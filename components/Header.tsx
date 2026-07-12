@@ -44,6 +44,15 @@ export function Header() {
       <div className="bg-gradient-maroon">
         <div className="flex items-center justify-between px-4 h-14 sm:px-7 sm:h-[64px]">
           <div className="flex items-center gap-3 sm:gap-9">
+            {/* Hamburger — hidden only at true desktop widths */}
+            <button
+              type="button"
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              onClick={() => setMenuOpen((o) => !o)}
+              className="lg:hidden inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20 sm:h-9 sm:w-9"
+            >
+              {menuOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
             <Link href="/" className="shrink-0" onClick={() => setMenuOpen(false)}>
               <Image src="/assets/wordmark-light.svg" alt="The Maroon Masters" width={520} height={92} className="h-5 w-auto sm:h-7" priority />
             </Link>
@@ -80,15 +89,6 @@ export function Header() {
               <InstagramGlyph />
             </a>
             <Image src="/assets/emblem.svg" alt="" width={240} height={240} className="hidden lg:block h-9 w-auto" />
-            {/* Hamburger — hidden only at true desktop widths */}
-            <button
-              type="button"
-              aria-label={menuOpen ? "Close menu" : "Open menu"}
-              onClick={() => setMenuOpen((o) => !o)}
-              className="lg:hidden inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20 sm:h-9 sm:w-9"
-            >
-              {menuOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
           </div>
         </div>
       </div>
