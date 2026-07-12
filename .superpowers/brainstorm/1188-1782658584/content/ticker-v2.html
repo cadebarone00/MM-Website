@@ -1,0 +1,72 @@
+<style>
+@keyframes shimmerSweepLeft { 0% { transform: translateX(-120%) skewX(-12deg); } 100% { transform: translateX(220%) skewX(-12deg); } }
+@keyframes shimmerSweepRight { 0% { transform: translateX(220%) skewX(-12deg); } 100% { transform: translateX(-120%) skewX(-12deg); } }
+@keyframes edgeBreathe { 0%, 100% { box-shadow: 0 0 6px 2px rgba(201,168,110,0.55); opacity: 0.7; } 50% { box-shadow: 0 0 18px 6px rgba(201,168,110,0.95); opacity: 1; } }
+.fill-clip { position: relative; overflow: hidden; }
+.shimmer-l { position: absolute; top:0; bottom:0; left:0; width:40%; background: linear-gradient(100deg, transparent, rgba(201,168,110,0.55), transparent); animation: shimmerSweepLeft 3.2s ease-in-out infinite; }
+.shimmer-r { position: absolute; top:0; bottom:0; left:0; width:40%; background: linear-gradient(100deg, transparent, rgba(201,168,110,0.55), transparent); animation: shimmerSweepRight 3.2s ease-in-out infinite; }
+.edge-glow { position: absolute; top:0; bottom:0; width:10px; background:#c9a86e; animation: edgeBreathe 2.4s ease-in-out infinite; }
+.gold-num { color:#fff; text-shadow: 0 2px 0 rgba(0,0,0,0.25), 0 0 14px rgba(201,168,110,0.85); -webkit-text-stroke: 1px #c9a86e; }
+.gold-num-white { color:#3d1010; text-shadow: 0 2px 0 rgba(0,0,0,0.12), 0 0 10px rgba(201,168,110,0.7); -webkit-text-stroke: 1px #b8945a; }
+.maroon-fill-text { color:#500001; text-shadow: 0 0 1px #c9a86e, 0 0 10px rgba(201,168,110,0.6); -webkit-text-stroke: 1.5px #c9a86e; }
+.white-fill-text { color:#fdfdfb; text-shadow: 0 0 1px #c9a86e, 0 0 10px rgba(201,168,110,0.6); -webkit-text-stroke: 1.5px #c9a86e; }
+</style>
+
+<h2>v2 — smaller numbers, "Points Available" box + center line, cream caption strip</h2>
+<p class="subtitle">Numbers shrunk from 128px to ~96px. Center badge now reads "Points Available 28" with a thin gold vertical line marking the bar's true center. Bottom strip is now cream with a gold outline, labels shortened to MAROON / WHITE, each rendered as a gold-accented color-fill (maroon-filled text for MAROON, white-filled text for WHITE, both with a thin gold stroke + glow so WHITE stays legible on cream).</p>
+
+<div style="border-top:1px solid #e0d9c5;border-bottom:1px solid #e0d9c5;">
+  <div style="position:relative;height:160px;display:flex;font-family:sans-serif;">
+    <div class="fill-clip" style="position:relative;width:28.1%;background:#500001;display:flex;align-items:center;padding-left:32px;">
+      <div class="shimmer-l"></div>
+      <span class="gold-num" style="font-size:96px;font-weight:900;line-height:1;position:relative;">18</span>
+      <div class="edge-glow" style="right:-5px;"></div>
+    </div>
+    <div style="width:50%;background:#e8e3d8;position:relative;">
+      <div style="position:absolute;left:50%;top:0;bottom:0;width:2px;background:#c9a86e;box-shadow:0 0 8px rgba(201,168,110,0.7);"></div>
+      <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border:3px solid #1a1a1a;font-family:sans-serif;font-size:15px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;background:#e8e3d8;color:#1a1a1a;white-space:nowrap;">
+        Points Available 28
+      </div>
+    </div>
+    <div class="fill-clip" style="position:relative;width:21.9%;background:#fdfdfb;display:flex;align-items:center;justify-content:flex-end;padding-right:32px;">
+      <div class="shimmer-r"></div>
+      <span class="gold-num-white" style="font-size:96px;font-weight:900;line-height:1;position:relative;">14</span>
+      <div class="edge-glow" style="left:-5px;"></div>
+    </div>
+  </div>
+  <div style="position:relative;height:90px;font-family:sans-serif;background:#f5efe2;border:2px solid #c9a86e;border-top:none;">
+    <div style="position:absolute;left:24px;top:15%;font-size:32px;font-weight:900;letter-spacing:0.5px;" class="maroon-fill-text">MAROON</div>
+    <div style="position:absolute;right:24px;top:12%;font-size:32px;font-weight:900;letter-spacing:0.5px;" class="white-fill-text">WHITE</div>
+  </div>
+</div>
+
+<h3 style="margin-top:40px;">Decided state — chevron straddles the winning team's fill edge</h3>
+<p class="subtitle">Maroon has clinched (reached pointsToWin) while White still has live matches in progress — chevron sits straddling the line where maroon's color fill ends, not the screen center. Filled maroon, gold accent, points toward maroon.</p>
+
+<div style="border-top:1px solid #e0d9c5;border-bottom:1px solid #e0d9c5;">
+  <div style="position:relative;height:160px;display:flex;font-family:sans-serif;">
+    <div class="fill-clip" style="position:relative;width:52%;background:#500001;display:flex;align-items:center;padding-left:32px;">
+      <div class="shimmer-l"></div>
+      <span class="gold-num" style="font-size:96px;font-weight:900;line-height:1;position:relative;">33</span>
+    </div>
+    <div style="width:30%;background:#e8e3d8;"></div>
+    <div class="fill-clip" style="position:relative;width:18%;background:#fdfdfb;display:flex;align-items:center;justify-content:flex-end;padding-right:32px;">
+      <div class="shimmer-r"></div>
+      <span class="gold-num-white" style="font-size:96px;font-weight:900;line-height:1;position:relative;">14</span>
+    </div>
+    <div style="position:absolute;left:52%;bottom:-22px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;height:44px;width:120px;background:#500001;border:2px solid #c9a86e;box-shadow:0 0 12px rgba(201,168,110,0.6);clip-path:polygon(0% 0%, 85% 0%, 100% 50%, 85% 100%, 0% 100%);font-size:13px;font-weight:800;letter-spacing:0.5px;color:#fff;text-transform:uppercase;">
+      Maroon Wins
+    </div>
+  </div>
+  <div style="position:relative;height:90px;font-family:sans-serif;background:#f5efe2;border:2px solid #c9a86e;border-top:none;">
+    <div style="position:absolute;left:24px;top:15%;font-size:32px;font-weight:900;letter-spacing:0.5px;" class="maroon-fill-text">MAROON</div>
+    <div style="position:absolute;right:24px;top:12%;font-size:32px;font-weight:900;letter-spacing:0.5px;" class="white-fill-text">WHITE</div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:16px;">The chevron's exact shape/size and how far it overhangs below the bar are rough first guesses — tell me what to adjust.</p>
+
+<div class="options">
+  <div class="option" data-choice="v2-good" onclick="toggleSelect(this)"><div class="letter">✓</div><div class="content"><h3>This is close — minor tweaks only</h3></div></div>
+  <div class="option" data-choice="v2-tweak" onclick="toggleSelect(this)"><div class="letter">✗</div><div class="content"><h3>Needs more work (say what)</h3></div></div>
+</div>

@@ -1,0 +1,53 @@
+<style>
+  .champ-wrap { font-family: sans-serif; max-width: 360px; }
+  .champ-card { position: relative; border: 2px solid #c9a86e; border-radius: 8px; overflow: hidden; background: #1a1a1a; margin-bottom: 28px; box-shadow: 0 4px 14px rgba(0,0,0,0.18); }
+  .champ-year { background: #500001; color: #f3e3c2; font-weight: 800; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; padding: 10px 16px; text-shadow: 0 0 8px rgba(201,168,110,0.6); border-bottom: 2px solid #c9a86e; }
+  .champ-photo { position: relative; width: 100%; height: 320px; background: linear-gradient(135deg,#3a3a3a,#222); display: flex; align-items: center; justify-content: center; color: #777; font-size: 13px; }
+  .champ-name-overlay { position: absolute; top: 14px; left: 16px; font-size: 22px; font-weight: 900; line-height: 1.15; text-transform: uppercase; }
+  .name-gold { color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.6), 0 0 10px rgba(201,168,110,0.85); -webkit-text-stroke: 1px #c9a86e; }
+  .trophy-row { display: inline-flex; gap: 4px; margin-top: 4px; }
+  .trophy { font-size: 16px; filter: drop-shadow(0 0 4px rgba(201,168,110,0.8)); }
+</style>
+
+<h2>Champions list — card v2: maroon fill removed from the name, white fill + gold stroke/glow instead</h2>
+<p class="subtitle">Year banner unchanged (maroon background, just above the photo). Name is now plain white text with the same gold stroke/glow treatment used on the ticker's point numbers, instead of a maroon color fill.</p>
+
+<div class="champ-wrap">
+  <div class="champ-card">
+    <div class="champ-year">2026</div>
+    <div class="champ-photo">
+      <div class="champ-name-overlay">
+        <span class="name-gold">Nate<br/>Wojciechowski</span>
+        <div class="trophy-row"><span class="trophy">🏆</span></div>
+      </div>
+      (photo placeholder — you'll upload Nate's photo here)
+    </div>
+  </div>
+
+  <div class="champ-card">
+    <div class="champ-year">2025</div>
+    <div class="champ-photo">
+      <div class="champ-name-overlay">
+        <span class="name-gold">Cade<br/>Barone</span>
+        <div class="trophy-row"><span class="trophy">🏆</span><span class="trophy">🏆</span></div>
+      </div>
+      (photo placeholder)
+    </div>
+  </div>
+
+  <div class="champ-card">
+    <div class="champ-year">2024</div>
+    <div class="champ-photo">
+      <div class="champ-name-overlay">
+        <span class="name-gold">Cade<br/>Barone</span>
+        <div class="trophy-row"><span class="trophy">🏆</span><span class="trophy">🏆</span></div>
+      </div>
+      (photo placeholder)
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="v2-good" onclick="toggleSelect(this)"><div class="letter">✓</div><div class="content"><h3>This works</h3></div></div>
+  <div class="option" data-choice="v2-tweak" onclick="toggleSelect(this)"><div class="letter">✗</div><div class="content"><h3>Still needs changes (say what)</h3></div></div>
+</div>

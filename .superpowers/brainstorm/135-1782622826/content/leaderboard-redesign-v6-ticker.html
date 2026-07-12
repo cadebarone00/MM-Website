@@ -1,0 +1,76 @@
+<style>
+@keyframes shimmerSweepLeft { 0% { transform: translateX(-120%) skewX(-12deg); } 100% { transform: translateX(220%) skewX(-12deg); } }
+@keyframes shimmerSweepRight { 0% { transform: translateX(220%) skewX(-12deg); } 100% { transform: translateX(-120%) skewX(-12deg); } }
+@keyframes edgeBreathe { 0%, 100% { box-shadow: 0 0 6px 2px rgba(201,168,110,0.55); opacity: 0.7; } 50% { box-shadow: 0 0 18px 6px rgba(201,168,110,0.95); opacity: 1; } }
+.fill-clip { position: relative; overflow: hidden; }
+.shimmer-gold-left { position: absolute; top:0; bottom:0; left:0; width:40%; background: linear-gradient(100deg, transparent, rgba(201,168,110,0.55), transparent); animation: shimmerSweepLeft 3.2s ease-in-out infinite; }
+.shimmer-gold-right { position: absolute; top:0; bottom:0; left:0; width:40%; background: linear-gradient(100deg, transparent, rgba(201,168,110,0.55), transparent); animation: shimmerSweepRight 3.2s ease-in-out infinite; }
+.edge-glow-gold { position: absolute; top:0; bottom:0; width:10px; background:#c9a86e; animation: edgeBreathe 2.4s ease-in-out infinite; }
+.full-bleed { width: 100vw; position: relative; left: 50%; margin-left: -50vw; }
+.fake-header { position: sticky; top: 0; z-index: 100; font-family: sans-serif; }
+.fake-ticker { position: sticky; top: 105px; z-index: 99; font-family: sans-serif; }
+</style>
+
+<h2>Sticky scoreboard ticker — touching the header, no gap</h2>
+<p class="subtitle">Scroll the preview below. The maroon header and the points bar are both pinned to the top — the bar sits flush against the header's gold edge with zero gap, like a broadcast score ticker. The bar's gold edge accent sits at its own bottom, away from the header.</p>
+
+<div class="full-bleed">
+  <div class="fake-header">
+    <div style="height:1px;background:rgba(255,255,255,0.15);"></div>
+    <div style="background:linear-gradient(135deg,#5c1a1a,#3d1010);height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;color:#fff;">
+      <div style="display:flex;align-items:center;gap:36px;">
+        <strong style="font-size:18px;letter-spacing:0.5px;">THE MAROON MASTERS</strong>
+        <nav style="display:flex;gap:24px;font-size:14px;opacity:0.85;">
+          <span>Home</span><span style="color:#fff;font-weight:700;opacity:1;border-bottom:2px solid #c9a86e;padding-bottom:22px;">Leaderboard</span><span>Teams</span><span>Schedule</span>
+        </nav>
+      </div>
+      <span style="background:#c9a86e;color:#3d1010;font-size:11px;font-weight:800;padding:4px 10px;border-radius:12px;">LIVE</span>
+    </div>
+    <div style="background:#3d1010;padding:7px 28px;text-align:center;">
+      <span style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#dcc28a;">The Maroon Masters 2027 · Underway now</span>
+    </div>
+    <div style="height:2px;background:#c9a86e;"></div>
+  </div>
+
+  <div class="fake-ticker">
+    <div style="position:relative;height:90px;display:flex;border-bottom:1px solid #e0d9c5;">
+      <div class="fill-clip" style="position:relative;width:28.1%;background:#5c1a1a;display:flex;align-items:center;padding-left:32px;">
+        <div class="shimmer-gold-left"></div>
+        <span style="color:#fff;font-size:24px;font-weight:800;position:relative;">18</span>
+        <div class="edge-glow-gold" style="right:-5px;"></div>
+      </div>
+      <div style="width:50%;background:#e8e3d8;"></div>
+      <div class="fill-clip" style="position:relative;width:21.9%;background:#fdfdfb;border-left:2px solid #1a1a1a;display:flex;align-items:center;justify-content:flex-end;padding-right:32px;">
+        <div class="shimmer-gold-right"></div>
+        <span style="color:#1a1a1a;font-size:24px;font-weight:800;position:relative;">14</span>
+        <div class="edge-glow-gold" style="left:-5px;"></div>
+      </div>
+      <div style="position:absolute;left:50.78%;bottom:0;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;">
+        <div style="width:2px;height:12px;background:#c9a86e;"></div>
+        <div style="width:18px;height:18px;border-radius:50%;background:#c9a86e;display:flex;align-items:center;justify-content:center;font-size:10px;margin-top:-2px;">🏆</div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:6px 32px 4px;background:#fff;">
+      <div>
+        <div style="font-weight:800;font-size:13px;">Team Maroon</div>
+        <div style="font-size:10px;color:#888;">14.5 to win</div>
+      </div>
+      <div style="text-align:center;font-size:10px;color:#888;padding-top:3px;">32 points still available</div>
+      <div style="text-align:right;">
+        <div style="font-weight:800;font-size:13px;">Team White</div>
+        <div style="font-size:10px;color:#888;">18.5 to retain</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:40px 32px;color:#666;">
+    <p>↓ Scroll down inside this preview to confirm both the header and the ticker bar stay pinned together at the top. ↓</p>
+    <div style="height:1400px;background:repeating-linear-gradient(#f7f4ec,#f7f4ec 80px,#eee6d4 80px,#eee6d4 81px);"></div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="ticker-good" onclick="toggleSelect(this)"><div class="letter">✓</div><div class="content"><h3>This is it — seamless and sticky, lock it in</h3></div></div>
+  <div class="option" data-choice="ticker-no-sticky" onclick="toggleSelect(this)"><div class="letter">✗</div><div class="content"><h3>Touching the header is right, but don't make it sticky on scroll</h3></div></div>
+  <div class="option" data-choice="ticker-tweak" onclick="toggleSelect(this)"><div class="letter">✗</div><div class="content"><h3>Something else needs adjusting</h3></div></div>
+</div>

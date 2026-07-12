@@ -1,0 +1,77 @@
+<style>
+@keyframes shimmerSweepLeft { 0% { transform: translateX(-120%) skewX(-12deg); } 100% { transform: translateX(220%) skewX(-12deg); } }
+@keyframes shimmerSweepRight { 0% { transform: translateX(220%) skewX(-12deg); } 100% { transform: translateX(-120%) skewX(-12deg); } }
+@keyframes edgeBreathe { 0%, 100% { box-shadow: 0 0 6px 2px rgba(201,168,110,0.55); opacity: 0.7; } 50% { box-shadow: 0 0 18px 6px rgba(201,168,110,0.95); opacity: 1; } }
+.fill-clip { position: relative; overflow: hidden; }
+.shimmer-l { position: absolute; top:0; bottom:0; left:0; width:40%; background: linear-gradient(100deg, transparent, rgba(201,168,110,0.55), transparent); animation: shimmerSweepLeft 3.2s ease-in-out infinite; }
+.shimmer-r { position: absolute; top:0; bottom:0; left:0; width:40%; background: linear-gradient(100deg, transparent, rgba(201,168,110,0.55), transparent); animation: shimmerSweepRight 3.2s ease-in-out infinite; }
+.edge-glow { position: absolute; top:0; bottom:0; width:10px; background:#c9a86e; animation: edgeBreathe 2.4s ease-in-out infinite; }
+.gold-num { color:#fff; text-shadow: 0 2px 0 rgba(0,0,0,0.25), 0 0 14px rgba(201,168,110,0.85); -webkit-text-stroke: 1px #c9a86e; }
+.gold-num-white { color:#3d1010; text-shadow: 0 2px 0 rgba(0,0,0,0.12), 0 0 10px rgba(201,168,110,0.7); -webkit-text-stroke: 1px #b8945a; }
+.maroon-fill-text { color:#500001; text-shadow: 0 0 1px #c9a86e, 0 0 10px rgba(201,168,110,0.6); -webkit-text-stroke: 1.5px #c9a86e; }
+.white-fill-text { color:#fdfdfb; text-shadow: 0 0 1px #c9a86e, 0 0 10px rgba(201,168,110,0.6); -webkit-text-stroke: 1.5px #c9a86e; }
+</style>
+
+<h2>v4 — chevron now matches the match-card ResultChevron shape exactly, gold center line always shown</h2>
+<p class="subtitle">The chevron is the same 5-point polygon used by match cards (just scaled way up), filled with the winner's color, gold stroke. The gold center line is now always present in both states — it marks the halfway point; once a team's fill crosses it, that's your visual cue they've mathematically won and the chevron appears in place of the box.</p>
+
+<h3>Undecided — box centered in bottom strip, gold line always visible on the bar</h3>
+<div style="border-top:1px solid #e0d9c5;border-bottom:1px solid #e0d9c5;">
+  <div style="position:relative;height:160px;display:flex;font-family:sans-serif;">
+    <div class="fill-clip" style="position:relative;width:28.1%;background:#500001;display:flex;align-items:center;padding-left:32px;">
+      <div class="shimmer-l"></div>
+      <span class="gold-num" style="font-size:96px;font-weight:900;line-height:1;position:relative;">18</span>
+      <div class="edge-glow" style="right:-5px;"></div>
+    </div>
+    <div style="width:50%;background:#e8e3d8;position:relative;"></div>
+    <div class="fill-clip" style="position:relative;width:21.9%;background:#fdfdfb;display:flex;align-items:center;justify-content:flex-end;padding-right:32px;">
+      <div class="shimmer-r"></div>
+      <span class="gold-num-white" style="font-size:96px;font-weight:900;line-height:1;position:relative;">14</span>
+      <div class="edge-glow" style="left:-5px;"></div>
+    </div>
+    <div style="position:absolute;left:50%;top:0;bottom:0;width:2px;background:#c9a86e;box-shadow:0 0 8px rgba(201,168,110,0.7);"></div>
+  </div>
+  <div style="position:relative;height:110px;font-family:sans-serif;background:#f5efe2;border:2px solid #c9a86e;border-top:none;display:flex;align-items:center;justify-content:center;">
+    <div style="position:absolute;left:24px;font-size:48px;font-weight:900;letter-spacing:0.5px;" class="maroon-fill-text">MAROON</div>
+    <div style="display:flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border:3px solid #1a1a1a;font-size:15px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#1a1a1a;white-space:nowrap;">
+      Points Available 28
+    </div>
+    <div style="position:absolute;right:24px;font-size:48px;font-weight:900;letter-spacing:0.5px;" class="white-fill-text">WHITE</div>
+  </div>
+</div>
+
+<h3 style="margin-top:40px;">Decided — White's fill has crossed the gold center line</h3>
+<div style="border-top:1px solid #e0d9c5;border-bottom:1px solid #e0d9c5;">
+  <div style="position:relative;height:160px;display:flex;font-family:sans-serif;">
+    <div class="fill-clip" style="position:relative;width:30%;background:#500001;display:flex;align-items:center;padding-left:32px;">
+      <div class="shimmer-l"></div>
+      <span class="gold-num" style="font-size:96px;font-weight:900;line-height:1;position:relative;">19</span>
+    </div>
+    <div style="width:20%;background:#e8e3d8;"></div>
+    <div class="fill-clip" style="position:relative;width:50%;background:#fdfdfb;display:flex;align-items:center;justify-content:flex-end;padding-right:32px;">
+      <div class="shimmer-r"></div>
+      <span class="gold-num-white" style="font-size:96px;font-weight:900;line-height:1;position:relative;">32.5</span>
+    </div>
+    <div style="position:absolute;left:50%;top:0;bottom:0;width:2px;background:#c9a86e;box-shadow:0 0 8px rgba(201,168,110,0.7);"></div>
+
+    <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:170px;height:75px;">
+      <svg viewBox="0 0 100 44" preserveAspectRatio="none" style="width:100%;height:100%;display:block;">
+        <polygon points="100,22 70,0 0,0 0,44 70,44" fill="#fdfdfb" stroke="#b8945a" stroke-width="3"></polygon>
+      </svg>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding-left:6px;font-family:sans-serif;font-size:15px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#500001;">
+        White Wins
+      </div>
+    </div>
+  </div>
+  <div style="position:relative;height:110px;font-family:sans-serif;background:#f5efe2;border:2px solid #c9a86e;border-top:none;display:flex;align-items:center;justify-content:center;">
+    <div style="position:absolute;left:24px;font-size:48px;font-weight:900;letter-spacing:0.5px;" class="maroon-fill-text">MAROON</div>
+    <div style="position:absolute;right:24px;font-size:48px;font-weight:900;letter-spacing:0.5px;" class="white-fill-text">WHITE</div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:16px;">For a Maroon win, this mirrors: polygon flips to point left (the LEFT_POINTS shape from ResultChevron), filled maroon, sitting on Maroon's fill edge.</p>
+
+<div class="options">
+  <div class="option" data-choice="v4-good" onclick="toggleSelect(this)"><div class="letter">✓</div><div class="content"><h3>This is it</h3></div></div>
+  <div class="option" data-choice="v4-tweak" onclick="toggleSelect(this)"><div class="letter">✗</div><div class="content"><h3>Still needs adjustment (say what)</h3></div></div>
+</div>

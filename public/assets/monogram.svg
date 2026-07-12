@@ -1,0 +1,5 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Maroon Masters monogram">
+  <rect width="120" height="120" rx="8" fill="#500001"></rect>
+  <circle cx="60" cy="60" r="50" fill="none" stroke="#C9A86E" stroke-width="1.5"></circle>
+  <text x="60" y="80" text-anchor="middle" font-family="'Spectral',Georgia,serif" font-size="58" font-weight="700" fill="#FBF8F1">MM</text>
+</svg>

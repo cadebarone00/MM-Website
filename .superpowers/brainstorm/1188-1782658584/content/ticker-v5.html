@@ -1,0 +1,49 @@
+<style>
+.fill-clip { position: relative; overflow: hidden; z-index: 1; }
+.gold-num { color:#fff; text-shadow: 0 2px 0 rgba(0,0,0,0.25), 0 0 14px rgba(201,168,110,0.85); -webkit-text-stroke: 1px #c9a86e; }
+.gold-num-white { color:#3d1010; text-shadow: 0 2px 0 rgba(0,0,0,0.12), 0 0 10px rgba(201,168,110,0.7); -webkit-text-stroke: 1px #b8945a; }
+</style>
+
+<h2>v5 — checking I've got the gold line mechanic right</h2>
+<p class="subtitle">Making sure before I lock this in: the gold line is a single fixed mark at literal dead-center (50%), sitting <em>behind</em> the color fills. While both teams are under 50%, it's visible in the gray gap. The moment a team's fill grows past 50%, their solid color naturally paints over/covers the line in that spot — no separate logic, just normal fill growth. That's what "the line moves" looks like here: it doesn't relocate, it gets swallowed by whichever team's fill has overtaken it. Is that the mechanic you meant?</p>
+
+<h3>Both teams under 50% — line visible in the gap</h3>
+<div style="border-top:1px solid #e0d9c5;border-bottom:1px solid #e0d9c5;">
+  <div style="position:relative;height:160px;display:flex;font-family:sans-serif;">
+    <div style="position:absolute;left:50%;top:0;bottom:0;width:2px;background:#c9a86e;box-shadow:0 0 8px rgba(201,168,110,0.7);z-index:0;"></div>
+    <div class="fill-clip" style="width:28.1%;background:#500001;display:flex;align-items:center;padding-left:32px;">
+      <span class="gold-num" style="font-size:96px;font-weight:900;line-height:1;">18</span>
+    </div>
+    <div style="width:50%;background:#e8e3d8;position:relative;z-index:0;"></div>
+    <div class="fill-clip" style="width:21.9%;background:#fdfdfb;display:flex;align-items:center;justify-content:flex-end;padding-right:32px;">
+      <span class="gold-num-white" style="font-size:96px;font-weight:900;line-height:1;">14</span>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:32px;">White grows past 50% — white's own fill covers the line, chevron appears</h3>
+<div style="border-top:1px solid #e0d9c5;border-bottom:1px solid #e0d9c5;">
+  <div style="position:relative;height:160px;display:flex;font-family:sans-serif;">
+    <div style="position:absolute;left:50%;top:0;bottom:0;width:2px;background:#c9a86e;box-shadow:0 0 8px rgba(201,168,110,0.7);z-index:0;"></div>
+    <div class="fill-clip" style="width:30%;background:#500001;display:flex;align-items:center;padding-left:32px;">
+      <span class="gold-num" style="font-size:96px;font-weight:900;line-height:1;">19</span>
+    </div>
+    <div style="width:20%;background:#e8e3d8;position:relative;z-index:0;"></div>
+    <div class="fill-clip" style="width:50%;background:#fdfdfb;display:flex;align-items:center;justify-content:flex-end;padding-right:32px;">
+      <span class="gold-num-white" style="font-size:96px;font-weight:900;line-height:1;">32.5</span>
+    </div>
+    <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:170px;height:75px;z-index:2;">
+      <svg viewBox="0 0 100 44" preserveAspectRatio="none" style="width:100%;height:100%;display:block;">
+        <polygon points="100,22 70,0 0,0 0,44 70,44" fill="#fdfdfb" stroke="#b8945a" stroke-width="3"></polygon>
+      </svg>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding-left:6px;font-size:15px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#500001;font-family:sans-serif;">White Wins</div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:16px;">Notice in the second example the line is gone — it's sitting exactly at 50%, and White's fill (which is now 50% wide, touching dead-center) has fully swallowed it. If White grew to 55%, the line would be 5% deep inside white's territory, still invisibly covered.</p>
+
+<div class="options">
+  <div class="option" data-choice="line-yes" onclick="toggleSelect(this)"><div class="letter">✓</div><div class="content"><h3>Yes, that's the mechanic</h3></div></div>
+  <div class="option" data-choice="line-no" onclick="toggleSelect(this)"><div class="letter">✗</div><div class="content"><h3>No, I meant something else (explain)</h3></div></div>
+</div>

@@ -1,0 +1,7 @@
+<svg width="120" height="140" viewBox="0 0 120 140" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Maroon Team crest">
+  <path d="M8 12 H112 V78 C112 108 88 126 60 134 C32 126 8 108 8 78 Z" fill="#500001" stroke="#C9A86E" stroke-width="2"></path>
+  <path d="M8 12 H112 V30 H8 Z" fill="#380001"></path>
+  <text x="60" y="26" text-anchor="middle" font-family="'Barlow Semi Condensed',sans-serif" font-size="11" font-weight="600" letter-spacing="2.5" fill="#C9A86E">MAROON</text>
+  <text x="60" y="92" text-anchor="middle" font-family="'Spectral',Georgia,serif" font-size="46" font-weight="700" fill="#FBF8F1">M</text>
+  <line x1="34" y1="108" x2="86" y2="108" stroke="#C9A86E" stroke-width="1.5"></line>
+</svg>

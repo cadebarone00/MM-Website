@@ -1,0 +1,77 @@
+<style>
+.fill-clip { position: relative; overflow: hidden; z-index: 1; }
+.gold-num { color:#fff; text-shadow: 0 2px 0 rgba(0,0,0,0.25), 0 0 10px rgba(201,168,110,0.85); -webkit-text-stroke: 1px #c9a86e; font-size:72px; font-weight:900; line-height:1; font-family:sans-serif; }
+.gold-num-white { color:#3d1010; text-shadow: 0 2px 0 rgba(0,0,0,0.12), 0 0 8px rgba(201,168,110,0.7); -webkit-text-stroke: 1px #b8945a; font-size:72px; font-weight:900; line-height:1; font-family:sans-serif; }
+.bar { position:relative; height:140px; display:flex; font-family:sans-serif; }
+.center-line { position:absolute; left:50%; top:0; bottom:0; width:2px; background:#c9a86e; box-shadow:0 0 8px rgba(201,168,110,0.7); z-index:0; }
+.gap { background:#e8e3d8; position:relative; z-index:0; }
+.wrap { border-top:1px solid #e0d9c5; border-bottom:1px solid #e0d9c5; margin-bottom:28px; }
+</style>
+
+<h2>v8 — all 6 examples together, fixed widths, one consistent number size (72px) throughout</h2>
+
+<h3>1. Maroon exactly 50% (32/64) — line at center, box stays (not yet at pointsToWin)</h3>
+<div class="wrap"><div class="bar">
+  <div class="center-line"></div>
+  <div class="fill-clip" style="width:50%;background:#500001;display:flex;align-items:center;padding-left:28px;"><span class="gold-num">32</span></div>
+  <div class="gap" style="width:32%;"></div>
+  <div class="fill-clip" style="width:18%;background:#fdfdfb;display:flex;align-items:center;justify-content:flex-end;padding-right:28px;"><span class="gold-num-white">11.5</span></div>
+</div></div>
+
+<h3>2. Maroon just past pointsToWin (32.5/64, 50.78%) — line nudged, chevron appears</h3>
+<div class="wrap"><div class="bar">
+  <div class="fill-clip" style="width:50.78%;background:#500001;display:flex;align-items:center;padding-left:28px;"><span class="gold-num">32.5</span></div>
+  <div class="gap" style="width:31.22%;"></div>
+  <div class="fill-clip" style="width:18%;background:#fdfdfb;display:flex;align-items:center;justify-content:flex-end;padding-right:28px;"><span class="gold-num-white">11.5</span></div>
+  <div style="position:absolute;left:50.78%;top:50%;transform:translate(-50%,-50%);width:150px;height:65px;z-index:2;">
+    <svg viewBox="0 0 100 44" preserveAspectRatio="none" style="width:100%;height:100%;display:block;"><polygon points="0,22 30,0 100,0 100,44 30,44" fill="#500001" stroke="#b8945a" stroke-width="3"></polygon></svg>
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding-right:6px;font-size:13px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#fff;font-family:sans-serif;">Maroon Wins</div>
+  </div>
+</div></div>
+
+<h3>3. Maroon at 60% (38.4/64) — line/chevron pushed further out</h3>
+<div class="wrap"><div class="bar">
+  <div class="fill-clip" style="width:60%;background:#500001;display:flex;align-items:center;padding-left:28px;"><span class="gold-num">38.4</span></div>
+  <div class="gap" style="width:21.6%;"></div>
+  <div class="fill-clip" style="width:18%;background:#fdfdfb;display:flex;align-items:center;justify-content:flex-end;padding-right:28px;"><span class="gold-num-white">11.5</span></div>
+  <div style="position:absolute;left:60%;top:50%;transform:translate(-50%,-50%);width:150px;height:65px;z-index:2;">
+    <svg viewBox="0 0 100 44" preserveAspectRatio="none" style="width:100%;height:100%;display:block;"><polygon points="0,22 30,0 100,0 100,44 30,44" fill="#500001" stroke="#b8945a" stroke-width="3"></polygon></svg>
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding-right:6px;font-size:13px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#fff;font-family:sans-serif;">Maroon Wins</div>
+  </div>
+</div></div>
+
+<h3>4. White (defending) ties at exactly 50% — RETAINS box, not a chevron</h3>
+<div class="wrap"><div class="bar">
+  <div class="fill-clip" style="width:50%;background:#500001;display:flex;align-items:center;padding-left:28px;"><span class="gold-num">32</span></div>
+  <div class="gap" style="width:32%;"></div>
+  <div class="fill-clip" style="width:18%;background:#fdfdfb;display:flex;align-items:center;justify-content:flex-end;padding-right:28px;"><span class="gold-num-white">11.5</span></div>
+  <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:160px;height:60px;z-index:2;display:flex;align-items:center;justify-content:center;background:#fdfdfb;border:3px solid #b8945a;box-shadow:0 0 12px rgba(201,168,110,0.6);font-size:13px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#500001;font-family:sans-serif;">White Retains</div>
+</div></div>
+
+<h3>5. Both teams at 0 — 15% floor each side, no real fill yet</h3>
+<div class="wrap">
+<div class="bar">
+  <div class="center-line"></div>
+  <div class="fill-clip" style="width:15%;background:#500001;display:flex;align-items:center;padding-left:20px;"><span class="gold-num">0</span></div>
+  <div class="gap" style="width:70%;"></div>
+  <div class="fill-clip" style="width:15%;background:#fdfdfb;display:flex;align-items:center;justify-content:flex-end;padding-right:20px;"><span class="gold-num-white">0</span></div>
+</div>
+<div style="position:relative;height:90px;font-family:sans-serif;background:#f5efe2;border:2px solid #c9a86e;border-top:none;display:flex;align-items:center;justify-content:center;">
+  <div style="display:flex;align-items:center;justify-content:center;height:36px;padding:0 14px;border:3px solid #1a1a1a;font-size:13px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#1a1a1a;white-space:nowrap;">Points Available 64</div>
+</div>
+</div>
+
+<h3>6. Maroon at 17% (past floor, tracking real %) vs White at 10% (pinned at 15% floor) — fixed: widths now sum to 100, white flush to the right edge</h3>
+<div class="wrap"><div class="bar">
+  <div class="center-line"></div>
+  <div class="fill-clip" style="width:17%;background:#500001;display:flex;align-items:center;padding-left:20px;"><span class="gold-num">10.9</span></div>
+  <div class="gap" style="width:68%;"></div>
+  <div class="fill-clip" style="width:15%;background:#fdfdfb;display:flex;align-items:center;justify-content:flex-end;padding-right:20px;"><span class="gold-num-white">6.4</span></div>
+</div></div>
+
+<p class="subtitle">Widths now check out: 17 + 68 + 15 = 100. White's block sits flush against the right edge of the bar in every example. Number size is 72px everywhere, regardless of how narrow the fill is.</p>
+
+<div class="options">
+  <div class="option" data-choice="v8-good" onclick="toggleSelect(this)"><div class="letter">✓</div><div class="content"><h3>All fixed, looks right</h3></div></div>
+  <div class="option" data-choice="v8-tweak" onclick="toggleSelect(this)"><div class="letter">✗</div><div class="content"><h3>Still an issue (say which)</h3></div></div>
+</div>

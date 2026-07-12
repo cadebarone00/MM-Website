@@ -1,0 +1,113 @@
+<style>
+@keyframes shimmerSweep {
+  0% { transform: translateX(-120%) skewX(-12deg); }
+  100% { transform: translateX(220%) skewX(-12deg); }
+}
+@keyframes edgeBreathe {
+  0%, 100% { box-shadow: 0 0 6px 2px rgba(201,168,110,0.5); opacity: 0.7; }
+  50% { box-shadow: 0 0 18px 6px rgba(201,168,110,0.9); opacity: 1; }
+}
+@keyframes blobMorph {
+  0%   { border-radius: 58% 42% 60% 40% / 50% 55% 45% 50%; transform: translateY(0px) scale(1); }
+  33%  { border-radius: 45% 55% 40% 60% / 60% 40% 60% 40%; transform: translateY(-3px) scale(1.05); }
+  66%  { border-radius: 65% 35% 50% 50% / 40% 60% 40% 60%; transform: translateY(3px) scale(0.96); }
+  100% { border-radius: 58% 42% 60% 40% / 50% 55% 45% 50%; }
+}
+@keyframes blobMorphWhite {
+  0%   { border-radius: 42% 58% 40% 60% / 55% 50% 50% 45%; transform: translateY(0px) scale(1); }
+  33%  { border-radius: 55% 45% 60% 40% / 40% 60% 40% 60%; transform: translateY(3px) scale(1.05); }
+  66%  { border-radius: 35% 65% 50% 50% / 60% 40% 60% 40%; transform: translateY(-3px) scale(0.96); }
+  100% { border-radius: 42% 58% 40% 60% / 55% 50% 50% 45%; }
+}
+.fill-clip { position: relative; overflow: hidden; }
+.shimmer { position: absolute; top: 0; bottom: 0; left: 0; width: 40%; background: linear-gradient(100deg, transparent, rgba(255,255,255,0.35), transparent); animation: shimmerSweep 3.2s ease-in-out infinite; }
+.edge-glow { position: absolute; top: 0; bottom: 0; width: 10px; animation: edgeBreathe 2.4s ease-in-out infinite; }
+.edge-blob { position: absolute; width: 26px; height: 26px; top: 50%; margin-top: -13px; background: #5c1a1a; animation: blobMorph 3.6s ease-in-out infinite; }
+.edge-blob-white { position: absolute; width: 26px; height: 26px; top: 50%; margin-top: -13px; background: #fdfdfb; border: 2px solid #1a1a1a; animation: blobMorphWhite 3.6s ease-in-out infinite; }
+</style>
+
+<h2>Liquid animation options</h2>
+<p class="subtitle">All three are running live below — let them play a few seconds, then tell me which feels right (or mix-and-match).</p>
+
+<div class="section">
+  <h3>A — Shimmer sweep (a streak of light glides across each fill on a loop)</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="padding:0;">
+      <div style="position:relative;height:90px;display:flex;font-family:sans-serif;border:1px solid #e0d9c5;">
+        <div class="fill-clip" style="width:28.1%;background:#5c1a1a;display:flex;align-items:center;padding-left:18px;">
+          <div class="shimmer"></div>
+          <span style="color:#fff;font-size:24px;font-weight:800;position:relative;">18</span>
+        </div>
+        <div style="width:50%;background:#e8e3d8;"></div>
+        <div class="fill-clip" style="width:21.9%;background:#fdfdfb;border-left:2px solid #1a1a1a;display:flex;align-items:center;justify-content:flex-end;padding-right:18px;">
+          <div class="shimmer" style="background:linear-gradient(100deg, transparent, rgba(0,0,0,0.12), transparent);"></div>
+          <span style="color:#1a1a1a;font-size:24px;font-weight:800;position:relative;">14</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:24px;">B — Breathing edge glow (the leading edge of each fill pulses, like it's pushing forward)</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="padding:0;">
+      <div style="position:relative;height:90px;display:flex;font-family:sans-serif;border:1px solid #e0d9c5;">
+        <div style="position:relative;width:28.1%;background:#5c1a1a;display:flex;align-items:center;padding-left:18px;">
+          <span style="color:#fff;font-size:24px;font-weight:800;">18</span>
+          <div class="edge-glow" style="right:-5px;background:#c9a86e;"></div>
+        </div>
+        <div style="width:50%;background:#e8e3d8;"></div>
+        <div style="position:relative;width:21.9%;background:#fdfdfb;border-left:2px solid #1a1a1a;display:flex;align-items:center;justify-content:flex-end;padding-right:18px;">
+          <span style="color:#1a1a1a;font-size:24px;font-weight:800;">14</span>
+          <div class="edge-glow" style="left:-5px;background:#1a1a1a;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:24px;">C — Liquid blob edge (a soft morphing blob sits right at the tip of each fill, like the surface of water)</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="padding:0;">
+      <div style="position:relative;height:90px;display:flex;font-family:sans-serif;border:1px solid #e0d9c5;">
+        <div style="position:relative;width:28.1%;background:#5c1a1a;display:flex;align-items:center;padding-left:18px;">
+          <span style="color:#fff;font-size:24px;font-weight:800;">18</span>
+          <div class="edge-blob" style="right:-13px;"></div>
+        </div>
+        <div style="width:50%;background:#e8e3d8;"></div>
+        <div style="position:relative;width:21.9%;background:#fdfdfb;border-left:2px solid #1a1a1a;display:flex;align-items:center;justify-content:flex-end;padding-right:18px;">
+          <span style="color:#1a1a1a;font-size:24px;font-weight:800;">14</span>
+          <div class="edge-blob-white" style="left:-13px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:24px;">D — All three combined</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="padding:0;">
+      <div style="position:relative;height:90px;display:flex;font-family:sans-serif;border:1px solid #e0d9c5;">
+        <div class="fill-clip" style="position:relative;width:28.1%;background:#5c1a1a;display:flex;align-items:center;padding-left:18px;">
+          <div class="shimmer"></div>
+          <span style="color:#fff;font-size:24px;font-weight:800;position:relative;">18</span>
+          <div class="edge-glow" style="right:-5px;background:#c9a86e;"></div>
+          <div class="edge-blob" style="right:-13px;"></div>
+        </div>
+        <div style="width:50%;background:#e8e3d8;"></div>
+        <div class="fill-clip" style="position:relative;width:21.9%;background:#fdfdfb;border-left:2px solid #1a1a1a;display:flex;align-items:center;justify-content:flex-end;padding-right:18px;">
+          <div class="shimmer" style="background:linear-gradient(100deg, transparent, rgba(0,0,0,0.12), transparent);"></div>
+          <span style="color:#1a1a1a;font-size:24px;font-weight:800;position:relative;">14</span>
+          <div class="edge-glow" style="left:-5px;background:#1a1a1a;"></div>
+          <div class="edge-blob-white" style="left:-13px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle">Note: this animation only makes sense while a tournament is actually live (points changing) — for completed/historical years the bar should probably sit still. I'll ask about that next.</p>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="shimmer" onclick="toggleSelect(this)"><div class="letter">A</div><div class="content"><h3>Shimmer sweep</h3></div></div>
+  <div class="option" data-choice="edge-glow" onclick="toggleSelect(this)"><div class="letter">B</div><div class="content"><h3>Breathing edge glow</h3></div></div>
+  <div class="option" data-choice="blob" onclick="toggleSelect(this)"><div class="letter">C</div><div class="content"><h3>Liquid blob edge</h3></div></div>
+  <div class="option" data-choice="combined" onclick="toggleSelect(this)"><div class="letter">D</div><div class="content"><h3>All combined</h3></div></div>
+</div>

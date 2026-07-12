@@ -1,0 +1,60 @@
+<style>
+@keyframes shimmerSweepLeft {
+  0% { transform: translateX(-120%) skewX(-12deg); }
+  100% { transform: translateX(220%) skewX(-12deg); }
+}
+@keyframes shimmerSweepRight {
+  0% { transform: translateX(220%) skewX(-12deg); }
+  100% { transform: translateX(-120%) skewX(-12deg); }
+}
+@keyframes edgeBreathe {
+  0%, 100% { box-shadow: 0 0 6px 2px rgba(201,168,110,0.55); opacity: 0.7; }
+  50% { box-shadow: 0 0 18px 6px rgba(201,168,110,0.95); opacity: 1; }
+}
+.fill-clip { position: relative; overflow: hidden; }
+.shimmer-gold-left { position: absolute; top: 0; bottom: 0; left: 0; width: 40%; background: linear-gradient(100deg, transparent, rgba(201,168,110,0.55), transparent); animation: shimmerSweepLeft 3.2s ease-in-out infinite; }
+.shimmer-gold-right { position: absolute; top: 0; bottom: 0; left: 0; width: 40%; background: linear-gradient(100deg, transparent, rgba(201,168,110,0.55), transparent); animation: shimmerSweepRight 3.2s ease-in-out infinite; }
+.edge-glow-gold { position: absolute; top: 0; bottom: 0; width: 10px; background: #c9a86e; animation: edgeBreathe 2.4s ease-in-out infinite; }
+.full-bleed { width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; }
+</style>
+
+<h2>Full-bleed bar, shimmers converging toward the middle</h2>
+<p class="subtitle">Maroon shimmer still sweeps left→right (toward center). White shimmer now sweeps right→left (also toward center) — both reading like they're flowing in from off-screen on either side. Bar itself now breaks out to the full browser width instead of stopping at the page's content column.</p>
+
+<div class="full-bleed">
+  <div style="position:relative;height:110px;display:flex;font-family:sans-serif;border-top:1px solid #e0d9c5;border-bottom:1px solid #e0d9c5;">
+    <div class="fill-clip" style="position:relative;width:28.1%;background:#5c1a1a;display:flex;align-items:center;padding-left:32px;">
+      <div class="shimmer-gold-left"></div>
+      <span style="color:#fff;font-size:28px;font-weight:800;position:relative;">18</span>
+      <div class="edge-glow-gold" style="right:-5px;"></div>
+    </div>
+    <div style="width:50%;background:#e8e3d8;"></div>
+    <div class="fill-clip" style="position:relative;width:21.9%;background:#fdfdfb;border-left:2px solid #1a1a1a;display:flex;align-items:center;justify-content:flex-end;padding-right:32px;">
+      <div class="shimmer-gold-right"></div>
+      <span style="color:#1a1a1a;font-size:28px;font-weight:800;position:relative;">14</span>
+      <div class="edge-glow-gold" style="left:-5px;"></div>
+    </div>
+    <div style="position:absolute;left:50.78%;bottom:0;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;">
+      <div style="width:2px;height:14px;background:#c9a86e;"></div>
+      <div style="width:22px;height:22px;border-radius:50%;background:#c9a86e;display:flex;align-items:center;justify-content:center;font-size:12px;margin-top:-2px;">🏆</div>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 32px 4px;font-family:sans-serif;">
+    <div>
+      <div style="font-weight:800;font-size:15px;">Team Maroon</div>
+      <div style="font-size:11px;color:#888;">14.5 to win</div>
+    </div>
+    <div style="text-align:center;font-size:11px;color:#888;padding-top:4px;">32 points still available</div>
+    <div style="text-align:right;">
+      <div style="font-weight:800;font-size:15px;">Team White</div>
+      <div style="font-size:11px;color:#888;">18.5 to retain</div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:80px;">Note on the full-bleed part: this preview frame has its own width, so "edge to edge" here means edge of the browser window showing this preview, not edge of your actual site — but the technique (breaking out of the page's max-width container with a 100vw/negative-margin trick) is exactly what makes it span the real browser window edge-to-edge on the live site, same as it does here.</p>
+
+<div class="options">
+  <div class="option" data-choice="converging-good" onclick="toggleSelect(this)"><div class="letter">✓</div><div class="content"><h3>This is it — lock it in</h3></div></div>
+  <div class="option" data-choice="converging-tweak" onclick="toggleSelect(this)"><div class="letter">✗</div><div class="content"><h3>Still needs something</h3></div></div>
+</div>

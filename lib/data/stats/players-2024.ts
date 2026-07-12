@@ -1,0 +1,81 @@
+import type { PlayerYearStatsTable } from "./types";
+
+// 2024 used an older sheet format: no Scoring Average, Team Points Won, Putting
+// Average, 3/4/5 performance, Total 1-Putts, Birdie/Double totals, Bounce Back %,
+// or Fall Off % were tracked. Those fields are simply omitted below (rendered as
+// "Not recorded for this year" by the stats UI). Money, Skins, GIR%, FIR%, 3+ Putts,
+// Up & Down %, and the full Strokes Gained breakdown were tracked and are included.
+export const players2024: PlayerYearStatsTable = {
+  Cam: {
+    totalEarned: 53,
+    totalSkins: 5,
+    girPct: 53,
+    firPct: 81,
+    threePlusPutts: { pct: 9, total: 9 },
+    upAndDown: { pct: 27 },
+    strokesGained: { total: 2.79, offTee: 37.95, approach: -44.05, aroundGreen: 9.35, putting: -0.46 },
+  },
+  Drew: {
+    totalEarned: 10,
+    totalSkins: 1,
+    girPct: 46,
+    firPct: 53,
+    threePlusPutts: { pct: 7, total: 7 },
+    upAndDown: { pct: 19 },
+    strokesGained: { total: -9.21, offTee: 50.47, approach: -50.44, aroundGreen: -4.03, putting: -5.21 },
+  },
+  Jackson: {
+    totalEarned: 53,
+    totalSkins: 3,
+    girPct: 43,
+    firPct: 46,
+    threePlusPutts: { pct: 11, total: 11 },
+    upAndDown: { pct: 19 },
+    strokesGained: { total: -16.21, offTee: -15.51, approach: 11.41, aroundGreen: -8.9, putting: -3.21 },
+  },
+  Luke: {
+    totalEarned: 46,
+    totalSkins: 4,
+    girPct: 53,
+    firPct: 65,
+    threePlusPutts: { pct: 10, total: 8 },
+    upAndDown: { pct: 28 },
+    strokesGained: { total: 5.5, offTee: 2.82, approach: 1.55, aroundGreen: 7.26, putting: -6.13 },
+  },
+  Cade: {
+    totalEarned: 245,
+    totalSkins: 10,
+    girPct: 62,
+    firPct: 74,
+    threePlusPutts: { pct: 6, total: 6 },
+    upAndDown: { pct: 33 },
+    strokesGained: { total: 31.79, offTee: 51.02, approach: -43.22, aroundGreen: 13.36, putting: 10.63 },
+  },
+  Collin: {
+    totalEarned: 138,
+    totalSkins: 4,
+    girPct: 45,
+    firPct: 59,
+    threePlusPutts: { pct: 11, total: 11 },
+    upAndDown: { pct: 16 },
+    strokesGained: { total: -3.21, offTee: 16.82, approach: -10.6, aroundGreen: -0.84, putting: -8.59 },
+  },
+  Dalton: {
+    totalEarned: 111,
+    totalSkins: 3,
+    girPct: 45,
+    firPct: 74,
+    threePlusPutts: { pct: 7, total: 7 },
+    upAndDown: { pct: 24 },
+    strokesGained: { total: -11.21, offTee: 40.22, approach: -47.29, aroundGreen: -5.93, putting: 1.79 },
+  },
+  Peyton: {
+    totalEarned: 144,
+    totalSkins: 4,
+    girPct: 48,
+    firPct: 75,
+    threePlusPutts: { pct: 10, total: 10 },
+    upAndDown: { pct: 23 },
+    strokesGained: { total: -0.21, offTee: 43.03, approach: -51.67, aroundGreen: 8.01, putting: 0.41 },
+  },
+};

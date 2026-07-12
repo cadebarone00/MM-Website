@@ -1,0 +1,22 @@
+<svg width="240" height="240" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The Maroon Masters championship emblem">
+  <defs>
+    <path id="mm-arc-top" d="M 36 120 A 84 84 0 0 1 204 120"></path>
+    <path id="mm-arc-bot" d="M 204 120 A 84 84 0 0 1 36 120"></path>
+  </defs>
+  <circle cx="120" cy="120" r="116" fill="#500001"></circle>
+  <circle cx="120" cy="120" r="111" fill="none" stroke="#C9A86E" stroke-width="1.5"></circle>
+  <circle cx="120" cy="120" r="84" fill="none" stroke="#C9A86E" stroke-width="1.5"></circle>
+  <text font-family="'Barlow Semi Condensed','Barlow',sans-serif" font-size="15" font-weight="600" letter-spacing="3" fill="#EADCC0">
+    <textPath href="#mm-arc-top" startOffset="50%" text-anchor="middle">THE MAROON MASTERS</textPath>
+  </text>
+  <text font-family="'Barlow Semi Condensed','Barlow',sans-serif" font-size="12.5" font-weight="500" letter-spacing="3.4" fill="#C9A86E">
+    <textPath href="#mm-arc-bot" startOffset="50%" text-anchor="middle">· MATCH PLAY CHAMPIONSHIP ·</textPath>
+  </text>
+  <circle cx="42" cy="120" r="2.6" fill="#C9A86E"></circle>
+  <circle cx="198" cy="120" r="2.6" fill="#C9A86E"></circle>
+  <text x="120" y="118" text-anchor="middle" font-family="'Spectral',Georgia,serif" font-size="74" font-weight="700" fill="#FBF8F1">MM</text>
+  <g stroke="#C9A86E" stroke-width="1.5" stroke-linecap="round">
+    <line x1="96" y1="150" x2="144" y2="150"></line>
+    <circle cx="120" cy="166" r="3.4" fill="#C9A86E" stroke="none"></circle>
+  </g>
+</svg>

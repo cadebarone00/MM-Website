@@ -1,0 +1,67 @@
+<style>
+.fill-clip { position: relative; overflow: hidden; z-index: 1; }
+.gold-num { color:#fff; text-shadow: 0 2px 0 rgba(0,0,0,0.25), 0 0 10px rgba(201,168,110,0.85); -webkit-text-stroke: 1px #c9a86e; }
+.gold-num-white { color:#3d1010; text-shadow: 0 2px 0 rgba(0,0,0,0.12), 0 0 8px rgba(201,168,110,0.7); -webkit-text-stroke: 1px #b8945a; }
+</style>
+
+<h2>v6 — the line gets pushed by the leading fill (3 stages)</h2>
+<p class="subtitle">Line stays pinned at exactly 50% until a team's fill reaches that point, then rides along the leading edge of whichever fill has gone past it — visually "pushed" rightward (or leftward) as that team earns more. Pointsable = 64, pointsToWin = 32.5 (50.78%) in all three, just to show real numbers.</p>
+
+<h3>Maroon at exactly 50% (32 pts) — line still dead-center, not yet at pointsToWin, box stays</h3>
+<div style="border-top:1px solid #e0d9c5;border-bottom:1px solid #e0d9c5;margin-bottom:28px;">
+  <div style="position:relative;height:140px;display:flex;font-family:sans-serif;">
+    <div style="position:absolute;left:50%;top:0;bottom:0;width:2px;background:#c9a86e;box-shadow:0 0 8px rgba(201,168,110,0.7);z-index:0;"></div>
+    <div class="fill-clip" style="width:50%;background:#500001;display:flex;align-items:center;padding-left:28px;">
+      <span class="gold-num" style="font-size:84px;font-weight:900;line-height:1;">32</span>
+    </div>
+    <div style="width:32%;background:#e8e3d8;position:relative;z-index:0;"></div>
+    <div class="fill-clip" style="width:18%;background:#fdfdfb;display:flex;align-items:center;justify-content:flex-end;padding-right:28px;">
+      <span class="gold-num-white" style="font-size:84px;font-weight:900;line-height:1;">11.5</span>
+    </div>
+  </div>
+</div>
+
+<h3>Maroon just past pointsToWin (32.5 pts, 50.78%) — line nudged right, chevron appears</h3>
+<div style="border-top:1px solid #e0d9c5;border-bottom:1px solid #e0d9c5;margin-bottom:28px;">
+  <div style="position:relative;height:140px;display:flex;font-family:sans-serif;">
+    <div class="fill-clip" style="width:50.78%;background:#500001;display:flex;align-items:center;padding-left:28px;">
+      <span class="gold-num" style="font-size:84px;font-weight:900;line-height:1;">32.5</span>
+    </div>
+    <div style="width:31.22%;background:#e8e3d8;position:relative;z-index:0;"></div>
+    <div class="fill-clip" style="width:18%;background:#fdfdfb;display:flex;align-items:center;justify-content:flex-end;padding-right:28px;">
+      <span class="gold-num-white" style="font-size:84px;font-weight:900;line-height:1;">11.5</span>
+    </div>
+    <div style="position:absolute;left:50.78%;top:50%;transform:translate(-50%,-50%);width:150px;height:65px;z-index:2;">
+      <svg viewBox="0 0 100 44" preserveAspectRatio="none" style="width:100%;height:100%;display:block;">
+        <polygon points="0,22 30,0 100,0 100,44 30,44" fill="#500001" stroke="#b8945a" stroke-width="3"></polygon>
+      </svg>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding-right:6px;font-size:13px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#fff;font-family:sans-serif;">Maroon Wins</div>
+    </div>
+  </div>
+</div>
+
+<h3>Maroon at 60% (38.4 pts) — line pushed well right, chevron rides further out with it</h3>
+<div style="border-top:1px solid #e0d9c5;border-bottom:1px solid #e0d9c5;">
+  <div style="position:relative;height:140px;display:flex;font-family:sans-serif;">
+    <div class="fill-clip" style="width:60%;background:#500001;display:flex;align-items:center;padding-left:28px;">
+      <span class="gold-num" style="font-size:84px;font-weight:900;line-height:1;">38.4</span>
+    </div>
+    <div style="width:21.6%;background:#e8e3d8;position:relative;z-index:0;"></div>
+    <div class="fill-clip" style="width:18%;background:#fdfdfb;display:flex;align-items:center;justify-content:flex-end;padding-right:28px;">
+      <span class="gold-num-white" style="font-size:84px;font-weight:900;line-height:1;">11.5</span>
+    </div>
+    <div style="position:absolute;left:60%;top:50%;transform:translate(-50%,-50%);width:150px;height:65px;z-index:2;">
+      <svg viewBox="0 0 100 44" preserveAspectRatio="none" style="width:100%;height:100%;display:block;">
+        <polygon points="0,22 30,0 100,0 100,44 30,44" fill="#500001" stroke="#b8945a" stroke-width="3"></polygon>
+      </svg>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding-right:6px;font-size:13px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#fff;font-family:sans-serif;">Maroon Wins</div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:16px;">So: the line is just a fixed center mark when nobody's past it. The instant a team's fill passes 50%, that fill's edge becomes the line's new effective position, and it keeps sliding outward as their points grow — there's no separate "line" element to animate once that happens, it's just where the fill's edge naturally is. The chevron rides along at that same spot.</p>
+
+<div class="options">
+  <div class="option" data-choice="v6-good" onclick="toggleSelect(this)"><div class="letter">✓</div><div class="content"><h3>Yes, this is it</h3></div></div>
+  <div class="option" data-choice="v6-tweak" onclick="toggleSelect(this)"><div class="letter">✗</div><div class="content"><h3>Still not quite right (explain)</h3></div></div>
+</div>
