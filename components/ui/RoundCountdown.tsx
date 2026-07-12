@@ -99,10 +99,10 @@ export function RoundCountdown({ className = "" }: { className?: string }) {
       aria-label="Countdown to Round 1 at 9:30 AM CST on January 6, 2027"
       className={["shrink-0 text-right font-condensed font-bold tabular-nums text-white", className].join(" ")}
     >
-      <span className="text-xs sm:hidden">
+      <span className="text-xs sm:hidden" suppressHydrationWarning>
         {totalDays}d {pad(parts.hours)}:{pad(parts.minutes)}:{pad(parts.seconds)}
       </span>
-      <span className="hidden text-base sm:inline">
+      <span className="hidden text-base sm:inline" suppressHydrationWarning>
         {parts.months} Months {parts.days} Days {pad(parts.hours)}:{pad(parts.minutes)}:{pad(parts.seconds)}
       </span>
     </div>
