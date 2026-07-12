@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Tabs } from "@/components/ui/Tabs";
+import { ChevronDown } from "lucide-react";
 import { ScorecardRow } from "./ScorecardRow";
 import { CourseInfoHeader } from "./CourseInfoHeader";
 import { RoundStatsBar } from "./RoundStatsBar";
@@ -14,22 +14,29 @@ export function PlayerScorecardView({ scorecard, tournamentSlug }: { scorecard: 
 
   return (
     <div>
-      <div className="mb-5 overflow-x-auto">
-        <Tabs
-          variant="pill"
-          items={scorecard.rounds.map((r) => ({ value: String(r.round), label: `Round ${r.round} – ${r.course}` }))}
+      <div className="relative mb-3 inline-block w-full sm:w-auto">
+        <select
           value={round}
-          onChange={setRound}
-        />
+          onChange={(e) => setRound(e.target.value)}
+          className="w-full appearance-none rounded-sm border border-ink-200 bg-white py-2 pl-3 pr-9 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-900 sm:w-auto sm:text-sm"
+        >
+          {scorecard.rounds.map((r) => (
+            <option key={r.round} value={String(r.round)}>
+              Round {r.round} – {r.course}
+              {r.format ? ` (${r.format})` : ""}
+            </option>
+          ))}
+        </select>
+        <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-400" />
       </div>
 
       <RoundStatsBar round={active} />
-      <CourseInfoHeader round={active} />
-      <div>
+      <div className="overflow-x-auto">
+        <CourseInfoHeader round={active} />
         <ScorecardRow round={active} tournamentSlug={tournamentSlug} player={scorecard.player} team={scorecard.team} />
       </div>
 
-      <div className="mt-5">
+      <div className="mt-3 sm:mt-5">
         <ScorecardLegend />
       </div>
     </div>

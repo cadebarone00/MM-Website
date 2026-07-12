@@ -200,6 +200,10 @@ function readScorecards(ss, rosterTeamByName, warnings) {
       const total = holes.reduce((s, h) => s + h.score, 0);
       const parTotal = holes.reduce((s, h) => s + h.par, 0);
 
+      // TODO: once the CSV upload pipeline populates real course/format data per
+      // round, replace the "Round N" placeholder below with the actual course
+      // name and add a `format: "..."` field (e.g. "Fourball") — the website
+      // already supports both (RoundScorecard.course / .format).
       allRounds.push({
         round: g + 1,
         course: "Round " + (g + 1),

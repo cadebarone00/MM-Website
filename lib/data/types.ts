@@ -95,6 +95,7 @@ export interface HoleStat {
 export interface RoundScorecard {
   round: number;
   course: string;
+  format?: string;
   total: number;
   toPar: number;
   putts: number;

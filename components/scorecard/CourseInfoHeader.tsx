@@ -76,10 +76,11 @@ export function CourseInfoHeader({ round }: { round: RoundScorecard }) {
   const inYards = back.reduce((s, h) => s + h.yards, 0);
 
   return (
-    <div className="bg-cream-100 border border-ink-100 rounded-md overflow-x-auto mb-2">
+    <div className="bg-cream-100 border border-ink-100 rounded-md mb-2 w-max min-w-full">
       <div className="flex items-center gap-1 px-3 pt-2">
-        <div className="w-[148px] shrink-0 pr-2 mr-1 font-condensed text-[11px] font-bold tracking-wide uppercase text-maroon-700">
-          {round.course}
+        <div className="w-[148px] shrink-0 pr-2 mr-1">
+          <div className="font-condensed text-[11px] font-bold tracking-wide uppercase text-maroon-700">{round.course}</div>
+          {round.format && <div className="font-condensed text-[9px] font-semibold tracking-wide uppercase text-ink-400">{round.format}</div>}
         </div>
       </div>
       <InfoRow
