@@ -1,4 +1,4 @@
-import { Trophy, Radio } from "lucide-react";
+import { Radio } from "lucide-react";
 import Link from "next/link";
 import { latestCompleted, nextTournament, champion, isLiveNow, fmtPt } from "@/lib/data";
 
@@ -44,11 +44,13 @@ export function VideoHero() {
         )}
 
         <div className="flex gap-1.5 sm:gap-3">
-          <div className="inline-flex items-center gap-1 bg-transparent text-cream-50 border border-cream-50/70 rounded-sm px-3 py-2 font-condensed text-[10px] font-semibold tracking-wide uppercase sm:gap-2 sm:px-6 sm:py-3 sm:text-sm lg:px-8 lg:py-4 lg:text-md">
-            {live ? <Radio width={12} height={12} className="shrink-0 sm:hidden" /> : <Trophy width={12} height={12} className="shrink-0 sm:hidden" />}
-            {live ? <Radio width={18} height={18} className="hidden shrink-0 sm:block" /> : <Trophy width={18} height={18} className="hidden shrink-0 sm:block" />}
-            {live ? "Live Now" : "Defending Champions"}
-          </div>
+          {live && (
+            <div className="inline-flex items-center gap-1 bg-transparent text-cream-50 border border-cream-50/70 rounded-sm px-3 py-2 font-condensed text-[10px] font-semibold tracking-wide uppercase sm:gap-2 sm:px-6 sm:py-3 sm:text-sm lg:px-8 lg:py-4 lg:text-md">
+              <Radio width={12} height={12} className="shrink-0 sm:hidden" />
+              <Radio width={18} height={18} className="hidden shrink-0 sm:block" />
+              Live Now
+            </div>
+          )}
           <Link
             href="/leaderboard"
             className="inline-flex items-center bg-transparent text-cream-50 border border-cream-50/70 hover:bg-white/10 rounded-sm px-3 py-2 font-condensed text-[10px] font-semibold tracking-wide uppercase transition-colors sm:px-6 sm:py-3 sm:text-sm lg:px-8 lg:py-4 lg:text-md"
