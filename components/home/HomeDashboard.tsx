@@ -1,32 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { ArrowRight, CalendarDays, Play, Shield, Trophy, X } from "lucide-react";
+import { Play, Trophy, X } from "lucide-react";
 import { SectionHead } from "@/components/home/SectionHead";
+import { QuickLeaderboardCard } from "@/components/home/QuickLeaderboardCard";
+import { QuickTeamsCard } from "@/components/home/QuickTeamsCard";
+import { QuickScheduleCard } from "@/components/home/QuickScheduleCard";
 import { latestCompleted, fmtPt } from "@/lib/data";
 import { getPlayerDisplayName } from "@/lib/data/players";
-
-type ScheduleItem = { session: string; course: string; format: string };
-
-type SessionSetupFeedItem = {
-  round?: number;
-  courseName?: string;
-  format?: string;
-};
-
-const fallbackScheduleItems: ScheduleItem[] = [
-  { session: "Session 1", course: "Mission Hills CC", format: "Fourball" },
-  { session: "Session 2", course: "Mission Hills CC", format: "Singles" },
-  { session: "Session 3", course: "Mission Hills CC", format: "Fourball" },
-  { session: "Session 4", course: "Mission Hills CC", format: "Alternate Shot" },
-  { session: "Session 5", course: "Mission Hills CC", format: "Singles" },
-  { session: "Session 6", course: "Mission Hills CC", format: "Fourball" },
-  { session: "Session 7", course: "Mission Hills CC", format: "Alternate Shot" },
-  { session: "Session 8", course: "Mission Hills CC", format: "Singles" },
-];
 
 const highlights = [
   {
@@ -113,110 +95,20 @@ const fallbackReels: SocialReel[] = [
   },
 ];
 
-function ActionCard({
-  href,
-  icon,
-  title,
-  body,
-  children,
-}: {
-  href: string;
-  icon: ReactNode;
-  title: string;
-  body: string;
-  children?: ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      className="group flex aspect-square min-h-0 flex-col items-center justify-center gap-1 rounded-md border border-gold-400 bg-cream-50 p-2 shadow-sm transition-transform hover:-translate-y-1 hover:shadow-xl sm:min-h-[200px] sm:items-stretch sm:justify-between sm:gap-0 sm:rounded-lg sm:p-5 sm:shadow-lg xl:min-h-[260px] xl:p-6"
-    >
-      <div className="flex flex-col items-center sm:block">
-        <div className="inline-flex h-8 w-8 items-center justify-center rounded-sm bg-maroon-800 text-gold-200 sm:mb-5 sm:h-11 sm:w-11">{icon}</div>
-        <h2 className="m-0 text-center font-sans text-[11px] font-extrabold text-ink-900 sm:text-left sm:text-xl xl:text-2xl">{title}</h2>
-        <p className="mt-3 hidden font-sans text-sm leading-relaxed text-ink-600 sm:block">{body}</p>
-      </div>
-      {children ?? (
-        <div className="mt-5 hidden items-center gap-2 font-condensed text-xs font-semibold uppercase tracking-wide text-maroon-700 sm:flex">
-          Open <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-        </div>
-      )}
-    </Link>
-  );
-}
-
-function ScheduleCard() {
-  const [items, setItems] = useState<ScheduleItem[]>(fallbackScheduleItems);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadSchedule() {
-      try {
-        const res = await fetch("/api/live-feed", { cache: "no-store" });
-        if (!res.ok) return;
-        const data = (await res.json()) as { sessionSetup?: SessionSetupFeedItem[] };
-        const setup = Array.isArray(data.sessionSetup) ? data.sessionSetup : [];
-        const nextItems = setup
-          .filter((item) => typeof item.round === "number")
-          .sort((a, b) => (a.round ?? 0) - (b.round ?? 0))
-          .map((item) => ({
-            session: `Session ${item.round}`,
-            course: item.courseName || "Course TBD",
-            format: item.format || "Format TBD",
-          }));
-        if (!cancelled && nextItems.length > 0) setItems(nextItems);
-      } catch {
-        if (!cancelled) setItems(fallbackScheduleItems);
-      }
-    }
-
-    loadSchedule();
-    const timer = window.setInterval(loadSchedule, 30000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, []);
-
-  return (
-    <Link
-      href="/schedule"
-      className="group flex aspect-square min-h-0 flex-col items-center justify-center gap-1 rounded-md border border-gold-400 bg-cream-50 p-2 shadow-sm transition-transform hover:-translate-y-1 hover:shadow-xl sm:min-h-[200px] sm:items-stretch sm:justify-start sm:gap-0 sm:rounded-lg sm:p-5 sm:shadow-lg xl:min-h-[260px] xl:p-6"
-    >
-      <div className="inline-flex h-8 w-8 items-center justify-center rounded-sm bg-maroon-800 text-gold-200 sm:mb-5 sm:h-11 sm:w-11">
-        <CalendarDays size={22} />
-      </div>
-      <h2 className="m-0 text-center font-sans text-[11px] font-extrabold text-ink-900 sm:text-left sm:text-xl xl:text-2xl">Schedule</h2>
-      <p className="mt-3 hidden font-sans text-sm leading-relaxed text-ink-600 sm:block">Here is your course and format schedule.</p>
-      <div className="mt-4 hidden min-h-0 flex-1 overflow-y-auto border-t border-ink-200 pt-3 sm:block">
-        {items.map((item) => (
-          <div key={item.session} className="border-b border-ink-100 py-2 last:border-b-0">
-            <div className="font-condensed text-xs font-semibold uppercase tracking-wide text-maroon-700">{item.session}</div>
-            <div className="mt-1 font-sans text-sm font-bold text-ink-900">{item.course}</div>
-            <div className="font-sans text-xs text-ink-500">{item.format}</div>
-          </div>
-        ))}
-      </div>
-    </Link>
-  );
-}
 function HighlightsRail() {
   return (
-    <aside className="col-span-3 rounded-lg border border-maroon-800 bg-maroon-900 p-3 text-white shadow-xl sm:p-5 xl:col-span-1 xl:row-span-3">
-      <div className="xl:sticky xl:top-[94px]">
-        <div className="mb-2 flex items-center gap-2 font-condensed text-xs font-semibold uppercase tracking-wide text-gold-300 sm:mb-3">
-          <Trophy size={16} />
-          Highlights
-        </div>
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-1 xl:max-h-[980px] xl:space-y-3 xl:gap-0 xl:overflow-y-auto xl:pr-1">
-          {highlights.map((item) => (
-            <article key={item.title} className="rounded-md border border-white/10 bg-white/[0.08] p-2 sm:p-4">
-              <h3 className="m-0 font-sans text-xs font-extrabold text-white sm:text-base">{item.title}</h3>
-              <p className="mt-1 font-sans text-[11px] leading-snug text-maroon-100 sm:mt-2 sm:text-sm sm:leading-relaxed">{item.body}</p>
-            </article>
-          ))}
-        </div>
+    <aside className="min-w-0 rounded-lg border border-maroon-800 bg-maroon-900 p-3 text-white shadow-xl sm:p-5">
+      <div className="mb-2 flex items-center gap-2 font-condensed text-xs font-semibold uppercase tracking-wide text-gold-300 sm:mb-3">
+        <Trophy size={16} />
+        Highlights
+      </div>
+      <div className="grid grid-cols-1 gap-2 sm:gap-3 xl:max-h-[980px] xl:space-y-3 xl:gap-0 xl:overflow-y-auto xl:pr-1">
+        {highlights.map((item) => (
+          <article key={item.title} className="rounded-md border border-white/10 bg-white/[0.08] p-2 sm:p-4">
+            <h3 className="m-0 font-sans text-xs font-extrabold text-white sm:text-base">{item.title}</h3>
+            <p className="mt-1 font-sans text-[11px] leading-snug text-maroon-100 sm:mt-2 sm:text-sm sm:leading-relaxed">{item.body}</p>
+          </article>
+        ))}
       </div>
     </aside>
   );
@@ -342,23 +234,17 @@ function SocialsSection() {
 export function HomeDashboard() {
   return (
     <section className="bg-cream-100">
-      <div className="mx-auto grid max-w-[1440px] grid-cols-3 gap-2 px-4 py-4 sm:gap-4 sm:px-7 sm:py-8 xl:grid-cols-4 xl:gap-7">
-        <ActionCard
-          href="/teams"
-          icon={<Shield size={22} />}
-          title="Teams"
-          body="Check out the Maroon and White rosters, player profiles, photos, bios, and team identities."
-        />
-        <ActionCard
-          href="/leaderboard"
-          icon={<Trophy size={22} />}
-          title="Leaderboard"
-          body="When the tournament is live, follow matches and individual standings in real time."
-        />
-        <ScheduleCard />
-        <HighlightsRail />
+      <div className="mx-auto max-w-[1440px] px-4 py-4 sm:px-7 sm:py-8">
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(132px,220px)] gap-2 sm:gap-4 xl:gap-7">
+          <HighlightsRail />
+          <div className="flex min-w-0 flex-col gap-2 sm:gap-3 xl:gap-4">
+            <QuickLeaderboardCard />
+            <QuickTeamsCard />
+            <QuickScheduleCard />
+          </div>
+        </div>
 
-        <div className="col-span-3 space-y-6 sm:space-y-10 xl:col-span-3">
+        <div className="mt-6 space-y-6 sm:mt-10 sm:space-y-10">
           <NewsSection />
           <SocialsSection />
         </div>

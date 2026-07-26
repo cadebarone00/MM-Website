@@ -46,99 +46,57 @@ All pages are public, no auth.
 - `PlayerProfile` (`lib/data/players/*.ts`): id, slug, fullName, avatarSrc, bio, history —
   one file per player, looked up via `getPlayerProfile`/`getPlayerDisplayName`/`getPlayerAvatar`.
 
+## Previously shipped rounds
+
+- Fixed 2026 venue label to "Mission Hills CC".
+- Trimmed the Rankings tab on Teams pages (rank + player + team only, no score/Bio).
+- Added the career-wide "Stats" tab (Player / Course views) to the Teams page.
+
 ## This round's work
 
-### 1. Fix 2026 venue
-`lib/data/2026-palm-springs.ts` currently has `venue: "PGA West"`. The 2026 trip was
-actually hosted at **Mission Hills CC** (the trip also included some rounds at Indian
-Wells, but the site's single `venue` field should just say "Mission Hills CC", consistent
-with how `2027-upcoming.ts` already lists it). Change the `venue` field only — leave the
-per-round `course` labels in `lib/data/scorecards-2026.ts` (Palmer #1, Cove, Classic,
-Pete Dye #1, Pete Dye #2, Tournament) untouched; confirmed these are the real labels from
-the source sheet.
+### Home page: quick-glance cards + Highlights takes the left column
 
-**Done when:** `venue` reads "Mission Hills CC"; `/teams/2026-palm-springs`,
-`/leaderboard/2026-palm-springs`, and `/history` all render the new venue with no other
-visual regression.
+Redesign the top block of `components/home/HomeDashboard.tsx` (currently 3 big square
+`ActionCard`/`ScheduleCard` tiles plus a `HighlightsRail` sidebar) into a single
+two-column row that stays side-by-side at every viewport width (it shrinks to fit on
+narrow screens — it does not reflow into a mobile stack):
 
-### 2. Trim the Rankings tab on Teams pages
-In `components/teams/TeamsDirectory.tsx`, the **Rankings** view of `PlayerRow` currently
-shows a rank number, the score (`ScoreBadge`/`toPar`), and a "Bio" link — same component
-used by the Maroon/White views. Change: on the **Rankings** view only, drop the score
-badge and the "Bio" link (rank number + name + team label stay). Maroon and White tabs
-keep showing Bio exactly as today. Scores remain visible elsewhere (the leaderboard pages).
+- **Left column:** the existing `HighlightsRail` content/styling, now the dominant,
+  wide element in the row (roughly 75% width at desktop). What populates the highlight
+  entries is out of scope here (a manually-curated list today; will later be filled by
+  a separately-trained AI writer) — only the layout slot changes.
+- **Right column:** a slim, fixed-ish-width stack of three new small rectangle cards,
+  each a `Link` to its full page, each pulling from the same `/api/live-feed` polling
+  already used elsewhere on the site (via `useLiveTournament`) — no backend changes.
 
-**Done when:** `/teams/[slug]` → Rankings tab shows rank + player + team only, no score
-chip, no Bio button; Maroon/White tabs unchanged.
+1. **Leaderboard card** (`components/home/QuickLeaderboardCard.tsx`) — top 5 rows of
+   `individualLeaderboard` sorted by `toPar` ascending (rank + player name + `ScoreBadge`
+   sm). Uses live 2027 data once `LIVE_FEED_URL` is configured and the leaderboard has
+   entries; until then, falls back to `latestCompleted` (2026)'s top 5, with a small
+   "2026" label so it's clearly not live. Links to `/leaderboard`.
+2. **Teams card** (`components/home/QuickTeamsCard.tsx`) — two mini-columns, Maroon
+   roster (6 names) left / White roster (6 names) right, with the live
+   `fmtPt(maroonPts)`–`fmtPt(whitePts)` total across the top. Same live-2027-else-
+   fallback-to-2026-labeled behavior as the Leaderboard card, driven by the same
+   `roster`/`maroonPts`/`whitePts` fields `mergeLiveTournament` already produces. Links
+   to `/teams`.
+3. **Schedule card** (`components/home/QuickScheduleCard.tsx`) — replaces the existing
+   `ScheduleCard`. Default state shows the placeholder "Round 1 starts 1/6/2027 · Mission
+   Hills CC" (from `nextTournament`). If any match in the live feed has
+   `status === "live"`, it swaps to that match's day + session + format, e.g.
+   "Round 2 — Afternoon: Fourball". Links to `/schedule`.
 
-### 3. New "Stats" tab on the Teams page
-Add a 4th tab — **Stats** — next to Maroon / White / Rankings in `TeamsDirectory`
-(`components/teams/TeamsDirectory.tsx`, `app/teams/[slug]/page.tsx`). Unlike the other
-three tabs, Stats is **not scoped to the year currently selected** — it always shows the
-same career-wide data regardless of which year's Teams page you're on, since career stats
-span all 3 played years (2024, 2025, 2026). It is not shown on the upcoming-2027 page
-(no roster yet).
-
-The Stats tab has its own sub-switch: **Player** | **Course**.
-
-#### Player view
-Two columns, same visual style as the existing Maroon/White roster rows
-(`PlayerRow` in `TeamsDirectory.tsx`): **Maroon team on the left**, alphabetical;
-**White team on the right**, alphabetical. Where a player's row would normally show a
-"Bio" button, it instead shows a **"Stats"** button — maroon-colored button
-(`bg-maroon-700 text-cream-50`, matching `TeamBadge`'s maroon "solid" styling) for Maroon
-players, white-colored button (`bg-white text-maroon-700 border-maroon-700`) for White
-players. Clicking it opens that player's stats breakdown (new route, e.g.
-`/teams/stats/players/[player]`).
-
-The player stats breakdown shows, **per year (2024 / 2025 / 2026) side by side**, every
-stat category below. Cells for a category a given year didn't track read
-**"Not recorded for this year."** No blended "career average" is computed for rate-based
-stats (averages/percentages) since that would require raw counts this data doesn't
-expose; cumulative count stats (Total Earned, Total Skins, Total Birdie-or-Better, Total
-Double-or-Worse, Total 1-Putts, Total 3+-Putts) additionally get a **Career Total**
-column that sums whichever years have data.
-
-Standardized stat categories (source: yearly Google Sheet exports already reviewed):
-
-| Category | 2024 | 2025 | 2026 |
-|---|---|---|---|
-| Scoring Average | not recorded (sheet only has to-par, not raw average) | ✓ | ✓ |
-| Team Points Won | not recorded | ✓ | ✓ |
-| Total Earned ($) | ✓ | ✓ | ✓ |
-| Total Skins | ✓ | ✓ | ✓ |
-| Putting Average / Avg Putts per Hole | not recorded | ✓ | ✓ |
-| Par 3 / Par 4 / Par 5 avg score | not recorded | not recorded | ✓ |
-| GIR % | ✓ | ✓ | ✓ |
-| FIR % | ✓ | ✓ | ✓ |
-| Total 1-Putts (% + count) | not recorded | ✓ | ✓ |
-| Total 3+-Putts (% + count) | ✓ | ✓ | ✓ |
-| Up & Down % | ✓ | ✓ | ✓ |
-| Total Birdie-or-Better | not recorded | ✓ | ✓ |
-| Total Double-or-Worse | not recorded | ✓ | ✓ |
-| Bounce Back % | not recorded | ✓ | ✓ |
-| Fall Off % | not recorded | ✓ | ✓ |
-| Strokes Gained: Total / Off Tee / Approach / Around Green / Putting | ✓ (all 5) | ✓ (all 5) | ✓ (all 5) |
-
-#### Course view
-Switching to "Course" shows a year selector (2024 / 2025 / 2026 — course stats aren't
-blendable across years since different courses were played each year). For the selected
-year:
-- Hole Difficulty Ranking (score differential, ranked hardest → easiest), with
-  Par 3 / Par 4 / Par 5 hardest/easiest/worst-performer call-outs
-- Green Difficulty Ranking (GIR %) — not recorded for 2024
-- Fairway Difficulty Ranking (FIR %) — not recorded for 2024
-- Most 3-Putted Green / Most 1-Putted Green — not recorded for 2024
-
-**Done when:** Stats tab appears on every past year's `/teams/[slug]` page (not on
-`/teams/2027`), Player view renders both team columns with working Stats buttons styled
-per team color, the player stats page renders the table above with correct "not
-recorded" cells for 2024, and Course view lets you pick a year and see that year's hole
-rankings. All numbers traced back to the CSVs already reviewed for this spec — no
-numbers invented or computed beyond the explicit sums noted above.
+**Done when:** home page renders the new two-column row (Highlights left, 3 stacked
+quick cards right) at mobile/tablet/desktop widths with no reflow/reordering; each quick
+card shows live 2027 data when the feed has it and a clearly-labeled 2026 fallback when
+it doesn't; the Schedule card correctly swaps to the in-progress round when a match is
+live; News and Socials sections below are unchanged; no hydration errors introduced
+(verify per the earlier `RoundCountdown` hydration fix pattern — no `new Date()`/`Math.random()`
+evaluated directly in render).
 
 ## Out of scope for this round
 
-- Populating `PlayerProfile.bio`/`history` (still empty placeholders) — unrelated to this task.
-- Any change to the live-scoring Apps Script or the 2027 (upcoming) sheet pipeline.
-- Computing/inferring any stat number not explicitly present in the reviewed sheet exports.
+- What content fills the Highlights rail (curation/AI-writer pipeline is separate work).
+- Any change to the live-feed backend, Apps Script, or `/api/live-feed` response shape.
+- The News and Socials sections on the home page.
+- Per-player links/avatars inside the Teams quick card — names only, whole card links to `/teams`.
