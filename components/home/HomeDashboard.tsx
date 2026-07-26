@@ -81,19 +81,22 @@ const fallbackReels: SocialReel[] = [
     thumbnailUrl: "/teams/maroon/collage/02-swing-pose.jpg",
     permalink: "https://www.instagram.com/themaroonmasters/",
   },
-  {
-    id: "pressers",
-    caption: "Pressers",
-    thumbnailUrl: "/teams/maroon/collage/05-walk-thumbsup.jpg",
-    permalink: "https://www.instagram.com/themaroonmasters/",
-  },
-  {
-    id: "final-putts",
-    caption: "Final Putts",
-    thumbnailUrl: "/champions/2025.jpg",
-    permalink: "https://www.instagram.com/themaroonmasters/",
-  },
 ];
+
+type HypeVideoSlot = {
+  id: string;
+  caption: string;
+  thumbnailUrl: string;
+};
+
+// TODO: swap these placeholders for real hype video thumbnails/links once uploaded.
+const hypeVideoSlots: HypeVideoSlot[] = [
+  { id: "hype-slot-1", caption: "Hype Video", thumbnailUrl: "/champions/2026.jpg" },
+  { id: "hype-slot-2", caption: "Hype Video", thumbnailUrl: "/champions/2025.jpg" },
+];
+
+// TODO: point this at the real "all videos" destination once it exists.
+const ALL_VIDEOS_HREF = "#";
 
 function HighlightsRail() {
   return (
@@ -128,12 +131,12 @@ function NewsSection() {
             onClick={() => setActive(item)}
             className="overflow-hidden rounded-md border border-ink-200 bg-white text-left shadow-sm transition-transform hover:-translate-y-1 hover:shadow-lg sm:rounded-lg sm:shadow-md"
           >
-            <div className="relative aspect-[4/3] bg-ink-100">
+            <div className="relative aspect-[16/9] bg-ink-100">
               <Image src={item.image} alt="" fill sizes="(max-width: 640px) 50vw, 360px" className="object-cover" />
             </div>
-            <div className="p-2 sm:p-5">
+            <div className="p-2 sm:p-3">
               <div className="font-condensed text-[9px] font-semibold uppercase tracking-wide text-maroon-600 sm:text-xs">{item.kicker}</div>
-              <h3 className="m-0 mt-1 font-sans text-[11px] font-extrabold text-ink-900 sm:mt-2 sm:text-xl">{item.title}</h3>
+              <h3 className="m-0 mt-1 font-sans text-[11px] font-extrabold text-ink-900 sm:text-base">{item.title}</h3>
             </div>
           </button>
         ))}
@@ -197,35 +200,65 @@ function SocialsSection() {
     };
   }, []);
 
+  const shownReels = reels.slice(0, 2);
+
   return (
     <section>
-      <SectionHead title="Check Out Our Socials" />
-      <div className="grid grid-cols-2 gap-2 sm:gap-5 xl:grid-cols-4">
-        {reels.map((reel, index) => (
-          <a
-            key={`${reel.id}-${index}`}
-            href={reel.permalink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group relative flex aspect-[9/16] min-h-[160px] flex-col justify-between overflow-hidden rounded-md border border-gold-400 bg-gradient-to-b from-maroon-800 to-ink-900 p-2 text-white shadow-sm sm:min-h-[360px] sm:rounded-lg sm:p-5 sm:shadow-lg"
-          >
-            {reel.thumbnailUrl && (
-              // Instagram thumbnails are remote URLs, so use a normal image rather than Next Image domain config.
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={reel.thumbnailUrl} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/10 to-maroon-950/90" />
-            <div className="relative flex items-center justify-between">
-              <div className="font-condensed text-[9px] font-semibold uppercase tracking-wide text-gold-300 sm:text-xs">Instagram Reel</div>
-              <Play size={12} fill="currentColor" className="sm:hidden" />
-              <Play size={18} fill="currentColor" className="hidden sm:block" />
-            </div>
-            <div className="relative">
-              <h3 className="m-0 line-clamp-3 font-sans text-xs font-extrabold sm:text-2xl">{reel.caption || "Maroon Masters Reel"}</h3>
-              <p className="mt-1 font-condensed text-[9px] font-semibold uppercase tracking-wide text-gold-200 sm:mt-2 sm:text-xs">Watch on Instagram</p>
-            </div>
-          </a>
-        ))}
+      <div className="grid grid-cols-2 gap-3 sm:gap-5">
+        <div className="min-w-0">
+          <SectionHead title="Our Insta" />
+          <div className="grid grid-cols-2 gap-2 sm:gap-4">
+            {shownReels.map((reel, index) => (
+              <a
+                key={`${reel.id}-${index}`}
+                href={reel.permalink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative flex aspect-[9/16] min-h-[140px] flex-col justify-between overflow-hidden rounded-md border border-gold-400 bg-gradient-to-b from-maroon-800 to-ink-900 p-2 text-white shadow-sm sm:min-h-[300px] sm:rounded-lg sm:p-4 sm:shadow-lg"
+              >
+                {reel.thumbnailUrl && (
+                  // Instagram thumbnails are remote URLs, so use a normal image rather than Next Image domain config.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={reel.thumbnailUrl} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/10 to-maroon-950/90" />
+                <div className="relative flex items-center justify-between">
+                  <div className="font-condensed text-[9px] font-semibold uppercase tracking-wide text-gold-300 sm:text-xs">Reel</div>
+                  <Play size={12} fill="currentColor" className="sm:hidden" />
+                  <Play size={16} fill="currentColor" className="hidden sm:block" />
+                </div>
+                <div className="relative">
+                  <h3 className="m-0 line-clamp-2 font-sans text-[10px] font-extrabold sm:text-base">{reel.caption || "Maroon Masters Reel"}</h3>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+
+        <div className="min-w-0">
+          <SectionHead title="Our Videos" action="Other Videos" actionHref={ALL_VIDEOS_HREF} />
+          <div className="grid grid-cols-2 gap-2 sm:gap-4">
+            {hypeVideoSlots.map((video) => (
+              <div
+                key={video.id}
+                className="group relative flex aspect-[9/16] min-h-[140px] flex-col justify-between overflow-hidden rounded-md border border-gold-400 bg-gradient-to-b from-maroon-800 to-ink-900 p-2 text-white shadow-sm sm:min-h-[300px] sm:rounded-lg sm:p-4 sm:shadow-lg"
+              >
+                {video.thumbnailUrl && (
+                  <Image src={video.thumbnailUrl} alt="" fill sizes="(max-width: 640px) 25vw, 180px" className="object-cover" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/10 to-maroon-950/90" />
+                <div className="relative flex items-center justify-between">
+                  <div className="font-condensed text-[9px] font-semibold uppercase tracking-wide text-gold-300 sm:text-xs">Video</div>
+                  <Play size={12} fill="currentColor" className="sm:hidden" />
+                  <Play size={16} fill="currentColor" className="hidden sm:block" />
+                </div>
+                <div className="relative">
+                  <h3 className="m-0 line-clamp-2 font-sans text-[10px] font-extrabold sm:text-base">{video.caption}</h3>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );
