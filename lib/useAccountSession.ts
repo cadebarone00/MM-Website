@@ -75,6 +75,11 @@ export function useAccountSession(): AccountSession {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sessionToken: player.sessionToken }),
         });
+        if (!res.ok) {
+          // Backend unreachable / erroring (e.g. 502) is not the same as an
+          // explicit rejection of this token — fall back like a network error.
+          throw new Error(`player-whoami request failed with status ${res.status}`);
+        }
         const data = await res.json();
         if (data.ok) {
           const refreshed: StoredPlayerSession = {
