@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { Play, Trophy, X } from "lucide-react";
+import { ArrowLeft, Play, Trophy, X } from "lucide-react";
 import { SectionHead } from "@/components/home/SectionHead";
 import { QuickLeaderboardCard } from "@/components/home/QuickLeaderboardCard";
 import { QuickTeamsCard } from "@/components/home/QuickTeamsCard";
@@ -26,6 +26,18 @@ const highlights = [
   {
     title: "Round 1 starts at 9:30 CST",
     body: "January 6, 2027 is the live flip point for the tournament experience.",
+  },
+  {
+    title: "Course walkthrough coming soon",
+    body: "A hole-by-hole preview of Mission Hills CC is queued for this rail once it's ready.",
+  },
+  {
+    title: "Rosters lock soon",
+    body: "The final 6-and-6 rosters for 2027 will post here the moment the sheet is confirmed.",
+  },
+  {
+    title: "Media day on the calendar",
+    body: "Team photos and player intros are planned ahead of the opening tee time.",
   },
 ];
 
@@ -98,22 +110,64 @@ const hypeVideoSlots: HypeVideoSlot[] = [
 // TODO: point this at the real "all videos" destination once it exists.
 const ALL_VIDEOS_HREF = "#";
 
+const HIGHLIGHTS_PREVIEW_COUNT = 6;
+
 function HighlightsRail() {
+  const [showAll, setShowAll] = useState(false);
+  const preview = highlights.slice(0, HIGHLIGHTS_PREVIEW_COUNT);
+  const hasMore = highlights.length > HIGHLIGHTS_PREVIEW_COUNT;
+
   return (
-    <aside className="min-w-0 rounded-lg border border-maroon-800 bg-maroon-900 p-3 text-white shadow-xl sm:p-5">
-      <div className="mb-2 flex items-center gap-2 font-condensed text-xs font-semibold uppercase tracking-wide text-gold-300 sm:mb-3">
-        <Trophy size={16} />
-        Highlights
-      </div>
-      <div className="grid grid-cols-1 gap-2 sm:gap-3 xl:max-h-[980px] xl:space-y-3 xl:gap-0 xl:overflow-y-auto xl:pr-1">
-        {highlights.map((item) => (
-          <article key={item.title} className="rounded-md border border-white/10 bg-white/[0.08] p-2 sm:p-4">
-            <h3 className="m-0 font-sans text-xs font-extrabold text-white sm:text-base">{item.title}</h3>
-            <p className="mt-1 font-sans text-[11px] leading-snug text-maroon-100 sm:mt-2 sm:text-sm sm:leading-relaxed">{item.body}</p>
-          </article>
-        ))}
-      </div>
-    </aside>
+    <>
+      <aside className="flex h-full min-w-0 flex-col rounded-lg border border-maroon-800 bg-maroon-900 p-3 text-white shadow-xl sm:p-5">
+        <div className="mb-2 flex items-center gap-2 font-condensed text-xs font-semibold uppercase tracking-wide text-gold-300 sm:mb-3">
+          <Trophy size={16} />
+          Highlights
+        </div>
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 sm:space-y-3">
+          {preview.map((item) => (
+            <article key={item.title} className="rounded-md border border-white/10 bg-white/[0.08] p-2 sm:p-4">
+              <h3 className="m-0 font-sans text-xs font-extrabold text-white sm:text-base">{item.title}</h3>
+              <p className="mt-1 font-sans text-[11px] leading-snug text-maroon-100 sm:mt-2 sm:text-sm sm:leading-relaxed">{item.body}</p>
+            </article>
+          ))}
+        </div>
+        {hasMore && (
+          <button
+            type="button"
+            onClick={() => setShowAll(true)}
+            className="mt-2 self-start font-sans text-[11px] font-semibold text-gold-300 underline underline-offset-2 hover:text-gold-200 sm:mt-3 sm:text-sm"
+          >
+            More Highlights
+          </button>
+        )}
+      </aside>
+
+      {showAll && (
+        <div className="fixed inset-0 z-[200] overflow-y-auto bg-maroon-900">
+          <button
+            type="button"
+            aria-label="Back"
+            onClick={() => setShowAll(false)}
+            className="fixed left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 font-sans text-sm font-semibold text-white shadow-md hover:bg-white/20"
+          >
+            <ArrowLeft size={18} />
+            Back
+          </button>
+          <div className="mx-auto max-w-[720px] px-5 pb-10 pt-20 sm:px-8">
+            <h2 className="m-0 mb-6 font-sans text-2xl font-extrabold text-white">All Highlights</h2>
+            <div className="space-y-3">
+              {highlights.map((item) => (
+                <article key={item.title} className="rounded-md border border-white/10 bg-white/[0.08] p-4">
+                  <h3 className="m-0 font-sans text-base font-extrabold text-white">{item.title}</h3>
+                  <p className="mt-2 font-sans text-sm leading-relaxed text-maroon-100">{item.body}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -237,14 +291,14 @@ function SocialsSection() {
 
         <div className="min-w-0">
           <SectionHead title="Our Videos" action="Other Videos" actionHref={ALL_VIDEOS_HREF} />
-          <div className="grid grid-cols-2 gap-2 sm:gap-4">
+          <div className="flex flex-col gap-2 sm:gap-4">
             {hypeVideoSlots.map((video) => (
               <div
                 key={video.id}
-                className="group relative flex aspect-[9/16] min-h-[140px] flex-col justify-between overflow-hidden rounded-md border border-gold-400 bg-gradient-to-b from-maroon-800 to-ink-900 p-2 text-white shadow-sm sm:min-h-[300px] sm:rounded-lg sm:p-4 sm:shadow-lg"
+                className="group relative flex aspect-[16/9] w-full flex-col justify-between overflow-hidden rounded-md border border-gold-400 bg-gradient-to-b from-maroon-800 to-ink-900 p-2 text-white shadow-sm sm:rounded-lg sm:p-4 sm:shadow-lg"
               >
                 {video.thumbnailUrl && (
-                  <Image src={video.thumbnailUrl} alt="" fill sizes="(max-width: 640px) 25vw, 180px" className="object-cover" />
+                  <Image src={video.thumbnailUrl} alt="" fill sizes="(max-width: 640px) 50vw, 360px" className="object-cover" />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/10 to-maroon-950/90" />
                 <div className="relative flex items-center justify-between">
@@ -268,12 +322,12 @@ export function HomeDashboard() {
   return (
     <section className="bg-cream-100">
       <div className="mx-auto max-w-[1440px] px-4 py-4 sm:px-7 sm:py-8">
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(132px,220px)] gap-2 sm:gap-4 xl:gap-7">
+        <div className="grid grid-cols-2 sm:grid-cols-[minmax(0,1fr)_minmax(180px,320px)] gap-2 sm:gap-4 xl:gap-7">
           <HighlightsRail />
           <div className="flex min-w-0 flex-col gap-2 sm:gap-3 xl:gap-4">
-            <QuickLeaderboardCard />
-            <QuickTeamsCard />
             <QuickScheduleCard />
+            <QuickTeamsCard />
+            <QuickLeaderboardCard />
           </div>
         </div>
 

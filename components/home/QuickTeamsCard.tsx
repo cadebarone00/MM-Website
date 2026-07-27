@@ -14,7 +14,7 @@ export function QuickTeamsCard() {
   return (
     <Link
       href="/teams"
-      className="group flex flex-col gap-2 rounded-md border border-gold-400 bg-cream-50 p-2 shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-lg sm:gap-3 sm:p-3"
+      className="group flex flex-col gap-2 rounded-md border border-gold-400 bg-cream-50 px-3 py-2 shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-lg sm:gap-3 sm:px-4 sm:py-3"
     >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 font-condensed text-2xs font-bold uppercase tracking-wide text-maroon-700">
