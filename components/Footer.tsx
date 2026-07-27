@@ -1,9 +1,6 @@
 import Image from "next/image";
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import { nextTournament } from "@/lib/data";
-
-const PLAYER_PORTAL_HREF = "/portal";
+import { AccountBadge } from "@/components/AccountBadge";
 
 export function Footer() {
   return (
@@ -13,13 +10,7 @@ export function Footer() {
         <span className="font-sans text-xs text-maroon-300 text-center sm:text-left">
           The Maroon Masters · An annual match-play golf trip · Next up {nextTournament.dateLabel}
         </span>
-        <Link
-          href={PLAYER_PORTAL_HREF}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-pill border border-white/20 bg-white/10 px-4 py-2 font-sans text-xs font-semibold text-white transition-colors hover:bg-white/20"
-        >
-          Player Portal
-          <ChevronRight size={14} />
-        </Link>
+        <AccountBadge position="footer" />
       </div>
     </footer>
   );

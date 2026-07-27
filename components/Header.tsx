@@ -6,7 +6,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { RoundCountdown } from "@/components/ui/RoundCountdown";
-import { PlayerAccountMenu } from "@/components/PlayerAccountMenu";
+import { AccountBadge } from "@/components/AccountBadge";
 import { latestCompleted, nextTournament, champion, isLiveNow, fmtPt } from "@/lib/data";
 
 const nav = [
@@ -89,7 +89,7 @@ export function Header() {
             >
               <InstagramGlyph />
             </a>
-            <PlayerAccountMenu />
+            <AccountBadge position="header" />
             <Image src="/assets/emblem.svg" alt="" width={240} height={240} className="hidden lg:block h-9 w-auto" />
           </div>
         </div>
