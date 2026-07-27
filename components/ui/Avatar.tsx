@@ -3,20 +3,20 @@ import { UserRound } from "lucide-react";
 import { HTMLAttributes } from "react";
 import type { Team } from "@/lib/data/types";
 
-type Size = "xs" | "sm" | "md" | "lg" | "xl";
+export type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl";
 
 interface AvatarProps extends Omit<HTMLAttributes<HTMLSpanElement>, "className"> {
   src?: string | null;
   name?: string;
-  size?: Size;
+  size?: AvatarSize;
   team?: Team | null;
   className?: string;
 }
 
-const sizes: Record<Size, number> = { xs: 24, sm: 32, md: 44, lg: 60, xl: 88 };
+export const AVATAR_SIZES: Record<AvatarSize, number> = { xs: 24, sm: 32, md: 44, lg: 60, xl: 88 };
 
 export function Avatar({ src = null, name = "", size = "md", team = null, className = "", ...rest }: AvatarProps) {
-  const px = sizes[size];
+  const px = AVATAR_SIZES[size];
 
   const ring =
     team === "maroon"
