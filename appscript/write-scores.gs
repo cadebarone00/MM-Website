@@ -84,7 +84,7 @@ function doPost(e) {
   if (body.type === "hostRegenerateCode") return jsonResponse(handleHostRegenerateCode(body.token, body.player, body.emailBody));
   if (body.type === "hostStartRound") return jsonResponse(handleHostStartRound(body.token, body.round));
   if (body.type === "hostResetRound") return jsonResponse(handleHostResetRound(body.token, body.round));
-  if (body.type === "hostSendRawEmail") return jsonResponse(handleHostSendRawEmail(body.to, body.subject, body.body));
+  if (body.type === "hostSendRawEmail") return jsonResponse(handleHostSendRawEmail(body.to, body.subject, body.body, body.secret));
   return jsonResponse({ error: "Unknown request type." });
 }
 
@@ -411,7 +411,9 @@ function sendCodeEmail(player, code, bodyTemplate) {
   }
 }
 
-function handleHostSendRawEmail(to, subject, body) {
+function handleHostSendRawEmail(to, subject, body, secret) {
+  const expected = PropertiesService.getScriptProperties().getProperty("RAW_EMAIL_SECRET");
+  if (!expected || String(secret || "") !== expected) return { ok: false, error: "Unauthorized." };
   if (!to || !subject || !body) return { ok: false, error: "Missing to, subject, or body." };
   try {
     MailApp.sendEmail({ to: to, subject: subject, body: body });
