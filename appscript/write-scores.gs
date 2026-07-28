@@ -84,6 +84,7 @@ function doPost(e) {
   if (body.type === "hostRegenerateCode") return jsonResponse(handleHostRegenerateCode(body.token, body.player, body.emailBody));
   if (body.type === "hostStartRound") return jsonResponse(handleHostStartRound(body.token, body.round));
   if (body.type === "hostResetRound") return jsonResponse(handleHostResetRound(body.token, body.round));
+  if (body.type === "hostSendRawEmail") return jsonResponse(handleHostSendRawEmail(body.to, body.subject, body.body));
   return jsonResponse({ error: "Unknown request type." });
 }
 
@@ -407,6 +408,16 @@ function sendCodeEmail(player, code, bodyTemplate) {
     return { sent: true };
   } catch (err) {
     return { sent: false, warning: "Could not send email to " + player + ": " + err.message };
+  }
+}
+
+function handleHostSendRawEmail(to, subject, body) {
+  if (!to || !subject || !body) return { ok: false, error: "Missing to, subject, or body." };
+  try {
+    MailApp.sendEmail({ to: to, subject: subject, body: body });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: "Could not send email: " + err.message };
   }
 }
 
