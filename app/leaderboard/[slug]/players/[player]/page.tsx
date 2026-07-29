@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Avatar } from "@/components/ui/Avatar";
 import { PlayerScorecardView } from "@/components/scorecard/PlayerScorecardView";
+import { PlayerProfileHeader } from "@/components/scorecard/PlayerProfileHeader";
 import { LivePlayerScorecard } from "@/components/scorecard/LivePlayerScorecard";
 import { pastTournaments, nextTournament, getTournament, getPlayerScorecard, playersOf } from "@/lib/data";
 import { getPlayerAvatar, getPlayerDisplayName } from "@/lib/data/players";
@@ -33,24 +32,30 @@ export default async function PlayerScorecardPage({ params }: { params: Promise<
   const displayName = getPlayerDisplayName(entry.name);
   const avatar = getPlayerAvatar(entry.name);
 
+  const ranked = [...tournament.individualLeaderboard].sort((a, b) => a.toPar - b.toPar);
+  const standing = ranked.find((p) => p.player.toLowerCase() === player.toLowerCase());
+  const position = standing ? ranked.indexOf(standing) + 1 : null;
+  const total = standing?.toPar ?? null;
+  const lastRound = scorecard?.rounds[scorecard.rounds.length - 1];
+  const playedCount = lastRound?.holes.filter((h) => h.score > 0).length ?? 0;
+  const thru = lastRound == null ? null : playedCount >= lastRound.holes.length ? "F" : String(playedCount);
+
   return (
     <div className="max-w-[1200px] mx-auto px-7 pt-8 pb-16">
-      <Link
-        href={`/leaderboard/${slug}`}
-        className="font-condensed text-xs font-semibold tracking-wide uppercase text-ink-500 hover:text-maroon-700 transition-colors"
-      >
-        ← Back to {tournament.editionLabel} Leaderboard
-      </Link>
-
-      <div className="flex items-center gap-4 mt-4 mb-6">
-        <Avatar name={displayName} src={avatar} size="lg" team={entry.team} />
-        <div>
-          <h1 className="font-sans text-[32px] font-extrabold text-ink-900 m-0">{displayName}</h1>
-          <span className={["font-condensed text-xs font-semibold tracking-wide uppercase", entry.team === "maroon" ? "text-maroon-600" : "text-ink-500"].join(" ")}>
-            {entry.team === "maroon" ? "Team Maroon" : "Team White"} · {tournament.editionLabel}
-          </span>
-        </div>
-      </div>
+      <PlayerProfileHeader
+        backHref={`/leaderboard/${slug}`}
+        backLabel={`Back to ${tournament.editionLabel} Leaderboard`}
+        displayName={displayName}
+        avatarSrc={avatar}
+        team={entry.team}
+        editionLabel={tournament.editionLabel}
+        bio={null}
+        bioHref={`/teams/stats/players/${player.toLowerCase()}`}
+        live={false}
+        position={position}
+        total={total}
+        thru={thru}
+      />
 
       {scorecard ? (
         <PlayerScorecardView scorecard={scorecard} tournamentSlug={slug} />
