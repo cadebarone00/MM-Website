@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Avatar } from "./Avatar";
 import { ScoreBadge } from "./ScoreBadge";
 import { TrophyBadge } from "./TrophyBadge";
@@ -13,8 +14,7 @@ interface LeaderboardRowProps {
   total?: number;
   highlight?: boolean;
   header?: boolean;
-  expanded?: boolean;
-  onToggle?: () => void;
+  href?: string;
   defendingChampion?: boolean;
   isWinner?: boolean;
 }
@@ -29,8 +29,7 @@ export function LeaderboardRow({
   total = 0,
   highlight = false,
   header = false,
-  expanded = false,
-  onToggle,
+  href,
   defendingChampion = false,
   isWinner = false,
 }: LeaderboardRowProps) {
@@ -60,19 +59,6 @@ export function LeaderboardRow({
           {team === "maroon" ? "Maroon" : "White"}
         </span>
       </span>
-      {onToggle && (
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          className={["ml-auto shrink-0 transition-transform duration-200", isMaroon ? "text-gold-200" : "text-ink-300", expanded ? "rotate-90" : ""].join(" ")}
-        >
-          <path d="M9 6l6 6-6 6" />
-        </svg>
-      )}
     </span>
   );
 
@@ -93,30 +79,8 @@ export function LeaderboardRow({
     );
   }
 
-  return (
-    <div
-      role={onToggle ? "button" : undefined}
-      tabIndex={onToggle ? 0 : undefined}
-      onClick={onToggle}
-      onKeyDown={
-        onToggle
-          ? (e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onToggle();
-              }
-            }
-          : undefined
-      }
-      className={[
-        "grid items-center gap-2 px-2 py-[3px] border-b border-ink-100 transition-colors duration-200 sm:gap-3 sm:px-3 sm:py-[8px]",
-        GRID_COLS,
-        highlight ? "bg-gold-200/35" : "bg-transparent",
-        expanded ? "bg-cream-50" : "",
-        onToggle ? "cursor-pointer" : "",
-        onToggle && !expanded && !highlight ? "hover:bg-cream-50" : "",
-      ].join(" ")}
-    >
+  const rowContent = (
+    <>
       <span className="font-condensed font-bold text-sm text-ink-900 text-center tabular-nums sm:text-md">{pos}</span>
 
       <span className={["grid grid-cols-[minmax(0,1fr)_56px] items-center gap-2 rounded-md border px-2 py-1 sm:grid-cols-[minmax(0,1fr)_72px] sm:gap-3 sm:px-3 sm:py-[9px]", panelClasses].join(" ")}>
@@ -130,6 +94,23 @@ export function LeaderboardRow({
           />
         </span>
       </span>
-    </div>
+    </>
   );
+
+  const rowClasses = [
+    "grid items-center gap-2 px-2 py-[3px] border-b border-ink-100 transition-colors duration-200 sm:gap-3 sm:px-3 sm:py-[8px]",
+    GRID_COLS,
+    highlight ? "bg-gold-200/35" : "bg-transparent",
+    href ? "cursor-pointer hover:bg-cream-50" : "",
+  ].join(" ");
+
+  if (href) {
+    return (
+      <Link href={href} className={rowClasses}>
+        {rowContent}
+      </Link>
+    );
+  }
+
+  return <div className={rowClasses}>{rowContent}</div>;
 }

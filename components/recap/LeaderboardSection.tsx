@@ -26,6 +26,7 @@ export function LeaderboardSection({ tournament, actionHref }: { tournament: Tou
                 team={player.team}
                 total={player.toPar}
                 highlight={index === 0}
+                href={`/leaderboard/${tournament.slug}/players/${player.player.toLowerCase()}`}
                 defendingChampion={champion != null && player.player === champion}
                 isWinner={tournament.individualChampion === player.player}
               />
