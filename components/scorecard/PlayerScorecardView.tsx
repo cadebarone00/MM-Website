@@ -6,6 +6,8 @@ import { ScorecardRow } from "./ScorecardRow";
 import { CourseInfoHeader } from "./CourseInfoHeader";
 import { RoundStatsBar } from "./RoundStatsBar";
 import { ScorecardLegend } from "./ScorecardLegend";
+import { HoleStrip } from "./HoleStrip";
+import { RoundVideoPlaceholder } from "./RoundVideoPlaceholder";
 import type { PlayerScorecard } from "@/lib/data";
 
 export function PlayerScorecardView({ scorecard, tournamentSlug }: { scorecard: PlayerScorecard; tournamentSlug: string }) {
@@ -30,6 +32,10 @@ export function PlayerScorecardView({ scorecard, tournamentSlug }: { scorecard: 
         <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-400" />
       </div>
 
+      <div className="mb-4">
+        <HoleStrip round={active} tournamentSlug={tournamentSlug} player={scorecard.player} />
+      </div>
+
       <RoundStatsBar round={active} />
       <div className="overflow-x-auto">
         <CourseInfoHeader round={active} />
@@ -39,6 +45,8 @@ export function PlayerScorecardView({ scorecard, tournamentSlug }: { scorecard: 
       <div className="mt-3 sm:mt-5">
         <ScorecardLegend />
       </div>
+
+      <RoundVideoPlaceholder roundLabel={`Round ${active.round}`} />
     </div>
   );
 }
