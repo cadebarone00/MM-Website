@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
-const SCOREKEEPER_ORIGIN = "https://maroon-masters-scorekeeper.vercel.app";
+const SCOREKEEPER_ORIGIN =
+  process.env.NODE_ENV === "development"
+    ? "http://localhost:3002"
+    : "https://maroon-masters-scorekeeper.vercel.app";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["lightningcss", "@tailwindcss/oxide"],
