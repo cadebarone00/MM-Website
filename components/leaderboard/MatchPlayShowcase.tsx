@@ -107,49 +107,55 @@ function optionLabel(option: BoardOption) {
   return option === "live" ? "LIVE" : option;
 }
 
-function TeamStack({ players, team, defendingChampion }: { players: string[]; team: Team; defendingChampion: string | null }) {
+function TeamStack({
+  players,
+  team,
+  defendingChampion,
+  tournamentSlug,
+}: {
+  players: string[];
+  team: Team;
+  defendingChampion: string | null;
+  tournamentSlug: string;
+}) {
   const top = players[0];
   const bottom = players[1];
 
   return (
     <div className={["flex min-w-0 flex-col gap-0.5 sm:gap-1", team === "maroon" ? "items-start" : "items-end"].join(" ")}>
       {top && (
-        <span className="sm:hidden">
-          <Avatar name={getPlayerDisplayName(top)} src={getPlayerAvatar(top)} size="xs" team={team} />
-        </span>
-      )}
-      {top && (
-        <span className="hidden sm:inline-flex">
-          <Avatar name={getPlayerDisplayName(top)} src={getPlayerAvatar(top)} size="sm" team={team} />
-        </span>
-      )}
-      {top && (
-        <span className="truncate font-sans text-xs font-extrabold text-ink-900 inline-flex items-center gap-[6px] sm:text-sm">
-          {getPlayerDisplayName(top)}
-          {defendingChampion === top && <TrophyBadge count={1} />}
-        </span>
+        <Link href={`/leaderboard/${tournamentSlug}/players/${top.toLowerCase()}`} className="flex flex-col gap-0.5 sm:gap-1 hover:opacity-80 transition-opacity" style={{ alignItems: team === "maroon" ? "flex-start" : "flex-end" }}>
+          <span className="sm:hidden">
+            <Avatar name={getPlayerDisplayName(top)} src={getPlayerAvatar(top)} size="xs" team={team} />
+          </span>
+          <span className="hidden sm:inline-flex">
+            <Avatar name={getPlayerDisplayName(top)} src={getPlayerAvatar(top)} size="sm" team={team} />
+          </span>
+          <span className="truncate font-sans text-xs font-extrabold text-ink-900 inline-flex items-center gap-[6px] sm:text-sm">
+            {getPlayerDisplayName(top)}
+            {defendingChampion === top && <TrophyBadge count={1} />}
+          </span>
+        </Link>
       )}
       {bottom && (
-        <span className="truncate font-sans text-xs font-extrabold text-ink-900 inline-flex items-center gap-[6px] sm:text-sm">
-          {getPlayerDisplayName(bottom)}
-          {defendingChampion === bottom && <TrophyBadge count={1} />}
-        </span>
-      )}
-      {bottom && (
-        <span className="sm:hidden">
-          <Avatar name={getPlayerDisplayName(bottom)} src={getPlayerAvatar(bottom)} size="xs" team={team} />
-        </span>
-      )}
-      {bottom && (
-        <span className="hidden sm:inline-flex">
-          <Avatar name={getPlayerDisplayName(bottom)} src={getPlayerAvatar(bottom)} size="sm" team={team} />
-        </span>
+        <Link href={`/leaderboard/${tournamentSlug}/players/${bottom.toLowerCase()}`} className="flex flex-col gap-0.5 sm:gap-1 hover:opacity-80 transition-opacity" style={{ alignItems: team === "maroon" ? "flex-start" : "flex-end" }}>
+          <span className="truncate font-sans text-xs font-extrabold text-ink-900 inline-flex items-center gap-[6px] sm:text-sm">
+            {getPlayerDisplayName(bottom)}
+            {defendingChampion === bottom && <TrophyBadge count={1} />}
+          </span>
+          <span className="sm:hidden">
+            <Avatar name={getPlayerDisplayName(bottom)} src={getPlayerAvatar(bottom)} size="xs" team={team} />
+          </span>
+          <span className="hidden sm:inline-flex">
+            <Avatar name={getPlayerDisplayName(bottom)} src={getPlayerAvatar(bottom)} size="sm" team={team} />
+          </span>
+        </Link>
       )}
     </div>
   );
 }
 
-function MatchCard({ match, defendingChampion }: { match: RealMatch; index: number; defendingChampion: string | null }) {
+function MatchCard({ match, defendingChampion, tournamentSlug }: { match: RealMatch; index: number; defendingChampion: string | null; tournamentSlug: string }) {
   const leader = matchLeader(match);
   const status = matchStatus(match);
   const label = matchLabel(match);
@@ -161,7 +167,7 @@ function MatchCard({ match, defendingChampion }: { match: RealMatch; index: numb
       <div className="relative flex h-full flex-col p-2 sm:p-4 lg:p-5">
         <div className="min-h-[12px] text-center font-condensed text-[9px] font-black uppercase tracking-wide text-ink-500 sm:min-h-[24px] sm:text-xs">{match.teeTimeCst}</div>
         <div className="grid flex-1 grid-cols-[minmax(0,1fr)_56px_minmax(0,1fr)] items-center gap-1.5 sm:grid-cols-[minmax(0,1fr)_72px_minmax(0,1fr)] sm:gap-3 lg:grid-cols-[minmax(0,1fr)_88px_minmax(0,1fr)]">
-          <TeamStack players={match.maroonPlayers} team="maroon" defendingChampion={defendingChampion} />
+          <TeamStack players={match.maroonPlayers} team="maroon" defendingChampion={defendingChampion} tournamentSlug={tournamentSlug} />
           <div className="flex justify-center">
             {status === "final" ? (
               <ResultChevron winner={leader}>{label}</ResultChevron>
@@ -178,7 +184,7 @@ function MatchCard({ match, defendingChampion }: { match: RealMatch; index: numb
               </span>
             )}
           </div>
-          <TeamStack players={match.whitePlayers} team="white" defendingChampion={defendingChampion} />
+          <TeamStack players={match.whitePlayers} team="white" defendingChampion={defendingChampion} tournamentSlug={tournamentSlug} />
         </div>
       </div>
     </article>
@@ -465,7 +471,7 @@ export function MatchPlayShowcase({
         ) : (
           <div className="grid gap-2 sm:gap-4 lg:grid-cols-3 lg:gap-5">
             {matches.map((match, index) => (
-              <MatchCard key={match.id} match={match} index={index + 1} defendingChampion={champion} />
+              <MatchCard key={match.id} match={match} index={index + 1} defendingChampion={champion} tournamentSlug={(selectedHistorical ?? liveTournament).slug} />
             ))}
           </div>
         )}

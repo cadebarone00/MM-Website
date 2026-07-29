@@ -121,7 +121,7 @@ export function MatchesSection({ tournament, isLive }: { tournament: Tournament;
         <div className="overflow-hidden rounded-md border border-ink-100 bg-white">
           <div className="max-h-[722px] overflow-y-auto">
             {selectedSession?.matches.map((match, index) => (
-              <MatchRow key={match.id} match={match} index={index + 1} defendingChampion={champion} />
+              <MatchRow key={match.id} match={match} index={index + 1} defendingChampion={champion} tournamentSlug={tournament.slug} />
             ))}
           </div>
         </div>

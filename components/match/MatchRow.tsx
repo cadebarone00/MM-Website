@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import { TrophyBadge } from "@/components/ui/TrophyBadge";
 import { ResultChevron } from "@/components/match/ResultChevron";
@@ -37,39 +38,68 @@ function labelColor(match: RealMatch) {
   return "border-ink-300 bg-ink-100 text-ink-900";
 }
 
-function TeamSide({ players, team, defendingChampion }: { players: string[]; team: Team; defendingChampion: string | null }) {
+function TeamSide({
+  players,
+  team,
+  defendingChampion,
+  tournamentSlug,
+}: {
+  players: string[];
+  team: Team;
+  defendingChampion: string | null;
+  tournamentSlug: string;
+}) {
   const isMaroon = team === "maroon";
   const top = players[0];
   const bottom = players[1];
 
   return (
     <div className={["flex min-w-0 flex-col gap-1", isMaroon ? "items-end" : "items-start"].join(" ")}>
-      {top && <Avatar name={getPlayerDisplayName(top)} src={getPlayerAvatar(top)} size="sm" team={team} />}
       {top && (
-        <span className="truncate font-sans text-sm font-semibold text-ink-900 inline-flex items-center gap-[6px]">
-          {getPlayerDisplayName(top)}
-          {defendingChampion === top && <TrophyBadge count={1} />}
-        </span>
+        <Link
+          href={`/leaderboard/${tournamentSlug}/players/${top.toLowerCase()}`}
+          className={["flex flex-col gap-1 hover:opacity-80 transition-opacity", isMaroon ? "items-end" : "items-start"].join(" ")}
+        >
+          <Avatar name={getPlayerDisplayName(top)} src={getPlayerAvatar(top)} size="sm" team={team} />
+          <span className="truncate font-sans text-sm font-semibold text-ink-900 inline-flex items-center gap-[6px]">
+            {getPlayerDisplayName(top)}
+            {defendingChampion === top && <TrophyBadge count={1} />}
+          </span>
+        </Link>
       )}
       {bottom && (
-        <span className="truncate font-sans text-sm font-semibold text-ink-900 inline-flex items-center gap-[6px]">
-          {getPlayerDisplayName(bottom)}
-          {defendingChampion === bottom && <TrophyBadge count={1} />}
-        </span>
+        <Link
+          href={`/leaderboard/${tournamentSlug}/players/${bottom.toLowerCase()}`}
+          className={["flex flex-col gap-1 hover:opacity-80 transition-opacity", isMaroon ? "items-end" : "items-start"].join(" ")}
+        >
+          <span className="truncate font-sans text-sm font-semibold text-ink-900 inline-flex items-center gap-[6px]">
+            {getPlayerDisplayName(bottom)}
+            {defendingChampion === bottom && <TrophyBadge count={1} />}
+          </span>
+          <Avatar name={getPlayerDisplayName(bottom)} src={getPlayerAvatar(bottom)} size="sm" team={team} />
+        </Link>
       )}
-      {bottom && <Avatar name={getPlayerDisplayName(bottom)} src={getPlayerAvatar(bottom)} size="sm" team={team} />}
     </div>
   );
 }
 
-export function MatchRow({ match, defendingChampion = null }: { match: RealMatch; index?: number; defendingChampion?: string | null }) {
+export function MatchRow({
+  match,
+  defendingChampion = null,
+  tournamentSlug,
+}: {
+  match: RealMatch;
+  index?: number;
+  defendingChampion?: string | null;
+  tournamentSlug: string;
+}) {
   const status = matchStatus(match);
   const centerLabel = status === "scheduled" ? "VS" : liveLabel(match);
 
   return (
     <div className="border-b border-ink-100 bg-white px-4 py-4 last:border-b-0">
       <div className="grid min-h-[84px] grid-cols-[minmax(0,1fr)_86px_minmax(0,1fr)] items-center gap-3">
-        <TeamSide players={match.maroonPlayers} team="maroon" defendingChampion={defendingChampion} />
+        <TeamSide players={match.maroonPlayers} team="maroon" defendingChampion={defendingChampion} tournamentSlug={tournamentSlug} />
         <div className="flex justify-center">
           {status === "final" ? (
             <ResultChevron winner={matchLeader(match)}>{centerLabel}</ResultChevron>
@@ -79,7 +109,7 @@ export function MatchRow({ match, defendingChampion = null }: { match: RealMatch
             </span>
           )}
         </div>
-        <TeamSide players={match.whitePlayers} team="white" defendingChampion={defendingChampion} />
+        <TeamSide players={match.whitePlayers} team="white" defendingChampion={defendingChampion} tournamentSlug={tournamentSlug} />
       </div>
     </div>
   );
