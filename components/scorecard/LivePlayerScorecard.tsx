@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import { Avatar } from "@/components/ui/Avatar";
+import { PlayerProfileHeader } from "@/components/scorecard/PlayerProfileHeader";
 import { PlayerScorecardView } from "./PlayerScorecardView";
 import { DETAIL_POLL_MS, useLiveTournament } from "@/lib/hooks/useLiveTournament";
-import { nextTournament } from "@/lib/data";
+import { nextTournament, isLiveNow } from "@/lib/data";
+import { getPlayerAvatar, getPlayerProfile } from "@/lib/data/players";
 import type { Team } from "@/lib/data/types";
 
 export function LivePlayerScorecard({ tournamentSlug, player }: { tournamentSlug: string; player: string }) {
@@ -18,25 +18,32 @@ export function LivePlayerScorecard({ tournamentSlug, player }: { tournamentSlug
   const displayName =
     [...tournament.roster.maroon, ...tournament.roster.white].find((n) => n.toLowerCase() === player.toLowerCase()) ?? player;
   const scorecard = tournament.scorecards?.find((s) => s.player.toLowerCase() === player.toLowerCase());
+  const profile = getPlayerProfile(player);
+
+  const ranked = [...tournament.individualLeaderboard].sort((a, b) => a.toPar - b.toPar);
+  const standing = ranked.find((p) => p.player.toLowerCase() === player.toLowerCase());
+  const position = standing ? ranked.indexOf(standing) + 1 : null;
+  const total = standing?.toPar ?? null;
+  const lastRound = scorecard?.rounds[scorecard.rounds.length - 1];
+  const playedCount = lastRound?.holes.filter((h) => h.score > 0).length ?? 0;
+  const thru = lastRound == null ? null : playedCount >= lastRound.holes.length ? "F" : String(playedCount);
 
   return (
     <div>
-      <Link
-        href={`/leaderboard/${tournamentSlug}`}
-        className="font-condensed text-xs font-semibold tracking-wide uppercase text-ink-500 hover:text-maroon-700 transition-colors"
-      >
-        &larr; Back to {nextTournament.editionLabel} Leaderboard
-      </Link>
-
-      <div className="flex items-center gap-4 mt-4 mb-6">
-        <Avatar name={displayName} size="lg" team={team} />
-        <div>
-          <h1 className="font-sans text-[32px] font-extrabold text-ink-900 m-0">{displayName}</h1>
-          <span className={["font-condensed text-xs font-semibold tracking-wide uppercase", team === "maroon" ? "text-maroon-600" : "text-ink-500"].join(" ")}>
-            {team === "maroon" ? "Team Maroon" : "Team White"} &middot; {nextTournament.editionLabel}
-          </span>
-        </div>
-      </div>
+      <PlayerProfileHeader
+        backHref={`/leaderboard/${tournamentSlug}`}
+        backLabel={`Back to ${nextTournament.editionLabel} Leaderboard`}
+        displayName={displayName}
+        avatarSrc={getPlayerAvatar(player)}
+        team={team}
+        editionLabel={nextTournament.editionLabel}
+        bio={profile?.bio ?? null}
+        bioHref={`/teams/stats/players/${player.toLowerCase()}`}
+        live={isLiveNow()}
+        position={position}
+        total={total}
+        thru={thru}
+      />
 
       {scorecard && scorecard.rounds.length > 0 ? (
         <PlayerScorecardView scorecard={scorecard} tournamentSlug={tournamentSlug} />
