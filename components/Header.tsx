@@ -4,17 +4,16 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
 import { RoundCountdown } from "@/components/ui/RoundCountdown";
 import { AccountBadge } from "@/components/AccountBadge";
+import { MobileTabBar } from "@/components/nav/MobileTabBar";
+import { MorePanel } from "@/components/nav/MorePanel";
 import { latestCompleted, nextTournament, champion, isLiveNow, fmtPt } from "@/lib/data";
 
 const nav = [
   { href: "/", label: "Home" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/teams", label: "Teams" },
-  { href: "/schedule", label: "Schedule" },
-  { href: "/history", label: "History" },
 ];
 
 function InstagramGlyph() {
@@ -36,7 +35,7 @@ export function Header() {
   const live = isLiveNow();
   const champ = champion(latestCompleted);
   const nextVenueKnown = isSet(nextTournament.venue);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-[100] shadow-lg relative">
@@ -45,16 +44,7 @@ export function Header() {
       <div className="bg-gradient-maroon">
         <div className="flex items-center justify-between px-4 h-14 sm:px-7 sm:h-[64px]">
           <div className="flex items-center gap-3 sm:gap-9">
-            {/* Hamburger — hidden only at true desktop widths */}
-            <button
-              type="button"
-              aria-label={menuOpen ? "Close menu" : "Open menu"}
-              onClick={() => setMenuOpen((o) => !o)}
-              className="lg:hidden inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20 sm:h-9 sm:w-9"
-            >
-              {menuOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
-            <Link href="/" className="shrink-0" onClick={() => setMenuOpen(false)}>
+            <Link href="/" className="shrink-0">
               <Image src="/assets/wordmark-light.svg" alt="The Maroon Masters" width={520} height={92} className="h-5 w-auto sm:h-7" priority />
             </Link>
             {/* Desktop nav — hidden below lg (covers phones in both orientations) */}
@@ -74,6 +64,13 @@ export function Header() {
                   </Link>
                 );
               })}
+              <button
+                type="button"
+                onClick={() => setMoreOpen(true)}
+                className="px-4 h-[64px] flex items-center font-sans text-[15px] whitespace-nowrap border-b-2 border-b-transparent font-medium text-white/65 transition-colors duration-150 hover:text-white/90"
+              >
+                More
+              </button>
             </nav>
           </div>
 
@@ -95,28 +92,6 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile dropdown menu */}
-      {menuOpen && (
-        <div className="lg:hidden bg-maroon-900 border-b border-white/10">
-          {nav.map((n) => {
-            const on = n.href === "/" ? pathname === "/" : pathname.startsWith(n.href);
-            return (
-              <Link
-                key={n.href}
-                href={n.href}
-                onClick={() => setMenuOpen(false)}
-                className={[
-                  "flex items-center px-6 py-4 font-sans text-base border-b border-white/10 last:border-b-0 transition-colors",
-                  on ? "font-bold text-white bg-white/10" : "font-medium text-white/70 hover:text-white hover:bg-white/5",
-                ].join(" ")}
-              >
-                {n.label}
-              </Link>
-            );
-          })}
-        </div>
-      )}
-
       <div className="bg-maroon-900 flex items-center justify-center gap-x-2 gap-y-0 px-4 py-[3px] flex-wrap shadow-[inset_0_1px_0_rgba(0,0,0,0.25)] sm:gap-[18px] sm:px-7 sm:py-[7px]">
         {live ? (
           <span className="font-condensed text-[8px] font-semibold tracking-eyebrow uppercase text-gold-300 text-center sm:text-[10px]">
@@ -137,6 +112,9 @@ export function Header() {
       </div>
 
       <div className="h-[2px] bg-gold-500" />
+
+      <MobileTabBar onMoreClick={() => setMoreOpen(true)} />
+      <MorePanel open={moreOpen} onClose={() => setMoreOpen(false)} />
     </header>
   );
 }
