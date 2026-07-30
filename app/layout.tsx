@@ -39,7 +39,7 @@ export default function RootLayout({
       lang="en"
       className={`${spectral.variable} ${barlow.variable} ${barlowCondensed.variable}`}
     >
-      <body className="min-h-screen bg-cream-50 font-sans text-ink-900 antialiased">
+      <body className="min-h-screen bg-cream-50 font-sans text-ink-900 antialiased pb-16 lg:pb-0">
         <Header />
         {children}
         <Footer />
