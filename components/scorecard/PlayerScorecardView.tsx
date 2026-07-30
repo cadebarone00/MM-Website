@@ -11,7 +11,7 @@ import { RoundVideoPlaceholder } from "./RoundVideoPlaceholder";
 import type { PlayerScorecard } from "@/lib/data";
 
 export function PlayerScorecardView({ scorecard, tournamentSlug }: { scorecard: PlayerScorecard; tournamentSlug: string }) {
-  const [round, setRound] = useState(String(scorecard.rounds[0].round));
+  const [round, setRound] = useState(String(scorecard.rounds[scorecard.rounds.length - 1].round));
   const active = scorecard.rounds.find((r) => String(r.round) === round) ?? scorecard.rounds[0];
 
   return (
