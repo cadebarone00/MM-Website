@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { X } from "lucide-react";
 
-const MORE_LINKS = [
+export const MORE_LINKS = [
   { href: "/schedule", label: "Schedule" },
   { href: "/history", label: "History" },
 ];
@@ -18,8 +18,10 @@ export function MorePanel({ open, onClose }: { open: boolean; onClose: () => voi
   if (!open) return null;
 
   return (
+    // z-[110] only orders this above MobileTabBar within <header>'s own stacking context (header itself is z-[100]) — not a page-wide guarantee.
     <div className="fixed inset-0 z-[110]">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      {/* Hidden below lg on purpose: the panel is full-screen there, so there's no visible backdrop to click — closing on mobile is via the X button only. */}
+      <div className="hidden lg:block absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="absolute inset-0 flex flex-col bg-white shadow-xl lg:inset-y-0 lg:left-auto lg:right-0 lg:w-1/4">
         <div className="flex items-center justify-between border-b border-ink-100 px-5 py-4">
           <span className="font-sans text-lg font-bold text-ink-900">More</span>

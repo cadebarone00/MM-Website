@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import { RoundCountdown } from "@/components/ui/RoundCountdown";
 import { AccountBadge } from "@/components/AccountBadge";
 import { MobileTabBar } from "@/components/nav/MobileTabBar";
-import { MorePanel } from "@/components/nav/MorePanel";
+import { MorePanel, MORE_LINKS } from "@/components/nav/MorePanel";
 import { latestCompleted, nextTournament, champion, isLiveNow, fmtPt } from "@/lib/data";
 
 const nav = [
@@ -36,6 +36,18 @@ export function Header() {
   const champ = champion(latestCompleted);
   const nextVenueKnown = isSet(nextTournament.venue);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [lastPathname, setLastPathname] = useState(pathname);
+  const moreOn = MORE_LINKS.some((l) => pathname.startsWith(l.href));
+
+  // Close the More panel on route change (e.g. Back/Forward navigation).
+  // Adjusted during render rather than in a useEffect, since Header never
+  // unmounts across navigations (it lives outside {children} in the root
+  // layout) — this is React's recommended pattern for resetting state when
+  // a value changes, and avoids a synchronous setState-in-effect.
+  if (pathname !== lastPathname) {
+    setLastPathname(pathname);
+    setMoreOpen(false);
+  }
 
   return (
     <header className="sticky top-0 z-[100] shadow-lg relative">
@@ -67,7 +79,10 @@ export function Header() {
               <button
                 type="button"
                 onClick={() => setMoreOpen(true)}
-                className="px-4 h-[64px] flex items-center font-sans text-[15px] whitespace-nowrap border-b-2 border-b-transparent font-medium text-white/65 transition-colors duration-150 hover:text-white/90"
+                className={[
+                  "px-4 h-[64px] flex items-center font-sans text-[15px] whitespace-nowrap border-b-2 transition-colors duration-150",
+                  moreOn ? "font-bold text-white border-b-gold-400" : "font-medium text-white/65 border-b-transparent hover:text-white/90",
+                ].join(" ")}
               >
                 More
               </button>

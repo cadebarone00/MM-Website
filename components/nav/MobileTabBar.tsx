@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { House, ListOrdered, Users, MoreHorizontal } from "lucide-react";
+import { MORE_LINKS } from "./MorePanel";
 
 const TABS = [
   { href: "/", label: "Home", icon: House },
@@ -12,9 +13,10 @@ const TABS = [
 
 export function MobileTabBar({ onMoreClick }: { onMoreClick: () => void }) {
   const pathname = usePathname();
+  const moreOn = MORE_LINKS.some((l) => pathname.startsWith(l.href));
 
   return (
-    <nav className="lg:hidden fixed inset-x-0 bottom-0 z-[100] flex h-16 items-stretch bg-maroon-900 shadow-[0_-2px_8px_rgba(0,0,0,0.25)]">
+    <nav className="lg:hidden fixed inset-x-0 bottom-0 z-[100] flex h-16 items-stretch bg-maroon-900 shadow-[0_-2px_8px_rgba(0,0,0,0.25)] pb-[env(safe-area-inset-bottom)]">
       {TABS.map((tab) => {
         const on = tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
         const Icon = tab.icon;
@@ -32,7 +34,7 @@ export function MobileTabBar({ onMoreClick }: { onMoreClick: () => void }) {
       <button
         type="button"
         onClick={onMoreClick}
-        className="flex flex-1 flex-col items-center justify-center gap-1 font-condensed text-3xs font-semibold uppercase tracking-wide text-white/60"
+        className={["flex flex-1 flex-col items-center justify-center gap-1 font-condensed text-3xs font-semibold uppercase tracking-wide", moreOn ? "text-white" : "text-white/60"].join(" ")}
       >
         <MoreHorizontal size={20} />
         More
