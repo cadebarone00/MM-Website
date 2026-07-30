@@ -87,26 +87,34 @@ export function MatchRow({
   match,
   defendingChampion = null,
   tournamentSlug,
+  size = "md",
 }: {
   match: RealMatch;
   index?: number;
   defendingChampion?: string | null;
   tournamentSlug: string;
+  size?: "md" | "lg";
 }) {
   const status = matchStatus(match);
   const centerLabel = status === "scheduled" ? "VS" : liveLabel(match);
+  const rowPadding = size === "lg" ? "px-4 py-5 sm:px-6" : "px-4 py-4";
+  const gridCols = size === "lg" ? "grid-cols-[minmax(0,1fr)_110px_minmax(0,1fr)]" : "grid-cols-[minmax(0,1fr)_86px_minmax(0,1fr)]";
+  const pillClasses =
+    size === "lg"
+      ? "inline-flex min-h-[48px] min-w-[86px] items-center justify-center rounded-pill border px-4 font-condensed text-xl font-extrabold uppercase tracking-wide"
+      : "inline-flex min-h-[44px] min-w-[62px] items-center justify-center rounded-pill border px-3 font-condensed text-lg font-extrabold uppercase tracking-wide";
 
   return (
-    <div className="border-b border-ink-100 bg-white px-4 py-4 last:border-b-0">
-      <div className="grid min-h-[84px] grid-cols-[minmax(0,1fr)_86px_minmax(0,1fr)] items-center gap-3">
+    <div className={["border-b border-ink-100 bg-white last:border-b-0", rowPadding].join(" ")}>
+      <div className={["grid min-h-[84px] items-center gap-3", gridCols].join(" ")}>
         <TeamSide players={match.maroonPlayers} team="maroon" defendingChampion={defendingChampion} tournamentSlug={tournamentSlug} />
         <div className="flex justify-center">
           {status === "final" ? (
-            <ResultChevron winner={matchLeader(match)}>{centerLabel}</ResultChevron>
-          ) : (
-            <span className={["inline-flex min-h-[44px] min-w-[62px] items-center justify-center rounded-pill border px-3 font-condensed text-lg font-extrabold uppercase tracking-wide", labelColor(match)].join(" ")}>
+            <ResultChevron winner={matchLeader(match)} size={size === "lg" ? "lg" : "md"}>
               {centerLabel}
-            </span>
+            </ResultChevron>
+          ) : (
+            <span className={[pillClasses, labelColor(match)].join(" ")}>{centerLabel}</span>
           )}
         </div>
         <TeamSide players={match.whitePlayers} team="white" defendingChampion={defendingChampion} tournamentSlug={tournamentSlug} />
