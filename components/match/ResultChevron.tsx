@@ -7,20 +7,37 @@ const GOLD_500 = "#b8945a";
 const LEFT_POINTS = "0,22 30,0 100,0 100,44 30,44";
 const RIGHT_POINTS = "100,22 70,0 0,0 0,44 70,44";
 
+export type ResultChevronSize = "sm" | "md" | "lg";
+
+const TIE_SIZE_CLASSES: Record<ResultChevronSize, string> = {
+  sm: "h-[22px] w-[40px] text-2xs",
+  md: "h-[34px] w-[58px] text-sm",
+  lg: "h-[48px] w-[86px] text-lg",
+};
+
+const CHEVRON_SIZE_CLASSES: Record<ResultChevronSize, string> = {
+  sm: "h-[22px] w-[44px] text-2xs",
+  md: "h-[34px] w-[62px] text-sm",
+  lg: "h-[48px] w-[92px] text-lg",
+};
+
 export function ResultChevron({
   winner,
   children,
+  size = "md",
   className,
 }: {
   winner: Team | "tie";
   children: ReactNode;
+  size?: ResultChevronSize;
   className?: string;
 }) {
   if (winner === "tie") {
     return (
       <span
         className={[
-          "inline-flex h-[34px] w-[58px] items-center justify-center border-2 border-ink-900 px-2 font-condensed text-sm font-extrabold uppercase tracking-wide text-ink-900",
+          "inline-flex items-center justify-center border-2 border-ink-900 px-2 font-condensed font-extrabold uppercase tracking-wide text-ink-900",
+          TIE_SIZE_CLASSES[size],
           className ?? "",
         ].join(" ")}
       >
@@ -34,7 +51,8 @@ export function ResultChevron({
   return (
     <span
       className={[
-        "relative inline-flex h-[34px] w-[62px] items-center justify-center font-condensed text-sm font-extrabold uppercase tracking-wide drop-shadow-md",
+        "relative inline-flex items-center justify-center font-condensed font-extrabold uppercase tracking-wide drop-shadow-md",
+        CHEVRON_SIZE_CLASSES[size],
         isMaroon ? "text-white" : "text-maroon-700",
         className ?? "",
       ].join(" ")}
