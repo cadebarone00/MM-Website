@@ -66,10 +66,18 @@ function PlaceholderPanel() {
 
 export function TeamMatchesBoard({ tournament, live }: { tournament: Tournament; live: boolean }) {
   const days = [...new Set(tournament.matches.map((m) => m.day))].sort((a, b) => a - b);
-  const [day, setDay] = useState<number>(() => currentRoundDay(tournament));
+  const [userPickedDay, setUserPickedDay] = useState<number | null>(null);
+  const day = userPickedDay ?? currentRoundDay(tournament);
   const champion = defendingIndividualChampion(tournament);
 
   if (days.length === 0) {
+    if (!live) {
+      return (
+        <div className="rounded-md border border-ink-100 bg-cream-50 px-5 py-10 text-center">
+          <p className="m-0 font-sans text-sm text-ink-500">No match data available for this tournament yet.</p>
+        </div>
+      );
+    }
     return <PlaceholderPanel />;
   }
 
@@ -86,13 +94,13 @@ export function TeamMatchesBoard({ tournament, live }: { tournament: Tournament;
             <button
               key={d}
               type="button"
-              onClick={() => setDay(d)}
+              onClick={() => setUserPickedDay(d)}
               className={[
                 "rounded-pill border px-3 py-1.5 font-condensed text-xs font-black uppercase tracking-wide transition-colors sm:px-4 sm:py-2 sm:text-sm",
                 on ? "border-gold-400 bg-maroon-700 text-white" : "border-ink-200 bg-white text-ink-700 hover:border-gold-400",
               ].join(" ")}
             >
-              R{d}
+              Day {d}
             </button>
           );
         })}

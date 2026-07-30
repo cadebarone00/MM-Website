@@ -12,7 +12,7 @@ export function YearLeaderboardContent({ tournament, activeSlug }: { tournament:
 
       <div className="pt-4 sm:pt-8">
         <YearTabs basePath="/leaderboard" activeSlug={activeSlug} />
-        <LeaderboardBoard tournament={tournament} live={false} />
+        <LeaderboardBoard key={tournament.slug} tournament={tournament} live={false} />
       </div>
     </div>
   );

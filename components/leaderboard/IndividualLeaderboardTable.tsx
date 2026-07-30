@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
 import { ScoreBadge } from "@/components/ui/ScoreBadge";
-import { getPlayerScorecard } from "@/lib/data";
+import { TrophyBadge } from "@/components/ui/TrophyBadge";
+import { WinnerBadge } from "@/components/ui/WinnerBadge";
+import { defendingIndividualChampion, getPlayerScorecard } from "@/lib/data";
 import { getPlayerAvatar, getPlayerDisplayName } from "@/lib/data/players";
 import type { RoundScorecard, Team, Tournament } from "@/lib/data/types";
 
@@ -37,6 +40,7 @@ function priorRoundNumbers(tournament: Tournament): number[] {
 
 export function IndividualLeaderboardTable({ tournament }: { tournament: Tournament }) {
   const [filter, setFilter] = useState<Filter>("all");
+  const router = useRouter();
 
   if (tournament.individualLeaderboard.length === 0) {
     return (
@@ -50,6 +54,7 @@ export function IndividualLeaderboardTable({ tournament }: { tournament: Tournam
   const ranked = sorted.map((p, i) => ({ ...p, pos: i + 1 }));
   const rows = ranked.filter((p) => filter === "all" || p.team === filter);
   const priorRounds = priorRoundNumbers(tournament);
+  const champion = defendingIndividualChampion(tournament);
 
   return (
     <div>
@@ -104,10 +109,15 @@ export function IndividualLeaderboardTable({ tournament }: { tournament: Tournam
               const lastRound = roundsSorted[roundsSorted.length - 1];
               const priorForPlayer = roundsSorted.slice(0, -1);
               const isMaroon = p.team === "maroon";
-              const rowBg = p.pos === 1 ? "bg-gold-100" : "bg-cream-50";
+              const rowBg = p.pos === 1 ? "bg-gold-200" : "bg-cream-50";
+              const href = `/leaderboard/${tournament.slug}/players/${p.player.toLowerCase()}`;
 
               return (
-                <tr key={p.player} className={["border-b border-ink-100 last:border-b-0", rowBg].join(" ")}>
+                <tr
+                  key={p.player}
+                  onClick={() => router.push(href)}
+                  className={["cursor-pointer border-b border-ink-100 last:border-b-0", rowBg].join(" ")}
+                >
                   <td
                     style={{ position: "sticky", left: 0, width: POS_W, minWidth: POS_W }}
                     className={["py-2 text-center font-condensed text-sm font-bold tabular-nums text-ink-900", rowBg].join(" ")}
@@ -119,14 +129,19 @@ export function IndividualLeaderboardTable({ tournament }: { tournament: Tournam
                     className={["py-2 pl-3", rowBg].join(" ")}
                   >
                     <Link
-                      href={`/leaderboard/${tournament.slug}/players/${p.player.toLowerCase()}`}
+                      href={href}
                       className="flex items-center gap-2 transition-opacity hover:opacity-80"
                     >
                       <Avatar name={getPlayerDisplayName(p.player)} src={getPlayerAvatar(p.player)} size="xs" team={p.team} />
                       <span
-                        className={["truncate font-sans text-xs font-semibold sm:text-sm", isMaroon ? "text-maroon-700" : "text-ink-900"].join(" ")}
+                        className={[
+                          "inline-flex min-w-0 items-center gap-[6px] truncate font-sans text-xs font-semibold sm:text-sm",
+                          isMaroon ? "text-maroon-700" : "text-ink-900",
+                        ].join(" ")}
                       >
                         {getPlayerDisplayName(p.player)}
+                        {champion === p.player && <TrophyBadge count={1} />}
+                        {tournament.individualChampion === p.player && <WinnerBadge />}
                       </span>
                     </Link>
                   </td>
