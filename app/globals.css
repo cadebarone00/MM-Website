@@ -171,24 +171,6 @@ body {
   animation: mm-fade 0.28s var(--ease-out);
 }
 
-@keyframes mm-shimmer-left {
-  0% {
-    transform: translateX(-120%) skewX(-12deg);
-  }
-  100% {
-    transform: translateX(220%) skewX(-12deg);
-  }
-}
-
-@keyframes mm-shimmer-right {
-  0% {
-    transform: translateX(220%) skewX(-12deg);
-  }
-  100% {
-    transform: translateX(-120%) skewX(-12deg);
-  }
-}
-
 @keyframes mm-edge-glow {
   0%,
   100% {
@@ -201,24 +183,6 @@ body {
   }
 }
 
-.mm-shimmer-left {
-  position: absolute;
-  inset: 0;
-  left: 0;
-  width: 40%;
-  background: linear-gradient(100deg, transparent, rgba(201, 168, 110, 0.55), transparent);
-  animation: mm-shimmer-left 3.2s ease-in-out infinite;
-}
-
-.mm-shimmer-right {
-  position: absolute;
-  inset: 0;
-  left: 0;
-  width: 40%;
-  background: linear-gradient(100deg, transparent, rgba(201, 168, 110, 0.55), transparent);
-  animation: mm-shimmer-right 3.2s ease-in-out infinite;
-}
-
 .mm-edge-glow {
   position: absolute;
   top: 0;
@@ -226,50 +190,6 @@ body {
   width: 10px;
   background: var(--color-gold-400);
   animation: mm-edge-glow 2.4s ease-in-out infinite;
-}
-
-.mm-gold-num {
-  color: #fff;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.25), 0 0 10px rgba(201, 168, 110, 0.85);
-  -webkit-text-stroke: 1px #c9a86e;
-  font-size: 26px;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.mm-gold-num-white {
-  color: #3d1010;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.12), 0 0 8px rgba(201, 168, 110, 0.7);
-  -webkit-text-stroke: 1px #b8945a;
-  font-size: 26px;
-  font-weight: 900;
-  line-height: 1;
-}
-
-@media (min-width: 640px) {
-  .mm-gold-num,
-  .mm-gold-num-white {
-    font-size: 40px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .mm-gold-num,
-  .mm-gold-num-white {
-    font-size: 58px;
-  }
-}
-
-.mm-team-fill-maroon {
-  color: var(--color-maroon-700);
-  text-shadow: 0 0 1px #c9a86e, 0 0 10px rgba(201, 168, 110, 0.6);
-  -webkit-text-stroke: 1.5px #c9a86e;
-}
-
-.mm-team-fill-white {
-  color: #fdfdfb;
-  text-shadow: 0 0 1px #c9a86e, 0 0 10px rgba(201, 168, 110, 0.6);
-  -webkit-text-stroke: 1.5px #c9a86e;
 }
 
 .mm-champion-name {
@@ -298,8 +218,6 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .mm-live-dot,
   .mm-fade,
-  .mm-shimmer-left,
-  .mm-shimmer-right,
   .mm-edge-glow,
   .mm-winner-pulse {
     animation: none;
