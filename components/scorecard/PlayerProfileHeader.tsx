@@ -56,7 +56,7 @@ export function PlayerProfileHeader({
       </Link>
 
       <div className="flex items-start gap-4 mt-4 mb-4 flex-wrap">
-        <Avatar name={displayName} src={avatarSrc} size="xl" team={team} className="h-[72px] w-[72px] sm:h-[88px] sm:w-[88px]" />
+        <Avatar name={displayName} src={avatarSrc} size="xl" team={team} />
         <div className="min-w-0">
           {live && (
             <span className="inline-flex items-center gap-1 rounded-pill bg-score-under/10 px-2 py-0.5 mb-1 font-condensed text-3xs font-bold uppercase tracking-wide text-score-under">

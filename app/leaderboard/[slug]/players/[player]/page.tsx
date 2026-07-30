@@ -3,7 +3,7 @@ import { PlayerScorecardView } from "@/components/scorecard/PlayerScorecardView"
 import { PlayerProfileHeader } from "@/components/scorecard/PlayerProfileHeader";
 import { LivePlayerScorecard } from "@/components/scorecard/LivePlayerScorecard";
 import { pastTournaments, nextTournament, getTournament, getPlayerScorecard, playersOf } from "@/lib/data";
-import { getPlayerAvatar, getPlayerDisplayName } from "@/lib/data/players";
+import { getPlayerAvatar, getPlayerDisplayName, getPlayerProfile } from "@/lib/data/players";
 
 export function generateStaticParams() {
   return pastTournaments.flatMap((t) =>
@@ -49,7 +49,7 @@ export default async function PlayerScorecardPage({ params }: { params: Promise<
         avatarSrc={avatar}
         team={entry.team}
         editionLabel={tournament.editionLabel}
-        bio={null}
+        bio={getPlayerProfile(entry.name)?.bio ?? null}
         bioHref={`/teams/stats/players/${player.toLowerCase()}`}
         live={false}
         position={position}
