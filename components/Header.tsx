@@ -4,10 +4,16 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
+import { UserRound } from "lucide-react";
 import { RoundCountdown } from "@/components/ui/RoundCountdown";
+import { Avatar } from "@/components/ui/Avatar";
+import { TigerAvatar } from "@/components/ui/TigerAvatar";
 import { AccountBadge } from "@/components/AccountBadge";
 import { MobileTabBar } from "@/components/nav/MobileTabBar";
 import { MorePanel, MORE_LINKS } from "@/components/nav/MorePanel";
+import { AccountMenu } from "@/components/nav/AccountMenu";
+import { useAccountSession } from "@/lib/useAccountSession";
+import { getPlayerAvatar, getPlayerDisplayName } from "@/lib/data/players";
 import { latestCompleted, nextTournament, champion, isLiveNow, fmtPt } from "@/lib/data";
 
 const nav = [
@@ -35,11 +41,13 @@ export function Header() {
   const live = isLiveNow();
   const champ = champion(latestCompleted);
   const nextVenueKnown = isSet(nextTournament.venue);
+  const session = useAccountSession();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [lastPathname, setLastPathname] = useState(pathname);
   const moreOn = MORE_LINKS.some((l) => pathname.startsWith(l.href));
 
-  // Close the More panel on route change (e.g. Back/Forward navigation).
+  // Close both panels on route change (e.g. Back/Forward navigation).
   // Adjusted during render rather than in a useEffect, since Header never
   // unmounts across navigations (it lives outside {children} in the root
   // layout) — this is React's recommended pattern for resetting state when
@@ -47,6 +55,7 @@ export function Header() {
   if (pathname !== lastPathname) {
     setLastPathname(pathname);
     setMoreOpen(false);
+    setAccountMenuOpen(false);
   }
 
   return (
@@ -54,13 +63,53 @@ export function Header() {
       <div className="h-px bg-white/15" />
 
       <div className="bg-gradient-maroon">
-        <div className="flex items-center justify-between px-4 h-14 sm:px-7 sm:h-[64px]">
-          <div className="flex items-center gap-3 sm:gap-9">
+        {/* Mobile header row — flush to top, 3 zones: Instagram + countdown/live (left), wordmark (center, bottom-aligned), account icon (right, always visible). */}
+        <div className="lg:hidden grid grid-cols-3 items-end gap-2 px-4 pb-2 pt-2">
+          <div className="flex min-w-0 items-center gap-2 justify-self-start">
+            <a
+              href="https://www.instagram.com/themaroonmasters/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="The Maroon Masters Instagram"
+              title="The Maroon Masters Instagram"
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white"
+            >
+              <InstagramGlyph />
+            </a>
+            {live ? (
+              <span className="font-condensed text-[10px] font-semibold uppercase tracking-wide text-gold-300">Live Now</span>
+            ) : (
+              <RoundCountdown className="text-gold-100" />
+            )}
+          </div>
+
+          <Link href="/" className="justify-self-center">
+            <Image src="/assets/wordmark-light.svg" alt="The Maroon Masters" width={520} height={92} className="h-5 w-auto" priority />
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => setAccountMenuOpen(true)}
+            aria-label="Your account"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center justify-self-end rounded-full"
+          >
+            {session?.kind === "host" ? (
+              <TigerAvatar size="xs" />
+            ) : session?.kind === "player" ? (
+              <Avatar name={getPlayerDisplayName(session.playerFirst)} src={getPlayerAvatar(session.playerFirst)} size="xs" team={session.team} />
+            ) : (
+              <UserRound size={22} className="text-white" />
+            )}
+          </button>
+        </div>
+
+        {/* Desktop header row — unchanged from before this plan. */}
+        <div className="hidden lg:flex items-center justify-between px-7 h-[64px]">
+          <div className="flex items-center gap-9">
             <Link href="/" className="shrink-0">
-              <Image src="/assets/wordmark-light.svg" alt="The Maroon Masters" width={520} height={92} className="h-5 w-auto sm:h-7" priority />
+              <Image src="/assets/wordmark-light.svg" alt="The Maroon Masters" width={520} height={92} className="h-7 w-auto" priority />
             </Link>
-            {/* Desktop nav — hidden below lg (covers phones in both orientations) */}
-            <nav className="hidden lg:flex gap-0">
+            <nav className="flex gap-0">
               {nav.map((n) => {
                 const on = n.href === "/" ? pathname === "/" : pathname.startsWith(n.href);
                 return (
@@ -89,7 +138,7 @@ export function Header() {
             </nav>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-3">
             <RoundCountdown className="text-gold-100" />
             <a
               href="https://www.instagram.com/themaroonmasters/"
@@ -97,28 +146,28 @@ export function Header() {
               rel="noopener noreferrer"
               aria-label="The Maroon Masters Instagram"
               title="The Maroon Masters Instagram"
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20 sm:h-9 sm:w-9"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20"
             >
               <InstagramGlyph />
             </a>
             <AccountBadge position="header" />
-            <Image src="/assets/emblem.svg" alt="" width={240} height={240} className="hidden lg:block h-9 w-auto" />
+            <Image src="/assets/emblem.svg" alt="" width={240} height={240} className="h-9 w-auto" />
           </div>
         </div>
       </div>
 
-      <div className="bg-maroon-900 flex items-center justify-center gap-x-2 gap-y-0 px-4 py-[3px] flex-wrap shadow-[inset_0_1px_0_rgba(0,0,0,0.25)] sm:gap-[18px] sm:px-7 sm:py-[7px]">
+      <div className="hidden lg:flex items-center justify-center gap-[18px] px-7 py-[7px] flex-wrap shadow-[inset_0_1px_0_rgba(0,0,0,0.25)] bg-maroon-900">
         {live ? (
-          <span className="font-condensed text-[8px] font-semibold tracking-eyebrow uppercase text-gold-300 text-center sm:text-[10px]">
+          <span className="font-condensed text-[10px] font-semibold tracking-eyebrow uppercase text-gold-300 text-center">
             {nextTournament.editionLabel} &middot; {nextTournament.venue} &middot; Underway now
           </span>
         ) : (
           <>
-            <span className="font-condensed text-[8px] font-semibold tracking-eyebrow uppercase text-gold-300 text-center sm:text-[10px]">
+            <span className="font-condensed text-[10px] font-semibold tracking-eyebrow uppercase text-gold-300 text-center">
               Defending Champions: Team {champ === "maroon" ? "Maroon" : "White"} &middot; {latestCompleted.year}
             </span>
-            <span className="hidden sm:block w-px h-[14px] bg-white/15" />
-            <span className="font-sans text-[9px] text-white/55 text-center sm:text-[11px]">
+            <span className="block w-px h-[14px] bg-white/15" />
+            <span className="font-sans text-[11px] text-white/55 text-center">
               {fmtPt(latestCompleted.maroonPts)}&ndash;{fmtPt(latestCompleted.whitePts)} at {latestCompleted.venue} &middot; Next up{" "}
               {nextVenueKnown ? `${nextTournament.venue} - ${nextTournament.dateLabel}` : nextTournament.dateLabel}
             </span>
@@ -130,6 +179,7 @@ export function Header() {
 
       <MobileTabBar onMoreClick={() => setMoreOpen(true)} />
       <MorePanel open={moreOpen} onClose={() => setMoreOpen(false)} />
+      <AccountMenu open={accountMenuOpen} onClose={() => setAccountMenuOpen(false)} />
     </header>
   );
 }
