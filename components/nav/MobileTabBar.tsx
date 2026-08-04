@@ -24,9 +24,9 @@ export function MobileTabBar({ onMoreClick }: { onMoreClick: () => void }) {
           <Link
             key={tab.href}
             href={tab.href}
-            className={["flex flex-1 flex-col items-center justify-center gap-1 font-condensed text-3xs font-semibold uppercase tracking-wide", on ? "text-white" : "text-white/60"].join(" ")}
+            className={["flex flex-1 flex-col items-center justify-start gap-1 pt-2.5 font-condensed text-3xs font-semibold uppercase tracking-wide", on ? "text-white" : "text-white/60"].join(" ")}
           >
-            <Icon size={20} />
+            <Icon size={18} />
             {tab.label}
           </Link>
         );
@@ -34,9 +34,9 @@ export function MobileTabBar({ onMoreClick }: { onMoreClick: () => void }) {
       <button
         type="button"
         onClick={onMoreClick}
-        className={["flex flex-1 flex-col items-center justify-center gap-1 font-condensed text-3xs font-semibold uppercase tracking-wide", moreOn ? "text-white" : "text-white/60"].join(" ")}
+        className={["flex flex-1 flex-col items-center justify-start gap-1 pt-2.5 font-condensed text-3xs font-semibold uppercase tracking-wide", moreOn ? "text-white" : "text-white/60"].join(" ")}
       >
-        <MoreHorizontal size={20} />
+        <MoreHorizontal size={18} />
         More
       </button>
     </nav>
