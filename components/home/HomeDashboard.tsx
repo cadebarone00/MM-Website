@@ -7,6 +7,9 @@ import { SectionHead } from "@/components/home/SectionHead";
 import { QuickLeaderboardCard } from "@/components/home/QuickLeaderboardCard";
 import { QuickTeamsCard } from "@/components/home/QuickTeamsCard";
 import { QuickScheduleCard } from "@/components/home/QuickScheduleCard";
+import { HomeTeamsPanel } from "@/components/home/HomeTeamsPanel";
+import { Tabs } from "@/components/ui/Tabs";
+import type { TabItem } from "@/components/ui/Tabs";
 import { latestCompleted, fmtPt } from "@/lib/data";
 import { getPlayerDisplayName } from "@/lib/data/players";
 
@@ -171,6 +174,30 @@ function HighlightsRail() {
   );
 }
 
+type ToggleTab = "highlights" | "teams" | "schedule";
+
+const TOGGLE_TABS: TabItem[] = [
+  { value: "highlights", label: "Highlights" },
+  { value: "teams", label: "Teams" },
+  { value: "schedule", label: "Schedule" },
+];
+
+/** Mobile-only replacement for the 2-column Highlights/quick-cards block: one full-width panel, switched by a 3-way toggle, defaulting to Highlights. */
+function MobileHighlightsToggle() {
+  const [tab, setTab] = useState<ToggleTab>("highlights");
+
+  return (
+    <div className="lg:hidden">
+      <Tabs items={TOGGLE_TABS} value={tab} onChange={(v) => setTab(v as ToggleTab)} variant="pill" />
+      <div className="mt-3">
+        {tab === "highlights" && <HighlightsRail />}
+        {tab === "teams" && <HomeTeamsPanel />}
+        {tab === "schedule" && <QuickScheduleCard />}
+      </div>
+    </div>
+  );
+}
+
 function NewsSection() {
   const [active, setActive] = useState<(typeof news)[number] | null>(null);
 
@@ -228,6 +255,10 @@ function NewsSection() {
   );
 }
 
+function confirmLeave(message: string): boolean {
+  return window.confirm(message);
+}
+
 function SocialsSection() {
   const [reels, setReels] = useState<SocialReel[]>(fallbackReels);
 
@@ -268,6 +299,9 @@ function SocialsSection() {
                 href={reel.permalink}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={(e) => {
+                  if (!confirmLeave("You're leaving The Maroon Masters to open Instagram. Continue?")) e.preventDefault();
+                }}
                 className="group relative flex aspect-[9/16] min-h-[140px] flex-col justify-between overflow-hidden rounded-md border border-gold-400 bg-gradient-to-b from-maroon-800 to-ink-900 p-2 text-white shadow-sm sm:min-h-[300px] sm:rounded-lg sm:p-4 sm:shadow-lg"
               >
                 {reel.thumbnailUrl && (
@@ -293,8 +327,12 @@ function SocialsSection() {
           <SectionHead title="Our Videos" action="Other Videos" actionHref={ALL_VIDEOS_HREF} />
           <div className="flex flex-col gap-2 sm:gap-4">
             {hypeVideoSlots.map((video) => (
-              <div
+              <a
                 key={video.id}
+                href={ALL_VIDEOS_HREF}
+                onClick={(e) => {
+                  if (!confirmLeave("You're leaving The Maroon Masters to view all videos. Continue?")) e.preventDefault();
+                }}
                 className="group relative flex aspect-[16/9] w-full flex-col justify-between overflow-hidden rounded-md border border-gold-400 bg-gradient-to-b from-maroon-800 to-ink-900 p-2 text-white shadow-sm sm:rounded-lg sm:p-4 sm:shadow-lg"
               >
                 {video.thumbnailUrl && (
@@ -309,7 +347,7 @@ function SocialsSection() {
                 <div className="relative">
                   <h3 className="m-0 line-clamp-2 font-sans text-[10px] font-extrabold sm:text-base">{video.caption}</h3>
                 </div>
-              </div>
+              </a>
             ))}
           </div>
         </div>
@@ -322,7 +360,9 @@ export function HomeDashboard() {
   return (
     <section className="bg-cream-100">
       <div className="mx-auto max-w-[1440px] px-4 py-4 sm:px-7 sm:py-8">
-        <div className="grid grid-cols-2 sm:grid-cols-[minmax(0,1fr)_minmax(180px,320px)] gap-2 sm:gap-4 xl:gap-7">
+        <MobileHighlightsToggle />
+
+        <div className="hidden lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(180px,320px)] gap-4 xl:gap-7">
           <HighlightsRail />
           <div className="flex min-w-0 flex-col gap-2 sm:gap-3 xl:gap-4">
             <QuickScheduleCard />
