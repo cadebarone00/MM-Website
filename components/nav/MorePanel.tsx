@@ -26,14 +26,14 @@ export function MorePanel({ open, onClose }: { open: boolean; onClose: () => voi
     <div className="fixed inset-0 z-[110]">
       {/* Hidden below lg on purpose: the panel is full-screen there, so there's no visible backdrop to click — closing on mobile is via the X button only. */}
       <div className="hidden lg:block absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="absolute inset-0 flex flex-col bg-white shadow-xl lg:inset-y-0 lg:left-auto lg:right-0 lg:w-1/4">
-        <div className="flex items-center justify-between border-b border-ink-100 px-5 py-4">
-          <span className="font-sans text-lg font-bold text-ink-900">More</span>
+      <div className="absolute inset-0 flex flex-col bg-maroon-900 shadow-xl lg:inset-y-0 lg:left-auto lg:right-0 lg:w-1/4">
+        <div className="flex items-center justify-between border-b border-white/15 px-5 py-4">
+          <span className="font-sans text-lg font-bold text-white">More</span>
           <button
             type="button"
             aria-label="Close menu"
             onClick={onClose}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-500 hover:bg-cream-50"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-white hover:bg-white/10"
           >
             <X size={20} />
           </button>
@@ -44,7 +44,7 @@ export function MorePanel({ open, onClose }: { open: boolean; onClose: () => voi
               key={link.href}
               href={link.href}
               onClick={onClose}
-              className="border-b border-ink-100 px-5 py-4 font-sans text-base font-semibold text-ink-900 hover:bg-cream-50"
+              className="border-b border-white/10 px-5 py-4 font-sans text-base font-semibold text-white hover:bg-white/10"
             >
               {link.label}
             </Link>
