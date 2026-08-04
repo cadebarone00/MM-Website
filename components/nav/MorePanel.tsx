@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { X } from "lucide-react";
+import { useAccountSession } from "@/lib/useAccountSession";
 
 export const MORE_LINKS = [
   { href: "/schedule", label: "Schedule" },
@@ -15,7 +16,10 @@ export const MORE_LINKS = [
  * the nav itself between bottom bar and top bar).
  */
 export function MorePanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const session = useAccountSession();
   if (!open) return null;
+
+  const links = session?.kind === "player" ? [...MORE_LINKS, { href: "/portal", label: "Portal" }] : MORE_LINKS;
 
   return (
     // z-[110] only orders this above MobileTabBar within <header>'s own stacking context (header itself is z-[100]) — not a page-wide guarantee.
@@ -35,7 +39,7 @@ export function MorePanel({ open, onClose }: { open: boolean; onClose: () => voi
           </button>
         </div>
         <nav className="flex flex-col">
-          {MORE_LINKS.map((link) => (
+          {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
