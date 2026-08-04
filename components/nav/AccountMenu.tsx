@@ -81,23 +81,32 @@ export function AccountMenu({ open, onClose }: { open: boolean; onClose: () => v
             Log Out
           </button>
         ) : (
-          <div className="flex gap-3">
-            <button
-              type="button"
-              disabled
-              title="Coming soon"
-              className="flex-1 rounded-sm border border-ink-300 px-5 py-3 font-condensed text-sm font-semibold uppercase tracking-wide text-ink-400"
+          <div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                disabled
+                title="Coming soon"
+                className="flex-1 rounded-sm border border-ink-300 px-5 py-3 font-condensed text-sm font-semibold uppercase tracking-wide text-ink-400"
+              >
+                Sign Up
+              </button>
+              <button
+                type="button"
+                disabled
+                title="Coming soon"
+                className="flex-1 rounded-sm border border-ink-300 px-5 py-3 font-condensed text-sm font-semibold uppercase tracking-wide text-ink-400"
+              >
+                Login
+              </button>
+            </div>
+            <Link
+              href="/portal"
+              onClick={onClose}
+              className="mt-3 block text-center font-sans text-sm font-semibold text-maroon-700 underline underline-offset-2"
             >
-              Sign Up
-            </button>
-            <button
-              type="button"
-              disabled
-              title="Coming soon"
-              className="flex-1 rounded-sm border border-ink-300 px-5 py-3 font-condensed text-sm font-semibold uppercase tracking-wide text-ink-400"
-            >
-              Login
-            </button>
+              Already have a login? Portal
+            </Link>
           </div>
         )}
       </div>

@@ -19,7 +19,10 @@ export function MorePanel({ open, onClose }: { open: boolean; onClose: () => voi
   const session = useAccountSession();
   if (!open) return null;
 
-  const links = session?.kind === "player" ? [...MORE_LINKS, { href: "/portal", label: "Portal" }] : MORE_LINKS;
+  const links =
+    session?.kind === "player" || session?.kind === "host"
+      ? [...MORE_LINKS, { href: "/portal", label: session.kind === "host" ? "Tiger Center" : "Player Portal" }]
+      : MORE_LINKS;
 
   return (
     // z-[110] only orders this above MobileTabBar within <header>'s own stacking context (header itself is z-[100]) — not a page-wide guarantee.

@@ -19,7 +19,15 @@ export function VideoHero() {
         <Image src="/teams/maroon/collage/02-swing-pose.jpg" alt="" fill sizes="100vw" className="scale-110 object-cover" priority />
       </div>
       {/* Desktop: video, unchanged from before this plan. */}
-      <video className="absolute inset-0 hidden h-full w-full scale-110 object-cover lg:block" src="/videos/home-hero.mp4" autoPlay muted loop playsInline />
+      <video
+        className="absolute inset-0 hidden h-full w-full scale-110 object-cover lg:block"
+        src="/videos/home-hero.mp4"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="none"
+      />
       <div className="absolute inset-0 bg-gradient-to-t from-[rgba(36,0,1,0.92)] via-[rgba(36,0,1,0.45)] to-[rgba(36,0,1,0.25)]" />
 
       <div className="relative z-10 h-full max-w-[1200px] mx-auto px-4 flex flex-col items-start justify-end pb-4 sm:px-7 sm:pb-10 lg:pb-16">
