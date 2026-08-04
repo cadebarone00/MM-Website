@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Radio } from "lucide-react";
 import Link from "next/link";
 import { latestCompleted, nextTournament, champion, isLiveNow, fmtPt } from "@/lib/data";
@@ -13,7 +14,12 @@ export function VideoHero() {
 
   return (
     <section className="relative w-full h-[280px] overflow-hidden bg-maroon-900 sm:h-[420px] lg:h-[640px]">
-      <video className="absolute inset-0 w-full h-full scale-110 object-cover" src="/videos/home-hero.mp4" autoPlay muted loop playsInline />
+      {/* Mobile: static placeholder image instead of video. */}
+      <div className="absolute inset-0 lg:hidden">
+        <Image src="/teams/maroon/collage/02-swing-pose.jpg" alt="" fill sizes="100vw" className="scale-110 object-cover" priority />
+      </div>
+      {/* Desktop: video, unchanged from before this plan. */}
+      <video className="absolute inset-0 hidden h-full w-full scale-110 object-cover lg:block" src="/videos/home-hero.mp4" autoPlay muted loop playsInline />
       <div className="absolute inset-0 bg-gradient-to-t from-[rgba(36,0,1,0.92)] via-[rgba(36,0,1,0.45)] to-[rgba(36,0,1,0.25)]" />
 
       <div className="relative z-10 h-full max-w-[1200px] mx-auto px-4 flex flex-col items-start justify-end pb-4 sm:px-7 sm:pb-10 lg:pb-16">
