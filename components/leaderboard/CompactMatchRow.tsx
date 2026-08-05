@@ -1,3 +1,6 @@
+"use client";
+
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ResultChevron } from "@/components/match/ResultChevron";
 import { getPlayerDisplayName } from "@/lib/data/players";
@@ -52,6 +55,7 @@ function TeamSide({
         <Link
           key={player}
           href={`/leaderboard/${tournamentSlug}/players/${player.toLowerCase()}`}
+          onClick={(e) => e.stopPropagation()}
           className={[
             "block w-full truncate py-1 font-sans text-xs font-semibold text-ink-900 transition-opacity hover:opacity-70",
             isMaroon ? "text-right" : "text-left",
@@ -78,11 +82,21 @@ export function CompactMatchRow({
   match: RealMatch;
   tournamentSlug: string;
 }) {
+  const router = useRouter();
   const status = matchStatus(match);
   const centerLabel = status === "scheduled" ? "VS" : liveLabel(match);
+  const breakdownHref = `/leaderboard/${tournamentSlug}/matches/${match.id}`;
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-center gap-2 border-b border-ink-100 px-2 py-1 last:border-b-0">
+    <div
+      role="link"
+      tabIndex={0}
+      onClick={() => router.push(breakdownHref)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") router.push(breakdownHref);
+      }}
+      className="grid cursor-pointer grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-center gap-2 border-b border-ink-100 px-2 py-1 last:border-b-0 hover:bg-cream-50"
+    >
       <TeamSide players={match.maroonPlayers} team="maroon" tournamentSlug={tournamentSlug} />
       <div className="flex justify-center">
         {status === "final" ? (
