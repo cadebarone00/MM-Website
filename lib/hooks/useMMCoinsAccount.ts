@@ -46,6 +46,7 @@ export function useMMCoinsAccount() {
   }, [session]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
     window.addEventListener(CHANGE_EVENT, refresh);
     return () => window.removeEventListener(CHANGE_EVENT, refresh);
