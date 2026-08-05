@@ -45,7 +45,7 @@ export function BetSlipSheet({
       return;
     }
     const ok = placeWager(key, {
-      id: `${Date.now()}-${Math.round(Math.random() * 1e6)}`, // eslint-disable-line
+      id: `${Date.now()}-${Math.round(Math.random() * 1e6)}`, // eslint-disable-line react-hooks/purity
       placedAt: new Date().toISOString(),
       selectionLabel: label,
       odds,
