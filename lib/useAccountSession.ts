@@ -29,7 +29,10 @@ export function useAccountSession(): AccountSession {
 
     void sync();
     window.addEventListener("mm:session-changed", sync);
-    return () => window.removeEventListener("mm:session-changed", sync);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("mm:session-changed", sync);
+    };
   }, []);
 
   return session;
