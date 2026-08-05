@@ -35,13 +35,13 @@ export function matchPropMarkets(match: RealMatch): PropMarket[] {
     PROP_STAT_TYPES.map((stat) => {
       const lineSeed = seededFraction(`prop-line-${match.id}-${player}-${stat.label}`);
       // Always lands on a half-line (X.5) so a market never pushes.
-      const roundedLine = Math.round((stat.baseLine + lineSeed * stat.lineSpread) * 2) / 2;
+      const line = Math.round(stat.baseLine + lineSeed * stat.lineSpread) + 0.5;
       return {
         id: `prop-${match.id}-${player}-${stat.label}`,
         matchId: match.id,
         player,
         statLabel: stat.label,
-        line: roundedLine + 0.5,
+        line,
         overOdds: -110,
         underOdds: -110,
       };
