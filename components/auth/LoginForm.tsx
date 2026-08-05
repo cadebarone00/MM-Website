@@ -10,6 +10,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [unverified, setUnverified] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [resent, setResent] = useState(false);
 
@@ -17,6 +18,7 @@ export function LoginForm() {
     e.preventDefault();
     setError(null);
     setUnverified(false);
+    setUnverifiedEmail(null);
     setSubmitting(true);
     try {
       const res = await fetch("/api/auth/login", {
@@ -28,6 +30,7 @@ export function LoginForm() {
       if (!data.ok) {
         setError(data.error);
         setUnverified(Boolean(data.unverified));
+        setUnverifiedEmail(data.unverified ? data.email : null);
         return;
       }
       window.dispatchEvent(new CustomEvent("mm:session-changed"));
@@ -40,11 +43,11 @@ export function LoginForm() {
   }
 
   async function handleResend() {
-    if (!usernameOrEmail.includes("@")) return;
+    if (!unverifiedEmail) return;
     await fetch("/api/auth/resend-verification", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: usernameOrEmail }),
+      body: JSON.stringify({ email: unverifiedEmail }),
     });
     setResent(true);
   }
