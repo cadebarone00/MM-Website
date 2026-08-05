@@ -231,12 +231,16 @@ begin
   values (p_market_key, p_winning_selection_key, auth.uid());
 
   update wagers_accounts a
-    set mm_coins_balance = mm_coins_balance + b.potential_payout
-    from mm_coin_bets b
-    where b.profile_id = a.profile_id
-      and b.market_key = p_market_key
-      and b.selection_key = p_winning_selection_key
-      and b.status = 'pending';
+    set mm_coins_balance = mm_coins_balance + w.total_payout
+    from (
+      select profile_id, sum(potential_payout) as total_payout
+      from mm_coin_bets
+      where market_key = p_market_key
+        and selection_key = p_winning_selection_key
+        and status = 'pending'
+      group by profile_id
+    ) w
+    where w.profile_id = a.profile_id;
 
   update mm_coin_bets
     set status = 'won', settled_at = now()
