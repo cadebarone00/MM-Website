@@ -42,11 +42,21 @@ create policy profiles_select_own on profiles for select using (auth.uid() = id)
 -- RLS entirely) may ever touch it. This keeps player usernames and claim
 -- status invisible to the anon key.
 
--- Seed the 13 known players (mirrors lib/data/players/index.ts). Re-running
--- is safe: existing rows are left untouched.
-insert into player_slots (player_slug) values
-  ('cade-barone'), ('cam-latto'), ('collin-ross'), ('dalton-spriggs'),
-  ('drew-weisser'), ('hugo-moebel'), ('jackson-collins'), ('kyle-schnabel'),
-  ('luke-sherrell'), ('nate-wojciechowski'), ('pete-peabody'), ('peyton-vos'),
-  ('quez-currier')
+-- Seed the 13 known players (mirrors lib/data/players/index.ts) with their
+-- deterministically computed usernames (see lib/portal/computePlayerUsername.ts).
+-- Re-running is safe: existing rows are left untouched.
+insert into player_slots (player_slug, username) values
+  ('cade-barone', 'MMCADBAR'),
+  ('cam-latto', 'MMCAMLAT'),
+  ('collin-ross', 'MMCOLROS'),
+  ('dalton-spriggs', 'MMDALSPR'),
+  ('drew-weisser', 'MMDREWEI'),
+  ('hugo-moebel', 'MMHUGMOE'),
+  ('jackson-collins', 'MMJACCOL'),
+  ('kyle-schnabel', 'MMKYLSCH'),
+  ('luke-sherrell', 'MMLUKSHE'),
+  ('nate-wojciechowski', 'MMNATWOJ'),
+  ('pete-peabody', 'MMPETPEA'),
+  ('peyton-vos', 'MMPEYVOS'),
+  ('quez-currier', 'MMQUECUR')
 on conflict (player_slug) do nothing;

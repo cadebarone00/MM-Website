@@ -3,14 +3,16 @@
 import { useState } from "react";
 import Link from "next/link";
 
-export function SignUpForm() {
+export function SignUpForm({ initialCode }: { initialCode?: string }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(initialCode ?? "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+
+  const isInvite = Boolean(initialCode);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -53,6 +55,11 @@ export function SignUpForm() {
   return (
     <form onSubmit={handleSubmit} className="mx-auto flex max-w-[420px] flex-col gap-4 px-4 py-16 sm:px-7">
       <h1 className="font-serif text-2xl font-bold text-ink-900">Sign Up</h1>
+      {isInvite && (
+        <p className="rounded-sm bg-cream-50 px-3 py-2 font-sans text-sm text-ink-700">
+          Signing up as <span className="font-semibold">{initialCode}</span>
+        </p>
+      )}
       {error && <p className="rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
       <input
         required
@@ -69,13 +76,15 @@ export function SignUpForm() {
         onChange={(e) => setEmail(e.target.value)}
         className="rounded-sm border border-ink-300 px-3 py-2 font-sans text-sm"
       />
-      <input
-        required
-        placeholder="Username"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        className="rounded-sm border border-ink-300 px-3 py-2 font-sans text-sm"
-      />
+      {!isInvite && (
+        <input
+          required
+          placeholder="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          className="rounded-sm border border-ink-300 px-3 py-2 font-sans text-sm"
+        />
+      )}
       <input
         required
         type="password"

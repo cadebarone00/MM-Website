@@ -9,29 +9,35 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "All fields are required." }, { status: 400 });
   }
 
-  const supabase = await createSupabaseServerClient();
   const service = createSupabaseServiceRoleClient();
+  const isReservedPrefix = username.toUpperCase().startsWith("MM");
+  let matchedSlug: string | null = null;
 
+  if (isReservedPrefix) {
+    const { data: slots } = await service.from("player_slots").select("player_slug, username, claimed_by");
+    const match = findUnclaimedSlotForUsername(username, slots ?? []);
+    if (!match) {
+      return NextResponse.json({ ok: false, error: "That username isn't available." }, { status: 400 });
+    }
+    matchedSlug = match.player_slug;
+  }
+
+  const supabase = await createSupabaseServerClient();
   const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password });
   if (signUpError || !signUpData.user) {
     return NextResponse.json({ ok: false, error: signUpError?.message ?? "Could not create account." }, { status: 400 });
   }
 
-  // profiles has no client-writable policy — every insert happens here,
-  // server-side, with the service-role key.
   const { error: profileError } = await service.from("profiles").insert({
     id: signUpData.user.id,
     email,
     display_name: name,
     username,
     is_host: false,
-    player_slug: null,
+    player_slug: matchedSlug,
   });
 
   if (profileError) {
-    // Most likely a duplicate username (profiles.username is unique).
-    // Clean up the just-created auth user so the email can be retried —
-    // otherwise it's stuck registered with no matching profile.
     const { error: deleteError } = await service.auth.admin.deleteUser(signUpData.user.id);
     if (deleteError) {
       console.error("Failed to clean up orphaned auth user after profile insert failure:", deleteError);
@@ -39,17 +45,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "That username or email is already taken." }, { status: 400 });
   }
 
-  const { data: slots } = await service.from("player_slots").select("player_slug, username, claimed_by");
-  const match = findUnclaimedSlotForUsername(username, slots ?? []);
-
-  if (match) {
-    await service
+  if (matchedSlug) {
+    const { data: claimed } = await service
       .from("player_slots")
       .update({ claimed_by: signUpData.user.id, claimed_at: new Date().toISOString() })
-      .eq("player_slug", match.player_slug)
-      .is("claimed_by", null); // guards against a same-instant double-claim race
+      .eq("player_slug", matchedSlug)
+      .is("claimed_by", null)
+      .select();
 
-    await service.from("profiles").update({ player_slug: match.player_slug }).eq("id", signUpData.user.id);
+    if (!claimed || claimed.length === 0) {
+      // Someone else claimed this exact slot in the split second between our
+      // check above and this update. Extremely unlikely now that usernames
+      // are reserved/deterministic, but roll back cleanly rather than leave
+      // an account wrongly marked as this player.
+      await service.from("profiles").update({ player_slug: null }).eq("id", signUpData.user.id);
+      const { error: deleteError } = await service.auth.admin.deleteUser(signUpData.user.id);
+      if (deleteError) {
+        console.error("Failed to clean up auth user after losing a player-slot claim race:", deleteError);
+      }
+      return NextResponse.json({ ok: false, error: "That username was just claimed — try again." }, { status: 400 });
+    }
   }
 
   return NextResponse.json({ ok: true });
