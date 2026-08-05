@@ -54,7 +54,7 @@ export function placeWager(key: string, wager: Wager): boolean {
   const balance = getBalance(key);
   if (wager.stake <= 0 || wager.stake > balance) return false;
 
-  localStorage.setItem(balanceStorageKey(key), String(balance - wager.stake));
+  localStorage.setItem(balanceStorageKey(key), String(Math.round((balance - wager.stake) * 100) / 100));
   localStorage.setItem(historyStorageKey(key), JSON.stringify([wager, ...getWagers(key)]));
   window.dispatchEvent(new CustomEvent(CHANGE_EVENT));
   return true;
