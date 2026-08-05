@@ -14,7 +14,7 @@ function topFive(standings: IndividualStanding[]): IndividualStanding[] {
 
 export function QuickLeaderboardCard() {
   const { tournament } = useLiveTournament();
-  const isLive = tournament.individualLeaderboard.length > 0;
+  const isLive = tournament.matches.length > 0;
   const rows = topFive(isLive ? tournament.individualLeaderboard : latestCompleted.individualLeaderboard);
 
   return (

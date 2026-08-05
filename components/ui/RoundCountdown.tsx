@@ -77,7 +77,7 @@ export function RoundCountdown({ className = "", compact = false }: { className?
       return (
         <div
           aria-label={secondary ? `${primary}. ${secondary}` : primary}
-          className={["max-w-[90px] truncate text-right font-condensed text-3xs font-bold uppercase tracking-wide text-gold-100", className].join(" ")}
+          className={["max-w-[90px] truncate text-right font-condensed text-3xs font-bold uppercase tracking-wide", className].join(" ")}
         >
           {primary}
         </div>
@@ -87,7 +87,7 @@ export function RoundCountdown({ className = "", compact = false }: { className?
       <div
         aria-label={secondary ? `${primary}. ${secondary}` : primary}
         className={[
-          "max-w-[130px] truncate text-right font-condensed text-xs font-bold uppercase tracking-wide text-gold-100 sm:max-w-none sm:text-base",
+          "max-w-[130px] truncate text-right font-condensed text-xs font-bold uppercase tracking-wide sm:max-w-none sm:text-base",
           className,
         ].join(" ")}
       >
@@ -108,7 +108,7 @@ export function RoundCountdown({ className = "", compact = false }: { className?
     return (
       <div
         aria-label="Countdown to Round 1 at 9:30 AM CST on January 6, 2027"
-        className={["shrink-0 text-right font-condensed text-3xs font-bold tabular-nums text-white", className].join(" ")}
+        className={["shrink-0 text-right font-condensed text-3xs font-bold tabular-nums", className].join(" ")}
       >
         <span suppressHydrationWarning>
           {totalDays}d {pad(parts.hours)}:{pad(parts.minutes)}:{pad(parts.seconds)}
@@ -120,7 +120,7 @@ export function RoundCountdown({ className = "", compact = false }: { className?
   return (
     <div
       aria-label="Countdown to Round 1 at 9:30 AM CST on January 6, 2027"
-      className={["shrink-0 text-right font-condensed font-bold tabular-nums text-white", className].join(" ")}
+      className={["shrink-0 text-right font-condensed font-bold tabular-nums", className].join(" ")}
     >
       <span className="text-xs sm:hidden" suppressHydrationWarning>
         {totalDays}d {pad(parts.hours)}:{pad(parts.minutes)}:{pad(parts.seconds)}

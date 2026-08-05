@@ -13,7 +13,7 @@ import { latestCompleted, getNextTournamentStatus } from "@/lib/data";
  */
 export function LiveLeaderboardStripSection() {
   const { tournament } = useLiveTournament();
-  const isLive = tournament.individualLeaderboard.length > 0;
+  const isLive = tournament.matches.length > 0;
   const mobileSource = isLive ? tournament : latestCompleted;
   const desktopLive = getNextTournamentStatus() === "live";
 

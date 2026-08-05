@@ -63,8 +63,8 @@ export function Header() {
       <div className="h-px bg-white/15" />
 
       <div className="bg-gradient-maroon">
-        {/* Mobile header row — flush to top, 3 zones: Instagram + countdown/live (left), wordmark (center, bottom-aligned), account icon (right, always visible). */}
-        <div className="lg:hidden grid grid-cols-3 items-end gap-2 px-4 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem)]">
+        {/* Mobile header row — white background to blend with the phone's status bar, 3 zones: Instagram + countdown/live (left), wordmark (center, bottom-aligned), account icon (right, always visible). */}
+        <div className="lg:hidden grid grid-cols-3 items-end gap-2 bg-white px-4 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem+2vh)]">
           <div className="flex min-w-0 items-center gap-1.5 justify-self-start">
             <a
               href="https://www.instagram.com/themaroonmasters/"
@@ -72,19 +72,19 @@ export function Header() {
               rel="noopener noreferrer"
               aria-label="The Maroon Masters Instagram"
               title="The Maroon Masters Instagram"
-              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white"
+              className="inline-flex h-6 w-6 shrink-0 items-center justify-center text-maroon-700"
             >
-              <InstagramGlyph size={14} />
+              <InstagramGlyph size={16} />
             </a>
             {live ? (
-              <span className="font-condensed text-3xs font-semibold uppercase tracking-wide text-gold-300">Live Now</span>
+              <span className="font-condensed text-3xs font-semibold uppercase tracking-wide text-maroon-700">Live Now</span>
             ) : (
-              <RoundCountdown className="text-gold-100" compact />
+              <RoundCountdown className="text-maroon-700" compact />
             )}
           </div>
 
           <Link href="/" className="justify-self-center">
-            <Image src="/assets/wordmark-light.svg" alt="The Maroon Masters" width={520} height={92} className="h-5 w-auto" priority />
+            <Image src="/assets/wordmark-header.svg" alt="The Maroon Masters" width={520} height={92} className="h-5 w-auto" priority />
           </Link>
 
           <button
@@ -98,7 +98,7 @@ export function Header() {
             ) : session?.kind === "player" ? (
               <Avatar name={getPlayerDisplayName(session.playerFirst)} src={getPlayerAvatar(session.playerFirst)} size="xs" team={session.team} />
             ) : (
-              <UserRound size={16} className="text-white" />
+              <UserRound size={16} className="text-maroon-700" />
             )}
           </button>
         </div>

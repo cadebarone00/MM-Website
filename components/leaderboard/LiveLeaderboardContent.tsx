@@ -26,13 +26,15 @@ function timeAgo(iso: string): string {
 export function LiveLeaderboardContent() {
   const { tournament, payload, error, loading } = useLiveTournament();
   const isLive = getNextTournamentStatus() === "live";
-  const hasLiveData = tournament.individualLeaderboard.length > 0;
+  const hasLiveData = tournament.matches.length > 0;
   const showFallback = !isLive && !hasLiveData;
   const source = showFallback ? latestCompleted : tournament;
 
   return (
     <div>
-      <PointsRibbon tournament={source} />
+      <div className="pt-[4vh] lg:pt-0">
+        <PointsRibbon tournament={source} />
+      </div>
 
       <div className="pt-4">
         {isLive && (

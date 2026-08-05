@@ -8,7 +8,7 @@ import { getPlayerDisplayName } from "@/lib/data/players";
 
 export function QuickTeamsCard() {
   const { tournament } = useLiveTournament();
-  const isLive = tournament.roster.maroon.length > 0 && tournament.roster.white.length > 0;
+  const isLive = tournament.matches.length > 0;
   const source = isLive ? tournament : latestCompleted;
 
   return (
