@@ -70,8 +70,16 @@ All pages are public, no auth.
 
 ## This round's work
 
-No active round.
+Kalshi-style layout redesign of the Wagers section — nav bar with
+back-button stack, 5 category pages (Team Futures, Player Futures, Matches,
+Fourballs, Props), a My Portfolio page, an entry loading splash, and an
+"MM Coins / Real Wagers" toggle (Real Wagers shows "Coming soon" — the real
+system is being built separately, see
+`docs/superpowers/specs/2026-08-05-wagers-phase3-real-money-design.md`).
+Visual/routing only — no changes to odds math, wallet, or wager placement
+logic. See `docs/superpowers/specs/2026-08-05-wagers-layout-redesign-design.md`.
 
 ## Out of scope for this round
 
-No active round.
+Any functional Real Wagers mode, real fourball market data, or the final
+entry-splash image asset (placeholder background until provided).
