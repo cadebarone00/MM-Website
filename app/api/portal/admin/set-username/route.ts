@@ -29,9 +29,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "That player's username is locked — unlink first to change it." }, { status: 400 });
   }
 
-  const { error } = await service.from("player_slots").update({ username }).eq("player_slug", playerSlug);
+  // Re-guard against claimed_by in the update itself (not just the check
+  // above) — closes the TOCTOU window where the slot gets claimed between
+  // the select and the update, which would otherwise silently overwrite
+  // the username on a now-claimed player.
+  const { data: updated, error } = await service
+    .from("player_slots")
+    .update({ username })
+    .eq("player_slug", playerSlug)
+    .is("claimed_by", null)
+    .select();
+
   if (error) {
     return NextResponse.json({ ok: false, error: "That username is already in use." }, { status: 400 });
+  }
+
+  if (!updated || updated.length === 0) {
+    return NextResponse.json({ ok: false, error: "That player was just claimed — refresh and try again." }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });
