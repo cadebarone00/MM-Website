@@ -57,39 +57,21 @@ All pages are public, no auth.
 - Mobile home & navigation redesign (bottom tab bar, More panel, Account menu shell) —
   see `docs/superpowers/specs/2026-08-04-mobile-home-nav-redesign-design.md`. The
   Sign Up/Login buttons it added were inert placeholders, wired up in the round below.
+- Accounts foundation: Supabase-backed Sign Up / Login / password reset, a post-login
+  fork screen (`/account/choose`), a minimal player/host `/portal` (retiring the old
+  separate scorekeeper app), and a Tiger-only `/portal/admin` for assigning player
+  usernames — see `docs/superpowers/specs/2026-08-04-accounts-foundation-design.md`.
+  Shipped in code and reviewed (`npm test`, `npx tsc --noEmit`, `npm run lint`,
+  `npm run build` all clean); live verification against a real Supabase project,
+  following `docs/supabase-setup.md`, is the one remaining step before this is fully
+  in production use. Known non-blocking follow-up: `middleware.ts` uses the
+  Next.js-16-deprecated "middleware" file convention rather than the newer "proxy"
+  convention — a deliberate, open item for whoever picks it up next.
 
 ## This round's work
 
-### Accounts foundation (Sign Up / Login / player & host portal access)
-
-Full design: `docs/superpowers/specs/2026-08-04-accounts-foundation-design.md`.
-
-Adds the site's first real backend (**Supabase** — Postgres + built-in Auth) and turns
-the placeholder Sign Up/Login buttons into working account creation and login for
-anyone (fans, family, players). Players and Tiger (host) additionally reach a
-minimal `/portal` after a post-login fork screen (`/account/choose`). The old,
-separate "scorekeeper" Vercel app is retired — `/portal` is now a real route in this
-app, not a proxy. Tiger pre-assigns each of the 13 `lib/data/players` a username on a
-new host-only `/portal/admin` page; a person who signs up with that exact username is
-automatically linked to that player's profile (name/team/avatar), everyone else gets
-an ordinary fan account. See the design doc for the full data model, page list, and
-error handling.
-
-**Done when:** `/signup`, `/login`, `/forgot-password` work end to end against
-Supabase; the desktop header (previously had no logged-out entry point at all) and
-mobile Account menu both link to them; a fan sign-up produces an ordinary account with
-no portal access; signing up with a Tiger-assigned player username links the account
-to that player and shows `/account/choose` on next login, from which "Portal" reaches
-`/portal` with correct player identity and "Website" continues normally;
-`/portal/admin` is reachable only when signed in as Tiger.
+No active round.
 
 ## Out of scope for this round
 
-- Scoring, pairings, round start/reset, or live score editing (future rounds).
-- Whether portal scoring will write to the existing Google Sheet or a new database
-  table (deferred decision, see design doc).
-- Real content for `/my-team`, `/fantasy`, `/vault`, `/merchandise`, `/settings` —
-  stay as "Coming soon" stubs.
-- Any change to `/leaderboard`, `/teams`, `/schedule`, `/history`, or the public
-  live-feed pipeline (`appscript/live-feed.gs`, `/api/live-feed`).
-- Social login (Google/Apple) — email/username + password only for now.
+No active round.

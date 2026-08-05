@@ -4,7 +4,6 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { useAccountSession, signOutAccount } from "@/lib/useAccountSession";
 import type { AccountSession } from "@/lib/useAccountSession";
-import { getPlayerDisplayName } from "@/lib/data/players";
 
 const PERSONAL_LINKS = [
   { href: "/my-team", label: "My Team" },
@@ -21,7 +20,7 @@ const INFO_LINKS = [
 
 function welcomeLabel(session: AccountSession): string {
   if (!session) return "Welcome";
-  const firstName = session.kind === "host" ? session.username : getPlayerDisplayName(session.playerFirst).split(" ")[0];
+  const firstName = session.kind === "host" ? session.username : session.displayName.split(" ")[0];
   return `Welcome, ${firstName}`;
 }
 
@@ -73,7 +72,7 @@ export function AccountMenu({ open, onClose }: { open: boolean; onClose: () => v
           <button
             type="button"
             onClick={() => {
-              signOutAccount(session);
+              void signOutAccount();
               onClose();
             }}
             className="w-full rounded-sm bg-maroon-700 px-5 py-3 text-center font-condensed text-sm font-semibold uppercase tracking-wide text-cream-50"
@@ -81,31 +80,20 @@ export function AccountMenu({ open, onClose }: { open: boolean; onClose: () => v
             Log Out
           </button>
         ) : (
-          <div>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                disabled
-                title="Coming soon"
-                className="flex-1 rounded-sm border border-ink-300 px-5 py-3 font-condensed text-sm font-semibold uppercase tracking-wide text-ink-400"
-              >
-                Sign Up
-              </button>
-              <button
-                type="button"
-                disabled
-                title="Coming soon"
-                className="flex-1 rounded-sm border border-ink-300 px-5 py-3 font-condensed text-sm font-semibold uppercase tracking-wide text-ink-400"
-              >
-                Login
-              </button>
-            </div>
+          <div className="flex gap-3">
             <Link
-              href="/portal"
+              href="/signup"
               onClick={onClose}
-              className="mt-3 block text-center font-sans text-sm font-semibold text-maroon-700 underline underline-offset-2"
+              className="flex-1 rounded-sm border border-ink-300 px-5 py-3 text-center font-condensed text-sm font-semibold uppercase tracking-wide text-ink-900 hover:bg-cream-50"
             >
-              Already have a login? Portal
+              Sign Up
+            </Link>
+            <Link
+              href="/login"
+              onClick={onClose}
+              className="flex-1 rounded-sm bg-maroon-700 px-5 py-3 text-center font-condensed text-sm font-semibold uppercase tracking-wide text-cream-50"
+            >
+              Login
             </Link>
           </div>
         )}
