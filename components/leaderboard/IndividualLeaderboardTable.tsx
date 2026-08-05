@@ -49,7 +49,7 @@ export function IndividualLeaderboardTable({ tournament }: { tournament: Tournam
   const champion = defendingIndividualChampion(tournament);
 
   return (
-    <div className="w-screen ml-[calc(50%-50vw)] mr-[calc(50%-50vw)] overflow-x-auto lg:w-auto lg:ml-0 lg:mr-0 lg:rounded-lg lg:border lg:border-gold-400 lg:shadow-lg">
+    <div className="-mx-4 overflow-x-auto sm:-mx-7 lg:mx-0 lg:rounded-lg lg:border lg:border-gold-400 lg:shadow-lg">
       <table className="w-full min-w-max border-collapse bg-cream-50">
         <thead>
           <tr className="bg-maroon-700 lg:bg-transparent lg:border-b lg:border-gold-200">

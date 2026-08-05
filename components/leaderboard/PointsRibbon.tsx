@@ -85,7 +85,7 @@ export function PointsRibbon({ tournament }: { tournament: Tournament }) {
   const badgeState = computeBadgeState(tournament);
 
   return (
-    <div className="sticky z-40 w-screen ml-[calc(50%-50vw)] mr-[calc(50%-50vw)]" style={{ top: headerOffset }}>
+    <div className="sticky z-40 -mx-4 sm:-mx-7 lg:mx-0" style={{ top: headerOffset }}>
       {/* Mobile: fixed 50/50 split, gold divider, numbers pinned at 40%/60%. */}
       <div className="lg:hidden">
         <div className="relative flex h-[114px] w-full border-y border-gold-300">
