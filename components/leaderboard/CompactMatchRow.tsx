@@ -1,32 +1,11 @@
+"use client";
+
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ResultChevron } from "@/components/match/ResultChevron";
+import { matchStatus, matchLeader, liveLabel } from "@/components/leaderboard/matchUtils";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import type { RealMatch, Team } from "@/lib/data/types";
-
-function matchStatus(match: RealMatch) {
-  return match.status ?? "final";
-}
-
-function matchLeader(match: RealMatch): Team | "tie" {
-  if (match.leader) return match.leader;
-  if (match.maroonPts > match.whitePts) return "maroon";
-  if (match.whitePts > match.maroonPts) return "white";
-  return "tie";
-}
-
-function liveLabel(match: RealMatch) {
-  const status = matchStatus(match);
-  const leader = matchLeader(match);
-  const hasMatchPlayMargin = match.margin != null;
-  const margin = match.margin ?? Math.abs(match.maroonPts - match.whitePts);
-  const remaining = match.holesRemaining ?? null;
-
-  if (status === "scheduled") return match.teeTimeCst ?? "VS";
-  if (leader === "tie") return "AS";
-  if (!hasMatchPlayMargin) return "Won";
-  if (status === "final" && remaining != null && remaining > 0) return `${margin}&${remaining}`;
-  return `${margin} Up`;
-}
 
 function labelColor(match: RealMatch) {
   const leader = matchLeader(match);
@@ -52,6 +31,7 @@ function TeamSide({
         <Link
           key={player}
           href={`/leaderboard/${tournamentSlug}/players/${player.toLowerCase()}`}
+          onClick={(e) => e.stopPropagation()}
           className={[
             "block w-full truncate py-1 font-sans text-xs font-semibold text-ink-900 transition-opacity hover:opacity-70",
             isMaroon ? "text-right" : "text-left",
@@ -78,11 +58,27 @@ export function CompactMatchRow({
   match: RealMatch;
   tournamentSlug: string;
 }) {
+  const router = useRouter();
   const status = matchStatus(match);
   const centerLabel = status === "scheduled" ? "VS" : liveLabel(match);
+  const breakdownHref = `/leaderboard/${tournamentSlug}/matches/${match.id}`;
+  const maroonSideLabel = match.maroonPlayers.map((p) => getPlayerDisplayName(p).split(" ").pop()).join(" & ");
+  const whiteSideLabel = match.whitePlayers.map((p) => getPlayerDisplayName(p).split(" ").pop()).join(" & ");
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-center gap-2 border-b border-ink-100 px-2 py-1 last:border-b-0">
+    <div
+      role="link"
+      tabIndex={0}
+      aria-label={`${maroonSideLabel} vs ${whiteSideLabel}, ${centerLabel}`}
+      onClick={() => router.push(breakdownHref)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          router.push(breakdownHref);
+        }
+      }}
+      className="grid cursor-pointer grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-center gap-2 border-b border-ink-100 px-2 py-1 last:border-b-0 hover:bg-cream-50"
+    >
       <TeamSide players={match.maroonPlayers} team="maroon" tournamentSlug={tournamentSlug} />
       <div className="flex justify-center">
         {status === "final" ? (

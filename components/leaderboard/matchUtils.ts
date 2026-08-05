@@ -23,6 +23,26 @@ export function matchLabel(match: RealMatch): string {
   return `${margin} Up`;
 }
 
+/**
+ * Same as `matchLabel`, but accounts for a decided live match whose feed
+ * omits `margin` — falls back to "Won" instead of computing a margin from
+ * points that don't represent match-play holes. Used anywhere a match's
+ * live state is shown, so it never disagrees with `matchLabel`'s callers.
+ */
+export function liveLabel(match: RealMatch): string {
+  const status = matchStatus(match);
+  const leader = matchLeader(match);
+  const hasMatchPlayMargin = match.margin != null;
+  const margin = match.margin ?? Math.abs(match.maroonPts - match.whitePts);
+  const remaining = match.holesRemaining ?? null;
+
+  if (status === "scheduled") return match.teeTimeCst ?? "VS";
+  if (leader === "tie") return "AS";
+  if (!hasMatchPlayMargin) return "Won";
+  if (status === "final" && remaining != null && remaining > 0) return `${margin}&${remaining}`;
+  return `${margin} Up`;
+}
+
 /** Which round (day) the Team view should default to: the day currently in progress, or the last day played if the tournament is complete. */
 export function currentRoundDay(tournament: Tournament): number {
   const days = [...new Set(tournament.matches.map((m) => m.day))].sort((a, b) => a - b);

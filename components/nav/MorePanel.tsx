@@ -7,6 +7,7 @@ import { useAccountSession } from "@/lib/useAccountSession";
 export const MORE_LINKS = [
   { href: "/schedule", label: "Schedule" },
   { href: "/history", label: "History" },
+  { href: "/wagers", label: "Wagers" },
 ];
 
 /**
