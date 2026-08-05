@@ -51,52 +51,45 @@ All pages are public, no auth.
 - Fixed 2026 venue label to "Mission Hills CC".
 - Trimmed the Rankings tab on Teams pages (rank + player + team only, no score/Bio).
 - Added the career-wide "Stats" tab (Player / Course views) to the Teams page.
+- Home page: two-column quick-glance row (Highlights left, Leaderboard/Teams/Schedule
+  quick cards right) — `components/home/QuickLeaderboardCard.tsx`,
+  `QuickTeamsCard.tsx`, `QuickScheduleCard.tsx`.
+- Mobile home & navigation redesign (bottom tab bar, More panel, Account menu shell) —
+  see `docs/superpowers/specs/2026-08-04-mobile-home-nav-redesign-design.md`. The
+  Sign Up/Login buttons it added were inert placeholders, wired up in the round below.
 
 ## This round's work
 
-### Home page: quick-glance cards + Highlights takes the left column
+### Accounts foundation (Sign Up / Login / player & host portal access)
 
-Redesign the top block of `components/home/HomeDashboard.tsx` (currently 3 big square
-`ActionCard`/`ScheduleCard` tiles plus a `HighlightsRail` sidebar) into a single
-two-column row that stays side-by-side at every viewport width (it shrinks to fit on
-narrow screens — it does not reflow into a mobile stack):
+Full design: `docs/superpowers/specs/2026-08-04-accounts-foundation-design.md`.
 
-- **Left column:** the existing `HighlightsRail` content/styling, now the dominant,
-  wide element in the row (roughly 75% width at desktop). What populates the highlight
-  entries is out of scope here (a manually-curated list today; will later be filled by
-  a separately-trained AI writer) — only the layout slot changes.
-- **Right column:** a slim, fixed-ish-width stack of three new small rectangle cards,
-  each a `Link` to its full page, each pulling from the same `/api/live-feed` polling
-  already used elsewhere on the site (via `useLiveTournament`) — no backend changes.
+Adds the site's first real backend (**Supabase** — Postgres + built-in Auth) and turns
+the placeholder Sign Up/Login buttons into working account creation and login for
+anyone (fans, family, players). Players and Tiger (host) additionally reach a
+minimal `/portal` after a post-login fork screen (`/account/choose`). The old,
+separate "scorekeeper" Vercel app is retired — `/portal` is now a real route in this
+app, not a proxy. Tiger pre-assigns each of the 13 `lib/data/players` a username on a
+new host-only `/portal/admin` page; a person who signs up with that exact username is
+automatically linked to that player's profile (name/team/avatar), everyone else gets
+an ordinary fan account. See the design doc for the full data model, page list, and
+error handling.
 
-1. **Leaderboard card** (`components/home/QuickLeaderboardCard.tsx`) — top 5 rows of
-   `individualLeaderboard` sorted by `toPar` ascending (rank + player name + `ScoreBadge`
-   sm). Uses live 2027 data once `LIVE_FEED_URL` is configured and the leaderboard has
-   entries; until then, falls back to `latestCompleted` (2026)'s top 5, with a small
-   "2026" label so it's clearly not live. Links to `/leaderboard`.
-2. **Teams card** (`components/home/QuickTeamsCard.tsx`) — two mini-columns, Maroon
-   roster (6 names) left / White roster (6 names) right, with the live
-   `fmtPt(maroonPts)`–`fmtPt(whitePts)` total across the top. Same live-2027-else-
-   fallback-to-2026-labeled behavior as the Leaderboard card, driven by the same
-   `roster`/`maroonPts`/`whitePts` fields `mergeLiveTournament` already produces. Links
-   to `/teams`.
-3. **Schedule card** (`components/home/QuickScheduleCard.tsx`) — replaces the existing
-   `ScheduleCard`. Default state shows the placeholder "Round 1 starts 1/6/2027 · Mission
-   Hills CC" (from `nextTournament`). If any match in the live feed has
-   `status === "live"`, it swaps to that match's day + session + format, e.g.
-   "Round 2 — Afternoon: Fourball". Links to `/schedule`.
-
-**Done when:** home page renders the new two-column row (Highlights left, 3 stacked
-quick cards right) at mobile/tablet/desktop widths with no reflow/reordering; each quick
-card shows live 2027 data when the feed has it and a clearly-labeled 2026 fallback when
-it doesn't; the Schedule card correctly swaps to the in-progress round when a match is
-live; News and Socials sections below are unchanged; no hydration errors introduced
-(verify per the earlier `RoundCountdown` hydration fix pattern — no `new Date()`/`Math.random()`
-evaluated directly in render).
+**Done when:** `/signup`, `/login`, `/forgot-password` work end to end against
+Supabase; the desktop header (previously had no logged-out entry point at all) and
+mobile Account menu both link to them; a fan sign-up produces an ordinary account with
+no portal access; signing up with a Tiger-assigned player username links the account
+to that player and shows `/account/choose` on next login, from which "Portal" reaches
+`/portal` with correct player identity and "Website" continues normally;
+`/portal/admin` is reachable only when signed in as Tiger.
 
 ## Out of scope for this round
 
-- What content fills the Highlights rail (curation/AI-writer pipeline is separate work).
-- Any change to the live-feed backend, Apps Script, or `/api/live-feed` response shape.
-- The News and Socials sections on the home page.
-- Per-player links/avatars inside the Teams quick card — names only, whole card links to `/teams`.
+- Scoring, pairings, round start/reset, or live score editing (future rounds).
+- Whether portal scoring will write to the existing Google Sheet or a new database
+  table (deferred decision, see design doc).
+- Real content for `/my-team`, `/fantasy`, `/vault`, `/merchandise`, `/settings` —
+  stay as "Coming soon" stubs.
+- Any change to `/leaderboard`, `/teams`, `/schedule`, `/history`, or the public
+  live-feed pipeline (`appscript/live-feed.gs`, `/api/live-feed`).
+- Social login (Google/Apple) — email/username + password only for now.
