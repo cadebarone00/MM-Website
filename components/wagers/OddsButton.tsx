@@ -22,7 +22,7 @@ export function OddsButton({ label, odds }: { label: string; odds: number }) {
       >
         {formatAmericanOdds(odds)}
       </button>
-      <BetSlipSheet label={label} odds={odds} open={open} onClose={() => setOpen(false)} />
+      {open && <BetSlipSheet label={label} odds={odds} open={open} onClose={() => setOpen(false)} />}
     </>
   );
 }
