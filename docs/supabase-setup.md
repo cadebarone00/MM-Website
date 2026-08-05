@@ -21,6 +21,11 @@ the website can talk to it.
    needs (`profiles`, `player_slots`) and pre-fills `player_slots` with all
    13 current players (usernames still blank until you set them later on
    the site's `/portal/admin` page).
+
+   If you've already run this once before (e.g. during accounts-foundation
+   setup), just re-run the whole file again — every statement in it is
+   safe to run more than once, and it will only add the new MM Coins
+   tables/functions without touching your existing data.
 4. Go to **Project Settings** (gear icon) -> **API**.
    - **Project URL** -> copy into `.env` as `SUPABASE_URL`.
    - **Project API keys** -> **anon public** key -> copy into `.env` as
