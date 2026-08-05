@@ -58,7 +58,10 @@ export async function POST(request: Request) {
       // check above and this update. Extremely unlikely now that usernames
       // are reserved/deterministic, but roll back cleanly rather than leave
       // an account wrongly marked as this player.
-      await service.from("profiles").update({ player_slug: null }).eq("id", signUpData.user.id);
+      const { error: clearSlugError } = await service.from("profiles").update({ player_slug: null }).eq("id", signUpData.user.id);
+      if (clearSlugError) {
+        console.error("Failed to clear player_slug during claim-race rollback:", clearSlugError);
+      }
       const { error: deleteError } = await service.auth.admin.deleteUser(signUpData.user.id);
       if (deleteError) {
         console.error("Failed to clean up auth user after losing a player-slot claim race:", deleteError);
