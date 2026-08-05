@@ -4,6 +4,7 @@ import { useAccountSession } from "@/lib/useAccountSession";
 import { accountKey } from "@/lib/wagers/wallet";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
 import { getNextTournamentStatus } from "@/lib/data";
+import { currentRoundDay } from "@/components/leaderboard/matchUtils";
 import { matchPropMarkets } from "@/lib/wagers/mockOdds";
 import { SignInGate } from "./SignInGate";
 import { BalancePill } from "./BalancePill";
@@ -26,7 +27,8 @@ export function WagersHubContent() {
     return <p className="font-sans text-sm text-ink-400 py-10 text-center">Checking the live sheet...</p>;
   }
 
-  const allPropMarkets = tournament.matches.flatMap((match) => matchPropMarkets(match));
+  const todaysMatches = tournament.matches.filter((match) => match.day === currentRoundDay(tournament));
+  const allPropMarkets = todaysMatches.flatMap((match) => matchPropMarkets(match));
 
   return (
     <div className="flex flex-col gap-8">
@@ -44,10 +46,10 @@ export function WagersHubContent() {
       <section>
         <h2 className="m-0 font-serif text-xl font-bold text-ink-900">Today&rsquo;s Matches</h2>
         <div className="mt-3 overflow-hidden rounded-md border border-ink-100 bg-white">
-          {tournament.matches.length === 0 ? (
+          {todaysMatches.length === 0 ? (
             <p className="p-4 font-sans text-sm text-ink-400">No matches posted yet.</p>
           ) : (
-            tournament.matches.map((match) => <CompactMatchRow key={match.id} match={match} tournamentSlug={tournament.slug} />)
+            todaysMatches.map((match) => <CompactMatchRow key={match.id} match={match} tournamentSlug={tournament.slug} />)
           )}
         </div>
       </section>
