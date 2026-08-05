@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ResultChevron } from "@/components/match/ResultChevron";
-import { matchStatus, matchLeader, matchLabel } from "@/components/leaderboard/matchUtils";
+import { matchStatus, matchLeader, liveLabel } from "@/components/leaderboard/matchUtils";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import { matchPropMarkets } from "@/lib/wagers/mockOdds";
 import { MatchWinnerCard } from "./MatchWinnerCard";
@@ -47,7 +47,7 @@ export function MatchBreakdownView({
 }) {
   const status = matchStatus(match);
   const leader = matchLeader(match);
-  const label = matchLabel(match);
+  const label = liveLabel(match);
   const propMarkets = matchPropMarkets(match);
 
   return (
