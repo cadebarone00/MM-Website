@@ -30,6 +30,12 @@ export async function POST(request: Request) {
 
   if (profileError) {
     // Most likely a duplicate username (profiles.username is unique).
+    // Clean up the just-created auth user so the email can be retried —
+    // otherwise it's stuck registered with no matching profile.
+    const { error: deleteError } = await service.auth.admin.deleteUser(signUpData.user.id);
+    if (deleteError) {
+      console.error("Failed to clean up orphaned auth user after profile insert failure:", deleteError);
+    }
     return NextResponse.json({ ok: false, error: "That username or email is already taken." }, { status: 400 });
   }
 
