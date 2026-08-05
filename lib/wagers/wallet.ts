@@ -8,10 +8,14 @@ const CHANGE_EVENT = "mm:wagers-changed";
  * A stable per-account storage key. Returns null for a signed-out
  * visitor — callers use that to know there's nowhere to read/write a
  * balance, and to gate Wagers content on "is this null."
+ *
+ * accounts-foundation gives every session kind (host/player/fan) the same
+ * `username` field, so Wagers is open to any signed-in account exactly as
+ * designed — no per-kind branching needed here anymore.
  */
 export function accountKey(session: AccountSession): string | null {
   if (!session) return null;
-  return session.kind === "host" ? `host:${session.username.toLowerCase()}` : `player:${session.playerFirst.toLowerCase()}`;
+  return `${session.kind}:${session.username.toLowerCase()}`;
 }
 
 function balanceStorageKey(key: string): string {
