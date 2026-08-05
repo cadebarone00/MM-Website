@@ -96,7 +96,9 @@ export function Header() {
             {session?.kind === "host" ? (
               <TigerAvatar size="xs" />
             ) : session?.kind === "player" ? (
-              <Avatar name={getPlayerDisplayName(session.playerFirst)} src={getPlayerAvatar(session.playerFirst)} size="xs" team={session.team} />
+              <Avatar name={getPlayerDisplayName(session.playerSlug)} src={getPlayerAvatar(session.playerSlug)} size="xs" team={session.team} />
+            ) : session?.kind === "fan" ? (
+              <Avatar name={session.displayName} size="xs" />
             ) : (
               <UserRound size={16} className="text-maroon-700" />
             )}
