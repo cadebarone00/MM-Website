@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { findPlayerTeam } from "@/lib/portal/findPlayerTeam";
@@ -27,6 +28,12 @@ export default async function PortalPage() {
         <TigerAvatar size="lg" />
         <h1 className="font-serif text-2xl font-bold text-ink-900">Welcome, Tiger</h1>
         <p className="font-sans text-sm text-ink-500">Host tools are coming in a later round.</p>
+        <Link
+          href="/portal/admin"
+          className="mt-2 font-sans text-sm font-semibold text-maroon-700 underline underline-offset-2"
+        >
+          Manage Player Usernames
+        </Link>
       </div>
     );
   }

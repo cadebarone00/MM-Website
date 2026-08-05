@@ -7,7 +7,7 @@ create table if not exists profiles (
   display_name text not null,
   username text not null unique,
   is_host boolean not null default false,
-  player_slug text references player_slots(player_slug),
+  player_slug text,
   created_at timestamptz not null default now()
 );
 

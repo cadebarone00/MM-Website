@@ -23,9 +23,21 @@ export async function POST(request: Request) {
   }
 
   const service = createSupabaseServiceRoleClient();
-  // Clears the claim only — does not delete the linked account, and does
-  // not touch that account's profiles.player_slug (matches the design
-  // spec's "does not log that account out" requirement).
+
+  // Unlink is a true undo: it also demotes the previously-linked account
+  // back to an ordinary account (they stay logged in, they just lose
+  // player/Portal access on their next session check). It must not delete
+  // the account or touch anything besides player_slug.
+  const { data: slot } = await service
+    .from("player_slots")
+    .select("claimed_by")
+    .eq("player_slug", playerSlug)
+    .single();
+
+  if (slot?.claimed_by) {
+    await service.from("profiles").update({ player_slug: null }).eq("id", slot.claimed_by);
+  }
+
   await service.from("player_slots").update({ claimed_by: null, claimed_at: null }).eq("player_slug", playerSlug);
 
   return NextResponse.json({ ok: true });

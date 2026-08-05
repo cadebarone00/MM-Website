@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 
+// `ilike` treats `%`, `_`, and `\` as wildcards/escape chars. Escaping them
+// here means user input is matched as a literal string (case-insensitively)
+// rather than as a SQL LIKE pattern.
+function escapeLikePattern(value: string): string {
+  return value.replace(/[\\%_]/g, (char) => `\\${char}`);
+}
+
 export async function POST(request: Request) {
   const { usernameOrEmail, password } = await request.json();
 
@@ -11,7 +18,11 @@ export async function POST(request: Request) {
   let email = usernameOrEmail;
   if (!usernameOrEmail.includes("@")) {
     const service = createSupabaseServiceRoleClient();
-    const { data } = await service.from("profiles").select("email").ilike("username", usernameOrEmail).single();
+    const { data } = await service
+      .from("profiles")
+      .select("email")
+      .ilike("username", escapeLikePattern(usernameOrEmail))
+      .single();
     // No matching username: still run signInWithPassword against a dummy,
     // non-existent address so this path takes about as long as a real
     // wrong-password check. Otherwise an attacker can tell "username

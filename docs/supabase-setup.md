@@ -32,9 +32,32 @@ the website can talk to it.
 5. Go to **Authentication** -> **Providers** -> **Email**, and confirm
    **Confirm email** is turned ON (it's on by default) — this is what makes
    people verify their email before they can log in.
-6. Copy `.env.example` to `.env` and paste in the three values from step 4.
-7. Run `npm install` (pulls in the two new packages this needs), then
+6. Still in **Authentication**, go to **URL Configuration**. Under **Redirect URLs**, add:
+   - `http://localhost:3001/**` (for local development — note the site runs on port 3001, not Supabase's default 3000)
+   - Your production URL once you have one, e.g. `https://your-site.vercel.app/**`
+
+   Without this, the links in verification and password-reset emails will silently point at the wrong address.
+7. Copy `.env.example` to `.env` and paste in the three values from step 4.
+8. Run `npm install` (pulls in the two new packages this needs), then
    `npm run dev` and try signing up on `/signup`.
+
+## Deploying to production (Vercel)
+
+The three keys from step 4 also need to be added to your live site, not just your local `.env`:
+
+1. Go to your Vercel dashboard → your project → **Settings** → **Environment Variables**.
+2. Add all three: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` — same values as your local `.env`.
+3. Redeploy (or it'll pick them up on the next deploy automatically).
+
+Without these, the whole site — not just sign-up/login — will error on every page, since a background check runs on every request.
+
+## Becoming Tiger (the host)
+
+There's no self-service way to become the host — it's a one-time manual step you do for your own account:
+
+1. Sign up normally on `/signup` with your own account, and verify your email.
+2. In the Supabase Dashboard → **Table Editor** → `profiles`, find your row (by your email) and edit its `is_host` column from `false` to `true`.
+3. Log out and back in. You'll now see the Website/Portal fork screen, and `/portal` will show a "Tiger" landing with a link to the player-username admin page.
 
 ## If you ever need to see who's signed up
 

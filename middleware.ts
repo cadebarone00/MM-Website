@@ -6,6 +6,13 @@ import { createServerClient } from "@supabase/ssr";
 // Components (which can't write cookies themselves) would see the user as
 // logged out even though their refresh token is still valid.
 export async function middleware(request: NextRequest) {
+  // Without these, an unconfigured deployment would 500 on every single
+  // page (not just account pages) since this middleware runs on almost
+  // every request. Skip Supabase entirely rather than crash the whole site.
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+    return NextResponse.next();
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
