@@ -21,12 +21,14 @@ export interface TeamFutureOdds {
   white: number;
 }
 
-/** Only "pending" exists in this phase — there's no settlement engine yet. */
-export type WagerStatus = "pending";
+/** Set by the settlement flow (Tiger marks a market's winning selection) — see settle_mm_coin_market in supabase/schema.sql. */
+export type WagerStatus = "pending" | "won" | "lost";
 
-/** A single wager a signed-in account has placed, stored in `lib/wagers/wallet.ts`. */
+/** A single wager a signed-in account has placed, stored server-side in the mm_coin_bets table. */
 export interface Wager {
   id: string;
+  marketKey: string;
+  selectionKey: string;
   placedAt: string;
   selectionLabel: string;
   odds: number;
