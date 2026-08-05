@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { UserRound } from "lucide-react";
 import { RoundCountdown } from "@/components/ui/RoundCountdown";
@@ -10,7 +10,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { TigerAvatar } from "@/components/ui/TigerAvatar";
 import { AccountBadge } from "@/components/AccountBadge";
 import { MobileTabBar } from "@/components/nav/MobileTabBar";
-import { MorePanel, MORE_LINKS } from "@/components/nav/MorePanel";
+import { MorePanel, MORE_LINKS, onOpenMoreMenuRequested } from "@/components/nav/MorePanel";
 import { AccountMenu } from "@/components/nav/AccountMenu";
 import { useAccountSession } from "@/lib/useAccountSession";
 import { getPlayerAvatar, getPlayerDisplayName } from "@/lib/data/players";
@@ -45,6 +45,7 @@ export function Header() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [lastPathname, setLastPathname] = useState(pathname);
+  useEffect(() => onOpenMoreMenuRequested(() => setMoreOpen(true)), []);
   const moreOn = MORE_LINKS.some((l) => pathname.startsWith(l.href));
 
   // Close both panels on route change (e.g. Back/Forward navigation).
