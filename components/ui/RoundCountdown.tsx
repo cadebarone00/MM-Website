@@ -36,7 +36,7 @@ function getCountdownParts(now: Date) {
   return { months, days, hours, minutes, seconds };
 }
 
-export function RoundCountdown({ className = "" }: { className?: string }) {
+export function RoundCountdown({ className = "", compact = false }: { className?: string; compact?: boolean }) {
   const [parts, setParts] = useState(() => getCountdownParts(new Date()));
   const [headerStatus, setHeaderStatus] = useState<HeaderStatus | null>(null);
   const pad = (value: number) => value.toString().padStart(2, "0");
@@ -73,6 +73,16 @@ export function RoundCountdown({ className = "" }: { className?: string }) {
   const primary = headerStatus?.primary?.trim();
   const secondary = headerStatus?.secondary;
   if (primary) {
+    if (compact) {
+      return (
+        <div
+          aria-label={secondary ? `${primary}. ${secondary}` : primary}
+          className={["max-w-[90px] truncate text-right font-condensed text-3xs font-bold uppercase tracking-wide text-gold-100", className].join(" ")}
+        >
+          {primary}
+        </div>
+      );
+    }
     return (
       <div
         aria-label={secondary ? `${primary}. ${secondary}` : primary}
@@ -93,6 +103,19 @@ export function RoundCountdown({ className = "" }: { className?: string }) {
   }
 
   const totalDays = parts.months * 30 + parts.days;
+
+  if (compact) {
+    return (
+      <div
+        aria-label="Countdown to Round 1 at 9:30 AM CST on January 6, 2027"
+        className={["shrink-0 text-right font-condensed text-3xs font-bold tabular-nums text-white", className].join(" ")}
+      >
+        <span suppressHydrationWarning>
+          {totalDays}d {pad(parts.hours)}:{pad(parts.minutes)}:{pad(parts.seconds)}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div

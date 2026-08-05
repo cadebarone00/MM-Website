@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Radio } from "lucide-react";
-import { ResultChevron } from "@/components/match/ResultChevron";
-import { MatchRow } from "@/components/match/MatchRow";
-import { defendingIndividualChampion } from "@/lib/data";
-import { centralDateLabel, currentRoundDay, matchLabel, matchLeader, matchStatus, LIVE_START_LABEL } from "./matchUtils";
+import { ChevronDown, Radio } from "lucide-react";
+import { CompactMatchRow } from "./CompactMatchRow";
+import { centralDateLabel, currentRoundDay, LIVE_START_LABEL } from "./matchUtils";
 import type { RealMatch, Tournament } from "@/lib/data/types";
 
 type SessionGroup = { session: string; format: string; matches: RealMatch[] };
@@ -29,23 +27,11 @@ function groupBySession(matches: RealMatch[]): SessionGroup[] {
 /** Live-only rule: if Morning has started and Afternoon's matches haven't, show "Upcoming" instead of "Afternoon". */
 function sessionHeaderLabel(group: SessionGroup, dayMatches: RealMatch[], live: boolean): string {
   if (live && group.session === "Afternoon") {
-    const afternoonStarted = group.matches.some((m) => matchStatus(m) !== "scheduled");
-    const morningInProgress = dayMatches.some((m) => m.session === "Morning" && matchStatus(m) !== "scheduled");
+    const afternoonStarted = group.matches.some((m) => (m.status ?? "final") !== "scheduled");
+    const morningInProgress = dayMatches.some((m) => m.session === "Morning" && (m.status ?? "final") !== "scheduled");
     if (!afternoonStarted && morningInProgress) return "Upcoming";
   }
   return group.session;
-}
-
-function RecapStrip({ matches }: { matches: RealMatch[] }) {
-  return (
-    <div className="flex items-center justify-center gap-2 border-t border-gold-200 bg-cream-50 py-2">
-      {matches.map((match) => (
-        <ResultChevron key={match.id} winner={matchLeader(match)} size="sm">
-          {matchLabel(match)}
-        </ResultChevron>
-      ))}
-    </div>
-  );
 }
 
 function PlaceholderPanel() {
@@ -64,11 +50,46 @@ function PlaceholderPanel() {
   );
 }
 
+/** "Day {n}" label that drops down the other available days on tap — replaces the old day-pill row. */
+function DaySelector({ days, activeDay, onSelect }: { days: number[]; activeDay: number; onSelect: (day: number) => void }) {
+  const [open, setOpen] = useState(false);
+  const otherDays = days.filter((d) => d !== activeDay);
+
+  return (
+    <div className="relative mb-3 inline-block">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex items-center gap-1 font-condensed text-base font-black uppercase tracking-wide text-ink-900"
+      >
+        Day {activeDay}
+        {otherDays.length > 0 && <ChevronDown size={16} className={["transition-transform", open ? "rotate-180" : ""].join(" ")} />}
+      </button>
+      {open && otherDays.length > 0 && (
+        <div className="absolute left-0 top-full z-20 mt-1 min-w-[110px] overflow-hidden rounded-md border border-ink-100 bg-white shadow-lg">
+          {otherDays.map((d) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => {
+                onSelect(d);
+                setOpen(false);
+              }}
+              className="block w-full px-4 py-2 text-left font-condensed text-sm font-semibold text-ink-700 hover:bg-cream-50"
+            >
+              Day {d}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TeamMatchesBoard({ tournament, live }: { tournament: Tournament; live: boolean }) {
   const days = [...new Set(tournament.matches.map((m) => m.day))].sort((a, b) => a - b);
   const [userPickedDay, setUserPickedDay] = useState<number | null>(null);
   const day = userPickedDay ?? currentRoundDay(tournament);
-  const champion = defendingIndividualChampion(tournament);
 
   if (days.length === 0) {
     if (!live) {
@@ -87,35 +108,24 @@ export function TeamMatchesBoard({ tournament, live }: { tournament: Tournament;
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap gap-1.5 sm:mb-6 sm:gap-2">
-        {days.map((d) => {
-          const on = d === activeDay;
-          return (
-            <button
-              key={d}
-              type="button"
-              onClick={() => setUserPickedDay(d)}
-              className={[
-                "rounded-pill border px-3 py-1.5 font-condensed text-xs font-black uppercase tracking-wide transition-colors sm:px-4 sm:py-2 sm:text-sm",
-                on ? "border-gold-400 bg-maroon-700 text-white" : "border-ink-200 bg-white text-ink-700 hover:border-gold-400",
-              ].join(" ")}
-            >
-              Day {d}
-            </button>
-          );
-        })}
+      <DaySelector days={days} activeDay={activeDay} onSelect={setUserPickedDay} />
+
+      <div className="flex overflow-hidden rounded-sm">
+        <div className="flex-1 bg-maroon-700 py-1.5 text-center font-condensed text-2xs font-bold uppercase tracking-eyebrow text-white">Maroon</div>
+        <div className="flex-1 border-y border-ink-100 bg-white py-1.5 text-center font-condensed text-2xs font-bold uppercase tracking-eyebrow text-maroon-700">
+          White
+        </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-gold-300 bg-white shadow-lg">
+      <div>
         {sessionGroups.map((group, index) => (
           <div key={group.session}>
-            <div className="border-b border-gold-200 bg-cream-50 px-4 py-2 font-condensed text-xs font-black uppercase tracking-wide text-gold-700">
-              {sessionHeaderLabel(group, dayMatches, live)} · {group.format}
+            <div className="px-1 py-1.5 font-condensed text-3xs font-black uppercase tracking-wide text-ink-400">
+              {sessionHeaderLabel(group, dayMatches, live)} &middot; {group.format}
             </div>
             {group.matches.map((match) => (
-              <MatchRow key={match.id} match={match} defendingChampion={champion} tournamentSlug={tournament.slug} size="lg" />
+              <CompactMatchRow key={match.id} match={match} tournamentSlug={tournament.slug} />
             ))}
-            {group.matches.length > 1 && <RecapStrip matches={group.matches} />}
             {index < sessionGroups.length - 1 && <div className="h-px bg-ink-100" />}
           </div>
         ))}

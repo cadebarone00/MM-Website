@@ -22,9 +22,9 @@ const nav = [
   { href: "/teams", label: "Teams" },
 ];
 
-function InstagramGlyph() {
+function InstagramGlyph({ size = 18 }: { size?: number }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width={18} height={18} aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width={size} height={size} aria-hidden="true">
       <rect x="2" y="2" width="20" height="20" rx="5" />
       <circle cx="12" cy="12" r="4" />
       <circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" stroke="none" />
@@ -64,22 +64,22 @@ export function Header() {
 
       <div className="bg-gradient-maroon">
         {/* Mobile header row — flush to top, 3 zones: Instagram + countdown/live (left), wordmark (center, bottom-aligned), account icon (right, always visible). */}
-        <div className="lg:hidden grid grid-cols-3 items-end gap-2 px-4 pb-2 pt-2">
-          <div className="flex min-w-0 items-center gap-2 justify-self-start">
+        <div className="lg:hidden grid grid-cols-3 items-end gap-2 px-4 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem)]">
+          <div className="flex min-w-0 items-center gap-1.5 justify-self-start">
             <a
               href="https://www.instagram.com/themaroonmasters/"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="The Maroon Masters Instagram"
               title="The Maroon Masters Instagram"
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white"
+              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white"
             >
-              <InstagramGlyph />
+              <InstagramGlyph size={14} />
             </a>
             {live ? (
-              <span className="font-condensed text-[10px] font-semibold uppercase tracking-wide text-gold-300">Live Now</span>
+              <span className="font-condensed text-3xs font-semibold uppercase tracking-wide text-gold-300">Live Now</span>
             ) : (
-              <RoundCountdown className="text-gold-100" />
+              <RoundCountdown className="text-gold-100" compact />
             )}
           </div>
 
@@ -91,14 +91,14 @@ export function Header() {
             type="button"
             onClick={() => setAccountMenuOpen(true)}
             aria-label="Your account"
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center justify-self-end rounded-full"
+            className="inline-flex h-6 w-6 shrink-0 items-center justify-center justify-self-end rounded-full"
           >
             {session?.kind === "host" ? (
               <TigerAvatar size="xs" />
             ) : session?.kind === "player" ? (
               <Avatar name={getPlayerDisplayName(session.playerFirst)} src={getPlayerAvatar(session.playerFirst)} size="xs" team={session.team} />
             ) : (
-              <UserRound size={22} className="text-white" />
+              <UserRound size={16} className="text-white" />
             )}
           </button>
         </div>

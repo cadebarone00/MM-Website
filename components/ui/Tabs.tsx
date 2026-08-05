@@ -12,7 +12,7 @@ interface TabsProps {
   items: TabItem[];
   value?: string;
   onChange?: (value: string) => void;
-  variant?: "underline" | "pill";
+  variant?: "underline" | "pill" | "plain";
 }
 
 export function Tabs({ items, value, onChange, variant = "underline" }: TabsProps) {
@@ -22,6 +22,34 @@ export function Tabs({ items, value, onChange, variant = "underline" }: TabsProp
     if (value === undefined) setInternal(v);
     onChange?.(v);
   };
+
+  if (variant === "plain") {
+    return (
+      <div role="tablist" className="flex items-center justify-center gap-3 sm:gap-5">
+        {items.map((it, i) => {
+          const on = it.value === active;
+          return (
+            <div key={it.value} className="flex items-center gap-3 sm:gap-5">
+              {i > 0 && <span className="h-4 w-px bg-ink-200" aria-hidden="true" />}
+              <button
+                type="button"
+                role="tab"
+                aria-selected={on}
+                onClick={() => select(it.value)}
+                className={[
+                  "font-condensed text-sm font-semibold uppercase tracking-wide transition-colors duration-150 cursor-pointer sm:text-base",
+                  on ? "text-maroon-700" : "text-ink-400 hover:text-maroon-600",
+                ].join(" ")}
+              >
+                {it.label}
+                {it.badge != null && <span className="ml-1 text-[10px] opacity-70 tabular-nums">{it.badge}</span>}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   if (variant === "pill") {
     return (

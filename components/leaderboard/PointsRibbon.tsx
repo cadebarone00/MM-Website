@@ -53,12 +53,12 @@ export function PointsRibbon({ tournament }: { tournament: Tournament }) {
 
   return (
     <div className="sticky z-40 w-screen ml-[calc(50%-50vw)] mr-[calc(50%-50vw)]" style={{ top: headerOffset }}>
-      <div className="flex h-[38px] w-full border-y border-gold-300 sm:h-[56px] lg:h-[74px]">
+      <div className="flex h-[57px] w-full border-y border-gold-300 sm:h-[56px] lg:h-[74px]">
         <div
           className="flex items-center justify-end pr-[10%]"
           style={{ width: `${maroonFill}%`, background: "var(--color-maroon-700)" }}
         >
-          <span className="font-sans text-lg font-black text-white sm:text-2xl lg:text-4xl">{fmtPt(tournament.maroonPts)}</span>
+          <span className="font-sans text-2xl font-black text-white sm:text-2xl lg:text-4xl">{fmtPt(tournament.maroonPts)}</span>
         </div>
         <div className="flex flex-1 items-center justify-center bg-cream-200 px-2">
           {badgeState.kind === "undecided" && (
@@ -71,7 +71,7 @@ export function PointsRibbon({ tournament }: { tournament: Tournament }) {
           className="flex items-center justify-start pl-[10%]"
           style={{ width: `${whiteFill}%`, background: "#fdfdfb" }}
         >
-          <span className="font-sans text-lg font-black text-maroon-700 sm:text-2xl lg:text-4xl">{fmtPt(tournament.whitePts)}</span>
+          <span className="font-sans text-2xl font-black text-maroon-700 sm:text-2xl lg:text-4xl">{fmtPt(tournament.whitePts)}</span>
         </div>
       </div>
       <div className="flex min-h-[22px] items-center justify-between border-2 border-t-0 border-gold-400 bg-cream-100 px-2 sm:min-h-[32px] sm:px-4 lg:min-h-[40px] lg:px-6">

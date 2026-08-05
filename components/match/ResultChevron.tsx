@@ -7,15 +7,17 @@ const GOLD_500 = "#b8945a";
 const LEFT_POINTS = "0,22 30,0 100,0 100,44 30,44";
 const RIGHT_POINTS = "100,22 70,0 0,0 0,44 70,44";
 
-export type ResultChevronSize = "sm" | "md" | "lg";
+export type ResultChevronSize = "xs" | "sm" | "md" | "lg";
 
 const TIE_SIZE_CLASSES: Record<ResultChevronSize, string> = {
+  xs: "h-[18px] w-[30px] text-3xs",
   sm: "h-[22px] w-[40px] text-2xs",
   md: "h-[34px] w-[58px] text-sm",
   lg: "h-[48px] w-[86px] text-lg",
 };
 
 const CHEVRON_SIZE_CLASSES: Record<ResultChevronSize, string> = {
+  xs: "h-[18px] w-[34px] text-3xs",
   sm: "h-[22px] w-[44px] text-2xs",
   md: "h-[34px] w-[62px] text-sm",
   lg: "h-[48px] w-[92px] text-lg",

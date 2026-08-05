@@ -115,36 +115,58 @@ const ALL_VIDEOS_HREF = "#";
 
 const HIGHLIGHTS_PREVIEW_COUNT = 6;
 
-function HighlightsRail() {
+function HighlightsRail({ flat = false }: { flat?: boolean }) {
   const [showAll, setShowAll] = useState(false);
   const preview = highlights.slice(0, HIGHLIGHTS_PREVIEW_COUNT);
   const hasMore = highlights.length > HIGHLIGHTS_PREVIEW_COUNT;
 
   return (
     <>
-      <aside className="flex h-full min-w-0 flex-col rounded-lg border border-maroon-800 bg-maroon-900 p-3 text-white shadow-xl sm:p-5">
-        <div className="mb-2 flex items-center gap-2 font-condensed text-xs font-semibold uppercase tracking-wide text-gold-300 sm:mb-3">
-          <Trophy size={16} />
-          Highlights
+      {flat ? (
+        <div className="flex h-full min-w-0 flex-col">
+          <div className="min-h-0 flex-1 divide-y divide-ink-100 overflow-y-auto">
+            {preview.map((item) => (
+              <article key={item.title} className="py-3 first:pt-0">
+                <h3 className="m-0 font-sans text-sm font-bold text-maroon-700">{item.title}</h3>
+                <p className="mt-1 font-sans text-xs leading-snug text-ink-500">{item.body}</p>
+              </article>
+            ))}
+          </div>
+          {hasMore && (
+            <button
+              type="button"
+              onClick={() => setShowAll(true)}
+              className="mt-3 self-start font-sans text-xs font-semibold text-maroon-700 underline underline-offset-2 hover:text-maroon-600"
+            >
+              More Highlights
+            </button>
+          )}
         </div>
-        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 sm:space-y-3">
-          {preview.map((item) => (
-            <article key={item.title} className="rounded-md border border-white/10 bg-white/[0.08] p-2 sm:p-4">
-              <h3 className="m-0 font-sans text-xs font-extrabold text-white sm:text-base">{item.title}</h3>
-              <p className="mt-1 font-sans text-[11px] leading-snug text-maroon-100 sm:mt-2 sm:text-sm sm:leading-relaxed">{item.body}</p>
-            </article>
-          ))}
-        </div>
-        {hasMore && (
-          <button
-            type="button"
-            onClick={() => setShowAll(true)}
-            className="mt-2 self-start font-sans text-[11px] font-semibold text-gold-300 underline underline-offset-2 hover:text-gold-200 sm:mt-3 sm:text-sm"
-          >
-            More Highlights
-          </button>
-        )}
-      </aside>
+      ) : (
+        <aside className="flex h-full min-w-0 flex-col rounded-lg border border-maroon-800 bg-maroon-900 p-3 text-white shadow-xl sm:p-5">
+          <div className="mb-2 flex items-center gap-2 font-condensed text-xs font-semibold uppercase tracking-wide text-gold-300 sm:mb-3">
+            <Trophy size={16} />
+            Highlights
+          </div>
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 sm:space-y-3">
+            {preview.map((item) => (
+              <article key={item.title} className="rounded-md border border-white/10 bg-white/[0.08] p-2 sm:p-4">
+                <h3 className="m-0 font-sans text-xs font-extrabold text-white sm:text-base">{item.title}</h3>
+                <p className="mt-1 font-sans text-[11px] leading-snug text-maroon-100 sm:mt-2 sm:text-sm sm:leading-relaxed">{item.body}</p>
+              </article>
+            ))}
+          </div>
+          {hasMore && (
+            <button
+              type="button"
+              onClick={() => setShowAll(true)}
+              className="mt-2 self-start font-sans text-[11px] font-semibold text-gold-300 underline underline-offset-2 hover:text-gold-200 sm:mt-3 sm:text-sm"
+            >
+              More Highlights
+            </button>
+          )}
+        </aside>
+      )}
 
       {showAll && (
         <div className="fixed inset-0 z-[200] overflow-y-auto bg-maroon-900">
@@ -188,9 +210,9 @@ function MobileHighlightsToggle() {
 
   return (
     <div className="lg:hidden">
-      <Tabs items={TOGGLE_TABS} value={tab} onChange={(v) => setTab(v as ToggleTab)} variant="pill" />
-      <div className="mt-3">
-        {tab === "highlights" && <HighlightsRail />}
+      <Tabs items={TOGGLE_TABS} value={tab} onChange={(v) => setTab(v as ToggleTab)} variant="plain" />
+      <div className="mt-4">
+        {tab === "highlights" && <HighlightsRail flat />}
         {tab === "teams" && <HomeTeamsPanel />}
         {tab === "schedule" && <QuickScheduleCard />}
       </div>
