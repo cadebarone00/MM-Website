@@ -20,8 +20,8 @@ test("portfolio route backs to the hub and hides its own link", () => {
   });
 });
 
-test("a known category route backs to the hub with its display title", () => {
-  assert.deepEqual(wagersNavBarContent("/wagers/matches"), {
+test("a market detail route backs to the hub with its category's display title", () => {
+  assert.deepEqual(wagersNavBarContent("/wagers/matches/day1-am-match2"), {
     backLabel: "Wagers",
     backHref: "/wagers",
     title: "Matches",
@@ -29,9 +29,9 @@ test("a known category route backs to the hub with its display title", () => {
   });
 });
 
-test("every category slug maps to a display title", () => {
-  assert.equal(wagersNavBarContent("/wagers/team-futures").title, "Team Futures");
-  assert.equal(wagersNavBarContent("/wagers/player-futures").title, "Player Futures");
+test("every category slug maps to a display title, regardless of route depth", () => {
+  assert.equal(wagersNavBarContent("/wagers/team-futures/team-winner").title, "Team Futures");
+  assert.equal(wagersNavBarContent("/wagers/player-futures/tournament-winner").title, "Player Futures");
   assert.equal(wagersNavBarContent("/wagers/fourballs").title, "Fourballs");
-  assert.equal(wagersNavBarContent("/wagers/props").title, "Props");
+  assert.equal(wagersNavBarContent("/wagers/props/day1-am-match2").title, "Props");
 });

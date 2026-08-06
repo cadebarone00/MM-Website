@@ -27,11 +27,11 @@ export function wagersNavBarContent(pathname: string): WagersNavBarContent {
   if (pathname === "/wagers/portfolio") {
     return { backLabel: "Wagers", backHref: "/wagers", title: "My Portfolio", showPortfolioLink: false };
   }
-  const segment = pathname.replace(/^\/wagers\//, "");
+  const [category] = pathname.replace(/^\/wagers\//, "").split("/");
   return {
     backLabel: "Wagers",
     backHref: "/wagers",
-    title: CATEGORY_TITLES[segment] ?? "Wagers",
+    title: CATEGORY_TITLES[category] ?? "Wagers",
     showPortfolioLink: true,
   };
 }
