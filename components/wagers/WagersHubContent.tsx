@@ -71,7 +71,7 @@ export function WagersHubContent() {
         <h2 className="m-0 font-serif text-xl font-bold text-ink-900">Futures</h2>
         <div className="mt-3 flex flex-col gap-4">
           <TeamFuturesCard tournament={tournament} />
-          <FuturesLadder standings={tournament.individualLeaderboard} />
+          <FuturesLadder tournamentSlug={tournament.slug} standings={tournament.individualLeaderboard} />
         </div>
       </section>
 
