@@ -1,5 +1,32 @@
 # Wagers Section — Kalshi-style Layout Redesign — Design Spec
 
+> **Revision note (same day):** after seeing the first pass, the user
+> rejected the boxed "market card" look and the separate per-category
+> pages below. Everything under this line describes that first pass;
+> the **actual shipped design** replaces it with:
+> - One `/wagers` hub page. The 5 categories are a `Tabs`
+>   (`variant="plain"`, the same component/style as the mobile home
+>   page's Highlights/Teams switch — letters separated by a thin
+>   vertical line, no boxes, no background) that stays fixed on screen;
+>   picking one swaps a plain list below it via React state, no route
+>   change.
+> - No `WagerBox`, no rules-text blurbs, no per-category routes. Each
+>   category's list is plain rows (title + chevron) separated by a
+>   `divide-y` line.
+> - Tapping a specific market (Team Winner, a match, Tournament Winner,
+>   a match's props) navigates to that market's own page —
+>   `/wagers/team-futures/team-winner`, `/wagers/player-futures/tournament-winner`,
+>   `/wagers/matches/[matchId]`, `/wagers/props/[matchId]` — built from
+>   two new shared components: `MarketSelectionList` (pick a side,
+>   searchable when long) and `WagerStakeForm` (the stake step,
+>   extracted from `BetSlipSheet`'s modal logic but rendered inline on
+>   the page instead of a bottom sheet).
+> - `BetSlipSheet`/`OddsButton`/`MatchWinnerCard`/`PropBetRow` remain
+>   untouched — still serving the unrelated Match Breakdown page.
+>
+> The nav bar, entry splash, sign-in gate, and MM Coins/Real Wagers
+> toggle described below are unchanged from the first pass.
+
 ## Vision
 
 Purely visual/layout rework of the existing Wagers section (`app/wagers/`,
