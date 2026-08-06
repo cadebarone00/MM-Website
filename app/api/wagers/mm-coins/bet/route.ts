@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { fetchLiveTournament } from "@/lib/data/fetchLiveTournament";
+import { listAllMarkets } from "@/lib/wagers/marketKeys";
 
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
@@ -11,16 +13,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Not signed in." }, { status: 401 });
   }
 
-  const { marketKey, selectionKey, label, odds, stake } = await request.json();
-  if (!marketKey || !selectionKey || !label || typeof odds !== "number" || typeof stake !== "number") {
+  const { marketKey, selectionKey, stake } = await request.json();
+  if (!marketKey || !selectionKey || typeof stake !== "number") {
     return NextResponse.json({ ok: false, error: "Malformed bet request." }, { status: 400 });
+  }
+
+  const tournament = await fetchLiveTournament();
+  if (!tournament) {
+    return NextResponse.json({ ok: false, error: "Live tournament data isn't available right now." }, { status: 503 });
+  }
+
+  const market = listAllMarkets(tournament).find((m) => m.marketKey === marketKey);
+  const selection = market?.selections.find((s) => s.key === selectionKey);
+  if (!selection) {
+    return NextResponse.json({ ok: false, error: "That market isn't open for betting right now." }, { status: 400 });
   }
 
   const { data, error } = await supabase.rpc("place_mm_coin_bet", {
     p_market_key: marketKey,
     p_selection_key: selectionKey,
-    p_selection_label: label,
-    p_odds: odds,
+    p_selection_label: selection.label,
+    p_odds: selection.odds,
     p_stake: stake,
   });
 
