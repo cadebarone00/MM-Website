@@ -59,17 +59,19 @@ export function useMMCoinsAccount() {
 export async function placeMMCoinBet(input: {
   marketKey: string;
   selectionKey: string;
-  label: string;
-  odds: number;
   stake: number;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
-  const res = await fetch("/api/wagers/mm-coins/bet", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  const data = await res.json();
-  if (!data.ok) return { ok: false, error: data.error ?? "Couldn't place that wager." };
-  notifyMMCoinsChanged();
-  return { ok: true };
+  try {
+    const res = await fetch("/api/wagers/mm-coins/bet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    const data = await res.json();
+    if (!data.ok) return { ok: false, error: data.error ?? "Couldn't place that wager." };
+    notifyMMCoinsChanged();
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Couldn't reach the server — check your connection and try again." };
+  }
 }

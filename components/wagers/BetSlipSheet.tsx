@@ -48,7 +48,7 @@ export function BetSlipSheet({
       return;
     }
     setSubmitting(true);
-    const result = await placeMMCoinBet({ marketKey, selectionKey, label, odds, stake: stakeNumber });
+    const result = await placeMMCoinBet({ marketKey, selectionKey, stake: stakeNumber });
     setSubmitting(false);
     if (!result.ok) {
       setError(result.error);
