@@ -207,13 +207,23 @@ begin
   insert into wagers_market_settlements (market_key, winning_selection_key, settled_by)
   values (p_market_key, p_winning_selection_key, auth.uid());
 
+  -- Aggregated per profile before the join: a plain UPDATE ... FROM with
+  -- multiple matching source rows per target row is documented as
+  -- non-deterministic in Postgres (only one match applies, silently) — and
+  -- one profile placing two separate bets on the same winning selection is
+  -- ordinary usage (e.g. tapping the same odds button twice), not an edge
+  -- case, so this must sum before crediting, not join bet rows directly.
   update wagers_accounts a
-    set mm_coins_balance = mm_coins_balance + b.potential_payout
-    from mm_coin_bets b
-    where b.profile_id = a.profile_id
-      and b.market_key = p_market_key
-      and b.selection_key = p_winning_selection_key
-      and b.status = 'pending';
+    set mm_coins_balance = mm_coins_balance + w.total_payout
+    from (
+      select profile_id, sum(potential_payout) as total_payout
+      from mm_coin_bets
+      where market_key = p_market_key
+        and selection_key = p_winning_selection_key
+        and status = 'pending'
+      group by profile_id
+    ) w
+    where w.profile_id = a.profile_id;
 
   update mm_coin_bets
     set status = 'won', settled_at = now()
