@@ -28,7 +28,7 @@ export function WagersHubContent() {
   }
 
   const todaysMatches = tournament.matches.filter((match) => match.day === currentRoundDay(tournament));
-  const allPropMarkets = todaysMatches.flatMap((match) => matchPropMarkets(match));
+  const allPropMarketsWithDay = todaysMatches.flatMap((match) => matchPropMarkets(match).map((market) => ({ market, day: match.day })));
 
   return (
     <div className="flex flex-col gap-8">
@@ -57,10 +57,12 @@ export function WagersHubContent() {
       <section>
         <h2 className="m-0 font-serif text-xl font-bold text-ink-900">Player Props</h2>
         <div className="mt-3 rounded-md border border-ink-100 bg-white p-4">
-          {allPropMarkets.length === 0 ? (
+          {allPropMarketsWithDay.length === 0 ? (
             <p className="font-sans text-sm text-ink-400">No player props posted yet.</p>
           ) : (
-            allPropMarkets.map((market) => <PropBetRow key={market.id} market={market} />)
+            allPropMarketsWithDay.map(({ market, day }) => (
+              <PropBetRow key={market.id} tournamentSlug={tournament.slug} day={day} market={market} />
+            ))
           )}
         </div>
       </section>

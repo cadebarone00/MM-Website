@@ -78,7 +78,7 @@ export function MatchBreakdownView({
             <p className="m-0 font-condensed text-2xs font-bold uppercase tracking-eyebrow text-ink-400">Player Props</p>
             <div className="mt-1">
               {propMarkets.map((market) => (
-                <PropBetRow key={market.id} market={market} />
+                <PropBetRow key={market.id} tournamentSlug={tournamentSlug} day={match.day} market={market} />
               ))}
             </div>
           </div>
