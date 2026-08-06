@@ -1,7 +1,6 @@
 "use client";
 
 import { useAccountSession } from "@/lib/useAccountSession";
-import { accountKey } from "@/lib/wagers/wallet";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
 import { getNextTournamentStatus } from "@/lib/data";
 import { currentRoundDay } from "@/components/leaderboard/matchUtils";
@@ -13,13 +12,14 @@ import { PropBetRow } from "./PropBetRow";
 import { TeamFuturesCard } from "./TeamFuturesCard";
 import { FuturesLadder } from "./FuturesLadder";
 import { MyWagersList } from "./MyWagersList";
+import { MMCoinsLeaderboard } from "./MMCoinsLeaderboard";
 
 export function WagersHubContent() {
   const session = useAccountSession();
   const { tournament, loading, payload } = useLiveTournament();
   const isLive = getNextTournamentStatus() === "live";
 
-  if (accountKey(session) == null) {
+  if (!session) {
     return <SignInGate />;
   }
 
@@ -79,6 +79,13 @@ export function WagersHubContent() {
         <h2 className="m-0 font-serif text-xl font-bold text-ink-900">My Wagers</h2>
         <div className="mt-3">
           <MyWagersList />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="m-0 font-serif text-xl font-bold text-ink-900">Standings</h2>
+        <div className="mt-3">
+          <MMCoinsLeaderboard />
         </div>
       </section>
     </div>
