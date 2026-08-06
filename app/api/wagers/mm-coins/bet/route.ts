@@ -19,10 +19,6 @@ export async function POST(request: Request) {
   }
 
   const tournament = await fetchLiveTournament();
-  if (!tournament) {
-    return NextResponse.json({ ok: false, error: "Live tournament data isn't available right now." }, { status: 503 });
-  }
-
   const market = listAllMarkets(tournament).find((m) => m.marketKey === marketKey);
   const selection = market?.selections.find((s) => s.key === selectionKey);
   if (!selection) {
