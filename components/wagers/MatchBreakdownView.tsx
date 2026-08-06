@@ -73,12 +73,12 @@ export function MatchBreakdownView({
       <section className="mt-8">
         <h2 className="m-0 font-serif text-xl font-bold text-ink-900">Wagers</h2>
         <div className="mt-3 flex flex-col gap-4">
-          <MatchWinnerCard match={match} />
+          <MatchWinnerCard tournamentSlug={tournamentSlug} match={match} />
           <div className="rounded-md border border-ink-100 bg-white p-4">
             <p className="m-0 font-condensed text-2xs font-bold uppercase tracking-eyebrow text-ink-400">Player Props</p>
             <div className="mt-1">
               {propMarkets.map((market) => (
-                <PropBetRow key={market.id} market={market} />
+                <PropBetRow key={market.id} tournamentSlug={tournamentSlug} day={match.day} market={market} />
               ))}
             </div>
           </div>

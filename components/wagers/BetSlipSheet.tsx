@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAccountSession } from "@/lib/useAccountSession";
-import { accountKey, getBalance, placeWager } from "@/lib/wagers/wallet";
+import { useMMCoinsAccount, placeMMCoinBet } from "@/lib/hooks/useMMCoinsAccount";
 import { formatAmericanOdds, potentialPayout } from "@/lib/wagers/americanOdds";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -13,29 +12,33 @@ import { SignInGate } from "./SignInGate";
  * market, one stake, one confirmation.
  */
 export function BetSlipSheet({
+  marketKey,
+  selectionKey,
   label,
   odds,
   open,
   onClose,
 }: {
+  marketKey: string;
+  selectionKey: string;
   label: string;
   odds: number;
   open: boolean;
   onClose: () => void;
 }) {
-  const session = useAccountSession();
-  const key = accountKey(session);
+  const { session, account, loading } = useMMCoinsAccount();
   const [stake, setStake] = useState("10");
   const [error, setError] = useState<string | null>(null);
   const [placed, setPlaced] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   if (!open) return null;
 
   const stakeNumber = Number(stake);
-  const balance = key ? getBalance(key) : 0;
+  const balance = account?.balance ?? 0;
 
-  function confirm() {
-    if (!key) return;
+  async function confirm() {
+    if (!session) return;
     if (!Number.isFinite(stakeNumber) || stakeNumber <= 0) {
       setError("Enter a stake greater than zero.");
       return;
@@ -44,17 +47,11 @@ export function BetSlipSheet({
       setError("That's more than your current balance.");
       return;
     }
-    const ok = placeWager(key, {
-      id: `${Date.now()}-${Math.round(Math.random() * 1e6)}`, // eslint-disable-line react-hooks/purity
-      placedAt: new Date().toISOString(),
-      selectionLabel: label,
-      odds,
-      stake: stakeNumber,
-      potentialPayout: potentialPayout(stakeNumber, odds),
-      status: "pending",
-    });
-    if (!ok) {
-      setError("Couldn't place that wager — check your balance.");
+    setSubmitting(true);
+    const result = await placeMMCoinBet({ marketKey, selectionKey, stake: stakeNumber });
+    setSubmitting(false);
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
     setError(null);
@@ -72,7 +69,7 @@ export function BetSlipSheet({
           </button>
         </div>
 
-        {!key ? (
+        {!session ? (
           <SignInGate />
         ) : placed ? (
           <div className="py-4 text-center">
@@ -91,15 +88,16 @@ export function BetSlipSheet({
               min={1}
               value={stake}
               onChange={(e) => setStake(e.target.value)}
+              disabled={loading || submitting}
               wrapClassName="mt-4"
             />
             <p className="mt-2 font-sans text-2xs text-ink-400">
-              Balance: {balance.toLocaleString()} pts &middot; Potential payout:{" "}
+              Balance: {loading ? "…" : balance.toLocaleString()} pts &middot; Potential payout:{" "}
               {Number.isFinite(stakeNumber) && stakeNumber > 0 ? potentialPayout(stakeNumber, odds).toLocaleString() : "—"} pts
             </p>
             {error && <p className="mt-2 font-sans text-2xs text-score-under">{error}</p>}
-            <Button className="mt-4" fullWidth onClick={confirm}>
-              Confirm Wager
+            <Button className="mt-4" fullWidth onClick={confirm} disabled={loading || submitting}>
+              {submitting ? "Placing…" : "Confirm Wager"}
             </Button>
           </>
         )}

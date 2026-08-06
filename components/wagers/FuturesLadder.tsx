@@ -1,26 +1,26 @@
 import { getPlayerDisplayName } from "@/lib/data/players";
-import { tournamentWinnerLadder } from "@/lib/wagers/mockOdds";
+import { futurePlayerMarket } from "@/lib/wagers/marketKeys";
 import { OddsButton } from "./OddsButton";
 import type { IndividualStanding } from "@/lib/data/types";
 
-export function FuturesLadder({ standings }: { standings: IndividualStanding[] }) {
-  const ladder = tournamentWinnerLadder(standings);
+export function FuturesLadder({ tournamentSlug, standings }: { tournamentSlug: string; standings: IndividualStanding[] }) {
+  const market = futurePlayerMarket(tournamentSlug, standings);
 
-  if (ladder.length === 0) {
+  if (market.selections.length === 0) {
     return <p className="font-sans text-sm text-ink-400">Tournament Winner odds post once the individual leaderboard has entries.</p>;
   }
 
   return (
     <div className="rounded-md border border-ink-100 bg-white">
-      {ladder.map((entry, i) => {
-        const name = getPlayerDisplayName(entry.player);
+      {market.selections.map((selection, i) => {
+        const name = getPlayerDisplayName(selection.key);
         return (
           <div
-            key={entry.player}
+            key={selection.key}
             className={["flex items-center justify-between gap-3 px-4 py-3", i > 0 ? "border-t border-ink-100" : ""].join(" ")}
           >
             <span className="font-sans text-sm font-semibold text-ink-900">{name}</span>
-            <OddsButton label={`${name} wins the tournament`} odds={entry.odds} />
+            <OddsButton marketKey={market.marketKey} selectionKey={selection.key} label={selection.label} odds={selection.odds} />
           </div>
         );
       })}

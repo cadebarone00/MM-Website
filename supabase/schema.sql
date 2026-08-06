@@ -60,3 +60,195 @@ insert into player_slots (player_slug, username) values
   ('peyton-vos', 'MMPEYVOS'),
   ('quez-currier', 'MMQUECUR')
 on conflict (player_slug) do nothing;
+
+-- === MM Coins (Wagers) ===================================================
+
+create table if not exists wagers_accounts (
+  profile_id uuid primary key references profiles(id) on delete cascade,
+  mm_coins_balance numeric not null default 1000,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists mm_coin_bets (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid not null references profiles(id) on delete cascade,
+  market_key text not null,
+  selection_key text not null,
+  selection_label text not null,
+  odds integer not null,
+  stake numeric not null,
+  potential_payout numeric not null,
+  status text not null default 'pending' check (status in ('pending', 'won', 'lost')),
+  placed_at timestamptz not null default now(),
+  settled_at timestamptz
+);
+create index if not exists mm_coin_bets_profile_idx on mm_coin_bets (profile_id, placed_at desc);
+create index if not exists mm_coin_bets_market_idx on mm_coin_bets (market_key);
+
+create table if not exists wagers_market_settlements (
+  market_key text primary key,
+  winning_selection_key text not null,
+  settled_by uuid not null references profiles(id),
+  settled_at timestamptz not null default now()
+);
+
+alter table wagers_accounts enable row level security;
+alter table mm_coin_bets enable row level security;
+alter table wagers_market_settlements enable row level security;
+
+drop policy if exists wagers_accounts_select_own on wagers_accounts;
+create policy wagers_accounts_select_own on wagers_accounts for select using (auth.uid() = profile_id);
+
+drop policy if exists mm_coin_bets_select_own on mm_coin_bets;
+create policy mm_coin_bets_select_own on mm_coin_bets for select using (auth.uid() = profile_id);
+
+-- Readable by any signed-in user — this is just "which markets have closed
+-- and who won," not sensitive, and the client needs it to show settled
+-- state. Nothing writes through this policy; only the SECURITY DEFINER
+-- settle_mm_coin_market() function below ever inserts a row here.
+drop policy if exists wagers_market_settlements_select_all on wagers_market_settlements;
+create policy wagers_market_settlements_select_all on wagers_market_settlements for select using (auth.uid() is not null);
+
+-- Seeds the calling user's wagers_accounts row if it doesn't exist yet,
+-- then returns it. Called on every account read so a brand-new visitor
+-- sees their starting balance immediately, without needing to place a bet
+-- first.
+create or replace function ensure_wagers_account() returns wagers_accounts
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_account wagers_accounts;
+begin
+  if auth.uid() is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  insert into wagers_accounts (profile_id) values (auth.uid())
+    on conflict (profile_id) do nothing;
+
+  select * into v_account from wagers_accounts where profile_id = auth.uid();
+  return v_account;
+end;
+$$;
+grant execute on function ensure_wagers_account to authenticated;
+
+-- Atomically checks balance, deducts the stake, and records the bet. Locks
+-- the caller's own account row for the duration (`for update`) so two
+-- rapid submissions can't both pass the balance check before either
+-- deducts. Rejects betting on an already-settled market.
+create or replace function place_mm_coin_bet(
+  p_market_key text,
+  p_selection_key text,
+  p_selection_label text,
+  p_odds integer,
+  p_stake numeric
+) returns mm_coin_bets
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_profile_id uuid := auth.uid();
+  v_balance numeric;
+  v_payout numeric;
+  v_bet mm_coin_bets;
+begin
+  if v_profile_id is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  if p_stake <= 0 then
+    raise exception 'Stake must be greater than zero';
+  end if;
+
+  -- Serializes against settle_mm_coin_market() for this same market_key —
+  -- without this, a bet could be accepted in the narrow window between
+  -- settlement's "not already settled" check and its INSERT committing,
+  -- leaving that bet permanently unresolved (settlement never re-runs for
+  -- an already-settled market). Released automatically at transaction end.
+  perform pg_advisory_xact_lock(hashtext(p_market_key));
+
+  if exists (select 1 from wagers_market_settlements where market_key = p_market_key) then
+    raise exception 'This market has already settled';
+  end if;
+
+  insert into wagers_accounts (profile_id) values (v_profile_id)
+    on conflict (profile_id) do nothing;
+
+  select mm_coins_balance into v_balance from wagers_accounts where profile_id = v_profile_id for update;
+
+  if p_stake > v_balance then
+    raise exception 'Stake exceeds current balance';
+  end if;
+
+  v_payout := round(
+    case when p_odds > 0 then p_stake + p_stake * (p_odds / 100.0)
+         else p_stake + p_stake * (100.0 / abs(p_odds))
+    end,
+    2
+  );
+
+  update wagers_accounts set mm_coins_balance = mm_coins_balance - p_stake where profile_id = v_profile_id;
+
+  insert into mm_coin_bets (profile_id, market_key, selection_key, selection_label, odds, stake, potential_payout)
+  values (v_profile_id, p_market_key, p_selection_key, p_selection_label, p_odds, p_stake, v_payout)
+  returning * into v_bet;
+
+  return v_bet;
+end;
+$$;
+grant execute on function place_mm_coin_bet to authenticated;
+
+-- Host-only. Records the winning selection for a market (idempotent guard:
+-- raises if already settled), credits every pending winning bet's payout,
+-- then marks all of that market's pending bets won/lost. Credits balances
+-- BEFORE flipping bet status to 'won', so the join in the credit step only
+-- matches bets still in 'pending' — avoids any ordering ambiguity.
+create or replace function settle_mm_coin_market(
+  p_market_key text,
+  p_winning_selection_key text
+) returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not coalesce((select is_host from profiles where id = auth.uid()), false) then
+    raise exception 'Not authorized';
+  end if;
+
+  -- Same market_key-keyed lock place_mm_coin_bet() takes — see the comment
+  -- there for why.
+  perform pg_advisory_xact_lock(hashtext(p_market_key));
+
+  if exists (select 1 from wagers_market_settlements where market_key = p_market_key) then
+    raise exception 'Market already settled';
+  end if;
+
+  insert into wagers_market_settlements (market_key, winning_selection_key, settled_by)
+  values (p_market_key, p_winning_selection_key, auth.uid());
+
+  update wagers_accounts a
+    set mm_coins_balance = mm_coins_balance + w.total_payout
+    from (
+      select profile_id, sum(potential_payout) as total_payout
+      from mm_coin_bets
+      where market_key = p_market_key
+        and selection_key = p_winning_selection_key
+        and status = 'pending'
+      group by profile_id
+    ) w
+    where w.profile_id = a.profile_id;
+
+  update mm_coin_bets
+    set status = 'won', settled_at = now()
+    where market_key = p_market_key and selection_key = p_winning_selection_key and status = 'pending';
+
+  update mm_coin_bets
+    set status = 'lost', settled_at = now()
+    where market_key = p_market_key and selection_key <> p_winning_selection_key and status = 'pending';
+end;
+$$;
+grant execute on function settle_mm_coin_market to authenticated;
