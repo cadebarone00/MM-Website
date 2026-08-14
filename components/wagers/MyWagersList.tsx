@@ -1,17 +1,29 @@
 "use client";
 
-import { useMMCoinsAccount } from "@/lib/hooks/useMMCoinsAccount";
+import { useEffect, useState } from "react";
+import { useAccountSession } from "@/lib/useAccountSession";
+import { accountKey, getWagers, onWagersChanged } from "@/lib/wagers/wallet";
 import { formatAmericanOdds } from "@/lib/wagers/americanOdds";
 import { Badge } from "@/components/ui/Badge";
+import type { Wager } from "@/lib/wagers/types";
 
-/** Every wager the signed-in account has placed, with its real settlement status. */
+/** Every wager the signed-in account has placed. Renders nothing if there's no session. */
 export function MyWagersList() {
-  const { session, account, loading } = useMMCoinsAccount();
+  const session = useAccountSession();
+  const key = accountKey(session);
+  const [wagers, setWagers] = useState<Wager[]>([]);
 
-  if (!session) return null;
-  if (loading) return <p className="font-sans text-sm text-ink-400">Loading…</p>;
+  useEffect(() => {
+    if (!key) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setWagers([]);
+      return;
+    }
+    setWagers(getWagers(key));
+    return onWagersChanged(() => setWagers(getWagers(key)));
+  }, [key]);
 
-  const wagers = account?.wagers ?? [];
+  if (!key) return null;
   if (wagers.length === 0) {
     return <p className="font-sans text-sm text-ink-400">No wagers placed yet.</p>;
   }
@@ -27,11 +39,7 @@ export function MyWagersList() {
               {wager.potentialPayout.toLocaleString()} pts
             </p>
           </div>
-          {wager.status === "pending" && <Badge variant="gold">Pending</Badge>}
-          {wager.status === "won" && <Badge variant="fairway">Won</Badge>}
-          {wager.status === "lost" && (
-            <span className="font-condensed text-2xs font-bold uppercase tracking-wide text-score-under">Lost</span>
-          )}
+          <Badge variant="gold">Pending</Badge>
         </div>
       ))}
     </div>
