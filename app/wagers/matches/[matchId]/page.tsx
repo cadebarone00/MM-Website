@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
 import { getPlayerDisplayName } from "@/lib/data/players";
-import { matchWinnerOdds } from "@/lib/wagers/mockOdds";
+import { matchWinnerMarket } from "@/lib/wagers/marketKeys";
 import { MarketSelectionList } from "@/components/wagers/MarketSelectionList";
 import { ComingSoonNotice } from "@/components/wagers/ComingSoonNotice";
 import { useWagersMode } from "@/components/wagers/WagersModeContext";
@@ -34,7 +34,7 @@ export default function MatchWinnerPage() {
     return <p className="px-4 py-10 text-center font-sans text-sm text-ink-400 sm:px-7">Match not found.</p>;
   }
 
-  const odds = matchWinnerOdds(match);
+  const market = matchWinnerMarket(tournament.slug, match);
   const maroonLabel = sideLabel(match.maroonPlayers);
   const whiteLabel = sideLabel(match.whitePlayers);
 
@@ -45,10 +45,7 @@ export default function MatchWinnerPage() {
       </h2>
       <div className="mt-4">
         <MarketSelectionList
-          selections={[
-            { key: "maroon", label: `${maroonLabel} wins the match`, odds: odds.maroon },
-            { key: "white", label: `${whiteLabel} wins the match`, odds: odds.white },
-          ]}
+          selections={market.selections.map((selection) => ({ ...selection, marketKey: market.marketKey }))}
         />
       </div>
     </div>

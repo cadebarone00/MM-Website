@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import { matchPropMarkets } from "@/lib/wagers/mockOdds";
+import { propMarket } from "@/lib/wagers/marketKeys";
 import { MarketSelectionList } from "@/components/wagers/MarketSelectionList";
 import { ComingSoonNotice } from "@/components/wagers/ComingSoonNotice";
 import { useWagersMode } from "@/components/wagers/WagersModeContext";
@@ -34,12 +35,10 @@ export default function MatchPropsPage() {
     return <p className="px-4 py-10 text-center font-sans text-sm text-ink-400 sm:px-7">Match not found.</p>;
   }
 
-  const selections = matchPropMarkets(match).flatMap((market) => {
-    const name = getPlayerDisplayName(market.player).split(" ").pop();
-    return [
-      { key: `${market.id}-over`, label: `${name} Over ${market.line} ${market.statLabel}`, odds: market.overOdds },
-      { key: `${market.id}-under`, label: `${name} Under ${market.line} ${market.statLabel}`, odds: market.underOdds },
-    ];
+  // Each prop is its own market (its own marketKey) with two selections — over and under.
+  const selections = matchPropMarkets(match).flatMap((prop) => {
+    const market = propMarket(tournament.slug, match.day, prop);
+    return market.selections.map((selection) => ({ ...selection, marketKey: market.marketKey }));
   });
 
   return (

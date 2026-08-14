@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAccountSession } from "@/lib/useAccountSession";
-import { accountKey, getBalance, placeWager } from "@/lib/wagers/wallet";
+import { useMMCoinsAccount, placeMMCoinBet } from "@/lib/hooks/useMMCoinsAccount";
 import { formatAmericanOdds, potentialPayout } from "@/lib/wagers/americanOdds";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -11,29 +10,32 @@ import { SignInGate } from "./SignInGate";
 /**
  * The stake-entry step for one chosen selection, embedded directly on a
  * Wagers market page (not a bottom sheet — that's BetSlipSheet, which stays
- * untouched for the unrelated Match Breakdown page). Same placeWager logic
- * as BetSlipSheet, just presented inline instead of in a modal.
+ * untouched for the unrelated Match Breakdown page). Places the bet
+ * server-side against the signed-in account's real MM Coins balance.
  */
 export function WagerStakeForm({
+  marketKey,
+  selectionKey,
   label,
   odds,
   onChangeSelection,
 }: {
+  marketKey: string;
+  selectionKey: string;
   label: string;
   odds: number;
   onChangeSelection?: () => void;
 }) {
-  const session = useAccountSession();
-  const key = accountKey(session);
+  const { session, account, loading: accountLoading } = useMMCoinsAccount();
   const [stake, setStake] = useState("10");
   const [error, setError] = useState<string | null>(null);
+  const [placing, setPlacing] = useState(false);
   const [placed, setPlaced] = useState(false);
 
   const stakeNumber = Number(stake);
-  const balance = key ? getBalance(key) : 0;
+  const balance = account?.balance ?? 0;
 
-  function confirm() {
-    if (!key) return;
+  async function confirm() {
     if (!Number.isFinite(stakeNumber) || stakeNumber <= 0) {
       setError("Enter a stake greater than zero.");
       return;
@@ -42,24 +44,19 @@ export function WagerStakeForm({
       setError("That's more than your current balance.");
       return;
     }
-    const ok = placeWager(key, {
-      id: `${Date.now()}-${Math.round(Math.random() * 1e6)}`, // eslint-disable-line react-hooks/purity
-      placedAt: new Date().toISOString(),
-      selectionLabel: label,
-      odds,
-      stake: stakeNumber,
-      potentialPayout: potentialPayout(stakeNumber, odds),
-      status: "pending",
-    });
-    if (!ok) {
-      setError("Couldn't place that wager — check your balance.");
+    setPlacing(true);
+    setError(null);
+    const result = await placeMMCoinBet({ marketKey, selectionKey, stake: stakeNumber });
+    setPlacing(false);
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
-    setError(null);
     setPlaced(true);
   }
 
-  if (!key) return <SignInGate />;
+  if (!session) return <SignInGate />;
+  if (accountLoading) return <p className="py-6 text-center font-sans text-sm text-ink-400">Loading…</p>;
 
   if (placed) {
     return (
@@ -88,8 +85,8 @@ export function WagerStakeForm({
         {Number.isFinite(stakeNumber) && stakeNumber > 0 ? potentialPayout(stakeNumber, odds).toLocaleString() : "—"} pts
       </p>
       {error && <p className="mt-2 font-sans text-2xs text-score-under">{error}</p>}
-      <Button className="mt-4" fullWidth onClick={confirm}>
-        Confirm Wager
+      <Button className="mt-4" fullWidth onClick={confirm} disabled={placing}>
+        {placing ? "Placing…" : "Confirm Wager"}
       </Button>
     </div>
   );

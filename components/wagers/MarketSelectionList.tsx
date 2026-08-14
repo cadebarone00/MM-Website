@@ -7,6 +7,8 @@ import { formatAmericanOdds } from "@/lib/wagers/americanOdds";
 import { WagerStakeForm } from "./WagerStakeForm";
 
 export interface MarketSelection {
+  /** The specific market this selection belongs to — e.g. one prop's marketKey (each prop is its own market). */
+  marketKey: string;
   key: string;
   label: string;
   odds: number;
@@ -29,7 +31,15 @@ export function MarketSelectionList({
   const [search, setSearch] = useState("");
 
   if (chosen) {
-    return <WagerStakeForm label={chosen.label} odds={chosen.odds} onChangeSelection={() => setChosen(null)} />;
+    return (
+      <WagerStakeForm
+        marketKey={chosen.marketKey}
+        selectionKey={chosen.key}
+        label={chosen.label}
+        odds={chosen.odds}
+        onChangeSelection={() => setChosen(null)}
+      />
+    );
   }
 
   const term = search.trim().toLowerCase();
