@@ -10,6 +10,24 @@ export const MORE_LINKS = [
   { href: "/wagers", label: "Wagers" },
 ];
 
+const OPEN_EVENT = "mm:open-more-menu";
+
+/**
+ * Requests that the More drawer open, from anywhere in the tree that
+ * doesn't own its open/close state — e.g. the Wagers nav bar's "< More"
+ * back button. Header.tsx owns the actual `moreOpen` state and listens
+ * for this event.
+ */
+export function openMoreMenu(): void {
+  window.dispatchEvent(new CustomEvent(OPEN_EVENT));
+}
+
+/** Subscribes to openMoreMenu() calls; returns an unsubscribe function. */
+export function onOpenMoreMenuRequested(handler: () => void): () => void {
+  window.addEventListener(OPEN_EVENT, handler);
+  return () => window.removeEventListener(OPEN_EVENT, handler);
+}
+
 /**
  * Full-screen on mobile, a 25%-width right-edge drawer on desktop — one
  * component, not two, since only one shape is ever visible at a time
