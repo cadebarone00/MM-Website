@@ -1,4 +1,4 @@
-// lib/scorekeeper/client.test.ts
+// lib/scorekeeper/client.test.mts
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
