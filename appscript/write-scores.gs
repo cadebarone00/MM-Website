@@ -76,13 +76,15 @@ function jsonResponse(obj) {
 
 function checkServerSecret(serverSecret) {
   const expected = PropertiesService.getScriptProperties().getProperty("SCOREKEEPER_SERVER_SECRET");
-  if (!expected) {
-    return {
-      valid: false,
-      error: 'No scoring server secret has been set yet. Open the Sheet, then run "Maroon Masters > Set Scoring Server Secret" from the menu.',
-    };
+  // Same generic message whether the property was never set or the caller's
+  // value just didn't match — per the design spec's error-handling section,
+  // this must never leak to a caller which of the two was actually true.
+  // (The setup guidance itself still lives in appscript/README.md, so
+  // there's no loss for you, the operator — only for the API's JSON, which
+  // is the surface an attacker probing the endpoint would see.)
+  if (!expected || String(serverSecret || "") !== expected) {
+    return { valid: false, error: "Could not reach the scoring system." };
   }
-  if (String(serverSecret || "") !== expected) return { valid: false, error: "Unauthorized." };
   return { valid: true };
 }
 
