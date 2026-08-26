@@ -123,13 +123,15 @@ function jsonResponse(obj) {
 
 function checkServerSecret(serverSecret) {
   const expected = PropertiesService.getScriptProperties().getProperty("SCOREKEEPER_SERVER_SECRET");
-  if (!expected) {
-    return {
-      valid: false,
-      error: 'No scoring server secret has been set yet. Open the Sheet, then run "Maroon Masters > Set Scoring Server Secret" from the menu.',
-    };
+  // Same generic message whether the property was never set or the caller's
+  // value just didn't match — per the design spec's error-handling section,
+  // this must never leak to a caller which of the two was actually true.
+  // (The setup guidance itself still lives in appscript/README.md, so
+  // there's no loss for you, the operator — only for the API's JSON, which
+  // is the surface an attacker probing the endpoint would see.)
+  if (!expected || String(serverSecret || "") !== expected) {
+    return { valid: false, error: "Could not reach the scoring system." };
   }
-  if (String(serverSecret || "") !== expected) return { valid: false, error: "Unauthorized." };
   return { valid: true };
 }
 
@@ -759,7 +761,7 @@ If you ever build a new player's row by copying an existing player's whole block
 - [ ] **Step 3: Manual verification checklist (no automated test harness exists for Apps Script)**
 
 Paste the updated `write-scores.gs`/`live-feed.gs` into a **sandbox copy** of the Sheet (File → Make a copy on the real Sheet first — never test against the live trip sheet), deploy as a Web App, run `Maroon Masters → Set Scoring Server Secret`, then verify with `curl` or Postman against the deployed `/exec` URL:
-  1. `POST { "type": "hostGetData", "serverSecret": "wrong" }` → `{ ok: false, error: "Unauthorized." }`
+  1. `POST { "type": "hostGetData", "serverSecret": "wrong" }` → `{ ok: false, error: "Could not reach the scoring system." }` (same generic message whether the secret is wrong or was never set — confirms nothing leaks about which)
   2. `POST { "type": "hostGetData", "serverSecret": "<real>" }` → `{ ok: true, roster, individualLeaderboard, scorecards, pairings, roundState, warnings }` (no `playerCodes` key)
   3. `POST { "type": "hostSetPairings", "serverSecret": "<real>", "round": 1, "session": "Morning", "format": "Fourball", "maroonPlayers": ["<p1>","<p2>"], "whitePlayers": ["<p3>","<p4>"] }` → `{ ok: true }`
   4. `POST { "type": "hostStartRound", "serverSecret": "<real>", "round": 1 }` → `{ ok: true, round: 1 }`
