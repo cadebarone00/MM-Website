@@ -68,18 +68,47 @@ All pages are public, no auth.
   Next.js-16-deprecated "middleware" file convention rather than the newer "proxy"
   convention — a deliberate, open item for whoever picks it up next.
 
-## This round's work
+## Previously shipped rounds (continued)
 
-Kalshi-style layout redesign of the Wagers section — nav bar with
-back-button stack, 5 category pages (Team Futures, Player Futures, Matches,
-Fourballs, Props), a My Portfolio page, an entry loading splash, and an
-"MM Coins / Real Wagers" toggle (Real Wagers shows "Coming soon" — the real
-system is being built separately, see
-`docs/superpowers/specs/2026-08-05-wagers-phase3-real-money-design.md`).
-Visual/routing only — no changes to odds math, wallet, or wager placement
-logic. See `docs/superpowers/specs/2026-08-05-wagers-layout-redesign-design.md`.
+- Kalshi-style layout redesign of the Wagers section — nav bar with
+  back-button stack, 5 category pages (Team Futures, Player Futures, Matches,
+  Fourballs, Props), a My Portfolio page, an entry loading splash, and an
+  "MM Coins / Real Wagers" toggle (Real Wagers shows "Coming soon" — the real
+  system is being built separately, see
+  `docs/superpowers/specs/2026-08-05-wagers-phase3-real-money-design.md`).
+  Visual/routing only — no changes to odds math, wallet, or wager placement
+  logic. See `docs/superpowers/specs/2026-08-05-wagers-layout-redesign-design.md`.
+- Live scoring, Tasks 1-4 of 7 (merged from `worktree-live-scoring-platform`):
+  `/portal` now has a real player scoring panel — players enter hole-by-hole
+  scores for themselves and their round partner, written through to the same
+  Google Sheet that feeds the public `/leaderboard`. The Apps Script backend
+  (`appscript/write-scores.gs`) was rewritten to trust one shared server
+  secret (`SCOREKEEPER_SERVER_SECRET`) instead of the old player-code/
+  host-password system. See
+  `docs/superpowers/plans/2026-08-14-live-scoring-platform.md`.
+
+## Known gaps / not yet built
+
+- **Host scoring tools (Tasks 5-7 of the live scoring plan, not started):**
+  `/portal/host` — pairings, round start/reset, direct score edits for
+  Tiger — does not exist yet. `/portal`'s host view still shows "Host tools
+  are coming in a later round." Until this ships, pairings/round management
+  still needs to happen outside the site.
+- **`SCOREKEEPER_SERVER_SECRET` is not yet configured** in `.env` or in the
+  Google Sheet's Apps Script properties — player scoring will not work live
+  until this is set on both sides (see Rule-2 walkthrough owed to the user).
+- **Players cannot edit their own profile info** (bio, contact info, photo,
+  or any other `PlayerProfile` field in `lib/data/players/*.ts`). All of
+  that data is still hand-edited, static TypeScript files — there is no
+  form, no database column, and no code anywhere in this repo for it. The
+  old standalone "MM-Scorekeeper" app (a separate codebase/deployment this
+  site used to proxy `/portal/*` to, retired 2026-08-04) may have had
+  something like this, but its code was never part of this repository — it
+  lived in that other app's own repo, whose current status is unknown to
+  this project. This needs its own spec before any code is written.
 
 ## Out of scope for this round
 
-Any functional Real Wagers mode, real fourball market data, or the final
-entry-splash image asset (placeholder background until provided).
+Any functional Real Wagers mode, real fourball market data, the final
+entry-splash image asset (placeholder background until provided), the host
+scoring tools listed above, or player profile editing.
