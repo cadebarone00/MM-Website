@@ -1,5 +1,5 @@
 /**
- * Maroon Masters — score write-back for the scorekeeper app, plus host admin.
+ * Maroon Masters — score write-back for /portal's scoring tools, plus host admin.
  *
  * Paste this in as a SECOND file in the SAME Apps Script project as live-feed.gs
  * (Apps Script shares one global scope across files in a project, so this reuses
@@ -7,55 +7,39 @@
  * there — no need to redeploy or create a second Web App URL. The existing
  * deployment already handles this automatically: GET = live feed, POST = this file.
  *
- * Two ways into score entry:
- *  - Player code flow: each player has ONE code for the whole trip (Player Codes
- *    tab). Each round, Pairings determines who they track — themselves, plus the
- *    one player in the matching "slot" on the other team. A round only accepts
- *    entries once the host starts it (Round State tab).
- *  - Host flow: the host logs in with a username/password they set themselves
- *    (run "Maroon Masters > Set Host Password" from the Sheet's menu once).
- *    A logged-in host can see every player's scores/stats, edit any player's
- *    scores directly, set up pairings, issue/replace codes, and start/reset
- *    rounds — all from inside the app instead of hand-editing the Sheet.
+ * Auth: every action here trusts a single shared secret (SCOREKEEPER_SERVER_SECRET,
+ * set via the menu below) sent by the website's own server — the website has
+ * already verified who's asking (via its own Supabase login) before it ever calls
+ * here, so this script doesn't need its own login system. It just checks the
+ * secret matches, then does what it's told: writes/reads a named player's scores,
+ * or (when the caller says isHost) runs pairings/round-control.
  */
 
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu("Maroon Masters")
-    .addItem("Set Host Password", "promptSetHostPassword")
+    .addItem("Set Scoring Server Secret", "promptSetScorekeeperSecret")
     .addItem("Rebuild Sheet (2027 setup)", "rebuildSheetForSeason")
     .addToUi();
 }
 
-function promptSetHostPassword() {
+function promptSetScorekeeperSecret() {
   const ui = SpreadsheetApp.getUi();
 
-  const userResp = ui.prompt("Host Login — Step 1 of 2", "Choose a username:", ui.ButtonSet.OK_CANCEL);
-  if (userResp.getSelectedButton() !== ui.Button.OK) return;
-  const username = userResp.getResponseText().trim();
-  if (!username) {
-    ui.alert("Username can't be blank. Run this again to try again.");
+  const resp = ui.prompt(
+    "Scoring Server Secret",
+    "Paste the same value you put in the website's SCOREKEEPER_SERVER_SECRET setting:",
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (resp.getSelectedButton() !== ui.Button.OK) return;
+  const secret = resp.getResponseText().trim();
+  if (!secret) {
+    ui.alert("Secret can't be blank. Run this again to try again.");
     return;
   }
 
-  const passResp = ui.prompt("Host Login — Step 2 of 2", "Choose a password:", ui.ButtonSet.OK_CANCEL);
-  if (passResp.getSelectedButton() !== ui.Button.OK) return;
-  const password = passResp.getResponseText().trim();
-  if (!password) {
-    ui.alert("Password can't be blank. Run this again to try again.");
-    return;
-  }
-
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName("Host Login");
-  if (!sheet) sheet = ss.insertSheet("Host Login");
-  sheet.clear();
-  sheet.getRange(1, 1, 2, 2).setValues([
-    ["Username", "PasswordHash"],
-    [username, hashPassword(password)],
-  ]);
-
-  ui.alert('Host login saved. Username: "' + username + '" — you can log in on the scorekeeper app now.');
+  PropertiesService.getScriptProperties().setProperty("SCOREKEEPER_SERVER_SECRET", secret);
+  ui.alert("Scoring server secret saved.");
 }
 
 function doPost(e) {
@@ -66,30 +50,42 @@ function doPost(e) {
     return jsonResponse({ error: "Could not read the request." });
   }
 
-  if (body.type === "validateCode") return jsonResponse(handleValidateCode(body.code));
-  if (body.type === "submitHoleAs")
-    return jsonResponse(handleSubmitHoleAs(body.code, body.round, body.target, body.hole, body.score, body.putts, body.fir, body.gir));
-  if (body.type === "cadeMasterGetPlayerRound") return jsonResponse(handleCadeMasterGetPlayerRound(body.code, body.player, body.round));
-  if (body.type === "cadeMasterSubmitHole")
-    return jsonResponse(handleCadeMasterSubmitHole(body.code, body.player, body.round, body.target, body.hole, body.score, body.putts, body.fir, body.gir));
-  if (body.type === "hostLogin") return jsonResponse(handleHostLogin(body.username, body.password));
-  if (body.type === "hostGetData") return jsonResponse(handleHostGetData(body.token));
+  if (body.type === "playerGetRounds") return jsonResponse(handlePlayerGetRounds(body.serverSecret, body.player));
+  if (body.type === "playerSubmitHole")
+    return jsonResponse(
+      handlePlayerSubmitHole(body.serverSecret, body.player, body.round, body.target, body.hole, body.score, body.putts, body.fir, body.gir)
+    );
+  if (body.type === "hostGetData") return jsonResponse(handleHostGetData(body.serverSecret));
   if (body.type === "hostSubmitHole")
-    return jsonResponse(handleHostSubmitHole(body.token, body.player, body.round, body.hole, body.score, body.putts, body.fir, body.gir));
-  if (body.type === "hostGetPlayerRound") return jsonResponse(handleHostGetPlayerRound(body.token, body.player, body.round));
+    return jsonResponse(handleHostSubmitHole(body.serverSecret, body.player, body.round, body.hole, body.score, body.putts, body.fir, body.gir));
+  if (body.type === "hostGetPlayerRound") return jsonResponse(handleHostGetPlayerRound(body.serverSecret, body.player, body.round));
   if (body.type === "hostSetPairings")
-    return jsonResponse(handleHostSetPairings(body.token, body.round, body.session, body.format, body.maroonPlayers, body.whitePlayers));
-  if (body.type === "hostDeletePairing") return jsonResponse(handleHostDeletePairing(body.token, body.row));
-  if (body.type === "hostSetPlayerCodes") return jsonResponse(handleHostSetPlayerCodes(body.token, body.assignments, body.emailBody));
-  if (body.type === "hostRegenerateCode") return jsonResponse(handleHostRegenerateCode(body.token, body.player, body.emailBody));
-  if (body.type === "hostStartRound") return jsonResponse(handleHostStartRound(body.token, body.round));
-  if (body.type === "hostResetRound") return jsonResponse(handleHostResetRound(body.token, body.round));
+    return jsonResponse(handleHostSetPairings(body.serverSecret, body.round, body.session, body.format, body.maroonPlayers, body.whitePlayers));
+  if (body.type === "hostDeletePairing") return jsonResponse(handleHostDeletePairing(body.serverSecret, body.row));
+  if (body.type === "hostStartRound") return jsonResponse(handleHostStartRound(body.serverSecret, body.round));
+  if (body.type === "hostResetRound") return jsonResponse(handleHostResetRound(body.serverSecret, body.round));
   if (body.type === "hostSendRawEmail") return jsonResponse(handleHostSendRawEmail(body.to, body.subject, body.body, body.secret));
   return jsonResponse({ error: "Unknown request type." });
 }
 
 function jsonResponse(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+/* ---------- Auth ---------- */
+
+function checkServerSecret(serverSecret) {
+  const expected = PropertiesService.getScriptProperties().getProperty("SCOREKEEPER_SERVER_SECRET");
+  // Same generic message whether the property was never set or the caller's
+  // value just didn't match — per the design spec's error-handling section,
+  // this must never leak to a caller which of the two was actually true.
+  // (The setup guidance itself still lives in appscript/README.md, so
+  // there's no loss for you, the operator — only for the API's JSON, which
+  // is the surface an attacker probing the endpoint would see.)
+  if (!expected || String(serverSecret || "") !== expected) {
+    return { valid: false, error: "Could not reach the scoring system." };
+  }
+  return { valid: true };
 }
 
 /* ---------- Shared scorecard helpers ---------- */
@@ -207,8 +203,8 @@ function findPairingForPlayer(pairings, round, playerName) {
   return null;
 }
 
-function handleHostSetPairings(token, round, session, format, maroonPlayers, whitePlayers) {
-  const check = verifyHostToken(token);
+function handleHostSetPairings(serverSecret, round, session, format, maroonPlayers, whitePlayers) {
+  const check = checkServerSecret(serverSecret);
   if (!check.valid) return { ok: false, error: check.error };
 
   const roundNum = Number(round);
@@ -233,8 +229,8 @@ function handleHostSetPairings(token, round, session, format, maroonPlayers, whi
   return { ok: true };
 }
 
-function handleHostDeletePairing(token, row) {
-  const check = verifyHostToken(token);
+function handleHostDeletePairing(serverSecret, row) {
+  const check = checkServerSecret(serverSecret);
   if (!check.valid) return { ok: false, error: check.error };
 
   const rowNum = Number(row);
@@ -248,123 +244,7 @@ function handleHostDeletePairing(token, row) {
   return { ok: true };
 }
 
-/* ---------- Player codes ---------- */
-
-function readPlayerCodes(ss) {
-  const sheet = ss.getSheetByName("Player Codes");
-  if (!sheet) return [];
-  const rows = sheet.getDataRange().getValues();
-  const codes = [];
-  for (let r = 1; r < rows.length; r++) {
-    const first = String(rows[r][0] || "").trim();
-    const last = String(rows[r][1] || "").trim();
-    const code = String(rows[r][2] || "").trim();
-    const player = [first, last].filter(Boolean).join(" ");
-    if (player && code) codes.push({ player: player, first: first, last: last, code: code });
-  }
-  return codes;
-}
-
-function findPlayerByCode(ss, code) {
-  const trimmed = String(code || "").trim().toUpperCase();
-  if (!trimmed) return null;
-  const entry = readPlayerCodes(ss).find((c) => c.code.toUpperCase() === trimmed);
-  return entry ? entry.player : null;
-}
-
-function generateCode() {
-  const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no 0/O/1/I/L — avoids mixups when read off a phone
-  let code = "";
-  for (let i = 0; i < 6; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
-  return code;
-}
-
-function handleHostSetPlayerCodes(token, assignments, emailBody) {
-  const check = verifyHostToken(token);
-  if (!check.valid) return { ok: false, error: check.error };
-  if (!Array.isArray(assignments)) return { ok: false, error: "Assignments must be a list." };
-
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName("Player Codes");
-  if (!sheet) {
-    sheet = ss.insertSheet("Player Codes");
-    sheet.getRange(1, 1, 1, 3).setValues([["Player (First)", "Player (Last)", "Code"]]);
-  }
-
-  const existingByFullName = {};
-  for (const entry of readPlayerCodes(ss)) {
-    existingByFullName[entry.player.toLowerCase()] = entry.code;
-  }
-  const oldCodeByPlayer = existingByFullName;
-
-  const clean = assignments
-    .map((a) => ({ player: String(a.player || "").trim(), code: String(a.code || "").trim().toUpperCase() }))
-    .filter((a) => a.player && a.code);
-
-  if (sheet.getLastRow() > 1) {
-    sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).clearContent();
-  }
-  if (clean.length > 0) {
-    sheet.getRange(2, 1, clean.length, 3).setValues(
-      clean.map((a) => {
-        const parts = a.player.split(" ");
-        const last = parts.length > 1 ? parts.pop() : "";
-        const first = parts.join(" ");
-        return [first, last, a.code];
-      })
-    );
-  }
-
-  const warnings = [];
-  for (const a of clean) {
-    const oldCode = oldCodeByPlayer[a.player.toLowerCase()];
-    if (oldCode === a.code) continue;
-    const result = sendCodeEmail(a.player, a.code, emailBody);
-    if (!result.sent) warnings.push(result.warning);
-  }
-
-  return { ok: true, count: clean.length, warnings: warnings };
-}
-
-function handleHostRegenerateCode(token, player, emailBody) {
-  const check = verifyHostToken(token);
-  if (!check.valid) return { ok: false, error: check.error };
-
-  const playerName = String(player || "").trim();
-  if (!playerName) return { ok: false, error: "Player is required." };
-
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName("Player Codes");
-  if (!sheet) {
-    sheet = ss.insertSheet("Player Codes");
-    sheet.getRange(1, 1, 1, 3).setValues([["Player (First)", "Player (Last)", "Code"]]);
-  }
-
-  const newCode = generateCode();
-  const rows = sheet.getDataRange().getValues();
-  let found = false;
-  for (let r = 1; r < rows.length; r++) {
-    const rowFirst = String(rows[r][0] || "").trim();
-    const rowLast = String(rows[r][1] || "").trim();
-    const rowFullName = [rowFirst, rowLast].filter(Boolean).join(" ");
-    if (rowFullName.toLowerCase() === playerName.toLowerCase()) {
-      sheet.getRange(r + 1, 3).setValue(newCode);
-      found = true;
-      break;
-    }
-  }
-  if (!found) {
-    const parts = playerName.split(" ");
-    const last = parts.length > 1 ? parts.pop() : "";
-    const first = parts.join(" ");
-    sheet.getRange(sheet.getLastRow() + 1, 1, 1, 3).setValues([[first, last, newCode]]);
-  }
-
-  const emailResult = sendCodeEmail(playerName, newCode, emailBody);
-  return { ok: true, player: playerName, code: newCode, emailSent: emailResult.sent, emailWarning: emailResult.warning };
-}
-
-/* ---------- Player emails ---------- */
+/* ---------- Player emails (unrelated to login — used for other host comms) ---------- */
 
 function readPlayerEmails(ss) {
   const sheet = ss.getSheetByName("Player Emails");
@@ -379,36 +259,6 @@ function readPlayerEmails(ss) {
     if (name && email) map[name.toLowerCase()] = email;
   }
   return map;
-}
-
-function defaultCodeEmailBody() {
-  return (
-    "Hey {name},\n\n" +
-    "Your Maroon Masters scoring code for the trip is: {code}\n\n" +
-    "Enter this in the Maroon Masters scorekeeper app under Player whenever the host starts a round.\n\n" +
-    "— Maroon Masters"
-  );
-}
-
-function sendCodeEmail(player, code, bodyTemplate) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const emails = readPlayerEmails(ss);
-  const email = emails[player.toLowerCase()];
-  if (!email) return { sent: false, warning: "No email on file for " + player + " — code not emailed." };
-
-  const template = String(bodyTemplate || "").trim() || defaultCodeEmailBody();
-  const body = template.replace(/\{name\}/g, player).replace(/\{code\}/g, code);
-
-  try {
-    MailApp.sendEmail({
-      to: email,
-      subject: "Maroon Masters — Your Scoring Code",
-      body: body,
-    });
-    return { sent: true };
-  } catch (err) {
-    return { sent: false, warning: "Could not send email to " + player + ": " + err.message };
-  }
 }
 
 function handleHostSendRawEmail(to, subject, body, secret) {
@@ -444,8 +294,8 @@ function startedRounds(ss) {
     .map((r) => r.round);
 }
 
-function handleHostStartRound(token, round) {
-  const check = verifyHostToken(token);
+function handleHostStartRound(serverSecret, round) {
+  const check = checkServerSecret(serverSecret);
   if (!check.valid) return { ok: false, error: check.error };
 
   const roundNum = Number(round);
@@ -474,8 +324,8 @@ function handleHostStartRound(token, round) {
   return { ok: true, round: roundNum };
 }
 
-function handleHostResetRound(token, round) {
-  const check = verifyHostToken(token);
+function handleHostResetRound(serverSecret, round) {
+  const check = checkServerSecret(serverSecret);
   if (!check.valid) return { ok: false, error: check.error };
 
   const roundNum = Number(round);
@@ -508,108 +358,59 @@ function handleHostResetRound(token, round) {
   return { ok: true, round: roundNum, playersCleared: blockStarts.length };
 }
 
-/* ---------- Player code login + scoring ---------- */
+/* ---------- Player scoring ---------- */
 
-function handleValidateCode(code) {
+function handlePlayerGetRounds(serverSecret, player) {
+  const check = checkServerSecret(serverSecret);
+  if (!check.valid) return { valid: false, error: check.error };
+
+  const playerName = String(player || "").trim();
+  if (!playerName) return { valid: false, error: "Player is required." };
+
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const player = findPlayerByCode(ss, code);
-  if (!player) return { valid: false, error: "Code not recognized." };
-
   const started = startedRounds(ss);
   if (started.length === 0) {
-    return { valid: true, player: player, rounds: [], waiting: "Waiting for the host to start a round." };
+    return { valid: true, player: playerName, rounds: [], waiting: "Waiting for the host to start a round." };
   }
 
   const pairings = readPairings(ss);
   const rounds = [];
   for (const round of started) {
-    const holes = readPlayerRoundHoles(player, round);
+    const holes = readPlayerRoundHoles(playerName, round);
     if (!holes) continue;
-    const match = findPairingForPlayer(pairings, round, player);
+    const match = findPairingForPlayer(pairings, round, playerName);
     const partner = match ? match.partner : null;
     const partnerHoles = partner ? readPlayerRoundHoles(partner, round) : null;
     rounds.push({ round: round, holes: holes, partner: partner, partnerHoles: partnerHoles });
   }
 
   if (rounds.length === 0) {
-    return { valid: true, player: player, rounds: [], waiting: "Waiting for the host to start a round." };
+    return { valid: true, player: playerName, rounds: [], waiting: "Waiting for the host to start a round." };
   }
 
-  return { valid: true, player: player, rounds: rounds };
+  return { valid: true, player: playerName, rounds: rounds };
 }
 
-function handleSubmitHoleAs(code, round, target, hole, score, putts, fir, gir) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const player = findPlayerByCode(ss, code);
-  if (!player) return { saved: false, error: "Code not recognized." };
+function handlePlayerSubmitHole(serverSecret, player, round, target, hole, score, putts, fir, gir) {
+  const check = checkServerSecret(serverSecret);
+  if (!check.valid) return { saved: false, error: check.error };
+
+  const playerName = String(player || "").trim();
+  if (!playerName) return { saved: false, error: "Player is required." };
 
   const roundNum = Number(round);
   if (!roundNum || roundNum < 1) return { saved: false, error: "Round is required." };
 
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
   const started = startedRounds(ss);
   if (started.indexOf(roundNum) === -1) return { saved: false, error: "This round hasn't been started by the host yet." };
 
   let writeTarget;
   if (target === "self") {
-    writeTarget = player;
-  } else if (target === "partner") {
-    const pairings = readPairings(ss);
-    const match = findPairingForPlayer(pairings, roundNum, player);
-    if (!match || !match.partner) return { saved: false, error: "No playing partner assigned for this round yet." };
-    writeTarget = match.partner;
-  } else {
-    return { saved: false, error: "Invalid target." };
-  }
-
-  return writeHoleScore(writeTarget, roundNum, hole, score, putts, fir, gir);
-}
-
-/* ---------- Cade master key ---------- */
-
-const CADE_MASTER_CODE = "CADE27";
-
-function isCadeMasterCode(code) {
-  return String(code || "").trim().toUpperCase() === CADE_MASTER_CODE;
-}
-
-function handleCadeMasterGetPlayerRound(code, player, round) {
-  if (!isCadeMasterCode(code)) return { valid: false, error: "Master key is required." };
-
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const playerName = String(player || "").trim();
-  const roundNum = Number(round);
-  if (!playerName) return { valid: false, error: "Player is required." };
-  if (!roundNum || roundNum < 1) return { valid: false, error: "Round is required." };
-
-  const holes = readPlayerRoundHoles(playerName, roundNum);
-  if (!holes) return { valid: false, error: "Could not find " + playerName + "'s scorecard block." };
-
-  const match = findPairingForPlayer(readPairings(ss), roundNum, playerName);
-  const partner = match ? match.partner : null;
-  const partnerHoles = partner ? readPlayerRoundHoles(partner, roundNum) : null;
-
-  return {
-    valid: true,
-    master: true,
-    player: playerName,
-    rounds: [{ round: roundNum, holes: holes, partner: partner, partnerHoles: partnerHoles }],
-  };
-}
-
-function handleCadeMasterSubmitHole(code, player, round, target, hole, score, putts, fir, gir) {
-  if (!isCadeMasterCode(code)) return { saved: false, error: "Master key is required." };
-
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const playerName = String(player || "").trim();
-  const roundNum = Number(round);
-  if (!playerName) return { saved: false, error: "Player is required." };
-  if (!roundNum || roundNum < 1) return { saved: false, error: "Round is required." };
-
-  let writeTarget;
-  if (target === "self") {
     writeTarget = playerName;
   } else if (target === "partner") {
-    const match = findPairingForPlayer(readPairings(ss), roundNum, playerName);
+    const pairings = readPairings(ss);
+    const match = findPairingForPlayer(pairings, roundNum, playerName);
     if (!match || !match.partner) return { saved: false, error: "No playing partner assigned for this round yet." };
     writeTarget = match.partner;
   } else {
@@ -617,88 +418,12 @@ function handleCadeMasterSubmitHole(code, player, round, target, hole, score, pu
   }
 
   return writeHoleScore(writeTarget, roundNum, hole, score, putts, fir, gir);
-}
-
-/* ---------- Host auth ---------- */
-
-function hashPassword(pw) {
-  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, pw);
-  return digest.map((b) => (b < 0 ? b + 256 : b).toString(16).padStart(2, "0")).join("");
-}
-
-function getHostTokenSecret() {
-  const props = PropertiesService.getScriptProperties();
-  let secret = props.getProperty("HOST_TOKEN_SECRET");
-  if (!secret) {
-    secret = Utilities.getUuid() + Utilities.getUuid();
-    props.setProperty("HOST_TOKEN_SECRET", secret);
-  }
-  return secret;
-}
-
-function hmacHex(message, secret) {
-  const raw = Utilities.computeHmacSha256Signature(message, secret);
-  return raw.map((b) => (b < 0 ? b + 256 : b).toString(16).padStart(2, "0")).join("");
-}
-
-function makeHostToken(username) {
-  const expiresAt = Date.now() + 12 * 60 * 60 * 1000; // 12 hours
-  const payload = username + "." + expiresAt;
-  const sig = hmacHex(payload, getHostTokenSecret());
-  return Utilities.base64EncodeWebSafe(payload + "." + sig);
-}
-
-function verifyHostToken(token) {
-  try {
-    const decoded = Utilities.newBlob(Utilities.base64DecodeWebSafe(String(token || ""))).getDataAsString();
-    const parts = decoded.split(".");
-    if (parts.length !== 3) return { valid: false, error: "Please log in again." };
-    const username = parts[0];
-    const expiresAt = Number(parts[1]);
-    const sig = parts[2];
-    const expected = hmacHex(username + "." + expiresAt, getHostTokenSecret());
-    if (sig !== expected) return { valid: false, error: "Please log in again." };
-    if (Date.now() > expiresAt) return { valid: false, error: "Your session expired — please log in again." };
-    return { valid: true, username: username };
-  } catch (err) {
-    return { valid: false, error: "Please log in again." };
-  }
-}
-
-function readHostLogin(ss) {
-  const sheet = ss.getSheetByName("Host Login");
-  if (!sheet) return null;
-  const rows = sheet.getDataRange().getValues();
-  for (let r = 1; r < rows.length; r++) {
-    const username = String(rows[r][0] || "").trim();
-    const hash = String(rows[r][1] || "").trim();
-    if (username && hash) return { username: username, hash: hash };
-  }
-  return null;
-}
-
-function handleHostLogin(username, password) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const stored = readHostLogin(ss);
-  if (!stored) {
-    return { ok: false, error: 'No host password has been set yet. Open the Sheet, then run "Maroon Masters > Set Host Password" from the menu.' };
-  }
-
-  const u = String(username || "").trim();
-  const p = String(password || "").trim();
-  if (!u || !p) return { ok: false, error: "Enter a username and password." };
-
-  if (u !== stored.username || hashPassword(p) !== stored.hash) {
-    return { ok: false, error: "Incorrect username or password." };
-  }
-
-  return { ok: true, token: makeHostToken(stored.username), expiresAt: Date.now() + 12 * 60 * 60 * 1000, username: stored.username };
 }
 
 /* ---------- Host data + direct-edit actions ---------- */
 
-function handleHostGetData(token) {
-  const check = verifyHostToken(token);
+function handleHostGetData(serverSecret) {
+  const check = checkServerSecret(serverSecret);
   if (!check.valid) return { ok: false, error: check.error };
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -711,7 +436,6 @@ function handleHostGetData(token) {
   const individualLeaderboard = readIndividualLeaderboard(ss, rosterTeamByName, warnings);
   const scorecards = readScorecards(ss, rosterTeamByName, warnings);
   const pairings = readPairings(ss);
-  const playerCodes = readPlayerCodes(ss);
   const roundState = readRoundState(ss);
 
   return {
@@ -720,14 +444,13 @@ function handleHostGetData(token) {
     individualLeaderboard: individualLeaderboard,
     scorecards: scorecards,
     pairings: pairings,
-    playerCodes: playerCodes,
     roundState: roundState,
     warnings: warnings,
   };
 }
 
-function handleHostSubmitHole(token, player, round, hole, score, putts, fir, gir) {
-  const check = verifyHostToken(token);
+function handleHostSubmitHole(serverSecret, player, round, hole, score, putts, fir, gir) {
+  const check = checkServerSecret(serverSecret);
   if (!check.valid) return { saved: false, error: check.error };
 
   const playerName = String(player || "").trim();
@@ -738,8 +461,8 @@ function handleHostSubmitHole(token, player, round, hole, score, putts, fir, gir
   return writeHoleScore(playerName, roundNum, hole, score, putts, fir, gir);
 }
 
-function handleHostGetPlayerRound(token, player, round) {
-  const check = verifyHostToken(token);
+function handleHostGetPlayerRound(serverSecret, player, round) {
+  const check = checkServerSecret(serverSecret);
   if (!check.valid) return { ok: false, error: check.error };
 
   const playerName = String(player || "").trim();
@@ -853,7 +576,8 @@ function rebuildPlayerDataPull(ss) {
   sheet = ss.insertSheet("Player Data Pull");
   sheet.hideSheet();
 
-  const players = readPlayerCodes(ss).map((c) => c.player);
+  const roster = readRoster(ss, []);
+  const players = [...roster.maroon, ...roster.white];
   const activeRounds = Object.keys(SEASON_REBUILD_ROUNDS)
     .map(Number)
     .sort((a, b) => a - b);
