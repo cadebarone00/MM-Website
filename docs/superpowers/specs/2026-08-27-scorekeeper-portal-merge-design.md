@@ -111,12 +111,21 @@ score-affecting ones — mirrors to the Sheet as described above.
 
 ## Data / identity mapping
 
-MM-Scorekeeper's Postgres keys players by name (`Player(first, last, team, email,
-phone)`); this repo's Supabase `profiles` table keys by `player_slug`. The Route
-Handlers are the single place this mapping happens: resolve Supabase session →
-`player_slug` → full name (via `getPlayerProfileBySlug`, as `requirePlayer.ts`
-already does) → pass that resolved name to the Python API. No client-supplied name
-or identity is ever trusted.
+MM-Scorekeeper's Postgres keys players by **bare first name only**
+(`Player(first, last, team, email, phone)`, `player_accounts.player_first`) — not
+full name. This repo's Supabase `profiles` table keys by `player_slug`, and
+`PlayerProfile.id` (in `lib/data/players/*.ts`) already equals that same first-name
+string for every player (verified against MM-Scorekeeper's roster — e.g.
+`PlayerProfile.id === "Cade"` for Cade Barone). The Route Handlers are the single
+place this mapping happens: resolve Supabase session → `player_slug` → both a full
+name (`playerFullName`, for the Google Sheet — see below) and a first name
+(`playerFirstName`, for the Python API — must be `PlayerProfile.id`, never a
+`fullName.split(" ")[0]` derivation or any other guess) via `requirePlayer.ts`. No
+client-supplied name or identity is ever trusted. Sending `playerFullName` to the
+Python API is a bug, not a style choice — Python's lazy account provisioning (see
+Phase 1's Task 3) means a full name silently creates a bogus `player_accounts` row
+instead of erroring, so this distinction matters even though the two backends'
+identity models won't be unified in this project.
 
 No data migration is required — the existing Neon Postgres database, and everything
 in it, stays exactly where it is; only who's allowed to write to it changes.
