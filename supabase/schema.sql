@@ -252,3 +252,80 @@ begin
 end;
 $$;
 grant execute on function settle_mm_coin_market to authenticated;
+
+-- === Native Live Platform ================================================
+-- Live tournament data (current/upcoming year only — past years stay as
+-- static lib/data/*.ts files, never written here). Every player reference
+-- uses player_slug, the same canonical identifier profiles/player_slots
+-- already use — never a bare first name.
+
+create table if not exists live_courses (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  holes jsonb not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists live_match_boxes (
+  id uuid primary key default gen_random_uuid(),
+  tournament_year integer not null,
+  day integer not null check (day between 1 and 4),
+  session text not null check (session in ('Morning', 'Afternoon')),
+  box_number integer not null check (box_number between 1 and 3),
+  format text not null check (format in ('Fourball', 'Scramble', 'Alternate Shot', 'Singles')),
+  tee_time timestamptz not null,
+  maroon_players text[] not null,
+  white_players text[] not null,
+  state text not null default 'Scheduled' check (state in ('Scheduled', 'Armed', 'Live', 'Final')),
+  started boolean not null default false,
+  created_at timestamptz not null default now(),
+  unique (tournament_year, day, session, box_number)
+);
+create index if not exists live_match_boxes_year_day_session_idx on live_match_boxes (tournament_year, day, session);
+
+create table if not exists live_hole_scores (
+  id uuid primary key default gen_random_uuid(),
+  player_slug text not null references player_slots(player_slug),
+  round integer not null,
+  hole integer not null check (hole between 1 and 18),
+  score integer,
+  putts integer,
+  fir boolean,
+  gir boolean,
+  host_edited boolean not null default false,
+  -- Set once the player's round partner confirms this entry matches their
+  -- own count. Null means "entered, not yet confirmed" — the confirmation
+  -- flow itself is a later phase, this column just makes room for it now.
+  confirmed_by text references player_slots(player_slug),
+  updated_at timestamptz not null default now(),
+  unique (player_slug, round, hole)
+);
+create index if not exists live_hole_scores_round_idx on live_hole_scores (round);
+
+create table if not exists live_round_state (
+  round integer primary key,
+  started boolean not null default false,
+  course_id uuid references live_courses(id)
+);
+
+alter table live_courses enable row level security;
+alter table live_match_boxes enable row level security;
+alter table live_hole_scores enable row level security;
+alter table live_round_state enable row level security;
+
+-- All four are readable by anyone, signed in or not — matches the public
+-- site's existing behavior (players and fans alike see live tournament
+-- state, and nothing here is sensitive). Writes happen server-side with the
+-- service-role key (bypasses RLS), same pattern as profiles — there is
+-- deliberately no insert/update policy on any of these.
+drop policy if exists live_courses_select_all on live_courses;
+create policy live_courses_select_all on live_courses for select using (true);
+
+drop policy if exists live_match_boxes_select_all on live_match_boxes;
+create policy live_match_boxes_select_all on live_match_boxes for select using (true);
+
+drop policy if exists live_hole_scores_select_all on live_hole_scores;
+create policy live_hole_scores_select_all on live_hole_scores for select using (true);
+
+drop policy if exists live_round_state_select_all on live_round_state;
+create policy live_round_state_select_all on live_round_state for select using (true);
