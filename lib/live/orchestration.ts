@@ -1,4 +1,4 @@
-import { scoreFor, type LiveMatchBox, type LiveTournamentSnapshot, type MatchState, type Session, type Team } from "./types.ts";
+import { readScore, type LiveMatchBox, type LiveTournamentSnapshot, type MatchState, type Session, type Team } from "./types.ts";
 
 const MATCH_BOXES_PER_SESSION = 3;
 const SESSION_PLAYER_COUNT = 12;
@@ -42,7 +42,7 @@ export function sessionIsComplete(snapshot: LiveTournamentSnapshot, day: number,
   return players.length === SESSION_PLAYER_COUNT && new Set(players).size === SESSION_PLAYER_COUNT;
 }
 
-export function effectiveMatchState(matchBox: LiveMatchBox, snapshot: LiveTournamentSnapshot, now?: Date): MatchState {
+export function effectiveMatchState(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox, now?: Date): MatchState {
   if (matchBox.state === "Final") return "Final";
   if (matchBoxStartedThru(snapshot, matchBox) === 18) return "Final";
   if (!matchBox.started) return "Scheduled";
@@ -72,7 +72,7 @@ export function holeComplete(snapshot: LiveTournamentSnapshot, matchBox: LiveMat
   const round = matchBoxRound(matchBox);
   const players = [...matchBox.maroonPlayers, ...matchBox.whitePlayers];
   return players.every((player) => {
-    const score = scoreFor(snapshot, player, round, hole);
+    const score = readScore(snapshot, player, round, hole);
     return score.score !== null && score.score > 0;
   });
 }
@@ -98,8 +98,8 @@ export function matchBoxResult(snapshot: LiveTournamentSnapshot, matchBox: LiveM
   for (let hole = 1; hole <= 18; hole++) {
     if (!holeComplete(snapshot, matchBox, hole)) break;
     completed = hole;
-    const maroonBest = Math.min(...matchBox.maroonPlayers.map((player) => scoreFor(snapshot, player, round, hole).score ?? 0));
-    const whiteBest = Math.min(...matchBox.whitePlayers.map((player) => scoreFor(snapshot, player, round, hole).score ?? 0));
+    const maroonBest = Math.min(...matchBox.maroonPlayers.map((player) => readScore(snapshot, player, round, hole).score ?? 0));
+    const whiteBest = Math.min(...matchBox.whitePlayers.map((player) => readScore(snapshot, player, round, hole).score ?? 0));
     if (maroonBest < whiteBest) maroonHoles++;
     else if (whiteBest < maroonBest) whiteHoles++;
   }
@@ -124,7 +124,7 @@ export function matchBoxResult(snapshot: LiveTournamentSnapshot, matchBox: LiveM
 }
 
 export function matchBoxPayload(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox, now?: Date): Record<string, unknown> {
-  const state = effectiveMatchState(matchBox, snapshot, now);
+  const state = effectiveMatchState(snapshot, matchBox, now);
   const result = matchBoxResult(snapshot, matchBox);
   return {
     id: matchBox.id,

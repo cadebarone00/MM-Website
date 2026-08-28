@@ -74,6 +74,13 @@ export function scoreFor(snapshot: LiveTournamentSnapshot, player: string, round
   return blank;
 }
 
+export function readScore(snapshot: LiveTournamentSnapshot, player: string, round: number, hole: number): LiveHoleScore {
+  const key = scoreKey(player, round, hole);
+  return (
+    snapshot.scores.get(key) ?? { player, round, hole, score: null, putts: null, fir: null, gir: null, hostEdited: false }
+  );
+}
+
 export function courseForRound(snapshot: LiveTournamentSnapshot, round: number): LiveCourse | null {
   const courseId = snapshot.roundCourses[round];
   if (courseId && snapshot.courses[courseId]) return snapshot.courses[courseId];

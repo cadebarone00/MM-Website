@@ -278,7 +278,8 @@ create table if not exists live_match_boxes (
   white_players text[] not null,
   state text not null default 'Scheduled' check (state in ('Scheduled', 'Armed', 'Live', 'Final')),
   started boolean not null default false,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  unique (tournament_year, day, session, box_number)
 );
 create index if not exists live_match_boxes_year_day_session_idx on live_match_boxes (tournament_year, day, session);
 
@@ -312,18 +313,19 @@ alter table live_match_boxes enable row level security;
 alter table live_hole_scores enable row level security;
 alter table live_round_state enable row level security;
 
--- All four are readable by any signed-in user (players and fans alike see
--- live tournament state) — nothing here is sensitive. Writes happen
--- server-side with the service-role key (bypasses RLS), same pattern as
--- profiles — there is deliberately no insert/update policy on any of these.
+-- All four are readable by anyone, signed in or not — matches the public
+-- site's existing behavior (players and fans alike see live tournament
+-- state, and nothing here is sensitive). Writes happen server-side with the
+-- service-role key (bypasses RLS), same pattern as profiles — there is
+-- deliberately no insert/update policy on any of these.
 drop policy if exists live_courses_select_all on live_courses;
-create policy live_courses_select_all on live_courses for select using (auth.uid() is not null);
+create policy live_courses_select_all on live_courses for select using (true);
 
 drop policy if exists live_match_boxes_select_all on live_match_boxes;
-create policy live_match_boxes_select_all on live_match_boxes for select using (auth.uid() is not null);
+create policy live_match_boxes_select_all on live_match_boxes for select using (true);
 
 drop policy if exists live_hole_scores_select_all on live_hole_scores;
-create policy live_hole_scores_select_all on live_hole_scores for select using (auth.uid() is not null);
+create policy live_hole_scores_select_all on live_hole_scores for select using (true);
 
 drop policy if exists live_round_state_select_all on live_round_state;
-create policy live_round_state_select_all on live_round_state for select using (auth.uid() is not null);
+create policy live_round_state_select_all on live_round_state for select using (true);
