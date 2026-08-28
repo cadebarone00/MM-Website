@@ -42,9 +42,9 @@ export function sessionIsComplete(snapshot: LiveTournamentSnapshot, day: number,
   return players.length === SESSION_PLAYER_COUNT && new Set(players).size === SESSION_PLAYER_COUNT;
 }
 
-export function effectiveMatchState(matchBox: LiveMatchBox, now?: Date, snapshotForThru?: LiveTournamentSnapshot): MatchState {
+export function effectiveMatchState(matchBox: LiveMatchBox, snapshot: LiveTournamentSnapshot, now?: Date): MatchState {
   if (matchBox.state === "Final") return "Final";
-  if (snapshotForThru && matchBoxStartedThru(snapshotForThru, matchBox) === 18) return "Final";
+  if (matchBoxStartedThru(snapshot, matchBox) === 18) return "Final";
   if (!matchBox.started) return "Scheduled";
 
   const current = now ?? new Date();
@@ -124,7 +124,7 @@ export function matchBoxResult(snapshot: LiveTournamentSnapshot, matchBox: LiveM
 }
 
 export function matchBoxPayload(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox, now?: Date): Record<string, unknown> {
-  const state = effectiveMatchState(matchBox, now, snapshot);
+  const state = effectiveMatchState(matchBox, snapshot, now);
   const result = matchBoxResult(snapshot, matchBox);
   return {
     id: matchBox.id,

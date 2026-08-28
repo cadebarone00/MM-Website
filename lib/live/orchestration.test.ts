@@ -49,13 +49,14 @@ test("session complete requires three boxes and all twelve players", () => {
 });
 
 test("match state moves from scheduled to armed to live", () => {
+  const snapshot = seedSnapshot();
   const matchBox = box(1, 1, ["cam", "drew"], ["cade", "collin"]);
 
-  assert.equal(effectiveMatchState(matchBox, new Date("2027-01-06T10:00:00-06:00")), "Scheduled");
+  assert.equal(effectiveMatchState(matchBox, snapshot, new Date("2027-01-06T10:00:00-06:00")), "Scheduled");
 
   matchBox.started = true;
-  assert.equal(effectiveMatchState(matchBox, new Date("2027-01-06T09:00:00-06:00")), "Armed");
-  assert.equal(effectiveMatchState(matchBox, new Date("2027-01-06T09:30:00-06:00")), "Live");
+  assert.equal(effectiveMatchState(matchBox, snapshot, new Date("2027-01-06T09:00:00-06:00")), "Armed");
+  assert.equal(effectiveMatchState(matchBox, snapshot, new Date("2027-01-06T09:30:00-06:00")), "Live");
 });
 
 test("thru label never displays Thru 18", () => {
