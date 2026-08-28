@@ -5,6 +5,7 @@ export interface PlayerSession {
   userId: string;
   playerSlug: string;
   playerFullName: string;
+  playerFirstName: string;
 }
 
 /**
@@ -26,5 +27,10 @@ export async function requirePlayer(): Promise<PlayerSession | null> {
   const playerProfile = getPlayerProfileBySlug(profile.player_slug);
   if (!playerProfile) return null;
 
-  return { userId: user.id, playerSlug: profile.player_slug, playerFullName: playerProfile.fullName };
+  return {
+    userId: user.id,
+    playerSlug: profile.player_slug,
+    playerFullName: playerProfile.fullName,
+    playerFirstName: playerProfile.id,
+  };
 }

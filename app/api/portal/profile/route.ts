@@ -23,9 +23,10 @@ export async function GET() {
   }
 
   try {
-    const result = await callPythonApi<WhoamiResponse>("/player-whoami", { player: player.playerFullName });
+    const result = await callPythonApi<WhoamiResponse>("/player-whoami", { player: player.playerFirstName });
     return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
-  } catch {
+  } catch (err) {
+    console.error("[portal/profile] python call failed", err);
     return NextResponse.json({ ok: false, error: "Could not reach the scoring system." }, { status: 502 });
   }
 }
