@@ -3,6 +3,8 @@ import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import type { LiveRoundState, MatchFormat } from "@/lib/live/types";
 
+const VALID_FORMATS: MatchFormat[] = ["Fourball", "Foursome", "Singles"];
+
 export async function GET() {
   const host = await requireHost();
   if (!host) {
@@ -39,6 +41,9 @@ export async function POST(request: Request) {
   const { round, date, courseId, format } = await request.json();
   if (typeof round !== "number") {
     return NextResponse.json({ ok: false, error: "Missing round." }, { status: 400 });
+  }
+  if (format !== undefined && !VALID_FORMATS.includes(format)) {
+    return NextResponse.json({ ok: false, error: "Invalid format." }, { status: 400 });
   }
 
   const update: Record<string, unknown> = {};
