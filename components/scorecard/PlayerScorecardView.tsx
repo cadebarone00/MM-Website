@@ -10,8 +10,8 @@ import type { PlayerScorecard } from "@/lib/data";
 
 function HoleStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col items-center gap-1 px-5">
-      <span className="font-score text-2xl font-bold text-ink-900 tabular-nums">{value}</span>
+    <div className="flex flex-col items-center gap-[2px] px-3">
+      <span className="font-score text-lg font-bold text-ink-900 tabular-nums">{value}</span>
       <span className="font-condensed text-3xs font-semibold tracking-eyebrow uppercase text-ink-400">{label}</span>
     </div>
   );
@@ -45,8 +45,8 @@ export function PlayerScorecardView({ scorecard }: { scorecard: PlayerScorecard 
       </div>
 
       <div className="overflow-x-auto">
-        <CourseInfoHeader round={active} onHoleClick={setSelectedHole} />
-        <ScorecardRow round={active} onHoleClick={setSelectedHole} />
+        <CourseInfoHeader round={active} onHoleClick={setSelectedHole} selectedHole={selectedHole} />
+        <ScorecardRow round={active} onHoleClick={setSelectedHole} selectedHole={selectedHole} />
       </div>
 
       <div className="mt-3 sm:mt-5">
@@ -55,9 +55,9 @@ export function PlayerScorecardView({ scorecard }: { scorecard: PlayerScorecard 
 
       {holeStat && (
         <div className="mt-6">
-          <div className="flex items-center justify-center gap-6 py-6 bg-white border border-ink-100 rounded-md mb-4">
-            <HoleMarkerForDiff diff={holeStat.diff} size={64}>
-              <span className="text-xl">{holeStat.score}</span>
+          <div className="flex flex-wrap items-center justify-center gap-3 py-3 px-3 bg-white border border-ink-100 rounded-md mb-4">
+            <HoleMarkerForDiff diff={holeStat.diff} size={40}>
+              {holeStat.score}
             </HoleMarkerForDiff>
             <div className="flex divide-x divide-ink-100">
               <HoleStat label="Par" value={String(holeStat.par)} />
