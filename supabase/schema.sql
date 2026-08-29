@@ -329,3 +329,45 @@ create policy live_hole_scores_select_all on live_hole_scores for select using (
 
 drop policy if exists live_round_state_select_all on live_round_state;
 create policy live_round_state_select_all on live_round_state for select using (true);
+
+-- === Tiger Center: Setup (roster, round scheduling) =====================
+-- Extends the Native Live Platform section above. Adds the pieces Tiger
+-- needs to set up a tournament: how many rounds, who's on which team, and
+-- each round's date/course/format with independent lock states.
+
+create table if not exists live_tournament_settings (
+  id boolean primary key default true,
+  round_count integer check (round_count between 6 and 10),
+  completed_at timestamptz,
+  constraint live_tournament_settings_singleton check (id)
+);
+
+create table if not exists live_roster (
+  player_slug text primary key references player_slots(player_slug),
+  team text not null check (team in ('maroon', 'white'))
+);
+
+alter table live_round_state
+  add column if not exists date date,
+  add column if not exists format text check (format in ('Fourball', 'Foursome', 'Singles')),
+  add column if not exists course_locked boolean not null default false,
+  add column if not exists matchups_locked boolean not null default false;
+
+-- Formats are three going forward (Foursome replaces the Scramble/Alternate
+-- Shot split — see the Tiger Center Operations spec). Postgres names an
+-- inline column check "<table>_<column>_check" by default, so this is the
+-- real name of the constraint the Native Live Platform section created.
+alter table live_match_boxes drop constraint if exists live_match_boxes_format_check;
+alter table live_match_boxes add constraint live_match_boxes_format_check check (format in ('Fourball', 'Foursome', 'Singles'));
+
+alter table live_tournament_settings enable row level security;
+alter table live_roster enable row level security;
+
+-- Same "public read, service-role writes" pattern as the rest of the live
+-- tables — this is tournament setup info, not sensitive, and the public
+-- site/Player Portal both need to read it.
+drop policy if exists live_tournament_settings_select_all on live_tournament_settings;
+create policy live_tournament_settings_select_all on live_tournament_settings for select using (true);
+
+drop policy if exists live_roster_select_all on live_roster;
+create policy live_roster_select_all on live_roster for select using (true);
