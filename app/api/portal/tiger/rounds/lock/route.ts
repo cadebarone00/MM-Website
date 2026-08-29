@@ -23,12 +23,13 @@ export async function POST(request: Request) {
       if (!current?.date || !current?.course_id || !current?.format) {
         return NextResponse.json({ ok: false, error: "Set a date, course, and format before locking this round." }, { status: 400 });
       }
-    } else {
-      // Unlocking course/format invalidates any matchups built against it —
-      // a matchups-locked round can't be left pointing at an unlocked format.
-      await service.from("live_round_state").update({ matchups_locked: false }).eq("round", round);
     }
-    const { error } = await service.from("live_round_state").update({ course_locked: value }).eq("round", round);
+    // Unlocking course/format invalidates any matchups built against it —
+    // a matchups-locked round can't be left pointing at an unlocked format.
+    const { error } = await service
+      .from("live_round_state")
+      .update(value ? { course_locked: value } : { course_locked: value, matchups_locked: false })
+      .eq("round", round);
     if (error) {
       return NextResponse.json({ ok: false, error: "Could not update the lock." }, { status: 500 });
     }
