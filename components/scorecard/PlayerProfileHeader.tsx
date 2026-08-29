@@ -73,7 +73,7 @@ export function PlayerProfileHeader({
       </div>
 
       {bio && (
-        <p className="font-sans text-sm leading-relaxed text-ink-600 max-w-[640px]">
+        <p className="font-sans text-xs leading-relaxed text-ink-600 max-w-[640px]">
           {truncateBio(bio)}{" "}
           <Link href={bioHref} className="font-semibold text-maroon-700 hover:underline whitespace-nowrap">
             Full Bio →
