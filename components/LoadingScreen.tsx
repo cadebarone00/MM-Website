@@ -38,7 +38,9 @@ export function LoadingScreen({
       <div className="absolute inset-0 bg-gradient-to-b from-maroon-900/70 via-maroon-900/30 to-maroon-900/70" />
       <div
         className={`relative flex h-full flex-col items-center gap-6 px-6 text-center ${
-          raised ? "justify-start pt-[18vh] sm:pt-[20vh]" : "justify-center"
+          raised
+            ? "justify-start pt-[22vh] lg:pt-[18vh]"
+            : "justify-center -translate-y-[3vh] lg:translate-y-0"
         }`}
       >
         <h1 className="font-serif text-4xl font-bold uppercase tracking-eyebrow text-cream-50 drop-shadow-lg sm:text-5xl">

@@ -1,39 +1,39 @@
-import { Avatar } from "@/components/ui/Avatar";
 import { HoleMarkerForDiff } from "./HoleMarker";
-import type { RoundScorecard, Team } from "@/lib/data";
+import type { RoundScorecard } from "@/lib/data";
 
 interface ScorecardRowProps {
   round: RoundScorecard;
-  player: string;
-  team?: Team;
   onHoleClick?: (hole: number) => void;
   selectedHole?: number | null;
+  registerHoleRef?: (hole: number, el: HTMLElement | null) => void;
 }
 
 function HoleCell({
   hole,
   onHoleClick,
   selected,
+  registerRef,
 }: {
   hole: RoundScorecard["holes"][number];
   onHoleClick?: (hole: number) => void;
   selected?: boolean;
+  registerRef?: (el: HTMLElement | null) => void;
 }) {
   const cellClass = [
-    "flex h-11 w-9 shrink-0 items-center justify-center border-r border-ink-900",
-    selected ? "bg-maroon-700" : "",
+    "flex h-11 w-9 shrink-0 items-center justify-center border-r border-ink-300 scroll-ml-[148px]",
+    selected ? "bg-maroon-700" : "bg-cream-100",
   ].join(" ");
 
   if (!hole.score) {
     return (
-      <div className={cellClass}>
-        <span className="font-sans text-xs text-ink-300">–</span>
+      <div ref={registerRef} className={cellClass}>
+        <span className="font-sans text-xs text-maroon-300">–</span>
       </div>
     );
   }
 
   return (
-    <button type="button" onClick={() => onHoleClick?.(hole.hole)} className={[cellClass, "cursor-pointer"].join(" ")}>
+    <button ref={registerRef} type="button" onClick={() => onHoleClick?.(hole.hole)} className={[cellClass, "cursor-pointer"].join(" ")}>
       {selected ? (
         <span className="font-score text-sm font-bold text-white tabular-nums leading-none">{hole.score}</span>
       ) : (
@@ -45,16 +45,16 @@ function HoleCell({
   );
 }
 
-function TotalCell({ label, value }: { label: string; value: number | string }) {
+function TotalCell({ label, value, className = "" }: { label: string; value: number | string; className?: string }) {
   return (
-    <div className="flex h-11 w-12 shrink-0 flex-col items-center justify-center border-r border-ink-900 px-1">
-      <span className="font-score text-sm font-bold text-ink-900 tabular-nums leading-none">{value}</span>
-      <span className="font-condensed text-[9px] font-semibold tracking-eyebrow uppercase text-ink-400 leading-none mt-[2px]">{label}</span>
+    <div className={["flex h-11 w-12 shrink-0 flex-col items-center justify-center border-r border-ink-300 bg-cream-100 px-1", className].join(" ")}>
+      <span className="font-score text-sm font-bold text-maroon-700 tabular-nums leading-none">{value}</span>
+      <span className="font-condensed text-[9px] font-semibold tracking-eyebrow uppercase text-maroon-500 leading-none mt-[2px]">{label}</span>
     </div>
   );
 }
 
-export function ScorecardRow({ round, player, team, onHoleClick, selectedHole }: ScorecardRowProps) {
+export function ScorecardRow({ round, onHoleClick, selectedHole, registerHoleRef }: ScorecardRowProps) {
   const front = round.holes.slice(0, 9);
   const back = round.holes.slice(9, 18);
   const frontPlayed = front.some((h) => h.score > 0);
@@ -63,29 +63,40 @@ export function ScorecardRow({ round, player, team, onHoleClick, selectedHole }:
   const inTotal: number | string = backPlayed ? back.reduce((s, h) => s + h.score, 0) : "–";
 
   return (
-    <div className="flex items-center bg-white">
-      <div className="flex h-11 w-[148px] shrink-0 items-center gap-[10px] border-r border-ink-900 pl-3">
-        <Avatar name={player} size="xs" team={team ?? null} />
-        <span className="font-sans text-[13px] font-semibold text-ink-900 whitespace-nowrap overflow-hidden text-ellipsis">{player}</span>
+    <div className="flex items-center bg-cream-100">
+      <div className="sticky left-0 z-10 flex h-11 w-[148px] shrink-0 items-center rounded-bl-2xl border-r border-ink-300 bg-cream-100 pl-3 sm:static sm:z-auto">
+        <span className="font-condensed text-[10px] font-bold tracking-eyebrow uppercase text-maroon-700">Score</span>
       </div>
 
       {front.map((h) => (
-        <HoleCell key={h.hole} hole={h} onHoleClick={onHoleClick} selected={selectedHole === h.hole} />
+        <HoleCell
+          key={h.hole}
+          hole={h}
+          onHoleClick={onHoleClick}
+          selected={selectedHole === h.hole}
+          registerRef={registerHoleRef ? (el) => registerHoleRef(h.hole, el) : undefined}
+        />
       ))}
-      <TotalCell label="Out" value={outTotal} />
+      <TotalCell label="Out" value={outTotal} className="hidden sm:flex" />
 
       {back.length > 0 && (
         <>
           {back.map((h) => (
-            <HoleCell key={h.hole} hole={h} onHoleClick={onHoleClick} selected={selectedHole === h.hole} />
+            <HoleCell
+              key={h.hole}
+              hole={h}
+              onHoleClick={onHoleClick}
+              selected={selectedHole === h.hole}
+              registerRef={registerHoleRef ? (el) => registerHoleRef(h.hole, el) : undefined}
+            />
           ))}
-          <TotalCell label="In" value={inTotal} />
+          <TotalCell label="In" value={inTotal} className="hidden sm:flex" />
         </>
       )}
 
-      <div className="flex h-11 w-14 shrink-0 flex-col items-center justify-center pl-1 pr-3">
+      <div className="sticky right-0 z-10 flex h-11 w-14 shrink-0 flex-col items-center justify-center rounded-br-2xl border-l border-ink-300 bg-cream-100 pl-1 pr-3 sm:static sm:z-auto">
         <span className="font-score text-lg font-extrabold text-maroon-700 tabular-nums leading-none">{round.total}</span>
-        <span className="font-condensed text-[9px] font-semibold tracking-eyebrow uppercase text-ink-400 leading-none mt-[2px]">Total</span>
+        <span className="font-condensed text-[9px] font-semibold tracking-eyebrow uppercase text-maroon-500 leading-none mt-[2px]">Total</span>
       </div>
     </div>
   );
