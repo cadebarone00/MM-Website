@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { playerProfiles } from "@/lib/data/players";
 import { PlayerSlotsAdmin, type PlayerSlotAdminRow } from "@/components/portal/PlayerSlotsAdmin";
@@ -29,14 +28,5 @@ export default async function PortalAdminPage() {
     team: rosterBySlug.get(p.slug) ?? null,
   }));
 
-  return (
-    <>
-      <div className="mx-auto max-w-[720px] px-4 pt-8 sm:px-7">
-        <Link href="/portal/admin/wagers" className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline">
-          MM Coins Settlement →
-        </Link>
-      </div>
-      <PlayerSlotsAdmin rows={rows} />
-    </>
-  );
+  return <PlayerSlotsAdmin rows={rows} />;
 }
