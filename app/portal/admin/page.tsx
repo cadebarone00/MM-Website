@@ -18,11 +18,15 @@ export default async function PortalAdminPage() {
   const { data: slots } = await service.from("player_slots").select("player_slug, username, claimed_by");
   const byslug = new Map((slots ?? []).map((s) => [s.player_slug, s]));
 
+  const { data: roster } = await service.from("live_roster").select("player_slug, team");
+  const rosterBySlug = new Map((roster ?? []).map((r) => [r.player_slug, r.team as "maroon" | "white"]));
+
   const rows: PlayerSlotAdminRow[] = playerProfiles.map((p) => ({
     playerSlug: p.slug,
     fullName: p.fullName,
     username: byslug.get(p.slug)?.username ?? null,
     claimedBy: byslug.get(p.slug)?.claimed_by ?? null,
+    team: rosterBySlug.get(p.slug) ?? null,
   }));
 
   return (
