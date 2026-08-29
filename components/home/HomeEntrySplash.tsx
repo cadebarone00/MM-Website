@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 
-const SPLASH_MS = 1200;
+const SPLASH_MS = 3000;
 const SESSION_KEY = "mm-home-splash-shown";
 
 /**
