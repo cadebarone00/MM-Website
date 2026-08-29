@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { roundIsComplete } from "@/lib/live/orchestration";
-import type { LiveMatchBox, LiveTournamentSnapshot, MatchFormat, MatchState } from "@/lib/live/types";
+import { roundIsComplete, validateMatchBox } from "@/lib/live/orchestration";
+import type { LiveMatchBox, LiveTournamentSnapshot, MatchFormat, MatchState, Team } from "@/lib/live/types";
 
 export async function POST(request: Request) {
   const host = await requireHost();
@@ -58,9 +58,20 @@ export async function POST(request: Request) {
       state: row.state as MatchState,
       started: row.started,
     }));
-    const snapshot: LiveTournamentSnapshot = { players: {}, courses: {}, roundCourses: {}, scores: new Map(), matchBoxes };
+    // Locking publishes these pairings as final, so re-check them against the
+    // roster as it stands now — a player moved between teams or dropped after
+    // their box was built would otherwise lock in a stale matchup.
+    const { data: rosterRows } = await service.from("live_roster").select("player_slug, team");
+    const players: LiveTournamentSnapshot["players"] = Object.fromEntries((rosterRows ?? []).map((r) => [r.player_slug, { team: r.team as Team }]));
+
+    const snapshot: LiveTournamentSnapshot = { players, courses: {}, roundCourses: {}, scores: new Map(), matchBoxes };
     if (!roundIsComplete(snapshot, round, current.format as MatchFormat)) {
       return NextResponse.json({ ok: false, error: "Every match box for this round needs to be filled before locking matchups." }, { status: 400 });
+    }
+
+    const boxErrors = matchBoxes.flatMap((box) => validateMatchBox(snapshot, box).map((message) => `Match ${box.boxNumber}: ${message}`));
+    if (boxErrors.length > 0) {
+      return NextResponse.json({ ok: false, error: boxErrors.join(" ") }, { status: 400 });
     }
   }
 

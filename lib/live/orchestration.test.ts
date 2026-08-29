@@ -75,6 +75,25 @@ test("validateMatchBox rejects a player already assigned elsewhere in the round"
   assert.deepEqual(validateMatchBox(snapshot, conflicting), ["Players already assigned in this round: cam."]);
 });
 
+// This is the check the matchups lock leans on: a round can be "complete"
+// (right box count, 12 unique players) and still be wrong if someone changed
+// teams or left the roster after their box was built.
+test("validateMatchBox catches a player whose roster team no longer matches their side", () => {
+  const snapshot = seedSnapshot();
+  const built = box(1, 1, ["cam", "hugo"], ["drew", "collin"]);
+  snapshot.matchBoxes = [built];
+  assert.deepEqual(validateMatchBox(snapshot, built), []);
+
+  // Tiger moves hugo to White and drops drew from the roster entirely.
+  snapshot.players.hugo = { team: "white" };
+  delete snapshot.players.drew;
+  assert.deepEqual(validateMatchBox(snapshot, built), ["hugo is not on Team Maroon.", "drew is not on Team White."]);
+
+  // A round can still look complete while those boxes are wrong.
+  snapshot.matchBoxes = [built, box(1, 2, ["cade", "dalton"], ["luke", "jackson"]), box(1, 3, ["nate", "kyle"], ["pete", "quez"])];
+  assert.equal(roundIsComplete(snapshot, 1, "Fourball"), true);
+});
+
 test("match state moves from scheduled to armed to live", () => {
   const snapshot = seedSnapshot();
   const matchBox = box(1, 1, ["cam", "drew"], ["cade", "collin"]);
