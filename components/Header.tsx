@@ -96,7 +96,7 @@ export function Header() {
                 <InstagramGlyph size={16} />
               </a>
             )}
-            {live ? (
+            {backHref ? null : live ? (
               <span className="font-condensed text-3xs font-semibold uppercase tracking-wide text-maroon-700">Live Now</span>
             ) : (
               <RoundCountdown className="text-maroon-700" compact />
