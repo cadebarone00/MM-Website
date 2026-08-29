@@ -371,3 +371,38 @@ create policy live_tournament_settings_select_all on live_tournament_settings fo
 
 drop policy if exists live_roster_select_all on live_roster;
 create policy live_roster_select_all on live_roster for select using (true);
+
+-- === Tiger Center: Matchups ==============================================
+-- Flattens live_match_boxes off the original 4-day/2-session/3-box grid
+-- (ported from MM-Scorekeeper's Python model in the Native Live Platform
+-- section above) onto the flexible round model Tiger Center Setup already
+-- shipped (round_count 6-10, one flat live_round_state row per round) — the
+-- old grid can only reach round 8 (4 days x 2 sessions) and caps at 3
+-- boxes, which doesn't fit Singles' 6 boxes (12 players / 2 per box). See
+-- the Tiger Center Operations spec's Matchups section.
+
+alter table live_match_boxes add column if not exists round integer references live_round_state(round);
+
+-- No real tournament has used this table yet (Matchups didn't exist until
+-- this plan) — delete instead of guessing a day/session -> round backfill
+-- mapping for any row that predates the round column.
+delete from live_match_boxes where round is null;
+alter table live_match_boxes alter column round set not null;
+
+-- Dropping a column automatically drops any table constraint that
+-- references it (check or unique) — no CASCADE needed, and this takes the
+-- old (tournament_year, day, session, box_number) unique constraint and the
+-- day/session check constraints with it.
+alter table live_match_boxes drop column if exists day;
+alter table live_match_boxes drop column if exists session;
+alter table live_match_boxes drop column if exists tournament_year;
+
+drop index if exists live_match_boxes_year_day_session_idx;
+create index if not exists live_match_boxes_round_idx on live_match_boxes (round);
+
+alter table live_match_boxes drop constraint if exists live_match_boxes_round_box_number_key;
+alter table live_match_boxes add constraint live_match_boxes_round_box_number_key unique (round, box_number);
+
+-- Singles is 12 players / 2 per box = 6 boxes; Fourball/Foursome stays 3.
+alter table live_match_boxes drop constraint if exists live_match_boxes_box_number_check;
+alter table live_match_boxes add constraint live_match_boxes_box_number_check check (box_number between 1 and 6);
