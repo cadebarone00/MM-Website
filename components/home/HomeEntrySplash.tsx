@@ -19,12 +19,11 @@ export function HomeEntrySplash({ children }: { children: ReactNode }) {
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
-    if (sessionStorage.getItem(SESSION_KEY)) {
-      setShowSplash(false);
-      return;
-    }
-    sessionStorage.setItem(SESSION_KEY, "1");
-    const timer = setTimeout(() => setShowSplash(false), SPLASH_MS);
+    const alreadyShown = sessionStorage.getItem(SESSION_KEY);
+    if (!alreadyShown) sessionStorage.setItem(SESSION_KEY, "1");
+    // Already seen this session: skip with a 0ms timer rather than setting
+    // state synchronously in the effect body (React discourages that).
+    const timer = setTimeout(() => setShowSplash(false), alreadyShown ? 0 : SPLASH_MS);
     return () => clearTimeout(timer);
   }, []);
 
