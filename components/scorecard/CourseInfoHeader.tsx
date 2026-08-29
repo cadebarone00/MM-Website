@@ -1,16 +1,30 @@
-import Link from "next/link";
 import type { RoundScorecard } from "@/lib/data";
 
-function Cell({ value, emphasize, href }: { value: number | string; emphasize?: boolean; href?: string }) {
+function Cell({
+  value,
+  emphasize,
+  selected,
+  onClick,
+}: {
+  value: number | string;
+  emphasize?: boolean;
+  selected?: boolean;
+  onClick?: () => void;
+}) {
   const content = (
     <span className={["font-sans text-xs tabular-nums", emphasize ? "font-bold text-ink-700" : "text-ink-500"].join(" ")}>{value}</span>
   );
   return (
-    <div className="flex items-center justify-center w-9 shrink-0">
-      {href ? (
-        <Link href={href} className="hover:opacity-70 transition-opacity">
+    <div
+      className={[
+        "flex items-center justify-center w-9 shrink-0 border-r border-ink-100 last:border-r-0",
+        selected ? "bg-gold-200" : "",
+      ].join(" ")}
+    >
+      {onClick ? (
+        <button type="button" onClick={onClick} className="hover:opacity-70 transition-opacity">
           {content}
-        </Link>
+        </button>
       ) : (
         content
       )}
@@ -27,21 +41,23 @@ function TotalCell({ value }: { value: number | string }) {
 }
 
 function InfoRow({
-  label,
   front,
   back,
-  frontHrefs,
-  backHrefs,
+  frontHoles,
+  backHoles,
+  selectedHole,
+  onHoleClick,
   outValue,
   inValue,
   totalValue,
   emphasize,
 }: {
-  label: string;
   front: (number | string)[];
   back: (number | string)[];
-  frontHrefs?: string[];
-  backHrefs?: string[];
+  frontHoles: number[];
+  backHoles: number[];
+  selectedHole?: number | null;
+  onHoleClick?: (hole: number) => void;
   outValue: number | string;
   inValue: number | string;
   totalValue: number | string;
@@ -49,13 +65,15 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-center gap-1 px-3 py-[3px]">
-      <div className="flex items-center w-[148px] shrink-0 pr-2 mr-1 border-r border-transparent">
-        <span className="font-condensed text-[10px] font-semibold tracking-eyebrow uppercase text-ink-400">{label}</span>
-      </div>
-
       <div className="flex items-center">
         {front.map((v, i) => (
-          <Cell key={i} value={v} emphasize={emphasize} href={frontHrefs?.[i]} />
+          <Cell
+            key={i}
+            value={v}
+            emphasize={emphasize}
+            selected={selectedHole === frontHoles[i]}
+            onClick={onHoleClick ? () => onHoleClick(frontHoles[i]) : undefined}
+          />
         ))}
       </div>
       <TotalCell value={outValue} />
@@ -65,7 +83,13 @@ function InfoRow({
         <>
           <div className="flex items-center">
             {back.map((v, i) => (
-              <Cell key={i} value={v} emphasize={emphasize} href={backHrefs?.[i]} />
+              <Cell
+                key={i}
+                value={v}
+                emphasize={emphasize}
+                selected={selectedHole === backHoles[i]}
+                onClick={onHoleClick ? () => onHoleClick(backHoles[i]) : undefined}
+              />
             ))}
           </div>
           <TotalCell value={inValue} />
@@ -82,55 +106,54 @@ function InfoRow({
 
 export function CourseInfoHeader({
   round,
-  tournamentSlug,
-  player,
+  onHoleClick,
+  selectedHole,
 }: {
   round: RoundScorecard;
-  tournamentSlug: string;
-  player: string;
+  onHoleClick: (hole: number) => void;
+  selectedHole?: number | null;
 }) {
   const front = round.holes.slice(0, 9);
   const back = round.holes.slice(9, 18);
+  const frontHoles = front.map((h) => h.hole);
+  const backHoles = back.map((h) => h.hole);
 
   const outPar = front.reduce((s, h) => s + h.par, 0);
   const inPar = back.reduce((s, h) => s + h.par, 0);
   const outYards = front.reduce((s, h) => s + h.yards, 0);
   const inYards = back.reduce((s, h) => s + h.yards, 0);
 
-  const holeHref = (hole: number) => `/leaderboard/${tournamentSlug}/players/${player.toLowerCase()}/${round.round}/${hole}`;
-
   return (
-    <div className="bg-cream-100 border border-ink-100 rounded-md mb-2 w-max min-w-full">
-      <div className="flex items-center gap-1 px-3 pt-2">
-        <div className="w-[148px] shrink-0 pr-2 mr-1">
-          <div className="font-condensed text-[11px] font-bold tracking-wide uppercase text-maroon-700">{round.course}</div>
-          {round.format && <div className="font-condensed text-[9px] font-semibold tracking-wide uppercase text-ink-400">{round.format}</div>}
-        </div>
-      </div>
+    <div className="bg-cream-100 border border-ink-100 rounded-md mb-2 w-max min-w-full pt-2 divide-y divide-ink-100">
       <InfoRow
-        label="Hole"
-        front={front.map((h) => h.hole)}
-        back={back.map((h) => h.hole)}
-        frontHrefs={front.map((h) => holeHref(h.hole))}
-        backHrefs={back.map((h) => holeHref(h.hole))}
+        front={frontHoles}
+        back={backHoles}
+        frontHoles={frontHoles}
+        backHoles={backHoles}
+        selectedHole={selectedHole}
+        onHoleClick={onHoleClick}
         outValue="OUT"
         inValue="IN"
         totalValue="TOT"
         emphasize
       />
       <InfoRow
-        label="Yards"
         front={front.map((h) => h.yards)}
         back={back.map((h) => h.yards)}
+        frontHoles={frontHoles}
+        backHoles={backHoles}
+        selectedHole={selectedHole}
         outValue={outYards}
         inValue={inYards}
         totalValue={outYards + inYards}
       />
       <div className="pb-2">
         <InfoRow
-          label="Par"
           front={front.map((h) => h.par)}
           back={back.map((h) => h.par)}
+          frontHoles={frontHoles}
+          backHoles={backHoles}
+          selectedHole={selectedHole}
           outValue={outPar}
           inValue={inPar}
           totalValue={outPar + inPar}
