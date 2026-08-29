@@ -68,7 +68,7 @@ export function thruLabel(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchB
 }
 
 export function holeComplete(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox, hole: number): boolean {
-  if ((matchBox.format as string) === "Alternate Shot") return false;
+  if ((matchBox.format as string) === "Foursome") return false;
   const round = matchBoxRound(matchBox);
   const players = [...matchBox.maroonPlayers, ...matchBox.whitePlayers];
   return players.every((player) => {
@@ -86,7 +86,7 @@ export interface MatchBoxResult {
 }
 
 export function matchBoxResult(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox): MatchBoxResult {
-  if ((matchBox.format as string) === "Alternate Shot") {
+  if ((matchBox.format as string) === "Foursome") {
     return { maroonPts: 0, whitePts: 0, leader: "tie", margin: 0, holesRemaining: 18 };
   }
 
