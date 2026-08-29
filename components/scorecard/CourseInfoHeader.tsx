@@ -1,9 +1,19 @@
+import Link from "next/link";
 import type { RoundScorecard } from "@/lib/data";
 
-function Cell({ value, emphasize }: { value: number | string; emphasize?: boolean }) {
+function Cell({ value, emphasize, href }: { value: number | string; emphasize?: boolean; href?: string }) {
+  const content = (
+    <span className={["font-sans text-xs tabular-nums", emphasize ? "font-bold text-ink-700" : "text-ink-500"].join(" ")}>{value}</span>
+  );
   return (
     <div className="flex items-center justify-center w-9 shrink-0">
-      <span className={["font-sans text-xs tabular-nums", emphasize ? "font-bold text-ink-700" : "text-ink-500"].join(" ")}>{value}</span>
+      {href ? (
+        <Link href={href} className="hover:opacity-70 transition-opacity">
+          {content}
+        </Link>
+      ) : (
+        content
+      )}
     </div>
   );
 }
@@ -20,6 +30,8 @@ function InfoRow({
   label,
   front,
   back,
+  frontHrefs,
+  backHrefs,
   outValue,
   inValue,
   totalValue,
@@ -28,6 +40,8 @@ function InfoRow({
   label: string;
   front: (number | string)[];
   back: (number | string)[];
+  frontHrefs?: string[];
+  backHrefs?: string[];
   outValue: number | string;
   inValue: number | string;
   totalValue: number | string;
@@ -41,7 +55,7 @@ function InfoRow({
 
       <div className="flex items-center">
         {front.map((v, i) => (
-          <Cell key={i} value={v} emphasize={emphasize} />
+          <Cell key={i} value={v} emphasize={emphasize} href={frontHrefs?.[i]} />
         ))}
       </div>
       <TotalCell value={outValue} />
@@ -51,7 +65,7 @@ function InfoRow({
         <>
           <div className="flex items-center">
             {back.map((v, i) => (
-              <Cell key={i} value={v} emphasize={emphasize} />
+              <Cell key={i} value={v} emphasize={emphasize} href={backHrefs?.[i]} />
             ))}
           </div>
           <TotalCell value={inValue} />
@@ -66,7 +80,15 @@ function InfoRow({
   );
 }
 
-export function CourseInfoHeader({ round }: { round: RoundScorecard }) {
+export function CourseInfoHeader({
+  round,
+  tournamentSlug,
+  player,
+}: {
+  round: RoundScorecard;
+  tournamentSlug: string;
+  player: string;
+}) {
   const front = round.holes.slice(0, 9);
   const back = round.holes.slice(9, 18);
 
@@ -74,6 +96,8 @@ export function CourseInfoHeader({ round }: { round: RoundScorecard }) {
   const inPar = back.reduce((s, h) => s + h.par, 0);
   const outYards = front.reduce((s, h) => s + h.yards, 0);
   const inYards = back.reduce((s, h) => s + h.yards, 0);
+
+  const holeHref = (hole: number) => `/leaderboard/${tournamentSlug}/players/${player.toLowerCase()}/${round.round}/${hole}`;
 
   return (
     <div className="bg-cream-100 border border-ink-100 rounded-md mb-2 w-max min-w-full">
@@ -87,6 +111,8 @@ export function CourseInfoHeader({ round }: { round: RoundScorecard }) {
         label="Hole"
         front={front.map((h) => h.hole)}
         back={back.map((h) => h.hole)}
+        frontHrefs={front.map((h) => holeHref(h.hole))}
+        backHrefs={back.map((h) => holeHref(h.hole))}
         outValue="OUT"
         inValue="IN"
         totalValue="TOT"
