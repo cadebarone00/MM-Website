@@ -1,26 +1,17 @@
-import Link from "next/link";
 import { HoleMarkerForDiff } from "./HoleMarker";
 import type { RoundScorecard } from "@/lib/data";
 
 interface ScorecardRowProps {
   round: RoundScorecard;
-  tournamentSlug: string;
-  player: string;
-  linkHoles?: boolean;
+  onHoleClick?: (hole: number) => void;
 }
 
 function HoleCell({
   hole,
-  tournamentSlug,
-  player,
-  round,
-  linkHoles,
+  onHoleClick,
 }: {
   hole: RoundScorecard["holes"][number];
-  tournamentSlug: string;
-  player: string;
-  round: number;
-  linkHoles: boolean;
+  onHoleClick?: (hole: number) => void;
 }) {
   if (!hole.score) {
     return (
@@ -38,13 +29,10 @@ function HoleCell({
 
   return (
     <div className="flex items-center justify-center w-9 shrink-0">
-      {linkHoles ? (
-        <Link
-          href={`/leaderboard/${tournamentSlug}/players/${player.toLowerCase()}/${round}/${hole.hole}`}
-          className="hover:opacity-75 transition-opacity"
-        >
+      {onHoleClick ? (
+        <button type="button" onClick={() => onHoleClick(hole.hole)} className="hover:opacity-75 transition-opacity">
           {marker}
-        </Link>
+        </button>
       ) : (
         marker
       )}
@@ -61,7 +49,7 @@ function TotalCell({ label, value }: { label: string; value: number | string }) 
   );
 }
 
-export function ScorecardRow({ round, tournamentSlug, player, linkHoles = true }: ScorecardRowProps) {
+export function ScorecardRow({ round, onHoleClick }: ScorecardRowProps) {
   const front = round.holes.slice(0, 9);
   const back = round.holes.slice(9, 18);
   const frontPlayed = front.some((h) => h.score > 0);
@@ -73,7 +61,7 @@ export function ScorecardRow({ round, tournamentSlug, player, linkHoles = true }
     <div className="flex items-center gap-1 py-[6px] px-3 bg-white border border-ink-100 rounded-md w-max min-w-full">
       <div className="flex items-center">
         {front.map((h) => (
-          <HoleCell key={h.hole} hole={h} tournamentSlug={tournamentSlug} player={player} round={round.round} linkHoles={linkHoles} />
+          <HoleCell key={h.hole} hole={h} onHoleClick={onHoleClick} />
         ))}
       </div>
 
@@ -84,7 +72,7 @@ export function ScorecardRow({ round, tournamentSlug, player, linkHoles = true }
         <>
           <div className="flex items-center">
             {back.map((h) => (
-              <HoleCell key={h.hole} hole={h} tournamentSlug={tournamentSlug} player={player} round={round.round} linkHoles={linkHoles} />
+              <HoleCell key={h.hole} hole={h} onHoleClick={onHoleClick} />
             ))}
           </div>
           <TotalCell label="In" value={inTotal} />

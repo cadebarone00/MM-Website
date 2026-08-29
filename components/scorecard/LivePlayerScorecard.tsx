@@ -46,7 +46,7 @@ export function LivePlayerScorecard({ tournamentSlug, player }: { tournamentSlug
       />
 
       {scorecard && scorecard.rounds.length > 0 ? (
-        <PlayerScorecardView scorecard={scorecard} tournamentSlug={tournamentSlug} />
+        <PlayerScorecardView scorecard={scorecard} />
       ) : (
         <div className="px-5 py-8 bg-cream-50 border border-ink-100 rounded-md text-center">
           <p className="font-sans text-sm text-ink-500 m-0">No rounds posted for {displayName} yet - check back once play begins.</p>

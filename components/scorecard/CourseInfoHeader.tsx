@@ -1,16 +1,15 @@
-import Link from "next/link";
 import type { RoundScorecard } from "@/lib/data";
 
-function Cell({ value, emphasize, href }: { value: number | string; emphasize?: boolean; href?: string }) {
+function Cell({ value, emphasize, onClick }: { value: number | string; emphasize?: boolean; onClick?: () => void }) {
   const content = (
     <span className={["font-sans text-xs tabular-nums", emphasize ? "font-bold text-ink-700" : "text-ink-500"].join(" ")}>{value}</span>
   );
   return (
     <div className="flex items-center justify-center w-9 shrink-0">
-      {href ? (
-        <Link href={href} className="hover:opacity-70 transition-opacity">
+      {onClick ? (
+        <button type="button" onClick={onClick} className="hover:opacity-70 transition-opacity">
           {content}
-        </Link>
+        </button>
       ) : (
         content
       )}
@@ -29,8 +28,8 @@ function TotalCell({ value }: { value: number | string }) {
 function InfoRow({
   front,
   back,
-  frontHrefs,
-  backHrefs,
+  frontOnClicks,
+  backOnClicks,
   outValue,
   inValue,
   totalValue,
@@ -38,8 +37,8 @@ function InfoRow({
 }: {
   front: (number | string)[];
   back: (number | string)[];
-  frontHrefs?: string[];
-  backHrefs?: string[];
+  frontOnClicks?: (() => void)[];
+  backOnClicks?: (() => void)[];
   outValue: number | string;
   inValue: number | string;
   totalValue: number | string;
@@ -49,7 +48,7 @@ function InfoRow({
     <div className="flex items-center gap-1 px-3 py-[3px]">
       <div className="flex items-center">
         {front.map((v, i) => (
-          <Cell key={i} value={v} emphasize={emphasize} href={frontHrefs?.[i]} />
+          <Cell key={i} value={v} emphasize={emphasize} onClick={frontOnClicks?.[i]} />
         ))}
       </div>
       <TotalCell value={outValue} />
@@ -59,7 +58,7 @@ function InfoRow({
         <>
           <div className="flex items-center">
             {back.map((v, i) => (
-              <Cell key={i} value={v} emphasize={emphasize} href={backHrefs?.[i]} />
+              <Cell key={i} value={v} emphasize={emphasize} onClick={backOnClicks?.[i]} />
             ))}
           </div>
           <TotalCell value={inValue} />
@@ -76,12 +75,10 @@ function InfoRow({
 
 export function CourseInfoHeader({
   round,
-  tournamentSlug,
-  player,
+  onHoleClick,
 }: {
   round: RoundScorecard;
-  tournamentSlug: string;
-  player: string;
+  onHoleClick: (hole: number) => void;
 }) {
   const front = round.holes.slice(0, 9);
   const back = round.holes.slice(9, 18);
@@ -91,15 +88,13 @@ export function CourseInfoHeader({
   const outYards = front.reduce((s, h) => s + h.yards, 0);
   const inYards = back.reduce((s, h) => s + h.yards, 0);
 
-  const holeHref = (hole: number) => `/leaderboard/${tournamentSlug}/players/${player.toLowerCase()}/${round.round}/${hole}`;
-
   return (
     <div className="bg-cream-100 border border-ink-100 rounded-md mb-2 w-max min-w-full pt-2">
       <InfoRow
         front={front.map((h) => h.hole)}
         back={back.map((h) => h.hole)}
-        frontHrefs={front.map((h) => holeHref(h.hole))}
-        backHrefs={back.map((h) => holeHref(h.hole))}
+        frontOnClicks={front.map((h) => () => onHoleClick(h.hole))}
+        backOnClicks={back.map((h) => () => onHoleClick(h.hole))}
         outValue="OUT"
         inValue="IN"
         totalValue="TOT"

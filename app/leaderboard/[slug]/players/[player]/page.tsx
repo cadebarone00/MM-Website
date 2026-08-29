@@ -58,7 +58,7 @@ export default async function PlayerScorecardPage({ params }: { params: Promise<
       />
 
       {scorecard ? (
-        <PlayerScorecardView scorecard={scorecard} tournamentSlug={slug} />
+        <PlayerScorecardView scorecard={scorecard} />
       ) : (
         <div className="px-5 py-8 bg-cream-50 border border-ink-100 rounded-md text-center">
           <p className="font-sans text-sm text-ink-500 m-0">
