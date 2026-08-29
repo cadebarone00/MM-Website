@@ -4,8 +4,6 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { ScorecardRow } from "./ScorecardRow";
 import { CourseInfoHeader } from "./CourseInfoHeader";
-import { ScorecardLegend } from "./ScorecardLegend";
-import { HoleMarkerForDiff } from "./HoleMarker";
 import type { PlayerScorecard } from "@/lib/data";
 
 function HoleStat({ label, value }: { label: string; value: string }) {
@@ -49,19 +47,10 @@ export function PlayerScorecardView({ scorecard }: { scorecard: PlayerScorecard 
         <ScorecardRow round={active} onHoleClick={setSelectedHole} selectedHole={selectedHole} />
       </div>
 
-      <div className="mt-3 sm:mt-5">
-        <ScorecardLegend />
-      </div>
-
       {holeStat && (
-        <div className="mt-6">
-          <div className="flex flex-wrap items-center justify-center gap-3 py-3 px-3 bg-white border border-ink-100 rounded-md mb-4">
-            <HoleMarkerForDiff diff={holeStat.diff} size={40}>
-              {holeStat.score}
-            </HoleMarkerForDiff>
+        <div className="mt-3 sm:mt-5">
+          <div className="flex items-center justify-center gap-3 py-3 px-3 bg-white border border-ink-100 rounded-md mb-4">
             <div className="flex divide-x divide-ink-100">
-              <HoleStat label="Par" value={String(holeStat.par)} />
-              <HoleStat label="Yards" value={String(holeStat.yards)} />
               <HoleStat label="Putts" value={String(holeStat.putts)} />
               <HoleStat label="FIR" value={holeStat.fir === "X" ? "–" : holeStat.fir === 1 ? "Hit" : "Miss"} />
               <HoleStat label="GIR" value={holeStat.gir === 1 ? "Hit" : "Miss"} />

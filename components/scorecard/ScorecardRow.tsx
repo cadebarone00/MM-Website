@@ -16,7 +16,7 @@ function HoleCell({
   onHoleClick?: (hole: number) => void;
   selected?: boolean;
 }) {
-  const cellClass = ["flex items-center justify-center w-9 shrink-0 border-r border-ink-100 last:border-r-0", selected ? "bg-gold-100" : ""].join(
+  const cellClass = ["flex items-center justify-center w-9 shrink-0 border-r border-ink-100 last:border-r-0", selected ? "bg-gold-200" : ""].join(
     " "
   );
 
