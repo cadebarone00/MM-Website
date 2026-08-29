@@ -31,8 +31,9 @@ for past years.
 - `/` — home
 - `/history` — list of every past edition, links to that year's leaderboard
 - `/leaderboard`, `/leaderboard/[slug]` — team + individual leaderboard for a given year;
-  `/leaderboard/[slug]/players/[player]` — that player's scorecard for that year;
-  `/leaderboard/[slug]/players/[player]/[round]/[hole]` — hole detail
+  `/leaderboard/[slug]/players/[player]` — that player's scorecard for that year, with an inline
+  hole-by-hole detail panel (stats + shot video) that fills in below the scorecard when a hole is
+  clicked — there is no separate hole-detail page/route
 - `/teams`, `/teams/[slug]` — roster directory for a given year (Maroon / White / Rankings tabs)
 - `/schedule`, `/schedule/[slug]` — match schedule for a given year
 
@@ -86,6 +87,18 @@ All pages are public, no auth.
   secret (`SCOREKEEPER_SERVER_SECRET`) instead of the old player-code/
   host-password system. See
   `docs/superpowers/plans/2026-08-14-live-scoring-platform.md`.
+- Two full-bleed loading screens, both using real photo backgrounds
+  (`public/loading/desktop.png` / `mobile.png`, swapped at the `lg`
+  breakpoint) with "The Maroon Masters" in the site's serif wordmark style:
+  `components/LoadingScreen.tsx` is the shared presentational piece (a
+  `raised` prop moves the title up to make room for content below it).
+  `components/home/HomeEntrySplash.tsx` wraps the homepage and shows it,
+  centered, once per browser session (`sessionStorage`) for ~1.2s before
+  revealing the page — for fans and signed-out visitors. `/account/choose`
+  (the post-login fork screen) now uses the `raised` variant with "Portal"
+  and "Website" as plain-text links stacked underneath instead of the old
+  boxed buttons; the existing server-side redirect (fan-only accounts skip
+  straight to `/`) is unchanged.
 
 ## Known gaps / not yet built
 

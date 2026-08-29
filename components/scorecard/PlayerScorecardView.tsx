@@ -4,16 +4,11 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { ScorecardRow } from "./ScorecardRow";
 import { CourseInfoHeader } from "./CourseInfoHeader";
+import { ScorecardLegend } from "./ScorecardLegend";
+import { RoundVideoPlaceholder } from "./RoundVideoPlaceholder";
+import { HoleDetailCard } from "./HoleDetailCard";
+import { ShotVideoPanel } from "./ShotVideoPanel";
 import type { PlayerScorecard } from "@/lib/data";
-
-function HoleStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col items-center gap-[2px] px-3">
-      <span className="font-score text-lg font-bold text-ink-900 tabular-nums">{value}</span>
-      <span className="font-condensed text-3xs font-semibold tracking-eyebrow uppercase text-ink-400">{label}</span>
-    </div>
-  );
-}
 
 export function PlayerScorecardView({ scorecard }: { scorecard: PlayerScorecard }) {
   const [round, setRound] = useState(String(scorecard.rounds[scorecard.rounds.length - 1].round));
@@ -43,31 +38,29 @@ export function PlayerScorecardView({ scorecard }: { scorecard: PlayerScorecard 
       </div>
 
       <div className="overflow-x-auto">
-        <CourseInfoHeader round={active} onHoleClick={setSelectedHole} selectedHole={selectedHole} />
-        <ScorecardRow round={active} onHoleClick={setSelectedHole} selectedHole={selectedHole} />
+        <div className="w-max min-w-full rounded-md border border-ink-900 bg-white">
+          <CourseInfoHeader round={active} onHoleClick={setSelectedHole} selectedHole={selectedHole} />
+          <ScorecardRow round={active} player={scorecard.player} team={scorecard.team} onHoleClick={setSelectedHole} selectedHole={selectedHole} />
+        </div>
       </div>
 
-      {holeStat && (
-        <div className="mt-3 sm:mt-5">
-          <div className="flex items-center justify-center gap-3 py-3 px-3 bg-white border border-ink-100 rounded-md mb-4">
-            <div className="flex divide-x divide-ink-100">
-              <HoleStat label="Putts" value={String(holeStat.putts)} />
-              <HoleStat label="FIR" value={holeStat.fir === "X" ? "–" : holeStat.fir === 1 ? "Hit" : "Miss"} />
-              <HoleStat label="GIR" value={holeStat.gir === 1 ? "Hit" : "Miss"} />
-            </div>
-          </div>
+      <div className="mt-3 sm:mt-5">
+        <ScorecardLegend />
+      </div>
 
-          <div className="font-condensed text-3xs font-semibold tracking-eyebrow uppercase text-ink-400 mb-2">Hole Overview</div>
-          <div className="aspect-[16/7] w-full flex flex-col items-center justify-center gap-2 bg-cream-100 border border-ink-100 rounded-md text-ink-400">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="9" cy="9" r="2" />
-              <path d="M21 15l-5-5L5 21" />
-            </svg>
-            <span className="font-condensed text-xs font-semibold tracking-wide uppercase">Hole photos coming soon</span>
-          </div>
-        </div>
-      )}
+      <div className="mt-4">
+        {holeStat ? (
+          <>
+            <div className="font-condensed text-3xs font-semibold tracking-eyebrow uppercase text-maroon-600 mb-2">Hole {holeStat.hole}</div>
+            <HoleDetailCard hole={holeStat} />
+            <div className="mt-6">
+              <ShotVideoPanel shotCount={holeStat.score} />
+            </div>
+          </>
+        ) : (
+          <RoundVideoPlaceholder roundLabel={`Round ${active.round}`} />
+        )}
+      </div>
     </div>
   );
 }

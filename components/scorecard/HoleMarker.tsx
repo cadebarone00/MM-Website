@@ -31,7 +31,7 @@ export function HoleMarkerShape({ marker, size = 34, children }: { marker: HoleM
           {cfg.rings === 2 && <span className={["absolute border-maroon-700", shapeClass].join(" ")} style={{ borderWidth, inset }} />}
         </>
       )}
-      <span className="relative z-10 font-score font-bold text-sm text-ink-900 tabular-nums leading-none">{children}</span>
+      <span className="relative z-10 font-score font-bold text-sm text-maroon-700 tabular-nums leading-none">{children}</span>
     </span>
   );
 }
