@@ -40,10 +40,15 @@ export function CoursesFormatPanel({
 
   async function updateRound(round: number, patch: { date?: string; courseId?: string; format?: MatchFormat }) {
     setError(null);
+    // An empty string from a cleared <input type="date"> means "no date
+    // set" — normalize it to null so it matches how a blank date is
+    // represented elsewhere in LiveRoundState, instead of sending "" to a
+    // Postgres `date` column (which would 500).
+    const date = patch.date === "" ? null : patch.date;
     const res = await fetch("/api/portal/tiger/rounds", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ round, ...patch }),
+      body: JSON.stringify({ round, ...patch, date }),
     });
     const data = await res.json();
     if (!data.ok) {
@@ -51,11 +56,15 @@ export function CoursesFormatPanel({
       return;
     }
     setRounds((current) =>
-      current.map((r) =>
-        r.round === round
-          ? { ...r, date: patch.date ?? r.date, courseId: patch.courseId ?? r.courseId, format: patch.format ?? r.format }
-          : r
-      )
+      current.map((r) => {
+        if (r.round !== round) return r;
+        return {
+          ...r,
+          date: patch.date !== undefined ? (date ?? null) : r.date,
+          courseId: patch.courseId ?? r.courseId,
+          format: patch.format ?? r.format,
+        };
+      })
     );
   }
 
