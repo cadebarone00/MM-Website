@@ -48,9 +48,10 @@ export function PlayerProfileHeader({
 }) {
   return (
     <div className="mb-6">
+      {/* On mobile, the back link is replaced by a back arrow in place of the header's Instagram icon (see components/Header.tsx). */}
       <Link
         href={backHref}
-        className="font-condensed text-xs font-semibold tracking-wide uppercase text-ink-500 hover:text-maroon-700 transition-colors"
+        className="hidden lg:inline font-condensed text-xs font-semibold tracking-wide uppercase text-ink-500 hover:text-maroon-700 transition-colors"
       >
         ← {backLabel}
       </Link>
