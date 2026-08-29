@@ -1,22 +1,25 @@
-import { readScore, type LiveMatchBox, type LiveTournamentSnapshot, type MatchState, type Session, type Team } from "./types.ts";
+import { readScore, type LiveMatchBox, type LiveTournamentSnapshot, type MatchFormat, type MatchState, type Team } from "./types.ts";
 
-const MATCH_BOXES_PER_SESSION = 3;
-const SESSION_PLAYER_COUNT = 12;
+const ROSTER_SIZE = 12; // 6 Maroon + 6 White — fixed roster size across formats
 
-export function roundForSession(day: number, session: Session): number {
-  return (day - 1) * 2 + (session === "Morning" ? 1 : 2);
+export function boxesPerRound(format: MatchFormat): number {
+  return format === "Singles" ? 6 : 3;
 }
 
-export function matchBoxRound(matchBox: LiveMatchBox): number {
-  return roundForSession(matchBox.day, matchBox.session);
+export function playersPerTeamPerBox(format: MatchFormat): number {
+  return format === "Singles" ? 1 : 2;
 }
 
 export function validateMatchBox(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox): string[] {
   const errors: string[] = [];
-  if (matchBox.day < 1 || matchBox.day > 4) errors.push("Day must be between 1 and 4.");
-  if (matchBox.boxNumber < 1 || matchBox.boxNumber > MATCH_BOXES_PER_SESSION) errors.push("Match box must be 1, 2, or 3.");
-  if (matchBox.maroonPlayers.length !== 2) errors.push("Pick exactly two Maroon players.");
-  if (matchBox.whitePlayers.length !== 2) errors.push("Pick exactly two White players.");
+  const maxBoxes = boxesPerRound(matchBox.format);
+  if (matchBox.boxNumber < 1 || matchBox.boxNumber > maxBoxes) {
+    errors.push(`Match box must be between 1 and ${maxBoxes} for ${matchBox.format}.`);
+  }
+
+  const perTeam = playersPerTeamPerBox(matchBox.format);
+  if (matchBox.maroonPlayers.length !== perTeam) errors.push(`Pick exactly ${perTeam} Maroon player${perTeam === 1 ? "" : "s"}.`);
+  if (matchBox.whitePlayers.length !== perTeam) errors.push(`Pick exactly ${perTeam} White player${perTeam === 1 ? "" : "s"}.`);
 
   for (const player of matchBox.maroonPlayers) {
     if (snapshot.players[player]?.team !== "maroon") errors.push(`${player} is not on Team Maroon.`);
@@ -25,21 +28,19 @@ export function validateMatchBox(snapshot: LiveTournamentSnapshot, matchBox: Liv
     if (snapshot.players[player]?.team !== "white") errors.push(`${player} is not on Team White.`);
   }
 
-  const sessionBoxes = snapshot.matchBoxes.filter(
-    (box) => box.day === matchBox.day && box.session === matchBox.session && box.boxNumber !== matchBox.boxNumber
-  );
-  const used = new Set(sessionBoxes.flatMap((box) => [...box.maroonPlayers, ...box.whitePlayers]));
+  const roundBoxes = snapshot.matchBoxes.filter((box) => box.round === matchBox.round && box.boxNumber !== matchBox.boxNumber);
+  const used = new Set(roundBoxes.flatMap((box) => [...box.maroonPlayers, ...box.whitePlayers]));
   const duplicates = [...matchBox.maroonPlayers, ...matchBox.whitePlayers].filter((player) => used.has(player));
-  if (duplicates.length > 0) errors.push(`Players already assigned in this session: ${[...new Set(duplicates)].sort().join(", ")}.`);
+  if (duplicates.length > 0) errors.push(`Players already assigned in this round: ${[...new Set(duplicates)].sort().join(", ")}.`);
 
   return errors;
 }
 
-export function sessionIsComplete(snapshot: LiveTournamentSnapshot, day: number, session: Session): boolean {
-  const boxes = snapshot.matchBoxes.filter((box) => box.day === day && box.session === session);
-  if (boxes.length !== MATCH_BOXES_PER_SESSION) return false;
+export function roundIsComplete(snapshot: LiveTournamentSnapshot, round: number, format: MatchFormat): boolean {
+  const boxes = snapshot.matchBoxes.filter((box) => box.round === round);
+  if (boxes.length !== boxesPerRound(format)) return false;
   const players = boxes.flatMap((box) => [...box.maroonPlayers, ...box.whitePlayers]);
-  return players.length === SESSION_PLAYER_COUNT && new Set(players).size === SESSION_PLAYER_COUNT;
+  return players.length === ROSTER_SIZE && new Set(players).size === ROSTER_SIZE;
 }
 
 export function effectiveMatchState(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox, now?: Date): MatchState {
@@ -69,10 +70,9 @@ export function thruLabel(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchB
 
 export function holeComplete(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox, hole: number): boolean {
   if ((matchBox.format as string) === "Foursome") return false;
-  const round = matchBoxRound(matchBox);
   const players = [...matchBox.maroonPlayers, ...matchBox.whitePlayers];
   return players.every((player) => {
-    const score = readScore(snapshot, player, round, hole);
+    const score = readScore(snapshot, player, matchBox.round, hole);
     return score.score !== null && score.score > 0;
   });
 }
@@ -90,7 +90,7 @@ export function matchBoxResult(snapshot: LiveTournamentSnapshot, matchBox: LiveM
     return { maroonPts: 0, whitePts: 0, leader: "tie", margin: 0, holesRemaining: 18 };
   }
 
-  const round = matchBoxRound(matchBox);
+  const round = matchBox.round;
   let maroonHoles = 0;
   let whiteHoles = 0;
   let completed = 0;
@@ -128,10 +128,7 @@ export function matchBoxPayload(snapshot: LiveTournamentSnapshot, matchBox: Live
   const result = matchBoxResult(snapshot, matchBox);
   return {
     id: matchBox.id,
-    year: matchBox.tournamentYear,
-    day: matchBox.day,
-    round: matchBoxRound(matchBox),
-    session: matchBox.session,
+    round: matchBox.round,
     boxNumber: matchBox.boxNumber,
     format: matchBox.format,
     teeTime: matchBox.teeTime.toISOString(),

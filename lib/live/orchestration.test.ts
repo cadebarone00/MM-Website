@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { LiveMatchBox, LiveTournamentSnapshot } from "./types.ts";
 import { updateScore } from "./scoring.ts";
-import { effectiveMatchState, matchBoxResult, sessionIsComplete, thruLabel } from "./orchestration.ts";
+import { effectiveMatchState, matchBoxResult, roundIsComplete, thruLabel, validateMatchBox } from "./orchestration.ts";
 
 const SEED_HOLES = Array.from({ length: 18 }, (_, i) => ({ number: i + 1, par: i === 3 || i === 5 || i === 12 ? 3 : i === 4 || i === 7 || i === 13 || i === 17 ? 5 : 4, yards: 400 }));
 
@@ -21,14 +21,12 @@ function seedSnapshot(): LiveTournamentSnapshot {
   };
 }
 
-function box(day: number, boxNumber: number, maroon: string[], white: string[]): LiveMatchBox {
+function box(round: number, boxNumber: number, maroon: string[], white: string[], format: LiveMatchBox["format"] = "Fourball"): LiveMatchBox {
   return {
     id: null,
-    tournamentYear: 2027,
-    day,
-    session: "Morning",
+    round,
     boxNumber,
-    format: "Fourball",
+    format,
     teeTime: new Date("2027-01-06T09:30:00-06:00"),
     maroonPlayers: maroon,
     whitePlayers: white,
@@ -37,15 +35,44 @@ function box(day: number, boxNumber: number, maroon: string[], white: string[]):
   };
 }
 
-test("session complete requires three boxes and all twelve players", () => {
+test("roundIsComplete requires the right box count and full, non-overlapping roster for the format", () => {
   const snapshot = seedSnapshot();
+  assert.equal(roundIsComplete(snapshot, 1, "Fourball"), false);
+
   snapshot.matchBoxes = [
     box(1, 1, ["cam", "drew"], ["cade", "collin"]),
     box(1, 2, ["hugo", "luke"], ["dalton", "jackson"]),
     box(1, 3, ["nate", "pete"], ["kyle", "quez"]),
   ];
+  assert.equal(roundIsComplete(snapshot, 1, "Fourball"), true);
+  // Same players, but Singles needs 6 boxes of 1v1, not 3 boxes of 2v2 —
+  // right roster, wrong box count for this format.
+  assert.equal(roundIsComplete(snapshot, 1, "Singles"), false);
+});
 
-  assert.equal(sessionIsComplete(snapshot, 1, "Morning"), true);
+test("validateMatchBox requires 2 players per side for Fourball/Foursome and 1 for Singles", () => {
+  const snapshot = seedSnapshot();
+  const shortHanded: LiveMatchBox = { id: null, round: 1, boxNumber: 1, format: "Fourball", teeTime: new Date("2027-01-06T09:30:00-06:00"), maroonPlayers: ["cam"], whitePlayers: ["drew", "collin"], state: "Scheduled", started: false };
+  assert.deepEqual(validateMatchBox(snapshot, shortHanded), ["Pick exactly 2 Maroon players."]);
+
+  const singlesBox: LiveMatchBox = { id: null, round: 1, boxNumber: 1, format: "Singles", teeTime: new Date("2027-01-06T09:30:00-06:00"), maroonPlayers: ["cam"], whitePlayers: ["drew"], state: "Scheduled", started: false };
+  assert.deepEqual(validateMatchBox(snapshot, singlesBox), []);
+});
+
+test("validateMatchBox caps box number at the format's box count", () => {
+  const snapshot = seedSnapshot();
+  const outOfRange: LiveMatchBox = { id: null, round: 1, boxNumber: 4, format: "Fourball", teeTime: new Date("2027-01-06T09:30:00-06:00"), maroonPlayers: ["cam", "cade"], whitePlayers: ["drew", "collin"], state: "Scheduled", started: false };
+  assert.deepEqual(validateMatchBox(snapshot, outOfRange), ["Match box must be between 1 and 3 for Fourball."]);
+
+  const inRangeForSingles: LiveMatchBox = { ...outOfRange, format: "Singles", maroonPlayers: ["cam"], whitePlayers: ["drew"] };
+  assert.deepEqual(validateMatchBox(snapshot, inRangeForSingles), []);
+});
+
+test("validateMatchBox rejects a player already assigned elsewhere in the round", () => {
+  const snapshot = seedSnapshot();
+  snapshot.matchBoxes = [box(1, 1, ["cam", "cade"], ["drew", "collin"])];
+  const conflicting: LiveMatchBox = { id: null, round: 1, boxNumber: 2, format: "Fourball", teeTime: new Date("2027-01-06T09:30:00-06:00"), maroonPlayers: ["cam", "hugo"], whitePlayers: ["luke", "jackson"], state: "Scheduled", started: false };
+  assert.deepEqual(validateMatchBox(snapshot, conflicting), ["Players already assigned in this round: cam."]);
 });
 
 test("match state moves from scheduled to armed to live", () => {
