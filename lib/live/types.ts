@@ -1,7 +1,7 @@
 // lib/live/types.ts
 export type Team = "maroon" | "white";
 export type Session = "Morning" | "Afternoon";
-export type MatchFormat = "Fourball" | "Scramble" | "Alternate Shot" | "Singles";
+export type MatchFormat = "Fourball" | "Foursome" | "Singles";
 export type MatchState = "Scheduled" | "Armed" | "Live" | "Final";
 
 export interface LiveHole {
@@ -41,10 +41,24 @@ export interface LiveMatchBox {
   started: boolean;
 }
 
+export interface TournamentSettings {
+  roundCount: number | null;
+  completedAt: string | null; // ISO timestamp, null until the tournament is done
+}
+
+export interface RosterEntry {
+  playerSlug: string;
+  team: Team;
+}
+
 export interface LiveRoundState {
   round: number;
   started: boolean;
   courseId: string | null;
+  date: string | null; // ISO date (YYYY-MM-DD)
+  format: MatchFormat | null;
+  courseLocked: boolean;
+  matchupsLocked: boolean;
 }
 
 /**

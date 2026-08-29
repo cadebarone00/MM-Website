@@ -1,10 +1,8 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { findPlayerTeam } from "@/lib/portal/findPlayerTeam";
 import { Avatar } from "@/components/ui/Avatar";
-import { TigerAvatar } from "@/components/ui/TigerAvatar";
 import { PlayerScoringPanel } from "@/components/portal/PlayerScoringPanel";
 
 export default async function PortalPage() {
@@ -23,21 +21,10 @@ export default async function PortalPage() {
 
   if (!profile || (!profile.is_host && !profile.player_slug)) redirect("/");
 
-  if (profile.is_host) {
-    return (
-      <div className="mx-auto flex max-w-[480px] flex-col items-center gap-4 px-4 py-16 text-center sm:px-7">
-        <TigerAvatar size="lg" />
-        <h1 className="font-serif text-2xl font-bold text-ink-900">Welcome, Tiger</h1>
-        <p className="font-sans text-sm text-ink-500">Host tools are coming in a later round.</p>
-        <Link
-          href="/portal/admin"
-          className="mt-2 font-sans text-sm font-semibold text-maroon-700 underline underline-offset-2"
-        >
-          Manage Player Usernames
-        </Link>
-      </div>
-    );
-  }
+  // Tiger doesn't get a fork screen or Website access — straight to the
+  // Tiger Center on login, per the site plan (docs/superpowers/specs/
+  // 2026-08-28-site-plan-design.md).
+  if (profile.is_host) redirect("/portal/admin");
 
   const playerProfile = getPlayerProfileBySlug(profile.player_slug!);
   const team = findPlayerTeam(profile.player_slug!);

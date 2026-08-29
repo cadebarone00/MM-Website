@@ -7,6 +7,7 @@ export interface PlayerSlotAdminRow {
   fullName: string;
   username: string | null;
   claimedBy: string | null;
+  team: "maroon" | "white" | null;
 }
 
 export function PlayerSlotsAdmin({ rows }: { rows: PlayerSlotAdminRow[] }) {
@@ -47,11 +48,31 @@ export function PlayerSlotsAdmin({ rows }: { rows: PlayerSlotAdminRow[] }) {
     }
   }
 
+  async function handleSetTeam(playerSlug: string, team: "maroon" | "white") {
+    setBusy(playerSlug);
+    setError(null);
+    try {
+      const res = await fetch("/api/portal/tiger/roster", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playerSlug, team }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error);
+        return;
+      }
+      window.location.reload();
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-[720px] px-4 py-12 sm:px-7">
-      <h1 className="font-serif text-2xl font-bold text-ink-900">Player Invitations</h1>
+      <h1 className="font-serif text-2xl font-bold text-ink-900">Players & Teams</h1>
       <p className="mt-2 font-sans text-sm text-ink-500">
-        Each player&apos;s username is generated automatically. Copy their invite link and send it to them — clicking it takes them straight to sign-up with their username already filled in.
+        Invite players, then assign each one to Maroon or White. Profile/bio editing is coming in a later round.
       </p>
       {error && <p className="mt-3 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
       <table className="mt-6 w-full border-collapse font-sans text-sm">
@@ -60,6 +81,7 @@ export function PlayerSlotsAdmin({ rows }: { rows: PlayerSlotAdminRow[] }) {
             <th className="py-2">Player</th>
             <th className="py-2">Username</th>
             <th className="py-2">Status</th>
+            <th className="py-2">Team</th>
             <th className="py-2"></th>
           </tr>
         </thead>
@@ -69,6 +91,20 @@ export function PlayerSlotsAdmin({ rows }: { rows: PlayerSlotAdminRow[] }) {
               <td className="py-2">{row.fullName}</td>
               <td className="py-2 font-mono">{row.username ?? "—"}</td>
               <td className="py-2">{row.claimedBy ? "Claimed" : "Open"}</td>
+              <td className="py-2">
+                <select
+                  value={row.team ?? ""}
+                  disabled={busy === row.playerSlug}
+                  onChange={(e) => handleSetTeam(row.playerSlug, e.target.value as "maroon" | "white")}
+                  className="border-2 border-stone-300 rounded-lg px-2 py-1 text-xs font-semibold bg-white"
+                >
+                  <option value="" disabled>
+                    Unassigned
+                  </option>
+                  <option value="maroon">Maroon</option>
+                  <option value="white">White</option>
+                </select>
+              </td>
               <td className="py-2 text-right">
                 {row.claimedBy ? (
                   <button
