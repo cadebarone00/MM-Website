@@ -31,7 +31,7 @@ export function PlayerScorecardView({ scorecard, tournamentSlug }: { scorecard: 
       </div>
 
       <div className="overflow-x-auto">
-        <CourseInfoHeader round={active} />
+        <CourseInfoHeader round={active} tournamentSlug={tournamentSlug} player={scorecard.player} />
         <ScorecardRow round={active} tournamentSlug={tournamentSlug} player={scorecard.player} team={scorecard.team} />
       </div>
 
