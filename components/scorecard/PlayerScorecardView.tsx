@@ -32,7 +32,7 @@ export function PlayerScorecardView({ scorecard, tournamentSlug }: { scorecard: 
 
       <div className="overflow-x-auto">
         <CourseInfoHeader round={active} tournamentSlug={tournamentSlug} player={scorecard.player} />
-        <ScorecardRow round={active} tournamentSlug={tournamentSlug} player={scorecard.player} team={scorecard.team} />
+        <ScorecardRow round={active} tournamentSlug={tournamentSlug} player={scorecard.player} />
       </div>
 
       <div className="mt-3 sm:mt-5">

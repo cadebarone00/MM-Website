@@ -1,13 +1,11 @@
 import Link from "next/link";
-import { Avatar } from "@/components/ui/Avatar";
 import { HoleMarkerForDiff } from "./HoleMarker";
-import type { RoundScorecard, Team } from "@/lib/data";
+import type { RoundScorecard } from "@/lib/data";
 
 interface ScorecardRowProps {
   round: RoundScorecard;
   tournamentSlug: string;
   player: string;
-  team?: Team;
   linkHoles?: boolean;
 }
 
@@ -63,7 +61,7 @@ function TotalCell({ label, value }: { label: string; value: number | string }) 
   );
 }
 
-export function ScorecardRow({ round, tournamentSlug, player, team, linkHoles = true }: ScorecardRowProps) {
+export function ScorecardRow({ round, tournamentSlug, player, linkHoles = true }: ScorecardRowProps) {
   const front = round.holes.slice(0, 9);
   const back = round.holes.slice(9, 18);
   const frontPlayed = front.some((h) => h.score > 0);
@@ -73,11 +71,6 @@ export function ScorecardRow({ round, tournamentSlug, player, team, linkHoles = 
 
   return (
     <div className="flex items-center gap-1 py-[6px] px-3 bg-white border border-ink-100 rounded-md w-max min-w-full">
-      <div className="flex items-center gap-[10px] w-[148px] shrink-0 pr-2 mr-1 border-r border-ink-100">
-        <Avatar name={player} size="xs" team={team ?? null} />
-        <span className="font-sans text-[13px] font-semibold text-ink-900 whitespace-nowrap overflow-hidden text-ellipsis">{player}</span>
-      </div>
-
       <div className="flex items-center">
         {front.map((h) => (
           <HoleCell key={h.hole} hole={h} tournamentSlug={tournamentSlug} player={player} round={round.round} linkHoles={linkHoles} />
