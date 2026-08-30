@@ -13,6 +13,8 @@ interface HoleScore {
   putts: number | null;
   fir: boolean | null;
   gir: boolean | null;
+  selfReportedScore: number | null;
+  confirmedBy: string | null;
 }
 
 interface ScoringState {
@@ -91,14 +93,14 @@ export function ScoringPanel({
     }
   }
 
-  async function submitStats(putts: number, fir: boolean | null, gir: boolean) {
+  async function submitStats(putts: number, fir: boolean | null, gir: boolean, selfReportedScore?: number) {
     setBusy(true);
     setError(null);
     try {
       const res = await fetch("/api/portal/scoring/stats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ round, hole: selectedHole, putts, fir, gir }),
+        body: JSON.stringify({ round, hole: selectedHole, putts, fir, gir, selfReportedScore }),
       });
       const data = await res.json();
       if (!data.ok) setError(data.error);
@@ -208,8 +210,28 @@ export function ScoringPanel({
                       className="w-16 rounded-lg border-2 border-stone-300 px-2 py-1 text-sm"
                     />
                   </label>
+                  {existing?.confirmedBy && (
+                    <span className="h-3 w-3 rounded-full bg-green-500" title="Your entries agree" />
+                  )}
+                  {!existing?.confirmedBy && existing?.score != null && existing?.selfReportedScore != null && (
+                    <span className="h-3 w-3 rounded-full bg-amber-500" title="Your entries don't match yet" />
+                  )}
                   {isSelf && (
                     <>
+                      <label className="flex items-center gap-1 font-sans text-xs text-ink-700">
+                        Your Score
+                        <input
+                          type="number"
+                          min={1}
+                          disabled={alreadySubmitted || busy}
+                          defaultValue={existing?.selfReportedScore ?? ""}
+                          onBlur={(e) => {
+                            const value = Number(e.target.value);
+                            if (value >= 1) submitStats(existing?.putts ?? 0, existing?.fir ?? null, existing?.gir ?? false, value);
+                          }}
+                          className="w-16 rounded-lg border-2 border-stone-300 px-2 py-1 text-sm"
+                        />
+                      </label>
                       <label className="flex items-center gap-1 font-sans text-xs text-ink-700">
                         Putts
                         <input
@@ -219,7 +241,7 @@ export function ScoringPanel({
                           defaultValue={existing?.putts ?? ""}
                           onBlur={(e) => {
                             const value = Number(e.target.value);
-                            submitStats(value, existing?.fir ?? null, existing?.gir ?? false);
+                            submitStats(value, existing?.fir ?? null, existing?.gir ?? false, existing?.selfReportedScore ?? undefined);
                           }}
                           className="w-16 rounded-lg border-2 border-stone-300 px-2 py-1 text-sm"
                         />
@@ -229,7 +251,7 @@ export function ScoringPanel({
                           type="checkbox"
                           disabled={alreadySubmitted || busy}
                           defaultChecked={existing?.fir ?? false}
-                          onChange={(e) => submitStats(existing?.putts ?? 0, e.target.checked, existing?.gir ?? false)}
+                          onChange={(e) => submitStats(existing?.putts ?? 0, e.target.checked, existing?.gir ?? false, existing?.selfReportedScore ?? undefined)}
                         />
                         FIR
                       </label>
@@ -238,7 +260,7 @@ export function ScoringPanel({
                           type="checkbox"
                           disabled={alreadySubmitted || busy}
                           defaultChecked={existing?.gir ?? false}
-                          onChange={(e) => submitStats(existing?.putts ?? 0, existing?.fir ?? null, e.target.checked)}
+                          onChange={(e) => submitStats(existing?.putts ?? 0, existing?.fir ?? null, e.target.checked, existing?.selfReportedScore ?? undefined)}
                         />
                         GIR
                       </label>
