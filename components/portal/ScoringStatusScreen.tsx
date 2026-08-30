@@ -3,7 +3,7 @@ import { matchupLabel, type CurrentRoundResult } from "@/lib/live/currentRoundFo
 import { nextTournament } from "@/lib/data";
 
 function formatTeeTime(date: Date): string {
-  return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" });
 }
 
 /**
@@ -41,11 +41,18 @@ export function ScoringStatusScreen({
       <p className="font-sans text-base text-cream-50/80">{matchupLabel(playerSlug, matchBox)}</p>
       <div
         className={[
-          "mt-4 flex h-16 w-40 items-center justify-center rounded-md border-2 border-maroon-700",
-          live ? "opacity-100" : "opacity-40",
+          "mt-4 flex h-16 w-40 items-center justify-center rounded-md border-2",
+          live ? "border-cream-50 bg-cream-50" : "border-cream-50/40",
         ].join(" ")}
       >
-        <span className="font-condensed text-sm font-bold uppercase tracking-wide text-maroon-700">Scorecard</span>
+        <span
+          className={[
+            "font-condensed text-sm font-bold uppercase tracking-wide",
+            live ? "text-maroon-700" : "text-cream-50",
+          ].join(" ")}
+        >
+          Scorecard
+        </span>
       </div>
       {!live && <p className="font-sans text-sm text-cream-50/80">Waiting For Round To Begin</p>}
     </LoadingScreen>

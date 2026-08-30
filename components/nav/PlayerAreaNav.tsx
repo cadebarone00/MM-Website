@@ -34,7 +34,7 @@ export function PlayerAreaNav() {
   const active = activeSegment(pathname);
 
   return (
-    <nav className="flex h-11 items-stretch bg-maroon-900">
+    <nav className="sticky top-0 z-[210] flex h-11 items-stretch bg-maroon-900">
       {SEGMENTS.map((segment) => {
         const on = segment.href === active;
         return (

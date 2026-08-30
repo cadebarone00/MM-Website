@@ -9,10 +9,12 @@ export interface CurrentRoundResult {
   state: MatchState;
 }
 
-// effectiveMatchState() only needs matchBox.state/.started/.teeTime plus
-// hole-completeness (via snapshot.scores) to tell Scheduled/Armed/Live/Final
-// apart. No live scoring exists yet anywhere in this build, so an empty
-// snapshot is accurate today and needs no changes once scoring ships.
+// An empty `scores` map means the hole-completion path in
+// effectiveMatchState can never fire here, so "Final" is detected only
+// from matchBox.state. That's correct today (no scores exist anywhere
+// yet). Once live scoring ships, this function must be given a real
+// snapshot (with real scores) or it will keep reporting a fully-played
+// round as "Live" forever.
 const EMPTY_SNAPSHOT: LiveTournamentSnapshot = {
   players: {},
   courses: {},
