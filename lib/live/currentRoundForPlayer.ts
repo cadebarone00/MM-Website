@@ -115,10 +115,17 @@ function matchBoxFromRow(row: MatchBoxRow): LiveMatchBox {
 export async function findCurrentRoundForPlayer(playerSlug: string): Promise<CurrentRoundResult | null> {
   const supabase = await createSupabaseServerClient();
 
-  const [{ data: roundRows }, { data: boxRows }] = await Promise.all([
+  const [{ data: roundRows, error: roundError }, { data: boxRows, error: boxError }] = await Promise.all([
     supabase.from("live_round_state").select("round, started, course_id, date, format, course_locked, matchups_locked").order("round"),
     supabase.from("live_match_boxes").select("id, round, box_number, format, tee_time, maroon_players, white_players, state, started").order("round"),
   ]);
+
+  if (roundError) {
+    console.error("Failed to fetch live_round_state:", roundError);
+  }
+  if (boxError) {
+    console.error("Failed to fetch live_match_boxes:", boxError);
+  }
 
   const rounds = (roundRows ?? []).map(roundFromRow);
   const matchBoxes = (boxRows ?? []).map(matchBoxFromRow);
