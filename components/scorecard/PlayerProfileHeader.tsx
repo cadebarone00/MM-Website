@@ -27,7 +27,6 @@ export function PlayerProfileHeader({
   team,
   editionLabel,
   bio,
-  bioHref,
   live,
   position,
   total,
@@ -40,7 +39,6 @@ export function PlayerProfileHeader({
   team: Team;
   editionLabel: string;
   bio: string | null;
-  bioHref: string;
   live: boolean;
   position: number | null;
   total: number | null;
@@ -72,14 +70,7 @@ export function PlayerProfileHeader({
         </div>
       </div>
 
-      {bio && (
-        <p className="font-sans text-xs leading-relaxed text-ink-600 max-w-[640px]">
-          {truncateBio(bio)}{" "}
-          <Link href={bioHref} className="font-semibold text-maroon-700 hover:underline whitespace-nowrap">
-            Full Bio →
-          </Link>
-        </p>
-      )}
+      {bio && <p className="font-sans text-xs leading-relaxed text-ink-600 max-w-[640px]">{truncateBio(bio)}</p>}
 
       {(position != null || total != null || thru != null) && (
         <div className="flex divide-x divide-ink-100 mt-4 bg-cream-50 border border-ink-100 rounded-md w-fit">
