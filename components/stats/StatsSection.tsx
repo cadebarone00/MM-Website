@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { playersOf } from "@/lib/data";
+import { playersOf, shortCourseName } from "@/lib/data";
 import type { Tournament } from "@/lib/data";
 import { CategoryPills } from "./CategoryPills";
 import { ComparePicker } from "./ComparePicker";
@@ -97,7 +97,7 @@ export function StatsSection({ tournament, player }: { tournament: Tournament; p
               return (
                 <div key={r.round} className="flex flex-col items-center gap-1">
                   <DonutGauge playerPct={r.pct} comparePct={c?.pct ?? null} size="mini" />
-                  <span className="font-condensed text-3xs font-semibold uppercase tracking-eyebrow text-ink-400">RD {r.round}</span>
+                  <span className="font-condensed text-3xs font-semibold uppercase tracking-eyebrow text-ink-400">{shortCourseName(r.course)}</span>
                 </div>
               );
             })}

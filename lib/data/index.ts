@@ -112,6 +112,20 @@ export function holeMarker(diff: number): HoleMarker {
   return "double-or-worse";
 }
 
+// Short, informal course names for spots where a round needs to be labeled
+// by what was played rather than by round number (e.g. the per-round mini
+// charts in the Statistics section) — the full course field stays as the
+// record of truth (shown in the round picker), this is display-only.
+const SHORT_COURSE_NAMES: Record<string, string> = {
+  Cove: "IW Cove",
+  Classic: "IW Classic",
+  Tournament: "Tourney",
+};
+
+export function shortCourseName(course: string): string {
+  return SHORT_COURSE_NAMES[course] ?? course;
+}
+
 export function daySummary(matches: Tournament["matches"]) {
   const maroonPts = matches.reduce((sum, m) => sum + m.maroonPts, 0);
   const whitePts = matches.reduce((sum, m) => sum + m.whitePts, 0);

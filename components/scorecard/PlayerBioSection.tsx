@@ -1,0 +1,93 @@
+import { SocialLinks } from "@/components/ui/SocialLinks";
+import type { PlayerProfile } from "@/lib/data/types";
+
+function InfoRow({ label, value }: { label: string; value?: string | null }) {
+  if (!value) return null;
+  return (
+    <div>
+      <div className="font-condensed text-3xs font-semibold uppercase tracking-eyebrow text-ink-400">{label}</div>
+      <div className="mt-0.5 font-sans text-sm text-ink-900">{value}</div>
+    </div>
+  );
+}
+
+function InfoBlock({ label, value }: { label: string; value?: string | null }) {
+  if (!value) return null;
+  return (
+    <div>
+      <div className="font-condensed text-3xs font-semibold uppercase tracking-eyebrow text-ink-400">{label}</div>
+      <div className="mt-1 font-sans text-sm leading-relaxed text-ink-700">{value}</div>
+    </div>
+  );
+}
+
+/**
+ * The merged "one bio per player" section — replaces the separate bio page
+ * that used to live at /teams/[team]/[player]. Everything real from that
+ * profile (background, location, golf details, personal notes, career
+ * highlights, and the full write-up) lives here now, directly below the
+ * Statistics section on this same page.
+ */
+export function PlayerBioSection({ profile }: { profile: PlayerProfile | undefined }) {
+  if (!profile) return null;
+
+  const hasNotes = profile.strengths || profile.careerHighlights || profile.personal || profile.hobbies || profile.goals || profile.misc;
+
+  return (
+    <div className="mt-8">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="m-0 font-serif text-2xl font-bold text-maroon-700">Player Bio</h2>
+        {(profile.instagram || profile.linkedin) && <SocialLinks instagram={profile.instagram} linkedin={profile.linkedin} />}
+      </div>
+
+      <div className="rounded-md border border-ink-100 bg-white p-5">
+        {profile.bio && <p className="mb-5 font-sans text-sm leading-relaxed text-ink-700">{profile.bio}</p>}
+
+        <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
+          <InfoRow label="Class Year" value={profile.classYear} />
+          <InfoRow label="Major" value={profile.major} />
+          <InfoRow label="Occupation" value={profile.occupation} />
+          <InfoRow label="Hometown" value={profile.hometown} />
+          <InfoRow label="College" value={profile.college} />
+          <InfoRow label="Residence" value={profile.residence} />
+          <InfoRow label="Plays From" value={profile.playsFrom} />
+          <InfoRow label="Status" value={profile.status} />
+          <InfoRow label="Handicap" value={profile.handicap} />
+          <InfoRow label="Ranking" value={profile.rankingNotes} />
+          <InfoRow label="Club Golf" value={profile.clubGolfYears} />
+          <InfoRow label="Debut" value={profile.debut} />
+          <InfoRow label="Debut Location" value={profile.debutLocation} />
+          <InfoRow label="Height" value={profile.height} />
+          <InfoRow label="Weight" value={profile.weight} />
+          <InfoRow label="Age" value={profile.age} />
+          <InfoRow label="Birthday" value={profile.birthday} />
+          <InfoRow label="Nickname" value={profile.nickname} />
+        </div>
+
+        {hasNotes && (
+          <div className="mt-5 grid gap-4 border-t border-ink-100 pt-5 sm:grid-cols-2">
+            <InfoBlock label="Strengths" value={profile.strengths} />
+            <InfoBlock label="Career Highlights" value={profile.careerHighlights} />
+            <InfoBlock label="Family" value={profile.personal} />
+            <InfoBlock label="Hobbies" value={profile.hobbies} />
+            <InfoBlock label="Goals" value={profile.goals} />
+            <InfoBlock label="Misc" value={profile.misc} />
+          </div>
+        )}
+
+        {profile.history && profile.history.length > 0 && (
+          <div className="mt-5 border-t border-ink-100 pt-5">
+            <div className="mb-2 font-condensed text-3xs font-semibold uppercase tracking-eyebrow text-ink-400">Maroon Masters History</div>
+            <ul className="m-0 space-y-1 pl-5">
+              {profile.history.map((h, i) => (
+                <li key={i} className="font-sans text-sm text-ink-700">
+                  {h}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

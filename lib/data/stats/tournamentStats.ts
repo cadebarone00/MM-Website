@@ -98,6 +98,7 @@ export type PctKind = "fir" | "gir" | "threePutt" | "upDown";
 
 export interface PerRoundPct {
   round: number;
+  course: string;
   pct: number;
 }
 
@@ -137,7 +138,7 @@ export function getPctSeries(tournament: Tournament, player: string, kind: PctKi
       }
     }
     if (attempts > 0) {
-      perRound.push({ round: round.round, pct: (hit / attempts) * 100 });
+      perRound.push({ round: round.round, course: round.course, pct: (hit / attempts) * 100 });
       hitTotal += hit;
       attemptTotal += attempts;
     }
@@ -171,6 +172,7 @@ export function fieldPctSeries(tournament: Tournament, excludePlayer: string, ki
 
 export interface PuttsRoundEntry {
   round: number;
+  course: string;
   puttsPerHole: number;
   threePutts: number;
 }
@@ -182,6 +184,7 @@ export function getPuttsPerRound(tournament: Tournament, player: string): PuttsR
     const played = round.holes.filter((h) => h.score > 0);
     return {
       round: round.round,
+      course: round.course,
       puttsPerHole: played.length > 0 ? round.putts / played.length : 0,
       threePutts: played.filter((h) => h.putts >= 3).length,
     };

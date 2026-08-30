@@ -1,5 +1,8 @@
+import { shortCourseName } from "@/lib/data";
+
 interface RoundBar {
   round: number;
+  course?: string;
   puttsPerHole: number;
   threePutts?: number;
 }
@@ -38,7 +41,7 @@ export function PuttsPerRoundBars({
                     className="absolute inset-y-0 left-0 flex items-center rounded-sm bg-maroon-600 px-3"
                     style={{ width: `${(pr.puttsPerHole / max) * 100}%` }}
                   >
-                    <span className="font-sans text-xs font-bold text-white whitespace-nowrap">RD {pr.round}</span>
+                    <span className="font-sans text-xs font-bold text-white whitespace-nowrap">{pr.course ? shortCourseName(pr.course) : `RD ${pr.round}`}</span>
                   </div>
                 </div>
                 <span className="w-24 shrink-0 text-right font-sans text-sm font-bold text-maroon-600 tabular-nums">
