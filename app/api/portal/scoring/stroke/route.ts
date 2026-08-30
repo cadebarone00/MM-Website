@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requirePlayer } from "@/lib/portal/requirePlayer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { canScoreStrokesFor } from "@/lib/live/orchestration";
+import { canScoreStrokesFor, scoresAgree } from "@/lib/live/orchestration";
 import type { LiveMatchBox, MatchFormat, MatchState } from "@/lib/live/types";
 
 interface MatchBoxRow {
@@ -81,12 +81,19 @@ export async function POST(request: Request) {
   }
 
   for (const target of targetPlayerSlugs as string[]) {
-    const { data: existingRow } = await service.from("live_hole_scores").select("id").eq("player_slug", target).eq("round", round).eq("hole", hole).maybeSingle();
+    const { data: existingRow } = await service
+      .from("live_hole_scores")
+      .select("id, self_reported_score")
+      .eq("player_slug", target)
+      .eq("round", round)
+      .eq("hole", hole)
+      .maybeSingle();
+    const confirmedBy = scoresAgree(score, existingRow?.self_reported_score ?? null) ? target : null;
     if (existingRow) {
-      const { error } = await service.from("live_hole_scores").update({ score }).eq("id", existingRow.id);
+      const { error } = await service.from("live_hole_scores").update({ score, confirmed_by: confirmedBy }).eq("id", existingRow.id);
       if (error) return NextResponse.json({ ok: false, error: "Could not save that score." }, { status: 500 });
     } else {
-      const { error } = await service.from("live_hole_scores").insert({ player_slug: target, round, hole, score });
+      const { error } = await service.from("live_hole_scores").insert({ player_slug: target, round, hole, score, confirmed_by: confirmedBy });
       if (error) return NextResponse.json({ ok: false, error: "Could not save that score." }, { status: 500 });
     }
   }

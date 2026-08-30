@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requirePlayer } from "@/lib/portal/requirePlayer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { scoresAgree } from "@/lib/live/orchestration";
 
 interface MatchBoxRow {
   id: string;
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
   }
 
-  const { round, hole, putts, fir, gir } = await request.json();
+  const { round, hole, putts, fir, gir, selfReportedScore } = await request.json();
   if (
     typeof round !== "number" ||
     !Number.isInteger(round) ||
@@ -26,7 +27,8 @@ export async function POST(request: Request) {
     !Number.isInteger(putts) ||
     putts < 0 ||
     (fir !== null && typeof fir !== "boolean") ||
-    typeof gir !== "boolean"
+    typeof gir !== "boolean" ||
+    (selfReportedScore !== undefined && selfReportedScore !== null && (typeof selfReportedScore !== "number" || !Number.isInteger(selfReportedScore) || selfReportedScore < 1))
   ) {
     return NextResponse.json({ ok: false, error: "Missing or invalid fields." }, { status: 400 });
   }
@@ -62,16 +64,26 @@ export async function POST(request: Request) {
 
   const { data: existingRow } = await service
     .from("live_hole_scores")
-    .select("id")
+    .select("id, score, self_reported_score")
     .eq("player_slug", player.playerSlug)
     .eq("round", round)
     .eq("hole", hole)
     .maybeSingle();
+
+  const nextSelfReported = selfReportedScore === undefined ? (existingRow?.self_reported_score ?? null) : selfReportedScore;
+  const officialScore = existingRow?.score ?? null;
+  const confirmedBy = scoresAgree(officialScore, nextSelfReported) ? player.playerSlug : null;
+
   if (existingRow) {
-    const { error } = await service.from("live_hole_scores").update({ putts, fir: normalizedFir, gir }).eq("id", existingRow.id);
+    const { error } = await service
+      .from("live_hole_scores")
+      .update({ putts, fir: normalizedFir, gir, self_reported_score: nextSelfReported, confirmed_by: confirmedBy })
+      .eq("id", existingRow.id);
     if (error) return NextResponse.json({ ok: false, error: "Could not save that." }, { status: 500 });
   } else {
-    const { error } = await service.from("live_hole_scores").insert({ player_slug: player.playerSlug, round, hole, putts, fir: normalizedFir, gir });
+    const { error } = await service
+      .from("live_hole_scores")
+      .insert({ player_slug: player.playerSlug, round, hole, putts, fir: normalizedFir, gir, self_reported_score: nextSelfReported, confirmed_by: confirmedBy });
     if (error) return NextResponse.json({ ok: false, error: "Could not save that." }, { status: 500 });
   }
 
