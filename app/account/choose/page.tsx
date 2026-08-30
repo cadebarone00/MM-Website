@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { LoadingScreen } from "@/components/LoadingScreen";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function ChooseAccountPage() {
@@ -22,22 +23,19 @@ export default async function ChooseAccountPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-[480px] flex-col gap-4 px-4 py-16 text-center sm:px-7">
-      <h1 className="font-serif text-2xl font-bold text-ink-900">Where to?</h1>
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Link
-          href="/"
-          className="flex-1 rounded-sm border border-ink-300 px-5 py-4 font-condensed text-sm font-semibold uppercase tracking-wide text-ink-900 hover:bg-cream-50"
-        >
-          Website
-        </Link>
-        <Link
-          href="/portal"
-          className="flex-1 rounded-sm bg-maroon-700 px-5 py-4 font-condensed text-sm font-semibold uppercase tracking-wide text-cream-50"
-        >
-          Portal
-        </Link>
-      </div>
-    </div>
+    <LoadingScreen raised>
+      <Link
+        href="/portal"
+        className="font-condensed text-2xl font-semibold uppercase tracking-wide text-cream-50 hover:text-cream-50/80"
+      >
+        Portal
+      </Link>
+      <Link
+        href="/"
+        className="font-condensed text-2xl font-semibold uppercase tracking-wide text-cream-50 hover:text-cream-50/80"
+      >
+        Website
+      </Link>
+    </LoadingScreen>
   );
 }
