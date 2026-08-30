@@ -398,8 +398,8 @@ Expected: FAIL — `currentRoundForPlayer.ts` doesn't exist yet (module not foun
 // lib/live/currentRoundForPlayer.ts
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPlayerDisplayName } from "@/lib/data/players";
-import { effectiveMatchState } from "./orchestration";
-import type { LiveMatchBox, LiveRoundState, LiveTournamentSnapshot, MatchFormat, MatchState } from "./types";
+import { effectiveMatchState } from "./orchestration.ts";
+import type { LiveMatchBox, LiveRoundState, LiveTournamentSnapshot, MatchFormat, MatchState } from "./types.ts";
 
 export interface CurrentRoundResult {
   round: LiveRoundState;
