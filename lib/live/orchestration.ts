@@ -36,6 +36,36 @@ export function validateMatchBox(snapshot: LiveTournamentSnapshot, matchBox: Liv
   return errors;
 }
 
+/**
+ * Whether `scorerSlug` is allowed to enter `targetSlugs`' shared stroke
+ * count for a hole in this match box. Fourball/Singles: `scorerSlug` and
+ * the sole entry in `targetSlugs` must be the direct opposing pair at the
+ * same box position (maroonPlayers[i] <-> whitePlayers[i] — Tiger already
+ * sets this just by the order players are picked in Matchups). Foursome:
+ * `targetSlugs` must be exactly the whole opposing side (either player on
+ * your side may enter it, since it's one shared real-world number).
+ */
+export function canScoreStrokesFor(
+  matchBox: Pick<LiveMatchBox, "format" | "maroonPlayers" | "whitePlayers">,
+  scorerSlug: string,
+  targetSlugs: string[]
+): boolean {
+  const onMaroon = matchBox.maroonPlayers.includes(scorerSlug);
+  const onWhite = matchBox.whitePlayers.includes(scorerSlug);
+  if (!onMaroon && !onWhite) return false;
+
+  const opposingSide = onMaroon ? matchBox.whitePlayers : matchBox.maroonPlayers;
+
+  if (matchBox.format === "Foursome") {
+    return targetSlugs.length === opposingSide.length && opposingSide.every((slug) => targetSlugs.includes(slug));
+  }
+
+  const ownSide = onMaroon ? matchBox.maroonPlayers : matchBox.whitePlayers;
+  const position = ownSide.indexOf(scorerSlug);
+  const expectedTarget = opposingSide[position];
+  return targetSlugs.length === 1 && targetSlugs[0] === expectedTarget;
+}
+
 export function roundIsComplete(snapshot: LiveTournamentSnapshot, round: number, format: MatchFormat): boolean {
   const boxes = snapshot.matchBoxes.filter((box) => box.round === round);
   if (boxes.length !== boxesPerRound(format)) return false;
@@ -69,7 +99,6 @@ export function thruLabel(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchB
 }
 
 export function holeComplete(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox, hole: number): boolean {
-  if ((matchBox.format as string) === "Foursome") return false;
   const players = [...matchBox.maroonPlayers, ...matchBox.whitePlayers];
   return players.every((player) => {
     const score = readScore(snapshot, player, matchBox.round, hole);
@@ -86,10 +115,6 @@ export interface MatchBoxResult {
 }
 
 export function matchBoxResult(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox): MatchBoxResult {
-  if ((matchBox.format as string) === "Foursome") {
-    return { maroonPts: 0, whitePts: 0, leader: "tie", margin: 0, holesRemaining: 18 };
-  }
-
   const round = matchBox.round;
   let maroonHoles = 0;
   let whiteHoles = 0;
