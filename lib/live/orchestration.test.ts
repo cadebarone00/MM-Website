@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { LiveMatchBox, LiveTournamentSnapshot } from "./types.ts";
 import { updateScore } from "./scoring.ts";
-import { canScoreStrokesFor, effectiveMatchState, holeComplete, matchBoxResult, matchBoxStartedThru, roundIsComplete, thruLabel, validateMatchBox } from "./orchestration.ts";
+import { canScoreStrokesFor, effectiveMatchState, holeComplete, matchBoxResult, matchBoxStartedThru, roundIsComplete, scoresAgree, thruLabel, validateMatchBox } from "./orchestration.ts";
 
 const SEED_HOLES = Array.from({ length: 18 }, (_, i) => ({ number: i + 1, par: i === 3 || i === 5 || i === 12 ? 3 : i === 4 || i === 7 || i === 13 || i === 17 ? 5 : 4, yards: 400 }));
 
@@ -207,6 +207,14 @@ test("canScoreStrokesFor requires the exact opposing pair position for Fourball/
   const singles: LiveMatchBox = { ...fourball, format: "Singles", maroonPlayers: ["cam"], whitePlayers: ["cade"] };
   assert.equal(canScoreStrokesFor(singles, "cam", ["cade"]), true);
   assert.equal(canScoreStrokesFor(singles, "cade", ["cam"]), true);
+});
+
+test("scoresAgree requires both values present and equal", () => {
+  assert.equal(scoresAgree(4, 4), true);
+  assert.equal(scoresAgree(4, 5), false);
+  assert.equal(scoresAgree(null, 4), false);
+  assert.equal(scoresAgree(4, null), false);
+  assert.equal(scoresAgree(null, null), false);
 });
 
 test("canScoreStrokesFor requires the whole opposing side for Foursome", () => {

@@ -66,6 +66,16 @@ export function canScoreStrokesFor(
   return targetSlugs.length === 1 && targetSlugs[0] === expectedTarget;
 }
 
+/**
+ * Whether a player's self-reported stroke count for a hole agrees with
+ * what their assigned scoring opponent officially entered — the live
+ * agreement indicator's underlying check. Both values must be present
+ * (a still-pending entry is never treated as "agreed").
+ */
+export function scoresAgree(officialScore: number | null, selfReportedScore: number | null): boolean {
+  return officialScore !== null && selfReportedScore !== null && officialScore === selfReportedScore;
+}
+
 export function roundIsComplete(snapshot: LiveTournamentSnapshot, round: number, format: MatchFormat): boolean {
   const boxes = snapshot.matchBoxes.filter((box) => box.round === round);
   if (boxes.length !== boxesPerRound(format)) return false;
