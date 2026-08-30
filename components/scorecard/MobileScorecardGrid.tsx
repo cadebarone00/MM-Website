@@ -74,27 +74,27 @@ function ScoreCell({
 
 function SideCell({
   value,
-  label,
+  kind = "label",
   variant,
   height,
   side,
 }: {
   value: string;
-  label?: string;
+  /** "label" for word cells (Hole/Yards/Par/Score, TOT) — "value" for a number, sized to match the numbers in its row. */
+  kind?: "label" | "value";
   variant: Variant;
   height: string;
   side: "left" | "right";
 }) {
   const { bg, text, border } = colors(variant);
   const edge = side === "left" ? "border-r" : "border-l";
+  const textClass =
+    kind === "value"
+      ? ["font-sans text-xs font-semibold tabular-nums", text]
+      : ["font-condensed text-[10px] font-bold uppercase tracking-eyebrow whitespace-nowrap", text];
   return (
-    <div className={["flex flex-col items-center justify-center px-1", height, edge, border, bg].join(" ")}>
-      <span className={["font-condensed text-[10px] font-bold uppercase tracking-eyebrow whitespace-nowrap", text].join(" ")}>{value}</span>
-      {label && (
-        <span className={["font-condensed text-[8px] font-semibold uppercase tracking-eyebrow leading-none", variant === "header" ? "text-white/80" : "text-maroon-500"].join(" ")}>
-          {label}
-        </span>
-      )}
+    <div className={["flex items-center justify-center px-1", height, edge, border, bg].join(" ")}>
+      <span className={textClass.join(" ")}>{value}</span>
     </div>
   );
 }
@@ -192,9 +192,9 @@ export function MobileScorecardGrid({ round, selectedHole, onHoleClick, initialH
 
       <div className="flex w-14 shrink-0 flex-col">
         <SideCell value="TOT" variant="header" height="h-8" side="right" />
-        <SideCell value={String(outYards + inYards)} variant="muted" height="h-8" side="right" />
-        <SideCell value={String(outPar + inPar)} variant="muted" height="h-8" side="right" />
-        <SideCell value={String(round.total)} variant="muted" height="h-11" side="right" />
+        <SideCell value={String(outYards + inYards)} kind="value" variant="muted" height="h-8" side="right" />
+        <SideCell value={String(outPar + inPar)} kind="value" variant="muted" height="h-8" side="right" />
+        <SideCell value={String(round.total)} kind="value" variant="muted" height="h-11" side="right" />
       </div>
     </div>
   );
