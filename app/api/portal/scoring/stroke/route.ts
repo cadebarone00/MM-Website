@@ -39,12 +39,15 @@ export async function POST(request: Request) {
   const { round, hole, targetPlayerSlugs, score } = await request.json();
   if (
     typeof round !== "number" ||
+    !Number.isInteger(round) ||
     typeof hole !== "number" ||
+    !Number.isInteger(hole) ||
     hole < 1 ||
     hole > 18 ||
     !Array.isArray(targetPlayerSlugs) ||
     targetPlayerSlugs.some((s: unknown) => typeof s !== "string") ||
     typeof score !== "number" ||
+    !Number.isInteger(score) ||
     score < 1
   ) {
     return NextResponse.json({ ok: false, error: "Missing or invalid fields." }, { status: 400 });

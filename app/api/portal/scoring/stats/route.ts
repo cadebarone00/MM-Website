@@ -17,10 +17,13 @@ export async function POST(request: Request) {
   const { round, hole, putts, fir, gir } = await request.json();
   if (
     typeof round !== "number" ||
+    !Number.isInteger(round) ||
     typeof hole !== "number" ||
+    !Number.isInteger(hole) ||
     hole < 1 ||
     hole > 18 ||
     typeof putts !== "number" ||
+    !Number.isInteger(putts) ||
     putts < 0 ||
     (fir !== null && typeof fir !== "boolean") ||
     typeof gir !== "boolean"
