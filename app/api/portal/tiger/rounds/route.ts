@@ -56,6 +56,21 @@ export async function POST(request: Request) {
   }
 
   const service = createSupabaseServiceRoleClient();
+
+  // A match box's format is always copied from its round's format, so changing
+  // the round's format invalidates every box already built against the old one.
+  // Clear them here rather than leave boxes whose format column disagrees with
+  // the round — scoring branches on the box's own format.
+  if (format !== undefined) {
+    const { data: current } = await service.from("live_round_state").select("format").eq("round", round).single();
+    if (current && current.format !== format) {
+      const { error: boxesError } = await service.from("live_match_boxes").delete().eq("round", round);
+      if (boxesError) {
+        return NextResponse.json({ ok: false, error: "Could not clear this round's match boxes for the new format." }, { status: 500 });
+      }
+    }
+  }
+
   const { error } = await service.from("live_round_state").update(update).eq("round", round);
   if (error) {
     return NextResponse.json({ ok: false, error: "Could not save that round." }, { status: 500 });

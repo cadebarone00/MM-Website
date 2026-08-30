@@ -1,6 +1,5 @@
 // lib/live/types.ts
 export type Team = "maroon" | "white";
-export type Session = "Morning" | "Afternoon";
 export type MatchFormat = "Fourball" | "Foursome" | "Singles";
 export type MatchState = "Scheduled" | "Armed" | "Live" | "Final";
 
@@ -29,9 +28,7 @@ export interface LiveHoleScore {
 
 export interface LiveMatchBox {
   id: string | null;
-  tournamentYear: number;
-  day: number;
-  session: Session;
+  round: number;
   boxNumber: number;
   format: MatchFormat;
   teeTime: Date;

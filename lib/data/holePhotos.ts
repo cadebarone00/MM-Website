@@ -8,7 +8,30 @@ export function slugifyCourse(course: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-/** Where a hole photo would live if one has been added for this course/hole. */
+/** Try the common image naming patterns used by the repo and the imported course/hole JPEGs. */
+export function holePhotoCandidates(course: string, hole: number): string[] {
+  const base = slugifyCourse(course).replace(/-(?:course|cc|country-club)$/, "");
+  const holeStr = String(hole);
+
+  return Array.from(
+    new Set([
+      `/hole-photos/${base}${holeStr}.jpg`,
+      `/hole-photos/${base}${holeStr}.jpeg`,
+      `/hole-photos/${base}-${holeStr}.jpg`,
+      `/hole-photos/${base}-${holeStr}.jpeg`,
+      `/hole-photos/${base}/${holeStr}.jpg`,
+      `/hole-photos/${base}/${holeStr}.jpeg`,
+      `/hole-photos/${base}/hole-${holeStr}.jpg`,
+      `/hole-photos/${base}/hole-${holeStr}.jpeg`,
+      `/hole-photos/${base}/hole${holeStr}.jpg`,
+      `/hole-photos/${base}/hole${holeStr}.jpeg`,
+      `/hole-photos/${base}-${holeStr}.png`,
+      `/hole-photos/${base}${holeStr}.png`,
+    ])
+  );
+}
+
+/** Preferred path for a hole photo; callers can try each candidate until one loads. */
 export function holePhotoSrc(course: string, hole: number): string {
-  return `/hole-photos/${slugifyCourse(course)}/${hole}.jpg`;
+  return holePhotoCandidates(course, hole)[0];
 }
