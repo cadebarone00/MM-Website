@@ -1,8 +1,13 @@
 import { SocialLinks } from "@/components/ui/SocialLinks";
 import type { PlayerProfile } from "@/lib/data/types";
 
+// The data files use a literal "-" to mark a field as not filled in yet — treat that as absent, same as empty.
+function isSet(value?: string | null): value is string {
+  return !!value && value.trim() !== "" && value.trim() !== "-";
+}
+
 function InfoRow({ label, value }: { label: string; value?: string | null }) {
-  if (!value) return null;
+  if (!isSet(value)) return null;
   return (
     <div>
       <div className="font-condensed text-3xs font-semibold uppercase tracking-eyebrow text-ink-400">{label}</div>
@@ -12,7 +17,7 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
 }
 
 function InfoBlock({ label, value }: { label: string; value?: string | null }) {
-  if (!value) return null;
+  if (!isSet(value)) return null;
   return (
     <div>
       <div className="font-condensed text-3xs font-semibold uppercase tracking-eyebrow text-ink-400">{label}</div>
@@ -31,7 +36,7 @@ function InfoBlock({ label, value }: { label: string; value?: string | null }) {
 export function PlayerBioSection({ profile }: { profile: PlayerProfile | undefined }) {
   if (!profile) return null;
 
-  const hasNotes = profile.strengths || profile.careerHighlights || profile.personal || profile.hobbies || profile.goals || profile.misc;
+  const hasNotes = [profile.strengths, profile.careerHighlights, profile.personal, profile.hobbies, profile.goals, profile.misc].some(isSet);
 
   return (
     <div className="mt-8">
@@ -41,7 +46,7 @@ export function PlayerBioSection({ profile }: { profile: PlayerProfile | undefin
       </div>
 
       <div className="rounded-md border border-ink-100 bg-white p-5">
-        {profile.bio && <p className="mb-5 font-sans text-sm leading-relaxed text-ink-700">{profile.bio}</p>}
+        {isSet(profile.bio) && <p className="mb-5 font-sans text-sm leading-relaxed text-ink-700">{profile.bio}</p>}
 
         <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
           <InfoRow label="Class Year" value={profile.classYear} />
