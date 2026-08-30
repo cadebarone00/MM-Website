@@ -107,6 +107,13 @@ export interface PctSeries {
   perRound: PerRoundPct[];
 }
 
+// Field/opponent averages are pooled across players (and possibly courses),
+// so there's no single course to attach to each round.
+export interface FieldPctSeries {
+  overallPct: number | null;
+  perRound: { round: number; pct: number }[];
+}
+
 export function getPctSeries(tournament: Tournament, player: string, kind: PctKind): PctSeries {
   const card = findScorecard(tournament, player);
   if (!card) return { overallPct: null, perRound: [] };
@@ -147,7 +154,7 @@ export function getPctSeries(tournament: Tournament, player: string, kind: PctKi
   return { overallPct: attemptTotal > 0 ? (hitTotal / attemptTotal) * 100 : null, perRound };
 }
 
-export function fieldPctSeries(tournament: Tournament, excludePlayer: string, kind: PctKind): PctSeries {
+export function fieldPctSeries(tournament: Tournament, excludePlayer: string, kind: PctKind): FieldPctSeries {
   const others = otherPlayers(tournament, excludePlayer);
   const overall = average(
     others.map((name) => getPctSeries(tournament, name, kind).overallPct).filter((v): v is number => v != null)
