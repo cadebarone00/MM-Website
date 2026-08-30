@@ -64,7 +64,7 @@ export function PlayerScorecardView({ scorecard }: { scorecard: PlayerScorecard 
       </div>
 
       {/* Desktop: the full 18-hole table with OUT/IN subtotals. */}
-      <div className="hidden overflow-x-auto sm:block">
+      <div className="hidden overflow-x-auto overflow-y-hidden sm:block">
         <div className="relative w-max rounded-2xl border border-ink-300 bg-cream-100">
           <CourseInfoHeader round={active} onHoleClick={setSelectedHole} selectedHole={selectedHole} registerHoleRef={registerHoleRef} />
           <ScorecardRow round={active} onHoleClick={setSelectedHole} selectedHole={selectedHole} registerHoleRef={registerHoleRef} />

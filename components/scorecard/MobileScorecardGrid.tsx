@@ -193,7 +193,7 @@ export function MobileScorecardGrid({ round, selectedHole, onHoleClick, currentH
         <SideCell value="Score" variant="muted" height="h-11" side="left" />
       </div>
 
-      <div ref={scrollerRef} className="flex flex-1 snap-x snap-mandatory overflow-x-auto">
+      <div ref={scrollerRef} className="flex flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden">
         {page(front, selectedHole != null && selectedHole <= 9)}
         {back.length > 0 && page(back, selectedHole != null && selectedHole > 9)}
       </div>

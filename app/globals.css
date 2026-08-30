@@ -132,6 +132,17 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Hide scrollbar tracks/thumbs everywhere in the app — scrolling still
+   works, there's just never a visible grey bar for it. */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* old Edge/IE */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/WebKit */
+}
+
 .bg-gradient-maroon {
   background: var(--gradient-maroon);
 }

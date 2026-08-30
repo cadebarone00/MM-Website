@@ -5,7 +5,7 @@ const ORDER: HoleMarkerType[] = ["eagle", "birdie", "bogey", "double-or-worse"];
 
 export function ScorecardLegend() {
   return (
-    <div className="flex flex-nowrap items-center justify-between gap-1.5 overflow-x-auto px-2 py-2 bg-cream-50 border border-ink-100 rounded-md sm:justify-start sm:gap-x-6 sm:gap-y-3 sm:px-4 sm:py-3">
+    <div className="flex flex-nowrap items-center justify-between gap-1.5 overflow-x-auto overflow-y-hidden px-2 py-2 bg-cream-50 border border-ink-100 rounded-md sm:justify-start sm:gap-x-6 sm:gap-y-3 sm:px-4 sm:py-3">
       {ORDER.map((marker) => (
         <div key={marker} className="flex shrink-0 items-center gap-1 sm:gap-[10px]">
           <HoleMarkerShape marker={marker} size={18} />
