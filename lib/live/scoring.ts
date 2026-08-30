@@ -20,6 +20,18 @@ function holeByNumber(holes: { number: number; par: number; yards: number }[]): 
   return new Map(holes.map((hole) => [hole.number, hole]));
 }
 
+/**
+ * Alt-shot (Foursome) rounds have one shared score per side, not a real
+ * personal gross score — they count fully toward the team match result
+ * (lib/live/orchestration.ts) but never toward an individual player's own
+ * stats. Derives the round's format from its match boxes rather than
+ * adding a new field to LiveTournamentSnapshot — a box's format always
+ * equals its round's format (the plan's own long-standing invariant).
+ */
+function isIndividualStatsExcluded(snapshot: LiveTournamentSnapshot, round: number): boolean {
+  return snapshot.matchBoxes.find((box) => box.round === round)?.format === "Foursome";
+}
+
 export function normalizeBool(value: boolean | number | string | null | undefined): boolean | null {
   if (value === null || value === undefined || value === "") return null;
   if (typeof value === "boolean") return value;
@@ -65,6 +77,7 @@ export function summarizePlayer(snapshot: LiveTournamentSnapshot, player: string
     if (score.player !== player) continue;
     if (score.score === null || score.score <= 0) continue;
     if (roundFilter && !roundFilter.has(score.round)) continue;
+    if (isIndividualStatsExcluded(snapshot, score.round)) continue;
     played.push(score);
   }
 
