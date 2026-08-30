@@ -1,11 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ChevronDown } from "lucide-react";
 import { ResultChevron } from "@/components/match/ResultChevron";
 import { matchStatus, matchLeader, liveLabel } from "@/components/leaderboard/matchUtils";
+import { MatchHoleByHole } from "@/components/leaderboard/MatchHoleByHole";
 import { getPlayerDisplayName } from "@/lib/data/players";
-import type { RealMatch, Team } from "@/lib/data/types";
+import type { RealMatch, Team, Tournament } from "@/lib/data/types";
 
 function labelColor(match: RealMatch) {
   const leader = matchLeader(match);
@@ -53,50 +54,65 @@ function TeamSide({
  */
 export function CompactMatchRow({
   match,
+  tournament,
   tournamentSlug,
+  expanded,
+  onToggle,
 }: {
   match: RealMatch;
+  tournament: Tournament;
   tournamentSlug: string;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
-  const router = useRouter();
   const status = matchStatus(match);
   const centerLabel = status === "scheduled" ? "VS" : liveLabel(match);
-  const breakdownHref = `/leaderboard/${tournamentSlug}/matches/${match.id}`;
   const maroonSideLabel = match.maroonPlayers.map((p) => getPlayerDisplayName(p).split(" ").pop()).join(" & ");
   const whiteSideLabel = match.whitePlayers.map((p) => getPlayerDisplayName(p).split(" ").pop()).join(" & ");
 
   return (
-    <div
-      role="link"
-      tabIndex={0}
-      aria-label={`${maroonSideLabel} vs ${whiteSideLabel}, ${centerLabel}`}
-      onClick={() => router.push(breakdownHref)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          router.push(breakdownHref);
-        }
-      }}
-      className="grid cursor-pointer grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-center gap-2 border-b border-ink-100 px-2 py-1 last:border-b-0 hover:bg-cream-50"
-    >
-      <TeamSide players={match.maroonPlayers} team="maroon" tournamentSlug={tournamentSlug} />
-      <div className="flex justify-center">
-        {status === "final" ? (
-          <ResultChevron winner={matchLeader(match)} size="xs">
-            {centerLabel}
-          </ResultChevron>
-        ) : (
-          <span
-            className={[
-              "inline-flex min-h-[22px] min-w-[40px] items-center justify-center rounded-pill border px-1.5 font-condensed text-3xs font-extrabold uppercase tracking-wide",
-              labelColor(match),
-            ].join(" ")}
-          >
-            {centerLabel}
-          </span>
-        )}
+    <div className="border-b border-ink-100 last:border-b-0">
+      <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
+        aria-label={`${maroonSideLabel} vs ${whiteSideLabel}, ${centerLabel}`}
+        onClick={onToggle}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggle();
+          }
+        }}
+        className="flex cursor-pointer items-center gap-1 px-2 py-1 hover:bg-cream-50"
+      >
+        <div className="grid flex-1 grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-center gap-2">
+          <TeamSide players={match.maroonPlayers} team="maroon" tournamentSlug={tournamentSlug} />
+          <div className="flex justify-center">
+            {status === "final" ? (
+              <ResultChevron winner={matchLeader(match)} size="xs">
+                {centerLabel}
+              </ResultChevron>
+            ) : (
+              <span
+                className={[
+                  "inline-flex min-h-[22px] min-w-[40px] items-center justify-center rounded-pill border px-1.5 font-condensed text-3xs font-extrabold uppercase tracking-wide",
+                  labelColor(match),
+                ].join(" ")}
+              >
+                {centerLabel}
+              </span>
+            )}
+          </div>
+          <TeamSide players={match.whitePlayers} team="white" tournamentSlug={tournamentSlug} />
+        </div>
+        <ChevronDown size={14} className={["shrink-0 text-ink-400 transition-transform", expanded ? "rotate-180" : ""].join(" ")} />
       </div>
-      <TeamSide players={match.whitePlayers} team="white" tournamentSlug={tournamentSlug} />
+      {expanded && (
+        <div className="pb-2">
+          <MatchHoleByHole tournament={tournament} match={match} />
+        </div>
+      )}
     </div>
   );
 }
