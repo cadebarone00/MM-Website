@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { ScorecardRow } from "./ScorecardRow";
 import { CourseInfoHeader } from "./CourseInfoHeader";
+import { holePhotoSrc } from "@/lib/data/holePhotos";
 import type { PlayerScorecard } from "@/lib/data";
 
 function HoleStat({ label, value }: { label: string; value: string }) {
@@ -18,8 +19,11 @@ function HoleStat({ label, value }: { label: string; value: string }) {
 export function PlayerScorecardView({ scorecard }: { scorecard: PlayerScorecard }) {
   const [round, setRound] = useState(String(scorecard.rounds[scorecard.rounds.length - 1].round));
   const [selectedHole, setSelectedHole] = useState<number | null>(null);
+  const [failedPhotoSrc, setFailedPhotoSrc] = useState<string | null>(null);
   const active = scorecard.rounds.find((r) => String(r.round) === round) ?? scorecard.rounds[0];
   const holeStat = selectedHole != null ? (active.holes.find((h) => h.hole === selectedHole) ?? null) : null;
+  const photoSrc = holeStat ? holePhotoSrc(active.course, holeStat.hole) : null;
+  const showPhoto = photoSrc != null && photoSrc !== failedPhotoSrc;
 
   return (
     <div>
@@ -58,14 +62,23 @@ export function PlayerScorecardView({ scorecard }: { scorecard: PlayerScorecard 
           </div>
 
           <div className="font-condensed text-3xs font-semibold tracking-eyebrow uppercase text-ink-400 mb-2">Hole Overview</div>
-          <div className="aspect-[16/7] w-full flex flex-col items-center justify-center gap-2 bg-cream-100 border border-ink-100 rounded-md text-ink-400">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="9" cy="9" r="2" />
-              <path d="M21 15l-5-5L5 21" />
-            </svg>
-            <span className="font-condensed text-xs font-semibold tracking-wide uppercase">Hole photos coming soon</span>
-          </div>
+          {showPhoto ? (
+            <img
+              src={photoSrc}
+              alt={`Hole ${holeStat.hole} at ${active.course}`}
+              className="aspect-[16/7] w-full object-cover rounded-md border border-ink-100"
+              onError={() => setFailedPhotoSrc(photoSrc)}
+            />
+          ) : (
+            <div className="aspect-[16/7] w-full flex flex-col items-center justify-center gap-2 bg-cream-100 border border-ink-100 rounded-md text-ink-400">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="9" cy="9" r="2" />
+                <path d="M21 15l-5-5L5 21" />
+              </svg>
+              <span className="font-condensed text-xs font-semibold tracking-wide uppercase">Hole photos coming soon</span>
+            </div>
+          )}
         </div>
       )}
     </div>
