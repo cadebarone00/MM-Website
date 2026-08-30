@@ -87,16 +87,11 @@ export function PlayerScorecardView({ scorecard }: { scorecard: PlayerScorecard 
         <MobileScorecardGrid round={active} selectedHole={selectedHole} onHoleClick={setSelectedHole} initialHole={defaultSelectedHole(active)} />
       </div>
 
-      <div className="mt-3 sm:mt-5">
-        <ScorecardLegend />
-      </div>
-
-      <div className="mt-4">
+      <div className="mt-3">
         {holeStat ? (
           <>
-            <div className="font-condensed text-3xs font-semibold tracking-eyebrow uppercase text-maroon-600 mb-2">Hole {holeStat.hole}</div>
             <HoleDetailCard hole={holeStat} />
-            <div className="mt-6">
+            <div className="mt-3">
               <ShotVideoPanel shotCount={holeStat.score} />
             </div>
           </>
