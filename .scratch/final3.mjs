@@ -1,0 +1,12 @@
+import { chromium } from "playwright";
+const OUT = "C:/Users/Owner/AppData/Local/Temp/claude/c--Users-Owner-Documents-GitHub-MM-Website/95f2e46e-66de-4d7e-b473-68b84fa0bb52/scratchpad";
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1000, height: 1400 } });
+const errors = [];
+page.on("pageerror", (e) => errors.push(String(e)));
+await page.goto("http://localhost:3095/leaderboard/2026-palm-springs/players/nate", { waitUntil: "networkidle" });
+await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+await page.waitForTimeout(200);
+await page.screenshot({ path: `${OUT}/bio-section2.png` });
+console.log("errors:", JSON.stringify(errors));
+await browser.close();
