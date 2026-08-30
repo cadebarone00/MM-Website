@@ -28,7 +28,7 @@ export function HomeEntrySplash({ children }: { children: ReactNode }) {
   }, []);
 
   if (showSplash) {
-    return <LoadingScreen />;
+    return <LoadingScreen heading="The Maroon Masters" />;
   }
 
   return <>{children}</>;
