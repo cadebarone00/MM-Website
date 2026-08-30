@@ -20,7 +20,7 @@ function HoleCell({
   registerRef?: (el: HTMLElement | null) => void;
 }) {
   const cellClass = [
-    "flex h-11 w-9 shrink-0 items-center justify-center border-r border-ink-300 scroll-ml-[148px]",
+    "flex h-11 w-9 shrink-0 items-center justify-center border-r border-ink-300",
     selected ? "bg-maroon-700" : "bg-cream-100",
   ].join(" ");
 
@@ -45,9 +45,9 @@ function HoleCell({
   );
 }
 
-function TotalCell({ label, value, className = "" }: { label: string; value: number | string; className?: string }) {
+function TotalCell({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className={["flex h-11 w-12 shrink-0 flex-col items-center justify-center border-r border-ink-300 bg-cream-100 px-1", className].join(" ")}>
+    <div className="flex h-11 w-12 shrink-0 flex-col items-center justify-center border-r border-ink-300 bg-cream-100 px-1">
       <span className="font-score text-sm font-bold text-maroon-700 tabular-nums leading-none">{value}</span>
       <span className="font-condensed text-[9px] font-semibold tracking-eyebrow uppercase text-maroon-500 leading-none mt-[2px]">{label}</span>
     </div>
@@ -64,7 +64,7 @@ export function ScorecardRow({ round, onHoleClick, selectedHole, registerHoleRef
 
   return (
     <div className="flex items-center bg-cream-100">
-      <div className="sticky left-0 z-10 flex h-11 w-[148px] shrink-0 items-center rounded-bl-2xl border-r border-ink-300 bg-cream-100 pl-3 sm:static sm:z-auto">
+      <div className="flex h-11 w-[148px] shrink-0 items-center rounded-bl-2xl border-r border-ink-300 bg-cream-100 pl-3">
         <span className="font-condensed text-[10px] font-bold tracking-eyebrow uppercase text-maroon-700">Score</span>
       </div>
 
@@ -77,7 +77,7 @@ export function ScorecardRow({ round, onHoleClick, selectedHole, registerHoleRef
           registerRef={registerHoleRef ? (el) => registerHoleRef(h.hole, el) : undefined}
         />
       ))}
-      <TotalCell label="Out" value={outTotal} className="hidden sm:flex" />
+      <TotalCell label="Out" value={outTotal} />
 
       {back.length > 0 && (
         <>
@@ -90,11 +90,11 @@ export function ScorecardRow({ round, onHoleClick, selectedHole, registerHoleRef
               registerRef={registerHoleRef ? (el) => registerHoleRef(h.hole, el) : undefined}
             />
           ))}
-          <TotalCell label="In" value={inTotal} className="hidden sm:flex" />
+          <TotalCell label="In" value={inTotal} />
         </>
       )}
 
-      <div className="sticky right-0 z-10 flex h-11 w-14 shrink-0 flex-col items-center justify-center rounded-br-2xl border-l border-ink-300 bg-cream-100 pl-1 pr-3 sm:static sm:z-auto">
+      <div className="flex h-11 w-14 shrink-0 flex-col items-center justify-center rounded-br-2xl border-l border-ink-300 bg-cream-100 pl-1 pr-3">
         <span className="font-score text-lg font-extrabold text-maroon-700 tabular-nums leading-none">{round.total}</span>
         <span className="font-condensed text-[9px] font-semibold tracking-eyebrow uppercase text-maroon-500 leading-none mt-[2px]">Total</span>
       </div>

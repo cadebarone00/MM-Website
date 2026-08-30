@@ -19,7 +19,7 @@ function Cell({
   const bg = isHeader || selected ? "bg-maroon-700" : "bg-cream-100";
   const text = isHeader || selected ? "text-white" : "text-maroon-700";
   const border = isHeader ? "border-white/15" : "border-ink-300";
-  const cellClass = ["flex h-8 w-9 shrink-0 items-center justify-center border-r scroll-ml-[148px]", border, bg].join(" ");
+  const cellClass = ["flex h-8 w-9 shrink-0 items-center justify-center border-r", border, bg].join(" ");
   const content = <span className={["font-sans text-xs font-semibold tabular-nums", text].join(" ")}>{value}</span>;
 
   return onClick ? (
@@ -33,13 +33,13 @@ function Cell({
   );
 }
 
-function TotalCell({ value, variant, className = "" }: { value: number | string; variant: RowVariant; className?: string }) {
+function TotalCell({ value, variant }: { value: number | string; variant: RowVariant }) {
   const isHeader = variant === "header";
   const bg = isHeader ? "bg-maroon-700" : "bg-cream-100";
   const text = isHeader ? "text-white" : "text-maroon-700";
   const border = isHeader ? "border-white/15" : "border-ink-300";
   return (
-    <div className={["flex h-8 w-12 shrink-0 items-center justify-center border-r", border, bg, "px-1", className].join(" ")}>
+    <div className={["flex h-8 w-12 shrink-0 items-center justify-center border-r", border, bg, "px-1"].join(" ")}>
       <span className={["font-sans text-xs font-semibold tabular-nums", text].join(" ")}>{value}</span>
     </div>
   );
@@ -79,14 +79,7 @@ function InfoRow({
 
   return (
     <div className={["flex border-b", rowBorder].join(" ")}>
-      <div
-        className={[
-          "sticky left-0 z-10 flex h-8 w-[148px] shrink-0 items-center border-r pl-3 sm:static sm:z-auto",
-          isHeader ? "rounded-tl-2xl" : "",
-          rowBorder,
-          rowBg,
-        ].join(" ")}
-      >
+      <div className={["flex h-8 w-[148px] shrink-0 items-center border-r pl-3", isHeader ? "rounded-tl-2xl" : "", rowBorder, rowBg].join(" ")}>
         <span className={["font-condensed text-[10px] font-bold tracking-eyebrow uppercase", rowText].join(" ")}>{label}</span>
       </div>
 
@@ -100,7 +93,7 @@ function InfoRow({
           registerRef={registerHoleRef ? (el) => registerHoleRef(frontHoles[i], el) : undefined}
         />
       ))}
-      <TotalCell value={outValue} variant={variant} className="hidden sm:flex" />
+      <TotalCell value={outValue} variant={variant} />
 
       {back.length > 0 && (
         <>
@@ -114,18 +107,11 @@ function InfoRow({
               registerRef={registerHoleRef ? (el) => registerHoleRef(backHoles[i], el) : undefined}
             />
           ))}
-          <TotalCell value={inValue} variant={variant} className="hidden sm:flex" />
+          <TotalCell value={inValue} variant={variant} />
         </>
       )}
 
-      <div
-        className={[
-          "sticky right-0 z-10 flex h-8 w-14 shrink-0 items-center justify-center border-l pl-1 pr-3 sm:static sm:z-auto",
-          isHeader ? "rounded-tr-2xl" : "",
-          rowBorder,
-          rowBg,
-        ].join(" ")}
-      >
+      <div className={["flex h-8 w-14 shrink-0 items-center justify-center border-l pl-1 pr-3", isHeader ? "rounded-tr-2xl" : "", rowBorder, rowBg].join(" ")}>
         <span className={["font-sans text-xs font-bold tabular-nums", rowText].join(" ")}>{totalValue}</span>
       </div>
     </div>

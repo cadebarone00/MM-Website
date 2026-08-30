@@ -4,6 +4,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { ScorecardRow } from "./ScorecardRow";
 import { CourseInfoHeader } from "./CourseInfoHeader";
+import { MobileScorecardGrid } from "./MobileScorecardGrid";
 import { ScorecardLegend } from "./ScorecardLegend";
 import { RoundVideoPlaceholder } from "./RoundVideoPlaceholder";
 import { HoleDetailCard } from "./HoleDetailCard";
@@ -36,15 +37,10 @@ export function PlayerScorecardView({ scorecard }: { scorecard: PlayerScorecard 
   }, [selectedHole, round]);
 
   // A round that's partway through (some holes scored, not all) with its
-  // next hole on the back nine should open scrolled to the back nine
-  // instead of defaulting to the front.
+  // next hole on the back nine opens the mobile view scrolled to the back
+  // nine instead of defaulting to the front (see MobileScorecardGrid).
   const playedCount = active.holes.filter((h) => h.score > 0).length;
   const currentHole = playedCount > 0 && playedCount < active.holes.length ? playedCount + 1 : null;
-
-  useLayoutEffect(() => {
-    if (currentHole == null || currentHole <= 9) return;
-    holeRefs.current.get(currentHole)?.scrollIntoView({ inline: "start", block: "nearest" });
-  }, [round, currentHole]);
 
   return (
     <div>
@@ -67,27 +63,30 @@ export function PlayerScorecardView({ scorecard }: { scorecard: PlayerScorecard 
         <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-400" />
       </div>
 
-      {/* Full-bleed on mobile (cancels the page's side padding), a normal inset card from sm up. */}
-      <div className="-mx-7 sm:mx-0">
-        <div className="overflow-x-auto">
-          <div className="relative w-max rounded-none border-y border-ink-200 bg-cream-100 sm:rounded-2xl sm:border">
-            <CourseInfoHeader round={active} onHoleClick={setSelectedHole} selectedHole={selectedHole} registerHoleRef={registerHoleRef} />
-            <ScorecardRow round={active} onHoleClick={setSelectedHole} selectedHole={selectedHole} registerHoleRef={registerHoleRef} />
+      {/* Desktop: the full 18-hole table with OUT/IN subtotals. */}
+      <div className="hidden overflow-x-auto sm:block">
+        <div className="relative w-max rounded-2xl border border-ink-300 bg-cream-100">
+          <CourseInfoHeader round={active} onHoleClick={setSelectedHole} selectedHole={selectedHole} registerHoleRef={registerHoleRef} />
+          <ScorecardRow round={active} onHoleClick={setSelectedHole} selectedHole={selectedHole} registerHoleRef={registerHoleRef} />
 
-            {cap && (
-              <>
-                <div
-                  className="pointer-events-none absolute -top-2 h-2 rounded-t-2xl bg-maroon-700"
-                  style={{ left: cap.left, width: cap.width }}
-                />
-                <div
-                  className="pointer-events-none absolute -bottom-2 h-2 rounded-b-2xl bg-maroon-700"
-                  style={{ left: cap.left, width: cap.width }}
-                />
-              </>
-            )}
-          </div>
+          {cap && (
+            <>
+              <div
+                className="pointer-events-none absolute -top-2 h-2 rounded-t-2xl bg-maroon-700"
+                style={{ left: cap.left, width: cap.width }}
+              />
+              <div
+                className="pointer-events-none absolute -bottom-2 h-2 rounded-b-2xl bg-maroon-700"
+                style={{ left: cap.left, width: cap.width }}
+              />
+            </>
+          )}
         </div>
+      </div>
+
+      {/* Mobile: edge-to-edge, frozen name/total columns, one swipe between the front and back nine. */}
+      <div className="-mx-7 sm:hidden">
+        <MobileScorecardGrid round={active} selectedHole={selectedHole} onHoleClick={setSelectedHole} currentHole={currentHole} />
       </div>
 
       <div className="mt-3 sm:mt-5">
