@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { ScorecardRow } from "./ScorecardRow";
 import { CourseInfoHeader } from "./CourseInfoHeader";
@@ -10,6 +10,7 @@ import { HoleDetailCard } from "./HoleDetailCard";
 import { ShotVideoPanel } from "./ShotVideoPanel";
 import { PlayerBioSection } from "./PlayerBioSection";
 import { StatsSection } from "@/components/stats/StatsSection";
+import { holePhotoCandidates } from "@/lib/data/holePhotos";
 import { getPlayerProfile } from "@/lib/data/players";
 import type { PlayerScorecard, RoundScorecard, Tournament } from "@/lib/data";
 
@@ -24,8 +25,11 @@ function defaultSelectedHole(round: RoundScorecard): number {
 export function PlayerScorecardView({ scorecard, tournament }: { scorecard: PlayerScorecard; tournament: Tournament }) {
   const [round, setRound] = useState(String(scorecard.rounds[scorecard.rounds.length - 1].round));
   const [selectedHole, setSelectedHole] = useState<number>(() => defaultSelectedHole(scorecard.rounds[scorecard.rounds.length - 1]));
+  const [photoIndex, setPhotoIndex] = useState(0);
   const active = scorecard.rounds.find((r) => String(r.round) === round) ?? scorecard.rounds[0];
   const holeStat = active.holes.find((h) => h.hole === selectedHole) ?? null;
+  const photoCandidates = holeStat ? holePhotoCandidates(active.course, holeStat.hole) : [];
+  const photoSrc = photoCandidates[photoIndex] ?? null;
 
   // Shared registry of each hole's cell element, keyed by hole number — used
   // both to measure the selected-hole highlight overlay and to scroll a
@@ -41,6 +45,10 @@ export function PlayerScorecardView({ scorecard, tournament }: { scorecard: Play
     const el = holeRefs.current.get(selectedHole);
     setCap(el ? { left: el.offsetLeft, width: el.offsetWidth } : null);
   }, [selectedHole, round]);
+
+  useEffect(() => {
+    setPhotoIndex(0);
+  }, [active.course, selectedHole, round]);
 
   return (
     <div>
@@ -94,6 +102,28 @@ export function PlayerScorecardView({ scorecard, tournament }: { scorecard: Play
         {holeStat ? (
           <>
             <HoleDetailCard hole={holeStat} />
+
+            <div className="mt-3">
+              <div className="font-condensed text-3xs font-semibold tracking-eyebrow uppercase text-ink-400 mb-2">Hole Overview</div>
+              {photoSrc ? (
+                <img
+                  src={photoSrc}
+                  alt={`Hole ${holeStat.hole} at ${active.course}`}
+                  className="aspect-[16/7] w-full object-cover rounded-md border border-ink-100"
+                  onError={() => setPhotoIndex((current) => Math.min(current + 1, photoCandidates.length - 1))}
+                />
+              ) : (
+                <div className="aspect-[16/7] w-full flex flex-col items-center justify-center gap-2 bg-cream-100 border border-ink-100 rounded-md text-ink-400">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <circle cx="9" cy="9" r="2" />
+                    <path d="M21 15l-5-5L5 21" />
+                  </svg>
+                  <span className="font-condensed text-xs font-semibold tracking-wide uppercase">Hole photos coming soon</span>
+                </div>
+              )}
+            </div>
+
             <div className="mt-3">
               <ShotVideoPanel shotCount={holeStat.score} />
             </div>
