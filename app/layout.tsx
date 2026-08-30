@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Spectral, Barlow, Barlow_Semi_Condensed } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
@@ -28,6 +28,16 @@ const barlowCondensed = Barlow_Semi_Condensed({
 export const metadata: Metadata = {
   title: "The Maroon Masters — Live",
   description: "The Maroon Masters — a fictional invitational match-play golf championship. Live leaderboard, pairings, and team rosters.",
+};
+
+// Lock the page to the device's own width and disable pinch-zoom — without
+// this, a user zooming out shrinks the layout viewport itself, which throws
+// off the scorecard's fixed-to-screen-width swipe pages.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
