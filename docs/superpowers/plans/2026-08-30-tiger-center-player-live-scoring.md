@@ -1506,12 +1506,414 @@ git commit -m "feat(scoring): add the live scoring screen, wire it to the Scorec
 
 ---
 
+---
+
+## Addendum: live agreement indicator (added 2026-08-30, after Task 9)
+
+**Why this addendum exists:** while Tasks 1-9 were being built, the user directly confirmed a requirement (with a different session, saved to shared memory as `live-scoring-competitor-agreement-indicator`) that contradicts an earlier decision made during this plan's own brainstorming. That earlier decision ("independent entry, Tiger reconciles" — no live confirmation) is superseded by this addendum: the scoring screen needs a live, per-hole **agreement indicator** — green when a player's own self-reported stroke count for a hole matches what their assigned scoring opponent officially entered for them, surfaced before either submits. This lets players catch a scoring mistake live, since players are the only scorers (no third-party) and Tiger Center's Edit Scores review (a separate, later phase) is the downstream backstop, not a live one.
+
+**Design resolution:** the existing model has exactly one writer per stroke-score field (the assigned opponent, via Task 6's stroke route) — there's no second independent entry to compare against yet. This addendum adds one: each player also self-reports their own perceived stroke count (alongside their existing putts/FIR/GIR self-report), stored separately (`live_hole_scores.self_reported_score`, a new column) from the opponent-entered official `score`. When the two agree, the row's existing-but-previously-unused `confirmed_by` column (reserved since the native-live-platform build, doc comment already said "the confirmation flow itself is a later phase") gets set to that player's own slug — the persisted "agreement reached" signal the UI reads.
+
+**Scope boundary:** this addendum covers Fourball and Singles only, where the "playing competitor" relationship is a clean 1v1 pairing per hole — matching the confirmed requirement's own wording. Foursome's shared one-score-per-side model doesn't have an obvious analogous self-report today (a side's two teammates don't currently have their own individual score fields to compare against); extending this indicator to Foursome is an open follow-up, not silently dropped, and is out of scope for this addendum. Foursome's UI stays exactly as Task 9 built it.
+
+### Task 10: Self-reported score + agreement detection (schema, pure helper, routes)
+
+**Files:**
+- Modify: `supabase/schema.sql`
+- Modify: `lib/live/orchestration.ts`
+- Modify: `lib/live/orchestration.test.ts`
+- Modify: `app/api/portal/scoring/stats/route.ts`
+- Modify: `app/api/portal/scoring/stroke/route.ts`
+- Modify: `app/api/portal/scoring/state/route.ts`
+- Test: `app/api/portal/scoring/stats/route.test.ts` (already exists — no new test needed unless noted)
+
+**Interfaces:**
+- Consumes: nothing new from earlier tasks besides what's already shipped.
+- Produces (consumed by Task 11's UI): `scoresAgree(a: number | null, b: number | null): boolean` (pure, in `lib/live/orchestration.ts`); `POST /api/portal/scoring/stats` now accepts an optional `selfReportedScore: number` field; `GET /api/portal/scoring/state`'s `scores[]` entries now include `selfReportedScore: number | null` and `confirmedBy: string | null`.
+
+- [ ] **Step 1: Append the schema migration**
+
+```sql
+-- === Tiger Center: Player Live Scoring — agreement indicator ==============
+-- The `confirmed_by` column on live_hole_scores was reserved back in the
+-- native-live-platform build for exactly this: "the confirmation flow
+-- itself is a later phase, this column just makes room for it now." This
+-- is that later phase, for Fourball/Singles: a player's own self-reported
+-- stroke count (new column below) gets compared against the officially
+-- entered score (written by their assigned scoring opponent); when they
+-- agree, confirmed_by is set to that player's own slug.
+
+alter table live_hole_scores add column if not exists self_reported_score integer;
+```
+
+- [ ] **Step 2: Run it against your Supabase project**
+
+Manual operator step, same as every prior schema task in this plan — no DB credentials exist in this environment. Note this in your report; do not attempt it.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add supabase/schema.sql
+git commit -m "feat(scoring): add self_reported_score column for the agreement indicator"
+```
+
+- [ ] **Step 4: Write the failing test for the pure helper**
+
+```typescript
+// lib/live/orchestration.test.ts
+// Add to the existing import line: import { ..., scoresAgree } from "./orchestration.ts";
+
+test("scoresAgree requires both values present and equal", () => {
+  assert.equal(scoresAgree(4, 4), true);
+  assert.equal(scoresAgree(4, 5), false);
+  assert.equal(scoresAgree(null, 4), false);
+  assert.equal(scoresAgree(4, null), false);
+  assert.equal(scoresAgree(null, null), false);
+});
+```
+
+- [ ] **Step 5: Run to verify it fails**
+
+Run: `npm test -- lib/live/orchestration.test.ts`
+Expected: FAIL (`scoresAgree` doesn't exist)
+
+- [ ] **Step 6: Add `scoresAgree` to `orchestration.ts`**
+
+```typescript
+// lib/live/orchestration.ts
+// Place near canScoreStrokesFor — same "small authorization/comparison
+// helper" grouping.
+
+/**
+ * Whether a player's self-reported stroke count for a hole agrees with
+ * what their assigned scoring opponent officially entered — the live
+ * agreement indicator's underlying check. Both values must be present
+ * (a still-pending entry is never treated as "agreed").
+ */
+export function scoresAgree(officialScore: number | null, selfReportedScore: number | null): boolean {
+  return officialScore !== null && selfReportedScore !== null && officialScore === selfReportedScore;
+}
+```
+
+- [ ] **Step 7: Run to verify it passes, then commit**
+
+Run: `npm test -- lib/live/orchestration.test.ts && npx tsc --noEmit`
+Expected: PASS (plus the one known pre-existing, unrelated `tournamentStats.ts` error).
+
+```bash
+git add lib/live/orchestration.ts lib/live/orchestration.test.ts
+git commit -m "feat(scoring): add scoresAgree pure helper for the agreement indicator"
+```
+
+- [ ] **Step 8: Extend `app/api/portal/scoring/stats/route.ts`**
+
+Read the file's current full content first (shown below is its exact current state going in). Add `selfReportedScore` handling: validate it if present, and after writing, check agreement against the row's existing `score` and set/clear `confirmed_by` accordingly.
+
+```typescript
+// app/api/portal/scoring/stats/route.ts
+import { NextResponse } from "next/server";
+import { requirePlayer } from "@/lib/portal/requirePlayer";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { scoresAgree } from "@/lib/live/orchestration";
+
+interface MatchBoxRow {
+  id: string;
+  maroon_players: string[];
+  white_players: string[];
+}
+
+export async function POST(request: Request) {
+  const player = await requirePlayer();
+  if (!player) {
+    return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
+  }
+
+  const { round, hole, putts, fir, gir, selfReportedScore } = await request.json();
+  if (
+    typeof round !== "number" ||
+    !Number.isInteger(round) ||
+    typeof hole !== "number" ||
+    !Number.isInteger(hole) ||
+    hole < 1 ||
+    hole > 18 ||
+    typeof putts !== "number" ||
+    !Number.isInteger(putts) ||
+    putts < 0 ||
+    (fir !== null && typeof fir !== "boolean") ||
+    typeof gir !== "boolean" ||
+    (selfReportedScore !== undefined && selfReportedScore !== null && (typeof selfReportedScore !== "number" || !Number.isInteger(selfReportedScore) || selfReportedScore < 1))
+  ) {
+    return NextResponse.json({ ok: false, error: "Missing or invalid fields." }, { status: 400 });
+  }
+
+  const service = createSupabaseServiceRoleClient();
+
+  const { data: boxRows } = await service.from("live_match_boxes").select("id, maroon_players, white_players").eq("round", round);
+  const box = (boxRows as MatchBoxRow[] | null ?? []).find(
+    (b) => b.maroon_players.includes(player.playerSlug) || b.white_players.includes(player.playerSlug)
+  );
+  if (!box) {
+    return NextResponse.json({ ok: false, error: "You don't have a match box in this round." }, { status: 404 });
+  }
+
+  const { data: existingSubmission } = await service
+    .from("live_match_box_submissions")
+    .select("player_slug")
+    .eq("match_box_id", box.id)
+    .eq("player_slug", player.playerSlug)
+    .maybeSingle();
+  if (existingSubmission) {
+    return NextResponse.json({ ok: false, error: "You've already submitted your scores for this round." }, { status: 400 });
+  }
+
+  const { data: roundRow } = await service.from("live_round_state").select("course_id").eq("round", round).single();
+  let isPar3 = false;
+  if (roundRow?.course_id) {
+    const { data: course } = await service.from("live_courses").select("holes").eq("id", roundRow.course_id).single();
+    const holeInfo = (course?.holes as { number: number; par: number }[] | undefined)?.find((h) => h.number === hole);
+    isPar3 = holeInfo?.par === 3;
+  }
+  const normalizedFir = isPar3 ? null : fir;
+
+  const { data: existingRow } = await service
+    .from("live_hole_scores")
+    .select("id, score, self_reported_score")
+    .eq("player_slug", player.playerSlug)
+    .eq("round", round)
+    .eq("hole", hole)
+    .maybeSingle();
+
+  const nextSelfReported = selfReportedScore === undefined ? (existingRow?.self_reported_score ?? null) : selfReportedScore;
+  const officialScore = existingRow?.score ?? null;
+  const confirmedBy = scoresAgree(officialScore, nextSelfReported) ? player.playerSlug : null;
+
+  if (existingRow) {
+    const { error } = await service
+      .from("live_hole_scores")
+      .update({ putts, fir: normalizedFir, gir, self_reported_score: nextSelfReported, confirmed_by: confirmedBy })
+      .eq("id", existingRow.id);
+    if (error) return NextResponse.json({ ok: false, error: "Could not save that." }, { status: 500 });
+  } else {
+    const { error } = await service
+      .from("live_hole_scores")
+      .insert({ player_slug: player.playerSlug, round, hole, putts, fir: normalizedFir, gir, self_reported_score: nextSelfReported, confirmed_by: confirmedBy });
+    if (error) return NextResponse.json({ ok: false, error: "Could not save that." }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}
+```
+
+Note the `confirmed_by` write is unconditional (always set to the computed value, never left stale) — this correctly *clears* a previously-true confirmation if the player changes their self-report to something that no longer matches.
+
+- [ ] **Step 9: Extend `app/api/portal/scoring/stroke/route.ts`**
+
+Same idea, the other direction: after writing the official `score`, check if the target's existing `self_reported_score` now agrees, and set/clear `confirmed_by` on that target's row accordingly.
+
+```typescript
+// app/api/portal/scoring/stroke/route.ts
+// Add to the existing import: import { canScoreStrokesFor, scoresAgree } from "@/lib/live/orchestration";
+
+// Replace the existing write loop body:
+// was:
+//   for (const target of targetPlayerSlugs as string[]) {
+//     const { data: existingRow } = await service.from("live_hole_scores").select("id").eq("player_slug", target).eq("round", round).eq("hole", hole).maybeSingle();
+//     if (existingRow) {
+//       const { error } = await service.from("live_hole_scores").update({ score }).eq("id", existingRow.id);
+//       if (error) return NextResponse.json({ ok: false, error: "Could not save that score." }, { status: 500 });
+//     } else {
+//       const { error } = await service.from("live_hole_scores").insert({ player_slug: target, round, hole, score });
+//       if (error) return NextResponse.json({ ok: false, error: "Could not save that score." }, { status: 500 });
+//     }
+//   }
+  for (const target of targetPlayerSlugs as string[]) {
+    const { data: existingRow } = await service
+      .from("live_hole_scores")
+      .select("id, self_reported_score")
+      .eq("player_slug", target)
+      .eq("round", round)
+      .eq("hole", hole)
+      .maybeSingle();
+    const confirmedBy = scoresAgree(score, existingRow?.self_reported_score ?? null) ? target : null;
+    if (existingRow) {
+      const { error } = await service.from("live_hole_scores").update({ score, confirmed_by: confirmedBy }).eq("id", existingRow.id);
+      if (error) return NextResponse.json({ ok: false, error: "Could not save that score." }, { status: 500 });
+    } else {
+      const { error } = await service.from("live_hole_scores").insert({ player_slug: target, round, hole, score, confirmed_by: confirmedBy });
+      if (error) return NextResponse.json({ ok: false, error: "Could not save that score." }, { status: 500 });
+    }
+  }
+```
+
+- [ ] **Step 10: Extend `app/api/portal/scoring/state/route.ts`**
+
+```typescript
+// app/api/portal/scoring/state/route.ts
+// Update HoleScoreRow to add the two new columns:
+interface HoleScoreRow {
+  player_slug: string;
+  hole: number;
+  score: number | null;
+  putts: number | null;
+  fir: boolean | null;
+  gir: boolean | null;
+  self_reported_score: number | null;
+  confirmed_by: string | null;
+}
+
+// Update the select() call to fetch them:
+// was: .select("player_slug, hole, score, putts, fir, gir")
+    service.from("live_hole_scores").select("player_slug, hole, score, putts, fir, gir, self_reported_score, confirmed_by").eq("round", round).in("player_slug", allPlayers),
+
+// Update the scores.map() to include them in the response:
+      scores: (scoreRows as HoleScoreRow[] | null ?? []).map((r) => ({
+        player: r.player_slug,
+        hole: r.hole,
+        score: r.score,
+        putts: r.putts,
+        fir: r.fir,
+        gir: r.gir,
+        selfReportedScore: r.self_reported_score,
+        confirmedBy: r.confirmed_by,
+      })),
+```
+
+- [ ] **Step 11: Run the full check and commit**
+
+Run: `npm test && npx tsc --noEmit && npm run lint && npm run build`
+Expected: all clean (plus the one known pre-existing, unrelated `tournamentStats.ts` error).
+
+```bash
+git add app/api/portal/scoring/stats app/api/portal/scoring/stroke app/api/portal/scoring/state
+git commit -m "feat(scoring): wire self-reported score + confirmed_by through stats/stroke/state routes"
+```
+
+---
+
+### Task 11: Agreement indicator UI
+
+**Files:**
+- Modify: `components/portal/ScoringPanel.tsx`
+
+**Interfaces:**
+- Consumes: Task 10's extended `GET /api/portal/scoring/state` (`selfReportedScore`, `confirmedBy` per score) and `POST /api/portal/scoring/stats` (`selfReportedScore` field).
+- Produces: nothing downstream — last task in this addendum.
+
+- [ ] **Step 1: Update the local `HoleScore` interface and the self-report block**
+
+Read `components/portal/ScoringPanel.tsx`'s current full content first (it may have shifted slightly from Task 9's exact given code — re-verify field names before editing). Add the two new fields to the local type, add a "Your Score" self-report input next to the existing Putts/FIR/GIR fields (only in the `isSelf` branch, non-Foursome path), and a small agreement indicator next to the opponent-entered Score field on every row (visible to whoever's viewing — the scorer and the target see the same computed state, since it's the same data):
+
+```typescript
+// components/portal/ScoringPanel.tsx
+// was:
+// interface HoleScore {
+//   player: string;
+//   hole: number;
+//   score: number | null;
+//   putts: number | null;
+//   fir: boolean | null;
+//   gir: boolean | null;
+// }
+interface HoleScore {
+  player: string;
+  hole: number;
+  score: number | null;
+  putts: number | null;
+  fir: boolean | null;
+  gir: boolean | null;
+  selfReportedScore: number | null;
+  confirmedBy: string | null;
+}
+```
+
+Update `submitStats` to accept and send the new field:
+
+```typescript
+// was: async function submitStats(putts: number, fir: boolean | null, gir: boolean) {
+async function submitStats(putts: number, fir: boolean | null, gir: boolean, selfReportedScore?: number) {
+  setBusy(true);
+  setError(null);
+  try {
+    const res = await fetch("/api/portal/scoring/stats", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ round, hole: selectedHole, putts, fir, gir, selfReportedScore }),
+    });
+    const data = await res.json();
+    if (!data.ok) setError(data.error);
+    else load();
+  } finally {
+    setBusy(false);
+  }
+}
+```
+
+- [ ] **Step 2: Add the agreement indicator next to the Score field, and the self-report input in the `isSelf` block**
+
+In the non-Foursome row rendering, add a small dot next to the existing "Score" label/input (right after the `</label>` that wraps the Score input), and add a new "Your Score" input inside the existing `isSelf && (...)` block, alongside Putts/FIR/GIR:
+
+```tsx
+// Right after the closing </label> of the existing "Score" <label> block:
+{existing?.confirmedBy && (
+  <span className="h-3 w-3 rounded-full bg-green-500" title="Your entries agree" />
+)}
+{!existing?.confirmedBy && existing?.score != null && existing?.selfReportedScore != null && (
+  <span className="h-3 w-3 rounded-full bg-amber-500" title="Your entries don't match yet" />
+)}
+
+// Inside the existing isSelf && (<>...</>) block, add before the Putts label:
+<label className="flex items-center gap-1 font-sans text-xs text-ink-700">
+  Your Score
+  <input
+    type="number"
+    min={1}
+    disabled={alreadySubmitted || busy}
+    defaultValue={existing?.selfReportedScore ?? ""}
+    onBlur={(e) => {
+      const value = Number(e.target.value);
+      if (value >= 1) submitStats(existing?.putts ?? 0, existing?.fir ?? null, existing?.gir ?? false, value);
+    }}
+    className="w-16 rounded-lg border-2 border-stone-300 px-2 py-1 text-sm"
+  />
+</label>
+```
+
+Update the other three existing `submitStats(...)` call sites in the Putts/FIR/GIR `onBlur`/`onChange` handlers to pass through the current `existing?.selfReportedScore ?? undefined` as the fourth argument, so editing one stat field doesn't accidentally clear another player's already-entered self-reported score:
+
+```tsx
+// Putts onBlur — was: submitStats(value, existing?.fir ?? null, existing?.gir ?? false);
+submitStats(value, existing?.fir ?? null, existing?.gir ?? false, existing?.selfReportedScore ?? undefined);
+// FIR onChange — was: submitStats(existing?.putts ?? 0, e.target.checked, existing?.gir ?? false);
+submitStats(existing?.putts ?? 0, e.target.checked, existing?.gir ?? false, existing?.selfReportedScore ?? undefined);
+// GIR onChange — was: submitStats(existing?.putts ?? 0, existing?.fir ?? null, e.target.checked);
+submitStats(existing?.putts ?? 0, existing?.fir ?? null, e.target.checked, existing?.selfReportedScore ?? undefined);
+```
+
+Foursome's rendering block is untouched by this task — it stays exactly as Task 9 built it, per this addendum's stated scope boundary.
+
+- [ ] **Step 3: Manual/structural check**
+
+This is UI-only, no `npm test` coverage (matches the plan's Global Constraints). Verify with `npx tsc --noEmit`, `npm run lint`, `npm run build` (expect only the one known pre-existing, unrelated error). A full live click-through (two real players, one entering a mismatched then matching self-report, watching the dot change color) is a manual step for the operator — note this in your report, matching every prior UI task's documented limitation in this project.
+
+- [ ] **Step 4: Run the full check and commit**
+
+Run: `npm test && npx tsc --noEmit && npm run lint && npm run build`
+Expected: all clean.
+
+```bash
+git add components/portal/ScoringPanel.tsx
+git commit -m "feat(scoring): add the live agreement indicator to the scoring screen"
+```
+
+---
+
 ## Definition of done for this phase
 
 - Tiger can start any round that has both Courses & Format and Matchups locked, from a banner on the Tiger Center landing page.
 - Each match box's players can enter each other's official strokes (position-paired for Fourball/Singles, whole-opposing-side for Foursome's one shared score) and their own putts/fairway/green hit, hole by hole, watching the match box update live via Supabase Realtime.
 - Foursome rounds compute a real match-play result (previously a stub returning zero) and are excluded from individual player stats (previously not excluded at all).
 - A player can Submit Scores once everything they're responsible for is filled in, after which they can't edit any of it — enforced server-side, not just hidden in the UI.
+- On Fourball/Singles holes, each player sees a live agreement indicator — green once their own self-reported stroke count matches what their assigned scoring opponent officially entered for the same hole (addendum, added after Task 9). Foursome does not yet have this indicator — an explicit, tracked follow-up, not a silent gap.
 - The previously-inert "Scorecard" box on `/portal/scoring` now leads to a real, working scoring screen once a round is Live.
 - `npm test && npx tsc --noEmit && npm run lint && npm run build` all clean.
 - **Not built in this phase** (separate, later sub-phases per the spec): Tiger's Edit Scores official review/settlement/wager payout, and the public Website/leaderboard reading from any of this live data.
