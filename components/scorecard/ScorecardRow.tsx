@@ -34,13 +34,9 @@ function HoleCell({
 
   return (
     <button ref={registerRef} type="button" onClick={() => onHoleClick?.(hole.hole)} className={[cellClass, "cursor-pointer"].join(" ")}>
-      {selected ? (
-        <span className="font-score text-sm font-bold text-white tabular-nums leading-none">{hole.score}</span>
-      ) : (
-        <HoleMarkerForDiff diff={hole.diff} size={28}>
-          {hole.score}
-        </HoleMarkerForDiff>
-      )}
+      <HoleMarkerForDiff diff={hole.diff} size={28} tone={selected ? "white" : "maroon"}>
+        {hole.score}
+      </HoleMarkerForDiff>
     </button>
   );
 }

@@ -9,13 +9,21 @@ import { ScorecardLegend } from "./ScorecardLegend";
 import { RoundVideoPlaceholder } from "./RoundVideoPlaceholder";
 import { HoleDetailCard } from "./HoleDetailCard";
 import { ShotVideoPanel } from "./ShotVideoPanel";
-import type { PlayerScorecard } from "@/lib/data";
+import type { PlayerScorecard, RoundScorecard } from "@/lib/data";
+
+// A finished round opens on hole 1. A round still in progress opens on
+// whichever hole was most recently finished (the played-holes count itself,
+// since holes are scored in order).
+function defaultSelectedHole(round: RoundScorecard): number {
+  const playedCount = round.holes.filter((h) => h.score > 0).length;
+  return playedCount > 0 && playedCount < round.holes.length ? playedCount : 1;
+}
 
 export function PlayerScorecardView({ scorecard }: { scorecard: PlayerScorecard }) {
   const [round, setRound] = useState(String(scorecard.rounds[scorecard.rounds.length - 1].round));
-  const [selectedHole, setSelectedHole] = useState<number | null>(null);
+  const [selectedHole, setSelectedHole] = useState<number>(() => defaultSelectedHole(scorecard.rounds[scorecard.rounds.length - 1]));
   const active = scorecard.rounds.find((r) => String(r.round) === round) ?? scorecard.rounds[0];
-  const holeStat = selectedHole != null ? (active.holes.find((h) => h.hole === selectedHole) ?? null) : null;
+  const holeStat = active.holes.find((h) => h.hole === selectedHole) ?? null;
 
   // Shared registry of each hole's cell element, keyed by hole number — used
   // both to measure the selected-hole highlight overlay and to scroll a
@@ -28,19 +36,9 @@ export function PlayerScorecardView({ scorecard }: { scorecard: PlayerScorecard 
 
   const [cap, setCap] = useState<{ left: number; width: number } | null>(null);
   useLayoutEffect(() => {
-    if (selectedHole == null) {
-      setCap(null);
-      return;
-    }
     const el = holeRefs.current.get(selectedHole);
     setCap(el ? { left: el.offsetLeft, width: el.offsetWidth } : null);
   }, [selectedHole, round]);
-
-  // A round that's partway through (some holes scored, not all) with its
-  // next hole on the back nine opens the mobile view scrolled to the back
-  // nine instead of defaulting to the front (see MobileScorecardGrid).
-  const playedCount = active.holes.filter((h) => h.score > 0).length;
-  const currentHole = playedCount > 0 && playedCount < active.holes.length ? playedCount + 1 : null;
 
   return (
     <div>
@@ -48,8 +46,9 @@ export function PlayerScorecardView({ scorecard }: { scorecard: PlayerScorecard 
         <select
           value={round}
           onChange={(e) => {
+            const nextRound = scorecard.rounds.find((r) => String(r.round) === e.target.value);
             setRound(e.target.value);
-            setSelectedHole(null);
+            setSelectedHole(defaultSelectedHole(nextRound ?? scorecard.rounds[0]));
           }}
           className="w-full appearance-none rounded-sm border border-ink-200 bg-white py-2 pl-3 pr-9 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-900 sm:w-auto sm:text-sm"
         >
@@ -86,7 +85,7 @@ export function PlayerScorecardView({ scorecard }: { scorecard: PlayerScorecard 
 
       {/* Mobile: edge-to-edge, frozen name/total columns, one swipe between the front and back nine. */}
       <div className="-mx-7 sm:hidden">
-        <MobileScorecardGrid round={active} selectedHole={selectedHole} onHoleClick={setSelectedHole} currentHole={currentHole} />
+        <MobileScorecardGrid round={active} selectedHole={selectedHole} onHoleClick={setSelectedHole} initialHole={defaultSelectedHole(active)} />
       </div>
 
       <div className="mt-3 sm:mt-5">

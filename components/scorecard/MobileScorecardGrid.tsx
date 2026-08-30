@@ -65,13 +65,9 @@ function ScoreCell({
   }
   return (
     <button ref={registerRef} type="button" onClick={onClick} className={[cellClass, "cursor-pointer"].join(" ")}>
-      {selected ? (
-        <span className="font-score text-sm font-bold text-white tabular-nums leading-none">{hole.score}</span>
-      ) : (
-        <HoleMarkerForDiff diff={hole.diff} size={28}>
-          {hole.score}
-        </HoleMarkerForDiff>
-      )}
+      <HoleMarkerForDiff diff={hole.diff} size={28} tone={selected ? "white" : "maroon"}>
+        {hole.score}
+      </HoleMarkerForDiff>
     </button>
   );
 }
@@ -105,13 +101,13 @@ function SideCell({
 
 interface Props {
   round: RoundScorecard;
-  selectedHole: number | null;
+  selectedHole: number;
   onHoleClick: (hole: number) => void;
-  /** The next hole to be played in a round that's in progress, or null for a round that hasn't started or is complete. */
-  currentHole: number | null;
+  /** Which hole the view should open scrolled to — the default selected hole for this round. */
+  initialHole: number;
 }
 
-export function MobileScorecardGrid({ round, selectedHole, onHoleClick, currentHole }: Props) {
+export function MobileScorecardGrid({ round, selectedHole, onHoleClick, initialHole }: Props) {
   const front = round.holes.slice(0, 9);
   const back = round.holes.slice(9, 18);
   const outPar = front.reduce((s, h) => s + h.par, 0);
@@ -128,21 +124,17 @@ export function MobileScorecardGrid({ round, selectedHole, onHoleClick, currentH
 
   const [cap, setCap] = useState<{ left: number; width: number } | null>(null);
   useLayoutEffect(() => {
-    if (selectedHole == null) {
-      setCap(null);
-      return;
-    }
     const el = holeRefs.current.get(selectedHole);
     setCap(el ? { left: el.offsetLeft, width: el.offsetWidth } : null);
   }, [selectedHole, round]);
 
-  // Open straight to the back-nine page when the round is in progress and its
-  // next hole is on the back nine; otherwise the front nine.
+  // Open scrolled to whichever page holds the round's default hole (the back
+  // nine if that hole is 10+, otherwise the front nine).
   useLayoutEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
-    el.scrollLeft = currentHole != null && currentHole > 9 ? el.clientWidth : 0;
-  }, [round, currentHole]);
+    el.scrollLeft = initialHole > 9 ? el.clientWidth : 0;
+  }, [round, initialHole]);
 
   const page = (holes: HoleStat[], showCap: boolean) => (
     <div className="relative flex w-full shrink-0 snap-start flex-col">
@@ -186,7 +178,7 @@ export function MobileScorecardGrid({ round, selectedHole, onHoleClick, currentH
 
   return (
     <div className="flex border-y border-ink-300 bg-cream-100">
-      <div className="flex shrink-0 flex-col">
+      <div className="flex w-14 shrink-0 flex-col">
         <SideCell value="Hole" variant="header" height="h-8" side="left" />
         <SideCell value="Yards" variant="muted" height="h-8" side="left" />
         <SideCell value="Par" variant="muted" height="h-8" side="left" />
@@ -198,11 +190,11 @@ export function MobileScorecardGrid({ round, selectedHole, onHoleClick, currentH
         {back.length > 0 && page(back, selectedHole != null && selectedHole > 9)}
       </div>
 
-      <div className="flex shrink-0 flex-col">
+      <div className="flex w-14 shrink-0 flex-col">
         <SideCell value="TOT" variant="header" height="h-8" side="right" />
         <SideCell value={String(outYards + inYards)} variant="muted" height="h-8" side="right" />
         <SideCell value={String(outPar + inPar)} variant="muted" height="h-8" side="right" />
-        <SideCell value={String(round.total)} label="Total" variant="muted" height="h-11" side="right" />
+        <SideCell value={String(round.total)} variant="muted" height="h-11" side="right" />
       </div>
     </div>
   );
