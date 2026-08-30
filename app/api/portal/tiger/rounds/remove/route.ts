@@ -19,6 +19,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Unlock this round before removing it." }, { status: 400 });
   }
 
+  // live_match_boxes.round references live_round_state(round) with no cascade,
+  // so any leftover boxes for this round have to go first or the delete below
+  // fails on a foreign key violation with no way for Tiger to clear them.
+  const { error: boxesError } = await service.from("live_match_boxes").delete().eq("round", round);
+  if (boxesError) {
+    return NextResponse.json({ ok: false, error: "Could not remove that round's match boxes." }, { status: 500 });
+  }
+
   const { error } = await service.from("live_round_state").delete().eq("round", round);
   if (error) {
     return NextResponse.json({ ok: false, error: "Could not remove that round." }, { status: 500 });
