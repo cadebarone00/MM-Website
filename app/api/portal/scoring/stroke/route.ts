@@ -1,0 +1,92 @@
+import { NextResponse } from "next/server";
+import { requirePlayer } from "@/lib/portal/requirePlayer";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { canScoreStrokesFor } from "@/lib/live/orchestration";
+import type { LiveMatchBox, MatchFormat, MatchState } from "@/lib/live/types";
+
+interface MatchBoxRow {
+  id: string;
+  round: number;
+  box_number: number;
+  format: string;
+  tee_time: string;
+  maroon_players: string[];
+  white_players: string[];
+  state: string;
+  started: boolean;
+}
+
+function rowToMatchBox(row: MatchBoxRow): LiveMatchBox {
+  return {
+    id: row.id,
+    round: row.round,
+    boxNumber: row.box_number,
+    format: row.format as MatchFormat,
+    teeTime: new Date(row.tee_time),
+    maroonPlayers: row.maroon_players,
+    whitePlayers: row.white_players,
+    state: row.state as MatchState,
+    started: row.started,
+  };
+}
+
+export async function POST(request: Request) {
+  const player = await requirePlayer();
+  if (!player) {
+    return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
+  }
+
+  const { round, hole, targetPlayerSlugs, score } = await request.json();
+  if (
+    typeof round !== "number" ||
+    typeof hole !== "number" ||
+    hole < 1 ||
+    hole > 18 ||
+    !Array.isArray(targetPlayerSlugs) ||
+    targetPlayerSlugs.some((s: unknown) => typeof s !== "string") ||
+    typeof score !== "number" ||
+    score < 1
+  ) {
+    return NextResponse.json({ ok: false, error: "Missing or invalid fields." }, { status: 400 });
+  }
+
+  const service = createSupabaseServiceRoleClient();
+
+  const { data: boxRow } = await service
+    .from("live_match_boxes")
+    .select("id, round, box_number, format, tee_time, maroon_players, white_players, state, started")
+    .eq("round", round);
+  const box = (boxRow as MatchBoxRow[] | null ?? [])
+    .map(rowToMatchBox)
+    .find((b) => b.maroonPlayers.includes(player.playerSlug) || b.whitePlayers.includes(player.playerSlug));
+  if (!box || !box.id) {
+    return NextResponse.json({ ok: false, error: "You don't have a match box in this round." }, { status: 404 });
+  }
+
+  const { data: existingSubmission } = await service
+    .from("live_match_box_submissions")
+    .select("player_slug")
+    .eq("match_box_id", box.id)
+    .eq("player_slug", player.playerSlug)
+    .maybeSingle();
+  if (existingSubmission) {
+    return NextResponse.json({ ok: false, error: "You've already submitted your scores for this round." }, { status: 400 });
+  }
+
+  if (!canScoreStrokesFor(box, player.playerSlug, targetPlayerSlugs)) {
+    return NextResponse.json({ ok: false, error: "You're not the assigned scorer for that player." }, { status: 403 });
+  }
+
+  for (const target of targetPlayerSlugs as string[]) {
+    const { data: existingRow } = await service.from("live_hole_scores").select("id").eq("player_slug", target).eq("round", round).eq("hole", hole).maybeSingle();
+    if (existingRow) {
+      const { error } = await service.from("live_hole_scores").update({ score }).eq("id", existingRow.id);
+      if (error) return NextResponse.json({ ok: false, error: "Could not save that score." }, { status: 500 });
+    } else {
+      const { error } = await service.from("live_hole_scores").insert({ player_slug: target, round, hole, score });
+      if (error) return NextResponse.json({ ok: false, error: "Could not save that score." }, { status: 500 });
+    }
+  }
+
+  return NextResponse.json({ ok: true });
+}
