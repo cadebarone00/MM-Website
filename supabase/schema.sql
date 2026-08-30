@@ -447,3 +447,14 @@ begin
     alter publication supabase_realtime add table live_match_box_submissions;
   end if;
 end $$;
+
+-- === Tiger Center: Player Live Scoring — agreement indicator ==============
+-- The `confirmed_by` column on live_hole_scores was reserved back in the
+-- native-live-platform build for exactly this: "the confirmation flow
+-- itself is a later phase, this column just makes room for it now." This
+-- is that later phase, for Fourball/Singles: a player's own self-reported
+-- stroke count (new column below) gets compared against the officially
+-- entered score (written by their assigned scoring opponent); when they
+-- agree, confirmed_by is set to that player's own slug.
+
+alter table live_hole_scores add column if not exists self_reported_score integer;
