@@ -50,7 +50,6 @@ export default async function PlayerScorecardPage({ params }: { params: Promise<
         team={entry.team}
         editionLabel={tournament.editionLabel}
         bio={getPlayerProfile(entry.name)?.bio ?? null}
-        bioHref={`/teams/stats/players/${player.toLowerCase()}`}
         live={false}
         position={position}
         total={total}
@@ -58,7 +57,7 @@ export default async function PlayerScorecardPage({ params }: { params: Promise<
       />
 
       {scorecard ? (
-        <PlayerScorecardView scorecard={scorecard} />
+        <PlayerScorecardView scorecard={scorecard} tournament={tournament} />
       ) : (
         <div className="px-5 py-8 bg-cream-50 border border-ink-100 rounded-md text-center">
           <p className="font-sans text-sm text-ink-500 m-0">

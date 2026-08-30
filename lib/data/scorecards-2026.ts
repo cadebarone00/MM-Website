@@ -7,7 +7,7 @@ export const scorecards2026: PlayerScorecard[] = [
     rounds: [
       {
         round: 1,
-        course: "Palmer #1",
+        course: "Palmer",
         total: 77,
         toPar: 5,
         putts: 33,
@@ -100,7 +100,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 4,
-        course: "Pete Dye #1",
+        course: "Pete Dye",
         total: 82,
         toPar: 10,
         putts: 35,
@@ -131,7 +131,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 5,
-        course: "Pete Dye #2",
+        course: "Pete Dye",
         total: 77,
         toPar: 5,
         putts: 30,
@@ -199,7 +199,7 @@ export const scorecards2026: PlayerScorecard[] = [
     rounds: [
       {
         round: 1,
-        course: "Palmer #1",
+        course: "Palmer",
         total: 77,
         toPar: 5,
         putts: 31,
@@ -292,7 +292,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 4,
-        course: "Pete Dye #1",
+        course: "Pete Dye",
         total: 86,
         toPar: 14,
         putts: 28,
@@ -323,7 +323,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 5,
-        course: "Pete Dye #2",
+        course: "Pete Dye",
         total: 82,
         toPar: 10,
         putts: 30,
@@ -391,7 +391,7 @@ export const scorecards2026: PlayerScorecard[] = [
     rounds: [
       {
         round: 1,
-        course: "Palmer #1",
+        course: "Palmer",
         total: 73,
         toPar: 1,
         putts: 28,
@@ -484,7 +484,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 4,
-        course: "Pete Dye #1",
+        course: "Pete Dye",
         total: 88,
         toPar: 16,
         putts: 30,
@@ -515,7 +515,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 5,
-        course: "Pete Dye #2",
+        course: "Pete Dye",
         total: 92,
         toPar: 20,
         putts: 32,
@@ -583,7 +583,7 @@ export const scorecards2026: PlayerScorecard[] = [
     rounds: [
       {
         round: 1,
-        course: "Palmer #1",
+        course: "Palmer",
         total: 80,
         toPar: 8,
         putts: 33,
@@ -676,7 +676,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 4,
-        course: "Pete Dye #1",
+        course: "Pete Dye",
         total: 87,
         toPar: 15,
         putts: 31,
@@ -707,7 +707,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 5,
-        course: "Pete Dye #2",
+        course: "Pete Dye",
         total: 81,
         toPar: 9,
         putts: 30,
@@ -775,7 +775,7 @@ export const scorecards2026: PlayerScorecard[] = [
     rounds: [
       {
         round: 1,
-        course: "Palmer #1",
+        course: "Palmer",
         total: 73,
         toPar: 1,
         putts: 31,
@@ -868,7 +868,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 4,
-        course: "Pete Dye #1",
+        course: "Pete Dye",
         total: 76,
         toPar: 4,
         putts: 30,
@@ -899,7 +899,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 5,
-        course: "Pete Dye #2",
+        course: "Pete Dye",
         total: 75,
         toPar: 3,
         putts: 26,
@@ -967,7 +967,7 @@ export const scorecards2026: PlayerScorecard[] = [
     rounds: [
       {
         round: 1,
-        course: "Palmer #1",
+        course: "Palmer",
         total: 79,
         toPar: 7,
         putts: 33,
@@ -1060,7 +1060,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 4,
-        course: "Pete Dye #1",
+        course: "Pete Dye",
         total: 77,
         toPar: 5,
         putts: 32,
@@ -1091,7 +1091,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 5,
-        course: "Pete Dye #2",
+        course: "Pete Dye",
         total: 74,
         toPar: 2,
         putts: 27,
@@ -1159,7 +1159,7 @@ export const scorecards2026: PlayerScorecard[] = [
     rounds: [
       {
         round: 1,
-        course: "Palmer #1",
+        course: "Palmer",
         total: 77,
         toPar: 5,
         putts: 28,
@@ -1252,7 +1252,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 4,
-        course: "Pete Dye #1",
+        course: "Pete Dye",
         total: 81,
         toPar: 9,
         putts: 30,
@@ -1283,7 +1283,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 5,
-        course: "Pete Dye #2",
+        course: "Pete Dye",
         total: 74,
         toPar: 2,
         putts: 28,
@@ -1351,7 +1351,7 @@ export const scorecards2026: PlayerScorecard[] = [
     rounds: [
       {
         round: 1,
-        course: "Palmer #1",
+        course: "Palmer",
         total: 73,
         toPar: 1,
         putts: 28,
@@ -1444,7 +1444,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 4,
-        course: "Pete Dye #1",
+        course: "Pete Dye",
         total: 79,
         toPar: 7,
         putts: 31,
@@ -1475,7 +1475,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 5,
-        course: "Pete Dye #2",
+        course: "Pete Dye",
         total: 73,
         toPar: 1,
         putts: 24,
@@ -1543,7 +1543,7 @@ export const scorecards2026: PlayerScorecard[] = [
     rounds: [
       {
         round: 1,
-        course: "Palmer #1",
+        course: "Palmer",
         total: 86,
         toPar: 14,
         putts: 34,
@@ -1636,7 +1636,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 4,
-        course: "Pete Dye #1",
+        course: "Pete Dye",
         total: 88,
         toPar: 16,
         putts: 29,
@@ -1667,7 +1667,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 5,
-        course: "Pete Dye #2",
+        course: "Pete Dye",
         total: 85,
         toPar: 13,
         putts: 31,
@@ -1735,7 +1735,7 @@ export const scorecards2026: PlayerScorecard[] = [
     rounds: [
       {
         round: 1,
-        course: "Palmer #1",
+        course: "Palmer",
         total: 84,
         toPar: 12,
         putts: 27,
@@ -1828,7 +1828,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 4,
-        course: "Pete Dye #1",
+        course: "Pete Dye",
         total: 88,
         toPar: 16,
         putts: 34,
@@ -1859,7 +1859,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 5,
-        course: "Pete Dye #2",
+        course: "Pete Dye",
         total: 85,
         toPar: 13,
         putts: 33,
@@ -1927,7 +1927,7 @@ export const scorecards2026: PlayerScorecard[] = [
     rounds: [
       {
         round: 1,
-        course: "Palmer #1",
+        course: "Palmer",
         total: 76,
         toPar: 4,
         putts: 32,
@@ -2020,7 +2020,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 4,
-        course: "Pete Dye #1",
+        course: "Pete Dye",
         total: 80,
         toPar: 8,
         putts: 31,
@@ -2051,7 +2051,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 5,
-        course: "Pete Dye #2",
+        course: "Pete Dye",
         total: 80,
         toPar: 8,
         putts: 34,
@@ -2119,7 +2119,7 @@ export const scorecards2026: PlayerScorecard[] = [
     rounds: [
       {
         round: 1,
-        course: "Palmer #1",
+        course: "Palmer",
         total: 79,
         toPar: 7,
         putts: 33,
@@ -2212,7 +2212,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 4,
-        course: "Pete Dye #1",
+        course: "Pete Dye",
         total: 87,
         toPar: 15,
         putts: 32,
@@ -2243,7 +2243,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 5,
-        course: "Pete Dye #2",
+        course: "Pete Dye",
         total: 84,
         toPar: 12,
         putts: 31,

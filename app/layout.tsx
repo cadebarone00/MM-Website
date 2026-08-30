@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Spectral, Barlow, Barlow_Semi_Condensed } from "next/font/google";
 import "./globals.css";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
+import { SiteChrome } from "@/components/nav/SiteChrome";
 
 const spectral = Spectral({
   subsets: ["latin"],
@@ -49,10 +48,8 @@ export default function RootLayout({
       lang="en"
       className={`${spectral.variable} ${barlow.variable} ${barlowCondensed.variable}`}
     >
-      <body className="min-h-screen bg-cream-50 font-sans text-ink-900 antialiased pb-[calc(5rem+env(safe-area-inset-bottom)+2.5vh)] lg:pb-0">
-        <Header />
-        {children}
-        <Footer />
+      <body className="min-h-screen bg-cream-50 font-sans text-ink-900 antialiased">
+        <SiteChrome>{children}</SiteChrome>
       </body>
     </html>
   );

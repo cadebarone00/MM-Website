@@ -2,19 +2,27 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 
 /**
- * Full-screen background used by both loading screens: the plain "site is
- * loading" splash (fans / signed-out visitors) and the post-login fork
- * screen (`/account/choose`), which passes `raised` + `children` to add the
- * Portal/Website links below the title.
+ * Full-screen background used by every full-takeover screen: the plain
+ * "site is loading" splash (fans / signed-out visitors), the post-login
+ * fork screen (`/account/choose`), and the Scoring status screen
+ * (`/portal/scoring`). `heading` is the big title line (was hardcoded
+ * "The Maroon Masters" — now each caller supplies its own so this shell can
+ * be reused for different titles). `topSlot` is a separate, optional small
+ * line pinned near the top of the screen (e.g. a "Welcome, {name}"
+ * greeting), independent of the centered/raised heading block below it.
  *
  * Purely presentational — it doesn't decide when to show or hide itself;
  * callers own that.
  */
 export function LoadingScreen({
+  heading,
   raised = false,
+  topSlot,
   children,
 }: {
+  heading: ReactNode;
   raised?: boolean;
+  topSlot?: ReactNode;
   children?: ReactNode;
 }) {
   return (
@@ -36,6 +44,13 @@ export function LoadingScreen({
         className="hidden object-cover lg:block"
       />
       <div className="absolute inset-0 bg-gradient-to-b from-maroon-900/70 via-maroon-900/30 to-maroon-900/70" />
+
+      {topSlot && (
+        <div className="absolute inset-x-0 top-[calc(env(safe-area-inset-top)+2rem)] px-6 text-center font-sans text-sm font-medium text-cream-50/90">
+          {topSlot}
+        </div>
+      )}
+
       <div
         className={`relative flex h-full flex-col items-center gap-6 px-6 text-center ${
           raised
@@ -44,7 +59,7 @@ export function LoadingScreen({
         }`}
       >
         <h1 className="font-serif text-4xl font-bold uppercase tracking-eyebrow text-cream-50 drop-shadow-lg sm:text-5xl">
-          The Maroon Masters
+          {heading}
         </h1>
         {children}
       </div>

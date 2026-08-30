@@ -5,23 +5,35 @@ import { ChevronDown } from "lucide-react";
 import { ScorecardRow } from "./ScorecardRow";
 import { CourseInfoHeader } from "./CourseInfoHeader";
 import { MobileScorecardGrid } from "./MobileScorecardGrid";
+import { RoundVideoPlaceholder } from "./RoundVideoPlaceholder";
+import { HoleDetailCard } from "./HoleDetailCard";
+import { ShotVideoPanel } from "./ShotVideoPanel";
+import { PlayerBioSection } from "./PlayerBioSection";
+import { StatsSection } from "@/components/stats/StatsSection";
 import { holePhotoCandidates } from "@/lib/data/holePhotos";
-import type { PlayerScorecard, RoundScorecard } from "@/lib/data";
+import { getPlayerProfile } from "@/lib/data/players";
+import type { PlayerScorecard, RoundScorecard, Tournament } from "@/lib/data";
 
+// A finished round opens on hole 1. A round still in progress opens on
+// whichever hole was most recently finished (the played-holes count itself,
+// since holes are scored in order).
 function defaultSelectedHole(round: RoundScorecard): number {
   const playedCount = round.holes.filter((h) => h.score > 0).length;
   return playedCount > 0 && playedCount < round.holes.length ? playedCount : 1;
 }
 
-export function PlayerScorecardView({ scorecard }: { scorecard: PlayerScorecard }) {
+export function PlayerScorecardView({ scorecard, tournament }: { scorecard: PlayerScorecard; tournament: Tournament }) {
   const [round, setRound] = useState(String(scorecard.rounds[scorecard.rounds.length - 1].round));
   const [selectedHole, setSelectedHole] = useState<number>(() => defaultSelectedHole(scorecard.rounds[scorecard.rounds.length - 1]));
   const [photoIndex, setPhotoIndex] = useState(0);
   const active = scorecard.rounds.find((r) => String(r.round) === round) ?? scorecard.rounds[0];
-  const holeStat = selectedHole != null ? (active.holes.find((h) => h.hole === selectedHole) ?? null) : null;
+  const holeStat = active.holes.find((h) => h.hole === selectedHole) ?? null;
   const photoCandidates = holeStat ? holePhotoCandidates(active.course, holeStat.hole) : [];
   const photoSrc = photoCandidates[photoIndex] ?? null;
 
+  // Shared registry of each hole's cell element, keyed by hole number — used
+  // both to measure the selected-hole highlight overlay and to scroll a
+  // live in-progress round's current hole into view.
   const holeRefs = useRef<Map<number, HTMLElement>>(new Map());
   const registerHoleRef = useCallback((hole: number, el: HTMLElement | null) => {
     if (el) holeRefs.current.set(hole, el);
@@ -60,15 +72,7 @@ export function PlayerScorecardView({ scorecard }: { scorecard: PlayerScorecard 
         <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-400" />
       </div>
 
-      <div className="sm:hidden">
-        <MobileScorecardGrid
-          round={active}
-          selectedHole={selectedHole}
-          onHoleClick={setSelectedHole}
-          initialHole={defaultSelectedHole(active)}
-        />
-      </div>
-
+      {/* Desktop: the full 18-hole table with OUT/IN subtotals. */}
       <div className="hidden overflow-x-auto overflow-y-hidden sm:block">
         <div className="relative w-max rounded-2xl border border-ink-300 bg-cream-100">
           <CourseInfoHeader round={active} onHoleClick={setSelectedHole} selectedHole={selectedHole} registerHoleRef={registerHoleRef} />
@@ -89,45 +93,49 @@ export function PlayerScorecardView({ scorecard }: { scorecard: PlayerScorecard 
         </div>
       </div>
 
-      {holeStat && (
-        <div className="mt-3 sm:mt-5">
-          <div className="flex items-center justify-center gap-3 py-3 px-3 bg-white border border-ink-100 rounded-md mb-4">
-            <div className="flex divide-x divide-ink-100">
-              <div className="flex flex-col items-center gap-[2px] px-3">
-                <span className="font-score text-lg font-bold text-ink-900 tabular-nums">{holeStat.putts}</span>
-                <span className="font-condensed text-3xs font-semibold tracking-eyebrow uppercase text-ink-400">Putts</span>
-              </div>
-              <div className="flex flex-col items-center gap-[2px] px-3">
-                <span className="font-score text-lg font-bold text-ink-900 tabular-nums">{holeStat.fir === "X" ? "–" : holeStat.fir === 1 ? "Hit" : "Miss"}</span>
-                <span className="font-condensed text-3xs font-semibold tracking-eyebrow uppercase text-ink-400">FIR</span>
-              </div>
-              <div className="flex flex-col items-center gap-[2px] px-3">
-                <span className="font-score text-lg font-bold text-ink-900 tabular-nums">{holeStat.gir === 1 ? "Hit" : "Miss"}</span>
-                <span className="font-condensed text-3xs font-semibold tracking-eyebrow uppercase text-ink-400">GIR</span>
-              </div>
-            </div>
-          </div>
+      {/* Mobile: edge-to-edge, frozen name/total columns, one swipe between the front and back nine. */}
+      <div className="-mx-7 sm:hidden">
+        <MobileScorecardGrid round={active} selectedHole={selectedHole} onHoleClick={setSelectedHole} initialHole={defaultSelectedHole(active)} />
+      </div>
 
-          <div className="font-condensed text-3xs font-semibold tracking-eyebrow uppercase text-ink-400 mb-2">Hole Overview</div>
-          {photoSrc ? (
-            <img
-              src={photoSrc}
-              alt={`Hole ${holeStat.hole} at ${active.course}`}
-              className="aspect-[16/7] w-full object-cover rounded-md border border-ink-100"
-              onError={() => setPhotoIndex((current) => Math.min(current + 1, photoCandidates.length - 1))}
-            />
-          ) : (
-            <div className="aspect-[16/7] w-full flex flex-col items-center justify-center gap-2 bg-cream-100 border border-ink-100 rounded-md text-ink-400">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <circle cx="9" cy="9" r="2" />
-                <path d="M21 15l-5-5L5 21" />
-              </svg>
-              <span className="font-condensed text-xs font-semibold tracking-wide uppercase">Hole photos coming soon</span>
+      <div className="mt-3">
+        {holeStat ? (
+          <>
+            <HoleDetailCard hole={holeStat} />
+
+            <div className="mt-3">
+              <div className="font-condensed text-3xs font-semibold tracking-eyebrow uppercase text-ink-400 mb-2">Hole Overview</div>
+              {photoSrc ? (
+                <img
+                  src={photoSrc}
+                  alt={`Hole ${holeStat.hole} at ${active.course}`}
+                  className="aspect-[16/7] w-full object-cover rounded-md border border-ink-100"
+                  onError={() => setPhotoIndex((current) => Math.min(current + 1, photoCandidates.length - 1))}
+                />
+              ) : (
+                <div className="aspect-[16/7] w-full flex flex-col items-center justify-center gap-2 bg-cream-100 border border-ink-100 rounded-md text-ink-400">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <circle cx="9" cy="9" r="2" />
+                    <path d="M21 15l-5-5L5 21" />
+                  </svg>
+                  <span className="font-condensed text-xs font-semibold tracking-wide uppercase">Hole photos coming soon</span>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      )}
+
+            <div className="mt-3">
+              <ShotVideoPanel shotCount={holeStat.score} />
+            </div>
+          </>
+        ) : (
+          <RoundVideoPlaceholder roundLabel={`Round ${active.round}`} />
+        )}
+      </div>
+
+      <StatsSection tournament={tournament} player={scorecard.player} />
+
+      <PlayerBioSection profile={getPlayerProfile(scorecard.player)} />
     </div>
   );
 }
