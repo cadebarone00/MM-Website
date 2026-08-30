@@ -8,7 +8,9 @@ import { MobileScorecardGrid } from "./MobileScorecardGrid";
 import { RoundVideoPlaceholder } from "./RoundVideoPlaceholder";
 import { HoleDetailCard } from "./HoleDetailCard";
 import { ShotVideoPanel } from "./ShotVideoPanel";
+import { PlayerBioSection } from "./PlayerBioSection";
 import { StatsSection } from "@/components/stats/StatsSection";
+import { getPlayerProfile } from "@/lib/data/players";
 import type { PlayerScorecard, RoundScorecard, Tournament } from "@/lib/data";
 
 // A finished round opens on hole 1. A round still in progress opens on
