@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAccountSession } from "@/lib/useAccountSession";
@@ -18,6 +19,22 @@ function activeSegment(pathname: string): SegmentHref {
   return "/";
 }
 
+function useHeaderOffset(): number {
+  const [offset, setOffset] = useState(0);
+
+  useEffect(() => {
+    function measure() {
+      const header = document.querySelector("header");
+      setOffset(header ? header.getBoundingClientRect().height : 0);
+    }
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  return offset;
+}
+
 /**
  * A persistent switcher between the three areas a player account has
  * access to — Website, Portal, Scoring — so they never have to go back to
@@ -28,13 +45,14 @@ function activeSegment(pathname: string): SegmentHref {
 export function PlayerAreaNav() {
   const session = useAccountSession();
   const pathname = usePathname();
+  const headerOffset = useHeaderOffset();
 
   if (session?.kind !== "player") return null;
 
   const active = activeSegment(pathname);
 
   return (
-    <nav className="relative z-[210] flex h-11 items-stretch bg-maroon-900">
+    <nav className="sticky z-[210] flex h-11 items-stretch bg-maroon-900" style={{ top: headerOffset }}>
       {SEGMENTS.map((segment) => {
         const on = segment.href === active;
         return (
