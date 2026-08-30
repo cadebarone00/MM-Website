@@ -8,7 +8,8 @@ import { MobileScorecardGrid } from "./MobileScorecardGrid";
 import { RoundVideoPlaceholder } from "./RoundVideoPlaceholder";
 import { HoleDetailCard } from "./HoleDetailCard";
 import { ShotVideoPanel } from "./ShotVideoPanel";
-import type { PlayerScorecard, RoundScorecard } from "@/lib/data";
+import { StatsSection } from "@/components/stats/StatsSection";
+import type { PlayerScorecard, RoundScorecard, Tournament } from "@/lib/data";
 
 // A finished round opens on hole 1. A round still in progress opens on
 // whichever hole was most recently finished (the played-holes count itself,
@@ -18,7 +19,7 @@ function defaultSelectedHole(round: RoundScorecard): number {
   return playedCount > 0 && playedCount < round.holes.length ? playedCount : 1;
 }
 
-export function PlayerScorecardView({ scorecard }: { scorecard: PlayerScorecard }) {
+export function PlayerScorecardView({ scorecard, tournament }: { scorecard: PlayerScorecard; tournament: Tournament }) {
   const [round, setRound] = useState(String(scorecard.rounds[scorecard.rounds.length - 1].round));
   const [selectedHole, setSelectedHole] = useState<number>(() => defaultSelectedHole(scorecard.rounds[scorecard.rounds.length - 1]));
   const active = scorecard.rounds.find((r) => String(r.round) === round) ?? scorecard.rounds[0];
@@ -99,6 +100,8 @@ export function PlayerScorecardView({ scorecard }: { scorecard: PlayerScorecard 
           <RoundVideoPlaceholder roundLabel={`Round ${active.round}`} />
         )}
       </div>
+
+      <StatsSection tournament={tournament} player={scorecard.player} />
     </div>
   );
 }
