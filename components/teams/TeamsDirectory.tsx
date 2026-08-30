@@ -20,9 +20,8 @@ const views: { value: View; label: string }[] = [
   { value: "stats", label: "Stats" },
 ];
 
-function playerHref(team: Team, player: string) {
-  const profile = getPlayerProfile(player);
-  return profile ? `/teams/${team}/${profile.slug}` : `/teams/stats/players/${encodeURIComponent(player.toLowerCase())}`;
+function playerHref(tournamentSlug: string, player: string) {
+  return `/leaderboard/${tournamentSlug}/players/${encodeURIComponent(player.toLowerCase())}`;
 }
 
 function teamLabel(team: Team) {

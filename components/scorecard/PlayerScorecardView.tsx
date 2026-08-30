@@ -104,6 +104,8 @@ export function PlayerScorecardView({ scorecard, tournament }: { scorecard: Play
       </div>
 
       <StatsSection tournament={tournament} player={scorecard.player} />
+
+      <PlayerBioSection profile={getPlayerProfile(scorecard.player)} />
     </div>
   );
 }
