@@ -23,7 +23,7 @@ export default async function ChooseAccountPage() {
   }
 
   return (
-    <LoadingScreen raised>
+    <LoadingScreen heading="The Maroon Masters" raised>
       <Link
         href="/portal"
         className="font-condensed text-2xl font-semibold uppercase tracking-wide text-cream-50 hover:text-cream-50/80"
