@@ -5,7 +5,6 @@ import { ChevronDown } from "lucide-react";
 import { ScorecardRow } from "./ScorecardRow";
 import { CourseInfoHeader } from "./CourseInfoHeader";
 import { MobileScorecardGrid } from "./MobileScorecardGrid";
-import { ScorecardLegend } from "./ScorecardLegend";
 import { RoundVideoPlaceholder } from "./RoundVideoPlaceholder";
 import { HoleDetailCard } from "./HoleDetailCard";
 import { ShotVideoPanel } from "./ShotVideoPanel";
