@@ -50,5 +50,5 @@ export default async function TeamPlayerBioRoute({ params }: { params: Promise<{
   const tournamentSlug = mostRecentTournamentSlug(profile.id);
   if (!tournamentSlug) notFound();
 
-  redirect(`/leaderboard/${tournamentSlug}/players/${profile.slug}`);
+  redirect(`/leaderboard/${tournamentSlug}/players/${profile.id.toLowerCase()}`);
 }
