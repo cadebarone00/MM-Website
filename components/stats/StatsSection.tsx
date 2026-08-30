@@ -97,7 +97,9 @@ export function StatsSection({ tournament, player }: { tournament: Tournament; p
               return (
                 <div key={r.round} className="flex flex-col items-center gap-1">
                   <DonutGauge playerPct={r.pct} comparePct={c?.pct ?? null} size="mini" />
-                  <span className="font-condensed text-3xs font-semibold uppercase tracking-eyebrow text-ink-400">{shortCourseName(r.course)}</span>
+                  <span className="font-condensed text-3xs font-semibold uppercase tracking-eyebrow text-ink-400">
+                    {r.course ? shortCourseName(r.course) : `RD ${r.round}`}
+                  </span>
                 </div>
               );
             })}
