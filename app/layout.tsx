@@ -3,6 +3,7 @@ import { Spectral, Barlow, Barlow_Semi_Condensed } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { PlayerAreaNav } from "@/components/nav/PlayerAreaNav";
 
 const spectral = Spectral({
   subsets: ["latin"],
@@ -41,6 +42,7 @@ export default function RootLayout({
     >
       <body className="min-h-screen bg-cream-50 font-sans text-ink-900 antialiased pb-[calc(5rem+env(safe-area-inset-bottom)+2.5vh)] lg:pb-0">
         <Header />
+        <PlayerAreaNav />
         {children}
         <Footer />
       </body>
