@@ -406,3 +406,44 @@ alter table live_match_boxes add constraint live_match_boxes_round_box_number_ke
 -- Singles is 12 players / 2 per box = 6 boxes; Fourball/Foursome stays 3.
 alter table live_match_boxes drop constraint if exists live_match_boxes_box_number_check;
 alter table live_match_boxes add constraint live_match_boxes_box_number_check check (box_number between 1 and 6);
+
+-- === Tiger Center: Player Live Scoring ====================================
+-- Tracks each player's own final submission for a match box (the ops
+-- spec's "Submit Scores" action — one row per player once they've entered
+-- everything they're responsible for and hit Submit). `on delete cascade`
+-- is included from the start this time — the Matchups migration shipped
+-- without one on `live_match_boxes.round` and it took two real bugs
+-- (a stuck "Remove round" and a stale-format hazard) to fix; this table
+-- inherits that lesson.
+
+create table if not exists live_match_box_submissions (
+  match_box_id uuid not null references live_match_boxes(id) on delete cascade,
+  player_slug text not null references player_slots(player_slug),
+  submitted_at timestamptz not null default now(),
+  primary key (match_box_id, player_slug)
+);
+
+alter table live_match_box_submissions enable row level security;
+
+drop policy if exists live_match_box_submissions_select_all on live_match_box_submissions;
+create policy live_match_box_submissions_select_all on live_match_box_submissions for select using (true);
+
+-- Postgres has no "add table if not exists" for publications, so this is
+-- guarded manually — safe to re-run. Both tables need to be in this
+-- publication for the scoring screen's Supabase Realtime subscriptions
+-- (Task 9) to receive any events at all; RLS alone does not enable that.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'live_hole_scores'
+  ) then
+    alter publication supabase_realtime add table live_hole_scores;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'live_match_box_submissions'
+  ) then
+    alter publication supabase_realtime add table live_match_box_submissions;
+  end if;
+end $$;
