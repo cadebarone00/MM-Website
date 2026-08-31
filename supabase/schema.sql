@@ -458,3 +458,69 @@ end $$;
 -- agree, confirmed_by is set to that player's own slug.
 
 alter table live_hole_scores add column if not exists self_reported_score integer;
+
+-- === Player Bio Portal ===================================================
+-- Lets a player edit their own public bio; every change needs Tiger's
+-- approval before it's live (email isn't part of this — that's a Supabase
+-- Auth setting). player_profile_edits is the pending queue a player writes
+-- to and Tiger clears; player_profile_overrides is what the public bio page
+-- reads on top of the static lib/data/players/*.ts baseline once approved.
+
+create table if not exists player_profile_edits (
+  player_slug text not null references player_slots(player_slug),
+  field text not null,
+  proposed_value jsonb not null,
+  submitted_at timestamptz not null default now(),
+  primary key (player_slug, field)
+);
+
+create table if not exists player_profile_overrides (
+  player_slug text not null references player_slots(player_slug),
+  field text not null,
+  value jsonb not null,
+  updated_at timestamptz not null default now(),
+  primary key (player_slug, field)
+);
+
+alter table player_profile_edits enable row level security;
+alter table player_profile_overrides enable row level security;
+
+-- Both readable by anyone — matches the live_* tables' existing pattern.
+-- The public bio page reads overrides with no auth; a player's own pending
+-- edits aren't sensitive either. Writes happen server-side with the
+-- service-role key, same as everywhere else.
+drop policy if exists player_profile_edits_select_all on player_profile_edits;
+create policy player_profile_edits_select_all on player_profile_edits for select using (true);
+
+drop policy if exists player_profile_overrides_select_all on player_profile_overrides;
+create policy player_profile_overrides_select_all on player_profile_overrides for select using (true);
+
+-- Approving is two writes (move the value to overrides, clear the pending
+-- row) that must happen together — a SECURITY DEFINER function, same
+-- reasoning as settle_mm_coin_market's atomicity above. The upsert's ON
+-- CONFLICT matters because a player can have an older override for a field
+-- that's now being re-approved after a second edit.
+create or replace function approve_profile_edit(p_player_slug text, p_field text)
+returns void as $$
+declare
+  affected integer;
+begin
+  insert into player_profile_overrides (player_slug, field, value, updated_at)
+  select player_slug, field, proposed_value, now()
+  from player_profile_edits
+  where player_slug = p_player_slug and field = p_field
+  on conflict (player_slug, field) do update set value = excluded.value, updated_at = excluded.updated_at;
+
+  -- GET DIAGNOSTICS, not a `returning ... into` boolean: when the select
+  -- above matches zero rows, the insert affects zero rows too, and a
+  -- `returning true into` variable would stay NULL rather than false —
+  -- `if not <null>` is itself NULL and silently skips the raise. Row count
+  -- doesn't have that trap.
+  get diagnostics affected = row_count;
+  if affected = 0 then
+    raise exception 'No pending edit for % / %', p_player_slug, p_field;
+  end if;
+
+  delete from player_profile_edits where player_slug = p_player_slug and field = p_field;
+end;
+$$ language plpgsql security definer;
