@@ -66,17 +66,23 @@ function teamFor(roster: Tournament["roster"], playerId: string): Team {
  */
 export async function getScorecardsForTournament(tournament: Pick<Tournament, "slug" | "roster">): Promise<PlayerScorecard[]> {
   const service = createSupabaseServiceRoleClient();
-  const { data: roundRows } = await service
+  const { data: roundRows, error: roundsError } = await service
     .from("archived_scorecard_rounds")
     .select("id, player_slug, round, course, format")
     .eq("tournament_slug", tournament.slug);
+  if (roundsError) {
+    console.error("getScorecardsForTournament: failed to load rounds", roundsError);
+  }
   const rounds = (roundRows ?? []) as RoundRow[];
   if (rounds.length === 0) return [];
 
-  const { data: holeRows } = await service
+  const { data: holeRows, error: holesError } = await service
     .from("archived_scorecard_holes")
     .select("round_id, hole, par, yards, score, putts, fir, gir")
     .in("round_id", rounds.map((r) => r.id));
+  if (holesError) {
+    console.error("getScorecardsForTournament: failed to load holes", holesError);
+  }
   const holes = (holeRows ?? []) as HoleRow[];
 
   const bySlug = new Map<string, RoundRow[]>();
@@ -103,31 +109,40 @@ export async function getArchivedRoundLabels(
   playerSlug: string
 ): Promise<{ round: number; course: string; format: string | null }[]> {
   const service = createSupabaseServiceRoleClient();
-  const { data } = await service
+  const { data, error } = await service
     .from("archived_scorecard_rounds")
     .select("round, course, format")
     .eq("tournament_slug", tournamentSlug)
     .eq("player_slug", playerSlug)
     .order("round");
+  if (error) {
+    console.error("getArchivedRoundLabels: failed to load round labels", error);
+  }
   return data ?? [];
 }
 
 /** One round's full hole-by-hole scorecard — used by both the public page and the Tiger Center editor. */
 export async function getArchivedRoundScorecard(tournamentSlug: string, playerSlug: string, round: number): Promise<RoundScorecard | null> {
   const service = createSupabaseServiceRoleClient();
-  const { data: roundRow } = await service
+  const { data: roundRow, error: roundError } = await service
     .from("archived_scorecard_rounds")
     .select("id, player_slug, round, course, format")
     .eq("tournament_slug", tournamentSlug)
     .eq("player_slug", playerSlug)
     .eq("round", round)
     .maybeSingle();
+  if (roundError) {
+    console.error("getArchivedRoundScorecard: failed to load round", roundError);
+  }
   if (!roundRow) return null;
 
-  const { data: holeRows } = await service
+  const { data: holeRows, error: holesError } = await service
     .from("archived_scorecard_holes")
     .select("round_id, hole, par, yards, score, putts, fir, gir")
     .eq("round_id", roundRow.id);
+  if (holesError) {
+    console.error("getArchivedRoundScorecard: failed to load holes", holesError);
+  }
 
   return toRoundScorecard(roundRow as RoundRow, (holeRows ?? []) as HoleRow[]);
 }
@@ -135,19 +150,25 @@ export async function getArchivedRoundScorecard(tournamentSlug: string, playerSl
 /** hole -> shot number -> public video URL, for a round. Empty object if nothing's uploaded yet. */
 export async function getShotVideoUrls(tournamentSlug: string, playerSlug: string, round: number): Promise<Record<number, Record<number, string>>> {
   const service = createSupabaseServiceRoleClient();
-  const { data: roundRow } = await service
+  const { data: roundRow, error: roundError } = await service
     .from("archived_scorecard_rounds")
     .select("id")
     .eq("tournament_slug", tournamentSlug)
     .eq("player_slug", playerSlug)
     .eq("round", round)
     .maybeSingle();
+  if (roundError) {
+    console.error("getShotVideoUrls: failed to load round", roundError);
+  }
   if (!roundRow) return {};
 
-  const { data: videoRows } = await service
+  const { data: videoRows, error: videosError } = await service
     .from("archived_shot_videos")
     .select("hole, shot_number, storage_path")
     .eq("round_id", roundRow.id);
+  if (videosError) {
+    console.error("getShotVideoUrls: failed to load videos", videosError);
+  }
 
   const result: Record<number, Record<number, string>> = {};
   for (const row of videoRows ?? []) {
