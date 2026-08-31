@@ -50,7 +50,6 @@ export default async function PlayerScorecardPage({ params }: { params: Promise<
         team={entry.team}
         editionLabel={tournament.editionLabel}
         bio={getPlayerProfile(entry.name)?.bio ?? null}
-        bioHref={`/teams/stats/players/${player.toLowerCase()}`}
         live={false}
         position={position}
         total={total}

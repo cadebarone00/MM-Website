@@ -31,6 +31,7 @@ function teamLabel(team: Team) {
 function PlayerRow({
   name,
   team,
+  tournamentSlug,
   rank,
   toPar,
   showBioAndScore = true,
@@ -38,6 +39,7 @@ function PlayerRow({
 }: {
   name: string;
   team: Team;
+  tournamentSlug: string;
   rank?: number;
   toPar?: number;
   showBioAndScore?: boolean;
@@ -76,7 +78,7 @@ function PlayerRow({
 
   return showBioAndScore ? (
     <Link
-      href={playerHref(team, name)}
+      href={playerHref(tournamentSlug, name)}
       className="block border-b-2 border-maroon-700 py-5 transition-colors hover:bg-maroon-50/50 sm:py-6"
     >
       {info}
@@ -142,6 +144,7 @@ export function TeamsDirectory({ tournament }: { tournament: Tournament }) {
               key={player.player}
               name={player.player}
               team={player.team}
+              tournamentSlug={tournament.slug}
               rank={player.rank}
               showBioAndScore={false}
             />
@@ -153,7 +156,13 @@ export function TeamsDirectory({ tournament }: { tournament: Tournament }) {
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
           <div>
             {alphaPlayers.map((player) => (
-              <PlayerRow key={player.name} name={player.name} team={player.team} favorite={isFavorite(player.name)} />
+              <PlayerRow
+                key={player.name}
+                name={player.name}
+                team={player.team}
+                tournamentSlug={tournament.slug}
+                favorite={isFavorite(player.name)}
+              />
             ))}
           </div>
           {view === "maroon" && <MaroonCollage />}

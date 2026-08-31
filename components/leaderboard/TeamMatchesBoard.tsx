@@ -89,6 +89,7 @@ function DaySelector({ days, activeDay, onSelect }: { days: number[]; activeDay:
 export function TeamMatchesBoard({ tournament, live }: { tournament: Tournament; live: boolean }) {
   const days = [...new Set(tournament.matches.map((m) => m.day))].sort((a, b) => a - b);
   const [userPickedDay, setUserPickedDay] = useState<number | null>(null);
+  const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
   const day = userPickedDay ?? currentRoundDay(tournament);
 
   if (days.length === 0) {
@@ -124,7 +125,14 @@ export function TeamMatchesBoard({ tournament, live }: { tournament: Tournament;
               {sessionHeaderLabel(group, dayMatches, live)} &middot; {group.format}
             </div>
             {group.matches.map((match) => (
-              <CompactMatchRow key={match.id} match={match} tournamentSlug={tournament.slug} />
+              <CompactMatchRow
+                key={match.id}
+                match={match}
+                tournament={tournament}
+                tournamentSlug={tournament.slug}
+                expanded={expandedMatchId === match.id}
+                onToggle={() => setExpandedMatchId((id) => (id === match.id ? null : match.id))}
+              />
             ))}
             {index < sessionGroups.length - 1 && <div className="h-px bg-ink-100" />}
           </div>

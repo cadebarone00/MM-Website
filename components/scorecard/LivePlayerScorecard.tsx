@@ -38,7 +38,6 @@ export function LivePlayerScorecard({ tournamentSlug, player }: { tournamentSlug
         team={team}
         editionLabel={nextTournament.editionLabel}
         bio={profile?.bio ?? null}
-        bioHref={`/teams/stats/players/${player.toLowerCase()}`}
         live={isLiveNow()}
         position={position}
         total={total}
