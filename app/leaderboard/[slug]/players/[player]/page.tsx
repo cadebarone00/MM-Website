@@ -4,6 +4,7 @@ import { PlayerProfileHeader } from "@/components/scorecard/PlayerProfileHeader"
 import { LivePlayerScorecard } from "@/components/scorecard/LivePlayerScorecard";
 import { pastTournaments, nextTournament, getTournament, getPlayerScorecard, playersOf } from "@/lib/data";
 import { getPlayerAvatar, getPlayerDisplayName, getPlayerProfile } from "@/lib/data/players";
+import { getScorecardsForTournament } from "@/lib/data/archivedScorecards";
 
 export function generateStaticParams() {
   return pastTournaments.flatMap((t) =>
@@ -25,14 +26,17 @@ export default async function PlayerScorecardPage({ params }: { params: Promise<
   const tournament = getTournament(slug);
   if (!tournament) notFound();
 
+  const scorecards = await getScorecardsForTournament(tournament);
+  const tournamentWithScorecards = { ...tournament, scorecards };
+
   const entry = playersOf(tournament).find((p) => p.name.toLowerCase() === player.toLowerCase());
   if (!entry) notFound();
 
-  const scorecard = getPlayerScorecard(tournament, entry.name);
+  const scorecard = getPlayerScorecard(tournamentWithScorecards, entry.name);
   const displayName = getPlayerDisplayName(entry.name);
   const avatar = getPlayerAvatar(entry.name);
 
-  const ranked = [...tournament.individualLeaderboard].sort((a, b) => a.toPar - b.toPar);
+  const ranked = [...tournamentWithScorecards.individualLeaderboard].sort((a, b) => a.toPar - b.toPar);
   const standing = ranked.find((p) => p.player.toLowerCase() === player.toLowerCase());
   const position = standing ? ranked.indexOf(standing) + 1 : null;
   const total = standing?.toPar ?? null;
@@ -44,11 +48,11 @@ export default async function PlayerScorecardPage({ params }: { params: Promise<
     <div className="max-w-[1200px] mx-auto px-7 pt-8 pb-16">
       <PlayerProfileHeader
         backHref={`/leaderboard/${slug}`}
-        backLabel={`Back to ${tournament.editionLabel} Leaderboard`}
+        backLabel={`Back to ${tournamentWithScorecards.editionLabel} Leaderboard`}
         displayName={displayName}
         avatarSrc={avatar}
         team={entry.team}
-        editionLabel={tournament.editionLabel}
+        editionLabel={tournamentWithScorecards.editionLabel}
         bio={getPlayerProfile(entry.name)?.bio ?? null}
         live={false}
         position={position}
@@ -57,7 +61,7 @@ export default async function PlayerScorecardPage({ params }: { params: Promise<
       />
 
       {scorecard ? (
-        <PlayerScorecardView scorecard={scorecard} tournament={tournament} />
+        <PlayerScorecardView scorecard={scorecard} tournament={tournamentWithScorecards} />
       ) : (
         <div className="px-5 py-8 bg-cream-50 border border-ink-100 rounded-md text-center">
           <p className="font-sans text-sm text-ink-500 m-0">

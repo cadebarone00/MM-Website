@@ -1,5 +1,4 @@
 import type { Tournament } from "./types";
-import { scorecards2026 } from "./scorecards-2026";
 
 export const palmSprings2026: Tournament = {
   slug: "2026-palm-springs",
@@ -70,7 +69,6 @@ export const palmSprings2026: Tournament = {
     { player: "Dalton", team: "white", toPar: 60 },
     { player: "Hugo", team: "maroon", toPar: 61 },
   ],
-  scorecards: scorecards2026,
   notes: "Exact calendar dates weren't reliably recorded in the source sheet (the Itinerary tab carried over stale dates from a prior trip) — shown as January 2026.",
   individualChampion: "Nate",
   individualChampionPhoto: "/champions/2026.jpg",

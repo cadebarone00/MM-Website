@@ -1,5 +1,4 @@
 import type { Tournament } from "./types";
-import { scorecards2025 } from "./scorecards-2025";
 
 export const danzante2025: Tournament = {
   slug: "2025-danzante",
@@ -46,7 +45,6 @@ export const danzante2025: Tournament = {
     { player: "Nate", team: "maroon", toPar: 43 },
     { player: "Dalton", team: "white", toPar: 60 },
   ],
-  scorecards: scorecards2025,
   notes: "Day 3 was a free/fishing day at Danzante Bay — no matches were played.",
   individualChampion: "Cade",
   individualChampionPhoto: "/champions/2025.jpg",
