@@ -16,7 +16,13 @@ export function CoursesFormatPanel({
   initialRounds: LiveRoundState[];
   initialCourses: LiveCourse[];
 }) {
-  const [roundCount, setRoundCount] = useState(initialSettings.roundCount ?? 8);
+  // null (never configured yet) shows a blank placeholder instead of
+  // defaulting to a real number like 8 — picking "8" from a dropdown that
+  // already shows "8" fires no onChange event at all (the browser only
+  // fires change when the value actually changes), so nothing would ever
+  // save on first setup. Every option is a real value once one is chosen,
+  // since roundCount then reflects a real, already-saved number.
+  const [roundCount, setRoundCount] = useState<number | null>(initialSettings.roundCount);
   const [rounds, setRounds] = useState(initialRounds);
   const [courses, setCourses] = useState(initialCourses);
   const [addingCourseFor, setAddingCourseFor] = useState<number | null>(null);
@@ -105,10 +111,13 @@ export function CoursesFormatPanel({
       <label className="font-sans text-sm font-semibold text-ink-700">
         Number of rounds:{" "}
         <select
-          value={roundCount}
+          value={roundCount ?? ""}
           onChange={(e) => saveRoundCount(Number(e.target.value))}
           className="border-2 border-stone-300 rounded-lg px-2 py-1"
         >
+          <option value="" disabled>
+            Choose a number
+          </option>
           {[6, 7, 8, 9, 10].map((n) => (
             <option key={n} value={n}>
               {n}
