@@ -4,7 +4,7 @@ import { PlayerProfileHeader } from "@/components/scorecard/PlayerProfileHeader"
 import { LivePlayerScorecard } from "@/components/scorecard/LivePlayerScorecard";
 import { pastTournaments, nextTournament, getTournament, getPlayerScorecard, playersOf } from "@/lib/data";
 import { getPlayerAvatar, getPlayerDisplayName, getPlayerProfile } from "@/lib/data/players";
-import { getScorecardsForTournament } from "@/lib/data/archivedScorecards";
+import { getScorecardsForTournament, getShotVideoUrls } from "@/lib/data/archivedScorecards";
 
 export function generateStaticParams() {
   return pastTournaments.flatMap((t) =>
@@ -44,6 +44,13 @@ export default async function PlayerScorecardPage({ params }: { params: Promise<
   const playedCount = lastRound?.holes.filter((h) => h.score > 0).length ?? 0;
   const thru = lastRound == null ? null : playedCount >= lastRound.holes.length ? "F" : String(playedCount);
 
+  const lastRoundNumber = scorecard?.rounds[scorecard.rounds.length - 1]?.round;
+  const playerSlug = getPlayerProfile(entry.name)?.slug;
+  const shotVideos =
+    lastRoundNumber != null && playerSlug
+      ? { [lastRoundNumber]: await getShotVideoUrls(slug, playerSlug, lastRoundNumber) }
+      : undefined;
+
   return (
     <div className="max-w-[1200px] mx-auto px-7 pt-8 pb-16">
       <PlayerProfileHeader
@@ -61,7 +68,7 @@ export default async function PlayerScorecardPage({ params }: { params: Promise<
       />
 
       {scorecard ? (
-        <PlayerScorecardView scorecard={scorecard} tournament={tournamentWithScorecards} />
+        <PlayerScorecardView scorecard={scorecard} tournament={tournamentWithScorecards} shotVideos={shotVideos} />
       ) : (
         <div className="px-5 py-8 bg-cream-50 border border-ink-100 rounded-md text-center">
           <p className="font-sans text-sm text-ink-500 m-0">
