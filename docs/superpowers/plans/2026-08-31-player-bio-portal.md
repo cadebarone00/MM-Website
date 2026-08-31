@@ -71,43 +71,27 @@ create policy player_profile_overrides_select_all on player_profile_overrides fo
 
 -- Approving is two writes (move the value to overrides, clear the pending
 -- row) that must happen together — a SECURITY DEFINER function, same
--- reasoning as settle_mm_coin_market's atomicity above.
-create or replace function approve_profile_edit(p_player_slug text, p_field text)
-returns void as $$
-begin
-  insert into player_profile_overrides (player_slug, field, value, updated_at)
-  select player_slug, field, proposed_value, now()
-  from player_profile_edits
-  where player_slug = p_player_slug and field = p_field;
-
-  if not found then
-    raise exception 'No pending edit for % / %', p_player_slug, p_field;
-  end if;
-
-  delete from player_profile_edits where player_slug = p_player_slug and field = p_field;
-end;
-$$ language plpgsql security definer;
-```
-
-**Wait — bug in the ON CONFLICT.** The `insert ... select` above has no
-`on conflict` clause, but a player could have an *older* override for a
-field that's now being re-approved after a second edit. Fix it before
-running:
-
-```sql
+-- reasoning as settle_mm_coin_market's atomicity above. The upsert's ON
+-- CONFLICT matters because a player can have an older override for a field
+-- that's now being re-approved after a second edit.
 create or replace function approve_profile_edit(p_player_slug text, p_field text)
 returns void as $$
 declare
-  found_row boolean;
+  affected integer;
 begin
   insert into player_profile_overrides (player_slug, field, value, updated_at)
   select player_slug, field, proposed_value, now()
   from player_profile_edits
   where player_slug = p_player_slug and field = p_field
-  on conflict (player_slug, field) do update set value = excluded.value, updated_at = excluded.updated_at
-  returning true into found_row;
+  on conflict (player_slug, field) do update set value = excluded.value, updated_at = excluded.updated_at;
 
-  if not found_row then
+  -- GET DIAGNOSTICS, not a `returning ... into` boolean: when the select
+  -- above matches zero rows, the insert affects zero rows too, and a
+  -- `returning true into` variable would stay NULL rather than false —
+  -- `if not <null>` is itself NULL and silently skips the raise. Row count
+  -- doesn't have that trap.
+  get diagnostics affected = row_count;
+  if affected = 0 then
     raise exception 'No pending edit for % / %', p_player_slug, p_field;
   end if;
 
@@ -115,8 +99,6 @@ begin
 end;
 $$ language plpgsql security definer;
 ```
-
-Use this second version — it's the one that ships.
 
 - [ ] **Step 2: Run it in Supabase**
 
@@ -1219,7 +1201,7 @@ git commit -m "feat: add /portal/profile page and link it from the Portal home s
 - Modify: `app/portal/admin/players-teams/page.tsx`
 
 **Interfaces:**
-- Consumes: `POST /api/portal/tiger/profile-edits/{approve,deny,set}` from Tasks 5–7.
+- Consumes: `POST /api/portal/tiger/profile-edits/{approve,deny,set}` from Tasks 5–7 — `set` is Tiger's own always-available direct edit, independent of any pending queue, so every row gets an "Edit directly" affordance, not just rows with pending edits.
 - Produces: no new exports — extends the existing `PlayerSlotAdminRow` shape with pending-edit data.
 
 - [ ] **Step 1: Extend the page to fetch pending edits**
@@ -1324,6 +1306,43 @@ existing `busy`/`copiedSlug`/`error` state:
       setBusy(null);
     }
   }
+
+  const [directEditSlug, setDirectEditSlug] = useState<string | null>(null);
+  const [directEditField, setDirectEditField] = useState("bio");
+  const [directEditValue, setDirectEditValue] = useState("");
+  const [directEditSaved, setDirectEditSaved] = useState(false);
+
+  async function handleSet(playerSlug: string) {
+    setBusy(playerSlug);
+    setError(null);
+    setDirectEditSaved(false);
+    try {
+      const res = await fetch("/api/portal/tiger/profile-edits/set", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          playerSlug,
+          field: directEditField,
+          value: directEditField === "history" ? directEditValue.split("\n").map((line) => line.trim()).filter(Boolean) : directEditValue,
+        }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error);
+        return;
+      }
+      // A direct set also clears any pending edit for that field server-side.
+      setRowsState((current) =>
+        current.map((r) =>
+          r.playerSlug === playerSlug ? { ...r, pendingEdits: r.pendingEdits.filter((e) => e.field !== directEditField) } : r
+        )
+      );
+      setDirectEditSaved(true);
+      setDirectEditValue("");
+    } finally {
+      setBusy(null);
+    }
+  }
 ```
 
 Rename the existing `rows` prop parameter to `initialRows` in the function
@@ -1339,8 +1358,8 @@ body's `<tbody>` block with:
 ```tsx
         <tbody>
           {rows.map((row) => (
-            <>
-              <tr key={row.playerSlug} className="border-b border-ink-100">
+            <Fragment key={row.playerSlug}>
+              <tr className="border-b border-ink-100">
                 <td className="py-2">{row.fullName}</td>
                 <td className="py-2 font-mono">{row.username ?? "—"}</td>
                 <td className="py-2">{row.claimedBy ? "Claimed" : "Open"}</td>
@@ -1368,6 +1387,17 @@ body's `<tbody>` block with:
                       {row.pendingEdits.length} pending
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDirectEditSlug((current) => (current === row.playerSlug ? null : row.playerSlug));
+                      setDirectEditSaved(false);
+                      setError(null);
+                    }}
+                    className="mr-3 font-condensed text-2xs font-semibold uppercase tracking-wide text-ink-500 underline"
+                  >
+                    Edit directly
+                  </button>
                   {row.claimedBy ? (
                     <button
                       type="button"
@@ -1420,9 +1450,54 @@ body's `<tbody>` block with:
                   </td>
                 </tr>
               )}
-            </>
+              {directEditSlug === row.playerSlug && (
+                <tr key={`${row.playerSlug}-direct-edit`} className="border-b border-ink-100 bg-cream-50">
+                  <td colSpan={5} className="py-3">
+                    <div className="flex flex-col gap-2 px-2">
+                      {directEditSaved && <p className="font-sans text-xs text-ink-700">Saved — live immediately, no approval needed.</p>}
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={directEditField}
+                          onChange={(e) => setDirectEditField(e.target.value)}
+                          className="border-2 border-stone-300 rounded-lg px-2 py-1 text-xs font-semibold bg-white"
+                        >
+                          {EDITABLE_PLAYER_FIELDS.map((field) => (
+                            <option key={field} value={field}>
+                              {field}
+                            </option>
+                          ))}
+                        </select>
+                        <textarea
+                          value={directEditValue}
+                          onChange={(e) => setDirectEditValue(e.target.value)}
+                          placeholder={directEditField === "history" ? "One entry per line" : "New value"}
+                          rows={2}
+                          className="flex-1 rounded-sm border border-ink-200 px-2 py-1 font-sans text-xs"
+                        />
+                        <button
+                          type="button"
+                          disabled={busy === row.playerSlug}
+                          onClick={() => handleSet(row.playerSlug)}
+                          className="rounded-pill bg-maroon-700 px-3 py-1.5 font-sans text-xs font-semibold text-white disabled:opacity-50"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </Fragment>
           ))}
         </tbody>
+```
+
+Add these imports at the top of the file (`Fragment` alongside the
+existing `useState` import from `"react"`, plus the new field list):
+
+```tsx
+import { Fragment, useState } from "react";
+import { EDITABLE_PLAYER_FIELDS } from "@/lib/data/players/overrides";
 ```
 
 Also update the description text above the table (it currently says
@@ -1446,7 +1521,9 @@ verification), then load `/portal/admin/players-teams`, confirm that
 player's row shows "1 pending", click it, confirm the field/proposed value
 shows with Approve/Deny buttons. Click Approve, confirm the row disappears
 and — per Task 8 — the player's public bio page now shows the new value
-after a refresh.
+after a refresh. Separately, click "Edit directly" on any row, pick a
+field, enter a value, Save — confirm "Saved — live immediately" shows and
+the field updates on that player's public bio page with no approval step.
 
 - [ ] **Step 4: Commit**
 
@@ -1479,10 +1556,9 @@ Expected: clean typecheck, successful build, no route errors.
    pending" → see current vs. proposed → Approve.
 3. Back on the public site: visit that player's scorecard page, confirm
    the new Hometown value shows in the Bio section.
-4. As Tiger again: use the `set` endpoint directly (or a quick curl) to
-   change a different field on a different player with no prior pending
-   edit, confirm it shows up on their public bio page without ever
-   appearing in the pending queue.
+4. As Tiger again: click "Edit directly" on a different player with no
+   pending edits, pick a field, enter a value, Save — confirm it shows up
+   on their public bio page without ever appearing in the pending queue.
 5. Confirm a denied edit disappears from the queue and the public bio page
    still shows the old value.
 
