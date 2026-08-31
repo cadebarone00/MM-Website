@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   }
 
   const { round } = await request.json();
-  if (typeof round !== "number") {
+  if (typeof round !== "number" || !Number.isInteger(round)) {
     return NextResponse.json({ ok: false, error: "Missing round." }, { status: 400 });
   }
 
@@ -52,6 +52,15 @@ export async function POST(request: Request) {
     .find((b) => b.maroonPlayers.includes(player.playerSlug) || b.whitePlayers.includes(player.playerSlug));
   if (!box || !box.id) {
     return NextResponse.json({ ok: false, error: "You don't have a match box in this round." }, { status: 404 });
+  }
+
+  const { data: roundState } = await service
+    .from("live_round_state")
+    .select("course_locked, matchups_locked, started")
+    .eq("round", round)
+    .single();
+  if (!roundState?.course_locked || !roundState?.matchups_locked || !roundState?.started) {
+    return NextResponse.json({ ok: false, error: "This round isn't live yet." }, { status: 400 });
   }
 
   const { data: existingSubmission } = await service
@@ -94,10 +103,12 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: false, error: `Finish entering all 18 holes before submitting (missing hole ${hole}).` }, { status: 400 });
       }
     }
-    const ownRow = rows.find((r) => r.player_slug === player.playerSlug && r.hole === hole);
-    const isPar3 = holes.find((h) => h.number === hole)?.par === 3;
-    if (!ownRow || ownRow.putts === null || ownRow.gir === null || (!isPar3 && ownRow.fir === null)) {
-      return NextResponse.json({ ok: false, error: `Finish entering your own stats for all 18 holes before submitting (missing hole ${hole}).` }, { status: 400 });
+    if (box.format !== "Foursome") {
+      const ownRow = rows.find((r) => r.player_slug === player.playerSlug && r.hole === hole);
+      const isPar3 = holes.find((h) => h.number === hole)?.par === 3;
+      if (!ownRow || ownRow.putts === null || ownRow.gir === null || (!isPar3 && ownRow.fir === null)) {
+        return NextResponse.json({ ok: false, error: `Finish entering your own stats for all 18 holes before submitting (missing hole ${hole}).` }, { status: 400 });
+      }
     }
   }
 

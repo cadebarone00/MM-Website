@@ -66,6 +66,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "You don't have a match box in this round." }, { status: 404 });
   }
 
+  const { data: roundState } = await service
+    .from("live_round_state")
+    .select("course_locked, matchups_locked, started")
+    .eq("round", round)
+    .single();
+  if (!roundState?.course_locked || !roundState?.matchups_locked || !roundState?.started) {
+    return NextResponse.json({ ok: false, error: "This round isn't live yet." }, { status: 400 });
+  }
+
   const { data: existingSubmission } = await service
     .from("live_match_box_submissions")
     .select("player_slug")

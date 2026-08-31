@@ -196,7 +196,6 @@ test("holeComplete and matchBoxResult treat Foursome like a 1v1 with one shared 
 });
 
 test("canScoreStrokesFor requires the exact opposing pair position for Fourball/Singles", () => {
-  const snapshot = seedSnapshot();
   const fourball = box(1, 1, ["cam", "drew"], ["cade", "collin"]);
   assert.equal(canScoreStrokesFor(fourball, "cam", ["cade"]), true);
   assert.equal(canScoreStrokesFor(fourball, "drew", ["collin"]), true);
@@ -218,7 +217,6 @@ test("scoresAgree requires both values present and equal", () => {
 });
 
 test("canScoreStrokesFor requires the whole opposing side for Foursome", () => {
-  const snapshot = seedSnapshot();
   const foursome = box(1, 1, ["cam", "drew"], ["cade", "collin"], "Foursome");
   assert.equal(canScoreStrokesFor(foursome, "cam", ["cade", "collin"]), true);
   assert.equal(canScoreStrokesFor(foursome, "drew", ["cade", "collin"]), true, "either player on your side can enter the opposing side's shared score");

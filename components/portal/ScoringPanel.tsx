@@ -43,20 +43,37 @@ export function ScoringPanel({
   const [confirmingSubmit, setConfirmingSubmit] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/portal/scoring/state?round=${round}`, { cache: "no-store" });
-    const data = await res.json();
-    if (data.ok) setState(data);
+    try {
+      const res = await fetch(`/api/portal/scoring/state?round=${round}`, { cache: "no-store" });
+      const data = await res.json();
+      if (data.ok) {
+        setState(data);
+        setError(null);
+      } else {
+        setError(data.error ?? "Could not load this round.");
+      }
+    } catch {
+      setError("Could not load this round. Check your connection and try again.");
+    }
   }, [round]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch-on-mount + Realtime resubscribe, matching components/portal/PlayerScoringPanel.tsx; `load` is reused by the mutation handlers so it can't be nested inside this effect.
     load();
-    const supabase = createSupabaseBrowserClient();
-    const channel = supabase
-      .channel(`scoring-round-${round}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "live_hole_scores", filter: `round=eq.${round}` }, load)
-      .on("postgres_changes", { event: "*", schema: "public", table: "live_match_box_submissions", filter: `match_box_id=eq.${matchBox.id}` }, load)
-      .subscribe();
+
+    type SupabaseBrowserClient = ReturnType<typeof createSupabaseBrowserClient>;
+    let supabase: SupabaseBrowserClient | null = null;
+    let channel: ReturnType<SupabaseBrowserClient["channel"]> | null = null;
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      supabase = createSupabaseBrowserClient();
+      channel = supabase
+        .channel(`scoring-round-${round}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "live_hole_scores", filter: `round=eq.${round}` }, load)
+        .on("postgres_changes", { event: "*", schema: "public", table: "live_match_box_submissions", filter: `match_box_id=eq.${matchBox.id}` }, load)
+        .subscribe();
+    } else {
+      console.warn("Realtime env vars not set — live updates disabled, falling back to visibility/online refetch only.");
+    }
 
     function onVisible() {
       if (document.visibilityState === "visible") load();
@@ -65,13 +82,19 @@ export function ScoringPanel({
     window.addEventListener("online", load);
 
     return () => {
-      supabase.removeChannel(channel);
+      if (supabase && channel) supabase.removeChannel(channel);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("online", load);
     };
   }, [round, matchBox.id, load]);
 
-  if (!state) return <p className="font-sans text-sm text-ink-400">Loading…</p>;
+  if (!state) {
+    return error ? (
+      <p className="rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>
+    ) : (
+      <p className="font-sans text-sm text-ink-400">Loading…</p>
+    );
+  }
 
   const alreadySubmitted = state.submittedPlayers.includes(playerSlug);
   const scoreFor = (player: string, hole: number) => state.scores.find((s) => s.player === player && s.hole === hole) ?? null;
@@ -164,7 +187,7 @@ export function ScoringPanel({
             const canScore = !alreadySubmitted && canScoreStrokesFor(matchBox, playerSlug, sidePlayers);
             const existing = scoreFor(sidePlayers[0], selectedHole);
             return (
-              <div key={side} className="rounded-lg border-2 border-stone-300 p-3">
+              <div key={`${side}-${selectedHole}`} className="rounded-lg border-2 border-stone-300 p-3">
                 <span className="font-condensed text-2xs font-semibold uppercase tracking-wide text-ink-500">
                   {side === "maroon" ? "Maroon" : "White"} side ({sidePlayers.map((p) => nameBySlug[p] ?? p).join(" & ")})
                 </span>
@@ -193,7 +216,7 @@ export function ScoringPanel({
             const isSelf = slug === playerSlug;
             const canScoreThis = !alreadySubmitted && canScoreStrokesFor(matchBox, playerSlug, [slug]);
             return (
-              <div key={slug} className="rounded-lg border-2 border-stone-300 p-3">
+              <div key={`${slug}-${selectedHole}`} className="rounded-lg border-2 border-stone-300 p-3">
                 <span className="font-condensed text-2xs font-semibold uppercase tracking-wide text-ink-500">{nameBySlug[slug] ?? slug}</span>
                 <div className="mt-2 flex flex-wrap items-center gap-3">
                   <label className="flex items-center gap-1 font-sans text-xs text-ink-700">
