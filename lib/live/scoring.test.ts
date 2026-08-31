@@ -59,3 +59,17 @@ test("summarizePlayer throws for an unknown player", () => {
   const snapshot = seedSnapshot();
   assert.throws(() => summarizePlayer(snapshot, "nobody"), /Unknown player/);
 });
+
+test("summarizePlayer excludes Foursome rounds from individual stats", () => {
+  const snapshot = seedSnapshot();
+  snapshot.matchBoxes = [
+    { id: null, round: 1, boxNumber: 1, format: "Singles", teeTime: new Date(), maroonPlayers: ["cade"], whitePlayers: ["cam"], state: "Scheduled", started: false },
+    { id: null, round: 2, boxNumber: 1, format: "Foursome", teeTime: new Date(), maroonPlayers: ["cade"], whitePlayers: ["cam"], state: "Scheduled", started: false },
+  ];
+  updateScore(snapshot, "cade", 1, 1, 4, 1, true, true); // Singles round — counts
+  updateScore(snapshot, "cade", 2, 1, 5, 2, true, true); // Foursome round — excluded
+
+  const summary = summarizePlayer(snapshot, "cade");
+  assert.equal(summary.played, 1, "only the Singles-round hole counts");
+  assert.equal(summary.gross, 4);
+});

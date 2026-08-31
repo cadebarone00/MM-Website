@@ -1,8 +1,9 @@
 // app/portal/admin/page.tsx
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { TigerCenterNav } from "@/components/portal/tiger/TigerCenterNav";
+import { StartRoundBanner, type StartableRound } from "@/components/portal/tiger/StartRoundBanner";
 
 export default async function TigerCenterPage() {
   const supabase = await createSupabaseServerClient();
@@ -14,9 +15,21 @@ export default async function TigerCenterPage() {
   const { data: profile } = await supabase.from("profiles").select("is_host").eq("id", user.id).single();
   if (!profile?.is_host) redirect("/");
 
+  const service = createSupabaseServiceRoleClient();
+  const [{ data: roundRows }, { data: courseRows }] = await Promise.all([
+    service.from("live_round_state").select("round, date, format, course_id, course_locked, matchups_locked, started").order("round"),
+    service.from("live_courses").select("id, name"),
+  ]);
+  const courseNameById = new Map((courseRows ?? []).map((c) => [c.id, c.name as string]));
+  const nextRound = (roundRows ?? []).find((r) => r.course_locked && r.matchups_locked && !r.started);
+  const startable: StartableRound | null = nextRound
+    ? { round: nextRound.round, format: nextRound.format ?? "", courseName: nextRound.course_id ? courseNameById.get(nextRound.course_id) ?? null : null, date: nextRound.date }
+    : null;
+
   return (
     <div className="mx-auto max-w-[720px] px-4 py-12 sm:px-7">
       <h1 className="font-serif text-3xl font-bold text-ink-900">The Tiger Center</h1>
+      {startable && <StartRoundBanner round={startable} />}
       <div className="mt-6">
         <TigerCenterNav />
       </div>
