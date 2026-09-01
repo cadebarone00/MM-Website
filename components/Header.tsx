@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { UserRound, ArrowLeft } from "lucide-react";
 import { RoundCountdown } from "@/components/ui/RoundCountdown";
 import { Avatar } from "@/components/ui/Avatar";
@@ -36,20 +36,27 @@ function isSet(value: string): boolean {
   return value.trim().length > 0 && value.trim().toLowerCase() !== "tbd";
 }
 
-// On a player profile page, the mobile header's Instagram icon is swapped
-// for a back arrow to the tournament leaderboard it was opened from.
-function playerProfileLeaderboardHref(pathname: string): string | null {
-  const match = pathname.match(/^\/leaderboard\/([^/]+)\/players\/[^/]+\/?$/);
-  return match ? `/leaderboard/${match[1]}` : null;
+// The "home" page of each section of the app — Website, Player Portal,
+// Scoring, and the Tiger Center. The mobile header's top-left Instagram
+// icon only shows on these; every other page (anything you had to click
+// into) shows a real back arrow there instead, matching the "the whole
+// site should be uniform about this" requirement. Exact match only — a
+// sub-page under one of these (e.g. /leaderboard/2027) still gets a back
+// arrow, only the bare hub itself is exempt.
+const HOME_PAGES = new Set(["/", "/leaderboard", "/teams", "/portal", "/portal/scoring", "/portal/admin"]);
+
+function isHomePage(pathname: string): boolean {
+  return HOME_PAGES.has(pathname);
 }
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const live = isLiveNow();
   const champ = champion(latestCompleted);
   const nextVenueKnown = isSet(nextTournament.venue);
   const session = useAccountSession();
-  const backHref = playerProfileLeaderboardHref(pathname);
+  const showBack = !isHomePage(pathname);
   const [moreOpen, setMoreOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [lastPathname, setLastPathname] = useState(pathname);
@@ -75,15 +82,16 @@ export function Header() {
         {/* Mobile header row — white background to blend with the phone's status bar, 3 zones: Instagram + countdown/live (left), wordmark (center, bottom-aligned), account icon (right, always visible). */}
         <div className="lg:hidden grid grid-cols-3 items-end gap-2 bg-white px-4 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem+2vh)]">
           <div className="flex min-w-0 items-center gap-1.5 justify-self-start">
-            {backHref ? (
-              <Link
-                href={backHref}
-                aria-label="Back to leaderboard"
-                title="Back to leaderboard"
+            {showBack ? (
+              <button
+                type="button"
+                onClick={() => router.back()}
+                aria-label="Back"
+                title="Back"
                 className="inline-flex h-6 w-6 shrink-0 items-center justify-center text-maroon-700"
               >
                 <ArrowLeft size={16} />
-              </Link>
+              </button>
             ) : (
               <a
                 href="https://www.instagram.com/themaroonmasters/"
@@ -96,7 +104,7 @@ export function Header() {
                 <InstagramGlyph size={16} />
               </a>
             )}
-            {backHref ? null : live ? (
+            {showBack ? null : live ? (
               <span className="font-condensed text-3xs font-semibold uppercase tracking-wide text-maroon-700">Live Now</span>
             ) : (
               <RoundCountdown className="text-maroon-700" compact />

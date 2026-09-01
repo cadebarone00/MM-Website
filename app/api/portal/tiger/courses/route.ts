@@ -10,12 +10,18 @@ export async function GET() {
   }
 
   const service = createSupabaseServiceRoleClient();
-  const { data, error } = await service.from("live_courses").select("id, name, holes").order("name");
+  const { data, error } = await service.from("live_courses").select("id, name, holes, rating, slope").order("name");
   if (error) {
     return NextResponse.json({ ok: false, error: "Could not load the course bank." }, { status: 500 });
   }
 
-  const courses: LiveCourse[] = (data ?? []).map((row) => ({ id: row.id, name: row.name, holes: row.holes as LiveHole[] }));
+  const courses: LiveCourse[] = (data ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    holes: row.holes as LiveHole[],
+    rating: row.rating,
+    slope: row.slope,
+  }));
   return NextResponse.json({ ok: true, courses }, { headers: { "Cache-Control": "no-store" } });
 }
 
@@ -25,7 +31,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
   }
 
-  const { name, holes } = await request.json();
+  const { name, holes, rating, slope } = await request.json();
   if (typeof name !== "string" || !name.trim()) {
     return NextResponse.json({ ok: false, error: "Course name is required." }, { status: 400 });
   }
@@ -37,9 +43,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: "Every hole needs a number, par, and yardage." }, { status: 400 });
     }
   }
+  if (rating !== undefined && rating !== null && typeof rating !== "number") {
+    return NextResponse.json({ ok: false, error: "Course rating must be a number." }, { status: 400 });
+  }
+  if (slope !== undefined && slope !== null && (typeof slope !== "number" || !Number.isInteger(slope) || slope < 55 || slope > 155)) {
+    return NextResponse.json({ ok: false, error: "Slope rating must be a whole number between 55 and 155." }, { status: 400 });
+  }
 
   const service = createSupabaseServiceRoleClient();
-  const { data, error } = await service.from("live_courses").insert({ name: name.trim(), holes }).select("id").single();
+  const { data, error } = await service
+    .from("live_courses")
+    .insert({ name: name.trim(), holes, rating: rating ?? null, slope: slope ?? null })
+    .select("id")
+    .single();
   if (error || !data) {
     return NextResponse.json({ ok: false, error: "Could not save that course." }, { status: 500 });
   }

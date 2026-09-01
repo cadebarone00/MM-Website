@@ -13,6 +13,8 @@ export interface LiveCourse {
   id: string;
   name: string;
   holes: LiveHole[];
+  rating: number | null; // e.g. 72.4 — null until set
+  slope: number | null; // USGA range 55-155 — null until set
 }
 
 export interface LiveHoleScore {

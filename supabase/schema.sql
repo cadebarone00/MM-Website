@@ -524,3 +524,12 @@ begin
   delete from player_profile_edits where player_slug = p_player_slug and field = p_field;
 end;
 $$ language plpgsql security definer;
+
+-- === Tiger Center: Course rating & slope (for handicap calculations) ======
+-- One rating/slope per course (not per tee box — this app has no tee-box
+-- concept yet). Course Rating is a decimal (e.g. 72.4); Slope Rating is a
+-- whole number, USGA range 55-155. Both nullable — existing courses saved
+-- before this migration won't have them until someone edits/re-adds them.
+
+alter table live_courses add column if not exists rating numeric;
+alter table live_courses add column if not exists slope integer check (slope between 55 and 155);

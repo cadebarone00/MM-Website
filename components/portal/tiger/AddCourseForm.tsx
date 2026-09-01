@@ -11,6 +11,8 @@ function blankHoles(): LiveHole[] {
 export function AddCourseForm({ onSaved }: { onSaved: (course: LiveCourse) => void }) {
   const [name, setName] = useState("");
   const [holes, setHoles] = useState<LiveHole[]>(blankHoles());
+  const [rating, setRating] = useState("");
+  const [slope, setSlope] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,19 +24,23 @@ export function AddCourseForm({ onSaved }: { onSaved: (course: LiveCourse) => vo
     setSaving(true);
     setError(null);
     try {
+      const ratingValue = rating.trim() ? Number(rating) : null;
+      const slopeValue = slope.trim() ? Number(slope) : null;
       const res = await fetch("/api/portal/tiger/courses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, holes }),
+        body: JSON.stringify({ name, holes, rating: ratingValue, slope: slopeValue }),
       });
       const data = await res.json();
       if (!data.ok) {
         setError(data.error);
         return;
       }
-      onSaved({ id: data.courseId, name, holes });
+      onSaved({ id: data.courseId, name, holes, rating: ratingValue, slope: slopeValue });
       setName("");
       setHoles(blankHoles());
+      setRating("");
+      setSlope("");
     } finally {
       setSaving(false);
     }
