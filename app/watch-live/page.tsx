@@ -1,5 +1,5 @@
-import { ComingSoonPage } from "@/components/ui/ComingSoonPage";
+import { WatchLiveExperience } from "@/components/watch-live/WatchLiveExperience";
 
 export default function WatchLivePage() {
-  return <ComingSoonPage title="Watch Live" />;
+  return <WatchLiveExperience />;
 }
