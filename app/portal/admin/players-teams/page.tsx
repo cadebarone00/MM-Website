@@ -20,12 +20,23 @@ export default async function PortalAdminPage() {
   const { data: roster } = await service.from("live_roster").select("player_slug, team");
   const rosterBySlug = new Map((roster ?? []).map((r) => [r.player_slug, r.team as "maroon" | "white"]));
 
+  const { data: pendingRows } = await service
+    .from("player_profile_edits")
+    .select("player_slug, field, proposed_value, submitted_at");
+  const pendingBySlug = new Map<string, { field: string; proposedValue: string | string[]; submittedAt: string }[]>();
+  for (const row of pendingRows ?? []) {
+    const list = pendingBySlug.get(row.player_slug) ?? [];
+    list.push({ field: row.field, proposedValue: row.proposed_value, submittedAt: row.submitted_at });
+    pendingBySlug.set(row.player_slug, list);
+  }
+
   const rows: PlayerSlotAdminRow[] = playerProfiles.map((p) => ({
     playerSlug: p.slug,
     fullName: p.fullName,
     username: byslug.get(p.slug)?.username ?? null,
     claimedBy: byslug.get(p.slug)?.claimed_by ?? null,
     team: rosterBySlug.get(p.slug) ?? null,
+    pendingEdits: pendingBySlug.get(p.slug) ?? [],
   }));
 
   return <PlayerSlotsAdmin rows={rows} />;
