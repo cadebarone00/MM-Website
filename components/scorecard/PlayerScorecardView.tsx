@@ -36,6 +36,11 @@ export function PlayerScorecardView({
   const [photoIndex, setPhotoIndex] = useState(0);
   const active = scorecard.rounds.find((r) => String(r.round) === round) ?? scorecard.rounds[0];
   const holeStat = active.holes.find((h) => h.hole === selectedHole) ?? null;
+  const holesWithVideo = new Set(
+    Object.entries(shotVideos?.[active.round] ?? {})
+      .filter(([, shots]) => Object.keys(shots).length > 0)
+      .map(([hole]) => Number(hole))
+  );
   const photoCandidates = holeStat ? holePhotoCandidates(active.course, holeStat.hole) : [];
   const photoSrc = photoCandidates[photoIndex] ?? null;
 
@@ -83,7 +88,13 @@ export function PlayerScorecardView({
       {/* Desktop: the full 18-hole table with OUT/IN subtotals. */}
       <div className="hidden overflow-x-auto overflow-y-hidden sm:block">
         <div className="relative w-max rounded-2xl border border-ink-300 bg-cream-100">
-          <CourseInfoHeader round={active} onHoleClick={setSelectedHole} selectedHole={selectedHole} registerHoleRef={registerHoleRef} />
+          <CourseInfoHeader
+            round={active}
+            onHoleClick={setSelectedHole}
+            selectedHole={selectedHole}
+            registerHoleRef={registerHoleRef}
+            holesWithVideo={holesWithVideo}
+          />
           <ScorecardRow round={active} onHoleClick={setSelectedHole} selectedHole={selectedHole} registerHoleRef={registerHoleRef} />
 
           {cap && (
@@ -103,7 +114,13 @@ export function PlayerScorecardView({
 
       {/* Mobile: edge-to-edge, frozen name/total columns, one swipe between the front and back nine. */}
       <div className="-mx-7 sm:hidden">
-        <MobileScorecardGrid round={active} selectedHole={selectedHole} onHoleClick={setSelectedHole} initialHole={defaultSelectedHole(active)} />
+        <MobileScorecardGrid
+          round={active}
+          selectedHole={selectedHole}
+          onHoleClick={setSelectedHole}
+          initialHole={defaultSelectedHole(active)}
+          holesWithVideo={holesWithVideo}
+        />
       </div>
 
       <div className="mt-3">
@@ -133,7 +150,11 @@ export function PlayerScorecardView({
             </div>
 
             <div className="mt-3">
-              <ShotVideoPanel shotCount={holeStat.score} videoUrls={shotVideos?.[active.round]?.[selectedHole]} />
+              <ShotVideoPanel
+                key={`${active.round}-${selectedHole}`}
+                shotCount={holeStat.score}
+                videoUrls={shotVideos?.[active.round]?.[selectedHole]}
+              />
             </div>
           </>
         ) : (

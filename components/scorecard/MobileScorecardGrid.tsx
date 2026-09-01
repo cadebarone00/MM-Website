@@ -22,6 +22,7 @@ function ValueCell({
   selected,
   onClick,
   registerRef,
+  hasVideo,
 }: {
   value: number | string;
   variant: Variant;
@@ -29,9 +30,17 @@ function ValueCell({
   selected?: boolean;
   onClick?: () => void;
   registerRef?: (el: HTMLElement | null) => void;
+  /** Small gold underline — this hole has at least one shot video. */
+  hasVideo?: boolean;
 }) {
   const { bg, text, border } = colors(variant, selected);
-  const cellClass = ["flex flex-1 items-center justify-center border-r", height, border, bg].join(" ");
+  const cellClass = [
+    "flex flex-1 items-center justify-center border-r",
+    height,
+    border,
+    bg,
+    hasVideo ? "border-b-2 border-b-amber-400" : "",
+  ].join(" ");
   const content = <span className={["font-sans text-xs font-semibold tabular-nums", text].join(" ")}>{value}</span>;
   return onClick ? (
     <button ref={registerRef} type="button" onClick={onClick} className={[cellClass, "cursor-pointer"].join(" ")}>
@@ -105,9 +114,11 @@ interface Props {
   onHoleClick: (hole: number) => void;
   /** Which hole the view should open scrolled to — the default selected hole for this round. */
   initialHole: number;
+  /** Hole numbers with at least one shot video — underlined gold in the Hole row. */
+  holesWithVideo?: Set<number>;
 }
 
-export function MobileScorecardGrid({ round, selectedHole, onHoleClick, initialHole }: Props) {
+export function MobileScorecardGrid({ round, selectedHole, onHoleClick, initialHole, holesWithVideo }: Props) {
   const front = round.holes.slice(0, 9);
   const back = round.holes.slice(9, 18);
   const outPar = front.reduce((s, h) => s + h.par, 0);
@@ -148,6 +159,7 @@ export function MobileScorecardGrid({ round, selectedHole, onHoleClick, initialH
             selected={selectedHole === h.hole}
             onClick={() => onHoleClick(h.hole)}
             registerRef={(el) => registerHoleRef(h.hole, el)}
+            hasVideo={holesWithVideo?.has(h.hole)}
           />
         ))}
       </div>
