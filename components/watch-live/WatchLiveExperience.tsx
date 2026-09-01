@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import { MessageCircle, Video } from "lucide-react";
 import { useState } from "react";
+import { RoundCountdown } from "@/components/ui/RoundCountdown";
 
 type Tab = "comments" | "highlights";
 
@@ -26,15 +28,11 @@ export function WatchLiveExperience() {
         {LIVE_STREAM_URL ? (
           <video className="aspect-video w-full" controls playsInline src={LIVE_STREAM_URL} />
         ) : (
-          <div className="aspect-video w-full bg-ink-900 text-cream-50">
-            <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full border border-white/25 bg-white/10">
-                <Video size={22} aria-hidden="true" />
-              </span>
-              <div>
-                <p className="m-0 font-condensed text-sm font-semibold uppercase tracking-eyebrow">Live broadcast</p>
-                <p className="mt-1 mb-0 text-xs text-cream-200/70">The stream will appear here when coverage begins.</p>
-              </div>
+          <div className="relative aspect-video w-full overflow-hidden bg-ink-900">
+            <Image src="/loading/mobile.png" alt="" fill priority sizes="100vw" className="object-cover lg:hidden" />
+            <Image src="/loading/desktop.png" alt="" fill priority sizes="(max-width: 1200px) 100vw, 1200px" className="hidden object-cover lg:block" />
+            <div className="absolute inset-0 flex items-center justify-center bg-maroon-900/20 px-4">
+              <RoundCountdown className="rounded-sm border border-white/30 bg-maroon-900/75 px-4 py-2 text-center text-cream-50 shadow-md" />
             </div>
           </div>
         )}
