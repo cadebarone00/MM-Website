@@ -1,7 +1,45 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import { EDITABLE_PLAYER_FIELDS } from "@/lib/data/players/overrides";
+
+// Mirrors EDITABLE_PLAYER_FIELDS in lib/data/players/overrides.ts. Not
+// imported from there directly: that module has a top-level import of the
+// server-only Supabase client (via next/headers), which breaks the client
+// bundle for this "use client" component — the same constraint
+// ProfileEditGrid.tsx (Task 9) works around by keeping its own local field
+// list instead of importing from overrides.ts. Keep this list in sync with
+// overrides.ts if editable fields ever change.
+const EDITABLE_PLAYER_FIELDS = [
+  "bio",
+  "avatarSrc",
+  "history",
+  "instagram",
+  "linkedin",
+  "nickname",
+  "classYear",
+  "major",
+  "occupation",
+  "hometown",
+  "residence",
+  "playsFrom",
+  "status",
+  "clubGolfYears",
+  "college",
+  "height",
+  "weight",
+  "age",
+  "birthday",
+  "handicap",
+  "rankingNotes",
+  "debut",
+  "debutLocation",
+  "strengths",
+  "careerHighlights",
+  "personal",
+  "hobbies",
+  "goals",
+  "misc",
+] as const;
 
 interface PendingProfileEdit {
   field: string;
