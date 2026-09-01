@@ -178,45 +178,136 @@ export function PlayerSlotsAdmin({ rows: initialRows }: { rows: PlayerSlotAdminR
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.playerSlug} className="border-b border-ink-100">
-              <td className="py-2">{row.fullName}</td>
-              <td className="py-2 font-mono">{row.username ?? "—"}</td>
-              <td className="py-2">{row.claimedBy ? "Claimed" : "Open"}</td>
-              <td className="py-2">
-                <select
-                  value={row.team ?? ""}
-                  disabled={busy === row.playerSlug}
-                  onChange={(e) => handleSetTeam(row.playerSlug, e.target.value as "maroon" | "white")}
-                  className="border-2 border-stone-300 rounded-lg px-2 py-1 text-xs font-semibold bg-white"
-                >
-                  <option value="" disabled>
-                    Unassigned
-                  </option>
-                  <option value="maroon">Maroon</option>
-                  <option value="white">White</option>
-                </select>
-              </td>
-              <td className="py-2 text-right">
-                {row.claimedBy ? (
-                  <button
-                    type="button"
+            <Fragment key={row.playerSlug}>
+              <tr className="border-b border-ink-100">
+                <td className="py-2">{row.fullName}</td>
+                <td className="py-2 font-mono">{row.username ?? "—"}</td>
+                <td className="py-2">{row.claimedBy ? "Claimed" : "Open"}</td>
+                <td className="py-2">
+                  <select
+                    value={row.team ?? ""}
                     disabled={busy === row.playerSlug}
-                    onClick={() => handleUnlink(row.playerSlug)}
-                    className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline"
+                    onChange={(e) => handleSetTeam(row.playerSlug, e.target.value as "maroon" | "white")}
+                    className="border-2 border-stone-300 rounded-lg px-2 py-1 text-xs font-semibold bg-white"
                   >
-                    Unlink
-                  </button>
-                ) : row.username ? (
+                    <option value="" disabled>
+                      Unassigned
+                    </option>
+                    <option value="maroon">Maroon</option>
+                    <option value="white">White</option>
+                  </select>
+                </td>
+                <td className="py-2 text-right">
+                  {row.pendingEdits.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setExpandedSlug((current) => (current === row.playerSlug ? null : row.playerSlug))}
+                      className="mr-3 font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline"
+                    >
+                      {row.pendingEdits.length} pending
+                    </button>
+                  )}
                   <button
                     type="button"
-                    onClick={() => handleCopyLink(row.playerSlug, row.username!)}
-                    className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline"
+                    onClick={() => {
+                      setDirectEditSlug((current) => (current === row.playerSlug ? null : row.playerSlug));
+                      setDirectEditSaved(false);
+                      setError(null);
+                    }}
+                    className="mr-3 font-condensed text-2xs font-semibold uppercase tracking-wide text-ink-500 underline"
                   >
-                    {copiedSlug === row.playerSlug ? "Copied!" : "Copy Invite Link"}
+                    Edit directly
                   </button>
-                ) : null}
-              </td>
-            </tr>
+                  {row.claimedBy ? (
+                    <button
+                      type="button"
+                      disabled={busy === row.playerSlug}
+                      onClick={() => handleUnlink(row.playerSlug)}
+                      className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline"
+                    >
+                      Unlink
+                    </button>
+                  ) : row.username ? (
+                    <button
+                      type="button"
+                      onClick={() => handleCopyLink(row.playerSlug, row.username!)}
+                      className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline"
+                    >
+                      {copiedSlug === row.playerSlug ? "Copied!" : "Copy Invite Link"}
+                    </button>
+                  ) : null}
+                </td>
+              </tr>
+              {expandedSlug === row.playerSlug && row.pendingEdits.length > 0 && (
+                <tr key={`${row.playerSlug}-pending`} className="border-b border-ink-100 bg-cream-50">
+                  <td colSpan={5} className="py-3">
+                    <div className="flex flex-col gap-2 px-2">
+                      {row.pendingEdits.map((edit) => (
+                        <div key={edit.field} className="flex items-center justify-between gap-3 font-sans text-xs">
+                          <span className="font-semibold text-ink-900">{edit.field}</span>
+                          <span className="flex-1 text-ink-500">
+                            → {Array.isArray(edit.proposedValue) ? edit.proposedValue.join(", ") : edit.proposedValue}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={busy === row.playerSlug}
+                            onClick={() => handleApprove(row.playerSlug, edit.field)}
+                            className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busy === row.playerSlug}
+                            onClick={() => handleDeny(row.playerSlug, edit.field)}
+                            className="font-condensed text-2xs font-semibold uppercase tracking-wide text-ink-500 underline"
+                          >
+                            Deny
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              )}
+              {directEditSlug === row.playerSlug && (
+                <tr key={`${row.playerSlug}-direct-edit`} className="border-b border-ink-100 bg-cream-50">
+                  <td colSpan={5} className="py-3">
+                    <div className="flex flex-col gap-2 px-2">
+                      {directEditSaved && <p className="font-sans text-xs text-ink-700">Saved — live immediately, no approval needed.</p>}
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={directEditField}
+                          onChange={(e) => setDirectEditField(e.target.value)}
+                          className="border-2 border-stone-300 rounded-lg px-2 py-1 text-xs font-semibold bg-white"
+                        >
+                          {EDITABLE_PLAYER_FIELDS.map((field) => (
+                            <option key={field} value={field}>
+                              {field}
+                            </option>
+                          ))}
+                        </select>
+                        <textarea
+                          value={directEditValue}
+                          onChange={(e) => setDirectEditValue(e.target.value)}
+                          placeholder={directEditField === "history" ? "One entry per line" : "New value"}
+                          rows={2}
+                          className="flex-1 rounded-sm border border-ink-200 px-2 py-1 font-sans text-xs"
+                        />
+                        <button
+                          type="button"
+                          disabled={busy === row.playerSlug}
+                          onClick={() => handleSet(row.playerSlug)}
+                          className="rounded-pill bg-maroon-700 px-3 py-1.5 font-sans text-xs font-semibold text-white disabled:opacity-50"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </Fragment>
           ))}
         </tbody>
       </table>
