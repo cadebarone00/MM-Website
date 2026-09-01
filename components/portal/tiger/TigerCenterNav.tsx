@@ -2,6 +2,7 @@
 import Link from "next/link";
 
 const BOXES = [
+  { label: "Master Settings", href: "#", enabled: false },
   { label: "Players & Teams", href: "/portal/admin/players-teams", enabled: true },
   { label: "Courses & Format", href: "/portal/admin/courses-format", enabled: true },
   { label: "Matchups", href: "/portal/admin/matchups", enabled: true },
