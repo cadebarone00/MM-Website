@@ -14,7 +14,7 @@ const SEED_HOLES = [
 function seedSnapshot(): LiveTournamentSnapshot {
   return {
     players: { cade: { team: "maroon" }, cam: { team: "white" } },
-    courses: { c1: { id: "c1", name: "2027 Maroon Masters", holes: SEED_HOLES } },
+    courses: { c1: { id: "c1", name: "2027 Maroon Masters", holes: SEED_HOLES, rating: null, slope: null } },
     roundCourses: { 1: "c1" },
     scores: new Map(),
     matchBoxes: [],

@@ -54,6 +54,31 @@ export function AddCourseForm({ onSaved }: { onSaved: (course: LiveCourse) => vo
         placeholder="Course name"
         className="w-full border-2 border-stone-300 rounded-lg px-2 py-2 text-sm font-semibold"
       />
+      <div className="mt-2 flex gap-3">
+        <label className="flex flex-1 flex-col gap-1 font-sans text-xs text-ink-700">
+          Course Rating
+          <input
+            type="number"
+            step="0.1"
+            value={rating}
+            onChange={(e) => setRating(e.target.value)}
+            placeholder="e.g. 72.4"
+            className="border-2 border-stone-300 rounded-lg px-2 py-1 text-sm"
+          />
+        </label>
+        <label className="flex flex-1 flex-col gap-1 font-sans text-xs text-ink-700">
+          Slope Rating
+          <input
+            type="number"
+            min={55}
+            max={155}
+            value={slope}
+            onChange={(e) => setSlope(e.target.value)}
+            placeholder="e.g. 128"
+            className="border-2 border-stone-300 rounded-lg px-2 py-1 text-sm"
+          />
+        </label>
+      </div>
       <table className="mt-3 w-full font-sans text-xs">
         <thead>
           <tr>

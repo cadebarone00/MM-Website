@@ -18,7 +18,7 @@ export default async function CoursesFormatPage() {
   const [{ data: settingsRow }, { data: roundRows }, { data: courseRows }] = await Promise.all([
     service.from("live_tournament_settings").select("round_count, completed_at").eq("id", true).maybeSingle(),
     service.from("live_round_state").select("round, started, course_id, date, format, course_locked, matchups_locked").order("round"),
-    service.from("live_courses").select("id, name, holes").order("name"),
+    service.from("live_courses").select("id, name, holes, rating, slope").order("name"),
   ]);
 
   const settings: TournamentSettings = { roundCount: settingsRow?.round_count ?? null, completedAt: settingsRow?.completed_at ?? null };
@@ -31,7 +31,7 @@ export default async function CoursesFormatPage() {
     courseLocked: r.course_locked,
     matchupsLocked: r.matchups_locked,
   }));
-  const courses: LiveCourse[] = (courseRows ?? []).map((c) => ({ id: c.id, name: c.name, holes: c.holes }));
+  const courses: LiveCourse[] = (courseRows ?? []).map((c) => ({ id: c.id, name: c.name, holes: c.holes, rating: c.rating, slope: c.slope }));
 
   return (
     <div className="mx-auto max-w-[960px] px-4 py-12 sm:px-7">
