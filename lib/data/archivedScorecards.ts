@@ -3,6 +3,34 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import type { HoleStat, PlayerScorecard, RoundScorecard, Team, Tournament } from "./types";
 import { playerProfiles } from "./players";
 
+// PostgREST caps a single request at 1000 rows by default — silently, with
+// no error, just a truncated result. A whole tournament's hole rows (players
+// × rounds × 18) crosses that once there are enough players/rounds (2026
+// Palm Springs already does: 12 players × 6 rounds × 18 holes = 1296), so
+// any query that can return "every hole row for a tournament" has to page
+// through results rather than assume one request covers everything.
+const MAX_ROWS_PER_PAGE = 1000;
+
+async function fetchAllRows<T>(
+  label: string,
+  runQuery: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>
+): Promise<T[]> {
+  const rows: T[] = [];
+  let from = 0;
+  for (;;) {
+    const { data, error } = await runQuery(from, from + MAX_ROWS_PER_PAGE - 1);
+    if (error) {
+      console.error(`${label}: failed to load a page`, error);
+      break;
+    }
+    const page = data ?? [];
+    rows.push(...page);
+    if (page.length < MAX_ROWS_PER_PAGE) break;
+    from += MAX_ROWS_PER_PAGE;
+  }
+  return rows;
+}
+
 interface RoundRow {
   id: string;
   player_slug: string;
@@ -66,24 +94,23 @@ function teamFor(roster: Tournament["roster"], playerId: string): Team {
  */
 export async function getScorecardsForTournament(tournament: Pick<Tournament, "slug" | "roster">): Promise<PlayerScorecard[]> {
   const service = createSupabaseServiceRoleClient();
-  const { data: roundRows, error: roundsError } = await service
-    .from("archived_scorecard_rounds")
-    .select("id, player_slug, round, course, format")
-    .eq("tournament_slug", tournament.slug);
-  if (roundsError) {
-    console.error("getScorecardsForTournament: failed to load rounds", roundsError);
-  }
-  const rounds = (roundRows ?? []) as RoundRow[];
+  const rounds = await fetchAllRows<RoundRow>("getScorecardsForTournament", (from, to) =>
+    service
+      .from("archived_scorecard_rounds")
+      .select("id, player_slug, round, course, format")
+      .eq("tournament_slug", tournament.slug)
+      .range(from, to)
+  );
   if (rounds.length === 0) return [];
 
-  const { data: holeRows, error: holesError } = await service
-    .from("archived_scorecard_holes")
-    .select("round_id, hole, par, yards, score, putts, fir, gir")
-    .in("round_id", rounds.map((r) => r.id));
-  if (holesError) {
-    console.error("getScorecardsForTournament: failed to load holes", holesError);
-  }
-  const holes = (holeRows ?? []) as HoleRow[];
+  const roundIds = rounds.map((r) => r.id);
+  const holes = await fetchAllRows<HoleRow>("getScorecardsForTournament", (from, to) =>
+    service
+      .from("archived_scorecard_holes")
+      .select("round_id, hole, par, yards, score, putts, fir, gir")
+      .in("round_id", roundIds)
+      .range(from, to)
+  );
 
   const bySlug = new Map<string, RoundRow[]>();
   for (const round of rounds) {

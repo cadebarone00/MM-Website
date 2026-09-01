@@ -1484,7 +1484,7 @@ export const scorecards2026: PlayerScorecard[] = [
         firHit: 9,
         firTotal: 14,
         holes: [
-          { hole: 4, par: 4, yards: 352, score: 4, putts: 1, fir: 1, gir: 0, diff: 0 },
+          { hole: 1, par: 4, yards: 352, score: 4, putts: 1, fir: 1, gir: 0, diff: 0 },
           { hole: 2, par: 4, yards: 396, score: 4, putts: 1, fir: 0, gir: 0, diff: 0 },
           { hole: 3, par: 3, yards: 215, score: 3, putts: 1, fir: "X", gir: 0, diff: 0 },
           { hole: 4, par: 5, yards: 521, score: 4, putts: 1, fir: 1, gir: 1, diff: -1 },
