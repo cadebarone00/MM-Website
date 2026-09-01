@@ -1,7 +1,9 @@
 // app/api/portal/tiger/scorecards/save/route.ts
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { getPlayerProfileBySlug } from "@/lib/data/players";
 
 interface HoleEdit {
   hole: number;
@@ -56,8 +58,16 @@ export async function POST(request: Request) {
       .eq("round_id", roundRow.id)
       .eq("hole", edit.hole);
     if (error) {
+      console.error("save/route: failed to update hole", error);
       return NextResponse.json({ ok: false, error: `Could not save hole ${edit.hole}.` }, { status: 500 });
     }
+  }
+
+  const profile = getPlayerProfileBySlug(playerSlug);
+  const playerParam = profile?.id.toLowerCase();
+  if (playerParam) {
+    revalidatePath(`/leaderboard/${tournamentSlug}/players/${playerParam}`);
+    revalidatePath(`/leaderboard/${tournamentSlug}`);
   }
 
   return NextResponse.json({ ok: true });

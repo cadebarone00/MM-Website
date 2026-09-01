@@ -181,6 +181,7 @@ export function ScorecardEditor({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="max-w-sm rounded-lg bg-white p-5">
             <p className="font-sans text-sm text-ink-700">You have unsaved changes. Leave without saving?</p>
+            {error && <p className="mt-3 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
             <div className="mt-4 flex flex-wrap gap-3">
               <button type="button" disabled={saving} onClick={save} className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline">
                 Save & Leave

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { pastTournaments, latestCompleted, playersOf } from "@/lib/data";
 import { getPlayerDisplayName, getPlayerProfile } from "@/lib/data/players";
+import { YearPicker } from "@/components/portal/tiger/YearPicker";
 
 export default async function ScorecardsYearPickerPage({ searchParams }: { searchParams: Promise<{ tournament?: string }> }) {
   const supabase = await createSupabaseServerClient();
@@ -21,19 +22,7 @@ export default async function ScorecardsYearPickerPage({ searchParams }: { searc
       <h1 className="font-serif text-3xl font-bold text-ink-900">Scorecards & Video</h1>
 
       <div className="relative mt-4 inline-block">
-        <form>
-          <select
-            name="tournament"
-            defaultValue={activeTournament.slug}
-            className="appearance-none rounded-lg border-2 border-stone-300 bg-white py-2 pl-3 pr-8 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-900"
-          >
-            {[...pastTournaments].reverse().map((t) => (
-              <option key={t.slug} value={t.slug}>
-                {t.year}
-              </option>
-            ))}
-          </select>
-        </form>
+        <YearPicker options={[...pastTournaments].reverse().map((t) => ({ slug: t.slug, year: t.year }))} value={activeTournament.slug} />
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">

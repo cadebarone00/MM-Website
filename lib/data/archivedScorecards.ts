@@ -31,7 +31,7 @@ function toHoleStat(row: HoleRow): HoleStat {
     putts: row.putts,
     fir: row.fir === "X" ? "X" : Number(row.fir),
     gir: row.gir ? 1 : 0,
-    diff: row.score - row.par,
+    diff: row.score > 0 ? row.score - row.par : 0,
   };
 }
 

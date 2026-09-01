@@ -1,7 +1,9 @@
 // app/api/portal/tiger/scorecards/video/route.ts
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { getPlayerProfileBySlug } from "@/lib/data/players";
 
 export async function POST(request: Request) {
   const host = await requireHost();
@@ -51,8 +53,9 @@ export async function POST(request: Request) {
   const extension = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")) : ".mp4";
   const storagePath = `${tournamentSlug}/round-${round}/hole-${hole}/shot-${shotNumber}${extension}`;
 
-  const { error: uploadError } = await service.storage.from("shot-videos").upload(storagePath, file, { contentType: file.type, upsert: true });
+  const { error: uploadError } = await service.storage.from("shot-videos").upload(storagePath, file, { contentType: file.type || "video/mp4", upsert: true });
   if (uploadError) {
+    console.error("video/route: failed to upload video", uploadError);
     return NextResponse.json({ ok: false, error: "Could not upload that video." }, { status: 500 });
   }
 
@@ -63,7 +66,15 @@ export async function POST(request: Request) {
       { onConflict: "round_id,hole,shot_number" }
     );
   if (dbError) {
+    console.error("video/route: failed to link video to shot", dbError);
     return NextResponse.json({ ok: false, error: "Video uploaded, but could not be linked to this shot." }, { status: 500 });
+  }
+
+  const profile = getPlayerProfileBySlug(playerSlug);
+  const playerParam = profile?.id.toLowerCase();
+  if (playerParam) {
+    revalidatePath(`/leaderboard/${tournamentSlug}/players/${playerParam}`);
+    revalidatePath(`/leaderboard/${tournamentSlug}`);
   }
 
   const { data: publicUrl } = service.storage.from("shot-videos").getPublicUrl(storagePath);

@@ -44,11 +44,12 @@ export default async function PlayerScorecardPage({ params }: { params: Promise<
   const playedCount = lastRound?.holes.filter((h) => h.score > 0).length ?? 0;
   const thru = lastRound == null ? null : playedCount >= lastRound.holes.length ? "F" : String(playedCount);
 
-  const lastRoundNumber = scorecard?.rounds[scorecard.rounds.length - 1]?.round;
   const playerSlug = getPlayerProfile(entry.name)?.slug;
   const shotVideos =
-    lastRoundNumber != null && playerSlug
-      ? { [lastRoundNumber]: await getShotVideoUrls(slug, playerSlug, lastRoundNumber) }
+    scorecard && playerSlug
+      ? Object.fromEntries(
+          await Promise.all(scorecard.rounds.map(async (r) => [r.round, await getShotVideoUrls(slug, playerSlug, r.round)] as const))
+        )
       : undefined;
 
   return (

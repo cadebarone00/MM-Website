@@ -7,7 +7,17 @@ function StatLabel({ children }: { children: string }) {
   return <span className="font-condensed text-3xs font-semibold tracking-eyebrow uppercase text-ink-400">{children}</span>;
 }
 
-function NumberEditor({ label, value, onCommit }: { label: string; value: number; onCommit: (v: number) => void }) {
+function NumberEditor({
+  label,
+  value,
+  onCommit,
+  min = 0,
+}: {
+  label: string;
+  value: number;
+  onCommit: (v: number) => void;
+  min?: number;
+}) {
   const [editing, setEditing] = useState(false);
   if (!editing) {
     return (
@@ -24,10 +34,10 @@ function NumberEditor({ label, value, onCommit }: { label: string; value: number
         inputMode="numeric"
         autoFocus
         defaultValue={value}
-        min={0}
+        min={min}
         onBlur={(e) => {
           const n = Number(e.target.value);
-          if (Number.isInteger(n) && n >= 0) onCommit(n);
+          if (Number.isInteger(n) && n >= min) onCommit(n);
           setEditing(false);
         }}
         onKeyDown={(e) => {
@@ -104,7 +114,7 @@ export function EditableHoleDetail({ hole, onChange }: { hole: HoleStat; onChang
 
   return (
     <div className="flex items-center justify-center divide-x divide-ink-100 py-3 bg-white border-2 border-maroon-700 rounded-md">
-      <NumberEditor label="Score" value={hole.score} onCommit={(score) => onChange({ ...hole, score, diff: score - hole.par })} />
+      <NumberEditor label="Score" value={hole.score} min={1} onCommit={(score) => onChange({ ...hole, score, diff: score - hole.par })} />
       <HitMissEditor
         label="Fairway"
         value={hole.fir === 1}
