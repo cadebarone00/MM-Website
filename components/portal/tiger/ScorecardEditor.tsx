@@ -50,7 +50,24 @@ export function ScorecardEditor({
     return () => window.removeEventListener("beforeunload", handler);
   }, [isDirty]);
 
-  const activeForDisplay: RoundScorecard = { ...initialScorecard, holes };
+  // Recompute the aggregate fields (Total, Out/In feed off round.holes directly,
+  // but the grand Total cell in ScorecardRow/MobileScorecardGrid reads round.total
+  // verbatim) from the current, possibly-edited holes — otherwise Total would stay
+  // frozen at its as-fetched value and visibly disagree with Out+In after an edit.
+  // Same formulas as toRoundScorecard in lib/data/archivedScorecards.ts.
+  const played = holes.filter((h) => h.score > 0);
+  const firApplicable = holes.filter((h) => h.fir !== "X");
+  const activeForDisplay: RoundScorecard = {
+    ...initialScorecard,
+    holes,
+    total: played.reduce((s, h) => s + h.score, 0),
+    toPar: played.reduce((s, h) => s + (h.score - h.par), 0),
+    putts: played.reduce((s, h) => s + h.putts, 0),
+    girHit: holes.filter((h) => h.gir === 1).length,
+    girTotal: holes.length,
+    firHit: firApplicable.filter((h) => h.fir === 1).length,
+    firTotal: firApplicable.length,
+  };
   const holeStat = holes.find((h) => h.hole === selectedHole) ?? null;
 
   function updateHole(next: HoleStat) {
@@ -136,9 +153,10 @@ export function ScorecardEditor({
 
       {holeStat && (
         <div className="mt-3">
-          <EditableHoleDetail hole={holeStat} onChange={updateHole} />
+          <EditableHoleDetail key={selectedHole} hole={holeStat} onChange={updateHole} />
           <div className="mt-3">
             <EditableShotVideoPanel
+              key={selectedHole}
               shotCount={holeStat.score}
               existingUrls={initialVideoUrls[selectedHole] ?? {}}
               stagedFiles={stagedVideos[selectedHole] ?? {}}
