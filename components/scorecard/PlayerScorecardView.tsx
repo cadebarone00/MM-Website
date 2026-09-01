@@ -129,6 +129,14 @@ export function PlayerScorecardView({
             <HoleDetailCard hole={holeStat} />
 
             <div className="mt-3">
+              <ShotVideoPanel
+                key={`${active.round}-${selectedHole}`}
+                shotCount={holeStat.score}
+                videoUrls={shotVideos?.[active.round]?.[selectedHole]}
+              />
+            </div>
+
+            <div className="mt-3">
               <div className="font-condensed text-3xs font-semibold tracking-eyebrow uppercase text-ink-400 mb-2">Hole Overview</div>
               {photoSrc ? (
                 <img
@@ -147,14 +155,6 @@ export function PlayerScorecardView({
                   <span className="font-condensed text-xs font-semibold tracking-wide uppercase">Hole photos coming soon</span>
                 </div>
               )}
-            </div>
-
-            <div className="mt-3">
-              <ShotVideoPanel
-                key={`${active.round}-${selectedHole}`}
-                shotCount={holeStat.score}
-                videoUrls={shotVideos?.[active.round]?.[selectedHole]}
-              />
             </div>
           </>
         ) : (
