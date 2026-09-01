@@ -31,8 +31,12 @@ export function WatchLiveExperience() {
           <div className="relative aspect-video w-full overflow-hidden bg-ink-900">
             <Image src="/loading/mobile.png" alt="" fill priority sizes="100vw" className="object-cover lg:hidden" />
             <Image src="/loading/desktop.png" alt="" fill priority sizes="(max-width: 1200px) 100vw, 1200px" className="hidden object-cover lg:block" />
-            <div className="absolute inset-0 flex items-center justify-center bg-maroon-900/20 px-4">
-              <RoundCountdown className="rounded-sm border border-white/30 bg-maroon-900/75 px-4 py-2 text-center text-cream-50 shadow-md" />
+            <div className="absolute inset-0 flex items-center justify-center bg-maroon-900/20 px-4 text-center text-cream-50">
+              <div className="rounded-sm border border-white/30 bg-maroon-900/75 px-5 py-3 shadow-md">
+                <p className="m-0 font-condensed text-xs font-bold uppercase tracking-eyebrow sm:text-sm">Maroon Masters On The Range</p>
+                <RoundCountdown className="my-1 text-center" />
+                <p className="m-0 font-condensed text-xs font-bold uppercase tracking-eyebrow sm:text-sm">January 5th 2027</p>
+              </div>
             </div>
           </div>
         )}
