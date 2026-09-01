@@ -22,7 +22,15 @@ function defaultSelectedHole(round: RoundScorecard): number {
   return playedCount > 0 && playedCount < round.holes.length ? playedCount : 1;
 }
 
-export function PlayerScorecardView({ scorecard, tournament }: { scorecard: PlayerScorecard; tournament: Tournament }) {
+export function PlayerScorecardView({
+  scorecard,
+  tournament,
+  shotVideos,
+}: {
+  scorecard: PlayerScorecard;
+  tournament: Tournament;
+  shotVideos?: Record<number, Record<number, Record<number, string>>>; // round -> hole -> shot -> url
+}) {
   const [round, setRound] = useState(String(scorecard.rounds[scorecard.rounds.length - 1].round));
   const [selectedHole, setSelectedHole] = useState<number>(() => defaultSelectedHole(scorecard.rounds[scorecard.rounds.length - 1]));
   const [photoIndex, setPhotoIndex] = useState(0);
@@ -125,7 +133,7 @@ export function PlayerScorecardView({ scorecard, tournament }: { scorecard: Play
             </div>
 
             <div className="mt-3">
-              <ShotVideoPanel shotCount={holeStat.score} />
+              <ShotVideoPanel shotCount={holeStat.score} videoUrls={shotVideos?.[active.round]?.[selectedHole]} />
             </div>
           </>
         ) : (

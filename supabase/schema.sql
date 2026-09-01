@@ -533,3 +533,81 @@ $$ language plpgsql security definer;
 
 alter table live_courses add column if not exists rating numeric;
 alter table live_courses add column if not exists slope integer check (slope between 55 and 155);
+
+-- === Tiger Center: Archived Scorecards & Shot Video ========================
+-- Historical (already-played) tournaments' hole-by-hole scorecards, editable
+-- by Tiger from the "Scorecards & Video" screen. Deliberately separate from
+-- the live_* tables above — those track the *current/future* tournament's
+-- live round cycle and have no year dimension; these are keyed by
+-- tournament_slug because multiple past years coexist. player_slug here is
+-- a PlayerProfile.slug (lib/data/players), NOT a player_slots foreign key —
+-- historical data must be enterable for a player whether or not they've
+-- ever claimed a site account.
+
+create table if not exists archived_scorecard_rounds (
+  id uuid primary key default gen_random_uuid(),
+  tournament_slug text not null,
+  player_slug text not null,
+  round integer not null,
+  course text not null,
+  format text,
+  created_at timestamptz not null default now(),
+  unique (tournament_slug, player_slug, round)
+);
+create index if not exists archived_scorecard_rounds_tournament_idx on archived_scorecard_rounds (tournament_slug);
+
+create table if not exists archived_scorecard_holes (
+  id uuid primary key default gen_random_uuid(),
+  round_id uuid not null references archived_scorecard_rounds(id) on delete cascade,
+  hole integer not null check (hole between 1 and 18),
+  par integer not null,
+  yards integer not null,
+  score integer not null,
+  putts integer not null,
+  -- '0' | '1' | 'X' — 'X' means "not applicable" (a par-3 has no fairway),
+  -- the same three-state convention lib/data/types.ts's HoleStat.fir
+  -- already uses, kept as text here so that convention carries through
+  -- unchanged rather than needing a translation layer on every read.
+  fir text not null check (fir in ('0', '1', 'X')),
+  gir boolean not null,
+  -- Set whenever Tiger changes a value here from its migrated original —
+  -- same convention live_hole_scores.host_edited already established.
+  host_edited boolean not null default false,
+  updated_at timestamptz not null default now(),
+  unique (round_id, hole)
+);
+
+create table if not exists archived_shot_videos (
+  id uuid primary key default gen_random_uuid(),
+  round_id uuid not null references archived_scorecard_rounds(id) on delete cascade,
+  hole integer not null check (hole between 1 and 18),
+  shot_number integer not null check (shot_number >= 1),
+  storage_path text not null,
+  uploaded_at timestamptz not null default now(),
+  unique (round_id, hole, shot_number)
+);
+
+alter table archived_scorecard_rounds enable row level security;
+alter table archived_scorecard_holes enable row level security;
+alter table archived_shot_videos enable row level security;
+
+-- Public read (fans/players see these on the real scorecard pages), no
+-- write policy at all — every write goes through a host-only Route Handler
+-- using the service-role key, same pattern as every other table above.
+drop policy if exists archived_scorecard_rounds_select_all on archived_scorecard_rounds;
+create policy archived_scorecard_rounds_select_all on archived_scorecard_rounds for select using (true);
+
+drop policy if exists archived_scorecard_holes_select_all on archived_scorecard_holes;
+create policy archived_scorecard_holes_select_all on archived_scorecard_holes for select using (true);
+
+drop policy if exists archived_shot_videos_select_all on archived_shot_videos;
+create policy archived_shot_videos_select_all on archived_shot_videos for select using (true);
+
+-- Storage bucket for shot video. Public-read (so a fan's browser can just
+-- play the file straight from its public URL), no write policy on
+-- storage.objects for this bucket — uploads go through a host-only Route
+-- Handler using the service-role key, which bypasses Storage RLS the same
+-- way it bypasses table RLS.
+insert into storage.buckets (id, name, public)
+values ('shot-videos', 'shot-videos', true)
+on conflict (id) do nothing;
