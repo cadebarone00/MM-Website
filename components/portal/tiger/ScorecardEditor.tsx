@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { CourseInfoHeader } from "@/components/scorecard/CourseInfoHeader";
 import { ScorecardRow } from "@/components/scorecard/ScorecardRow";
 import { MobileScorecardGrid } from "@/components/scorecard/MobileScorecardGrid";
@@ -101,18 +102,39 @@ export function ScorecardEditor({
         if (!data.ok) throw new Error(data.error);
       }
 
+      // Each staged video goes straight from this browser to Supabase
+      // Storage — not through this app's own server — so there's no
+      // request-body size ceiling on our end for a real phone video clip.
+      // Three steps per file: ask for a one-time upload permission (sign),
+      // upload the bytes directly to storage with it, then tell our
+      // database the upload is done (confirm) — that last call carries no
+      // file data, just the identifying fields.
+      const browserClient = createSupabaseBrowserClient();
       for (const [holeStr, byShot] of Object.entries(stagedVideos)) {
         for (const [shotStr, file] of Object.entries(byShot)) {
-          const form = new FormData();
-          form.set("tournamentSlug", tournamentSlug);
-          form.set("playerSlug", playerSlug);
-          form.set("round", String(initialScorecard.round));
-          form.set("hole", holeStr);
-          form.set("shotNumber", shotStr);
-          form.set("file", file);
-          const res = await fetch("/api/portal/tiger/scorecards/video", { method: "POST", body: form });
-          const data = await res.json();
-          if (!data.ok) throw new Error(data.error);
+          const extension = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")) : ".mp4";
+          const identity = { tournamentSlug, playerSlug, round: initialScorecard.round, hole: Number(holeStr), shotNumber: Number(shotStr), extension };
+
+          const signRes = await fetch("/api/portal/tiger/scorecards/video/sign", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(identity),
+          });
+          const signData = await signRes.json();
+          if (!signData.ok) throw new Error(signData.error);
+
+          const { error: uploadError } = await browserClient.storage
+            .from("shot-videos")
+            .uploadToSignedUrl(signData.path, signData.token, file, { contentType: file.type || "video/mp4" });
+          if (uploadError) throw new Error(uploadError.message || "Could not upload that video.");
+
+          const confirmRes = await fetch("/api/portal/tiger/scorecards/video/confirm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(identity),
+          });
+          const confirmData = await confirmRes.json();
+          if (!confirmData.ok) throw new Error(confirmData.error);
         }
       }
 

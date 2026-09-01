@@ -1,24 +1,24 @@
-// app/api/portal/tiger/scorecards/video/route.ts
+// app/api/portal/tiger/scorecards/video/confirm/route.ts
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 
+/**
+ * Second half of the direct-to-storage upload flow: called once the browser
+ * has already uploaded the file straight to Supabase Storage using the
+ * token from .../video/sign. This route touches no file bytes — it only
+ * links the already-uploaded object to its shot and revalidates the public
+ * pages that show it.
+ */
 export async function POST(request: Request) {
   const host = await requireHost();
   if (!host) {
     return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
   }
 
-  const form = await request.formData();
-  const tournamentSlug = form.get("tournamentSlug");
-  const playerSlug = form.get("playerSlug");
-  const round = Number(form.get("round"));
-  const hole = Number(form.get("hole"));
-  const shotNumber = Number(form.get("shotNumber"));
-  const file = form.get("file");
-
+  const { tournamentSlug, playerSlug, round, hole, shotNumber, extension } = await request.json();
   if (
     typeof tournamentSlug !== "string" ||
     typeof playerSlug !== "string" ||
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     hole > 18 ||
     !Number.isInteger(shotNumber) ||
     shotNumber < 1 ||
-    !(file instanceof File)
+    typeof extension !== "string"
   ) {
     return NextResponse.json({ ok: false, error: "Missing or invalid fields." }, { status: 400 });
   }
@@ -50,14 +50,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "That shot number doesn't exist for this hole's score." }, { status: 400 });
   }
 
-  const extension = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")) : ".mp4";
+  // Recomputed the same way .../video/sign computed it — never trust a
+  // client-supplied storage path, derive it fresh from the validated
+  // identifying fields so this can only ever confirm the exact object this
+  // hole/shot's signed URL was actually issued for.
   const storagePath = `${tournamentSlug}/round-${round}/hole-${hole}/shot-${shotNumber}${extension}`;
-
-  const { error: uploadError } = await service.storage.from("shot-videos").upload(storagePath, file, { contentType: file.type || "video/mp4", upsert: true });
-  if (uploadError) {
-    console.error("video/route: failed to upload video", uploadError);
-    return NextResponse.json({ ok: false, error: "Could not upload that video." }, { status: 500 });
-  }
 
   const { error: dbError } = await service
     .from("archived_shot_videos")
@@ -66,7 +63,7 @@ export async function POST(request: Request) {
       { onConflict: "round_id,hole,shot_number" }
     );
   if (dbError) {
-    console.error("video/route: failed to link video to shot", dbError);
+    console.error("video/confirm: failed to link video to shot", dbError);
     return NextResponse.json({ ok: false, error: "Video uploaded, but could not be linked to this shot." }, { status: 500 });
   }
 
