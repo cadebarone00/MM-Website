@@ -11,7 +11,6 @@ import { Fragment, useState } from "react";
 // overrides.ts if editable fields ever change.
 const EDITABLE_PLAYER_FIELDS = [
   "bio",
-  "avatarSrc",
   "history",
   "instagram",
   "linkedin",
@@ -63,14 +62,14 @@ export function PlayerSlotsAdmin({ rows: initialRows }: { rows: PlayerSlotAdminR
   const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
   const [rows, setRowsState] = useState(initialRows);
 
-  async function handleApprove(playerSlug: string, field: string) {
+  async function handleApprove(playerSlug: string, field: string, submittedAt: string) {
     setBusy(playerSlug);
     setError(null);
     try {
       const res = await fetch("/api/portal/tiger/profile-edits/approve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playerSlug, field }),
+        body: JSON.stringify({ playerSlug, field, submittedAt }),
       });
       const data = await res.json();
       if (!data.ok) {
@@ -80,19 +79,21 @@ export function PlayerSlotsAdmin({ rows: initialRows }: { rows: PlayerSlotAdminR
       setRowsState((current) =>
         current.map((r) => (r.playerSlug === playerSlug ? { ...r, pendingEdits: r.pendingEdits.filter((e) => e.field !== field) } : r))
       );
+    } catch {
+      setError("Something went wrong — try again.");
     } finally {
       setBusy(null);
     }
   }
 
-  async function handleDeny(playerSlug: string, field: string) {
+  async function handleDeny(playerSlug: string, field: string, submittedAt: string) {
     setBusy(playerSlug);
     setError(null);
     try {
       const res = await fetch("/api/portal/tiger/profile-edits/deny", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playerSlug, field }),
+        body: JSON.stringify({ playerSlug, field, submittedAt }),
       });
       const data = await res.json();
       if (!data.ok) {
@@ -102,6 +103,8 @@ export function PlayerSlotsAdmin({ rows: initialRows }: { rows: PlayerSlotAdminR
       setRowsState((current) =>
         current.map((r) => (r.playerSlug === playerSlug ? { ...r, pendingEdits: r.pendingEdits.filter((e) => e.field !== field) } : r))
       );
+    } catch {
+      setError("Something went wrong — try again.");
     } finally {
       setBusy(null);
     }
@@ -139,6 +142,8 @@ export function PlayerSlotsAdmin({ rows: initialRows }: { rows: PlayerSlotAdminR
       );
       setDirectEditSaved(true);
       setDirectEditValue("");
+    } catch {
+      setError("Something went wrong — try again.");
     } finally {
       setBusy(null);
     }
@@ -172,6 +177,8 @@ export function PlayerSlotsAdmin({ rows: initialRows }: { rows: PlayerSlotAdminR
         return;
       }
       window.location.reload();
+    } catch {
+      setError("Something went wrong — try again.");
     } finally {
       setBusy(null);
     }
@@ -192,6 +199,8 @@ export function PlayerSlotsAdmin({ rows: initialRows }: { rows: PlayerSlotAdminR
         return;
       }
       window.location.reload();
+    } catch {
+      setError("Something went wrong — try again.");
     } finally {
       setBusy(null);
     }
@@ -289,7 +298,7 @@ export function PlayerSlotsAdmin({ rows: initialRows }: { rows: PlayerSlotAdminR
                           <button
                             type="button"
                             disabled={busy === row.playerSlug}
-                            onClick={() => handleApprove(row.playerSlug, edit.field)}
+                            onClick={() => handleApprove(row.playerSlug, edit.field, edit.submittedAt)}
                             className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline"
                           >
                             Approve
@@ -297,7 +306,7 @@ export function PlayerSlotsAdmin({ rows: initialRows }: { rows: PlayerSlotAdminR
                           <button
                             type="button"
                             disabled={busy === row.playerSlug}
-                            onClick={() => handleDeny(row.playerSlug, edit.field)}
+                            onClick={() => handleDeny(row.playerSlug, edit.field, edit.submittedAt)}
                             className="font-condensed text-2xs font-semibold uppercase tracking-wide text-ink-500 underline"
                           >
                             Deny

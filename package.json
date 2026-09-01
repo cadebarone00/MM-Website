@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test {lib,app}/**/*.test.{ts,mts}"
+    "test": "tsx --test {lib,app,components}/**/*.test.{ts,mts,tsx}"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

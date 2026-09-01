@@ -22,7 +22,7 @@ interface Section {
   fields: FieldSpec[];
 }
 
-const SECTIONS: Section[] = [
+export const SECTIONS: Section[] = [
   { key: "bio", title: "Bio Text", fields: [{ key: "bio", label: "Bio", multiline: true }] },
   {
     key: "facts",
@@ -61,7 +61,6 @@ const SECTIONS: Section[] = [
     ],
   },
   { key: "history", title: "History", fields: [{ key: "history", label: "One per line", multiline: true }] },
-  { key: "photo", title: "Photo", fields: [{ key: "avatarSrc", label: "Photo URL" }] },
   {
     key: "social",
     title: "Social Links",
@@ -92,6 +91,7 @@ export function ProfileEditGrid({ profile, pendingEdits }: { profile: PlayerProf
   const [pendingByField, setPendingByField] = useState(new Map(pendingEdits.map((e) => [e.field, e])));
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
+  const [initialValues, setInitialValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedSection, setSavedSection] = useState<string | null>(null);
@@ -107,6 +107,7 @@ export function ProfileEditGrid({ profile, pendingEdits }: { profile: PlayerProf
         : toFieldValue(profile, field.key);
     }
     setValues(initial);
+    setInitialValues(initial);
     setError(null);
     setSavedSection(null);
     setOpenSection(section.key);
@@ -116,10 +117,16 @@ export function ProfileEditGrid({ profile, pendingEdits }: { profile: PlayerProf
     setSaving(true);
     setError(null);
     try {
-      const edits = section.fields.map((field) => ({
-        field: field.key as string,
-        value: fromFieldValue(field.key, values[field.key as string] ?? ""),
-      }));
+      const edits = section.fields
+        .filter((field) => (values[field.key as string] ?? "") !== (initialValues[field.key as string] ?? ""))
+        .map((field) => ({
+          field: field.key as string,
+          value: fromFieldValue(field.key, values[field.key as string] ?? ""),
+        }));
+      if (edits.length === 0) {
+        setSavedSection(section.key);
+        return;
+      }
       const res = await fetch("/api/portal/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -137,7 +144,10 @@ export function ProfileEditGrid({ profile, pendingEdits }: { profile: PlayerProf
         }
         return next;
       });
+      setInitialValues(values);
       setSavedSection(section.key);
+    } catch {
+      setError("Something went wrong — try again.");
     } finally {
       setSaving(false);
     }

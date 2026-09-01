@@ -2,12 +2,13 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import type { PlayerProfile } from "../types";
 
 // Every PlayerProfile field a player can propose a change to — everything
-// shown on their public bio (PlayerBioSection) plus their photo. `id`,
-// `slug`, and `fullName` are structural/identity fields and are never
-// editable through this system.
+// shown on their public bio (PlayerBioSection). `id`, `slug`, and
+// `fullName` are structural/identity fields and are never editable through
+// this system; `avatarSrc` isn't included either — PlayerBioSection never
+// renders it (the avatar comes from a separate static lookup), so an
+// approved photo edit would have no visible effect anywhere.
 export const EDITABLE_PLAYER_FIELDS = [
   "bio",
-  "avatarSrc",
   "history",
   "instagram",
   "linkedin",

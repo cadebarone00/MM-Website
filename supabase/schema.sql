@@ -486,44 +486,68 @@ alter table player_profile_edits enable row level security;
 alter table player_profile_overrides enable row level security;
 
 -- Both readable by anyone — matches the live_* tables' existing pattern.
--- The public bio page reads overrides with no auth; a player's own pending
--- edits aren't sensitive either. Writes happen server-side with the
--- service-role key, same as everywhere else.
+-- The public bio page reads overrides with no auth. player_profile_edits
+-- has NO select policy (see below) — it's not public.
 drop policy if exists player_profile_edits_select_all on player_profile_edits;
-create policy player_profile_edits_select_all on player_profile_edits for select using (true);
+-- player_profile_edits intentionally has NO policies — only the
+-- service-role key (which bypasses RLS entirely) may read it. Pending
+-- edits are unmoderated content; they shouldn't be publicly queryable
+-- before Tiger has reviewed them. Same pattern as player_slots above.
 
 drop policy if exists player_profile_overrides_select_all on player_profile_overrides;
 create policy player_profile_overrides_select_all on player_profile_overrides for select using (true);
 
--- Approving is two writes (move the value to overrides, clear the pending
--- row) that must happen together — a SECURITY DEFINER function, same
--- reasoning as settle_mm_coin_market's atomicity above. The upsert's ON
--- CONFLICT matters because a player can have an older override for a field
--- that's now being re-approved after a second edit.
-create or replace function approve_profile_edit(p_player_slug text, p_field text)
-returns void as $$
+-- Approving is one atomic statement (move the value to overrides, remove
+-- the pending row) — a SECURITY DEFINER function, same atomicity reasoning
+-- as settle_mm_coin_market above. It takes p_submitted_at and matches it
+-- against the stored row so it only ever approves the exact proposal Tiger
+-- saw: if the player resubmitted after Tiger loaded the page but before
+-- Tiger clicked Approve, the delete's WHERE won't match, GET DIAGNOSTICS
+-- sees 0 rows, and this raises instead of silently promoting or discarding
+-- content nobody reviewed. The DELETE...RETURNING feeding the INSERT (one
+-- statement, not a SELECT then a separate DELETE) closes the earlier
+-- version's race: a resubmission arriving between a read and a delete could
+-- previously be deleted-but-never-applied. The UPSERT's ON CONFLICT still
+-- matters because a player can have an older override for a field that's
+-- now being re-approved after a second edit.
+--
+-- REVOKE EXECUTE FROM PUBLIC matters as much as the function body: Postgres
+-- grants EXECUTE on a new function to PUBLIC by default, and PostgREST
+-- exposes every public-schema function as an RPC callable by the anon key
+-- shipped to the browser. Without the revoke, anyone could call this
+-- directly over HTTP and skip approve/route.ts's requireHost() check
+-- entirely — self-approving their own edits, or approving anyone's.
+-- service_role (the only caller — see approve/route.ts) keeps access via
+-- Supabase's own project-level grants, not anything in this file.
+drop function if exists approve_profile_edit(text, text);
+create or replace function approve_profile_edit(p_player_slug text, p_field text, p_submitted_at timestamptz)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
 declare
   affected integer;
 begin
+  with removed as (
+    delete from player_profile_edits
+    where player_slug = p_player_slug
+      and field = p_field
+      and submitted_at = p_submitted_at
+    returning player_slug, field, proposed_value
+  )
   insert into player_profile_overrides (player_slug, field, value, updated_at)
-  select player_slug, field, proposed_value, now()
-  from player_profile_edits
-  where player_slug = p_player_slug and field = p_field
+  select player_slug, field, proposed_value, now() from removed
   on conflict (player_slug, field) do update set value = excluded.value, updated_at = excluded.updated_at;
 
-  -- GET DIAGNOSTICS, not a `returning ... into` boolean: when the select
-  -- above matches zero rows, the insert affects zero rows too, and a
-  -- `returning true into` variable would stay NULL rather than false —
-  -- `if not <null>` is itself NULL and silently skips the raise. Row count
-  -- doesn't have that trap.
   get diagnostics affected = row_count;
   if affected = 0 then
-    raise exception 'No pending edit for % / %', p_player_slug, p_field;
+    raise exception 'No matching pending edit for % / % — it may have already been approved or the player resubmitted since this was loaded', p_player_slug, p_field;
   end if;
-
-  delete from player_profile_edits where player_slug = p_player_slug and field = p_field;
 end;
-$$ language plpgsql security definer;
+$$;
+
+revoke execute on function approve_profile_edit(text, text, timestamptz) from public;
 
 -- === Tiger Center: Course rating & slope (for handicap calculations) ======
 -- One rating/slope per course (not per tee box — this app has no tee-box

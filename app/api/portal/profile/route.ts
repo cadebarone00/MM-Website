@@ -54,12 +54,20 @@ export async function POST(request: Request) {
   if (!Array.isArray(edits) || edits.length === 0) {
     return NextResponse.json({ ok: false, error: "No edits submitted." }, { status: 400 });
   }
+  const MAX_VALUE_LENGTH = 5000;
   for (const edit of edits) {
     if (!edit || typeof edit.field !== "string" || !isEditableField(edit.field)) {
       return NextResponse.json({ ok: false, error: `"${edit?.field}" isn't an editable field.` }, { status: 400 });
     }
-    if (typeof edit.value !== "string" && !Array.isArray(edit.value)) {
+    const valueOk = edit.field === "history" ? Array.isArray(edit.value) : typeof edit.value === "string";
+    if (!valueOk) {
       return NextResponse.json({ ok: false, error: `Invalid value for "${edit.field}".` }, { status: 400 });
+    }
+    const tooLong = Array.isArray(edit.value)
+      ? edit.value.some((v) => typeof v !== "string" || v.length > MAX_VALUE_LENGTH)
+      : edit.value.length > MAX_VALUE_LENGTH;
+    if (tooLong) {
+      return NextResponse.json({ ok: false, error: `"${edit.field}" is too long.` }, { status: 400 });
     }
   }
 
