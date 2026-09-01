@@ -54,9 +54,10 @@ export async function POST(request: Request) {
   const storagePath = `${tournamentSlug}/round-${round}/hole-${hole}/shot-${shotNumber}${extension}`;
   const { data: signed, error: signError } = await service.storage.from("shot-videos").createSignedUploadUrl(storagePath, { upsert: true });
   if (signError || !signed) {
-    console.error("video/sign: failed to create signed upload URL", signError);
+    console.error("video/sign: failed to create signed upload URL", { storagePath, signError });
     return NextResponse.json({ ok: false, error: "Could not prepare that upload." }, { status: 500 });
   }
+  console.log("video/sign: issued signed upload URL", { storagePath, returnedPath: signed.path });
 
   return NextResponse.json({ ok: true, path: signed.path, token: signed.token });
 }

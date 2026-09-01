@@ -126,7 +126,17 @@ export function ScorecardEditor({
           const { error: uploadError } = await browserClient.storage
             .from("shot-videos")
             .uploadToSignedUrl(signData.path, signData.token, file, { contentType: file.type || "video/mp4" });
-          if (uploadError) throw new Error(uploadError.message || "Could not upload that video.");
+          if (uploadError) {
+            // Surface everything the Storage SDK gives us — .message alone
+            // ("Invalid path specified in request URL") wasn't enough to
+            // diagnose a real failure; .code/.status/.statusCode narrow it
+            // to Supabase's actual documented error code.
+            const detail = uploadError as { code?: string; status?: number; statusCode?: string };
+            console.error("Video upload failed", { path: signData.path, error: uploadError });
+            throw new Error(
+              `Could not upload that video (${uploadError.message}${detail.code ? `, code: ${detail.code}` : ""}${detail.status ? `, status: ${detail.status}` : ""}). Path: ${signData.path}`
+            );
+          }
 
           const confirmRes = await fetch("/api/portal/tiger/scorecards/video/confirm", {
             method: "POST",
