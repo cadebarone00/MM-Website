@@ -59,6 +59,24 @@ export function isLiveNow(now: Date = new Date()): boolean {
   return getNextTournamentStatus(now) === "live";
 }
 
+// The calendar date the public Leaderboard switches from defaulting to the
+// latest *completed* tournament over to `nextTournament` — independent of
+// `isLiveNow()`/`liveAt`, which track the tournament's actual first tee
+// time. The switchover happens at the start of the new year so visitors
+// land on the upcoming season ahead of the first round, instead of still
+// defaulting to last year's results (or a dead-end empty page for a season
+// that hasn't started) right up until play begins. Tied to
+// `nextTournament.year` so this doesn't need a manual date update for each
+// new season.
+export function isPastLeaderboardSwitchover(now: Date = new Date()): boolean {
+  // A date-only string ("2027-01-01") parses as UTC midnight, while a
+  // datetime string with no offset parses as local time — comparing the two
+  // directly makes the boundary shift by the server's UTC offset. Adding an
+  // explicit local midnight keeps both sides of the comparison in the same
+  // (local) time.
+  return now >= new Date(`${nextTournament.year}-01-01T00:00:00`);
+}
+
 export const latestCompleted: Tournament = pastTournaments[pastTournaments.length - 1];
 
 export function getTournament(slug: string): Tournament | undefined {

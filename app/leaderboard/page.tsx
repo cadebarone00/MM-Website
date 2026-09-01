@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
-import { nextTournament } from "@/lib/data";
+import { nextTournament, latestCompleted, isPastLeaderboardSwitchover } from "@/lib/data";
 
 export default function LeaderboardIndex() {
-  redirect(`/leaderboard/${nextTournament.slug}`);
+  const slug = isPastLeaderboardSwitchover() ? nextTournament.slug : latestCompleted.slug;
+  redirect(`/leaderboard/${slug}`);
 }
