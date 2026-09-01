@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { findPlayerTeam } from "@/lib/portal/findPlayerTeam";
@@ -39,6 +40,9 @@ export default async function PortalPage() {
       <div className="w-full max-w-[640px] text-left">
         <PlayerScoringPanel />
       </div>
+      <Link href="/portal/profile" className="font-sans text-sm font-semibold text-maroon-700 hover:underline">
+        Edit My Bio →
+      </Link>
     </div>
   );
 }
