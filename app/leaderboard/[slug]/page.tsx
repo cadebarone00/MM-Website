@@ -33,7 +33,7 @@ export default async function LeaderboardYearPage({ params }: { params: Promise<
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 pb-8 sm:px-7 sm:pb-16">
-      <YearLeaderboardContent tournament={tournamentWithScorecards} activeSlug={slug} />
+      <YearLeaderboardContent tournament={tournamentWithScorecards} />
       {tournament.notes && <p className="font-sans text-xs text-ink-400 mt-6 max-w-[640px]">{tournament.notes}</p>}
     </div>
   );
