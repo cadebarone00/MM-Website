@@ -13,11 +13,11 @@ const tabs: { id: Tab; label: string }[] = [
 ];
 
 /**
- * The broadcast URL will be supplied when the production stream is ready.
- * Keeping the empty state inside the player preserves the final layout while
- * avoiding an inactive browser video control surface before then.
+ * Set this to the YouTube video ID for the scheduled/live broadcast (not the
+ * whole YouTube URL). Until it is set, the page retains the custom countdown
+ * state rather than showing an inactive player.
  */
-const LIVE_STREAM_URL = process.env.NEXT_PUBLIC_LIVE_STREAM_URL || null;
+const YOUTUBE_LIVE_VIDEO_ID = process.env.NEXT_PUBLIC_YOUTUBE_LIVE_VIDEO_ID || null;
 
 export function WatchLiveExperience() {
   const [activeTab, setActiveTab] = useState<Tab>("comments");
@@ -25,8 +25,14 @@ export function WatchLiveExperience() {
   return (
     <main>
       <section className="mx-auto w-full max-w-[1200px] bg-ink-900">
-        {LIVE_STREAM_URL ? (
-          <video className="aspect-video w-full" controls playsInline src={LIVE_STREAM_URL} />
+        {YOUTUBE_LIVE_VIDEO_ID ? (
+          <iframe
+            className="aspect-video w-full"
+            src={`https://www.youtube-nocookie.com/embed/${YOUTUBE_LIVE_VIDEO_ID}?rel=0`}
+            title="Maroon Masters live broadcast"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          />
         ) : (
           <div className="relative aspect-video w-full overflow-hidden bg-ink-900">
             <Image src="/loading/mobile.png" alt="" fill priority sizes="100vw" className="object-cover lg:hidden" />
