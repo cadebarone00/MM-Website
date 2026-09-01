@@ -38,9 +38,11 @@ export function WatchLiveExperience() {
             <Image src="/loading/mobile.png" alt="" fill priority sizes="100vw" className="object-cover lg:hidden" />
             <Image src="/loading/desktop.png" alt="" fill priority sizes="(max-width: 1200px) 100vw, 1200px" className="hidden object-cover lg:block" />
             <div className="absolute inset-0 flex items-center justify-center bg-maroon-900/20 px-4 text-center">
-              <div>
+              <div className="flex flex-col items-center">
                 <p className="mb-2 font-condensed text-xs font-bold uppercase tracking-eyebrow text-white sm:text-sm">Maroon Masters On The Range</p>
-                <RoundCountdown className="rounded-sm border border-white/30 bg-maroon-900/75 px-5 py-3 text-center text-cream-50 shadow-md" />
+                <div className="flex min-w-[190px] justify-center rounded-sm border border-white/30 bg-maroon-900/75 px-5 py-3 text-cream-50 shadow-md sm:min-w-[270px]">
+                  <RoundCountdown className="w-full text-center" />
+                </div>
                 <p className="mt-2 font-condensed text-xs font-bold uppercase tracking-eyebrow text-white sm:text-sm">January 5th 2027</p>
               </div>
             </div>
