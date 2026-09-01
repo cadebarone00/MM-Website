@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, ListOrdered, Users, MoreHorizontal } from "lucide-react";
+import { House, ListOrdered, Video, Users, MoreHorizontal } from "lucide-react";
 import { MORE_LINKS } from "./MorePanel";
 
 const TABS = [
   { href: "/", label: "Home", icon: House },
   { href: "/leaderboard", label: "Leaderboard", icon: ListOrdered },
+  { href: "/watch-live", label: "Watch Live", icon: Video },
   { href: "/teams", label: "Teams", icon: Users },
 ];
 

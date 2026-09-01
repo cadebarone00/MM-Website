@@ -19,6 +19,7 @@ import { latestCompleted, nextTournament, champion, isLiveNow, fmtPt } from "@/l
 const nav = [
   { href: "/", label: "Home" },
   { href: "/leaderboard", label: "Leaderboard" },
+  { href: "/watch-live", label: "Watch Live" },
   { href: "/teams", label: "Teams" },
 ];
 
@@ -43,7 +44,7 @@ function isSet(value: string): boolean {
 // site should be uniform about this" requirement. Exact match only — a
 // sub-page under one of these (e.g. /leaderboard/2027) still gets a back
 // arrow, only the bare hub itself is exempt.
-const HOME_PAGES = new Set(["/", "/leaderboard", "/teams", "/portal", "/portal/scoring", "/portal/admin"]);
+const HOME_PAGES = new Set(["/", "/leaderboard", "/watch-live", "/teams", "/portal", "/portal/scoring", "/portal/admin"]);
 
 function isHomePage(pathname: string): boolean {
   return HOME_PAGES.has(pathname);
