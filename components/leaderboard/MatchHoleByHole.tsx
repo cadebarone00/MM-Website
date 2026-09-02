@@ -94,7 +94,7 @@ function SinglesMatchGrid({ tournament, match, tournamentSlug }: { tournament: T
   const back = data.allHoles.slice(9, 18);
 
   return (
-    <div className="mx-0 flex border-y border-ink-300 bg-cream-100 [container-type:inline-size]">
+    <div className="mx-0 flex border-y border-gold-600 bg-cream-100 [container-type:inline-size]">
       <div className="flex w-[60px] shrink-0 flex-col">
         <SideCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Hole</span></SideCell>
         <SideCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Par</span></SideCell>
@@ -236,15 +236,15 @@ function FourballMatchGrid({ tournament, match, tournamentSlug }: { tournament: 
   return (
     <div className="mx-0 flex border-y border-ink-300 bg-cream-100 [container-type:inline-size]">
       <div className="flex w-[60px] shrink-0 flex-col">
-        <SideCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Hole</span></SideCell>
-        <SideCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Par</span></SideCell>
+        <SideCell className="h-8 border-gold-600 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Hole</span></SideCell>
+        <SideCell className="h-8 border-gold-600 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Par</span></SideCell>
         <SideCell className="h-11 border-gold-600 bg-maroon-700 text-white"><Link href={`/leaderboard/${tournamentSlug}/players/${maroonOne.toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames([maroonOne])}</Link></SideCell>
         <SideCell className="h-11 border-gold-600 bg-maroon-700 text-white"><Link href={`/leaderboard/${tournamentSlug}/players/${maroonTwo.toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames([maroonTwo])}</Link></SideCell>
-        <SideCell className="h-11 border-t border-gold-600 bg-maroon-700 text-white"><span className="whitespace-nowrap font-condensed text-[8px] font-bold uppercase tracking-tight">Best Ball</span></SideCell>
-        <SideCell className="h-9 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Status</span></SideCell>
-        <SideCell className="h-11 border-t border-gold-600 bg-white text-maroon-700"><span className="whitespace-nowrap font-condensed text-[8px] font-bold uppercase tracking-tight">Best Ball</span></SideCell>
-        <SideCell className="h-11 bg-white text-maroon-700"><Link href={`/leaderboard/${tournamentSlug}/players/${whiteOne.toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames([whiteOne])}</Link></SideCell>
-        <SideCell className="h-11 bg-white text-maroon-700"><Link href={`/leaderboard/${tournamentSlug}/players/${whiteTwo.toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames([whiteTwo])}</Link></SideCell>
+        <SideCell className="h-11 border-t border-gold-600 bg-maroon-700 text-white"><span className="whitespace-nowrap font-condensed text-[10px] font-bold uppercase tracking-wide">Best Ball</span></SideCell>
+        <SideCell className="h-9 border-gold-600 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Status</span></SideCell>
+        <SideCell className="h-11 border-b border-gold-600 bg-white text-maroon-700"><span className="whitespace-nowrap font-condensed text-[10px] font-bold uppercase tracking-wide">Best Ball</span></SideCell>
+        <SideCell className="h-11 border-gold-600 bg-white text-maroon-700"><Link href={`/leaderboard/${tournamentSlug}/players/${whiteOne.toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames([whiteOne])}</Link></SideCell>
+        <SideCell className="h-11 border-gold-600 bg-white text-maroon-700"><Link href={`/leaderboard/${tournamentSlug}/players/${whiteTwo.toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames([whiteTwo])}</Link></SideCell>
       </div>
 
       <div className="flex flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden">
