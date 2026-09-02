@@ -108,6 +108,12 @@ update live_tournament_settings
 alter table live_round_state add column if not exists season_year integer;
 update live_round_state set season_year = 2027 where season_year is null;
 alter table live_round_state alter column season_year set not null;
+-- live_match_boxes.round still references live_round_state(round) here —
+-- that FK must be dropped before live_round_state's primary key below, or
+-- Postgres refuses to drop a PK a live FK still depends on. It's
+-- re-created against the new composite key once both tables have one (see
+-- the live_match_boxes block further down).
+alter table live_match_boxes drop constraint if exists live_match_boxes_round_fkey;
 alter table live_round_state drop constraint if exists live_round_state_pkey;
 alter table live_round_state add constraint live_round_state_season_year_check check (season_year between 2027 and 2034);
 alter table live_round_state add primary key (season_year, round);
@@ -121,10 +127,11 @@ alter table live_roster add constraint live_roster_season_year_check check (seas
 alter table live_roster add primary key (season_year, player_slug);
 
 -- live_match_boxes: gains season_year, FK repointed at the new composite key
+-- (the old round_fkey was already dropped above, before live_round_state's
+-- old primary key was)
 alter table live_match_boxes add column if not exists season_year integer;
 update live_match_boxes set season_year = 2027 where season_year is null;
 alter table live_match_boxes alter column season_year set not null;
-alter table live_match_boxes drop constraint if exists live_match_boxes_round_fkey;
 alter table live_match_boxes add constraint live_match_boxes_season_year_round_fkey
   foreign key (season_year, round) references live_round_state (season_year, round);
 alter table live_match_boxes drop constraint if exists live_match_boxes_round_box_number_key;
@@ -133,10 +140,16 @@ alter table live_match_boxes add constraint live_match_boxes_season_round_box_nu
 drop index if exists live_match_boxes_round_idx;
 create index if not exists live_match_boxes_season_round_idx on live_match_boxes (season_year, round);
 
--- live_hole_scores: gains season_year, widens the unique key
+-- live_hole_scores: gains season_year, widens the unique key. Unlike
+-- live_match_boxes (indirectly bounded via its FK to the now-checked
+-- live_round_state), this table has no FK on round/season_year at all —
+-- matching its own pre-existing looseness — so it needs its own explicit
+-- range check to keep every season_year column in this migration bounded
+-- the same way.
 alter table live_hole_scores add column if not exists season_year integer;
 update live_hole_scores set season_year = 2027 where season_year is null;
 alter table live_hole_scores alter column season_year set not null;
+alter table live_hole_scores add constraint live_hole_scores_season_year_check check (season_year between 2027 and 2034);
 alter table live_hole_scores drop constraint if exists live_hole_scores_player_slug_round_hole_key;
 alter table live_hole_scores add constraint live_hole_scores_season_year_player_slug_round_hole_key
   unique (season_year, player_slug, round, hole);
