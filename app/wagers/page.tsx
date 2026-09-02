@@ -60,19 +60,34 @@ function PropsList({ tournament }: { tournament: Tournament }) {
 }
 
 function FuturesList({ tournament }: { tournament: Tournament }) {
+  const [futureType, setFutureType] = useState<"team" | "player">("team");
   const market = futurePlayerMarket(tournament.slug, tournament.individualLeaderboard, [...tournament.roster.maroon, ...tournament.roster.white]);
   const teamMarket = futureTeamMarket(tournament);
 
   return (
-    <div className="flex flex-col gap-4">
-      <FuturesMarketCard title="Team Winner" marketKey={teamMarket.marketKey} selections={teamMarket.selections} href="/wagers/team-futures/team-winner" />
-      <FuturesMarketCard
-        title="Tournament Winner"
-        marketKey={market.marketKey}
-        selections={market.selections}
-        href="/wagers/player-futures/tournament-winner"
-        limit={3}
+    <div>
+      <Tabs
+        items={[
+          { value: "team", label: "Team" },
+          { value: "player", label: "Player" },
+        ]}
+        value={futureType}
+        onChange={(value) => setFutureType(value as "team" | "player")}
+        variant="plain"
       />
+      <div className="mt-4">
+        {futureType === "team" ? (
+          <FuturesMarketCard title="Team Winner" marketKey={teamMarket.marketKey} selections={teamMarket.selections} href="/wagers/team-futures/team-winner" />
+        ) : (
+          <FuturesMarketCard
+            title="Tournament Winner"
+            marketKey={market.marketKey}
+            selections={market.selections}
+            href="/wagers/player-futures/tournament-winner"
+            limit={3}
+          />
+        )}
+      </div>
     </div>
   );
 }
