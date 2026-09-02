@@ -193,6 +193,8 @@ git commit -m "feat(tiger): multi-year live_* schema for Master Settings"
 - Modify: `lib/live/types.ts`
 - Create: `lib/live/activeSeason.ts`
 - Create: `lib/live/activeSeason.test.ts`
+- Modify: `lib/live/orchestration.test.ts`
+- Modify: `lib/live/scoring.test.ts`
 
 **Interfaces:**
 - Consumes: nothing new.
@@ -206,6 +208,28 @@ git commit -m "feat(tiger): multi-year live_* schema for Master Settings"
   should never happen after Task 1's seed insert).
   `SEASON_YEARS: number[]` — `[2027, 2028, ..., 2034]`.
   `isValidSeasonYear(value: unknown): value is number`.
+
+**Note (found during Task 2's own review — not in the original brief):**
+adding a required `seasonYear` field to `LiveMatchBox`/`LiveRoundState`
+breaks compilation of every existing file that constructs one of these
+types as an object literal. Most such files are Route Handlers/pages
+already owned by a later task (3, 6-9, 11-13) and are expected to show a
+`tsc` error until that task lands — that's normal, cross-task
+propagation, not a defect. But `lib/live/orchestration.test.ts` and
+`lib/live/scoring.test.ts` construct `LiveMatchBox` test fixtures for
+*pure* logic (`validateMatchBox`, `roundIsComplete`, `matchBoxResult`,
+etc.) that no other task in this plan touches or has a reason to touch —
+nothing else owns fixing them. This task fixes them directly, as the one
+place they can be fixed at all: add `seasonYear: 2027` to every
+`LiveMatchBox` object literal in both files (the value is arbitrary —
+these are pure functions that never read `seasonYear` — pick any valid
+year for consistency; `2027` matches every other placeholder value already
+used across the codebase's test fixtures).
+`lib/live/currentRoundForPlayer.ts` also breaks and is a *production*
+code path (not a test fixture) with a real season-scoping gap of its
+own — that one is folded into Task 3 below, not fixed here, since it
+needs the same "resolve the active season" treatment as Task 3's other
+four files, not a placeholder value.
 
 - [ ] **Step 1: Update `lib/live/types.ts`**
 
@@ -357,11 +381,38 @@ test("isValidSeasonYear accepts only integers in range", () => {
 Run: `npx tsx --test lib/live/activeSeason.test.ts`
 Expected: PASS (2 tests)
 
-- [ ] **Step 5: Full verification and commit**
+- [ ] **Step 5: Fix the two orphaned pure-logic test files**
+
+Run `npx tsc --noEmit` and look at the errors in `lib/live/orchestration.test.ts`
+and `lib/live/scoring.test.ts` specifically (ignore every other file's
+errors for now — see the Note above the Files list). Every error there is
+a `LiveMatchBox` object literal missing the new `seasonYear` field. Add
+`seasonYear: 2027,` to each one (the value is never read by the pure
+functions under test — pick this constant so every fixture in both files
+matches). Re-run `npx tsc --noEmit` afterward and confirm neither file
+appears in the remaining error list.
+
+- [ ] **Step 6: Full verification and commit**
 
 ```bash
 npm test && npx tsc --noEmit && npm run lint && npm run build
-git add lib/live/types.ts lib/live/activeSeason.ts lib/live/activeSeason.test.ts
+```
+
+`npm test` should be fully green (this task's new test plus the whole
+existing suite, orchestration.test.ts/scoring.test.ts included).
+`npx tsc --noEmit`/`npm run build` will still report errors — confirm
+every remaining one is in a file this task doesn't own (a later task's
+territory: `app/api/portal/scoring/*` and `lib/live/currentRoundForPlayer.*`
+→ Task 3; `app/api/portal/tiger/{roster,rounds,rounds/lock,rounds/remove,
+rounds/start,settings,matchboxes,matchboxes/remove}` → Tasks 6-9;
+`app/portal/admin/{courses-format,matchups,players-teams,page}.tsx` →
+Tasks 12-13) — and that `lib/live/orchestration.test.ts`/`scoring.test.ts`
+are NOT in that list anymore. `npm run lint` should be unaffected by
+this task either way (report any lint errors newly appearing in files
+this task touches).
+
+```bash
+git add lib/live/types.ts lib/live/activeSeason.ts lib/live/activeSeason.test.ts lib/live/orchestration.test.ts lib/live/scoring.test.ts
 git commit -m "feat(tiger): season_year types and the active-season helper"
 ```
 
@@ -374,14 +425,19 @@ git commit -m "feat(tiger): season_year types and the active-season helper"
 - Modify: `app/api/portal/scoring/submit/route.ts`
 - Modify: `app/api/portal/scoring/state/route.ts`
 - Modify: `app/api/portal/scoring/stats/route.ts`
+- Modify: `lib/live/currentRoundForPlayer.ts`
+- Modify: `lib/live/currentRoundForPlayer.test.ts`
 
 **Interfaces:**
 - Consumes: `getActiveSeasonYear()` (Task 2).
 - Produces: nothing new — these routes' request/response shapes are
-  **unchanged**; players never pick a year.
+  **unchanged**; players never pick a year. `findCurrentRoundForPlayer`'s
+  signature is also unchanged (`(playerSlug: string) =>
+  Promise<CurrentRoundResult | null>`) — it resolves the active season
+  internally, same as the four routes above.
 
 Player scoring only ever happens against whatever tournament is
-currently live, so these four routes resolve the active season
+currently live, so these routes/functions resolve the active season
 server-side rather than taking a `year` field from the client — this
 keeps a separate, already-shipped feature's contract untouched. Every
 `live_match_boxes`/`live_hole_scores` query in these files needs
@@ -389,6 +445,16 @@ keeps a separate, already-shipped feature's contract untouched. Every
 numbers repeat across years, so a query without this filter can now
 match the wrong year's rows once a second year has data), and every
 `live_hole_scores` insert needs `season_year: seasonYear` added.
+
+**Found during Task 2's review (not in the original brief):** the
+already-shipped `/portal/scoring` and `/portal/scoring/play` pages both
+call `findCurrentRoundForPlayer(playerSlug)` from `lib/live/
+currentRoundForPlayer.ts`, which independently queries
+`live_round_state`/`live_match_boxes` with no season filter at all — the
+exact same bug class this task exists to fix, in a file the original
+plan missed. It's in scope here rather than a separate task since it's
+the same fix, for the same reason (a player-facing lookup that always
+means "the active season"), on the same footing as the four routes above.
 
 - [ ] **Step 1: Update `app/api/portal/scoring/stroke/route.ts`**
 
@@ -875,13 +941,174 @@ export async function POST(request: Request) {
 }
 ```
 
-- [ ] **Step 5: Full verification and commit**
+- [ ] **Step 5: Update `lib/live/currentRoundForPlayer.ts` and its test**
+
+```typescript
+// lib/live/currentRoundForPlayer.ts
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getPlayerDisplayName } from "@/lib/data/players";
+import { getActiveSeasonYear } from "./activeSeason.ts";
+import { effectiveMatchState } from "./orchestration.ts";
+import type { LiveMatchBox, LiveRoundState, LiveTournamentSnapshot, MatchFormat, MatchState } from "./types.ts";
+
+export interface CurrentRoundResult {
+  round: LiveRoundState;
+  matchBox: LiveMatchBox;
+  state: MatchState;
+}
+
+const EMPTY_SNAPSHOT: LiveTournamentSnapshot = {
+  players: {},
+  courses: {},
+  roundCourses: {},
+  scores: new Map(),
+  matchBoxes: [],
+};
+
+/**
+ * The next round relevant to this player: the lowest-numbered fully locked
+ * round (course + matchups) that has a match box containing them, whose
+ * computed state isn't yet Final. Pure — no I/O — so the selection rule is
+ * fully unit-testable without a live Supabase instance.
+ */
+export function pickCurrentRound(rounds: LiveRoundState[], matchBoxes: LiveMatchBox[], playerSlug: string): CurrentRoundResult | null {
+  const lockedRounds = rounds.filter((r) => r.courseLocked && r.matchupsLocked).sort((a, b) => a.round - b.round);
+
+  for (const round of lockedRounds) {
+    const matchBox = matchBoxes.find(
+      (box) => box.round === round.round && (box.maroonPlayers.includes(playerSlug) || box.whitePlayers.includes(playerSlug))
+    );
+    if (!matchBox) continue;
+
+    const state = effectiveMatchState(EMPTY_SNAPSHOT, matchBox);
+    if (state === "Final") continue;
+
+    return { round, matchBox, state };
+  }
+
+  return null;
+}
+
+/**
+ * "You & Cam vs. Drew & Hugo" (Fourball/Foursome) or "You vs. Drew"
+ * (Singles) — this player's side first, teammate before opponents.
+ */
+export function matchupLabel(playerSlug: string, matchBox: LiveMatchBox): string {
+  const onMaroon = matchBox.maroonPlayers.includes(playerSlug);
+  const ownSide = onMaroon ? matchBox.maroonPlayers : matchBox.whitePlayers;
+  const otherSide = onMaroon ? matchBox.whitePlayers : matchBox.maroonPlayers;
+  const teammates = ownSide.filter((slug) => slug !== playerSlug).map(getPlayerDisplayName);
+  const opponents = otherSide.map(getPlayerDisplayName);
+  return `${["You", ...teammates].join(" & ")} vs. ${opponents.join(" & ")}`;
+}
+
+interface RoundRow {
+  round: number;
+  started: boolean;
+  course_id: string | null;
+  date: string | null;
+  format: string | null;
+  course_locked: boolean;
+  matchups_locked: boolean;
+}
+
+function roundFromRow(row: RoundRow, seasonYear: number): LiveRoundState {
+  return {
+    seasonYear,
+    round: row.round,
+    started: row.started,
+    courseId: row.course_id,
+    date: row.date,
+    format: row.format as MatchFormat | null,
+    courseLocked: row.course_locked,
+    matchupsLocked: row.matchups_locked,
+  };
+}
+
+interface MatchBoxRow {
+  id: string;
+  round: number;
+  box_number: number;
+  format: string;
+  tee_time: string;
+  maroon_players: string[];
+  white_players: string[];
+  state: string;
+  started: boolean;
+}
+
+function matchBoxFromRow(row: MatchBoxRow, seasonYear: number): LiveMatchBox {
+  return {
+    id: row.id,
+    seasonYear,
+    round: row.round,
+    boxNumber: row.box_number,
+    format: row.format as MatchFormat,
+    teeTime: new Date(row.tee_time),
+    maroonPlayers: row.maroon_players,
+    whitePlayers: row.white_players,
+    state: row.state as MatchState,
+    started: row.started,
+  };
+}
+
+// Not unit tested: createSupabaseServerClient() needs a real request
+// lifecycle, same documented limitation as lib/portal/requireHost.test.mts
+// and app/api/portal/profile/route.test.mts. pickCurrentRound() above (the
+// actual selection rule) is where the real logic lives and is fully tested.
+export async function findCurrentRoundForPlayer(playerSlug: string): Promise<CurrentRoundResult | null> {
+  const supabase = await createSupabaseServerClient();
+  const seasonYear = await getActiveSeasonYear();
+
+  const [{ data: roundRows, error: roundError }, { data: boxRows, error: boxError }] = await Promise.all([
+    supabase
+      .from("live_round_state")
+      .select("round, started, course_id, date, format, course_locked, matchups_locked")
+      .eq("season_year", seasonYear)
+      .order("round"),
+    supabase
+      .from("live_match_boxes")
+      .select("id, round, box_number, format, tee_time, maroon_players, white_players, state, started")
+      .eq("season_year", seasonYear)
+      .order("round"),
+  ]);
+
+  if (roundError) {
+    console.error("Failed to fetch live_round_state:", roundError);
+  }
+  if (boxError) {
+    console.error("Failed to fetch live_match_boxes:", boxError);
+  }
+
+  const rounds = (roundRows ?? []).map((row) => roundFromRow(row, seasonYear));
+  const matchBoxes = (boxRows ?? []).map((row) => matchBoxFromRow(row, seasonYear));
+
+  return pickCurrentRound(rounds, matchBoxes, playerSlug);
+}
+```
+
+`pickCurrentRound`/`matchupLabel` themselves are unchanged — they already
+take already-year-scoped arrays as plain parameters and never touch
+Supabase, so nothing about the active season affects their logic, only
+their test fixtures' types.
+
+In `lib/live/currentRoundForPlayer.test.ts`, add `seasonYear: 2027,` to
+every `LiveRoundState`/`LiveMatchBox` object literal used to call
+`pickCurrentRound`/`matchupLabel` in the existing tests — mechanical only,
+no test behavior changes (same reasoning as Task 2's fix to
+`orchestration.test.ts`/`scoring.test.ts`).
+
+- [ ] **Step 6: Full verification and commit**
 
 ```bash
 npm test && npx tsc --noEmit && npm run lint && npm run build
-git add app/api/portal/scoring
+git add app/api/portal/scoring lib/live/currentRoundForPlayer.ts lib/live/currentRoundForPlayer.test.ts
 git commit -m "fix(scoring): year-scope live scoring reads/writes to the active season"
 ```
+
+Remaining `tsc`/build errors after this task should only be in files
+owned by Tasks 6-9, 12, 13 (see Task 2's Step 6 note for the full list)
+— confirm none are in a file this task touches.
 
 ---
 
