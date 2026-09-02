@@ -39,6 +39,16 @@ function TeamSide({ players, team }: { players: string[]; team: Team }) {
           ].join(" ")}
         >
           {lastName(player)}
+          {players.length === 1 && (
+            <span
+              className={[
+                "absolute top-1/2 -translate-y-1/2 font-condensed text-[8px] font-extrabold uppercase tracking-tight",
+                isMaroon ? "left-1/4 -translate-x-1/2 text-white" : "right-1/4 translate-x-1/2 text-maroon-700",
+              ].join(" ")}
+            >
+              Odds
+            </span>
+          )}
           {i > 0 && (
             <>
               <span aria-hidden className={isMaroon ? "absolute right-0 top-0 h-px w-1/2 bg-gold-600" : "absolute left-0 top-0 h-px w-1/2 bg-gold-600"} />
