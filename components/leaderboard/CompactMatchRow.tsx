@@ -36,10 +36,22 @@ function TeamSide({ players, team }: { players: string[]; team: Team }) {
           className={[
             "relative block w-full truncate px-2 py-1.5 font-sans text-xs font-semibold capitalize",
             isMaroon ? "text-right" : "text-left",
-            i > 0 ? (isMaroon ? "before:absolute before:top-0 before:left-2 before:right-0 before:h-px before:bg-gold-600" : "before:absolute before:top-0 before:left-0 before:right-2 before:h-px before:bg-gold-600") : "",
           ].join(" ")}
         >
           {lastName(player)}
+          {i > 0 && (
+            <>
+              <span aria-hidden className={isMaroon ? "absolute left-0 top-0 h-px w-1/2 bg-gold-600" : "absolute right-0 top-0 h-px w-1/2 bg-gold-600"} />
+              <span
+                className={[
+                  "absolute top-0 flex h-4 w-8 -translate-y-1/2 items-center justify-center bg-transparent font-condensed text-[7px] font-extrabold uppercase tracking-tight",
+                  isMaroon ? "right-[calc(25%-16px)] border border-white text-white" : "left-[calc(25%-16px)] border border-maroon-700 text-maroon-700",
+                ].join(" ")}
+              >
+                Odds
+              </span>
+            </>
+          )}
         </span>
       ))}
     </div>
