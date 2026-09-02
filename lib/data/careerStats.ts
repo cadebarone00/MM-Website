@@ -1,6 +1,58 @@
-import type { PlayerScorecard } from "./types";
+import type { RealMatch, PlayerScorecard } from "./types";
 
 export type CareerScorecardSet = { year: number; scorecards: PlayerScorecard[] };
+
+export type CareerHoleRecord = {
+  year: number;
+  player: string;
+  round: number;
+  course: string;
+  format: string;
+  hole: number;
+  par: number;
+  yards: number;
+  score: number;
+};
+
+export type CareerPartnership = { player: string; partner: string; year: number; format: string; result: "win" | "loss" | "halve" };
+
+export function buildCareerHoleRecords(sets: CareerScorecardSet[]): CareerHoleRecord[] {
+  return sets.flatMap(({ year, scorecards }) =>
+    scorecards.flatMap((scorecard) =>
+      scorecard.rounds.flatMap((round) =>
+        round.holes.filter((hole) => hole.score > 0).map((hole) => ({
+          year,
+          player: scorecard.player,
+          round: round.round,
+          course: round.course,
+          format: round.format ?? "Unspecified",
+          hole: hole.hole,
+          par: hole.par,
+          yards: hole.yards,
+          score: hole.score,
+        }))
+      )
+    )
+  );
+}
+
+export function buildCareerPartnerships(tournaments: { year: number; matches: RealMatch[] }[]): CareerPartnership[] {
+  return tournaments.flatMap(({ year, matches }) =>
+    matches.flatMap((match) => {
+      const maroonResult = match.maroonPts > match.whitePts ? "win" : match.maroonPts < match.whitePts ? "loss" : "halve";
+      const whiteResult = maroonResult === "win" ? "loss" : maroonResult === "loss" ? "win" : "halve";
+      const pairings: CareerPartnership[] = [];
+      for (const [players, result] of [[match.maroonPlayers, maroonResult], [match.whitePlayers, whiteResult]] as const) {
+        if (players.length !== 2) continue;
+        pairings.push(
+          { player: players[0], partner: players[1], year, format: match.format, result },
+          { player: players[1], partner: players[0], year, format: match.format, result }
+        );
+      }
+      return pairings;
+    })
+  );
+}
 
 export type CareerPlayerStat = {
   player: string;
