@@ -33,7 +33,7 @@ function flooredFill(real: number, otherReal: number, floor = 15): number {
 function ProjectionBar() {
   return (
     <div className="grid h-10 grid-cols-[1fr_auto_1fr] items-center border-y border-gold-300 bg-cream-100 px-3 sm:h-11 sm:px-5">
-      <span className="justify-self-end pr-3 font-sans text-2xl font-black tabular-nums text-maroon-700 sm:text-3xl">
+      <span className="justify-self-end pr-3 font-sans text-2xl font-black tabular-nums text-ink-900 sm:text-3xl">
         {fmtPt(PROJECTED_POINTS.maroon)}
       </span>
       <span className="font-condensed text-2xs font-extrabold uppercase tracking-eyebrow text-ink-700">Projected</span>
