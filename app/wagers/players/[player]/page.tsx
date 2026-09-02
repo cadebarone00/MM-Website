@@ -2,10 +2,10 @@
 
 import { useParams } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
-import { OddsButton } from "@/components/wagers/OddsButton";
+import { PlayerFutureCard } from "@/components/wagers/PlayerFutureCard";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
-import { playerBirdiesFutureMarket } from "@/lib/wagers/marketKeys";
+import { PLAYER_FUTURES, playerFutureMarket } from "@/lib/wagers/marketKeys";
 
 export default function PlayerWagersPage() {
   const { player } = useParams<{ player: string }>();
@@ -21,9 +21,6 @@ export default function PlayerWagersPage() {
   }
 
   const team = tournament.roster.maroon.includes(profile.id) ? "maroon" : tournament.roster.white.includes(profile.id) ? "white" : null;
-  const market = playerBirdiesFutureMarket(tournament.slug, profile.id);
-  const [yes, no] = market.selections;
-
   return (
     <div className="px-4 pt-5 sm:px-7">
       <div className="flex items-center gap-3">
@@ -33,17 +30,10 @@ export default function PlayerWagersPage() {
 
       <section className="mt-7">
         <h3 className="m-0 font-sans text-base font-black text-ink-900">Futures</h3>
-        <div className="mt-2 rounded-sm border border-gold-300 bg-white p-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="m-0 font-sans text-sm font-semibold text-ink-900">Total Birdies</p>
-              <p className="mt-1 font-condensed text-sm font-bold text-ink-500">Over 8.5</p>
-            </div>
-            <div className="flex shrink-0 gap-2">
-              <OddsButton marketKey={market.marketKey} selectionKey={yes.key} label={yes.label} odds={yes.odds} tone="yes" prefix="Yes" />
-              <OddsButton marketKey={market.marketKey} selectionKey={no.key} label={no.label} odds={no.odds} tone="no" prefix="No" />
-            </div>
-          </div>
+        <div className="mt-2 flex flex-col gap-2">
+          {PLAYER_FUTURES.map((future) => (
+            <PlayerFutureCard key={future.id} future={future} market={playerFutureMarket(tournament.slug, profile.id, future)} />
+          ))}
         </div>
       </section>
 

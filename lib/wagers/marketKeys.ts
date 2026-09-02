@@ -93,16 +93,38 @@ export function futureTeamMarket(tournament: Tournament): Market {
   };
 }
 
+export interface PlayerFutureDefinition {
+  id: string;
+  title: string;
+  detail: string;
+  yesDescription: string;
+  noDescription: string;
+  yesOdds: number;
+  noOdds: number;
+}
+
+/** Add new player futures here; the shared card will render each one identically. */
+export const PLAYER_FUTURES: PlayerFutureDefinition[] = [
+  {
+    id: "total-birdies",
+    title: "Total Birdies",
+    detail: "Over 8.5",
+    yesDescription: "records over 8.5 birdies",
+    noDescription: "records 8.5 or fewer birdies",
+    yesOdds: -110,
+    noOdds: -110,
+  },
+];
+
 /** Temporary player-futures market; live lines will replace this seeded placeholder. */
-export function playerBirdiesFutureMarket(tournamentSlug: string, player: string): Market {
+export function playerFutureMarket(tournamentSlug: string, player: string, future: PlayerFutureDefinition): Market {
   const displayName = getPlayerDisplayName(player);
-  const line = 8.5;
   return {
-    marketKey: `player-birdies:${tournamentSlug}:${player.toLowerCase()}`,
-    groupLabel: `${displayName} — Total Birdies`,
+    marketKey: `player-future:${future.id}:${tournamentSlug}:${player.toLowerCase()}`,
+    groupLabel: `${displayName} — ${future.title}`,
     selections: [
-      { key: "yes", label: `${displayName} records over ${line} birdies`, odds: -110 },
-      { key: "no", label: `${displayName} records ${line} or fewer birdies`, odds: -110 },
+      { key: "yes", label: `${displayName} ${future.yesDescription}`, odds: future.yesOdds },
+      { key: "no", label: `${displayName} ${future.noDescription}`, odds: future.noOdds },
     ],
   };
 }
@@ -110,7 +132,7 @@ export function playerBirdiesFutureMarket(tournamentSlug: string, player: string
 /** Every currently-defined market for a tournament — used by the Tiger settlement admin page to list what can be resolved. */
 export function listAllMarkets(tournament: Tournament): Market[] {
   const field = [...tournament.roster.maroon, ...tournament.roster.white];
-  const playerFutures = (field.length > 0 ? field : playerProfiles.map((player) => player.id)).map((player) => playerBirdiesFutureMarket(tournament.slug, player));
+  const playerFutures = (field.length > 0 ? field : playerProfiles.map((player) => player.id)).flatMap((player) => PLAYER_FUTURES.map((future) => playerFutureMarket(tournament.slug, player, future)));
   const matchMarkets = tournament.matches.flatMap((match) => [
     matchWinnerMarket(tournament.slug, match),
     ...matchPropMarkets(match).map((prop) => propMarket(tournament.slug, match.day, prop)),
