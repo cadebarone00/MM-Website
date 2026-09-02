@@ -8,10 +8,12 @@ import { AddCourseForm } from "./AddCourseForm";
 const FORMATS: MatchFormat[] = ["Fourball", "Foursome", "Singles"];
 
 export function CoursesFormatPanel({
+  year,
   initialSettings,
   initialRounds,
   initialCourses,
 }: {
+  year: number;
   initialSettings: TournamentSettings;
   initialRounds: LiveRoundState[];
   initialCourses: LiveCourse[];
@@ -34,7 +36,7 @@ export function CoursesFormatPanel({
     const res = await fetch("/api/portal/tiger/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ roundCount: count }),
+      body: JSON.stringify({ year, roundCount: count }),
     });
     const data = await res.json();
     if (!data.ok) {
@@ -54,7 +56,7 @@ export function CoursesFormatPanel({
     const res = await fetch("/api/portal/tiger/rounds", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ round, ...patch, date }),
+      body: JSON.stringify({ year, round, ...patch, date }),
     });
     const data = await res.json();
     if (!data.ok) {
@@ -79,7 +81,7 @@ export function CoursesFormatPanel({
     const res = await fetch("/api/portal/tiger/rounds/lock", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ round, lock: "course", value }),
+      body: JSON.stringify({ year, round, lock: "course", value }),
     });
     const data = await res.json();
     if (!data.ok) {
@@ -94,7 +96,7 @@ export function CoursesFormatPanel({
     const res = await fetch("/api/portal/tiger/rounds/remove", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ round }),
+      body: JSON.stringify({ year, round }),
     });
     const data = await res.json();
     if (!data.ok) {
