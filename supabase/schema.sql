@@ -635,3 +635,49 @@ create policy archived_shot_videos_select_all on archived_shot_videos for select
 insert into storage.buckets (id, name, public)
 values ('shot-videos', 'shot-videos', true)
 on conflict (id) do nothing;
+
+-- === Watch Live Broadcast: Foundation (Phase 1) ==========================
+-- See docs/superpowers/specs/2026-09-02-watch-live-broadcast-design.md.
+-- Singleton tables, same shape as live_tournament_settings — there is no
+-- season_year concept anywhere else in this schema yet (Master Settings is
+-- still just a spec), so these don't invent one either. The event queue
+-- (broadcast_events) is Phase 2 work, added once there's a rules engine to
+-- write to it.
+
+create table if not exists broadcast_config (
+  id boolean primary key default true,
+  scene_durations_ms jsonb not null default '{"individual_leaderboard":12000,"match_play":12000,"holding":10000}',
+  priorities jsonb not null default '{}',
+  overlay_duration_ms integer not null default 6000,
+  audio jsonb not null default '{}',
+  updated_at timestamptz not null default now(),
+  constraint broadcast_config_singleton check (id)
+);
+
+create table if not exists broadcast_state (
+  id boolean primary key default true,
+  current_scene text not null default 'holding'
+    check (current_scene in ('holding', 'individual_leaderboard', 'match_play')),
+  scene_started_at timestamptz not null default now(),
+  -- References broadcast_events(id) once that table exists (Phase 2).
+  active_event_id uuid,
+  automation_mode text not null default 'auto' check (automation_mode in ('auto', 'producer')),
+  paused boolean not null default false,
+  updated_at timestamptz not null default now(),
+  constraint broadcast_state_singleton check (id)
+);
+
+alter table broadcast_config enable row level security;
+alter table broadcast_state enable row level security;
+
+-- Public read, no write policy — the /broadcast page has no login, and
+-- writes go through a host-only Route Handler with the service-role key,
+-- same pattern as every table above.
+drop policy if exists broadcast_config_select_all on broadcast_config;
+create policy broadcast_config_select_all on broadcast_config for select using (true);
+
+drop policy if exists broadcast_state_select_all on broadcast_state;
+create policy broadcast_state_select_all on broadcast_state for select using (true);
+
+insert into broadcast_config (id) values (true) on conflict (id) do nothing;
+insert into broadcast_state (id) values (true) on conflict (id) do nothing;
