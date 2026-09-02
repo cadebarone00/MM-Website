@@ -92,9 +92,28 @@ create table if not exists wagers_market_settlements (
   settled_at timestamptz not null default now()
 );
 
+-- The host-managed definition of a reusable wager market. Individual odds,
+-- selections, and bets are built from these rulebooks; this table deliberately
+-- stores no calculated odds so a market can be recalculated/audited later.
+create table if not exists wager_types (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique,
+  name text not null,
+  scope text not null check (scope in ('player', 'team', 'match', 'tournament')),
+  market_kind text not null check (market_kind in ('yes_no', 'over_under', 'winner', 'head_to_head')),
+  stat_key text not null,
+  calculation_rule text not null,
+  settlement_rule text not null,
+  is_active boolean not null default false,
+  created_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index if not exists wager_types_active_idx on wager_types (is_active, created_at desc);
+
 alter table wagers_accounts enable row level security;
 alter table mm_coin_bets enable row level security;
 alter table wagers_market_settlements enable row level security;
+alter table wager_types enable row level security;
 
 drop policy if exists wagers_accounts_select_own on wagers_accounts;
 create policy wagers_accounts_select_own on wagers_accounts for select using (auth.uid() = profile_id);
