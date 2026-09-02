@@ -3382,14 +3382,34 @@ they now 404 (the files were moved, not copied).
 ### Task 13: Rework the Tiger Center home screen
 
 **Files:**
+- Create: `lib/live/seasonYears.ts`
+- Modify: `lib/live/activeSeason.ts` (re-export from the new file)
 - Create: `components/portal/tiger/YearAndMasterSettingsNav.tsx`
 - Modify: `app/portal/admin/page.tsx`
 - Modify: `components/portal/tiger/StartRoundBanner.tsx` (no code
   change — see note below; listed so the reviewer checks it)
 - Delete: `components/portal/tiger/TigerCenterNav.tsx`
 
+**Why `SEASON_YEARS`/`isValidSeasonYear` move to their own file (found
+live during this task — not in the original brief):** `YearAndMasterSettingsNav`
+is this plan's first `"use client"` component to need `SEASON_YEARS` —
+every prior consumer (Tasks 3, 5-9, 11-12) was a Route Handler or Server
+Component. Importing it from `lib/live/activeSeason.ts` as originally
+written would pull that whole module — which also has
+`getActiveSeasonYear()`, importing `createSupabaseServiceRoleClient` —
+into the client bundle, the exact `next/headers`-poisoning bug Task 4
+already hit once for `lib/data/index.ts`. Same fix, same reasoning: split
+the zero-dependency constants into their own file so a Client Component
+can import them directly, and have `activeSeason.ts` re-export them so
+every one of the ~15 existing server-side `import { isValidSeasonYear }
+from "@/lib/live/activeSeason"` call sites (Tasks 3, 5-9, 11-12) keeps
+working unchanged.
+
 **Interfaces:**
-- Consumes: `SEASON_YEARS`, `getActiveSeasonYear` (Task 2).
+- Consumes: `SEASON_YEARS` (now from `lib/live/seasonYears.ts`, or via
+  `lib/live/activeSeason.ts`'s re-export — both resolve to the same
+  values), `getActiveSeasonYear` (Task 2, from `activeSeason.ts` directly
+  — only Server Components/Route Handlers call this one).
 - Produces: nothing else in this plan depends on this task — it's the
   final piece.
 
@@ -3397,12 +3417,33 @@ they now 404 (the files were moved, not copied).
 `round: StartableRound | null` prop and POSTs `{ round: round.round }` to
 `/api/portal/tiger/rounds/start` — Task 8 already added a required
 `year` field to that route). What changes is **what its caller passes
-it**: Step 2 below scopes the round it looks up to the active season
+it**: Step 3 below scopes the round it looks up to the active season
 year, and includes that `year` in the POST body
 `StartRoundBanner` already sends (via a small prop addition), so this
-task does touch `StartRoundBanner.tsx` after all — see Step 2.
+task does touch `StartRoundBanner.tsx` after all — see Step 3.
 
-- [ ] **Step 1: Create the year/Master Settings nav**
+- [ ] **Step 1: Extract `SEASON_YEARS`/`isValidSeasonYear` into their own file**
+
+```typescript
+// lib/live/seasonYears.ts
+export const SEASON_YEARS: number[] = [2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034];
+
+export function isValidSeasonYear(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && SEASON_YEARS.includes(value);
+}
+```
+
+```typescript
+// lib/live/activeSeason.ts
+// was: export const SEASON_YEARS: number[] = [...]; export function isValidSeasonYear(...) {...}
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+
+export { SEASON_YEARS, isValidSeasonYear } from "@/lib/live/seasonYears";
+
+// getActiveSeasonYear() below is unchanged.
+```
+
+- [ ] **Step 2: Create the year/Master Settings nav**
 
 ```typescript
 // components/portal/tiger/YearAndMasterSettingsNav.tsx
@@ -3410,7 +3451,7 @@ task does touch `StartRoundBanner.tsx` after all — see Step 2.
 
 import { useState } from "react";
 import Link from "next/link";
-import { SEASON_YEARS } from "@/lib/live/activeSeason";
+import { SEASON_YEARS } from "@/lib/live/seasonYears";
 
 export function YearAndMasterSettingsNav({ initialYear }: { initialYear: number }) {
   const [year, setYear] = useState(initialYear);
@@ -3443,7 +3484,7 @@ export function YearAndMasterSettingsNav({ initialYear }: { initialYear: number 
 }
 ```
 
-- [ ] **Step 2: Update `app/portal/admin/page.tsx`**
+- [ ] **Step 3: Update `app/portal/admin/page.tsx`**
 
 ```typescript
 // app/portal/admin/page.tsx
@@ -3498,7 +3539,7 @@ export default async function TigerCenterPage() {
 }
 ```
 
-- [ ] **Step 3: Add `year` to `StartRoundBanner`**
+- [ ] **Step 4: Add `year` to `StartRoundBanner`**
 
 ```typescript
 // components/portal/tiger/StartRoundBanner.tsx
@@ -3559,7 +3600,7 @@ export function StartRoundBanner({ round }: { round: StartableRound }) {
 }
 ```
 
-- [ ] **Step 4: Delete `TigerCenterNav.tsx`**
+- [ ] **Step 5: Delete `TigerCenterNav.tsx`**
 
 ```bash
 git rm components/portal/tiger/TigerCenterNav.tsx
@@ -3569,12 +3610,12 @@ It's fully superseded: its box grid (minus Edit Scores, which is gone)
 now lives in `MasterSettingsPanel` (Task 11), and its only import site
 (`app/portal/admin/page.tsx`) was replaced in Step 2 above.
 
-- [ ] **Step 5: Full verification and commit**
+- [ ] **Step 6: Full verification and commit**
 
 ```bash
 npm test && npx tsc --noEmit && npm run lint && npm run build
 grep -rn "TigerCenterNav" app components || echo "no remaining references"
-git add components/portal/tiger/YearAndMasterSettingsNav.tsx app/portal/admin/page.tsx components/portal/tiger/StartRoundBanner.tsx
+git add lib/live/seasonYears.ts lib/live/activeSeason.ts components/portal/tiger/YearAndMasterSettingsNav.tsx app/portal/admin/page.tsx components/portal/tiger/StartRoundBanner.tsx
 git commit -m "feat(tiger): year picker + single Master Settings box on the Tiger Center home screen"
 ```
 
