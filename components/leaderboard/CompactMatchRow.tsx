@@ -28,9 +28,9 @@ function TeamSide({ players, team }: { players: string[]; team: Team }) {
         <span
           key={player}
           className={[
-            "block w-full truncate px-2 py-1.5 font-sans text-xs font-semibold",
+            "relative block w-full truncate px-2 py-1.5 font-sans text-xs font-semibold",
             isMaroon ? "text-right" : "text-left",
-            i > 0 ? (isMaroon ? "border-t border-gold-600" : "border-t border-ink-200") : "",
+            i > 0 ? (isMaroon ? "before:absolute before:top-0 before:left-2 before:right-0 before:h-px before:bg-gold-600" : "before:absolute before:top-0 before:left-0 before:right-2 before:h-px before:bg-gold-600") : "",
           ].join(" ")}
         >
           {lastName(player)}
@@ -65,7 +65,7 @@ export function CompactMatchRow({
   const whiteSideLabel = match.whitePlayers.map(lastName).join(" & ");
 
   return (
-    <div className="border-b border-ink-100 last:border-b-0">
+    <div className="-mx-4 mb-1.5 overflow-hidden border-2 border-gold-500 last:mb-0 sm:mx-0">
       <div
         role="button"
         tabIndex={0}

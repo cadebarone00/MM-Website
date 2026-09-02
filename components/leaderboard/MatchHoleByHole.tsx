@@ -91,7 +91,7 @@ function SinglesMatchGrid({ tournament, match, tournamentSlug }: { tournament: T
   const back = data.allHoles.slice(9, 18);
 
   return (
-    <div className="-mx-4 flex border-y border-ink-300 bg-cream-100 sm:mx-0">
+    <div className="mx-0 flex border-y border-ink-300 bg-cream-100">
       <div className="flex w-[72px] shrink-0 flex-col">
         <SideCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Hole</span></SideCell>
         <SideCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Par</span></SideCell>
