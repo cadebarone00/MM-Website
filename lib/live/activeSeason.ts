@@ -1,4 +1,5 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { SEASON_YEARS } from "@/lib/live/seasonYears";
 
 export { SEASON_YEARS, isValidSeasonYear } from "@/lib/live/seasonYears";
 
@@ -12,7 +13,8 @@ export async function getActiveSeasonYear(): Promise<number> {
   const service = createSupabaseServiceRoleClient();
   const { data, error } = await service.from("live_active_season").select("season_year").eq("id", true).single();
   if (error || !data) {
-    throw new Error("No active season is configured.");
+    console.warn("No active season is configured; using the default season.");
+    return SEASON_YEARS[0];
   }
   return data.season_year;
 }
