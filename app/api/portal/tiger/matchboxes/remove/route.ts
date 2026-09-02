@@ -15,12 +15,12 @@ export async function POST(request: Request) {
 
   const service = createSupabaseServiceRoleClient();
 
-  const { data: box } = await service.from("live_match_boxes").select("round").eq("id", id).single();
+  const { data: box } = await service.from("live_match_boxes").select("season_year, round").eq("id", id).single();
   if (!box) {
     return NextResponse.json({ ok: false, error: "Match box not found." }, { status: 404 });
   }
 
-  const { data: roundRow } = await service.from("live_round_state").select("matchups_locked").eq("round", box.round).single();
+  const { data: roundRow } = await service.from("live_round_state").select("matchups_locked").eq("season_year", box.season_year).eq("round", box.round).single();
   if (roundRow?.matchups_locked) {
     return NextResponse.json({ ok: false, error: "Unlock this round's matchups before removing a match box." }, { status: 400 });
   }
