@@ -35,7 +35,24 @@ export function EditableShotVideoPanel({
     <div className="-mx-7 sm:mx-0">
       {previewUrl ? (
         <div className="relative">
-          <video key={previewUrl} controls playsInline className="aspect-video w-full bg-ink-900 sm:rounded-md" src={previewUrl} />
+          <video
+            key={previewUrl}
+            autoPlay
+            controls
+            playsInline
+            className="aspect-video w-full bg-ink-900 sm:rounded-md"
+            src={previewUrl}
+            onEnded={() => {
+              // Advance to the next shot so its video (if any) auto-plays
+              // via the same key-remount + autoPlay above. Stops at the
+              // last shot rather than looping back — this is a review
+              // screen, not the public site's continuous playback loop.
+              // If the next shot has no video yet, it just shows its "No
+              // video yet" placeholder — this never auto-opens the file
+              // picker on its own.
+              if (currentShot < shotCount) setCurrentShot(currentShot + 1);
+            }}
+          />
 
           {staged?.status === "uploading" && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-ink-900/85 sm:rounded-md">
