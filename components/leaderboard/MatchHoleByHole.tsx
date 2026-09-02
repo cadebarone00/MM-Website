@@ -8,7 +8,12 @@ import { matchLabel, matchLeader } from "@/components/leaderboard/matchUtils";
 import type { RealMatch, Team, Tournament } from "@/lib/data/types";
 
 function lastNames(players: string[]) {
-  return players.map((p) => getPlayerDisplayName(p).split(" ").pop()).join(" & ");
+  return players
+    .map((player) => {
+      const name = getPlayerDisplayName(player).split(" ").pop() ?? player;
+      return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+    })
+    .join(" & ");
 }
 
 function statusCellColor(leader: Team | null) {

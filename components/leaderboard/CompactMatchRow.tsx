@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { ResultChevron } from "@/components/match/ResultChevron";
 import { matchStatus, matchLeader, liveLabel } from "@/components/leaderboard/matchUtils";
 import { MatchHoleByHole } from "@/components/leaderboard/MatchHoleByHole";
@@ -14,32 +13,27 @@ function labelColor(match: RealMatch) {
   return "border-ink-300 bg-ink-100 text-ink-900";
 }
 
-function TeamSide({
-  players,
-  team,
-  tournamentSlug,
-}: {
-  players: string[];
-  team: Team;
-  tournamentSlug: string;
-}) {
+function lastName(player: string) {
+  const name = getPlayerDisplayName(player).split(" ").pop() ?? player;
+  return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+}
+
+function TeamSide({ players, team }: { players: string[]; team: Team }) {
   const isMaroon = team === "maroon";
 
   return (
     <div className={["flex min-w-0 flex-col", isMaroon ? "items-end" : "items-start"].join(" ")}>
       {players.map((player, i) => (
-        <Link
+        <span
           key={player}
-          href={`/leaderboard/${tournamentSlug}/players/${player.toLowerCase()}`}
-          onClick={(e) => e.stopPropagation()}
           className={[
-            "block w-full truncate py-1 font-sans text-xs font-semibold text-ink-900 transition-opacity hover:opacity-70",
+            "block w-full truncate py-1 font-sans text-xs font-semibold text-ink-900",
             isMaroon ? "text-right" : "text-left",
             i > 0 ? "border-t border-ink-100" : "",
           ].join(" ")}
         >
-          {getPlayerDisplayName(player).split(" ").pop()}
-        </Link>
+          {lastName(player)}
+        </span>
       ))}
     </div>
   );
@@ -66,8 +60,8 @@ export function CompactMatchRow({
 }) {
   const status = matchStatus(match);
   const centerLabel = status === "scheduled" ? "VS" : liveLabel(match);
-  const maroonSideLabel = match.maroonPlayers.map((p) => getPlayerDisplayName(p).split(" ").pop()).join(" & ");
-  const whiteSideLabel = match.whitePlayers.map((p) => getPlayerDisplayName(p).split(" ").pop()).join(" & ");
+  const maroonSideLabel = match.maroonPlayers.map(lastName).join(" & ");
+  const whiteSideLabel = match.whitePlayers.map(lastName).join(" & ");
 
   return (
     <div className="border-b border-ink-100 last:border-b-0">
@@ -86,7 +80,7 @@ export function CompactMatchRow({
         className="cursor-pointer px-2 py-1 hover:bg-cream-50"
       >
         <div className="grid grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-center gap-2">
-          <TeamSide players={match.maroonPlayers} team="maroon" tournamentSlug={tournamentSlug} />
+          <TeamSide players={match.maroonPlayers} team="maroon" />
           <div className="flex justify-center">
             {status === "final" ? (
               <ResultChevron winner={matchLeader(match)} size="xs">
@@ -103,7 +97,7 @@ export function CompactMatchRow({
               </span>
             )}
           </div>
-          <TeamSide players={match.whitePlayers} team="white" tournamentSlug={tournamentSlug} />
+          <TeamSide players={match.whitePlayers} team="white" />
         </div>
       </div>
       {expanded && (
