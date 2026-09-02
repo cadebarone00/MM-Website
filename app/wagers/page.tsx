@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
-import { getPlayerDisplayName, playerProfiles } from "@/lib/data/players";
+import { getPlayerDisplayName, getPlayerProfile, playerProfiles } from "@/lib/data/players";
 import { currentRoundDay } from "@/components/leaderboard/matchUtils";
 import { Tabs, type TabItem } from "@/components/ui/Tabs";
 import { MarketRow } from "@/components/wagers/MarketRow";
@@ -83,9 +84,13 @@ function PlayersList({ tournament }: { tournament: Tournament }) {
   return (
     <div className="grid gap-2 sm:grid-cols-2">
       {players.map((player) => (
-        <div key={player} className="rounded-sm border border-gold-300 bg-white px-4 py-3 font-sans text-sm font-semibold text-ink-900">
+        <Link
+          key={player}
+          href={`/wagers/players/${getPlayerProfile(player)?.slug ?? player.toLowerCase()}`}
+          className="rounded-sm border border-gold-300 bg-white px-4 py-3 font-sans text-sm font-semibold text-ink-900 transition-colors hover:bg-cream-50"
+        >
           {getPlayerDisplayName(player)}
-        </div>
+        </Link>
       ))}
     </div>
   );

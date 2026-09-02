@@ -10,11 +10,15 @@ export function OddsButton({
   selectionKey,
   label,
   odds,
+  tone = "default",
+  prefix,
 }: {
   marketKey: string;
   selectionKey: string;
   label: string;
   odds: number;
+  tone?: "default" | "yes" | "no";
+  prefix?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -25,12 +29,16 @@ export function OddsButton({
         onClick={() => setOpen(true)}
         className={[
           "min-w-[64px] rounded-sm border px-3 py-2 text-center font-condensed text-sm font-bold tabular-nums transition-colors",
-          odds > 0
+          tone === "yes"
+            ? "border-fairway-600 bg-fairway-600 text-white hover:bg-fairway-700"
+            : tone === "no"
+              ? "border-red-700 bg-red-700 text-white hover:bg-red-800"
+              : odds > 0
             ? "border-fairway-300 text-fairway-700 hover:bg-[#E2EDE7]"
             : "border-maroon-200 text-score-under hover:bg-maroon-50",
         ].join(" ")}
       >
-        {formatAmericanOdds(odds)}
+        {prefix ? `${prefix} ${formatAmericanOdds(odds)}` : formatAmericanOdds(odds)}
       </button>
       {open && (
         <BetSlipSheet
