@@ -1,7 +1,7 @@
 import type { RealMatch, Tournament, IndividualStanding } from "@/lib/data/types";
 import { matchWinnerOdds, matchPropMarkets, tournamentWinnerLadder, teamWinnerOdds } from "./mockOdds";
 import type { PropMarket } from "./types";
-import { getPlayerDisplayName } from "@/lib/data/players";
+import { getPlayerDisplayName, playerProfiles } from "@/lib/data/players";
 
 export interface MarketSelection {
   key: string;
@@ -60,8 +60,12 @@ export function futurePlayerMarketKey(tournamentSlug: string): string {
   return `future-player:${tournamentSlug}`;
 }
 
-export function futurePlayerMarket(tournamentSlug: string, standings: IndividualStanding[]): Market {
-  const ladder = tournamentWinnerLadder(standings);
+export function futurePlayerMarket(tournamentSlug: string, standings: IndividualStanding[], fallbackPlayers: string[] = playerProfiles.map((player) => player.id)): Market {
+  // Before a live leaderboard exists, use the posted field (or the current
+  // player directory) to make the market visible with deterministic mock odds.
+  const field = fallbackPlayers.length > 0 ? fallbackPlayers : playerProfiles.map((player) => player.id);
+  const contenders = standings.length > 0 ? standings : field.map((player) => ({ player, team: "maroon" as const, toPar: 0 }));
+  const ladder = tournamentWinnerLadder(contenders);
   return {
     marketKey: futurePlayerMarketKey(tournamentSlug),
     groupLabel: "Tournament Winner",
@@ -97,7 +101,7 @@ export function listAllMarkets(tournament: Tournament): Market[] {
   ]);
   return [
     ...matchMarkets,
-    futurePlayerMarket(tournament.slug, tournament.individualLeaderboard),
+    futurePlayerMarket(tournament.slug, tournament.individualLeaderboard, [...tournament.roster.maroon, ...tournament.roster.white]),
     futureTeamMarket(tournament),
   ];
 }

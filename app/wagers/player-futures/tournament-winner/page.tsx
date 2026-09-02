@@ -22,7 +22,7 @@ export default function TournamentWinnerPage() {
     return <p className="px-4 py-10 text-center font-sans text-sm text-ink-400 sm:px-7">Checking the live sheet...</p>;
   }
 
-  const market = futurePlayerMarket(tournament.slug, tournament.individualLeaderboard);
+  const market = futurePlayerMarket(tournament.slug, tournament.individualLeaderboard, [...tournament.roster.maroon, ...tournament.roster.white]);
 
   return (
     <div className="px-4 pt-5 sm:px-7">

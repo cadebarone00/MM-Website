@@ -59,7 +59,7 @@ function PropsList({ tournament }: { tournament: Tournament }) {
 }
 
 function PlayerFuturesList({ tournament }: { tournament: Tournament }) {
-  const market = futurePlayerMarket(tournament.slug, tournament.individualLeaderboard);
+  const market = futurePlayerMarket(tournament.slug, tournament.individualLeaderboard, [...tournament.roster.maroon, ...tournament.roster.white]);
 
   if (market.selections.length === 0) {
     return <p className="font-sans text-sm text-ink-400">Tournament Winner odds post once the individual leaderboard has entries.</p>;
