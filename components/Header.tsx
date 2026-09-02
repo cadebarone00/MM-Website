@@ -15,6 +15,7 @@ import { AccountMenu } from "@/components/nav/AccountMenu";
 import { useAccountSession } from "@/lib/useAccountSession";
 import { getPlayerAvatar, getPlayerDisplayName } from "@/lib/data/players";
 import { latestCompleted, nextTournament, champion, isLiveNow, fmtPt } from "@/lib/data";
+import type { NextTournamentOverride } from "@/lib/data/types";
 
 const nav = [
   { href: "/", label: "Home" },
@@ -50,12 +51,12 @@ function isHomePage(pathname: string): boolean {
   return HOME_PAGES.has(pathname);
 }
 
-export function Header() {
+export function Header({ nextTournamentOverride }: { nextTournamentOverride: NextTournamentOverride }) {
   const pathname = usePathname();
   const router = useRouter();
   const live = isLiveNow();
   const champ = champion(latestCompleted);
-  const nextVenueKnown = isSet(nextTournament.venue);
+  const nextVenueKnown = isSet(nextTournamentOverride.venue);
   const session = useAccountSession();
   const showBack = !isHomePage(pathname);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -190,7 +191,7 @@ export function Header() {
       <div className="hidden lg:flex items-center justify-center gap-[18px] px-7 py-[7px] flex-wrap shadow-[inset_0_1px_0_rgba(0,0,0,0.25)] bg-maroon-900">
         {live ? (
           <span className="font-condensed text-[10px] font-semibold tracking-eyebrow uppercase text-gold-300 text-center">
-            {nextTournament.editionLabel} &middot; {nextTournament.venue} &middot; Underway now
+            {nextTournament.editionLabel} &middot; {nextTournamentOverride.venue} &middot; Underway now
           </span>
         ) : (
           <>
@@ -200,7 +201,7 @@ export function Header() {
             <span className="block w-px h-[14px] bg-white/15" />
             <span className="font-sans text-[11px] text-white/55 text-center">
               {fmtPt(latestCompleted.maroonPts)}&ndash;{fmtPt(latestCompleted.whitePts)} at {latestCompleted.venue} &middot; Next up{" "}
-              {nextVenueKnown ? `${nextTournament.venue} - ${nextTournament.dateLabel}` : nextTournament.dateLabel}
+              {nextVenueKnown ? `${nextTournamentOverride.venue} - ${nextTournamentOverride.dateLabel}` : nextTournamentOverride.dateLabel}
             </span>
           </>
         )}

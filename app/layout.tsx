@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Spectral, Barlow, Barlow_Semi_Condensed } from "next/font/google";
 import "./globals.css";
 import { SiteChrome } from "@/components/nav/SiteChrome";
+import { getNextTournamentOverride } from "@/lib/data/activeSeasonOverlay";
 
 const spectral = Spectral({
   subsets: ["latin"],
@@ -38,18 +39,19 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const nextTournamentOverride = await getNextTournamentOverride();
   return (
     <html
       lang="en"
       className={`${spectral.variable} ${barlow.variable} ${barlowCondensed.variable}`}
     >
       <body className="min-h-screen bg-cream-50 font-sans text-ink-900 antialiased">
-        <SiteChrome>{children}</SiteChrome>
+        <SiteChrome nextTournamentOverride={nextTournamentOverride}>{children}</SiteChrome>
       </body>
     </html>
   );
