@@ -17,6 +17,9 @@ export interface MatchHoleStatus {
 export interface MatchHoleByHole {
   maroonPlayers: string[];
   whitePlayers: string[];
+  /** Scores for every hole in the players' scorecards, including holes after a match was clinched. */
+  allHoles: Array<Pick<MatchHoleStatus, "hole" | "par" | "maroonScore" | "whiteScore">>;
+  /** Running match status through the last hole that counted toward the match result. */
   holes: MatchHoleStatus[];
 }
 
@@ -116,6 +119,12 @@ export function getMatchHoleByHole(tournament: Tournament, match: RealMatch): Ma
   const holesPlayed = 18 - (match.holesRemaining ?? 0);
   if (holesPlayed < 1 || holesPlayed > maroon.scores.length) return null;
 
+  const allHoles = maroon.scores.map((maroonScore, i) => ({
+    hole: i + 1,
+    par: maroon.pars[i],
+    maroonScore,
+    whiteScore: white.scores[i],
+  }));
   const holes: MatchHoleStatus[] = [];
   let tally = 0;
   for (let i = 0; i < holesPlayed; i++) {
@@ -135,6 +144,7 @@ export function getMatchHoleByHole(tournament: Tournament, match: RealMatch): Ma
   return {
     maroonPlayers: match.maroonPlayers,
     whitePlayers: match.whitePlayers,
+    allHoles,
     holes,
   };
 }
