@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getBroadcastPayload } from "@/lib/broadcast/state";
+import { getBroadcastLeaderboard } from "@/lib/broadcast/leaderboardData";
 import { BroadcastStage } from "@/components/broadcast/BroadcastStage";
 
 export const metadata: Metadata = {
@@ -9,6 +9,6 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function BroadcastPage() {
-  const initial = await getBroadcastPayload();
-  return <BroadcastStage initial={initial} />;
+  const { standings } = await getBroadcastLeaderboard();
+  return <BroadcastStage standings={standings} />;
 }

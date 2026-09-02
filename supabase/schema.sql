@@ -115,6 +115,57 @@ alter table mm_coin_bets enable row level security;
 alter table wagers_market_settlements enable row level security;
 alter table wager_types enable row level security;
 
+-- === Career Stats workbook source ========================================
+-- The raw-hole table is the calculation source of truth. Each upload also
+-- snapshots every worksheet as JSON so no information from the workbook is
+-- lost, even when a sheet is a derived report rather than raw data.
+create table if not exists career_stat_holes (
+  id uuid primary key default gen_random_uuid(),
+  year integer not null check (year between 2024 and 2034),
+  player text not null,
+  round integer not null check (round > 0),
+  day text,
+  course text not null,
+  hole integer not null check (hole between 1 and 18),
+  par integer not null check (par between 3 and 6),
+  yards integer not null check (yards > 0),
+  hole_type text,
+  hole_length_bucket text,
+  course_length numeric,
+  course_length_bucket text,
+  score integer not null check (score > 0),
+  diff_vs_par integer,
+  score_type text,
+  format text,
+  created_at timestamptz not null default now()
+);
+create index if not exists career_stat_holes_player_year_idx on career_stat_holes (player, year);
+create index if not exists career_stat_holes_format_idx on career_stat_holes (format);
+
+create table if not exists career_stat_partnerships (
+  id uuid primary key default gen_random_uuid(),
+  player text not null,
+  partner text not null,
+  year integer not null check (year between 2024 and 2034),
+  format text,
+  result text not null check (result in ('win', 'loss', 'halve')),
+  created_at timestamptz not null default now()
+);
+create index if not exists career_stat_partnerships_player_idx on career_stat_partnerships (player, year);
+
+create table if not exists career_stats_workbook_sheets (
+  id uuid primary key default gen_random_uuid(),
+  sheet_name text not null,
+  source_file text not null,
+  imported_by uuid references profiles(id) on delete set null,
+  imported_at timestamptz not null default now(),
+  sheet_data jsonb not null
+);
+
+alter table career_stat_holes enable row level security;
+alter table career_stat_partnerships enable row level security;
+alter table career_stats_workbook_sheets enable row level security;
+
 drop policy if exists wagers_accounts_select_own on wagers_accounts;
 create policy wagers_accounts_select_own on wagers_accounts for select using (auth.uid() = profile_id);
 
