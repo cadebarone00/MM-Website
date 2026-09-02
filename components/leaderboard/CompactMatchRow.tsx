@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
 import { ResultChevron } from "@/components/match/ResultChevron";
 import { matchStatus, matchLeader, liveLabel } from "@/components/leaderboard/matchUtils";
 import { MatchHoleByHole } from "@/components/leaderboard/MatchHoleByHole";
@@ -84,9 +83,9 @@ export function CompactMatchRow({
             onToggle();
           }
         }}
-        className="flex cursor-pointer items-center gap-1 px-2 py-1 hover:bg-cream-50"
+        className="cursor-pointer px-2 py-1 hover:bg-cream-50"
       >
-        <div className="grid flex-1 grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-center gap-2">
+        <div className="grid grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-center gap-2">
           <TeamSide players={match.maroonPlayers} team="maroon" tournamentSlug={tournamentSlug} />
           <div className="flex justify-center">
             {status === "final" ? (
@@ -106,11 +105,10 @@ export function CompactMatchRow({
           </div>
           <TeamSide players={match.whitePlayers} team="white" tournamentSlug={tournamentSlug} />
         </div>
-        <ChevronDown size={14} className={["shrink-0 text-ink-400 transition-transform", expanded ? "rotate-180" : ""].join(" ")} />
       </div>
       {expanded && (
         <div className="pb-2">
-          <MatchHoleByHole tournament={tournament} match={match} />
+          <MatchHoleByHole tournament={tournament} match={match} tournamentSlug={tournamentSlug} />
         </div>
       )}
     </div>

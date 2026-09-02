@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { HoleMarkerForDiff } from "@/components/scorecard/HoleMarker";
 import { getPlayerDisplayName } from "@/lib/data/players";
@@ -69,7 +70,7 @@ function SinglesNinePage({ holes, statusByHole, endedFill }: { holes: MatchHoleB
   );
 }
 
-function SinglesMatchGrid({ tournament, match }: { tournament: Tournament; match: RealMatch }) {
+function SinglesMatchGrid({ tournament, match, tournamentSlug }: { tournament: Tournament; match: RealMatch; tournamentSlug: string }) {
   const data = getMatchHoleByHole(tournament, match);
   if (!data) return <NotAvailable format={match.format} />;
 
@@ -88,9 +89,9 @@ function SinglesMatchGrid({ tournament, match }: { tournament: Tournament; match
       <div className="flex w-[72px] shrink-0 flex-col">
         <SideCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Hole</span></SideCell>
         <SideCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Par</span></SideCell>
-        <SideCell className="h-11 border-white/15 bg-maroon-700 text-white"><span className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide">{lastNames(data.maroonPlayers)}</span></SideCell>
+        <SideCell className="h-11 border-white/15 bg-maroon-700 text-white"><Link href={`/leaderboard/${tournamentSlug}/players/${data.maroonPlayers[0].toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames(data.maroonPlayers)}</Link></SideCell>
         <SideCell className="h-9 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Status</span></SideCell>
-        <SideCell className="h-11 bg-white text-maroon-700"><span className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide">{lastNames(data.whitePlayers)}</span></SideCell>
+        <SideCell className="h-11 bg-white text-maroon-700"><Link href={`/leaderboard/${tournamentSlug}/players/${data.whitePlayers[0].toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames(data.whitePlayers)}</Link></SideCell>
       </div>
 
       <div className="flex flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden">
@@ -157,7 +158,7 @@ function LegacyMatchHoleByHole({ tournament, match }: { tournament: Tournament; 
 }
 
 /** A compact, full-width 18-hole scorecard for expanded Singles matches. */
-export function MatchHoleByHole({ tournament, match }: { tournament: Tournament; match: RealMatch }) {
-  if (match.format === "Singles") return <SinglesMatchGrid tournament={tournament} match={match} />;
+export function MatchHoleByHole({ tournament, match, tournamentSlug }: { tournament: Tournament; match: RealMatch; tournamentSlug: string }) {
+  if (match.format === "Singles") return <SinglesMatchGrid tournament={tournament} match={match} tournamentSlug={tournamentSlug} />;
   return <LegacyMatchHoleByHole tournament={tournament} match={match} />;
 }
