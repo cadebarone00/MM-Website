@@ -856,6 +856,27 @@ create policy live_active_season_select_all on live_active_season for select usi
 -- exact same singleton -> one-row-per-year migration every live_* table
 -- just went through, backfilled to season_year = 2027 the same way.
 
+-- broadcast_state needs to be in the Realtime publication for Tiger's scene
+-- overrides (Broadcast Controls) to reach an open /broadcast tab instantly.
+-- live_match_boxes was never added despite components/portal/ScoringPanel.tsx-
+-- style code elsewhere subscribing to it — fixed here too, since Watch Live
+-- Broadcast's own live-update wiring depends on it actually firing.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'broadcast_state'
+  ) then
+    alter publication supabase_realtime add table broadcast_state;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'live_match_boxes'
+  ) then
+    alter publication supabase_realtime add table live_match_boxes;
+  end if;
+end $$;
+
 alter table broadcast_config drop constraint if exists broadcast_config_singleton;
 alter table broadcast_config add column if not exists season_year integer;
 update broadcast_config set season_year = 2027 where season_year is null;
