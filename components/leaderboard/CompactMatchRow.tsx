@@ -23,14 +23,14 @@ function TeamSide({ players, team }: { players: string[]; team: Team }) {
   const isMaroon = team === "maroon";
 
   return (
-    <div className={["flex min-w-0 flex-col", isMaroon ? "items-end" : "items-start"].join(" ")}>
+    <div className={["flex min-w-0 flex-col self-stretch", isMaroon ? "items-end bg-maroon-700 text-white" : "items-start bg-white text-maroon-700"].join(" ")}>
       {players.map((player, i) => (
         <span
           key={player}
           className={[
-            "block w-full truncate py-1 font-sans text-xs font-semibold text-ink-900",
+            "block w-full truncate px-2 py-1.5 font-sans text-xs font-semibold",
             isMaroon ? "text-right" : "text-left",
-            i > 0 ? "border-t border-ink-100" : "",
+            i > 0 ? (isMaroon ? "border-t border-gold-600" : "border-t border-ink-200") : "",
           ].join(" ")}
         >
           {lastName(player)}
@@ -78,9 +78,9 @@ export function CompactMatchRow({
             onToggle();
           }
         }}
-        className="cursor-pointer px-2 py-1 hover:bg-cream-50"
+        className="cursor-pointer py-0 hover:bg-cream-50"
       >
-        <div className="grid grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-center gap-2">
+        <div className="grid grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-stretch gap-2">
           <TeamSide players={match.maroonPlayers} team="maroon" />
           <div className="flex justify-center">
             {status === "final" ? (
