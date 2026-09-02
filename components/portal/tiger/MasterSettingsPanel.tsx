@@ -214,6 +214,14 @@ export function MasterSettingsPanel({
         >
           Scorecards & Video
         </Link>
+        <Link
+          href="/broadcast"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-8 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800"
+        >
+          Broadcast
+        </Link>
       </div>
     </div>
   );
