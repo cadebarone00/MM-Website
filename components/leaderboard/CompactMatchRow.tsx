@@ -46,6 +46,30 @@ function TeamSide({ players, team }: { players: string[]; team: Team }) {
   );
 }
 
+function MatchStat({ status }: { status: ReturnType<typeof matchStatus> }) {
+  return (
+    <div className="flex min-h-[34px] items-center justify-center border-r border-gold-300 bg-cream-100">
+      {status === "live" ? (
+        <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-600" aria-label="Live" />
+      ) : status === "final" ? (
+        <span className="font-sans text-sm font-black text-maroon-700">F</span>
+      ) : (
+        <span className="font-sans text-xs font-bold text-ink-400">—</span>
+      )}
+    </div>
+  );
+}
+
+function MatchThru({ match, status }: { match: RealMatch; status: ReturnType<typeof matchStatus> }) {
+  const thru = status === "final" ? 18 : status === "live" ? match.thru ?? "—" : "—";
+
+  return (
+    <div className="flex min-h-[34px] items-center justify-center border-l border-gold-300 bg-cream-100 font-sans text-xs font-black tabular-nums text-maroon-700">
+      {thru}
+    </div>
+  );
+}
+
 /**
  * Compact, no-avatar, last-name-only match row for the mobile Match Play
  * tab. Deliberately separate from `components/match/MatchRow.tsx` (still
@@ -86,7 +110,8 @@ export function CompactMatchRow({
         }}
         className="cursor-pointer py-0 hover:bg-cream-50"
       >
-        <div className="grid grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-stretch">
+        <div className="grid grid-cols-[30px_minmax(0,1fr)_44px_minmax(0,1fr)_30px] items-stretch">
+          <MatchStat status={status} />
           <TeamSide players={match.maroonPlayers} team="maroon" />
           <div className="flex items-stretch">
             {status === "final" ? (
@@ -105,6 +130,7 @@ export function CompactMatchRow({
             )}
           </div>
           <TeamSide players={match.whitePlayers} team="white" />
+          <MatchThru match={match} status={status} />
         </div>
       </div>
       {expanded && (
