@@ -76,6 +76,7 @@ export async function buildLiveTournamentSnapshot(seasonYear: number): Promise<L
 
   const matchBoxes: LiveMatchBox[] = ((boxRows as MatchBoxRow[] | null) ?? []).map((row) => ({
     id: row.id,
+    seasonYear,
     round: row.round,
     boxNumber: row.box_number,
     format: row.format as MatchFormat,
@@ -90,6 +91,7 @@ export async function buildLiveTournamentSnapshot(seasonYear: number): Promise<L
   for (const row of (scoreRows as HoleScoreRow[] | null) ?? []) {
     scores.set(scoreKey(row.player_slug, row.round, row.hole), {
       player: row.player_slug,
+      seasonYear,
       round: row.round,
       hole: row.hole,
       score: row.score,
