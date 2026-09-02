@@ -31,7 +31,7 @@ export function buildCareerStats(sets: CareerScorecardSet[]): CareerPlayerStat[]
 
   for (const { year, scorecards } of sets) {
     for (const scorecard of scorecards) {
-      const stat = players.get(scorecard.player) ?? {
+      const stat: MutableStat = players.get(scorecard.player) ?? {
         player: scorecard.player,
         years: [],
         rounds: 0,
