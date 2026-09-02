@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Radio } from "lucide-react";
+import { Radio } from "lucide-react";
 import { CompactMatchRow } from "./CompactMatchRow";
 import { centralDateLabel, currentRoundDay, LIVE_START_LABEL } from "./matchUtils";
 import { fmtPt } from "@/lib/data";
@@ -53,36 +53,23 @@ function PlaceholderPanel() {
 
 /** "Day {n}" label that drops down the other available days on tap — replaces the old day-pill row. */
 function DaySelector({ days, activeDay, onSelect }: { days: number[]; activeDay: number; onSelect: (day: number) => void }) {
-  const [open, setOpen] = useState(false);
-  const otherDays = days.filter((d) => d !== activeDay);
-
   return (
-    <div className="relative mb-3 inline-block">
-      <button
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-        className="flex items-center gap-1 font-condensed text-base font-black uppercase tracking-wide text-ink-900"
-      >
-        Day {activeDay}
-        {otherDays.length > 0 && <ChevronDown size={16} className={["transition-transform", open ? "rotate-180" : ""].join(" ")} />}
-      </button>
-      {open && otherDays.length > 0 && (
-        <div className="absolute left-0 top-full z-20 mt-1 min-w-[110px] overflow-hidden rounded-md border border-ink-100 bg-white shadow-lg">
-          {otherDays.map((d) => (
-            <button
-              key={d}
-              type="button"
-              onClick={() => {
-                onSelect(d);
-                setOpen(false);
-              }}
-              className="block w-full px-4 py-2 text-left font-condensed text-sm font-semibold text-ink-700 hover:bg-cream-50"
-            >
-              Day {d}
-            </button>
-          ))}
-        </div>
-      )}
+    <div className="mb-3 inline-flex overflow-hidden rounded-sm border border-gold-400">
+      <span className="flex h-9 items-center bg-maroon-700 px-3 font-condensed text-sm font-black uppercase tracking-wide text-white">Day</span>
+      {days.map((day) => (
+        <button
+          key={day}
+          type="button"
+          aria-pressed={day === activeDay}
+          onClick={() => onSelect(day)}
+          className={[
+            "flex h-9 min-w-9 items-center justify-center border-l border-gold-400 px-2 font-sans text-sm font-black tabular-nums transition-colors",
+            day === activeDay ? "bg-cream-100 text-maroon-700" : "bg-white text-ink-500 hover:bg-cream-50",
+          ].join(" ")}
+        >
+          {day}
+        </button>
+      ))}
     </div>
   );
 }
