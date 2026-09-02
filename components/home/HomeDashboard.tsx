@@ -12,6 +12,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import type { TabItem } from "@/components/ui/Tabs";
 import { latestCompleted, fmtPt } from "@/lib/data";
 import { getPlayerDisplayName } from "@/lib/data/players";
+import type { NextTournamentOverride } from "@/lib/data/types";
 
 const highlights = [
   {
@@ -205,7 +206,7 @@ const TOGGLE_TABS: TabItem[] = [
 ];
 
 /** Mobile-only replacement for the 2-column Highlights/quick-cards block: one full-width panel, switched by a 3-way toggle, defaulting to Highlights. */
-function MobileHighlightsToggle() {
+function MobileHighlightsToggle({ nextTournamentOverride }: { nextTournamentOverride: NextTournamentOverride }) {
   const [tab, setTab] = useState<ToggleTab>("highlights");
 
   return (
@@ -214,7 +215,7 @@ function MobileHighlightsToggle() {
       <div className="mt-4">
         {tab === "highlights" && <HighlightsRail flat />}
         {tab === "teams" && <HomeTeamsPanel />}
-        {tab === "schedule" && <QuickScheduleCard />}
+        {tab === "schedule" && <QuickScheduleCard nextTournamentOverride={nextTournamentOverride} />}
       </div>
     </div>
   );
@@ -378,16 +379,16 @@ function SocialsSection() {
   );
 }
 
-export function HomeDashboard() {
+export function HomeDashboard({ nextTournamentOverride }: { nextTournamentOverride: NextTournamentOverride }) {
   return (
     <section className="bg-cream-100">
       <div className="mx-auto max-w-[1440px] px-4 py-4 sm:px-7 sm:py-8">
-        <MobileHighlightsToggle />
+        <MobileHighlightsToggle nextTournamentOverride={nextTournamentOverride} />
 
         <div className="hidden lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(180px,320px)] gap-4 xl:gap-7">
           <HighlightsRail />
           <div className="flex min-w-0 flex-col gap-2 sm:gap-3 xl:gap-4">
-            <QuickScheduleCard />
+            <QuickScheduleCard nextTournamentOverride={nextTournamentOverride} />
             <QuickTeamsCard />
             <QuickLeaderboardCard />
           </div>

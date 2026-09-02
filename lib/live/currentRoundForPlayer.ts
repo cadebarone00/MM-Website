@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPlayerDisplayName } from "@/lib/data/players";
+import { getActiveSeasonYear } from "./activeSeason.ts";
 import { effectiveMatchState } from "./orchestration.ts";
 import type { LiveMatchBox, LiveRoundState, LiveTournamentSnapshot, MatchFormat, MatchState } from "./types.ts";
 
@@ -9,12 +10,6 @@ export interface CurrentRoundResult {
   state: MatchState;
 }
 
-// An empty `scores` map means the hole-completion path in
-// effectiveMatchState can never fire here, so "Final" is detected only
-// from matchBox.state. That's correct today (no scores exist anywhere
-// yet). Once live scoring ships, this function must be given a real
-// snapshot (with real scores) or it will keep reporting a fully-played
-// round as "Live" forever.
 const EMPTY_SNAPSHOT: LiveTournamentSnapshot = {
   players: {},
   courses: {},
@@ -70,8 +65,9 @@ interface RoundRow {
   matchups_locked: boolean;
 }
 
-function roundFromRow(row: RoundRow): LiveRoundState {
+function roundFromRow(row: RoundRow, seasonYear: number): LiveRoundState {
   return {
+    seasonYear,
     round: row.round,
     started: row.started,
     courseId: row.course_id,
@@ -94,9 +90,10 @@ interface MatchBoxRow {
   started: boolean;
 }
 
-function matchBoxFromRow(row: MatchBoxRow): LiveMatchBox {
+function matchBoxFromRow(row: MatchBoxRow, seasonYear: number): LiveMatchBox {
   return {
     id: row.id,
+    seasonYear,
     round: row.round,
     boxNumber: row.box_number,
     format: row.format as MatchFormat,
@@ -114,10 +111,19 @@ function matchBoxFromRow(row: MatchBoxRow): LiveMatchBox {
 // actual selection rule) is where the real logic lives and is fully tested.
 export async function findCurrentRoundForPlayer(playerSlug: string): Promise<CurrentRoundResult | null> {
   const supabase = await createSupabaseServerClient();
+  const seasonYear = await getActiveSeasonYear();
 
   const [{ data: roundRows, error: roundError }, { data: boxRows, error: boxError }] = await Promise.all([
-    supabase.from("live_round_state").select("round, started, course_id, date, format, course_locked, matchups_locked").order("round"),
-    supabase.from("live_match_boxes").select("id, round, box_number, format, tee_time, maroon_players, white_players, state, started").order("round"),
+    supabase
+      .from("live_round_state")
+      .select("round, started, course_id, date, format, course_locked, matchups_locked")
+      .eq("season_year", seasonYear)
+      .order("round"),
+    supabase
+      .from("live_match_boxes")
+      .select("id, round, box_number, format, tee_time, maroon_players, white_players, state, started")
+      .eq("season_year", seasonYear)
+      .order("round"),
   ]);
 
   if (roundError) {
@@ -127,8 +133,8 @@ export async function findCurrentRoundForPlayer(playerSlug: string): Promise<Cur
     console.error("Failed to fetch live_match_boxes:", boxError);
   }
 
-  const rounds = (roundRows ?? []).map(roundFromRow);
-  const matchBoxes = (boxRows ?? []).map(matchBoxFromRow);
+  const rounds = (roundRows ?? []).map((row) => roundFromRow(row, seasonYear));
+  const matchBoxes = (boxRows ?? []).map((row) => matchBoxFromRow(row, seasonYear));
 
   return pickCurrentRound(rounds, matchBoxes, playerSlug);
 }

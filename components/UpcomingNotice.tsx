@@ -1,13 +1,14 @@
 import { CalendarClock } from "lucide-react";
 import { nextTournament } from "@/lib/data";
+import type { NextTournamentOverride } from "@/lib/data/types";
 
 function isSet(value: string): boolean {
   return value.trim().length > 0 && value.trim().toLowerCase() !== "tbd";
 }
 
-export function UpcomingNotice({ what }: { what: string }) {
+export function UpcomingNotice({ what, nextTournamentOverride }: { what: string; nextTournamentOverride: NextTournamentOverride }) {
   const rosterKnown = !!nextTournament.roster && (nextTournament.roster.maroon.length > 0 || nextTournament.roster.white.length > 0);
-  const details = [nextTournament.venue, nextTournament.location].filter(isSet).join(" · ");
+  const details = [nextTournamentOverride.venue, nextTournament.location].filter(isSet).join(" · ");
 
   return (
     <div className="bg-cream-100 border border-dashed border-ink-300 rounded-lg p-8 text-center">
@@ -15,13 +16,13 @@ export function UpcomingNotice({ what }: { what: string }) {
       <div className="font-serif text-2xl font-semibold text-ink-900 mb-2">{nextTournament.editionLabel}</div>
       {details && (
         <div className="font-condensed text-[13px] font-semibold tracking-wide uppercase text-maroon-700 mb-2">
-          {details} · {nextTournament.dateLabel}
+          {details} · {nextTournamentOverride.dateLabel}
         </div>
       )}
       <p className="font-sans text-sm text-ink-500 max-w-[420px] mx-auto">
         {rosterKnown
-          ? `${what} for ${nextTournament.dateLabel} hasn’t been posted yet — check back closer to the trip.`
-          : `${what} for ${nextTournament.dateLabel} hasn’t been set yet — the roster and pairings will appear here once they’re finalized.`}
+          ? `${what} for ${nextTournamentOverride.dateLabel} hasn’t been posted yet — check back closer to the trip.`
+          : `${what} for ${nextTournamentOverride.dateLabel} hasn’t been set yet — the roster and pairings will appear here once they’re finalized.`}
       </p>
     </div>
   );

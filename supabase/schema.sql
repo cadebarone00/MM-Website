@@ -681,3 +681,100 @@ create policy broadcast_state_select_all on broadcast_state for select using (tr
 
 insert into broadcast_config (id) values (true) on conflict (id) do nothing;
 insert into broadcast_state (id) values (true) on conflict (id) do nothing;
+
+-- === Tiger Center: Master Settings (multi-year) ==========================
+-- Every table below moves from "one live tournament, implicitly 2027" to
+-- "one row per season_year, 2027-2034." Existing real rows (the 2027
+-- tournament actually being set up) are backfilled to season_year = 2027
+-- before any not-null/key constraint is added, so nothing is lost. See
+-- docs/superpowers/specs/2026-09-01-tiger-center-master-settings-design.md.
+
+-- live_tournament_settings: singleton -> one row per year, gains venue/dates
+alter table live_tournament_settings drop constraint if exists live_tournament_settings_singleton;
+alter table live_tournament_settings add column if not exists season_year integer;
+update live_tournament_settings set season_year = 2027 where season_year is null;
+alter table live_tournament_settings alter column season_year set not null;
+alter table live_tournament_settings drop constraint if exists live_tournament_settings_pkey;
+alter table live_tournament_settings drop column if exists id;
+alter table live_tournament_settings add constraint live_tournament_settings_season_year_check check (season_year between 2027 and 2034);
+alter table live_tournament_settings add primary key (season_year);
+
+alter table live_tournament_settings add column if not exists venue_name text;
+alter table live_tournament_settings add column if not exists venue_locked boolean not null default false;
+alter table live_tournament_settings add column if not exists begin_date date;
+alter table live_tournament_settings add column if not exists end_date date;
+alter table live_tournament_settings add column if not exists dates_locked boolean not null default false;
+
+-- Seed 2027's row with what the static files already say, so the public
+-- site shows the same thing before and after this migration.
+update live_tournament_settings
+  set venue_name = coalesce(venue_name, 'Mission Hills CC'),
+      begin_date = coalesce(begin_date, '2027-01-06'),
+      end_date = coalesce(end_date, '2027-01-09')
+  where season_year = 2027;
+
+-- live_round_state: round -> (season_year, round)
+alter table live_round_state add column if not exists season_year integer;
+update live_round_state set season_year = 2027 where season_year is null;
+alter table live_round_state alter column season_year set not null;
+-- live_match_boxes.round still references live_round_state(round) here —
+-- that FK must be dropped before live_round_state's primary key below, or
+-- Postgres refuses to drop a PK a live FK still depends on. It's
+-- re-created against the new composite key once both tables have one (see
+-- the live_match_boxes block further down).
+alter table live_match_boxes drop constraint if exists live_match_boxes_round_fkey;
+alter table live_round_state drop constraint if exists live_round_state_pkey;
+alter table live_round_state add constraint live_round_state_season_year_check check (season_year between 2027 and 2034);
+alter table live_round_state add primary key (season_year, round);
+
+-- live_roster: player_slug -> (season_year, player_slug)
+alter table live_roster add column if not exists season_year integer;
+update live_roster set season_year = 2027 where season_year is null;
+alter table live_roster alter column season_year set not null;
+alter table live_roster drop constraint if exists live_roster_pkey;
+alter table live_roster add constraint live_roster_season_year_check check (season_year between 2027 and 2034);
+alter table live_roster add primary key (season_year, player_slug);
+
+-- live_match_boxes: gains season_year, FK repointed at the new composite key
+-- (the old round_fkey was already dropped above, before live_round_state's
+-- old primary key was)
+alter table live_match_boxes add column if not exists season_year integer;
+update live_match_boxes set season_year = 2027 where season_year is null;
+alter table live_match_boxes alter column season_year set not null;
+alter table live_match_boxes add constraint live_match_boxes_season_year_round_fkey
+  foreign key (season_year, round) references live_round_state (season_year, round);
+alter table live_match_boxes drop constraint if exists live_match_boxes_round_box_number_key;
+alter table live_match_boxes add constraint live_match_boxes_season_round_box_number_key
+  unique (season_year, round, box_number);
+drop index if exists live_match_boxes_round_idx;
+create index if not exists live_match_boxes_season_round_idx on live_match_boxes (season_year, round);
+
+-- live_hole_scores: gains season_year, widens the unique key. Unlike
+-- live_match_boxes (indirectly bounded via its FK to the now-checked
+-- live_round_state), this table has no FK on round/season_year at all —
+-- matching its own pre-existing looseness — so it needs its own explicit
+-- range check to keep every season_year column in this migration bounded
+-- the same way.
+alter table live_hole_scores add column if not exists season_year integer;
+update live_hole_scores set season_year = 2027 where season_year is null;
+alter table live_hole_scores alter column season_year set not null;
+alter table live_hole_scores add constraint live_hole_scores_season_year_check check (season_year between 2027 and 2034);
+alter table live_hole_scores drop constraint if exists live_hole_scores_player_slug_round_hole_key;
+alter table live_hole_scores add constraint live_hole_scores_season_year_player_slug_round_hole_key
+  unique (season_year, player_slug, round, hole);
+drop index if exists live_hole_scores_round_idx;
+create index if not exists live_hole_scores_season_round_idx on live_hole_scores (season_year, round);
+
+-- New: which year is actually live for the public site / player scoring —
+-- independent of whichever year Tiger happens to be viewing in Master
+-- Settings.
+create table if not exists live_active_season (
+  id boolean primary key default true,
+  season_year integer not null check (season_year between 2027 and 2034),
+  constraint live_active_season_singleton check (id)
+);
+insert into live_active_season (id, season_year) values (true, 2027) on conflict (id) do nothing;
+
+alter table live_active_season enable row level security;
+drop policy if exists live_active_season_select_all on live_active_season;
+create policy live_active_season_select_all on live_active_season for select using (true);

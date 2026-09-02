@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requirePlayer } from "@/lib/portal/requirePlayer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { getActiveSeasonYear } from "@/lib/live/activeSeason";
 import { canScoreStrokesFor } from "@/lib/live/orchestration";
 import type { LiveMatchBox, MatchFormat, MatchState } from "@/lib/live/types";
 
@@ -16,9 +17,10 @@ interface MatchBoxRow {
   started: boolean;
 }
 
-function rowToMatchBox(row: MatchBoxRow): LiveMatchBox {
+function rowToMatchBox(row: MatchBoxRow, seasonYear: number): LiveMatchBox {
   return {
     id: row.id,
+    seasonYear,
     round: row.round,
     boxNumber: row.box_number,
     format: row.format as MatchFormat,
@@ -41,14 +43,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Missing round." }, { status: 400 });
   }
 
+  const seasonYear = await getActiveSeasonYear();
   const service = createSupabaseServiceRoleClient();
 
   const { data: boxRows } = await service
     .from("live_match_boxes")
     .select("id, round, box_number, format, tee_time, maroon_players, white_players, state, started")
+    .eq("season_year", seasonYear)
     .eq("round", round);
   const box = (boxRows as MatchBoxRow[] | null ?? [])
-    .map(rowToMatchBox)
+    .map((row) => rowToMatchBox(row, seasonYear))
     .find((b) => b.maroonPlayers.includes(player.playerSlug) || b.whitePlayers.includes(player.playerSlug));
   if (!box || !box.id) {
     return NextResponse.json({ ok: false, error: "You don't have a match box in this round." }, { status: 404 });
@@ -57,6 +61,7 @@ export async function POST(request: Request) {
   const { data: roundState } = await service
     .from("live_round_state")
     .select("course_locked, matchups_locked, started")
+    .eq("season_year", seasonYear)
     .eq("round", round)
     .single();
   if (!roundState?.course_locked || !roundState?.matchups_locked || !roundState?.started) {
@@ -86,11 +91,17 @@ export async function POST(request: Request) {
   const { data: scoreRows } = await service
     .from("live_hole_scores")
     .select("player_slug, hole, score, putts, fir, gir")
+    .eq("season_year", seasonYear)
     .eq("round", round)
     .in("player_slug", everyone);
   const rows = scoreRows ?? [];
 
-  const { data: roundRow } = await service.from("live_round_state").select("course_id").eq("round", round).single();
+  const { data: roundRow } = await service
+    .from("live_round_state")
+    .select("course_id")
+    .eq("season_year", seasonYear)
+    .eq("round", round)
+    .single();
   const { data: course } = roundRow?.course_id
     ? await service.from("live_courses").select("holes").eq("id", roundRow.course_id).single()
     : { data: null };

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { VenueSchedulePage } from "@/components/schedule/VenueSchedulePage";
-import { pastTournaments, nextTournament, getVenueBySlug } from "@/lib/data";
+import { pastTournaments, nextTournament } from "@/lib/data";
+import { getVenueBySlugAsync } from "@/lib/data/activeSeasonOverlay";
 
 export function generateStaticParams() {
   return [...pastTournaments.map((t) => ({ slug: t.slug })), { slug: nextTournament.slug }];
@@ -8,7 +9,7 @@ export function generateStaticParams() {
 
 export default async function ScheduleYearPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const venue = getVenueBySlug(slug);
+  const venue = await getVenueBySlugAsync(slug);
   if (!venue) notFound();
 
   return (

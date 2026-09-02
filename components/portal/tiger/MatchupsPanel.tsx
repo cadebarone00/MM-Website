@@ -43,7 +43,17 @@ function availablePlayers(pool: RosterPlayer[], drafts: BoxDraft[], side: "maroo
   return pool.filter((p) => p.playerSlug === currentValue || !usedElsewhere.has(p.playerSlug));
 }
 
-export function MatchupsPanel({ rounds, initialMatchBoxes, roster }: { rounds: LiveRoundState[]; initialMatchBoxes: LiveMatchBox[]; roster: RosterPlayer[] }) {
+export function MatchupsPanel({
+  year,
+  rounds,
+  initialMatchBoxes,
+  roster,
+}: {
+  year: number;
+  rounds: LiveRoundState[];
+  initialMatchBoxes: LiveMatchBox[];
+  roster: RosterPlayer[];
+}) {
   // Saved match boxes only ever change via a full page reload, right after
   // a successful save/remove/lock (see saveBox/removeBox/toggleMatchupsLock
   // below) — so in-progress edits never need to live alongside them. They're
@@ -91,6 +101,7 @@ export function MatchupsPanel({ rounds, initialMatchBoxes, roster }: { rounds: L
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          year,
           round: round.round,
           boxNumber: draft.boxNumber,
           teeTime: new Date(`${round.date}T${draft.teeTime}:00`).toISOString(),
@@ -129,7 +140,7 @@ export function MatchupsPanel({ rounds, initialMatchBoxes, roster }: { rounds: L
     const res = await fetch("/api/portal/tiger/rounds/lock", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ round, lock: "matchups", value }),
+      body: JSON.stringify({ year, round, lock: "matchups", value }),
     });
     const data = await res.json();
     if (!data.ok) {

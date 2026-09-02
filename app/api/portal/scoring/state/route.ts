@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requirePlayer } from "@/lib/portal/requirePlayer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { getActiveSeasonYear } from "@/lib/live/activeSeason";
 import type { MatchFormat, MatchState } from "@/lib/live/types";
 
 interface MatchBoxRow {
@@ -37,11 +38,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: "Missing or invalid round." }, { status: 400 });
   }
 
+  const seasonYear = await getActiveSeasonYear();
   const service = createSupabaseServiceRoleClient();
 
   const { data: boxRows } = await service
     .from("live_match_boxes")
     .select("id, box_number, format, tee_time, maroon_players, white_players, state, started")
+    .eq("season_year", seasonYear)
     .eq("round", round);
   const box = (boxRows as MatchBoxRow[] | null ?? []).find(
     (b) => b.maroon_players.includes(player.playerSlug) || b.white_players.includes(player.playerSlug)
@@ -52,7 +55,12 @@ export async function GET(request: Request) {
 
   const allPlayers = [...box.maroon_players, ...box.white_players];
   const [{ data: scoreRows }, { data: submissionRows }] = await Promise.all([
-    service.from("live_hole_scores").select("player_slug, hole, score, putts, fir, gir, self_reported_score, confirmed_by").eq("round", round).in("player_slug", allPlayers),
+    service
+      .from("live_hole_scores")
+      .select("player_slug, hole, score, putts, fir, gir, self_reported_score, confirmed_by")
+      .eq("season_year", seasonYear)
+      .eq("round", round)
+      .in("player_slug", allPlayers),
     service.from("live_match_box_submissions").select("player_slug").eq("match_box_id", box.id),
   ]);
 

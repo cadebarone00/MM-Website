@@ -4,6 +4,7 @@
 import { useState } from "react";
 
 export interface StartableRound {
+  year: number;
   round: number;
   format: string;
   courseName: string | null;
@@ -21,7 +22,7 @@ export function StartRoundBanner({ round }: { round: StartableRound }) {
       const res = await fetch("/api/portal/tiger/rounds/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ round: round.round }),
+        body: JSON.stringify({ year: round.year, round: round.round }),
       });
       const data = await res.json();
       if (!data.ok) {

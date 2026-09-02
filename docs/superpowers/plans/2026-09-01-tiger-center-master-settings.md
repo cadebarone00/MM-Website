@@ -108,6 +108,12 @@ update live_tournament_settings
 alter table live_round_state add column if not exists season_year integer;
 update live_round_state set season_year = 2027 where season_year is null;
 alter table live_round_state alter column season_year set not null;
+-- live_match_boxes.round still references live_round_state(round) here —
+-- that FK must be dropped before live_round_state's primary key below, or
+-- Postgres refuses to drop a PK a live FK still depends on. It's
+-- re-created against the new composite key once both tables have one (see
+-- the live_match_boxes block further down).
+alter table live_match_boxes drop constraint if exists live_match_boxes_round_fkey;
 alter table live_round_state drop constraint if exists live_round_state_pkey;
 alter table live_round_state add constraint live_round_state_season_year_check check (season_year between 2027 and 2034);
 alter table live_round_state add primary key (season_year, round);
@@ -121,10 +127,11 @@ alter table live_roster add constraint live_roster_season_year_check check (seas
 alter table live_roster add primary key (season_year, player_slug);
 
 -- live_match_boxes: gains season_year, FK repointed at the new composite key
+-- (the old round_fkey was already dropped above, before live_round_state's
+-- old primary key was)
 alter table live_match_boxes add column if not exists season_year integer;
 update live_match_boxes set season_year = 2027 where season_year is null;
 alter table live_match_boxes alter column season_year set not null;
-alter table live_match_boxes drop constraint if exists live_match_boxes_round_fkey;
 alter table live_match_boxes add constraint live_match_boxes_season_year_round_fkey
   foreign key (season_year, round) references live_round_state (season_year, round);
 alter table live_match_boxes drop constraint if exists live_match_boxes_round_box_number_key;
@@ -133,10 +140,16 @@ alter table live_match_boxes add constraint live_match_boxes_season_round_box_nu
 drop index if exists live_match_boxes_round_idx;
 create index if not exists live_match_boxes_season_round_idx on live_match_boxes (season_year, round);
 
--- live_hole_scores: gains season_year, widens the unique key
+-- live_hole_scores: gains season_year, widens the unique key. Unlike
+-- live_match_boxes (indirectly bounded via its FK to the now-checked
+-- live_round_state), this table has no FK on round/season_year at all —
+-- matching its own pre-existing looseness — so it needs its own explicit
+-- range check to keep every season_year column in this migration bounded
+-- the same way.
 alter table live_hole_scores add column if not exists season_year integer;
 update live_hole_scores set season_year = 2027 where season_year is null;
 alter table live_hole_scores alter column season_year set not null;
+alter table live_hole_scores add constraint live_hole_scores_season_year_check check (season_year between 2027 and 2034);
 alter table live_hole_scores drop constraint if exists live_hole_scores_player_slug_round_hole_key;
 alter table live_hole_scores add constraint live_hole_scores_season_year_player_slug_round_hole_key
   unique (season_year, player_slug, round, hole);
@@ -180,6 +193,8 @@ git commit -m "feat(tiger): multi-year live_* schema for Master Settings"
 - Modify: `lib/live/types.ts`
 - Create: `lib/live/activeSeason.ts`
 - Create: `lib/live/activeSeason.test.ts`
+- Modify: `lib/live/orchestration.test.ts`
+- Modify: `lib/live/scoring.test.ts`
 
 **Interfaces:**
 - Consumes: nothing new.
@@ -193,6 +208,28 @@ git commit -m "feat(tiger): multi-year live_* schema for Master Settings"
   should never happen after Task 1's seed insert).
   `SEASON_YEARS: number[]` — `[2027, 2028, ..., 2034]`.
   `isValidSeasonYear(value: unknown): value is number`.
+
+**Note (found during Task 2's own review — not in the original brief):**
+adding a required `seasonYear` field to `LiveMatchBox`/`LiveRoundState`
+breaks compilation of every existing file that constructs one of these
+types as an object literal. Most such files are Route Handlers/pages
+already owned by a later task (3, 6-9, 11-13) and are expected to show a
+`tsc` error until that task lands — that's normal, cross-task
+propagation, not a defect. But `lib/live/orchestration.test.ts` and
+`lib/live/scoring.test.ts` construct `LiveMatchBox` test fixtures for
+*pure* logic (`validateMatchBox`, `roundIsComplete`, `matchBoxResult`,
+etc.) that no other task in this plan touches or has a reason to touch —
+nothing else owns fixing them. This task fixes them directly, as the one
+place they can be fixed at all: add `seasonYear: 2027` to every
+`LiveMatchBox` object literal in both files (the value is arbitrary —
+these are pure functions that never read `seasonYear` — pick any valid
+year for consistency; `2027` matches every other placeholder value already
+used across the codebase's test fixtures).
+`lib/live/currentRoundForPlayer.ts` also breaks and is a *production*
+code path (not a test fixture) with a real season-scoping gap of its
+own — that one is folded into Task 3 below, not fixed here, since it
+needs the same "resolve the active season" treatment as Task 3's other
+four files, not a placeholder value.
 
 - [ ] **Step 1: Update `lib/live/types.ts`**
 
@@ -344,11 +381,38 @@ test("isValidSeasonYear accepts only integers in range", () => {
 Run: `npx tsx --test lib/live/activeSeason.test.ts`
 Expected: PASS (2 tests)
 
-- [ ] **Step 5: Full verification and commit**
+- [ ] **Step 5: Fix the two orphaned pure-logic test files**
+
+Run `npx tsc --noEmit` and look at the errors in `lib/live/orchestration.test.ts`
+and `lib/live/scoring.test.ts` specifically (ignore every other file's
+errors for now — see the Note above the Files list). Every error there is
+a `LiveMatchBox` object literal missing the new `seasonYear` field. Add
+`seasonYear: 2027,` to each one (the value is never read by the pure
+functions under test — pick this constant so every fixture in both files
+matches). Re-run `npx tsc --noEmit` afterward and confirm neither file
+appears in the remaining error list.
+
+- [ ] **Step 6: Full verification and commit**
 
 ```bash
 npm test && npx tsc --noEmit && npm run lint && npm run build
-git add lib/live/types.ts lib/live/activeSeason.ts lib/live/activeSeason.test.ts
+```
+
+`npm test` should be fully green (this task's new test plus the whole
+existing suite, orchestration.test.ts/scoring.test.ts included).
+`npx tsc --noEmit`/`npm run build` will still report errors — confirm
+every remaining one is in a file this task doesn't own (a later task's
+territory: `app/api/portal/scoring/*` and `lib/live/currentRoundForPlayer.*`
+→ Task 3; `app/api/portal/tiger/{roster,rounds,rounds/lock,rounds/remove,
+rounds/start,settings,matchboxes,matchboxes/remove}` → Tasks 6-9;
+`app/portal/admin/{courses-format,matchups,players-teams,page}.tsx` →
+Tasks 12-13) — and that `lib/live/orchestration.test.ts`/`scoring.test.ts`
+are NOT in that list anymore. `npm run lint` should be unaffected by
+this task either way (report any lint errors newly appearing in files
+this task touches).
+
+```bash
+git add lib/live/types.ts lib/live/activeSeason.ts lib/live/activeSeason.test.ts lib/live/orchestration.test.ts lib/live/scoring.test.ts
 git commit -m "feat(tiger): season_year types and the active-season helper"
 ```
 
@@ -361,14 +425,19 @@ git commit -m "feat(tiger): season_year types and the active-season helper"
 - Modify: `app/api/portal/scoring/submit/route.ts`
 - Modify: `app/api/portal/scoring/state/route.ts`
 - Modify: `app/api/portal/scoring/stats/route.ts`
+- Modify: `lib/live/currentRoundForPlayer.ts`
+- Modify: `lib/live/currentRoundForPlayer.test.ts`
 
 **Interfaces:**
 - Consumes: `getActiveSeasonYear()` (Task 2).
 - Produces: nothing new — these routes' request/response shapes are
-  **unchanged**; players never pick a year.
+  **unchanged**; players never pick a year. `findCurrentRoundForPlayer`'s
+  signature is also unchanged (`(playerSlug: string) =>
+  Promise<CurrentRoundResult | null>`) — it resolves the active season
+  internally, same as the four routes above.
 
 Player scoring only ever happens against whatever tournament is
-currently live, so these four routes resolve the active season
+currently live, so these routes/functions resolve the active season
 server-side rather than taking a `year` field from the client — this
 keeps a separate, already-shipped feature's contract untouched. Every
 `live_match_boxes`/`live_hole_scores` query in these files needs
@@ -376,6 +445,16 @@ keeps a separate, already-shipped feature's contract untouched. Every
 numbers repeat across years, so a query without this filter can now
 match the wrong year's rows once a second year has data), and every
 `live_hole_scores` insert needs `season_year: seasonYear` added.
+
+**Found during Task 2's review (not in the original brief):** the
+already-shipped `/portal/scoring` and `/portal/scoring/play` pages both
+call `findCurrentRoundForPlayer(playerSlug)` from `lib/live/
+currentRoundForPlayer.ts`, which independently queries
+`live_round_state`/`live_match_boxes` with no season filter at all — the
+exact same bug class this task exists to fix, in a file the original
+plan missed. It's in scope here rather than a separate task since it's
+the same fix, for the same reason (a player-facing lookup that always
+means "the active season"), on the same footing as the four routes above.
 
 - [ ] **Step 1: Update `app/api/portal/scoring/stroke/route.ts`**
 
@@ -862,36 +941,219 @@ export async function POST(request: Request) {
 }
 ```
 
-- [ ] **Step 5: Full verification and commit**
+- [ ] **Step 5: Update `lib/live/currentRoundForPlayer.ts` and its test**
+
+```typescript
+// lib/live/currentRoundForPlayer.ts
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getPlayerDisplayName } from "@/lib/data/players";
+import { getActiveSeasonYear } from "./activeSeason.ts";
+import { effectiveMatchState } from "./orchestration.ts";
+import type { LiveMatchBox, LiveRoundState, LiveTournamentSnapshot, MatchFormat, MatchState } from "./types.ts";
+
+export interface CurrentRoundResult {
+  round: LiveRoundState;
+  matchBox: LiveMatchBox;
+  state: MatchState;
+}
+
+const EMPTY_SNAPSHOT: LiveTournamentSnapshot = {
+  players: {},
+  courses: {},
+  roundCourses: {},
+  scores: new Map(),
+  matchBoxes: [],
+};
+
+/**
+ * The next round relevant to this player: the lowest-numbered fully locked
+ * round (course + matchups) that has a match box containing them, whose
+ * computed state isn't yet Final. Pure — no I/O — so the selection rule is
+ * fully unit-testable without a live Supabase instance.
+ */
+export function pickCurrentRound(rounds: LiveRoundState[], matchBoxes: LiveMatchBox[], playerSlug: string): CurrentRoundResult | null {
+  const lockedRounds = rounds.filter((r) => r.courseLocked && r.matchupsLocked).sort((a, b) => a.round - b.round);
+
+  for (const round of lockedRounds) {
+    const matchBox = matchBoxes.find(
+      (box) => box.round === round.round && (box.maroonPlayers.includes(playerSlug) || box.whitePlayers.includes(playerSlug))
+    );
+    if (!matchBox) continue;
+
+    const state = effectiveMatchState(EMPTY_SNAPSHOT, matchBox);
+    if (state === "Final") continue;
+
+    return { round, matchBox, state };
+  }
+
+  return null;
+}
+
+/**
+ * "You & Cam vs. Drew & Hugo" (Fourball/Foursome) or "You vs. Drew"
+ * (Singles) — this player's side first, teammate before opponents.
+ */
+export function matchupLabel(playerSlug: string, matchBox: LiveMatchBox): string {
+  const onMaroon = matchBox.maroonPlayers.includes(playerSlug);
+  const ownSide = onMaroon ? matchBox.maroonPlayers : matchBox.whitePlayers;
+  const otherSide = onMaroon ? matchBox.whitePlayers : matchBox.maroonPlayers;
+  const teammates = ownSide.filter((slug) => slug !== playerSlug).map(getPlayerDisplayName);
+  const opponents = otherSide.map(getPlayerDisplayName);
+  return `${["You", ...teammates].join(" & ")} vs. ${opponents.join(" & ")}`;
+}
+
+interface RoundRow {
+  round: number;
+  started: boolean;
+  course_id: string | null;
+  date: string | null;
+  format: string | null;
+  course_locked: boolean;
+  matchups_locked: boolean;
+}
+
+function roundFromRow(row: RoundRow, seasonYear: number): LiveRoundState {
+  return {
+    seasonYear,
+    round: row.round,
+    started: row.started,
+    courseId: row.course_id,
+    date: row.date,
+    format: row.format as MatchFormat | null,
+    courseLocked: row.course_locked,
+    matchupsLocked: row.matchups_locked,
+  };
+}
+
+interface MatchBoxRow {
+  id: string;
+  round: number;
+  box_number: number;
+  format: string;
+  tee_time: string;
+  maroon_players: string[];
+  white_players: string[];
+  state: string;
+  started: boolean;
+}
+
+function matchBoxFromRow(row: MatchBoxRow, seasonYear: number): LiveMatchBox {
+  return {
+    id: row.id,
+    seasonYear,
+    round: row.round,
+    boxNumber: row.box_number,
+    format: row.format as MatchFormat,
+    teeTime: new Date(row.tee_time),
+    maroonPlayers: row.maroon_players,
+    whitePlayers: row.white_players,
+    state: row.state as MatchState,
+    started: row.started,
+  };
+}
+
+// Not unit tested: createSupabaseServerClient() needs a real request
+// lifecycle, same documented limitation as lib/portal/requireHost.test.mts
+// and app/api/portal/profile/route.test.mts. pickCurrentRound() above (the
+// actual selection rule) is where the real logic lives and is fully tested.
+export async function findCurrentRoundForPlayer(playerSlug: string): Promise<CurrentRoundResult | null> {
+  const supabase = await createSupabaseServerClient();
+  const seasonYear = await getActiveSeasonYear();
+
+  const [{ data: roundRows, error: roundError }, { data: boxRows, error: boxError }] = await Promise.all([
+    supabase
+      .from("live_round_state")
+      .select("round, started, course_id, date, format, course_locked, matchups_locked")
+      .eq("season_year", seasonYear)
+      .order("round"),
+    supabase
+      .from("live_match_boxes")
+      .select("id, round, box_number, format, tee_time, maroon_players, white_players, state, started")
+      .eq("season_year", seasonYear)
+      .order("round"),
+  ]);
+
+  if (roundError) {
+    console.error("Failed to fetch live_round_state:", roundError);
+  }
+  if (boxError) {
+    console.error("Failed to fetch live_match_boxes:", boxError);
+  }
+
+  const rounds = (roundRows ?? []).map((row) => roundFromRow(row, seasonYear));
+  const matchBoxes = (boxRows ?? []).map((row) => matchBoxFromRow(row, seasonYear));
+
+  return pickCurrentRound(rounds, matchBoxes, playerSlug);
+}
+```
+
+`pickCurrentRound`/`matchupLabel` themselves are unchanged — they already
+take already-year-scoped arrays as plain parameters and never touch
+Supabase, so nothing about the active season affects their logic, only
+their test fixtures' types.
+
+In `lib/live/currentRoundForPlayer.test.ts`, add `seasonYear: 2027,` to
+every `LiveRoundState`/`LiveMatchBox` object literal used to call
+`pickCurrentRound`/`matchupLabel` in the existing tests — mechanical only,
+no test behavior changes (same reasoning as Task 2's fix to
+`orchestration.test.ts`/`scoring.test.ts`).
+
+- [ ] **Step 6: Full verification and commit**
 
 ```bash
 npm test && npx tsc --noEmit && npm run lint && npm run build
-git add app/api/portal/scoring
+git add app/api/portal/scoring lib/live/currentRoundForPlayer.ts lib/live/currentRoundForPlayer.test.ts
 git commit -m "fix(scoring): year-scope live scoring reads/writes to the active season"
 ```
+
+Remaining `tsc`/build errors after this task should only be in files
+owned by Tasks 6-9, 12, 13 (see Task 2's Step 6 note for the full list)
+— confirm none are in a file this task touches.
 
 ---
 
 ### Task 4: Async `getNextTournament()`/`getNextVenue()` overlay
 
 **Files:**
-- Modify: `lib/data/index.ts`
+- Modify: `lib/data/index.ts` (export `pastVenues` — one-line change; no
+  other change, and critically, **no new import** — see below)
 - Modify: `lib/data/types.ts`
-- Create: `lib/data/index.test.ts` (append — check the existing file first;
-  if it already covers other exports, add these tests alongside them
-  rather than replacing the file)
+- Create: `lib/data/activeSeasonOverlay.ts`
+- Create: `lib/data/activeSeasonOverlay.test.ts`
+
+**Why a new file, not `lib/data/index.ts` itself (found live during this
+task's own build check — not in the original brief):** `lib/data/index.ts`
+is imported by several Client Components (`Header.tsx`, `QuickScheduleCard.tsx`,
+and others, for `nextTournament`/`isLiveNow`/`champion`/`fmtPt`/etc.).
+`@/lib/supabase/server` transitively imports `next/headers` (via its
+sibling export `createSupabaseServerClient`, in the very same file as
+`createSupabaseServiceRoleClient`) — Next.js refuses to bundle a module
+that imports `next/headers` into a Client Component's graph, **even via
+a dynamic `await import()` inside a function nobody on the client calls**.
+Adding any Supabase import to `lib/data/index.ts` itself breaks `npm run
+build` for every Client Component that imports anything from it — not
+just the ones this plan intends to touch. The fix: put every
+Supabase-touching function in its own new file that ONLY true Server
+Components ever import (Task 10's `layout.tsx`/`page.tsx`/
+`teams/[slug]/page.tsx`/`schedule/[slug]/page.tsx` — none of them are
+Client Components). `lib/data/index.ts` itself gains nothing but a
+`pastVenues` export (a plain data lookup, zero new imports, so it stays
+exactly as client-safe as it is today).
 
 **Interfaces:**
-- Consumes: `getActiveSeasonYear()` (Task 2, indirectly — via a new
-  `getActiveSeasonOverride()` in this task).
-- Produces (consumed by Task 10): `getNextTournament():
-  Promise<UpcomingTournament>`, `getNextVenue(): Promise<VenueSchedule>`,
-  both overlaying database venue/dates onto the static per-year base for
-  whichever year `live_active_season` names. `getVenueBySlug` becomes
-  `async` (same name, same slug-matching logic, now returns the
-  overlaid venue for the live year). The existing sync `nextTournament`/
-  `nextVenue` exports are **unchanged** — every one of their existing
-  callers uses only `.slug`/`.year`/`.roster`/`.location`/`.editionLabel`
+- Consumes: nothing new (does NOT consume `getActiveSeasonYear()` from
+  Task 2's `lib/live/activeSeason.ts` — this module queries
+  `live_active_season`/`live_tournament_settings` directly, matching the
+  Task 2/Task 4 query-duplication call already made and ledgered as a
+  deliberate, non-blocking layering choice during Task 2's review).
+- Produces (consumed by Task 10 — note the import path):
+  `getNextTournament(): Promise<UpcomingTournament>`, `getNextVenue():
+  Promise<VenueSchedule>`, `getVenueBySlugAsync(slug): Promise<VenueSchedule
+  | undefined>`, `getNextTournamentOverride(): Promise<NextTournamentOverride>`
+  — all from `@/lib/data/activeSeasonOverlay`, NOT `@/lib/data`. The
+  existing sync `nextTournament`/`nextVenue`/`getVenueBySlug` exports from
+  `@/lib/data` are **unchanged** — every one of their existing callers
+  uses only `.slug`/`.year`/`.roster`/`.location`/`.editionLabel`
   (verified in the design spec's research), none of which this task
   touches.
 
@@ -905,15 +1167,41 @@ export interface NextTournamentOverride {
 }
 ```
 
-- [ ] **Step 2: Add the overlay functions to `lib/data/index.ts`**
+- [ ] **Step 2: Export `pastVenues` from `lib/data/index.ts`**
+
+Change the one line:
 
 ```typescript
-// lib/data/index.ts
-// Add these imports at the top, alongside the existing ones:
-import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import type { NextTournamentOverride } from "./types";
+// was: const pastVenues: Record<string, VenueSchedule> = {
+export const pastVenues: Record<string, VenueSchedule> = {
+```
 
-// Add near the bottom of the file, after the existing exports:
+Nothing else in `lib/data/index.ts` changes — no new import, no new
+function. `export type { ... }` at the top of the file should also gain
+`NextTournamentOverride` (it's a type this file re-exports for
+convenience, same as its other type re-exports), but that's the only
+other edit here:
+
+```typescript
+// was: export type { Team, Tournament, UpcomingTournament, RealMatch, IndividualStanding, PlayerScorecard, RoundScorecard, HoleStat, CourseHole, VenueCourse, VenueSession, VenueSchedule } from "./types";
+export type { Team, Tournament, UpcomingTournament, RealMatch, IndividualStanding, PlayerScorecard, RoundScorecard, HoleStat, CourseHole, VenueCourse, VenueSession, VenueSchedule, NextTournamentOverride } from "./types";
+```
+
+- [ ] **Step 3: Create `lib/data/activeSeasonOverlay.ts`**
+
+```typescript
+// lib/data/activeSeasonOverlay.ts
+//
+// Server-only. This file imports @/lib/supabase/server, which pulls in
+// next/headers transitively — importing it from anywhere reachable by a
+// Client Component breaks `npm run build`. Only import this file from a
+// true Server Component (see Task 10). Never import it from
+// lib/data/index.ts itself, and never re-export its functions from there
+// — that would poison every Client Component that imports anything else
+// from lib/data/index.ts.
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { nextTournament, nextVenue, pastVenues } from "./index";
+import type { UpcomingTournament, VenueSchedule, NextTournamentOverride } from "./types";
 
 interface ActiveSeasonSettings {
   seasonYear: number;
@@ -942,7 +1230,7 @@ async function getActiveSeasonSettings(): Promise<ActiveSeasonSettings | null> {
 // Formats an inclusive date range the same way the hand-written
 // dateLabel strings in lib/data/*-upcoming.ts already read (e.g.
 // "January 6–9, 2027"). Both dates are "YYYY-MM-DD".
-function formatDateLabel(begin: string, end: string): string {
+export function formatDateLabel(begin: string, end: string): string {
   const b = new Date(`${begin}T00:00:00`);
   const e = new Date(`${end}T00:00:00`);
   const monthFmt = new Intl.DateTimeFormat("en-US", { month: "long" });
@@ -950,7 +1238,8 @@ function formatDateLabel(begin: string, end: string): string {
     return `${monthFmt.format(b)} ${b.getDate()}–${e.getDate()}, ${e.getFullYear()}`;
   }
   const dayFmt = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric" });
-  return `${dayFmt.format(b)} – ${dayFmt.format(e)}, ${e.getFullYear()}`;
+  const beginStr = b.getFullYear() === e.getFullYear() ? `${dayFmt.format(b)}` : `${dayFmt.format(b)}, ${b.getFullYear()}`;
+  return `${beginStr} – ${dayFmt.format(e)}, ${e.getFullYear()}`;
 }
 
 /**
@@ -979,7 +1268,7 @@ export async function getNextVenue(): Promise<VenueSchedule> {
   return { ...nextVenue, venueName: override.venueName };
 }
 
-/** Async counterpart of getVenueBySlug — same slug match, live-overlaid venue. */
+/** Async counterpart of lib/data/index.ts's getVenueBySlug — same slug match, live-overlaid venue. */
 export async function getVenueBySlugAsync(slug: string): Promise<VenueSchedule | undefined> {
   if (slug === nextTournament.slug) return getNextVenue();
   return pastVenues[slug];
@@ -998,20 +1287,25 @@ active year has moved past 2027 with no static file for it yet (Task 1's
 seed keeps it at 2027, so this only matters once a host uses "Set as
 Active Year" in Task 11 — at that point `getNextTournament()` correctly
 falls back to the 2027 static data rather than silently mixing a 2028
-venue into a 2027-shaped object).
+venue into a 2027-shaped object). `formatDateLabel` is exported (not
+private) so its own test file can import it directly rather than only
+exercising it indirectly through a Supabase-dependent function.
 
-- [ ] **Step 3: Test `formatDateLabel` indirectly through a same-file case**
-
-Check whether `lib/data/index.test.ts` already exists; if so open it and
-add this test alongside the existing ones (same `import`/`test` style
-already in that file). If it doesn't exist, create it with just this
-test.
+- [ ] **Step 4: Write the test**
 
 ```typescript
-// lib/data/index.test.ts (add this test; keep any existing tests in the file)
+// lib/data/activeSeasonOverlay.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { getNextTournament } from "./index.ts";
+import { formatDateLabel, getNextTournament } from "./activeSeasonOverlay.ts";
+
+test("formatDateLabel formats a same-month range", () => {
+  assert.equal(formatDateLabel("2027-01-06", "2027-01-09"), "January 6–9, 2027");
+});
+
+test("formatDateLabel formats a cross-month range", () => {
+  assert.equal(formatDateLabel("2026-12-28", "2027-01-02"), "December 28, 2026 – January 2, 2027");
+});
 
 // No Supabase credentials in the test environment, so
 // createSupabaseServiceRoleClient() throws before any network call —
@@ -1025,16 +1319,26 @@ test("getNextTournament rejects with no Supabase configuration in the test envir
 });
 ```
 
-- [ ] **Step 4: Run the test**
+- [ ] **Step 5: Run the tests**
 
-Run: `npx tsx --test lib/data/index.test.ts`
-Expected: PASS
+Run: `npx tsx --test lib/data/activeSeasonOverlay.test.ts`
+Expected: PASS (3 tests)
 
-- [ ] **Step 5: Full verification and commit**
+- [ ] **Step 6: Full verification and commit**
 
 ```bash
 npm test && npx tsc --noEmit && npm run lint && npm run build
-git add lib/data/index.ts lib/data/types.ts lib/data/index.test.ts
+```
+
+`npm run build` must succeed cleanly this time — unlike every other task
+so far, this one has no excuse for a build failure: `lib/data/index.ts`
+gained nothing but a data export, and the new file is not yet imported
+by anything (Task 10 is what wires it in), so nothing in this task's own
+diff can possibly break the client bundle. If `npm run build` fails,
+stop and treat it as this task's own defect, not a "later task" deferral.
+
+```bash
+git add lib/data/index.ts lib/data/types.ts lib/data/activeSeasonOverlay.ts lib/data/activeSeasonOverlay.test.ts
 git commit -m "feat(data): async getNextTournament/getNextVenue overlay for the active season"
 ```
 
@@ -1915,7 +2219,7 @@ treatment.
 ```typescript
 // app/layout.tsx
 // Add this import:
-import { getNextTournamentOverride } from "@/lib/data";
+import { getNextTournamentOverride } from "@/lib/data/activeSeasonOverlay";
 // ... existing imports/font setup unchanged ...
 
 export default async function RootLayout({
@@ -2046,7 +2350,7 @@ import { HomeDashboard } from "@/components/home/HomeDashboard";
 import { HomeEntrySplash } from "@/components/home/HomeEntrySplash";
 import { VideoHero } from "@/components/home/VideoHero";
 import { LiveLeaderboardStripSection } from "@/components/home/LiveLeaderboardStripSection";
-import { getNextTournamentOverride } from "@/lib/data";
+import { getNextTournamentOverride } from "@/lib/data/activeSeasonOverlay";
 
 export default async function Home() {
   const nextTournamentOverride = await getNextTournamentOverride();
@@ -2173,7 +2477,7 @@ walkthrough covers confirming this).
 ```typescript
 // app/teams/[slug]/page.tsx
 // Add this import:
-import { getNextTournamentOverride } from "@/lib/data";
+import { getNextTournamentOverride } from "@/lib/data/activeSeasonOverlay";
 // ... existing imports unchanged ...
 
 export default async function TeamsYearPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -2232,7 +2536,8 @@ export function UpcomingNotice({ what, nextTournamentOverride }: { what: string;
 // app/schedule/[slug]/page.tsx
 import { notFound } from "next/navigation";
 import { VenueSchedulePage } from "@/components/schedule/VenueSchedulePage";
-import { pastTournaments, nextTournament, getVenueBySlugAsync } from "@/lib/data";
+import { pastTournaments, nextTournament } from "@/lib/data";
+import { getVenueBySlugAsync } from "@/lib/data/activeSeasonOverlay";
 
 export function generateStaticParams() {
   return [...pastTournaments.map((t) => ({ slug: t.slug })), { slug: nextTournament.slug }];
@@ -3077,14 +3382,34 @@ they now 404 (the files were moved, not copied).
 ### Task 13: Rework the Tiger Center home screen
 
 **Files:**
+- Create: `lib/live/seasonYears.ts`
+- Modify: `lib/live/activeSeason.ts` (re-export from the new file)
 - Create: `components/portal/tiger/YearAndMasterSettingsNav.tsx`
 - Modify: `app/portal/admin/page.tsx`
 - Modify: `components/portal/tiger/StartRoundBanner.tsx` (no code
   change — see note below; listed so the reviewer checks it)
 - Delete: `components/portal/tiger/TigerCenterNav.tsx`
 
+**Why `SEASON_YEARS`/`isValidSeasonYear` move to their own file (found
+live during this task — not in the original brief):** `YearAndMasterSettingsNav`
+is this plan's first `"use client"` component to need `SEASON_YEARS` —
+every prior consumer (Tasks 3, 5-9, 11-12) was a Route Handler or Server
+Component. Importing it from `lib/live/activeSeason.ts` as originally
+written would pull that whole module — which also has
+`getActiveSeasonYear()`, importing `createSupabaseServiceRoleClient` —
+into the client bundle, the exact `next/headers`-poisoning bug Task 4
+already hit once for `lib/data/index.ts`. Same fix, same reasoning: split
+the zero-dependency constants into their own file so a Client Component
+can import them directly, and have `activeSeason.ts` re-export them so
+every one of the ~15 existing server-side `import { isValidSeasonYear }
+from "@/lib/live/activeSeason"` call sites (Tasks 3, 5-9, 11-12) keeps
+working unchanged.
+
 **Interfaces:**
-- Consumes: `SEASON_YEARS`, `getActiveSeasonYear` (Task 2).
+- Consumes: `SEASON_YEARS` (now from `lib/live/seasonYears.ts`, or via
+  `lib/live/activeSeason.ts`'s re-export — both resolve to the same
+  values), `getActiveSeasonYear` (Task 2, from `activeSeason.ts` directly
+  — only Server Components/Route Handlers call this one).
 - Produces: nothing else in this plan depends on this task — it's the
   final piece.
 
@@ -3092,12 +3417,33 @@ they now 404 (the files were moved, not copied).
 `round: StartableRound | null` prop and POSTs `{ round: round.round }` to
 `/api/portal/tiger/rounds/start` — Task 8 already added a required
 `year` field to that route). What changes is **what its caller passes
-it**: Step 2 below scopes the round it looks up to the active season
+it**: Step 3 below scopes the round it looks up to the active season
 year, and includes that `year` in the POST body
 `StartRoundBanner` already sends (via a small prop addition), so this
-task does touch `StartRoundBanner.tsx` after all — see Step 2.
+task does touch `StartRoundBanner.tsx` after all — see Step 3.
 
-- [ ] **Step 1: Create the year/Master Settings nav**
+- [ ] **Step 1: Extract `SEASON_YEARS`/`isValidSeasonYear` into their own file**
+
+```typescript
+// lib/live/seasonYears.ts
+export const SEASON_YEARS: number[] = [2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034];
+
+export function isValidSeasonYear(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && SEASON_YEARS.includes(value);
+}
+```
+
+```typescript
+// lib/live/activeSeason.ts
+// was: export const SEASON_YEARS: number[] = [...]; export function isValidSeasonYear(...) {...}
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+
+export { SEASON_YEARS, isValidSeasonYear } from "@/lib/live/seasonYears";
+
+// getActiveSeasonYear() below is unchanged.
+```
+
+- [ ] **Step 2: Create the year/Master Settings nav**
 
 ```typescript
 // components/portal/tiger/YearAndMasterSettingsNav.tsx
@@ -3105,7 +3451,7 @@ task does touch `StartRoundBanner.tsx` after all — see Step 2.
 
 import { useState } from "react";
 import Link from "next/link";
-import { SEASON_YEARS } from "@/lib/live/activeSeason";
+import { SEASON_YEARS } from "@/lib/live/seasonYears";
 
 export function YearAndMasterSettingsNav({ initialYear }: { initialYear: number }) {
   const [year, setYear] = useState(initialYear);
@@ -3138,7 +3484,7 @@ export function YearAndMasterSettingsNav({ initialYear }: { initialYear: number 
 }
 ```
 
-- [ ] **Step 2: Update `app/portal/admin/page.tsx`**
+- [ ] **Step 3: Update `app/portal/admin/page.tsx`**
 
 ```typescript
 // app/portal/admin/page.tsx
@@ -3193,7 +3539,7 @@ export default async function TigerCenterPage() {
 }
 ```
 
-- [ ] **Step 3: Add `year` to `StartRoundBanner`**
+- [ ] **Step 4: Add `year` to `StartRoundBanner`**
 
 ```typescript
 // components/portal/tiger/StartRoundBanner.tsx
@@ -3254,7 +3600,7 @@ export function StartRoundBanner({ round }: { round: StartableRound }) {
 }
 ```
 
-- [ ] **Step 4: Delete `TigerCenterNav.tsx`**
+- [ ] **Step 5: Delete `TigerCenterNav.tsx`**
 
 ```bash
 git rm components/portal/tiger/TigerCenterNav.tsx
@@ -3264,12 +3610,12 @@ It's fully superseded: its box grid (minus Edit Scores, which is gone)
 now lives in `MasterSettingsPanel` (Task 11), and its only import site
 (`app/portal/admin/page.tsx`) was replaced in Step 2 above.
 
-- [ ] **Step 5: Full verification and commit**
+- [ ] **Step 6: Full verification and commit**
 
 ```bash
 npm test && npx tsc --noEmit && npm run lint && npm run build
 grep -rn "TigerCenterNav" app components || echo "no remaining references"
-git add components/portal/tiger/YearAndMasterSettingsNav.tsx app/portal/admin/page.tsx components/portal/tiger/StartRoundBanner.tsx
+git add lib/live/seasonYears.ts lib/live/activeSeason.ts components/portal/tiger/YearAndMasterSettingsNav.tsx app/portal/admin/page.tsx components/portal/tiger/StartRoundBanner.tsx
 git commit -m "feat(tiger): year picker + single Master Settings box on the Tiger Center home screen"
 ```
 

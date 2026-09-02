@@ -55,7 +55,7 @@ export interface PlayerSlotAdminRow {
   pendingEdits: PendingProfileEdit[];
 }
 
-export function PlayerSlotsAdmin({ rows: initialRows }: { rows: PlayerSlotAdminRow[] }) {
+export function PlayerSlotsAdmin({ year, rows: initialRows }: { year: number; rows: PlayerSlotAdminRow[] }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -191,7 +191,7 @@ export function PlayerSlotsAdmin({ rows: initialRows }: { rows: PlayerSlotAdminR
       const res = await fetch("/api/portal/tiger/roster", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playerSlug, team }),
+        body: JSON.stringify({ year, playerSlug, team }),
       });
       const data = await res.json();
       if (!data.ok) {

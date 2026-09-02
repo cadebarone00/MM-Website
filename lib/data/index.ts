@@ -8,13 +8,13 @@ import { venue2026 } from "./2026-venue";
 import { venue2027 } from "./2027-venue";
 import type { Team, Tournament, UpcomingTournament, PlayerScorecard, RoundScorecard, VenueSchedule } from "./types";
 
-export type { Team, Tournament, UpcomingTournament, RealMatch, IndividualStanding, PlayerScorecard, RoundScorecard, HoleStat, CourseHole, VenueCourse, VenueSession, VenueSchedule } from "./types";
+export type { Team, Tournament, UpcomingTournament, RealMatch, IndividualStanding, PlayerScorecard, RoundScorecard, HoleStat, CourseHole, VenueCourse, VenueSession, VenueSchedule, NextTournamentOverride } from "./types";
 
 export const pastTournaments: Tournament[] = [pinehurst2024, danzante2025, palmSprings2026];
 export const nextTournament: UpcomingTournament = upcoming2027;
 export const nextVenue: VenueSchedule = venue2027;
 
-const pastVenues: Record<string, VenueSchedule> = {
+export const pastVenues: Record<string, VenueSchedule> = {
   "2024-pinehurst": venue2024,
   "2025-danzante": venue2025,
   "2026-palm-springs": venue2026,

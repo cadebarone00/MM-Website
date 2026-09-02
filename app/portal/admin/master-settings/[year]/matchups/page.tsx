@@ -1,11 +1,16 @@
-// app/portal/admin/matchups/page.tsx
-import { redirect } from "next/navigation";
+// app/portal/admin/master-settings/[year]/matchups/page.tsx
+import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { isValidSeasonYear } from "@/lib/live/activeSeason";
 import { playerProfiles } from "@/lib/data/players";
 import { MatchupsPanel, type RosterPlayer } from "@/components/portal/tiger/MatchupsPanel";
 import type { LiveMatchBox, LiveRoundState, MatchFormat, MatchState } from "@/lib/live/types";
 
-export default async function MatchupsPage() {
+export default async function MatchupsPage({ params }: { params: Promise<{ year: string }> }) {
+  const { year: yearParam } = await params;
+  const year = Number(yearParam);
+  if (!isValidSeasonYear(year)) notFound();
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -17,12 +22,22 @@ export default async function MatchupsPage() {
 
   const service = createSupabaseServiceRoleClient();
   const [{ data: roundRows }, { data: boxRows }, { data: rosterRows }] = await Promise.all([
-    service.from("live_round_state").select("round, started, course_id, date, format, course_locked, matchups_locked").order("round"),
-    service.from("live_match_boxes").select("id, round, box_number, format, tee_time, maroon_players, white_players, state, started").order("round").order("box_number"),
-    service.from("live_roster").select("player_slug, team"),
+    service
+      .from("live_round_state")
+      .select("round, started, course_id, date, format, course_locked, matchups_locked")
+      .eq("season_year", year)
+      .order("round"),
+    service
+      .from("live_match_boxes")
+      .select("id, round, box_number, format, tee_time, maroon_players, white_players, state, started")
+      .eq("season_year", year)
+      .order("round")
+      .order("box_number"),
+    service.from("live_roster").select("player_slug, team").eq("season_year", year),
   ]);
 
   const rounds: LiveRoundState[] = (roundRows ?? []).map((r) => ({
+    seasonYear: year,
     round: r.round,
     started: r.started,
     courseId: r.course_id,
@@ -34,6 +49,7 @@ export default async function MatchupsPage() {
 
   const matchBoxes: LiveMatchBox[] = (boxRows ?? []).map((b) => ({
     id: b.id,
+    seasonYear: year,
     round: b.round,
     boxNumber: b.box_number,
     format: b.format as MatchFormat,
@@ -56,7 +72,7 @@ export default async function MatchupsPage() {
         Assign players into match boxes for each round whose course and format are locked. Lock Matchups once a
         round is fully set to make it visible on the Website and Player Portals.
       </p>
-      <MatchupsPanel rounds={rounds} initialMatchBoxes={matchBoxes} roster={roster} />
+      <MatchupsPanel year={year} rounds={rounds} initialMatchBoxes={matchBoxes} roster={roster} />
     </div>
   );
 }
