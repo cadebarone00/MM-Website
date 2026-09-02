@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requirePlayer } from "@/lib/portal/requirePlayer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { getActiveSeasonYear } from "@/lib/live/activeSeason";
 import { scoresAgree } from "@/lib/live/orchestration";
 
 interface MatchBoxRow {
@@ -33,9 +34,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Missing or invalid fields." }, { status: 400 });
   }
 
+  const seasonYear = await getActiveSeasonYear();
   const service = createSupabaseServiceRoleClient();
 
-  const { data: boxRows } = await service.from("live_match_boxes").select("id, maroon_players, white_players").eq("round", round);
+  const { data: boxRows } = await service
+    .from("live_match_boxes")
+    .select("id, maroon_players, white_players")
+    .eq("season_year", seasonYear)
+    .eq("round", round);
   const box = (boxRows as MatchBoxRow[] | null ?? []).find(
     (b) => b.maroon_players.includes(player.playerSlug) || b.white_players.includes(player.playerSlug)
   );
@@ -46,6 +52,7 @@ export async function POST(request: Request) {
   const { data: roundState } = await service
     .from("live_round_state")
     .select("course_locked, matchups_locked, started")
+    .eq("season_year", seasonYear)
     .eq("round", round)
     .single();
   if (!roundState?.course_locked || !roundState?.matchups_locked || !roundState?.started) {
@@ -62,7 +69,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "You've already submitted your scores for this round." }, { status: 400 });
   }
 
-  const { data: roundRow } = await service.from("live_round_state").select("course_id").eq("round", round).single();
+  const { data: roundRow } = await service
+    .from("live_round_state")
+    .select("course_id")
+    .eq("season_year", seasonYear)
+    .eq("round", round)
+    .single();
   let isPar3 = false;
   if (roundRow?.course_id) {
     const { data: course } = await service.from("live_courses").select("holes").eq("id", roundRow.course_id).single();
@@ -74,6 +86,7 @@ export async function POST(request: Request) {
   const { data: existingRow } = await service
     .from("live_hole_scores")
     .select("id, score, self_reported_score")
+    .eq("season_year", seasonYear)
     .eq("player_slug", player.playerSlug)
     .eq("round", round)
     .eq("hole", hole)
@@ -92,7 +105,7 @@ export async function POST(request: Request) {
   } else {
     const { error } = await service
       .from("live_hole_scores")
-      .insert({ player_slug: player.playerSlug, round, hole, putts, fir: normalizedFir, gir, self_reported_score: nextSelfReported, confirmed_by: confirmedBy });
+      .insert({ season_year: seasonYear, player_slug: player.playerSlug, round, hole, putts, fir: normalizedFir, gir, self_reported_score: nextSelfReported, confirmed_by: confirmedBy });
     if (error) return NextResponse.json({ ok: false, error: "Could not save that." }, { status: 500 });
   }
 
