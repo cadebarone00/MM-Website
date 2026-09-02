@@ -86,11 +86,11 @@ export function CompactMatchRow({
         }}
         className="cursor-pointer py-0 hover:bg-cream-50"
       >
-        <div className="grid grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-stretch gap-2">
+        <div className="grid grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-stretch">
           <TeamSide players={match.maroonPlayers} team="maroon" />
-          <div className="flex justify-center">
+          <div className="flex items-stretch">
             {status === "final" ? (
-              <span className={["inline-flex min-h-[22px] min-w-[40px] items-center justify-center px-1.5 font-condensed text-3xs font-extrabold uppercase tracking-wide", finalLabelColor(match)].join(" ")}>
+              <span className={["flex h-full w-full items-center justify-center px-1.5 font-condensed text-3xs font-extrabold uppercase tracking-wide", finalLabelColor(match)].join(" ")}>
                 {centerLabel}
               </span>
             ) : (
