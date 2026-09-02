@@ -28,22 +28,35 @@ function NotAvailable({ format }: { format: string }) {
   );
 }
 
-const singlesGrid = "grid grid-cols-[minmax(78px,1.8fr)_repeat(18,minmax(0,1fr))_minmax(54px,1.2fr)]";
-
-function GridCell({ children, className = "" }: { children?: ReactNode; className?: string }) {
-  return <div className={["flex min-w-0 items-center justify-center border-r border-b border-ink-300", className].join(" ")}>{children}</div>;
-}
-
-function SinglesStatusCell({ status }: { status?: MatchHoleStatus }) {
-  if (!status) return <GridCell className="h-8 bg-cream-100" />;
-
+function TeamStatusCell({ status }: { status?: MatchHoleStatus }) {
+  if (!status) return <div className="flex h-9 flex-1 border-r border-ink-300 bg-cream-100" />;
   return (
-    <GridCell className="h-8 bg-cream-100 p-px">
+    <div className="flex h-9 flex-1 items-center justify-center border-r border-ink-300 bg-cream-100 p-px">
       <span className={["flex h-full w-full items-center justify-center gap-px rounded-xs border font-condensed text-3xs font-extrabold", statusCellColor(status.leader)].join(" ")}>
-        {status.leader === "maroon" ? <ArrowUp size={10} strokeWidth={3} aria-label="Maroon up" /> : status.leader === "white" ? <ArrowDown size={10} strokeWidth={3} aria-label="White up" /> : null}
+        {status.leader === "maroon" ? <ArrowUp size={11} strokeWidth={3} aria-label="Maroon up" /> : status.leader === "white" ? <ArrowDown size={11} strokeWidth={3} aria-label="White up" /> : null}
         {status.leader ? Math.abs(status.tally) : "AS"}
       </span>
-    </GridCell>
+    </div>
+  );
+}
+
+function SideCell({ children, className }: { children: ReactNode; className: string }) {
+  return <div className={["flex w-[78px] shrink-0 items-center justify-center border-r border-ink-300 px-1 text-center", className].join(" ")}>{children}</div>;
+}
+
+function TotalCell({ children, className }: { children: ReactNode; className: string }) {
+  return <div className={["flex w-14 shrink-0 items-center justify-center border-l border-ink-300 px-1 text-center", className].join(" ")}>{children}</div>;
+}
+
+function SinglesNinePage({ holes, statusByHole }: { holes: ReturnType<typeof getMatchHoleByHole> extends infer T ? T extends { allHoles: infer H } ? H : never : never; statusByHole: Map<number, MatchHoleStatus> }) {
+  return (
+    <div className="flex w-full shrink-0 snap-start flex-col">
+      <div className="flex">{holes.map((hole) => <div key={hole.hole} className="flex h-8 flex-1 items-center justify-center border-r border-white/15 bg-maroon-700 font-sans text-xs font-semibold tabular-nums text-white">{hole.hole}</div>)}</div>
+      <div className="flex">{holes.map((hole) => <div key={hole.hole} className="flex h-8 flex-1 items-center justify-center border-r border-ink-300 bg-cream-100 font-sans text-xs tabular-nums text-maroon-700">{hole.par}</div>)}</div>
+      <div className="flex">{holes.map((hole) => <div key={hole.hole} className="flex h-11 flex-1 items-center justify-center border-r border-white/15 bg-maroon-700"><HoleMarkerForDiff diff={hole.maroonScore - hole.par} size={28} tone="white">{hole.maroonScore}</HoleMarkerForDiff></div>)}</div>
+      <div className="flex">{holes.map((hole) => <TeamStatusCell key={hole.hole} status={statusByHole.get(hole.hole)} />)}</div>
+      <div className="flex">{holes.map((hole) => <div key={hole.hole} className="flex h-11 flex-1 items-center justify-center border-r border-ink-300 bg-white"><HoleMarkerForDiff diff={hole.whiteScore - hole.par} size={28} tone="maroon">{hole.whiteScore}</HoleMarkerForDiff></div>)}</div>
+    </div>
   );
 }
 
@@ -56,38 +69,31 @@ function SinglesMatchGrid({ tournament, match }: { tournament: Tournament; match
   const whiteTotal = data.allHoles.reduce((total, hole) => total + hole.whiteScore, 0);
   const parTotal = data.allHoles.reduce((total, hole) => total + hole.par, 0);
   const winner = matchLeader(match);
-  const resultTone = winner === "maroon" ? "border-maroon-300 bg-maroon-700/15 text-maroon-700" : winner === "white" ? "border-ink-300 bg-white/70 text-ink-800" : "border-ink-300 bg-ink-100 text-ink-900";
+  const resultTone = winner === "maroon" ? "border-maroon-700 bg-maroon-700 text-white" : winner === "white" ? "border-ink-300 bg-white text-maroon-700" : "border-ink-300 bg-ink-100 text-ink-900";
+  const front = data.allHoles.slice(0, 9);
+  const back = data.allHoles.slice(9, 18);
 
   return (
-    <div className="overflow-hidden border-y border-ink-300 bg-cream-100">
-      <div className={singlesGrid}>
-        <GridCell className="h-7 justify-start bg-maroon-700 px-2 text-left text-white"><span className="font-condensed text-3xs font-bold uppercase tracking-wide">Hole</span></GridCell>
-        {data.allHoles.map((hole) => <GridCell key={hole.hole} className="h-7 bg-maroon-700 text-white"><span className="font-sans text-[10px] font-semibold tabular-nums">{hole.hole}</span></GridCell>)}
-        <GridCell className="h-7 bg-maroon-700 text-white"><span className="font-condensed text-3xs font-bold uppercase">Total</span></GridCell>
+    <div className="-mx-4 flex border-y border-ink-300 bg-cream-100 sm:mx-0">
+      <div className="flex w-[78px] shrink-0 flex-col">
+        <SideCell className="h-8 border-white/15 bg-maroon-700 text-white"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Hole</span></SideCell>
+        <SideCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Par</span></SideCell>
+        <SideCell className="h-11 border-white/15 bg-maroon-700 text-white"><span className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide">{lastNames(data.maroonPlayers)}</span></SideCell>
+        <SideCell className="h-9 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Status</span></SideCell>
+        <SideCell className="h-11 bg-white text-maroon-700"><span className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide">{lastNames(data.whitePlayers)}</span></SideCell>
       </div>
 
-      <div className={singlesGrid}>
-        <GridCell className="h-6 justify-start bg-cream-100 px-2"><span className="font-condensed text-3xs font-bold uppercase tracking-wide text-maroon-700">Par</span></GridCell>
-        {data.allHoles.map((hole) => <GridCell key={hole.hole} className="h-6 bg-cream-100"><span className="font-sans text-[10px] tabular-nums text-maroon-500">{hole.par}</span></GridCell>)}
-        <GridCell className="h-6 bg-cream-100"><span className="font-sans text-[10px] font-semibold tabular-nums text-maroon-700">{parTotal}</span></GridCell>
+      <div className="flex flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden">
+        <SinglesNinePage holes={front} statusByHole={statusByHole} />
+        <SinglesNinePage holes={back} statusByHole={statusByHole} />
       </div>
 
-      <div className={singlesGrid}>
-        <GridCell className="h-9 justify-start bg-cream-100 px-2"><span className="truncate font-condensed text-3xs font-bold uppercase tracking-wide text-maroon-700">{lastNames(data.maroonPlayers)}</span></GridCell>
-        {data.allHoles.map((hole) => <GridCell key={hole.hole} className="h-9 bg-cream-100"><HoleMarkerForDiff diff={hole.maroonScore - hole.par} size={20} tone="maroon">{hole.maroonScore}</HoleMarkerForDiff></GridCell>)}
-        <GridCell className="h-9 bg-cream-100"><span className="font-score text-xs font-bold tabular-nums text-maroon-700">{maroonTotal}</span></GridCell>
-      </div>
-
-      <div className={singlesGrid}>
-        <GridCell className="h-8 justify-start bg-cream-100 px-2"><span className="font-condensed text-3xs font-bold uppercase tracking-wide text-maroon-700">Status</span></GridCell>
-        {data.allHoles.map((hole) => <SinglesStatusCell key={hole.hole} status={statusByHole.get(hole.hole)} />)}
-        <GridCell className="h-8 bg-cream-100 p-px"><span className={["flex h-full w-full items-center justify-center rounded-xs border font-condensed text-3xs font-extrabold uppercase", resultTone].join(" ")}>{matchLabel(match)}</span></GridCell>
-      </div>
-
-      <div className={singlesGrid}>
-        <GridCell className="h-9 justify-start bg-cream-100 px-2"><span className="truncate font-condensed text-3xs font-bold uppercase tracking-wide text-ink-800">{lastNames(data.whitePlayers)}</span></GridCell>
-        {data.allHoles.map((hole) => <GridCell key={hole.hole} className="h-9 bg-cream-100"><HoleMarkerForDiff diff={hole.whiteScore - hole.par} size={20} tone="maroon">{hole.whiteScore}</HoleMarkerForDiff></GridCell>)}
-        <GridCell className="h-9 bg-cream-100"><span className="font-score text-xs font-bold tabular-nums text-ink-800">{whiteTotal}</span></GridCell>
+      <div className="flex w-14 shrink-0 flex-col">
+        <TotalCell className="h-8 border-white/15 bg-maroon-700 text-white"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Tot</span></TotalCell>
+        <TotalCell className="h-8 bg-cream-100 font-sans text-xs font-semibold tabular-nums text-maroon-700">{parTotal}</TotalCell>
+        <TotalCell className="h-11 border-white/15 bg-maroon-700 font-score text-xs font-bold tabular-nums text-white">{maroonTotal}</TotalCell>
+        <TotalCell className="h-9 bg-cream-100 p-px"><span className={["flex h-full w-full items-center justify-center rounded-xs border font-condensed text-3xs font-extrabold uppercase", resultTone].join(" ")}>{matchLabel(match)}</span></TotalCell>
+        <TotalCell className="h-11 bg-white font-score text-xs font-bold tabular-nums text-maroon-700">{whiteTotal}</TotalCell>
       </div>
     </div>
   );
