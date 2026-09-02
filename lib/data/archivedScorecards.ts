@@ -1,5 +1,6 @@
 // lib/data/archivedScorecards.ts
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { r2PublicUrl } from "@/lib/r2/client";
 import type { HoleStat, PlayerScorecard, RoundScorecard, Team, Tournament } from "./types";
 import { playerProfiles } from "./players";
 
@@ -199,9 +200,8 @@ export async function getShotVideoUrls(tournamentSlug: string, playerSlug: strin
 
   const result: Record<number, Record<number, string>> = {};
   for (const row of videoRows ?? []) {
-    const { data: publicUrl } = service.storage.from("shot-videos").getPublicUrl(row.storage_path);
     result[row.hole] = result[row.hole] ?? {};
-    result[row.hole][row.shot_number] = publicUrl.publicUrl;
+    result[row.hole][row.shot_number] = r2PublicUrl(row.storage_path);
   }
   return result;
 }

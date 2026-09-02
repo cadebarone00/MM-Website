@@ -11,17 +11,19 @@ import { EditableShotVideoPanel, type StagedVideo } from "./EditableShotVideoPan
 import type { HoleStat, RoundScorecard } from "@/lib/data";
 
 /**
- * Uploads a file straight to Supabase Storage's signed-upload URL with real
- * byte-level progress. supabase-js's own `uploadToSignedUrl` uses `fetch`,
- * which has no reliable cross-browser upload-progress event — XHR does
- * (`xhr.upload.onprogress`), so this replicates that same request shape
- * (a PUT with `cacheControl` + the file under an empty-string field name,
- * matching @supabase/storage-js's StorageFileApi.uploadToSignedUrl) by hand.
+ * Uploads a file straight to a Cloudflare R2 presigned PUT URL with real
+ * byte-level progress. `fetch` has no reliable cross-browser upload-progress
+ * event, so this uses XHR (`xhr.upload.onprogress`) instead. R2's presigned
+ * PUT (S3-compatible) takes the raw file as the request body — no wrapper
+ * needed — with Content-Type set to the file's real MIME type; that header
+ * is NOT part of what the URL's signature covers (see .../video/sign), so
+ * it's free to set here from whatever the browser actually reports.
  */
 function uploadFileWithProgress(url: string, file: File, onProgress: (fraction: number) => void): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", url);
+    xhr.setRequestHeader("Content-Type", file.type || "video/mp4");
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) onProgress(e.loaded / e.total);
     };
@@ -30,10 +32,7 @@ function uploadFileWithProgress(url: string, file: File, onProgress: (fraction: 
       else reject(new Error(`Upload failed (status ${xhr.status}).`));
     };
     xhr.onerror = () => reject(new Error("Upload failed — check your connection."));
-    const form = new FormData();
-    form.append("cacheControl", "3600");
-    form.append("", file);
-    xhr.send(form);
+    xhr.send(file);
   });
 }
 
@@ -148,8 +147,7 @@ export function ScorecardEditor({
       const signData = await signRes.json();
       if (!signData.ok) throw new Error(signData.error);
 
-      const uploadUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/upload/sign/shot-videos/${signData.path}?token=${signData.token}`;
-      await uploadFileWithProgress(uploadUrl, file, (progress) => setStagedField(hole, shot, { progress }));
+      await uploadFileWithProgress(signData.url, file, (progress) => setStagedField(hole, shot, { progress }));
 
       setStagedField(hole, shot, { status: "ready", progress: 1 });
     } catch (err) {
