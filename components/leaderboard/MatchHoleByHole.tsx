@@ -28,10 +28,19 @@ function NotAvailable({ format }: { format: string }) {
   );
 }
 
-function TeamStatusCell({ status }: { status?: MatchHoleStatus }) {
-  if (!status) return <div className="flex h-9 min-w-0 flex-1 border-r border-ink-300 bg-cream-100" />;
+function statusDivider(nextLeader: Team | null) {
+  return nextLeader === "maroon" ? "border-white/15" : "border-ink-300";
+}
+
+function TeamStatusCell({ status, nextStatus, endedFill }: { status?: MatchHoleStatus; nextStatus?: MatchHoleStatus; endedFill: Team | null }) {
+  const nextLeader = nextStatus?.leader ?? endedFill;
+  const divider = statusDivider(nextLeader);
+  if (!status) {
+    const fill = endedFill === "maroon" ? "bg-maroon-700" : endedFill === "white" ? "bg-white" : "bg-cream-100";
+    return <div className={["flex h-9 min-w-0 flex-1 border-r", fill, divider].join(" ")} />;
+  }
   return (
-    <div className="flex h-9 min-w-0 flex-1 items-center justify-center border-r border-ink-300 bg-cream-100">
+    <div className={["flex h-9 min-w-0 flex-1 items-center justify-center border-r bg-cream-100", divider].join(" ")}>
       <span className={["flex h-full w-full items-center justify-center gap-px font-condensed text-3xs font-extrabold", statusCellColor(status.leader)].join(" ")}>
         {status.leader === "maroon" ? <ArrowUp size={11} strokeWidth={3} aria-label="Maroon up" /> : status.leader === "white" ? <ArrowDown size={11} strokeWidth={3} aria-label="White up" /> : null}
         {status.leader ? Math.abs(status.tally) : "AS"}
@@ -48,13 +57,13 @@ function TotalCell({ children, className }: { children: ReactNode; className: st
   return <div className={["flex w-14 shrink-0 items-center justify-center border-l border-ink-300 px-1 text-center", className].join(" ")}>{children}</div>;
 }
 
-function SinglesNinePage({ holes, statusByHole }: { holes: MatchHoleByHoleData["allHoles"]; statusByHole: Map<number, MatchHoleStatus> }) {
+function SinglesNinePage({ holes, statusByHole, endedFill }: { holes: MatchHoleByHoleData["allHoles"]; statusByHole: Map<number, MatchHoleStatus>; endedFill: Team | null }) {
   return (
     <div className="flex w-full shrink-0 snap-start flex-col">
       <div className="flex">{holes.map((hole) => <div key={hole.hole} className="flex h-8 min-w-0 flex-1 items-center justify-center border-r border-ink-300 bg-cream-100 font-sans text-xs font-semibold tabular-nums text-maroon-700">{hole.hole}</div>)}</div>
       <div className="flex">{holes.map((hole) => <div key={hole.hole} className="flex h-8 min-w-0 flex-1 items-center justify-center border-r border-ink-300 bg-cream-100 font-sans text-xs tabular-nums text-maroon-700">{hole.par}</div>)}</div>
       <div className="flex">{holes.map((hole) => <div key={hole.hole} className="flex h-11 min-w-0 flex-1 items-center justify-center border-r border-white/15 bg-maroon-700"><HoleMarkerForDiff diff={hole.maroonScore - hole.par} size={24} tone="white">{hole.maroonScore}</HoleMarkerForDiff></div>)}</div>
-      <div className="flex">{holes.map((hole) => <TeamStatusCell key={hole.hole} status={statusByHole.get(hole.hole)} />)}</div>
+      <div className="flex">{holes.map((hole) => <TeamStatusCell key={hole.hole} status={statusByHole.get(hole.hole)} nextStatus={statusByHole.get(hole.hole + 1)} endedFill={endedFill} />)}</div>
       <div className="flex">{holes.map((hole) => <div key={hole.hole} className="flex h-11 min-w-0 flex-1 items-center justify-center border-r border-ink-300 bg-white"><HoleMarkerForDiff diff={hole.whiteScore - hole.par} size={24} tone="maroon">{hole.whiteScore}</HoleMarkerForDiff></div>)}</div>
     </div>
   );
@@ -69,6 +78,7 @@ function SinglesMatchGrid({ tournament, match }: { tournament: Tournament; match
   const whiteTotal = data.allHoles.reduce((total, hole) => total + hole.whiteScore, 0);
   const parTotal = data.allHoles.reduce((total, hole) => total + hole.par, 0);
   const winner = matchLeader(match);
+  const endedFill: Team | null = winner === "tie" ? null : winner;
   const resultTone = winner === "maroon" ? "bg-maroon-700 text-white" : winner === "white" ? "bg-white text-maroon-700" : "bg-cream-100 text-maroon-700";
   const front = data.allHoles.slice(0, 9);
   const back = data.allHoles.slice(9, 18);
@@ -84,15 +94,15 @@ function SinglesMatchGrid({ tournament, match }: { tournament: Tournament; match
       </div>
 
       <div className="flex flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden">
-        <SinglesNinePage holes={front} statusByHole={statusByHole} />
-        <SinglesNinePage holes={back} statusByHole={statusByHole} />
+        <SinglesNinePage holes={front} statusByHole={statusByHole} endedFill={endedFill} />
+        <SinglesNinePage holes={back} statusByHole={statusByHole} endedFill={endedFill} />
       </div>
 
       <div className="flex w-14 shrink-0 flex-col">
         <TotalCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Tot</span></TotalCell>
         <TotalCell className="h-8 bg-cream-100 font-sans text-xs font-semibold tabular-nums text-maroon-700">{parTotal}</TotalCell>
         <TotalCell className="h-11 border-white/15 bg-maroon-700 font-score text-xs font-bold tabular-nums text-white">{maroonTotal}</TotalCell>
-        <TotalCell className="h-9 bg-cream-100"><span className={["flex h-full w-full items-center justify-center font-condensed text-3xs font-extrabold uppercase", resultTone].join(" ")}>{matchLabel(match)}</span></TotalCell>
+        <TotalCell className={["h-9 px-0 font-condensed text-3xs font-extrabold uppercase", resultTone].join(" ")}>{matchLabel(match)}</TotalCell>
         <TotalCell className="h-11 bg-white font-score text-xs font-bold tabular-nums text-maroon-700">{whiteTotal}</TotalCell>
       </div>
     </div>
