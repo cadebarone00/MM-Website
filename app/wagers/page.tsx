@@ -15,8 +15,8 @@ import type { RealMatch, Tournament } from "@/lib/data/types";
 type Category = "team-futures" | "player-futures" | "matches" | "fourballs" | "props";
 
 const CATEGORY_ITEMS: TabItem[] = [
-  { value: "team-futures", label: "Team Futures" },
-  { value: "player-futures", label: "Player Futures" },
+  { value: "team-futures", label: "Futures" },
+  { value: "player-futures", label: "Players" },
   { value: "matches", label: "Matches" },
   { value: "fourballs", label: "Fourballs" },
   { value: "props", label: "Props" },
