@@ -9,7 +9,7 @@ import { MarketRow } from "@/components/wagers/MarketRow";
 import { FuturesMarketCard } from "@/components/wagers/FuturesMarketCard";
 import { ComingSoonNotice } from "@/components/wagers/ComingSoonNotice";
 import { useWagersMode } from "@/components/wagers/WagersModeContext";
-import { futurePlayerMarket } from "@/lib/wagers/marketKeys";
+import { futurePlayerMarket, futureTeamMarket } from "@/lib/wagers/marketKeys";
 import type { RealMatch, Tournament } from "@/lib/data/types";
 
 type Category = "team-futures" | "player-futures" | "matches" | "fourballs" | "props";
@@ -76,6 +76,12 @@ function PlayerFuturesList({ tournament }: { tournament: Tournament }) {
   );
 }
 
+function TeamFuturesList({ tournament }: { tournament: Tournament }) {
+  const market = futureTeamMarket(tournament);
+
+  return <FuturesMarketCard title="Team Winner" marketKey={market.marketKey} selections={market.selections} href="/wagers/team-futures/team-winner" />;
+}
+
 export default function WagersPage() {
   const [category, setCategory] = useState<Category>("team-futures");
   const { tournament, loading, payload } = useLiveTournament();
@@ -91,11 +97,7 @@ export default function WagersPage() {
           <p className="py-10 text-center font-sans text-sm text-ink-400">Checking the live sheet...</p>
         ) : (
           <>
-            {category === "team-futures" && (
-              <div className="flex flex-col divide-y divide-ink-100">
-                <MarketRow href="/wagers/team-futures/team-winner" label="Team Winner" />
-              </div>
-            )}
+            {category === "team-futures" && <TeamFuturesList tournament={tournament} />}
             {category === "player-futures" && <PlayerFuturesList tournament={tournament} />}
             {category === "matches" && <MatchesList tournament={tournament} />}
             {category === "props" && <PropsList tournament={tournament} />}

@@ -3,7 +3,7 @@ import { OddsButton } from "./OddsButton";
 
 type Selection = { key: string; label: string; odds: number };
 
-function playerName(label: string) {
+function selectionName(label: string) {
   return label.replace(" wins the tournament", "");
 }
 
@@ -31,7 +31,7 @@ export function FuturesMarketCard({
         <div className="mt-3 divide-y divide-gold-200">
           {visibleSelections.map((selection) => (
             <div key={selection.key} className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
-              <span className="min-w-0 truncate font-sans text-sm font-semibold text-ink-900">{playerName(selection.label)}</span>
+              <span className="min-w-0 truncate font-sans text-sm font-semibold text-ink-900">{selectionName(selection.label)}</span>
               <div className="pointer-events-auto shrink-0">
                 <OddsButton marketKey={marketKey} selectionKey={selection.key} label={selection.label} odds={selection.odds} />
               </div>
