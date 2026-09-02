@@ -6,9 +6,9 @@ import { venue2024 } from "./2024-venue";
 import { venue2025 } from "./2025-venue";
 import { venue2026 } from "./2026-venue";
 import { venue2027 } from "./2027-venue";
-import type { Team, Tournament, UpcomingTournament, PlayerScorecard, RoundScorecard, VenueSchedule } from "./types";
+import type { Team, Tournament, UpcomingTournament, PlayerScorecard, RoundScorecard, VenueSchedule, NextTournamentOverride } from "./types";
 
-export type { Team, Tournament, UpcomingTournament, RealMatch, IndividualStanding, PlayerScorecard, RoundScorecard, HoleStat, CourseHole, VenueCourse, VenueSession, VenueSchedule } from "./types";
+export type { Team, Tournament, UpcomingTournament, RealMatch, IndividualStanding, PlayerScorecard, RoundScorecard, HoleStat, CourseHole, VenueCourse, VenueSession, VenueSchedule, NextTournamentOverride } from "./types";
 
 export const pastTournaments: Tournament[] = [pinehurst2024, danzante2025, palmSprings2026];
 export const nextTournament: UpcomingTournament = upcoming2027;
@@ -154,4 +154,82 @@ export function daySummary(matches: Tournament["matches"]) {
     count: matches.filter((m) => m.session === session).length,
   }));
   return { maroonPts, whitePts, bySession };
+}
+
+interface ActiveSeasonSettings {
+  seasonYear: number;
+  venueName: string | null;
+  beginDate: string | null;
+  endDate: string | null;
+}
+
+async function getActiveSeasonSettings(): Promise<ActiveSeasonSettings | null> {
+  const { createSupabaseServiceRoleClient } = await import("@/lib/supabase/server");
+  const service = createSupabaseServiceRoleClient();
+  const { data: active } = await service.from("live_active_season").select("season_year").eq("id", true).maybeSingle();
+  if (!active) return null;
+  const { data: settings } = await service
+    .from("live_tournament_settings")
+    .select("venue_name, begin_date, end_date")
+    .eq("season_year", active.season_year)
+    .maybeSingle();
+  return {
+    seasonYear: active.season_year,
+    venueName: settings?.venue_name ?? null,
+    beginDate: settings?.begin_date ?? null,
+    endDate: settings?.end_date ?? null,
+  };
+}
+
+// Formats an inclusive date range the same way the hand-written
+// dateLabel strings in lib/data/*-upcoming.ts already read (e.g.
+// "January 6–9, 2027"). Both dates are "YYYY-MM-DD".
+function formatDateLabel(begin: string, end: string): string {
+  const b = new Date(`${begin}T00:00:00`);
+  const e = new Date(`${end}T00:00:00`);
+  const monthFmt = new Intl.DateTimeFormat("en-US", { month: "long" });
+  if (b.getFullYear() === e.getFullYear() && b.getMonth() === e.getMonth()) {
+    return `${monthFmt.format(b)} ${b.getDate()}–${e.getDate()}, ${e.getFullYear()}`;
+  }
+  const dayFmt = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric" });
+  return `${dayFmt.format(b)} – ${dayFmt.format(e)}, ${e.getFullYear()}`;
+}
+
+/**
+ * `nextTournament`, with venue and dates overlaid from the database for
+ * whichever year is currently marked active — everything else (slug,
+ * roster, location, notes) stays exactly what the static per-year file
+ * says, same as `nextTournament` today. Falls back to the static value
+ * untouched if no active-season row/settings exist yet.
+ */
+export async function getNextTournament(): Promise<UpcomingTournament> {
+  const override = await getActiveSeasonSettings();
+  if (!override || override.seasonYear !== nextTournament.year) return nextTournament;
+  return {
+    ...nextTournament,
+    venue: override.venueName ?? nextTournament.venue,
+    startDate: override.beginDate ?? nextTournament.startDate,
+    endDate: override.endDate ?? nextTournament.endDate,
+    dateLabel: override.beginDate && override.endDate ? formatDateLabel(override.beginDate, override.endDate) : nextTournament.dateLabel,
+  };
+}
+
+/** Same overlay, applied to `nextVenue`'s `venueName`. */
+export async function getNextVenue(): Promise<VenueSchedule> {
+  const override = await getActiveSeasonSettings();
+  if (!override || override.seasonYear !== nextVenue.year || !override.venueName) return nextVenue;
+  return { ...nextVenue, venueName: override.venueName };
+}
+
+/** Async counterpart of getVenueBySlug — same slug match, live-overlaid venue. */
+export async function getVenueBySlugAsync(slug: string): Promise<VenueSchedule | undefined> {
+  if (slug === nextTournament.slug) return getNextVenue();
+  return pastVenues[slug];
+}
+
+/** Just the two fields the public-site chrome components need, for
+ * threading through client component props (see Task 10). */
+export async function getNextTournamentOverride(): Promise<NextTournamentOverride> {
+  const t = await getNextTournament();
+  return { venue: t.venue, dateLabel: t.dateLabel };
 }

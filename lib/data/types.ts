@@ -153,3 +153,8 @@ export interface UpcomingTournament {
   roster?: { maroon: string[]; white: string[] };
   notes?: string;
 }
+
+export interface NextTournamentOverride {
+  venue: string;
+  dateLabel: string;
+}
