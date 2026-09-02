@@ -1,6 +1,5 @@
 "use client";
 
-import { ResultChevron } from "@/components/match/ResultChevron";
 import { matchStatus, matchLeader, liveLabel } from "@/components/leaderboard/matchUtils";
 import { MatchHoleByHole } from "@/components/leaderboard/MatchHoleByHole";
 import { getPlayerDisplayName } from "@/lib/data/players";
@@ -17,6 +16,13 @@ function lastName(player: string) {
   const name = getPlayerDisplayName(player).split(" ").pop() ?? player;
   if (name.toLowerCase() === "wojciechowski") return "WOJO";
   return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+}
+
+function finalLabelColor(match: RealMatch) {
+  const leader = matchLeader(match);
+  if (leader === "maroon") return "bg-maroon-700 text-white";
+  if (leader === "white") return "bg-white text-maroon-700";
+  return "bg-cream-100 text-maroon-700";
 }
 
 function TeamSide({ players, team }: { players: string[]; team: Team }) {
@@ -65,7 +71,7 @@ export function CompactMatchRow({
   const whiteSideLabel = match.whitePlayers.map(lastName).join(" & ");
 
   return (
-    <div className="-mx-4 mb-1.5 overflow-hidden border-2 border-gold-500 last:mb-0 sm:mx-0">
+    <div className="mb-1.5 overflow-hidden border border-gold-500 last:mb-0">
       <div
         role="button"
         tabIndex={0}
@@ -84,9 +90,9 @@ export function CompactMatchRow({
           <TeamSide players={match.maroonPlayers} team="maroon" />
           <div className="flex justify-center">
             {status === "final" ? (
-              <ResultChevron winner={matchLeader(match)} size="xs">
+              <span className={["inline-flex min-h-[22px] min-w-[40px] items-center justify-center px-1.5 font-condensed text-3xs font-extrabold uppercase tracking-wide", finalLabelColor(match)].join(" ")}>
                 {centerLabel}
-              </ResultChevron>
+              </span>
             ) : (
               <span
                 className={[
