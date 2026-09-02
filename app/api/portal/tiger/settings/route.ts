@@ -56,6 +56,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Could not save the round count." }, { status: 500 });
   }
 
+  // Create any missing round rows for 1..roundCount — never touch rounds
+  // that already exist (their date/course/format/locks stay as-is).
   const { data: existing } = await service.from("live_round_state").select("round").eq("season_year", year);
   const existingRounds = new Set((existing ?? []).map((r) => r.round));
   const missing = Array.from({ length: roundCount }, (_, i) => i + 1).filter((round) => !existingRounds.has(round));

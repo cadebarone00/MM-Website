@@ -193,8 +193,11 @@ fetching gains a `season_year` filter on every `live_*` query (`.eq
 matchboxes,matchboxes/remove}`) gain a required `year` field in every
 request body, used in the corresponding `.eq("season_year", ...)`
 filter/insert. `Scorecards & Video` (`archived_scorecard_*` tables) is
-keyed by `tournament_slug`, not `season_year` — its route moves for
-consistency but its query logic is unaffected.
+keyed by `tournament_slug`, not `season_year` — decided during planning
+to leave its route at the existing, unmoved `/portal/admin/scorecards`
+rather than nest it under `/master-settings/[year]/`, since its content
+isn't actually year-scoped; the Master Settings box for it just links
+there directly (see the implementation plan's Task 11).
 
 ### New route: `/api/portal/tiger/active-season`
 
