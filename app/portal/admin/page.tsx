@@ -36,8 +36,14 @@ export default async function TigerCenterPage() {
     <div className="mx-auto max-w-[720px] px-4 py-12 sm:px-7">
       <h1 className="font-serif text-3xl font-bold text-ink-900">The Tiger Center</h1>
       {startable && <StartRoundBanner round={startable} />}
-      <div className="mt-6">
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <YearAndMasterSettingsNav initialYear={activeYear} />
+        <Link
+          href="/portal/admin/career-stats"
+          className="self-end rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-8 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800"
+        >
+          Career Stats
+        </Link>
       </div>
       <Link
         href="/portal/admin/wagers"
