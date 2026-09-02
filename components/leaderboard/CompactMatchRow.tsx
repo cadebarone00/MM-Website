@@ -34,16 +34,16 @@ function TeamSide({ players, team }: { players: string[]; team: Team }) {
         <span
           key={player}
           className={[
-            "relative block w-full truncate px-2 py-1.5 font-sans text-xs font-semibold capitalize",
+            "relative block w-full px-2 py-1.5 font-sans text-xs font-semibold capitalize",
             isMaroon ? "text-right" : "text-left",
           ].join(" ")}
         >
-          {lastName(player)}
+          <span className="block truncate">{lastName(player)}</span>
           {players.length === 1 && (
             <span
               className={[
-                "absolute top-1/2 -translate-y-1/2 font-condensed text-[8px] font-extrabold uppercase tracking-tight",
-                isMaroon ? "left-1/4 -translate-x-1/2 text-white" : "right-1/4 translate-x-1/2 text-maroon-700",
+                "absolute top-1/2 flex h-4 w-8 -translate-y-1/2 items-center justify-center bg-transparent font-condensed text-[7px] font-extrabold uppercase tracking-tight",
+                isMaroon ? "left-1/4 -translate-x-1/2 border border-white text-white" : "right-1/4 translate-x-1/2 border border-maroon-700 text-maroon-700",
               ].join(" ")}
             >
               Odds
