@@ -17,6 +17,8 @@ export interface MatchHoleStatus {
 export interface MatchHoleByHole {
   maroonPlayers: string[];
   whitePlayers: string[];
+  /** Individual scorecard values, used when a four-player match shows both teammates. */
+  playerHoles: Record<string, Array<{ hole: number; par: number; score: number }>>;
   /** Scores for every hole in the players' scorecards, including holes after a match was clinched. */
   allHoles: Array<Pick<MatchHoleStatus, "hole" | "par" | "maroonScore" | "whiteScore">>;
   /** Running match status through the last hole that counted toward the match result. */
@@ -88,6 +90,17 @@ function teamHoleScores(tournament: Tournament, players: string[], round: number
   return { scores, pars };
 }
 
+function individualHoleScores(tournament: Tournament, players: string[], round: number): Record<string, Array<{ hole: number; par: number; score: number }>> | null {
+  const entries = players.map((player) => {
+    const scorecard = getRoundScorecard(tournament, player, round);
+    if (!scorecard || scorecard.holes.length < 18) return null;
+    return [player, scorecard.holes.map((hole) => ({ hole: hole.hole, par: hole.par, score: hole.score }))] as const;
+  });
+
+  if (entries.some((entry) => entry == null)) return null;
+  return Object.fromEntries(entries as [string, Array<{ hole: number; par: number; score: number }>][]) as Record<string, Array<{ hole: number; par: number; score: number }>>;
+}
+
 /** The signed maroon-minus-white tally the match should land on at its clinching hole, or null if it can't be determined. */
 function expectedFinalTally(match: RealMatch): number | null {
   if (match.maroonPts === match.whitePts) return 0;
@@ -114,7 +127,8 @@ export function getMatchHoleByHole(tournament: Tournament, match: RealMatch): Ma
 
   const maroon = teamHoleScores(tournament, match.maroonPlayers, round);
   const white = teamHoleScores(tournament, match.whitePlayers, round);
-  if (!maroon || !white || maroon.scores.length !== white.scores.length) return null;
+  const playerHoles = individualHoleScores(tournament, [...match.maroonPlayers, ...match.whitePlayers], round);
+  if (!maroon || !white || !playerHoles || maroon.scores.length !== white.scores.length) return null;
 
   const holesPlayed = 18 - (match.holesRemaining ?? 0);
   if (holesPlayed < 1 || holesPlayed > maroon.scores.length) return null;
@@ -144,6 +158,7 @@ export function getMatchHoleByHole(tournament: Tournament, match: RealMatch): Ma
   return {
     maroonPlayers: match.maroonPlayers,
     whitePlayers: match.whitePlayers,
+    playerHoles,
     allHoles,
     holes,
   };

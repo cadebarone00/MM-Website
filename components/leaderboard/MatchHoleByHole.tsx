@@ -116,6 +116,109 @@ function SinglesMatchGrid({ tournament, match, tournamentSlug }: { tournament: T
   );
 }
 
+function TeamPlayerNineRow({
+  player,
+  team,
+  holes,
+  playerHoles,
+}: {
+  player: string;
+  team: Team;
+  holes: MatchHoleByHoleData["allHoles"];
+  playerHoles: MatchHoleByHoleData["playerHoles"];
+}) {
+  const maroon = team === "maroon";
+  const scores = playerHoles[player];
+  return (
+    <div className="flex">
+      {holes.map((hole) => {
+        const score = scores[hole.hole - 1]?.score ?? 0;
+        return (
+          <div key={hole.hole} className={["flex h-11 min-w-0 flex-1 items-center justify-center border-r", maroon ? "border-gold-600 bg-maroon-700" : "border-ink-300 bg-white"].join(" ")}>
+            <HoleMarkerForDiff diff={score - hole.par} size={24} tone={maroon ? "white" : "maroon"}>{score}</HoleMarkerForDiff>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function FourballNinePage({
+  holes,
+  maroonPlayers,
+  whitePlayers,
+  playerHoles,
+  statusByHole,
+  endedFill,
+}: {
+  holes: MatchHoleByHoleData["allHoles"];
+  maroonPlayers: string[];
+  whitePlayers: string[];
+  playerHoles: MatchHoleByHoleData["playerHoles"];
+  statusByHole: Map<number, MatchHoleStatus>;
+  endedFill: Team | null;
+}) {
+  return (
+    <div className="flex w-full shrink-0 snap-start flex-col">
+      <div className="flex">{holes.map((hole) => <div key={hole.hole} className="flex h-8 min-w-0 flex-1 items-center justify-center border-r border-ink-300 bg-cream-100 font-sans text-xs font-semibold tabular-nums text-maroon-700">{hole.hole}</div>)}</div>
+      <div className="flex">{holes.map((hole) => <div key={hole.hole} className="flex h-8 min-w-0 flex-1 items-center justify-center border-r border-ink-300 bg-cream-100 font-sans text-xs tabular-nums text-maroon-700">{hole.par}</div>)}</div>
+      <TeamPlayerNineRow player={maroonPlayers[0]} team="maroon" holes={holes} playerHoles={playerHoles} />
+      <TeamPlayerNineRow player={maroonPlayers[1]} team="maroon" holes={holes} playerHoles={playerHoles} />
+      <div className="flex">{holes.map((hole) => <TeamStatusCell key={hole.hole} status={statusByHole.get(hole.hole)} nextStatus={statusByHole.get(hole.hole + 1)} endedFill={endedFill} />)}</div>
+      <TeamPlayerNineRow player={whitePlayers[0]} team="white" holes={holes} playerHoles={playerHoles} />
+      <TeamPlayerNineRow player={whitePlayers[1]} team="white" holes={holes} playerHoles={playerHoles} />
+    </div>
+  );
+}
+
+function playerTotal(player: string, playerHoles: MatchHoleByHoleData["playerHoles"]) {
+  return playerHoles[player].reduce((total, hole) => total + hole.score, 0);
+}
+
+function FourballMatchGrid({ tournament, match, tournamentSlug }: { tournament: Tournament; match: RealMatch; tournamentSlug: string }) {
+  const data = getMatchHoleByHole(tournament, match);
+  if (!data || data.maroonPlayers.length !== 2 || data.whitePlayers.length !== 2) return <NotAvailable format={match.format} />;
+
+  const statusByHole = new Map(data.holes.map((hole) => [hole.hole, hole]));
+  const parTotal = data.allHoles.reduce((total, hole) => total + hole.par, 0);
+  const winner = matchLeader(match);
+  const endedFill: Team | null = winner === "tie" ? null : winner;
+  const resultTone = winner === "maroon" ? "bg-maroon-700 text-white" : winner === "white" ? "bg-white text-maroon-700" : "bg-cream-100 text-maroon-700";
+  const front = data.allHoles.slice(0, 9);
+  const back = data.allHoles.slice(9, 18);
+  const [maroonOne, maroonTwo] = data.maroonPlayers;
+  const [whiteOne, whiteTwo] = data.whitePlayers;
+
+  return (
+    <div className="mx-0 flex border-y border-ink-300 bg-cream-100">
+      <div className="flex w-16 shrink-0 flex-col">
+        <SideCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Hole</span></SideCell>
+        <SideCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Par</span></SideCell>
+        <SideCell className="h-11 border-gold-600 bg-maroon-700 text-white"><Link href={`/leaderboard/${tournamentSlug}/players/${maroonOne.toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames([maroonOne])}</Link></SideCell>
+        <SideCell className="h-11 border-gold-600 bg-maroon-700 text-white"><Link href={`/leaderboard/${tournamentSlug}/players/${maroonTwo.toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames([maroonTwo])}</Link></SideCell>
+        <SideCell className="h-9 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Status</span></SideCell>
+        <SideCell className="h-11 bg-white text-maroon-700"><Link href={`/leaderboard/${tournamentSlug}/players/${whiteOne.toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames([whiteOne])}</Link></SideCell>
+        <SideCell className="h-11 bg-white text-maroon-700"><Link href={`/leaderboard/${tournamentSlug}/players/${whiteTwo.toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames([whiteTwo])}</Link></SideCell>
+      </div>
+
+      <div className="flex flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden">
+        <FourballNinePage holes={front} maroonPlayers={data.maroonPlayers} whitePlayers={data.whitePlayers} playerHoles={data.playerHoles} statusByHole={statusByHole} endedFill={endedFill} />
+        <FourballNinePage holes={back} maroonPlayers={data.maroonPlayers} whitePlayers={data.whitePlayers} playerHoles={data.playerHoles} statusByHole={statusByHole} endedFill={endedFill} />
+      </div>
+
+      <div className="flex w-[50px] shrink-0 flex-col">
+        <TotalCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Tot</span></TotalCell>
+        <TotalCell className="h-8 bg-cream-100 font-sans text-xs font-semibold tabular-nums text-maroon-700">{parTotal}</TotalCell>
+        <TotalCell className="h-11 border-gold-600 bg-maroon-700 font-score text-xs font-bold tabular-nums text-white">{playerTotal(maroonOne, data.playerHoles)}</TotalCell>
+        <TotalCell className="h-11 border-gold-600 bg-maroon-700 font-score text-xs font-bold tabular-nums text-white">{playerTotal(maroonTwo, data.playerHoles)}</TotalCell>
+        <TotalCell className={["h-9 px-0 font-condensed text-3xs font-extrabold uppercase", resultTone].join(" ")}>{matchLabel(match)}</TotalCell>
+        <TotalCell className="h-11 bg-white font-score text-xs font-bold tabular-nums text-maroon-700">{playerTotal(whiteOne, data.playerHoles)}</TotalCell>
+        <TotalCell className="h-11 bg-white font-score text-xs font-bold tabular-nums text-maroon-700">{playerTotal(whiteTwo, data.playerHoles)}</TotalCell>
+      </div>
+    </div>
+  );
+}
+
 function LegacyHeaderCell({ value }: { value: number }) {
   return <div className="flex h-7 w-9 shrink-0 items-center justify-center border-r border-white/15 bg-maroon-700 font-sans text-2xs font-semibold tabular-nums text-white">{value}</div>;
 }
@@ -166,5 +269,6 @@ function LegacyMatchHoleByHole({ tournament, match }: { tournament: Tournament; 
 /** A compact, full-width 18-hole scorecard for expanded Singles matches. */
 export function MatchHoleByHole({ tournament, match, tournamentSlug }: { tournament: Tournament; match: RealMatch; tournamentSlug: string }) {
   if (match.format === "Singles") return <SinglesMatchGrid tournament={tournament} match={match} tournamentSlug={tournamentSlug} />;
+  if (match.format === "Fourball") return <FourballMatchGrid tournament={tournament} match={match} tournamentSlug={tournamentSlug} />;
   return <LegacyMatchHoleByHole tournament={tournament} match={match} />;
 }
