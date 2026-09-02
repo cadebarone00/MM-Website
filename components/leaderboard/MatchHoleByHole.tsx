@@ -57,11 +57,11 @@ function TeamStatusCell({ status, nextStatus, endedFill }: { status?: MatchHoleS
 }
 
 function SideCell({ children, className }: { children: ReactNode; className: string }) {
-  return <div className={["flex w-16 shrink-0 items-center justify-center border-r border-ink-300 px-1 text-center", className].join(" ")}>{children}</div>;
+  return <div className={["flex w-[60px] shrink-0 items-center justify-center border-r border-ink-300 px-1 text-center", className].join(" ")}>{children}</div>;
 }
 
 function TotalCell({ children, className }: { children: ReactNode; className: string }) {
-  return <div className={["flex w-[50px] shrink-0 items-center justify-center border-l border-ink-300 px-1 text-center", className].join(" ")}>{children}</div>;
+  return <div className={["flex w-[42px] shrink-0 items-center justify-center border-l border-ink-300 px-1 text-center", className].join(" ")}>{children}</div>;
 }
 
 function SinglesNinePage({ holes, statusByHole, endedFill }: { holes: MatchHoleByHoleData["allHoles"]; statusByHole: Map<number, MatchHoleStatus>; endedFill: Team | null }) {
@@ -92,7 +92,7 @@ function SinglesMatchGrid({ tournament, match, tournamentSlug }: { tournament: T
 
   return (
     <div className="mx-0 flex border-y border-ink-300 bg-cream-100">
-      <div className="flex w-16 shrink-0 flex-col">
+      <div className="flex w-[60px] shrink-0 flex-col">
         <SideCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Hole</span></SideCell>
         <SideCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Par</span></SideCell>
         <SideCell className="h-11 border-gold-600 bg-maroon-700 text-white"><Link href={`/leaderboard/${tournamentSlug}/players/${data.maroonPlayers[0].toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames(data.maroonPlayers)}</Link></SideCell>
@@ -105,7 +105,7 @@ function SinglesMatchGrid({ tournament, match, tournamentSlug }: { tournament: T
         <SinglesNinePage holes={back} statusByHole={statusByHole} endedFill={endedFill} />
       </div>
 
-      <div className="flex w-[50px] shrink-0 flex-col">
+      <div className="flex w-[42px] shrink-0 flex-col">
         <TotalCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Tot</span></TotalCell>
         <TotalCell className="h-8 bg-cream-100 font-sans text-xs font-semibold tabular-nums text-maroon-700">{parTotal}</TotalCell>
         <TotalCell className="h-11 border-gold-600 bg-maroon-700 font-score text-xs font-bold tabular-nums text-white">{maroonTotal}</TotalCell>
@@ -191,7 +191,7 @@ function FourballMatchGrid({ tournament, match, tournamentSlug }: { tournament: 
 
   return (
     <div className="mx-0 flex border-y border-ink-300 bg-cream-100">
-      <div className="flex w-16 shrink-0 flex-col">
+      <div className="flex w-[60px] shrink-0 flex-col">
         <SideCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Hole</span></SideCell>
         <SideCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Par</span></SideCell>
         <SideCell className="h-11 border-gold-600 bg-maroon-700 text-white"><Link href={`/leaderboard/${tournamentSlug}/players/${maroonOne.toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames([maroonOne])}</Link></SideCell>
@@ -206,7 +206,7 @@ function FourballMatchGrid({ tournament, match, tournamentSlug }: { tournament: 
         <FourballNinePage holes={back} maroonPlayers={data.maroonPlayers} whitePlayers={data.whitePlayers} playerHoles={data.playerHoles} statusByHole={statusByHole} endedFill={endedFill} />
       </div>
 
-      <div className="flex w-[50px] shrink-0 flex-col">
+      <div className="flex w-[42px] shrink-0 flex-col">
         <TotalCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Tot</span></TotalCell>
         <TotalCell className="h-8 bg-cream-100 font-sans text-xs font-semibold tabular-nums text-maroon-700">{parTotal}</TotalCell>
         <TotalCell className="h-11 border-gold-600 bg-maroon-700 font-score text-xs font-bold tabular-nums text-white">{playerTotal(maroonOne, data.playerHoles)}</TotalCell>
