@@ -48,9 +48,9 @@ function TeamStatusCell({ status, nextStatus, endedFill }: { status?: MatchHoleS
   }
   return (
     <div className={["flex h-9 min-w-0 flex-1 items-center justify-center border-r bg-cream-100", divider].join(" ")}>
-      <span className={["flex h-full w-full items-center justify-center gap-px font-condensed text-3xs font-extrabold", statusCellColor(status.leader)].join(" ")}>
-        {status.leader === "maroon" ? <ArrowUp size={11} strokeWidth={3} aria-label="Maroon up" /> : status.leader === "white" ? <ArrowDown size={11} strokeWidth={3} aria-label="White up" /> : null}
+      <span className={["flex h-full w-full items-center justify-center gap-px font-condensed text-sm font-extrabold", statusCellColor(status.leader)].join(" ")}>
         {status.leader ? Math.abs(status.tally) : "AS"}
+        {status.leader === "maroon" ? <ArrowUp size={14} strokeWidth={3} aria-label="Maroon up" /> : status.leader === "white" ? <ArrowDown size={14} strokeWidth={3} aria-label="White up" /> : null}
       </span>
     </div>
   );
