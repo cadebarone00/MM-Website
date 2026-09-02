@@ -169,7 +169,7 @@ function TeamBestBallNineRow({
       {holes.map((hole) => {
         const score = bestBallScore(players, hole.hole, playerHoles);
         return (
-          <div key={hole.hole} className={["flex min-w-0 flex-1 items-center justify-center border-r", SQUARE_ROW, maroon ? "border-gold-600 bg-maroon-700" : "border-ink-300 bg-white"].join(" ")}>
+          <div key={hole.hole} className={["flex min-w-0 flex-1 items-center justify-center border-r border-t border-gold-600", SQUARE_ROW, maroon ? "bg-maroon-700" : "bg-white"].join(" ")}>
             <HoleMarkerForDiff diff={score - hole.par} size={24} tone={maroon ? "white" : "maroon"}>{score}</HoleMarkerForDiff>
           </div>
         );
@@ -238,9 +238,9 @@ function FourballMatchGrid({ tournament, match, tournamentSlug }: { tournament: 
         <SideCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Par</span></SideCell>
         <SideCell className="h-11 border-gold-600 bg-maroon-700 text-white"><Link href={`/leaderboard/${tournamentSlug}/players/${maroonOne.toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames([maroonOne])}</Link></SideCell>
         <SideCell className="h-11 border-gold-600 bg-maroon-700 text-white"><Link href={`/leaderboard/${tournamentSlug}/players/${maroonTwo.toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames([maroonTwo])}</Link></SideCell>
-        <SideCell className="h-11 border-gold-600 bg-maroon-700 text-white"><span className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide">M Best Ball</span></SideCell>
+        <SideCell className="h-11 border-t border-gold-600 bg-maroon-700 text-white"><span className="whitespace-nowrap font-condensed text-[8px] font-bold uppercase tracking-tight">Best Ball</span></SideCell>
         <SideCell className="h-9 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Status</span></SideCell>
-        <SideCell className="h-11 bg-white text-maroon-700"><span className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide">W Best Ball</span></SideCell>
+        <SideCell className="h-11 border-t border-gold-600 bg-white text-maroon-700"><span className="whitespace-nowrap font-condensed text-[8px] font-bold uppercase tracking-tight">Best Ball</span></SideCell>
         <SideCell className="h-11 bg-white text-maroon-700"><Link href={`/leaderboard/${tournamentSlug}/players/${whiteOne.toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames([whiteOne])}</Link></SideCell>
         <SideCell className="h-11 bg-white text-maroon-700"><Link href={`/leaderboard/${tournamentSlug}/players/${whiteTwo.toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames([whiteTwo])}</Link></SideCell>
       </div>
@@ -255,9 +255,9 @@ function FourballMatchGrid({ tournament, match, tournamentSlug }: { tournament: 
         <TotalCell className="h-8 bg-cream-100 font-sans text-xs font-semibold tabular-nums text-maroon-700">{parTotal}</TotalCell>
         <TotalCell className="h-11 border-gold-600 bg-maroon-700 font-score text-xs font-bold tabular-nums text-white">{playerTotal(maroonOne, data.playerHoles)}</TotalCell>
         <TotalCell className="h-11 border-gold-600 bg-maroon-700 font-score text-xs font-bold tabular-nums text-white">{playerTotal(maroonTwo, data.playerHoles)}</TotalCell>
-        <TotalCell className="h-11 border-gold-600 bg-maroon-700 font-score text-xs font-bold tabular-nums text-white">{bestBallTotal(data.maroonPlayers, data.playerHoles)}</TotalCell>
+        <TotalCell className="h-11 border-t border-gold-600 bg-maroon-700 font-score text-xs font-bold tabular-nums text-white">{bestBallTotal(data.maroonPlayers, data.playerHoles)}</TotalCell>
         <TotalCell className={["h-9 px-0 font-condensed text-3xs font-extrabold uppercase", resultTone].join(" ")}>{matchLabel(match)}</TotalCell>
-        <TotalCell className="h-11 bg-white font-score text-xs font-bold tabular-nums text-maroon-700">{bestBallTotal(data.whitePlayers, data.playerHoles)}</TotalCell>
+        <TotalCell className="h-11 border-t border-gold-600 bg-white font-score text-xs font-bold tabular-nums text-maroon-700">{bestBallTotal(data.whitePlayers, data.playerHoles)}</TotalCell>
         <TotalCell className="h-11 bg-white font-score text-xs font-bold tabular-nums text-maroon-700">{playerTotal(whiteOne, data.playerHoles)}</TotalCell>
         <TotalCell className="h-11 bg-white font-score text-xs font-bold tabular-nums text-maroon-700">{playerTotal(whiteTwo, data.playerHoles)}</TotalCell>
       </div>
