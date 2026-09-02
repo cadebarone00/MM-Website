@@ -7,6 +7,7 @@ const BOXES = [
   { label: "Courses & Format", href: "/portal/admin/courses-format", enabled: true },
   { label: "Matchups", href: "/portal/admin/matchups", enabled: true },
   { label: "Scorecards & Video", href: "/portal/admin/scorecards", enabled: true },
+  { label: "Career Stats", href: "/portal/admin/career-stats", enabled: true },
   { label: "Edit Scores", href: "#", enabled: false },
 ];
 
