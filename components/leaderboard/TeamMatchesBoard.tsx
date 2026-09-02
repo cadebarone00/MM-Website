@@ -53,23 +53,37 @@ function PlaceholderPanel() {
 
 /** "Day {n}" label that drops down the other available days on tap — replaces the old day-pill row. */
 function DaySelector({ days, activeDay, onSelect }: { days: number[]; activeDay: number; onSelect: (day: number) => void }) {
+  const [open, setOpen] = useState(false);
+
   return (
-    <div className="mb-3 inline-flex overflow-hidden rounded-sm border border-gold-400">
-      <span className="flex h-9 items-center bg-maroon-700 px-3 font-condensed text-sm font-black uppercase tracking-wide text-white">Day</span>
-      {days.map((day) => (
-        <button
-          key={day}
-          type="button"
-          aria-pressed={day === activeDay}
-          onClick={() => onSelect(day)}
-          className={[
-            "flex h-9 min-w-9 items-center justify-center border-l border-gold-400 px-2 font-sans text-sm font-black tabular-nums transition-colors",
-            day === activeDay ? "bg-cream-100 text-maroon-700" : "bg-white text-ink-500 hover:bg-cream-50",
-          ].join(" ")}
-        >
-          {day}
-        </button>
-      ))}
+    <div className="mb-3 inline-flex rounded-pill border border-gold-400 bg-cream-50 p-[3px]">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className="rounded-pill bg-maroon-700 px-3 py-1 font-condensed text-2xs font-bold uppercase tracking-wide text-cream-50"
+      >
+        Day
+      </button>
+      <div className={["flex overflow-hidden transition-[max-width,opacity,margin] duration-200 ease-out", open ? "ml-1 max-w-40 opacity-100" : "max-w-0 opacity-0"].join(" ")}>
+        {days.map((day) => (
+          <button
+            key={day}
+            type="button"
+            aria-pressed={day === activeDay}
+            onClick={() => {
+              onSelect(day);
+              setOpen(false);
+            }}
+            className={[
+              "shrink-0 rounded-pill px-3 py-1 font-condensed text-2xs font-bold tabular-nums transition-colors",
+              day === activeDay ? "bg-maroon-700 text-cream-50" : "text-ink-500 hover:bg-cream-100",
+            ].join(" ")}
+          >
+            {day}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
