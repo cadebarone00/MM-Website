@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { HoleMarkerForDiff } from "@/components/scorecard/HoleMarker";
 import { getPlayerDisplayName } from "@/lib/data/players";
-import { getMatchHoleByHole, type MatchHoleStatus } from "@/lib/data/matchHoleByHole";
+import { getMatchHoleByHole, type MatchHoleByHole as MatchHoleByHoleData, type MatchHoleStatus } from "@/lib/data/matchHoleByHole";
 import { matchLabel, matchLeader } from "@/components/leaderboard/matchUtils";
 import type { RealMatch, Team, Tournament } from "@/lib/data/types";
 
@@ -11,8 +11,8 @@ function lastNames(players: string[]) {
 }
 
 function statusCellColor(leader: Team | null) {
-  if (leader === "maroon") return "border-maroon-300 bg-maroon-700/15 text-maroon-700";
-  if (leader === "white") return "border-ink-300 bg-white/70 text-ink-800";
+  if (leader === "maroon") return "border-maroon-700 bg-maroon-700 text-white";
+  if (leader === "white") return "border-ink-300 bg-white text-maroon-700";
   return "border-ink-300 bg-ink-100 text-ink-900";
 }
 
@@ -48,7 +48,7 @@ function TotalCell({ children, className }: { children: ReactNode; className: st
   return <div className={["flex w-14 shrink-0 items-center justify-center border-l border-ink-300 px-1 text-center", className].join(" ")}>{children}</div>;
 }
 
-function SinglesNinePage({ holes, statusByHole }: { holes: ReturnType<typeof getMatchHoleByHole> extends infer T ? T extends { allHoles: infer H } ? H : never : never; statusByHole: Map<number, MatchHoleStatus> }) {
+function SinglesNinePage({ holes, statusByHole }: { holes: MatchHoleByHoleData["allHoles"]; statusByHole: Map<number, MatchHoleStatus> }) {
   return (
     <div className="flex w-full shrink-0 snap-start flex-col">
       <div className="flex">{holes.map((hole) => <div key={hole.hole} className="flex h-8 flex-1 items-center justify-center border-r border-white/15 bg-maroon-700 font-sans text-xs font-semibold tabular-nums text-white">{hole.hole}</div>)}</div>
