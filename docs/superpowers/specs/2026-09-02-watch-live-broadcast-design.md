@@ -536,73 +536,75 @@ lose events that happened while a human had the wheel.
 
 ## 26. Database Schema
 
+**Correction from initial drafting (confirmed against the real schema before
+writing any SQL):** `docs/superpowers/specs/2026-09-01-tiger-center-master-settings-design.md`'s
+`season_year` model is itself only a spec — it has not been built yet
+(`supabase/schema.sql` has no `season_year` column anywhere, `live_tournament_settings`
+is still today's actual singleton `id boolean primary key default true` row).
+So these tables are built **singleton, matching today's real
+`live_tournament_settings` shape** — not `season_year`-keyed. If/when Master
+Settings ships, these get a `season_year` column retrofitted the exact same
+way every other `live_*` table's Master Settings migration does (see that
+spec's `alter table ... add column season_year integer` pattern) — this is a
+deferred, not lost, requirement.
+
 New tables, all following this repo's existing conventions exactly (`create
-table if not exists`, `season_year` scoping matching `live_tournament_settings`,
-RLS `select using (true)` + service-role-only writes, no ORM). Every table
-below references *existing* tables by id/slug rather than duplicating their
-data — the "why" for each is inline.
+table if not exists`, RLS `select using (true)` + service-role-only writes,
+no ORM). Every table below references *existing* tables by id/slug rather
+than duplicating their data — the "why" for each is inline.
 
 ```sql
--- One row per year: the whole rotation/priority/overlay/audio config.
+-- The whole rotation/priority/overlay/audio config. Singleton for now (see
+-- note above) — one row, matching live_tournament_settings' own pattern.
 -- Why a table and not hard-coded constants: the brief requires these be
 -- configurable per tournament, not fixed at build time (§2, §13, §18, §21).
 create table if not exists broadcast_config (
-  season_year integer primary key check (season_year between 2027 and 2034),
+  id boolean primary key default true,
   scene_durations_ms jsonb not null default '{"individual_leaderboard":12000,"match_play":12000,"holding":10000}',
   priorities jsonb not null default '{}', -- overrides on top of the code defaults in §13
   overlay_duration_ms integer not null default 6000,
   audio jsonb not null default '{}', -- Phase 6+
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint broadcast_config_singleton check (id)
 );
-alter table broadcast_config enable row level security;
-create policy "broadcast_config read" on broadcast_config for select using (true);
 
--- One row per year: the single authoritative "what's on screen right now."
--- Why a table and not derived: every client must converge on the same
--- scene/timestamp without a shared process (§8) — this row IS that shared
--- clock.
+-- The single authoritative "what's on screen right now." Singleton for now
+-- (see note above). Why a table and not derived: every client must converge
+-- on the same scene/timestamp without a shared process (§8) — this row IS
+-- that shared clock.
 create table if not exists broadcast_state (
-  season_year integer primary key check (season_year between 2027 and 2034),
-  current_scene text not null default 'holding',
+  id boolean primary key default true,
+  current_scene text not null default 'holding'
+    check (current_scene in ('holding', 'individual_leaderboard', 'match_play')),
   scene_started_at timestamptz not null default now(),
-  active_event_id uuid references broadcast_events(id),
-  automation_mode text not null default 'auto' check (automation_mode in ('auto','producer')),
+  active_event_id uuid, -- references broadcast_events(id) once that table exists, Phase 2
+  automation_mode text not null default 'auto' check (automation_mode in ('auto', 'producer')),
   paused boolean not null default false,
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint broadcast_state_singleton check (id)
 );
-alter table broadcast_state enable row level security;
-create policy "broadcast_state read" on broadcast_state for select using (true);
 
--- The queue. One row per broadcast-worthy moment. References existing
--- entities by id/slug rather than copying player/match/score data — the
--- payload jsonb holds only the display-ready summary (names, labels) so a
--- scene doesn't need a second round-trip to render a queued item's preview.
-create table if not exists broadcast_events (
-  id uuid primary key default gen_random_uuid(),
-  season_year integer not null check (season_year between 2027 and 2034),
-  kind text not null, -- see taxonomy, §11
-  priority integer not null,
-  status text not null default 'pending'
-    check (status in ('pending','queued','ready','playing','played','skipped','dismissed','expired','failed')),
-  player_slug text, -- references lib/data/players, nullable
-  match_box_id uuid references live_match_boxes(id),
-  round integer,
-  hole integer,
-  video_id uuid, -- references live_shot_videos(id), Phase 3+, nullable until that table exists
-  payload jsonb not null default '{}',
-  source text not null default 'system' check (source in ('system','host')),
-  created_by uuid references profiles(id), -- null for system-generated
-  created_at timestamptz not null default now(),
-  scheduled_at timestamptz,
-  started_at timestamptz,
-  completed_at timestamptz,
-  dismissed_at timestamptz,
-  expires_at timestamptz
-);
-create index broadcast_events_season_status_idx on broadcast_events (season_year, status, priority desc, created_at asc);
-alter table broadcast_events enable row level security;
-create policy "broadcast_events read" on broadcast_events for select using (true);
+alter table broadcast_config enable row level security;
+alter table broadcast_state enable row level security;
+
+-- Same "public read, service-role writes" pattern as every live_* table —
+-- the /broadcast page has no login, and none of this is sensitive.
+drop policy if exists broadcast_config_select_all on broadcast_config;
+create policy broadcast_config_select_all on broadcast_config for select using (true);
+
+drop policy if exists broadcast_state_select_all on broadcast_state;
+create policy broadcast_state_select_all on broadcast_state for select using (true);
+
+insert into broadcast_config (id) values (true) on conflict (id) do nothing;
+insert into broadcast_state (id) values (true) on conflict (id) do nothing;
 ```
+
+`broadcast_events` (the queue) is **not created yet** — it's Phase 2 work,
+once there's a rules engine to write to it. Its shape stays as sketched in
+the original draft of this section (`kind`, `priority`, `status`, references
+to `live_match_boxes`/players/hole/`profiles`, timestamps) and will be added
+with its own migration when Phase 2 starts, at which point `broadcast_state.active_event_id`
+also gets its real foreign key.
 
 **Deliberately not built now:** a separate `broadcast_history` table (§12 —
 status filtering on the same table covers it); a separate `scene_configuration`
