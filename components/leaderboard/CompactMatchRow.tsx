@@ -15,6 +15,7 @@ function labelColor(match: RealMatch) {
 
 function lastName(player: string) {
   const name = getPlayerDisplayName(player).split(" ").pop() ?? player;
+  if (name.toLowerCase() === "wojciechowski") return "WOJO";
   return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
 }
 
