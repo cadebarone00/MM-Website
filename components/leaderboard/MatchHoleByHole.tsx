@@ -42,9 +42,9 @@ function statusDivider(nextLeader: Team | null) {
   return nextLeader === "maroon" ? "border-gold-600" : "border-ink-300";
 }
 
-function TeamStatusCell({ status, nextStatus, endedFill }: { status?: MatchHoleStatus; nextStatus?: MatchHoleStatus; endedFill: Team | null }) {
+function TeamStatusCell({ status, nextStatus, endedFill, uniformGold = false }: { status?: MatchHoleStatus; nextStatus?: MatchHoleStatus; endedFill: Team | null; uniformGold?: boolean }) {
   const nextLeader = nextStatus?.leader ?? endedFill;
-  const divider = statusDivider(nextLeader);
+  const divider = uniformGold ? "border-gold-600" : statusDivider(nextLeader);
   if (!status) {
     const fill = endedFill === "maroon" ? "bg-maroon-700" : endedFill === "white" ? "bg-white" : "bg-cream-100";
     return <div className={["flex min-w-0 flex-1 border-r", SQUARE_ROW, fill, divider].join(" ")} />;
@@ -137,7 +137,7 @@ function TeamPlayerNineRow({
       {holes.map((hole) => {
         const score = scores[hole.hole - 1]?.score ?? 0;
         return (
-          <div key={hole.hole} className={["flex min-w-0 flex-1 items-center justify-center border-r", SQUARE_ROW, maroon ? "border-gold-600 bg-maroon-700" : "border-ink-300 bg-white"].join(" ")}>
+          <div key={hole.hole} className={["flex min-w-0 flex-1 items-center justify-center border-r border-gold-600", SQUARE_ROW, maroon ? "bg-maroon-700" : "bg-white"].join(" ")}>
             <HoleMarkerForDiff diff={score - hole.par} size={24} tone={maroon ? "white" : "maroon"}>{score}</HoleMarkerForDiff>
           </div>
         );
@@ -156,11 +156,13 @@ function TeamBestBallNineRow({
   team,
   holes,
   playerHoles,
+  separation,
 }: {
   players: string[];
   team: Team;
   holes: MatchHoleByHoleData["allHoles"];
   playerHoles: MatchHoleByHoleData["playerHoles"];
+  separation: "above" | "below";
 }) {
   const maroon = team === "maroon";
 
@@ -169,7 +171,7 @@ function TeamBestBallNineRow({
       {holes.map((hole) => {
         const score = bestBallScore(players, hole.hole, playerHoles);
         return (
-          <div key={hole.hole} className={["flex min-w-0 flex-1 items-center justify-center border-r border-t border-gold-600", SQUARE_ROW, maroon ? "bg-maroon-700" : "bg-white"].join(" ")}>
+          <div key={hole.hole} className={["flex min-w-0 flex-1 items-center justify-center border-r border-gold-600", separation === "above" ? "border-t" : "border-b", SQUARE_ROW, maroon ? "bg-maroon-700" : "bg-white"].join(" ")}>
             <HoleMarkerForDiff diff={score - hole.par} size={24} tone={maroon ? "white" : "maroon"}>{score}</HoleMarkerForDiff>
           </div>
         );
@@ -195,13 +197,13 @@ function FourballNinePage({
 }) {
   return (
     <div className="flex w-full shrink-0 snap-start flex-col">
-      <div className="flex">{holes.map((hole) => <div key={hole.hole} className={["flex min-w-0 flex-1 items-center justify-center border-r border-ink-300 bg-cream-100 font-sans text-xs font-semibold tabular-nums text-maroon-700", SQUARE_ROW].join(" ")}>{hole.hole}</div>)}</div>
-      <div className="flex">{holes.map((hole) => <div key={hole.hole} className={["flex min-w-0 flex-1 items-center justify-center border-r border-ink-300 bg-cream-100 font-sans text-xs tabular-nums text-maroon-700", SQUARE_ROW].join(" ")}>{hole.par}</div>)}</div>
+      <div className="flex">{holes.map((hole) => <div key={hole.hole} className={["flex min-w-0 flex-1 items-center justify-center border-r border-gold-600 bg-cream-100 font-sans text-xs font-semibold tabular-nums text-maroon-700", SQUARE_ROW].join(" ")}>{hole.hole}</div>)}</div>
+      <div className="flex">{holes.map((hole) => <div key={hole.hole} className={["flex min-w-0 flex-1 items-center justify-center border-r border-gold-600 bg-cream-100 font-sans text-xs tabular-nums text-maroon-700", SQUARE_ROW].join(" ")}>{hole.par}</div>)}</div>
       <TeamPlayerNineRow player={maroonPlayers[0]} team="maroon" holes={holes} playerHoles={playerHoles} />
       <TeamPlayerNineRow player={maroonPlayers[1]} team="maroon" holes={holes} playerHoles={playerHoles} />
-      <TeamBestBallNineRow players={maroonPlayers} team="maroon" holes={holes} playerHoles={playerHoles} />
-      <div className="flex">{holes.map((hole) => <TeamStatusCell key={hole.hole} status={statusByHole.get(hole.hole)} nextStatus={statusByHole.get(hole.hole + 1)} endedFill={endedFill} />)}</div>
-      <TeamBestBallNineRow players={whitePlayers} team="white" holes={holes} playerHoles={playerHoles} />
+      <TeamBestBallNineRow players={maroonPlayers} team="maroon" holes={holes} playerHoles={playerHoles} separation="above" />
+      <div className="flex">{holes.map((hole) => <TeamStatusCell key={hole.hole} status={statusByHole.get(hole.hole)} nextStatus={statusByHole.get(hole.hole + 1)} endedFill={endedFill} uniformGold />)}</div>
+      <TeamBestBallNineRow players={whitePlayers} team="white" holes={holes} playerHoles={playerHoles} separation="below" />
       <TeamPlayerNineRow player={whitePlayers[0]} team="white" holes={holes} playerHoles={playerHoles} />
       <TeamPlayerNineRow player={whitePlayers[1]} team="white" holes={holes} playerHoles={playerHoles} />
     </div>
