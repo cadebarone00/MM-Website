@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown, Radio } from "lucide-react";
 import { CompactMatchRow } from "./CompactMatchRow";
 import { centralDateLabel, currentRoundDay, LIVE_START_LABEL } from "./matchUtils";
+import { fmtPt } from "@/lib/data";
 import type { RealMatch, Tournament } from "@/lib/data/types";
 
 type SessionGroup = { session: string; format: string; matches: RealMatch[] };
@@ -105,16 +106,23 @@ export function TeamMatchesBoard({ tournament, live }: { tournament: Tournament;
 
   const activeDay = days.includes(day) ? day : days[days.length - 1];
   const dayMatches = tournament.matches.filter((m) => m.day === activeDay);
+  const dayMaroonPts = dayMatches.reduce((total, match) => total + match.maroonPts, 0);
+  const dayWhitePts = dayMatches.reduce((total, match) => total + match.whitePts, 0);
   const sessionGroups = groupBySession(dayMatches);
 
   return (
     <div>
       <DaySelector days={days} activeDay={activeDay} onSelect={setUserPickedDay} />
 
-      <div className="flex overflow-hidden rounded-sm">
-        <div className="flex-1 bg-maroon-700 py-1.5 text-center font-condensed text-2xs font-bold uppercase tracking-eyebrow text-white">Maroon</div>
-        <div className="flex-1 border-y border-ink-100 bg-white py-1.5 text-center font-condensed text-2xs font-bold uppercase tracking-eyebrow text-maroon-700">
-          White
+      <div className="flex overflow-hidden rounded-sm border-y border-gold-300">
+        <div className="flex h-10 flex-1 items-center justify-between bg-maroon-700 px-3 text-white">
+          <span className="font-condensed text-2xs font-bold uppercase tracking-eyebrow">Maroon</span>
+          <span className="font-sans text-xl font-black tabular-nums">{fmtPt(dayMaroonPts)}</span>
+        </div>
+        <div className="w-px bg-gold-500" />
+        <div className="flex h-10 flex-1 items-center justify-between bg-white px-3 text-maroon-700">
+          <span className="font-sans text-xl font-black tabular-nums">{fmtPt(dayWhitePts)}</span>
+          <span className="font-condensed text-2xs font-bold uppercase tracking-eyebrow">White</span>
         </div>
       </div>
 
