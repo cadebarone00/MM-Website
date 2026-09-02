@@ -130,12 +130,15 @@ export function TeamMatchesBoard({ tournament, live }: { tournament: Tournament;
       <div>
         {sessionGroups.map((group, index) => (
           <div key={group.session}>
-            <div className="grid min-h-8 grid-cols-[30px_minmax(0,1fr)_44px_minmax(0,1fr)_30px] items-center pt-2 font-condensed text-3xs font-black uppercase tracking-wide text-ink-400">
-              <span className="text-center">Stat</span>
-              <span className="col-span-3 px-1">
+            <div className="pt-2">
+              <div className="px-1 pb-1 font-condensed text-2xs font-black uppercase tracking-wide text-ink-400">
                 {sessionHeaderLabel(group, dayMatches, live)} &middot; {group.format}
-              </span>
-              <span className="text-center">Thru</span>
+              </div>
+              <div className="grid min-h-5 grid-cols-[30px_minmax(0,1fr)_44px_minmax(0,1fr)_30px] items-center font-condensed text-3xs font-black uppercase tracking-wide text-ink-400">
+                <span className="text-center">Stat</span>
+                <span className="col-span-3" />
+                <span className="text-center">Thru</span>
+              </div>
             </div>
             {group.matches.map((match) => (
               <CompactMatchRow
