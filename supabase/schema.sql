@@ -778,3 +778,28 @@ insert into live_active_season (id, season_year) values (true, 2027) on conflict
 alter table live_active_season enable row level security;
 drop policy if exists live_active_season_select_all on live_active_season;
 create policy live_active_season_select_all on live_active_season for select using (true);
+
+-- === Watch Live Broadcast: catch up to season_year ========================
+-- broadcast_config/broadcast_state were built singleton (see their create
+-- table statements above) because at the time Master Settings hadn't shipped
+-- yet. It has now (see the section above this one), so these two follow the
+-- exact same singleton -> one-row-per-year migration every live_* table
+-- just went through, backfilled to season_year = 2027 the same way.
+
+alter table broadcast_config drop constraint if exists broadcast_config_singleton;
+alter table broadcast_config add column if not exists season_year integer;
+update broadcast_config set season_year = 2027 where season_year is null;
+alter table broadcast_config alter column season_year set not null;
+alter table broadcast_config drop constraint if exists broadcast_config_pkey;
+alter table broadcast_config drop column if exists id;
+alter table broadcast_config add constraint broadcast_config_season_year_check check (season_year between 2027 and 2034);
+alter table broadcast_config add primary key (season_year);
+
+alter table broadcast_state drop constraint if exists broadcast_state_singleton;
+alter table broadcast_state add column if not exists season_year integer;
+update broadcast_state set season_year = 2027 where season_year is null;
+alter table broadcast_state alter column season_year set not null;
+alter table broadcast_state drop constraint if exists broadcast_state_pkey;
+alter table broadcast_state drop column if exists id;
+alter table broadcast_state add constraint broadcast_state_season_year_check check (season_year between 2027 and 2034);
+alter table broadcast_state add primary key (season_year);
