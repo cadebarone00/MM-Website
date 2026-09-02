@@ -143,6 +143,38 @@ function TeamPlayerNineRow({
   );
 }
 
+function bestBallScore(players: string[], hole: number, playerHoles: MatchHoleByHoleData["playerHoles"]) {
+  const scores = players.map((player) => playerHoles[player][hole - 1]?.score).filter((score): score is number => typeof score === "number");
+  return scores.length > 0 ? Math.min(...scores) : 0;
+}
+
+function TeamBestBallNineRow({
+  players,
+  team,
+  holes,
+  playerHoles,
+}: {
+  players: string[];
+  team: Team;
+  holes: MatchHoleByHoleData["allHoles"];
+  playerHoles: MatchHoleByHoleData["playerHoles"];
+}) {
+  const maroon = team === "maroon";
+
+  return (
+    <div className="flex">
+      {holes.map((hole) => {
+        const score = bestBallScore(players, hole.hole, playerHoles);
+        return (
+          <div key={hole.hole} className={["flex h-11 min-w-0 flex-1 items-center justify-center border-r", maroon ? "border-gold-600 bg-maroon-700" : "border-ink-300 bg-white"].join(" ")}>
+            <HoleMarkerForDiff diff={score - hole.par} size={24} tone={maroon ? "white" : "maroon"}>{score}</HoleMarkerForDiff>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function FourballNinePage({
   holes,
   maroonPlayers,
@@ -164,7 +196,9 @@ function FourballNinePage({
       <div className="flex">{holes.map((hole) => <div key={hole.hole} className="flex h-8 min-w-0 flex-1 items-center justify-center border-r border-ink-300 bg-cream-100 font-sans text-xs tabular-nums text-maroon-700">{hole.par}</div>)}</div>
       <TeamPlayerNineRow player={maroonPlayers[0]} team="maroon" holes={holes} playerHoles={playerHoles} />
       <TeamPlayerNineRow player={maroonPlayers[1]} team="maroon" holes={holes} playerHoles={playerHoles} />
+      <TeamBestBallNineRow players={maroonPlayers} team="maroon" holes={holes} playerHoles={playerHoles} />
       <div className="flex">{holes.map((hole) => <TeamStatusCell key={hole.hole} status={statusByHole.get(hole.hole)} nextStatus={statusByHole.get(hole.hole + 1)} endedFill={endedFill} />)}</div>
+      <TeamBestBallNineRow players={whitePlayers} team="white" holes={holes} playerHoles={playerHoles} />
       <TeamPlayerNineRow player={whitePlayers[0]} team="white" holes={holes} playerHoles={playerHoles} />
       <TeamPlayerNineRow player={whitePlayers[1]} team="white" holes={holes} playerHoles={playerHoles} />
     </div>
@@ -173,6 +207,11 @@ function FourballNinePage({
 
 function playerTotal(player: string, playerHoles: MatchHoleByHoleData["playerHoles"]) {
   return playerHoles[player].reduce((total, hole) => total + hole.score, 0);
+}
+
+function bestBallTotal(players: string[], playerHoles: MatchHoleByHoleData["playerHoles"]) {
+  const holeCount = Math.max(...players.map((player) => playerHoles[player].length));
+  return Array.from({ length: holeCount }, (_, index) => bestBallScore(players, index + 1, playerHoles)).reduce((total, score) => total + score, 0);
 }
 
 function FourballMatchGrid({ tournament, match, tournamentSlug }: { tournament: Tournament; match: RealMatch; tournamentSlug: string }) {
@@ -196,7 +235,9 @@ function FourballMatchGrid({ tournament, match, tournamentSlug }: { tournament: 
         <SideCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Par</span></SideCell>
         <SideCell className="h-11 border-gold-600 bg-maroon-700 text-white"><Link href={`/leaderboard/${tournamentSlug}/players/${maroonOne.toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames([maroonOne])}</Link></SideCell>
         <SideCell className="h-11 border-gold-600 bg-maroon-700 text-white"><Link href={`/leaderboard/${tournamentSlug}/players/${maroonTwo.toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames([maroonTwo])}</Link></SideCell>
+        <SideCell className="h-11 border-gold-600 bg-maroon-700 text-white"><span className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide">M Best Ball</span></SideCell>
         <SideCell className="h-9 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Status</span></SideCell>
+        <SideCell className="h-11 bg-white text-maroon-700"><span className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide">W Best Ball</span></SideCell>
         <SideCell className="h-11 bg-white text-maroon-700"><Link href={`/leaderboard/${tournamentSlug}/players/${whiteOne.toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames([whiteOne])}</Link></SideCell>
         <SideCell className="h-11 bg-white text-maroon-700"><Link href={`/leaderboard/${tournamentSlug}/players/${whiteTwo.toLowerCase()}`} className="truncate font-condensed text-[10px] font-bold uppercase tracking-wide hover:underline">{lastNames([whiteTwo])}</Link></SideCell>
       </div>
@@ -211,7 +252,9 @@ function FourballMatchGrid({ tournament, match, tournamentSlug }: { tournament: 
         <TotalCell className="h-8 bg-cream-100 font-sans text-xs font-semibold tabular-nums text-maroon-700">{parTotal}</TotalCell>
         <TotalCell className="h-11 border-gold-600 bg-maroon-700 font-score text-xs font-bold tabular-nums text-white">{playerTotal(maroonOne, data.playerHoles)}</TotalCell>
         <TotalCell className="h-11 border-gold-600 bg-maroon-700 font-score text-xs font-bold tabular-nums text-white">{playerTotal(maroonTwo, data.playerHoles)}</TotalCell>
+        <TotalCell className="h-11 border-gold-600 bg-maroon-700 font-score text-xs font-bold tabular-nums text-white">{bestBallTotal(data.maroonPlayers, data.playerHoles)}</TotalCell>
         <TotalCell className={["h-9 px-0 font-condensed text-3xs font-extrabold uppercase", resultTone].join(" ")}>{matchLabel(match)}</TotalCell>
+        <TotalCell className="h-11 bg-white font-score text-xs font-bold tabular-nums text-maroon-700">{bestBallTotal(data.whitePlayers, data.playerHoles)}</TotalCell>
         <TotalCell className="h-11 bg-white font-score text-xs font-bold tabular-nums text-maroon-700">{playerTotal(whiteOne, data.playerHoles)}</TotalCell>
         <TotalCell className="h-11 bg-white font-score text-xs font-bold tabular-nums text-maroon-700">{playerTotal(whiteTwo, data.playerHoles)}</TotalCell>
       </div>
