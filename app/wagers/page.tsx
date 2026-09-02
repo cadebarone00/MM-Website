@@ -6,8 +6,10 @@ import { getPlayerDisplayName } from "@/lib/data/players";
 import { currentRoundDay } from "@/components/leaderboard/matchUtils";
 import { Tabs, type TabItem } from "@/components/ui/Tabs";
 import { MarketRow } from "@/components/wagers/MarketRow";
+import { FuturesMarketCard } from "@/components/wagers/FuturesMarketCard";
 import { ComingSoonNotice } from "@/components/wagers/ComingSoonNotice";
 import { useWagersMode } from "@/components/wagers/WagersModeContext";
+import { futurePlayerMarket } from "@/lib/wagers/marketKeys";
 import type { RealMatch, Tournament } from "@/lib/data/types";
 
 type Category = "team-futures" | "player-futures" | "matches" | "fourballs" | "props";
@@ -56,6 +58,24 @@ function PropsList({ tournament }: { tournament: Tournament }) {
   );
 }
 
+function PlayerFuturesList({ tournament }: { tournament: Tournament }) {
+  const market = futurePlayerMarket(tournament.slug, tournament.individualLeaderboard);
+
+  if (market.selections.length === 0) {
+    return <p className="font-sans text-sm text-ink-400">Tournament Winner odds post once the individual leaderboard has entries.</p>;
+  }
+
+  return (
+    <FuturesMarketCard
+      title="Tournament Winner"
+      marketKey={market.marketKey}
+      selections={market.selections}
+      href="/wagers/player-futures/tournament-winner"
+      limit={3}
+    />
+  );
+}
+
 export default function WagersPage() {
   const [category, setCategory] = useState<Category>("team-futures");
   const { tournament, loading, payload } = useLiveTournament();
@@ -76,11 +96,7 @@ export default function WagersPage() {
                 <MarketRow href="/wagers/team-futures/team-winner" label="Team Winner" />
               </div>
             )}
-            {category === "player-futures" && (
-              <div className="flex flex-col divide-y divide-ink-100">
-                <MarketRow href="/wagers/player-futures/tournament-winner" label="Tournament Winner" />
-              </div>
-            )}
+            {category === "player-futures" && <PlayerFuturesList tournament={tournament} />}
             {category === "matches" && <MatchesList tournament={tournament} />}
             {category === "props" && <PropsList tournament={tournament} />}
             {category === "fourballs" && <p className="font-sans text-sm text-ink-400">No fourball markets posted yet.</p>}
