@@ -1115,23 +1115,45 @@ owned by Tasks 6-9, 12, 13 (see Task 2's Step 6 note for the full list)
 ### Task 4: Async `getNextTournament()`/`getNextVenue()` overlay
 
 **Files:**
-- Modify: `lib/data/index.ts`
+- Modify: `lib/data/index.ts` (export `pastVenues` — one-line change; no
+  other change, and critically, **no new import** — see below)
 - Modify: `lib/data/types.ts`
-- Create: `lib/data/index.test.ts` (append — check the existing file first;
-  if it already covers other exports, add these tests alongside them
-  rather than replacing the file)
+- Create: `lib/data/activeSeasonOverlay.ts`
+- Create: `lib/data/activeSeasonOverlay.test.ts`
+
+**Why a new file, not `lib/data/index.ts` itself (found live during this
+task's own build check — not in the original brief):** `lib/data/index.ts`
+is imported by several Client Components (`Header.tsx`, `QuickScheduleCard.tsx`,
+and others, for `nextTournament`/`isLiveNow`/`champion`/`fmtPt`/etc.).
+`@/lib/supabase/server` transitively imports `next/headers` (via its
+sibling export `createSupabaseServerClient`, in the very same file as
+`createSupabaseServiceRoleClient`) — Next.js refuses to bundle a module
+that imports `next/headers` into a Client Component's graph, **even via
+a dynamic `await import()` inside a function nobody on the client calls**.
+Adding any Supabase import to `lib/data/index.ts` itself breaks `npm run
+build` for every Client Component that imports anything from it — not
+just the ones this plan intends to touch. The fix: put every
+Supabase-touching function in its own new file that ONLY true Server
+Components ever import (Task 10's `layout.tsx`/`page.tsx`/
+`teams/[slug]/page.tsx`/`schedule/[slug]/page.tsx` — none of them are
+Client Components). `lib/data/index.ts` itself gains nothing but a
+`pastVenues` export (a plain data lookup, zero new imports, so it stays
+exactly as client-safe as it is today).
 
 **Interfaces:**
-- Consumes: `getActiveSeasonYear()` (Task 2, indirectly — via a new
-  `getActiveSeasonOverride()` in this task).
-- Produces (consumed by Task 10): `getNextTournament():
-  Promise<UpcomingTournament>`, `getNextVenue(): Promise<VenueSchedule>`,
-  both overlaying database venue/dates onto the static per-year base for
-  whichever year `live_active_season` names. `getVenueBySlug` becomes
-  `async` (same name, same slug-matching logic, now returns the
-  overlaid venue for the live year). The existing sync `nextTournament`/
-  `nextVenue` exports are **unchanged** — every one of their existing
-  callers uses only `.slug`/`.year`/`.roster`/`.location`/`.editionLabel`
+- Consumes: nothing new (does NOT consume `getActiveSeasonYear()` from
+  Task 2's `lib/live/activeSeason.ts` — this module queries
+  `live_active_season`/`live_tournament_settings` directly, matching the
+  Task 2/Task 4 query-duplication call already made and ledgered as a
+  deliberate, non-blocking layering choice during Task 2's review).
+- Produces (consumed by Task 10 — note the import path):
+  `getNextTournament(): Promise<UpcomingTournament>`, `getNextVenue():
+  Promise<VenueSchedule>`, `getVenueBySlugAsync(slug): Promise<VenueSchedule
+  | undefined>`, `getNextTournamentOverride(): Promise<NextTournamentOverride>`
+  — all from `@/lib/data/activeSeasonOverlay`, NOT `@/lib/data`. The
+  existing sync `nextTournament`/`nextVenue`/`getVenueBySlug` exports from
+  `@/lib/data` are **unchanged** — every one of their existing callers
+  uses only `.slug`/`.year`/`.roster`/`.location`/`.editionLabel`
   (verified in the design spec's research), none of which this task
   touches.
 
@@ -1145,15 +1167,41 @@ export interface NextTournamentOverride {
 }
 ```
 
-- [ ] **Step 2: Add the overlay functions to `lib/data/index.ts`**
+- [ ] **Step 2: Export `pastVenues` from `lib/data/index.ts`**
+
+Change the one line:
 
 ```typescript
-// lib/data/index.ts
-// Add these imports at the top, alongside the existing ones:
-import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import type { NextTournamentOverride } from "./types";
+// was: const pastVenues: Record<string, VenueSchedule> = {
+export const pastVenues: Record<string, VenueSchedule> = {
+```
 
-// Add near the bottom of the file, after the existing exports:
+Nothing else in `lib/data/index.ts` changes — no new import, no new
+function. `export type { ... }` at the top of the file should also gain
+`NextTournamentOverride` (it's a type this file re-exports for
+convenience, same as its other type re-exports), but that's the only
+other edit here:
+
+```typescript
+// was: export type { Team, Tournament, UpcomingTournament, RealMatch, IndividualStanding, PlayerScorecard, RoundScorecard, HoleStat, CourseHole, VenueCourse, VenueSession, VenueSchedule } from "./types";
+export type { Team, Tournament, UpcomingTournament, RealMatch, IndividualStanding, PlayerScorecard, RoundScorecard, HoleStat, CourseHole, VenueCourse, VenueSession, VenueSchedule, NextTournamentOverride } from "./types";
+```
+
+- [ ] **Step 3: Create `lib/data/activeSeasonOverlay.ts`**
+
+```typescript
+// lib/data/activeSeasonOverlay.ts
+//
+// Server-only. This file imports @/lib/supabase/server, which pulls in
+// next/headers transitively — importing it from anywhere reachable by a
+// Client Component breaks `npm run build`. Only import this file from a
+// true Server Component (see Task 10). Never import it from
+// lib/data/index.ts itself, and never re-export its functions from there
+// — that would poison every Client Component that imports anything else
+// from lib/data/index.ts.
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { nextTournament, nextVenue, pastVenues } from "./index";
+import type { UpcomingTournament, VenueSchedule, NextTournamentOverride } from "./types";
 
 interface ActiveSeasonSettings {
   seasonYear: number;
@@ -1182,7 +1230,7 @@ async function getActiveSeasonSettings(): Promise<ActiveSeasonSettings | null> {
 // Formats an inclusive date range the same way the hand-written
 // dateLabel strings in lib/data/*-upcoming.ts already read (e.g.
 // "January 6–9, 2027"). Both dates are "YYYY-MM-DD".
-function formatDateLabel(begin: string, end: string): string {
+export function formatDateLabel(begin: string, end: string): string {
   const b = new Date(`${begin}T00:00:00`);
   const e = new Date(`${end}T00:00:00`);
   const monthFmt = new Intl.DateTimeFormat("en-US", { month: "long" });
@@ -1219,7 +1267,7 @@ export async function getNextVenue(): Promise<VenueSchedule> {
   return { ...nextVenue, venueName: override.venueName };
 }
 
-/** Async counterpart of getVenueBySlug — same slug match, live-overlaid venue. */
+/** Async counterpart of lib/data/index.ts's getVenueBySlug — same slug match, live-overlaid venue. */
 export async function getVenueBySlugAsync(slug: string): Promise<VenueSchedule | undefined> {
   if (slug === nextTournament.slug) return getNextVenue();
   return pastVenues[slug];
@@ -1238,20 +1286,25 @@ active year has moved past 2027 with no static file for it yet (Task 1's
 seed keeps it at 2027, so this only matters once a host uses "Set as
 Active Year" in Task 11 — at that point `getNextTournament()` correctly
 falls back to the 2027 static data rather than silently mixing a 2028
-venue into a 2027-shaped object).
+venue into a 2027-shaped object). `formatDateLabel` is exported (not
+private) so its own test file can import it directly rather than only
+exercising it indirectly through a Supabase-dependent function.
 
-- [ ] **Step 3: Test `formatDateLabel` indirectly through a same-file case**
-
-Check whether `lib/data/index.test.ts` already exists; if so open it and
-add this test alongside the existing ones (same `import`/`test` style
-already in that file). If it doesn't exist, create it with just this
-test.
+- [ ] **Step 4: Write the test**
 
 ```typescript
-// lib/data/index.test.ts (add this test; keep any existing tests in the file)
+// lib/data/activeSeasonOverlay.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { getNextTournament } from "./index.ts";
+import { formatDateLabel, getNextTournament } from "./activeSeasonOverlay.ts";
+
+test("formatDateLabel formats a same-month range", () => {
+  assert.equal(formatDateLabel("2027-01-06", "2027-01-09"), "January 6–9, 2027");
+});
+
+test("formatDateLabel formats a cross-month range", () => {
+  assert.equal(formatDateLabel("2026-12-28", "2027-01-02"), "December 28, 2026 – January 2, 2027");
+});
 
 // No Supabase credentials in the test environment, so
 // createSupabaseServiceRoleClient() throws before any network call —
@@ -1265,16 +1318,26 @@ test("getNextTournament rejects with no Supabase configuration in the test envir
 });
 ```
 
-- [ ] **Step 4: Run the test**
+- [ ] **Step 5: Run the tests**
 
-Run: `npx tsx --test lib/data/index.test.ts`
-Expected: PASS
+Run: `npx tsx --test lib/data/activeSeasonOverlay.test.ts`
+Expected: PASS (3 tests)
 
-- [ ] **Step 5: Full verification and commit**
+- [ ] **Step 6: Full verification and commit**
 
 ```bash
 npm test && npx tsc --noEmit && npm run lint && npm run build
-git add lib/data/index.ts lib/data/types.ts lib/data/index.test.ts
+```
+
+`npm run build` must succeed cleanly this time — unlike every other task
+so far, this one has no excuse for a build failure: `lib/data/index.ts`
+gained nothing but a data export, and the new file is not yet imported
+by anything (Task 10 is what wires it in), so nothing in this task's own
+diff can possibly break the client bundle. If `npm run build` fails,
+stop and treat it as this task's own defect, not a "later task" deferral.
+
+```bash
+git add lib/data/index.ts lib/data/types.ts lib/data/activeSeasonOverlay.ts lib/data/activeSeasonOverlay.test.ts
 git commit -m "feat(data): async getNextTournament/getNextVenue overlay for the active season"
 ```
 
@@ -2155,7 +2218,7 @@ treatment.
 ```typescript
 // app/layout.tsx
 // Add this import:
-import { getNextTournamentOverride } from "@/lib/data";
+import { getNextTournamentOverride } from "@/lib/data/activeSeasonOverlay";
 // ... existing imports/font setup unchanged ...
 
 export default async function RootLayout({
@@ -2286,7 +2349,7 @@ import { HomeDashboard } from "@/components/home/HomeDashboard";
 import { HomeEntrySplash } from "@/components/home/HomeEntrySplash";
 import { VideoHero } from "@/components/home/VideoHero";
 import { LiveLeaderboardStripSection } from "@/components/home/LiveLeaderboardStripSection";
-import { getNextTournamentOverride } from "@/lib/data";
+import { getNextTournamentOverride } from "@/lib/data/activeSeasonOverlay";
 
 export default async function Home() {
   const nextTournamentOverride = await getNextTournamentOverride();
@@ -2413,7 +2476,7 @@ walkthrough covers confirming this).
 ```typescript
 // app/teams/[slug]/page.tsx
 // Add this import:
-import { getNextTournamentOverride } from "@/lib/data";
+import { getNextTournamentOverride } from "@/lib/data/activeSeasonOverlay";
 // ... existing imports unchanged ...
 
 export default async function TeamsYearPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -2472,7 +2535,8 @@ export function UpcomingNotice({ what, nextTournamentOverride }: { what: string;
 // app/schedule/[slug]/page.tsx
 import { notFound } from "next/navigation";
 import { VenueSchedulePage } from "@/components/schedule/VenueSchedulePage";
-import { pastTournaments, nextTournament, getVenueBySlugAsync } from "@/lib/data";
+import { pastTournaments, nextTournament } from "@/lib/data";
+import { getVenueBySlugAsync } from "@/lib/data/activeSeasonOverlay";
 
 export function generateStaticParams() {
   return [...pastTournaments.map((t) => ({ slug: t.slug })), { slug: nextTournament.slug }];
