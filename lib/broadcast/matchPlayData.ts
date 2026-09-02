@@ -7,7 +7,7 @@ import type { MatchState, Team } from "@/lib/live/types";
 import { buildLiveTournamentSnapshot } from "./liveSnapshot";
 
 export interface BroadcastMatchBox {
-  id: string;
+  id: string | null;
   boxNumber: number;
   format: string;
   state: MatchState;

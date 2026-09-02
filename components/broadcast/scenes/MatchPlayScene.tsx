@@ -29,7 +29,7 @@ export function MatchPlayScene({ matchPlay }: { matchPlay: BroadcastMatchPlay })
       ) : (
         <div className="mt-10 w-full max-w-4xl overflow-hidden rounded-lg border border-white/10">
           {matchPlay.matchBoxes.map((box) => (
-            <div key={box.id} className="flex items-center gap-4 border-b border-white/10 bg-white/[0.03] px-6 py-4 last:border-b-0 sm:gap-6 sm:px-8">
+            <div key={box.boxNumber} className="flex items-center gap-4 border-b border-white/10 bg-white/[0.03] px-6 py-4 last:border-b-0 sm:gap-6 sm:px-8">
               <span className="w-8 shrink-0 font-condensed text-lg font-bold text-[color:var(--color-maroon-300)]">#{box.boxNumber}</span>
               <div className="flex flex-1 flex-col gap-1 overflow-hidden font-serif text-lg sm:text-xl">
                 <div className="flex items-center gap-2">
