@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
-import { getPlayerDisplayName } from "@/lib/data/players";
+import { getPlayerDisplayName, playerProfiles } from "@/lib/data/players";
 import { currentRoundDay } from "@/components/leaderboard/matchUtils";
 import { Tabs, type TabItem } from "@/components/ui/Tabs";
 import { MarketRow } from "@/components/wagers/MarketRow";
@@ -58,28 +58,37 @@ function PropsList({ tournament }: { tournament: Tournament }) {
   );
 }
 
-function PlayerFuturesList({ tournament }: { tournament: Tournament }) {
+function FuturesList({ tournament }: { tournament: Tournament }) {
   const market = futurePlayerMarket(tournament.slug, tournament.individualLeaderboard, [...tournament.roster.maroon, ...tournament.roster.white]);
-
-  if (market.selections.length === 0) {
-    return <p className="font-sans text-sm text-ink-400">Tournament Winner odds post once the individual leaderboard has entries.</p>;
-  }
+  const teamMarket = futureTeamMarket(tournament);
 
   return (
-    <FuturesMarketCard
-      title="Tournament Winner"
-      marketKey={market.marketKey}
-      selections={market.selections}
-      href="/wagers/player-futures/tournament-winner"
-      limit={3}
-    />
+    <div className="flex flex-col gap-4">
+      <FuturesMarketCard title="Team Winner" marketKey={teamMarket.marketKey} selections={teamMarket.selections} href="/wagers/team-futures/team-winner" />
+      <FuturesMarketCard
+        title="Tournament Winner"
+        marketKey={market.marketKey}
+        selections={market.selections}
+        href="/wagers/player-futures/tournament-winner"
+        limit={3}
+      />
+    </div>
   );
 }
 
-function TeamFuturesList({ tournament }: { tournament: Tournament }) {
-  const market = futureTeamMarket(tournament);
+function PlayersList({ tournament }: { tournament: Tournament }) {
+  const playerIds = [...tournament.roster.maroon, ...tournament.roster.white];
+  const players = playerIds.length > 0 ? playerIds : playerProfiles.map((player) => player.id);
 
-  return <FuturesMarketCard title="Team Winner" marketKey={market.marketKey} selections={market.selections} href="/wagers/team-futures/team-winner" />;
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {players.map((player) => (
+        <div key={player} className="rounded-sm border border-gold-300 bg-white px-4 py-3 font-sans text-sm font-semibold text-ink-900">
+          {getPlayerDisplayName(player)}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function WagersPage() {
@@ -97,8 +106,8 @@ export default function WagersPage() {
           <p className="py-10 text-center font-sans text-sm text-ink-400">Checking the live sheet...</p>
         ) : (
           <>
-            {category === "team-futures" && <TeamFuturesList tournament={tournament} />}
-            {category === "player-futures" && <PlayerFuturesList tournament={tournament} />}
+            {category === "team-futures" && <FuturesList tournament={tournament} />}
+            {category === "player-futures" && <PlayersList tournament={tournament} />}
             {category === "matches" && <MatchesList tournament={tournament} />}
             {category === "props" && <PropsList tournament={tournament} />}
             {category === "fourballs" && <p className="font-sans text-sm text-ink-400">No fourball markets posted yet.</p>}
