@@ -94,7 +94,7 @@ function SinglesMatchGrid({ tournament, match, tournamentSlug }: { tournament: T
   const back = data.allHoles.slice(9, 18);
 
   return (
-    <div className="mx-0 flex border-y border-gold-600 bg-cream-100 [container-type:inline-size]">
+    <div className="mx-0 flex border-y border-ink-300 bg-cream-100 [container-type:inline-size]">
       <div className="flex w-[60px] shrink-0 flex-col">
         <SideCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Hole</span></SideCell>
         <SideCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Par</span></SideCell>
@@ -234,7 +234,7 @@ function FourballMatchGrid({ tournament, match, tournamentSlug }: { tournament: 
   const [whiteOne, whiteTwo] = data.whitePlayers;
 
   return (
-    <div className="mx-0 flex border-y border-ink-300 bg-cream-100 [container-type:inline-size]">
+    <div className="mx-0 flex border-y border-gold-600 bg-cream-100 [container-type:inline-size]">
       <div className="flex w-[60px] shrink-0 flex-col">
         <SideCell className="h-8 border-gold-600 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Hole</span></SideCell>
         <SideCell className="h-8 border-gold-600 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Par</span></SideCell>
@@ -253,15 +253,15 @@ function FourballMatchGrid({ tournament, match, tournamentSlug }: { tournament: 
       </div>
 
       <div className="flex w-[42px] shrink-0 flex-col">
-        <TotalCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Tot</span></TotalCell>
-        <TotalCell className="h-8 bg-cream-100 font-sans text-xs font-semibold tabular-nums text-maroon-700">{parTotal}</TotalCell>
+        <TotalCell className="h-8 border-gold-600 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Tot</span></TotalCell>
+        <TotalCell className="h-8 border-gold-600 bg-cream-100 font-sans text-xs font-semibold tabular-nums text-maroon-700">{parTotal}</TotalCell>
         <TotalCell className="h-11 border-gold-600 bg-maroon-700 font-score text-xs font-bold tabular-nums text-white">{playerTotal(maroonOne, data.playerHoles)}</TotalCell>
         <TotalCell className="h-11 border-gold-600 bg-maroon-700 font-score text-xs font-bold tabular-nums text-white">{playerTotal(maroonTwo, data.playerHoles)}</TotalCell>
         <TotalCell className="h-11 border-t border-gold-600 bg-maroon-700 font-score text-xs font-bold tabular-nums text-white">{bestBallTotal(data.maroonPlayers, data.playerHoles)}</TotalCell>
-        <TotalCell className={["h-9 px-0 font-condensed text-3xs font-extrabold uppercase", resultTone].join(" ")}>{matchLabel(match)}</TotalCell>
-        <TotalCell className="h-11 border-t border-gold-600 bg-white font-score text-xs font-bold tabular-nums text-maroon-700">{bestBallTotal(data.whitePlayers, data.playerHoles)}</TotalCell>
-        <TotalCell className="h-11 bg-white font-score text-xs font-bold tabular-nums text-maroon-700">{playerTotal(whiteOne, data.playerHoles)}</TotalCell>
-        <TotalCell className="h-11 bg-white font-score text-xs font-bold tabular-nums text-maroon-700">{playerTotal(whiteTwo, data.playerHoles)}</TotalCell>
+        <TotalCell className={["h-9 border-gold-600 px-0 font-condensed text-3xs font-extrabold uppercase", resultTone].join(" ")}>{matchLabel(match)}</TotalCell>
+        <TotalCell className="h-11 border-b border-gold-600 bg-white font-score text-xs font-bold tabular-nums text-maroon-700">{bestBallTotal(data.whitePlayers, data.playerHoles)}</TotalCell>
+        <TotalCell className="h-11 border-gold-600 bg-white font-score text-xs font-bold tabular-nums text-maroon-700">{playerTotal(whiteOne, data.playerHoles)}</TotalCell>
+        <TotalCell className="h-11 border-gold-600 bg-white font-score text-xs font-bold tabular-nums text-maroon-700">{playerTotal(whiteTwo, data.playerHoles)}</TotalCell>
       </div>
     </div>
   );
