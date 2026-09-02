@@ -38,18 +38,20 @@ export default async function TigerCenterPage() {
       {startable && <StartRoundBanner round={startable} />}
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <YearAndMasterSettingsNav initialYear={activeYear} />
-        <Link
-          href="/portal/admin/career-stats"
-          className="self-end rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-8 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800"
-        >
-          Career Stats
-        </Link>
-        <Link
-          href="/portal/admin/wager-types"
-          className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-8 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800"
-        >
-          Wager Types
-        </Link>
+        <div className="flex flex-col gap-4 self-end">
+          <Link
+            href="/portal/admin/career-stats"
+            className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-8 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800"
+          >
+            Career Stats
+          </Link>
+          <Link
+            href="/portal/admin/wager-types"
+            className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-8 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800"
+          >
+            Wager Types
+          </Link>
+        </div>
       </div>
       <Link
         href="/portal/admin/wagers"
