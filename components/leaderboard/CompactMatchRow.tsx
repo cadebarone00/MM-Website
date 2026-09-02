@@ -29,13 +29,13 @@ function TeamSide({ players, team }: { players: string[]; team: Team }) {
   const isMaroon = team === "maroon";
 
   return (
-    <div className={["flex min-w-0 flex-col self-stretch", isMaroon ? "bg-maroon-700 text-white" : "bg-white text-maroon-700"].join(" ")}>
+    <div className={["flex min-w-0 flex-col justify-center self-stretch", isMaroon ? "items-end bg-maroon-700 text-white" : "items-start bg-white text-maroon-700"].join(" ")}>
       {players.map((player, i) => (
         <span
           key={player}
           className={[
             "relative block w-full truncate px-2 py-1.5 font-sans text-xs font-semibold capitalize",
-            "text-center",
+            isMaroon ? "text-right" : "text-left",
             i > 0 ? (isMaroon ? "before:absolute before:top-0 before:left-2 before:right-0 before:h-px before:bg-gold-600" : "before:absolute before:top-0 before:left-0 before:right-2 before:h-px before:bg-gold-600") : "",
           ].join(" ")}
         >
