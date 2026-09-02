@@ -1238,7 +1238,8 @@ export function formatDateLabel(begin: string, end: string): string {
     return `${monthFmt.format(b)} ${b.getDate()}–${e.getDate()}, ${e.getFullYear()}`;
   }
   const dayFmt = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric" });
-  return `${dayFmt.format(b)} – ${dayFmt.format(e)}, ${e.getFullYear()}`;
+  const beginStr = b.getFullYear() === e.getFullYear() ? `${dayFmt.format(b)}` : `${dayFmt.format(b)}, ${b.getFullYear()}`;
+  return `${beginStr} – ${dayFmt.format(e)}, ${e.getFullYear()}`;
 }
 
 /**
