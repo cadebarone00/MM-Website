@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { PlayerSummary } from "@/lib/live/scoring";
+import type { BroadcastStanding } from "@/lib/broadcast/types";
 import type { BroadcastMatchPlay } from "@/lib/broadcast/matchPlayData";
 
 /**
@@ -17,7 +17,7 @@ import type { BroadcastMatchPlay } from "@/lib/broadcast/matchPlayData";
  * this is exactly the "leaderboard scene subscribes directly to
  * live_hole_scores" plan from the spec's Phase 1 Definition of Done.
  */
-export function useLiveBroadcastData(seasonYear: number, initial: { standings: PlayerSummary[]; matchPlay: BroadcastMatchPlay }) {
+export function useLiveBroadcastData(seasonYear: number, initial: { standings: BroadcastStanding[]; matchPlay: BroadcastMatchPlay }) {
   const [standings, setStandings] = useState(initial.standings);
   const [matchPlay, setMatchPlay] = useState(initial.matchPlay);
 

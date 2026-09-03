@@ -17,15 +17,20 @@ export function SceneRenderer({
 }: {
   state: BroadcastState;
   config: BroadcastConfig;
-  standings: PlayerSummary[];
+  standings: BroadcastStanding[];
   matchPlay: BroadcastMatchPlay;
   holding: { venue: string; dateLabel: string };
 }) {
   const isAuto = state.automationMode === "auto";
   // Producer Mode (including a host's Pause — see BroadcastControlsPanel):
-  // no rotation timer running, current_scene is shown statically.
+  // no rotation timer running, current_scene is shown statically. Called
+  // unconditionally either way — Rules of Hooks — the hook itself no-ops
+  // internally when isAuto is false.
   const autoScene = useAutoScene(state.sceneStartedAt, config, isAuto);
-  const scene = isAuto ? autoScene : state.currentScene;
+  // Before Tiger hits "Go Live" (Broadcast Controls), the show holds on
+  // this scene regardless of rotation/producer mode — same as a real
+  // broadcast's pre-show hold (spec §7/§17's Holding scene).
+  const scene = !state.tournamentLive ? "holding" : isAuto ? autoScene : state.currentScene;
 
   return (
     <>

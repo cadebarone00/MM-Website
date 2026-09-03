@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { getActiveSeasonYear } from "@/lib/live/activeSeason";
+import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
 
 const VALID_SCENES = ["holding", "individual_leaderboard", "match_play"];
 
@@ -13,10 +13,11 @@ const VALID_SCENES = ["holding", "individual_leaderboard", "match_play"];
  * Broadcast Controls UI can label it "Paused" instead of "Manual."
  * SceneRenderer itself treats paused and manually-picked identically (both
  * are just "show current_scene, no rotation timer"). Always acts on
- * whichever season is currently active — /broadcast never takes a year, so
- * neither does this. Posting a scene switches to producer mode and shows it
- * immediately; omitting `scene` returns to automatic rotation, restarted
- * cleanly from the top (Individual Leaderboard).
+ * whichever year Broadcast Controls has picked (`broadcast_display_year`) —
+ * /broadcast never takes a year, so neither does this. Posting a scene
+ * switches to producer mode and shows it immediately; omitting `scene`
+ * returns to automatic rotation, restarted cleanly from the top
+ * (Individual Leaderboard).
  */
 export async function POST(request: Request) {
   const host = await requireHost();
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Invalid scene." }, { status: 400 });
   }
 
-  const seasonYear = await getActiveSeasonYear();
+  const seasonYear = await getBroadcastDisplayYear();
   const service = createSupabaseServiceRoleClient();
 
   const update =

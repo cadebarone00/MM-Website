@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { getActiveSeasonYear } from "@/lib/live/activeSeason";
+import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
 
 const MAX_TEXT_LENGTH = 120;
 const MIN_DURATION_SECONDS = 3;
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const seasonYear = await getActiveSeasonYear();
+  const seasonYear = await getBroadcastDisplayYear();
   const service = createSupabaseServiceRoleClient();
 
   if (body.clear === true) {
