@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Tabs } from "@/components/ui/Tabs";
 import { CareerRoundArchive } from "@/components/portal/tiger/CareerRoundArchive";
+import { CareerBuckets } from "@/components/portal/tiger/CareerBuckets";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import type { CareerHoleRecord, CareerPartnership, CareerTeamHoleRecord } from "@/lib/data/careerStats";
 
@@ -45,10 +46,11 @@ export function CareerStatsPanel({ records, partnerships, teamRecords }: { recor
       <Select label="Format" value={format} onChange={setFormat} options={[ALL, ...formats]} />
       {view === "trends" && <Select label="Team format" value={partnershipFormat} onChange={setPartnershipFormat} options={[ALL, ...partnershipFormats]} />}
     </div>
-    <div className="mt-5"><Tabs items={[{ value: "overview", label: "Overview" }, { value: "scoring", label: "Scoring" }, { value: "trends", label: "Trends" }, { value: "archive", label: "Round Archive" }]} value={view} onChange={setView} variant="plain" /></div>
+    <div className="mt-5"><Tabs items={[{ value: "overview", label: "Overview" }, { value: "scoring", label: "Scoring" }, { value: "buckets", label: "Buckets" }, { value: "trends", label: "Trends" }, { value: "archive", label: "Round Archive" }]} value={view} onChange={setView} variant="plain" /></div>
     <div className="mt-5"><h2 className="m-0 font-serif text-xl font-bold text-ink-900">{getPlayerDisplayName(player)}</h2>
       {view === "overview" && <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4"><Metric label="Years" value={year === ALL ? years.length : year} /><Metric label="Rounds" value={totals.length} /><Metric label="Avg. Round" value={totals.length ? (totals.reduce((a, b) => a + b, 0) / totals.length).toFixed(2) : "—"} /><Metric label="Avg. Hole" value={holes ? (rows.reduce((sum, r) => sum + r.score, 0) / holes).toFixed(3) : "—"} /><Metric label="Best Round" value={totals.length ? Math.min(...totals) : "—"} /><Metric label="Worst Round" value={totals.length ? Math.max(...totals) : "—"} /><Metric label="Holes" value={holes} /><Metric label="Courses" value={new Set(rows.map((r) => r.course)).size} /></div>}
       {view === "scoring" && <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5"><Metric label="Eagle+" value={byDiff((d) => d <= -2)} /><Metric label="Birdies" value={`${byDiff((d) => d === -1)} (${holes ? ((byDiff((d) => d === -1) / holes) * 100).toFixed(1) : 0}%)`} /><Metric label="Pars" value={byDiff((d) => d === 0)} /><Metric label="Bogeys" value={byDiff((d) => d === 1)} /><Metric label="Double+" value={byDiff((d) => d >= 2)} /></div>}
+      {view === "buckets" && <CareerBuckets records={rows} />}
       {view === "archive" && <CareerRoundArchive player={player} year={year} format={format} records={records} teamRecords={teamRecords} />}
       {view === "trends" && <div className="mt-3"><Select label="Partnered with" value={partner} onChange={setPartner} options={[ALL, ...partners]} /><div className="mt-4 grid grid-cols-3 gap-2"><Metric label="Partnerships" value={pairings.length} /><Metric label="Wins" value={pairings.filter((p) => p.result === "win").length} /><Metric label="Losses" value={pairings.filter((p) => p.result === "loss").length} /></div><div className="mt-4 overflow-x-auto rounded-sm border border-gold-200 bg-white"><table className="min-w-full text-left font-sans text-xs"><thead className="bg-cream-100 font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500"><tr><th className="px-3 py-2">Year</th><th className="px-3 py-2">Rounds</th><th className="px-3 py-2">Avg. Round</th></tr></thead><tbody>{trends.map((row) => <tr key={row.year} className="border-t border-gold-100"><td className="px-3 py-2">{row.year}</td><td className="px-3 py-2">{row.rounds}</td><td className="px-3 py-2">{row.rounds ? row.average.toFixed(2) : "—"}</td></tr>)}</tbody></table></div></div>}
     </div>
