@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { BroadcastConfig, BroadcastScene, BroadcastState } from "@/lib/broadcast/types";
+import { DISPLAY_YEARS } from "@/lib/broadcast/displayYears";
 import { useAutoScene } from "@/lib/broadcast/useAutoScene";
 
 const SCENE_BUTTONS: { scene: BroadcastScene; label: string }[] = [
@@ -16,12 +17,69 @@ const SCENE_LABELS: Record<BroadcastScene, string> = {
   match_play: "Match Play",
 };
 
-export function BroadcastControlsPanel({ initialState, config }: { initialState: BroadcastState; config: BroadcastConfig }) {
+export function BroadcastControlsPanel({
+  initialDisplayYear,
+  initialState,
+  config,
+}: {
+  initialDisplayYear: number;
+  initialState: BroadcastState;
+  config: BroadcastConfig;
+}) {
   const [state, setState] = useState(initialState);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [announcementText, setAnnouncementText] = useState("");
   const [announcementBusy, setAnnouncementBusy] = useState(false);
+  const [switchingYear, setSwitchingYear] = useState(false);
+  const [liveBusy, setLiveBusy] = useState(false);
+
+  async function changeDisplayYear(year: number) {
+    if (year === initialDisplayYear) return;
+    setSwitchingYear(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/portal/tiger/broadcast/display-year", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ year }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error ?? "Could not switch the displayed year.");
+        setSwitchingYear(false);
+        return;
+      }
+      // Everything on this page (state, config, and /broadcast's own data)
+      // is scoped to the displayed year — reload rather than patch four
+      // different pieces of state, same call as /broadcast itself makes
+      // when this changes (see useReloadOnDisplayYearChange.ts).
+      window.location.reload();
+    } catch {
+      setError("Could not switch the displayed year.");
+      setSwitchingYear(false);
+    }
+  }
+
+  async function toggleLive(live: boolean) {
+    setLiveBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/portal/tiger/broadcast/live", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ live }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error ?? "Could not update the broadcast.");
+        return;
+      }
+      setState((current) => ({ ...current, tournamentLive: live }));
+    } finally {
+      setLiveBusy(false);
+    }
+  }
 
   const isAuto = state.automationMode === "auto";
   // The real live scene while auto rotation is running — current_scene in
@@ -110,7 +168,53 @@ export function BroadcastControlsPanel({ initialState, config }: { initialState:
 
   return (
     <div className="mt-6">
-      <p className="font-sans text-sm text-ink-700">
+      <div className="flex flex-wrap items-end justify-between gap-4 rounded-lg border-2 border-stone-300 p-4">
+        <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
+          Data year
+          <select
+            defaultValue={initialDisplayYear}
+            disabled={switchingYear}
+            onChange={(e) => changeDisplayYear(Number(e.target.value))}
+            className="rounded-lg border-2 border-stone-300 px-3 py-2 text-sm disabled:opacity-50"
+          >
+            {DISPLAY_YEARS.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="flex flex-col items-end gap-1">
+          <span
+            className={[
+              "rounded-full px-3 py-1 font-condensed text-2xs font-semibold uppercase tracking-wide",
+              state.tournamentLive ? "bg-maroon-700 text-white" : "bg-stone-200 text-ink-700",
+            ].join(" ")}
+          >
+            {state.tournamentLive ? "Live" : "Offline"}
+          </span>
+          <button
+            type="button"
+            disabled={liveBusy}
+            onClick={() => toggleLive(!state.tournamentLive)}
+            className={[
+              "rounded-lg px-4 py-2 font-condensed text-sm font-semibold uppercase tracking-wide transition disabled:opacity-50",
+              state.tournamentLive ? "border-2 border-stone-300 text-ink-700 hover:bg-stone-50" : "bg-maroon-700 text-white hover:bg-maroon-800",
+            ].join(" ")}
+          >
+            {liveBusy ? "Updating…" : state.tournamentLive ? "End Broadcast" : "Go Live"}
+          </button>
+        </div>
+      </div>
+      {!state.tournamentLive && (
+        <p className="mt-2 font-sans text-xs text-ink-500">
+          /broadcast is holding on the venue screen until you go live — scene controls below still work, they just won&apos;t show on
+          /broadcast until then.
+        </p>
+      )}
+
+      <p className="mt-4 font-sans text-sm text-ink-700">
         Currently showing: <span className="font-semibold text-ink-900">{SCENE_LABELS[isAuto ? liveAutoScene : state.currentScene]}</span> —{" "}
         {isAuto ? "Auto rotation" : state.paused ? "Paused" : "Producer Mode (manual)"}
       </p>

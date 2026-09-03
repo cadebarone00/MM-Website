@@ -1,12 +1,11 @@
 // lib/broadcast/displayYear.ts
+//
+// Server-only (pulls in @/lib/supabase/server via next/headers) — only
+// import from a Route Handler or Server Component. lib/broadcast/displayYears.ts
+// holds the plain constants a Client Component can safely import instead.
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 
-/** Years selectable in Broadcast Controls today. 2026 has real (archived) data to preview the look against; 2027 is the live one. Widen this later as more years get real data behind them — the database column itself already allows 2024-2034. */
-export const DISPLAY_YEARS = [2026, 2027] as const;
-
-export function isValidDisplayYear(value: unknown): value is number {
-  return typeof value === "number" && Number.isInteger(value) && (DISPLAY_YEARS as readonly number[]).includes(value);
-}
+export { DISPLAY_YEARS, isValidDisplayYear } from "@/lib/broadcast/displayYears";
 
 /**
  * Which year's data /broadcast currently shows — set via Broadcast
