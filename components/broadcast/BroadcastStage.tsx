@@ -22,19 +22,27 @@ import { SceneRenderer } from "./SceneRenderer";
 export function BroadcastStage({
   broadcast,
   standings: initialStandings,
+  leaderboardFinal: initialLeaderboardFinal,
   matchPlay: initialMatchPlay,
   holding,
   preview = false,
 }: {
   broadcast: BroadcastPayload;
   standings: BroadcastStanding[];
+  leaderboardFinal: boolean;
   matchPlay: BroadcastMatchPlay;
   holding: { venue: string; dateLabel: string };
   preview?: boolean;
 }) {
-  const { standings, matchPlay } = useLiveBroadcastData(broadcast.seasonYear, { standings: initialStandings, matchPlay: initialMatchPlay });
+  const { standings, leaderboardFinal, matchPlay } = useLiveBroadcastData(broadcast.seasonYear, {
+    standings: initialStandings,
+    leaderboardFinal: initialLeaderboardFinal,
+    matchPlay: initialMatchPlay,
+  });
   const state = useLiveBroadcastState(broadcast.seasonYear, broadcast.state, !preview);
   useReloadOnDisplayYearChange(broadcast.seasonYear, !preview);
 
-  return <SceneRenderer state={state} config={broadcast.config} standings={standings} matchPlay={matchPlay} holding={holding} />;
+  return (
+    <SceneRenderer state={state} config={broadcast.config} standings={standings} leaderboardFinal={leaderboardFinal} matchPlay={matchPlay} holding={holding} />
+  );
 }
