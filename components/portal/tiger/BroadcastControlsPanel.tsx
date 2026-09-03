@@ -22,7 +22,12 @@ export function BroadcastControlsPanel({ initialState }: { initialState: Broadca
   const [announcementText, setAnnouncementText] = useState("");
   const [announcementBusy, setAnnouncementBusy] = useState(false);
 
-  const overlayActive = Boolean(state.overlayText && state.overlayExpiresAt && new Date(state.overlayExpiresAt).getTime() > Date.now());
+  // Good enough for this admin panel: whether *something* is set to show,
+  // not a live moment-by-moment check against the clock (that precision
+  // belongs to the actual /broadcast viewer — components/broadcast/OverlayLayer.tsx).
+  // Worst case here is "Clear Now" staying visible a few seconds after an
+  // announcement already auto-expired on its own; clicking it then is a no-op.
+  const overlayActive = Boolean(state.overlayText);
 
   async function postAnnouncement() {
     const text = announcementText.trim();
@@ -124,8 +129,8 @@ export function BroadcastControlsPanel({ initialState }: { initialState: Broadca
 
       <section className="mt-8 rounded-lg border-2 border-stone-300 p-4">
         <h2 className="font-serif text-lg font-bold text-ink-900">Announcement</h2>
-        <p className="mt-1 font-sans text-xs text-ink-500">Shows as a banner over whatever's on screen for 8 seconds, then disappears on its own.</p>
-        {overlayActive && <p className="mt-2 font-sans text-xs font-semibold text-maroon-700">Currently showing: "{state.overlayText}"</p>}
+        <p className="mt-1 font-sans text-xs text-ink-500">Shows as a banner over whatever&apos;s on screen for 8 seconds, then disappears on its own.</p>
+        {overlayActive && <p className="mt-2 font-sans text-xs font-semibold text-maroon-700">Currently showing: &ldquo;{state.overlayText}&rdquo;</p>}
         <div className="mt-3 flex flex-col gap-2 sm:flex-row">
           <input
             type="text"

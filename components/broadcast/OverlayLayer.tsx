@@ -11,6 +11,11 @@ export function OverlayLayer({ text, expiresAt }: { text: string | null; expires
   const [visible, setVisible] = useState(() => isActive(text, expiresAt));
 
   useEffect(() => {
+    // Intentional: syncs local visibility to a prop that can change while
+    // mounted (a new announcement replacing/clearing the old one), same
+    // pattern/justification as components/portal/ScoringPanel.tsx's own
+    // fetch-on-mount effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVisible(isActive(text, expiresAt));
     if (!text || !expiresAt) return;
     const msLeft = new Date(expiresAt).getTime() - Date.now();
