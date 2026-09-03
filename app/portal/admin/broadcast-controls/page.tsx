@@ -14,7 +14,7 @@ export default async function BroadcastControlsPage() {
   const { data: profile } = await supabase.from("profiles").select("is_host").eq("id", user.id).single();
   if (!profile?.is_host) redirect("/");
 
-  const { state, config } = await getBroadcastPayload();
+  const { seasonYear, state, config } = await getBroadcastPayload();
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
@@ -25,7 +25,7 @@ export default async function BroadcastControlsPage() {
         <BroadcastPreview />
       </div>
 
-      <BroadcastControlsPanel initialState={state} config={config} />
+      <BroadcastControlsPanel initialDisplayYear={seasonYear} initialState={state} config={config} />
     </div>
   );
 }
