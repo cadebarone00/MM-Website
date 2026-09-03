@@ -406,3 +406,38 @@ alter table live_match_boxes add constraint live_match_boxes_round_box_number_ke
 -- Singles is 12 players / 2 per box = 6 boxes; Fourball/Foursome stays 3.
 alter table live_match_boxes drop constraint if exists live_match_boxes_box_number_check;
 alter table live_match_boxes add constraint live_match_boxes_box_number_check check (box_number between 1 and 6);
+
+-- === Fantasy ==============================================================
+-- One saved fantasy team per user, always for the current tournament
+-- (nextTournament.slug). Player identifiers are the same short roster names
+-- used everywhere else (PlayerProfile.id / RealMatch.maroonPlayers, e.g.
+-- "Cam") — never a slug like "cam-latto". A row whose tournament_slug no
+-- longer matches the current tournament is simply ignored by the app rather
+-- than deleted, so last year's pick doesn't silently apply to this year but
+-- also isn't destroyed.
+
+create table if not exists fantasy_teams (
+  profile_id uuid primary key references profiles(id) on delete cascade,
+  tournament_slug text not null,
+  maroon_player text not null,
+  white_player text not null,
+  wildcard_player text not null,
+  updated_at timestamptz not null default now(),
+  check (
+    lower(maroon_player) <> lower(white_player)
+    and lower(maroon_player) <> lower(wildcard_player)
+    and lower(white_player) <> lower(wildcard_player)
+  )
+);
+
+alter table fantasy_teams enable row level security;
+
+-- Users may only see and edit their own team — no public fantasy leaderboard yet.
+drop policy if exists fantasy_teams_select_own on fantasy_teams;
+create policy fantasy_teams_select_own on fantasy_teams for select using (auth.uid() = profile_id);
+
+drop policy if exists fantasy_teams_insert_own on fantasy_teams;
+create policy fantasy_teams_insert_own on fantasy_teams for insert with check (auth.uid() = profile_id);
+
+drop policy if exists fantasy_teams_update_own on fantasy_teams;
+create policy fantasy_teams_update_own on fantasy_teams for update using (auth.uid() = profile_id);

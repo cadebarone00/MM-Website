@@ -8,6 +8,7 @@ export const MORE_LINKS = [
   { href: "/schedule", label: "Schedule" },
   { href: "/history", label: "History" },
   { href: "/wagers", label: "Wagers" },
+  { href: "/fantasy", label: "Fantasy" },
 ];
 
 const OPEN_EVENT = "mm:open-more-menu";
