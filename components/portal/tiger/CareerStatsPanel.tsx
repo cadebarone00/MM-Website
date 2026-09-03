@@ -19,6 +19,7 @@ export function CareerStatsPanel({ records, partnerships }: { records: CareerHol
   const [year, setYear] = useState(ALL);
   const [format, setFormat] = useState(ALL);
   const [partner, setPartner] = useState(ALL);
+  const [partnershipFormat, setPartnershipFormat] = useState(ALL);
   const [view, setView] = useState("overview");
   const allPlayerRows = records.filter((r) => r.player === player);
   const years = [...new Set(allPlayerRows.map((r) => String(r.year)))].sort();
@@ -30,11 +31,12 @@ export function CareerStatsPanel({ records, partnerships }: { records: CareerHol
   const holes = rows.length;
   const byDiff = (diff: (value: number) => boolean) => rows.filter((r) => diff(r.score - r.par)).length;
   const partners = [...new Set(partnerships.filter((p) => p.player === player).map((p) => p.partner))].sort();
-  const pairings = partnerships.filter((p) => p.player === player && (year === ALL || p.year === Number(year)) && (format === ALL || p.format === format) && (partner === ALL || p.partner === partner));
+  const partnershipFormats = [...new Set(partnerships.filter((p) => p.player === player).map((p) => p.format))].sort();
+  const pairings = partnerships.filter((p) => p.player === player && (year === ALL || p.year === Number(year)) && (partnershipFormat === ALL || p.format === partnershipFormat) && (partner === ALL || p.partner === partner));
   const trends = years.map((trendYear) => { const yearRows = allPlayerRows.filter((r) => String(r.year) === trendYear && (format === ALL || r.format === format)); const groups = new Map<string, CareerHoleRecord[]>(); yearRows.forEach((r) => { const key = `${r.round}-${r.course}`; groups.set(key, [...(groups.get(key) ?? []), r]); }); const scores = [...groups.values()].map((round) => round.reduce((sum, r) => sum + r.score, 0)); return { year: trendYear, rounds: scores.length, average: scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0 }; });
   if (!player) return <p className="rounded-md border border-gold-300 bg-cream-50 px-4 py-5 font-sans text-sm text-ink-500">No archived scorecards are available yet. Import the 2024–2026 scorecards and this page will calculate every view automatically.</p>;
   return <div>
-    <div className="flex flex-wrap gap-3"><Select label="Player" value={player} onChange={(value) => { setPlayer(value); setYear(ALL); setFormat(ALL); setPartner(ALL); }} options={players} /><Select label="Year" value={year} onChange={setYear} options={[ALL, ...years]} /><Select label="Format" value={format} onChange={setFormat} options={[ALL, ...formats]} /></div>
+    <div className="flex flex-wrap gap-3"><Select label="Player" value={player} onChange={(value) => { setPlayer(value); setYear(ALL); setFormat(ALL); setPartner(ALL); setPartnershipFormat(ALL); }} options={players} /><Select label="Year" value={year} onChange={setYear} options={[ALL, ...years]} /><Select label="Format" value={format} onChange={setFormat} options={[ALL, ...formats]} /></div>
     <div className="mt-5"><Tabs items={[{ value: "overview", label: "Overview" }, { value: "scoring", label: "Scoring" }, { value: "trends", label: "Trends" }]} value={view} onChange={setView} variant="plain" /></div>
     <div className="mt-5"><h2 className="m-0 font-serif text-xl font-bold text-ink-900">{getPlayerDisplayName(player)}</h2>
       {view === "overview" && <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4"><Metric label="Years" value={year === ALL ? years.length : year} /><Metric label="Rounds" value={totals.length} /><Metric label="Avg. Round" value={totals.length ? (totals.reduce((a, b) => a + b, 0) / totals.length).toFixed(2) : "—"} /><Metric label="Avg. Hole" value={holes ? (rows.reduce((sum, r) => sum + r.score, 0) / holes).toFixed(3) : "—"} /><Metric label="Best Round" value={totals.length ? Math.min(...totals) : "—"} /><Metric label="Worst Round" value={totals.length ? Math.max(...totals) : "—"} /><Metric label="Holes" value={holes} /><Metric label="Courses" value={new Set(rows.map((r) => r.course)).size} /></div>}

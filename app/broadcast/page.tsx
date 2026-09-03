@@ -51,7 +51,7 @@ export default async function BroadcastPage({
   const previewYear = Number(params.year);
   const preview = params.preview === "1" && isValidDisplayYear(previewYear) && VALID_SCENES.includes(params.scene as BroadcastScene);
 
-  const [broadcast, { standings }, matchPlay, nextTournament] = await Promise.all([
+  const [broadcast, { standings, final: leaderboardFinal }, matchPlay, nextTournament] = await Promise.all([
     preview ? previewPayload(previewYear, params.scene as BroadcastScene) : getBroadcastPayload(),
     getBroadcastLeaderboard(preview ? previewYear : undefined),
     getBroadcastMatchPlay(preview ? previewYear : undefined),
@@ -62,6 +62,7 @@ export default async function BroadcastPage({
     <BroadcastStage
       broadcast={broadcast}
       standings={standings}
+      leaderboardFinal={leaderboardFinal}
       matchPlay={matchPlay}
       holding={{ venue: nextTournament.venue, dateLabel: nextTournament.dateLabel }}
       preview={preview}
