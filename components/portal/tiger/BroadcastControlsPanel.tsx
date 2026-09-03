@@ -121,6 +121,40 @@ export function BroadcastControlsPanel({ initialState }: { initialState: Broadca
       >
         {busy === "auto" ? "Returning…" : "Return to Auto"}
       </button>
+
+      <section className="mt-8 rounded-lg border-2 border-stone-300 p-4">
+        <h2 className="font-serif text-lg font-bold text-ink-900">Announcement</h2>
+        <p className="mt-1 font-sans text-xs text-ink-500">Shows as a banner over whatever's on screen for 8 seconds, then disappears on its own.</p>
+        {overlayActive && <p className="mt-2 font-sans text-xs font-semibold text-maroon-700">Currently showing: "{state.overlayText}"</p>}
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+          <input
+            type="text"
+            value={announcementText}
+            onChange={(e) => setAnnouncementText(e.target.value)}
+            maxLength={120}
+            placeholder="e.g. Round 1 tee times pushed back 15 minutes"
+            className="flex-1 rounded-lg border-2 border-stone-300 px-3 py-2 text-sm"
+          />
+          <button
+            type="button"
+            disabled={announcementBusy || !announcementText.trim()}
+            onClick={postAnnouncement}
+            className="rounded-lg bg-maroon-700 px-4 py-2 font-condensed text-sm font-semibold uppercase tracking-wide text-white disabled:opacity-50"
+          >
+            Post
+          </button>
+          {overlayActive && (
+            <button
+              type="button"
+              disabled={announcementBusy}
+              onClick={clearAnnouncement}
+              className="rounded-lg border-2 border-stone-300 px-4 py-2 font-condensed text-sm font-semibold uppercase tracking-wide text-ink-700 disabled:opacity-50"
+            >
+              Clear Now
+            </button>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
