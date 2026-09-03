@@ -11,7 +11,7 @@ type ArchiveRound = {
   format: string;
   course: string;
   detail: string;
-  holes: Array<{ hole: number; par: number; yards: number; score: number }>;
+  holes: Array<{ hole: number; par: number; yards: number; score: number; putts: number | null; fairwayInRegulation: boolean | null; greenInRegulation: boolean | null }>;
 };
 
 export function CareerRoundArchive({ player, year, format, records, teamRecords }: { player: string; year: string; format: string; records: CareerHoleRecord[]; teamRecords: CareerTeamHoleRecord[] }) {
@@ -47,7 +47,7 @@ export function CareerRoundArchive({ player, year, format, records, teamRecords 
       <h3 className="mt-1 font-serif text-xl font-bold text-ink-900">{selected.year} · Round {selected.round} · {selected.format}</h3>
       <p className="mt-1 font-sans text-sm text-ink-500">{selected.course} · {selected.detail}</p>
       <div className="mt-4 grid grid-cols-3 gap-2 font-sans"><div className="rounded-sm bg-cream-100 p-2"><p className="m-0 text-2xs uppercase text-ink-500">Score</p><p className="m-0 text-lg font-black">{total}</p></div><div className="rounded-sm bg-cream-100 p-2"><p className="m-0 text-2xs uppercase text-ink-500">To par</p><p className="m-0 text-lg font-black">{toPar > 0 ? `+${toPar}` : toPar}</p></div><div className="rounded-sm bg-cream-100 p-2"><p className="m-0 text-2xs uppercase text-ink-500">Holes</p><p className="m-0 text-lg font-black">{selected.holes.length}</p></div></div>
-      <div className="mt-4 overflow-x-auto"><table className="min-w-full text-left font-sans text-xs"><thead className="border-b border-gold-200 text-ink-500"><tr><th className="px-2 py-2">Hole</th><th className="px-2 py-2">Par</th><th className="px-2 py-2">Yards</th><th className="px-2 py-2">Score</th><th className="px-2 py-2">To par</th></tr></thead><tbody>{selected.holes.sort((a, b) => a.hole - b.hole).map((hole) => { const diff = hole.score - hole.par; return <tr key={hole.hole} className="border-b border-gold-100"><td className="px-2 py-2">{hole.hole}</td><td className="px-2 py-2">{hole.par}</td><td className="px-2 py-2">{hole.yards}</td><td className="px-2 py-2 font-bold">{hole.score}</td><td className="px-2 py-2">{diff > 0 ? `+${diff}` : diff}</td></tr>; })}</tbody></table></div>
+      <div className="mt-4 overflow-x-auto"><table className="min-w-full text-left font-sans text-xs"><thead className="border-b border-gold-200 text-ink-500"><tr><th className="px-2 py-2">Hole</th><th className="px-2 py-2">Par</th><th className="px-2 py-2">Yards</th><th className="px-2 py-2">Score</th><th className="px-2 py-2">To par</th><th className="px-2 py-2">Fairway</th><th className="px-2 py-2">Green</th><th className="px-2 py-2">Putts</th></tr></thead><tbody>{selected.holes.sort((a, b) => a.hole - b.hole).map((hole) => { const diff = hole.score - hole.par; return <tr key={hole.hole} className="border-b border-gold-100"><td className="px-2 py-2">{hole.hole}</td><td className="px-2 py-2">{hole.par}</td><td className="px-2 py-2">{hole.yards}</td><td className="px-2 py-2 font-bold">{hole.score}</td><td className="px-2 py-2">{diff > 0 ? `+${diff}` : diff}</td><td className="px-2 py-2">{hole.fairwayInRegulation == null ? "—" : hole.fairwayInRegulation ? "Hit" : "Miss"}</td><td className="px-2 py-2">{hole.greenInRegulation == null ? "—" : hole.greenInRegulation ? "Hit" : "Miss"}</td><td className="px-2 py-2">{hole.putts ?? "—"}</td></tr>; })}</tbody></table></div>
     </section>
   </div>;
 }

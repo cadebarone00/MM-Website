@@ -13,6 +13,7 @@ const integer = (value: unknown) => {
   const result = Number(value);
   return Number.isInteger(result) ? result : null;
 };
+const bool = (value: unknown) => value === true || value === 1 || String(value).trim() === "1" ? true : value === false || value === 0 || String(value).trim() === "0" ? false : null;
 
 function rowsFromSheet(workbook: XLSX.WorkBook, sheetName: string, required: string[]): SheetRow[] {
   const sheet = workbook.Sheets[sheetName];
@@ -36,7 +37,7 @@ const workbook = XLSX.readFile(input);
 const records = rowsFromSheet(workbook, "Raw_Hole_Results", ["year", "player", "score"])
   .map((row) => ({
     year: integer(value(row, "year")), player: text(value(row, "player")), round: integer(value(row, "round")), roundHoles: integer(value(row, "round_holes")),
-    course: text(value(row, "course")), format: text(value(row, "format")) || "Unspecified", hole: integer(value(row, "hole")), par: integer(value(row, "par")), yards: integer(value(row, "yards")), score: integer(value(row, "score")),
+    course: text(value(row, "course")), format: text(value(row, "format")) || "Unspecified", hole: integer(value(row, "hole")), par: integer(value(row, "par")), yards: integer(value(row, "yards")), score: integer(value(row, "score")), putts: integer(value(row, "putts")), fairwayInRegulation: bool(value(row, "fairway_in_regulation")), greenInRegulation: bool(value(row, "green_in_regulation")),
   }))
   .filter((row) => row.roundHoles === 18 && row.year && row.player && row.round && row.course && row.hole && row.par && row.yards && row.score);
 
@@ -44,7 +45,7 @@ const teamRecords = rowsFromSheet(workbook, "Raw_Team_Hole_Results", ["year", "t
   .map((row) => ({
     year: integer(value(row, "year")), round: integer(value(row, "round")), format: text(value(row, "format")) || "Unspecified", matchId: text(value(row, "match_id")),
     teamId: text(value(row, "team_id")), player1: text(value(row, "player_1")), player2: text(value(row, "player_2")), course: text(value(row, "course")),
-    hole: integer(value(row, "hole")), par: integer(value(row, "par")), yards: integer(value(row, "yards")), score: integer(value(row, "team_score")),
+    hole: integer(value(row, "hole")), par: integer(value(row, "par")), yards: integer(value(row, "yards")), score: integer(value(row, "team_score")), putts: null, fairwayInRegulation: null, greenInRegulation: null,
   }))
   .filter((row) => row.year && row.round && row.matchId && row.teamId && row.player1 && row.course && row.hole && row.par && row.yards && row.score);
 

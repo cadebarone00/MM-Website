@@ -13,6 +13,9 @@ export type CareerHoleRecord = {
   par: number;
   yards: number;
   score: number;
+  putts: number | null;
+  fairwayInRegulation: boolean | null;
+  greenInRegulation: boolean | null;
 };
 
 export type CareerPartnership = { player: string; partner: string; year: number; format: string; result: "win" | "loss" | "halve" };
@@ -31,6 +34,9 @@ export type CareerTeamHoleRecord = {
   par: number;
   yards: number;
   score: number;
+  putts: number | null;
+  fairwayInRegulation: boolean | null;
+  greenInRegulation: boolean | null;
 };
 
 export function buildCareerHoleRecords(sets: CareerScorecardSet[]): CareerHoleRecord[] {
@@ -48,6 +54,9 @@ export function buildCareerHoleRecords(sets: CareerScorecardSet[]): CareerHoleRe
           par: hole.par,
           yards: hole.yards,
           score: hole.score,
+          putts: hole.putts,
+          fairwayInRegulation: hole.fir === "X" ? null : hole.fir === 1,
+          greenInRegulation: hole.gir === 1,
         }))
       )
     )
