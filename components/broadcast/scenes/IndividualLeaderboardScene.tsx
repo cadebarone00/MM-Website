@@ -75,8 +75,10 @@ export function IndividualLeaderboardScene({ standings }: { standings: Broadcast
                 <span
                   aria-hidden
                   className={[
-                    "h-2.5 w-2.5 shrink-0 rounded-full",
-                    r.team === "maroon" ? "bg-[color:var(--color-maroon-500)]" : "border border-[color:var(--color-ink-300)] bg-white",
+                    "h-2.5 w-2.5 shrink-0 rounded-full border",
+                    r.team === "maroon"
+                      ? "border-[color:var(--color-maroon-700)] bg-[color:var(--color-maroon-500)]"
+                      : "border-[color:var(--color-maroon-400)] bg-[color:var(--color-cream-200)]",
                   ].join(" ")}
                 />
                 <span className="flex-1 truncate font-sans text-xl font-bold uppercase tracking-wide text-[color:var(--color-ink-900)]">

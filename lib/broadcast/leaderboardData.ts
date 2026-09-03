@@ -8,6 +8,8 @@ import type { BroadcastStanding } from "./types";
 export interface BroadcastLeaderboard {
   seasonYear: number;
   standings: BroadcastStanding[];
+  /** True for an archived year (already finished) — the scene shows "Final" instead of "Live" against it. */
+  final: boolean;
 }
 
 /**
