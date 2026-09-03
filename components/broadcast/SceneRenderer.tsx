@@ -12,12 +12,14 @@ export function SceneRenderer({
   state,
   config,
   standings,
+  leaderboardFinal,
   matchPlay,
   holding,
 }: {
   state: BroadcastState;
   config: BroadcastConfig;
   standings: BroadcastStanding[];
+  leaderboardFinal: boolean;
   matchPlay: BroadcastMatchPlay;
   holding: { venue: string; dateLabel: string };
 }) {
