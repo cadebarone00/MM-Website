@@ -69,5 +69,5 @@ export function useLiveBroadcastData(
     };
   }, [seasonYear, reload]);
 
-  return { standings, matchPlay };
+  return { standings, leaderboardFinal, matchPlay };
 }
