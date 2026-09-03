@@ -10,8 +10,8 @@ import { useEffect, useRef, useState } from "react";
 const PREVIEW_WIDTH = 1920;
 const PREVIEW_HEIGHT = 1080;
 
-/** A true-to-scale live preview of /broadcast — same page real viewers see, shrunk to fit instead of reflowed. */
-export function BroadcastPreview() {
+/** A true-to-scale preview of /broadcast, shrunk to fit instead of reflowed. Pass a plain `/broadcast` src for the real thing, or a `?preview=1&...` src to rehearse privately (see BroadcastControlsPanel.tsx). */
+export function BroadcastPreview({ src }: { src: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState<number | null>(null);
 
@@ -33,7 +33,7 @@ export function BroadcastPreview() {
       className="relative -mx-4 aspect-video overflow-hidden border-y-2 border-stone-300 bg-[color:var(--color-maroon-900)] sm:mx-0 sm:rounded-lg sm:border-x-2"
     >
       <iframe
-        src="/broadcast"
+        src={src}
         title="Broadcast preview"
         style={{
           width: PREVIEW_WIDTH,

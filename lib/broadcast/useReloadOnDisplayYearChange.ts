@@ -11,9 +11,14 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
  * onto the new year cleanly — the same `window.location.reload()` pattern
  * Master Settings' own save/set-active-year actions already use. This is a
  * deliberate, infrequent admin action, not something viewers do themselves.
+ * Pass `enabled: false` for a preview render (see app/broadcast/page.tsx's
+ * `?preview=1`) — that render's "year" is a query param a Tiger is
+ * rehearsing with locally, not the published one, so it must never reload
+ * itself over a real production display-year change either.
  */
-export function useReloadOnDisplayYearChange(loadedWithYear: number) {
+export function useReloadOnDisplayYearChange(loadedWithYear: number, enabled = true) {
   useEffect(() => {
+    if (!enabled) return;
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return;
 
     const supabase = createSupabaseBrowserClient();
@@ -28,5 +33,5 @@ export function useReloadOnDisplayYearChange(loadedWithYear: number) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [loadedWithYear]);
+  }, [loadedWithYear, enabled]);
 }

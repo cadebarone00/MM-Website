@@ -98,9 +98,14 @@ async function liveMatchPlay(seasonYear: number): Promise<BroadcastMatchPlay> {
   return { seasonYear, roundLabel: `Round ${round}`, matchBoxes };
 }
 
-/** Same live-vs-archived split as lib/broadcast/leaderboardData.ts — see that file's comment for why the branch is by year, not a config flag. */
-export async function getBroadcastMatchPlay(): Promise<BroadcastMatchPlay> {
-  const seasonYear = await getBroadcastDisplayYear();
+/**
+ * Same live-vs-archived split as lib/broadcast/leaderboardData.ts — see
+ * that file's comment for why the branch is by year, not a config flag.
+ * `overrideYear` is for the Broadcast Controls preview only, same as
+ * getBroadcastLeaderboard's.
+ */
+export async function getBroadcastMatchPlay(overrideYear?: number): Promise<BroadcastMatchPlay> {
+  const seasonYear = overrideYear ?? (await getBroadcastDisplayYear());
 
   const archived = pastTournaments.find((t) => t.year === seasonYear);
   if (archived) return archivedMatchPlay(archived);

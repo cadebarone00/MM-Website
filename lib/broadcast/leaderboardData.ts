@@ -19,9 +19,13 @@ export interface BroadcastLeaderboard {
  *   already has a finished tournament's real standings on hand
  *   (`Tournament.individualLeaderboard`) — no live_* rows exist for it.
  * - Anything else falls through to the live Supabase path (2027+).
+ *
+ * `overrideYear` is for the Broadcast Controls preview only (see
+ * app/broadcast/page.tsx's `?preview=1`) — omit it and this resolves the
+ * real published display year, exactly as /broadcast itself does.
  */
-export async function getBroadcastLeaderboard(): Promise<BroadcastLeaderboard> {
-  const seasonYear = await getBroadcastDisplayYear();
+export async function getBroadcastLeaderboard(overrideYear?: number): Promise<BroadcastLeaderboard> {
+  const seasonYear = overrideYear ?? (await getBroadcastDisplayYear());
 
   const archived = pastTournaments.find((t) => t.year === seasonYear);
   if (archived) {

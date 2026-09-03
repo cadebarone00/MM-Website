@@ -8,12 +8,17 @@ import type { BroadcastState } from "@/lib/broadcast/types";
  * Keeps automation_mode/current_scene/scene_started_at live, so a host's
  * "Broadcast Controls" click (see app/portal/admin/broadcast-controls)
  * reaches every open /broadcast tab immediately — same Realtime-then-
- * refetch pattern as useLiveBroadcastData.ts.
+ * refetch pattern as useLiveBroadcastData.ts. Pass `enabled: false` for a
+ * preview render (see app/broadcast/page.tsx's `?preview=1`) — a Tiger
+ * rehearsing privately must never subscribe to the real, shared broadcast
+ * state, or every open real /broadcast tab would flicker along with it.
  */
-export function useLiveBroadcastState(seasonYear: number, initial: BroadcastState) {
+export function useLiveBroadcastState(seasonYear: number, initial: BroadcastState, enabled = true) {
   const [state, setState] = useState(initial);
 
   useEffect(() => {
+    if (!enabled) return;
+
     async function reload() {
       try {
         const res = await fetch("/api/broadcast", { cache: "no-store" });
@@ -45,7 +50,7 @@ export function useLiveBroadcastState(seasonYear: number, initial: BroadcastStat
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("online", reload);
     };
-  }, [seasonYear]);
+  }, [seasonYear, enabled]);
 
   return state;
 }
