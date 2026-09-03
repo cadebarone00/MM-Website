@@ -289,6 +289,39 @@ alter table career_stat_matches enable row level security;
 alter table career_match_participants enable row level security;
 alter table career_stat_imports enable row level security;
 
+-- === Tiger Center Odds Model =============================================
+-- The model reads normalized Career Stats rows; workbook sheets are never
+-- queried by calculations. Each preview is reproducible/auditable through
+-- this persisted settings record and the run history below.
+create table if not exists odds_model_settings (
+  id boolean primary key default true,
+  model_version text not null default 'MM-1.0',
+  simulation_count integer not null default 10000 check (simulation_count between 1000 and 100000),
+  career_weight numeric not null default 0.75 check (career_weight between 0 and 1),
+  recent_form_weight numeric not null default 0.25 check (recent_form_weight between 0 and 1),
+  house_margin numeric not null default 0.05 check (house_margin between 0 and 0.25),
+  updated_at timestamptz not null default now(),
+  constraint odds_model_settings_singleton check (id),
+  constraint odds_model_settings_weights_check check (career_weight + recent_form_weight = 1)
+);
+insert into odds_model_settings (id) values (true) on conflict (id) do nothing;
+
+create table if not exists odds_model_runs (
+  id uuid primary key default gen_random_uuid(),
+  wager_type_slug text not null,
+  player text,
+  line numeric,
+  settings jsonb not null,
+  input_summary jsonb not null,
+  result jsonb not null,
+  run_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index if not exists odds_model_runs_created_idx on odds_model_runs (created_at desc);
+
+alter table odds_model_settings enable row level security;
+alter table odds_model_runs enable row level security;
+
 drop policy if exists wagers_accounts_select_own on wagers_accounts;
 create policy wagers_accounts_select_own on wagers_accounts for select using (auth.uid() = profile_id);
 

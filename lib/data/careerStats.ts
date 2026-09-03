@@ -6,6 +6,7 @@ export type CareerHoleRecord = {
   year: number;
   player: string;
   round: number;
+  roundHoles: number;
   course: string;
   format: string;
   hole: number;
@@ -24,6 +25,7 @@ export function buildCareerHoleRecords(sets: CareerScorecardSet[]): CareerHoleRe
           year,
           player: scorecard.player,
           round: round.round,
+          roundHoles: round.holes.filter((hole) => hole.score > 0).length,
           course: round.course,
           format: round.format ?? "Unspecified",
           hole: hole.hole,

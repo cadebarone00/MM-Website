@@ -93,7 +93,7 @@ export async function POST(request: Request) {
   let workbook: XLSX.WorkBook;
   try { workbook = XLSX.read(Buffer.from(await file.arrayBuffer()), { type: "buffer" }); }
   catch { return NextResponse.json({ ok: false, error: "That workbook could not be read." }, { status: 400 }); }
-  const individual = rowsFromSheet(workbook, "Raw_Hole_Results", ["year", "player", "score"]).map(mapIndividual);
+  const individual = rowsFromSheet(workbook, "Raw_Hole_Results", ["year", "player", "score"]).map(mapIndividual).filter((row) => row.round_holes === 18);
   const teamHoles = rowsFromSheet(workbook, "Raw_Team_Hole_Results", ["year", "team_id", "team_score"]).map(mapTeam);
   const matches = rowsFromSheet(workbook, "Raw_Match_Results", ["year", "match_id", "format"]).map(mapMatch);
   const participants = rowsFromSheet(workbook, "Match_Participants", ["year", "match_id", "player"]).map(mapParticipant);
