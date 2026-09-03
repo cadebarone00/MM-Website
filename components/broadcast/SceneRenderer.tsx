@@ -1,7 +1,6 @@
 "use client";
 
-import type { BroadcastConfig, BroadcastState } from "@/lib/broadcast/types";
-import type { PlayerSummary } from "@/lib/live/scoring";
+import type { BroadcastConfig, BroadcastStanding, BroadcastState } from "@/lib/broadcast/types";
 import type { BroadcastMatchPlay } from "@/lib/broadcast/matchPlayData";
 import { useAutoScene } from "@/lib/broadcast/useAutoScene";
 import { IndividualLeaderboardScene } from "./scenes/IndividualLeaderboardScene";

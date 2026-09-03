@@ -20,9 +20,7 @@ export function MatchPlayScene({ matchPlay }: { matchPlay: BroadcastMatchPlay })
   return (
     <div className="flex min-h-screen w-full flex-col items-center bg-[color:var(--color-maroon-900)] px-6 py-10 text-[color:var(--color-maroon-50)]">
       <p className="font-condensed text-sm uppercase tracking-[0.3em] text-[color:var(--color-maroon-300)]">The Maroon Masters</p>
-      <h1 className="mt-2 font-serif text-4xl font-semibold sm:text-5xl">
-        Match Play{matchPlay.round !== null ? ` — Round ${matchPlay.round}` : ""}
-      </h1>
+      <h1 className="mt-2 font-serif text-4xl font-semibold sm:text-5xl">Match Play{matchPlay.roundLabel ? ` — ${matchPlay.roundLabel}` : ""}</h1>
 
       {matchPlay.matchBoxes.length === 0 ? (
         <p className="mt-16 font-sans text-xl text-[color:var(--color-maroon-200)]">No round is live yet.</p>
