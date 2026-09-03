@@ -37,8 +37,10 @@ export function CareerStatsPanel({ records, partnerships, teamRecords }: { recor
   const trends = years.map((trendYear) => { const yearRows = allPlayerRows.filter((r) => String(r.year) === trendYear && (format === ALL || r.format === format)); const groups = new Map<string, CareerHoleRecord[]>(); yearRows.forEach((r) => { const key = `${r.round}-${r.course}`; groups.set(key, [...(groups.get(key) ?? []), r]); }); const scores = [...groups.values()].map((round) => round.reduce((sum, r) => sum + r.score, 0)); return { year: trendYear, rounds: scores.length, average: scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0 }; });
   if (!player) return <p className="rounded-md border border-gold-300 bg-cream-50 px-4 py-5 font-sans text-sm text-ink-500">No archived scorecards are available yet. Import the 2024–2026 scorecards and this page will calculate every view automatically.</p>;
   return <div>
-    <div className="flex flex-wrap gap-3">
-      <Select label="Player" value={player} onChange={(value) => { setPlayer(value); setYear(ALL); setFormat(ALL); setPartner(ALL); setPartnershipFormat(ALL); }} options={players} />
+    <div role="tablist" aria-label="Player archive" className="flex flex-wrap gap-2 border-b border-gold-200 pb-4">
+      {players.map((playerId) => <button type="button" key={playerId} role="tab" aria-selected={player === playerId} onClick={() => { setPlayer(playerId); setYear(ALL); setFormat(ALL); setPartner(ALL); setPartnershipFormat(ALL); }} className={`rounded-sm px-3 py-2 font-condensed text-xs font-bold uppercase tracking-wide ${player === playerId ? "bg-maroon-700 text-white" : "bg-white text-ink-600 hover:bg-cream-100"}`}>{getPlayerDisplayName(playerId)}</button>)}
+    </div>
+    <div className="mt-4 flex flex-wrap gap-3">
       <Select label="Year" value={year} onChange={setYear} options={[ALL, ...years]} />
       <Select label="Format" value={format} onChange={setFormat} options={[ALL, ...formats]} />
       {view === "trends" && <Select label="Team format" value={partnershipFormat} onChange={setPartnershipFormat} options={[ALL, ...partnershipFormats]} />}
