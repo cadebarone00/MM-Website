@@ -25,7 +25,7 @@ export async function getBroadcastPayload(): Promise<BroadcastPayload> {
   const seasonYear = await getActiveSeasonYear();
   const service = createSupabaseServiceRoleClient();
 
-  const [{ data: stateRow }, { data: configRow }] = await Promise.all([
+  const [{ data: stateRow, error: stateError }, { data: configRow, error: configError }] = await Promise.all([
     service
       .from("broadcast_state")
       .select("current_scene, scene_started_at, automation_mode, paused, overlay_text, overlay_expires_at")
@@ -33,6 +33,15 @@ export async function getBroadcastPayload(): Promise<BroadcastPayload> {
       .maybeSingle(),
     service.from("broadcast_config").select("scene_durations_ms").eq("season_year", seasonYear).maybeSingle(),
   ]);
+
+  // A missing row for this season is expected (falls back to defaults
+  // below, same as Master Settings' "unconfigured year" philosophy) — but
+  // an actual query error (e.g. a schema mismatch) is not, and silently
+  // falling back to defaults on one hid exactly that kind of bug for
+  // several steps before a write finally surfaced it. Log, don't throw:
+  // broadcast failures must never take down the page (spec §32).
+  if (stateError) console.error("broadcast_state read failed, falling back to defaults:", stateError.message);
+  if (configError) console.error("broadcast_config read failed, falling back to defaults:", configError.message);
 
   const state: BroadcastState = {
     seasonYear,
