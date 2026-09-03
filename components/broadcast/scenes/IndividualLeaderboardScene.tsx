@@ -1,5 +1,5 @@
 import { getPlayerDisplayName } from "@/lib/data/players";
-import type { PlayerSummary } from "@/lib/live/scoring";
+import type { BroadcastStanding } from "@/lib/broadcast/types";
 
 function scoreLabel(toPar: number): string {
   if (toPar === 0) return "E";
@@ -8,13 +8,13 @@ function scoreLabel(toPar: number): string {
 
 /**
  * Full-screen, TV-style individual leaderboard — restyles the same
- * lib/live/scoring.ts standings the rest of the app will eventually show,
- * rather than reusing components/leaderboard/IndividualLeaderboardTable.tsx
- * directly (that component is built around the static, past-years
- * Tournament type, not the live PlayerSummary shape). See the Watch Live
- * Broadcast spec, §17.
+ * live or archived standings, restyled full-screen — rather than reusing
+ * components/leaderboard/IndividualLeaderboardTable.tsx directly (that
+ * component is built around the full static Tournament type and its own
+ * multi-round column layout, more than a TV leaderboard needs). See the
+ * Watch Live Broadcast spec, §17.
  */
-export function IndividualLeaderboardScene({ standings }: { standings: PlayerSummary[] }) {
+export function IndividualLeaderboardScene({ standings }: { standings: BroadcastStanding[] }) {
   return (
     <div className="flex min-h-screen w-full flex-col items-center bg-[color:var(--color-maroon-900)] px-6 py-10 text-[color:var(--color-maroon-50)]">
       <p className="font-condensed text-sm uppercase tracking-[0.3em] text-[color:var(--color-maroon-300)]">The Maroon Masters</p>
