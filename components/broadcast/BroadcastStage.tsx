@@ -4,14 +4,13 @@ import type { BroadcastPayload } from "@/lib/broadcast/types";
 import type { PlayerSummary } from "@/lib/live/scoring";
 import type { BroadcastMatchPlay } from "@/lib/broadcast/matchPlayData";
 import { useLiveBroadcastData } from "@/lib/broadcast/useLiveBroadcastData";
+import { useLiveBroadcastState } from "@/lib/broadcast/useLiveBroadcastState";
 import { SceneRenderer } from "./SceneRenderer";
 
 /**
- * Step 5 of the Watch Live Broadcast build: the leaderboard and match play
- * scenes now stay live via Supabase Realtime — no refresh needed when a
- * score is entered. Rotation timing and the holding scene's venue/date
- * still come from what the page loaded with (neither changes often enough
- * to need live wiring yet). See
+ * Step 6 of the Watch Live Broadcast build: a host can now force a scene
+ * (or return to auto) from Tiger Center's new Broadcast Controls page, and
+ * every open /broadcast tab picks it up live. See
  * docs/superpowers/specs/2026-09-02-watch-live-broadcast-design.md.
  */
 export function BroadcastStage({
@@ -26,6 +25,7 @@ export function BroadcastStage({
   holding: { venue: string; dateLabel: string };
 }) {
   const { standings, matchPlay } = useLiveBroadcastData(broadcast.seasonYear, { standings: initialStandings, matchPlay: initialMatchPlay });
+  const state = useLiveBroadcastState(broadcast.seasonYear, broadcast.state);
 
-  return <SceneRenderer anchorIso={broadcast.state.sceneStartedAt} config={broadcast.config} standings={standings} matchPlay={matchPlay} holding={holding} />;
+  return <SceneRenderer state={state} config={broadcast.config} standings={standings} matchPlay={matchPlay} holding={holding} />;
 }

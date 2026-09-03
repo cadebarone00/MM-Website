@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { BroadcastConfig, BroadcastScene } from "@/lib/broadcast/types";
+import type { BroadcastConfig, BroadcastScene, BroadcastState } from "@/lib/broadcast/types";
 import type { PlayerSummary } from "@/lib/live/scoring";
 import type { BroadcastMatchPlay } from "@/lib/broadcast/matchPlayData";
 import { sceneAt } from "@/lib/broadcast/rotation";
@@ -10,27 +10,30 @@ import { MatchPlayScene } from "./scenes/MatchPlayScene";
 import { HoldingScene } from "./scenes/HoldingScene";
 
 export function SceneRenderer({
-  anchorIso,
+  state,
   config,
   standings,
   matchPlay,
   holding,
 }: {
-  anchorIso: string;
+  state: BroadcastState;
   config: BroadcastConfig;
   standings: PlayerSummary[];
   matchPlay: BroadcastMatchPlay;
   holding: { venue: string; dateLabel: string };
 }) {
-  const anchorMs = useMemo(() => new Date(anchorIso).getTime(), [anchorIso]);
-  const [scene, setScene] = useState<BroadcastScene>(() => sceneAt(anchorMs, config, Date.now()).scene);
+  const isAuto = state.automationMode === "auto";
+  const anchorMs = useMemo(() => new Date(state.sceneStartedAt).getTime(), [state.sceneStartedAt]);
+  const [autoScene, setAutoScene] = useState<BroadcastScene>(() => sceneAt(anchorMs, config, Date.now()).scene);
 
   useEffect(() => {
+    if (!isAuto) return; // Producer Mode: a host is showing a specific scene — no rotation timer running.
+
     let timeoutId: ReturnType<typeof setTimeout>;
 
     function tick() {
       const { scene: next, msUntilNext } = sceneAt(anchorMs, config, Date.now());
-      setScene(next);
+      setAutoScene(next);
       // Re-check a bit early rather than exactly on the boundary — cheap
       // insurance against clock drift/timer coalescing causing a scene to
       // hang one tick too long.
@@ -39,7 +42,9 @@ export function SceneRenderer({
 
     tick();
     return () => clearTimeout(timeoutId);
-  }, [anchorMs, config]);
+  }, [isAuto, anchorMs, config]);
+
+  const scene = isAuto ? autoScene : state.currentScene;
 
   switch (scene) {
     case "individual_leaderboard":
