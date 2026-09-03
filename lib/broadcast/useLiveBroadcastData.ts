@@ -17,14 +17,22 @@ import type { BroadcastMatchPlay } from "@/lib/broadcast/matchPlayData";
  * this is exactly the "leaderboard scene subscribes directly to
  * live_hole_scores" plan from the spec's Phase 1 Definition of Done.
  */
-export function useLiveBroadcastData(seasonYear: number, initial: { standings: BroadcastStanding[]; matchPlay: BroadcastMatchPlay }) {
+export function useLiveBroadcastData(
+  seasonYear: number,
+  initial: { standings: BroadcastStanding[]; leaderboardFinal: boolean; matchPlay: BroadcastMatchPlay }
+) {
   const [standings, setStandings] = useState(initial.standings);
+  const [leaderboardFinal, setLeaderboardFinal] = useState(initial.leaderboardFinal);
   const [matchPlay, setMatchPlay] = useState(initial.matchPlay);
 
   const reload = useCallback(async () => {
     try {
       const [leaderboardRes, matchPlayRes] = await Promise.all([fetch("/api/broadcast/leaderboard", { cache: "no-store" }), fetch("/api/broadcast/match-play", { cache: "no-store" })]);
-      if (leaderboardRes.ok) setStandings((await leaderboardRes.json()).standings);
+      if (leaderboardRes.ok) {
+        const data = await leaderboardRes.json();
+        setStandings(data.standings);
+        setLeaderboardFinal(data.final);
+      }
       if (matchPlayRes.ok) setMatchPlay(await matchPlayRes.json());
     } catch {
       // A missed refresh just means the broadcast shows slightly stale data
