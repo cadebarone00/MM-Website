@@ -1,16 +1,35 @@
 // lib/broadcast/leaderboardData.ts
-import { getActiveSeasonYear } from "@/lib/live/activeSeason";
-import { leaderboard, type PlayerSummary } from "@/lib/live/scoring";
+import { pastTournaments } from "@/lib/data";
+import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
+import { leaderboard } from "@/lib/live/scoring";
 import { buildLiveTournamentSnapshot } from "./liveSnapshot";
+import type { BroadcastStanding } from "./types";
 
 export interface BroadcastLeaderboard {
   seasonYear: number;
-  standings: PlayerSummary[];
+  standings: BroadcastStanding[];
 }
 
-/** Whole-tournament individual standings for whichever season is active — what the broadcast's Individual Leaderboard scene shows. */
+/**
+ * Whole-tournament individual standings for whichever year Broadcast
+ * Controls has picked. Two real sources, picked by year — not a config
+ * flag — since which one applies is a fact about the data, not a choice:
+ *
+ * - A year with a static `pastTournaments` entry (2026 and earlier today)
+ *   already has a finished tournament's real standings on hand
+ *   (`Tournament.individualLeaderboard`) — no live_* rows exist for it.
+ * - Anything else falls through to the live Supabase path (2027+).
+ */
 export async function getBroadcastLeaderboard(): Promise<BroadcastLeaderboard> {
-  const seasonYear = await getActiveSeasonYear();
+  const seasonYear = await getBroadcastDisplayYear();
+
+  const archived = pastTournaments.find((t) => t.year === seasonYear);
+  if (archived) {
+    const standings: BroadcastStanding[] = [...archived.individualLeaderboard].sort((a, b) => a.toPar - b.toPar);
+    return { seasonYear, standings };
+  }
+
   const snapshot = await buildLiveTournamentSnapshot(seasonYear);
-  return { seasonYear, standings: leaderboard(snapshot) };
+  const standings: BroadcastStanding[] = leaderboard(snapshot).map((p) => ({ player: p.player, team: p.team, toPar: p.toPar }));
+  return { seasonYear, standings };
 }
