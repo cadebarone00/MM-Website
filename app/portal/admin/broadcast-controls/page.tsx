@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getBroadcastPayload } from "@/lib/broadcast/state";
 import { BroadcastControlsPanel } from "@/components/portal/tiger/BroadcastControlsPanel";
+import { BroadcastPreview } from "@/components/portal/tiger/BroadcastPreview";
 
 export default async function BroadcastControlsPage() {
   const supabase = await createSupabaseServerClient();
@@ -20,11 +21,9 @@ export default async function BroadcastControlsPage() {
       <h1 className="font-serif text-2xl font-bold text-ink-900">Broadcast Controls</h1>
       <p className="mt-1 font-sans text-sm text-ink-500">Force a scene on /broadcast, or hand control back to automatic rotation.</p>
 
-      <iframe
-        src="/broadcast"
-        title="Broadcast preview"
-        className="mt-4 aspect-video w-full rounded-lg border-2 border-stone-300"
-      />
+      <div className="mt-4">
+        <BroadcastPreview />
+      </div>
 
       <BroadcastControlsPanel initialState={state} config={config} />
     </div>
