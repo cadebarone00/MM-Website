@@ -72,13 +72,12 @@ export function IndividualLeaderboardScene({ standings, final = false }: { stand
                 <span className="w-8 shrink-0 text-right font-condensed text-lg font-bold tabular-nums text-[color:var(--color-maroon-600)]">
                   {r.showPos ? r.pos : ""}
                 </span>
+                {/* True white is invisible on a cream card, so "White" reads as a dark marker instead — same reason real broadcast graphics never render an away-team dot in actual white. */}
                 <span
                   aria-hidden
                   className={[
-                    "h-2.5 w-2.5 shrink-0 rounded-full border",
-                    r.team === "maroon"
-                      ? "border-[color:var(--color-maroon-700)] bg-[color:var(--color-maroon-500)]"
-                      : "border-[color:var(--color-maroon-400)] bg-[color:var(--color-cream-200)]",
+                    "h-2.5 w-2.5 shrink-0 rounded-full",
+                    r.team === "maroon" ? "bg-[color:var(--color-maroon-500)]" : "bg-[color:var(--color-ink-800)]",
                   ].join(" ")}
                 />
                 <span className="flex-1 truncate font-sans text-xl font-bold uppercase tracking-wide text-[color:var(--color-ink-900)]">
