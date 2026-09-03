@@ -1,7 +1,7 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import type { CareerHoleRecord, CareerPartnership } from "./careerStats";
 
-type HoleRow = { year: number; player: string; round: number; round_holes: number | null; course: string; format: string | null; hole: number; par: number; yards: number; score: number };
+type HoleRow = { year: number; player: string; round: number; round_holes: number | null; course: string; format: string | null; hole: number; par: number; yards: number; score: number; putts: number | null; fairway_in_regulation: boolean | null; green_in_regulation: boolean | null };
 
 async function loadAll<T>(table: string): Promise<{ rows: T[]; ready: boolean }> {
   const service = createSupabaseServiceRoleClient();
@@ -21,7 +21,7 @@ export async function getCareerStatsDatabase() {
     loadAll<{ player: string; partner: string | null; year: number; format: string | null; team_id: string | null; winning_side: string | null }>("career_match_participants"),
   ]);
   return {
-    records: holes.rows.filter((row) => (row.round_holes ?? 18) === 18).map((row): CareerHoleRecord => ({ year: row.year, player: row.player, round: row.round, roundHoles: row.round_holes ?? 18, course: row.course, format: row.format ?? "Unspecified", hole: row.hole, par: row.par, yards: row.yards, score: row.score })),
+    records: holes.rows.filter((row) => (row.round_holes ?? 18) === 18).map((row): CareerHoleRecord => ({ year: row.year, player: row.player, round: row.round, roundHoles: row.round_holes ?? 18, course: row.course, format: row.format ?? "Unspecified", hole: row.hole, par: row.par, yards: row.yards, score: row.score, putts: row.putts, fairwayInRegulation: row.fairway_in_regulation, greenInRegulation: row.green_in_regulation })),
     partnerships: participants.rows.filter((row) => row.partner).map((row): CareerPartnership => ({
       player: row.player, partner: row.partner!, year: row.year, format: row.format ?? "Unspecified",
       result: row.winning_side?.toUpperCase() === "HALVED" ? "halve" : row.winning_side?.toUpperCase() === row.team_id?.toUpperCase() ? "win" : "loss",
