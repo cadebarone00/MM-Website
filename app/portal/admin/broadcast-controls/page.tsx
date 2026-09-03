@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getBroadcastPayload } from "@/lib/broadcast/state";
 import { BroadcastControlsPanel } from "@/components/portal/tiger/BroadcastControlsPanel";
-import { BroadcastPreview } from "@/components/portal/tiger/BroadcastPreview";
 
 export default async function BroadcastControlsPage() {
   const supabase = await createSupabaseServerClient();
@@ -19,11 +18,7 @@ export default async function BroadcastControlsPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <h1 className="font-serif text-2xl font-bold text-ink-900">Broadcast Controls</h1>
-      <p className="mt-1 font-sans text-sm text-ink-500">Force a scene on /broadcast, or hand control back to automatic rotation.</p>
-
-      <div className="mt-4">
-        <BroadcastPreview />
-      </div>
+      <p className="mt-1 font-sans text-sm text-ink-500">Rehearse privately, then Go Live to publish it to the real /broadcast.</p>
 
       <BroadcastControlsPanel initialDisplayYear={seasonYear} initialState={state} config={config} />
     </div>
