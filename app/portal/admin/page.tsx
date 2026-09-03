@@ -52,6 +52,12 @@ export default async function TigerCenterPage() {
             Wager Types
           </Link>
           <Link
+            href="/portal/admin/odds-model"
+            className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-8 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800"
+          >
+            Odds Model
+          </Link>
+          <Link
             href="/portal/admin/broadcast-controls"
             className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-8 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800"
           >
