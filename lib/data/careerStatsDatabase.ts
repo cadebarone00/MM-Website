@@ -29,3 +29,26 @@ export async function getCareerStatsDatabase() {
     databaseReady: holes.ready && participants.ready,
   };
 }
+
+/** Live archive rows are the 2027+ extension of Career Stats. Partial rounds
+ * are retained so the Round Archive can show in-progress scoring; callers
+ * that price historical baselines must require roundHoles === 18. */
+export async function getLiveCareerArchiveRecords(): Promise<CareerHoleRecord[]> {
+  const service = createSupabaseServiceRoleClient();
+  const [{ data: rounds, error: roundsError }, { data: holes, error: holesError }] = await Promise.all([
+    service.from("career_archive_rounds").select("season_year, round, player_slug, course, format, holes"),
+    service.from("career_archive_live_holes").select("season_year, round, player_slug, hole, score, putts, fir, gir"),
+  ]);
+  if (roundsError || holesError) return [];
+  const metadata = new Map((rounds ?? []).map((row) => [`${row.season_year}:${row.round}:${row.player_slug}`, row]));
+  const counts = new Map<string, number>();
+  (holes ?? []).filter((row) => row.score != null && row.score > 0).forEach((row) => { const id = `${row.season_year}:${row.round}:${row.player_slug}`; counts.set(id, (counts.get(id) ?? 0) + 1); });
+  return (holes ?? []).filter((row) => row.score != null && row.score > 0).flatMap((row): CareerHoleRecord[] => {
+    const id = `${row.season_year}:${row.round}:${row.player_slug}`;
+    const round = metadata.get(id);
+    const setup = (round as { holes?: { number: number; par: number; yards: number }[] } | undefined)?.holes;
+    const hole = setup?.find((entry) => entry.number === row.hole);
+    if (!round || !hole) return [];
+    return [{ year: row.season_year, player: row.player_slug, round: row.round, roundHoles: counts.get(id) ?? 0, course: round.course, format: round.format, hole: row.hole, par: hole.par, yards: hole.yards, score: row.score, putts: row.putts, fairwayInRegulation: row.fir, greenInRegulation: row.gir, penalties: null }];
+  });
+}
