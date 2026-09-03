@@ -36,7 +36,7 @@ export function SceneRenderer({
 
   return (
     <>
-      {scene === "individual_leaderboard" && <IndividualLeaderboardScene standings={standings} />}
+      {scene === "individual_leaderboard" && <IndividualLeaderboardScene standings={standings} final={leaderboardFinal} />}
       {scene === "match_play" && <MatchPlayScene matchPlay={matchPlay} />}
       {scene === "holding" && <HoldingScene venue={holding.venue} dateLabel={holding.dateLabel} />}
       <OverlayLayer text={state.overlayText} expiresAt={state.overlayExpiresAt} />
