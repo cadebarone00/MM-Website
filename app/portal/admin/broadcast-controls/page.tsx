@@ -19,6 +19,13 @@ export default async function BroadcastControlsPage() {
     <div className="mx-auto max-w-2xl px-4 py-8">
       <h1 className="font-serif text-2xl font-bold text-ink-900">Broadcast Controls</h1>
       <p className="mt-1 font-sans text-sm text-ink-500">Force a scene on /broadcast, or hand control back to automatic rotation.</p>
+
+      <iframe
+        src="/broadcast"
+        title="Broadcast preview"
+        className="mt-4 aspect-video w-full rounded-lg border-2 border-stone-300"
+      />
+
       <BroadcastControlsPanel initialState={state} config={config} />
     </div>
   );
