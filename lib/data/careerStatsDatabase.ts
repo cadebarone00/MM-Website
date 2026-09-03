@@ -16,13 +16,16 @@ async function loadAll<T>(table: string): Promise<{ rows: T[]; ready: boolean }>
 }
 
 export async function getCareerStatsDatabase() {
-  const [holes, partnerships] = await Promise.all([
+  const [holes, participants] = await Promise.all([
     loadAll<HoleRow>("career_stat_holes"),
-    loadAll<{ player: string; partner: string; year: number; format: string | null; result: "win" | "loss" | "halve" }>("career_stat_partnerships"),
+    loadAll<{ player: string; partner: string | null; year: number; format: string | null; team_id: string | null; winning_side: string | null }>("career_match_participants"),
   ]);
   return {
     records: holes.rows.map((row): CareerHoleRecord => ({ year: row.year, player: row.player, round: row.round, course: row.course, format: row.format ?? "Unspecified", hole: row.hole, par: row.par, yards: row.yards, score: row.score })),
-    partnerships: partnerships.rows.map((row): CareerPartnership => ({ player: row.player, partner: row.partner, year: row.year, format: row.format ?? "Unspecified", result: row.result })),
-    databaseReady: holes.ready && partnerships.ready,
+    partnerships: participants.rows.filter((row) => row.partner).map((row): CareerPartnership => ({
+      player: row.player, partner: row.partner!, year: row.year, format: row.format ?? "Unspecified",
+      result: row.winning_side?.toUpperCase() === "HALVED" ? "halve" : row.winning_side?.toUpperCase() === row.team_id?.toUpperCase() ? "win" : "loss",
+    })),
+    databaseReady: holes.ready && participants.ready,
   };
 }

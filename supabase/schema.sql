@@ -166,6 +166,129 @@ alter table career_stat_holes enable row level security;
 alter table career_stat_partnerships enable row level security;
 alter table career_stats_workbook_sheets enable row level security;
 
+-- Career data model v2: mirrors the validated Career Data & Odds Model
+-- workbook. The original raw rows remain immutable after import; format-aware
+-- team/match tables stop Fourball and Alternate Shot scores corrupting an
+-- individual's stroke-play history.
+alter table career_stat_holes add column if not exists event_id text;
+alter table career_stat_holes add column if not exists tournament text;
+alter table career_stat_holes add column if not exists played_on date;
+alter table career_stat_holes add column if not exists round_holes integer;
+alter table career_stat_holes add column if not exists match_id text;
+alter table career_stat_holes add column if not exists team text;
+alter table career_stat_holes add column if not exists partner_1 text;
+alter table career_stat_holes add column if not exists partner_2 text;
+alter table career_stat_holes add column if not exists opponent_1 text;
+alter table career_stat_holes add column if not exists opponent_2 text;
+alter table career_stat_holes add column if not exists tee text;
+alter table career_stat_holes add column if not exists putts integer;
+alter table career_stat_holes add column if not exists fairway_in_regulation boolean;
+alter table career_stat_holes add column if not exists green_in_regulation boolean;
+alter table career_stat_holes add column if not exists penalties integer;
+alter table career_stat_holes add column if not exists entered_at timestamptz;
+alter table career_stat_holes add column if not exists entered_by text;
+alter table career_stat_holes add column if not exists source_record_id text;
+alter table career_stat_holes add column if not exists google_sheet_row_id text;
+alter table career_stat_holes add column if not exists sync_status text;
+alter table career_stat_holes add column if not exists source_workbook text;
+alter table career_stat_holes add column if not exists source_sheet text;
+alter table career_stat_holes add column if not exists source_cell text;
+alter table career_stat_holes add column if not exists data_quality_flags text;
+create unique index if not exists career_stat_holes_source_record_id_idx on career_stat_holes (source_record_id) where source_record_id is not null;
+
+create table if not exists career_stat_team_holes (
+  id uuid primary key default gen_random_uuid(),
+  event_id text not null,
+  year integer not null check (year between 2024 and 2034),
+  round integer not null,
+  format text not null,
+  match_id text not null,
+  team_id text not null,
+  player_1 text not null,
+  player_2 text,
+  opponent_team_id text,
+  course text not null,
+  hole integer not null check (hole between 1 and 18),
+  par integer not null,
+  yards integer not null,
+  team_score integer not null,
+  team_score_to_par integer,
+  team_score_type text,
+  best_ball_score integer,
+  winning_side text,
+  result_text text,
+  source_record_id text not null unique,
+  source_workbook text,
+  source_sheet text,
+  source_cell text,
+  data_quality_flags text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists career_stat_matches (
+  id uuid primary key default gen_random_uuid(),
+  event_id text not null,
+  year integer not null check (year between 2024 and 2034),
+  round integer not null,
+  played_on date,
+  format text not null,
+  match_id text not null,
+  maroon_players text,
+  white_players text,
+  winning_side text,
+  result_text text,
+  holes_played integer,
+  final_status text,
+  team_points numeric,
+  match_notes text,
+  source_workbook text,
+  source_sheet text,
+  source_cell text,
+  data_quality_flags text,
+  created_at timestamptz not null default now(),
+  unique (event_id, match_id)
+);
+
+create table if not exists career_match_participants (
+  id uuid primary key default gen_random_uuid(),
+  event_id text not null,
+  year integer not null check (year between 2024 and 2034),
+  round integer not null,
+  format text not null,
+  match_id text not null,
+  team_id text,
+  player text not null,
+  partner text,
+  opponent_1 text,
+  opponent_2 text,
+  winning_side text,
+  result_text text,
+  source_workbook text,
+  source_sheet text,
+  source_cell text,
+  data_quality_flags text,
+  created_at timestamptz not null default now(),
+  unique (event_id, match_id, player)
+);
+create index if not exists career_match_participants_player_idx on career_match_participants (player, year, format);
+
+create table if not exists career_stat_imports (
+  id uuid primary key default gen_random_uuid(),
+  source_file text not null,
+  imported_by uuid references profiles(id) on delete set null,
+  imported_at timestamptz not null default now(),
+  individual_hole_count integer not null,
+  team_hole_count integer not null,
+  match_count integer not null,
+  participant_count integer not null,
+  status text not null default 'complete'
+);
+
+alter table career_stat_team_holes enable row level security;
+alter table career_stat_matches enable row level security;
+alter table career_match_participants enable row level security;
+alter table career_stat_imports enable row level security;
+
 drop policy if exists wagers_accounts_select_own on wagers_accounts;
 create policy wagers_accounts_select_own on wagers_accounts for select using (auth.uid() = profile_id);
 
