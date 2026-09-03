@@ -4,7 +4,7 @@
 // from a Route Handler or Server Component, same rule as
 // lib/data/activeSeasonOverlay.ts.
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { getActiveSeasonYear } from "@/lib/live/activeSeason";
+import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
 import { DEFAULT_SCENE_DURATIONS_MS, type BroadcastConfig, type BroadcastPayload, type BroadcastScene, type BroadcastState } from "./types";
 
 const VALID_SCENES: BroadcastScene[] = ["holding", "individual_leaderboard", "match_play"];
@@ -14,21 +14,23 @@ function isBroadcastScene(value: unknown): value is BroadcastScene {
 }
 
 /**
- * Full broadcast state/config for whichever season is currently marked
- * active (`live_active_season`) — this is what `/broadcast` always shows;
- * it never takes a year from the URL (see the spec's §42 decision). Falls
- * back to sane defaults if that year's rows don't exist yet, the same
- * "unconfigured year is blank/default, not an error" philosophy Master
- * Settings established.
+ * Full broadcast state/config for whichever year Broadcast Controls has
+ * picked (`broadcast_display_year`) — this is what `/broadcast` always
+ * shows; it never takes a year from the URL (see the spec's §42 decision).
+ * Deliberately independent of `live_active_season` — that flag governs the
+ * real scoring system, this is just "what /broadcast is currently looking
+ * at." Falls back to sane defaults if that year's rows don't exist yet, the
+ * same "unconfigured year is blank/default, not an error" philosophy
+ * Master Settings established.
  */
 export async function getBroadcastPayload(): Promise<BroadcastPayload> {
-  const seasonYear = await getActiveSeasonYear();
+  const seasonYear = await getBroadcastDisplayYear();
   const service = createSupabaseServiceRoleClient();
 
   const [{ data: stateRow, error: stateError }, { data: configRow, error: configError }] = await Promise.all([
     service
       .from("broadcast_state")
-      .select("current_scene, scene_started_at, automation_mode, paused, overlay_text, overlay_expires_at")
+      .select("current_scene, scene_started_at, automation_mode, paused, tournament_live, overlay_text, overlay_expires_at")
       .eq("season_year", seasonYear)
       .maybeSingle(),
     service.from("broadcast_config").select("scene_durations_ms").eq("season_year", seasonYear).maybeSingle(),
@@ -49,6 +51,7 @@ export async function getBroadcastPayload(): Promise<BroadcastPayload> {
     sceneStartedAt: stateRow?.scene_started_at ?? new Date().toISOString(),
     automationMode: stateRow?.automation_mode === "producer" ? "producer" : "auto",
     paused: stateRow?.paused ?? false,
+    tournamentLive: stateRow?.tournament_live ?? false,
     overlayText: stateRow?.overlay_text ?? null,
     overlayExpiresAt: stateRow?.overlay_expires_at ?? null,
   };
