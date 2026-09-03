@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { BroadcastScene, BroadcastState } from "@/lib/broadcast/types";
+import type { BroadcastConfig, BroadcastScene, BroadcastState } from "@/lib/broadcast/types";
+import { useAutoScene } from "@/lib/broadcast/useAutoScene";
 
 const SCENE_BUTTONS: { scene: BroadcastScene; label: string }[] = [
   { scene: "individual_leaderboard", label: "Individual Leaderboard" },
@@ -15,12 +16,18 @@ const SCENE_LABELS: Record<BroadcastScene, string> = {
   match_play: "Match Play",
 };
 
-export function BroadcastControlsPanel({ initialState }: { initialState: BroadcastState }) {
+export function BroadcastControlsPanel({ initialState, config }: { initialState: BroadcastState; config: BroadcastConfig }) {
   const [state, setState] = useState(initialState);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [announcementText, setAnnouncementText] = useState("");
   const [announcementBusy, setAnnouncementBusy] = useState(false);
+
+  const isAuto = state.automationMode === "auto";
+  // The real live scene while auto rotation is running — current_scene in
+  // the database is stale in that case (auto rotation never writes it
+  // back, see the spec's §8/§15), so this is what Pause actually freezes on.
+  const liveAutoScene = useAutoScene(state.sceneStartedAt, config, isAuto);
 
   // Good enough for this admin panel: whether *something* is set to show,
   // not a live moment-by-moment check against the clock (that precision
@@ -72,14 +79,14 @@ export function BroadcastControlsPanel({ initialState }: { initialState: Broadca
     }
   }
 
-  async function setScene(scene: BroadcastScene | null) {
-    setBusy(scene ?? "auto");
+  async function setScene(scene: BroadcastScene | null, options?: { paused?: boolean; busyKey?: string }) {
+    setBusy(options?.busyKey ?? scene ?? "auto");
     setError(null);
     try {
       const res = await fetch("/api/portal/tiger/broadcast/scene", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scene }),
+        body: JSON.stringify({ scene, paused: options?.paused ?? false }),
       });
       const data = await res.json();
       if (!data.ok) {
@@ -90,17 +97,22 @@ export function BroadcastControlsPanel({ initialState }: { initialState: Broadca
         ...current,
         automationMode: scene === null ? "auto" : "producer",
         currentScene: scene ?? current.currentScene,
+        paused: scene !== null && (options?.paused ?? false),
       }));
     } finally {
       setBusy(null);
     }
   }
 
+  function pause() {
+    setScene(liveAutoScene, { paused: true, busyKey: "pause" });
+  }
+
   return (
     <div className="mt-6">
       <p className="font-sans text-sm text-ink-700">
-        Currently showing: <span className="font-semibold text-ink-900">{SCENE_LABELS[state.currentScene]}</span> —{" "}
-        {state.automationMode === "auto" ? "Auto rotation" : "Producer Mode (manual)"}
+        Currently showing: <span className="font-semibold text-ink-900">{SCENE_LABELS[isAuto ? liveAutoScene : state.currentScene]}</span> —{" "}
+        {isAuto ? "Auto rotation" : state.paused ? "Paused" : "Producer Mode (manual)"}
       </p>
       {error && <p className="mt-2 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
 
@@ -118,14 +130,24 @@ export function BroadcastControlsPanel({ initialState }: { initialState: Broadca
         ))}
       </div>
 
-      <button
-        type="button"
-        disabled={busy !== null || state.automationMode === "auto"}
-        onClick={() => setScene(null)}
-        className="mt-3 w-full rounded-lg border-2 border-stone-300 px-4 py-4 font-condensed text-sm font-semibold uppercase tracking-wide text-ink-700 transition hover:bg-stone-50 disabled:opacity-50"
-      >
-        {busy === "auto" ? "Returning…" : "Return to Auto"}
-      </button>
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <button
+          type="button"
+          disabled={busy !== null || !isAuto}
+          onClick={pause}
+          className="rounded-lg border-2 border-stone-300 px-4 py-4 font-condensed text-sm font-semibold uppercase tracking-wide text-ink-700 transition hover:bg-stone-50 disabled:opacity-50"
+        >
+          {busy === "pause" ? "Pausing…" : "Pause Automation"}
+        </button>
+        <button
+          type="button"
+          disabled={busy !== null || isAuto}
+          onClick={() => setScene(null)}
+          className="rounded-lg border-2 border-stone-300 px-4 py-4 font-condensed text-sm font-semibold uppercase tracking-wide text-ink-700 transition hover:bg-stone-50 disabled:opacity-50"
+        >
+          {busy === "auto" ? "Resuming…" : "Resume / Return to Auto"}
+        </button>
+      </div>
 
       <section className="mt-8 rounded-lg border-2 border-stone-300 p-4">
         <h2 className="font-serif text-lg font-bold text-ink-900">Announcement</h2>

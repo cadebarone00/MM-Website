@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import type { BroadcastConfig, BroadcastScene, BroadcastState } from "@/lib/broadcast/types";
+import type { BroadcastConfig, BroadcastState } from "@/lib/broadcast/types";
 import type { PlayerSummary } from "@/lib/live/scoring";
 import type { BroadcastMatchPlay } from "@/lib/broadcast/matchPlayData";
-import { sceneAt } from "@/lib/broadcast/rotation";
+import { useAutoScene } from "@/lib/broadcast/useAutoScene";
 import { IndividualLeaderboardScene } from "./scenes/IndividualLeaderboardScene";
 import { MatchPlayScene } from "./scenes/MatchPlayScene";
 import { HoldingScene } from "./scenes/HoldingScene";
@@ -24,27 +23,9 @@ export function SceneRenderer({
   holding: { venue: string; dateLabel: string };
 }) {
   const isAuto = state.automationMode === "auto";
-  const anchorMs = useMemo(() => new Date(state.sceneStartedAt).getTime(), [state.sceneStartedAt]);
-  const [autoScene, setAutoScene] = useState<BroadcastScene>(() => sceneAt(anchorMs, config, Date.now()).scene);
-
-  useEffect(() => {
-    if (!isAuto) return; // Producer Mode: a host is showing a specific scene — no rotation timer running.
-
-    let timeoutId: ReturnType<typeof setTimeout>;
-
-    function tick() {
-      const { scene: next, msUntilNext } = sceneAt(anchorMs, config, Date.now());
-      setAutoScene(next);
-      // Re-check a bit early rather than exactly on the boundary — cheap
-      // insurance against clock drift/timer coalescing causing a scene to
-      // hang one tick too long.
-      timeoutId = setTimeout(tick, Math.max(250, msUntilNext - 50));
-    }
-
-    tick();
-    return () => clearTimeout(timeoutId);
-  }, [isAuto, anchorMs, config]);
-
+  // Producer Mode (including a host's Pause — see BroadcastControlsPanel):
+  // no rotation timer running, current_scene is shown statically.
+  const autoScene = useAutoScene(state.sceneStartedAt, config, isAuto);
   const scene = isAuto ? autoScene : state.currentScene;
 
   return (

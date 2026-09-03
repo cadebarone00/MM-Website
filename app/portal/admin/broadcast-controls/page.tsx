@@ -13,13 +13,13 @@ export default async function BroadcastControlsPage() {
   const { data: profile } = await supabase.from("profiles").select("is_host").eq("id", user.id).single();
   if (!profile?.is_host) redirect("/");
 
-  const { state } = await getBroadcastPayload();
+  const { state, config } = await getBroadcastPayload();
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <h1 className="font-serif text-2xl font-bold text-ink-900">Broadcast Controls</h1>
       <p className="mt-1 font-sans text-sm text-ink-500">Force a scene on /broadcast, or hand control back to automatic rotation.</p>
-      <BroadcastControlsPanel initialState={state} />
+      <BroadcastControlsPanel initialState={state} config={config} />
     </div>
   );
 }
