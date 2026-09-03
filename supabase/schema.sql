@@ -901,3 +901,39 @@ alter table broadcast_state add primary key (season_year);
 -- doesn't need a queue). null overlay_text means "nothing to show."
 alter table broadcast_state add column if not exists overlay_text text;
 alter table broadcast_state add column if not exists overlay_expires_at timestamptz;
+
+-- === Watch Live Broadcast: display year + Go Live ========================
+-- Broadcast Controls now lives on the main Tiger Center page (not nested
+-- inside a per-year Master Settings screen), so /broadcast needs its own
+-- notion of "which year's data is showing" — deliberately independent of
+-- live_active_season (that flag still governs the real scoring system;
+-- picking an old year here to look at is just a display choice, it must
+-- never affect what players are actually scoring against).
+
+create table if not exists broadcast_display_year (
+  id boolean primary key default true,
+  season_year integer not null default 2027 check (season_year between 2024 and 2034),
+  constraint broadcast_display_year_singleton check (id)
+);
+insert into broadcast_display_year (id, season_year) values (true, 2027) on conflict (id) do nothing;
+
+alter table broadcast_display_year enable row level security;
+drop policy if exists broadcast_display_year_select_all on broadcast_display_year;
+create policy broadcast_display_year_select_all on broadcast_display_year for select using (true);
+
+-- "Go Live" — before this, /broadcast always shows the Holding scene
+-- regardless of rotation/producer mode, same as a real broadcast's
+-- pre-show hold. Per season_year, same as every other broadcast_state
+-- column (Tiger could go live on 2026 just to demo the look, independent
+-- of 2027's real state).
+alter table broadcast_state add column if not exists tournament_live boolean not null default false;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'broadcast_display_year'
+  ) then
+    alter publication supabase_realtime add table broadcast_display_year;
+  end if;
+end $$;

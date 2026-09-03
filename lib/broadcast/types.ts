@@ -6,6 +6,14 @@
 
 export type BroadcastScene = "holding" | "individual_leaderboard" | "match_play";
 export type BroadcastAutomationMode = "auto" | "producer";
+export type BroadcastTeam = "maroon" | "white";
+
+/** Minimal shape the Individual Leaderboard scene needs — deliberately not lib/live/scoring.ts's PlayerSummary, since standings can come from either the live season or an archived one (see lib/broadcast/leaderboardData.ts), and those two sources don't share a richer shape in common. */
+export interface BroadcastStanding {
+  player: string;
+  team: BroadcastTeam;
+  toPar: number;
+}
 
 export interface BroadcastState {
   seasonYear: number;
@@ -13,6 +21,7 @@ export interface BroadcastState {
   sceneStartedAt: string; // ISO timestamp
   automationMode: BroadcastAutomationMode;
   paused: boolean;
+  tournamentLive: boolean;
   overlayText: string | null;
   overlayExpiresAt: string | null; // ISO timestamp; null whenever overlayText is null
 }
