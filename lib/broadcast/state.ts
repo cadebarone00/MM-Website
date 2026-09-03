@@ -26,7 +26,11 @@ export async function getBroadcastPayload(): Promise<BroadcastPayload> {
   const service = createSupabaseServiceRoleClient();
 
   const [{ data: stateRow }, { data: configRow }] = await Promise.all([
-    service.from("broadcast_state").select("current_scene, scene_started_at, automation_mode, paused").eq("season_year", seasonYear).maybeSingle(),
+    service
+      .from("broadcast_state")
+      .select("current_scene, scene_started_at, automation_mode, paused, overlay_text, overlay_expires_at")
+      .eq("season_year", seasonYear)
+      .maybeSingle(),
     service.from("broadcast_config").select("scene_durations_ms").eq("season_year", seasonYear).maybeSingle(),
   ]);
 
@@ -36,6 +40,8 @@ export async function getBroadcastPayload(): Promise<BroadcastPayload> {
     sceneStartedAt: stateRow?.scene_started_at ?? new Date().toISOString(),
     automationMode: stateRow?.automation_mode === "producer" ? "producer" : "auto",
     paused: stateRow?.paused ?? false,
+    overlayText: stateRow?.overlay_text ?? null,
+    overlayExpiresAt: stateRow?.overlay_expires_at ?? null,
   };
 
   const config: BroadcastConfig = {

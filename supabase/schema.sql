@@ -894,3 +894,10 @@ alter table broadcast_state drop constraint if exists broadcast_state_pkey;
 alter table broadcast_state drop column if exists id;
 alter table broadcast_state add constraint broadcast_state_season_year_check check (season_year between 2027 and 2034);
 alter table broadcast_state add primary key (season_year);
+
+-- Host-triggered announcement banner (a manual overlay, not the full
+-- broadcast_events queue — that's a bigger Phase 2 build for once real
+-- score-confirmation events exist to feed it; a single at-a-time overlay
+-- doesn't need a queue). null overlay_text means "nothing to show."
+alter table broadcast_state add column if not exists overlay_text text;
+alter table broadcast_state add column if not exists overlay_expires_at timestamptz;

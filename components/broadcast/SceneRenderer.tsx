@@ -8,6 +8,7 @@ import { sceneAt } from "@/lib/broadcast/rotation";
 import { IndividualLeaderboardScene } from "./scenes/IndividualLeaderboardScene";
 import { MatchPlayScene } from "./scenes/MatchPlayScene";
 import { HoldingScene } from "./scenes/HoldingScene";
+import { OverlayLayer } from "./OverlayLayer";
 
 export function SceneRenderer({
   state,
@@ -46,13 +47,12 @@ export function SceneRenderer({
 
   const scene = isAuto ? autoScene : state.currentScene;
 
-  switch (scene) {
-    case "individual_leaderboard":
-      return <IndividualLeaderboardScene standings={standings} />;
-    case "match_play":
-      return <MatchPlayScene matchPlay={matchPlay} />;
-    case "holding":
-    default:
-      return <HoldingScene venue={holding.venue} dateLabel={holding.dateLabel} />;
-  }
+  return (
+    <>
+      {scene === "individual_leaderboard" && <IndividualLeaderboardScene standings={standings} />}
+      {scene === "match_play" && <MatchPlayScene matchPlay={matchPlay} />}
+      {scene === "holding" && <HoldingScene venue={holding.venue} dateLabel={holding.dateLabel} />}
+      <OverlayLayer text={state.overlayText} expiresAt={state.overlayExpiresAt} />
+    </>
+  );
 }

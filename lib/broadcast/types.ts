@@ -13,6 +13,8 @@ export interface BroadcastState {
   sceneStartedAt: string; // ISO timestamp
   automationMode: BroadcastAutomationMode;
   paused: boolean;
+  overlayText: string | null;
+  overlayExpiresAt: string | null; // ISO timestamp; null whenever overlayText is null
 }
 
 export interface BroadcastConfig {

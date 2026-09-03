@@ -19,6 +19,53 @@ export function BroadcastControlsPanel({ initialState }: { initialState: Broadca
   const [state, setState] = useState(initialState);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [announcementText, setAnnouncementText] = useState("");
+  const [announcementBusy, setAnnouncementBusy] = useState(false);
+
+  const overlayActive = Boolean(state.overlayText && state.overlayExpiresAt && new Date(state.overlayExpiresAt).getTime() > Date.now());
+
+  async function postAnnouncement() {
+    const text = announcementText.trim();
+    if (!text) return;
+    setAnnouncementBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/portal/tiger/broadcast/announcement", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, durationSeconds: 8 }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error ?? "Could not post the announcement.");
+        return;
+      }
+      setState((current) => ({ ...current, overlayText: text, overlayExpiresAt: new Date(Date.now() + 8000).toISOString() }));
+      setAnnouncementText("");
+    } finally {
+      setAnnouncementBusy(false);
+    }
+  }
+
+  async function clearAnnouncement() {
+    setAnnouncementBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/portal/tiger/broadcast/announcement", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clear: true }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error ?? "Could not clear the announcement.");
+        return;
+      }
+      setState((current) => ({ ...current, overlayText: null, overlayExpiresAt: null }));
+    } finally {
+      setAnnouncementBusy(false);
+    }
+  }
 
   async function setScene(scene: BroadcastScene | null) {
     setBusy(scene ?? "auto");
