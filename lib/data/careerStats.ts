@@ -17,6 +17,22 @@ export type CareerHoleRecord = {
 
 export type CareerPartnership = { player: string; partner: string; year: number; format: string; result: "win" | "loss" | "halve" };
 
+/** A team score is intentionally separate from individual stroke-play data. */
+export type CareerTeamHoleRecord = {
+  year: number;
+  round: number;
+  format: string;
+  matchId: string;
+  teamId: string;
+  player1: string;
+  player2: string;
+  course: string;
+  hole: number;
+  par: number;
+  yards: number;
+  score: number;
+};
+
 export function buildCareerHoleRecords(sets: CareerScorecardSet[]): CareerHoleRecord[] {
   return sets.flatMap(({ year, scorecards }) =>
     scorecards.flatMap((scorecard) =>

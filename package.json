@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "build:career-archive": "tsx scripts/build-career-archive.ts",
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start",
