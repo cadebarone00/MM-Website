@@ -39,7 +39,7 @@ function rankRows(standings: BroadcastStanding[]): Row[] {
  * ticker) rather than a plain website table. See the Watch Live Broadcast
  * spec, §17, and the reference screenshot this was designed against.
  */
-export function IndividualLeaderboardScene({ standings }: { standings: BroadcastStanding[] }) {
+export function IndividualLeaderboardScene({ standings, final = false }: { standings: BroadcastStanding[]; final?: boolean }) {
   const rows = rankRows(standings);
   const leader = rows[0];
 
