@@ -53,7 +53,7 @@ export function IndividualLeaderboardScene({ standings, final = false }: { stand
 
         <div className="flex items-center justify-between bg-[color:var(--color-maroon-900)] px-8 py-3">
           <span className="font-condensed text-sm font-bold uppercase tracking-[0.2em] text-white">Individual Leaderboard</span>
-          <span className="font-condensed text-sm font-bold uppercase tracking-[0.2em] text-[color:var(--color-gold-300)]">Live</span>
+          <span className="font-condensed text-sm font-bold uppercase tracking-[0.2em] text-[color:var(--color-gold-300)]">{final ? "Final" : "Live"}</span>
         </div>
 
         {rows.length === 0 ? (
