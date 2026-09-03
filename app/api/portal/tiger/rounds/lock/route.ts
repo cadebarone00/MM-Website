@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
   // lock === "matchups"
   if (value) {
-    const { data: current } = await service.from("live_round_state").select("course_locked, format").eq("season_year", year).eq("round", round).single();
+    const { data: current } = await service.from("live_round_state").select("course_locked, format, course_id, date").eq("season_year", year).eq("round", round).single();
     if (!current?.course_locked || !current.format) {
       return NextResponse.json({ ok: false, error: "Lock this round's course and format before locking matchups." }, { status: 400 });
     }
@@ -72,6 +72,19 @@ export async function POST(request: Request) {
     if (boxErrors.length > 0) {
       return NextResponse.json({ ok: false, error: boxErrors.join(" ") }, { status: 400 });
     }
+
+    const { data: course } = await service.from("live_courses").select("name, holes").eq("id", current.course_id).single();
+    if (!course) return NextResponse.json({ ok: false, error: "The selected course could not be loaded." }, { status: 400 });
+    const archiveRows = matchBoxes.flatMap((box) => {
+      const entries = [[box.maroonPlayers, box.whitePlayers], [box.whitePlayers, box.maroonPlayers]] as const;
+      return entries.flatMap(([side, opponents]) => side.map((playerSlug, index) => ({
+        season_year: year, round, player_slug: playerSlug, course: course.name, played_on: current.date, format: box.format,
+        match_box_id: box.id, partner_slug: side.length === 2 ? side[1 - index] : null, opponent_slugs: opponents,
+        status: "scheduled", holes: course.holes,
+      })));
+    });
+    const { error: archiveError } = await service.from("career_archive_rounds").upsert(archiveRows, { onConflict: "season_year,round,player_slug", ignoreDuplicates: true });
+    if (archiveError) return NextResponse.json({ ok: false, error: "Could not create Career Archive rounds. Run the Career Live Archive SQL first." }, { status: 500 });
   }
 
   const { error } = await service.from("live_round_state").update({ matchups_locked: value }).eq("season_year", year).eq("round", round);
