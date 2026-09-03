@@ -32,10 +32,10 @@ export async function getBroadcastLeaderboard(overrideYear?: number): Promise<Br
   const archived = pastTournaments.find((t) => t.year === seasonYear);
   if (archived) {
     const standings: BroadcastStanding[] = [...archived.individualLeaderboard].sort((a, b) => a.toPar - b.toPar);
-    return { seasonYear, standings };
+    return { seasonYear, standings, final: true };
   }
 
   const snapshot = await buildLiveTournamentSnapshot(seasonYear);
   const standings: BroadcastStanding[] = leaderboard(snapshot).map((p) => ({ player: p.player, team: p.team, toPar: p.toPar }));
-  return { seasonYear, standings };
+  return { seasonYear, standings, final: false };
 }
