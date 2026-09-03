@@ -20,12 +20,23 @@ export interface BroadcastMatchBox {
   leader: BroadcastTeam | "tie";
   margin: number;
   holesRemaining: number;
+  maroonPts: number;
+  whitePts: number;
 }
 
 export interface BroadcastMatchPlay {
   seasonYear: number;
   roundLabel: string | null; // e.g. "Round 3" (live) or "Day 4" (archived) — null when there's nothing to show
   matchBoxes: BroadcastMatchBox[];
+  /** Points won so far across the shown matches (clinched boxes only — an in-progress box contributes 0 either side until it closes, same convention lib/live/orchestration.ts's matchBoxResult already uses). */
+  maroonPts: number;
+  whitePts: number;
+  /** True for an archived year's day (already finished) — the scene shows "Final" instead of "Live" against it. */
+  final: boolean;
+}
+
+function sumPts(boxes: { maroonPts: number; whitePts: number }[]): { maroonPts: number; whitePts: number } {
+  return boxes.reduce((sum, b) => ({ maroonPts: sum.maroonPts + b.maroonPts, whitePts: sum.whitePts + b.whitePts }), { maroonPts: 0, whitePts: 0 });
 }
 
 interface RoundStateRow {
@@ -39,15 +50,23 @@ function pickCurrentRound(rows: RoundStateRow[]): number | null {
   return started.length === 0 ? null : Math.max(...started);
 }
 
+/**
+ * `RealMatch.status` is never actually populated in the static per-year
+ * data files (checked: no `2026-palm-springs.ts` match sets it) — every
+ * archived match is undefined there, not "final". But everything in
+ * `pastTournaments` is, by definition, a finished tournament, so the
+ * correct default for a missing status here is Final, not Scheduled
+ * (Scheduled would be actively misleading — it already happened).
+ */
 function archivedMatchState(status: RealMatch["status"]): MatchState {
-  if (status === "final") return "Final";
   if (status === "live") return "Live";
-  return "Scheduled";
+  if (status === "scheduled") return "Scheduled";
+  return "Final";
 }
 
 /** A finished tournament's real match results, for previewing the look (see the spec addendum on Broadcast Controls' display-year picker) — the most recent day's matches, since a whole event's worth in one scene would be too dense. */
 function archivedMatchPlay(tournament: Tournament): BroadcastMatchPlay {
-  if (tournament.matches.length === 0) return { seasonYear: tournament.year, roundLabel: null, matchBoxes: [] };
+  if (tournament.matches.length === 0) return { seasonYear: tournament.year, roundLabel: null, matchBoxes: [], maroonPts: 0, whitePts: 0, final: true };
 
   const lastDay = Math.max(...tournament.matches.map((m) => m.day));
   const dayMatches = tournament.matches.filter((m) => m.day === lastDay);
@@ -60,12 +79,18 @@ function archivedMatchPlay(tournament: Tournament): BroadcastMatchPlay {
     thru: m.thru != null ? (m.thru >= 18 ? "Final" : `Thru ${m.thru}`) : "",
     maroonNames: m.maroonPlayers.map(getPlayerDisplayName),
     whiteNames: m.whitePlayers.map(getPlayerDisplayName),
-    leader: (m.leader ?? "tie") as BroadcastTeam | "tie",
+    // `RealMatch.leader` isn't actually populated in the static data files
+    // either (checked, same as `status` above) — derived from the real
+    // points instead, same as the live path's matchBoxResult() does.
+    leader: m.maroonPts > m.whitePts ? "maroon" : m.whitePts > m.maroonPts ? "white" : "tie",
     margin: m.margin ?? 0,
     holesRemaining: m.holesRemaining ?? 0,
+    maroonPts: m.maroonPts,
+    whitePts: m.whitePts,
   }));
 
-  return { seasonYear: tournament.year, roundLabel: `Day ${lastDay}`, matchBoxes };
+  const { maroonPts, whitePts } = sumPts(matchBoxes);
+  return { seasonYear: tournament.year, roundLabel: `Day ${lastDay}`, matchBoxes, maroonPts, whitePts, final: true };
 }
 
 async function liveMatchPlay(seasonYear: number): Promise<BroadcastMatchPlay> {
@@ -73,7 +98,7 @@ async function liveMatchPlay(seasonYear: number): Promise<BroadcastMatchPlay> {
 
   const { data: roundRows } = await service.from("live_round_state").select("round, started").eq("season_year", seasonYear);
   const round = pickCurrentRound((roundRows as RoundStateRow[] | null) ?? []);
-  if (round === null) return { seasonYear, roundLabel: null, matchBoxes: [] };
+  if (round === null) return { seasonYear, roundLabel: null, matchBoxes: [], maroonPts: 0, whitePts: 0, final: false };
 
   const snapshot = await buildLiveTournamentSnapshot(seasonYear);
   const boxes = snapshot.matchBoxes.filter((box) => box.round === round).sort((a, b) => a.boxNumber - b.boxNumber);
@@ -92,10 +117,13 @@ async function liveMatchPlay(seasonYear: number): Promise<BroadcastMatchPlay> {
       leader: result.leader,
       margin: result.margin,
       holesRemaining: result.holesRemaining,
+      maroonPts: result.maroonPts,
+      whitePts: result.whitePts,
     };
   });
 
-  return { seasonYear, roundLabel: `Round ${round}`, matchBoxes };
+  const { maroonPts, whitePts } = sumPts(matchBoxes);
+  return { seasonYear, roundLabel: `Round ${round}`, matchBoxes, maroonPts, whitePts, final: false };
 }
 
 /**
