@@ -1134,3 +1134,9 @@ begin
     alter publication supabase_realtime add table broadcast_events;
   end if;
 end $$;
+
+-- === Watch Live Broadcast: Phase 4a (Overlay/Takeover UI) =================
+-- See docs/superpowers/specs/2026-09-04-broadcast-overlay-takeover-design.md.
+-- overlay_duration_ms already exists (Phase 1) — this is its takeover-class
+-- counterpart, same shape.
+alter table broadcast_config add column if not exists takeover_duration_ms integer not null default 8000;
