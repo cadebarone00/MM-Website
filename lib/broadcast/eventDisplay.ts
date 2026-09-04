@@ -70,3 +70,14 @@ export function closedMarginLabel(margin: number, holesRemaining: number): strin
 export function teamLabel(team: BroadcastTeam | "tie"): string {
   return team === "maroon" ? "Maroon" : team === "white" ? "White" : "Tie";
 }
+
+/**
+ * The full result sentence for a CLOSED match box: "Match Halved" for a
+ * tie, otherwise "{Team} Wins {N & M / N UP}". Wraps closedMarginLabel()
+ * so callers never have to special-case the tie leader themselves — the
+ * gap this fixes: teamLabel("tie") + closedMarginLabel(0, X) alone would
+ * read as the nonsensical "Tie Wins 0 UP".
+ */
+export function matchResultLabel(leader: BroadcastTeam | "tie", margin: number, holesRemaining: number): string {
+  return leader === "tie" ? "Match Halved" : `${teamLabel(leader)} Wins ${closedMarginLabel(margin, holesRemaining)}`;
+}

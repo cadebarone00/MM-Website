@@ -1,4 +1,4 @@
-import { closedMarginLabel, teamLabel, type ActiveBroadcastEvent } from "@/lib/broadcast/eventDisplay";
+import { matchResultLabel, teamLabel, type ActiveBroadcastEvent } from "@/lib/broadcast/eventDisplay";
 import type { BroadcastMatchPlay } from "@/lib/broadcast/matchPlayData";
 import type { BroadcastTeam } from "@/lib/broadcast/types";
 
@@ -20,13 +20,18 @@ interface RoundFinalPayload {
  * this INSTEAD OF the rotating scene while it's active (rotation is
  * frozen for the duration, see SceneRenderer.tsx). For MATCH_WON, looks
  * up the box in the already-live matchPlay data for its number/names AND
- * its live margin/holesRemaining — closedMarginLabel() reproduces exactly
+ * its live margin/holesRemaining — matchResultLabel() reproduces exactly
  * what MatchPlayScene.tsx's private statusLabel() already shows for a
  * Final box ("3 & 2" for an early closeout, "1 UP" for one that went the
- * distance), sourced from matchPlay rather than the event payload itself
- * (Phase 2's MATCH_WON payload doesn't carry holesRemaining — see the
- * spec's correction note). Renders nothing if the box can't be found, same
- * as EventOverlay.
+ * distance, "Match Halved" for a tie), sourced from matchPlay rather than
+ * the event payload itself (Phase 2's MATCH_WON payload doesn't carry
+ * holesRemaining — see the spec's correction note). If the box can't be
+ * found (e.g. the round rolled over while this MATCH_WON event was still
+ * queued), renders a simpler payload-only card instead of nothing —
+ * SceneRenderer has already replaced the normal scene with this takeover,
+ * so returning null here would blank the screen for the full takeover
+ * duration rather than degrade gracefully the way EventOverlay's null-render
+ * does (which renders alongside a scene that's still there).
  */
 export function EventTakeover({ event, matchPlay }: { event: ActiveBroadcastEvent | null; matchPlay: BroadcastMatchPlay }) {
   if (!event || event.displayMode !== "takeover") return null;
@@ -45,7 +50,18 @@ export function EventTakeover({ event, matchPlay }: { event: ActiveBroadcastEven
 
   const payload = event.payload as unknown as MatchWonPayload;
   const box = matchPlay.matchBoxes.find((b) => b.id === payload.matchBoxId);
-  if (!box) return null;
+  if (!box) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-gradient-maroon px-10 py-10">
+        <div className="w-full max-w-[900px] rounded-2xl bg-[color:var(--color-cream-50)] px-10 py-16 text-center shadow-2xl ring-1 ring-[color:var(--color-gold-400)]/40">
+          <p className="font-serif text-2xl italic text-[color:var(--color-maroon-700)]">The Maroon Masters</p>
+          <p className="mt-6 font-condensed text-5xl font-bold uppercase tracking-wide text-[color:var(--color-maroon-900)]">
+            {payload.leader === "tie" ? "Match Halved" : `${teamLabel(payload.leader)} Wins`}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-gradient-maroon px-10 py-10">
@@ -57,7 +73,7 @@ export function EventTakeover({ event, matchPlay }: { event: ActiveBroadcastEven
         <div className="bg-gradient-trophy px-8 py-10 text-center">
           <p className="font-condensed text-sm font-bold uppercase tracking-[0.2em] text-[color:var(--color-maroon-900)]/70">Match {box.boxNumber}</p>
           <p className="mt-3 font-condensed text-5xl font-bold uppercase tracking-wide text-[color:var(--color-maroon-900)]">
-            {teamLabel(box.leader)} Wins {closedMarginLabel(box.margin, box.holesRemaining)}
+            {matchResultLabel(box.leader, box.margin, box.holesRemaining)}
           </p>
           <p className="mt-4 font-sans text-lg text-[color:var(--color-maroon-900)]/80">
             {box.maroonNames.join(" / ")} vs. {box.whiteNames.join(" / ")}

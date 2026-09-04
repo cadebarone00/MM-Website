@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { closedMarginLabel, DISPLAY_MODE_BY_KIND, marginLabel, pickActiveEvent, teamLabel } from "./eventDisplay.ts";
+import { closedMarginLabel, DISPLAY_MODE_BY_KIND, marginLabel, matchResultLabel, pickActiveEvent, teamLabel } from "./eventDisplay.ts";
 import type { BroadcastEventRow } from "./queue.ts";
 
 function row(overrides: Partial<BroadcastEventRow>): BroadcastEventRow {
@@ -69,4 +69,13 @@ test("teamLabel maps maroon/white/tie", () => {
   assert.equal(teamLabel("maroon"), "Maroon");
   assert.equal(teamLabel("white"), "White");
   assert.equal(teamLabel("tie"), "Tie");
+});
+
+test("matchResultLabel: Match Halved for a tie, regardless of margin/holesRemaining", () => {
+  assert.equal(matchResultLabel("tie", 0, 0), "Match Halved");
+});
+
+test("matchResultLabel: Team Wins + closedMarginLabel for a real winner", () => {
+  assert.equal(matchResultLabel("maroon", 3, 2), "Maroon Wins 3 & 2");
+  assert.equal(matchResultLabel("white", 1, 0), "White Wins 1 UP");
 });
