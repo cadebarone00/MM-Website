@@ -3,6 +3,26 @@
 -- individual scores, and official match state/odds/audit records have a
 -- durable home. Route handlers will be the only writers (service role).
 
+-- Compatibility bridge for a project created before the multi-year live
+-- migration. The application and archive use season_year everywhere; seed
+-- any pre-existing live rows as the original 2027 tournament before this
+-- file references the column below.
+alter table live_hole_scores add column if not exists season_year integer;
+update live_hole_scores set season_year = 2027 where season_year is null;
+alter table live_hole_scores alter column season_year set not null;
+
+alter table live_match_boxes add column if not exists season_year integer;
+update live_match_boxes set season_year = 2027 where season_year is null;
+alter table live_match_boxes alter column season_year set not null;
+
+alter table live_round_state add column if not exists season_year integer;
+update live_round_state set season_year = 2027 where season_year is null;
+alter table live_round_state alter column season_year set not null;
+
+alter table live_roster add column if not exists season_year integer;
+update live_roster set season_year = 2027 where season_year is null;
+alter table live_roster alter column season_year set not null;
+
 -- Foursome/Alternate Shot is a single shared ball per side. It belongs in a
 -- team archive, never twice in two players' individual score histories.
 -- These confirmed observations are the live counterpart to
