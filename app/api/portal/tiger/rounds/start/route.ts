@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
+import { publishBroadcastEvent } from "@/lib/broadcast/publish";
 
 export async function POST(request: Request) {
   const host = await requireHost();
@@ -34,6 +35,12 @@ export async function POST(request: Request) {
   const { error: boxesError } = await service.from("live_match_boxes").update({ started: true }).eq("season_year", year).eq("round", round);
   if (boxesError) {
     return NextResponse.json({ ok: false, error: "Round was marked started, but could not open its match boxes." }, { status: 500 });
+  }
+
+  try {
+    await publishBroadcastEvent({ kind: "ROUND_STARTED", seasonYear: year, round });
+  } catch (err) {
+    console.error("broadcast publish failed:", err);
   }
 
   return NextResponse.json({ ok: true });
