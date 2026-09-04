@@ -11,6 +11,7 @@ export type PreRoundSinglesResult = {
   measureOneMinimum: [number, number];
   measureTwoMinimum: [number, number];
   formatDeltas: [number, number];
+  finalLeadDistribution?: Record<string, number>;
 };
 
 const HOLE_SIMULATIONS = 10_000;
@@ -79,6 +80,7 @@ export function calculatePreRoundSinglesOdds({ records, courseHoles, playerA, pl
   const formatDeltaA = mean(aRows.filter((row) => row.format === "Singles")) - mean(aRows);
   const formatDeltaB = mean(bRows.filter((row) => row.format === "Singles")) - mean(bRows);
   let weightedA = 0; let weightedTie = 0; let weightedB = 0;
+  const finalLeads = new Map<number, number>();
   for (let simulation = 0; simulation < MATCH_SIMULATIONS; simulation += 1) {
     const scoresA: Score[] = completedScores.map((score) => ({ score: score.a, par: score.par })); const scoresB: Score[] = completedScores.map((score) => ({ score: score.b, par: score.par })); let lead = playerALead;
     validPairs.forEach(({ hole, outcomes }) => { const outcome = pick(outcomes); scoresA.push({ score: outcome.a, par: hole.par }); scoresB.push({ score: outcome.b, par: hole.par }); if (outcome.a < outcome.b) lead += 1; else if (outcome.b < outcome.a) lead -= 1; });
@@ -86,6 +88,7 @@ export function calculatePreRoundSinglesOdds({ records, courseHoles, playerA, pl
     const toParB = scoresB.reduce((sum, row) => sum + row.score - row.par, 0);
     const measureThreeWeight = completedScores.length === holesFinished ? Math.exp(-ROUND_SHAPE_STRENGTH * (shapeDistance(scoresA, profileA) + shapeDistance(scoresB, profileB))) : 1;
     const weight = measureThreeWeight * Math.exp(FORMAT_STRENGTH * (formatDeltaA - formatDeltaB) * (toParA - toParB));
+    finalLeads.set(lead, (finalLeads.get(lead) ?? 0) + weight);
     if (lead > 0) weightedA += weight; else if (lead < 0) weightedB += weight; else weightedTie += weight;
   }
   const total = weightedA + weightedTie + weightedB;
@@ -127,5 +130,5 @@ export function calculatePreRoundFourballOdds({ records, courseHoles, teamA, tea
     if (lead > 0) weightedA += weight; else if (lead < 0) weightedB += weight; else weightedTie += weight;
   }
   const total = weightedA + weightedTie + weightedB;
-  return { a: weightedA / total, tie: weightedTie / total, b: weightedB / total, measureOneMinimum: [Math.min(...validPairs.map((row) => row.one[0])), Math.min(...validPairs.map((row) => row.one[1]))], measureTwoMinimum: [Math.min(...validPairs.map((row) => row.two[0])), Math.min(...validPairs.map((row) => row.two[1]))], formatDeltas: [(deltas[0] + deltas[1]) / 2, (deltas[2] + deltas[3]) / 2] };
+  return { a: weightedA / total, tie: weightedTie / total, b: weightedB / total, measureOneMinimum: [Math.min(...validPairs.map((row) => row.one[0])), Math.min(...validPairs.map((row) => row.one[1]))], measureTwoMinimum: [Math.min(...validPairs.map((row) => row.two[0])), Math.min(...validPairs.map((row) => row.two[1]))], formatDeltas: [(deltas[0] + deltas[1]) / 2, (deltas[2] + deltas[3]) / 2], finalLeadDistribution: Object.fromEntries([...finalLeads.entries()].map(([lead, value]) => [String(lead), value / total])) };
 }
