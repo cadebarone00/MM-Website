@@ -92,7 +92,7 @@ export function calculatePreRoundSinglesOdds({ records, courseHoles, playerA, pl
     if (lead > 0) weightedA += weight; else if (lead < 0) weightedB += weight; else weightedTie += weight;
   }
   const total = weightedA + weightedTie + weightedB;
-  return { a: weightedA / total, tie: weightedTie / total, b: weightedB / total, measureOneMinimum: [Math.min(...validPairs.map((row) => row.one[0])), Math.min(...validPairs.map((row) => row.one[1]))], measureTwoMinimum: [Math.min(...validPairs.map((row) => row.two[0])), Math.min(...validPairs.map((row) => row.two[1]))], formatDeltas: [formatDeltaA, formatDeltaB] };
+  return { a: weightedA / total, tie: weightedTie / total, b: weightedB / total, measureOneMinimum: [Math.min(...validPairs.map((row) => row.one[0])), Math.min(...validPairs.map((row) => row.one[1]))], measureTwoMinimum: [Math.min(...validPairs.map((row) => row.two[0])), Math.min(...validPairs.map((row) => row.two[1]))], formatDeltas: [formatDeltaA, formatDeltaB], finalLeadDistribution: Object.fromEntries([...finalLeads.entries()].map(([lead, value]) => [String(lead), value / total])) };
 }
 
 export function calculatePreRoundFourballOdds({ records, courseHoles, teamA, teamB, course, holesFinished = 0, teamALead = 0, completedScores = [] }: { records: CareerHoleRecord[]; courseHoles: CareerCourseHole[]; teamA: [string, string]; teamB: [string, string]; course: string; holesFinished?: number; teamALead?: number; completedScores?: { a1: number; a2: number; b1: number; b2: number; par: number }[] }): PreRoundSinglesResult | null {
@@ -119,6 +119,7 @@ export function calculatePreRoundFourballOdds({ records, courseHoles, teamA, tea
   const mean = (rows: CareerHoleRecord[]) => rows.reduce((sum, row) => sum + row.score - row.par, 0) / rows.length;
   const deltas = playerRows.map((rows) => { const fourball = rows.filter((row) => row.format === "Fourball"); return fourball.length ? mean(fourball) - mean(rows) : 0; });
   let weightedA = 0; let weightedTie = 0; let weightedB = 0;
+  const finalLeads = new Map<number, number>();
   for (let simulation = 0; simulation < MATCH_SIMULATIONS; simulation += 1) {
     const scores: Score[][] = [completedScores.map((score) => ({ score: score.a1, par: score.par })), completedScores.map((score) => ({ score: score.a2, par: score.par })), completedScores.map((score) => ({ score: score.b1, par: score.par })), completedScores.map((score) => ({ score: score.b2, par: score.par }))]; let lead = teamALead;
     validPairs.forEach(({ hole, outcomes }) => { const outcome = pick(outcomes); const values = [outcome.a1, outcome.a2, outcome.b1, outcome.b2]; values.forEach((score, index) => scores[index].push({ score, par: hole.par })); const teamAValue = Math.min(outcome.a1, outcome.a2); const teamBValue = Math.min(outcome.b1, outcome.b2); if (teamAValue < teamBValue) lead += 1; else if (teamBValue < teamAValue) lead -= 1; });
@@ -127,6 +128,7 @@ export function calculatePreRoundFourballOdds({ records, courseHoles, teamA, tea
     const measureThreeWeight = completedScores.length === holesFinished ? Math.exp(-ROUND_SHAPE_STRENGTH * scores.reduce((sum, round, index) => sum + shapeDistance(round, shapes[index]), 0)) : 1;
     const formatDeltaA = (deltas[0] + deltas[1]) / 2; const formatDeltaB = (deltas[2] + deltas[3]) / 2;
     const weight = measureThreeWeight * Math.exp(FORMAT_STRENGTH * (formatDeltaA - formatDeltaB) * (teamAToPar - teamBToPar));
+    finalLeads.set(lead, (finalLeads.get(lead) ?? 0) + weight);
     if (lead > 0) weightedA += weight; else if (lead < 0) weightedB += weight; else weightedTie += weight;
   }
   const total = weightedA + weightedTie + weightedB;
