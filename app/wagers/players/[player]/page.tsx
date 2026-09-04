@@ -2,10 +2,9 @@
 
 import { useParams } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
-import { PlayerFutureCard } from "@/components/wagers/PlayerFutureCard";
+import { TournamentBirdiesReadinessCard } from "@/components/wagers/TournamentBirdiesReadinessCard";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
-import { PLAYER_FUTURES, playerFutureMarket } from "@/lib/wagers/marketKeys";
 
 export default function PlayerWagersPage() {
   const { player } = useParams<{ player: string }>();
@@ -30,11 +29,7 @@ export default function PlayerWagersPage() {
 
       <section className="mt-7">
         <h3 className="m-0 font-sans text-base font-black text-ink-900">Futures</h3>
-        <div className="mt-2 flex flex-col gap-2">
-          {PLAYER_FUTURES.map((future) => (
-            <PlayerFutureCard key={future.id} future={future} market={playerFutureMarket(tournament.slug, profile.id, future)} />
-          ))}
-        </div>
+        <div className="mt-2"><TournamentBirdiesReadinessCard playerSlug={profile.slug} playerName={profile.fullName} /></div>
       </section>
 
       <section className="mt-7">
