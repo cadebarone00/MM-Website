@@ -63,6 +63,26 @@ Course-level performance can be incorporated as a separately weighted course
 adjustment. It must not double-count the same score rows already selected by a
 course-specific bucket.
 
+## Measures
+
+Measures are named, versioned views of the same valid Career Archive data.
+They can be independently tested before being blended into a production
+simulation.
+
+### Measure 1 — Par-Based Individual Scoring
+
+For a target par 3, 4, or 5, use every complete 18-hole individual-ball
+(Singles and Fourball) score that player has recorded on that same par. This
+is the widest player-specific model measure and supplies the stable baseline.
+
+### Measure 2 — 10-Yard Individual Scoring Buckets
+
+Use the same complete individual-ball archive, grouped without regard to par
+into fixed 10-yard ranges: 101–110, 111–120, continuing through 641–650.
+Empty buckets remain visible and are treated as no direct evidence rather than
+as a zero score. The Career Stats Buckets tab displays this exact measure so
+the model and the user inspect the same data.
+
 ## Monte Carlo engine
 
 Each model calculation runs 10,000 complete simulated matches.
