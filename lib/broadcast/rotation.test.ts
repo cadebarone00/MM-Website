@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { sceneAt } from "./rotation.ts";
 import { DEFAULT_SCENE_DURATIONS_MS, type BroadcastConfig } from "./types.ts";
 
-const config: BroadcastConfig = { seasonYear: 2027, sceneDurationsMs: DEFAULT_SCENE_DURATIONS_MS };
+const config: BroadcastConfig = { seasonYear: 2027, sceneDurationsMs: DEFAULT_SCENE_DURATIONS_MS, overlayDurationMs: 6000, takeoverDurationMs: 8000 };
 const anchor = 0;
 
 test("starts on the first scene at the anchor instant", () => {

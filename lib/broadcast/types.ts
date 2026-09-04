@@ -4,6 +4,8 @@
 // docs/superpowers/specs/2026-09-02-watch-live-broadcast-design.md.
 // broadcast_events (the queue) doesn't exist yet; that's Phase 2.
 
+import type { BroadcastEventRow } from "./queue";
+
 export type BroadcastScene = "holding" | "individual_leaderboard" | "match_play";
 export type BroadcastAutomationMode = "auto" | "producer";
 export type BroadcastTeam = "maroon" | "white";
@@ -29,12 +31,15 @@ export interface BroadcastState {
 export interface BroadcastConfig {
   seasonYear: number;
   sceneDurationsMs: Record<BroadcastScene, number>;
+  overlayDurationMs: number;
+  takeoverDurationMs: number;
 }
 
 export interface BroadcastPayload {
   seasonYear: number;
   state: BroadcastState;
   config: BroadcastConfig;
+  events: BroadcastEventRow[];
 }
 
 export const DEFAULT_SCENE_DURATIONS_MS: Record<BroadcastScene, number> = {
