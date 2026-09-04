@@ -5,6 +5,7 @@ import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/l
 import { getActiveSeasonYear } from "@/lib/live/activeSeason";
 import { YearAndMasterSettingsNav } from "@/components/portal/tiger/YearAndMasterSettingsNav";
 import { StartRoundBanner, type StartableRound } from "@/components/portal/tiger/StartRoundBanner";
+import { MatchCloseoutCards } from "@/components/portal/tiger/MatchCloseoutCards";
 
 export default async function TigerCenterPage() {
   const supabase = await createSupabaseServerClient();
@@ -36,6 +37,7 @@ export default async function TigerCenterPage() {
     <div className="mx-auto max-w-[720px] px-4 py-12 sm:px-7">
       <h1 className="font-serif text-3xl font-bold text-ink-900">The Tiger Center</h1>
       {startable && <StartRoundBanner round={startable} />}
+      <MatchCloseoutCards />
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <YearAndMasterSettingsNav initialYear={activeYear} />
         <div className="flex flex-col gap-4 self-end">

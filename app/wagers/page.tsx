@@ -11,6 +11,7 @@ import { FuturesMarketCard } from "@/components/wagers/FuturesMarketCard";
 import { ComingSoonNotice } from "@/components/wagers/ComingSoonNotice";
 import { useWagersMode } from "@/components/wagers/WagersModeContext";
 import { futurePlayerMarket, futureTeamMarket } from "@/lib/wagers/marketKeys";
+import { LiveMatchesList } from "@/components/wagers/LiveMatchesList";
 import type { RealMatch, Tournament } from "@/lib/data/types";
 
 type Category = "team-futures" | "player-futures" | "matches" | "fourballs" | "props";
@@ -29,20 +30,6 @@ function sideLabel(players: string[]): string {
 
 function matchTitle(match: RealMatch): string {
   return `${sideLabel(match.maroonPlayers)} vs ${sideLabel(match.whitePlayers)}`;
-}
-
-function MatchesList({ tournament }: { tournament: Tournament }) {
-  const todaysMatches = tournament.matches.filter((match) => match.day === currentRoundDay(tournament));
-  if (todaysMatches.length === 0) {
-    return <p className="font-sans text-sm text-ink-400">No matches posted yet.</p>;
-  }
-  return (
-    <div className="flex flex-col divide-y divide-ink-100">
-      {todaysMatches.map((match) => (
-        <MarketRow key={match.id} href={`/wagers/matches/${match.id}`} label={matchTitle(match)} />
-      ))}
-    </div>
-  );
 }
 
 function PropsList({ tournament }: { tournament: Tournament }) {
@@ -128,7 +115,7 @@ export default function WagersPage() {
           <>
             {category === "team-futures" && <FuturesList tournament={tournament} />}
             {category === "player-futures" && <PlayersList tournament={tournament} />}
-            {category === "matches" && <MatchesList tournament={tournament} />}
+            {category === "matches" && <LiveMatchesList />}
             {category === "props" && <PropsList tournament={tournament} />}
             {category === "fourballs" && <p className="font-sans text-sm text-ink-400">No fourball markets posted yet.</p>}
           </>

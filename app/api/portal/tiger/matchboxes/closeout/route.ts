@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { liveMatchMarketKey } from "@/lib/wagers/liveMatchMarket";
 
 /**
  * Tiger's final accounting checkpoint. Live confirmation has already updated
@@ -54,5 +56,16 @@ export async function POST(request: Request) {
     kind: "match_closed_out",
     payload: { result: official.official_result },
   });
+  // The only automatic settlement path: Close Out Match has passed all
+  // player-submission and confirmed-result checks above.
+  const sessionClient = await createSupabaseServerClient();
+  const { error: settlementError } = await sessionClient.rpc("settle_mm_coin_market", {
+    p_market_key: liveMatchMarketKey(id),
+    p_winning_selection_key: official.official_result,
+  });
+  // No wagers is normal; the settlement function still creates a harmless
+  // market settlement. Any other error is logged for Tiger but never undoes
+  // the already-approved match closeout.
+  if (settlementError) console.error("live match wager settlement failed:", settlementError.message);
   return NextResponse.json({ ok: true, result: official.official_result });
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { fetchLiveTournament } from "@/lib/data/fetchLiveTournament";
 import { listAllMarkets } from "@/lib/wagers/marketKeys";
+import { liveMatchMarket, liveMatchMarketKey, type LiveOddsSnapshot } from "@/lib/wagers/liveMatchMarket";
 
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
@@ -19,7 +20,14 @@ export async function POST(request: Request) {
   }
 
   const tournament = await fetchLiveTournament();
-  const market = listAllMarkets(tournament).find((m) => m.marketKey === marketKey);
+  let market = listAllMarkets(tournament).find((m) => m.marketKey === marketKey);
+  if (!market && typeof marketKey === "string" && marketKey.startsWith("live-match:")) {
+    const matchBoxId = marketKey.slice("live-match:".length);
+    const { data: match } = await supabase.from("live_match_boxes").select("id, maroon_players, white_players").eq("id", matchBoxId).maybeSingle();
+    const { data: state } = await supabase.from("live_match_official_state").select("status").eq("match_box_id", matchBoxId).maybeSingle();
+    const { data: odds } = await supabase.from("live_match_odds_snapshots").select("maroon_win_probability, tie_probability, white_win_probability, maroon_american_odds, tie_american_odds, white_american_odds").eq("match_box_id", matchBoxId).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (match && odds && state?.status !== "closed_out" && marketKey === liveMatchMarketKey(match.id)) market = liveMatchMarket(match, odds as LiveOddsSnapshot);
+  }
   const selection = market?.selections.find((s) => s.key === selectionKey);
   if (!selection) {
     return NextResponse.json({ ok: false, error: "That market isn't open for betting right now." }, { status: 400 });
