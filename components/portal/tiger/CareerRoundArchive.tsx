@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { canonicalCourseName } from "@/lib/data/canonicalCourse";
 import type { CareerHoleRecord, CareerTeamHoleRecord } from "@/lib/data/careerStats";
 
 type ArchiveRound = {
@@ -28,8 +29,8 @@ export function CareerRoundArchive({ player, year, format, records, teamRecords 
       team.set(id, [...(team.get(id) ?? []), record]);
     });
     return [
-      ...[...individual.entries()].map(([id, holes]) => ({ id, kind: "Individual" as const, year: holes[0].year, round: holes[0].round, format: holes[0].format, course: holes[0].course, detail: "Individual scorecard", holes })),
-      ...[...team.entries()].map(([id, holes]) => ({ id, kind: "Team" as const, year: holes[0].year, round: holes[0].round, format: holes[0].format, course: holes[0].course, detail: `${holes[0].player1}${holes[0].player2 ? ` + ${holes[0].player2}` : ""} · ${holes[0].teamId}`, holes })),
+      ...[...individual.entries()].map(([id, holes]) => ({ id, kind: "Individual" as const, year: holes[0].year, round: holes[0].round, format: holes[0].format, course: canonicalCourseName(holes[0].course), detail: "Individual scorecard", holes })),
+      ...[...team.entries()].map(([id, holes]) => ({ id, kind: "Team" as const, year: holes[0].year, round: holes[0].round, format: holes[0].format, course: canonicalCourseName(holes[0].course), detail: `${holes[0].player1}${holes[0].player2 ? ` + ${holes[0].player2}` : ""} · ${holes[0].teamId}`, holes })),
     ].sort((a, b) => b.year - a.year || a.round - b.round || a.kind.localeCompare(b.kind));
   }, [format, player, records, teamRecords, year]);
   const selected = rounds.find((round) => round.id === selectedId) ?? rounds[0];

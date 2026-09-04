@@ -1,4 +1,5 @@
 import type { CareerHoleRecord } from "@/lib/data/careerStats";
+import { canonicalCourseName } from "@/lib/data/canonicalCourse";
 
 type Bucket = { label: string; rows: CareerHoleRecord[] };
 
@@ -48,7 +49,7 @@ export function CareerBuckets({ records }: { records: CareerHoleRecord[] }) {
     <p className="m-0 font-sans text-xs text-ink-500">Measure 2: fixed 10-yard individual-ball scoring buckets. Every completed Singles and Fourball hole from this player&apos;s Career Archive is counted; par does not affect bucket membership. Empty buckets remain visible so the model can identify sparse data.</p>
     <BucketTable title="Measure 2 — 10-yard scoring buckets (101–650 yards)" buckets={tenYardBuckets(individualBallRecords)} />
     <BucketTable title="By format" buckets={group(records, (row) => row.format)} />
-    <BucketTable title="By course" buckets={group(records, (row) => row.course)} />
+    <BucketTable title="By course" buckets={group(records, (row) => canonicalCourseName(row.course))} />
     <div className="grid gap-4 xl:grid-cols-2"><BucketTable title="By par" buckets={group(records, (row) => `Par ${row.par}`)} /></div>
     <BucketTable title="By course side" buckets={group(records, (row) => row.hole <= 9 ? "Front 9" : "Back 9")} />
   </div>;
