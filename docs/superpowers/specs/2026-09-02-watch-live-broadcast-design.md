@@ -949,32 +949,55 @@ Screen; live leaderboard updates via the *existing* Realtime subscription on
 scene, any host control screen, any audio, Shot Tracer, OBS output. All of
 Phases 2–8 wait for Phase 1 to be reviewed working in the browser first.
 
-## Decisions I Need to Make
+## Decisions I Need to Make — RESOLVED 2026-09-04
 
-1. **Where does `/broadcast` link to when "just show whatever's live" is
-   wanted**, vs. a year-pinned URL always showing one specific year (§42)?
-   Affects the exact route shape (`/broadcast/[year]` vs. an additional
-   `/broadcast` that redirects to the active season).
-2. **Max video length / enforcement policy** once Phase 3 is scoped (§19) —
-   affects whether upload-time validation is needed.
-3. **Audio source** for Phase 6 — what tracks the tournament actually has
-   rights to use; this blocks Phase 6 regardless of engineering readiness.
-4. **Expected concurrent viewer count** for a real event (§35) — affects
-   whether any Supabase Realtime tier consideration is needed before a real
-   tournament weekend.
+1. **Route shape (§42):** `/broadcast/[year]` stays the year-pinned URL
+   exactly as specced. **Adding a plain `/broadcast` route** (`app/broadcast/page.tsx`)
+   that server-redirects to `/broadcast/[live_active_season's year]` — the
+   "set it and forget it" URL for a clubhouse TV/projector that should
+   always show whatever's currently live. Both routes ship in Phase 1 (it's
+   a one-file addition on top of work already being done — no reason to
+   defer it to a later phase). If `live_active_season` has no row yet
+   (before Master Settings' first Save of a season), the redirect falls back
+   to the Holding Screen's year-selection default — same "no live round"
+   handling the Holding Screen already needs per §17/§42, no new fallback
+   logic required.
+2. **Max video length / enforcement policy (Phase 3, §19):** deferred —
+   genuinely doesn't need an answer until Phase 3 is scoped, per the spec's
+   own reasoning. Revisit then.
+3. **Audio source (Phase 6, §21):** deferred — blocked on which tracks the
+   tournament actually has rights to use, a product decision independent of
+   engineering readiness. Revisit when Phase 6 starts.
+4. **Expected concurrent viewers (§35):** confirmed **small — under 20**
+   (a clubhouse TV or two plus a handful of phones). This is well within any
+   Supabase Realtime tier's connection limits — **no tier review or action
+   needed before go-live.**
 
-## Questions/Unknowns
+## Questions/Unknowns — RESOLVED 2026-09-04
 
-- Exact Vercel plan/limits in force (function timeouts, cron availability)
-  — **UNKNOWN — REQUIRES CONFIRMATION**.
-- Whether a migration tool is planned to replace hand-maintained
-  `supabase/schema.sql` before this ships — **UNKNOWN — REQUIRES
-  CONFIRMATION**.
-- Whether any error-tracking service (Sentry or similar) exists or is
-  planned — none found in `package.json` — **UNKNOWN — REQUIRES
-  CONFIRMATION**.
-- Whether Playwright e2e specs currently exist/run in CI for this repo —
-  not sampled in this pass — **UNKNOWN — REQUIRES CONFIRMATION**.
+- **Migration approach for `broadcast_config`/`broadcast_state` (§26):**
+  confirmed — **same hand-maintained `supabase/schema.sql` + manual paste
+  into the Supabase SQL Editor pattern** used for every prior Tiger Center
+  phase (Matchups, Courses & Format). No migration tool is being adopted.
+  Phase 1's implementation plan and checklist call out this manual
+  production step explicitly, the same way [[tiger-center-build-phasing]]
+  records it for past phases — so a future session doesn't have to guess
+  whether it was run.
+- **Exact Vercel plan/limits (function timeouts, cron availability):** not
+  blocking — Phase 1 adds no cron usage and its Route Handlers
+  (`GET /api/broadcast/[year]/state`) are simple reads, well under any
+  plan's default function timeout. Left as a non-blocking informational
+  gap, not a re-opened decision.
+- **Error-tracking service:** none exists in `package.json` today. Confirmed
+  fallback stands as specced (§36): `console.error` with enough context to
+  find in Vercel's function logs, matching this repo's current standard
+  everywhere else. No action needed unless the project adopts one broadly
+  (not scoped to this feature).
+- **Playwright e2e in CI:** not sampled, not blocking — Phase 1's testing
+  section (§37/§44) already only commits to unit tests + manual walkthrough,
+  matching what every other Tiger Center phase has actually done. If e2e
+  coverage becomes a project-wide initiative later, this feature picks it up
+  then, not as a special case now.
 
 ## Phase 1 Implementation Checklist
 
