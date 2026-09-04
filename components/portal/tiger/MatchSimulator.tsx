@@ -7,9 +7,14 @@ const field = "w-full rounded-lg border-2 border-gold-300 bg-white px-3 py-2 fon
 const american = (p: number) => Math.round(p >= .5 ? -100 * p / (1-p) : 100 * (1-p) / p);
 const odds = (p: number) => { const n=american(p); return n>0?`+${n}`:`${n}`; };
 
-/** MM-MATCH-1.0. Samples completed 18-hole Career Stats score distributions.
- * Prefers the selected format and remaining-hole number; falls back only to
- * that same player's completed archive. Current score sets the match state. */
+/**
+ * Model contract: docs/odds-model-spec.md.
+ *
+ * This is the initial interactive simulator. It samples completed Career
+ * Archive records and treats the entered live score as fixed match state.
+ * Bucket weighting and the format-specific Fourball/Foursomes engines are
+ * implemented against the contract rather than changing this policy ad hoc.
+ */
 export function MatchSimulator({ records }: { records: CareerHoleRecord[] }) {
  const players=useMemo(()=>[...new Set(records.map(r=>r.player))].sort((a,b)=>getPlayerDisplayName(a).localeCompare(getPlayerDisplayName(b))),[records]);
  const [a,setA]=useState(players[0]??""); const [b,setB]=useState(players[1]??""); const [format,setFormat]=useState("Singles"); const [course,setCourse]=useState("All courses"); const [live,setLive]=useState(false); const [leader,setLeader]=useState("a"); const [up,setUp]=useState("1"); const [thru,setThru]=useState("0"); const [result,setResult]=useState<{a:number;tie:number;b:number}|null>(null);
