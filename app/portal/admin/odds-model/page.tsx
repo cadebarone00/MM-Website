@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { careerArchiveRecords } from "@/lib/data/careerArchive";
-import { getLiveCareerArchiveRecords } from "@/lib/data/careerStatsDatabase";
 import { OddsModelLab } from "@/components/portal/tiger/OddsModelLab";
+import { careerArchiveCourseHoles, careerArchiveRecords } from "@/lib/data/careerArchive";
+import { getLiveCareerArchiveRecords } from "@/lib/data/careerStatsDatabase";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function OddsModelPage() {
   const supabase = await createSupabaseServerClient();
@@ -11,6 +11,9 @@ export default async function OddsModelPage() {
   const { data: profile } = await supabase.from("profiles").select("is_host").eq("id", user.id).single();
   if (!profile?.is_host) redirect("/");
   const records = [...careerArchiveRecords, ...(await getLiveCareerArchiveRecords())];
-  const databaseReady = true;
-  return <div className="mx-auto max-w-[900px] px-4 py-12 sm:px-7"><h1 className="font-serif text-3xl font-bold text-ink-900">Odds Model</h1><p className="mt-2 font-sans text-sm text-ink-500">Run model previews from the normalized 18-hole Career Stats records. This is Tiger Center’s model workspace; the workbook remains source data and audit documentation.</p><div className="mt-6"><OddsModelLab records={records} databaseReady={databaseReady} /></div></div>;
+  return <div className="mx-auto max-w-[1100px] px-4 py-12 sm:px-7">
+    <h1 className="font-serif text-3xl font-bold text-ink-900">Odds Model</h1>
+    <p className="mt-2 font-sans text-sm text-ink-500">Match odds are calculated from the normalized Career Archive. The simulator expands format and live models as each is validated.</p>
+    <div className="mt-6"><OddsModelLab records={records} courseHoles={careerArchiveCourseHoles} /></div>
+  </div>;
 }
