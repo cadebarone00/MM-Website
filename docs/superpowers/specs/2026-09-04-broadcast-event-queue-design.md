@@ -62,15 +62,36 @@ box**:
 2. Build a `LiveTournamentSnapshot` from the fresh state (same pattern
    `rounds/lock/route.ts:51-66` already uses to build one for
    `roundIsComplete`/`validateMatchBox` — reuse that shape, don't invent a
-   second one). Compute `effectiveMatchState(snapshot, box)` **after** the
-   write.
-3. Compare against `effectiveMatchState` computed from the **pre-write**
-   snapshot (fetch `live_hole_scores` for the box once before the loop
-   starts, alongside the existing box/round-state reads already at the top
-   of the handler — one extra read, not one per target). If different:
-   `publishBroadcastEvent({ kind: "MATCH_STATE_CHANGED", ..., matchBoxId: box.id, state: newState })`.
-   If the new state is `"Final"`: also
-   `publishBroadcastEvent({ kind: "MATCH_WON", ..., matchBoxId: box.id })`.
+   second one). Compute `matchBoxResult(snapshot, box)` **after** the write.
+3. **Correction from initial drafting** (found while grounding this in
+   `lib/live/orchestration.ts`): diffing `effectiveMatchState()` is the
+   wrong signal. It only returns `"Final"` once all 18 holes are entered —
+   it has no concept of an early closeout (a match won 3&2, the most common
+   real finish in match play), and otherwise sits on `"Live"` for the whole
+   match, so a diff on it would almost never fire `MATCH_STATE_CHANGED` and
+   would miss every early `MATCH_WON`. The correct signal is
+   `matchBoxResult()` — already what the shipped Match Play scene uses
+   (`lib/broadcast/matchPlayData.ts:107-108`) — compared against the same
+   function called on the **pre-write** snapshot (fetch `live_hole_scores`
+   for the box once before the loop starts, alongside the existing
+   box/round-state reads already at the top of the handler — one extra read,
+   not one per target):
+   - A box is "closed" (won) when `maroonPts > 0 || whitePts > 0` (true
+     exactly when `matchBoxResult`'s internal `matchClosed` condition —
+     `completed === 18 || margin > holesRemaining` — holds; a tie at 18
+     holes also yields nonzero, 0.5/0.5, points, correctly counting as
+     closed). If closed **now** and **wasn't closed before this write**:
+     publish `MATCH_WON` — `{ matchBoxId: box.id, leader, margin, maroonPts, whitePts }` —
+     and skip `MATCH_STATE_CHANGED` for this box (the win is the more
+     specific classification of the same change; no reason to publish
+     both for one underlying event, matching §13's dedup philosophy).
+   - Otherwise, if `leader`, `margin`, or `holesRemaining` differ from
+     before the write: publish `MATCH_STATE_CHANGED` —
+     `{ matchBoxId: box.id, leader, margin, holesRemaining }`. This is the
+     raw shape (no baked "2 UP"/"dormie"/"AS" label — nothing in this
+     codebase computes that string today; whichever phase first renders
+     this event's UI derives the label from these primitives then, not
+     Phase 2).
 4. After the per-target loop finishes (all targets' scores written), check
    `roundIsComplete(snapshotAfter, round, box.format)` against
    `roundIsComplete(snapshotBefore, round, box.format)` — actually **not
@@ -158,7 +179,7 @@ Unchanged from the master spec §13 — implemented, not redesigned, here:
 |---|---|
 | 0 | `ROUND_STARTED` — no rule currently acts on it beyond logging; reserved for Phase 4/7 ("Round 2 has begun" announcement) |
 | 10 | `SCORE_POSTED`, no notable classification — logged (`status: 'pending'`), never becomes `queued` (birdie/eagle classification is Phase 4/7, not this phase) |
-| 40 | `MATCH_STATE_CHANGED` (AS / N-UP / dormie payload) |
+| 40 | `MATCH_STATE_CHANGED` (raw `leader`/`margin`/`holesRemaining` payload — no baked AS/N-UP/dormie label, see Trigger Points) |
 | 70 | `MATCH_WON` |
 | 75 | `ROUND_FINAL` |
 
@@ -278,11 +299,14 @@ existing table.
 1. Submitting a hole score that doesn't change any match's state or close
    out a round inserts exactly one `broadcast_events` row: `SCORE_POSTED`,
    priority 10, status `pending`.
-2. Submitting a hole score that changes a match to dormie/all-square/N-UP
-   inserts a second row: `MATCH_STATE_CHANGED`, priority 40, status
-   `queued`, payload carrying the new state label.
-3. Submitting the hole score that closes out a match inserts a third kind:
-   `MATCH_WON`, priority 70, status `queued`.
+2. Submitting a hole score that changes a match's `leader`/`margin`/
+   `holesRemaining` (per `matchBoxResult()`) without closing it out inserts
+   a second row: `MATCH_STATE_CHANGED`, priority 40, status `queued`,
+   payload carrying the raw `leader`/`margin`/`holesRemaining`.
+3. Submitting the hole score that closes out a match — including an early
+   closeout (e.g. 3&2, `margin > holesRemaining`), not just a full 18 holes
+   — inserts a third kind instead: `MATCH_WON`, priority 70, status
+   `queued`, no accompanying `MATCH_STATE_CHANGED` for that same write.
 4. Submitting the hole score that completes the last unfinished box in a
    round inserts `ROUND_FINAL`, priority 75, status `queued`, scoped to that
    `round` (not a specific match box).
