@@ -4,6 +4,8 @@ import Image from "next/image";
 import { MessageCircle, Video } from "lucide-react";
 import { useState } from "react";
 import { RoundCountdown } from "@/components/ui/RoundCountdown";
+import { useLiveBroadcastState } from "@/lib/broadcast/useLiveBroadcastState";
+import type { BroadcastState } from "@/lib/broadcast/types";
 
 type Tab = "comments" | "highlights";
 
@@ -19,8 +21,13 @@ const tabs: { id: Tab; label: string }[] = [
  */
 const YOUTUBE_LIVE_VIDEO_ID = process.env.NEXT_PUBLIC_YOUTUBE_LIVE_VIDEO_ID || null;
 
-export function WatchLiveExperience({ tournamentLive }: { tournamentLive: boolean }) {
+export function WatchLiveExperience({ seasonYear, initialState }: { seasonYear: number; initialState: BroadcastState }) {
   const [activeTab, setActiveTab] = useState<Tab>("comments");
+  // Same Realtime-then-refetch pattern /broadcast itself uses (see
+  // useLiveBroadcastState.ts) — so ending the broadcast in Broadcast
+  // Controls swaps this page back to the placeholder immediately, no
+  // manual refresh needed.
+  const { tournamentLive } = useLiveBroadcastState(seasonYear, initialState);
 
   return (
     <main>
