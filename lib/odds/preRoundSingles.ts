@@ -106,13 +106,13 @@ export function calculatePreRoundFourballOdds({ records, courseHoles, teamA, tea
     const outcomes: { a1: number; a2: number; b1: number; b2: number }[] = [];
     for (let i = 0; i < HOLE_SIMULATIONS; i += 1) outcomes.push({ a1: pick(one[0]).score, a2: pick(one[1]).score, b1: pick(one[2]).score, b2: pick(one[3]).score });
     for (let i = 0; i < HOLE_SIMULATIONS; i += 1) outcomes.push({ a1: pick(two[0]).score, a2: pick(two[1]).score, b1: pick(two[2]).score, b2: pick(two[3]).score });
-    return { hole, outcomes, one: [Math.min(...one[0].map(() => one[0].length)), Math.min(...one[2].map(() => one[2].length))] as [number, number], two: [Math.min(...two[0].map(() => two[0].length)), Math.min(...two[2].map(() => two[2].length))] as [number, number] };
+    return { hole, outcomes, one: [Math.min(one[0].length, one[1].length), Math.min(one[2].length, one[3].length)] as [number, number], two: [Math.min(two[0].length, two[1].length), Math.min(two[2].length, two[3].length)] as [number, number] };
   });
   if (pairs.some((row) => row === null)) return null;
   const validPairs = pairs as NonNullable<typeof pairs[number]>[];
   const shapes = playerRows.map(profile);
   const mean = (rows: CareerHoleRecord[]) => rows.reduce((sum, row) => sum + row.score - row.par, 0) / rows.length;
-  const deltas = playerRows.map((rows) => mean(rows.filter((row) => row.format === "Fourball")) - mean(rows));
+  const deltas = playerRows.map((rows) => { const fourball = rows.filter((row) => row.format === "Fourball"); return fourball.length ? mean(fourball) - mean(rows) : 0; });
   let weightedA = 0; let weightedTie = 0; let weightedB = 0;
   for (let simulation = 0; simulation < MATCH_SIMULATIONS; simulation += 1) {
     const scores: Score[][] = [[], [], [], []]; let lead = 0;
