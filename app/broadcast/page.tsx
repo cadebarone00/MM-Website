@@ -38,7 +38,8 @@ function previewPayload(year: number, scene: BroadcastScene): BroadcastPayload {
       overlayText: null,
       overlayExpiresAt: null,
     },
-    config: { seasonYear: year, sceneDurationsMs: DEFAULT_SCENE_DURATIONS_MS },
+    config: { seasonYear: year, sceneDurationsMs: DEFAULT_SCENE_DURATIONS_MS, overlayDurationMs: 6000, takeoverDurationMs: 8000 },
+    events: [],
   };
 }
 

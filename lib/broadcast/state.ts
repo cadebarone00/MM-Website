@@ -5,6 +5,7 @@
 // lib/data/activeSeasonOverlay.ts.
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
+import { getNextInQueue } from "@/lib/broadcast/queue";
 import { DEFAULT_SCENE_DURATIONS_MS, type BroadcastConfig, type BroadcastPayload, type BroadcastScene, type BroadcastState } from "./types";
 
 const VALID_SCENES: BroadcastScene[] = ["holding", "individual_leaderboard", "match_play"];
@@ -27,13 +28,14 @@ export async function getBroadcastPayload(): Promise<BroadcastPayload> {
   const seasonYear = await getBroadcastDisplayYear();
   const service = createSupabaseServiceRoleClient();
 
-  const [{ data: stateRow, error: stateError }, { data: configRow, error: configError }] = await Promise.all([
+  const [{ data: stateRow, error: stateError }, { data: configRow, error: configError }, events] = await Promise.all([
     service
       .from("broadcast_state")
       .select("current_scene, scene_started_at, automation_mode, paused, tournament_live, overlay_text, overlay_expires_at")
       .eq("season_year", seasonYear)
       .maybeSingle(),
-    service.from("broadcast_config").select("scene_durations_ms").eq("season_year", seasonYear).maybeSingle(),
+    service.from("broadcast_config").select("scene_durations_ms, overlay_duration_ms, takeover_duration_ms").eq("season_year", seasonYear).maybeSingle(),
+    getNextInQueue(seasonYear),
   ]);
 
   // A missing row for this season is expected (falls back to defaults
@@ -59,7 +61,9 @@ export async function getBroadcastPayload(): Promise<BroadcastPayload> {
   const config: BroadcastConfig = {
     seasonYear,
     sceneDurationsMs: { ...DEFAULT_SCENE_DURATIONS_MS, ...(configRow?.scene_durations_ms ?? {}) },
+    overlayDurationMs: configRow?.overlay_duration_ms ?? 6000,
+    takeoverDurationMs: configRow?.takeover_duration_ms ?? 8000,
   };
 
-  return { seasonYear, state, config };
+  return { seasonYear, state, config, events };
 }
