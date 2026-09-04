@@ -14,6 +14,6 @@ const tiers: Tier[] = [
  { name:"Exact course + par + yardage + side", source:(p,h)=>complete.filter(r=>r.player===p&&canonicalCourseName(r.course)===canonicalCourse&&r.par===h.par&&bucket(r.yards)===bucket(h.yards)&&(r.hole<=9)===(h.hole<=9)) },
  { name:"Par + yardage + side", source:(p,h)=>complete.filter(r=>r.player===p&&r.par===h.par&&bucket(r.yards)===bucket(h.yards)&&(r.hole<=9)===(h.hole<=9)) },
  { name:"Par + yardage", source:(p,h)=>complete.filter(r=>r.player===p&&r.par===h.par&&bucket(r.yards)===bucket(h.yards)) },
- { name:"Player format baseline", source:(p,_h)=>complete.filter(r=>r.player===p) },
+ { name:"Player format baseline", source:(p)=>complete.filter(r=>r.player===p) },
 ];
 for(const tier of tiers){let aw=0,bw=0,tie=0, min=Infinity; for(const h of setup){min=Math.min(min,tier.source(playerA,h).length,tier.source(playerB,h).length)} if(!Number.isFinite(min)||min===0){console.log(`${tier.name}: cannot run — at least one comparison bucket has 0 samples.`);continue} for(let i=0;i<10000;i++){let lead=0;for(const h of setup){const a=tier.source(playerA,h),b=tier.source(playerB,h);const as=a[Math.floor(Math.random()*a.length)].score-h.par,bs=b[Math.floor(Math.random()*b.length)].score-h.par;if(as<bs)lead++;else if(bs<as)lead--;}if(lead>0)aw++;else if(lead<0)bw++;else tie++;} console.log(`${tier.name}: ${playerA} ${(aw/100).toFixed(1)}%, tie ${(tie/100).toFixed(1)}%, ${playerB} ${(bw/100).toFixed(1)}% | minimum per-hole sample ${min}`)}
