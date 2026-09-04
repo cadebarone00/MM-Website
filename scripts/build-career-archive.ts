@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import * as XLSX from "xlsx";
+import { canonicalCourseName } from "../lib/data/canonicalCourse";
 
 type SheetRow = Record<string, unknown>;
 
@@ -37,14 +38,14 @@ const workbook = XLSX.readFile(input);
 const records = rowsFromSheet(workbook, "Raw_Hole_Results", ["year", "player", "score"])
   .map((row) => ({
     year: integer(value(row, "year")), player: text(value(row, "player")), round: integer(value(row, "round")), roundHoles: integer(value(row, "round_holes")),
-    course: text(value(row, "course")), format: text(value(row, "format")) || "Unspecified", hole: integer(value(row, "hole")), par: integer(value(row, "par")), yards: integer(value(row, "yards")), score: integer(value(row, "score")), putts: integer(value(row, "putts")), fairwayInRegulation: bool(value(row, "fairway_in_regulation")), greenInRegulation: bool(value(row, "green_in_regulation")), penalties: integer(value(row, "penalties")),
+    course: canonicalCourseName(text(value(row, "course"))), format: text(value(row, "format")) || "Unspecified", hole: integer(value(row, "hole")), par: integer(value(row, "par")), yards: integer(value(row, "yards")), score: integer(value(row, "score")), putts: integer(value(row, "putts")), fairwayInRegulation: bool(value(row, "fairway_in_regulation")), greenInRegulation: bool(value(row, "green_in_regulation")), penalties: integer(value(row, "penalties")),
   }))
   .filter((row) => row.roundHoles === 18 && row.year && row.player && row.round && row.course && row.hole && row.par && row.yards && row.score);
 
 const teamRecords = rowsFromSheet(workbook, "Raw_Team_Hole_Results", ["year", "team_id", "team_score"])
   .map((row) => ({
     year: integer(value(row, "year")), round: integer(value(row, "round")), format: text(value(row, "format")) || "Unspecified", matchId: text(value(row, "match_id")),
-    teamId: text(value(row, "team_id")), player1: text(value(row, "player_1")), player2: text(value(row, "player_2")), course: text(value(row, "course")),
+    teamId: text(value(row, "team_id")), player1: text(value(row, "player_1")), player2: text(value(row, "player_2")), course: canonicalCourseName(text(value(row, "course"))),
     hole: integer(value(row, "hole")), par: integer(value(row, "par")), yards: integer(value(row, "yards")), score: integer(value(row, "team_score")), putts: null, fairwayInRegulation: null, greenInRegulation: null, penalties: null,
   }))
   .filter((row) => row.year && row.round && row.matchId && row.teamId && row.player1 && row.course && row.hole && row.par && row.yards && row.score);
@@ -61,7 +62,7 @@ const partnerships = rowsFromSheet(workbook, "Match_Participants", ["year", "mat
   .filter((row) => row.year);
 
 const courseHoles = rowsFromSheet(workbook, "Course_Hole_Setup", ["year", "course", "hole", "par", "yards"])
-  .map((row) => ({ year: integer(value(row, "year")), course: text(value(row, "course")), tee: text(value(row, "tee")) || null, hole: integer(value(row, "hole")), par: integer(value(row, "par")), yards: integer(value(row, "yards")), holeType: text(value(row, "hole_type")) || null, holeLengthBucket: text(value(row, "hole_length_bucket")) || null }))
+  .map((row) => ({ year: integer(value(row, "year")), course: canonicalCourseName(text(value(row, "course"))), tee: text(value(row, "tee")) || null, hole: integer(value(row, "hole")), par: integer(value(row, "par")), yards: integer(value(row, "yards")), holeType: text(value(row, "hole_type")) || null, holeLengthBucket: text(value(row, "hole_length_bucket")) || null }))
   .filter((row) => row.year && row.course && row.hole && row.par && row.yards);
 
 const source = `// Generated from ${path.basename(input)} by scripts/build-career-archive.ts. Do not hand-edit.\nimport type { CareerCourseHole, CareerHoleRecord, CareerPartnership, CareerTeamHoleRecord } from "./careerStats";\n\nexport const careerArchiveRecords: CareerHoleRecord[] = ${JSON.stringify(records)};\n\nexport const careerArchiveTeamRecords: CareerTeamHoleRecord[] = ${JSON.stringify(teamRecords)};\n\nexport const careerArchivePartnerships: CareerPartnership[] = ${JSON.stringify(partnerships)};\n\nexport const careerArchiveCourseHoles: CareerCourseHole[] = ${JSON.stringify(courseHoles)};\n`;
