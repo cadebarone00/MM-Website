@@ -3,6 +3,7 @@ import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
 import { roundIsComplete, validateMatchBox } from "@/lib/live/orchestration";
+import { syncLockedRoundToCareerArchive } from "@/lib/live/syncLockedRound";
 import type { LiveMatchBox, LiveTournamentSnapshot, MatchFormat, MatchState, Team } from "@/lib/live/types";
 
 export async function POST(request: Request) {
@@ -73,23 +74,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: boxErrors.join(" ") }, { status: 400 });
     }
 
-    const { data: course } = await service.from("live_courses").select("name, holes").eq("id", current.course_id).single();
-    if (!course) return NextResponse.json({ ok: false, error: "The selected course could not be loaded." }, { status: 400 });
-    const archiveRows = matchBoxes.flatMap((box) => {
-      const entries = [[box.maroonPlayers, box.whitePlayers], [box.whitePlayers, box.maroonPlayers]] as const;
-      return entries.flatMap(([side, opponents]) => side.map((playerSlug, index) => ({
-        season_year: year, round, player_slug: playerSlug, course: course.name, played_on: current.date, format: box.format,
-        match_box_id: box.id, partner_slug: side.length === 2 ? side[1 - index] : null, opponent_slugs: opponents,
-        status: "scheduled", holes: course.holes,
-      })));
-    });
-    const { error: archiveError } = await service.from("career_archive_rounds").upsert(archiveRows, { onConflict: "season_year,round,player_slug", ignoreDuplicates: true });
-    if (archiveError) return NextResponse.json({ ok: false, error: "Could not create Career Archive rounds. Run the Career Live Archive SQL first." }, { status: 500 });
   }
 
   const { error } = await service.from("live_round_state").update({ matchups_locked: value }).eq("season_year", year).eq("round", round);
   if (error) {
     return NextResponse.json({ ok: false, error: "Could not update the lock." }, { status: 500 });
+  }
+  if (value) {
+    try {
+      await syncLockedRoundToCareerArchive(year, round);
+    } catch {
+      return NextResponse.json({ ok: false, error: "Matchups locked, but Career Archive publishing failed. Run the Career Live Archive SQL first." }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ ok: true });

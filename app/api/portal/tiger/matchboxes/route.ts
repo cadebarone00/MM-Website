@@ -3,6 +3,7 @@ import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
 import { validateMatchBox } from "@/lib/live/orchestration";
+import { syncLockedRoundToCareerArchive } from "@/lib/live/syncLockedRound";
 import type { LiveMatchBox, LiveTournamentSnapshot, MatchFormat, MatchState, Team } from "@/lib/live/types";
 
 interface MatchBoxRow {
@@ -120,6 +121,7 @@ export async function POST(request: Request) {
       .update({ format, tee_time: teeTime, maroon_players: maroonPlayers, white_players: whitePlayers })
       .eq("id", currentBox.id);
     if (error) return NextResponse.json({ ok: false, error: "Could not save that match box." }, { status: 500 });
+    if (roundRow.matchups_locked) await syncLockedRoundToCareerArchive(year, round);
     return NextResponse.json({ ok: true, id: currentBox.id });
   }
 
@@ -131,6 +133,7 @@ export async function POST(request: Request) {
   if (error || !inserted) {
     return NextResponse.json({ ok: false, error: "Could not save that match box." }, { status: 500 });
   }
+  if (roundRow.matchups_locked) await syncLockedRoundToCareerArchive(year, round);
 
   return NextResponse.json({ ok: true, id: inserted.id });
 }

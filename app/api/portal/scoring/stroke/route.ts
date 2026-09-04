@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
   }
 
-  const { round, hole, targetPlayerSlugs, score } = await request.json();
+  const { round, hole, targetPlayerSlugs, score, didNotFinish = false } = await request.json();
   if (
     typeof round !== "number" ||
     !Number.isInteger(round) ||
@@ -49,9 +49,8 @@ export async function POST(request: Request) {
     hole > 18 ||
     !Array.isArray(targetPlayerSlugs) ||
     targetPlayerSlugs.some((s: unknown) => typeof s !== "string") ||
-    typeof score !== "number" ||
-    !Number.isInteger(score) ||
-    score < 1
+    typeof didNotFinish !== "boolean" ||
+    (!didNotFinish && (typeof score !== "number" || !Number.isInteger(score) || score < 1))
   ) {
     return NextResponse.json({ ok: false, error: "Missing or invalid fields." }, { status: 400 });
   }
@@ -73,12 +72,15 @@ export async function POST(request: Request) {
 
   const { data: roundState } = await service
     .from("live_round_state")
-    .select("course_locked, matchups_locked, started")
+    .select("course_locked, matchups_locked, started, course_id")
     .eq("season_year", seasonYear)
     .eq("round", round)
     .single();
   if (!roundState?.course_locked || !roundState?.matchups_locked || !roundState?.started) {
     return NextResponse.json({ ok: false, error: "This round isn't live yet." }, { status: 400 });
+  }
+  if (!matchIsScoreable(box)) {
+    return NextResponse.json({ ok: false, error: "This match is waiting for its tee time or Tiger's Start Match override." }, { status: 400 });
   }
 
   const { data: existingSubmission } = await service
@@ -94,6 +96,19 @@ export async function POST(request: Request) {
   if (!canScoreStrokesFor(box, player.playerSlug, targetPlayerSlugs)) {
     return NextResponse.json({ ok: false, error: "You're not the assigned scorer for that player." }, { status: 403 });
   }
+  if (didNotFinish && box.format !== "Fourball") {
+    return NextResponse.json({ ok: false, error: "Double-par X is available only for Fourball." }, { status: 400 });
+  }
+
+  let recordedScore = score as number;
+  if (didNotFinish) {
+    const { data: course } = roundState.course_id
+      ? await service.from("live_courses").select("holes").eq("id", roundState.course_id).single()
+      : { data: null };
+    const par = (course?.holes as { number: number; par: number }[] | undefined)?.find((entry) => entry.number === hole)?.par;
+    if (!par) return NextResponse.json({ ok: false, error: "Could not determine par for this hole." }, { status: 500 });
+    recordedScore = par * 2;
+  }
 
   for (const target of targetPlayerSlugs as string[]) {
     const { data: existingRow } = await service
@@ -108,14 +123,14 @@ export async function POST(request: Request) {
     // self-report/stat row to compare, so an assigned opposing-side entry is
     // itself the official confirmation. Singles/Fourball still require both
     // assigned-score and self-score to agree.
-    const confirmedBy = box.format === "Foursome" || scoresAgree(score, existingRow?.self_reported_score ?? null) ? target : null;
+    const confirmedBy = didNotFinish || box.format === "Foursome" || scoresAgree(recordedScore, existingRow?.self_reported_score ?? null) ? target : null;
     if (existingRow) {
-      const { error } = await service.from("live_hole_scores").update({ score, confirmed_by: confirmedBy }).eq("id", existingRow.id);
+      const { error } = await service.from("live_hole_scores").update({ score: recordedScore, confirmed_by: confirmedBy }).eq("id", existingRow.id);
       if (error) return NextResponse.json({ ok: false, error: "Could not save that score." }, { status: 500 });
     } else {
       const { error } = await service
         .from("live_hole_scores")
-        .insert({ season_year: seasonYear, player_slug: target, round, hole, score, confirmed_by: confirmedBy });
+        .insert({ season_year: seasonYear, player_slug: target, round, hole, score: recordedScore, confirmed_by: confirmedBy });
       if (error) return NextResponse.json({ ok: false, error: "Could not save that score." }, { status: 500 });
     }
   }
@@ -127,9 +142,17 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("official match-state publish failed:", err);
   }
-  if (!matchIsScoreable(box)) {
-    return NextResponse.json({ ok: false, error: "This match is waiting for its tee time or Tiger's Start Match override." }, { status: 400 });
+  if (didNotFinish) {
+    await service.from("live_score_audit_events").insert({
+      season_year: seasonYear,
+      match_box_id: box.id,
+      round,
+      hole,
+      actor_profile_id: player.userId,
+      kind: "double_par_recorded",
+      payload: { targets: targetPlayerSlugs, score: recordedScore },
+    });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, score: recordedScore });
 }

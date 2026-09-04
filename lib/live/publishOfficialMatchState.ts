@@ -1,6 +1,7 @@
 import { buildLiveTournamentSnapshot } from "@/lib/broadcast/liveSnapshot";
 import { buildOfficialMatchState, type OfficialMatchState } from "@/lib/live/officialMatchState";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { publishMatchOdds } from "@/lib/live/publishMatchOdds";
 
 /**
  * Rebuild and publish a match using confirmed holes only. This is the shared
@@ -8,7 +9,11 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
  * tee-time/start-match automation. It is intentionally idempotent: a retry
  * replaces current state rather than incrementing points or settling wagers.
  */
-export async function publishOfficialMatchState(seasonYear: number, matchBoxId: string): Promise<OfficialMatchState | null> {
+export async function publishOfficialMatchState(
+  seasonYear: number,
+  matchBoxId: string,
+  auditKind: "match_locked" | "match_updated" | "score_confirmed" | "score_retracted" = "score_confirmed"
+): Promise<OfficialMatchState | null> {
   const snapshot = await buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true });
   const box = snapshot.matchBoxes.find((candidate) => candidate.id === matchBoxId);
   if (!box) return null;
@@ -35,10 +40,12 @@ export async function publishOfficialMatchState(seasonYear: number, matchBoxId: 
     season_year: seasonYear,
     match_box_id: matchBoxId,
     round: box.round,
-    kind: "score_confirmed",
+    kind: auditKind,
     payload: { thru: official.thru, leader: official.leader, margin: official.margin, mathematicallyComplete: official.mathematicallyComplete },
   });
   if (auditError) throw auditError;
+
+  await publishMatchOdds(seasonYear, box, official);
 
   return official;
 }

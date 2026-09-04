@@ -143,7 +143,7 @@ export function calculatePreRoundFourballOdds({ records, courseHoles, teamA, tea
 /** Alternate Shot keeps target-hole matching in Measures 1/2. Format
  * calibration uses every historical Alternate Shot team hole; an exact-pair
  * adjustment is shrunk toward zero when the partnership has little history. */
-export function calculatePreRoundAlternateShotOdds({ records, teamRecords, courseHoles, teamA, teamB, course }: { records: CareerHoleRecord[]; teamRecords: CareerTeamHoleRecord[]; courseHoles: CareerCourseHole[]; teamA: [string, string]; teamB: [string, string]; course: string }): PreRoundSinglesResult | null {
+export function calculatePreRoundAlternateShotOdds({ records, teamRecords, courseHoles, teamA, teamB, course, holesFinished = 0, teamALead = 0 }: { records: CareerHoleRecord[]; teamRecords: CareerTeamHoleRecord[]; courseHoles: CareerCourseHole[]; teamA: [string, string]; teamB: [string, string]; course: string; holesFinished?: number; teamALead?: number }): PreRoundSinglesResult | null {
   const canonicalCourse = canonicalCourseName(course);
   const setup = [...new Map(courseHoles.filter((row) => canonicalCourseName(row.course) === canonicalCourse).map((row) => [row.hole, row])).values()].sort((a, b) => a.hole - b.hole);
   const individual = records.filter(isEligibleIndividualHole);
@@ -153,6 +153,8 @@ export function calculatePreRoundAlternateShotOdds({ records, teamRecords, cours
   const pairRows = (pair: [string, string]) => alternate.filter((row) => pairKey([row.player1, row.player2 ?? ""]) === pairKey(pair));
   const aPair = pairRows(teamA); const bPair = pairRows(teamB);
   if (setup.length !== 18 || individualRows.some((rows) => !rows.length) || !alternate.length) return null;
+  if (holesFinished < 0 || holesFinished > 18 || Math.abs(teamALead) > holesFinished) return null;
+  if (holesFinished === 18) return teamALead > 0 ? { a: 1, tie: 0, b: 0, measureOneMinimum: [0, 0], measureTwoMinimum: [0, 0], formatDeltas: [0, 0] } : teamALead < 0 ? { a: 0, tie: 0, b: 1, measureOneMinimum: [0, 0], measureTwoMinimum: [0, 0], formatDeltas: [0, 0] } : { a: 0, tie: 1, b: 0, measureOneMinimum: [0, 0], measureTwoMinimum: [0, 0], formatDeltas: [0, 0] };
   const averageRelative = (rows: CareerTeamHoleRecord[]) => rows.reduce((sum, row) => sum + row.score - row.par, 0) / rows.length;
   const formatRelative = averageRelative(alternate);
   // A new pair gets zero pair-specific adjustment. An established pair moves
@@ -160,7 +162,7 @@ export function calculatePreRoundAlternateShotOdds({ records, teamRecords, cours
   // the individual target-hole model on a small history.
   const pairAdjustment = (rows: CareerTeamHoleRecord[]) => rows.length ? (rows.length / (rows.length + 36)) * (averageRelative(rows) - formatRelative) : 0;
   const aAdjustment = pairAdjustment(aPair); const bAdjustment = pairAdjustment(bPair);
-  const holes = setup.map((hole) => {
+  const holes = setup.slice(holesFinished).map((hole) => {
     const targetBucket = bucket(hole.yards);
     const individualPools = (measure: 1 | 2) => individualRows.map((rows) => rows.filter((row) => measure === 1 ? row.par === hole.par : Math.abs(bucket(row.yards) - targetBucket) <= 1));
     const one = individualPools(1); const two = individualPools(2);
@@ -174,6 +176,6 @@ export function calculatePreRoundAlternateShotOdds({ records, teamRecords, cours
   if (holes.some((row) => row === null)) return null;
   const validHoles = holes as NonNullable<typeof holes[number]>[];
   let aWins = 0; let ties = 0; let bWins = 0;
-  for (let simulation = 0; simulation < MATCH_SIMULATIONS; simulation += 1) { let lead = 0; validHoles.forEach(({ outcomes }) => { const score = pick(outcomes); if (score.a < score.b) lead += 1; else if (score.b < score.a) lead -= 1; }); if (lead > 0) aWins += 1; else if (lead < 0) bWins += 1; else ties += 1; }
+  for (let simulation = 0; simulation < MATCH_SIMULATIONS; simulation += 1) { let lead = teamALead; validHoles.forEach(({ outcomes }) => { const score = pick(outcomes); if (score.a < score.b) lead += 1; else if (score.b < score.a) lead -= 1; }); if (lead > 0) aWins += 1; else if (lead < 0) bWins += 1; else ties += 1; }
   return { a: aWins / MATCH_SIMULATIONS, tie: ties / MATCH_SIMULATIONS, b: bWins / MATCH_SIMULATIONS, measureOneMinimum: [Math.min(...validHoles.map((row) => row.one[0])), Math.min(...validHoles.map((row) => row.one[1]))], measureTwoMinimum: [Math.min(...validHoles.map((row) => row.two[0])), Math.min(...validHoles.map((row) => row.two[1]))], formatDeltas: [0, 0] };
 }
