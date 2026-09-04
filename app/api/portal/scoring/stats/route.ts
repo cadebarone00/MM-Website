@@ -2,10 +2,15 @@ import { NextResponse } from "next/server";
 import { requirePlayer } from "@/lib/portal/requirePlayer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getActiveSeasonYear } from "@/lib/live/activeSeason";
-import { scoresAgree } from "@/lib/live/orchestration";
+import { matchIsScoreable, scoresAgree } from "@/lib/live/orchestration";
+import { publishOfficialMatchState } from "@/lib/live/publishOfficialMatchState";
 
 interface MatchBoxRow {
   id: string;
+  format: string;
+  tee_time: string;
+  state: string;
+  started: boolean;
   maroon_players: string[];
   white_players: string[];
 }
@@ -39,7 +44,7 @@ export async function POST(request: Request) {
 
   const { data: boxRows } = await service
     .from("live_match_boxes")
-    .select("id, maroon_players, white_players")
+    .select("id, format, tee_time, state, started, maroon_players, white_players")
     .eq("season_year", seasonYear)
     .eq("round", round);
   const box = (boxRows as MatchBoxRow[] | null ?? []).find(
@@ -47,6 +52,12 @@ export async function POST(request: Request) {
   );
   if (!box) {
     return NextResponse.json({ ok: false, error: "You don't have a match box in this round." }, { status: 404 });
+  }
+  if (box.format === "Foursome") {
+    return NextResponse.json({ ok: false, error: "Alternate Shot stores a shared team score only; it has no individual stats." }, { status: 400 });
+  }
+  if (!matchIsScoreable({ state: box.state as "Scheduled" | "Armed" | "Live" | "Final", started: box.started, teeTime: new Date(box.tee_time) })) {
+    return NextResponse.json({ ok: false, error: "This match is waiting for its tee time or Tiger's Start Match override." }, { status: 400 });
   }
 
   const { data: roundState } = await service
@@ -107,6 +118,13 @@ export async function POST(request: Request) {
       .from("live_hole_scores")
       .insert({ season_year: seasonYear, player_slug: player.playerSlug, round, hole, putts, fir: normalizedFir, gir, self_reported_score: nextSelfReported, confirmed_by: confirmedBy });
     if (error) return NextResponse.json({ ok: false, error: "Could not save that." }, { status: 500 });
+  }
+
+  try {
+    // A player's self-report can confirm or retract their official stroke.
+    await publishOfficialMatchState(seasonYear, box.id);
+  } catch (err) {
+    console.error("official match-state publish failed:", err);
   }
 
   return NextResponse.json({ ok: true });

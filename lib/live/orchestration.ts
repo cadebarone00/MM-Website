@@ -117,6 +117,10 @@ export function holeComplete(snapshot: LiveTournamentSnapshot, matchBox: LiveMat
 }
 
 export interface MatchBoxResult {
+  /** Hole wins are populated by matchBoxResult; optional preserves legacy
+   * event fixtures that only need lead/margin. */
+  maroonHoles?: number;
+  whiteHoles?: number;
   maroonPts: number;
   whitePts: number;
   leader: Team | "tie";
@@ -155,7 +159,13 @@ export function matchBoxResult(snapshot: LiveTournamentSnapshot, matchBox: LiveM
     }
   }
 
-  return { maroonPts, whitePts, leader, margin, holesRemaining };
+  return { maroonHoles, whiteHoles, maroonPts, whitePts, leader, margin, holesRemaining };
+}
+
+/** A round may be armed while this box is waiting for tee time. Tiger can
+ * override that wait by setting the persisted box state to Live. */
+export function matchIsScoreable(matchBox: Pick<LiveMatchBox, "state" | "started" | "teeTime">, now = new Date()): boolean {
+  return matchBox.started && matchBox.state !== "Final" && (matchBox.state === "Live" || now >= matchBox.teeTime);
 }
 
 export function matchBoxPayload(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox, now?: Date): Record<string, unknown> {

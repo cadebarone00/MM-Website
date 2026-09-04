@@ -30,8 +30,8 @@ export function buildOfficialMatchState(snapshot: LiveTournamentSnapshot, box: L
   return {
     status,
     thru,
-    maroonHoles: result.maroonPts > 0 ? result.margin : 0,
-    whiteHoles: result.whitePts > 0 ? result.margin : 0,
+    maroonHoles: result.maroonHoles ?? 0,
+    whiteHoles: result.whiteHoles ?? 0,
     leader: result.leader,
     margin: result.margin,
     mathematicallyComplete,

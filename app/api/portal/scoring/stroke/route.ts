@@ -2,10 +2,8 @@ import { NextResponse } from "next/server";
 import { requirePlayer } from "@/lib/portal/requirePlayer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getActiveSeasonYear } from "@/lib/live/activeSeason";
-import { canScoreStrokesFor, matchBoxResult, scoresAgree } from "@/lib/live/orchestration";
-import { buildLiveTournamentSnapshot } from "@/lib/broadcast/liveSnapshot";
-import { detectMatchBoxEvent, detectRoundFinal, isRoundComplete } from "@/lib/broadcast/matchEvents";
-import { publishBroadcastEvent } from "@/lib/broadcast/publish";
+import { canScoreStrokesFor, matchIsScoreable, scoresAgree } from "@/lib/live/orchestration";
+import { publishOfficialMatchState } from "@/lib/live/publishOfficialMatchState";
 import type { LiveMatchBox, MatchFormat, MatchState } from "@/lib/live/types";
 
 interface MatchBoxRow {
@@ -97,13 +95,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "You're not the assigned scorer for that player." }, { status: 403 });
   }
 
-  let beforeSnapshot: Awaited<ReturnType<typeof buildLiveTournamentSnapshot>> | null = null;
-  try {
-    beforeSnapshot = await buildLiveTournamentSnapshot(seasonYear);
-  } catch (err) {
-    console.error("broadcast: could not read pre-write snapshot:", err);
-  }
-
   for (const target of targetPlayerSlugs as string[]) {
     const { data: existingRow } = await service
       .from("live_hole_scores")
@@ -113,7 +104,11 @@ export async function POST(request: Request) {
       .eq("round", round)
       .eq("hole", hole)
       .maybeSingle();
-    const confirmedBy = scoresAgree(score, existingRow?.self_reported_score ?? null) ? target : null;
+    // Alternate Shot records one shared team score. There is no individual
+    // self-report/stat row to compare, so an assigned opposing-side entry is
+    // itself the official confirmation. Singles/Fourball still require both
+    // assigned-score and self-score to agree.
+    const confirmedBy = box.format === "Foursome" || scoresAgree(score, existingRow?.self_reported_score ?? null) ? target : null;
     if (existingRow) {
       const { error } = await service.from("live_hole_scores").update({ score, confirmed_by: confirmedBy }).eq("id", existingRow.id);
       if (error) return NextResponse.json({ ok: false, error: "Could not save that score." }, { status: 500 });
@@ -126,25 +121,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    for (const target of targetPlayerSlugs as string[]) {
-      await publishBroadcastEvent({ kind: "SCORE_POSTED", seasonYear, playerSlug: target, round, hole, score, matchBoxId: box.id });
-    }
-
-    if (beforeSnapshot) {
-      const afterSnapshot = await buildLiveTournamentSnapshot(seasonYear);
-      const boxEvent = detectMatchBoxEvent(matchBoxResult(beforeSnapshot, box), matchBoxResult(afterSnapshot, box), box.id, seasonYear, round);
-      if (boxEvent) await publishBroadcastEvent(boxEvent);
-
-      const roundFinalEvent = detectRoundFinal(
-        isRoundComplete(beforeSnapshot, round),
-        isRoundComplete(afterSnapshot, round),
-        seasonYear,
-        round
-      );
-      if (roundFinalEvent) await publishBroadcastEvent(roundFinalEvent);
-    }
+    // Rebuilds from confirmed rows only. Calling this for a draft/retraction is
+    // deliberate: it removes any formerly official hole from match state.
+    await publishOfficialMatchState(seasonYear, box.id);
   } catch (err) {
-    console.error("broadcast publish failed:", err);
+    console.error("official match-state publish failed:", err);
+  }
+  if (!matchIsScoreable(box)) {
+    return NextResponse.json({ ok: false, error: "This match is waiting for its tee time or Tiger's Start Match override." }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });

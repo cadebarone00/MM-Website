@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requirePlayer } from "@/lib/portal/requirePlayer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getActiveSeasonYear } from "@/lib/live/activeSeason";
-import { canScoreStrokesFor } from "@/lib/live/orchestration";
+import { canScoreStrokesFor, matchIsScoreable } from "@/lib/live/orchestration";
 import type { LiveMatchBox, MatchFormat, MatchState } from "@/lib/live/types";
 
 interface MatchBoxRow {
@@ -66,6 +66,9 @@ export async function POST(request: Request) {
     .single();
   if (!roundState?.course_locked || !roundState?.matchups_locked || !roundState?.started) {
     return NextResponse.json({ ok: false, error: "This round isn't live yet." }, { status: 400 });
+  }
+  if (!matchIsScoreable(box)) {
+    return NextResponse.json({ ok: false, error: "This match is waiting for its tee time or Tiger's Start Match override." }, { status: 400 });
   }
 
   const { data: existingSubmission } = await service

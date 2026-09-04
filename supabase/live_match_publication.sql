@@ -14,6 +14,11 @@ where archive.season_year = live.season_year
   and archive.hole = live.hole
   and live.confirmed_by is null;
 
+-- A round can be armed while individual boxes remain upcoming until tee time.
+-- `state = 'Live'` plus this timestamp is Tiger's per-match Start Match
+-- override; tee-time activation does not need to mutate the database.
+alter table live_match_boxes add column if not exists started_at timestamptz;
+
 create or replace function mirror_live_score_to_career_archive()
 returns trigger
 language plpgsql

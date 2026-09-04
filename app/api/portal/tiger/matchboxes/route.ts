@@ -79,12 +79,12 @@ export async function POST(request: Request) {
 
   const service = createSupabaseServiceRoleClient();
 
-  const { data: roundRow } = await service.from("live_round_state").select("format, course_locked, matchups_locked").eq("season_year", year).eq("round", round).single();
+  const { data: roundRow } = await service.from("live_round_state").select("format, course_locked, matchups_locked, started").eq("season_year", year).eq("round", round).single();
   if (!roundRow?.course_locked || !roundRow.format) {
     return NextResponse.json({ ok: false, error: "Lock this round's course and format before building matchups." }, { status: 400 });
   }
-  if (roundRow.matchups_locked) {
-    return NextResponse.json({ ok: false, error: "Unlock this round's matchups before editing." }, { status: 400 });
+  if (roundRow.started) {
+    return NextResponse.json({ ok: false, error: "This round is armed; use Tiger's correction flow for a live matchup." }, { status: 400 });
   }
   const format = roundRow.format as MatchFormat;
 

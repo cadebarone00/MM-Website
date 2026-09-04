@@ -150,6 +150,26 @@ export function MatchupsPanel({
     window.location.reload();
   }
 
+  async function startMatch(id: string) {
+    setBusyKey(`start:${id}`);
+    setError(null);
+    try {
+      const res = await fetch("/api/portal/tiger/matchboxes/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error);
+        return;
+      }
+      window.location.reload();
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
   return (
     <div className="mt-6 space-y-6">
       {error && <p className="rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
@@ -184,17 +204,27 @@ export function MatchupsPanel({
                       <input
                         type="time"
                         value={draft.teeTime}
-                        disabled={round.matchupsLocked}
+                        disabled={round.started}
                         onChange={(e) => updateDraft(round.round, draft.boxNumber, { teeTime: e.target.value })}
                         className="border-2 border-stone-300 rounded-lg px-2 py-1 text-sm"
                       />
-                      {draft.id && !round.matchupsLocked && (
+                      {draft.id && !round.started && (
                         <button
                           type="button"
                           onClick={() => removeBox(draft.id!)}
                           className="font-condensed text-2xs font-semibold uppercase tracking-wide text-red-600 underline"
                         >
                           Remove
+                        </button>
+                      )}
+                      {draft.id && round.started && (
+                        <button
+                          type="button"
+                          disabled={busyKey === `start:${draft.id}`}
+                          onClick={() => startMatch(draft.id!)}
+                          className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline disabled:opacity-50"
+                        >
+                          {busyKey === `start:${draft.id}` ? "Starting…" : "Start Match"}
                         </button>
                       )}
                     </div>
@@ -207,7 +237,7 @@ export function MatchupsPanel({
                         <select
                           key={i}
                           value={value ?? ""}
-                          disabled={round.matchupsLocked}
+                          disabled={round.started}
                           onChange={(e) => {
                             const next = [...draft.maroonPlayers];
                             next[i] = e.target.value || null;
@@ -230,7 +260,7 @@ export function MatchupsPanel({
                         <select
                           key={i}
                           value={value ?? ""}
-                          disabled={round.matchupsLocked}
+                          disabled={round.started}
                           onChange={(e) => {
                             const next = [...draft.whitePlayers];
                             next[i] = e.target.value || null;
@@ -249,7 +279,7 @@ export function MatchupsPanel({
                     </div>
                   </div>
 
-                  {!round.matchupsLocked && (
+                  {!round.started && (
                     <button
                       type="button"
                       disabled={busyKey === `${round.round}:${draft.boxNumber}`}
