@@ -1,5 +1,5 @@
 import { canonicalCourseName } from "@/lib/data/canonicalCourse";
-import type { CareerCourseHole, CareerHoleRecord } from "@/lib/data/careerStats";
+import type { CareerCourseHole, CareerHoleRecord, CareerTeamHoleRecord } from "@/lib/data/careerStats";
 
 type Category = "eagles" | "birdies" | "pars" | "bogeys" | "doubles";
 type Profile = Record<Category, { mean: number; sd: number }>;
@@ -133,4 +133,38 @@ export function calculatePreRoundFourballOdds({ records, courseHoles, teamA, tea
   }
   const total = weightedA + weightedTie + weightedB;
   return { a: weightedA / total, tie: weightedTie / total, b: weightedB / total, measureOneMinimum: [Math.min(...validPairs.map((row) => row.one[0])), Math.min(...validPairs.map((row) => row.one[1]))], measureTwoMinimum: [Math.min(...validPairs.map((row) => row.two[0])), Math.min(...validPairs.map((row) => row.two[1]))], formatDeltas: [(deltas[0] + deltas[1]) / 2, (deltas[2] + deltas[3]) / 2], finalLeadDistribution: Object.fromEntries([...finalLeads.entries()].map(([lead, value]) => [String(lead), value / total])) };
+}
+
+/** Alternate Shot combines each partner's individual-ball projection with a
+ * real Alternate Shot team-score sample. Exact-pair history is preferred once
+ * it has three samples; otherwise the format-wide team archive calibrates it. */
+export function calculatePreRoundAlternateShotOdds({ records, teamRecords, courseHoles, teamA, teamB, course }: { records: CareerHoleRecord[]; teamRecords: CareerTeamHoleRecord[]; courseHoles: CareerCourseHole[]; teamA: [string, string]; teamB: [string, string]; course: string }): PreRoundSinglesResult | null {
+  const canonicalCourse = canonicalCourseName(course);
+  const setup = [...new Map(courseHoles.filter((row) => canonicalCourseName(row.course) === canonicalCourse).map((row) => [row.hole, row])).values()].sort((a, b) => a.hole - b.hole);
+  const individual = records.filter((row) => row.roundHoles === 18 && (row.format === "Singles" || row.format === "Fourball"));
+  const individualRows = [...teamA, ...teamB].map((player) => individual.filter((row) => row.player === player));
+  const alternate = teamRecords.filter((row) => row.format === "Alternate Shot");
+  const pairKey = (pair: [string, string]) => [...pair].sort().join(":");
+  const pairRows = (pair: [string, string]) => alternate.filter((row) => pairKey([row.player1, row.player2 ?? ""]) === pairKey(pair));
+  const aPair = pairRows(teamA); const bPair = pairRows(teamB);
+  if (setup.length !== 18 || individualRows.some((rows) => !rows.length) || !alternate.length) return null;
+  const pairPool = (rows: CareerTeamHoleRecord[], fallback: CareerTeamHoleRecord[], predicate: (row: CareerTeamHoleRecord) => boolean) => { const exact = rows.filter(predicate); return exact.length >= 3 ? exact : fallback.filter(predicate); };
+  const holes = setup.map((hole) => {
+    const targetBucket = bucket(hole.yards);
+    const individualPools = (measure: 1 | 2) => individualRows.map((rows) => rows.filter((row) => measure === 1 ? row.par === hole.par : Math.abs(bucket(row.yards) - targetBucket) <= 1));
+    const one = individualPools(1); const two = individualPools(2);
+    const aOne = pairPool(aPair, alternate, (row) => row.par === hole.par); const bOne = pairPool(bPair, alternate, (row) => row.par === hole.par);
+    const aTwo = pairPool(aPair, alternate, (row) => Math.abs(bucket(row.yards) - targetBucket) <= 1); const bTwo = pairPool(bPair, alternate, (row) => Math.abs(bucket(row.yards) - targetBucket) <= 1);
+    if (one.some((rows) => !rows.length) || two.some((rows) => !rows.length) || !aOne.length || !bOne.length || !aTwo.length || !bTwo.length) return null;
+    const combine = (left: number, right: number, calibration: number) => Math.max(1, Math.round((0.5 * (left + right) + calibration) / 2));
+    const outcomes: Pair[] = [];
+    for (let i = 0; i < HOLE_SIMULATIONS; i += 1) outcomes.push({ a: combine(pick(one[0]).score, pick(one[1]).score, pick(aOne).score), b: combine(pick(one[2]).score, pick(one[3]).score, pick(bOne).score) });
+    for (let i = 0; i < HOLE_SIMULATIONS; i += 1) outcomes.push({ a: combine(pick(two[0]).score, pick(two[1]).score, pick(aTwo).score), b: combine(pick(two[2]).score, pick(two[3]).score, pick(bTwo).score) });
+    return { hole, outcomes, one: [Math.min(one[0].length, one[1].length, aOne.length), Math.min(one[2].length, one[3].length, bOne.length)] as [number, number], two: [Math.min(two[0].length, two[1].length, aTwo.length), Math.min(two[2].length, two[3].length, bTwo.length)] as [number, number] };
+  });
+  if (holes.some((row) => row === null)) return null;
+  const validHoles = holes as NonNullable<typeof holes[number]>[];
+  let aWins = 0; let ties = 0; let bWins = 0;
+  for (let simulation = 0; simulation < MATCH_SIMULATIONS; simulation += 1) { let lead = 0; validHoles.forEach(({ outcomes }) => { const score = pick(outcomes); if (score.a < score.b) lead += 1; else if (score.b < score.a) lead -= 1; }); if (lead > 0) aWins += 1; else if (lead < 0) bWins += 1; else ties += 1; }
+  return { a: aWins / MATCH_SIMULATIONS, tie: ties / MATCH_SIMULATIONS, b: bWins / MATCH_SIMULATIONS, measureOneMinimum: [Math.min(...validHoles.map((row) => row.one[0])), Math.min(...validHoles.map((row) => row.one[1]))], measureTwoMinimum: [Math.min(...validHoles.map((row) => row.two[0])), Math.min(...validHoles.map((row) => row.two[1]))], formatDeltas: [0, 0] };
 }
