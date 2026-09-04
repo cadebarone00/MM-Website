@@ -21,6 +21,17 @@ At runtime the model reads the Career Archive only.
 - `Course_Hole_Setup` is the source of truth for a target course's hole
   number, par, yardage, yardage bucket, and front/back-nine placement.
 
+### Canonical course identity
+
+A course and a course setup are different concepts. The model aggregates
+player course history by canonical course identity: for example, `Palmer`,
+`Palmer #1`, `Palmer #2`, and `Palmer #3` all belong to the canonical course
+`Palmer`. The same rule applies to every course.
+
+The setup suffix may still identify a particular round's 18-hole scorecard
+configuration when its pars or yardages differ. It must not cause repeat plays
+of the same course to be treated as experience at different courses.
+
 ## Eligibility of scoring data
 
 Individual-ball data answers: “What is this player's likelihood of making a
