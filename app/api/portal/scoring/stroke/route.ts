@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { requirePlayer } from "@/lib/portal/requirePlayer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getActiveSeasonYear } from "@/lib/live/activeSeason";
-import { canScoreStrokesFor, matchBoxResult, roundIsComplete, scoresAgree } from "@/lib/live/orchestration";
+import { canScoreStrokesFor, matchBoxResult, scoresAgree } from "@/lib/live/orchestration";
 import { buildLiveTournamentSnapshot } from "@/lib/broadcast/liveSnapshot";
-import { detectMatchBoxEvent, detectRoundFinal } from "@/lib/broadcast/matchEvents";
+import { detectMatchBoxEvent, detectRoundFinal, isRoundComplete } from "@/lib/broadcast/matchEvents";
 import { publishBroadcastEvent } from "@/lib/broadcast/publish";
 import type { LiveMatchBox, MatchFormat, MatchState } from "@/lib/live/types";
 
@@ -136,8 +136,8 @@ export async function POST(request: Request) {
       if (boxEvent) await publishBroadcastEvent(boxEvent);
 
       const roundFinalEvent = detectRoundFinal(
-        roundIsComplete(beforeSnapshot, round, box.format),
-        roundIsComplete(afterSnapshot, round, box.format),
+        isRoundComplete(beforeSnapshot, round),
+        isRoundComplete(afterSnapshot, round),
         seasonYear,
         round
       );

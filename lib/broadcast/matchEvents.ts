@@ -6,11 +6,25 @@
 // docs/superpowers/specs/2026-09-04-broadcast-event-queue-design.md
 // (Trigger Points, item 3) for why this diffs matchBoxResult() rather than
 // effectiveMatchState(): the latter has no concept of an early closeout.
-import type { MatchBoxResult } from "@/lib/live/orchestration";
+import { matchBoxResult, type MatchBoxResult } from "@/lib/live/orchestration";
+import type { LiveTournamentSnapshot } from "@/lib/live/types";
 import type { RawMatchStateChangedEvent, RawMatchWonEvent, RawRoundFinalEvent } from "./types";
 
 function isClosed(result: Pick<MatchBoxResult, "maroonPts" | "whitePts">): boolean {
   return result.maroonPts > 0 || result.whitePts > 0;
+}
+
+/**
+ * Whether every match box in a round has actually closed (matchBoxResult
+ * shows nonzero points), not just whether the round's boxes are set up.
+ * NOT the same thing as lib/live/orchestration.ts's roundIsComplete(),
+ * which only checks the round's boxes are filled with a full valid roster
+ * (a pre-round setup gate, unrelated to whether any hole has been played) —
+ * that function never reads scores and can never detect a round finishing.
+ */
+export function isRoundComplete(snapshot: LiveTournamentSnapshot, round: number): boolean {
+  const boxes = snapshot.matchBoxes.filter((box) => box.round === round);
+  return boxes.length > 0 && boxes.every((box) => isClosed(matchBoxResult(snapshot, box)));
 }
 
 /**

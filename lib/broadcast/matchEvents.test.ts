@@ -1,10 +1,60 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { detectMatchBoxEvent, detectRoundFinal } from "./matchEvents.ts";
+import { detectMatchBoxEvent, detectRoundFinal, isRoundComplete } from "./matchEvents.ts";
 import type { MatchBoxResult } from "@/lib/live/orchestration";
+import { scoreKey, type LiveMatchBox, type LiveTournamentSnapshot } from "@/lib/live/types";
 
 function result(overrides: Partial<MatchBoxResult> = {}): MatchBoxResult {
   return { maroonPts: 0, whitePts: 0, leader: "tie", margin: 0, holesRemaining: 18, ...overrides };
+}
+
+function box(overrides: Partial<LiveMatchBox> = {}): LiveMatchBox {
+  return {
+    id: "box-1",
+    seasonYear: 2027,
+    round: 1,
+    boxNumber: 1,
+    format: "Singles",
+    teeTime: new Date("2027-06-01T12:00:00Z"),
+    maroonPlayers: ["maroon-1"],
+    whitePlayers: ["white-1"],
+    state: "Live",
+    started: true,
+    ...overrides,
+  };
+}
+
+/** Empty snapshot — matchBoxResult only reads snapshot.scores + the box itself. */
+function emptySnapshot(matchBoxes: LiveMatchBox[] = []): LiveTournamentSnapshot {
+  return { players: {}, courses: {}, roundCourses: {}, scores: new Map(), matchBoxes };
+}
+
+/** Scores every hole 1..count for maroonPlayer/whitePlayer so maroon wins every hole (closes the box). */
+function scoreHolesMaroonWins(snapshot: LiveTournamentSnapshot, maroonPlayer: string, whitePlayer: string, round: number, count: number): void {
+  for (let hole = 1; hole <= count; hole++) {
+    snapshot.scores.set(scoreKey(maroonPlayer, round, hole), {
+      seasonYear: 2027,
+      player: maroonPlayer,
+      round,
+      hole,
+      score: 3,
+      putts: null,
+      fir: null,
+      gir: null,
+      hostEdited: false,
+    });
+    snapshot.scores.set(scoreKey(whitePlayer, round, hole), {
+      seasonYear: 2027,
+      player: whitePlayer,
+      round,
+      hole,
+      score: 4,
+      putts: null,
+      fir: null,
+      gir: null,
+      hostEdited: false,
+    });
+  }
 }
 
 test("detectMatchBoxEvent returns null when nothing changed", () => {
@@ -44,4 +94,27 @@ test("detectRoundFinal fires only on the false -> true transition", () => {
   assert.equal(detectRoundFinal(true, true, 2027, 4), null);
   assert.equal(detectRoundFinal(false, false, 2027, 4), null);
   assert.equal(detectRoundFinal(true, false, 2027, 4), null);
+});
+
+test("isRoundComplete returns false for a round with no match boxes", () => {
+  const snapshot = emptySnapshot([]);
+  assert.equal(isRoundComplete(snapshot, 1), false);
+});
+
+test("isRoundComplete returns false when at least one box in the round isn't closed", () => {
+  const closedBox = box({ id: "box-1", boxNumber: 1, maroonPlayers: ["m1"], whitePlayers: ["w1"] });
+  const openBox = box({ id: "box-2", boxNumber: 2, maroonPlayers: ["m2"], whitePlayers: ["w2"] });
+  const snapshot = emptySnapshot([closedBox, openBox]);
+  scoreHolesMaroonWins(snapshot, "m1", "w1", 1, 18); // closedBox: maroon wins all 18 -> closed
+  // openBox gets no scores at all -> maroonPts/whitePts stay 0/0, not closed
+  assert.equal(isRoundComplete(snapshot, 1), false);
+});
+
+test("isRoundComplete returns true when every box in the round is closed", () => {
+  const box1 = box({ id: "box-1", boxNumber: 1, maroonPlayers: ["m1"], whitePlayers: ["w1"] });
+  const box2 = box({ id: "box-2", boxNumber: 2, maroonPlayers: ["m2"], whitePlayers: ["w2"] });
+  const snapshot = emptySnapshot([box1, box2]);
+  scoreHolesMaroonWins(snapshot, "m1", "w1", 1, 18);
+  scoreHolesMaroonWins(snapshot, "m2", "w2", 1, 18);
+  assert.equal(isRoundComplete(snapshot, 1), true);
 });

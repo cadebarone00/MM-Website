@@ -79,7 +79,8 @@ export async function publishBroadcastEvent(event: RawBroadcastEvent): Promise<v
   for (const [column, value] of dedupFilters(event)) {
     query = query.eq(column, value);
   }
-  const { data: existing } = await query.maybeSingle();
+  const { data: existing, error: selectError } = await query.order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (selectError) console.error("broadcast_events dedup select failed:", selectError.message);
   existingId = existing?.id ?? null;
 
   const row = {
@@ -94,12 +95,20 @@ export async function publishBroadcastEvent(event: RawBroadcastEvent): Promise<v
     hole: columns.hole,
     source: "system",
     expires_at: draft.expiresAt,
+    // A dedup-replace is semantically a NEW occurrence of the event, so its
+    // aging clock (effectivePriority ages off created_at) must reset — an
+    // update that kept the original created_at could let a stale
+    // MATCH_STATE_CHANGED row's aged priority out-rank a freshly-inserted
+    // MATCH_WON for the same box.
+    created_at: now.toISOString(),
     updated_at: now.toISOString(),
   };
 
   if (existingId) {
-    await service.from("broadcast_events").update(row).eq("id", existingId);
+    const { error } = await service.from("broadcast_events").update(row).eq("id", existingId);
+    if (error) console.error("broadcast_events update failed:", error.message);
   } else {
-    await service.from("broadcast_events").insert(row);
+    const { error } = await service.from("broadcast_events").insert(row);
+    if (error) console.error("broadcast_events insert failed:", error.message);
   }
 }
