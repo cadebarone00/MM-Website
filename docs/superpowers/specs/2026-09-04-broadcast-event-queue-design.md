@@ -242,24 +242,48 @@ Phase 4 doesn't redefine the ordering rule a second time.
 
 ## Testing Strategy
 
-Matches this repo's convention exactly (`tsx --test`, colocated `*.test.ts`):
+**Correction from initial drafting:** this repo's `app/api/**/*.test.ts`
+files have no Supabase mocking/test-DB harness anywhere (checked
+`stroke/route.test.ts`, `rounds/start/route.test.ts`, and every sibling —
+each contains exactly one test, asserting the route rejects when
+`requirePlayer`/`requireHost` resolves null). Route tests exercising a full
+happy path with real match-state transitions aren't achievable in this
+repo's actual testing convention, so the plan below doesn't add them.
+Instead, the before/after diffing logic (§ Trigger Points) is written as a
+**pure function with no I/O** — same shape as `lib/live/orchestration.ts`'s
+existing functions — so it gets real unit-test coverage the same way
+`orchestration.test.ts` already covers `effectiveMatchState`/
+`matchBoxResult`: hand-built `LiveTournamentSnapshot`/`MatchBoxResult`
+fixtures in, assertions on the output, zero mocking needed. The route
+becomes a thin I/O wrapper around this function plus `publishBroadcastEvent`.
 
-- `lib/broadcast/rules.test.ts`: one test per rule function — given a raw
-  event, assert the returned `BroadcastEventDraft`'s priority/status/payload.
+- `lib/broadcast/matchEvents.ts` — new pure module:
+  `detectMatchBoxEvent(before: MatchBoxResult, after: MatchBoxResult, matchBoxId: string): RawMatchStateChangedEvent | RawMatchWonEvent | null`
+  and `detectRoundFinal(beforeComplete: boolean, afterComplete: boolean, round: number): RawRoundFinalEvent | null`
+  — implement exactly the closed/changed logic from Trigger Points item 3.
+  Tested in `lib/broadcast/matchEvents.test.ts`: table-driven cases over
+  `{leader, margin, holesRemaining, maroonPts, whitePts}` before/after pairs
+  — no change → `null`; margin change only → `MATCH_STATE_CHANGED`; closes
+  at 18 holes → `MATCH_WON`; closes early (`margin > holesRemaining`,
+  e.g. 3&2) → `MATCH_WON` (this is the case the original `effectiveMatchState`-based
+  design would have missed — assert it explicitly); already-closed before
+  and after → `null` (no re-firing on an unrelated hole in an already-decided
+  box).
+- `lib/broadcast/rules.test.ts`: one test per rule function
+  (`scorePostedRule`, `matchStateChangedRule`, `matchWonRule`,
+  `roundStartedRule`, `roundFinalRule`) — given a raw event, assert the
+  returned `BroadcastEventDraft`'s priority/status/payload against the
+  table in this document.
 - `lib/broadcast/priority.test.ts`: aging calculation at 0/15/30/60+ minutes
   waiting, clamped at +30.
 - `lib/broadcast/queue.test.ts`: ordering (priority desc, then created_at
   asc), expired rows excluded.
-- `app/api/portal/scoring/stroke/route.test.ts` (existing file, extended):
-  a stroke submission that flips a match to dormie inserts a
-  `MATCH_STATE_CHANGED` row; one that closes out a match also inserts
-  `MATCH_WON`; completing the last box in a round also inserts
-  `ROUND_FINAL`; a routine submission with no state change inserts only
-  `SCORE_POSTED` at priority 10, status `pending`; a `publishBroadcastEvent`
-  throw (mock the client) does **not** fail the route — score write still
-  returns `{ ok: true }`.
-- `app/api/portal/tiger/rounds/start/route.test.ts` (existing, extended):
-  starting a round inserts a `ROUND_STARTED` row.
+- `app/api/portal/scoring/stroke/route.test.ts` /
+  `app/api/portal/tiger/rounds/start/route.test.ts`: unchanged from what
+  exists today — the auth-rejection test still passes as-is (these routes
+  gain a broadcast side effect, not a new auth path); no new route tests
+  added, matching this repo's actual convention rather than the repo's
+  test file naming making it look like more coverage exists than does.
 - `npx tsc --noEmit`, `npm run lint`, `npm run build`.
 
 ## Migration
@@ -311,11 +335,17 @@ existing table.
    round inserts `ROUND_FINAL`, priority 75, status `queued`, scoped to that
    `round` (not a specific match box).
 5. Starting a round inserts `ROUND_STARTED`, priority 0.
-6. None of the above ever cause the underlying score-write or round-start
-   request to fail, even if the broadcast insert itself fails (simulate by
-   temporarily breaking the table/policy in a local test).
+6. The `try/catch` around every `publishBroadcastEvent` call is placed after
+   the underlying score-write/round-start write has already succeeded and
+   already been assembled into the response — verified by code inspection
+   (the write and its success response construction happen before the
+   broadcast block, matching §32's existing "never fail the underlying
+   write" convention elsewhere in this codebase) rather than a route-level
+   failure-injection test, per the Testing Strategy correction above.
 7. `/broadcast` (and Broadcast Controls) behave identically to before this
-   phase — no visible change, per this document's Goal section.
+   phase — no visible change, per this document's Goal section. Verified by
+   a manual check (open both, confirm nothing looks different) rather than
+   an automated test, since there's genuinely nothing new for one to assert.
 
 ## Explicitly Out of Scope (this phase)
 
