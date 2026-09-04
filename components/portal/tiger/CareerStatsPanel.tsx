@@ -5,6 +5,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import { CareerRoundArchive } from "@/components/portal/tiger/CareerRoundArchive";
 import { CareerBuckets } from "@/components/portal/tiger/CareerBuckets";
 import { getPlayerDisplayName } from "@/lib/data/players";
+import { canonicalCourseName } from "@/lib/data/canonicalCourse";
 import type { CareerHoleRecord, CareerPartnership, CareerTeamHoleRecord } from "@/lib/data/careerStats";
 
 const ALL = "all";
@@ -48,7 +49,7 @@ export function CareerStatsPanel({ records, partnerships, teamRecords }: { recor
     </div>
     <div className="mt-5"><Tabs items={[{ value: "overview", label: "Overview" }, { value: "scoring", label: "Scoring" }, { value: "buckets", label: "Buckets" }, { value: "trends", label: "Trends" }, { value: "archive", label: "Round Archive" }]} value={view} onChange={setView} variant="plain" /></div>
     <div className="mt-5"><h2 className="m-0 font-serif text-xl font-bold text-ink-900">{getPlayerDisplayName(player)}</h2>
-      {view === "overview" && <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4"><Metric label="Years" value={year === ALL ? years.length : year} /><Metric label="Rounds" value={totals.length} /><Metric label="Avg. Round" value={totals.length ? (totals.reduce((a, b) => a + b, 0) / totals.length).toFixed(2) : "—"} /><Metric label="Avg. Hole" value={holes ? (rows.reduce((sum, r) => sum + r.score, 0) / holes).toFixed(3) : "—"} /><Metric label="Best Round" value={totals.length ? Math.min(...totals) : "—"} /><Metric label="Worst Round" value={totals.length ? Math.max(...totals) : "—"} /><Metric label="Holes" value={holes} /><Metric label="Courses" value={new Set(rows.map((r) => r.course)).size} /></div>}
+      {view === "overview" && <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4"><Metric label="Years" value={year === ALL ? years.length : year} /><Metric label="Rounds" value={totals.length} /><Metric label="Avg. Round" value={totals.length ? (totals.reduce((a, b) => a + b, 0) / totals.length).toFixed(2) : "—"} /><Metric label="Avg. Hole" value={holes ? (rows.reduce((sum, r) => sum + r.score, 0) / holes).toFixed(3) : "—"} /><Metric label="Best Round" value={totals.length ? Math.min(...totals) : "—"} /><Metric label="Worst Round" value={totals.length ? Math.max(...totals) : "—"} /><Metric label="Holes" value={holes} /><Metric label="Courses" value={new Set(rows.map((r) => canonicalCourseName(r.course))).size} /></div>}
       {view === "scoring" && <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5"><Metric label="Eagle+" value={byDiff((d) => d <= -2)} /><Metric label="Birdies" value={`${byDiff((d) => d === -1)} (${holes ? ((byDiff((d) => d === -1) / holes) * 100).toFixed(1) : 0}%)`} /><Metric label="Pars" value={byDiff((d) => d === 0)} /><Metric label="Bogeys" value={byDiff((d) => d === 1)} /><Metric label="Double+" value={byDiff((d) => d >= 2)} /></div>}
       {view === "buckets" && <CareerBuckets records={rows} />}
       {view === "archive" && <CareerRoundArchive player={player} year={year} format={format} records={records} teamRecords={teamRecords} />}
