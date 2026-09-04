@@ -1093,3 +1093,44 @@ begin
     alter publication supabase_realtime add table broadcast_display_year;
   end if;
 end $$;
+
+-- === Watch Live Broadcast: Phase 2 (Event Queue) ==========================
+-- See docs/superpowers/specs/2026-09-04-broadcast-event-queue-design.md.
+
+create table if not exists broadcast_events (
+  id uuid primary key default gen_random_uuid(),
+  season_year integer not null check (season_year between 2027 and 2034),
+  kind text not null check (kind in (
+    'SCORE_POSTED', 'MATCH_STATE_CHANGED', 'MATCH_WON', 'ROUND_STARTED', 'ROUND_FINAL'
+  )),
+  priority integer not null,
+  status text not null default 'pending' check (status in (
+    'pending', 'queued', 'ready', 'playing', 'played', 'expired', 'dismissed'
+  )),
+  payload jsonb not null default '{}',
+  match_box_id uuid,
+  player_slug text,
+  round integer,
+  hole integer,
+  source text not null default 'system' check (source in ('system', 'host')),
+  expires_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists broadcast_events_queue_idx
+  on broadcast_events (season_year, status, priority desc, created_at asc);
+
+alter table broadcast_events enable row level security;
+drop policy if exists broadcast_events_select_all on broadcast_events;
+create policy broadcast_events_select_all on broadcast_events for select using (true);
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'broadcast_events'
+  ) then
+    alter publication supabase_realtime add table broadcast_events;
+  end if;
+end $$;
