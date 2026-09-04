@@ -650,6 +650,7 @@ concept for a future engineer to learn.
 ## 29. Frontend Architecture
 
 ```
+app/broadcast/page.tsx                 — redirects to /broadcast/[live_active_season year] (§45)
 app/broadcast/[year]/page.tsx          — no SiteChrome, no nav, full 16:9 canvas
 components/broadcast/
   BroadcastStage.tsx                   — top-level: ConnectionManager + SceneRenderer + OverlayLayer + (later) AudioManager
@@ -1005,12 +1006,21 @@ Phases 2–8 wait for Phase 1 to be reviewed working in the browser first.
 until then.)*
 
 - [ ] `supabase/schema.sql`: add `broadcast_config`, `broadcast_state`
-      (§26), RLS policies matching existing `live_*` convention.
+      (§26), RLS policies matching existing `live_*` convention. **Manual
+      step:** paste the resulting `create table`/RLS statements into the
+      Supabase SQL Editor in production after merge — same convention as
+      Matchups/Courses & Format (§26 resolution) — and confirm it landed
+      before calling this phase done (don't assume "merged" means "migrated,"
+      per [[tiger-center-build-phasing]]).
 - [ ] `lib/broadcast/types.ts`: `BroadcastState`, `BroadcastConfig` types.
 - [ ] `app/api/broadcast/[year]/route.ts`: `GET` handler returning
       `{ state, config }` for that `season_year` (public, no auth).
 - [ ] `app/broadcast/[year]/page.tsx`: no `SiteChrome`, fetches initial
       state server-side, renders `BroadcastStage`.
+- [ ] `app/broadcast/page.tsx`: redirects to `/broadcast/[year]` for
+      whatever `live_active_season` currently is (§45 decision 1); falls
+      back to the Holding Screen's default year if no active season is set
+      yet.
 - [ ] `components/broadcast/BroadcastStage.tsx`,
       `ConnectionManager.tsx`, `SceneRenderer.tsx`, `TransitionManager.tsx`.
 - [ ] `components/broadcast/scenes/IndividualLeaderboardScene.tsx`,
