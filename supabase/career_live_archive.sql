@@ -28,6 +28,7 @@ create table if not exists career_archive_live_holes (
   putts integer,
   fir boolean,
   gir boolean,
+  did_not_finish boolean not null default false,
   updated_at timestamptz not null default now(),
   primary key (season_year, round, player_slug, hole),
   foreign key (season_year, round, player_slug) references career_archive_rounds(season_year, round, player_slug) on delete cascade

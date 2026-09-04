@@ -93,7 +93,7 @@ export async function POST(request: Request) {
 
   const { data: scoreRows } = await service
     .from("live_hole_scores")
-    .select("player_slug, hole, score, putts, fir, gir")
+    .select("player_slug, hole, score, putts, fir, gir, did_not_finish, confirmed_by")
     .eq("season_year", seasonYear)
     .eq("round", round)
     .in("player_slug", everyone);
@@ -113,15 +113,15 @@ export async function POST(request: Request) {
   for (let hole = 1; hole <= 18; hole++) {
     for (const target of uniqueResponsibleFor) {
       const row = rows.find((r) => r.player_slug === target && r.hole === hole);
-      if (!row || row.score === null || row.score <= 0) {
-        return NextResponse.json({ ok: false, error: `Finish entering all 18 holes before submitting (missing hole ${hole}).` }, { status: 400 });
+      if (!row || row.score === null || row.score <= 0 || !row.confirmed_by) {
+        return NextResponse.json({ ok: false, error: `Every score must match the assigned opponent before submission (hole ${hole} is not confirmed).` }, { status: 400 });
       }
     }
     if (box.format !== "Foursome") {
       const ownRow = rows.find((r) => r.player_slug === player.playerSlug && r.hole === hole);
       const isPar3 = holes.find((h) => h.number === hole)?.par === 3;
-      if (!ownRow || ownRow.putts === null || ownRow.gir === null || (!isPar3 && ownRow.fir === null)) {
-        return NextResponse.json({ ok: false, error: `Finish entering your own stats for all 18 holes before submitting (missing hole ${hole}).` }, { status: 400 });
+      if (!ownRow || !ownRow.confirmed_by || (!ownRow.did_not_finish && (ownRow.putts === null || ownRow.gir === null || (!isPar3 && ownRow.fir === null)))) {
+        return NextResponse.json({ ok: false, error: `Finish your confirmed score and stats for all 18 holes before submitting (hole ${hole}).` }, { status: 400 });
       }
     }
   }
@@ -130,6 +130,16 @@ export async function POST(request: Request) {
   if (error) {
     return NextResponse.json({ ok: false, error: "Could not submit your scores." }, { status: 500 });
   }
+
+  await service.from("live_score_audit_events").insert({
+    season_year: seasonYear,
+    match_box_id: box.id,
+    round,
+    actor_profile_id: player.userId,
+    player_slug: player.playerSlug,
+    kind: "player_submitted",
+    payload: { format: box.format },
+  });
 
   return NextResponse.json({ ok: true });
 }

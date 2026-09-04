@@ -22,6 +22,7 @@ interface HoleScoreRow {
   putts: number | null;
   fir: boolean | null;
   gir: boolean | null;
+  did_not_finish: boolean;
   self_reported_score: number | null;
   confirmed_by: string | null;
 }
@@ -57,7 +58,7 @@ export async function GET(request: Request) {
   const [{ data: scoreRows }, { data: submissionRows }] = await Promise.all([
     service
       .from("live_hole_scores")
-      .select("player_slug, hole, score, putts, fir, gir, self_reported_score, confirmed_by")
+      .select("player_slug, hole, score, putts, fir, gir, did_not_finish, self_reported_score, confirmed_by")
       .eq("season_year", seasonYear)
       .eq("round", round)
       .in("player_slug", allPlayers),
@@ -83,6 +84,7 @@ export async function GET(request: Request) {
         putts: r.putts,
         fir: r.fir,
         gir: r.gir,
+        didNotFinish: r.did_not_finish,
         selfReportedScore: r.self_reported_score,
         confirmedBy: r.confirmed_by,
       })),

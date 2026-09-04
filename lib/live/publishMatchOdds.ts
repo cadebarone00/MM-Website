@@ -1,5 +1,5 @@
 import { buildLiveTournamentSnapshot } from "@/lib/broadcast/liveSnapshot";
-import { getLiveCareerArchiveRecords } from "@/lib/data/careerStatsDatabase";
+import { getLiveCareerArchiveRecords, getLiveCareerArchiveTeamRecords } from "@/lib/data/careerStatsDatabase";
 import { careerArchiveCourseHoles, careerArchiveRecords, careerArchiveTeamRecords } from "@/lib/data/careerArchive.generated";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 import type { CareerCourseHole, CareerHoleRecord } from "@/lib/data/careerStats";
@@ -29,8 +29,17 @@ export async function publishMatchOdds(seasonYear: number, box: LiveMatchBox, st
   const course = snapshot.courses[snapshot.roundCourses[box.round]];
   if (!course) return null;
   const courseHoles: CareerCourseHole[] = course.holes.map((hole) => ({ year: seasonYear, course: course.name, tee: null, hole: hole.number, par: hole.par, yards: hole.yards, holeType: `Par ${hole.par}`, holeLengthBucket: null }));
-  const liveRecords = (await getLiveCareerArchiveRecords()).map(recordWithModelPlayer);
+  const [liveArchiveRecords, liveArchiveTeamRecords] = await Promise.all([
+    getLiveCareerArchiveRecords(),
+    getLiveCareerArchiveTeamRecords(),
+  ]);
+  const liveRecords = liveArchiveRecords.map(recordWithModelPlayer);
   const records = [...careerArchiveRecords, ...liveRecords];
+  const teamRecords = [...careerArchiveTeamRecords, ...liveArchiveTeamRecords.map((row) => ({
+    ...row,
+    player1: modelPlayer(row.player1),
+    player2: modelPlayer(row.player2),
+  }))];
   const a = box.maroonPlayers.map(modelPlayer);
   const b = box.whitePlayers.map(modelPlayer);
   const scores = snapshot.scores;
@@ -52,7 +61,7 @@ export async function publishMatchOdds(seasonYear: number, box: LiveMatchBox, st
     });
     result = calculatePreRoundFourballOdds({ records, courseHoles: [...careerArchiveCourseHoles, ...courseHoles], teamA: [a[0], a[1]], teamB: [b[0], b[1]], course: course.name, holesFinished: state.thru, teamALead: state.leader === "maroon" ? state.margin : state.leader === "white" ? -state.margin : 0, completedScores });
   } else if (box.format === "Foursome" && a.length === 2 && b.length === 2) {
-    result = calculatePreRoundAlternateShotOdds({ records, teamRecords: careerArchiveTeamRecords, courseHoles: [...careerArchiveCourseHoles, ...courseHoles], teamA: [a[0], a[1]], teamB: [b[0], b[1]], course: course.name, holesFinished: state.thru, teamALead: state.leader === "maroon" ? state.margin : state.leader === "white" ? -state.margin : 0 });
+    result = calculatePreRoundAlternateShotOdds({ records, teamRecords, courseHoles: [...careerArchiveCourseHoles, ...courseHoles], teamA: [a[0], a[1]], teamB: [b[0], b[1]], course: course.name, holesFinished: state.thru, teamALead: state.leader === "maroon" ? state.margin : state.leader === "white" ? -state.margin : 0 });
   }
   if (!result) return null;
 

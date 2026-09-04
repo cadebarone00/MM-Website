@@ -518,6 +518,10 @@ create table if not exists live_hole_scores (
   putts integer,
   fir boolean,
   gir boolean,
+  -- Fourball only: player did not finish, so the official score is double
+  -- par. It remains a match/leaderboard fact but is excluded from player
+  -- stats and historical odds samples.
+  did_not_finish boolean not null default false,
   host_edited boolean not null default false,
   -- Set once the player's round partner confirms this entry matches their
   -- own count. Null means "entered, not yet confirmed" — the confirmation

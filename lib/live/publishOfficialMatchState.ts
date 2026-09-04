@@ -12,7 +12,7 @@ import { publishMatchOdds } from "@/lib/live/publishMatchOdds";
 export async function publishOfficialMatchState(
   seasonYear: number,
   matchBoxId: string,
-  auditKind: "match_locked" | "match_updated" | "score_confirmed" | "score_retracted" = "score_confirmed"
+  auditKind?: "match_locked" | "match_updated"
 ): Promise<OfficialMatchState | null> {
   const snapshot = await buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true });
   const box = snapshot.matchBoxes.find((candidate) => candidate.id === matchBoxId);
@@ -36,14 +36,16 @@ export async function publishOfficialMatchState(
   });
   if (error) throw error;
 
-  const { error: auditError } = await service.from("live_score_audit_events").insert({
-    season_year: seasonYear,
-    match_box_id: matchBoxId,
-    round: box.round,
-    kind: auditKind,
-    payload: { thru: official.thru, leader: official.leader, margin: official.margin, mathematicallyComplete: official.mathematicallyComplete },
-  });
-  if (auditError) throw auditError;
+  if (auditKind) {
+    const { error: auditError } = await service.from("live_score_audit_events").insert({
+      season_year: seasonYear,
+      match_box_id: matchBoxId,
+      round: box.round,
+      kind: auditKind,
+      payload: { thru: official.thru, leader: official.leader, margin: official.margin, mathematicallyComplete: official.mathematicallyComplete },
+    });
+    if (auditError) throw auditError;
+  }
 
   await publishMatchOdds(seasonYear, box, official);
 

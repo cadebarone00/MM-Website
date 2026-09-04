@@ -51,6 +51,10 @@ export interface RealMatch {
   margin?: number;
   holesRemaining?: number;
   teeTimeCst?: string;
+  /** Latest saved fair-odds snapshot. Present for live-season matches only. */
+  maroonWinProbability?: number;
+  tieProbability?: number;
+  whiteWinProbability?: number;
 }
 
 export interface IndividualStanding {

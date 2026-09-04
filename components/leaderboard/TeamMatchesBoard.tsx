@@ -146,7 +146,8 @@ export function TeamMatchesBoard({ tournament, live }: { tournament: Tournament;
                 match={match}
                 tournament={tournament}
                 tournamentSlug={tournament.slug}
-                expanded={expandedMatchId === match.id}
+                interactive={!live}
+                expanded={!live && expandedMatchId === match.id}
                 onToggle={() => setExpandedMatchId((id) => (id === match.id ? null : match.id))}
               />
             ))}

@@ -97,7 +97,9 @@ player who does not finish a hole. Before saving, show this confirmation:
 
 On approval, store the course's double-par score: 6 on a par 3, 8 on a par
 4, or 10 on a par 5. It goes through the same assigned-scorer confirmation
-and publish rule as any other score.
+and publish rule as any other score. It counts for the live match and
+leaderboard, but carries a `did_not_finish` marker so it is excluded from
+personal stats and future odds-training pools.
 
 ### Alternate Shot
 
@@ -145,16 +147,21 @@ The Match Simulator model is the one odds engine and model-version contract.
 ## 7. Match completion and closeout
 
 1. A match can become mathematically complete before 18 holes. Unplayed holes
-   remain unplayed; no made-up scores are recorded for the individual
-   leaderboard or model pool.
-2. Players may submit their scoring responsibilities when done. Their
-   submissions surface a Tiger review card containing player totals, match
-   status, disputes, and any unconfirmed holes.
+   no longer affect the match result, but players still enter their actual
+   remaining holes for the individual leaderboard and Career Archive.
+   Match-play points and the public final match result update immediately
+   from the confirmed clinch; no score is invented for an unfinished hole.
+2. Players may submit only after all required 18-hole score entries have
+   been confirmed. Singles/Fourball submissions also require their personal
+   putt/FIR/GIR entries. Their submissions surface a Tiger review card
+   containing player totals, match status, disputes, and any unconfirmed
+   holes.
 3. Tiger may correct an official score before closeout. The normal publisher
    recalculates archive, standings, odds, and public views.
 4. **Close Out Match** is available only when the required match result and
-   submitted/confirmed data satisfy the format's completion rules. It freezes
-   the official result, awards points, and authorizes wager settlement.
+   submitted/confirmed data satisfy the format's completion rules. It is the
+   final audit checkpoint and authorizes wager settlement; it does not delay
+   the already-published result or match-play points.
 5. Wagers show the confirmed winner/result after closeout. They must not pay
    merely because a live match is mathematically decided.
 
@@ -166,7 +173,8 @@ The Match Simulator model is the one odds engine and model-version contract.
 - Fourball's individual scores remain stored even though only the lower team
   score decides the match hole.
 - Alternate Shot team scores are retained for team/partnership and Alternate
-  Shot calibration data, never as individual-ball score samples.
+  Shot calibration data in a distinct team-hole archive, never as
+  individual-ball score samples.
 - Unplayed match holes, draft scores, and disputed scores never become model
   samples.
 - Complete rounds remain useful for round-level summaries, quality checks,

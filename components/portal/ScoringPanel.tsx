@@ -13,6 +13,7 @@ interface HoleScore {
   putts: number | null;
   fir: boolean | null;
   gir: boolean | null;
+  didNotFinish: boolean;
   selfReportedScore: number | null;
   confirmedBy: string | null;
 }
@@ -250,10 +251,11 @@ export function ScoringPanel({
                   {existing?.confirmedBy && (
                     <span className="h-3 w-3 rounded-full bg-green-500" title="Your entries agree" />
                   )}
+                  {existing?.didNotFinish && <span className="font-condensed text-2xs font-semibold uppercase text-ink-500">Double par (X)</span>}
                   {!existing?.confirmedBy && existing?.score != null && existing?.selfReportedScore != null && (
                     <span className="h-3 w-3 rounded-full bg-amber-500" title="Your entries don't match yet" />
                   )}
-                  {isSelf && (
+                  {isSelf && !existing?.didNotFinish && (
                     <>
                       <label className="flex items-center gap-1 font-sans text-xs text-ink-700">
                         Your Score

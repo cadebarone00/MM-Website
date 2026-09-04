@@ -26,7 +26,12 @@ export async function POST(request: Request) {
     const { data: match } = await supabase.from("live_match_boxes").select("id, maroon_players, white_players").eq("id", matchBoxId).maybeSingle();
     const { data: state } = await supabase.from("live_match_official_state").select("status").eq("match_box_id", matchBoxId).maybeSingle();
     const { data: odds } = await supabase.from("live_match_odds_snapshots").select("maroon_win_probability, tie_probability, white_win_probability, maroon_american_odds, tie_american_odds, white_american_odds").eq("match_box_id", matchBoxId).order("created_at", { ascending: false }).limit(1).maybeSingle();
-    if (match && odds && state?.status !== "closed_out" && marketKey === liveMatchMarketKey(match.id)) market = liveMatchMarket(match, odds as LiveOddsSnapshot);
+    // A match that is mathematically over is no longer a market. Tiger's
+    // later Close Out action only audits the score and releases settlement;
+    // it must never leave a window for a wager after the result is known.
+    if (match && odds && state?.status !== "complete" && state?.status !== "closed_out" && marketKey === liveMatchMarketKey(match.id)) {
+      market = liveMatchMarket(match, odds as LiveOddsSnapshot);
+    }
   }
   const selection = market?.selections.find((s) => s.key === selectionKey);
   if (!selection) {

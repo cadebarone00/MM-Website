@@ -8,6 +8,7 @@ import { WinnerBadge } from "@/components/ui/WinnerBadge";
 import { defendingIndividualChampion, getPlayerScorecard } from "@/lib/data";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import type { RoundScorecard, Tournament } from "@/lib/data/types";
+import type { LiveIndividualStanding } from "./LeaderboardBoard";
 
 const POS_W = 36;
 const PLAYER_W = 96;
@@ -32,8 +33,59 @@ function priorRoundNumbers(tournament: Tournament): number[] {
   return [...rounds].sort((a, b) => a - b);
 }
 
-export function IndividualLeaderboardTable({ tournament }: { tournament: Tournament }) {
+/** Live standings deliberately render straight from confirmed scoring rows.
+ * They do not borrow a static scorecard, so `Thru` and totals stay truthful
+ * while a round is in progress. */
+function LiveIndividualLeaderboardTable({ standings }: { standings: LiveIndividualStanding[] }) {
+  const sorted = [...standings].sort((a, b) => a.toPar - b.toPar || b.played - a.played || a.gross - b.gross || a.player.localeCompare(b.player));
+
+  if (sorted.length === 0) {
+    return (
+      <div className="rounded-md border border-ink-100 bg-cream-50 px-5 py-10 text-center">
+        <p className="m-0 font-sans text-sm text-ink-500">No confirmed individual scores have posted yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="-mx-4 overflow-x-auto sm:-mx-7 lg:mx-0 lg:rounded-lg lg:border lg:border-gold-400 lg:shadow-lg">
+      <table className="w-full min-w-max border-collapse bg-cream-50">
+        <thead>
+          <tr className="bg-maroon-700 lg:bg-transparent lg:border-b lg:border-gold-200">
+            {[
+              ["Pos", "text-center"],
+              ["Player", "text-left"],
+              ["Tot", "text-center"],
+              ["Thru", "text-center"],
+              ["Gross", "text-center"],
+            ].map(([label, align]) => (
+              <th key={label} className={`px-3 py-2 font-condensed text-3xs font-semibold uppercase tracking-eyebrow text-white lg:text-ink-400 ${align}`}>{label}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((standing, index) => {
+            const rowBg = index === 0 ? "bg-gold-200" : "bg-cream-50";
+            return (
+              <tr key={standing.player} className={`border-b border-ink-100 last:border-b-0 ${rowBg}`}>
+                <td className="px-3 py-2 text-center font-condensed text-xs font-bold tabular-nums text-ink-900">{index + 1}</td>
+                <td className="px-3 py-2 font-sans text-2xs font-bold uppercase text-ink-900 sm:text-xs">{lastName(standing.player)}</td>
+                <td className="px-3 py-2 text-center"><ScoreBadge value={standing.toPar} size="sm" /></td>
+                <td className="px-3 py-2 text-center font-sans text-2xs font-semibold text-ink-500">{standing.played}</td>
+                <td className="px-3 py-2 text-center font-sans text-2xs font-semibold tabular-nums text-ink-700">{standing.gross}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export function IndividualLeaderboardTable({ tournament, liveStandings }: { tournament: Tournament; liveStandings?: LiveIndividualStanding[] }) {
   const router = useRouter();
+
+  if (liveStandings) return <LiveIndividualLeaderboardTable standings={liveStandings} />;
 
   if (tournament.individualLeaderboard.length === 0) {
     return (

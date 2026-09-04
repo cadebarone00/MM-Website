@@ -11,11 +11,12 @@ import type { RealMatch, Tournament } from "@/lib/data/types";
 type OfficialEntry = {
   match: { id: string; round: number; box_number: number; format: string; tee_time: string; maroon_players: string[]; white_players: string[] };
   officialState: { status: "upcoming" | "live" | "complete" | "closed_out"; thru: number; leader: "maroon" | "white" | "tie"; margin: number } | null;
+  odds: { maroon_win_probability: number; tie_probability: number; white_win_probability: number } | null;
 };
-type OfficialStanding = { player: string; team: "maroon" | "white"; toPar: number };
+type OfficialStanding = { player: string; team: "maroon" | "white"; toPar: number; played: number; gross: number; par: number };
 
 function asOfficialMatches(entries: OfficialEntry[]): RealMatch[] {
-  return entries.map(({ match, officialState }) => ({
+  return entries.map(({ match, officialState, odds }) => ({
     id: match.id,
     day: match.round,
     session: "Morning",
@@ -30,6 +31,9 @@ function asOfficialMatches(entries: OfficialEntry[]): RealMatch[] {
     margin: officialState?.margin,
     holesRemaining: officialState ? 18 - officialState.thru : 18,
     teeTimeCst: new Date(match.tee_time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+    maroonWinProbability: odds?.maroon_win_probability,
+    tieProbability: odds?.tie_probability,
+    whiteWinProbability: odds?.white_win_probability,
   }));
 }
 
@@ -80,7 +84,7 @@ export function LiveLeaderboardContent() {
   return (
     <div>
       <div className="pt-[4vh] lg:pt-0">
-        <PointsRibbon tournament={source} />
+        <PointsRibbon tournament={liveSource} />
       </div>
 
       <div className="pt-4">
@@ -95,7 +99,7 @@ export function LiveLeaderboardContent() {
         {isLive && loading && !payload && officialEntries === null ? (
           <p className="font-sans text-sm text-ink-400 py-10 text-center">Checking the live sheet...</p>
         ) : (
-          <LeaderboardBoard tournament={liveSource} live={isLive} />
+          <LeaderboardBoard tournament={liveSource} live={isLive} liveStandings={officialStandings ?? undefined} />
         )}
       </div>
     </div>

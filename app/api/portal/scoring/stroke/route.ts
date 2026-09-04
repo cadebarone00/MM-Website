@@ -110,10 +110,11 @@ export async function POST(request: Request) {
     recordedScore = par * 2;
   }
 
+  const auditEvents: { player_slug: string; kind: "score_entered" | "score_disputed" | "score_confirmed" | "score_retracted"; payload: Record<string, unknown> }[] = [];
   for (const target of targetPlayerSlugs as string[]) {
     const { data: existingRow } = await service
       .from("live_hole_scores")
-      .select("id, self_reported_score")
+      .select("id, self_reported_score, confirmed_by")
       .eq("season_year", seasonYear)
       .eq("player_slug", target)
       .eq("round", round)
@@ -125,15 +126,34 @@ export async function POST(request: Request) {
     // assigned-score and self-score to agree.
     const confirmedBy = didNotFinish || box.format === "Foursome" || scoresAgree(recordedScore, existingRow?.self_reported_score ?? null) ? target : null;
     if (existingRow) {
-      const { error } = await service.from("live_hole_scores").update({ score: recordedScore, confirmed_by: confirmedBy }).eq("id", existingRow.id);
+      const { error } = await service.from("live_hole_scores").update({ score: recordedScore, confirmed_by: confirmedBy, did_not_finish: didNotFinish }).eq("id", existingRow.id);
       if (error) return NextResponse.json({ ok: false, error: "Could not save that score." }, { status: 500 });
     } else {
       const { error } = await service
         .from("live_hole_scores")
-        .insert({ season_year: seasonYear, player_slug: target, round, hole, score: recordedScore, confirmed_by: confirmedBy });
+        .insert({ season_year: seasonYear, player_slug: target, round, hole, score: recordedScore, confirmed_by: confirmedBy, did_not_finish: didNotFinish });
       if (error) return NextResponse.json({ ok: false, error: "Could not save that score." }, { status: 500 });
     }
+    const kind = confirmedBy
+      ? "score_confirmed"
+      : existingRow?.confirmed_by
+        ? "score_retracted"
+        : existingRow?.self_reported_score != null
+          ? "score_disputed"
+          : "score_entered";
+    auditEvents.push({ player_slug: target, kind, payload: { score: recordedScore, didNotFinish } });
   }
+
+  await service.from("live_score_audit_events").insert(auditEvents.map((event) => ({
+    season_year: seasonYear,
+    match_box_id: box.id,
+    round,
+    hole,
+    player_slug: event.player_slug,
+    actor_profile_id: player.userId,
+    kind: event.kind,
+    payload: event.payload,
+  })));
 
   try {
     // Rebuilds from confirmed rows only. Calling this for a draft/retraction is

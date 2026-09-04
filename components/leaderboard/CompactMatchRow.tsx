@@ -25,7 +25,7 @@ function finalLabelColor(match: RealMatch) {
   return "bg-cream-100 text-maroon-700";
 }
 
-function TeamSide({ players, team }: { players: string[]; team: Team }) {
+function TeamSide({ players, team, probability }: { players: string[]; team: Team; probability?: number }) {
   const isMaroon = team === "maroon";
 
   return (
@@ -46,7 +46,7 @@ function TeamSide({ players, team }: { players: string[]; team: Team }) {
                 isMaroon ? "left-1/4 -translate-x-1/2 border border-white text-white" : "right-1/4 translate-x-1/2 border border-maroon-700 text-maroon-700",
               ].join(" ")}
             >
-              Odds
+              {probability == null ? "Odds" : `${Math.round(probability * 100)}%`}
             </span>
           )}
           {i > 0 && (
@@ -58,7 +58,7 @@ function TeamSide({ players, team }: { players: string[]; team: Team }) {
                   isMaroon ? "left-[calc(25%-16px)] border border-white text-white" : "right-[calc(25%-16px)] border border-maroon-700 text-maroon-700",
                 ].join(" ")}
               >
-                Odds
+                {probability == null ? "Odds" : `${Math.round(probability * 100)}%`}
               </span>
             </>
           )}
@@ -83,7 +83,7 @@ function MatchStat({ status }: { status: ReturnType<typeof matchStatus> }) {
 }
 
 function MatchThru({ match, status }: { match: RealMatch; status: ReturnType<typeof matchStatus> }) {
-  const thru = status === "final" ? 18 : status === "live" ? match.thru ?? "—" : "—";
+  const thru = status === "final" ? 18 : status === "live" && (match.thru ?? 0) > 0 ? match.thru : "—";
 
   return (
     <div className="flex min-h-[34px] items-center justify-center border-l border-gold-300 bg-cream-100 font-sans text-xs font-black tabular-nums text-maroon-700">
@@ -104,12 +104,16 @@ export function CompactMatchRow({
   tournamentSlug,
   expanded,
   onToggle,
+  interactive = true,
 }: {
   match: RealMatch;
   tournament: Tournament;
   tournamentSlug: string;
   expanded: boolean;
   onToggle: () => void;
+  /** Only static matches expand into a static scorecard. Live matches use
+   * their confirmed state directly and should not open unrelated data. */
+  interactive?: boolean;
 }) {
   const status = matchStatus(match);
   const centerLabel = status === "scheduled" ? "VS" : liveLabel(match);
@@ -119,22 +123,22 @@ export function CompactMatchRow({
   return (
     <div className="mb-1.5 overflow-hidden border border-gold-500 last:mb-0">
       <div
-        role="button"
-        tabIndex={0}
-        aria-expanded={expanded}
-        aria-label={`${maroonSideLabel} vs ${whiteSideLabel}, ${centerLabel}`}
-        onClick={onToggle}
-        onKeyDown={(e) => {
+        role={interactive ? "button" : undefined}
+        tabIndex={interactive ? 0 : undefined}
+        aria-expanded={interactive ? expanded : undefined}
+        aria-label={interactive ? `${maroonSideLabel} vs ${whiteSideLabel}, ${centerLabel}` : undefined}
+        onClick={interactive ? onToggle : undefined}
+        onKeyDown={interactive ? (e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             onToggle();
           }
-        }}
-        className="cursor-pointer py-0 hover:bg-cream-50"
+        } : undefined}
+        className={interactive ? "cursor-pointer py-0 hover:bg-cream-50" : "py-0"}
       >
         <div className="grid grid-cols-[30px_minmax(0,1fr)_44px_minmax(0,1fr)_30px] items-stretch">
           <MatchStat status={status} />
-          <TeamSide players={match.maroonPlayers} team="maroon" />
+          <TeamSide players={match.maroonPlayers} team="maroon" probability={match.maroonWinProbability} />
           <div className="flex items-stretch">
             {status === "final" ? (
               <span className={["flex h-full w-full items-center justify-center px-1.5 font-condensed text-3xs font-extrabold uppercase tracking-wide", finalLabelColor(match)].join(" ")}>
@@ -151,7 +155,7 @@ export function CompactMatchRow({
               </span>
             )}
           </div>
-          <TeamSide players={match.whitePlayers} team="white" />
+          <TeamSide players={match.whitePlayers} team="white" probability={match.whiteWinProbability} />
           <MatchThru match={match} status={status} />
         </div>
       </div>

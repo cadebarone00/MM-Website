@@ -96,7 +96,7 @@ export async function POST(request: Request) {
 
   const { data: existingRow } = await service
     .from("live_hole_scores")
-    .select("id, score, self_reported_score")
+    .select("id, score, self_reported_score, confirmed_by")
     .eq("season_year", seasonYear)
     .eq("player_slug", player.playerSlug)
     .eq("round", round)
@@ -119,6 +119,24 @@ export async function POST(request: Request) {
       .insert({ season_year: seasonYear, player_slug: player.playerSlug, round, hole, putts, fir: normalizedFir, gir, self_reported_score: nextSelfReported, confirmed_by: confirmedBy });
     if (error) return NextResponse.json({ ok: false, error: "Could not save that." }, { status: 500 });
   }
+
+  const auditKind = confirmedBy
+    ? "score_confirmed"
+    : existingRow?.confirmed_by
+      ? "score_retracted"
+      : officialScore !== null && nextSelfReported !== null
+        ? "score_disputed"
+        : "score_entered";
+  await service.from("live_score_audit_events").insert({
+    season_year: seasonYear,
+    match_box_id: box.id,
+    round,
+    hole,
+    player_slug: player.playerSlug,
+    actor_profile_id: player.userId,
+    kind: auditKind,
+    payload: { selfReportedScore: nextSelfReported },
+  });
 
   try {
     // A player's self-report can confirm or retract their official stroke.
