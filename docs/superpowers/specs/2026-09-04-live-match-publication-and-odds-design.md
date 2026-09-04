@@ -203,7 +203,73 @@ markets. It is not a real season.
   effects, delete only 2034 roster/setup/match/score/archive/odds/audit and
   broadcast rows, and return the active season to 2027.
 - The reset action is host-only, requires an explicit confirmation, and never
-  touches the static 2024–2026 archive or any non-2034 live season.
+touches the static 2024–2026 archive or any non-2034 live season.
+
+## 11. Player prop markets: featured line and alternate lines
+
+### Purpose
+
+Every player-stat market uses one underlying 10,000-run course-and-player
+simulation distribution. The market board presents a simple primary wager
+without hiding the richer distribution needed for alternate lines.
+
+### Example market identity
+
+`Jackson Collins — Birdies, Round 1 — Mission Hills Arnold Palmer`
+
+The stored market identity must include the season, round, player, canonical
+course name, stat, format (where applicable), model version, and the exact
+state timestamp used to price it.
+
+### Birdie simulation rule
+
+1. For each configured course hole, estimate the player's birdie probability
+   from eligible individual-ball Career Archive history: Singles and
+   Fourball only. Alternate Shot never supplies individual birdie samples.
+2. The probability uses the same model measures as match odds: par-level
+   history, the target 10-yard bucket plus its neighbouring buckets,
+   player round-shape calibration, and applicable format calibration.
+3. Simulate the 18-hole round 10,000 times and retain the total-birdie
+   distribution, not merely its average.
+4. For live markets, already confirmed holes are fixed facts. Simulate only
+   the remaining holes and add their outcomes to the confirmed birdie count.
+   Draft or disputed holes do not affect a price.
+
+### Featured line rule
+
+- Available totals are half-birdie lines: `0.5`, `1.5`, `2.5`, and so on.
+  They eliminate pushes.
+- The **featured line** is the available total whose Over probability is
+  closest to 50%. This is the default card shown to a user—for example,
+  `O/U 1.5 birdies`.
+- Each side displays its fair American odds derived directly from the
+  simulation probability. A sportsbook margin is not applied unless a
+  separately versioned board-pricing policy explicitly enables one.
+
+### Alternate-line rule
+
+- The wager card exposes a slider across reasonable half-birdie totals around
+  the featured line. Moving it changes the selected total and immediately
+  reprices both Over and Under from the same saved distribution.
+- Lower totals naturally make Over more likely; higher totals make Over a
+  longer-priced outcome. No odds are manually selected.
+- Do not offer lines outside a model-defined reasonable range: the range must
+  have meaningful simulation support and a non-negligible probability on
+  both sides. This prevents empty or misleading extreme markets.
+- A placed wager records its exact selected line, side, probability, American
+  odds, model version, and input timestamp. Later price movement never
+  changes an accepted wager.
+
+### Settlement rule
+
+- A pre-round birdie market settles from the final confirmed 18-hole
+  individual scorecard.
+- A live market is closed when its outcome becomes mathematically certain or
+  when the round is closed out, whichever comes first. Settlement remains
+  gated by Tiger's final closeout/audit step.
+- Fourball `X` / double-par entries are a valid match outcome but are not a
+  completed individual performance sample; they cannot create a birdie and
+  remain excluded from future player-prop model inputs.
 
 ## Delivery plan
 
