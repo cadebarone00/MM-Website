@@ -271,6 +271,27 @@ state timestamp used to price it.
   completed individual performance sample; they cannot create a birdie and
   remain excluded from future player-prop model inputs.
 
+### Market-readiness rule
+
+A Total Tournament Birdies card may exist before its odds do. Until it is
+safe to price, Wagers shows the market title and a precise readiness list
+instead of placeholder odds, a bet button, or a fabricated line.
+
+To post odds, all of the following must be true for the active season:
+
+1. Tiger has configured the tournament round count.
+2. The player is on that season's active roster.
+3. Every tournament round has a selected and locked course with a complete
+   18-hole par/yards layout.
+4. Every tournament round has a selected format and locked matchups.
+5. The player is assigned to a match in every configured round.
+6. At least one scheduled round is Singles or Fourball. Foursome is a valid
+   scheduled round but contributes no individual birdie opportunities.
+
+The readiness card reports the exact failed item by round. When the final
+requirement becomes true, the market may create its first saved model
+snapshot and show the featured line plus alternate-line slider.
+
 ## Delivery plan
 
 1. **Foundation:** database state for score-entry audit, confirmed publication,
