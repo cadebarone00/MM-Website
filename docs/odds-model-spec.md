@@ -9,6 +9,30 @@ rules or update this specification in the same change.
 The model produces analytical, fair probabilities and fair American odds. It
 does not add a sportsbook margin.
 
+## Match Simulator as the odds source of truth
+
+The Tiger Center Match Simulator is the single authoritative calculation
+surface for match odds. It must support a matchup at any valid course, format,
+number of completed holes, and current match status. Its result is the source
+of truth for:
+
+- Pre-round winning probabilities and fair American odds.
+- Live winning probabilities and fair American odds.
+- Wager market prices and displayed win/tie/loss selections.
+- Leaderboard win-probability displays.
+- Any other public or Tiger Center odds presentation.
+
+Those consumers must read a common model result or a stored snapshot created
+by the same model. They must not independently rebuild probabilities from
+their own partial calculations.
+
+The artifact is also the visual control surface for the model. It accepts the
+format, course, sides/players, holes completed, and Team A match status; Team
+B status is the derived inverse. Changing a matchup, course, or format resets
+the visual state to pre-round/all square. The currently validated engine is
+pre-round Singles; live Singles, Fourball, and Alternate Shot become active
+only after their own rules are implemented and tested against this contract.
+
 ## Canonical data source
 
 At runtime the model reads the Career Archive only.
