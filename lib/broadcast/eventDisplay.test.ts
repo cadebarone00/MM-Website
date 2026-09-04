@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { closedMarginLabel, DISPLAY_MODE_BY_KIND, marginLabel, pickActiveEvent, teamLabel, type ActiveBroadcastEvent } from "./eventDisplay.ts";
+import { closedMarginLabel, DISPLAY_MODE_BY_KIND, marginLabel, pickActiveEvent, teamLabel } from "./eventDisplay.ts";
 import type { BroadcastEventRow } from "./queue.ts";
 
 function row(overrides: Partial<BroadcastEventRow>): BroadcastEventRow {

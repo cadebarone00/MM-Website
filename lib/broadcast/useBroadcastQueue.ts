@@ -25,7 +25,7 @@ export function useBroadcastQueue(seasonYear: number, initialEvents: BroadcastEv
   const [events, setEvents] = useState(initialEvents);
   const shownIds = useRef<Set<string>>(new Set());
   const [bump, setBump] = useState(0);
-  const [activeEvent, setActiveEvent] = useState<ActiveBroadcastEvent | null>(() => (enabled ? pickActiveEvent(initialEvents, shownIds.current) : null));
+  const [activeEvent, setActiveEvent] = useState<ActiveBroadcastEvent | null>(() => (enabled ? pickActiveEvent(initialEvents, new Set()) : null));
 
   // Realtime subscribe/refetch — identical shape to useLiveBroadcastState.ts.
   useEffect(() => {
@@ -67,7 +67,6 @@ export function useBroadcastQueue(seasonYear: number, initialEvents: BroadcastEv
   // Re-pick whenever the event list changes (a Realtime-triggered refetch)
   // or a display-duration timer fires (bump) — never on its own timer.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: this IS the re-evaluation, same justification as useAutoScene.ts's tick().
     setActiveEvent(enabled ? pickActiveEvent(events, shownIds.current) : null);
   }, [events, bump, enabled]);
 
