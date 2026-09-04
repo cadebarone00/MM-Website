@@ -19,7 +19,7 @@ const tabs: { id: Tab; label: string }[] = [
  */
 const YOUTUBE_LIVE_VIDEO_ID = process.env.NEXT_PUBLIC_YOUTUBE_LIVE_VIDEO_ID || null;
 
-export function WatchLiveExperience() {
+export function WatchLiveExperience({ tournamentLive }: { tournamentLive: boolean }) {
   const [activeTab, setActiveTab] = useState<Tab>("comments");
 
   return (
@@ -33,6 +33,12 @@ export function WatchLiveExperience() {
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen
           />
+        ) : tournamentLive ? (
+          // Tiger has gone live (Broadcast Controls) — embed the real,
+          // shared broadcast (auto-rotating leaderboard/match-play scenes;
+          // see app/broadcast/page.tsx) instead of the pre-show placeholder.
+          // No real camera video exists yet (that's Phase 3, not built).
+          <iframe className="aspect-video w-full border-0" src="/broadcast" title="Maroon Masters live broadcast" />
         ) : (
           <div className="relative aspect-video w-full overflow-hidden bg-ink-900">
             <Image src="/loading/mobile.png" alt="" fill priority sizes="100vw" className="object-cover lg:hidden" />

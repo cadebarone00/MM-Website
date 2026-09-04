@@ -211,12 +211,13 @@ Simulate a likely contribution for each partner using individual-ball history,
 then combine those contributions into one team-hole score. Simulate the other
 team the same way and compare the two combined scores.
 
-For each measure, both partners provide individual simulated scores and the
-model blends their average with a sampled historical Alternate Shot team score.
-Exact-pair Alternate Shot history is used for this calibration when it has at
-least three matching samples; otherwise the broader Alternate Shot team-hole
-archive is used. It must never simply label an individual player's score as a
-Foursomes score. Pre-round Alternate Shot runs 10,000 Measure 1 outcomes and
+For each measure, both partners provide individual simulated scores. Their
+target-hole projection is then calibrated with the all-hole historical
+Alternate Shot team archive. Exact-pair history is an all-hole partnership
+adjustment, shrunk toward the format average when the pair has little or no
+history; a new partnership therefore still has an accurate individual-plus-
+format projection. It must never simply label an individual player's score as
+a Foursomes score. Pre-round Alternate Shot runs 10,000 Measure 1 outcomes and
 10,000 Measure 2 outcomes per target hole, then 10,000 complete matches.
 
 ## Live-match rules

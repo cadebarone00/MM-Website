@@ -49,7 +49,7 @@ export function MatchSimulator({ records, teamRecords, courseHoles }: { records:
     if (format === "Fourball" && new Set([a1, a2, b1, b2]).size === 4) return calculatePreRoundFourballOdds({ records, courseHoles, teamA: [a1, a2], teamB: [b1, b2], course, holesFinished, teamALead: teamAStatus });
     if (format === "Alternate Shot" && holesFinished === 0 && new Set([a1, a2, b1, b2]).size === 4) return calculatePreRoundAlternateShotOdds({ records, teamRecords, courseHoles, teamA: [a1, a2], teamB: [b1, b2], course });
     return null;
-  }, [a1, a2, b1, b2, course, courseHoles, format, holesFinished, records, teamAStatus]);
+  }, [a1, a2, b1, b2, course, courseHoles, format, holesFinished, records, teamAStatus, teamRecords]);
   const statusA = teamAStatus === 0 ? "AS" : teamAStatus > 0 ? `${teamAStatus} UP` : `${Math.abs(teamAStatus)} DOWN`;
   const statusB = teamAStatus === 0 ? "AS" : teamAStatus > 0 ? `${teamAStatus} DOWN` : `${Math.abs(teamAStatus)} UP`;
   const available = format === "Singles" || format === "Fourball" || (format === "Alternate Shot" && holesFinished === 0);
