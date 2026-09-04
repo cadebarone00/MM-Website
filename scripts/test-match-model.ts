@@ -1,8 +1,10 @@
-import { careerArchiveRecords } from "../lib/data/careerArchive.generated";
+import { careerArchiveCourseHoles, careerArchiveRecords } from "../lib/data/careerArchive.generated";
 
 const [playerA = "CADE", playerB = "CAM", course = "TPC Danzante Bay", format = "Singles"] = process.argv.slice(2);
 const bucket = (yards: number) => yards <= 150 ? "a" : yards <= 200 ? "b" : yards <= 250 ? "c" : yards <= 350 ? "d" : yards <= 400 ? "e" : yards <= 450 ? "f" : yards <= 500 ? "g" : "h";
-const setup = [...new Map(careerArchiveRecords.filter(r => r.course === course).map(r => [r.hole, r])).values()].sort((a,b)=>a.hole-b.hole);
+// Target-hole par, yardage, and bucket always come from Course_Hole_Setup,
+// never from the player results being sampled.
+const setup = [...new Map(careerArchiveCourseHoles.filter(r => r.course === course).map(r => [r.hole, r])).values()].sort((a,b)=>a.hole-b.hole);
 if (setup.length !== 18) throw new Error(`${course} does not have a complete 18-hole setup in Career Stats.`);
 type Tier = { name: string; source: (player:string,hole:typeof setup[number]) => typeof careerArchiveRecords };
 const complete = careerArchiveRecords.filter(r => r.roundHoles === 18 && r.format === format);

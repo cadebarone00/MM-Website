@@ -20,6 +20,7 @@ export type CareerHoleRecord = {
 };
 
 export type CareerPartnership = { player: string; partner: string; year: number; format: string; result: "win" | "loss" | "halve" };
+export type CareerCourseHole = { year: number; course: string; tee: string | null; hole: number; par: number; yards: number; holeType: string | null; holeLengthBucket: string | null };
 
 /** A team score is intentionally separate from individual stroke-play data. */
 export type CareerTeamHoleRecord = {

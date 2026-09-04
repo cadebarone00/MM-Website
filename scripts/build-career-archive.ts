@@ -60,6 +60,10 @@ const partnerships = rowsFromSheet(workbook, "Match_Participants", ["year", "mat
   })
   .filter((row) => row.year);
 
-const source = `// Generated from ${path.basename(input)} by scripts/build-career-archive.ts. Do not hand-edit.\nimport type { CareerHoleRecord, CareerPartnership, CareerTeamHoleRecord } from "./careerStats";\n\nexport const careerArchiveRecords: CareerHoleRecord[] = ${JSON.stringify(records)};\n\nexport const careerArchiveTeamRecords: CareerTeamHoleRecord[] = ${JSON.stringify(teamRecords)};\n\nexport const careerArchivePartnerships: CareerPartnership[] = ${JSON.stringify(partnerships)};\n`;
+const courseHoles = rowsFromSheet(workbook, "Course_Hole_Setup", ["year", "course", "hole", "par", "yards"])
+  .map((row) => ({ year: integer(value(row, "year")), course: text(value(row, "course")), tee: text(value(row, "tee")) || null, hole: integer(value(row, "hole")), par: integer(value(row, "par")), yards: integer(value(row, "yards")), holeType: text(value(row, "hole_type")) || null, holeLengthBucket: text(value(row, "hole_length_bucket")) || null }))
+  .filter((row) => row.year && row.course && row.hole && row.par && row.yards);
+
+const source = `// Generated from ${path.basename(input)} by scripts/build-career-archive.ts. Do not hand-edit.\nimport type { CareerCourseHole, CareerHoleRecord, CareerPartnership, CareerTeamHoleRecord } from "./careerStats";\n\nexport const careerArchiveRecords: CareerHoleRecord[] = ${JSON.stringify(records)};\n\nexport const careerArchiveTeamRecords: CareerTeamHoleRecord[] = ${JSON.stringify(teamRecords)};\n\nexport const careerArchivePartnerships: CareerPartnership[] = ${JSON.stringify(partnerships)};\n\nexport const careerArchiveCourseHoles: CareerCourseHole[] = ${JSON.stringify(courseHoles)};\n`;
 fs.writeFileSync(path.join(process.cwd(), "lib/data/careerArchive.generated.ts"), source);
 console.log(`Built archive: ${records.length} individual holes, ${teamRecords.length} team holes, ${partnerships.length} partnership rows.`);
