@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { requirePlayer } from "@/lib/portal/requirePlayer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getActiveSeasonYear } from "@/lib/live/activeSeason";
-import { canScoreStrokesFor, scoresAgree } from "@/lib/live/orchestration";
+import { canScoreStrokesFor, matchBoxResult, roundIsComplete, scoresAgree } from "@/lib/live/orchestration";
+import { buildLiveTournamentSnapshot } from "@/lib/broadcast/liveSnapshot";
+import { detectMatchBoxEvent, detectRoundFinal } from "@/lib/broadcast/matchEvents";
+import { publishBroadcastEvent } from "@/lib/broadcast/publish";
 import type { LiveMatchBox, MatchFormat, MatchState } from "@/lib/live/types";
 
 interface MatchBoxRow {
@@ -94,6 +97,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "You're not the assigned scorer for that player." }, { status: 403 });
   }
 
+  let beforeSnapshot: Awaited<ReturnType<typeof buildLiveTournamentSnapshot>> | null = null;
+  try {
+    beforeSnapshot = await buildLiveTournamentSnapshot(seasonYear);
+  } catch (err) {
+    console.error("broadcast: could not read pre-write snapshot:", err);
+  }
+
   for (const target of targetPlayerSlugs as string[]) {
     const { data: existingRow } = await service
       .from("live_hole_scores")
@@ -113,6 +123,28 @@ export async function POST(request: Request) {
         .insert({ season_year: seasonYear, player_slug: target, round, hole, score, confirmed_by: confirmedBy });
       if (error) return NextResponse.json({ ok: false, error: "Could not save that score." }, { status: 500 });
     }
+  }
+
+  try {
+    for (const target of targetPlayerSlugs as string[]) {
+      await publishBroadcastEvent({ kind: "SCORE_POSTED", seasonYear, playerSlug: target, round, hole, score, matchBoxId: box.id });
+    }
+
+    if (beforeSnapshot) {
+      const afterSnapshot = await buildLiveTournamentSnapshot(seasonYear);
+      const boxEvent = detectMatchBoxEvent(matchBoxResult(beforeSnapshot, box), matchBoxResult(afterSnapshot, box), box.id, seasonYear, round);
+      if (boxEvent) await publishBroadcastEvent(boxEvent);
+
+      const roundFinalEvent = detectRoundFinal(
+        roundIsComplete(beforeSnapshot, round, box.format),
+        roundIsComplete(afterSnapshot, round, box.format),
+        seasonYear,
+        round
+      );
+      if (roundFinalEvent) await publishBroadcastEvent(roundFinalEvent);
+    }
+  } catch (err) {
+    console.error("broadcast publish failed:", err);
   }
 
   return NextResponse.json({ ok: true });
