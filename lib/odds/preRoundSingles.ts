@@ -21,6 +21,11 @@ const FORMAT_STRENGTH = 0.08;
 const categories: Category[] = ["eagles", "birdies", "pars", "bogeys", "doubles"];
 const pick = <T,>(rows: T[]) => rows[Math.floor(Math.random() * rows.length)];
 const bucket = (yards: number) => Math.floor((yards - 101) / 10);
+// Historical nine-hole rounds remain excluded. Confirmed live 2027+ holes
+// have a running roundHoles count below 18 and intentionally enter the raw
+// sampling pool immediately; an unplayed hole has no record to include.
+const isEligibleIndividualHole = (row: CareerHoleRecord) =>
+  row.roundHoles !== 9 && (row.format === "Singles" || row.format === "Fourball");
 
 function counts(rows: Score[]): Record<Category, number> {
   return rows.reduce<Record<Category, number>>((result, row) => {
@@ -54,7 +59,7 @@ function shapeDistance(round: Score[], shape: Profile) {
 export function calculatePreRoundSinglesOdds({ records, courseHoles, playerA, playerB, course, holesFinished = 0, playerALead = 0, completedScores = [] }: { records: CareerHoleRecord[]; courseHoles: CareerCourseHole[]; playerA: string; playerB: string; course: string; holesFinished?: number; playerALead?: number; completedScores?: { a: number; b: number; par: number }[] }): PreRoundSinglesResult | null {
   const canonicalCourse = canonicalCourseName(course);
   const setup = [...new Map(courseHoles.filter((row) => canonicalCourseName(row.course) === canonicalCourse).map((row) => [row.hole, row])).values()].sort((a, b) => a.hole - b.hole);
-  const individual = records.filter((row) => row.roundHoles === 18 && (row.format === "Singles" || row.format === "Fourball"));
+  const individual = records.filter(isEligibleIndividualHole);
   const aRows = individual.filter((row) => row.player === playerA);
   const bRows = individual.filter((row) => row.player === playerB);
   if (setup.length !== 18 || !aRows.length || !bRows.length) return null;
@@ -98,7 +103,7 @@ export function calculatePreRoundSinglesOdds({ records, courseHoles, playerA, pl
 export function calculatePreRoundFourballOdds({ records, courseHoles, teamA, teamB, course, holesFinished = 0, teamALead = 0, completedScores = [] }: { records: CareerHoleRecord[]; courseHoles: CareerCourseHole[]; teamA: [string, string]; teamB: [string, string]; course: string; holesFinished?: number; teamALead?: number; completedScores?: { a1: number; a2: number; b1: number; b2: number; par: number }[] }): PreRoundSinglesResult | null {
   const canonicalCourse = canonicalCourseName(course);
   const setup = [...new Map(courseHoles.filter((row) => canonicalCourseName(row.course) === canonicalCourse).map((row) => [row.hole, row])).values()].sort((a, b) => a.hole - b.hole);
-  const individual = records.filter((row) => row.roundHoles === 18 && (row.format === "Singles" || row.format === "Fourball"));
+  const individual = records.filter(isEligibleIndividualHole);
   const playerRows = [...teamA, ...teamB].map((player) => individual.filter((row) => row.player === player));
   if (setup.length !== 18 || playerRows.some((rows) => !rows.length)) return null;
   if (holesFinished < 0 || holesFinished > 18 || Math.abs(teamALead) > holesFinished) return null;
@@ -141,7 +146,7 @@ export function calculatePreRoundFourballOdds({ records, courseHoles, teamA, tea
 export function calculatePreRoundAlternateShotOdds({ records, teamRecords, courseHoles, teamA, teamB, course }: { records: CareerHoleRecord[]; teamRecords: CareerTeamHoleRecord[]; courseHoles: CareerCourseHole[]; teamA: [string, string]; teamB: [string, string]; course: string }): PreRoundSinglesResult | null {
   const canonicalCourse = canonicalCourseName(course);
   const setup = [...new Map(courseHoles.filter((row) => canonicalCourseName(row.course) === canonicalCourse).map((row) => [row.hole, row])).values()].sort((a, b) => a.hole - b.hole);
-  const individual = records.filter((row) => row.roundHoles === 18 && (row.format === "Singles" || row.format === "Fourball"));
+  const individual = records.filter(isEligibleIndividualHole);
   const individualRows = [...teamA, ...teamB].map((player) => individual.filter((row) => row.player === player));
   const alternate = teamRecords.filter((row) => row.format === "Alternate Shot");
   const pairKey = (pair: [string, string]) => [...pair].sort().join(":");

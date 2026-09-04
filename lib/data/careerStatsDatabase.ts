@@ -31,9 +31,11 @@ export async function getCareerStatsDatabase() {
   };
 }
 
-/** Live archive rows are the 2027+ extension of Career Stats. Partial rounds
- * are retained so the Round Archive can show in-progress scoring; callers
- * that price historical baselines must require roundHoles === 18. */
+/** Live archive rows are the 2027+ extension of Career Stats. The archive
+ * contains confirmed scores only (enforced by live_match_publication.sql).
+ * Partial Singles/Fourball rounds deliberately feed the raw model pool as
+ * confirmed holes arrive; nine-hole historical rounds stay excluded by the
+ * odds model's eligibility rule. */
 export async function getLiveCareerArchiveRecords(): Promise<CareerHoleRecord[]> {
   const service = createSupabaseServiceRoleClient();
   const [{ data: rounds, error: roundsError }, { data: holes, error: holesError }] = await Promise.all([
