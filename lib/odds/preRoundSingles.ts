@@ -50,7 +50,7 @@ function shapeDistance(round: Score[], shape: Profile) {
   return categories.reduce((sum, category) => sum + ((actual[category] - shape[category].mean) / shape[category].sd) ** 2, 0);
 }
 
-export function calculatePreRoundSinglesOdds({ records, courseHoles, playerA, playerB, course }: { records: CareerHoleRecord[]; courseHoles: CareerCourseHole[]; playerA: string; playerB: string; course: string }): PreRoundSinglesResult | null {
+export function calculatePreRoundSinglesOdds({ records, courseHoles, playerA, playerB, course, holesFinished = 0, playerALead = 0, completedScores = [] }: { records: CareerHoleRecord[]; courseHoles: CareerCourseHole[]; playerA: string; playerB: string; course: string; holesFinished?: number; playerALead?: number; completedScores?: { a: number; b: number; par: number }[] }): PreRoundSinglesResult | null {
   const canonicalCourse = canonicalCourseName(course);
   const setup = [...new Map(courseHoles.filter((row) => canonicalCourseName(row.course) === canonicalCourse).map((row) => [row.hole, row])).values()].sort((a, b) => a.hole - b.hole);
   const individual = records.filter((row) => row.roundHoles === 18 && (row.format === "Singles" || row.format === "Fourball"));
@@ -58,7 +58,9 @@ export function calculatePreRoundSinglesOdds({ records, courseHoles, playerA, pl
   const bRows = individual.filter((row) => row.player === playerB);
   if (setup.length !== 18 || !aRows.length || !bRows.length) return null;
 
-  const pairs = setup.map((hole) => {
+  if (holesFinished < 0 || holesFinished > 18 || Math.abs(playerALead) > holesFinished) return null;
+  if (holesFinished === 18) return playerALead > 0 ? { a: 1, tie: 0, b: 0, measureOneMinimum: [0, 0], measureTwoMinimum: [0, 0], formatDeltas: [0, 0] } : playerALead < 0 ? { a: 0, tie: 0, b: 1, measureOneMinimum: [0, 0], measureTwoMinimum: [0, 0], formatDeltas: [0, 0] } : { a: 0, tie: 1, b: 0, measureOneMinimum: [0, 0], measureTwoMinimum: [0, 0], formatDeltas: [0, 0] };
+  const pairs = setup.slice(holesFinished).map((hole) => {
     const aOne = aRows.filter((row) => row.par === hole.par);
     const bOne = bRows.filter((row) => row.par === hole.par);
     const targetBucket = bucket(hole.yards);
@@ -78,11 +80,12 @@ export function calculatePreRoundSinglesOdds({ records, courseHoles, playerA, pl
   const formatDeltaB = mean(bRows.filter((row) => row.format === "Singles")) - mean(bRows);
   let weightedA = 0; let weightedTie = 0; let weightedB = 0;
   for (let simulation = 0; simulation < MATCH_SIMULATIONS; simulation += 1) {
-    const scoresA: Score[] = []; const scoresB: Score[] = []; let lead = 0;
+    const scoresA: Score[] = completedScores.map((score) => ({ score: score.a, par: score.par })); const scoresB: Score[] = completedScores.map((score) => ({ score: score.b, par: score.par })); let lead = playerALead;
     validPairs.forEach(({ hole, outcomes }) => { const outcome = pick(outcomes); scoresA.push({ score: outcome.a, par: hole.par }); scoresB.push({ score: outcome.b, par: hole.par }); if (outcome.a < outcome.b) lead += 1; else if (outcome.b < outcome.a) lead -= 1; });
     const toParA = scoresA.reduce((sum, row) => sum + row.score - row.par, 0);
     const toParB = scoresB.reduce((sum, row) => sum + row.score - row.par, 0);
-    const weight = Math.exp(-ROUND_SHAPE_STRENGTH * (shapeDistance(scoresA, profileA) + shapeDistance(scoresB, profileB))) * Math.exp(FORMAT_STRENGTH * (formatDeltaA - formatDeltaB) * (toParA - toParB));
+    const measureThreeWeight = completedScores.length === holesFinished ? Math.exp(-ROUND_SHAPE_STRENGTH * (shapeDistance(scoresA, profileA) + shapeDistance(scoresB, profileB))) : 1;
+    const weight = measureThreeWeight * Math.exp(FORMAT_STRENGTH * (formatDeltaA - formatDeltaB) * (toParA - toParB));
     if (lead > 0) weightedA += weight; else if (lead < 0) weightedB += weight; else weightedTie += weight;
   }
   const total = weightedA + weightedTie + weightedB;

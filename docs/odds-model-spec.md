@@ -210,6 +210,16 @@ When a match is live:
 - Completed holes are fixed at their real result.
 - The entered match state (leader and holes completed) is the starting state.
 - Only remaining holes are simulated.
+- The reusable Singles engine accepts any valid through/margin state, from AS
+  through one hole to a mathematically final match. The margin cannot exceed
+  holes completed, and a final match returns a 100% outcome without simulating.
+- For every remaining target hole, Measures 1 and 2 still create the combined
+  20,000 score-pair distribution; the 10,000 finish simulations begin from
+  the fixed real match lead instead of all square.
+- When official completed-hole scores are available, Measure 3 includes those
+  real scores plus simulated remaining scores. A manual status-only preview
+  leaves Measure 3 neutral for the unknown completed-hole score shape rather
+  than inventing it.
 - A player, course, or format change resets the test to pre-round state to
   prevent stale live-match assumptions from carrying over.
 
