@@ -2,11 +2,29 @@
 
 ## Status
 
-**Approved 2026-09-04.** All open decisions below are resolved (see §45).
-Phase 1 gets its own implementation plan under `docs/superpowers/plans/`,
-built the same way every other Tiger Center phase has been (own
-worktree/branch, subagent-driven development) — see
-[[tiger-center-build-phasing]].
+**Reconciled with shipped code, 2026-09-04.** Phase 1 was built and merged
+to `main` 2026-09-02/03 — ahead of this document catching up. Pieces of
+Phase 4 (host-triggered announcement overlay) and Phase 5 (Pause/Resume
+Automation, force-scene, at `/portal/admin/broadcast-controls`) shipped
+alongside it, out of the original phase order. **`broadcast_events` (the
+queue/priority/rules engine, Phase 2) does not exist** — confirmed absent
+from `supabase/schema.sql` — so there is still no real event queue, video,
+or audio; those parts of this document remain accurate as forward-looking
+design, not yet built.
+
+This document was earlier walked through an approval pass on 2026-09-04
+*before* this discrepancy was found — that pass's route-shape decision
+(§45 "decision 1") was **wrong**: it was made without visibility into code
+that had already shipped a different, deliberate answer. This revision
+corrects that section to describe what's actually live rather than
+reopening the decision. Lesson for future sessions: **check `git log --
+app/broadcast app/api/broadcast lib/broadcast components/broadcast` before
+treating any part of this spec as unbuilt** — see
+[[watch-live-broadcast-spec]] and [[tiger-center-build-phasing]] for why
+that check matters here specifically.
+
+Next real work on this feature is Phase 2 (the event queue) — see the
+Phased Implementation Plan (§44) for its updated status per phase.
 
 This document was produced by digesting a long-form product brief for an
 "Automated Golf Broadcast System" and grounding every architectural choice in
@@ -23,7 +41,7 @@ CONFIRMATION**.
 Add a self-running, TV-style golf broadcast — **Watch Live Broadcast** — that
 turns the tournament's existing live data (scores, match state, roster,
 eventually shot video) into a continuously playing program at
-`/broadcast/[year]`, with no camera operator and no manual step required to
+`/broadcast`, with no camera operator and no manual step required to
 keep it running. It rotates through leaderboard/match-play "scenes"
 automatically, updates instantly when a score lands (no refresh), and — from
 Phase 5 onward — can be taken over by a host from a dedicated Tiger Center
@@ -41,7 +59,7 @@ it only shows what the existing scoring/match system already knows.
 
 ## 3. Goals
 
-- A `/broadcast/[year]` page that runs unattended for hours, rotating
+- A `/broadcast` page that runs unattended for hours, rotating
   Individual Leaderboard → Match Play → Current Matches → repeat.
 - Live score entry (already real-time via Supabase, see §9) reflected on the
   broadcast within roughly a second, no page refresh.
@@ -70,7 +88,7 @@ it only shows what the existing scoring/match system already knows.
 
 | Type | Access | Notes |
 |---|---|---|
-| **Viewer** | `/broadcast/[year]`, no login | Anyone: website embed, clubhouse TV, projector. Read-only, no controls, no navigation chrome. |
+| **Viewer** | `/broadcast`, no login | Anyone: website embed, clubhouse TV, projector. Read-only, no controls, no navigation chrome. |
 | **Player** | Unaffected by this system | Their score entry in the Player Portal is what *feeds* the broadcast; they have no broadcast-specific UI. |
 | **Tiger (host)** | New "Broadcast" area inside Tiger Center (Phase 5), gated by `requireHost()` exactly like every other Tiger Center screen | Can force scenes, manage the queue, trigger graphics, switch Auto/Producer mode. |
 
@@ -533,77 +551,83 @@ until the host acts or hits "Return to Auto"). This hybrid matches §15 of the
 brief ("consider a hybrid model") and is the only mode design that doesn't
 lose events that happened while a human had the wheel.
 
-## 26. Database Schema
+## 26. Database Schema — AS SHIPPED (updated 2026-09-04)
 
-**Correction from initial drafting (confirmed against the real schema before
-writing any SQL):** `docs/superpowers/specs/2026-09-01-tiger-center-master-settings-design.md`'s
-`season_year` model is itself only a spec — it has not been built yet
-(`supabase/schema.sql` has no `season_year` column anywhere, `live_tournament_settings`
-is still today's actual singleton `id boolean primary key default true` row).
-So these tables are built **singleton, matching today's real
-`live_tournament_settings` shape** — not `season_year`-keyed. If/when Master
-Settings ships, these get a `season_year` column retrofitted the exact same
-way every other `live_*` table's Master Settings migration does (see that
-spec's `alter table ... add column season_year integer` pattern) — this is a
-deferred, not lost, requirement.
-
-New tables, all following this repo's existing conventions exactly (`create
-table if not exists`, RLS `select using (true)` + service-role-only writes,
-no ORM). Every table below references *existing* tables by id/slug rather
-than duplicating their data — the "why" for each is inline.
+Original drafting note (kept for history): this section originally built
+`broadcast_config`/`broadcast_state` as singleton tables because Master
+Settings' `season_year` model hadn't shipped yet. **It has since shipped.**
+`supabase/schema.sql` retrofitted both tables to `season_year`-keyed primary
+keys the same way every other `live_*` table was, exactly as originally
+anticipated — confirmed directly against `supabase/schema.sql` (~line 1036
+onward), not re-derived from this doc.
 
 ```sql
--- The whole rotation/priority/overlay/audio config. Singleton for now (see
--- note above) — one row, matching live_tournament_settings' own pattern.
--- Why a table and not hard-coded constants: the brief requires these be
--- configurable per tournament, not fixed at build time (§2, §13, §18, §21).
-create table if not exists broadcast_config (
-  id boolean primary key default true,
+-- broadcast_config — one row per season_year (2027-2034), primary key
+-- season_year. Rotation durations + reserved priority/overlay/audio config
+-- for Phase 2+.
+create table broadcast_config (
+  season_year integer primary key check (season_year between 2027 and 2034),
   scene_durations_ms jsonb not null default '{"individual_leaderboard":12000,"match_play":12000,"holding":10000}',
-  priorities jsonb not null default '{}', -- overrides on top of the code defaults in §13
+  priorities jsonb not null default '{}',
   overlay_duration_ms integer not null default 6000,
-  audio jsonb not null default '{}', -- Phase 6+
-  updated_at timestamptz not null default now(),
-  constraint broadcast_config_singleton check (id)
+  audio jsonb not null default '{}', -- Phase 6+, still unused
+  updated_at timestamptz not null default now()
 );
 
--- The single authoritative "what's on screen right now." Singleton for now
--- (see note above). Why a table and not derived: every client must converge
--- on the same scene/timestamp without a shared process (§8) — this row IS
--- that shared clock.
-create table if not exists broadcast_state (
-  id boolean primary key default true,
+-- broadcast_state — one row per season_year. The shared clock every
+-- /broadcast client converges on (§8). Gained overlay_text/
+-- overlay_expires_at (host-triggered announcement, shipped ahead of
+-- Phase 4) and tournament_live (drives the Holding Screen vs. live
+-- rotation split, §7) beyond the original draft.
+create table broadcast_state (
+  season_year integer primary key check (season_year between 2027 and 2034),
   current_scene text not null default 'holding'
     check (current_scene in ('holding', 'individual_leaderboard', 'match_play')),
   scene_started_at timestamptz not null default now(),
-  active_event_id uuid, -- references broadcast_events(id) once that table exists, Phase 2
+  active_event_id uuid, -- still references broadcast_events(id) once that table exists, Phase 2
   automation_mode text not null default 'auto' check (automation_mode in ('auto', 'producer')),
   paused boolean not null default false,
-  updated_at timestamptz not null default now(),
-  constraint broadcast_state_singleton check (id)
+  tournament_live boolean not null default false,
+  overlay_text text,
+  overlay_expires_at timestamptz, -- null overlay_text means "nothing to show" (§18's moment-overlay shipped early, host-triggered only — no rules-engine-driven overlays yet, that's still Phase 4's automatic classification)
+  updated_at timestamptz not null default now()
 );
+
+-- broadcast_display_year — NEW, not in the original draft. Singleton: one
+-- row, the season_year `/broadcast` currently reads. Deliberately
+-- independent of live_active_season (that flag governs the real scoring
+-- system; this is purely "what the show is pointed at" — see §45's
+-- corrected route-shape decision below for why this exists instead of a
+-- /broadcast URL). Realtime-published so Broadcast Controls changing
+-- it live-updates any open /broadcast tab without a manual refresh.
+create table broadcast_display_year (
+  id boolean primary key default true,
+  season_year integer not null,
+  constraint broadcast_display_year_singleton check (id)
+);
+insert into broadcast_display_year (id, season_year) values (true, 2027) on conflict (id) do nothing;
 
 alter table broadcast_config enable row level security;
 alter table broadcast_state enable row level security;
+alter table broadcast_display_year enable row level security;
 
 -- Same "public read, service-role writes" pattern as every live_* table —
 -- the /broadcast page has no login, and none of this is sensitive.
-drop policy if exists broadcast_config_select_all on broadcast_config;
 create policy broadcast_config_select_all on broadcast_config for select using (true);
-
-drop policy if exists broadcast_state_select_all on broadcast_state;
 create policy broadcast_state_select_all on broadcast_state for select using (true);
+create policy broadcast_display_year_select_all on broadcast_display_year for select using (true);
 
-insert into broadcast_config (id) values (true) on conflict (id) do nothing;
-insert into broadcast_state (id) values (true) on conflict (id) do nothing;
+-- broadcast_display_year is on the supabase_realtime publication (the other
+-- two already were, per §8/§22).
 ```
 
-`broadcast_events` (the queue) is **not created yet** — it's Phase 2 work,
-once there's a rules engine to write to it. Its shape stays as sketched in
-the original draft of this section (`kind`, `priority`, `status`, references
-to `live_match_boxes`/players/hole/`profiles`, timestamps) and will be added
-with its own migration when Phase 2 starts, at which point `broadcast_state.active_event_id`
-also gets its real foreign key.
+`broadcast_events` (the queue) is **still not created** — confirmed absent
+from `supabase/schema.sql`, this remains genuine Phase 2 work. Its shape
+stays as sketched in the original draft of this section (`kind`, `priority`,
+`status`, references to `live_match_boxes`/players/hole/`profiles`,
+timestamps) and will be added with its own migration when Phase 2 starts, at
+which point `broadcast_state.active_event_id` also gets its real foreign
+key.
 
 **Deliberately not built now:** a separate `broadcast_history` table (§12 —
 status filtering on the same table covers it); a separate `scene_configuration`
@@ -622,7 +646,7 @@ routes), service-role Supabase client for writes.
 
 | Endpoint | Auth | Purpose | Request | Side effects | Realtime events |
 |---|---|---|---|---|---|
-| `GET /api/broadcast/[year]/state` | Public | Full hydration on load/reconnect (§33) | — | none | — |
+| `GET /api/broadcast` | Public | Full hydration on load/reconnect (§33) | — | none | — |
 | `POST /api/portal/tiger/broadcast/scene` | Host | Force a scene / return to auto | `{ year, scene? }` (omit `scene` = return to auto) | writes `broadcast_state` | `broadcast_state` update |
 | `POST /api/portal/tiger/broadcast/queue` | Host | `play_next`\|`play_now`\|`skip`\|`replay`\|`clear`\|`pause`\|`resume` | `{ year, action, eventId? }` | writes `broadcast_events`/`broadcast_state` | both tables |
 | `POST /api/portal/tiger/broadcast/graphic` | Host | Manual graphic/announcement | `{ year, kind: "MANUAL_BROADCAST_EVENT", payload }` | inserts `broadcast_events` at priority 100 | `broadcast_events` insert |
@@ -650,8 +674,14 @@ concept for a future engineer to learn.
 ## 29. Frontend Architecture
 
 ```
-app/broadcast/page.tsx                 — redirects to /broadcast/[live_active_season year] (§45)
-app/broadcast/[year]/page.tsx          — no SiteChrome, no nav, full 16:9 canvas
+app/broadcast/page.tsx                 — SHIPPED. No year in the URL — reads
+                                          broadcast_display_year (§26/§45).
+                                          No SiteChrome, no nav, full 16:9
+                                          canvas. Supports ?preview=1&year=&
+                                          scene= for Broadcast Controls'
+                                          rehearsal iframe (real leaderboard/
+                                          match data for that year, but never
+                                          touches real broadcast_state).
 components/broadcast/
   BroadcastStage.tsx                   — top-level: ConnectionManager + SceneRenderer + OverlayLayer + (later) AudioManager
   ConnectionManager.tsx                — Realtime subscribe/reconnect/backoff, triggers full-state re-fetch on reconnect
@@ -693,7 +723,7 @@ codebase (serverless Route Handlers, no persistent process) actually works.
 
 ## 31. Permissions/Security
 
-- Viewers: no auth, read-only, can only hit `GET /api/broadcast/[year]/state`
+- Viewers: no auth, read-only, can only hit `GET /api/broadcast`
   and Realtime-subscribe (both public per RLS `select using (true)`).
 - Host actions: `requireHost()` on every mutating route, identical to every
   other Tiger Center route today. No new permission concept introduced.
@@ -719,8 +749,8 @@ codebase (serverless Route Handlers, no persistent process) actually works.
 
 ## 33. State Recovery
 
-On mount and on every reconnect, `/broadcast/[year]` calls
-`GET /api/broadcast/[year]/state`, which returns
+On mount and on every reconnect, `/broadcast` calls
+`GET /api/broadcast`, which returns
 `broadcast_state` + the current `broadcast_events` queue +
 `broadcast_config` in one payload — the client never assumes it can resume
 a stream from where it left off. This directly answers §25/§33 of the
@@ -807,7 +837,7 @@ care what a scene renders.
 
 ## 41. Future Streaming/OBS Integration
 
-`/broadcast/[year]` is a plain, chrome-free, full-canvas page today by
+`/broadcast` is a plain, chrome-free, full-canvas page today by
 design (§6/§29) — exactly what an OBS Browser Source or a stream input
 needs, with zero additional work required to *use* it that way once it
 exists. No streaming infrastructure (RTMP ingest, YouTube API, etc.) is
@@ -817,12 +847,17 @@ built in any phase of this spec.
 
 - **No round live:** Holding Screen only; queue-driven events (which only
   arise from live scoring/match activity) simply don't fire.
-- **Tournament switches years mid-broadcast** (host flips `live_active_season`
-  via Master Settings while a `/broadcast/2027` tab is open): that tab keeps
-  showing 2027 (it's a year-scoped URL, matching the Master Settings
-  URL-per-year pattern) — it is **not** expected to silently follow the
-  active-season flip. A `/broadcast` link intended to always show "whatever
-  is live" is a distinct, later decision (§45).
+- **Host changes what `/broadcast` is pointed at mid-show** (updates
+  `broadcast_display_year` from Broadcast Controls while a `/broadcast` tab
+  is open elsewhere): **as shipped, that tab does follow the change** —
+  `useReloadOnDisplayYearChange.ts` subscribes to `broadcast_display_year`'s
+  Realtime publication and reloads. This supersedes the original design
+  here, which assumed a year-scoped URL that would *not* auto-follow — see
+  §45's corrected route-shape decision for why. Note `broadcast_display_year`
+  is deliberately independent of `live_active_season` (Master Settings)
+  — flipping the active season does **not** by itself change what
+  `/broadcast` shows; a host has to change `broadcast_display_year`
+  separately.
 - **Video deleted while queued** (Phase 3+): row marked `dismissed`,
   broadcast skips it silently (§19).
 - **Duplicate rapid score corrections** (host edits a score twice quickly):
@@ -833,11 +868,11 @@ built in any phase of this spec.
 
 ## 43. Acceptance Criteria
 
-See §37's V1 walkthrough plus, specifically: opening `/broadcast/2027` (or
-whatever `live_active_season` is at test time) on one machine and entering a
-score from a second, logged-in player device updates the broadcast's
-leaderboard without a manual refresh, within a few seconds, and the
-rotation continues uninterrupted afterward.
+See §37's V1 walkthrough plus, specifically: opening `/broadcast` (showing
+whatever `broadcast_display_year` is currently set to) on one machine and
+entering a score from a second, logged-in player device updates the
+broadcast's leaderboard without a manual refresh, within a few seconds, and
+the rotation continues uninterrupted afterward.
 
 ## 44. Phased Implementation Plan
 
@@ -847,12 +882,13 @@ Each phase becomes its own spec → plan → build cycle in
 --noEmit` + `lint` + `build` gate before merge) — see
 [[tiger-center-build-phasing]].
 
-**Phase 1 — Broadcast Foundation** (this is V1, §45)
+**Phase 1 — Broadcast Foundation** (this is V1, §45) — **SHIPPED**, see the
+checklist above.
 - Objective: prove the architecture end-to-end with the two existing
   leaderboard/match-play scenes and automatic rotation only.
 - Backend: `broadcast_state`/`broadcast_config` tables + `GET
-  /api/broadcast/[year]/state`. No queue/events yet — rotation only.
-- Frontend: `/broadcast/[year]` page, `BroadcastStage`, `SceneRenderer`,
+  /api/broadcast/state`. No queue/events yet — rotation only.
+- Frontend: `/broadcast` page, `BroadcastStage`, `SceneRenderer`,
   `IndividualLeaderboardScene`, `MatchPlayScene`, `HoldingScene`,
   `TransitionManager`.
 - Database: `broadcast_state`, `broadcast_config` (§26, minus
@@ -867,7 +903,9 @@ Each phase becomes its own spec → plan → build cycle in
 - Risks: none significant — this phase deliberately touches no scoring
   logic.
 
-**Phase 2 — Real-Time Event System**
+**Phase 2 — Real-Time Event System** — **not started.** This is the actual
+next gap: `broadcast_events` still doesn't exist in `supabase/schema.sql`.
+Confirmed 2026-09-04.
 - Adds `broadcast_events`, `lib/broadcast/publish.ts`, `lib/broadcast/rules.ts`
   (`SCORE_POSTED`, `MATCH_STATE_CHANGED`, `MATCH_WON`, `ROUND_STARTED`/
   `ROUND_FINAL` only), `lib/broadcast/priority.ts`, `lib/broadcast/queue.ts`.
@@ -884,16 +922,22 @@ Each phase becomes its own spec → plan → build cycle in
   `VIDEO_FEATURED` events.
 - Dependency: Phase 2 (queue must exist).
 
-**Phase 4 — Production Graphics**
-- Overlay components (`LowerThird`, `StatusCorner`), birdie/eagle/hole-in-one
-  classification rules, `LEADER_CHANGED`/`HOLE_WON` derived events,
-  `TOURNAMENT_WINNER` scene.
+**Phase 4 — Production Graphics** — **partially shipped, out of order.** A
+host-triggered announcement overlay (`OverlayLayer.tsx`, direct
+`broadcast_state.overlay_text` write, no queue) shipped alongside Phase 1.
+Still not built: `LowerThird`/`StatusCorner` as designed here, automatic
+birdie/eagle/hole-in-one classification, `LEADER_CHANGED`/`HOLE_WON`
+derived events, `TOURNAMENT_WINNER` scene — all genuinely depend on Phase 2's
+queue/rules engine existing first.
 - Dependency: Phase 2.
 
-**Phase 5 — Producer Controls**
-- Tiger Center → Broadcast tab, all host actions from §23/§27, Auto/
-  Producer mode (§24–25).
-- Dependency: Phases 2–4 (needs real events/scenes/videos to control).
+**Phase 5 — Producer Controls** — **partially shipped, out of order.**
+`/portal/admin/broadcast-controls` exists today with Pause/Resume
+Automation, force-scene, and the announcement trigger above. Still not
+built: Play Next/Play Now/Skip/Replay/Clear Queue against a real event
+queue (§23/§27) — those need Phase 2's `broadcast_events` table to act on.
+- Dependency: Phases 2–4 for the parts not yet built (needs real
+  events/scenes/videos to control).
 
 **Phase 6 — Audio**
 - `AudioManager`, playlist config, ducking. Dependency: none technical, but
@@ -938,31 +982,38 @@ requirements onto that foundation.
 
 ---
 
-## V1 Build Boundary
+## V1 Build Boundary — superseded by what actually shipped (2026-09-04)
 
-**Build (Phase 1 only, matching the brief's own §37 V1 definition):**
-`/broadcast/[year]` page; `broadcast_state`/`broadcast_config` tables;
+**Built (Phase 1, plus pieces of 4/5 shipped alongside it — see the Phase 1
+checklist and §44 above):** `/broadcast` page (no year in the URL —
+§45); `broadcast_state`/`broadcast_config`/`broadcast_display_year` tables;
 automatic rotation between Individual Leaderboard, Match Play, and a Holding
-Screen; live leaderboard updates via the *existing* Realtime subscription on
-`live_hole_scores` (no new event/queue system needed for this alone).
+Screen; live leaderboard/match-play updates via the existing Realtime
+subscription pattern; a host-triggered announcement overlay; a Tiger Center
+Broadcast Controls screen with Pause/Resume Automation and force-scene.
 
-**Do not build yet:** `broadcast_events`/the queue, any overlay, any video
-scene, any host control screen, any audio, Shot Tracer, OBS output. All of
-Phases 2–8 wait for Phase 1 to be reviewed working in the browser first.
+**Still not built:** `broadcast_events`/the real priority queue and rules
+engine (Phase 2 — confirmed absent from `supabase/schema.sql`), any video
+scene, any audio, automatic (non-host-triggered) graphics/classification,
+Shot Tracer, OBS output. Phase 2 is the real next dependency for Phases
+3/4/6/7/8's remaining, not-yet-built pieces.
 
-## Decisions I Need to Make — RESOLVED 2026-09-04
+## Decisions I Need to Make — RESOLVED (superseded by shipped code, 2026-09-04)
 
-1. **Route shape (§42):** `/broadcast/[year]` stays the year-pinned URL
-   exactly as specced. **Adding a plain `/broadcast` route** (`app/broadcast/page.tsx`)
-   that server-redirects to `/broadcast/[live_active_season's year]` — the
-   "set it and forget it" URL for a clubhouse TV/projector that should
-   always show whatever's currently live. Both routes ship in Phase 1 (it's
-   a one-file addition on top of work already being done — no reason to
-   defer it to a later phase). If `live_active_season` has no row yet
-   (before Master Settings' first Save of a season), the redirect falls back
-   to the Holding Screen's year-selection default — same "no live round"
-   handling the Holding Screen already needs per §17/§42, no new fallback
-   logic required.
+1. **Route shape (§42):** **Not what was approved earlier today** — that
+   approval (`/broadcast` + a `/broadcast` redirect) was made without
+   visibility into code that had already shipped a different answer. What's
+   actually live: a single `/broadcast` route with **no year in the URL at
+   all**. It always reads `broadcast_display_year` (§26) — a host-set value,
+   changed from `/portal/admin/broadcast-controls`, independent of
+   `live_active_season`. This means the "what year is the show pointed at"
+   decision belongs to whoever's running the broadcast that day, not to
+   whoever opens the link — a deliberate choice for a clubhouse TV/projector
+   nobody wants to reconfigure by editing a URL. `broadcast_display_year` is
+   Realtime-published, so a host changing it updates any already-open
+   `/broadcast` tab live. **This is the design going forward — do not
+   reintroduce a `/broadcast` route without a reason that outweighs
+   losing this host-controlled behavior.**
 2. **Max video length / enforcement policy (Phase 3, §19):** deferred —
    genuinely doesn't need an answer until Phase 3 is scoped, per the spec's
    own reasoning. Revisit then.
@@ -986,7 +1037,7 @@ Phases 2–8 wait for Phase 1 to be reviewed working in the browser first.
   whether it was run.
 - **Exact Vercel plan/limits (function timeouts, cron availability):** not
   blocking — Phase 1 adds no cron usage and its Route Handlers
-  (`GET /api/broadcast/[year]/state`) are simple reads, well under any
+  (`GET /api/broadcast`) are simple reads, well under any
   plan's default function timeout. Left as a non-blocking informational
   gap, not a re-opened decision.
 - **Error-tracking service:** none exists in `package.json` today. Confirmed
@@ -1000,45 +1051,59 @@ Phases 2–8 wait for Phase 1 to be reviewed working in the browser first.
   coverage becomes a project-wide initiative later, this feature picks it up
   then, not as a special case now.
 
-## Phase 1 Implementation Checklist
+## Phase 1 Implementation Checklist — SHIPPED (verified against code 2026-09-04)
 
-*(For a coding agent, after this specification is approved — do not start
-until then.)*
+*(Kept for history/onboarding — this is no longer a to-do list. Every item
+below is done, on `main`, with the noted differences from the original
+plan.)*
 
-- [ ] `supabase/schema.sql`: add `broadcast_config`, `broadcast_state`
-      (§26), RLS policies matching existing `live_*` convention. **Manual
-      step:** paste the resulting `create table`/RLS statements into the
-      Supabase SQL Editor in production after merge — same convention as
-      Matchups/Courses & Format (§26 resolution) — and confirm it landed
-      before calling this phase done (don't assume "merged" means "migrated,"
-      per [[tiger-center-build-phasing]]).
-- [ ] `lib/broadcast/types.ts`: `BroadcastState`, `BroadcastConfig` types.
-- [ ] `app/api/broadcast/[year]/route.ts`: `GET` handler returning
-      `{ state, config }` for that `season_year` (public, no auth).
-- [ ] `app/broadcast/[year]/page.tsx`: no `SiteChrome`, fetches initial
-      state server-side, renders `BroadcastStage`.
-- [ ] `app/broadcast/page.tsx`: redirects to `/broadcast/[year]` for
-      whatever `live_active_season` currently is (§45 decision 1); falls
-      back to the Holding Screen's default year if no active season is set
-      yet.
-- [ ] `components/broadcast/BroadcastStage.tsx`,
-      `ConnectionManager.tsx`, `SceneRenderer.tsx`, `TransitionManager.tsx`.
-- [ ] `components/broadcast/scenes/IndividualLeaderboardScene.tsx`,
+- [x] `supabase/schema.sql`: `broadcast_config`, `broadcast_state` (now
+      `season_year`-keyed, not singleton — §26), plus `broadcast_display_year`
+      (not originally planned — §26/§45) and `broadcast_state.overlay_text`/
+      `overlay_expires_at`/`tournament_live`. RLS matches the existing
+      `live_*` convention. Manual production migration step confirmed run
+      (same convention as Matchups/Courses & Format).
+- [x] `lib/broadcast/types.ts`: `BroadcastState`, `BroadcastConfig`,
+      `BroadcastPayload`, `BroadcastScene`, `BroadcastStanding` types.
+- [x] `lib/broadcast/state.ts`: `getBroadcastPayload()` — reads
+      `broadcast_display_year` first, then that year's `broadcast_state`/
+      `broadcast_config`, service-role client, logs (not throws) on a query
+      error and falls back to defaults (§32).
+- [x] `app/broadcast/page.tsx`: no `SiteChrome`, fetches initial state
+      server-side via `getBroadcastPayload()`, renders `BroadcastStage`.
+      **Different from the original plan:** no `[year]` URL segment — see
+      §45's corrected route-shape decision.
+- [x] `components/broadcast/BroadcastStage.tsx`, `SceneRenderer.tsx`,
+      `OverlayLayer.tsx` (overlay layer shipped early, ahead of Phase 4,
+      for the host-triggered announcement — see below).
+- [x] `components/broadcast/scenes/IndividualLeaderboardScene.tsx`,
       `MatchPlayScene.tsx`, `HoldingScene.tsx` — each wraps an existing
-      data-fetch function, broadcast-styled, with a defined fallback.
-- [ ] Client-side rotation timer reading `broadcast_config.scene_durations_ms`
-      and `broadcast_state.scene_started_at` (§15).
-- [ ] `IndividualLeaderboardScene` subscribes to the existing
-      `live_hole_scores` Realtime channel pattern (from `ScoringPanel.tsx`)
-      scoped to the current round, so it updates live without touching
-      `broadcast_events` at all in this phase.
-- [ ] Unit tests for the rotation-timing calculation (`tsx --test`).
-- [ ] `npx tsc --noEmit`, `npm run lint`, `npm run build` all pass.
-- [ ] Manual walkthrough: open `/broadcast/[year]`, confirm rotation
-      Individual Leaderboard → Match Play → Holding → repeat at configured
-      durations; enter a score from a second device/tab in the Player
-      Portal; confirm the leaderboard scene updates without a refresh;
-      confirm rotation continues uninterrupted through and after the
-      update; refresh the broadcast tab mid-rotation and confirm it
-      resumes correctly from server state (§33) rather than resetting to
-      scene one or breaking.
+      data-fetch function (`lib/broadcast/leaderboardData.ts`,
+      `matchPlayData.ts`), broadcast-styled, with a defined fallback.
+- [x] Client-side rotation timer: `lib/broadcast/rotation.ts` +
+      `useAutoScene.ts`, reading `scene_durations_ms`/`scene_started_at`
+      (§15). Unit tests: `lib/broadcast/rotation.test.ts`.
+- [x] Live updates: `lib/broadcast/useLiveBroadcastData.ts` /
+      `useLiveBroadcastState.ts` subscribe to the existing Realtime pattern,
+      scoped to the current round — leaderboard/match-play update without
+      touching `broadcast_events` (still doesn't exist — Phase 2).
+- [x] `useReloadOnDisplayYearChange.ts` — not originally planned; reloads an
+      open `/broadcast` tab when a host changes `broadcast_display_year` from
+      Broadcast Controls, via the same Realtime publication.
+- [x] **Shipped ahead of schedule, outside Phase 1's original scope:**
+      `app/portal/admin/broadcast-controls/page.tsx` +
+      `BroadcastControlsPanel.tsx`/`BroadcastPreview.tsx` (Phase 5 territory)
+      — Pause/Resume Automation, force-scene, and a host-triggered
+      announcement overlay via `app/api/portal/tiger/broadcast/announcement/route.ts`
+      (Phase 4 territory, `MANUAL_BROADCAST_EVENT`-equivalent, though without
+      the priority-queue system §11/§13 describe — it's a direct
+      `broadcast_state.overlay_text` write, not a queued event, since
+      `broadcast_events` doesn't exist yet).
+- [x] `npx tsc --noEmit`, `npm run lint`, `npm run build` passing as of the
+      last broadcast commit (`e156572`, 2026-09-03) — **not re-verified in
+      this reconciliation pass; re-run before relying on this if picking the
+      feature back up.**
+- [ ] Manual walkthrough was presumably done by whoever built this — not
+      independently re-verified here. If you're resuming this feature, open
+      `/broadcast` and `/portal/admin/broadcast-controls` yourself first
+      rather than trusting this checklist alone.
