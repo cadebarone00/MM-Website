@@ -193,6 +193,18 @@ Simulate one individual score for each of the two players on each side. The
 lowest score on a side is that side's hole score; compare those best-ball
 scores.
 
+For each target hole, every player contributes 10,000 Measure 1 par-based
+draws and 10,000 Measure 2 three-yardage-bucket draws. The four individual
+scores are retained in the combined 20,000-outcome hole distribution so
+Measure 3 can evaluate plausible player round shapes. The lower score for
+each pair becomes the team score for that simulated hole.
+
+An `X` entered on a live Fourball scorecard means that player did not complete
+the hole. It is never a Monte Carlo outcome. In live scoring, the side's hole
+score is its lowest numeric player score; an `X` simply leaves the partner's
+numeric score as the only eligible score. A live hole is complete only once
+both teams have an eligible best-ball score.
+
 ### Foursomes / Alternate Shot
 
 Simulate a likely contribution for each partner using individual-ball history,
