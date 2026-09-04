@@ -19,7 +19,7 @@ export function YearAndMasterSettingsNav({ initialYear }: { initialYear: number 
         >
           {SEASON_YEARS.map((y) => (
             <option key={y} value={y}>
-              {y}
+              {y === 2034 ? "2034 — Test Season" : y}
             </option>
           ))}
         </select>
@@ -29,7 +29,7 @@ export function YearAndMasterSettingsNav({ initialYear }: { initialYear: number 
         href={`/portal/admin/master-settings/${year}`}
         className="mt-4 block rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-8 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800"
       >
-        {year} Master Settings
+        {year === 2034 ? "2034 Test Season Setup" : `${year} Master Settings`}
       </Link>
     </div>
   );

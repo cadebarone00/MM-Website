@@ -189,6 +189,22 @@ Tiger correction, odds snapshot, player submission, and closeout/wager
 settlement. This is required both for corrections and future probability
 visualizations such as tournament-win chances.
 
+## 10. Disposable Test Season (2034)
+
+2034 is reserved for an end-to-end rehearsal using the actual player portals,
+scoring flow, archive publication, live odds, public surfaces, and MM Coin
+markets. It is not a real season.
+
+- While 2034 is active, its confirmed holes may inform that test season's
+  odds, exactly as a real live tournament would.
+- 2034 archive rows are excluded from normal Career Stats and every real
+  season's odds model inputs.
+- Tiger can use **Reset Test Season** to reverse test-only wager balance
+  effects, delete only 2034 roster/setup/match/score/archive/odds/audit and
+  broadcast rows, and return the active season to 2027.
+- The reset action is host-only, requires an explicit confirmation, and never
+  touches the static 2024–2026 archive or any non-2034 live season.
+
 ## Delivery plan
 
 1. **Foundation:** database state for score-entry audit, confirmed publication,

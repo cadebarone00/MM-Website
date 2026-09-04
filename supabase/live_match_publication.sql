@@ -23,6 +23,56 @@ alter table live_roster add column if not exists season_year integer;
 update live_roster set season_year = 2027 where season_year is null;
 alter table live_roster alter column season_year set not null;
 
+-- A season column alone is not enough: the legacy tables used `round` or
+-- `player_slug` as a global key. Re-key them by season so a 2034 rehearsal
+-- can coexist with the real 2027 tournament. These operations are safe to
+-- re-run; any dependent round FK is dropped and recreated as a composite FK.
+alter table live_match_boxes drop constraint if exists live_match_boxes_round_fkey;
+alter table live_match_boxes drop constraint if exists live_match_boxes_season_year_round_fkey;
+alter table live_round_state drop constraint if exists live_round_state_pkey;
+alter table live_round_state add primary key (season_year, round);
+
+alter table live_roster drop constraint if exists live_roster_pkey;
+alter table live_roster add primary key (season_year, player_slug);
+
+alter table live_match_boxes drop constraint if exists live_match_boxes_round_box_number_key;
+alter table live_match_boxes drop constraint if exists live_match_boxes_season_round_box_number_key;
+alter table live_match_boxes add constraint live_match_boxes_season_year_round_fkey
+  foreign key (season_year, round) references live_round_state (season_year, round);
+alter table live_match_boxes add constraint live_match_boxes_season_round_box_number_key
+  unique (season_year, round, box_number);
+
+alter table live_hole_scores drop constraint if exists live_hole_scores_player_slug_round_hole_key;
+alter table live_hole_scores drop constraint if exists live_hole_scores_season_year_player_slug_round_hole_key;
+alter table live_hole_scores add constraint live_hole_scores_season_year_player_slug_round_hole_key
+  unique (season_year, player_slug, round, hole);
+
+-- Master Settings and Broadcast must also have one row per season; otherwise
+-- creating the 2034 setup would overwrite the real tournament's settings.
+alter table live_tournament_settings add column if not exists season_year integer;
+update live_tournament_settings set season_year = 2027 where season_year is null;
+alter table live_tournament_settings alter column season_year set not null;
+alter table live_tournament_settings drop constraint if exists live_tournament_settings_singleton;
+alter table live_tournament_settings drop constraint if exists live_tournament_settings_pkey;
+alter table live_tournament_settings drop column if exists id;
+alter table live_tournament_settings add primary key (season_year);
+
+alter table broadcast_config add column if not exists season_year integer;
+update broadcast_config set season_year = 2027 where season_year is null;
+alter table broadcast_config alter column season_year set not null;
+alter table broadcast_config drop constraint if exists broadcast_config_singleton;
+alter table broadcast_config drop constraint if exists broadcast_config_pkey;
+alter table broadcast_config drop column if exists id;
+alter table broadcast_config add primary key (season_year);
+
+alter table broadcast_state add column if not exists season_year integer;
+update broadcast_state set season_year = 2027 where season_year is null;
+alter table broadcast_state alter column season_year set not null;
+alter table broadcast_state drop constraint if exists broadcast_state_singleton;
+alter table broadcast_state drop constraint if exists broadcast_state_pkey;
+alter table broadcast_state drop column if exists id;
+alter table broadcast_state add primary key (season_year);
+
 -- Foursome/Alternate Shot is a single shared ball per side. It belongs in a
 -- team archive, never twice in two players' individual score histories.
 -- These confirmed observations are the live counterpart to

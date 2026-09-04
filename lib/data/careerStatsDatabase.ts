@@ -36,17 +36,19 @@ export async function getCareerStatsDatabase() {
  * Partial Singles/Fourball rounds deliberately feed the raw model pool as
  * confirmed holes arrive; nine-hole historical rounds stay excluded by the
  * odds model's eligibility rule. */
-export async function getLiveCareerArchiveRecords(): Promise<CareerHoleRecord[]> {
+export async function getLiveCareerArchiveRecords(options: { includeTestSeason?: boolean } = {}): Promise<CareerHoleRecord[]> {
   const service = createSupabaseServiceRoleClient();
   const [{ data: rounds, error: roundsError }, { data: holes, error: holesError }] = await Promise.all([
     service.from("career_archive_rounds").select("season_year, round, player_slug, course, format, holes"),
     service.from("career_archive_live_holes").select("season_year, round, player_slug, hole, score, putts, fir, gir, did_not_finish"),
   ]);
   if (roundsError || holesError) return [];
-  const metadata = new Map((rounds ?? []).map((row) => [`${row.season_year}:${row.round}:${row.player_slug}`, row]));
+  const permittedRounds = (rounds ?? []).filter((row) => options.includeTestSeason || row.season_year !== 2034);
+  const permittedSeasonYears = new Set(permittedRounds.map((row) => row.season_year as number));
+  const metadata = new Map(permittedRounds.map((row) => [`${row.season_year}:${row.round}:${row.player_slug}`, row]));
   const counts = new Map<string, number>();
-  (holes ?? []).filter((row) => row.score != null && row.score > 0).forEach((row) => { const id = `${row.season_year}:${row.round}:${row.player_slug}`; counts.set(id, (counts.get(id) ?? 0) + 1); });
-  return (holes ?? []).filter((row) => row.score != null && row.score > 0 && !row.did_not_finish).flatMap((row): CareerHoleRecord[] => {
+  (holes ?? []).filter((row) => permittedSeasonYears.has(row.season_year as number) && row.score != null && row.score > 0).forEach((row) => { const id = `${row.season_year}:${row.round}:${row.player_slug}`; counts.set(id, (counts.get(id) ?? 0) + 1); });
+  return (holes ?? []).filter((row) => permittedSeasonYears.has(row.season_year as number) && row.score != null && row.score > 0 && !row.did_not_finish).flatMap((row): CareerHoleRecord[] => {
     const id = `${row.season_year}:${row.round}:${row.player_slug}`;
     const round = metadata.get(id);
     const setup = (round as { holes?: { number: number; par: number; yards: number }[] } | undefined)?.holes;
@@ -59,13 +61,13 @@ export async function getLiveCareerArchiveRecords(): Promise<CareerHoleRecord[]>
 /** Foursome's live shared-ball observations are deliberately read from a
  * separate archive. The model calls the format "Alternate Shot" to match
  * the historical workbook vocabulary; the application calls it Foursome. */
-export async function getLiveCareerArchiveTeamRecords(): Promise<CareerTeamHoleRecord[]> {
+export async function getLiveCareerArchiveTeamRecords(options: { includeTestSeason?: boolean } = {}): Promise<CareerTeamHoleRecord[]> {
   const service = createSupabaseServiceRoleClient();
   const { data, error } = await service
     .from("career_archive_team_holes")
     .select("season_year, round, match_box_id, team, player_1, player_2, course, hole, par, yards, team_score");
   if (error) return [];
-  return (data ?? []).map((row) => ({
+  return (data ?? []).filter((row) => options.includeTestSeason || row.season_year !== 2034).map((row) => ({
     year: row.season_year as number,
     round: row.round as number,
     format: "Alternate Shot",

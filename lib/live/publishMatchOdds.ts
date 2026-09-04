@@ -7,6 +7,7 @@ import { calculatePreRoundAlternateShotOdds, calculatePreRoundFourballOdds, calc
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import type { LiveMatchBox } from "@/lib/live/types";
 import type { OfficialMatchState } from "@/lib/live/officialMatchState";
+import { isTestSeason } from "@/lib/live/testSeason";
 
 export const LIVE_MATCH_ODDS_MODEL_VERSION = "match-monte-carlo-v1";
 
@@ -30,8 +31,8 @@ export async function publishMatchOdds(seasonYear: number, box: LiveMatchBox, st
   if (!course) return null;
   const courseHoles: CareerCourseHole[] = course.holes.map((hole) => ({ year: seasonYear, course: course.name, tee: null, hole: hole.number, par: hole.par, yards: hole.yards, holeType: `Par ${hole.par}`, holeLengthBucket: null }));
   const [liveArchiveRecords, liveArchiveTeamRecords] = await Promise.all([
-    getLiveCareerArchiveRecords(),
-    getLiveCareerArchiveTeamRecords(),
+    getLiveCareerArchiveRecords({ includeTestSeason: isTestSeason(seasonYear) }),
+    getLiveCareerArchiveTeamRecords({ includeTestSeason: isTestSeason(seasonYear) }),
   ]);
   const liveRecords = liveArchiveRecords.map(recordWithModelPlayer);
   const records = [...careerArchiveRecords, ...liveRecords];
