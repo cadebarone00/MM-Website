@@ -292,6 +292,23 @@ The readiness card reports the exact failed item by round. When the final
 requirement becomes true, the market may create its first saved model
 snapshot and show the featured line plus alternate-line slider.
 
+### Tiger publication rule
+
+Tiger Center's **Wager Types** is the publishing control room for public
+Wagers. It maintains a catalogue card for each supported public market,
+showing its plain-language description, who it applies to, and its exact
+public placement. For example:
+
+- **Total Tournament Birdies**
+- Applies to: every active player
+- Public slot: `Players → Selected Player → Futures`
+
+Tiger presses **Submit Wager** to explicitly publish that market type. Public
+Wagers then displays the corresponding market card, but the card remains
+non-bettable and reports its readiness requirements until the model can
+produce a legitimate saved price. Publication never authorizes placeholder
+or manually invented odds.
+
 ## Delivery plan
 
 1. **Foundation:** database state for score-entry audit, confirmed publication,

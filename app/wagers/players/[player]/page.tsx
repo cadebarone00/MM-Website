@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
 import { TournamentBirdiesReadinessCard } from "@/components/wagers/TournamentBirdiesReadinessCard";
@@ -10,6 +11,16 @@ export default function PlayerWagersPage() {
   const { player } = useParams<{ player: string }>();
   const profile = getPlayerProfileBySlug(player);
   const { tournament, loading, payload } = useLiveTournament();
+  const [published, setPublished] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/wagers/published-types", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : { slugs: [] })
+      .then((data: { slugs?: string[] }) => { if (active) setPublished(data.slugs ?? []); })
+      .catch(() => { if (active) setPublished([]); });
+    return () => { active = false; };
+  }, []);
 
   if (!profile) {
     return <p className="px-4 py-10 text-center font-sans text-sm text-ink-400 sm:px-7">Player not found.</p>;
@@ -29,7 +40,9 @@ export default function PlayerWagersPage() {
 
       <section className="mt-7">
         <h3 className="m-0 font-sans text-base font-black text-ink-900">Futures</h3>
-        <div className="mt-2"><TournamentBirdiesReadinessCard playerSlug={profile.slug} playerName={profile.fullName} /></div>
+        <div className="mt-2">
+          {published === null ? <p className="font-sans text-sm text-ink-500">Loading available futures…</p> : published.includes("total-tournament-birdies") ? <TournamentBirdiesReadinessCard playerSlug={profile.slug} playerName={profile.fullName} /> : <p className="font-sans text-sm text-ink-500">No player futures have been submitted yet.</p>}
+        </div>
       </section>
 
       <section className="mt-7">
