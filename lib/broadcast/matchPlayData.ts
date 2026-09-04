@@ -3,7 +3,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { pastTournaments } from "@/lib/data";
 import type { RealMatch, Tournament } from "@/lib/data/types";
 import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
-import { effectiveMatchState, matchBoxResult, thruLabel } from "@/lib/live/orchestration";
+import { effectiveMatchState, matchBoxResult, matchBoxStartedThru } from "@/lib/live/orchestration";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import type { MatchState } from "@/lib/live/types";
 import type { BroadcastTeam } from "./types";
@@ -100,25 +100,36 @@ async function liveMatchPlay(seasonYear: number): Promise<BroadcastMatchPlay> {
   const round = pickCurrentRound((roundRows as RoundStateRow[] | null) ?? []);
   if (round === null) return { seasonYear, roundLabel: null, matchBoxes: [], maroonPts: 0, whitePts: 0, final: false };
 
-  const snapshot = await buildLiveTournamentSnapshot(seasonYear);
+  // The broadcast consumes the same confirmed-only source that drives
+  // leaderboard state and odds. Draft/disputed device entries never appear.
+  const snapshot = await buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true });
   const boxes = snapshot.matchBoxes.filter((box) => box.round === round).sort((a, b) => a.boxNumber - b.boxNumber);
+  const { data: officialRows } = boxes.length
+    ? await service.from("live_match_official_state").select("match_box_id, status, thru, leader, margin, mathematically_complete, official_result").in("match_box_id", boxes.map((box) => box.id!))
+    : { data: [] };
+  const officialByBox = new Map((officialRows ?? []).map((row) => [row.match_box_id as string, row]));
 
   const matchBoxes: BroadcastMatchBox[] = boxes.map((box) => {
+    const official = box.id ? officialByBox.get(box.id) : null;
     const state = effectiveMatchState(snapshot, box);
     const result = matchBoxResult(snapshot, box);
+    const final = official?.status === "closed_out" || official?.status === "complete";
+    const leader = (official?.leader as BroadcastTeam | "tie" | undefined) ?? result.leader;
+    const margin = official?.margin ?? result.margin;
+    const thru = official?.thru ?? matchBoxStartedThru(snapshot, box);
     return {
       id: box.id,
       boxNumber: box.boxNumber,
       format: box.format,
-      state,
-      thru: state === "Scheduled" ? "" : thruLabel(snapshot, box),
+      state: final ? "Final" : state,
+      thru: state === "Scheduled" && thru === 0 ? "" : thru >= 18 || final ? "Final" : thru > 0 ? `Thru ${thru}` : "",
       maroonNames: box.maroonPlayers.map(getPlayerDisplayName),
       whiteNames: box.whitePlayers.map(getPlayerDisplayName),
-      leader: result.leader,
-      margin: result.margin,
-      holesRemaining: result.holesRemaining,
-      maroonPts: result.maroonPts,
-      whitePts: result.whitePts,
+      leader,
+      margin,
+      holesRemaining: 18 - thru,
+      maroonPts: final && leader === "maroon" ? 1 : final && leader === "tie" ? 0.5 : 0,
+      whitePts: final && leader === "white" ? 1 : final && leader === "tie" ? 0.5 : 0,
     };
   });
 

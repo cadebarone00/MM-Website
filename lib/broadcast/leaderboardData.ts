@@ -35,7 +35,7 @@ export async function getBroadcastLeaderboard(overrideYear?: number): Promise<Br
     return { seasonYear, standings, final: true };
   }
 
-  const snapshot = await buildLiveTournamentSnapshot(seasonYear);
+  const snapshot = await buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true });
   const standings: BroadcastStanding[] = leaderboard(snapshot).map((p) => ({ player: p.player, team: p.team, toPar: p.toPar }));
   return { seasonYear, standings, final: false };
 }

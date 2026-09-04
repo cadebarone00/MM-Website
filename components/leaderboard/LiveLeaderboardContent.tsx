@@ -1,10 +1,37 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { PointsRibbon } from "./PointsRibbon";
 import { LeaderboardBoard } from "./LeaderboardBoard";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
 import { getNextTournamentStatus, latestCompleted } from "@/lib/data";
+import type { RealMatch, Tournament } from "@/lib/data/types";
+
+type OfficialEntry = {
+  match: { id: string; round: number; box_number: number; format: string; tee_time: string; maroon_players: string[]; white_players: string[] };
+  officialState: { status: "upcoming" | "live" | "complete" | "closed_out"; thru: number; leader: "maroon" | "white" | "tie"; margin: number } | null;
+};
+type OfficialStanding = { player: string; team: "maroon" | "white"; toPar: number };
+
+function asOfficialMatches(entries: OfficialEntry[]): RealMatch[] {
+  return entries.map(({ match, officialState }) => ({
+    id: match.id,
+    day: match.round,
+    session: "Morning",
+    format: match.format,
+    maroonPlayers: match.maroon_players,
+    whitePlayers: match.white_players,
+    maroonPts: (officialState?.status === "closed_out" || officialState?.status === "complete") && officialState.leader === "maroon" ? 1 : (officialState?.status === "closed_out" || officialState?.status === "complete") && officialState?.leader === "tie" ? 0.5 : 0,
+    whitePts: (officialState?.status === "closed_out" || officialState?.status === "complete") && officialState.leader === "white" ? 1 : (officialState?.status === "closed_out" || officialState?.status === "complete") && officialState?.leader === "tie" ? 0.5 : 0,
+    status: officialState?.status === "closed_out" || officialState?.status === "complete" ? "final" : officialState?.status === "live" ? "live" : "scheduled",
+    thru: officialState?.thru,
+    leader: officialState?.leader,
+    margin: officialState?.margin,
+    holesRemaining: officialState ? 18 - officialState.thru : 18,
+    teeTimeCst: new Date(match.tee_time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+  }));
+}
 
 function timeAgo(iso: string): string {
   const seconds = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
@@ -25,10 +52,30 @@ function timeAgo(iso: string): string {
  */
 export function LiveLeaderboardContent() {
   const { tournament, payload, error, loading } = useLiveTournament();
+  const [officialEntries, setOfficialEntries] = useState<OfficialEntry[] | null>(null);
+  const [officialStandings, setOfficialStandings] = useState<OfficialStanding[] | null>(null);
+  useEffect(() => {
+    let active = true;
+    const load = () => fetch("/api/live/matches", { cache: "no-store" }).then((res) => res.json()).then((data) => active && setOfficialEntries(data.ok ? data.matches : [])).catch(() => active && setOfficialEntries([]));
+    load();
+    const timer = window.setInterval(load, 10_000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, []);
+  useEffect(() => {
+    let active = true;
+    const load = () => fetch("/api/live/standings", { cache: "no-store" }).then((res) => res.json()).then((data) => active && setOfficialStandings(data.ok ? data.standings : [])).catch(() => active && setOfficialStandings([]));
+    load();
+    const timer = window.setInterval(load, 10_000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, []);
   const isLive = getNextTournamentStatus() === "live";
   const hasLiveData = tournament.matches.length > 0;
   const showFallback = !isLive && !hasLiveData;
   const source = showFallback ? latestCompleted : tournament;
+  const officialMatches = officialEntries ? asOfficialMatches(officialEntries) : [];
+  const liveSource: Tournament = officialMatches.length > 0
+    ? { ...source, matches: officialMatches, individualLeaderboard: officialStandings ?? source.individualLeaderboard, maroonPts: officialMatches.reduce((sum, match) => sum + match.maroonPts, 0), whitePts: officialMatches.reduce((sum, match) => sum + match.whitePts, 0) }
+    : officialStandings && officialStandings.length > 0 ? { ...source, individualLeaderboard: officialStandings } : source;
 
   return (
     <div>
@@ -45,10 +92,10 @@ export function LiveLeaderboardContent() {
           </div>
         )}
 
-        {isLive && loading && !payload ? (
+        {isLive && loading && !payload && officialEntries === null ? (
           <p className="font-sans text-sm text-ink-400 py-10 text-center">Checking the live sheet...</p>
         ) : (
-          <LeaderboardBoard tournament={source} live={isLive} />
+          <LeaderboardBoard tournament={liveSource} live={isLive} />
         )}
       </div>
     </div>
