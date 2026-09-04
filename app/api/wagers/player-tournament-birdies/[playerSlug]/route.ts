@@ -21,7 +21,12 @@ export async function GET(_: Request, { params }: { params: Promise<{ playerSlug
     service.from("live_courses").select("id, name, holes"),
   ]);
   const error = settingsError ?? rosterError ?? roundsError ?? boxesError ?? coursesError;
-  if (error) return NextResponse.json({ ok: false, error: "Could not check tournament setup." }, { status: 500 });
+  if (error) {
+    return NextResponse.json({
+      ok: false,
+      error: `The live database setup is not ready for tournament futures (${error.message}). Run the latest supabase/live_match_publication.sql once in Supabase SQL Editor, then refresh this page.`,
+    }, { status: 500 });
+  }
 
   const blockers: string[] = [];
   const roundCount = settings?.round_count ?? null;
