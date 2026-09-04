@@ -99,14 +99,14 @@ export function ScoringPanel({
   const alreadySubmitted = state.submittedPlayers.includes(playerSlug);
   const scoreFor = (player: string, hole: number) => state.scores.find((s) => s.player === player && s.hole === hole) ?? null;
 
-  async function submitStroke(targetPlayerSlugs: string[], score: number) {
+  async function submitStroke(targetPlayerSlugs: string[], score: number, didNotFinish = false) {
     setBusy(true);
     setError(null);
     try {
       const res = await fetch("/api/portal/scoring/stroke", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ round, hole: selectedHole, targetPlayerSlugs, score }),
+        body: JSON.stringify({ round, hole: selectedHole, targetPlayerSlugs, score, didNotFinish }),
       });
       const data = await res.json();
       if (!data.ok) setError(data.error);
@@ -233,6 +233,20 @@ export function ScoringPanel({
                       className="w-16 rounded-lg border-2 border-stone-300 px-2 py-1 text-sm"
                     />
                   </label>
+                  {matchBox.format === "Fourball" && canScoreThis && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => {
+                        if (window.confirm("If this player does not finish the hole, the recorded score will be double par. Continue?")) {
+                          submitStroke([slug], 0, true);
+                        }
+                      }}
+                      className="rounded border border-ink-300 px-2 py-1 font-condensed text-2xs font-semibold text-ink-700"
+                    >
+                      X
+                    </button>
+                  )}
                   {existing?.confirmedBy && (
                     <span className="h-3 w-3 rounded-full bg-green-500" title="Your entries agree" />
                   )}
