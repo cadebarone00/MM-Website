@@ -2,12 +2,11 @@
 
 ## Status
 
-**Specification only — nothing in this document has been built.** Per
-`CLAUDE.md` Rule 2 and the brief this was written against: no code changes
-until this file is reviewed and approved. Once approved, Phase 1 gets its own
-implementation plan under `docs/superpowers/plans/`, built the same way every
-other Tiger Center phase has been (own worktree/branch, subagent-driven
-development) — see [[tiger-center-build-phasing]].
+**Approved 2026-09-04.** All open decisions below are resolved (see §45).
+Phase 1 gets its own implementation plan under `docs/superpowers/plans/`,
+built the same way every other Tiger Center phase has been (own
+worktree/branch, subagent-driven development) — see
+[[tiger-center-build-phasing]].
 
 This document was produced by digesting a long-form product brief for an
 "Automated Golf Broadcast System" and grounding every architectural choice in
@@ -913,7 +912,8 @@ Each phase becomes its own spec → plan → build cycle in
 ## 45. Open Questions
 
 (Also restated at the very end as this document's required closing
-deliverable, per the brief's §40 format.)
+deliverable, per the brief's §40 format.) All resolved 2026-09-04 — see
+"Decisions I Need to Make" below.
 
 ## 46. Final Recommended Architecture
 
