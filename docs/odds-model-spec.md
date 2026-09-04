@@ -45,13 +45,9 @@ calibration:
 ## Target-hole and bucket logic
 
 For every future or remaining hole, the simulator starts with the target
-course's actual hole setup. Historical individual scores are weighted by how
-closely they match that target hole:
-
-1. Exact course configuration + par + yardage bucket + front/back nine.
-2. Par + yardage bucket + front/back nine across all courses.
-3. Par + yardage bucket across all courses.
-4. Player's overall complete individual-ball baseline.
+course's actual hole setup. The target setup supplies the hole's par, yardage,
+yardage bucket, and front/back-nine position. Measures define which parts of
+that target information are used at each stage.
 
 An exact small sample must not dominate the result. The implementation uses a
 minimum-sample threshold and weighted smoothing: more specific buckets receive
@@ -83,9 +79,59 @@ Empty buckets remain visible and are treated as no direct evidence rather than
 as a zero score. The Career Stats Buckets tab displays this exact measure so
 the model and the user inspect the same data.
 
+For a target hole, Measure 2 pools the target bucket and its immediately
+adjacent buckets. For example, a 435-yard hole uses 421–430, 431–440, and
+441–450. Every score in those three buckets is eligible regardless of par.
+
+### Measure 3 — Individual Round-Shape Stabilizer
+
+Measure 3 lightly reweights, but does not reject, simulated full-round score
+shapes using each player's historical 18-hole individual-ball average and
+variation for eagles+, birdies, pars, bogeys, and doubles+. A very unusual
+round remains possible; it receives a small soft penalty so a rare extreme
+round does not disproportionately drive match odds. The size of this penalty
+must be back-tested and must remain a stabilizer, not a primary predictor.
+
+### Measure 4 — Singles and Fourball Format Adjustment
+
+Measure 4 applies only to Singles and Fourball. It makes a small,
+shrinkage-based adjustment from two format-specific signals:
+
+- The player's win/loss/halve record in that format.
+- The player's average score to par in that format relative to their overall
+  individual-ball baseline.
+
+The adjustment must be modest and smoothed toward neutral for small samples.
+It must not double-count the hole-score evidence already used by Measures 1
+and 2.
+
 ## Monte Carlo engine
 
-Each model calculation runs 10,000 complete simulated matches.
+### Pre-round Singles method
+
+Pre-round Singles odds use two simulation layers.
+
+For each of the 18 target holes:
+
+1. Run 10,000 player-versus-player score-pair simulations using Measure 1's
+   par-based pools.
+2. Run 10,000 player-versus-player score-pair simulations using Measure 2's
+   three-bucket yardage pools.
+3. Retain the score pairs, not just their win/tie/loss labels, and combine the
+   two sets into a 20,000-outcome hole distribution. Until back-testing proves
+   a better blend, Measure 1 and Measure 2 each contribute 50%.
+
+Then run 10,000 complete simulated matches. Each match draws one score pair
+from every target hole's combined distribution, awards the hole to the lower
+score or halves it, and records the final match result. Measure 3 reweights
+the resulting player round shapes and Measure 4 applies its small
+format-specific adjustment before the final win/tie/loss probabilities are
+calculated.
+
+### Other formats and live matches
+
+Each model calculation runs 10,000 complete simulated matches after forming
+the relevant hole distributions.
 
 For each simulation and each unplayed target hole:
 
