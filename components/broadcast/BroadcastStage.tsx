@@ -5,6 +5,7 @@ import type { BroadcastMatchPlay } from "@/lib/broadcast/matchPlayData";
 import { useLiveBroadcastData } from "@/lib/broadcast/useLiveBroadcastData";
 import { useLiveBroadcastState } from "@/lib/broadcast/useLiveBroadcastState";
 import { useReloadOnDisplayYearChange } from "@/lib/broadcast/useReloadOnDisplayYearChange";
+import { useBroadcastQueue } from "@/lib/broadcast/useBroadcastQueue";
 import { SceneRenderer } from "./SceneRenderer";
 
 /**
@@ -40,9 +41,18 @@ export function BroadcastStage({
     matchPlay: initialMatchPlay,
   });
   const state = useLiveBroadcastState(broadcast.seasonYear, broadcast.state, !preview);
+  const activeEvent = useBroadcastQueue(broadcast.seasonYear, broadcast.events, broadcast.config, !preview);
   useReloadOnDisplayYearChange(broadcast.seasonYear, !preview);
 
   return (
-    <SceneRenderer state={state} config={broadcast.config} standings={standings} leaderboardFinal={leaderboardFinal} matchPlay={matchPlay} holding={holding} />
+    <SceneRenderer
+      state={state}
+      config={broadcast.config}
+      standings={standings}
+      leaderboardFinal={leaderboardFinal}
+      matchPlay={matchPlay}
+      holding={holding}
+      activeEvent={activeEvent}
+    />
   );
 }
