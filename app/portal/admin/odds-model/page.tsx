@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { OddsModelLab } from "@/components/portal/tiger/OddsModelLab";
-import { careerArchiveCourseHoles, careerArchiveRecords } from "@/lib/data/careerArchive";
+import { careerArchiveCourseHoles, careerArchiveRecords, careerArchiveTeamRecords } from "@/lib/data/careerArchive";
 import { getLiveCareerArchiveRecords } from "@/lib/data/careerStatsDatabase";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -14,6 +14,6 @@ export default async function OddsModelPage() {
   return <div className="mx-auto max-w-[1100px] px-4 py-12 sm:px-7">
     <h1 className="font-serif text-3xl font-bold text-ink-900">Odds Model</h1>
     <p className="mt-2 font-sans text-sm text-ink-500">Match odds are calculated from the normalized Career Archive. The simulator expands format and live models as each is validated.</p>
-    <div className="mt-6"><OddsModelLab records={records} courseHoles={careerArchiveCourseHoles} /></div>
+    <div className="mt-6"><OddsModelLab records={records} teamRecords={careerArchiveTeamRecords} courseHoles={careerArchiveCourseHoles} /></div>
   </div>;
 }

@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import { canonicalCourseName } from "@/lib/data/canonicalCourse";
 import { getPlayerDisplayName } from "@/lib/data/players";
-import type { CareerCourseHole, CareerHoleRecord } from "@/lib/data/careerStats";
-import { calculatePreRoundFourballOdds, calculatePreRoundSinglesOdds } from "@/lib/odds/preRoundSingles";
+import type { CareerCourseHole, CareerHoleRecord, CareerTeamHoleRecord } from "@/lib/data/careerStats";
+import { calculatePreRoundAlternateShotOdds, calculatePreRoundFourballOdds, calculatePreRoundSinglesOdds } from "@/lib/odds/preRoundSingles";
 
 type Format = "Singles" | "Fourball" | "Alternate Shot";
 const selectClass = "mt-1 w-full rounded-md border border-gold-300 bg-white px-3 py-2 font-sans text-sm text-ink-900";
@@ -27,7 +27,7 @@ function OutcomeBar({ aLabel, bLabel, result }: { aLabel: string; bLabel: string
 /** Visual home for every match format. Only the pre-round Singles engine is
  * active; rules for other formats/live state are kept visibly separate until
  * their Career Archive model layers are validated. */
-export function MatchSimulator({ records, courseHoles }: { records: CareerHoleRecord[]; courseHoles: CareerCourseHole[] }) {
+export function MatchSimulator({ records, teamRecords, courseHoles }: { records: CareerHoleRecord[]; teamRecords: CareerTeamHoleRecord[]; courseHoles: CareerCourseHole[] }) {
   const players = useMemo(() => [...new Set(records.map((row) => row.player))].sort((a, b) => getPlayerDisplayName(a).localeCompare(getPlayerDisplayName(b))), [records]);
   const courses = useMemo(() => {
     const historicalCourses = new Set(records.map((row) => canonicalCourseName(row.course)));
@@ -47,17 +47,18 @@ export function MatchSimulator({ records, courseHoles }: { records: CareerHoleRe
     if (!course) return null;
     if (format === "Singles" && a1 !== b1) return calculatePreRoundSinglesOdds({ records, courseHoles, playerA: a1, playerB: b1, course, holesFinished, playerALead: teamAStatus });
     if (format === "Fourball" && new Set([a1, a2, b1, b2]).size === 4) return calculatePreRoundFourballOdds({ records, courseHoles, teamA: [a1, a2], teamB: [b1, b2], course, holesFinished, teamALead: teamAStatus });
+    if (format === "Alternate Shot" && holesFinished === 0 && new Set([a1, a2, b1, b2]).size === 4) return calculatePreRoundAlternateShotOdds({ records, teamRecords, courseHoles, teamA: [a1, a2], teamB: [b1, b2], course });
     return null;
   }, [a1, a2, b1, b2, course, courseHoles, format, holesFinished, records, teamAStatus]);
   const statusA = teamAStatus === 0 ? "AS" : teamAStatus > 0 ? `${teamAStatus} UP` : `${Math.abs(teamAStatus)} DOWN`;
   const statusB = teamAStatus === 0 ? "AS" : teamAStatus > 0 ? `${teamAStatus} DOWN` : `${Math.abs(teamAStatus)} UP`;
-  const available = format === "Singles" || format === "Fourball";
+  const available = format === "Singles" || format === "Fourball" || (format === "Alternate Shot" && holesFinished === 0);
   return <div className="grid gap-5 xl:grid-cols-[1.15fr_.85fr]">
     <section className="rounded-lg border-2 border-maroon-700 bg-cream-50 p-5"><p className="font-condensed text-2xs font-bold uppercase tracking-wide text-maroon-700">MM Match Simulator · Career Archive only</p><h2 className="mt-1 font-serif text-2xl font-bold text-ink-900">Match Simulator</h2><p className="mt-1 font-sans text-sm text-ink-600">Change any control and the visual updates automatically. Player, format, and course changes reset the match to all square before the first hole.</p>
       <div className="mt-5 grid gap-3 sm:grid-cols-2"><label className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Format<select className={selectClass} value={format} onChange={(event) => { setFormat(event.target.value as Format); resetState(); }}><option>Singles</option><option>Fourball</option><option>Alternate Shot</option></select></label><label className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Course<select className={selectClass} value={course} onChange={(event) => { setCourse(event.target.value); resetState(); }}>{courses.map((item) => <option key={item}>{item}</option>)}</select></label></div>
       {format === "Singles" ? <div className="mt-4 grid gap-3 sm:grid-cols-2"><PlayerSelect label="Player A" value={a1} players={players} onChange={(value) => { setA1(value); resetState(); }} /><PlayerSelect label="Player B" value={b1} players={players} onChange={(value) => { setB1(value); resetState(); }} /></div> : <div className="mt-4"><p className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Team A</p><div className="mt-1 grid gap-3 sm:grid-cols-2"><PlayerSelect label="Player 1" value={a1} players={players} onChange={(value) => { setA1(value); resetState(); }} /><PlayerSelect label="Player 2" value={a2} players={players} onChange={(value) => { setA2(value); resetState(); }} /></div><p className="mt-4 font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Team B</p><div className="mt-1 grid gap-3 sm:grid-cols-2"><PlayerSelect label="Player 1" value={b1} players={players} onChange={(value) => { setB1(value); resetState(); }} /><PlayerSelect label="Player 2" value={b2} players={players} onChange={(value) => { setB2(value); resetState(); }} /></div></div>}
       <div className="mt-5 grid gap-4 rounded-md border border-gold-200 bg-white p-4"><Range label="Holes finished" value={holesFinished} min={0} max={18} display={String(holesFinished)} onChange={(value) => { setHolesFinished(value); setTeamAStatus((status) => Math.max(-Math.min(9, value), Math.min(Math.min(9, value), status))); }} /><div className="grid gap-3 sm:grid-cols-2"><Range label={`${format === "Singles" ? "Player" : "Team"} A status`} value={teamAStatus} min={-Math.min(9, holesFinished)} max={Math.min(9, holesFinished)} display={statusA} onChange={setTeamAStatus} /><Range label={`${format === "Singles" ? "Player" : "Team"} B status`} value={-teamAStatus} min={-Math.min(9, holesFinished)} max={Math.min(9, holesFinished)} display={statusB} onChange={() => undefined} disabled /></div></div>
-      {!available && <p className="mt-4 rounded-md bg-gold-100 px-3 py-2 font-sans text-sm text-ink-700">Alternate Shot controls are ready; its scoring engine is the next model to validate.</p>}
+      {!available && <p className="mt-4 rounded-md bg-gold-100 px-3 py-2 font-sans text-sm text-ink-700">Live Alternate Shot controls are ready; its remaining-hole engine is the next model to validate.</p>}
       {available && result && <p className="mt-4 font-sans text-xs text-ink-500">{holesFinished === 0 ? "Pre-round:" : `Live through ${holesFinished}: completed-hole state is fixed and only ${18 - holesFinished} holes are simulated.`} Measure 1 + Measure 2 create 20,000 score pairs per remaining {course} hole, then the model runs 10,000 finish scenarios. Smallest samples: A {result.measureOneMinimum[0]}/{result.measureTwoMinimum[0]}, B {result.measureOneMinimum[1]}/{result.measureTwoMinimum[1]}.</p>}
     </section>
     <div className="space-y-4"><OutcomeBar aLabel={format === "Singles" ? getPlayerDisplayName(a1) : "Team A"} bLabel={format === "Singles" ? getPlayerDisplayName(b1) : "Team B"} result={result} /><section className="rounded-lg border border-gold-200 bg-white p-4"><p className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Current match state</p><p className="mt-1 font-serif text-lg font-bold text-ink-900">{activeA} {statusA} · {statusB} {activeB}</p><p className="mt-1 font-sans text-sm text-ink-600">{holesFinished === 0 ? "Pre-round" : `Through ${holesFinished}`} · {course}</p></section></div>

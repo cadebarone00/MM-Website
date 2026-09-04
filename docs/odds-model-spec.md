@@ -211,9 +211,13 @@ Simulate a likely contribution for each partner using individual-ball history,
 then combine those contributions into one team-hole score. Simulate the other
 team the same way and compare the two combined scores.
 
-The combination formula is calibrated against historical Foursomes team and
-partnership results whenever enough team evidence exists. It must never simply
-label an individual player's score as a Foursomes score.
+For each measure, both partners provide individual simulated scores and the
+model blends their average with a sampled historical Alternate Shot team score.
+Exact-pair Alternate Shot history is used for this calibration when it has at
+least three matching samples; otherwise the broader Alternate Shot team-hole
+archive is used. It must never simply label an individual player's score as a
+Foursomes score. Pre-round Alternate Shot runs 10,000 Measure 1 outcomes and
+10,000 Measure 2 outcomes per target hole, then 10,000 complete matches.
 
 ## Live-match rules
 
