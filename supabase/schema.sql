@@ -1094,6 +1094,15 @@ begin
   end if;
 end $$;
 
+-- Fix: "Go Live" while previewing 2026 (a valid DISPLAY_YEARS entry — see
+-- lib/broadcast/displayYears.ts) was failing with "Could not go live."
+-- because this table's season_year check only allowed 2027-2034, while
+-- broadcast_display_year (the year picker's source of truth) allows
+-- 2024-2034. Widen this one to match so any previewable year can go live,
+-- per the comment above ("Tiger could go live on 2026 just to demo the look").
+alter table broadcast_state drop constraint if exists broadcast_state_season_year_check;
+alter table broadcast_state add constraint broadcast_state_season_year_check check (season_year between 2024 and 2034);
+
 -- === Watch Live Broadcast: Phase 2 (Event Queue) ==========================
 -- See docs/superpowers/specs/2026-09-04-broadcast-event-queue-design.md.
 
