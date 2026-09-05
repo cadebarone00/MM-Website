@@ -48,17 +48,19 @@ function ProbabilityGraph({ tournament }: { tournament: Tournament }) {
   };
   const path = samples.map(point).join(" ");
   const final = samples.at(-1) ?? 50;
+  const favorite = final >= 50 ? "Maroon" : "White";
+  const favoriteProbability = Math.round(favorite === "Maroon" ? final : 100 - final);
 
   return (
-    <section className="rounded-md border border-gold-300 bg-maroon-900 p-4 text-white sm:p-6">
+    <section className="rounded-md border border-ink-200 bg-white p-4 text-ink-900 shadow-sm sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="font-condensed text-2xs font-bold uppercase tracking-eyebrow text-gold-300">Tournament Win Probability</p>
-          <h1 className="mt-1 font-serif text-3xl font-bold sm:text-4xl">{tournament.editionLabel}</h1>
+          <p className="font-condensed text-2xs font-bold uppercase tracking-eyebrow text-ink-500">Tournament Win Probability</p>
+          <h1 className="mt-1 font-serif text-2xl font-bold sm:text-3xl">{tournament.editionLabel}</h1>
         </div>
-        <div className="rounded-sm border border-white/20 px-3 py-2 text-right">
-          <div className="font-condensed text-2xs font-bold uppercase tracking-wide text-gold-300">{final === 50 ? "Tied" : final > 50 ? "Maroon wins" : "White wins"}</div>
-          <div className="font-sans text-2xl font-black">{final}%</div>
+        <div className="flex gap-4 text-right">
+          <div><div className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Projected points</div><div className="mt-1 font-sans text-2xl font-black"><span className="text-maroon-700">{fmtPt(tournament.maroonPts)}</span><span className="mx-2 text-ink-300">–</span>{fmtPt(tournament.whitePts)}</div></div>
+          <div className="border-l border-ink-200 pl-4"><div className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">{favorite} win probability</div><div className="mt-1 font-sans text-3xl font-black text-maroon-700">{favoriteProbability}%</div></div>
         </div>
       </div>
       <div className="mt-5 h-[260px] sm:h-[340px]">
