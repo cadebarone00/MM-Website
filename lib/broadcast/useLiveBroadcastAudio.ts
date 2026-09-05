@@ -17,7 +17,12 @@ import type { PlaylistTrack } from "./playlist";
  * <audio> element and the mute/volume UI state.
  */
 export function useLiveBroadcastAudio(state: BroadcastState, tracks: PlaylistTrack[]) {
-  const [audio] = useState(() => (typeof window !== "undefined" ? new Audio() : null));
+  const [audio] = useState(() => {
+    if (typeof window === "undefined") return null;
+    const element = new Audio();
+    element.muted = true; // must be muted at creation — the very first .play() call in the effect below happens before the mute-sync effect runs, and only a muted element is allowed to autoplay
+    return element;
+  });
   const [muted, setMuted] = useState(true);
   const [volume, setVolume] = useState(1);
   const [nowPlayingId, setNowPlayingId] = useState<string | null>(null);

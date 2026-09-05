@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { SocialLinks } from "@/components/ui/SocialLinks";
+import { ArchivedScores } from "@/components/scorecard/ArchivedScores";
 import type { PlayerProfile } from "@/lib/data/types";
 
 // The data files use a literal "-" to mark a field as not filled in yet — treat that as absent, same as empty.
@@ -68,6 +69,7 @@ export function PlayerBioSection({ profile: baseProfile }: { profile: PlayerProf
   const hasNotes = [profile.strengths, profile.careerHighlights, profile.personal, profile.hobbies, profile.goals, profile.misc].some(isSet);
 
   return (
+    <>
     <div className="mt-8">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="m-0 font-serif text-2xl font-bold text-maroon-700">Player Bio</h2>
@@ -123,5 +125,7 @@ export function PlayerBioSection({ profile: baseProfile }: { profile: PlayerProf
         )}
       </div>
     </div>
+    <ArchivedScores playerSlug={profile.slug} />
+    </>
   );
 }
