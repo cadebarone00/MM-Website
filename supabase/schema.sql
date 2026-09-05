@@ -1193,3 +1193,10 @@ begin
     alter publication supabase_realtime add table broadcast_playlist_tracks;
   end if;
 end $$;
+
+-- Shuffle toggle for loop_mode 'all' — see lib/broadcast/playlistPlayback.ts's
+-- playlistTickAt(), which derives a deterministic shuffle from
+-- audio_track_id + audio_started_at, so every viewer computes the same
+-- order without a new random-order column. Ignored entirely when
+-- audio_loop_mode is 'one'.
+alter table broadcast_state add column if not exists audio_shuffle boolean not null default false;
