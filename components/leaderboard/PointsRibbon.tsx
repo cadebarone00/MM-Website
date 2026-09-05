@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { fmtPt } from "@/lib/data";
 import type { Tournament } from "@/lib/data/types";
 
@@ -30,13 +31,13 @@ function flooredFill(real: number, otherReal: number, floor = 15): number {
   return (a / (a + b)) * 100;
 }
 
-function ProjectionBar() {
+function ProjectionBar({ tournament }: { tournament: Tournament }) {
   return (
     <div className="grid h-10 grid-cols-[1fr_auto_1fr] items-center border-y border-gold-300 bg-cream-100 px-3 sm:h-11 sm:px-5">
       <span className="justify-self-end pr-3 font-sans text-2xl font-black tabular-nums text-ink-900 sm:text-3xl">
         {fmtPt(PROJECTED_POINTS.maroon)}
       </span>
-      <span className="font-condensed text-2xs font-extrabold uppercase tracking-eyebrow text-ink-700">Projected</span>
+      <Link href={`/leaderboard/${tournament.slug}/projected`} className="font-condensed text-2xs font-extrabold uppercase tracking-eyebrow text-ink-700 underline decoration-gold-500 underline-offset-4 hover:text-maroon-700">Projected</Link>
       <span className="justify-self-start pl-3 font-sans text-2xl font-black tabular-nums text-ink-900 sm:text-3xl">
         {fmtPt(PROJECTED_POINTS.white)}
       </span>
@@ -64,7 +65,7 @@ export function PointsRibbon({ tournament }: { tournament: Tournament }) {
   const whiteFill = flooredFill(realWhite, realMaroon);
   return (
     <div className="sticky z-40 -mx-4 sm:-mx-7 lg:mx-0" style={{ top: headerOffset }}>
-      <ProjectionBar />
+      <ProjectionBar tournament={tournament} />
       {/* Mobile: fixed 50/50 split, gold divider, numbers pinned at 40%/60%. */}
       <div className="lg:hidden">
         <div className="relative flex h-[114px] w-full border-b border-gold-300">
