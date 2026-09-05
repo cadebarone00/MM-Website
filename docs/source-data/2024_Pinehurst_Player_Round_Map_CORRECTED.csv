@@ -1,0 +1,49 @@
+Player,Round,Course,Day_Sheet,Session,Format,Partner(s),Opponent(s),Scorecard_Sheet,Scorecard_Block,Hole_Score_Cells,Match_Pairing_Source_Cells,Format_Source_Cell
+CAM,1,Mid Pines Golf Club,Tuesday,Morning,Fourball,DREW,CADE & PEYTON,Player Input,D5:X14,F14:W14,Tuesday!G29:G32,Tuesday!G23
+CAM,2,The Mid South Club,Wednesday,Morning,Fourball,JACKSON,PEYTON & DALTON,Player Input,Z5:AT14,AB14:AS14,Wednesday!G29:G32,Wednesday!G23
+CAM,3,Pine Needles Golf Club,Thursday,Morning,Fourball,LUKE,CADE & DALTON,Player Input,BI5:CC14,BK14:CB14,Thursday!G14:G17,Thursday!G8
+CAM,4,Pine Needles Golf Club,Thursday,Afternoon,Alternate Shot,DREW,DALTON & COLLIN,Thursday,G48:AC60,"H54:P54,R54:Z54",Thursday!G54:G57,Thursday!G48
+CAM,5,Tobacco Road Golf Club,Friday,Morning,Singles,,CADE,Player Input,CE5:CY14,CG14:CX14,Friday!G14:G15,Friday!G8
+CAM,6,Tobacco Road Golf Club,Friday,Afternoon,Singles,,PEYTON,Player Input,DA5:DU14,DC14:DT14,Friday!G89:G90,Friday!G83
+DREW,1,Mid Pines Golf Club,Tuesday,Morning,Fourball,CAM,CADE & PEYTON,Player Input,D17:X26,F26:W26,Tuesday!G29:G32,Tuesday!G23
+DREW,2,The Mid South Club,Wednesday,Morning,Fourball,LUKE,COLLIN & CADE,Player Input,Z17:AT26,AB26:AS26,Wednesday!G14:G17,Wednesday!G8
+DREW,3,Pine Needles Golf Club,Thursday,Morning,Fourball,JACKSON,COLLIN & PEYTON,Player Input,BI17:CC26,BK26:CB26,Thursday!G29:G32,Thursday!G23
+DREW,4,Pine Needles Golf Club,Thursday,Afternoon,Alternate Shot,CAM,DALTON & COLLIN,Thursday,G48:AC60,"H54:P54,R54:Z54",Thursday!G54:G57,Thursday!G48
+DREW,5,Tobacco Road Golf Club,Friday,Morning,Singles,,PEYTON,Player Input,CE17:CY26,CG26:CX26,Friday!G40:G41,Friday!G34
+DREW,6,Tobacco Road Golf Club,Friday,Afternoon,Singles,,CADE,Player Input,DA17:DU26,DC26:DT26,Friday!G76:G77,Friday!G70
+JACKSON,1,Mid Pines Golf Club,Tuesday,Morning,Fourball,LUKE,DALTON & COLLIN,Player Input,D29:X38,F38:W38,Tuesday!G14:G17,Tuesday!G8
+JACKSON,2,The Mid South Club,Wednesday,Morning,Fourball,CAM,PEYTON & DALTON,Player Input,Z29:AT38,AB38:AS38,Wednesday!G29:G32,Wednesday!G23
+JACKSON,3,Pine Needles Golf Club,Thursday,Morning,Fourball,DREW,COLLIN & PEYTON,Player Input,BI29:CC38,BK38:CB38,Thursday!G29:G32,Thursday!G23
+JACKSON,4,Pine Needles Golf Club,Thursday,Afternoon,Alternate Shot,LUKE,CADE & PEYTON,Thursday,G63:AC75,"H69:P69,R69:Z69",Thursday!G69:G72,Thursday!G63
+JACKSON,5,Tobacco Road Golf Club,Friday,Morning,Singles,,COLLIN,Player Input,CE29:CY38,CG38:CX38,Friday!G53:G54,Friday!G47
+JACKSON,6,Tobacco Road Golf Club,Friday,Afternoon,Singles,,DALTON,Player Input,DA29:DU38,DC38:DT38,Friday!G102:G103,Friday!G96
+LUKE,1,Mid Pines Golf Club,Tuesday,Morning,Fourball,JACKSON,DALTON & COLLIN,Player Input,D41:X50,F50:W50,Tuesday!G14:G17,Tuesday!G8
+LUKE,2,The Mid South Club,Wednesday,Morning,Fourball,DREW,COLLIN & CADE,Player Input,Z41:AT50,AB50:AS50,Wednesday!G14:G17,Wednesday!G8
+LUKE,3,Pine Needles Golf Club,Thursday,Morning,Fourball,CAM,CADE & DALTON,Player Input,BI41:CC50,BK50:CB50,Thursday!G14:G17,Thursday!G8
+LUKE,4,Pine Needles Golf Club,Thursday,Afternoon,Alternate Shot,JACKSON,CADE & PEYTON,Thursday,G63:AC75,"H69:P69,R69:Z69",Thursday!G69:G72,Thursday!G63
+LUKE,5,Tobacco Road Golf Club,Friday,Morning,Singles,,DALTON,Player Input,CE41:CY50,CG50:CX50,Friday!G27:G28,Friday!G21
+LUKE,6,Tobacco Road Golf Club,Friday,Afternoon,Singles,,COLLIN,Player Input,DA41:DU50,DC50:DT50,Friday!G115:G116,Friday!G109
+CADE,1,Mid Pines Golf Club,Tuesday,Morning,Fourball,PEYTON,CAM & DREW,Player Input,D53:X62,F62:W62,Tuesday!G29:G32,Tuesday!G23
+CADE,2,The Mid South Club,Wednesday,Morning,Fourball,COLLIN,DREW & LUKE,Player Input,Z53:AT62,AB62:AS62,Wednesday!G14:G17,Wednesday!G8
+CADE,3,Pine Needles Golf Club,Thursday,Morning,Fourball,DALTON,LUKE & CAM,Player Input,BI53:CC62,BK62:CB62,Thursday!G14:G17,Thursday!G8
+CADE,4,Pine Needles Golf Club,Thursday,Afternoon,Alternate Shot,PEYTON,LUKE & JACKSON,Thursday,G63:AC75,"H71:P71,R71:Z71",Thursday!G69:G72,Thursday!G63
+CADE,5,Tobacco Road Golf Club,Friday,Morning,Singles,,CAM,Player Input,CE53:CY62,CG62:CX62,Friday!G14:G15,Friday!G8
+CADE,6,Tobacco Road Golf Club,Friday,Afternoon,Singles,,DREW,Player Input,DA53:DU62,DC62:DT62,Friday!G76:G77,Friday!G70
+COLLIN,1,Mid Pines Golf Club,Tuesday,Morning,Fourball,DALTON,LUKE & JACKSON,Player Input,D65:X74,F74:W74,Tuesday!G14:G17,Tuesday!G8
+COLLIN,2,The Mid South Club,Wednesday,Morning,Fourball,CADE,DREW & LUKE,Player Input,Z65:AT74,AB74:AS74,Wednesday!G14:G17,Wednesday!G8
+COLLIN,3,Pine Needles Golf Club,Thursday,Morning,Fourball,PEYTON,JACKSON & DREW,Player Input,BI65:CC74,BK74:CB74,Thursday!G29:G32,Thursday!G23
+COLLIN,4,Pine Needles Golf Club,Thursday,Afternoon,Alternate Shot,DALTON,DREW & CAM,Thursday,G48:AC60,"H56:P56,R56:Z56",Thursday!G54:G57,Thursday!G48
+COLLIN,5,Tobacco Road Golf Club,Friday,Morning,Singles,,JACKSON,Player Input,CE65:CY74,CG74:CX74,Friday!G53:G54,Friday!G47
+COLLIN,6,Tobacco Road Golf Club,Friday,Afternoon,Singles,,LUKE,Player Input,DA65:DU74,DC74:DT74,Friday!G115:G116,Friday!G109
+DALTON,1,Mid Pines Golf Club,Tuesday,Morning,Fourball,COLLIN,LUKE & JACKSON,Player Input,D77:X86,F86:W86,Tuesday!G14:G17,Tuesday!G8
+DALTON,2,The Mid South Club,Wednesday,Morning,Fourball,PEYTON,CAM & JACKSON,Player Input,Z77:AT86,AB86:AS86,Wednesday!G29:G32,Wednesday!G23
+DALTON,3,Pine Needles Golf Club,Thursday,Morning,Fourball,CADE,LUKE & CAM,Player Input,BI77:CC86,BK86:CB86,Thursday!G14:G17,Thursday!G8
+DALTON,4,Pine Needles Golf Club,Thursday,Afternoon,Alternate Shot,COLLIN,DREW & CAM,Thursday,G48:AC60,"H56:P56,R56:Z56",Thursday!G54:G57,Thursday!G48
+DALTON,5,Tobacco Road Golf Club,Friday,Morning,Singles,,LUKE,Player Input,CE77:CY86,CG86:CX86,Friday!G27:G28,Friday!G21
+DALTON,6,Tobacco Road Golf Club,Friday,Afternoon,Singles,,JACKSON,Player Input,DA77:DU86,DC86:DT86,Friday!G102:G103,Friday!G96
+PEYTON,1,Mid Pines Golf Club,Tuesday,Morning,Fourball,CADE,CAM & DREW,Player Input,D89:X98,F98:W98,Tuesday!G29:G32,Tuesday!G23
+PEYTON,2,The Mid South Club,Wednesday,Morning,Fourball,DALTON,CAM & JACKSON,Player Input,Z89:AT98,AB98:AS98,Wednesday!G29:G32,Wednesday!G23
+PEYTON,3,Pine Needles Golf Club,Thursday,Morning,Fourball,COLLIN,JACKSON & DREW,Player Input,BI89:CC98,BK98:CB98,Thursday!G29:G32,Thursday!G23
+PEYTON,4,Pine Needles Golf Club,Thursday,Afternoon,Alternate Shot,CADE,LUKE & JACKSON,Thursday,G63:AC75,"H71:P71,R71:Z71",Thursday!G69:G72,Thursday!G63
+PEYTON,5,Tobacco Road Golf Club,Friday,Morning,Singles,,DREW,Player Input,CE89:CY98,CG98:CX98,Friday!G40:G41,Friday!G34
+PEYTON,6,Tobacco Road Golf Club,Friday,Afternoon,Singles,,CAM,Player Input,DA89:DU98,DC98:DT98,Friday!G89:G90,Friday!G83
