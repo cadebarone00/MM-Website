@@ -31,15 +31,24 @@ export default async function TigerCenterPage() {
       <TestSeasonPanel activeYear={activeYear} />
       {startable && <StartRoundBanner round={startable} />}
       <MatchCloseoutCards />
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <YearAndMasterSettingsNav initialYear={activeYear} />
-        <div className="flex flex-col gap-4 self-end">
-          <Link href="/portal/admin/career-stats" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-8 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Career Stats</Link>
-          <Link href="/portal/admin/wager-types" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-8 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Wager Types</Link>
-          <Link href="/portal/admin/odds-model" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-8 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Odds Model</Link>
-          <Link href="/portal/admin/broadcast-controls" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-8 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Broadcast Controls</Link>
+      <section className="mt-6 rounded-xl border border-gold-300 bg-cream-50 p-5">
+        <p className="font-condensed text-2xs font-bold uppercase tracking-[0.16em] text-ink-500">Year-Specific Setup</p>
+        <h2 className="mt-1 font-serif text-2xl font-bold text-ink-900">{activeYear} tournament operations</h2>
+        <p className="mt-1 font-sans text-sm text-ink-600">Roster, teams, dates, courses, formats, tee times, and matchups belong to one selected season.</p>
+        <div className="mt-4"><YearAndMasterSettingsNav initialYear={activeYear} /></div>
+      </section>
+
+      <section className="mt-6">
+        <p className="font-condensed text-2xs font-bold uppercase tracking-[0.16em] text-ink-500">Global Tools</p>
+        <h2 className="mt-1 font-serif text-2xl font-bold text-ink-900">Shared archive, models, and presentation</h2>
+        <p className="mt-1 font-sans text-sm text-ink-600">These tools are not a season setup screen. They use the Career Archive, coded wager rules, and the active live data only where their individual page explicitly says so.</p>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Link href="/portal/admin/career-stats" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-7 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Career Stats</Link>
+          <Link href="/portal/admin/wager-types" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-7 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Wager Types</Link>
+          <Link href="/portal/admin/odds-model" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-7 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Odds Model</Link>
+          <Link href="/portal/admin/broadcast-controls" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-7 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Broadcast Controls</Link>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
