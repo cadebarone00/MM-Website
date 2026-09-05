@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getPlayerProfileBySlug, getPlayerProfile } from "@/lib/data/players";
 import { getCareerStatsDatabase, getLiveCareerArchiveRecords } from "@/lib/data/careerStatsDatabase";
 
-type ArchiveHole = { hole: number; par: number; yards: number; score: number | null };
+type ArchiveHole = { hole: number; par: number; yards: number; score: number | null; putts: number | null; fairwayInRegulation: boolean | null; greenInRegulation: boolean | null };
 
 export async function GET(_: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -17,7 +17,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
     const key = `${record.year}:${record.round}:${record.course}`;
     const item = rounds.get(key) ?? { year: record.year, round: record.round, course: record.course, format: record.format, holes: [] };
     if (!item.holes.some((hole) => hole.hole === record.hole)) {
-      item.holes.push({ hole: record.hole, par: record.par, yards: record.yards, score: record.score });
+      item.holes.push({ hole: record.hole, par: record.par, yards: record.yards, score: record.score, putts: record.putts, fairwayInRegulation: record.fairwayInRegulation, greenInRegulation: record.greenInRegulation });
     }
     rounds.set(key, item);
   }
