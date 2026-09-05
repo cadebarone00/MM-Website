@@ -31,7 +31,7 @@ export async function getBroadcastPayload(): Promise<BroadcastPayload> {
   const [{ data: stateRow, error: stateError }, { data: configRow, error: configError }, events] = await Promise.all([
     service
       .from("broadcast_state")
-      .select("current_scene, scene_started_at, automation_mode, paused, tournament_live, overlay_text, overlay_expires_at")
+      .select("current_scene, scene_started_at, automation_mode, paused, tournament_live, overlay_text, overlay_expires_at, audio_track_id, audio_started_at, audio_loop_mode")
       .eq("season_year", seasonYear)
       .maybeSingle(),
     service.from("broadcast_config").select("scene_durations_ms, overlay_duration_ms, takeover_duration_ms").eq("season_year", seasonYear).maybeSingle(),
@@ -56,6 +56,9 @@ export async function getBroadcastPayload(): Promise<BroadcastPayload> {
     tournamentLive: stateRow?.tournament_live ?? false,
     overlayText: stateRow?.overlay_text ?? null,
     overlayExpiresAt: stateRow?.overlay_expires_at ?? null,
+    audioTrackId: stateRow?.audio_track_id ?? null,
+    audioStartedAt: stateRow?.audio_started_at ?? null,
+    audioLoopMode: stateRow?.audio_loop_mode === "one" ? "one" : "all",
   };
 
   const config: BroadcastConfig = {
