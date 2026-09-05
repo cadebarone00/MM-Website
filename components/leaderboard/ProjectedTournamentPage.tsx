@@ -47,12 +47,14 @@ function ProbabilityGraph({ tournament }: { tournament: Tournament }) {
     return `${x},${y}`;
   };
   const path = samples.map(point).join(" ");
+  const chartHeight = height - padding.top - padding.bottom;
+  const centerY = padding.top + chartHeight / 2;
   const final = samples.at(-1) ?? 50;
   const favorite = final >= 50 ? "Maroon" : "White";
   const favoriteProbability = Math.round(favorite === "Maroon" ? final : 100 - final);
 
   return (
-    <section className="border-y border-ink-200 bg-white p-4 text-ink-900 shadow-sm sm:rounded-md sm:border sm:p-6">
+    <section className="border-y border-ink-200 bg-cream-50 p-4 text-ink-900 shadow-sm sm:rounded-md sm:border sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-condensed text-2xs font-bold uppercase tracking-eyebrow text-ink-500">Tournament Win Probability</p>
@@ -60,23 +62,31 @@ function ProbabilityGraph({ tournament }: { tournament: Tournament }) {
         </div>
         <div className="flex gap-4 text-right">
           <div><div className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Projected points</div><div className="mt-1 font-sans text-2xl font-black"><span className="text-maroon-700">{fmtPt(tournament.maroonPts)}</span><span className="mx-2 text-ink-300">–</span>{fmtPt(tournament.whitePts)}</div></div>
-          <div className="border-l border-ink-200 pl-4"><div className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">{favorite} win probability</div><div className="mt-1 font-sans text-3xl font-black text-maroon-700">{favoriteProbability}%</div></div>
+          <div className="border-l border-ink-200 pl-4"><div className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">{favorite} win probability</div><div className={`mt-1 font-sans text-3xl font-black ${favorite === "Maroon" ? "text-maroon-700" : "text-ink-900"}`}>{favoriteProbability}%</div></div>
         </div>
       </div>
       <div className="mt-5 aspect-video h-auto sm:h-[340px] sm:aspect-auto">
-        <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full" role="img" aria-label="Maroon win probability across the tournament">
-          {[0, 25, 50, 75, 100].map((value) => {
+        <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full" role="img" aria-label="Maroon and White win probability across the tournament">
+          {[100, 75, 50, 25, 0].map((value) => {
             const y = padding.top + ((100 - value) / 100) * (height - padding.top - padding.bottom);
-            return <g key={value}><line x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke="#d9d5cd" strokeDasharray="4 6" /><text x="8" y={y + 4} fill="#6e645b" fontSize="22">{value}</text></g>;
+            const label = value === 100 ? "MAROON 100%" : value === 0 ? "WHITE 100%" : `${value}%`;
+            return <g key={value}><line x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke={value === 50 ? "#91877b" : "#d9d5cd"} strokeDasharray={value === 50 ? undefined : "4 6"} /><text x="8" y={y + 4} fill={value === 100 ? "var(--color-maroon-700)" : "#6e645b"} fontSize={value === 100 || value === 0 ? "17" : "22"} fontWeight={value === 100 || value === 0 ? "700" : undefined}>{label}</text></g>;
           })}
-          <polygon points={`${padding.left},${height - padding.bottom} ${path} ${width - padding.right},${height - padding.bottom}`} fill="#1a1513" opacity=".16" />
+          {samples.slice(0, -1).map((value, index) => {
+            const next = samples[index + 1];
+            const x1 = padding.left + (index / Math.max(1, samples.length - 1)) * (width - padding.left - padding.right);
+            const x2 = padding.left + ((index + 1) / Math.max(1, samples.length - 1)) * (width - padding.left - padding.right);
+            const y1 = padding.top + ((100 - value) / 100) * chartHeight;
+            const y2 = padding.top + ((100 - next) / 100) * chartHeight;
+            const maroonLeads = (value + next) / 2 >= 50;
+            return <polygon key={`${value}-${index}`} points={`${x1},${centerY} ${x1},${y1} ${x2},${y2} ${x2},${centerY}`} fill={maroonLeads ? "var(--color-maroon-500)" : "#ffffff"} opacity={maroonLeads ? ".30" : ".78"} />;
+          })}
           <polyline points={path} fill="none" stroke="#1a1513" strokeWidth="7" strokeLinejoin="round" strokeLinecap="round" />
-          <circle cx={Number(path.split(" ").at(-1)?.split(",")[0])} cy={Number(path.split(" ").at(-1)?.split(",")[1])} r="9" fill="var(--color-maroon-700)" />
+          <circle cx={Number(path.split(" ").at(-1)?.split(",")[0])} cy={Number(path.split(" ").at(-1)?.split(",")[1])} r="9" fill={favorite === "Maroon" ? "var(--color-maroon-700)" : "#1a1513"} />
           {Array.from({ length: 8 }, (_, index) => <text key={index} x={padding.left + (index / 7) * (width - padding.left - padding.right)} y={height - 8} textAnchor="middle" fill="#6e645b" fontSize="20">R{index + 1}</text>)}
           <text x={width - padding.right} y={padding.top + 18} textAnchor="end" fill="#6e645b" fontSize="20">FINAL</text>
         </svg>
       </div>
-      <p className="mt-1 font-sans text-xs text-white/65">Maroon win probability · final result confirmed</p>
     </section>
   );
 }
