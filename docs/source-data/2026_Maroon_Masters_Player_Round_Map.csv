@@ -1,4 +1,4 @@
-+Player,Round,Sheet,Format,Partner,Opponent(s),Scorecard_Block,Hole_Score_Cells,Pairing_Source_Cells
+Player,Round,Sheet,Format,Partner,Opponent(s),Scorecard_Block,Hole_Score_Cells,Pairing_Source_Cells
 Cam,1,Day 1,Fourball,Pete,Kyle & Quez,G10:AA19,H15:Y15,AF25
 Cam,2,Day 1,Alternate Shot,Hugo,Jackson & Kyle,AF76:BB88,"AG82:AO82,AQ82:AY82",AF76
 Cam,3,Day 2,Fourball,Luke,Collin & Kyle,G10:AA19,H15:Y15,BD38
@@ -95,4 +95,3 @@ Quez,5,Day 3,Alternate Shot,Dalton,Luke & Hugo,AF89:BB101,"AG97:AO97,AQ97:AY97",
 Quez,6,Day 3,Fourball,Collin,Cam & Drew,G134:AA143,H139:Y139,AF12
 Quez,7,Day 4,Singles,,Drew,G134:AA143,H139:Y139,CG71:CH72
 Quez,8,Day 4,Singles,,Nate,AE134:AZ143,AF139:AW139,CG89:CH90
-
