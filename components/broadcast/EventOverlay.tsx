@@ -29,11 +29,11 @@ export function EventOverlay({ event, matchPlay }: { event: ActiveBroadcastEvent
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-10 flex justify-center px-6 pb-8 sm:pb-12">
-      <div className="flex max-w-3xl items-center gap-4 rounded-lg bg-[color:var(--color-maroon-900)] px-6 py-3 shadow-xl ring-1 ring-[color:var(--color-gold-400)]/40">
+      <div className="flex max-w-3xl items-center gap-4 border-t border-[color:var(--color-gold-400)]/40 bg-[color:var(--color-maroon-900)]/90 px-6 py-3 shadow-xl backdrop-blur-sm">
         <span className="shrink-0 font-condensed text-xs font-bold uppercase tracking-[0.2em] text-[color:var(--color-gold-300)]">
           Match {box.boxNumber}
         </span>
-        <span className="font-serif text-xl font-semibold text-white sm:text-2xl">
+        <span className="font-condensed text-xl font-bold uppercase tracking-wide text-[color:var(--color-cream-50)] sm:text-2xl [text-shadow:0_0_12px_rgba(220,196,149,0.35)]">
           {teamLabel(payload.leader)} {marginLabel(payload.margin)}
           {payload.holesRemaining > 0 ? `, ${payload.holesRemaining} to play` : ""}
         </span>
