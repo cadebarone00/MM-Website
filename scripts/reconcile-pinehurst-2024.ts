@@ -12,11 +12,14 @@ const book = XLSX.readFile(source, { cellFormula: false });
 const mapBook = XLSX.readFile(mapPath, { raw: true });
 const map = XLSX.utils.sheet_to_json<Row>(mapBook.Sheets[mapBook.SheetNames[0]], { defval: "" });
 if (map.length !== 48) throw new Error("Expected 48 Pinehurst map rows.");
+// Luke did not play Friday afternoon's Round 6. The map retains the row for
+// match-history context, but it deliberately contributes no score/stat card.
+const DID_NOT_PLAY = new Set(["LUKE-6"]);
 const integer = (value: unknown) => Number.isInteger(Number(value)) ? Number(value) : null;
 const boolean = (value: unknown) => value === 1 || value === true || String(value).trim() === "1" ? true : value === 0 || value === false || String(value).trim() === "0" ? false : null;
 const valueAt = (sheet: XLSX.WorkSheet, r: number, c: number) => sheet[XLSX.utils.encode_cell({ r, c })]?.v;
 function cells(reference: string) { return reference.split(",").flatMap((part) => { const [first, last = first] = part.trim().split(":"); const a = XLSX.utils.decode_cell(first), b = XLSX.utils.decode_cell(last); return Array.from({ length: b.c - a.c + 1 }, (_, offset) => ({ r: a.r, c: a.c + offset })); }); }
-function teamMeta(sheet: XLSX.WorkSheet, cell: { r: number; c: number }, labelColumn: number) { let par: number | null = null, yards: number | null = null; for (let r = cell.r - 1; r >= cell.r - 8; r -= 1) { const label = String(valueAt(sheet, r, labelColumn) ?? "").trim().toLowerCase(); if (label === "par") par = integer(valueAt(sheet, r, cell.c)); if (label === "yards") yards = integer(valueAt(sheet, r, cell.c)); } return { par, yards }; }
+function teamMeta(sheet: XLSX.WorkSheet, cell: { r: number; c: number }, labelColumn: number) { let par: number | null = null, yards: number | null = null; for (let r = cell.r - 1; r >= cell.r - 8; r -= 1) { const label = String(valueAt(sheet, r, labelColumn) ?? "").trim().toLowerCase(); if (label === "par") par = integer(valueAt(sheet, r, cell.c)); if (label === "yards" || label === "yardage") yards = integer(valueAt(sheet, r, cell.c)); } return { par, yards }; }
 const individual: CareerHoleRecord[] = [], alternate: CareerTeamHoleRecord[] = [];
 const audit = new Map<string, number[]>(), seenTeams = new Set<string>();
 for (const row of map) {
@@ -24,7 +27,10 @@ for (const row of map) {
   const sheet = book.Sheets[row.Scorecard_Sheet], scoreCells = cells(row.Hole_Score_Cells);
   if (!sheet || !player || !course || scoreCells.length !== 18) throw new Error("Invalid map row for " + player + " round " + round + ".");
   const scores = scoreCells.map((cell) => integer(valueAt(sheet, cell.r, cell.c)));
-  if (scores.some((score) => !score || score <= 0)) throw new Error("Incomplete mapped scores for " + player + " round " + round + ".");
+  if (scores.some((score) => !score || score <= 0)) {
+    if (DID_NOT_PLAY.has(player + "-" + round)) continue;
+    throw new Error("Incomplete mapped scores for " + player + " round " + round + ".");
+  }
   if (format !== "Alternate Shot") {
     scoreCells.forEach((cell, index) => { const { par, yards } = teamMeta(sheet, cell, scoreCells[0].c - 1); if (!par || !yards) throw new Error("Missing individual course data for " + player + " round " + round + "."); individual.push({ year: 2024, player, round, roundHoles: 18, course, format, hole: index + 1, par, yards, score: scores[index]!, putts: integer(valueAt(sheet, cell.r + 1, cell.c)), fairwayInRegulation: boolean(valueAt(sheet, cell.r + 2, cell.c)), greenInRegulation: boolean(valueAt(sheet, cell.r + 3, cell.c)), penalties: null }); });
     audit.set(player, [...(audit.get(player) ?? []), round]); continue;
@@ -33,8 +39,11 @@ for (const row of map) {
   if (!partner || seenTeams.has(key)) continue; seenTeams.add(key);
   scoreCells.forEach((cell, index) => { const { par, yards } = teamMeta(sheet, cell, scoreCells[0].c - 1); if (!par || !yards) throw new Error("Missing Alternate Shot course data."); alternate.push({ year: 2024, round, format, matchId: "MM2024-R" + round + "-" + pair.join("-"), teamId: pair.join("-"), player1: pair[0], player2: pair[1], course, hole: index + 1, par, yards, score: scores[index]!, putts: null, fairwayInRegulation: null, greenInRegulation: null, penalties: null }); });
 }
-for (const [player, rounds] of audit) if (rounds.sort((a, b) => a - b).join(",") !== "1,2,3,5,6") throw new Error(player + " has incorrect individual rounds.");
-if (audit.size !== 8 || individual.length !== 720 || alternate.length !== 72) throw new Error("Unexpected 2024 rebuild totals.");
+for (const [player, rounds] of audit) {
+  const expected = player === "LUKE" ? "1,2,3,5" : "1,2,3,5,6";
+  if (rounds.sort((a, b) => a - b).join(",") !== expected) throw new Error(player + " has incorrect individual rounds.");
+}
+if (audit.size !== 8 || individual.length !== 702 || alternate.length !== 72) throw new Error("Unexpected 2024 rebuild totals.");
 function read<T>(file: string, name: string, next: string): T { const start = file.indexOf("export const " + name), end = file.indexOf("export const " + next, start), expression = file.slice(file.indexOf("=", start) + 1, file.lastIndexOf(";", end)).trim(); return (expression.startsWith("JSON.parse(") ? JSON.parse(JSON.parse(expression.slice(11, -1))) : JSON.parse(expression)) as T; }
 const archive = fs.readFileSync(archivePath, "utf8");
 const records = [...read<CareerHoleRecord[]>(archive, "careerArchiveRecords", "careerArchiveTeamRecords").filter((row) => row.year !== 2024), ...individual];
