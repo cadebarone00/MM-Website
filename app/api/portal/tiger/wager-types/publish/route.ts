@@ -9,6 +9,9 @@ export async function POST(request: Request) {
   const { slug } = await request.json();
   const market = PUBLIC_WAGER_CATALOG[slug as PublicWagerSlug];
   if (!market) return NextResponse.json({ ok: false, error: "Unknown public wager." }, { status: 400 });
+  if (market.modelStatus !== "ready") {
+    return NextResponse.json({ ok: false, error: "This wager type is still in design. Its calculation, readiness checks, and settlement rule must be implemented before it can be submitted publicly." }, { status: 400 });
+  }
 
   const service = createSupabaseServiceRoleClient();
   const { data, error } = await service
