@@ -52,18 +52,18 @@ function ProbabilityGraph({ tournament }: { tournament: Tournament }) {
   const favoriteProbability = Math.round(favorite === "Maroon" ? final : 100 - final);
 
   return (
-    <section className="rounded-md border border-ink-200 bg-white p-4 text-ink-900 shadow-sm sm:p-6">
+    <section className="border-y border-ink-200 bg-white p-4 text-ink-900 shadow-sm sm:rounded-md sm:border sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-condensed text-2xs font-bold uppercase tracking-eyebrow text-ink-500">Tournament Win Probability</p>
-          <h1 className="mt-1 font-serif text-2xl font-bold sm:text-3xl">{tournament.editionLabel}</h1>
+          <h1 className="mt-1 font-serif text-xl font-bold sm:text-3xl">{tournament.editionLabel}</h1>
         </div>
         <div className="flex gap-4 text-right">
           <div><div className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Projected points</div><div className="mt-1 font-sans text-2xl font-black"><span className="text-maroon-700">{fmtPt(tournament.maroonPts)}</span><span className="mx-2 text-ink-300">–</span>{fmtPt(tournament.whitePts)}</div></div>
           <div className="border-l border-ink-200 pl-4"><div className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">{favorite} win probability</div><div className="mt-1 font-sans text-3xl font-black text-maroon-700">{favoriteProbability}%</div></div>
         </div>
       </div>
-      <div className="mt-5 h-[260px] sm:h-[340px]">
+      <div className="mt-5 aspect-video h-auto sm:h-[340px] sm:aspect-auto">
         <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full" role="img" aria-label="Maroon win probability across the tournament">
           {[0, 25, 50, 75, 100].map((value) => {
             const y = padding.top + ((100 - value) / 100) * (height - padding.top - padding.bottom);
@@ -93,12 +93,34 @@ function TeamPoints({ title, rows, team }: { title: string; rows: PointRow[]; te
   );
 }
 
-export function ProjectedTournamentPage({ tournament }: { tournament: Tournament }) {
+function lastName(name: string): string {
+  return name.trim().split(/\s+/).at(-1) ?? name;
+}
+
+function MobilePointsBoard({ maroon, white }: { maroon: PointRow[]; white: PointRow[] }) {
   return (
-    <main className="mx-auto max-w-[1200px] px-4 py-7 sm:px-7 sm:py-10">
+    <section className="lg:hidden border-y border-ink-200 bg-white px-4 py-3">
+      <div className="grid grid-cols-[1fr_auto_auto_1fr] gap-x-2 border-b border-ink-200 pb-2 font-condensed text-2xs font-bold uppercase tracking-wide">
+        <span className="text-maroon-700">Maroon</span><span className="text-center text-ink-400">Pts</span><span className="text-center text-ink-400">Pts</span><span className="text-right text-ink-700">White</span>
+      </div>
+      <div className="divide-y divide-ink-100">
+        {Array.from({ length: Math.max(maroon.length, white.length) }, (_, index) => {
+          const left = maroon[index]; const right = white[index];
+          return <div key={index} className="grid grid-cols-[1fr_auto_auto_1fr] items-center gap-x-2 py-2 font-sans text-sm"><span className="truncate font-semibold text-maroon-700">{left ? lastName(left.name) : ""}</span><span className="w-7 text-center font-black tabular-nums text-ink-900">{left ? fmtPt(left.points) : ""}</span><span className="w-7 text-center font-black tabular-nums text-ink-900">{right ? fmtPt(right.points) : ""}</span><span className="truncate text-right font-semibold text-ink-800">{right ? lastName(right.name) : ""}</span></div>;
+        })}
+      </div>
+    </section>
+  );
+}
+
+export function ProjectedTournamentPage({ tournament }: { tournament: Tournament }) {
+  const maroon = playerPoints(tournament, "maroon");
+  const white = playerPoints(tournament, "white");
+  return (
+    <main className="mx-auto max-w-[1200px] px-4 py-4 sm:px-7 sm:py-10">
       <Link href={`/leaderboard/${tournament.slug}`} className="inline-flex items-center gap-1 font-condensed text-2xs font-bold uppercase tracking-wide text-maroon-700 hover:text-maroon-900"><ArrowLeft size={15} /> Back to Leaderboard</Link>
-      <div className="mt-4"><ProbabilityGraph tournament={tournament} /></div>
-      <div className="mt-6 grid gap-5 lg:grid-cols-2"><TeamPoints title="Maroon" rows={playerPoints(tournament, "maroon")} team="maroon" /><TeamPoints title="White" rows={playerPoints(tournament, "white")} team="white" /></div>
+      <div className="mt-3 -mx-4 sm:mx-0 sm:mt-4"><ProbabilityGraph tournament={tournament} /></div>
+      <div className="mt-5 sm:mt-6"><MobilePointsBoard maroon={maroon} white={white} /><div className="hidden gap-5 lg:grid lg:grid-cols-2"><TeamPoints title="Maroon" rows={maroon} team="maroon" /><TeamPoints title="White" rows={white} team="white" /></div></div>
     </main>
   );
 }
