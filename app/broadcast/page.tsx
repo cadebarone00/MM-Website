@@ -40,6 +40,7 @@ function previewPayload(year: number, scene: BroadcastScene): BroadcastPayload {
       audioTrackId: null,
       audioStartedAt: null,
       audioLoopMode: "all",
+      audioShuffle: false,
     },
     config: { seasonYear: year, sceneDurationsMs: DEFAULT_SCENE_DURATIONS_MS, overlayDurationMs: 6000, takeoverDurationMs: 8000 },
     events: [],

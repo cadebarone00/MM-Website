@@ -14,7 +14,13 @@ import type { PlaylistTrack } from "./playlist";
  * lib/broadcast/rotation.ts's sceneAt() already uses for scene rotation.
  * `state`/`tracks` are expected to already be live (the caller owns
  * useLiveBroadcastState/usePlaylistTracks) — this hook only owns the
- * <audio> element and the mute/volume UI state.
+ * <audio> element and the mute/volume UI state. It plays whenever
+ * `state.audioTrackId` is set, with no live-broadcast check of its own —
+ * that's deliberate: it's used both by /watch-live (mounted only once
+ * tournamentLive, so real fans only ever hear it once live) and by
+ * Broadcast Controls (mounted always, so a host can test songs during
+ * rehearsal — audible only in the host's own browser, since nothing else
+ * is listening for it before Go Live).
  */
 export function useLiveBroadcastAudio(state: BroadcastState, tracks: PlaylistTrack[]) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -40,7 +46,13 @@ export function useLiveBroadcastAudio(state: BroadcastState, tracks: PlaylistTra
       setNowPlayingId(null);
     }
 
-    if (!state.tournamentLive || !state.audioTrackId || !state.audioStartedAt) {
+    // Deliberately no `tournamentLive` check here — whether real fans on
+    // /watch-live ever hear this is decided by the CALLER (it only mounts
+    // this hook once tournamentLive is true; see WatchLiveExperience.tsx),
+    // not by this hook itself. Tiger Center mounts this same hook
+    // regardless of live status, so a host can test songs during rehearsal
+    // without that reaching real viewers.
+    if (!state.audioTrackId || !state.audioStartedAt) {
       reset();
       return;
     }
@@ -48,10 +60,11 @@ export function useLiveBroadcastAudio(state: BroadcastState, tracks: PlaylistTra
     const timings: PlaylistTrackTiming[] = [...tracks].sort((a, b) => a.uploadedAt.localeCompare(b.uploadedAt));
     const anchorMs = new Date(state.audioStartedAt).getTime();
     const loopMode = state.audioLoopMode;
+    const shuffle = state.audioShuffle;
     const audioTrackId = state.audioTrackId;
 
     function applyTick() {
-      const tick = playlistTickAt(timings, audioTrackId, loopMode, anchorMs, Date.now());
+      const tick = playlistTickAt(timings, audioTrackId, loopMode, shuffle, anchorMs, Date.now());
       if (!tick) return; // the anchor track isn't in `tracks` yet — a pending usePlaylistTracks refresh will retry this effect
       audio!.loop = loopMode === "one";
       if (audio!.src !== tick.track.url) {
@@ -73,7 +86,7 @@ export function useLiveBroadcastAudio(state: BroadcastState, tracks: PlaylistTra
     }
     audio.addEventListener("ended", onEnded);
     return () => audio.removeEventListener("ended", onEnded);
-  }, [state.tournamentLive, state.audioTrackId, state.audioStartedAt, state.audioLoopMode, tracks]);
+  }, [state.audioTrackId, state.audioStartedAt, state.audioLoopMode, state.audioShuffle, tracks]);
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.muted = muted;

@@ -30,6 +30,7 @@ export interface BroadcastState {
   audioTrackId: string | null;
   audioStartedAt: string | null; // ISO timestamp; null whenever audioTrackId is null
   audioLoopMode: AudioLoopMode;
+  audioShuffle: boolean; // ignored when audioLoopMode is "one"
 }
 
 export interface BroadcastConfig {
