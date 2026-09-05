@@ -1632,13 +1632,45 @@ Inside the `isLive` branch (the `else` side of `{!isLive ? (...) : (...)}`), imm
 
 - [ ] **Step 4: Update the caller to pass `initialTracks`**
 
-In `app/portal/admin/broadcast-controls/page.tsx`, find where `getBroadcastPayload`/`getBroadcastDisplayYear` (or equivalent) are read and `<BroadcastControlsPanel>` is rendered. Add:
+In `app/portal/admin/broadcast-controls/page.tsx`, change:
 
 ```ts
+import { getBroadcastPayload } from "@/lib/broadcast/state";
+import { BroadcastControlsPanel } from "@/components/portal/tiger/BroadcastControlsPanel";
+```
+to:
+```ts
+import { getBroadcastPayload } from "@/lib/broadcast/state";
 import { getBroadcastPlaylist } from "@/lib/broadcast/playlist";
+import { BroadcastControlsPanel } from "@/components/portal/tiger/BroadcastControlsPanel";
 ```
 
-Fetch `{ tracks }` alongside whatever this page already fetches (mirror the `Promise.all` shape used in Task 11's `app/watch-live/page.tsx` if this page doesn't already batch its reads), and pass `initialTracks={tracks}` to `<BroadcastControlsPanel>`.
+and change:
+```ts
+  const { seasonYear, state, config } = await getBroadcastPayload();
+
+  return (
+    <div className="mx-auto max-w-2xl px-4 py-8">
+      <h1 className="font-serif text-2xl font-bold text-ink-900">Broadcast Controls</h1>
+      <p className="mt-1 font-sans text-sm text-ink-500">Rehearse privately, then Go Live to publish it to the real /broadcast.</p>
+
+      <BroadcastControlsPanel initialDisplayYear={seasonYear} initialState={state} config={config} />
+    </div>
+  );
+```
+to:
+```ts
+  const [{ seasonYear, state, config }, { tracks }] = await Promise.all([getBroadcastPayload(), getBroadcastPlaylist()]);
+
+  return (
+    <div className="mx-auto max-w-2xl px-4 py-8">
+      <h1 className="font-serif text-2xl font-bold text-ink-900">Broadcast Controls</h1>
+      <p className="mt-1 font-sans text-sm text-ink-500">Rehearse privately, then Go Live to publish it to the real /broadcast.</p>
+
+      <BroadcastControlsPanel initialDisplayYear={seasonYear} initialState={state} initialTracks={tracks} config={config} />
+    </div>
+  );
+```
 
 - [ ] **Step 5: Type-check and build**
 
