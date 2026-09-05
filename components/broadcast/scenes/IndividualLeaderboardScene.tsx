@@ -1,17 +1,6 @@
 import { getPlayerDisplayName } from "@/lib/data/players";
+import { ScoreBadge } from "@/components/ui/ScoreBadge";
 import type { BroadcastStanding } from "@/lib/broadcast/types";
-
-function scoreLabel(toPar: number): string {
-  if (toPar === 0) return "E";
-  return toPar > 0 ? `+${toPar}` : `−${Math.abs(toPar)}`;
-}
-
-/** Red under par / dark green even / near-black over — the same three tones components/ui/ScoreBadge.tsx already uses everywhere else on the site, just as a filled pill here instead of text. */
-function pillBg(toPar: number): string {
-  if (toPar < 0) return "var(--color-score-under)";
-  if (toPar === 0) return "var(--color-score-even)";
-  return "var(--color-ink-700)";
-}
 
 interface Row extends BroadcastStanding {
   pos: number;
@@ -33,31 +22,34 @@ function rankRows(standings: BroadcastStanding[]): Row[] {
 }
 
 /**
- * A TV leaderboard card in The Maroon Masters' own colors — modeled on a
- * real broadcast leaderboard graphic (cream card, header wordmark, a
- * striped title bar, alternating rows, a colored score pill, a gold leader
- * ticker) rather than a plain website table. See the Watch Live Broadcast
- * spec, §17, and the reference screenshot this was designed against.
+ * A TV leaderboard graphic in The Maroon Masters' own colors — a full-bleed
+ * dark stage-lit canvas (not a card), modeled on modern golf broadcast
+ * packages (Golf Channel / PGA Tour Live) rather than a plain website
+ * table. Score colors are the site's real red/green/near-black convention
+ * (ScoreBadge, shared with every scorecard on the site) — gold here is a
+ * pure accent, never a score meaning. See the Round 1 redesign spec.
  */
 export function IndividualLeaderboardScene({ standings, final = false }: { standings: BroadcastStanding[]; final?: boolean }) {
   const rows = rankRows(standings);
-  const leader = rows[0];
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-gradient-maroon px-10 py-10">
-      <div className="w-full max-w-[900px] overflow-hidden rounded-2xl shadow-2xl ring-1 ring-[color:var(--color-gold-400)]/40">
-        <div className="bg-[color:var(--color-cream-50)] px-8 pb-5 pt-7 text-center">
-          <p className="font-serif text-4xl italic text-[color:var(--color-maroon-700)]">The Maroon Masters</p>
-          <div className="mx-auto mt-3 h-px w-24 bg-[color:var(--color-gold-400)]" />
-        </div>
+    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden px-10 py-10 [background:radial-gradient(120%_90%_at_50%_8%,var(--color-maroon-700)_0%,var(--color-maroon-900)_46%,#0d0000_100%)]">
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -bottom-[10%] -right-[6%] font-serif text-[22vw] font-semibold italic leading-none text-transparent [-webkit-text-stroke:1px_rgba(201,168,110,0.14)]"
+      >
+        MM
+      </span>
 
-        <div className="flex items-center justify-between bg-[color:var(--color-maroon-900)] px-8 py-3">
-          <span className="font-condensed text-sm font-bold uppercase tracking-[0.2em] text-white">Individual Leaderboard</span>
+      <div className="relative z-[1] w-full max-w-[900px]">
+        <div className="mb-2 flex items-baseline justify-between border-b border-[color:var(--color-gold-400)]/35 pb-3">
+          <span className="font-serif text-lg italic text-[color:var(--color-cream-100)]">The Maroon Masters</span>
+          <span className="font-condensed text-sm font-bold uppercase tracking-[0.2em] text-[color:var(--color-cream-50)]">Individual Leaderboard</span>
           <span className="font-condensed text-sm font-bold uppercase tracking-[0.2em] text-[color:var(--color-gold-300)]">{final ? "Final" : "Live"}</span>
         </div>
 
         {rows.length === 0 ? (
-          <p className="bg-[color:var(--color-cream-50)] px-8 py-16 text-center font-sans text-lg text-[color:var(--color-ink-500)]">
+          <p className="px-2 py-16 text-center font-sans text-lg text-[color:var(--color-ink-400)]">
             No scores posted yet. Check back once play begins.
           </p>
         ) : (
@@ -65,43 +57,27 @@ export function IndividualLeaderboardScene({ standings, final = false }: { stand
             {rows.map((r, i) => (
               <div
                 key={r.player}
-                className={["flex items-center gap-4 px-8 py-3", i % 2 === 0 ? "bg-[color:var(--color-cream-50)]" : "bg-[color:var(--color-cream-100)]"].join(
-                  " "
-                )}
+                className={[
+                  "flex items-center gap-4 border-b border-white/[0.06] px-2 py-3",
+                  i === 0 ? "bg-gradient-to-r from-[color:var(--color-gold-400)]/[0.08] to-transparent" : "",
+                ].join(" ")}
               >
-                <span className="w-8 shrink-0 text-right font-condensed text-lg font-bold tabular-nums text-[color:var(--color-maroon-600)]">
+                <span className="w-8 shrink-0 text-right font-condensed text-lg font-bold tabular-nums text-[color:var(--color-ink-400)]">
                   {r.showPos ? r.pos : ""}
                 </span>
-                {/* True white is invisible on a cream card, so "White" reads as a dark marker instead — same reason real broadcast graphics never render an away-team dot in actual white. */}
                 <span
                   aria-hidden
                   className={[
                     "h-2.5 w-2.5 shrink-0 rounded-full",
-                    r.team === "maroon" ? "bg-[color:var(--color-maroon-500)]" : "bg-[color:var(--color-ink-800)]",
+                    r.team === "maroon" ? "bg-[color:var(--color-maroon-500)] shadow-[0_0_6px_rgba(168,82,88,0.9)]" : "bg-[color:var(--color-cream-100)]",
                   ].join(" ")}
                 />
-                <span className="flex-1 truncate font-sans text-xl font-bold uppercase tracking-wide text-[color:var(--color-ink-900)]">
+                <span className="flex-1 truncate font-sans text-xl font-bold uppercase tracking-wide text-[color:var(--color-cream-50)]">
                   {getPlayerDisplayName(r.player)}
                 </span>
-                <span
-                  className="min-w-[64px] rounded-md px-3 py-1 text-center font-condensed text-xl font-bold tabular-nums text-white"
-                  style={{ background: pillBg(r.toPar) }}
-                >
-                  {scoreLabel(r.toPar)}
-                </span>
+                <ScoreBadge value={r.toPar} chip size="lg" />
               </div>
             ))}
-          </div>
-        )}
-
-        {leader && (
-          <div className="flex items-center justify-between bg-gradient-trophy px-8 py-3">
-            <span className="font-serif text-lg font-bold uppercase tracking-wide text-[color:var(--color-maroon-900)]">
-              {getPlayerDisplayName(leader.player)} {scoreLabel(leader.toPar)}
-            </span>
-            <span className="font-condensed text-xs font-bold uppercase tracking-[0.2em] text-[color:var(--color-maroon-900)]/70">
-              The Maroon Masters
-            </span>
           </div>
         )}
       </div>
