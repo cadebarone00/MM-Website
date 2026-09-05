@@ -96,13 +96,14 @@ export async function POST(request: Request) {
 
   try {
     const spreadsheet = /\.(csv|xlsx|xls)$/i.test(file.name);
-    const draft = spreadsheet
-      ? (() => {
-          const workbook = XLSX.read(Buffer.from(file.arrayBuffer as never), { type: "buffer" });
-          const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          return draftFromRows(XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: "" }), file.name);
-        })()
-      : await analyzeVisualScorecard(file);
+    let draft: CourseDraft;
+    if (spreadsheet) {
+      const workbook = XLSX.read(Buffer.from(await file.arrayBuffer()), { type: "buffer" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      draft = draftFromRows(XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: "" }), file.name);
+    } else {
+      draft = await analyzeVisualScorecard(file);
+    }
     return NextResponse.json({ ok: true, draft });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Could not read that scorecard file." }, { status: 422 });
