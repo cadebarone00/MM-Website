@@ -18,24 +18,30 @@ import type { PlaylistTrack } from "./playlist";
  */
 export function useLiveBroadcastAudio(state: BroadcastState, tracks: PlaylistTrack[]) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  if (audioRef.current === null && typeof window !== "undefined") {
-    audioRef.current = new Audio();
-    audioRef.current.muted = true; // must be muted at creation — the very first .play() call in the effect below happens before the mute-sync effect runs, and only a muted element is allowed to autoplay
-  }
   const [muted, setMuted] = useState(true);
   const [volume, setVolume] = useState(1);
   const [nowPlayingId, setNowPlayingId] = useState<string | null>(null);
   const nowPlayingIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    // Lazy-create once, the first time this effect runs. Must be muted at
+    // creation — the very first .play() call below happens before the
+    // mute-sync effect runs, and only a muted element is allowed to autoplay.
+    if (audioRef.current === null) {
+      audioRef.current = new Audio();
+      audioRef.current.muted = true;
+    }
     const audio = audioRef.current;
-    if (!audio) return;
 
-    if (!state.tournamentLive || !state.audioTrackId || !state.audioStartedAt) {
+    function reset() {
       audio.pause();
       audio.removeAttribute("src");
       nowPlayingIdRef.current = null;
       setNowPlayingId(null);
+    }
+
+    if (!state.tournamentLive || !state.audioTrackId || !state.audioStartedAt) {
+      reset();
       return;
     }
 
