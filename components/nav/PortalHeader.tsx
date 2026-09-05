@@ -31,14 +31,25 @@ function isHomePage(pathname: string): boolean {
 export function PortalHeader() {
   const pathname = usePathname();
   const router = useRouter();
-  const title = pathname.startsWith("/portal/scoring") ? "Official Scoring" : "The Player Portal";
+  const inTigerCenter = pathname.startsWith("/portal/admin");
+  const tigerChildPage = inTigerCenter && pathname !== "/portal/admin";
+  const title = inTigerCenter ? "The Tiger Center" : pathname.startsWith("/portal/scoring") ? "Official Scoring" : "The Player Portal";
   const showBack = !isHomePage(pathname);
 
   return (
     <header className="sticky top-0 z-[100] shadow-lg bg-maroon-900">
       <div className="grid grid-cols-3 items-center gap-2 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] lg:px-7 lg:py-4">
         <div className="justify-self-start shrink-0">
-          {showBack && (
+          {tigerChildPage ? (
+            <Link
+              href="/portal/admin"
+              aria-label="Back to Tiger Center"
+              className="inline-flex items-center gap-1 font-condensed text-2xs font-bold uppercase tracking-wide text-cream-50 hover:text-white"
+            >
+              <ArrowLeft size={18} />
+              <span> Tiger Center</span>
+            </Link>
+          ) : showBack && (
             <button
               type="button"
               onClick={() => router.back()}
@@ -49,7 +60,7 @@ export function PortalHeader() {
               <ArrowLeft size={18} />
             </button>
           )}
-          <Link href="/portal" className={showBack ? "hidden lg:block" : "block"}>
+          <Link href="/portal" className={tigerChildPage ? "hidden" : showBack ? "hidden lg:block" : "block"}>
             <Image src="/assets/wordmark-light.svg" alt="The Maroon Masters" width={520} height={92} className="h-5 w-auto lg:h-7" priority />
           </Link>
         </div>
