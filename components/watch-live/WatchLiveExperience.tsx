@@ -5,7 +5,10 @@ import { MessageCircle, Video } from "lucide-react";
 import { useState } from "react";
 import { RoundCountdown } from "@/components/ui/RoundCountdown";
 import { useLiveBroadcastState } from "@/lib/broadcast/useLiveBroadcastState";
+import { usePlaylistTracks } from "@/lib/broadcast/usePlaylistTracks";
+import { BroadcastPlayer } from "./BroadcastPlayer";
 import type { BroadcastState } from "@/lib/broadcast/types";
+import type { PlaylistTrack } from "@/lib/broadcast/playlist";
 
 type Tab = "comments" | "highlights";
 
@@ -21,13 +24,22 @@ const tabs: { id: Tab; label: string }[] = [
  */
 const YOUTUBE_LIVE_VIDEO_ID = process.env.NEXT_PUBLIC_YOUTUBE_LIVE_VIDEO_ID || null;
 
-export function WatchLiveExperience({ seasonYear, initialState }: { seasonYear: number; initialState: BroadcastState }) {
+export function WatchLiveExperience({
+  seasonYear,
+  initialState,
+  initialTracks,
+}: {
+  seasonYear: number;
+  initialState: BroadcastState;
+  initialTracks: PlaylistTrack[];
+}) {
   const [activeTab, setActiveTab] = useState<Tab>("comments");
   // Same Realtime-then-refetch pattern /broadcast itself uses (see
   // useLiveBroadcastState.ts) — so ending the broadcast in Broadcast
   // Controls swaps this page back to the placeholder immediately, no
   // manual refresh needed.
-  const { tournamentLive } = useLiveBroadcastState(seasonYear, initialState);
+  const state = useLiveBroadcastState(seasonYear, initialState);
+  const tracks = usePlaylistTracks(seasonYear, initialTracks);
 
   return (
     <main>
@@ -40,12 +52,13 @@ export function WatchLiveExperience({ seasonYear, initialState }: { seasonYear: 
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen
           />
-        ) : tournamentLive ? (
+        ) : state.tournamentLive ? (
           // Tiger has gone live (Broadcast Controls) — embed the real,
           // shared broadcast (auto-rotating leaderboard/match-play scenes;
-          // see app/broadcast/page.tsx) instead of the pre-show placeholder.
-          // No real camera video exists yet (that's Phase 3, not built).
-          <iframe className="aspect-video w-full border-0" src="/broadcast" title="Maroon Masters live broadcast" />
+          // see app/broadcast/page.tsx) instead of the pre-show placeholder,
+          // scaled to the real 16:9 proportions with fullscreen/volume
+          // chrome. No real camera video exists yet (that's Phase 3, not built).
+          <BroadcastPlayer state={state} tracks={tracks} />
         ) : (
           <div className="relative aspect-video w-full overflow-hidden bg-ink-900">
             <Image src="/loading/mobile.png" alt="" fill priority sizes="100vw" className="object-cover lg:hidden" />

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { matchResultLabel, teamLabel, type ActiveBroadcastEvent } from "@/lib/broadcast/eventDisplay";
 import type { BroadcastMatchPlay } from "@/lib/broadcast/matchPlayData";
 import type { BroadcastTeam } from "@/lib/broadcast/types";
