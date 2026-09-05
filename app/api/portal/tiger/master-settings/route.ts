@@ -42,7 +42,14 @@ export async function POST(request: Request) {
     venue_locked: venueLocked,
   });
   if (error) {
-    return NextResponse.json({ ok: false, error: "Could not save Master Settings." }, { status: 500 });
+    console.error("Master Settings save failed:", error);
+    const needsMultiYearMigration = /season_year|venue_name|venue_locked|begin_date|end_date|dates_locked|primary key|duplicate key/i.test(error.message);
+    return NextResponse.json({
+      ok: false,
+      error: needsMultiYearMigration
+        ? "Your Supabase database needs the current multi-year setup. Run the full supabase/live_match_publication.sql file in the Supabase SQL Editor, then save again."
+        : `Could not save Master Settings: ${error.message}`,
+    }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

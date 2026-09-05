@@ -58,8 +58,9 @@ export function PlayerAreaNav() {
 
   if (session?.kind !== "player" && session?.kind !== "host") return null;
 
-  const segments = session.kind === "host" ? TIGER_SEGMENTS : SEGMENTS;
-  const active = session.kind === "host" ? tigerActiveSegment(pathname) : activeSegment(pathname);
+  const isTiger = session.kind === "host";
+  const segments = isTiger ? TIGER_SEGMENTS : SEGMENTS;
+  const active = isTiger ? tigerActiveSegment(pathname) : activeSegment(pathname);
 
   return (
     <nav className="sticky z-[210] flex h-12 items-stretch bg-maroon-900" style={{ top: headerOffset }}>
@@ -70,8 +71,10 @@ export function PlayerAreaNav() {
             key={segment.href}
             href={segment.href}
             className={[
-              "flex flex-1 items-center justify-center font-condensed text-xs font-bold uppercase tracking-wide transition-colors",
-              on ? "bg-cream-50 text-maroon-700" : "text-white",
+              "flex flex-1 items-center justify-center border-b-2 font-condensed text-xs font-bold uppercase tracking-wide transition-colors",
+              isTiger
+                ? on ? "border-gold-400 text-white" : "border-transparent text-white/75 hover:text-white"
+                : on ? "border-transparent bg-cream-50 text-maroon-700" : "border-transparent text-white",
             ].join(" ")}
           >
             {segment.label}

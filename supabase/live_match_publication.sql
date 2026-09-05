@@ -56,6 +56,14 @@ alter table live_tournament_settings drop constraint if exists live_tournament_s
 alter table live_tournament_settings drop constraint if exists live_tournament_settings_pkey;
 alter table live_tournament_settings drop column if exists id;
 alter table live_tournament_settings add primary key (season_year);
+-- Master Settings fields are kept with the season record. These were added
+-- to schema.sql before this publication file existed, so include them here
+-- as well for projects whose database was migrated incrementally.
+alter table live_tournament_settings add column if not exists venue_name text;
+alter table live_tournament_settings add column if not exists venue_locked boolean not null default false;
+alter table live_tournament_settings add column if not exists begin_date date;
+alter table live_tournament_settings add column if not exists end_date date;
+alter table live_tournament_settings add column if not exists dates_locked boolean not null default false;
 
 alter table broadcast_config add column if not exists season_year integer;
 update broadcast_config set season_year = 2027 where season_year is null;
