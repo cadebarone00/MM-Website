@@ -52,6 +52,9 @@ export function BroadcastControlsPanel({
   const [tracks, setTracks] = useState(initialTracks);
   const [uploadBusy, setUploadBusy] = useState(false);
   const [playlistBusy, setPlaylistBusy] = useState<string | null>(null);
+  const [urlBusy, setUrlBusy] = useState(false);
+  const [trackUrl, setTrackUrl] = useState("");
+  const [trackUrlTitle, setTrackUrlTitle] = useState("");
   const [previewYear, setPreviewYear] = useState(initialDisplayYear);
   const [previewScene, setPreviewScene] = useState<BroadcastScene>("individual_leaderboard");
 
@@ -169,6 +172,45 @@ export function BroadcastControlsPanel({
       setError(err instanceof Error ? err.message : "Could not upload that file.");
     } finally {
       setUploadBusy(false);
+    }
+  }
+
+  async function addTrackFromUrl() {
+    const url = trackUrl.trim();
+    const title = trackUrlTitle.trim();
+    if (!url || !title) return;
+    setUrlBusy(true);
+    setError(null);
+    try {
+      // The browser measures the track's length itself, same technique as
+      // uploadTrack — the server (which does the actual download, see
+      // .../upload/from-url) has no built-in way to read an mp3's duration
+      // without a new dependency, and the browser already does this for free.
+      const durationSeconds = await new Promise<number>((resolve, reject) => {
+        const probe = new Audio();
+        probe.preload = "metadata";
+        probe.onloadedmetadata = () => resolve(probe.duration);
+        probe.onerror = () => reject(new Error("Could not read that link — check it's a direct link to an audio file."));
+        probe.src = url;
+      });
+
+      const res = await fetch("/api/portal/tiger/broadcast/playlist/upload/from-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, title, durationSeconds }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error ?? "Could not add that link.");
+        return;
+      }
+      setTracks((current) => [...current, data.track]);
+      setTrackUrl("");
+      setTrackUrlTitle("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not add that link.");
+    } finally {
+      setUrlBusy(false);
     }
   }
 
@@ -520,6 +562,31 @@ export function BroadcastControlsPanel({
             }}
           />
         </label>
+
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+          <input
+            type="url"
+            value={trackUrl}
+            onChange={(e) => setTrackUrl(e.target.value)}
+            placeholder="Or paste a direct link to an mp3…"
+            className="flex-1 rounded-lg border-2 border-stone-300 px-3 py-2 text-sm"
+          />
+          <input
+            type="text"
+            value={trackUrlTitle}
+            onChange={(e) => setTrackUrlTitle(e.target.value)}
+            placeholder="Song title"
+            className="rounded-lg border-2 border-stone-300 px-3 py-2 text-sm sm:w-40"
+          />
+          <button
+            type="button"
+            disabled={urlBusy || !trackUrl.trim() || !trackUrlTitle.trim()}
+            onClick={addTrackFromUrl}
+            className="rounded-lg border-2 border-stone-300 px-4 py-2 font-condensed text-sm font-semibold uppercase tracking-wide text-ink-700 transition hover:bg-stone-50 disabled:opacity-50"
+          >
+            {urlBusy ? "Adding…" : "Add"}
+          </button>
+        </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
           <button
