@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { HoleMarkerForDiff } from "./HoleMarker";
 
 type ArchiveHole = { hole: number; par: number; yards: number; score: number | null };
 type ArchiveRound = { year: number; round: number; course: string; format: string; holes: ArchiveHole[] };
@@ -9,29 +10,86 @@ function scoreTotal(holes: ArchiveHole[]): number | null {
   return holes.length === 9 && holes.every((hole) => hole.score !== null) ? holes.reduce((total, hole) => total + (hole.score ?? 0), 0) : null;
 }
 
-function NineScorecard({ holes, label, finalTotal }: { holes: ArchiveHole[]; label: "OUT" | "IN"; finalTotal?: number | null }) {
-  const rows = [
-    ["Hole", ...holes.map((hole) => hole.hole)],
-    ["Yards", ...holes.map((hole) => hole.yards || "—")],
-    ["Par", ...holes.map((hole) => hole.par)],
-    ["Score", ...holes.map((hole) => hole.score ?? "—")],
-  ];
-  const nineTotal = scoreTotal(holes);
+// Same header-row look as CourseInfoHeader: a maroon "Hole" row, then muted
+// cream rows for Yards/Par — reused here at nine-hole size instead of 18.
+function InfoRow({
+  label,
+  variant,
+  values,
+  totalValue,
+  first,
+}: {
+  label: string;
+  variant: "header" | "muted";
+  values: (number | string)[];
+  totalValue: number | string;
+  /** First row in the block gets the rounded top corners. */
+  first?: boolean;
+}) {
+  const isHeader = variant === "header";
+  const rowBg = isHeader ? "bg-maroon-700" : "bg-cream-100";
+  const rowText = isHeader ? "text-white" : "text-maroon-700";
+  const rowBorder = isHeader ? "border-white/15" : "border-ink-300";
 
   return (
-    <div className="overflow-x-auto rounded-md border border-ink-200">
-      <table className="min-w-[650px] w-full border-collapse text-center font-condensed text-xs">
-        <tbody>
-          {rows.map(([rowLabel, ...values]) => (
-            <tr key={String(rowLabel)} className={rowLabel === "Score" ? "bg-cream-100 font-bold text-ink-900" : "text-ink-600"}>
-              <th className="w-14 border-b border-r border-ink-200 bg-maroon-700 px-2 py-1.5 text-left font-condensed text-2xs font-bold uppercase tracking-wide text-white">{rowLabel}</th>
-              {values.map((value, index) => <td key={index} className="min-w-12 border-b border-r border-ink-200 px-1 py-1.5 last:border-r-0">{value}</td>)}
-              {rowLabel === "Score" ? <td className="min-w-14 border-b border-ink-200 bg-gold-200 px-2 py-1.5 font-bold text-ink-900">{label} {nineTotal ?? "—"}</td> : <td className="border-b border-ink-200 bg-cream-50" />}
-              {rowLabel === "Score" && label === "IN" ? <td className="min-w-16 border-b border-l border-ink-200 bg-gold-400 px-2 py-1.5 font-bold text-maroon-900">Total {finalTotal ?? "—"}</td> : rowLabel === "Score" ? null : label === "IN" ? <td className="border-b border-l border-ink-200 bg-cream-50" /> : null}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className={["flex border-b", rowBorder].join(" ")}>
+      <div className={["flex h-8 w-[148px] shrink-0 items-center border-r pl-3", first ? "rounded-tl-2xl" : "", rowBorder, rowBg].join(" ")}>
+        <span className={["font-condensed text-[10px] font-bold tracking-eyebrow uppercase", rowText].join(" ")}>{label}</span>
+      </div>
+      {values.map((value, index) => (
+        <div key={index} className={["flex h-8 w-9 shrink-0 items-center justify-center border-r", rowBorder, rowBg].join(" ")}>
+          <span className={["font-sans text-xs font-semibold tabular-nums", rowText].join(" ")}>{value}</span>
+        </div>
+      ))}
+      <div className={["flex h-8 w-12 shrink-0 items-center justify-center border-l pl-1 pr-3", first ? "rounded-tr-2xl" : "", rowBorder, rowBg].join(" ")}>
+        <span className={["font-sans text-xs font-semibold tabular-nums", rowText].join(" ")}>{totalValue}</span>
+      </div>
+    </div>
+  );
+}
+
+function NineScorecard({ holes, label, finalTotal }: { holes: ArchiveHole[]; label: "OUT" | "IN"; finalTotal?: number | null }) {
+  const nineTotal = scoreTotal(holes);
+  const parTotal = holes.reduce((sum, hole) => sum + hole.par, 0);
+  const yardTotal = holes.reduce((sum, hole) => sum + (hole.yards || 0), 0);
+  const showFinalTotal = label === "IN";
+
+  return (
+    <div className="w-max min-w-full overflow-hidden rounded-2xl border border-ink-300 bg-cream-100">
+      <InfoRow label="Hole" variant="header" values={holes.map((hole) => hole.hole)} totalValue={label} first />
+      <InfoRow label="Yards" variant="muted" values={holes.map((hole) => hole.yards || "—")} totalValue={yardTotal || "—"} />
+      <InfoRow label="Par" variant="muted" values={holes.map((hole) => hole.par)} totalValue={parTotal} />
+
+      {/* Score row — same look as ScorecardRow: hole markers for eagle/birdie/bogey/etc. */}
+      <div className="flex items-center bg-cream-100">
+        <div className="flex h-11 w-[148px] shrink-0 items-center rounded-bl-2xl border-r border-ink-300 bg-cream-100 pl-3">
+          <span className="font-condensed text-[10px] font-bold tracking-eyebrow uppercase text-maroon-700">Score</span>
+        </div>
+        {holes.map((hole) => (
+          <div key={hole.hole} className="flex h-11 w-9 shrink-0 items-center justify-center border-r border-ink-300 bg-cream-100">
+            {hole.score === null ? (
+              <span className="font-sans text-xs text-maroon-300">–</span>
+            ) : (
+              <HoleMarkerForDiff diff={hole.score - hole.par} size={28} tone="maroon">{hole.score}</HoleMarkerForDiff>
+            )}
+          </div>
+        ))}
+        <div
+          className={[
+            "flex h-11 w-12 shrink-0 flex-col items-center justify-center border-ink-300 bg-cream-100 px-1",
+            showFinalTotal ? "border-r" : "rounded-br-2xl border-r",
+          ].join(" ")}
+        >
+          <span className="font-score text-sm font-bold text-maroon-700 tabular-nums leading-none">{nineTotal ?? "—"}</span>
+          <span className="font-condensed text-[9px] font-semibold tracking-eyebrow uppercase text-maroon-500 leading-none mt-[2px]">{label}</span>
+        </div>
+        {showFinalTotal && (
+          <div className="flex h-11 w-14 shrink-0 flex-col items-center justify-center rounded-br-2xl border-l border-ink-300 bg-cream-100 pl-1 pr-3">
+            <span className="font-score text-lg font-extrabold text-maroon-700 tabular-nums leading-none">{finalTotal ?? "—"}</span>
+            <span className="font-condensed text-[9px] font-semibold tracking-eyebrow uppercase text-maroon-500 leading-none mt-[2px]">Total</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -110,7 +168,7 @@ export function ArchivedScores({ playerSlug }: { playerSlug: string }) {
             </label>
           </div>
           <div className="mb-3 flex flex-wrap gap-x-3 gap-y-1 font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500"><span>{selectedRound.course}</span><span>{selectedRound.format}</span></div>
-          <div className="space-y-3">
+          <div className="space-y-3 overflow-x-auto">
             <NineScorecard holes={front} label="OUT" />
             <NineScorecard holes={back} label="IN" finalTotal={total} />
           </div>
