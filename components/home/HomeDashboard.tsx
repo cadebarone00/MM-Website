@@ -7,6 +7,7 @@ import { SectionHead } from "@/components/home/SectionHead";
 import { QuickLeaderboardCard } from "@/components/home/QuickLeaderboardCard";
 import { QuickTeamsCard } from "@/components/home/QuickTeamsCard";
 import { QuickScheduleCard } from "@/components/home/QuickScheduleCard";
+import type { UpcomingRoundScheduleItem } from "@/lib/data/activeSeasonOverlay";
 import { HomeTeamsPanel } from "@/components/home/HomeTeamsPanel";
 import { Tabs } from "@/components/ui/Tabs";
 import type { TabItem } from "@/components/ui/Tabs";
@@ -206,7 +207,7 @@ const TOGGLE_TABS: TabItem[] = [
 ];
 
 /** Mobile-only replacement for the 2-column Highlights/quick-cards block: one full-width panel, switched by a 3-way toggle, defaulting to Highlights. */
-function MobileHighlightsToggle({ nextTournamentOverride }: { nextTournamentOverride: NextTournamentOverride }) {
+function MobileHighlightsToggle({ nextTournamentOverride, rounds }: { nextTournamentOverride: NextTournamentOverride; rounds: UpcomingRoundScheduleItem[] }) {
   const [tab, setTab] = useState<ToggleTab>("highlights");
 
   return (
@@ -215,7 +216,7 @@ function MobileHighlightsToggle({ nextTournamentOverride }: { nextTournamentOver
       <div className="mt-4">
         {tab === "highlights" && <HighlightsRail flat />}
         {tab === "teams" && <HomeTeamsPanel />}
-        {tab === "schedule" && <QuickScheduleCard nextTournamentOverride={nextTournamentOverride} />}
+        {tab === "schedule" && <QuickScheduleCard nextTournamentOverride={nextTournamentOverride} rounds={rounds} />}
       </div>
     </div>
   );
@@ -379,16 +380,16 @@ function SocialsSection() {
   );
 }
 
-export function HomeDashboard({ nextTournamentOverride }: { nextTournamentOverride: NextTournamentOverride }) {
+export function HomeDashboard({ nextTournamentOverride, rounds }: { nextTournamentOverride: NextTournamentOverride; rounds: UpcomingRoundScheduleItem[] }) {
   return (
     <section className="bg-cream-100">
       <div className="mx-auto max-w-[1440px] px-4 py-4 sm:px-7 sm:py-8">
-        <MobileHighlightsToggle nextTournamentOverride={nextTournamentOverride} />
+        <MobileHighlightsToggle nextTournamentOverride={nextTournamentOverride} rounds={rounds} />
 
         <div className="hidden lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(180px,320px)] gap-4 xl:gap-7">
           <HighlightsRail />
           <div className="flex min-w-0 flex-col gap-2 sm:gap-3 xl:gap-4">
-            <QuickScheduleCard nextTournamentOverride={nextTournamentOverride} />
+            <QuickScheduleCard nextTournamentOverride={nextTournamentOverride} rounds={rounds} />
             <QuickTeamsCard />
             <QuickLeaderboardCard />
           </div>
