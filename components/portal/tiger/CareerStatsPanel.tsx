@@ -40,7 +40,7 @@ export function CareerStatsPanel({ records, partnerships, teamRecords }: { recor
   if (!player) return <p className="rounded-md border border-gold-300 bg-cream-50 px-4 py-5 font-sans text-sm text-ink-500">No archived scorecards are available yet. Import the 2024–2026 scorecards and this page will calculate every view automatically.</p>;
   return <div>
     <div role="tablist" aria-label="Player archive" className="flex flex-wrap gap-2 border-b border-gold-200 pb-4">
-      {players.map((playerId) => <button type="button" key={playerId} role="tab" aria-selected={player === playerId} onClick={() => { setPlayer(playerId); setYear(ALL); setFormat(ALL); setPartner(ALL); setPartnershipFormat(ALL); }} className={`rounded-sm px-3 py-2 font-condensed text-xs font-bold uppercase tracking-wide ${player === playerId ? "bg-maroon-700 text-white" : "bg-white text-ink-600 hover:bg-cream-100"}`}>{getPlayerDisplayName(playerId)}</button>)}
+      {players.map((playerId) => <button type="button" key={playerId} role="tab" aria-selected={player === playerId} onClick={() => { setPlayer(playerId); setPartner(ALL); setPartnershipFormat(ALL); }} className={`rounded-sm px-3 py-2 font-condensed text-xs font-bold uppercase tracking-wide ${player === playerId ? "bg-maroon-700 text-white" : "bg-white text-ink-600 hover:bg-cream-100"}`}>{getPlayerDisplayName(playerId)}</button>)}
     </div>
     <div className="mt-4 flex flex-wrap gap-3">
       <Select label="Year" value={year} onChange={setYear} options={[ALL, ...years]} />
