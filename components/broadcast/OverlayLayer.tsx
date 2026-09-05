@@ -28,7 +28,7 @@ export function OverlayLayer({ text, expiresAt }: { text: string | null; expires
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-10 flex justify-center px-6 pb-8 sm:pb-12">
-      <div className="max-w-3xl rounded-lg bg-[color:var(--color-maroon-700)] px-6 py-3 text-center font-serif text-xl font-semibold text-white shadow-xl sm:text-2xl">
+      <div className="max-w-3xl border-t border-[color:var(--color-gold-400)]/40 bg-[color:var(--color-maroon-900)]/90 px-6 py-3 text-center font-serif text-xl font-semibold text-[color:var(--color-cream-50)] shadow-xl backdrop-blur-sm sm:text-2xl">
         {text}
       </div>
     </div>
