@@ -30,12 +30,16 @@ for (const sheetName of ["Day 1", "Day 2", "Day 3", "Day 4"]) {
     const match = title.match(/^(.*?)\s*Round\s+(\d+)\s+Scorecard$/i);
     if (!match) continue;
     const anchor = XLSX.utils.decode_cell(address);
-    // A few scorecard titles omit the player name, but the workbook still
-    // labels that card's block in column A (for example, "Nate" beside
-    // "Round 1 Scorecard"). Do not drop a complete card for presentation
-    // formatting in the input sheet.
+    // The score row is the authoritative player identifier. Some Day 1/4
+    // display titles omit a name, and some of the later titles are shifted
+    // one player ahead (for example, a "Kyle" title over DaltonScore data).
+    // The row label remains correct in every card, so use it first.
+    const scoreRowPlayer = String(sheet[XLSX.utils.encode_cell({ r: anchor.r + 5, c: 5 })]?.v ?? "")
+      .trim()
+      .replace(/Score$/i, "")
+      .trim();
     const headerPlayer = String(sheet[XLSX.utils.encode_cell({ r: anchor.r, c: 0 })]?.v ?? "").trim();
-    const player = (match[1].trim() || headerPlayer).toUpperCase();
+    const player = (scoreRowPlayer || match[1].trim() || headerPlayer).toUpperCase();
     const round = Number(match[2]);
     const context = ROUND_CONTEXT[round];
     if (!player || !context) continue;
