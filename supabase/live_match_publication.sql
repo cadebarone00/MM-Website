@@ -35,6 +35,19 @@ alter table live_round_state add primary key (season_year, round);
 alter table live_roster drop constraint if exists live_roster_pkey;
 alter table live_roster add primary key (season_year, player_slug);
 
+-- Team choices may be locked one player at a time. A separate table lets
+-- Tiger lock an explicit "Unassigned" choice without creating an invalid
+-- roster entry (live_roster itself contains active team assignments only).
+create table if not exists live_roster_assignment_locks (
+  season_year integer not null check (season_year between 2027 and 2034),
+  player_slug text not null references player_slots(player_slug) on delete cascade,
+  locked_at timestamptz not null default now(),
+  primary key (season_year, player_slug)
+);
+alter table live_roster_assignment_locks enable row level security;
+drop policy if exists live_roster_assignment_locks_select_all on live_roster_assignment_locks;
+create policy live_roster_assignment_locks_select_all on live_roster_assignment_locks for select using (true);
+
 alter table live_match_boxes drop constraint if exists live_match_boxes_round_box_number_key;
 alter table live_match_boxes drop constraint if exists live_match_boxes_season_round_box_number_key;
 alter table live_match_boxes add constraint live_match_boxes_season_year_round_fkey
