@@ -67,12 +67,13 @@ function ProbabilityGraph({ tournament }: { tournament: Tournament }) {
         <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full" role="img" aria-label="Maroon win probability across the tournament">
           {[0, 25, 50, 75, 100].map((value) => {
             const y = padding.top + ((100 - value) / 100) * (height - padding.top - padding.bottom);
-            return <g key={value}><line x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke="rgba(255,255,255,.18)" /><text x="8" y={y + 4} fill="rgba(255,255,255,.72)" fontSize="22">{value}%</text></g>;
+            return <g key={value}><line x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke="#d9d5cd" strokeDasharray="4 6" /><text x="8" y={y + 4} fill="#6e645b" fontSize="22">{value}</text></g>;
           })}
-          <polyline points={path} fill="none" stroke="var(--color-gold-400)" strokeWidth="7" strokeLinejoin="round" strokeLinecap="round" />
-          <circle cx={Number(path.split(" ").at(-1)?.split(",")[0])} cy={Number(path.split(" ").at(-1)?.split(",")[1])} r="9" fill="var(--color-gold-300)" />
-          <text x={padding.left} y={height - 8} fill="rgba(255,255,255,.72)" fontSize="22">Opening</text>
-          <text x={width - padding.right} y={height - 8} textAnchor="end" fill="rgba(255,255,255,.72)" fontSize="22">Final</text>
+          <polygon points={`${padding.left},${height - padding.bottom} ${path} ${width - padding.right},${height - padding.bottom}`} fill="#1a1513" opacity=".16" />
+          <polyline points={path} fill="none" stroke="#1a1513" strokeWidth="7" strokeLinejoin="round" strokeLinecap="round" />
+          <circle cx={Number(path.split(" ").at(-1)?.split(",")[0])} cy={Number(path.split(" ").at(-1)?.split(",")[1])} r="9" fill="var(--color-maroon-700)" />
+          {Array.from({ length: 8 }, (_, index) => <text key={index} x={padding.left + (index / 7) * (width - padding.left - padding.right)} y={height - 8} textAnchor="middle" fill="#6e645b" fontSize="20">R{index + 1}</text>)}
+          <text x={width - padding.right} y={padding.top + 18} textAnchor="end" fill="#6e645b" fontSize="20">FINAL</text>
         </svg>
       </div>
       <p className="mt-1 font-sans text-xs text-white/65">Maroon win probability · final result confirmed</p>
