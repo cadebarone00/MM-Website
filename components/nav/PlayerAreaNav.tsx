@@ -11,12 +11,21 @@ const SEGMENTS = [
   { href: "/portal/scoring", label: "Scoring" },
 ] as const;
 
+const TIGER_SEGMENTS = [
+  { href: "/", label: "Website" },
+  { href: "/portal/admin", label: "Tiger Center" },
+] as const;
+
 type SegmentHref = (typeof SEGMENTS)[number]["href"];
 
 function activeSegment(pathname: string): SegmentHref {
   if (pathname.startsWith("/portal/scoring")) return "/portal/scoring";
   if (pathname.startsWith("/portal")) return "/portal";
   return "/";
+}
+
+function tigerActiveSegment(pathname: string): (typeof TIGER_SEGMENTS)[number]["href"] {
+  return pathname.startsWith("/portal/admin") ? "/portal/admin" : "/";
 }
 
 function useHeaderOffset(): number {
@@ -47,13 +56,14 @@ export function PlayerAreaNav() {
   const pathname = usePathname();
   const headerOffset = useHeaderOffset();
 
-  if (session?.kind !== "player") return null;
+  if (session?.kind !== "player" && session?.kind !== "host") return null;
 
-  const active = activeSegment(pathname);
+  const segments = session.kind === "host" ? TIGER_SEGMENTS : SEGMENTS;
+  const active = session.kind === "host" ? tigerActiveSegment(pathname) : activeSegment(pathname);
 
   return (
     <nav className="sticky z-[210] flex h-12 items-stretch bg-maroon-900" style={{ top: headerOffset }}>
-      {SEGMENTS.map((segment) => {
+      {segments.map((segment) => {
         const on = segment.href === active;
         return (
           <Link
