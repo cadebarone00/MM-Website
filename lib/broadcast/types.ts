@@ -27,6 +27,9 @@ export interface BroadcastState {
   tournamentLive: boolean;
   overlayText: string | null;
   overlayExpiresAt: string | null; // ISO timestamp; null whenever overlayText is null
+  audioTrackId: string | null;
+  audioStartedAt: string | null; // ISO timestamp; null whenever audioTrackId is null
+  audioLoopMode: AudioLoopMode;
 }
 
 export interface BroadcastConfig {
