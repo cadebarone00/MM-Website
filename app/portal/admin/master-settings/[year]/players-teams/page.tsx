@@ -22,8 +22,12 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ ye
   const { data: slots } = await service.from("player_slots").select("player_slug, username, claimed_by");
   const byslug = new Map((slots ?? []).map((s) => [s.player_slug, s]));
 
-  const { data: roster } = await service.from("live_roster").select("player_slug, team").eq("season_year", year);
+  const [{ data: roster }, { data: locks }] = await Promise.all([
+    service.from("live_roster").select("player_slug, team").eq("season_year", year),
+    service.from("live_roster_assignment_locks").select("player_slug").eq("season_year", year),
+  ]);
   const rosterBySlug = new Map((roster ?? []).map((r) => [r.player_slug, r.team as "maroon" | "white"]));
+  const lockedSlugs = new Set((locks ?? []).map((lock) => lock.player_slug));
 
   const { data: pendingRows } = await service
     .from("player_profile_edits")
@@ -41,6 +45,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ ye
     username: byslug.get(p.slug)?.username ?? null,
     claimedBy: byslug.get(p.slug)?.claimed_by ?? null,
     team: rosterBySlug.get(p.slug) ?? null,
+    teamLocked: lockedSlugs.has(p.slug),
     pendingEdits: pendingBySlug.get(p.slug) ?? [],
   }));
 

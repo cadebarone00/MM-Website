@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useState } from "react";
+import { LockKeyhole, LockKeyholeOpen } from "lucide-react";
 
 // Mirrors EDITABLE_PLAYER_FIELDS in lib/data/players/overrides.ts. Not
 // imported from there directly: that module has a top-level import of the
@@ -52,6 +53,7 @@ export interface PlayerSlotAdminRow {
   username: string | null;
   claimedBy: string | null;
   team: "maroon" | "white" | null;
+  teamLocked: boolean;
   pendingEdits: PendingProfileEdit[];
 }
 
@@ -184,7 +186,7 @@ export function PlayerSlotsAdmin({ year, rows: initialRows }: { year: number; ro
     }
   }
 
-  async function handleSetTeam(playerSlug: string, team: "maroon" | "white") {
+  async function handleSetTeam(playerSlug: string, team: "maroon" | "white" | null) {
     setBusy(playerSlug);
     setError(null);
     try {
@@ -201,6 +203,28 @@ export function PlayerSlotsAdmin({ year, rows: initialRows }: { year: number; ro
       window.location.reload();
     } catch {
       setError("Something went wrong — try again.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleTeamLock(playerSlug: string, locked: boolean) {
+    setBusy(playerSlug);
+    setError(null);
+    try {
+      const res = await fetch("/api/portal/tiger/roster/lock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ year, playerSlug, locked }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error);
+        return;
+      }
+      setRowsState((current) => current.map((row) => row.playerSlug === playerSlug ? { ...row, teamLocked: locked } : row));
+    } catch {
+      setError("Something went wrong â€” try again.");
     } finally {
       setBusy(null);
     }
@@ -231,18 +255,42 @@ export function PlayerSlotsAdmin({ year, rows: initialRows }: { year: number; ro
                 <td className="py-2 font-mono">{row.username ?? "—"}</td>
                 <td className="py-2">{row.claimedBy ? "Claimed" : "Open"}</td>
                 <td className="py-2">
-                  <select
-                    value={row.team ?? ""}
-                    disabled={busy === row.playerSlug}
-                    onChange={(e) => handleSetTeam(row.playerSlug, e.target.value as "maroon" | "white")}
-                    className="border-2 border-stone-300 rounded-lg px-2 py-1 text-xs font-semibold bg-white"
-                  >
-                    <option value="" disabled>
-                      Unassigned
-                    </option>
-                    <option value="maroon">Maroon</option>
-                    <option value="white">White</option>
-                  </select>
+                  <div className="flex flex-wrap items-center gap-1">
+                    {([
+                      [null, "Unassigned"],
+                      ["maroon", "Maroon"],
+                      ["white", "White"],
+                    ] as const).map(([team, label]) => {
+                      const selected = row.team === team;
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          disabled={busy === row.playerSlug || row.teamLocked}
+                          onClick={() => handleSetTeam(row.playerSlug, team)}
+                          className={[
+                            "rounded-sm border px-2 py-1 font-condensed text-2xs font-bold uppercase tracking-wide disabled:cursor-not-allowed disabled:opacity-70",
+                            selected && row.teamLocked ? "border-fairway-800 bg-fairway-800 text-white" : "",
+                            selected && !row.teamLocked && team === "maroon" ? "border-maroon-700 bg-maroon-700 text-white" : "",
+                            selected && !row.teamLocked && team === "white" ? "border-ink-400 bg-white text-ink-900" : "",
+                            selected && !row.teamLocked && team === null ? "border-ink-500 bg-ink-100 text-ink-800" : "",
+                            !selected ? "border-ink-200 bg-white text-ink-500 hover:border-ink-400" : "",
+                          ].join(" ")}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      disabled={busy === row.playerSlug}
+                      onClick={() => handleTeamLock(row.playerSlug, !row.teamLocked)}
+                      title={row.teamLocked ? "Unlock team assignment" : "Lock team assignment"}
+                      className="ml-1 inline-flex h-7 w-7 items-center justify-center rounded-sm border border-ink-300 bg-white text-ink-700 hover:border-gold-500 hover:text-maroon-700 disabled:opacity-50"
+                    >
+                      {row.teamLocked ? <LockKeyhole size={14} /> : <LockKeyholeOpen size={14} />}
+                    </button>
+                  </div>
                 </td>
                 <td className="py-2 text-right">
                   {row.pendingEdits.length > 0 && (
