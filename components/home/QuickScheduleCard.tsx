@@ -5,13 +5,14 @@ import { CalendarDays } from "lucide-react";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
 import { nextTournament } from "@/lib/data";
 import type { NextTournamentOverride } from "@/lib/data/types";
+import type { UpcomingRoundScheduleItem } from "@/lib/data/activeSeasonOverlay";
 
 function placeholderDateLabel(startDate: string): string {
   const [year, month, day] = startDate.split("-");
   return `${Number(month)}/${Number(day)}/${year}`;
 }
 
-export function QuickScheduleCard({ nextTournamentOverride }: { nextTournamentOverride: NextTournamentOverride }) {
+export function QuickScheduleCard({ nextTournamentOverride, rounds }: { nextTournamentOverride: NextTournamentOverride; rounds: UpcomingRoundScheduleItem[] }) {
   const { tournament } = useLiveTournament();
   const liveMatch = tournament.matches.find((match) => match.status === "live");
 
@@ -32,11 +33,24 @@ export function QuickScheduleCard({ nextTournamentOverride }: { nextTournamentOv
           <div className="font-sans text-2xs text-ink-500 sm:text-xs">{liveMatch.format}</div>
         </div>
       ) : (
-        <div>
-          <div className="font-sans text-xs font-bold text-ink-900 sm:text-sm">
-            Round 1 starts {placeholderDateLabel(nextTournament.startDate)}
-          </div>
-          <div className="font-sans text-2xs text-ink-500 sm:text-xs">{nextTournamentOverride.venue}</div>
+        <div className="space-y-2">
+          {rounds.length ? rounds.map((round) => (
+            <div key={round.round} className="border-b border-ink-100 pb-2 last:border-b-0 last:pb-0">
+              <div className="font-sans text-xs font-bold text-ink-900 sm:text-sm">
+                Round {round.round}{round.date ? ` · ${placeholderDateLabel(round.date)}` : ""}
+              </div>
+              <div className="font-sans text-2xs text-ink-500 sm:text-xs">
+                {round.courseName ?? "Course not set"} · {round.format ?? "Format not set"}
+              </div>
+            </div>
+          )) : (
+            <div>
+              <div className="font-sans text-xs font-bold text-ink-900 sm:text-sm">
+                Round 1 starts {placeholderDateLabel(nextTournament.startDate)}
+              </div>
+              <div className="font-sans text-2xs text-ink-500 sm:text-xs">{nextTournamentOverride.venue}</div>
+            </div>
+          )}
         </div>
       )}
     </Link>

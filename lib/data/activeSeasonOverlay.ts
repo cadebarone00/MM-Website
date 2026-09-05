@@ -18,6 +18,13 @@ interface ActiveSeasonSettings {
   endDate: string | null;
 }
 
+export interface UpcomingRoundScheduleItem {
+  round: number;
+  date: string | null;
+  courseName: string | null;
+  format: string | null;
+}
+
 async function getActiveSeasonSettings(): Promise<ActiveSeasonSettings | null> {
   const service = createSupabaseServiceRoleClient();
   const { data: active } = await service.from("live_active_season").select("season_year").eq("id", true).maybeSingle();
@@ -89,4 +96,41 @@ export async function getVenueBySlugAsync(slug: string): Promise<VenueSchedule |
 export async function getNextTournamentOverride(): Promise<NextTournamentOverride> {
   const t = await getNextTournament();
   return { venue: t.venue, dateLabel: t.dateLabel };
+}
+
+/**
+ * The home-page schedule is a direct public read of Tiger Center's round
+ * setup. Courses and formats are never duplicated in static website data:
+ * changing either field in Tiger Center changes this list automatically.
+ */
+export async function getUpcomingRoundSchedule(): Promise<UpcomingRoundScheduleItem[]> {
+  const service = createSupabaseServiceRoleClient();
+  const { data: active } = await service
+    .from("live_active_season")
+    .select("season_year")
+    .eq("id", true)
+    .maybeSingle();
+
+  if (!active) return [];
+
+  const { data: rounds, error } = await service
+    .from("live_round_state")
+    .select("round, date, format, course_id")
+    .eq("season_year", active.season_year)
+    .order("round");
+
+  if (error || !rounds?.length) return [];
+
+  const courseIds = [...new Set(rounds.map((round) => round.course_id).filter((id): id is string => Boolean(id)))];
+  const { data: courses } = courseIds.length
+    ? await service.from("live_courses").select("id, name").in("id", courseIds)
+    : { data: [] as { id: string; name: string }[] };
+  const courseNames = new Map((courses ?? []).map((course) => [course.id, course.name]));
+
+  return rounds.map((round) => ({
+    round: round.round,
+    date: round.date ?? null,
+    courseName: round.course_id ? courseNames.get(round.course_id) ?? null : null,
+    format: round.format ?? null,
+  }));
 }
