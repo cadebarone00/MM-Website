@@ -50,13 +50,14 @@ for (let startRow = 9; startRow < 120; startRow += 14) {
     const format = FORMAT_BY_ROUND[round];
     if (!format) throw new Error(`Unexpected Danzante round ${round} for ${player}.`);
 
-    const holes = Array.from({ length: 18 }, (_, offset) => {
+    const holes: CareerHoleRecord[] = [];
+    for (let offset = 0; offset < 18; offset += 1) {
       const column = firstHoleColumn + offset;
       const score = integer(cell(startRow + 5, column));
       const par = integer(cell(startRow + 3, column));
       const yards = integer(cell(startRow + 2, column));
-      if (!score || !par || !yards) return null;
-      return {
+      if (!score || !par || !yards) continue;
+      holes.push({
         year: 2025,
         player,
         round,
@@ -71,8 +72,8 @@ for (let startRow = 9; startRow < 120; startRow += 14) {
         fairwayInRegulation: bool(cell(startRow + 7, column)),
         greenInRegulation: bool(cell(startRow + 8, column)),
         penalties: null,
-      } satisfies CareerHoleRecord;
-    }).filter((hole): hole is CareerHoleRecord => hole !== null);
+      });
+    }
 
     if (holes.length === 0) continue;
     if (holes.length !== 18) throw new Error(`${player} round ${round} has ${holes.length} scored holes; expected 18.`);
@@ -103,7 +104,7 @@ const nextRecords = [...retainedRecords, ...individualRecords].map((record) => (
 // Preserve the already-separated team history and partnership results, while
 // canonicalizing the course label across every archive collection.
 const nextArchive = archive
-  .replace(/export const careerArchiveRecords: CareerHoleRecord\[\] = .*?;\n\nexport const careerArchiveTeamRecords/s, `export const careerArchiveRecords: CareerHoleRecord[] = ${JSON.stringify(nextRecords)};\n\nexport const careerArchiveTeamRecords`)
+  .replace(/export const careerArchiveRecords: CareerHoleRecord\[\] = [\s\S]*?;\n\nexport const careerArchiveTeamRecords/, `export const careerArchiveRecords: CareerHoleRecord[] = ${JSON.stringify(nextRecords)};\n\nexport const careerArchiveTeamRecords`)
   .replaceAll('"course":"TPC Danzante Bay"', '"course":"Danzante Bay"');
 fs.writeFileSync(archivePath, nextArchive);
 
