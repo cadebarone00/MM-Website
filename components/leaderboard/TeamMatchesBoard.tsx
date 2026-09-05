@@ -63,7 +63,7 @@ function DaySelector({ days, activeDay, onSelect }: { days: number[]; activeDay:
         onClick={() => setOpen((current) => !current)}
         className="rounded-pill bg-maroon-700 px-3 py-1 font-condensed text-2xs font-bold uppercase tracking-wide text-cream-50"
       >
-        Day
+        Day {activeDay}
       </button>
       <div className={["flex overflow-hidden transition-[max-width,opacity,margin] duration-200 ease-out", open ? "ml-1 max-w-40 opacity-100" : "max-w-0 opacity-0"].join(" ")}>
         {days.map((day) => (

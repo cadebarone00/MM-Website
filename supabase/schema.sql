@@ -1153,3 +1153,43 @@ end $$;
 -- overlay_duration_ms already exists (Phase 1) — this is its takeover-class
 -- counterpart, same shape.
 alter table broadcast_config add column if not exists takeover_duration_ms integer not null default 8000;
+
+-- === Watch Live Broadcast: Playlist ========================================
+-- See docs/superpowers/specs/2026-09-04-watch-live-player-playlist-design.md.
+-- Host-uploaded audio for /watch-live's player, tied to Go Live/End
+-- Broadcast (no separate on/off switch). Same season_year-scoped,
+-- public-read/service-role-write convention as every broadcast_* table.
+
+create table if not exists broadcast_playlist_tracks (
+  id uuid primary key default gen_random_uuid(),
+  season_year integer not null check (season_year between 2024 and 2034),
+  title text not null,
+  storage_path text not null,
+  duration_seconds numeric not null check (duration_seconds > 0),
+  uploaded_at timestamptz not null default now()
+);
+create index if not exists broadcast_playlist_tracks_season_idx on broadcast_playlist_tracks (season_year, uploaded_at);
+
+alter table broadcast_playlist_tracks enable row level security;
+drop policy if exists broadcast_playlist_tracks_select_all on broadcast_playlist_tracks;
+create policy broadcast_playlist_tracks_select_all on broadcast_playlist_tracks for select using (true);
+
+-- Which track anchors playback, when it started (offset 0), and whether it
+-- loops alone or cycles through the whole playlist — every client derives
+-- "which track, how far into it" from these via
+-- lib/broadcast/playlistPlayback.ts's playlistTickAt(), the same anchor-
+-- timestamp approach broadcast_state.scene_started_at already uses for
+-- scene rotation.
+alter table broadcast_state add column if not exists audio_track_id uuid references broadcast_playlist_tracks(id) on delete set null;
+alter table broadcast_state add column if not exists audio_started_at timestamptz;
+alter table broadcast_state add column if not exists audio_loop_mode text not null default 'all' check (audio_loop_mode in ('one', 'all'));
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'broadcast_playlist_tracks'
+  ) then
+    alter publication supabase_realtime add table broadcast_playlist_tracks;
+  end if;
+end $$;
