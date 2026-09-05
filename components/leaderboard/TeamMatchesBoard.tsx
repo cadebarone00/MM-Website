@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Radio } from "lucide-react";
 import { CompactMatchRow } from "./CompactMatchRow";
 import { centralDateLabel, currentRoundDay, LIVE_START_LABEL } from "./matchUtils";
@@ -54,9 +54,19 @@ function PlaceholderPanel() {
 /** "Day {n}" label that drops down the other available days on tap — replaces the old day-pill row. */
 function DaySelector({ days, activeDay, onSelect }: { days: number[]; activeDay: number; onSelect: (day: number) => void }) {
   const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function closeWhenClickedOutside(event: MouseEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", closeWhenClickedOutside);
+    return () => document.removeEventListener("mousedown", closeWhenClickedOutside);
+  }, [open]);
 
   return (
-    <div className="mb-3 inline-flex rounded-pill border border-gold-400 bg-cream-50 p-[3px]">
+    <div ref={containerRef} className="mb-3 inline-flex rounded-pill border border-gold-400 bg-cream-50 p-[3px]">
       <button
         type="button"
         aria-expanded={open}

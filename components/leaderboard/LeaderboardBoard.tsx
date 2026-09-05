@@ -29,7 +29,7 @@ export function LeaderboardBoard({ tournament, live, liveStandings }: { tourname
   return (
     <div>
       <div className="mb-4 sm:mb-6">
-        <Tabs items={VIEW_TABS} value={view} onChange={(v) => setView(v as View)} variant="plain" />
+        <Tabs items={VIEW_TABS} value={view} onChange={(v) => setView(v as View)} variant="plain" size="large" />
       </div>
 
       {view === "team" ? <TeamMatchesBoard tournament={tournament} live={live} /> : <IndividualLeaderboardTable tournament={tournament} liveStandings={liveStandings} />}

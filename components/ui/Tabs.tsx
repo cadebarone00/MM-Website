@@ -13,9 +13,10 @@ interface TabsProps {
   value?: string;
   onChange?: (value: string) => void;
   variant?: "underline" | "pill" | "plain";
+  size?: "default" | "large";
 }
 
-export function Tabs({ items, value, onChange, variant = "underline" }: TabsProps) {
+export function Tabs({ items, value, onChange, variant = "underline", size = "default" }: TabsProps) {
   const [internal, setInternal] = useState(value ?? items[0]?.value);
   const active = value !== undefined ? value : internal;
   const select = (v: string) => {
@@ -37,7 +38,7 @@ export function Tabs({ items, value, onChange, variant = "underline" }: TabsProp
                 aria-selected={on}
                 onClick={() => select(it.value)}
                 className={[
-                  "font-condensed text-sm font-semibold uppercase tracking-wide transition-colors duration-150 cursor-pointer sm:text-base",
+                  size === "large" ? "font-condensed text-base font-semibold uppercase tracking-wide transition-colors duration-150 cursor-pointer sm:text-lg" : "font-condensed text-sm font-semibold uppercase tracking-wide transition-colors duration-150 cursor-pointer sm:text-base",
                   on ? "text-maroon-700" : "text-ink-400 hover:text-maroon-600",
                 ].join(" ")}
               >
