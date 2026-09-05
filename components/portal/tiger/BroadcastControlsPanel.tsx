@@ -5,6 +5,8 @@ import type { BroadcastConfig, BroadcastScene, BroadcastState } from "@/lib/broa
 import type { PlaylistTrack } from "@/lib/broadcast/playlist";
 import { DISPLAY_YEARS } from "@/lib/broadcast/displayYears";
 import { useAutoScene } from "@/lib/broadcast/useAutoScene";
+import { useLiveBroadcastAudio } from "@/lib/broadcast/useLiveBroadcastAudio";
+import { Volume2, VolumeX } from "lucide-react";
 import { BroadcastPreview } from "./BroadcastPreview";
 
 const SCENE_BUTTONS: { scene: BroadcastScene; label: string }[] = [
@@ -52,6 +54,13 @@ export function BroadcastControlsPanel({
   const [playlistBusy, setPlaylistBusy] = useState<string | null>(null);
   const [previewYear, setPreviewYear] = useState(initialDisplayYear);
   const [previewScene, setPreviewScene] = useState<BroadcastScene>("individual_leaderboard");
+
+  // Lets a host actually hear whatever's selected in the Playlist below,
+  // whether rehearsing or live — audible only in this browser tab, since
+  // real /watch-live viewers only get this hook mounted once tournamentLive
+  // is true (see WatchLiveExperience.tsx). Muted by default, same
+  // one-click-to-unmute pattern as the real viewer player.
+  const { nowPlayingTitle, muted: previewMuted, setMuted: setPreviewMuted } = useLiveBroadcastAudio(state, tracks);
 
   const isLive = state.tournamentLive;
   const isAuto = state.automationMode === "auto";
@@ -198,6 +207,26 @@ export function BroadcastControlsPanel({
         return;
       }
       setState((current) => ({ ...current, audioLoopMode: mode }));
+    } finally {
+      setPlaylistBusy(null);
+    }
+  }
+
+  async function setShuffle(shuffle: boolean) {
+    setPlaylistBusy(`shuffle-${shuffle}`);
+    setError(null);
+    try {
+      const res = await fetch("/api/portal/tiger/broadcast/playlist/shuffle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shuffle }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error ?? "Could not change shuffle.");
+        return;
+      }
+      setState((current) => ({ ...current, audioShuffle: shuffle }));
     } finally {
       setPlaylistBusy(null);
     }
@@ -446,89 +475,125 @@ export function BroadcastControlsPanel({
               )}
             </div>
           </section>
-
-          <section className="mt-8 rounded-lg border-2 border-stone-300 p-4">
-            <h2 className="font-serif text-lg font-bold text-ink-900">Broadcast Playlist</h2>
-            <p className="mt-1 font-sans text-xs text-ink-500">Plays on /watch-live while the broadcast is live. Stops automatically when you end the broadcast.</p>
-
-            <label className="mt-3 inline-block cursor-pointer rounded-lg bg-maroon-700 px-4 py-2 font-condensed text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-maroon-800">
-              {uploadBusy ? "Uploading…" : "Upload Song"}
-              <input
-                type="file"
-                accept="audio/*"
-                disabled={uploadBusy}
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  e.target.value = "";
-                  if (file) uploadTrack(file);
-                }}
-              />
-            </label>
-
-            <div className="mt-4 flex gap-2">
-              <button
-                type="button"
-                disabled={playlistBusy !== null}
-                onClick={() => setLoopMode("one")}
-                className={[
-                  "rounded-lg border-2 px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide transition disabled:opacity-50",
-                  state.audioLoopMode === "one" ? "border-maroon-700 bg-maroon-700 text-white" : "border-stone-300 text-ink-700 hover:bg-stone-50",
-                ].join(" ")}
-              >
-                Loop One
-              </button>
-              <button
-                type="button"
-                disabled={playlistBusy !== null}
-                onClick={() => setLoopMode("all")}
-                className={[
-                  "rounded-lg border-2 px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide transition disabled:opacity-50",
-                  state.audioLoopMode === "all" ? "border-maroon-700 bg-maroon-700 text-white" : "border-stone-300 text-ink-700 hover:bg-stone-50",
-                ].join(" ")}
-              >
-                Loop All
-              </button>
-            </div>
-
-            {tracks.length === 0 ? (
-              <p className="mt-4 font-sans text-sm text-ink-500">No songs uploaded yet.</p>
-            ) : (
-              <ul className="mt-4 flex flex-col gap-2">
-                {tracks.map((track) => {
-                  const isPlaying = state.audioTrackId === track.id;
-                  return (
-                    <li key={track.id} className="flex items-center justify-between gap-3 rounded-lg border-2 border-stone-200 px-3 py-2">
-                      <span className={["truncate font-sans text-sm", isPlaying ? "font-semibold text-maroon-700" : "text-ink-700"].join(" ")}>
-                        {isPlaying ? "▶ " : ""}
-                        {track.title}
-                      </span>
-                      <div className="flex shrink-0 gap-2">
-                        <button
-                          type="button"
-                          disabled={playlistBusy !== null || isPlaying}
-                          onClick={() => playTrack(track.id)}
-                          className="rounded-lg border-2 border-stone-300 px-3 py-1 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-700 transition hover:bg-stone-50 disabled:opacity-50"
-                        >
-                          {playlistBusy === track.id ? "Starting…" : "Play"}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={playlistBusy !== null}
-                          onClick={() => deleteTrack(track.id)}
-                          className="rounded-lg border-2 border-stone-300 px-3 py-1 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-700 transition hover:bg-stone-50 disabled:opacity-50"
-                        >
-                          {playlistBusy === `delete-${track.id}` ? "Removing…" : "Remove"}
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
         </div>
       )}
+
+      {/* Visible whether rehearsing or on air — a host can upload, test-listen
+          to (this browser only, via useLiveBroadcastAudio above), and queue
+          up songs before Go Live, not just once live. */}
+      <section className="mt-8 rounded-lg border-2 border-stone-300 p-4">
+        <h2 className="font-serif text-lg font-bold text-ink-900">Broadcast Playlist</h2>
+        <p className="mt-1 font-sans text-xs text-ink-500">
+          {isLive
+            ? "Playing live on /watch-live. Stops automatically when you end the broadcast."
+            : "Test songs here anytime — only you hear this until you Go Live, which starts the show with whatever's queued (or the top of the list)."}
+        </p>
+
+        {state.audioTrackId && (
+          <div className="mt-3 flex items-center gap-2 rounded-lg bg-stone-50 px-3 py-2">
+            <button
+              type="button"
+              onClick={() => setPreviewMuted(!previewMuted)}
+              aria-label={previewMuted ? "Unmute preview" : "Mute preview"}
+              className="text-ink-700"
+            >
+              {previewMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+            </button>
+            <span className="font-sans text-xs text-ink-700">
+              {previewMuted ? "Muted — " : "Playing — "}
+              {nowPlayingTitle ?? "…"}
+            </span>
+          </div>
+        )}
+
+        <label className="mt-3 inline-block cursor-pointer rounded-lg bg-maroon-700 px-4 py-2 font-condensed text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-maroon-800">
+          {uploadBusy ? "Uploading…" : "Upload Song"}
+          <input
+            type="file"
+            accept="audio/*"
+            disabled={uploadBusy}
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (file) uploadTrack(file);
+            }}
+          />
+        </label>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={playlistBusy !== null}
+            onClick={() => setLoopMode("one")}
+            className={[
+              "rounded-lg border-2 px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide transition disabled:opacity-50",
+              state.audioLoopMode === "one" ? "border-maroon-700 bg-maroon-700 text-white" : "border-stone-300 text-ink-700 hover:bg-stone-50",
+            ].join(" ")}
+          >
+            Loop One
+          </button>
+          <button
+            type="button"
+            disabled={playlistBusy !== null}
+            onClick={() => setLoopMode("all")}
+            className={[
+              "rounded-lg border-2 px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide transition disabled:opacity-50",
+              state.audioLoopMode === "all" ? "border-maroon-700 bg-maroon-700 text-white" : "border-stone-300 text-ink-700 hover:bg-stone-50",
+            ].join(" ")}
+          >
+            Loop All
+          </button>
+          <button
+            type="button"
+            disabled={playlistBusy !== null || state.audioLoopMode === "one"}
+            onClick={() => setShuffle(!state.audioShuffle)}
+            title={state.audioLoopMode === "one" ? "Shuffle only applies to Loop All" : undefined}
+            className={[
+              "rounded-lg border-2 px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide transition disabled:opacity-50",
+              state.audioShuffle ? "border-maroon-700 bg-maroon-700 text-white" : "border-stone-300 text-ink-700 hover:bg-stone-50",
+            ].join(" ")}
+          >
+            Shuffle {state.audioShuffle ? "On" : "Off"}
+          </button>
+        </div>
+
+        {tracks.length === 0 ? (
+          <p className="mt-4 font-sans text-sm text-ink-500">No songs uploaded yet.</p>
+        ) : (
+          <ul className="mt-4 flex flex-col gap-2">
+            {tracks.map((track) => {
+              const isPlaying = state.audioTrackId === track.id;
+              return (
+                <li key={track.id} className="flex items-center justify-between gap-3 rounded-lg border-2 border-stone-200 px-3 py-2">
+                  <span className={["truncate font-sans text-sm", isPlaying ? "font-semibold text-maroon-700" : "text-ink-700"].join(" ")}>
+                    {isPlaying ? "▶ " : ""}
+                    {track.title}
+                  </span>
+                  <div className="flex shrink-0 gap-2">
+                    <button
+                      type="button"
+                      disabled={playlistBusy !== null || isPlaying}
+                      onClick={() => playTrack(track.id)}
+                      className="rounded-lg border-2 border-stone-300 px-3 py-1 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-700 transition hover:bg-stone-50 disabled:opacity-50"
+                    >
+                      {playlistBusy === track.id ? "Starting…" : "Play"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={playlistBusy !== null}
+                      onClick={() => deleteTrack(track.id)}
+                      className="rounded-lg border-2 border-stone-300 px-3 py-1 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-700 transition hover:bg-stone-50 disabled:opacity-50"
+                    >
+                      {playlistBusy === `delete-${track.id}` ? "Removing…" : "Remove"}
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
