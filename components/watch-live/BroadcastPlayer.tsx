@@ -56,7 +56,10 @@ export function BroadcastPlayer({ state, tracks }: { state: BroadcastState; trac
         <iframe className="h-full w-full border-0" src="/broadcast" title="Maroon Masters live broadcast" />
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-gradient-to-t from-black/80 to-transparent px-4 py-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+      {/* Reveal on hover/focus for mouse users; on touch devices there's no
+          hover state at all, so [@media(hover:none)] keeps the bar always
+          visible there instead of being permanently unreachable. */}
+      <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-gradient-to-t from-black/80 to-transparent px-4 py-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100">
         <button type="button" onClick={toggleMuted} aria-label={muted ? "Unmute" : "Mute"} className="text-white">
           {muted || volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
         </button>
