@@ -8,7 +8,10 @@ const source = process.argv[2];
 if (!source) throw new Error("Pass the 2026 Maroon Masters workbook path.");
 const archivePath = path.join(process.cwd(), "lib/data/careerArchive.generated.ts");
 const mapPath = path.join(process.cwd(), "docs/source-data/2026_Maroon_Masters_Player_Round_Map.csv");
-const course: Record<number, string> = { 1: "Palmer", 2: "Pete Dye", 3: "Cove", 4: "Classic", 5: "Palmer", 6: "Pete Dye", 7: "Pete Dye", 8: "Tournament" };
+// Verified Mission Hills sequence: Palmer, Pete Dye, Classic, Cove, Pete
+// Dye, Palmer, Pete Dye, Tournament. Keep this beside the round map so
+// course labels never depend on misleading scorecard display titles.
+const course: Record<number, string> = { 1: "Palmer", 2: "Pete Dye", 3: "Classic", 4: "Cove", 5: "Pete Dye", 6: "Palmer", 7: "Pete Dye", 8: "Tournament" };
 type MapRow = { Player: string; Round: string; Sheet: string; Format: string; Partner: string; Hole_Score_Cells: string };
 const book = XLSX.readFile(source, { cellFormula: false });
 const mapBook = XLSX.readFile(mapPath, { raw: true });

@@ -13,6 +13,10 @@ function ScoreNine({ holes, endLabel }: { holes: ArchiveHole[]; endLabel: "OUT" 
   return <div className="grid grid-cols-10 overflow-hidden rounded-sm border border-gold-200 text-center">
     {holes.map((hole) => <div key={hole.hole} className="flex h-7 items-center justify-center border-r border-gold-100 bg-maroon-700 font-condensed text-xs font-bold text-white">{hole.hole}</div>)}
     <div className="flex h-7 items-center justify-center bg-maroon-700 font-condensed text-2xs font-bold text-white">{endLabel}</div>
+    {holes.map((hole) => <div key={hole.hole} className="flex h-5 items-center justify-center border-r border-gold-100 bg-cream-100 font-sans text-[9px] font-semibold tabular-nums text-ink-500">{hole.yards || "—"}</div>)}
+    <div className="flex h-5 items-center justify-center bg-cream-100 font-condensed text-[8px] font-bold uppercase text-ink-500">YDS</div>
+    {holes.map((hole) => <div key={hole.hole} className="flex h-5 items-center justify-center border-r border-gold-100 bg-cream-100 font-sans text-[10px] font-bold tabular-nums text-ink-600">{hole.par}</div>)}
+    <div className="flex h-5 items-center justify-center bg-cream-100 font-condensed text-[8px] font-bold uppercase text-ink-500">PAR</div>
     {holes.map((hole) => <div key={hole.hole} className="flex h-10 items-center justify-center border-r border-gold-100 bg-cream-50">{hole.score == null ? <span className="text-xs text-ink-400">—</span> : <HoleMarkerForDiff diff={hole.score - hole.par} size={26} tone="maroon">{hole.score}</HoleMarkerForDiff>}</div>)}
     <div className="flex h-10 flex-col items-center justify-center bg-cream-100"><span className="font-score text-sm font-bold text-maroon-700">{nine || "—"}</span><span className="font-condensed text-[8px] font-bold text-ink-500">SCORE</span></div>
   </div>;
