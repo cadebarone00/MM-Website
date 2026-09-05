@@ -1,0 +1,98 @@
++Player,Round,Sheet,Format,Partner,Opponent(s),Scorecard_Block,Hole_Score_Cells,Pairing_Source_Cells
+Cam,1,Day 1,Fourball,Pete,Kyle & Quez,G10:AA19,H15:Y15,AF25
+Cam,2,Day 1,Alternate Shot,Hugo,Jackson & Kyle,AF76:BB88,"AG82:AO82,AQ82:AY82",AF76
+Cam,3,Day 2,Fourball,Luke,Collin & Kyle,G10:AA19,H15:Y15,BD38
+Cam,4,Day 2,Singles,,Cade,AE10:AZ19,AF15:AW15,CF78:CG79
+Cam,5,Day 3,Alternate Shot,Drew,Collin & Jackson,AF76:BB88,"AG82:AO82,AQ82:AY82",AF76
+Cam,6,Day 3,Fourball,Drew,Quez & Collin,G10:AA19,H15:Y15,AF12
+Cam,7,Day 4,Singles,,Kyle,G10:AA19,H15:Y15,CG69:CH70
+Cam,8,Day 4,Singles,,Dalton,AE10:AZ19,AF15:AW15,CG85:CH86
+Drew,1,Day 1,Fourball,Luke,Cade & Jackson,G21:AA30,H26:Y26,AF12
+Drew,2,Day 1,Alternate Shot,Luke,Cade & Dalton,AF89:BB101,"AG95:AO95,AQ95:AY95",AF89
+Drew,3,Day 2,Fourball,Nate,Cade & Quez,G21:AA30,H26:Y26,BD25
+Drew,4,Day 2,Singles,,Jackson,AE21:AZ30,AF26:AW26,CF80:CG81
+Drew,5,Day 3,Alternate Shot,Cam,Collin & Jackson,AF76:BB88,"AG82:AO82,AQ82:AY82",AF76
+Drew,6,Day 3,Fourball,Cam,Quez & Collin,G21:AA30,H26:Y26,AF12
+Drew,7,Day 4,Singles,,Quez,G21:AA30,H26:Y26,CG71:CH72
+Drew,8,Day 4,Singles,,Kyle,AE21:AZ30,AF26:AW26,CG83:CH84
+Hugo,1,Day 1,Fourball,Nate,Collin & Dalton,G32:AA41,H37:Y37,AF38
+Hugo,2,Day 1,Alternate Shot,Cam,Jackson & Kyle,AF76:BB88,"AG82:AO82,AQ82:AY82",AF76
+Hugo,3,Day 2,Fourball,Pete,Jackson & Dalton,G32:AA41,H37:Y37,BD12
+Hugo,4,Day 2,Singles,,Kyle,AE32:AZ41,AF37:AW37,CF82:CG83
+Hugo,5,Day 3,Alternate Shot,Luke,Dalton & Quez,AF89:BB101,"AG95:AO95,AQ95:AY95",AF89
+Hugo,6,Day 3,Fourball,Nate,Dalton & Jackson,G32:AA41,H37:Y37,AF38
+Hugo,7,Day 4,Singles,,Dalton,G32:AA41,H37:Y37,CG73:CH74
+Hugo,8,Day 4,Singles,,Jackson,AE32:AZ41,AF37:AW37,CG91:CH92
+Luke,1,Day 1,Fourball,Drew,Cade & Jackson,G43:AA52,H48:Y48,AF12
+Luke,2,Day 1,Alternate Shot,Drew,Cade & Dalton,AF89:BB101,"AG95:AO95,AQ95:AY95",AF89
+Luke,3,Day 2,Fourball,Cam,Collin & Kyle,G43:AA52,H48:Y48,BD38
+Luke,4,Day 2,Singles,,Dalton,AE43:AZ52,AF48:AW48,CF84:CG85
+Luke,5,Day 3,Alternate Shot,Hugo,Dalton & Quez,AF89:BB101,"AG95:AO95,AQ95:AY95",AF89
+Luke,6,Day 3,Fourball,Pete,Cade & Kyle,G43:AA52,H48:Y48,AF25
+Luke,7,Day 4,Singles,,Jackson,G43:AA52,H48:Y48,CG75:CH76
+Luke,8,Day 4,Singles,,Collin,AE43:AZ52,AF48:AW48,CG81:CH82
+Nate,1,Day 1,Fourball,Hugo,Collin & Dalton,G54:AA63,H59:Y59,AF38
+Nate,2,Day 1,Alternate Shot,Pete,Collin & Quez,AF63:BB75,"AG69:AO69,AQ69:AY69",AF63
+Nate,3,Day 2,Fourball,Drew,Cade & Quez,G54:AA63,H59:Y59,BD25
+Nate,4,Day 2,Singles,,Collin,AE54:AZ63,AF59:AW59,CF86:CG87
+Nate,5,Day 3,Alternate Shot,Pete,Cade & Kyle,AF63:BB75,"AG69:AO69,AQ69:AY69",AF63
+Nate,6,Day 3,Fourball,Hugo,Dalton & Jackson,G54:AA63,H59:Y59,AF38
+Nate,7,Day 4,Singles,,Cade,G54:AA63,H59:Y59,CG77:CH78
+Nate,8,Day 4,Singles,,Quez,AE54:AZ63,AF59:AW59,CG89:CH90
+Pete,1,Day 1,Fourball,Cam,Kyle & Quez,G65:AA74,H70:Y70,AF25
+Pete,2,Day 1,Alternate Shot,Nate,Collin & Quez,AF63:BB75,"AG69:AO69,AQ69:AY69",AF63
+Pete,3,Day 2,Fourball,Hugo,Jackson & Dalton,G65:AA74,H70:Y70,BD12
+Pete,4,Day 2,Singles,,Quez,AE65:AZ74,AF70:AW70,CF88:CG89
+Pete,5,Day 3,Alternate Shot,Nate,Cade & Kyle,AF63:BB75,"AG69:AO69,AQ69:AY69",AF63
+Pete,6,Day 3,Fourball,Luke,Cade & Kyle,G65:AA74,H70:Y70,AF25
+Pete,7,Day 4,Singles,,Collin,G65:AA74,H70:Y70,CG79:CH80
+Pete,8,Day 4,Singles,,Cade,AE65:AZ74,AF70:AW70,CG87:CH88
+Cade,1,Day 1,Fourball,Jackson,Drew & Luke,G79:AA88,H84:Y84,AF12
+Cade,2,Day 1,Alternate Shot,Dalton,Drew & Luke,AF89:BB101,"AG97:AO97,AQ97:AY97",AF89
+Cade,3,Day 2,Fourball,Quez,Drew & Nate,G79:AA88,H84:Y84,BD25
+Cade,4,Day 2,Singles,,Cam,AE79:AZ88,AF84:AW84,CF78:CG79
+Cade,5,Day 3,Alternate Shot,Kyle,Nate & Pete,AF63:BB75,"AG71:AO71,AQ71:AY71",AF63
+Cade,6,Day 3,Fourball,Kyle,Luke & Pete,G79:AA88,H84:Y84,AF25
+Cade,7,Day 4,Singles,,Nate,G79:AA88,H84:Y84,CG77:CH78
+Cade,8,Day 4,Singles,,Pete,AE79:AZ88,AF84:AW84,CG87:CH88
+Collin,1,Day 1,Fourball,Dalton,Hugo & Nate,G90:AA99,H95:Y95,AF38
+Collin,2,Day 1,Alternate Shot,Quez,Nate & Pete,AF63:BB75,"AG71:AO71,AQ71:AY71",AF63
+Collin,3,Day 2,Fourball,Kyle,Cam & Luke,G90:AA99,H95:Y95,BD38
+Collin,4,Day 2,Singles,,Nate,AE90:AZ99,AF95:AW95,CF86:CG87
+Collin,5,Day 3,Alternate Shot,Jackson,Cam & Drew,AF76:BB88,"AG84:AO84,AQ84:AY84",AF76
+Collin,6,Day 3,Fourball,Quez,Cam & Drew,G90:AA99,H95:Y95,AF12
+Collin,7,Day 4,Singles,,Pete,G90:AA99,H95:Y95,CG79:CH80
+Collin,8,Day 4,Singles,,Luke,AE90:AZ99,AF95:AW95,CG81:CH82
+Dalton,1,Day 1,Fourball,Collin,Hugo & Nate,G101:AA110,H106:Y106,AF38
+Dalton,2,Day 1,Alternate Shot,Cade,Drew & Luke,AF89:BB101,"AG97:AO97,AQ97:AY97",AF89
+Dalton,3,Day 2,Fourball,Jackson,Hugo & Pete,G101:AA110,H106:Y106,BD12
+Dalton,4,Day 2,Singles,,Luke,AE101:AZ110,AF106:AW106,CF84:CG85
+Dalton,5,Day 3,Alternate Shot,Quez,Luke & Hugo,AF89:BB101,"AG97:AO97,AQ97:AY97",AF89
+Dalton,6,Day 3,Fourball,Jackson,Hugo & Nate,G101:AA110,H106:Y106,AF38
+Dalton,7,Day 4,Singles,,Hugo,G101:AA110,H106:Y106,CG73:CH74
+Dalton,8,Day 4,Singles,,Cam,AE101:AZ110,AF106:AW106,CG85:CH86
+Jackson,1,Day 1,Fourball,Cade,Drew & Luke,G112:AA121,H117:Y117,AF12
+Jackson,2,Day 1,Alternate Shot,Kyle,Cam & Hugo,AF76:BB88,"AG84:AO84,AQ84:AY84",AF76
+Jackson,3,Day 2,Fourball,Dalton,Hugo & Pete,G112:AA121,H117:Y117,BD12
+Jackson,4,Day 2,Singles,,Drew,AE112:AZ121,AF117:AW117,CF80:CG81
+Jackson,5,Day 3,Alternate Shot,Collin,Cam & Drew,AF76:BB88,"AG84:AO84,AQ84:AY84",AF76
+Jackson,6,Day 3,Fourball,Dalton,Hugo & Nate,G112:AA121,H117:Y117,AF38
+Jackson,7,Day 4,Singles,,Luke,G112:AA121,H117:Y117,CG75:CH76
+Jackson,8,Day 4,Singles,,Hugo,AE112:AZ121,AF117:AW117,CG91:CH92
+Kyle,1,Day 1,Fourball,Quez,Cam & Pete,G123:AA132,H128:Y128,AF25
+Kyle,2,Day 1,Alternate Shot,Jackson,Cam & Hugo,AF76:BB88,"AG84:AO84,AQ84:AY84",AF76
+Kyle,3,Day 2,Fourball,Collin,Cam & Luke,G123:AA132,H128:Y128,BD38
+Kyle,4,Day 2,Singles,,Hugo,AE123:AZ132,AF128:AW128,CF82:CG83
+Kyle,5,Day 3,Alternate Shot,Cade,Nate & Pete,AF63:BB75,"AG71:AO71,AQ71:AY71",AF63
+Kyle,6,Day 3,Fourball,Cade,Luke & Pete,G123:AA132,H128:Y128,AF25
+Kyle,7,Day 4,Singles,,Cam,G123:AA132,H128:Y128,CG69:CH70
+Kyle,8,Day 4,Singles,,Drew,AE123:AZ132,AF128:AW128,CG83:CH84
+Quez,1,Day 1,Fourball,Kyle,Cam & Pete,G134:AA143,H139:Y139,AF25
+Quez,2,Day 1,Alternate Shot,Collin,Nate & Pete,AF63:BB75,"AG71:AO71,AQ71:AY71",AF63
+Quez,3,Day 2,Fourball,Cade,Drew & Nate,G134:AA143,H139:Y139,BD25
+Quez,4,Day 2,Singles,,Pete,AE134:AZ143,AF139:AW139,CF88:CG89
+Quez,5,Day 3,Alternate Shot,Dalton,Luke & Hugo,AF89:BB101,"AG97:AO97,AQ97:AY97",AF89
+Quez,6,Day 3,Fourball,Collin,Cam & Drew,G134:AA143,H139:Y139,AF12
+Quez,7,Day 4,Singles,,Drew,G134:AA143,H139:Y139,CG71:CH72
+Quez,8,Day 4,Singles,,Nate,AE134:AZ143,AF139:AW139,CG89:CH90
+
