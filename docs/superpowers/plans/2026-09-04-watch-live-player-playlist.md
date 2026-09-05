@@ -924,10 +924,10 @@ test("POST /api/portal/tiger/broadcast/live rejects when requireHost resolves nu
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [ ] **Step 2: Run it to confirm the existing auth gate already passes**
 
 Run: `npx tsx --test app/api/portal/tiger/broadcast/live/route.test.ts`
-Expected: FAIL — no test file existed before this task, so it can't yet have run; confirm it fails for the *right* reason first by temporarily checking it errors if `route.ts` were missing. Since `route.ts` already exists, this step instead just confirms the test passes immediately (the auth gate already exists) — **skip to Step 3 for the actual behavior change**, then re-run this test in Step 4 to confirm it still passes.
+Expected: PASS — this route already calls `requireHost()` first, same as every other host route; this test is new only because no test file existed for this route before. This isn't red-green TDD (the behavior it checks already exists) — Step 3 is the actual change this task makes, verified by the manual walkthrough in Task 13 rather than a new automated assertion (matches this codebase's existing testing convention — see the spec's Testing section).
 
 - [ ] **Step 3: Add the "stop music" behavior**
 
