@@ -77,7 +77,7 @@ export function Header({ nextTournamentOverride }: { nextTournamentOverride: Nex
   }
 
   return (
-    <header className="sticky top-0 z-[100] shadow-lg relative">
+    <header className={`sticky top-0 ${moreOpen ? "z-[300]" : "z-[100]"} relative shadow-lg`}>
       <div className="bg-gradient-maroon">
         {/* Mobile header row — white background to blend with the phone's status bar, 3 zones: Instagram + countdown/live (left), wordmark (center, bottom-aligned), account icon (right, always visible). */}
         <div className="lg:hidden grid grid-cols-3 items-end gap-2 bg-white px-4 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem+2vh)]">

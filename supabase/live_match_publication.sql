@@ -94,6 +94,25 @@ alter table broadcast_state drop constraint if exists broadcast_state_pkey;
 alter table broadcast_state drop column if exists id;
 alter table broadcast_state add primary key (season_year);
 
+-- Tiger's public Wager board records which of the code-defined models have
+-- been submitted. The model definitions remain in code; this table stores
+-- publication state and the immutable rulebook shown to the public.
+create table if not exists wager_types (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique,
+  name text not null,
+  scope text not null check (scope in ('player', 'team', 'match', 'tournament')),
+  market_kind text not null check (market_kind in ('yes_no', 'over_under', 'winner', 'head_to_head')),
+  stat_key text not null,
+  calculation_rule text not null,
+  settlement_rule text not null,
+  is_active boolean not null default false,
+  created_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index if not exists wager_types_active_idx on wager_types (is_active, created_at desc);
+alter table wager_types enable row level security;
+
 -- Foursome/Alternate Shot is a single shared ball per side. It belongs in a
 -- team archive, never twice in two players' individual score histories.
 -- These confirmed observations are the live counterpart to
