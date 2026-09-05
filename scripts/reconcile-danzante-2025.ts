@@ -89,7 +89,10 @@ function readExport<T>(source: string, name: string, nextName: string): T {
   if (start < 0 || end < 0) throw new Error(`Could not read ${name} from the generated archive.`);
   const jsonStart = source.indexOf("=", start) + 1;
   const jsonEnd = source.lastIndexOf(";", end);
-  return JSON.parse(source.slice(jsonStart, jsonEnd).trim()) as T;
+  const expression = source.slice(jsonStart, jsonEnd).trim();
+  return (expression.startsWith("JSON.parse(")
+    ? JSON.parse(JSON.parse(expression.slice("JSON.parse(".length, -1)))
+    : JSON.parse(expression)) as T;
 }
 
 type OtherRecord = CareerHoleRecord;
@@ -104,7 +107,7 @@ const nextRecords = [...retainedRecords, ...individualRecords].map((record) => (
 // Preserve the already-separated team history and partnership results, while
 // canonicalizing the course label across every archive collection.
 const nextArchive = archive
-  .replace(/export const careerArchiveRecords: CareerHoleRecord\[\] = [\s\S]*?;\n\nexport const careerArchiveTeamRecords/, `export const careerArchiveRecords: CareerHoleRecord[] = ${JSON.stringify(nextRecords)};\n\nexport const careerArchiveTeamRecords`)
+  .replace(/export const careerArchiveRecords: CareerHoleRecord\[\] = [\s\S]*?;\n\nexport const careerArchiveTeamRecords/, `export const careerArchiveRecords: CareerHoleRecord[] = JSON.parse(${JSON.stringify(JSON.stringify(nextRecords))});\n\nexport const careerArchiveTeamRecords`)
   .replaceAll('"course":"TPC Danzante Bay"', '"course":"Danzante Bay"');
 fs.writeFileSync(archivePath, nextArchive);
 

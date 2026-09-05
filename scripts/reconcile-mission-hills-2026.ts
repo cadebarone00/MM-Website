@@ -57,12 +57,15 @@ function readRecords(source: string): CareerHoleRecord[] {
   const start = source.indexOf("export const careerArchiveRecords");
   const end = source.indexOf("export const careerArchiveTeamRecords", start);
   if (start < 0 || end < 0) throw new Error("Could not read careerArchiveRecords.");
-  return JSON.parse(source.slice(source.indexOf("=", start) + 1, source.lastIndexOf(";", end)).trim()) as CareerHoleRecord[];
+  const expression = source.slice(source.indexOf("=", start) + 1, source.lastIndexOf(";", end)).trim();
+  return (expression.startsWith("JSON.parse(")
+    ? JSON.parse(JSON.parse(expression.slice("JSON.parse(".length, -1)))
+    : JSON.parse(expression)) as CareerHoleRecord[];
 }
 
 const archive = fs.readFileSync(archivePath, "utf8");
 const nextRecords = [...readRecords(archive).filter((record) => record.year !== 2026), ...records];
-const nextArchive = archive.replace(/export const careerArchiveRecords: CareerHoleRecord\[\] = [\s\S]*?;\n\nexport const careerArchiveTeamRecords/, `export const careerArchiveRecords: CareerHoleRecord[] = ${JSON.stringify(nextRecords)};\n\nexport const careerArchiveTeamRecords`);
+const nextArchive = archive.replace(/export const careerArchiveRecords: CareerHoleRecord\[\] = [\s\S]*?;\n\nexport const careerArchiveTeamRecords/, `export const careerArchiveRecords: CareerHoleRecord[] = JSON.parse(${JSON.stringify(JSON.stringify(nextRecords))});\n\nexport const careerArchiveTeamRecords`);
 fs.writeFileSync(archivePath, nextArchive);
 
 for (const [player, rounds] of [...audit.entries()].sort(([a], [b]) => a.localeCompare(b))) console.log(`${player}: ${rounds.sort((a, b) => a - b).join(", ")} (${rounds.length * 18} holes)`);
