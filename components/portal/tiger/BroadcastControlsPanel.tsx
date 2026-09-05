@@ -293,7 +293,7 @@ export function BroadcastControlsPanel({
         setError(data.error ?? "Could not end the broadcast.");
         return;
       }
-      setState((current) => ({ ...current, tournamentLive: false }));
+      setState((current) => ({ ...current, tournamentLive: false, audioTrackId: null, audioStartedAt: null }));
     } finally {
       setBusy(null);
     }

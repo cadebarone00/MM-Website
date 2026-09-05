@@ -27,14 +27,19 @@ for (const sheetName of ["Day 1", "Day 2", "Day 3", "Day 4"]) {
   for (const address of Object.keys(sheet)) {
     if (address.startsWith("!")) continue;
     const title = String(sheet[address]?.v ?? "");
-    const match = title.match(/^(.+?)\s+Round\s+(\d+)\s+Scorecard$/i);
+    const match = title.match(/^(.*?)\s*Round\s+(\d+)\s+Scorecard$/i);
     if (!match) continue;
-    const player = match[1].trim().toUpperCase();
+    const anchor = XLSX.utils.decode_cell(address);
+    // A few scorecard titles omit the player name, but the workbook still
+    // labels that card's block in column A (for example, "Nate" beside
+    // "Round 1 Scorecard"). Do not drop a complete card for presentation
+    // formatting in the input sheet.
+    const headerPlayer = String(sheet[XLSX.utils.encode_cell({ r: anchor.r, c: 0 })]?.v ?? "").trim();
+    const player = (match[1].trim() || headerPlayer).toUpperCase();
     const round = Number(match[2]);
     const context = ROUND_CONTEXT[round];
     if (!player || !context) continue;
 
-    const anchor = XLSX.utils.decode_cell(address);
     const valueAt = (rowOffset: number, holeOffset: number) => sheet[XLSX.utils.encode_cell({ r: anchor.r + rowOffset, c: anchor.c + 1 + holeOffset })]?.v;
     const asInteger = (value: unknown) => Number.isInteger(Number(value)) ? Number(value) : null;
     const asBoolean = (value: unknown) => value === 1 || value === true || String(value).trim() === "1" ? true : value === 0 || value === false || String(value).trim() === "0" ? false : null;

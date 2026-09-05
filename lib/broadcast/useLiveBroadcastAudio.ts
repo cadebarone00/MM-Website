@@ -17,18 +17,18 @@ import type { PlaylistTrack } from "./playlist";
  * <audio> element and the mute/volume UI state.
  */
 export function useLiveBroadcastAudio(state: BroadcastState, tracks: PlaylistTrack[]) {
-  const [audio] = useState(() => {
-    if (typeof window === "undefined") return null;
-    const element = new Audio();
-    element.muted = true; // must be muted at creation — the very first .play() call in the effect below happens before the mute-sync effect runs, and only a muted element is allowed to autoplay
-    return element;
-  });
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  if (audioRef.current === null && typeof window !== "undefined") {
+    audioRef.current = new Audio();
+    audioRef.current.muted = true; // must be muted at creation — the very first .play() call in the effect below happens before the mute-sync effect runs, and only a muted element is allowed to autoplay
+  }
   const [muted, setMuted] = useState(true);
   const [volume, setVolume] = useState(1);
   const [nowPlayingId, setNowPlayingId] = useState<string | null>(null);
   const nowPlayingIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    const audio = audioRef.current;
     if (!audio) return;
 
     if (!state.tournamentLive || !state.audioTrackId || !state.audioStartedAt) {
@@ -67,15 +67,15 @@ export function useLiveBroadcastAudio(state: BroadcastState, tracks: PlaylistTra
     }
     audio.addEventListener("ended", onEnded);
     return () => audio.removeEventListener("ended", onEnded);
-  }, [audio, state.tournamentLive, state.audioTrackId, state.audioStartedAt, state.audioLoopMode, tracks]);
+  }, [state.tournamentLive, state.audioTrackId, state.audioStartedAt, state.audioLoopMode, tracks]);
 
   useEffect(() => {
-    if (audio) audio.muted = muted;
-  }, [audio, muted]);
+    if (audioRef.current) audioRef.current.muted = muted;
+  }, [muted]);
 
   useEffect(() => {
-    if (audio) audio.volume = volume;
-  }, [audio, volume]);
+    if (audioRef.current) audioRef.current.volume = volume;
+  }, [volume]);
 
   const nowPlayingTitle = tracks.find((t) => t.id === nowPlayingId)?.title ?? null;
 
