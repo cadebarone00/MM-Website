@@ -37,7 +37,7 @@ function ProjectionBar({ tournament }: { tournament: Tournament }) {
       <span className="justify-self-end pr-3 font-sans text-2xl font-black tabular-nums text-ink-900 sm:text-3xl">
         {fmtPt(PROJECTED_POINTS.maroon)}
       </span>
-      <Link href={`/leaderboard/${tournament.slug}/projected`} className="font-condensed text-2xs font-extrabold uppercase tracking-eyebrow text-ink-700 underline decoration-gold-500 underline-offset-4 hover:text-maroon-700">Projected</Link>
+      <span className="font-condensed text-2xs font-extrabold uppercase tracking-eyebrow text-ink-700 underline decoration-gold-500 underline-offset-4">Projected</span>
       <span className="justify-self-start pl-3 font-sans text-2xl font-black tabular-nums text-ink-900 sm:text-3xl">
         {fmtPt(PROJECTED_POINTS.white)}
       </span>
@@ -64,7 +64,7 @@ export function PointsRibbon({ tournament }: { tournament: Tournament }) {
   const maroonFill = flooredFill(realMaroon, realWhite);
   const whiteFill = flooredFill(realWhite, realMaroon);
   return (
-    <div className="sticky z-40 -mx-4 sm:-mx-7 lg:mx-0" style={{ top: headerOffset }}>
+    <Link href={`/leaderboard/${tournament.slug}/projected`} aria-label={`View projected tournament results for ${tournament.editionLabel}`} className="sticky z-40 block -mx-4 cursor-pointer sm:-mx-7 lg:mx-0" style={{ top: headerOffset }}>
       <ProjectionBar tournament={tournament} />
       {/* Mobile: fixed 50/50 split, gold divider, numbers pinned at 40%/60%. */}
       <div className="lg:hidden">
@@ -103,6 +103,6 @@ export function PointsRibbon({ tournament }: { tournament: Tournament }) {
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
