@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type ArchiveHole = { hole: number; par: number; yards: number; score: number | null };
 type ArchiveRound = { year: number; round: number; course: string; format: string; holes: ArchiveHole[] };
@@ -41,6 +41,17 @@ export function ArchivedScores({ playerSlug }: { playerSlug: string }) {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedRoundKey, setSelectedRoundKey] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const [yearOpen, setYearOpen] = useState(false);
+  const yearSelectorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!yearOpen) return;
+    const closeOutside = (event: MouseEvent) => {
+      if (yearSelectorRef.current && !yearSelectorRef.current.contains(event.target as Node)) setYearOpen(false);
+    };
+    document.addEventListener("mousedown", closeOutside);
+    return () => document.removeEventListener("mousedown", closeOutside);
+  }, [yearOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,8 +94,13 @@ export function ArchivedScores({ playerSlug }: { playerSlug: string }) {
       {error ? <p className="rounded-md bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p> : selectedRound && (
         <div className="rounded-md border border-ink-100 bg-white p-4 sm:p-5">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
-              {years.map((year) => <button key={year} type="button" onClick={() => selectYear(year)} className={selectedYear === year ? "shrink-0 rounded-sm bg-maroon-700 px-3 py-1.5 font-condensed text-xs font-bold text-white" : "shrink-0 rounded-sm border border-ink-200 bg-cream-50 px-3 py-1.5 font-condensed text-xs font-bold text-ink-600 hover:border-gold-500"}>{year}</button>)}
+            <div ref={yearSelectorRef} className="flex items-center">
+              <button type="button" aria-expanded={yearOpen} onClick={() => setYearOpen((open) => !open)} className="rounded-pill bg-maroon-700 px-3 py-1.5 font-condensed text-xs font-bold text-cream-50">
+                {selectedYear}
+              </button>
+              <div className={["flex overflow-hidden transition-[max-width,opacity,margin] duration-200", yearOpen ? "ml-1 max-w-40 opacity-100" : "max-w-0 opacity-0"].join(" ")}>
+                {years.map((year) => <button key={year} type="button" onClick={() => { selectYear(year); setYearOpen(false); }} className={year === selectedYear ? "shrink-0 rounded-pill bg-maroon-700 px-3 py-1.5 font-condensed text-xs font-bold text-cream-50" : "shrink-0 rounded-pill px-3 py-1.5 font-condensed text-xs font-bold text-ink-500 hover:bg-cream-100"}>{year}</button>)}
+              </div>
             </div>
             <label className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">
               Round
