@@ -26,17 +26,12 @@ function playerPoints(tournament: Tournament, team: "maroon" | "white"): PointRo
 function probabilitySeries(tournament: Tournament): number[] {
   let maroon = 0;
   let white = 0;
-  const samples = [50];
-  tournament.matches.forEach((match, index) => {
-    maroon += match.maroonPts;
-    white += match.whitePts;
-    const remaining = tournament.matches.length - index - 1;
-    if (remaining === 0) {
-      samples.push(maroon > white ? 100 : maroon < white ? 0 : 50);
-      return;
-    }
-    const scale = Math.max(1, Math.sqrt(remaining) * 0.85);
-    samples.push(Math.max(1, Math.min(99, 50 + ((maroon - white) / scale) * 15)));
+  const sessions = [...new Map(tournament.matches.map((match) => [`${match.day}:${match.session}`, match])).keys()];
+  const samples: number[] = [];
+  sessions.forEach((session, index) => {
+    tournament.matches.filter((match) => `${match.day}:${match.session}` === session).forEach((match) => { maroon += match.maroonPts; white += match.whitePts; });
+    const remaining = sessions.length - index - 1;
+    samples.push(remaining === 0 ? (maroon > white ? 100 : maroon < white ? 0 : 50) : Math.max(1, Math.min(99, 50 + ((maroon - white) / Math.max(1, Math.sqrt(remaining) * 0.85)) * 15)));
   });
   return samples;
 }

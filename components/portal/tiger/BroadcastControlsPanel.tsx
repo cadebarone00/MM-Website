@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { BroadcastConfig, BroadcastScene, BroadcastState } from "@/lib/broadcast/types";
+import type { PlaylistTrack } from "@/lib/broadcast/playlist";
 import { DISPLAY_YEARS } from "@/lib/broadcast/displayYears";
 import { useAutoScene } from "@/lib/broadcast/useAutoScene";
 import { BroadcastPreview } from "./BroadcastPreview";
@@ -33,10 +34,12 @@ const SCENE_LABELS: Record<BroadcastScene, string> = {
 export function BroadcastControlsPanel({
   initialDisplayYear,
   initialState,
+  initialTracks,
   config,
 }: {
   initialDisplayYear: number;
   initialState: BroadcastState;
+  initialTracks: PlaylistTrack[];
   config: BroadcastConfig;
 }) {
   const [state, setState] = useState(initialState);
@@ -44,6 +47,9 @@ export function BroadcastControlsPanel({
   const [error, setError] = useState<string | null>(null);
   const [announcementText, setAnnouncementText] = useState("");
   const [announcementBusy, setAnnouncementBusy] = useState(false);
+  const [tracks, setTracks] = useState(initialTracks);
+  const [uploadBusy, setUploadBusy] = useState(false);
+  const [playlistBusy, setPlaylistBusy] = useState<string | null>(null);
   const [previewYear, setPreviewYear] = useState(initialDisplayYear);
   const [previewScene, setPreviewScene] = useState<BroadcastScene>("individual_leaderboard");
 
@@ -103,6 +109,118 @@ export function BroadcastControlsPanel({
       setState((current) => ({ ...current, overlayText: null, overlayExpiresAt: null }));
     } finally {
       setAnnouncementBusy(false);
+    }
+  }
+
+  async function uploadTrack(file: File) {
+    setUploadBusy(true);
+    setError(null);
+    try {
+      const extension = "." + (file.name.split(".").pop() ?? "mp3").toLowerCase();
+      const signRes = await fetch("/api/portal/tiger/broadcast/playlist/upload/sign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ extension }),
+      });
+      const signData = await signRes.json();
+      if (!signData.ok) {
+        setError(signData.error ?? "Could not prepare that upload.");
+        return;
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", signData.url);
+        xhr.setRequestHeader("Content-Type", file.type || "audio/mpeg");
+        xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload failed (status ${xhr.status}).`)));
+        xhr.onerror = () => reject(new Error("Upload failed — check your connection."));
+        xhr.send(file);
+      });
+
+      const durationSeconds = await new Promise<number>((resolve, reject) => {
+        const probe = new Audio();
+        probe.preload = "metadata";
+        probe.onloadedmetadata = () => resolve(probe.duration);
+        probe.onerror = () => reject(new Error("Could not read that file's length."));
+        probe.src = URL.createObjectURL(file);
+      });
+
+      const confirmRes = await fetch("/api/portal/tiger/broadcast/playlist/upload/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: file.name.replace(/\.[^.]+$/, ""), storagePath: signData.storagePath, durationSeconds }),
+      });
+      const confirmData = await confirmRes.json();
+      if (!confirmData.ok) {
+        setError(confirmData.error ?? "Uploaded, but could not save it to the playlist.");
+        return;
+      }
+      setTracks((current) => [...current, confirmData.track]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not upload that file.");
+    } finally {
+      setUploadBusy(false);
+    }
+  }
+
+  async function playTrack(trackId: string) {
+    setPlaylistBusy(trackId);
+    setError(null);
+    try {
+      const res = await fetch("/api/portal/tiger/broadcast/playlist/play", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trackId }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error ?? "Could not start that track.");
+        return;
+      }
+      setState((current) => ({ ...current, audioTrackId: trackId, audioStartedAt: new Date().toISOString() }));
+    } finally {
+      setPlaylistBusy(null);
+    }
+  }
+
+  async function setLoopMode(mode: "one" | "all") {
+    setPlaylistBusy(`loop-${mode}`);
+    setError(null);
+    try {
+      const res = await fetch("/api/portal/tiger/broadcast/playlist/loop-mode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error ?? "Could not change loop mode.");
+        return;
+      }
+      setState((current) => ({ ...current, audioLoopMode: mode }));
+    } finally {
+      setPlaylistBusy(null);
+    }
+  }
+
+  async function deleteTrack(trackId: string) {
+    setPlaylistBusy(`delete-${trackId}`);
+    setError(null);
+    try {
+      const res = await fetch("/api/portal/tiger/broadcast/playlist/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trackId }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error ?? "Could not remove that track.");
+        return;
+      }
+      setTracks((current) => current.filter((t) => t.id !== trackId));
+      setState((current) => (current.audioTrackId === trackId ? { ...current, audioTrackId: null, audioStartedAt: null } : current));
+    } finally {
+      setPlaylistBusy(null);
     }
   }
 
@@ -327,6 +445,87 @@ export function BroadcastControlsPanel({
                 </button>
               )}
             </div>
+          </section>
+
+          <section className="mt-8 rounded-lg border-2 border-stone-300 p-4">
+            <h2 className="font-serif text-lg font-bold text-ink-900">Broadcast Playlist</h2>
+            <p className="mt-1 font-sans text-xs text-ink-500">Plays on /watch-live while the broadcast is live. Stops automatically when you end the broadcast.</p>
+
+            <label className="mt-3 inline-block cursor-pointer rounded-lg bg-maroon-700 px-4 py-2 font-condensed text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-maroon-800">
+              {uploadBusy ? "Uploading…" : "Upload Song"}
+              <input
+                type="file"
+                accept="audio/*"
+                disabled={uploadBusy}
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) uploadTrack(file);
+                }}
+              />
+            </label>
+
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                disabled={playlistBusy !== null}
+                onClick={() => setLoopMode("one")}
+                className={[
+                  "rounded-lg border-2 px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide transition disabled:opacity-50",
+                  state.audioLoopMode === "one" ? "border-maroon-700 bg-maroon-700 text-white" : "border-stone-300 text-ink-700 hover:bg-stone-50",
+                ].join(" ")}
+              >
+                Loop One
+              </button>
+              <button
+                type="button"
+                disabled={playlistBusy !== null}
+                onClick={() => setLoopMode("all")}
+                className={[
+                  "rounded-lg border-2 px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide transition disabled:opacity-50",
+                  state.audioLoopMode === "all" ? "border-maroon-700 bg-maroon-700 text-white" : "border-stone-300 text-ink-700 hover:bg-stone-50",
+                ].join(" ")}
+              >
+                Loop All
+              </button>
+            </div>
+
+            {tracks.length === 0 ? (
+              <p className="mt-4 font-sans text-sm text-ink-500">No songs uploaded yet.</p>
+            ) : (
+              <ul className="mt-4 flex flex-col gap-2">
+                {tracks.map((track) => {
+                  const isPlaying = state.audioTrackId === track.id;
+                  return (
+                    <li key={track.id} className="flex items-center justify-between gap-3 rounded-lg border-2 border-stone-200 px-3 py-2">
+                      <span className={["truncate font-sans text-sm", isPlaying ? "font-semibold text-maroon-700" : "text-ink-700"].join(" ")}>
+                        {isPlaying ? "▶ " : ""}
+                        {track.title}
+                      </span>
+                      <div className="flex shrink-0 gap-2">
+                        <button
+                          type="button"
+                          disabled={playlistBusy !== null || isPlaying}
+                          onClick={() => playTrack(track.id)}
+                          className="rounded-lg border-2 border-stone-300 px-3 py-1 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-700 transition hover:bg-stone-50 disabled:opacity-50"
+                        >
+                          {playlistBusy === track.id ? "Starting…" : "Play"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={playlistBusy !== null}
+                          onClick={() => deleteTrack(track.id)}
+                          className="rounded-lg border-2 border-stone-300 px-3 py-1 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-700 transition hover:bg-stone-50 disabled:opacity-50"
+                        >
+                          {playlistBusy === `delete-${track.id}` ? "Removing…" : "Remove"}
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </section>
         </div>
       )}
