@@ -50,12 +50,29 @@ export async function POST(request: Request) {
   const { error: yearError } = await service.from("broadcast_display_year").upsert({ id: true, season_year: year });
   if (yearError) return NextResponse.json({ ok: false, error: "Could not publish the year." }, { status: 500 });
 
+  // Whatever the host already pressed Play on during rehearsal keeps
+  // playing (just restarted from 0:00 below); otherwise default to the
+  // oldest-uploaded track so the show has music from the first scene.
+  const { data: currentState } = await service.from("broadcast_state").select("audio_track_id").eq("season_year", year).maybeSingle();
+  let startTrackId: string | null = currentState?.audio_track_id ?? null;
+  if (!startTrackId) {
+    const { data: firstTrack } = await service
+      .from("broadcast_playlist_tracks")
+      .select("id")
+      .eq("season_year", year)
+      .order("uploaded_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    startTrackId = firstTrack?.id ?? null;
+  }
+
   const { error: stateError } = await service.from("broadcast_state").upsert({
     season_year: year,
     tournament_live: true,
     automation_mode: "auto",
     scene_started_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    ...(startTrackId ? { audio_track_id: startTrackId, audio_started_at: new Date().toISOString() } : {}),
   });
   if (stateError) return NextResponse.json({ ok: false, error: "Could not go live." }, { status: 500 });
 
