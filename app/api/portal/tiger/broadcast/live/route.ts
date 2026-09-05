@@ -12,6 +12,9 @@ import { getBroadcastDisplayYear, isValidDisplayYear } from "@/lib/broadcast/dis
  * look — going live starts the actual show). Ending it only flips
  * tournament_live off, on whichever year is currently published.
  *
+ * Also clears the playlist's now-playing track — music follows Go Live/End
+ * Broadcast, see the Watch Live Player + Broadcast Playlist spec.
+ *
  * Doesn't yet start "watching for video uploads" — that system doesn't
  * exist (Phase 3, not built). This is the flag it will key off later.
  */
@@ -30,7 +33,9 @@ export async function POST(request: Request) {
 
   if (!live) {
     const seasonYear = await getBroadcastDisplayYear();
-    const { error } = await service.from("broadcast_state").upsert({ season_year: seasonYear, tournament_live: false, updated_at: new Date().toISOString() });
+    const { error } = await service
+      .from("broadcast_state")
+      .upsert({ season_year: seasonYear, tournament_live: false, audio_track_id: null, audio_started_at: null, updated_at: new Date().toISOString() });
     if (error) return NextResponse.json({ ok: false, error: "Could not end the broadcast." }, { status: 500 });
     return NextResponse.json({ ok: true });
   }
