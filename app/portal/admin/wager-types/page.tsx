@@ -30,7 +30,7 @@ export default async function WagerTypesPage() {
   return (
     <div className="mx-auto max-w-[900px] px-4 py-12 sm:px-7">
       <h1 className="font-serif text-3xl font-bold text-ink-900">Wager Types</h1>
-      <p className="mt-2 font-sans text-sm text-ink-500">Define each wager market once: its audience, statistic source, calculation method, and settlement rule. Activating a type makes it eligible for the public Wagers experience after odds are configured.</p>
+      <p className="mt-2 font-sans text-sm text-ink-500">Publish only wager models that are built into the app and documented in the odds specification. Each card shows its audience, public location, readiness requirements, calculation method, and settlement rule.</p>
       <div className="mt-6"><WagerTypesPanel initialWagerTypes={wagerTypes} databaseReady={!error} /></div>
     </div>
   );
