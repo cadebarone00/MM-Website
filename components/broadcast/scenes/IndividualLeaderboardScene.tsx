@@ -75,7 +75,9 @@ export function IndividualLeaderboardScene({ standings, final = false }: { stand
                 <span className="flex-1 truncate font-sans text-xl font-bold uppercase tracking-wide text-[color:var(--color-cream-50)]">
                   {getPlayerDisplayName(r.player)}
                 </span>
-                <ScoreBadge value={r.toPar} chip size="lg" />
+                <span className="inline-flex min-w-[64px] justify-center rounded-md bg-[color:var(--color-cream-50)] px-3 py-1">
+                  <ScoreBadge value={r.toPar} size="lg" />
+                </span>
               </div>
             ))}
           </div>

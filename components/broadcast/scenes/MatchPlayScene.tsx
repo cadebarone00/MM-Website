@@ -71,9 +71,9 @@ export function MatchPlayScene({ matchPlay }: { matchPlay: BroadcastMatchPlay })
                   <span
                     className={[
                       "font-condensed text-lg font-bold uppercase tracking-wide",
-                      box.state === "Final"
-                        ? "text-[color:var(--color-ink-400)]"
-                        : "text-[color:var(--color-gold-300)] [text-shadow:0_0_12px_rgba(220,196,149,0.45)]",
+                      box.state === "Live"
+                        ? "text-[color:var(--color-gold-300)] [text-shadow:0_0_12px_rgba(220,196,149,0.45)]"
+                        : "text-[color:var(--color-ink-400)]",
                     ].join(" ")}
                   >
                     {statusLabel(box)}

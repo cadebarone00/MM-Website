@@ -43,9 +43,10 @@ export function AddCourseForm({ onSaved }: { onSaved: (course: LiveCourse) => vo
 
       const draft = data.draft as { name?: string | null; holes?: LiveHole[]; rating?: number | null; slope?: number | null };
       if (draft.name) setName(draft.name);
-      if (Array.isArray(draft.holes)) {
+      const importedHoles = Array.isArray(draft.holes) ? draft.holes : null;
+      if (importedHoles) {
         setHoles(Array.from({ length: 18 }, (_, index) => {
-          const imported = draft.holes.find((hole) => hole.number === index + 1);
+          const imported = importedHoles.find((hole) => hole.number === index + 1);
           return { number: index + 1, par: imported?.par ?? 4, yards: imported?.yards ?? 0 };
         }));
       }
