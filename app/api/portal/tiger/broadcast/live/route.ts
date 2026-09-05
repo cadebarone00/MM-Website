@@ -12,8 +12,11 @@ import { getBroadcastDisplayYear, isValidDisplayYear } from "@/lib/broadcast/dis
  * look — going live starts the actual show). Ending it only flips
  * tournament_live off, on whichever year is currently published.
  *
- * Also clears the playlist's now-playing track — music follows Go Live/End
- * Broadcast, see the Watch Live Player + Broadcast Playlist spec.
+ * Also starts the playlist: whichever track a host already pressed Play on
+ * during rehearsal keeps playing (restarted fresh from 0:00, not resumed
+ * mid-test), or if none was picked, the oldest-uploaded track starts —
+ * "runs through the playlist from the top." Ending the broadcast clears it
+ * back to silent. See the Watch Live Player + Broadcast Playlist spec.
  *
  * Doesn't yet start "watching for video uploads" — that system doesn't
  * exist (Phase 3, not built). This is the flag it will key off later.
