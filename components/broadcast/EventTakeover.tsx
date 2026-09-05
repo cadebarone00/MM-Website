@@ -39,10 +39,16 @@ export function EventTakeover({ event, matchPlay }: { event: ActiveBroadcastEven
   if (event.kind === "ROUND_FINAL") {
     const payload = event.payload as unknown as RoundFinalPayload;
     return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-gradient-maroon px-10 py-10">
-        <div className="w-full max-w-[900px] rounded-2xl bg-[color:var(--color-cream-50)] px-10 py-16 text-center shadow-2xl ring-1 ring-[color:var(--color-gold-400)]/40">
-          <p className="font-serif text-2xl italic text-[color:var(--color-maroon-700)]">The Maroon Masters</p>
-          <p className="mt-6 font-condensed text-5xl font-bold uppercase tracking-wide text-[color:var(--color-maroon-900)]">Round {payload.round} Complete</p>
+      <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden px-10 py-10 [background:radial-gradient(120%_90%_at_50%_8%,var(--color-maroon-700)_0%,var(--color-maroon-900)_46%,#0d0000_100%)]">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -bottom-[10%] -right-[6%] font-serif text-[22vw] font-semibold italic leading-none text-transparent [-webkit-text-stroke:1px_rgba(201,168,110,0.14)]"
+        >
+          MM
+        </span>
+        <div className="relative z-[1] text-center">
+          <p className="font-serif text-2xl italic text-[color:var(--color-cream-100)]">The Maroon Masters</p>
+          <p className="mt-6 font-condensed text-6xl font-bold uppercase tracking-wide text-[color:var(--color-cream-50)]">Round {payload.round} Complete</p>
         </div>
       </div>
     );

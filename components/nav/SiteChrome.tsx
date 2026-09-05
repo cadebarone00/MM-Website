@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
 import { PortalHeader } from "@/components/nav/PortalHeader";
 import { PlayerAreaNav } from "@/components/nav/PlayerAreaNav";
 import type { NextTournamentOverride } from "@/lib/data/types";
@@ -42,7 +41,6 @@ export function SiteChrome({ children, nextTournamentOverride }: { children: Rea
       <Header nextTournamentOverride={nextTournamentOverride} />
       <PlayerAreaNav />
       {children}
-      <Footer nextTournamentOverride={nextTournamentOverride} />
     </div>
   );
 }
