@@ -58,10 +58,16 @@ export function EventTakeover({ event, matchPlay }: { event: ActiveBroadcastEven
   const box = matchPlay.matchBoxes.find((b) => b.id === payload.matchBoxId);
   if (!box) {
     return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-gradient-maroon px-10 py-10">
-        <div className="w-full max-w-[900px] rounded-2xl bg-[color:var(--color-cream-50)] px-10 py-16 text-center shadow-2xl ring-1 ring-[color:var(--color-gold-400)]/40">
-          <p className="font-serif text-2xl italic text-[color:var(--color-maroon-700)]">The Maroon Masters</p>
-          <p className="mt-6 font-condensed text-5xl font-bold uppercase tracking-wide text-[color:var(--color-maroon-900)]">
+      <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden px-10 py-10 [background:radial-gradient(120%_90%_at_50%_8%,var(--color-maroon-700)_0%,var(--color-maroon-900)_46%,#0d0000_100%)]">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -bottom-[10%] -right-[6%] font-serif text-[22vw] font-semibold italic leading-none text-transparent [-webkit-text-stroke:1px_rgba(201,168,110,0.14)]"
+        >
+          MM
+        </span>
+        <div className="relative z-[1] text-center">
+          <p className="font-serif text-2xl italic text-[color:var(--color-cream-100)]">The Maroon Masters</p>
+          <p className="mt-6 font-condensed text-6xl font-bold uppercase tracking-wide text-[color:var(--color-cream-50)]">
             {payload.leader === "tie" ? "Match Halved" : `${teamLabel(payload.leader)} Wins`}
           </p>
         </div>
@@ -70,21 +76,21 @@ export function EventTakeover({ event, matchPlay }: { event: ActiveBroadcastEven
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-gradient-maroon px-10 py-10">
-      <div className="w-full max-w-[900px] overflow-hidden rounded-2xl shadow-2xl ring-1 ring-[color:var(--color-gold-400)]/40">
-        <div className="bg-[color:var(--color-cream-50)] px-8 pb-5 pt-7 text-center">
-          <p className="font-serif text-2xl italic text-[color:var(--color-maroon-700)]">The Maroon Masters</p>
-          <div className="mx-auto mt-3 h-px w-24 bg-[color:var(--color-gold-400)]" />
-        </div>
-        <div className="bg-gradient-trophy px-8 py-10 text-center">
-          <p className="font-condensed text-sm font-bold uppercase tracking-[0.2em] text-[color:var(--color-maroon-900)]/70">Match {box.boxNumber}</p>
-          <p className="mt-3 font-condensed text-5xl font-bold uppercase tracking-wide text-[color:var(--color-maroon-900)]">
-            {matchResultLabel(box.leader, box.margin, box.holesRemaining)}
-          </p>
-          <p className="mt-4 font-sans text-lg text-[color:var(--color-maroon-900)]/80">
-            {box.maroonNames.join(" / ")} vs. {box.whiteNames.join(" / ")}
-          </p>
-        </div>
+    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden px-10 py-10 [background:radial-gradient(120%_90%_at_50%_8%,var(--color-maroon-700)_0%,var(--color-maroon-900)_46%,#0d0000_100%)]">
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -bottom-[10%] -right-[6%] font-serif text-[22vw] font-semibold italic leading-none text-transparent [-webkit-text-stroke:1px_rgba(201,168,110,0.14)]"
+      >
+        MM
+      </span>
+      <div className="relative z-[1] text-center">
+        <p className="font-condensed text-sm font-bold uppercase tracking-[0.2em] text-[color:var(--color-gold-300)]">Match {box.boxNumber}</p>
+        <p className="mt-3 font-condensed text-6xl font-bold uppercase tracking-wide text-[color:var(--color-cream-50)] [text-shadow:0_0_16px_rgba(220,196,149,0.4)]">
+          {matchResultLabel(box.leader, box.margin, box.holesRemaining)}
+        </p>
+        <p className="mt-4 font-sans text-lg text-[color:var(--color-cream-100)]/80">
+          {box.maroonNames.join(" / ")} vs. {box.whiteNames.join(" / ")}
+        </p>
       </div>
     </div>
   );
