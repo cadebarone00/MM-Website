@@ -37,7 +37,7 @@ export function PortalHeader() {
   const showBack = !isHomePage(pathname);
 
   return (
-    <header className="sticky top-0 z-[100] shadow-lg bg-maroon-900">
+    <header className="sticky top-0 z-[300] shadow-lg bg-maroon-900">
       <div className="grid grid-cols-3 items-center gap-2 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] lg:px-7 lg:py-4">
         <div className="justify-self-start shrink-0">
           {tigerChildPage ? (
