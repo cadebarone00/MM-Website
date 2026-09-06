@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -23,19 +22,8 @@ export default async function ChooseAccountPage() {
   }
 
   return (
-    <LoadingScreen heading="The Maroon Masters" raised>
-      <Link
-        href="/portal"
-        className="font-condensed text-2xl font-semibold uppercase tracking-wide text-cream-50 hover:text-cream-50/80"
-      >
-        Portal
-      </Link>
-      <Link
-        href="/"
-        className="font-condensed text-2xl font-semibold uppercase tracking-wide text-cream-50 hover:text-cream-50/80"
-      >
-        Website
-      </Link>
+    <LoadingScreen heading="The Maroon Masters" belowAreaNav headingClassName="normal-case tracking-normal">
+      <p className="-mt-4 font-condensed text-2xl font-semibold tracking-[0.18em] text-cream-50 sm:text-3xl">2027</p>
     </LoadingScreen>
   );
 }
