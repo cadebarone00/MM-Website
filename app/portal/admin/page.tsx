@@ -47,6 +47,7 @@ export default async function TigerCenterPage() {
           <Link href="/portal/admin/wager-types" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-7 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Wager Types</Link>
           <Link href="/portal/admin/odds-model" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-7 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Odds Model</Link>
           <Link href="/portal/admin/broadcast-controls" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-7 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Broadcast Controls</Link>
+          <Link href="/portal/admin/course-library" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-7 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Course Library</Link>
         </div>
       </section>
     </div>

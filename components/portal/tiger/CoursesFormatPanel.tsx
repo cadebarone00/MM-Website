@@ -2,8 +2,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { LiveCourse, LiveRoundState, MatchFormat, TournamentSettings } from "@/lib/live/types";
-import { AddCourseForm } from "./AddCourseForm";
 
 const FORMATS: MatchFormat[] = ["Fourball", "Foursome", "Singles"];
 
@@ -26,8 +26,7 @@ export function CoursesFormatPanel({
   // since roundCount then reflects a real, already-saved number.
   const [roundCount, setRoundCount] = useState<number | null>(initialSettings.roundCount);
   const [rounds, setRounds] = useState(initialRounds);
-  const [courses, setCourses] = useState(initialCourses);
-  const [addingCourseFor, setAddingCourseFor] = useState<number | null>(null);
+  const courses = initialCourses;
   const [removeTarget, setRemoveTarget] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -110,6 +109,7 @@ export function CoursesFormatPanel({
 
   return (
     <div className="mt-6">
+      <p className="mb-4 rounded-sm border border-gold-300 bg-cream-100 px-3 py-2 font-sans text-sm text-ink-700">Courses are selected from the shared <Link href="/portal/admin/course-library" className="font-semibold text-maroon-700 underline">Course Library</Link>, so adding or editing a course never belongs to one season.</p>
       <label className="font-sans text-sm font-semibold text-ink-700">
         Number of rounds:{" "}
         <select
@@ -194,24 +194,6 @@ export function CoursesFormatPanel({
                 ))}
               </select>
             </div>
-
-            {!round.courseLocked && (
-              <button
-                type="button"
-                onClick={() => setAddingCourseFor(addingCourseFor === round.round ? null : round.round)}
-                className="mt-3 font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline"
-              >
-                {addingCourseFor === round.round ? "Cancel" : "Add Course"}
-              </button>
-            )}
-            {addingCourseFor === round.round && (
-              <AddCourseForm
-                onSaved={(course) => {
-                  setCourses((current) => [...current, course]);
-                  setAddingCourseFor(null);
-                }}
-              />
-            )}
 
             {removeTarget === round.round && (
               <div className="mt-3 rounded-lg bg-red-50 p-3">
