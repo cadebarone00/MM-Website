@@ -1,5 +1,7 @@
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { ArrowRight, ChartNoAxesCombined, CircleUserRound, Flag, Trophy } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { findPlayerTeam } from "@/lib/portal/findPlayerTeam";
@@ -8,10 +10,7 @@ import { Avatar } from "@/components/ui/Avatar";
 
 export default async function PortalPage() {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase
@@ -21,48 +20,93 @@ export default async function PortalPage() {
     .single();
 
   if (!profile || (!profile.is_host && !profile.player_slug)) redirect("/");
-
-  // Tiger doesn't get a fork screen or Website access — straight to the
-  // Tiger Center on login, per the site plan (docs/superpowers/specs/
-  // 2026-08-28-site-plan-design.md).
   if (profile.is_host) redirect("/portal/admin");
 
-  const playerProfile = getPlayerProfileBySlug(profile.player_slug!);
-  const team = findPlayerTeam(profile.player_slug!);
-  const currentMatch = await findCurrentRoundForPlayer(profile.player_slug!);
+  const playerSlug = profile.player_slug!;
+  const playerProfile = getPlayerProfileBySlug(playerSlug);
+  const playerName = playerProfile?.fullName ?? profile.display_name ?? "Player";
+  const team = findPlayerTeam(playerSlug);
+  const currentMatch = await findCurrentRoundForPlayer(playerSlug);
+  const isLive = currentMatch?.state === "Live";
+  const teamName = team ? `Team ${team === "maroon" ? "Maroon" : "White"}` : "Team pending";
 
   return (
-    <div className="mx-auto flex max-w-[640px] flex-col items-center gap-4 px-4 py-16 text-center sm:px-7">
-      <Avatar name={playerProfile?.fullName ?? profile.display_name} src={playerProfile?.avatarSrc ?? null} size="lg" team={team} />
-      <h1 className="font-serif text-2xl font-bold text-ink-900">Welcome, {playerProfile?.fullName ?? profile.display_name}</h1>
-      <p className="font-sans text-sm text-ink-500">
-        {team ? `Team ${team === "maroon" ? "Maroon" : "White"}` : "Team not yet assigned"} · @{profile.username}
-      </p>
-      <div className="w-full max-w-[640px] text-left">
-        {currentMatch ? (
-          <section className="rounded-lg border-2 border-stone-300 bg-white p-5">
-            <p className="font-condensed text-2xs font-semibold uppercase tracking-wide text-ink-500">
-              {currentMatch.state === "Live" ? "Live match" : "Upcoming match"}
-            </p>
-            <h2 className="mt-1 font-serif text-xl font-bold text-ink-900">{matchupLabel(profile.player_slug!, currentMatch.matchBox)}</h2>
-            <p className="mt-1 font-sans text-sm text-ink-500">
-              Round {currentMatch.round.round} · {currentMatch.matchBox.format} · Tee time {currentMatch.matchBox.teeTime.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
-            </p>
-            {currentMatch.state === "Live" ? (
-              <Link href="/portal/scoring/play" className="mt-4 inline-block rounded-lg bg-maroon-700 px-4 py-2 font-condensed text-xs font-semibold uppercase tracking-wide text-white">
-                Go to Scoring
-              </Link>
-            ) : (
-              <p className="mt-4 font-sans text-sm text-ink-500">Scoring opens at tee time, or when Tiger starts this match.</p>
-            )}
-          </section>
-        ) : (
-          <p className="font-sans text-sm text-ink-500">Did Not Play — no upcoming live match is assigned to you for this season.</p>
-        )}
+    <main className="mx-auto w-full max-w-4xl px-3 pb-10 pt-4 sm:px-6 sm:pt-6">
+      <section className="relative isolate overflow-hidden rounded-2xl border border-stone-300 bg-maroon-950 shadow-sm">
+        <div className="relative aspect-[16/8] min-h-48 sm:aspect-[16/7]">
+          <Image src="/loading/desktop.png" alt="Maroon Masters course view" fill priority sizes="(max-width: 768px) 100vw, 896px" className="object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-maroon-950 via-maroon-950/35 to-transparent" />
+        </div>
+        <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 sm:p-6">
+          <div className="flex min-w-0 items-end gap-3 text-white">
+            <Avatar name={playerName} src={playerProfile?.avatarSrc ?? null} size="md" team={team} />
+            <div className="min-w-0 pb-0.5">
+              <p className="font-condensed text-2xs font-semibold uppercase tracking-[0.18em] text-gold-200">Player portal</p>
+              <h1 className="truncate font-serif text-2xl font-bold sm:text-3xl">{playerName}</h1>
+              <p className="mt-0.5 font-sans text-xs text-stone-200 sm:text-sm">{teamName} · @{profile.username}</p>
+            </div>
+          </div>
+          <span className="shrink-0 rounded-full border border-white/25 bg-black/20 px-2.5 py-1 font-condensed text-2xs font-semibold uppercase tracking-wide text-white">My dashboard</span>
+        </div>
+      </section>
+
+      <div className="mt-4 grid gap-4 md:grid-cols-[1.45fr_0.9fr]">
+        <section className="rounded-xl border border-stone-300 bg-white p-4 shadow-sm sm:p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-condensed text-2xs font-semibold uppercase tracking-[0.16em] text-ink-500">{isLive ? "Live match" : currentMatch ? "Your next match" : "Tournament status"}</p>
+              <h2 className="mt-1 font-serif text-xl font-bold text-ink-900 sm:text-2xl">{currentMatch ? matchupLabel(playerSlug, currentMatch.matchBox) : "No match currently assigned"}</h2>
+            </div>
+            <span className={`shrink-0 rounded-full px-2.5 py-1 font-condensed text-2xs font-semibold uppercase tracking-wide ${isLive ? "bg-maroon-700 text-white" : "bg-stone-100 text-ink-600"}`}>{isLive ? "Live now" : currentMatch ? "Upcoming" : "Waiting"}</span>
+          </div>
+
+          {currentMatch ? (
+            <>
+              <div className="mt-4 grid grid-cols-3 divide-x divide-stone-200 rounded-lg border border-stone-200 bg-stone-50 text-center">
+                <div className="p-2.5"><p className="font-condensed text-2xs font-semibold uppercase tracking-wide text-ink-500">Round</p><p className="mt-0.5 font-serif text-lg font-bold text-ink-900">{currentMatch.round.round}</p></div>
+                <div className="p-2.5"><p className="font-condensed text-2xs font-semibold uppercase tracking-wide text-ink-500">Format</p><p className="mt-0.5 truncate font-sans text-sm font-semibold text-ink-900">{currentMatch.matchBox.format}</p></div>
+                <div className="p-2.5"><p className="font-condensed text-2xs font-semibold uppercase tracking-wide text-ink-500">Tee time</p><p className="mt-0.5 font-sans text-sm font-semibold text-ink-900">{currentMatch.matchBox.teeTime.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</p></div>
+              </div>
+              {isLive ? (
+                <Link href="/portal/scoring/play" className="mt-4 flex items-center justify-between rounded-lg bg-maroon-700 px-4 py-3 font-condensed text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-maroon-800">Open live scoring <ArrowRight size={16} aria-hidden="true" /></Link>
+              ) : (
+                <p className="mt-4 font-sans text-sm leading-5 text-ink-500">Scoring opens at tee time, or when Tiger starts your match.</p>
+              )}
+            </>
+          ) : (
+            <p className="mt-3 font-sans text-sm leading-5 text-ink-500">Your personal dashboard will show your next match and scoring access once your round is set up.</p>
+          )}
+        </section>
+
+        <section className="rounded-xl border border-stone-300 bg-cream-50 p-4 shadow-sm sm:p-5">
+          <p className="font-condensed text-2xs font-semibold uppercase tracking-[0.16em] text-ink-500">My tournament</p>
+          <div className="mt-3 space-y-3">
+            <div className="flex items-center gap-3 rounded-lg border border-stone-200 bg-white p-3">
+              <span className={`grid size-9 place-items-center rounded-full ${team === "maroon" ? "bg-maroon-700 text-white" : team === "white" ? "bg-stone-200 text-ink-700" : "bg-stone-100 text-ink-500"}`}><Flag size={17} aria-hidden="true" /></span>
+              <div><p className="font-sans text-sm font-semibold text-ink-900">{teamName}</p><p className="font-sans text-xs text-ink-500">Your team assignment</p></div>
+            </div>
+            <div className="flex items-center gap-3 rounded-lg border border-stone-200 bg-white p-3">
+              <span className="grid size-9 place-items-center rounded-full bg-gold-100 text-maroon-800"><Trophy size={17} aria-hidden="true" /></span>
+              <div><p className="font-sans text-sm font-semibold text-ink-900">Personal access</p><p className="font-sans text-xs text-ink-500">Your profile, stats, and scoring</p></div>
+            </div>
+          </div>
+        </section>
       </div>
-      <Link href="/portal/profile" className="font-sans text-sm font-semibold text-maroon-700 hover:underline">
-        Edit My Bio →
-      </Link>
-    </div>
+
+      <section className="mt-4">
+        <p className="mb-2 font-condensed text-2xs font-semibold uppercase tracking-[0.16em] text-ink-500">My information</p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Link href="/portal/profile" className="group rounded-xl border border-stone-300 bg-white p-4 shadow-sm transition hover:border-maroon-400 hover:shadow-md">
+            <CircleUserRound size={20} className="text-maroon-700" aria-hidden="true" /><h2 className="mt-4 font-serif text-lg font-bold text-ink-900">My profile</h2><p className="mt-1 font-sans text-sm leading-5 text-ink-500">Update the personal information shown on your player page.</p><span className="mt-4 flex items-center gap-1 font-condensed text-xs font-semibold uppercase tracking-wide text-maroon-700">Edit profile <ArrowRight size={14} /></span>
+          </Link>
+          <Link href={`/teams/stats/players/${playerSlug}`} className="group rounded-xl border border-stone-300 bg-white p-4 shadow-sm transition hover:border-maroon-400 hover:shadow-md">
+            <ChartNoAxesCombined size={20} className="text-maroon-700" aria-hidden="true" /><h2 className="mt-4 font-serif text-lg font-bold text-ink-900">My career stats</h2><p className="mt-1 font-sans text-sm leading-5 text-ink-500">Explore your archived scorecards and career performance.</p><span className="mt-4 flex items-center gap-1 font-condensed text-xs font-semibold uppercase tracking-wide text-maroon-700">View archive <ArrowRight size={14} /></span>
+          </Link>
+          <Link href="/wagers/portfolio" className="group rounded-xl border border-stone-300 bg-white p-4 shadow-sm transition hover:border-maroon-400 hover:shadow-md">
+            <Trophy size={20} className="text-maroon-700" aria-hidden="true" /><h2 className="mt-4 font-serif text-lg font-bold text-ink-900">My wagers</h2><p className="mt-1 font-sans text-sm leading-5 text-ink-500">Review your current wagers and MM Coins activity.</p><span className="mt-4 flex items-center gap-1 font-condensed text-xs font-semibold uppercase tracking-wide text-maroon-700">Open wagers <ArrowRight size={14} /></span>
+          </Link>
+        </div>
+      </section>
+    </main>
   );
 }
