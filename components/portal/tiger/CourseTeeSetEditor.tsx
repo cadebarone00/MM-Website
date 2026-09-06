@@ -7,7 +7,7 @@ function defaultTeeSet(course: LiveCourse): LiveTeeSet {
   return { id: "standard", name: "Standard", holes: course.holes, rating: course.rating, slope: course.slope };
 }
 
-export function CourseTeeSetEditor({ course, onSaved }: { course: LiveCourse; onSaved: (teeSets: LiveTeeSet[]) => void }) {
+export function CourseTeeSetEditor({ course, onSaved }: { course: LiveCourse; onSaved?: (teeSets: LiveTeeSet[]) => void }) {
   const [teeSets, setTeeSets] = useState<LiveTeeSet[]>(course.teeSets?.length ? course.teeSets : [defaultTeeSet(course)]);
   const [selectedId, setSelectedId] = useState(teeSets[0].id);
   const [saving, setSaving] = useState(false);
@@ -26,7 +26,8 @@ export function CourseTeeSetEditor({ course, onSaved }: { course: LiveCourse; on
       const response = await fetch("/api/portal/tiger/courses", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: course.id, teeSets }) });
       const data = await response.json();
       if (!data.ok) { setError(data.error); return; }
-      onSaved(teeSets);
+      if (onSaved) onSaved(teeSets);
+      else window.location.reload();
     } finally { setSaving(false); }
   }
 
