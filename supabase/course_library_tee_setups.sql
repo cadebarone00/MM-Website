@@ -2,6 +2,10 @@
 -- A course is global. A tee set is a named 18-hole yardage/rating/slope
 -- configuration within that course. A round snapshots its selected tee set
 -- plus any hole-by-hole override, so “Palmer” never becomes Palmer 1/2/3.
+-- Older projects may have the original live_courses shape without these
+-- optional rating fields, so make this migration self-contained.
+alter table live_courses add column if not exists rating numeric;
+alter table live_courses add column if not exists slope integer check (slope between 55 and 155);
 alter table live_courses add column if not exists tee_sets jsonb not null default '[]'::jsonb;
 alter table live_round_state add column if not exists course_setup jsonb;
 

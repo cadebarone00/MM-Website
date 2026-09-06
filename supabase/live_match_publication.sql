@@ -225,7 +225,7 @@ begin
       into v_played_on, v_course, v_hole
       from live_round_state round_state
       join live_courses course on course.id = round_state.course_id
-      cross join lateral jsonb_array_elements(course.holes) hole_data
+      cross join lateral jsonb_array_elements(coalesce(round_state.course_setup -> 'holes', course.holes)) hole_data
       where round_state.season_year = new.season_year
         and round_state.round = new.round
         and (hole_data ->> 'number')::integer = new.hole;
