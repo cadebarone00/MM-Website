@@ -3,8 +3,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { LiveCourse, TournamentSettings } from "@/lib/live/types";
-import { AddCourseForm } from "./AddCourseForm";
+import type { TournamentSettings } from "@/lib/live/types";
 
 const SETUP_BOXES = [
   { label: "Players & Teams", path: "players-teams" },
@@ -15,17 +14,12 @@ const SETUP_BOXES = [
 export function MasterSettingsPanel({
   year,
   initialSettings,
-  initialCourses,
   isActiveYear,
 }: {
   year: number;
   initialSettings: TournamentSettings;
-  initialCourses: LiveCourse[];
   isActiveYear: boolean;
 }) {
-  const [courses, setCourses] = useState(initialCourses);
-  const [addingCourse, setAddingCourse] = useState(false);
-
   const [beginDate, setBeginDate] = useState(initialSettings.beginDate ?? "");
   const [endDate, setEndDate] = useState(initialSettings.endDate ?? "");
   const [datesLocked, setDatesLocked] = useState(initialSettings.datesLocked);
