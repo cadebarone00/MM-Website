@@ -9,10 +9,19 @@ export interface LiveHole {
   yards: number;
 }
 
+export interface LiveTeeSet {
+  id: string;
+  name: string;
+  holes: LiveHole[];
+  rating: number | null;
+  slope: number | null;
+}
+
 export interface LiveCourse {
   id: string;
   name: string;
   holes: LiveHole[];
+  teeSets?: LiveTeeSet[];
   rating: number | null; // e.g. 72.4 — null until set
   slope: number | null; // USGA range 55-155 — null until set
 }
@@ -63,6 +72,7 @@ export interface LiveRoundState {
   round: number;
   started: boolean;
   courseId: string | null;
+  courseSetup?: { teeSetId: string; teeSetName: string; holes: LiveHole[]; rating: number | null; slope: number | null; holeTeeSetIds?: Record<string, string> } | null;
   date: string | null; // ISO date (YYYY-MM-DD)
   format: MatchFormat | null;
   courseLocked: boolean;

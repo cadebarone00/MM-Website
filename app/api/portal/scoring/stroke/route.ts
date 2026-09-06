@@ -72,7 +72,7 @@ export async function POST(request: Request) {
 
   const { data: roundState } = await service
     .from("live_round_state")
-    .select("course_locked, matchups_locked, started, course_id")
+    .select("course_locked, matchups_locked, started, course_id, course_setup")
     .eq("season_year", seasonYear)
     .eq("round", round)
     .single();
@@ -105,7 +105,8 @@ export async function POST(request: Request) {
     const { data: course } = roundState.course_id
       ? await service.from("live_courses").select("holes").eq("id", roundState.course_id).single()
       : { data: null };
-    const par = (course?.holes as { number: number; par: number }[] | undefined)?.find((entry) => entry.number === hole)?.par;
+    const setupHoles = (roundState.course_setup as { holes?: { number: number; par: number }[] } | null)?.holes;
+    const par = (setupHoles ?? course?.holes as { number: number; par: number }[] | undefined)?.find((entry) => entry.number === hole)?.par;
     if (!par) return NextResponse.json({ ok: false, error: "Could not determine par for this hole." }, { status: 500 });
     recordedScore = par * 2;
   }

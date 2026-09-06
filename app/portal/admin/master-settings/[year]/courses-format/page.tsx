@@ -28,10 +28,10 @@ export default async function CoursesFormatPage({ params }: { params: Promise<{ 
       .maybeSingle(),
     service
       .from("live_round_state")
-      .select("round, started, course_id, date, format, course_locked, matchups_locked")
+      .select("round, started, course_id, date, format, course_locked, matchups_locked, course_setup")
       .eq("season_year", year)
       .order("round"),
-    service.from("live_courses").select("id, name, holes, rating, slope").order("name"),
+    service.from("live_courses").select("id, name, holes, rating, slope, tee_sets").order("name"),
   ]);
 
   const settings: TournamentSettings = {
@@ -52,8 +52,9 @@ export default async function CoursesFormatPage({ params }: { params: Promise<{ 
     format: r.format as MatchFormat | null,
     courseLocked: r.course_locked,
     matchupsLocked: r.matchups_locked,
+    courseSetup: r.course_setup,
   }));
-  const courses: LiveCourse[] = (courseRows ?? []).map((c) => ({ id: c.id, name: c.name, holes: c.holes, rating: c.rating, slope: c.slope }));
+  const courses: LiveCourse[] = (courseRows ?? []).map((c) => ({ id: c.id, name: c.name, holes: c.holes, rating: c.rating, slope: c.slope, teeSets: Array.isArray(c.tee_sets) ? c.tee_sets : [] }));
 
   return (
     <div className="mx-auto max-w-[960px] px-4 py-12 sm:px-7">

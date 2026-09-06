@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { LiveCourse, LiveRoundState, MatchFormat, TournamentSettings } from "@/lib/live/types";
+import type { LiveCourse, LiveRoundState, LiveTeeSet, MatchFormat, TournamentSettings } from "@/lib/live/types";
 
 const FORMATS: MatchFormat[] = ["Fourball", "Foursome", "Singles"];
 
@@ -45,7 +45,7 @@ export function CoursesFormatPanel({
     window.location.reload();
   }
 
-  async function updateRound(round: number, patch: { date?: string; courseId?: string; format?: MatchFormat }) {
+  async function updateRound(round: number, patch: { date?: string; courseId?: string; format?: MatchFormat; courseSetup?: { teeSetId: string; holeTeeSetIds: Record<string, string> } }) {
     setError(null);
     // An empty string from a cleared <input type="date"> means "no date
     // set" — normalize it to null so it matches how a blank date is
@@ -70,9 +70,23 @@ export function CoursesFormatPanel({
           date: patch.date !== undefined ? (date ?? null) : r.date,
           courseId: patch.courseId ?? r.courseId,
           format: patch.format ?? r.format,
+          courseSetup: patch.courseSetup ? { teeSetId: patch.courseSetup.teeSetId, teeSetName: "", holes: r.courseSetup?.holes ?? [], rating: r.courseSetup?.rating ?? null, slope: r.courseSetup?.slope ?? null, holeTeeSetIds: patch.courseSetup.holeTeeSetIds } : patch.courseId ? null : r.courseSetup,
         };
       })
     );
+  }
+
+  function teeSetsFor(course: LiveCourse): LiveTeeSet[] {
+    return course.teeSets?.length ? course.teeSets : [{ id: "standard", name: "Standard", holes: course.holes, rating: course.rating, slope: course.slope }];
+  }
+
+  async function saveCourseSetup(round: LiveRoundState, teeSetId: string, changedHole?: number, changedTeeSetId?: string) {
+    const course = courses.find((entry) => entry.id === round.courseId);
+    if (!course) return;
+    const current = round.courseSetup?.teeSetId ?? teeSetId;
+    const holeTeeSetIds = changedHole ? { ...(round.courseSetup?.holeTeeSetIds ?? Object.fromEntries(course.holes.map((hole) => [String(hole.number), current]))) } : Object.fromEntries(course.holes.map((hole) => [String(hole.number), teeSetId]));
+    if (changedHole && changedTeeSetId) holeTeeSetIds[String(changedHole)] = changedTeeSetId;
+    await updateRound(round.round, { courseId: course.id, courseSetup: { teeSetId, holeTeeSetIds } });
   }
 
   async function toggleLock(round: number, value: boolean) {
@@ -194,6 +208,17 @@ export function CoursesFormatPanel({
                 ))}
               </select>
             </div>
+
+            {!round.courseLocked && round.courseId && (() => {
+              const course = courses.find((entry) => entry.id === round.courseId);
+              if (!course) return null;
+              const teeSets = teeSetsFor(course);
+              const selectedTeeId = round.courseSetup?.teeSetId ?? teeSets[0]?.id;
+              return <div className="mt-4 border-t border-gold-200 pt-3">
+                <div className="flex flex-wrap items-end justify-between gap-3"><label className="min-w-48 font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Base tee set<select value={selectedTeeId} onChange={(event) => saveCourseSetup(round, event.target.value)} className="mt-1 block w-full rounded-sm border border-gold-300 bg-white px-2 py-2 font-sans text-sm normal-case text-ink-900">{teeSets.map((tee) => <option key={tee.id} value={tee.id}>{tee.name}{tee.rating != null ? ` · ${tee.rating}/${tee.slope ?? "—"}` : ""}</option>)}</select></label><span className="font-sans text-xs text-ink-500">Choose a tee for the whole round, then adjust individual holes below.</span></div>
+                <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">{course.holes.map((hole) => <label key={hole.number} className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Hole {hole.number}<select value={round.courseSetup?.holeTeeSetIds?.[String(hole.number)] ?? selectedTeeId} onChange={(event) => saveCourseSetup(round, selectedTeeId, hole.number, event.target.value)} className="mt-1 block w-full rounded-sm border border-gold-300 bg-white px-1 py-1.5 font-sans text-xs normal-case text-ink-900">{teeSets.map((tee) => <option key={tee.id} value={tee.id}>{tee.name} · {tee.holes.find((entry) => entry.number === hole.number)?.yards ?? "—"}</option>)}</select></label>)}</div>
+              </div>;
+            })()}
 
             {removeTarget === round.round && (
               <div className="mt-3 rounded-lg bg-red-50 p-3">

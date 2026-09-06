@@ -24,6 +24,7 @@ interface CourseRow {
 interface RoundStateRow {
   round: number;
   course_id: string | null;
+  course_setup: { holes?: LiveHole[]; rating?: number | null; slope?: number | null } | null;
 }
 interface MatchBoxRow {
   id: string;
@@ -56,7 +57,7 @@ export async function buildLiveTournamentSnapshot(seasonYear: number, options: {
     service.from("live_roster").select("player_slug, team").eq("season_year", seasonYear),
     // live_courses is a shared pool across years (no season_year column), so this isn't filtered.
     service.from("live_courses").select("id, name, holes, rating, slope"),
-    service.from("live_round_state").select("round, course_id").eq("season_year", seasonYear),
+    service.from("live_round_state").select("round, course_id, course_setup").eq("season_year", seasonYear),
     service.from("live_match_boxes").select("id, round, box_number, format, tee_time, maroon_players, white_players, state, started").eq("season_year", seasonYear),
     scoreQuery,
   ]);
@@ -73,7 +74,15 @@ export async function buildLiveTournamentSnapshot(seasonYear: number, options: {
 
   const roundCourses: Record<number, string> = {};
   for (const row of (roundRows as RoundStateRow[] | null) ?? []) {
-    if (row.course_id) roundCourses[row.round] = row.course_id;
+    if (!row.course_id) continue;
+    const baseCourse = courses[row.course_id];
+    if (row.course_setup?.holes?.length === 18 && baseCourse) {
+      const setupId = `round-${row.round}`;
+      courses[setupId] = { ...baseCourse, id: setupId, holes: row.course_setup.holes, rating: row.course_setup.rating ?? null, slope: row.course_setup.slope ?? null };
+      roundCourses[row.round] = setupId;
+    } else {
+      roundCourses[row.round] = row.course_id;
+    }
   }
 
   const matchBoxes: LiveMatchBox[] = ((boxRows as MatchBoxRow[] | null) ?? []).map((row) => ({
