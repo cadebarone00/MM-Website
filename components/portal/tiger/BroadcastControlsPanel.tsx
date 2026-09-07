@@ -20,10 +20,12 @@ type PreviewVideoSettings = {
   player: string;
   place: string;
   scoreToPar: string;
+  round: string;
   hole: string;
   par: string;
   yards: string;
   shot: string;
+  videoUrl: string;
   course: string;
   format: "Singles" | "Fourball" | "Foursome";
   showMatch: boolean;
@@ -39,10 +41,12 @@ const DEFAULT_PREVIEW_VIDEO: PreviewVideoSettings = {
   player: "Cade Barone",
   place: "1",
   scoreToPar: "-13",
+  round: "1",
   hole: "16",
   par: "4",
   yards: "611",
   shot: "1",
+  videoUrl: "",
   course: "Maroon Masters Golf Club",
   format: "Singles",
   showMatch: true,
@@ -101,6 +105,7 @@ export function BroadcastControlsPanel({
   const [previewYear, setPreviewYear] = useState(initialDisplayYear);
   const [previewScene, setPreviewScene] = useState<PreviewScene>("individual_leaderboard");
   const [previewVideo, setPreviewVideo] = useState<PreviewVideoSettings>(DEFAULT_PREVIEW_VIDEO);
+  const [clipBusy, setClipBusy] = useState(false);
   const [mockRun, setMockRun] = useState<MockRunState | null>(null);
   const [mockClock, setMockClock] = useState(Date.now());
 
@@ -158,10 +163,12 @@ export function BroadcastControlsPanel({
       videoPlayer: previewVideo.player,
       videoPlace: previewVideo.place,
       videoToPar: previewVideo.scoreToPar,
+      videoRound: previewVideo.round,
       videoHole: previewVideo.hole,
       videoPar: previewVideo.par,
       videoYards: previewVideo.yards,
       videoShot: previewVideo.shot,
+      videoUrl: previewVideo.videoUrl,
       videoCourse: previewVideo.course,
       videoFormat: previewVideo.format,
       videoMatch: previewVideo.showMatch && previewMatchReady ? "1" : "0",
@@ -205,6 +212,39 @@ export function BroadcastControlsPanel({
     setMockRun((current) => current?.status === "running"
       ? { ...current, offsetMs: clamped, startedAt: Date.now() }
       : { status: "paused", offsetMs: clamped, startedAt: null });
+  }
+
+  async function loadCamRoundThreeClip() {
+    setClipBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/portal/tiger/broadcast/rehearsal-video?year=2026&playerSlug=cam-latto&round=3&hole=5&shotNumber=4");
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error ?? "Could not load Cam's scorecard clip.");
+        return;
+      }
+      setPreviewVideo((current) => ({
+        ...current,
+        player: data.video.playerName,
+        round: "3",
+        hole: "5",
+        shot: "4",
+        par: data.video.par == null ? current.par : String(data.video.par),
+        yards: data.video.yards == null ? current.yards : String(data.video.yards),
+        course: data.video.course || current.course,
+        format: data.video.format === "Foursome" ? "Foursome" : data.video.format === "Fourball" ? "Fourball" : "Singles",
+        videoUrl: data.video.url,
+        showMatch: true,
+        team: "maroon",
+        ownPlayers: "Latto, Drew",
+        opposingPlayers: "Quez, Collin",
+        ownStatus: "AS",
+        opposingStatus: "AS",
+      }));
+    } finally {
+      setClipBusy(false);
+    }
   }
 
   async function postAnnouncement() {
@@ -608,7 +648,17 @@ export function BroadcastControlsPanel({
                 <h2 className="font-serif text-lg font-bold text-ink-900">Live Player Video rehearsal controls</h2>
                 <p className="font-sans text-xs text-ink-500">Preview only — this never changes the real broadcast.</p>
               </div>
-              <p className="mt-1 font-sans text-xs text-ink-600">Use commas to stack partners or opponents in the match overlay.</p>
+              <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+                <p className="font-sans text-xs text-ink-600">Use commas to stack partners or opponents in the match overlay.</p>
+                <button
+                  type="button"
+                  disabled={clipBusy}
+                  onClick={loadCamRoundThreeClip}
+                  className="rounded-lg border border-gold-500 bg-white px-3 py-1 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-800 hover:bg-gold-50"
+                >
+                  {clipBusy ? "Loading Cam clip…" : "Load Cam R3 · Classic · H5 · Shot 4"}
+                </button>
+              </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <label className="col-span-2 flex flex-col gap-1 font-sans text-xs text-ink-700">
@@ -622,6 +672,10 @@ export function BroadcastControlsPanel({
                 <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
                   Score to par
                   <input value={previewVideo.scoreToPar} onChange={(e) => updatePreviewVideo("scoreToPar", e.target.value)} placeholder="-13" className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm" />
+                </label>
+                <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
+                  Round
+                  <input type="number" min="1" max="8" value={previewVideo.round} onChange={(e) => updatePreviewVideo("round", e.target.value)} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm" />
                 </label>
                 <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
                   Hole
@@ -638,6 +692,10 @@ export function BroadcastControlsPanel({
                 <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
                   Shot being hit
                   <input type="number" min="1" value={previewVideo.shot} onChange={(e) => updatePreviewVideo("shot", e.target.value)} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm" />
+                </label>
+                <label className="col-span-2 flex flex-col gap-1 font-sans text-xs text-ink-700">
+                  Rehearsal clip URL <span className="font-normal text-ink-500">(optional public MP4/WebM link)</span>
+                  <input type="url" value={previewVideo.videoUrl} onChange={(e) => updatePreviewVideo("videoUrl", e.target.value)} placeholder="Paste Cam's uploaded video URL" className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm" />
                 </label>
                 <label className="col-span-2 flex flex-col gap-1 font-sans text-xs text-ink-700">
                   Golf course

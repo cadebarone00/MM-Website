@@ -37,10 +37,11 @@ function previewVideoFromParams(params: { [key: string]: string | undefined }): 
     playerName: params.videoPlayer?.trim() || PREVIEW_VIDEO.playerName,
     individualPlace: number("videoPlace", PREVIEW_VIDEO.individualPlace ?? 1),
     scoreToPar: number("videoToPar", PREVIEW_VIDEO.scoreToPar ?? 0),
-    hole: number("videoHole", PREVIEW_VIDEO.hole), par: number("videoPar", PREVIEW_VIDEO.par),
+    round: number("videoRound", PREVIEW_VIDEO.round), hole: number("videoHole", PREVIEW_VIDEO.hole), par: number("videoPar", PREVIEW_VIDEO.par),
     yards: number("videoYards", PREVIEW_VIDEO.yards), shotNumber: number("videoShot", PREVIEW_VIDEO.shotNumber),
     courseName: params.videoCourse?.trim() || PREVIEW_VIDEO.courseName,
     format: params.videoFormat?.trim() || PREVIEW_VIDEO.format,
+    videoUrl: params.videoUrl?.trim() || PREVIEW_VIDEO.videoUrl,
     match: showMatch
       ? {
           team,

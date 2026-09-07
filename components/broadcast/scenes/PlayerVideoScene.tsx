@@ -26,9 +26,9 @@ export function PlayerVideoScene({ video, preview = false }: { video: BroadcastP
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black">
-      {preview ? (
+      {preview && video.videoUrl === "/loading/desktop.mp4" ? (
         <><Image src="/loading/desktop.png" alt="Player video preview" fill priority className="object-cover" /><div className="absolute inset-0 grid place-items-center bg-black/35 font-condensed text-4xl font-bold uppercase tracking-[0.2em] text-white">Player video preview</div></>
-      ) : <video className="h-screen w-screen object-contain" src={video.videoUrl} autoPlay playsInline onEnded={() => { void fetch("/api/broadcast/video/complete", { method: "POST" }); }} />}
+      ) : <video className="h-screen w-screen object-contain" src={video.videoUrl} autoPlay playsInline loop={preview} onEnded={() => { if (!preview) void fetch("/api/broadcast/video/complete", { method: "POST" }); }} />}
 
       <aside className="absolute right-8 top-8 w-[570px] overflow-hidden border border-black/20 bg-white font-condensed font-bold uppercase shadow-2xl">
         <div className="flex h-20 items-stretch text-white">
