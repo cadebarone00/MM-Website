@@ -108,6 +108,7 @@ export function BroadcastControlsPanel({
   const [trackUrlTitle, setTrackUrlTitle] = useState("");
   const [previewYear, setPreviewYear] = useState(initialDisplayYear);
   const [previewScene, setPreviewScene] = useState<PreviewScene>("individual_leaderboard");
+  const [openRehearsalPanel, setOpenRehearsalPanel] = useState<PreviewScene | null>(null);
   const [previewVideo, setPreviewVideo] = useState<PreviewVideoSettings>(DEFAULT_PREVIEW_VIDEO);
   const [clipBusy, setClipBusy] = useState(false);
   const [mockRun, setMockRun] = useState<MockRunState | null>(null);
@@ -115,6 +116,7 @@ export function BroadcastControlsPanel({
   const [mockPickerOpen, setMockPickerOpen] = useState(false);
   const [mockClips, setMockClips] = useState<RehearsalClip[]>([]);
   const [mockClipsBusy, setMockClipsBusy] = useState(false);
+  const [playlistOpen, setPlaylistOpen] = useState(false);
 
   // Lets a host actually hear whatever's selected in the Playlist below,
   // whether rehearsing or live — audible only in this browser tab, since
@@ -710,7 +712,10 @@ export function BroadcastControlsPanel({
               <button
                 key={b.scene}
                 type="button"
-                onClick={() => setPreviewScene(b.scene)}
+                onClick={() => {
+                  setPreviewScene(b.scene);
+                  setOpenRehearsalPanel((open) => open === b.scene ? null : b.scene);
+                }}
                 className={[
                   "rounded-lg border-2 px-4 py-4 font-condensed text-sm font-semibold uppercase tracking-wide transition",
                   previewScene === b.scene ? "border-maroon-700 bg-maroon-700 text-white" : "border-stone-300 text-ink-700 hover:bg-stone-50",
@@ -721,7 +726,31 @@ export function BroadcastControlsPanel({
             ))}
           </div>
 
-          {previewScene === "player_video" && (
+          {openRehearsalPanel === "individual_leaderboard" && (
+            <section className="mt-4 rounded-lg border-2 border-gold-400 bg-gold-50/40 p-4">
+              <h2 className="font-serif text-lg font-bold text-ink-900">Individual Leaderboard animation</h2>
+              <p className="mt-1 font-sans text-xs text-ink-600">The mock uses generated standings only. A birdie callout appears first, then the affected row changes score and slides to its new position; unchanged rows remain still.</p>
+            </section>
+          )}
+          {openRehearsalPanel === "match_play" && (
+            <section className="mt-4 rounded-lg border-2 border-gold-400 bg-gold-50/40 p-4">
+              <h2 className="font-serif text-lg font-bold text-ink-900">Match Play scene controls</h2>
+              <p className="mt-1 font-sans text-xs text-ink-600">This dropdown is the home for Match Play animations and simulated match-state controls as we build them. The current preview is selected above and remains rehearsal-only.</p>
+            </section>
+          )}
+          {openRehearsalPanel === "holding" && (
+            <section className="mt-4 rounded-lg border-2 border-gold-400 bg-gold-50/40 p-4">
+              <h2 className="font-serif text-lg font-bold text-ink-900">Holding scene controls</h2>
+              <p className="mt-1 font-sans text-xs text-ink-600">This is where holding-screen timing, motion, and music-transition settings will live. It currently previews the selected holding scene.</p>
+            </section>
+          )}
+          {openRehearsalPanel === "video_transition" && (
+            <section className="mt-4 rounded-lg border-2 border-gold-400 bg-gold-50/40 p-4">
+              <h2 className="font-serif text-lg font-bold text-ink-900">Player video transition controls</h2>
+              <p className="mt-1 font-sans text-xs text-ink-600">The transition holds for four seconds before the player video. Its animation and music-fade settings will be built here.</p>
+            </section>
+          )}
+          {openRehearsalPanel === "player_video" && (
             <section className="mt-4 rounded-lg border-2 border-gold-400 bg-gold-50/40 p-4">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
                 <h2 className="font-serif text-lg font-bold text-ink-900">Live Player Video rehearsal controls</h2>
@@ -912,8 +941,12 @@ export function BroadcastControlsPanel({
           to (this browser only, via useLiveBroadcastAudio above), and queue
           up songs before Go Live, not just once live. */}
       <section className="mt-8 rounded-lg border-2 border-stone-300 p-4">
-        <h2 className="font-serif text-lg font-bold text-ink-900">Broadcast Playlist</h2>
-        <p className="mt-1 font-sans text-xs text-ink-500">
+        <button type="button" onClick={() => setPlaylistOpen((open) => !open)} className="flex w-full items-center justify-between text-left">
+          <span className="font-serif text-lg font-bold text-ink-900">Broadcast Playlist</span>
+          <span className="font-condensed text-sm font-semibold uppercase tracking-wide text-maroon-700">{playlistOpen ? "Close" : "Open"}</span>
+        </button>
+        {playlistOpen && <div className="mt-1">
+        <p className="font-sans text-xs text-ink-500">
           {isLive
             ? "Playing live on /watch-live. Stops automatically when you end the broadcast."
             : "Test songs here anytime — only you hear this until you Go Live, which starts the show with whatever's queued (or the top of the list)."}
@@ -1052,6 +1085,7 @@ export function BroadcastControlsPanel({
             })}
           </ul>
         )}
+        </div>}
       </section>
     </div>
   );
