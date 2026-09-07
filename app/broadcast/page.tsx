@@ -117,7 +117,7 @@ export default async function BroadcastPage({
     : null;
   const animationTest = preview && (params.animationTest === "birdie" || params.animationTest === "eagle")
     ? {
-        kind: params.animationTest,
+        kind: params.animationTest as "birdie" | "eagle",
         startedAt: Number(params.animationTestStart) || Date.now(),
         seed: Number.isFinite(Number(params.animationTestSeed)) ? Number(params.animationTestSeed) : 1,
       }
