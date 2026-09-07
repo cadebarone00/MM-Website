@@ -13,7 +13,13 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-const VALID_SCENES: BroadcastScene[] = ["holding", "individual_leaderboard", "match_play"];
+const VALID_SCENES = ["holding", "individual_leaderboard", "match_play", "video_transition", "player_video"] as const;
+type PreviewScene = (typeof VALID_SCENES)[number];
+
+const PREVIEW_VIDEO = {
+  id: "preview-player-video", playerSlug: "cade-barone", playerName: "Cade Barone", round: 1, hole: 16, shotNumber: 1,
+  par: 4, yards: 611, scoreToPar: -13, videoUrl: "/loading/desktop.mp4",
+};
 
 /**
  * `?preview=1&year=2026&scene=match_play` — Tiger Center's Broadcast
@@ -25,12 +31,13 @@ const VALID_SCENES: BroadcastScene[] = ["holding", "individual_leaderboard", "ma
  * that's real tournament data, not "the show" itself, so there's no reason
  * to fake it.
  */
-function previewPayload(year: number, scene: BroadcastScene): BroadcastPayload {
+function previewPayload(year: number, scene: PreviewScene): BroadcastPayload {
+  const videoPhase = scene === "video_transition" ? "transition" : scene === "player_video" ? "playing" : null;
   return {
     seasonYear: year,
     state: {
       seasonYear: year,
-      currentScene: scene,
+      currentScene: scene === "video_transition" || scene === "player_video" ? "holding" : scene,
       sceneStartedAt: new Date().toISOString(),
       automationMode: "producer",
       paused: false,
@@ -41,9 +48,13 @@ function previewPayload(year: number, scene: BroadcastScene): BroadcastPayload {
       audioStartedAt: null,
       audioLoopMode: "all",
       audioShuffle: false,
+      videoPhase,
+      activeVideoQueueId: videoPhase ? PREVIEW_VIDEO.id : null,
+      videoPhaseStartedAt: videoPhase ? new Date().toISOString() : null,
     },
     config: { seasonYear: year, sceneDurationsMs: DEFAULT_SCENE_DURATIONS_MS, overlayDurationMs: 6000, takeoverDurationMs: 8000 },
     events: [],
+    activeVideo: videoPhase ? PREVIEW_VIDEO : null,
   };
 }
 
@@ -54,10 +65,10 @@ export default async function BroadcastPage({
 }) {
   const params = await searchParams;
   const previewYear = Number(params.year);
-  const preview = params.preview === "1" && isValidDisplayYear(previewYear) && VALID_SCENES.includes(params.scene as BroadcastScene);
+  const preview = params.preview === "1" && isValidDisplayYear(previewYear) && VALID_SCENES.includes(params.scene as PreviewScene);
 
   const [broadcast, { standings, final: leaderboardFinal }, matchPlay, nextTournament] = await Promise.all([
-    preview ? previewPayload(previewYear, params.scene as BroadcastScene) : getBroadcastPayload(),
+    preview ? previewPayload(previewYear, params.scene as PreviewScene) : getBroadcastPayload(),
     getBroadcastLeaderboard(preview ? previewYear : undefined),
     getBroadcastMatchPlay(preview ? previewYear : undefined),
     getNextTournament(),

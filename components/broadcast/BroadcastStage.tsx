@@ -53,6 +53,8 @@ export function BroadcastStage({
       matchPlay={matchPlay}
       holding={holding}
       activeEvent={activeEvent}
+      activeVideo={broadcast.activeVideo}
+      preview={preview}
     />
   );
 }

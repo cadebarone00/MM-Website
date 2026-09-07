@@ -6,7 +6,7 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
 import { getNextInQueue } from "@/lib/broadcast/queue";
-import { DEFAULT_SCENE_DURATIONS_MS, type BroadcastConfig, type BroadcastPayload, type BroadcastScene, type BroadcastState } from "./types";
+import { DEFAULT_SCENE_DURATIONS_MS, type BroadcastConfig, type BroadcastPayload, type BroadcastPlayerVideo, type BroadcastScene, type BroadcastState } from "./types";
 
 const VALID_SCENES: BroadcastScene[] = ["holding", "individual_leaderboard", "match_play"];
 
@@ -31,7 +31,7 @@ export async function getBroadcastPayload(): Promise<BroadcastPayload> {
   const [{ data: stateRow, error: stateError }, { data: configRow, error: configError }, events] = await Promise.all([
     service
       .from("broadcast_state")
-      .select("current_scene, scene_started_at, automation_mode, paused, tournament_live, overlay_text, overlay_expires_at, audio_track_id, audio_started_at, audio_loop_mode, audio_shuffle")
+      .select("current_scene, scene_started_at, automation_mode, paused, tournament_live, overlay_text, overlay_expires_at, audio_track_id, audio_started_at, audio_loop_mode, audio_shuffle, video_phase, active_video_queue_id, video_phase_started_at")
       .eq("season_year", seasonYear)
       .maybeSingle(),
     service.from("broadcast_config").select("scene_durations_ms, overlay_duration_ms, takeover_duration_ms").eq("season_year", seasonYear).maybeSingle(),
@@ -60,7 +60,24 @@ export async function getBroadcastPayload(): Promise<BroadcastPayload> {
     audioStartedAt: stateRow?.audio_started_at ?? null,
     audioLoopMode: stateRow?.audio_loop_mode === "one" ? "one" : "all",
     audioShuffle: stateRow?.audio_shuffle ?? false,
+    videoPhase: stateRow?.video_phase === "transition" || stateRow?.video_phase === "playing" ? stateRow.video_phase : null,
+    activeVideoQueueId: stateRow?.active_video_queue_id ?? null,
+    videoPhaseStartedAt: stateRow?.video_phase_started_at ?? null,
   };
+
+  let activeVideo: BroadcastPlayerVideo | null = null;
+  if (state.activeVideoQueueId) {
+    const { data, error } = await service
+      .from("broadcast_player_video_queue")
+      .select("id, player_slug, player_name, round, hole, shot_number, par, yards, score_to_par, video_url")
+      .eq("id", state.activeVideoQueueId)
+      .maybeSingle();
+    if (error) console.error("broadcast video queue read failed:", error.message);
+    if (data) activeVideo = {
+      id: data.id, playerSlug: data.player_slug, playerName: data.player_name, round: data.round, hole: data.hole,
+      shotNumber: data.shot_number, par: data.par, yards: data.yards, scoreToPar: data.score_to_par, videoUrl: data.video_url,
+    };
+  }
 
   const config: BroadcastConfig = {
     seasonYear,
@@ -69,5 +86,5 @@ export async function getBroadcastPayload(): Promise<BroadcastPayload> {
     takeoverDurationMs: configRow?.takeover_duration_ms ?? 8000,
   };
 
-  return { seasonYear, state, config, events };
+  return { seasonYear, state, config, events, activeVideo };
 }

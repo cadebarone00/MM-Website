@@ -14,6 +14,12 @@ const SCENE_BUTTONS: { scene: BroadcastScene; label: string }[] = [
   { scene: "match_play", label: "Match Play" },
   { scene: "holding", label: "Holding" },
 ];
+type PreviewScene = BroadcastScene | "video_transition" | "player_video";
+const PREVIEW_SCENE_BUTTONS: { scene: PreviewScene; label: string }[] = [
+  ...SCENE_BUTTONS,
+  { scene: "video_transition", label: "Video Transition" },
+  { scene: "player_video", label: "Live Player Video" },
+];
 
 const SCENE_LABELS: Record<BroadcastScene, string> = {
   holding: "Holding",
@@ -56,14 +62,14 @@ export function BroadcastControlsPanel({
   const [trackUrl, setTrackUrl] = useState("");
   const [trackUrlTitle, setTrackUrlTitle] = useState("");
   const [previewYear, setPreviewYear] = useState(initialDisplayYear);
-  const [previewScene, setPreviewScene] = useState<BroadcastScene>("individual_leaderboard");
+  const [previewScene, setPreviewScene] = useState<PreviewScene>("individual_leaderboard");
 
   // Lets a host actually hear whatever's selected in the Playlist below,
   // whether rehearsing or live — audible only in this browser tab, since
   // real /watch-live viewers only get this hook mounted once tournamentLive
   // is true (see WatchLiveExperience.tsx). Muted by default, same
   // one-click-to-unmute pattern as the real viewer player.
-  const { nowPlayingTitle, muted: previewMuted, setMuted: setPreviewMuted } = useLiveBroadcastAudio(state, tracks);
+  const { nowPlayingTitle, muted: previewMuted, setMuted: setPreviewMuted } = useLiveBroadcastAudio(state, tracks, state.videoPhase !== null);
 
   const isLive = state.tournamentLive;
   const isAuto = state.automationMode === "auto";
@@ -445,7 +451,7 @@ export function BroadcastControlsPanel({
           </label>
 
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {SCENE_BUTTONS.map((b) => (
+            {PREVIEW_SCENE_BUTTONS.map((b) => (
               <button
                 key={b.scene}
                 type="button"

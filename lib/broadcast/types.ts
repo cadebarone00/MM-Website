@@ -10,6 +10,20 @@ export type BroadcastScene = "holding" | "individual_leaderboard" | "match_play"
 export type BroadcastAutomationMode = "auto" | "producer";
 export type BroadcastTeam = "maroon" | "white";
 export type AudioLoopMode = "one" | "all";
+export type BroadcastVideoPhase = "transition" | "playing";
+
+export interface BroadcastPlayerVideo {
+  id: string;
+  playerSlug: string;
+  playerName: string;
+  round: number;
+  hole: number;
+  shotNumber: number;
+  par: number;
+  yards: number;
+  scoreToPar: number | null;
+  videoUrl: string;
+}
 
 /** Minimal shape the Individual Leaderboard scene needs — deliberately not lib/live/scoring.ts's PlayerSummary, since standings can come from either the live season or an archived one (see lib/broadcast/leaderboardData.ts), and those two sources don't share a richer shape in common. */
 export interface BroadcastStanding {
@@ -31,6 +45,9 @@ export interface BroadcastState {
   audioStartedAt: string | null; // ISO timestamp; null whenever audioTrackId is null
   audioLoopMode: AudioLoopMode;
   audioShuffle: boolean; // ignored when audioLoopMode is "one"
+  videoPhase: BroadcastVideoPhase | null;
+  activeVideoQueueId: string | null;
+  videoPhaseStartedAt: string | null;
 }
 
 export interface BroadcastConfig {
@@ -45,6 +62,7 @@ export interface BroadcastPayload {
   state: BroadcastState;
   config: BroadcastConfig;
   events: BroadcastEventRow[];
+  activeVideo: BroadcastPlayerVideo | null;
 }
 
 export const DEFAULT_SCENE_DURATIONS_MS: Record<BroadcastScene, number> = {

@@ -22,7 +22,7 @@ import type { PlaylistTrack } from "./playlist";
  * rehearsal — audible only in the host's own browser, since nothing else
  * is listening for it before Go Live).
  */
-export function useLiveBroadcastAudio(state: BroadcastState, tracks: PlaylistTrack[]) {
+export function useLiveBroadcastAudio(state: BroadcastState, tracks: PlaylistTrack[], suspended = false) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [muted, setMuted] = useState(true);
   const [volume, setVolume] = useState(1);
@@ -95,6 +95,33 @@ export function useLiveBroadcastAudio(state: BroadcastState, tracks: PlaylistTra
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [volume]);
+
+  // A player clip owns the programme audio. Pause this browser's music at
+  // the exact playhead while the shared transition/video is running, then
+  // gently return it once the queue releases back to normal rotation.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (suspended) {
+      const start = audio.volume;
+      const started = Date.now();
+      const fade = window.setInterval(() => {
+        const progress = Math.min(1, (Date.now() - started) / 350);
+        audio.volume = start * (1 - progress);
+        if (progress === 1) { audio.pause(); window.clearInterval(fade); }
+      }, 30);
+      return () => window.clearInterval(fade);
+    }
+    audio.volume = 0;
+    void audio.play().catch(() => {});
+    const started = Date.now();
+    const fade = window.setInterval(() => {
+      const progress = Math.min(1, (Date.now() - started) / 3000);
+      audio.volume = volume * progress;
+      if (progress === 1) window.clearInterval(fade);
+    }, 30);
+    return () => window.clearInterval(fade);
+  }, [suspended, volume]);
 
   const nowPlayingTitle = tracks.find((t) => t.id === nowPlayingId)?.title ?? null;
 

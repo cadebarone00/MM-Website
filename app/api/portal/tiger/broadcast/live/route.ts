@@ -53,7 +53,7 @@ export async function POST(request: Request) {
   // Whatever the host already pressed Play on during rehearsal keeps
   // playing (just restarted from 0:00 below); otherwise default to the
   // oldest-uploaded track so the show has music from the first scene.
-  const { data: currentState } = await service.from("broadcast_state").select("audio_track_id").eq("season_year", year).maybeSingle();
+  const { data: currentState } = await service.from("broadcast_state").select("audio_track_id, video_phase").eq("season_year", year).maybeSingle();
   let startTrackId: string | null = currentState?.audio_track_id ?? null;
   if (!startTrackId) {
     const { data: firstTrack } = await service
@@ -72,6 +72,7 @@ export async function POST(request: Request) {
     automation_mode: "auto",
     scene_started_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    ...(currentState?.video_phase ? { video_phase_started_at: new Date().toISOString() } : {}),
     ...(startTrackId ? { audio_track_id: startTrackId, audio_started_at: new Date().toISOString() } : {}),
   });
   if (stateError) return NextResponse.json({ ok: false, error: "Could not go live." }, { status: 500 });

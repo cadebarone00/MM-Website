@@ -5,6 +5,7 @@ import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { r2PublicUrl } from "@/lib/r2/client";
+import { queuePlayerVideo } from "@/lib/broadcast/playerVideoQueue";
 
 /**
  * Second half of the direct-to-storage upload flow: called once the browser
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
 
   const { data: holeRow, error: holeError } = await service
     .from("archived_scorecard_holes")
-    .select("score")
+    .select("score, par, yards")
     .eq("round_id", roundRow.id)
     .eq("hole", hole)
     .maybeSingle();
@@ -65,12 +66,14 @@ export async function POST(request: Request) {
   // hole/shot's signed URL was actually issued for.
   const storagePath = `${tournamentSlug}/round-${round}/hole-${hole}/shot-${shotNumber}${extension}`;
 
-  const { error: dbError } = await service
+  const { data: videoRow, error: dbError } = await service
     .from("archived_shot_videos")
     .upsert(
       { round_id: roundRow.id, hole, shot_number: shotNumber, storage_path: storagePath, uploaded_at: new Date().toISOString() },
       { onConflict: "round_id,hole,shot_number" }
-    );
+    )
+    .select("id")
+    .single();
   if (dbError) {
     console.error("video/confirm: failed to link video to shot", dbError);
     return NextResponse.json({ ok: false, error: "Video uploaded, but could not be linked to this shot." }, { status: 500 });
@@ -81,6 +84,13 @@ export async function POST(request: Request) {
   if (playerParam) {
     revalidatePath(`/leaderboard/${tournamentSlug}/players/${playerParam}`);
     revalidatePath(`/leaderboard/${tournamentSlug}`);
+  }
+
+  if (videoRow) {
+    await queuePlayerVideo({
+      videoId: videoRow.id, tournamentSlug, playerSlug, round, hole, shotNumber,
+      par: holeRow.par, yards: holeRow.yards, storagePath,
+    });
   }
 
   return NextResponse.json({ ok: true, url: r2PublicUrl(storagePath) });

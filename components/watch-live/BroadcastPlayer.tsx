@@ -23,7 +23,7 @@ export function BroadcastPlayer({ state, tracks }: { state: BroadcastState; trac
   const [scale, setScale] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(false);
-  const { nowPlayingTitle, muted, setMuted, volume, setVolume } = useLiveBroadcastAudio(state, tracks);
+  const { nowPlayingTitle, muted, setMuted, volume, setVolume } = useLiveBroadcastAudio(state, tracks, state.videoPhase !== null);
 
   // Tap (touch) or mouse movement/click reveals the control bar; it hides
   // itself after 3s of no further activity. Any interaction with the bar

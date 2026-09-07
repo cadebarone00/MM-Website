@@ -1,6 +1,6 @@
 "use client";
 
-import type { BroadcastConfig, BroadcastStanding, BroadcastState } from "@/lib/broadcast/types";
+import type { BroadcastConfig, BroadcastPlayerVideo, BroadcastStanding, BroadcastState } from "@/lib/broadcast/types";
 import type { BroadcastMatchPlay } from "@/lib/broadcast/matchPlayData";
 import type { ActiveBroadcastEvent } from "@/lib/broadcast/eventDisplay";
 import { useAutoScene } from "@/lib/broadcast/useAutoScene";
@@ -10,6 +10,8 @@ import { HoldingScene } from "./scenes/HoldingScene";
 import { OverlayLayer } from "./OverlayLayer";
 import { EventOverlay } from "./EventOverlay";
 import { EventTakeover } from "./EventTakeover";
+import { PlayerVideoTransitionScene } from "./scenes/PlayerVideoTransitionScene";
+import { PlayerVideoScene } from "./scenes/PlayerVideoScene";
 
 export function SceneRenderer({
   state,
@@ -19,6 +21,8 @@ export function SceneRenderer({
   matchPlay,
   holding,
   activeEvent,
+  activeVideo,
+  preview = false,
 }: {
   state: BroadcastState;
   config: BroadcastConfig;
@@ -27,6 +31,8 @@ export function SceneRenderer({
   matchPlay: BroadcastMatchPlay;
   holding: { venue: string; dateLabel: string };
   activeEvent: ActiveBroadcastEvent | null;
+  activeVideo: BroadcastPlayerVideo | null;
+  preview?: boolean;
 }) {
   const isAuto = state.automationMode === "auto";
   // Producer Mode (including a host's Pause — see BroadcastControlsPanel):
@@ -45,7 +51,11 @@ export function SceneRenderer({
 
   return (
     <>
-      {activeEvent?.displayMode === "takeover" ? (
+      {(state.tournamentLive || preview) && state.videoPhase === "transition" && activeVideo ? (
+        <PlayerVideoTransitionScene video={activeVideo} startedAt={state.videoPhaseStartedAt} preview={preview} />
+      ) : (state.tournamentLive || preview) && state.videoPhase === "playing" && activeVideo ? (
+        <PlayerVideoScene video={activeVideo} preview={preview} />
+      ) : activeEvent?.displayMode === "takeover" ? (
         <EventTakeover event={activeEvent} matchPlay={matchPlay} />
       ) : (
         <>
