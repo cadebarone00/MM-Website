@@ -49,18 +49,22 @@ function MockLeaderboardScene({ elapsedMs, videoDurationMs, seed, animation }: {
             return (
               <div
                 key={row.player}
-                style={{ transform: `translateY(${index * 66}px)`, transitionDuration: `${animation?.rowMoveMs ?? 1000}ms` }}
+                style={{ transform: `translateY(${index * 66}px) scale(${eventRow && birdieShowing ? 1.1 : 1})`, transitionDuration: `${animation?.rowMoveMs ?? 1000}ms` }}
                 className={[
-                  "absolute inset-x-0 flex h-[62px] items-center gap-4 border-b border-white/[0.06] px-2 transition-transform duration-1000 ease-out",
+                  "absolute inset-x-0 flex h-[62px] items-center gap-4 overflow-hidden border-b border-white/[0.06] px-2 transition-transform duration-1000 ease-out",
                   index === 0 ? "bg-gradient-to-r from-[color:var(--color-gold-400)]/[0.08] to-transparent" : "",
-                  eventRow && birdieShowing ? eventKind === "birdie" ? "bg-emerald-400/20" : "bg-red-500/20" : "",
                 ].join(" ")}
               >
-                <span className="w-8 shrink-0 text-right font-condensed text-lg font-bold tabular-nums text-[color:var(--color-ink-400)]">{row.showPos ? row.pos : ""}</span>
-                <span aria-hidden className={["h-2.5 w-2.5 shrink-0 rounded-full", row.team === "maroon" ? "bg-[color:var(--color-maroon-500)]" : "bg-[color:var(--color-cream-100)]"].join(" ")} />
-                <span className="flex-1 truncate font-sans text-xl font-bold uppercase tracking-wide text-[color:var(--color-cream-50)]">{getPlayerDisplayName(row.player)}</span>
-                {eventRow && birdieShowing && <span className={["animate-pulse rounded px-2 py-1 font-condensed text-xs font-black tracking-[0.16em]", eventKind === "birdie" ? "bg-emerald-400 text-emerald-950" : "bg-red-500 text-white"].join(" ")}>{eventKind.toUpperCase()}</span>}
-                <span className="inline-flex min-w-[64px] justify-center rounded-md bg-[color:var(--color-cream-50)] px-3 py-1"><ScoreBadge value={row.toPar} size="lg" /></span>
+                {eventRow && <span aria-hidden className="absolute inset-0 bg-maroon-700 transition-[clip-path] duration-700 ease-out" style={{ clipPath: birdieShowing ? "circle(150% at 50% 50%)" : "circle(0% at 50% 50%)" }} />}
+                {eventRow && birdieShowing && (
+                  <span className="absolute inset-0 z-20 grid place-items-center font-condensed text-5xl font-black uppercase tracking-[0.22em] text-white [text-shadow:0_3px_0_rgba(73,20,30,0.7),0_0_24px_rgba(255,255,255,0.42)]">
+                    {eventKind.toUpperCase()}
+                  </span>
+                )}
+                <span className="relative z-10 w-8 shrink-0 text-right font-condensed text-lg font-bold tabular-nums text-[color:var(--color-ink-400)]">{row.showPos ? row.pos : ""}</span>
+                <span aria-hidden className={["relative z-10 h-2.5 w-2.5 shrink-0 rounded-full", row.team === "maroon" ? "bg-[color:var(--color-maroon-500)]" : "bg-[color:var(--color-cream-100)]"].join(" ")} />
+                <span className="relative z-10 flex-1 truncate font-sans text-xl font-bold uppercase tracking-wide text-[color:var(--color-cream-50)]">{getPlayerDisplayName(row.player)}</span>
+                <span className="relative z-10 inline-flex min-w-[64px] justify-center rounded-md bg-[color:var(--color-cream-50)] px-3 py-1"><ScoreBadge value={row.toPar} size="lg" /></span>
               </div>
             );
           })}
