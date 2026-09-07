@@ -10,6 +10,7 @@ import { useFavoritePlayers } from "@/components/teams/useFavoritePlayers";
 import { getPlayerAvatar, getPlayerDisplayName, getPlayerProfile } from "@/lib/data/players";
 import { StatsTab } from "@/components/teams/StatsTab";
 import type { Team, Tournament } from "@/lib/data/types";
+import { placementLabel } from "@/lib/leaderboard/placement";
 
 type View = Team | "rankings" | "stats";
 
@@ -40,7 +41,7 @@ function PlayerRow({
   name: string;
   team: Team;
   tournamentSlug: string;
-  rank?: number;
+  rank?: string;
   toPar?: number;
   showBioAndScore?: boolean;
   favorite?: boolean;
@@ -59,7 +60,7 @@ function PlayerRow({
       />
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          {rank != null && <span className="font-condensed text-lg font-bold text-maroon-700 tabular-nums">#{rank}</span>}
+          {rank != null && <span className="font-condensed text-lg font-bold text-maroon-700 tabular-nums">{rank}</span>}
           <h2 className="m-0 truncate font-sans text-xl font-extrabold text-ink-900 sm:text-2xl">{displayName}</h2>
           {favorite && <Star size={18} fill="currentColor" className="shrink-0 text-gold-500" aria-label="Favorited player" />}
         </div>
@@ -105,7 +106,7 @@ export function TeamsDirectory({ tournament }: { tournament: Tournament }) {
     });
   const rankedPlayers = [...tournament.individualLeaderboard]
     .sort((a, b) => a.toPar - b.toPar || getPlayerDisplayName(a.player).localeCompare(getPlayerDisplayName(b.player)))
-    .map((entry, index) => ({ ...entry, rank: index + 1 }));
+    .map((entry, index, ranked) => ({ ...entry, rank: placementLabel(ranked, index) }));
 
   return (
     <section className="mt-8">

@@ -7,7 +7,7 @@ import { getPlayerAvatar, getPlayerDisplayName } from "@/lib/data/players";
 import type { Team } from "@/lib/data/types";
 
 interface LeaderboardRowProps {
-  pos?: number;
+  pos?: number | string;
   name?: string;
   team?: Team;
   avatar?: string | null;

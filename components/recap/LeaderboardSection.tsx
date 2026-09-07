@@ -2,6 +2,7 @@ import { SectionHead } from "@/components/home/SectionHead";
 import { LeaderboardRow } from "@/components/ui/LeaderboardRow";
 import { defendingIndividualChampion } from "@/lib/data";
 import type { Tournament } from "@/lib/data/types";
+import { placementLabel, placementNumber } from "@/lib/leaderboard/placement";
 
 export function LeaderboardSection({ tournament, actionHref }: { tournament: Tournament; actionHref: string }) {
   const top = [...tournament.individualLeaderboard].sort((a, b) => a.toPar - b.toPar);
@@ -21,11 +22,11 @@ export function LeaderboardSection({ tournament, actionHref }: { tournament: Tou
             top.map((player, index) => (
               <LeaderboardRow
                 key={player.player}
-                pos={index + 1}
+                pos={placementLabel(top, index)}
                 name={player.player}
                 team={player.team}
                 total={player.toPar}
-                highlight={index === 0}
+                highlight={placementNumber(top, index) === 1}
                 href={`/leaderboard/${tournament.slug}/players/${player.player.toLowerCase()}`}
                 defendingChampion={champion != null && player.player === champion}
                 isWinner={tournament.individualChampion === player.player}

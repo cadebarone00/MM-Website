@@ -2,11 +2,10 @@ import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import { getPlayerAvatar, getPlayerDisplayName } from "@/lib/data/players";
 import type { Tournament } from "@/lib/data/types";
+import { placementLabel } from "@/lib/leaderboard/placement";
 
 function posLabel(index: number, ranked: { toPar: number }[]): string {
-  const pos = index + 1;
-  const tied = ranked.filter((p) => p.toPar === ranked[index].toPar).length > 1;
-  return `${tied ? "T" : ""}${pos}`;
+  return placementLabel(ranked, index);
 }
 
 function scoreLabel(toPar: number): string {
