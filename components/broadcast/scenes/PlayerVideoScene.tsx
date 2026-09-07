@@ -12,8 +12,8 @@ function teamStatusClass(team: BroadcastTeam) {
   return team === "white" ? "bg-white text-maroon-800" : "bg-maroon-800 text-white";
 }
 
-function Names({ names, align }: { names: string[]; align: "left" | "right" }) {
-  return <div className={`flex min-w-0 flex-1 flex-col justify-center px-3 text-2xl leading-tight text-ink-900 ${align === "right" ? "items-end text-right" : "items-start text-left"}`}>{names.map((name) => <span key={name} className="truncate">{name}</span>)}</div>;
+function Names({ names, align, team }: { names: string[]; align: "left" | "right"; team: BroadcastTeam }) {
+  return <div className={`flex min-w-0 flex-1 flex-col justify-center px-4 text-2xl leading-tight ${teamStatusClass(team)} ${align === "right" ? "items-end text-right" : "items-start text-left"}`}>{names.map((name) => <span key={name} className="truncate">{name}</span>)}</div>;
 }
 
 export function PlayerVideoScene({ video, preview = false }: { video: BroadcastPlayerVideo; preview?: boolean }) {
@@ -21,6 +21,7 @@ export function PlayerVideoScene({ video, preview = false }: { video: BroadcastP
   if (video.shotNumber > video.par) shotNumbers.push(video.shotNumber);
   const match = video.match;
   const opposingTeam: BroadcastTeam = match?.team === "white" ? "maroon" : "white";
+  const scoreBoxClass = video.scoreToPar != null && video.scoreToPar < 0 ? "bg-red-700" : "bg-black";
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black">
@@ -29,10 +30,10 @@ export function PlayerVideoScene({ video, preview = false }: { video: BroadcastP
       ) : <video className="h-screen w-screen object-contain" src={video.videoUrl} autoPlay playsInline onEnded={() => { void fetch("/api/broadcast/video/complete", { method: "POST" }); }} />}
 
       <aside className="absolute right-8 top-8 w-[570px] overflow-hidden border border-black/20 bg-white font-condensed font-bold uppercase shadow-2xl">
-        <div className="flex h-18 items-stretch text-white">
-          <span className="grid w-20 place-items-center bg-gold-400 text-2xl">{video.individualPlace ?? "—"}</span>
+        <div className="flex h-20 items-stretch text-white">
+          <span className="grid w-24 place-items-center bg-gold-400 text-3xl">{video.individualPlace ?? "—"}</span>
           <span className="flex flex-1 items-center bg-maroon-800 px-5 text-3xl tracking-wide">{video.playerName}</span>
-          <span className="grid w-24 place-items-center bg-maroon-950 text-3xl">{toPar(video.scoreToPar)}</span>
+          <span className={`grid w-24 place-items-center text-3xl ${scoreBoxClass}`}>{toPar(video.scoreToPar)}</span>
         </div>
         <div className="flex min-h-13 items-center bg-stone-200 px-5 text-xl tracking-wide text-ink-900">
           <span>Par {video.par}</span><span className="ml-8">{video.yards} yds</span>
@@ -44,12 +45,17 @@ export function PlayerVideoScene({ video, preview = false }: { video: BroadcastP
             })}
           </div>
         </div>
+        <div className="flex min-h-11 items-center bg-white px-5 text-lg tracking-wide text-ink-900">
+          <span className="truncate">{video.courseName ?? "Course to be confirmed"}</span>
+          <span className="mx-3 text-gold-600">&bull;</span>
+          <span>{video.format ?? "Format to be confirmed"}</span>
+        </div>
         {match && (
-          <div className="flex min-h-14 border-t border-stone-300 bg-stone-100">
-            <span className={`grid w-24 place-items-center text-lg ${teamStatusClass(match.team)}`}>{match.ownStatus}</span>
-            <Names names={match.ownPlayers} align="left" />
-            <Names names={match.opposingPlayers} align="right" />
-            <span className={`grid w-24 place-items-center text-lg ${teamStatusClass(opposingTeam)}`}>{match.opposingStatus}</span>
+          <div className="flex min-h-20 border-t border-stone-300">
+            <span className={`grid w-24 place-items-center text-3xl ${teamStatusClass(match.team)}`}>{match.ownStatus}</span>
+            <Names names={match.ownPlayers} align="left" team={match.team} />
+            <Names names={match.opposingPlayers} align="right" team={opposingTeam} />
+            <span className={`grid w-24 place-items-center text-3xl ${teamStatusClass(opposingTeam)}`}>{match.opposingStatus}</span>
           </div>
         )}
       </aside>

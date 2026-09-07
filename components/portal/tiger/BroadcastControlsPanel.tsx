@@ -23,6 +23,8 @@ type PreviewVideoSettings = {
   par: string;
   yards: string;
   shot: string;
+  course: string;
+  format: "Singles" | "Fourball" | "Foursome";
   showMatch: boolean;
   team: "maroon" | "white";
   ownPlayers: string;
@@ -39,6 +41,8 @@ const DEFAULT_PREVIEW_VIDEO: PreviewVideoSettings = {
   par: "4",
   yards: "611",
   shot: "1",
+  course: "Maroon Masters Golf Club",
+  format: "Singles",
   showMatch: true,
   team: "white",
   ownPlayers: "Barone",
@@ -117,6 +121,12 @@ export function BroadcastControlsPanel({
   // announcement already auto-expired on its own; clicking it then is a no-op.
   const overlayActive = Boolean(state.overlayText);
 
+  const previewNameCount = (value: string) => value.split(",").map((name) => name.trim()).filter(Boolean).length;
+  const matchPlayerCount = previewVideo.format === "Singles" ? 1 : 2;
+  const previewMatchReady = previewNameCount(previewVideo.ownPlayers) === matchPlayerCount && previewNameCount(previewVideo.opposingPlayers) === matchPlayerCount;
+  const ownTeamLabel = previewVideo.team === "white" ? "White" : "Maroon";
+  const opposingTeamLabel = previewVideo.team === "white" ? "Maroon" : "White";
+
   const previewSrc = (() => {
     if (isLive) return "/broadcast";
     const params = new URLSearchParams({
@@ -130,7 +140,9 @@ export function BroadcastControlsPanel({
       videoPar: previewVideo.par,
       videoYards: previewVideo.yards,
       videoShot: previewVideo.shot,
-      videoMatch: previewVideo.showMatch ? "1" : "0",
+      videoCourse: previewVideo.course,
+      videoFormat: previewVideo.format,
+      videoMatch: previewVideo.showMatch && previewMatchReady ? "1" : "0",
       videoTeam: previewVideo.team,
       videoOwn: previewVideo.ownPlayers,
       videoOpposing: previewVideo.opposingPlayers,
@@ -560,6 +572,18 @@ export function BroadcastControlsPanel({
                   Shot being hit
                   <input type="number" min="1" value={previewVideo.shot} onChange={(e) => updatePreviewVideo("shot", e.target.value)} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm" />
                 </label>
+                <label className="col-span-2 flex flex-col gap-1 font-sans text-xs text-ink-700">
+                  Golf course
+                  <input value={previewVideo.course} onChange={(e) => updatePreviewVideo("course", e.target.value)} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm" />
+                </label>
+                <label className="col-span-2 flex flex-col gap-1 font-sans text-xs text-ink-700">
+                  Format
+                  <select value={previewVideo.format} onChange={(e) => updatePreviewVideo("format", e.target.value as PreviewVideoSettings["format"])} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm">
+                    <option value="Singles">Singles</option>
+                    <option value="Fourball">Fourball</option>
+                    <option value="Foursome">Foursome / Alternate Shot</option>
+                  </select>
+                </label>
               </div>
 
               <div className="mt-4 border-t border-gold-300 pt-4">
@@ -583,11 +607,11 @@ export function BroadcastControlsPanel({
                     <input disabled={!previewVideo.showMatch} value={previewVideo.ownStatus} onChange={(e) => updatePreviewVideo("ownStatus", e.target.value)} placeholder="1 UP" className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm disabled:cursor-not-allowed" />
                   </label>
                   <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
-                    Player / partner last name(s)
+                    {ownTeamLabel} player{matchPlayerCount === 1 ? "" : "s"}
                     <input disabled={!previewVideo.showMatch} value={previewVideo.ownPlayers} onChange={(e) => updatePreviewVideo("ownPlayers", e.target.value)} placeholder="Barone, Smith" className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm disabled:cursor-not-allowed" />
                   </label>
                   <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
-                    Opponent last name(s)
+                    {opposingTeamLabel} player{matchPlayerCount === 1 ? "" : "s"}
                     <input disabled={!previewVideo.showMatch} value={previewVideo.opposingPlayers} onChange={(e) => updatePreviewVideo("opposingPlayers", e.target.value)} placeholder="Sherrell, Jones" className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm disabled:cursor-not-allowed" />
                   </label>
                   <label className="flex flex-col gap-1 font-sans text-xs text-ink-700 sm:col-start-2">
@@ -595,6 +619,11 @@ export function BroadcastControlsPanel({
                     <input disabled={!previewVideo.showMatch} value={previewVideo.opposingStatus} onChange={(e) => updatePreviewVideo("opposingStatus", e.target.value)} placeholder="1 DN" className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm disabled:cursor-not-allowed" />
                   </label>
                 </div>
+                {previewVideo.showMatch && !previewMatchReady && (
+                  <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 font-sans text-xs font-semibold text-red-700">
+                    {previewVideo.format} requires {matchPlayerCount} {ownTeamLabel} player{matchPlayerCount === 1 ? "" : "s"} and {matchPlayerCount} {opposingTeamLabel} player{matchPlayerCount === 1 ? "" : "s"}. Add comma-separated last names for both sides to show the match overlay.
+                  </p>
+                )}
               </div>
             </section>
           )}
