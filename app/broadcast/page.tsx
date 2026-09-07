@@ -115,9 +115,9 @@ export default async function BroadcastPage({
         leaderboardAnimation: { birdieEnabled: params.mockBirdieEnabled !== "0", birdieDelayMs: mockBirdieDelayMs, rowMoveMs: mockRowMoveMs },
       }
     : null;
-  const animationTest = preview && params.animationTest === "birdie"
+  const animationTest = preview && (params.animationTest === "birdie" || params.animationTest === "eagle")
     ? {
-        kind: "birdie" as const,
+        kind: params.animationTest,
         startedAt: Number(params.animationTestStart) || Date.now(),
         seed: Number.isFinite(Number(params.animationTestSeed)) ? Number(params.animationTestSeed) : 1,
       }

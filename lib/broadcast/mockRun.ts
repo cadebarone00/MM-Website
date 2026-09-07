@@ -47,15 +47,16 @@ export function getMockFormat(seed: number): "Singles" | "Fourball" | "Foursome"
   return ["Singles", "Fourball", "Foursome"][Math.abs(seed) % 3] as "Singles" | "Fourball" | "Foursome";
 }
 
-export function getMockStandings(seed: number, scoreChangeApplied: boolean, cycle: number): { standings: BroadcastStanding[]; eventPlayer: string; eventKind: "birdie" | "bogey" } {
+export function getMockStandings(seed: number, scoreChangeApplied: boolean, cycle: number, forcedEventKind?: "birdie" | "eagle" | "bogey"): { standings: BroadcastStanding[]; eventPlayer: string; eventKind: "birdie" | "eagle" | "bogey" } {
   const players = shuffledPlayers(seed + cycle * 71);
-  const eventKind = Math.abs(seed + cycle * 13) % 3 === 0 ? "bogey" : "birdie";
-  const moverIndex = eventKind === "birdie" ? 2 + (Math.abs(seed + cycle) % 5) : Math.abs(seed + cycle) % 3;
+  const roll = Math.abs(seed + cycle * 13) % 6;
+  const eventKind = forcedEventKind ?? (roll === 0 ? "eagle" : roll <= 2 ? "bogey" : "birdie");
+  const moverIndex = eventKind === "bogey" ? Math.abs(seed + cycle) % 3 : 2 + (Math.abs(seed + cycle) % 5);
   const eventPlayer = players[moverIndex]?.player ?? players[2].player;
   const standings = players.map((entry, index) => ({ ...entry, toPar: -6 + index }));
   if (scoreChangeApplied) {
     const mover = standings.find((entry) => entry.player === eventPlayer);
-    if (mover) mover.toPar = eventKind === "birdie" ? -7 : 7;
+    if (mover) mover.toPar += eventKind === "eagle" ? -2 : eventKind === "birdie" ? -1 : 1;
   }
   return { standings: standings.sort((a, b) => a.toPar - b.toPar), eventPlayer, eventKind };
 }
