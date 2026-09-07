@@ -206,7 +206,7 @@ export function BroadcastControlsPanel({
 
   function pauseMockRun() {
     if (!mockRun || mockRun.status !== "running") return;
-    setMockRun({ status: "paused", offsetMs: mockElapsed, startedAt: null });
+    setMockRun({ status: "paused", offsetMs: mockElapsed, startedAt: null, videoDurationMs: mockRun.videoDurationMs });
   }
 
   function resumeMockRun() {
@@ -257,7 +257,14 @@ export function BroadcastControlsPanel({
     setMockPickerOpen(false);
     const durationMs = await new Promise<number>((resolve) => {
       const probe = document.createElement("video");
-      const done = () => resolve(Number.isFinite(probe.duration) && probe.duration > 0 ? Math.round(probe.duration * 1000) : MOCK_RUN_DEFAULT_VIDEO_MS);
+      let settled = false;
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timeout);
+        resolve(Number.isFinite(probe.duration) && probe.duration > 0 ? Math.round(probe.duration * 1000) : MOCK_RUN_DEFAULT_VIDEO_MS);
+      };
+      const timeout = window.setTimeout(done, 5000);
       probe.preload = "metadata";
       probe.onloadedmetadata = done;
       probe.onerror = done;
@@ -630,13 +637,33 @@ export function BroadcastControlsPanel({
           </button>
         ) : (
           <div className="flex items-center gap-2">
-            <button type="button" disabled={busy !== null} onClick={startMockRun} className="rounded-lg border-2 border-gold-500 bg-gold-50 px-4 py-2 font-condensed text-sm font-semibold uppercase tracking-wide text-ink-900 transition hover:bg-gold-100 disabled:opacity-50">Mock Run</button>
+            <button type="button" disabled={busy !== null} onClick={openMockPicker} className="rounded-lg border-2 border-gold-500 bg-gold-50 px-4 py-2 font-condensed text-sm font-semibold uppercase tracking-wide text-ink-900 transition hover:bg-gold-100 disabled:opacity-50">Mock Run</button>
             <button type="button" disabled={busy !== null} onClick={goLive} className="rounded-lg bg-maroon-700 px-4 py-2 font-condensed text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-maroon-800 disabled:opacity-50">
               {busy === "golive" ? "Going Live…" : `Go Live (${previewYear})`}
             </button>
           </div>
         )}
       </div>
+      {!isLive && mockPickerOpen && (
+        <section className="rounded-b-lg border-x-2 border-b-2 border-gold-400 bg-gold-50/50 p-4">
+          <h2 className="font-serif text-lg font-bold text-ink-900">Choose a mock</h2>
+          <p className="mt-1 font-sans text-xs text-ink-600">Each run uses a real archived shot, plays the full broadcast sequence twice, and keeps the player-video section on screen for that clip&apos;s actual length.</p>
+          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <button type="button" onClick={() => { setMockPickerOpen(false); startMockRun(); }} className="rounded-lg border-2 border-stone-300 bg-white p-3 text-left transition hover:border-gold-500">
+              <span className="block font-condensed text-sm font-semibold uppercase tracking-wide text-ink-900">Overlay demo</span>
+              <span className="mt-1 block font-sans text-xs text-ink-600">Uses the rehearsal values currently in the controls.</span>
+            </button>
+            {mockClips.map((clip) => (
+              <button key={`${clip.playerSlug}-${clip.round}-${clip.hole}-${clip.shotNumber}`} type="button" onClick={() => { void startMockFromClip(clip); }} className="rounded-lg border-2 border-stone-300 bg-white p-3 text-left transition hover:border-gold-500">
+                <span className="block font-condensed text-sm font-semibold uppercase tracking-wide text-ink-900">{clip.playerName} · R{clip.round} · Hole {clip.hole} · Shot {clip.shotNumber}</span>
+                <span className="mt-1 block font-sans text-xs text-ink-600">{clip.course} · {clip.format}{clip.par ? ` · Par ${clip.par}` : ""}{clip.yards ? ` · ${clip.yards} yds` : ""}</span>
+              </button>
+            ))}
+          </div>
+          {mockClipsBusy && <p className="mt-3 font-sans text-xs text-ink-600">Loading uploaded scorecard clips…</p>}
+          {!mockClipsBusy && mockClips.length === 0 && <p className="mt-3 font-sans text-xs text-ink-600">No uploaded clips were found for {previewYear}. The overlay demo is still available.</p>}
+        </section>
+      )}
       {!isLive && mockRun && (
         <section className="rounded-b-lg border-x-2 border-b-2 border-gold-400 bg-gold-50/50 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -650,8 +677,8 @@ export function BroadcastControlsPanel({
             </div>
           </div>
           <div className="mt-3 flex items-center gap-3">
-            <input type="range" min="0" max={MOCK_RUN_TOTAL_MS} step="1000" value={mockElapsed} onChange={(e) => seekMockRun(Number(e.target.value))} className="min-w-0 flex-1 accent-maroon-700" aria-label="Rewind mock broadcast" />
-            <span className="w-20 text-right font-mono text-xs text-ink-700">{Math.floor(mockElapsed / 60000)}:{String(Math.floor((mockElapsed % 60000) / 1000)).padStart(2, "0")} / 2:00</span>
+            <input type="range" min="0" max={mockTotalMs} step="1000" value={mockElapsed} onChange={(e) => seekMockRun(Number(e.target.value))} className="min-w-0 flex-1 accent-maroon-700" aria-label="Rewind mock broadcast" />
+            <span className="w-24 text-right font-mono text-xs text-ink-700">{Math.floor(mockElapsed / 60000)}:{String(Math.floor((mockElapsed % 60000) / 1000)).padStart(2, "0")} / {Math.floor(mockTotalMs / 60000)}:{String(Math.floor((mockTotalMs % 60000) / 1000)).padStart(2, "0")}</span>
           </div>
         </section>
       )}

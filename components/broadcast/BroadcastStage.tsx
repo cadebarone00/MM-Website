@@ -37,7 +37,7 @@ export function BroadcastStage({
   matchPlay: BroadcastMatchPlay;
   holding: { venue: string; dateLabel: string };
   preview?: boolean;
-  mockRun?: { startedAt: number | null; offsetMs: number } | null;
+  mockRun?: { startedAt: number | null; offsetMs: number; videoDurationMs: number } | null;
 }) {
   const [mockClock, setMockClock] = useState(Date.now());
   useEffect(() => {
@@ -54,7 +54,7 @@ export function BroadcastStage({
   const activeEvent = useBroadcastQueue(broadcast.seasonYear, broadcast.events, broadcast.config, !preview);
   useReloadOnDisplayYearChange(broadcast.seasonYear, !preview);
   const mockPosition = mockRun
-    ? getMockRunPosition(mockRun.offsetMs + (mockRun.startedAt ? Math.max(0, mockClock - mockRun.startedAt) : 0))
+    ? getMockRunPosition(mockRun.offsetMs + (mockRun.startedAt ? Math.max(0, mockClock - mockRun.startedAt) : 0), mockRun.videoDurationMs)
     : null;
   const displayState = mockPosition
     ? { ...state, tournamentLive: true, automationMode: "producer" as const, currentScene: mockPosition.scene, videoPhase: mockPosition.videoPhase }

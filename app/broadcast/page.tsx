@@ -102,11 +102,12 @@ export default async function BroadcastPage({
   const mock = preview && params.mock === "1";
   const mockOffsetMs = Math.max(0, Number(params.mockOffset) || 0);
   const mockStartedAt = Number(params.mockStart);
+  const mockVideoDurationMs = Math.max(1_000, Number(params.mockVideoDuration) || 16_000);
   const mockRun = mock
-    ? { startedAt: Number.isFinite(mockStartedAt) && mockStartedAt > 0 ? mockStartedAt : null, offsetMs: mockOffsetMs }
+    ? { startedAt: Number.isFinite(mockStartedAt) && mockStartedAt > 0 ? mockStartedAt : null, offsetMs: mockOffsetMs, videoDurationMs: mockVideoDurationMs }
     : null;
   const initialMockPosition = mockRun
-    ? getMockRunPosition(mockRun.offsetMs + (mockRun.startedAt ? Math.max(0, Date.now() - mockRun.startedAt) : 0))
+    ? getMockRunPosition(mockRun.offsetMs + (mockRun.startedAt ? Math.max(0, Date.now() - mockRun.startedAt) : 0), mockRun.videoDurationMs)
     : null;
 
   const [broadcast, { standings, final: leaderboardFinal }, matchPlay, nextTournament] = await Promise.all([
