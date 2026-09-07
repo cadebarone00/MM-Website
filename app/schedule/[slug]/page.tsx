@@ -3,6 +3,13 @@ import { VenueSchedulePage } from "@/components/schedule/VenueSchedulePage";
 import { pastTournaments, nextTournament } from "@/lib/data";
 import { getVenueBySlugAsync, getUpcomingRoundSchedule } from "@/lib/data/activeSeasonOverlay";
 
+// Without this, generateStaticParams below makes Next.js prerender this
+// page once and cache it (same as any other statically-generated route) —
+// the upcoming year's schedule would then only ever reflect Tiger
+// Center's live round/course setup as of the last deploy, not in real
+// time. Same reasoning as app/broadcast/page.tsx and app/watch-live/page.tsx.
+export const dynamic = "force-dynamic";
+
 export function generateStaticParams() {
   return [...pastTournaments.map((t) => ({ slug: t.slug })), { slug: nextTournament.slug }];
 }
