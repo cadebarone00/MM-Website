@@ -251,12 +251,32 @@ body {
   animation: mm-broadcast-total-change 1.9s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+@keyframes mm-video-transition-in {
+  from { transform: translateX(-115vw); opacity: 0.4; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes mm-video-transition-out {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(115vw); opacity: 0.2; }
+}
+
+.mm-video-transition-in {
+  animation: mm-video-transition-in 700ms cubic-bezier(0.12, 0.82, 0.26, 1) both;
+}
+
+.mm-video-transition-out {
+  animation: mm-video-transition-out 800ms cubic-bezier(0.55, 0, 0.95, 0.42) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mm-live-dot,
   .mm-fade,
   .mm-edge-glow,
   .mm-winner-pulse,
-  .mm-broadcast-total-change {
+  .mm-broadcast-total-change,
+  .mm-video-transition-in,
+  .mm-video-transition-out {
     animation: none;
   }
 }
