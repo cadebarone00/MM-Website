@@ -8,7 +8,7 @@ import { useAutoScene } from "@/lib/broadcast/useAutoScene";
 import { useLiveBroadcastAudio } from "@/lib/broadcast/useLiveBroadcastAudio";
 import { Volume2, VolumeX } from "lucide-react";
 import { BroadcastPreview } from "./BroadcastPreview";
-import { getMockRunTotalMs, MOCK_RUN_DEFAULT_VIDEO_MS } from "@/lib/broadcast/mockRun";
+import { getMockRunTotalMs, getMockStandings, MOCK_RUN_DEFAULT_VIDEO_MS } from "@/lib/broadcast/mockRun";
 
 const SCENE_BUTTONS: { scene: BroadcastScene; label: string }[] = [
   { scene: "individual_leaderboard", label: "Individual Leaderboard" },
@@ -261,16 +261,25 @@ export function BroadcastControlsPanel({
         setError(`No uploaded scorecard videos were found for ${previewYear}.`);
         return;
       }
-      await startMockFromClip(clips[Math.floor(Math.random() * clips.length)]);
+      await startMockFromClip(clips[Math.floor(Math.random() * clips.length)], Math.floor(Math.random() * 2_147_483_647));
     } finally {
       setMockClipsBusy(false);
     }
   }
 
-  async function startMockFromClip(clip: RehearsalClip) {
+  async function startMockFromClip(clip: RehearsalClip, seed = Math.floor(Math.random() * 2_147_483_647)) {
+    const mockStandings = getMockStandings(seed, false, 0).standings;
+    const playerFirstName = clip.playerName.trim().split(/\s+/)[0];
+    const playerIndex = mockStandings.findIndex((standing) => standing.player.toLowerCase() === playerFirstName.toLowerCase());
+    const playerStanding = playerIndex >= 0 ? mockStandings[playerIndex] : null;
     setPreviewVideo((current) => ({
       ...current,
       player: clip.playerName,
+      // The video is historical, while the run is a simulated live show.
+      // These two values deliberately come from the mock board so the
+      // player overlay always agrees with the leaderboard the viewer saw.
+      place: String(playerIndex + 1 || 1),
+      scoreToPar: String(playerStanding?.toPar ?? 0),
       round: String(clip.round),
       hole: String(clip.hole),
       shot: String(clip.shotNumber),
@@ -301,7 +310,7 @@ export function BroadcastControlsPanel({
       probe.onerror = done;
       probe.src = clip.url;
     });
-    startMockRun(durationMs);
+    startMockRun(durationMs, seed);
   }
 
   async function loadCamRoundThreeClip() {
@@ -675,12 +684,12 @@ export function BroadcastControlsPanel({
           </div>
         )}
       </div>
-      {!isLive && mockPickerOpen && (
+      {false && (
         <section className="rounded-b-lg border-x-2 border-b-2 border-gold-400 bg-gold-50/50 p-4">
           <h2 className="font-serif text-lg font-bold text-ink-900">Choose a mock</h2>
           <p className="mt-1 font-sans text-xs text-ink-600">Each run uses a real archived shot, plays the full broadcast sequence twice, and keeps the player-video section on screen for that clip&apos;s actual length.</p>
           <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <button type="button" onClick={() => { setMockPickerOpen(false); startMockRun(); }} className="rounded-lg border-2 border-stone-300 bg-white p-3 text-left transition hover:border-gold-500">
+            <button type="button" onClick={() => { startMockRun(); }} className="rounded-lg border-2 border-stone-300 bg-white p-3 text-left transition hover:border-gold-500">
               <span className="block font-condensed text-sm font-semibold uppercase tracking-wide text-ink-900">Overlay demo</span>
               <span className="mt-1 block font-sans text-xs text-ink-600">Uses the rehearsal values currently in the controls.</span>
             </button>
@@ -704,7 +713,7 @@ export function BroadcastControlsPanel({
             </div>
             <div className="flex gap-2">
               <button type="button" onClick={mockRun.status === "running" ? pauseMockRun : resumeMockRun} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-800">{mockRun.status === "running" ? "Pause" : "Resume"}</button>
-              <button type="button" onClick={() => startMockRun(mockRun.videoDurationMs)} className="rounded-lg border-2 border-gold-500 bg-gold-50 px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-800">Randomize</button>
+              <button type="button" disabled={mockClipsBusy} onClick={() => { void startRandomMockRun(); }} className="rounded-lg border-2 border-gold-500 bg-gold-50 px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-800 disabled:opacity-50">New Random Shot</button>
               <button type="button" onClick={() => setMockRun(null)} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-800">End Mock</button>
             </div>
           </div>

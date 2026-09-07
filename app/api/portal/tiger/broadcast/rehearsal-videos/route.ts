@@ -5,6 +5,14 @@ import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { pastTournaments } from "@/lib/data";
 import { r2PublicUrl } from "@/lib/r2/client";
 
+function lastName(name: string) {
+  return name.trim().split(/\s+/).at(-1) ?? name;
+}
+
+function playerIsOnRoster(playerName: string, rosterName: string) {
+  return playerName.toLowerCase().startsWith(`${rosterName.toLowerCase()} `) || playerName.toLowerCase() === rosterName.toLowerCase();
+}
+
 // A private Tiger-only index of real scorecard clips that can be used in a
 // rehearsal. Reading this list never puts anything on air or in the queue.
 export async function GET(request: Request) {
@@ -36,9 +44,16 @@ export async function GET(request: Request) {
     const round = roundById.get(video.round_id);
     if (!round) return [];
     const hole = holeByRoundAndNumber.get(`${video.round_id}:${video.hole}`);
+    const playerName = getPlayerProfileBySlug(round.player_slug)?.fullName ?? round.player_slug;
+    const team = tournament.roster.maroon.some((name) => playerIsOnRoster(playerName, name)) ? "maroon" : "white";
+    const ownRoster = team === "maroon" ? tournament.roster.maroon : tournament.roster.white;
+    const opposingRoster = team === "maroon" ? tournament.roster.white : tournament.roster.maroon;
+    const playersPerSide = round.format === "Singles" ? 1 : 2;
+    const ownPlayers = [lastName(playerName), ...ownRoster.filter((name) => !playerIsOnRoster(playerName, name)).map(lastName)].slice(0, playersPerSide);
+    const opposingPlayers = opposingRoster.map(lastName).slice(0, playersPerSide);
     return [{
       playerSlug: round.player_slug,
-      playerName: getPlayerProfileBySlug(round.player_slug)?.fullName ?? round.player_slug,
+      playerName,
       round: round.round,
       hole: video.hole,
       shotNumber: video.shot_number,
@@ -47,6 +62,9 @@ export async function GET(request: Request) {
       par: hole?.par ?? null,
       yards: hole?.yards ?? null,
       url: r2PublicUrl(video.storage_path),
+      team,
+      ownPlayers,
+      opposingPlayers,
     }];
   }).sort((a, b) => a.playerName.localeCompare(b.playerName) || a.round - b.round || a.hole - b.hole || a.shotNumber - b.shotNumber);
 
