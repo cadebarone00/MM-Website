@@ -42,6 +42,16 @@ type RehearsalClip = {
   course: string; format: string; par: number | null; yards: number | null; url: string;
   team: "maroon" | "white"; ownPlayers: string[]; opposingPlayers: string[];
 };
+type VisibleQueueItem = { id: string; scene: "individual" | "match" | "video"; status: string; label: string; queuedAt: string };
+
+function SceneQueue({ title, items }: { title: string; items: VisibleQueueItem[] }) {
+  return (
+    <section className="mt-4 border-t border-gold-300 pt-4">
+      <h3 className="font-condensed text-sm font-semibold uppercase tracking-wide text-ink-900">{title} queue</h3>
+      {items.length === 0 ? <p className="mt-2 font-sans text-xs text-ink-600">Nothing is queued for this screen.</p> : <div className="mt-2 space-y-2">{items.map((item, index) => <div key={item.id} className="flex items-center gap-3 rounded-lg border border-stone-300 bg-white px-3 py-2"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-maroon-700 font-condensed text-xs font-bold text-white">{index + 1}</span><span className="min-w-0 flex-1 truncate font-sans text-xs font-semibold text-ink-800">{item.label}</span><span className="font-condensed text-2xs font-bold uppercase tracking-wide text-maroon-700">{item.status}</span></div>)}</div>}
+    </section>
+  );
+}
 
 const DEFAULT_PREVIEW_VIDEO: PreviewVideoSettings = {
   player: "Cade Barone",
@@ -116,6 +126,7 @@ export function BroadcastControlsPanel({
   const [mockRun, setMockRun] = useState<MockRunState | null>(null);
   const [mockClock, setMockClock] = useState(Date.now());
   const [mockClips, setMockClips] = useState<RehearsalClip[]>([]);
+  const [visibleQueues, setVisibleQueues] = useState<VisibleQueueItem[]>([]);
   const [mockClipsBusy, setMockClipsBusy] = useState(false);
   const [playlistOpen, setPlaylistOpen] = useState(false);
   const [leaderboardAnimation] = useState<LeaderboardAnimationSettings>({ birdieEnabled: true, birdieDelayMs: 7000, rowMoveMs: 1000 });
@@ -171,6 +182,18 @@ export function BroadcastControlsPanel({
     }, 250);
     return () => window.clearInterval(timer);
   }, [mockRun]);
+
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      const res = await fetch(`/api/portal/tiger/broadcast/queue?year=${previewYear}`, { cache: "no-store" });
+      const data = await res.json();
+      if (alive && data.ok) setVisibleQueues(data.items ?? []);
+    };
+    void load();
+    const timer = window.setInterval(() => { void load(); }, 5000);
+    return () => { alive = false; window.clearInterval(timer); };
+  }, [previewYear]);
 
   const previewSrc = (() => {
     if (isLive) return "/broadcast";
@@ -798,12 +821,14 @@ export function BroadcastControlsPanel({
                 </div>
                 <button type="button" onClick={() => testScoringAnimation("bogey")} className="rounded-lg bg-maroon-700 px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide text-white hover:bg-maroon-800">Test Animation</button>
               </div>
+              <SceneQueue title="Individual Leaderboard" items={visibleQueues.filter((item) => item.scene === "individual")} />
             </section>
           )}
           {openRehearsalPanel === "match_play" && (
             <section className="mt-4 rounded-lg border-2 border-gold-400 bg-gold-50/40 p-4">
-              <h2 className="font-serif text-lg font-bold text-ink-900">Match Play scene controls</h2>
-              <p className="mt-1 font-sans text-xs text-ink-600">This dropdown is the home for Match Play animations and simulated match-state controls as we build them. The current preview is selected above and remains rehearsal-only.</p>
+              <h2 className="font-serif text-lg font-bold text-ink-900">Match Play animations</h2>
+              <p className="mt-1 font-sans text-xs text-ink-600">Match-state animations will appear here as they are locked in. The queue below already reflects confirmed live match changes.</p>
+              <SceneQueue title="Match Play" items={visibleQueues.filter((item) => item.scene === "match")} />
             </section>
           )}
           {openRehearsalPanel === "holding" && (
@@ -835,6 +860,7 @@ export function BroadcastControlsPanel({
                   {clipBusy ? "Loading Cam clip…" : "Load Cam R3 · Classic · H5 · Shot 4"}
                 </button>
               </div>
+              <SceneQueue title="Live Player Video" items={visibleQueues.filter((item) => item.scene === "video")} />
 
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <label className="col-span-2 flex flex-col gap-1 font-sans text-xs text-ink-700">
