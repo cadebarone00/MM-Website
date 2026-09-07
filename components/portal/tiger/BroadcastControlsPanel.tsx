@@ -234,6 +234,22 @@ export function BroadcastControlsPanel({
     }
   }
 
+  async function pausePlaylist() {
+    setPlaylistBusy("pause");
+    setError(null);
+    try {
+      const res = await fetch("/api/portal/tiger/broadcast/playlist/pause", { method: "POST" });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error ?? "Could not pause the playlist.");
+        return;
+      }
+      setState((current) => ({ ...current, audioTrackId: null, audioStartedAt: null }));
+    } finally {
+      setPlaylistBusy(null);
+    }
+  }
+
   async function setLoopMode(mode: "one" | "all") {
     setPlaylistBusy(`loop-${mode}`);
     setError(null);
@@ -640,10 +656,14 @@ export function BroadcastControlsPanel({
                   <div className="flex shrink-0 gap-2">
                     <button
                       type="button"
-                      disabled={playlistBusy !== null || isPlaying}
-                      onClick={() => playTrack(track.id)}
-                      className="rounded-lg border-2 border-stone-300 px-3 py-1 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-700 transition hover:bg-stone-50 disabled:opacity-50"
+                      disabled={playlistBusy !== null}
+                      onClick={isPlaying ? pausePlaylist : () => playTrack(track.id)}
+                      className={[
+                        "rounded-lg border-2 px-3 py-1 font-condensed text-xs font-semibold uppercase tracking-wide transition disabled:opacity-50",
+                        isPlaying ? "border-maroon-700 bg-maroon-700 text-[0px] text-white hover:bg-maroon-800" : "border-stone-300 text-ink-700 hover:bg-stone-50",
+                      ].join(" ")}
                     >
+                      {isPlaying && <span className="text-xs">{playlistBusy === "pause" ? "Pausing…" : "Pause"}</span>}
                       {playlistBusy === track.id ? "Starting…" : "Play"}
                     </button>
                     <button
