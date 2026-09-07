@@ -86,13 +86,27 @@ function PlayerRow({
 
   const info = (
     <div className="grid grid-cols-[36px_1fr_auto] items-center gap-5 lg:grid-cols-[88px_1fr_auto] lg:gap-6">
-      <Avatar
-        src={avatar}
-        name={displayName}
-        team={team}
-        size="xl"
-        className="h-9 w-9 border border-ink-100 bg-white text-ink-400 lg:h-[88px] lg:w-[88px]"
-      />
+      {/* Avatar's own size prop sets a fixed inline width/height, which a
+          plain className override can't beat — so the mobile-vs-desktop
+          sizes are two instances swapped by `hidden`/`lg:hidden`, each with
+          its own explicit style, rather than one responsive className. */}
+      <div>
+        <Avatar
+          src={avatar}
+          name={displayName}
+          team={team}
+          size="xl"
+          className="lg:hidden border border-ink-100 bg-white text-ink-400"
+          style={{ width: 36, height: 36, fontSize: 14 }}
+        />
+        <Avatar
+          src={avatar}
+          name={displayName}
+          team={team}
+          size="xl"
+          className="hidden lg:inline-flex border border-ink-100 bg-white text-ink-400 lg:h-[88px] lg:w-[88px]"
+        />
+      </div>
       <div className="min-w-0">
         <div className="flex flex-nowrap items-center gap-x-2 lg:gap-x-3">
           {rank != null && <span className="shrink-0 font-condensed text-lg font-bold text-maroon-700 tabular-nums">{rank}</span>}
