@@ -10,6 +10,7 @@ import { getPlayerDisplayName } from "@/lib/data/players";
 import type { RoundScorecard, Tournament } from "@/lib/data/types";
 import type { LiveIndividualStanding } from "./LeaderboardBoard";
 import { placementLabel, placementNumber } from "@/lib/leaderboard/placement";
+import { compareLeaderboardOrder } from "@/lib/leaderboard/sort";
 
 const POS_W = 36;
 const PLAYER_W = 96;
@@ -38,7 +39,7 @@ function priorRoundNumbers(tournament: Tournament): number[] {
  * They do not borrow a static scorecard, so `Thru` and totals stay truthful
  * while a round is in progress. */
 function LiveIndividualLeaderboardTable({ standings }: { standings: LiveIndividualStanding[] }) {
-  const sorted = [...standings].sort((a, b) => a.toPar - b.toPar || b.played - a.played || a.gross - b.gross || a.player.localeCompare(b.player));
+  const sorted = [...standings].sort(compareLeaderboardOrder);
 
   if (sorted.length === 0) {
     return (

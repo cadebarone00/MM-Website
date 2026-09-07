@@ -2,6 +2,7 @@ import type { BroadcastScene, BroadcastVideoPhase } from "./types";
 import type { BroadcastStanding } from "./types";
 import type { BroadcastTeam } from "./types";
 import type { BroadcastMatchPlay } from "./matchPlayData";
+import { compareLeaderboardOrder } from "@/lib/leaderboard/sort";
 
 // Two complete one-minute rehearsal cycles. The short transition is kept at
 // the same four seconds used by the real player-video workflow.
@@ -72,7 +73,7 @@ export function getMockStandings(seed: number, scoreChangeApplied: boolean, cycl
       mover.thru = Math.min(18, (mover.thru ?? 0) + 1);
     }
   }
-  return { standings: reorderForPlacement ? standings.sort((a, b) => a.toPar - b.toPar) : standings, eventPlayer, eventKind };
+  return { standings: reorderForPlacement ? standings.sort(compareLeaderboardOrder) : standings, eventPlayer, eventKind };
 }
 
 export function getMockMatchPlay(seed: number): BroadcastMatchPlay {

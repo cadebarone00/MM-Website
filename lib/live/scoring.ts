@@ -1,4 +1,5 @@
 import { courseForRound, scoreFor, type LiveHoleScore, type LiveTournamentSnapshot, type Team } from "./types.ts";
+import { compareLeaderboardOrder } from "@/lib/leaderboard/sort";
 
 export interface PlayerSummary {
   player: string;
@@ -112,7 +113,7 @@ export function summarizePlayer(snapshot: LiveTournamentSnapshot, player: string
 
 export function leaderboard(snapshot: LiveTournamentSnapshot, rounds?: number[]): PlayerSummary[] {
   const summaries = Object.keys(snapshot.players).map((player) => summarizePlayer(snapshot, player, rounds));
-  return summaries.sort((a, b) => a.toPar - b.toPar || b.played - a.played || a.gross - b.gross || a.player.localeCompare(b.player));
+  return summaries.sort(compareLeaderboardOrder);
 }
 
 export function teamTotals(snapshot: LiveTournamentSnapshot): Record<Team, number> {
