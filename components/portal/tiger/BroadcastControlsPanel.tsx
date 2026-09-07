@@ -40,6 +40,7 @@ type MockRunState = { status: "running" | "paused"; offsetMs: number; startedAt:
 type RehearsalClip = {
   playerSlug: string; playerName: string; round: number; hole: number; shotNumber: number;
   course: string; format: string; par: number | null; yards: number | null; url: string;
+  team: "maroon" | "white"; ownPlayers: string[]; opposingPlayers: string[];
 };
 
 const DEFAULT_PREVIEW_VIDEO: PreviewVideoSettings = {
@@ -114,7 +115,6 @@ export function BroadcastControlsPanel({
   const [clipBusy, setClipBusy] = useState(false);
   const [mockRun, setMockRun] = useState<MockRunState | null>(null);
   const [mockClock, setMockClock] = useState(Date.now());
-  const [mockPickerOpen, setMockPickerOpen] = useState(false);
   const [mockClips, setMockClips] = useState<RehearsalClip[]>([]);
   const [mockClipsBusy, setMockClipsBusy] = useState(false);
   const [playlistOpen, setPlaylistOpen] = useState(false);
@@ -244,19 +244,24 @@ export function BroadcastControlsPanel({
       : { status: "paused", offsetMs: clamped, startedAt: null, videoDurationMs: MOCK_RUN_DEFAULT_VIDEO_MS, seed: Math.floor(Math.random() * 2_147_483_647), leaderboardAnimation });
   }
 
-  async function openMockPicker() {
-    setMockPickerOpen((open) => !open);
-    if (mockClips.length > 0 || mockClipsBusy) return;
+  async function startRandomMockRun() {
+    if (mockClipsBusy) return;
     setMockClipsBusy(true);
     setError(null);
     try {
-      const res = await fetch(`/api/portal/tiger/broadcast/rehearsal-videos?year=${previewYear}`);
+      const res = await fetch(`/api/portal/tiger/broadcast/rehearsal-videos?year=${previewYear}`, { cache: "no-store" });
       const data = await res.json();
       if (!data.ok) {
         setError(data.error ?? "Could not load archived clips.");
         return;
       }
-      setMockClips(data.clips);
+      const clips = data.clips as RehearsalClip[];
+      setMockClips(clips);
+      if (clips.length === 0) {
+        setError(`No uploaded scorecard videos were found for ${previewYear}.`);
+        return;
+      }
+      await startMockFromClip(clips[Math.floor(Math.random() * clips.length)]);
     } finally {
       setMockClipsBusy(false);
     }
@@ -274,8 +279,13 @@ export function BroadcastControlsPanel({
       course: clip.course,
       format: clip.format === "Foursome" ? "Foursome" : clip.format === "Fourball" ? "Fourball" : "Singles",
       videoUrl: clip.url,
+      showMatch: true,
+      team: clip.team,
+      ownPlayers: clip.ownPlayers.join(", "),
+      opposingPlayers: clip.opposingPlayers.join(", "),
+      ownStatus: "1 UP",
+      opposingStatus: "1 DN",
     }));
-    setMockPickerOpen(false);
     const durationMs = await new Promise<number>((resolve) => {
       const probe = document.createElement("video");
       let settled = false;
