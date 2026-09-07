@@ -28,9 +28,6 @@ export default async function TeamsYearPage({ params }: { params: Promise<{ slug
 
   return (
     <div className="max-w-[1200px] mx-auto px-7 pt-8 pb-16">
-      <div className="hidden lg:block">
-        <YearTabs basePath="/teams" activeSlug={slug} includeLive />
-      </div>
       <TournamentHeader tournament={tournament} title="Players" />
       <TeamsDirectory tournament={tournament} />
     </div>
