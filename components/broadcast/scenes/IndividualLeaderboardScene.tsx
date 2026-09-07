@@ -65,7 +65,13 @@ function MockLeaderboardScene({ elapsedMs, videoDurationMs, seed, animation, for
             return (
               <div
                 key={row.player}
-                style={{ transform: `translateY(${index * 66}px) scale(${eventRow && celebrationShowing ? 1.1 : 1})`, transitionDuration: `${animation?.rowMoveMs ?? 1000}ms` }}
+                style={{
+                  transform: `translateY(${index * 66}px) scale(${eventRow && celebrationShowing ? 1.1 : 1})`,
+                  // Only the player whose score changed gets a moving-row
+                  // animation. Everyone else snaps to the refreshed board
+                  // so one Birdie/Bogey never makes the whole table slide.
+                  transitionDuration: eventRow ? `${animation?.rowMoveMs ?? 1000}ms` : "0ms",
+                }}
                 className={[
                   "absolute inset-x-0 flex h-[62px] items-center gap-4 overflow-hidden border-b border-white/[0.06] px-2 transition-transform duration-1000 ease-out",
                   index === 0 ? "bg-gradient-to-r from-[color:var(--color-gold-400)]/[0.08] to-transparent" : "",
