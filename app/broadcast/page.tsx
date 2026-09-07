@@ -4,7 +4,7 @@ import { getBroadcastLeaderboard } from "@/lib/broadcast/leaderboardData";
 import { getBroadcastMatchPlay } from "@/lib/broadcast/matchPlayData";
 import { getNextTournament } from "@/lib/data/activeSeasonOverlay";
 import { BroadcastStage } from "@/components/broadcast/BroadcastStage";
-import { DEFAULT_SCENE_DURATIONS_MS, type BroadcastPayload, type BroadcastScene } from "@/lib/broadcast/types";
+import { DEFAULT_SCENE_DURATIONS_MS, type BroadcastPayload, type BroadcastPlayerVideo, type BroadcastScene } from "@/lib/broadcast/types";
 import { isValidDisplayYear } from "@/lib/broadcast/displayYears";
 
 export const metadata: Metadata = {
@@ -16,9 +16,11 @@ export const dynamic = "force-dynamic";
 const VALID_SCENES = ["holding", "individual_leaderboard", "match_play", "video_transition", "player_video"] as const;
 type PreviewScene = (typeof VALID_SCENES)[number];
 
-const PREVIEW_VIDEO = {
+const PREVIEW_VIDEO: BroadcastPlayerVideo = {
   id: "preview-player-video", playerSlug: "cade-barone", playerName: "Cade Barone", round: 1, hole: 16, shotNumber: 1,
-  par: 4, yards: 611, scoreToPar: -13, videoUrl: "/loading/desktop.mp4",
+  par: 4, yards: 611, scoreToPar: -13, individualPlace: 1,
+  match: { team: "white", ownPlayers: ["Barone"], opposingPlayers: ["Sherrell"], ownStatus: "1 UP", opposingStatus: "1 DN" },
+  videoUrl: "/loading/desktop.mp4",
 };
 
 /**

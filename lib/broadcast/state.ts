@@ -5,10 +5,17 @@
 // lib/data/activeSeasonOverlay.ts.
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
+import { getBroadcastLeaderboard } from "@/lib/broadcast/leaderboardData";
 import { getNextInQueue } from "@/lib/broadcast/queue";
+import { getPlayerDisplayName, getPlayerProfileBySlug } from "@/lib/data/players";
 import { DEFAULT_SCENE_DURATIONS_MS, type BroadcastConfig, type BroadcastPayload, type BroadcastPlayerVideo, type BroadcastScene, type BroadcastState } from "./types";
 
 const VALID_SCENES: BroadcastScene[] = ["holding", "individual_leaderboard", "match_play"];
+
+function lastName(player: string): string {
+  const name = getPlayerDisplayName(player);
+  return name.split(/\s+/).at(-1) ?? name;
+}
 
 function isBroadcastScene(value: unknown): value is BroadcastScene {
   return typeof value === "string" && (VALID_SCENES as string[]).includes(value);
@@ -73,10 +80,38 @@ export async function getBroadcastPayload(): Promise<BroadcastPayload> {
       .eq("id", state.activeVideoQueueId)
       .maybeSingle();
     if (error) console.error("broadcast video queue read failed:", error.message);
-    if (data) activeVideo = {
-      id: data.id, playerSlug: data.player_slug, playerName: data.player_name, round: data.round, hole: data.hole,
-      shotNumber: data.shot_number, par: data.par, yards: data.yards, scoreToPar: data.score_to_par, videoUrl: data.video_url,
-    };
+    if (data) {
+      const profile = getPlayerProfileBySlug(data.player_slug);
+      const { standings } = await getBroadcastLeaderboard(seasonYear);
+      const placement = standings.findIndex((standing) => {
+        const standingProfile = getPlayerProfileBySlug(standing.player);
+        return standing.player.toLowerCase() === data.player_slug.toLowerCase() || standingProfile?.id === profile?.id || standing.player.toLowerCase() === profile?.id.toLowerCase();
+      });
+      const { data: maroonBox } = await service
+        .from("live_match_boxes").select("id, maroon_players, white_players").eq("season_year", seasonYear).eq("round", data.round).contains("maroon_players", [data.player_slug]).maybeSingle();
+      const { data: whiteBox } = maroonBox ? { data: null } : await service
+        .from("live_match_boxes").select("id, maroon_players, white_players").eq("season_year", seasonYear).eq("round", data.round).contains("white_players", [data.player_slug]).maybeSingle();
+      const box = maroonBox ?? whiteBox;
+      const team = maroonBox ? "maroon" : whiteBox ? "white" : null;
+      let match: BroadcastPlayerVideo["match"] = null;
+      if (box && team) {
+        const { data: official } = await service.from("live_match_official_state").select("leader, margin").eq("match_box_id", box.id).maybeSingle();
+        const ownLeads = official?.leader === team;
+        const opponentLeads = official?.leader && official.leader !== "tie" && !ownLeads;
+        const margin = official?.margin ?? 0;
+        match = {
+          team,
+          ownPlayers: (team === "maroon" ? box.maroon_players : box.white_players).map(lastName),
+          opposingPlayers: (team === "maroon" ? box.white_players : box.maroon_players).map(lastName),
+          ownStatus: margin === 0 ? "AS" : ownLeads ? `${margin} UP` : `${margin} DN`,
+          opposingStatus: margin === 0 ? "AS" : opponentLeads ? `${margin} UP` : `${margin} DN`,
+        };
+      }
+      activeVideo = {
+        id: data.id, playerSlug: data.player_slug, playerName: data.player_name, round: data.round, hole: data.hole,
+        shotNumber: data.shot_number, par: data.par, yards: data.yards, scoreToPar: data.score_to_par, individualPlace: placement >= 0 ? placement + 1 : null, match, videoUrl: data.video_url,
+      };
+    }
   }
 
   const config: BroadcastConfig = {

@@ -1,29 +1,58 @@
 "use client";
 
 import Image from "next/image";
-import type { BroadcastPlayerVideo } from "@/lib/broadcast/types";
+import type { BroadcastPlayerVideo, BroadcastTeam } from "@/lib/broadcast/types";
 
 function toPar(value: number | null) {
   if (value == null || value === 0) return "E";
   return value > 0 ? `+${value}` : String(value);
 }
 
+function teamStatusClass(team: BroadcastTeam) {
+  return team === "white" ? "bg-white text-maroon-800" : "bg-maroon-800 text-white";
+}
+
+function Names({ names, align }: { names: string[]; align: "left" | "right" }) {
+  return <div className={`flex min-w-0 flex-1 flex-col justify-center px-3 text-2xl leading-tight text-ink-900 ${align === "right" ? "items-end text-right" : "items-start text-left"}`}>{names.map((name) => <span key={name} className="truncate">{name}</span>)}</div>;
+}
+
 export function PlayerVideoScene({ video, preview = false }: { video: BroadcastPlayerVideo; preview?: boolean }) {
+  const shotNumbers = [...Array(video.par).keys()].map((index) => index + 1);
+  if (video.shotNumber > video.par) shotNumbers.push(video.shotNumber);
+  const match = video.match;
+  const opposingTeam: BroadcastTeam = match?.team === "white" ? "maroon" : "white";
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-black">
       {preview ? (
         <><Image src="/loading/desktop.png" alt="Player video preview" fill priority className="object-cover" /><div className="absolute inset-0 grid place-items-center bg-black/35 font-condensed text-4xl font-bold uppercase tracking-[0.2em] text-white">Player video preview</div></>
-      ) : (
-        <video className="h-screen w-screen object-contain" src={video.videoUrl} autoPlay playsInline onEnded={() => { void fetch("/api/broadcast/video/complete", { method: "POST" }); }} />
-      )}
-      <div className="absolute right-8 top-8 w-[510px] overflow-hidden border border-white/25 bg-white font-condensed font-bold uppercase shadow-2xl">
-        <div className="flex h-18 items-stretch bg-[#135a50] text-white">
-          <span className="grid w-20 place-items-center bg-[#30a76a] text-2xl">{video.hole}</span>
-          <span className="flex flex-1 items-center px-5 text-3xl tracking-wide">{video.playerName}</span>
-          <span className="grid w-24 place-items-center bg-[#b20e3a] text-3xl">{toPar(video.scoreToPar)}</span>
+      ) : <video className="h-screen w-screen object-contain" src={video.videoUrl} autoPlay playsInline onEnded={() => { void fetch("/api/broadcast/video/complete", { method: "POST" }); }} />}
+
+      <aside className="absolute right-8 top-8 w-[570px] overflow-hidden border border-black/20 bg-white font-condensed font-bold uppercase shadow-2xl">
+        <div className="flex h-18 items-stretch text-white">
+          <span className="grid w-20 place-items-center bg-gold-400 text-2xl">{video.individualPlace ?? "—"}</span>
+          <span className="flex flex-1 items-center bg-maroon-800 px-5 text-3xl tracking-wide">{video.playerName}</span>
+          <span className="grid w-24 place-items-center bg-maroon-950 text-3xl">{toPar(video.scoreToPar)}</span>
         </div>
-        <div className="flex h-12 items-center bg-stone-200 px-5 text-2xl tracking-wide text-ink-900"><span>Par {video.par}</span><span className="ml-10">{video.yards} yds</span><span className="ml-auto">Shot {video.shotNumber}</span></div>
-      </div>
+        <div className="flex min-h-13 items-center bg-stone-200 px-5 text-xl tracking-wide text-ink-900">
+          <span>Par {video.par}</span><span className="ml-8">{video.yards} yds</span>
+          <div className="ml-auto flex items-center gap-1.5" aria-label={`Shot ${video.shotNumber}`}>
+            {shotNumbers.map((shot) => {
+              const overParCurrent = shot === video.shotNumber && shot > video.par;
+              const current = shot === video.shotNumber;
+              return <span key={shot} className={`grid size-7 place-items-center ${overParCurrent ? "bg-gold-400 ring-1 ring-gold-600" : current ? "font-black text-ink-950" : "font-medium text-ink-500"}`}>{shot}</span>;
+            })}
+          </div>
+        </div>
+        {match && (
+          <div className="flex min-h-14 border-t border-stone-300 bg-stone-100">
+            <span className={`grid w-24 place-items-center text-lg ${teamStatusClass(match.team)}`}>{match.ownStatus}</span>
+            <Names names={match.ownPlayers} align="left" />
+            <Names names={match.opposingPlayers} align="right" />
+            <span className={`grid w-24 place-items-center text-lg ${teamStatusClass(opposingTeam)}`}>{match.opposingStatus}</span>
+          </div>
+        )}
+      </aside>
     </main>
   );
 }

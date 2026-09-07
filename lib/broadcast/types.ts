@@ -22,6 +22,14 @@ export interface BroadcastPlayerVideo {
   par: number;
   yards: number;
   scoreToPar: number | null;
+  individualPlace: number | null;
+  match: {
+    team: BroadcastTeam;
+    ownPlayers: string[];
+    opposingPlayers: string[];
+    ownStatus: string;
+    opposingStatus: string;
+  } | null;
   videoUrl: string;
 }
 
