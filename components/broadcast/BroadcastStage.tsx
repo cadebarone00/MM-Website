@@ -37,7 +37,7 @@ export function BroadcastStage({
   matchPlay: BroadcastMatchPlay;
   holding: { venue: string; dateLabel: string };
   preview?: boolean;
-  mockRun?: { startedAt: number | null; offsetMs: number; videoDurationMs: number; seed: number } | null;
+  mockRun?: { startedAt: number | null; offsetMs: number; videoDurationMs: number; seed: number; leaderboardAnimation: { birdieEnabled: boolean; birdieDelayMs: number; rowMoveMs: number } } | null;
 }) {
   const [mockClock, setMockClock] = useState(Date.now());
   useEffect(() => {
@@ -77,6 +77,7 @@ export function BroadcastStage({
       mockElapsedMs={mockElapsedMs}
       mockVideoDurationMs={mockRun?.videoDurationMs ?? null}
       mockSeed={mockRun?.seed ?? 1}
+      mockLeaderboardAnimation={mockRun?.leaderboardAnimation ?? null}
     />
   );
 }
