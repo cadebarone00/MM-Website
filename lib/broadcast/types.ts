@@ -22,7 +22,7 @@ export interface BroadcastPlayerVideo {
   par: number;
   yards: number;
   scoreToPar: number | null;
-  individualPlace: number | null;
+  individualPlace: string | null;
   courseName: string | null;
   format: string | null;
   match: {

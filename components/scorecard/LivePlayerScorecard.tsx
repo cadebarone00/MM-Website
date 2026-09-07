@@ -6,6 +6,7 @@ import { DETAIL_POLL_MS, useLiveTournament } from "@/lib/hooks/useLiveTournament
 import { nextTournament, isLiveNow } from "@/lib/data";
 import { getPlayerAvatar, getPlayerProfile } from "@/lib/data/players";
 import type { Team } from "@/lib/data/types";
+import { placementLabel } from "@/lib/leaderboard/placement";
 
 export function LivePlayerScorecard({ tournamentSlug, player }: { tournamentSlug: string; player: string }) {
   const { tournament, loading, payload } = useLiveTournament(DETAIL_POLL_MS);
@@ -22,7 +23,7 @@ export function LivePlayerScorecard({ tournamentSlug, player }: { tournamentSlug
 
   const ranked = [...tournament.individualLeaderboard].sort((a, b) => a.toPar - b.toPar);
   const standing = ranked.find((p) => p.player.toLowerCase() === player.toLowerCase());
-  const position = standing ? ranked.indexOf(standing) + 1 : null;
+  const position = standing ? placementLabel(ranked, ranked.indexOf(standing)) : null;
   const total = standing?.toPar ?? null;
   const lastRound = scorecard?.rounds[scorecard.rounds.length - 1];
   const playedCount = lastRound?.holes.filter((h) => h.score > 0).length ?? 0;

@@ -3,24 +3,14 @@ import { getPlayerDisplayName } from "@/lib/data/players";
 import { ScoreBadge } from "@/components/ui/ScoreBadge";
 import type { BroadcastStanding } from "@/lib/broadcast/types";
 import { getMockRunCycleMs, getMockStandings } from "@/lib/broadcast/mockRun";
+import { placementLabel } from "@/lib/leaderboard/placement";
 
 interface Row extends BroadcastStanding {
-  pos: number;
-  showPos: boolean;
+  pos: string;
 }
 
-/** Groups ties (equal toPar) under one shared position number, blank on the rows underneath — same convention the reference broadcast leaderboard uses. */
 function rankRows(standings: BroadcastStanding[]): Row[] {
-  let pos = 0;
-  let lastToPar: number | null = null;
-  return standings.map((s, i) => {
-    if (lastToPar === null || s.toPar !== lastToPar) {
-      pos = i + 1;
-      lastToPar = s.toPar;
-      return { ...s, pos, showPos: true };
-    }
-    return { ...s, pos, showPos: false };
-  });
+  return standings.map((standing, index) => ({ ...standing, pos: placementLabel(standings, index) }));
 }
 
 function todayLabel(value: number | null | undefined) {
@@ -83,7 +73,7 @@ function MockLeaderboardScene({ elapsedMs, videoDurationMs, seed, animation, for
                     {eventKind.toUpperCase()}
                   </span>
                 )}
-                <span className="relative z-10 w-[52px] shrink-0 text-right font-score text-2xl font-bold leading-none tabular-nums text-[color:var(--color-cream-50)]">{row.showPos ? row.pos : ""}</span>
+                <span className="relative z-10 w-[52px] shrink-0 text-right font-score text-2xl font-bold leading-none tabular-nums text-[color:var(--color-cream-50)]">{row.pos}</span>
                 <span aria-hidden className={["relative z-10 h-2.5 w-2.5 shrink-0 rounded-full", row.team === "maroon" ? "bg-[color:var(--color-maroon-500)]" : "bg-[color:var(--color-cream-100)]"].join(" ")} />
                 <span className="relative z-10 flex-1 truncate font-sans text-xl font-bold uppercase tracking-wide text-[color:var(--color-cream-50)]">{getPlayerDisplayName(row.player)}</span>
                 <span className="relative z-10 inline-flex min-w-[64px] justify-center rounded-md bg-[color:var(--color-cream-50)] px-3 py-1"><ScoreBadge value={row.toPar} size="lg" /></span>
@@ -152,7 +142,7 @@ export function IndividualLeaderboardScene({ standings, final = false, mockElaps
                 ].join(" ")}
               >
                 <span className="w-[52px] shrink-0 text-right font-score text-2xl font-bold leading-none tabular-nums text-[color:var(--color-cream-50)]">
-                  {r.showPos ? r.pos : ""}
+                  {r.pos}
                 </span>
                 <span
                   aria-hidden

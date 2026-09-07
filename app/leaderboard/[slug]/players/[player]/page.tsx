@@ -4,6 +4,7 @@ import { PlayerProfileHeader } from "@/components/scorecard/PlayerProfileHeader"
 import { LivePlayerScorecard } from "@/components/scorecard/LivePlayerScorecard";
 import { pastTournaments, nextTournament, getTournament, getPlayerScorecard, playersOf } from "@/lib/data";
 import { getPlayerAvatar, getPlayerDisplayName, getPlayerProfile } from "@/lib/data/players";
+import { placementLabel } from "@/lib/leaderboard/placement";
 import { getScorecardsForTournament, getShotVideoUrls } from "@/lib/data/archivedScorecards";
 
 export function generateStaticParams() {
@@ -38,7 +39,7 @@ export default async function PlayerScorecardPage({ params }: { params: Promise<
 
   const ranked = [...tournamentWithScorecards.individualLeaderboard].sort((a, b) => a.toPar - b.toPar);
   const standing = ranked.find((p) => p.player.toLowerCase() === player.toLowerCase());
-  const position = standing ? ranked.indexOf(standing) + 1 : null;
+  const position = standing ? placementLabel(ranked, ranked.indexOf(standing)) : null;
   const total = standing?.toPar ?? null;
   const lastRound = scorecard?.rounds[scorecard.rounds.length - 1];
   const playedCount = lastRound?.holes.filter((h) => h.score > 0).length ?? 0;

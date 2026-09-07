@@ -6,6 +6,7 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
 import { getBroadcastLeaderboard } from "@/lib/broadcast/leaderboardData";
+import { placementLabel } from "@/lib/leaderboard/placement";
 import { getNextInQueue } from "@/lib/broadcast/queue";
 import { getPlayerDisplayName, getPlayerProfileBySlug } from "@/lib/data/players";
 import { DEFAULT_SCENE_DURATIONS_MS, type BroadcastConfig, type BroadcastPayload, type BroadcastPlayerVideo, type BroadcastScene, type BroadcastState } from "./types";
@@ -113,7 +114,7 @@ export async function getBroadcastPayload(): Promise<BroadcastPayload> {
       }
       activeVideo = {
         id: data.id, playerSlug: data.player_slug, playerName: data.player_name, round: data.round, hole: data.hole,
-        shotNumber: data.shot_number, par: data.par, yards: data.yards, scoreToPar: data.score_to_par, individualPlace: placement >= 0 ? placement + 1 : null,
+        shotNumber: data.shot_number, par: data.par, yards: data.yards, scoreToPar: data.score_to_par, individualPlace: placement >= 0 ? placementLabel(standings, placement) : null,
         courseName: course?.name ?? null, format: box?.format ?? null, match, videoUrl: data.video_url,
       };
     }
