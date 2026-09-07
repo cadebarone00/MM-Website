@@ -33,7 +33,7 @@ export function MatchPlayScene({ matchPlay }: { matchPlay: BroadcastMatchPlay })
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden px-10 py-10">
       <Image src="/loading/desktop.png" alt="" fill priority sizes="100vw" className="object-cover" />
       <div className="absolute inset-0 bg-maroon-900/80" />
-      <Image src="/broadcast/oak-motif.png" alt="" width={860} height={860} aria-hidden className="pointer-events-none absolute -bottom-56 -right-40 opacity-[0.16]" />
+      <Image src="/broadcast/oak-motif.png" alt="" width={980} height={980} aria-hidden className="pointer-events-none absolute -bottom-60 -right-44 opacity-[0.27]" />
       <span
         aria-hidden
         className="pointer-events-none absolute -bottom-[10%] -right-[6%] z-[1] font-serif text-[22vw] font-semibold italic leading-none text-transparent [-webkit-text-stroke:1px_rgba(201,168,110,0.14)]"

@@ -13,7 +13,7 @@ export function PlayerVideoTransitionScene({ video, startedAt, preview = false }
   }, [preview, startedAt, video.id]);
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-maroon-950 px-12 text-center text-cream-50">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-maroon-900 px-12 text-center text-cream-50">
       <Image src="/broadcast/oak-motif.png" alt="" width={1254} height={1254} priority aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 w-[min(92vw,1000px)] -translate-x-1/2 -translate-y-1/2 opacity-[0.22]" />
       <div className="relative z-10 max-w-5xl border-y border-white/45 py-12">
         <p className="font-condensed text-2xl font-bold uppercase tracking-[0.35em] text-white">Now over to</p>
