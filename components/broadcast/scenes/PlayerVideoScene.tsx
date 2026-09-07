@@ -37,7 +37,7 @@ export function PlayerVideoScene({ video, preview = false }: { video: BroadcastP
           <span className={`grid w-24 place-items-center text-3xl ${scoreBoxClass}`}>{toPar(video.scoreToPar)}</span>
         </div>
         <div className="flex min-h-13 items-center bg-stone-200 px-5 text-xl tracking-wide text-ink-900">
-          <span>Par {video.par}</span><span className="ml-8">{video.yards} yds</span>
+          <span>Hole {video.hole}</span><span className="ml-6">Par {video.par}</span><span className="ml-6">{video.yards} yds</span>
           <div className="ml-auto flex items-center gap-1.5" aria-label={`Shot ${video.shotNumber}`}>
             {shotNumbers.map((shot) => {
               const overParCurrent = shot === video.shotNumber && shot > video.par;
