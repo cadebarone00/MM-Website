@@ -39,17 +39,6 @@ function sumPts(boxes: { maroonPts: number; whitePts: number }[]): { maroonPts: 
   return boxes.reduce((sum, b) => ({ maroonPts: sum.maroonPts + b.maroonPts, whitePts: sum.whitePts + b.whitePts }), { maroonPts: 0, whitePts: 0 });
 }
 
-interface RoundStateRow {
-  round: number;
-  started: boolean;
-}
-
-/** The most relevant round for the Match Play scene: the highest-numbered started round, or null if none has started. */
-function pickCurrentRound(rows: RoundStateRow[]): number | null {
-  const started = rows.filter((r) => r.started).map((r) => r.round);
-  return started.length === 0 ? null : Math.max(...started);
-}
-
 /**
  * `RealMatch.status` is never actually populated in the static per-year
  * data files (checked: no `2026-palm-springs.ts` match sets it) — every
@@ -95,14 +84,19 @@ function archivedMatchPlay(tournament: Tournament): BroadcastMatchPlay {
 
 async function liveMatchPlay(seasonYear: number): Promise<BroadcastMatchPlay> {
   const service = createSupabaseServiceRoleClient();
-
-  const { data: roundRows } = await service.from("live_round_state").select("round, started").eq("season_year", seasonYear);
-  const round = pickCurrentRound((roundRows as RoundStateRow[] | null) ?? []);
+  const snapshot = await buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true });
+  const liveRounds = snapshot.matchBoxes.filter((box) => effectiveMatchState(snapshot, box) === "Live").map((box) => box.round);
+  const finishedRounds = [...new Set(snapshot.matchBoxes.map((box) => box.round))].filter((round) => {
+    const boxes = snapshot.matchBoxes.filter((box) => box.round === round);
+    return boxes.length > 0 && boxes.every((box) => effectiveMatchState(snapshot, box) === "Final");
+  });
+  // During play, show the currently live round. Between rounds, retain the
+  // newest fully finished round rather than an armed/upcoming schedule.
+  const round = liveRounds.length > 0 ? Math.max(...liveRounds) : finishedRounds.length > 0 ? Math.max(...finishedRounds) : null;
   if (round === null) return { seasonYear, roundLabel: null, matchBoxes: [], maroonPts: 0, whitePts: 0, final: false };
 
   // The broadcast consumes the same confirmed-only source that drives
   // leaderboard state and odds. Draft/disputed device entries never appear.
-  const snapshot = await buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true });
   const boxes = snapshot.matchBoxes.filter((box) => box.round === round).sort((a, b) => a.boxNumber - b.boxNumber);
   const { data: officialRows } = boxes.length
     ? await service.from("live_match_official_state").select("match_box_id, status, thru, leader, margin, mathematically_complete, official_result").in("match_box_id", boxes.map((box) => box.id!))
@@ -113,7 +107,7 @@ async function liveMatchPlay(seasonYear: number): Promise<BroadcastMatchPlay> {
     const official = box.id ? officialByBox.get(box.id) : null;
     const state = effectiveMatchState(snapshot, box);
     const result = matchBoxResult(snapshot, box);
-    const final = official?.status === "closed_out" || official?.status === "complete";
+    const final = official?.status === "closed_out" || official?.status === "complete" || state === "Final";
     const leader = (official?.leader as BroadcastTeam | "tie" | undefined) ?? result.leader;
     const margin = official?.margin ?? result.margin;
     const thru = official?.thru ?? matchBoxStartedThru(snapshot, box);
@@ -134,7 +128,7 @@ async function liveMatchPlay(seasonYear: number): Promise<BroadcastMatchPlay> {
   });
 
   const { maroonPts, whitePts } = sumPts(matchBoxes);
-  return { seasonYear, roundLabel: `Round ${round}`, matchBoxes, maroonPts, whitePts, final: false };
+  return { seasonYear, roundLabel: `Round ${round}`, matchBoxes, maroonPts, whitePts, final: liveRounds.length === 0 };
 }
 
 /**
