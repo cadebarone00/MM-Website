@@ -736,14 +736,14 @@ export function BroadcastControlsPanel({
           {openRehearsalPanel === "individual_leaderboard" && (
             <section className="mt-4 rounded-lg border-2 border-gold-400 bg-gold-50/40 p-4">
               <h2 className="font-serif text-lg font-bold text-ink-900">Individual Leaderboard animation</h2>
-              <p className="mt-1 font-sans text-xs text-ink-600">The mock uses generated standings only. A birdie callout appears first, then the affected row changes score and slides to its new position; unchanged rows remain still.</p>
+              <p className="mt-1 font-sans text-xs text-ink-600">The mock uses generated standings only. A birdie or bogey callout appears first, then the affected row changes score and slides to its new position; unchanged rows remain still.</p>
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <label className="flex items-center gap-2 rounded-lg border-2 border-stone-300 bg-white px-3 py-2 font-sans text-xs font-semibold text-ink-700">
                   <input type="checkbox" checked={leaderboardAnimation.birdieEnabled} onChange={(e) => setLeaderboardAnimation((current) => ({ ...current, birdieEnabled: e.target.checked }))} className="size-4 accent-maroon-700" />
-                  Show birdie callout
+                  Show scoring callout
                 </label>
                 <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
-                  Birdie timing
+                  Scoring-event timing
                   <select value={leaderboardAnimation.birdieDelayMs} onChange={(e) => setLeaderboardAnimation((current) => ({ ...current, birdieDelayMs: Number(e.target.value) }))} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm">
                     <option value={4000}>4 seconds</option><option value={7000}>7 seconds</option><option value={9000}>9 seconds</option>
                   </select>

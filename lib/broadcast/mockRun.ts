@@ -47,16 +47,17 @@ export function getMockFormat(seed: number): "Singles" | "Fourball" | "Foursome"
   return ["Singles", "Fourball", "Foursome"][Math.abs(seed) % 3] as "Singles" | "Fourball" | "Foursome";
 }
 
-export function getMockStandings(seed: number, birdieApplied: boolean, cycle: number): { standings: BroadcastStanding[]; birdiePlayer: string } {
+export function getMockStandings(seed: number, scoreChangeApplied: boolean, cycle: number): { standings: BroadcastStanding[]; eventPlayer: string; eventKind: "birdie" | "bogey" } {
   const players = shuffledPlayers(seed + cycle * 71);
-  const moverIndex = 2 + (Math.abs(seed + cycle) % 5);
-  const birdiePlayer = players[moverIndex]?.player ?? players[2].player;
+  const eventKind = Math.abs(seed + cycle * 13) % 3 === 0 ? "bogey" : "birdie";
+  const moverIndex = eventKind === "birdie" ? 2 + (Math.abs(seed + cycle) % 5) : Math.abs(seed + cycle) % 3;
+  const eventPlayer = players[moverIndex]?.player ?? players[2].player;
   const standings = players.map((entry, index) => ({ ...entry, toPar: -6 + index }));
-  if (birdieApplied) {
-    const mover = standings.find((entry) => entry.player === birdiePlayer);
-    if (mover) mover.toPar = -7;
+  if (scoreChangeApplied) {
+    const mover = standings.find((entry) => entry.player === eventPlayer);
+    if (mover) mover.toPar = eventKind === "birdie" ? -7 : 7;
   }
-  return { standings: standings.sort((a, b) => a.toPar - b.toPar), birdiePlayer };
+  return { standings: standings.sort((a, b) => a.toPar - b.toPar), eventPlayer, eventKind };
 }
 
 export function getMockMatchPlay(seed: number): BroadcastMatchPlay {

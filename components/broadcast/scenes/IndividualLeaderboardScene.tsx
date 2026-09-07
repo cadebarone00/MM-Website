@@ -23,13 +23,14 @@ function rankRows(standings: BroadcastStanding[]): Row[] {
   });
 }
 
-function MockLeaderboardScene({ elapsedMs, videoDurationMs, seed }: { elapsedMs: number; videoDurationMs: number | null; seed: number }) {
+function MockLeaderboardScene({ elapsedMs, videoDurationMs, seed, animation }: { elapsedMs: number; videoDurationMs: number | null; seed: number; animation: { birdieEnabled: boolean; birdieDelayMs: number; rowMoveMs: number } | null }) {
   const cycleMs = getMockRunCycleMs(videoDurationMs ?? undefined);
   const cycle = Math.floor(Math.max(0, elapsedMs) / cycleMs) % 2;
   const timeInCycle = Math.max(0, elapsedMs) % cycleMs;
-  const birdieShowing = timeInCycle >= 7_000 && timeInCycle < 8_900;
-  const birdieApplied = timeInCycle >= 8_500;
-  const { standings, birdiePlayer } = getMockStandings(seed, birdieApplied, cycle);
+  const birdieDelayMs = animation?.birdieDelayMs ?? 7000;
+  const birdieShowing = Boolean(animation?.birdieEnabled ?? true) && timeInCycle >= birdieDelayMs && timeInCycle < birdieDelayMs + 1_900;
+  const birdieApplied = timeInCycle >= birdieDelayMs + 1_500;
+  const { standings, eventPlayer, eventKind } = getMockStandings(seed, birdieApplied, cycle);
   const rows = rankRows(standings);
 
   return (
@@ -44,21 +45,21 @@ function MockLeaderboardScene({ elapsedMs, videoDurationMs, seed }: { elapsedMs:
         </div>
         <div className="relative" style={{ height: rows.length * 66 }}>
           {rows.map((row, index) => {
-            const birdieRow = row.player === birdiePlayer;
+            const eventRow = row.player === eventPlayer;
             return (
               <div
                 key={row.player}
-                style={{ transform: `translateY(${index * 66}px)` }}
+                style={{ transform: `translateY(${index * 66}px)`, transitionDuration: `${animation?.rowMoveMs ?? 1000}ms` }}
                 className={[
                   "absolute inset-x-0 flex h-[62px] items-center gap-4 border-b border-white/[0.06] px-2 transition-transform duration-1000 ease-out",
                   index === 0 ? "bg-gradient-to-r from-[color:var(--color-gold-400)]/[0.08] to-transparent" : "",
-                  birdieRow && birdieShowing ? "bg-emerald-400/20" : "",
+                  eventRow && birdieShowing ? eventKind === "birdie" ? "bg-emerald-400/20" : "bg-red-500/20" : "",
                 ].join(" ")}
               >
                 <span className="w-8 shrink-0 text-right font-condensed text-lg font-bold tabular-nums text-[color:var(--color-ink-400)]">{row.showPos ? row.pos : ""}</span>
                 <span aria-hidden className={["h-2.5 w-2.5 shrink-0 rounded-full", row.team === "maroon" ? "bg-[color:var(--color-maroon-500)]" : "bg-[color:var(--color-cream-100)]"].join(" ")} />
                 <span className="flex-1 truncate font-sans text-xl font-bold uppercase tracking-wide text-[color:var(--color-cream-50)]">{getPlayerDisplayName(row.player)}</span>
-                {birdieRow && birdieShowing && <span className="animate-pulse rounded bg-emerald-400 px-2 py-1 font-condensed text-xs font-black tracking-[0.16em] text-emerald-950">BIRDIE</span>}
+                {eventRow && birdieShowing && <span className={["animate-pulse rounded px-2 py-1 font-condensed text-xs font-black tracking-[0.16em]", eventKind === "birdie" ? "bg-emerald-400 text-emerald-950" : "bg-red-500 text-white"].join(" ")}>{eventKind.toUpperCase()}</span>}
                 <span className="inline-flex min-w-[64px] justify-center rounded-md bg-[color:var(--color-cream-50)] px-3 py-1"><ScoreBadge value={row.toPar} size="lg" /></span>
               </div>
             );
@@ -77,8 +78,8 @@ function MockLeaderboardScene({ elapsedMs, videoDurationMs, seed }: { elapsedMs:
  * (ScoreBadge, shared with every scorecard on the site) — gold here is a
  * pure accent, never a score meaning. See the Round 1 redesign spec.
  */
-export function IndividualLeaderboardScene({ standings, final = false, mockElapsedMs = null, mockVideoDurationMs = null, mockSeed = 1 }: { standings: BroadcastStanding[]; final?: boolean; mockElapsedMs?: number | null; mockVideoDurationMs?: number | null; mockSeed?: number }) {
-  if (mockElapsedMs != null) return <MockLeaderboardScene elapsedMs={mockElapsedMs} videoDurationMs={mockVideoDurationMs} seed={mockSeed} />;
+export function IndividualLeaderboardScene({ standings, final = false, mockElapsedMs = null, mockVideoDurationMs = null, mockSeed = 1, mockAnimation = null }: { standings: BroadcastStanding[]; final?: boolean; mockElapsedMs?: number | null; mockVideoDurationMs?: number | null; mockSeed?: number; mockAnimation?: { birdieEnabled: boolean; birdieDelayMs: number; rowMoveMs: number } | null }) {
+  if (mockElapsedMs != null) return <MockLeaderboardScene elapsedMs={mockElapsedMs} videoDurationMs={mockVideoDurationMs} seed={mockSeed} animation={mockAnimation} />;
   const rows = rankRows(standings);
 
   return (
