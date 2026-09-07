@@ -47,7 +47,7 @@ export function getMockFormat(seed: number): "Singles" | "Fourball" | "Foursome"
   return ["Singles", "Fourball", "Foursome"][Math.abs(seed) % 3] as "Singles" | "Fourball" | "Foursome";
 }
 
-export function getMockStandings(seed: number, scoreChangeApplied: boolean, cycle: number, forcedEventKind?: "birdie" | "eagle" | "bogey"): { standings: BroadcastStanding[]; eventPlayer: string; eventKind: "birdie" | "eagle" | "bogey" } {
+export function getMockStandings(seed: number, scoreChangeApplied: boolean, cycle: number, forcedEventKind?: "birdie" | "eagle" | "bogey", reorderForPlacement = true): { standings: BroadcastStanding[]; eventPlayer: string; eventKind: "birdie" | "eagle" | "bogey" } {
   const players = shuffledPlayers(seed + cycle * 71);
   const roll = Math.abs(seed + cycle * 13) % 6;
   const eventKind = forcedEventKind ?? (roll === 0 ? "eagle" : roll <= 2 ? "bogey" : "birdie");
@@ -69,7 +69,7 @@ export function getMockStandings(seed: number, scoreChangeApplied: boolean, cycl
       mover.todayToPar = (mover.todayToPar ?? 0) + strokeChange;
     }
   }
-  return { standings: standings.sort((a, b) => a.toPar - b.toPar), eventPlayer, eventKind };
+  return { standings: reorderForPlacement ? standings.sort((a, b) => a.toPar - b.toPar) : standings, eventPlayer, eventKind };
 }
 
 export function getMockMatchPlay(seed: number): BroadcastMatchPlay {

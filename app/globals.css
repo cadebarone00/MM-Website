@@ -226,11 +226,37 @@ body {
   animation: mm-winner-pulse 1.6s ease-in-out infinite;
 }
 
+@keyframes mm-broadcast-total-change {
+  0% {
+    transform: scale(0.78);
+    box-shadow: 0 0 0 rgba(201, 168, 110, 0);
+    opacity: 0.35;
+  }
+  24% {
+    transform: scale(1.42);
+    box-shadow: 0 0 28px rgba(201, 168, 110, 0.92);
+    opacity: 1;
+  }
+  58% {
+    transform: scale(1.2);
+    box-shadow: 0 0 18px rgba(201, 168, 110, 0.64);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(201, 168, 110, 0);
+  }
+}
+
+.mm-broadcast-total-change {
+  animation: mm-broadcast-total-change 1.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mm-live-dot,
   .mm-fade,
   .mm-edge-glow,
-  .mm-winner-pulse {
+  .mm-winner-pulse,
+  .mm-broadcast-total-change {
     animation: none;
   }
 }

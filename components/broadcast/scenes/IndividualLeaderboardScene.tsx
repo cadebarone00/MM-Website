@@ -34,8 +34,11 @@ function MockLeaderboardScene({ elapsedMs, videoDurationMs, seed, animation, for
   const celebrationShowing = Boolean(animation?.birdieEnabled ?? true) && eventKind !== "bogey" && eventElapsedMs >= 0 && eventElapsedMs < 1_900;
   const bogeyBlinking = eventKind === "bogey" && eventElapsedMs >= 0 && eventElapsedMs < 1_400;
   const bogeyBlinkVisible = bogeyBlinking && Math.floor(eventElapsedMs / 350) % 2 === 0;
-  const scoreChangeApplied = timeInCycle >= eventDelayMs + (eventKind === "bogey" ? 1_400 : 1_500);
-  const { standings, eventPlayer } = getMockStandings(seed, scoreChangeApplied, cycle, forcedEventKind);
+  const scoreChangeAtMs = eventDelayMs + (eventKind === "bogey" ? 1_400 : 1_500);
+  const scoreChangeApplied = timeInCycle >= scoreChangeAtMs;
+  const rowMoveApplied = timeInCycle >= scoreChangeAtMs + 1_900;
+  const totalChanging = scoreChangeApplied && !rowMoveApplied;
+  const { standings, eventPlayer } = getMockStandings(seed, scoreChangeApplied, cycle, forcedEventKind, rowMoveApplied);
   const rows = rankRows(standings);
 
   return (
@@ -78,7 +81,10 @@ function MockLeaderboardScene({ elapsedMs, videoDurationMs, seed, animation, for
                 <span className="relative z-10 w-[52px] shrink-0 text-right font-score text-2xl font-bold leading-none tabular-nums text-[color:var(--color-cream-50)]">{row.pos}</span>
                 <span aria-hidden className={["relative z-10 h-2.5 w-2.5 shrink-0 rounded-full", row.team === "maroon" ? "bg-[color:var(--color-maroon-500)]" : "bg-[color:var(--color-cream-100)]"].join(" ")} />
                 <span className="relative z-10 flex-1 truncate font-sans text-xl font-bold uppercase tracking-wide text-[color:var(--color-cream-50)]">{getPlayerDisplayName(row.player)}</span>
-                <span className="relative z-10 inline-flex min-w-[64px] justify-center rounded-md bg-[color:var(--color-cream-50)] px-3 py-1"><ScoreBadge value={row.toPar} size="lg" /></span>
+                <span className={[
+                  "relative z-10 inline-flex min-w-[64px] justify-center rounded-md bg-[color:var(--color-cream-50)] px-3 py-1",
+                  eventRow && totalChanging ? "mm-broadcast-total-change" : "",
+                ].join(" ")}><ScoreBadge value={row.toPar} size="lg" /></span>
                 <span className="relative z-10 inline-flex w-[64px] justify-center">{todayLabel(row.todayToPar)}</span>
                 <span className="relative z-10 inline-flex w-[56px] justify-center font-score text-2xl font-bold leading-none tabular-nums text-[color:var(--color-cream-50)]">{thruLabel(row.thru)}</span>
               </div>
