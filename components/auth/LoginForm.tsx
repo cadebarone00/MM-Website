@@ -3,11 +3,17 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 
 export function LoginForm() {
   const router = useRouter();
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
+  // Clicking the eye toggles this and it sticks (works on mobile too, where
+  // there's no real hover). Hovering only kicks in on devices with a mouse.
+  const [passwordRevealed, setPasswordRevealed] = useState(false);
+  const [passwordHovered, setPasswordHovered] = useState(false);
+  const showPassword = passwordRevealed || passwordHovered;
   const [error, setError] = useState<string | null>(null);
   const [unverified, setUnverified] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
@@ -72,14 +78,27 @@ export function LoginForm() {
         onChange={(e) => setUsernameOrEmail(e.target.value)}
         className="rounded-sm border border-ink-300 px-3 py-2 font-sans text-sm"
       />
-      <input
-        required
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        className="rounded-sm border border-ink-300 px-3 py-2 font-sans text-sm"
-      />
+      <div className="relative">
+        <input
+          required
+          type={showPassword ? "text" : "password"}
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full rounded-sm border border-ink-300 px-3 py-2 pr-10 font-sans text-sm"
+        />
+        <button
+          type="button"
+          onClick={() => setPasswordRevealed((v) => !v)}
+          onMouseEnter={() => setPasswordHovered(true)}
+          onMouseLeave={() => setPasswordHovered(false)}
+          aria-label={showPassword ? "Hide password" : "Show password"}
+          aria-pressed={passwordRevealed}
+          className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-ink-500"
+        >
+          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
+      </div>
       <button
         type="submit"
         disabled={submitting}
