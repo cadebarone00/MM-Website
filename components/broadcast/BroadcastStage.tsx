@@ -53,8 +53,11 @@ export function BroadcastStage({
   const state = useLiveBroadcastState(broadcast.seasonYear, broadcast.state, !preview);
   const activeEvent = useBroadcastQueue(broadcast.seasonYear, broadcast.events, broadcast.config, !preview);
   useReloadOnDisplayYearChange(broadcast.seasonYear, !preview);
+  const mockElapsedMs = mockRun
+    ? mockRun.offsetMs + (mockRun.startedAt ? Math.max(0, mockClock - mockRun.startedAt) : 0)
+    : null;
   const mockPosition = mockRun
-    ? getMockRunPosition(mockRun.offsetMs + (mockRun.startedAt ? Math.max(0, mockClock - mockRun.startedAt) : 0), mockRun.videoDurationMs)
+    ? getMockRunPosition(mockElapsedMs ?? 0, mockRun.videoDurationMs)
     : null;
   const displayState = mockPosition
     ? { ...state, tournamentLive: true, automationMode: "producer" as const, currentScene: mockPosition.scene, videoPhase: mockPosition.videoPhase }
@@ -71,6 +74,8 @@ export function BroadcastStage({
       activeEvent={activeEvent}
       activeVideo={broadcast.activeVideo}
       preview={preview}
+      mockElapsedMs={mockElapsedMs}
+      mockVideoDurationMs={mockRun?.videoDurationMs ?? null}
     />
   );
 }
