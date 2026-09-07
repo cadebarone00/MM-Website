@@ -668,7 +668,7 @@ export function BroadcastControlsPanel({
           </button>
         ) : (
           <div className="flex items-center gap-2">
-            <button type="button" disabled={busy !== null} onClick={openMockPicker} className="rounded-lg border-2 border-gold-500 bg-gold-50 px-4 py-2 font-condensed text-sm font-semibold uppercase tracking-wide text-ink-900 transition hover:bg-gold-100 disabled:opacity-50">Mock Run</button>
+            <button type="button" disabled={busy !== null || mockClipsBusy} onClick={() => { void startRandomMockRun(); }} className="rounded-lg border-2 border-gold-500 bg-gold-50 px-4 py-2 font-condensed text-sm font-semibold uppercase tracking-wide text-ink-900 transition hover:bg-gold-100 disabled:opacity-50">{mockClipsBusy ? "Loading…" : "Mock Run"}</button>
             <button type="button" disabled={busy !== null} onClick={goLive} className="rounded-lg bg-maroon-700 px-4 py-2 font-condensed text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-maroon-800 disabled:opacity-50">
               {busy === "golive" ? "Going Live…" : `Go Live (${previewYear})`}
             </button>
