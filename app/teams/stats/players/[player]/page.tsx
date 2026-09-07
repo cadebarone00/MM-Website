@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
 import { pastTournaments } from "@/lib/data";
-import { getPlayerDisplayName, getPlayerAvatar, playerProfiles } from "@/lib/data/players";
+import { getPlayerDisplayName, getPlayerAvatar, getPlayerProfile, playerProfiles } from "@/lib/data/players";
 import { getPlayerStatsByYear, playerHasAnyStats } from "@/lib/data/stats";
 import type { Team } from "@/lib/data/types";
 
@@ -39,12 +39,13 @@ interface Row {
 
 export default async function PlayerStatsPage({ params }: { params: Promise<{ player: string }> }) {
   const { player } = await params;
-  if (!playerHasAnyStats(player)) notFound();
+  const playerId = getPlayerProfile(player)?.id ?? player;
+  if (!playerHasAnyStats(playerId)) notFound();
 
-  const displayName = getPlayerDisplayName(player);
-  const avatar = getPlayerAvatar(player);
-  const team = mostRecentTeam(player);
-  const yearStats = getPlayerStatsByYear(player);
+  const displayName = getPlayerDisplayName(playerId);
+  const avatar = getPlayerAvatar(playerId);
+  const team = mostRecentTeam(playerId);
+  const yearStats = getPlayerStatsByYear(playerId);
   const years = yearStats.map((y) => y.year);
 
   const sumIfAny = (vals: (number | undefined)[]) => {
