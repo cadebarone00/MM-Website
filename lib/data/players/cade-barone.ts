@@ -4,7 +4,7 @@ export const cadeBarone: PlayerProfile = {
   id: "Cade",
   slug: "cade-barone",
   fullName: "Cade Barone",
-  avatarSrc: "/players/cade-barone/avatar.png",
+  avatarSrc: "/players/cade-barone/avatar-headshot.png",
   instagram: "https://www.instagram.com/cade_barone/",
   linkedin: "https://www.linkedin.com/in/cade-barone/",
   bio:

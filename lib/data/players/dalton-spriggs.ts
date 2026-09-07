@@ -4,7 +4,7 @@ export const daltonSpriggs: PlayerProfile = {
   id: "Dalton",
   slug: "dalton-spriggs",
   fullName: "Dalton Spriggs",
-  avatarSrc: "/players/dalton-spriggs/avatar.png",
+  avatarSrc: "/players/dalton-spriggs/avatar-headshot.png",
   instagram: "https://www.instagram.com/daltonspriggs/",
   linkedin: "https://www.linkedin.com/in/dalton-spriggs-26a174230/",
   bio:
