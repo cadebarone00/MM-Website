@@ -19,7 +19,7 @@ type PreviewScene = (typeof VALID_SCENES)[number];
 
 const PREVIEW_VIDEO: BroadcastPlayerVideo = {
   id: "preview-player-video", playerSlug: "cade-barone", playerName: "Cade Barone", round: 1, hole: 16, shotNumber: 1,
-  par: 4, yards: 611, scoreToPar: -13, individualPlace: 1, courseName: "Maroon Masters Golf Club", format: "Singles",
+  par: 4, yards: 611, scoreToPar: -13, individualPlace: "1", courseName: "Maroon Masters Golf Club", format: "Singles",
   match: { team: "white", ownPlayers: ["Barone"], opposingPlayers: ["Sherrell"], ownStatus: "1 UP", opposingStatus: "1 DN" },
   videoUrl: "/loading/desktop.mp4",
 };
@@ -35,7 +35,7 @@ function previewVideoFromParams(params: { [key: string]: string | undefined }): 
   return {
     ...PREVIEW_VIDEO,
     playerName: params.videoPlayer?.trim() || PREVIEW_VIDEO.playerName,
-    individualPlace: number("videoPlace", PREVIEW_VIDEO.individualPlace ?? 1),
+    individualPlace: String(number("videoPlace", Number(PREVIEW_VIDEO.individualPlace ?? "1"))),
     scoreToPar: number("videoToPar", PREVIEW_VIDEO.scoreToPar ?? 0),
     round: number("videoRound", PREVIEW_VIDEO.round), hole: number("videoHole", PREVIEW_VIDEO.hole), par: number("videoPar", PREVIEW_VIDEO.par),
     yards: number("videoYards", PREVIEW_VIDEO.yards), shotNumber: number("videoShot", PREVIEW_VIDEO.shotNumber),
