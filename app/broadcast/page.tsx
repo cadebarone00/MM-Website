@@ -23,6 +23,33 @@ const PREVIEW_VIDEO: BroadcastPlayerVideo = {
   videoUrl: "/loading/desktop.mp4",
 };
 
+function previewVideoFromParams(params: { [key: string]: string | undefined }): BroadcastPlayerVideo {
+  const number = (key: string, fallback: number) => {
+    const value = Number(params[key]);
+    return Number.isFinite(value) ? value : fallback;
+  };
+  const names = (key: string, fallback: string[]) => params[key]?.split(",").map((name) => name.trim()).filter(Boolean) ?? fallback;
+  const team = params.videoTeam === "maroon" ? "maroon" : "white";
+  const showMatch = params.videoMatch !== "0";
+  return {
+    ...PREVIEW_VIDEO,
+    playerName: params.videoPlayer?.trim() || PREVIEW_VIDEO.playerName,
+    individualPlace: number("videoPlace", PREVIEW_VIDEO.individualPlace ?? 1),
+    scoreToPar: number("videoToPar", PREVIEW_VIDEO.scoreToPar ?? 0),
+    hole: number("videoHole", PREVIEW_VIDEO.hole), par: number("videoPar", PREVIEW_VIDEO.par),
+    yards: number("videoYards", PREVIEW_VIDEO.yards), shotNumber: number("videoShot", PREVIEW_VIDEO.shotNumber),
+    match: showMatch
+      ? {
+          team,
+          ownPlayers: names("videoOwn", PREVIEW_VIDEO.match?.ownPlayers ?? []),
+          opposingPlayers: names("videoOpposing", PREVIEW_VIDEO.match?.opposingPlayers ?? []),
+          ownStatus: params.videoOwnStatus?.trim() || PREVIEW_VIDEO.match?.ownStatus || "AS",
+          opposingStatus: params.videoOpposingStatus?.trim() || PREVIEW_VIDEO.match?.opposingStatus || "AS",
+        }
+      : null,
+  };
+}
+
 /**
  * `?preview=1&year=2026&scene=match_play` — Tiger Center's Broadcast
  * Controls rehearsal iframe (components/portal/tiger/BroadcastControlsPanel.tsx).
@@ -33,7 +60,7 @@ const PREVIEW_VIDEO: BroadcastPlayerVideo = {
  * that's real tournament data, not "the show" itself, so there's no reason
  * to fake it.
  */
-function previewPayload(year: number, scene: PreviewScene): BroadcastPayload {
+function previewPayload(year: number, scene: PreviewScene, video: BroadcastPlayerVideo): BroadcastPayload {
   const videoPhase = scene === "video_transition" ? "transition" : scene === "player_video" ? "playing" : null;
   return {
     seasonYear: year,
@@ -51,26 +78,26 @@ function previewPayload(year: number, scene: PreviewScene): BroadcastPayload {
       audioLoopMode: "all",
       audioShuffle: false,
       videoPhase,
-      activeVideoQueueId: videoPhase ? PREVIEW_VIDEO.id : null,
+      activeVideoQueueId: videoPhase ? video.id : null,
       videoPhaseStartedAt: videoPhase ? new Date().toISOString() : null,
     },
     config: { seasonYear: year, sceneDurationsMs: DEFAULT_SCENE_DURATIONS_MS, overlayDurationMs: 6000, takeoverDurationMs: 8000 },
     events: [],
-    activeVideo: videoPhase ? PREVIEW_VIDEO : null,
+    activeVideo: videoPhase ? video : null,
   };
 }
 
 export default async function BroadcastPage({
   searchParams,
 }: {
-  searchParams: Promise<{ preview?: string; year?: string; scene?: string }>;
+  searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
   const params = await searchParams;
   const previewYear = Number(params.year);
   const preview = params.preview === "1" && isValidDisplayYear(previewYear) && VALID_SCENES.includes(params.scene as PreviewScene);
 
   const [broadcast, { standings, final: leaderboardFinal }, matchPlay, nextTournament] = await Promise.all([
-    preview ? previewPayload(previewYear, params.scene as PreviewScene) : getBroadcastPayload(),
+    preview ? previewPayload(previewYear, params.scene as PreviewScene, previewVideoFromParams(params)) : getBroadcastPayload(),
     getBroadcastLeaderboard(preview ? previewYear : undefined),
     getBroadcastMatchPlay(preview ? previewYear : undefined),
     getNextTournament(),

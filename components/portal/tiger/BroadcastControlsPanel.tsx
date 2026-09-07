@@ -15,6 +15,37 @@ const SCENE_BUTTONS: { scene: BroadcastScene; label: string }[] = [
   { scene: "holding", label: "Holding" },
 ];
 type PreviewScene = BroadcastScene | "video_transition" | "player_video";
+type PreviewVideoSettings = {
+  player: string;
+  place: string;
+  scoreToPar: string;
+  hole: string;
+  par: string;
+  yards: string;
+  shot: string;
+  showMatch: boolean;
+  team: "maroon" | "white";
+  ownPlayers: string;
+  opposingPlayers: string;
+  ownStatus: string;
+  opposingStatus: string;
+};
+
+const DEFAULT_PREVIEW_VIDEO: PreviewVideoSettings = {
+  player: "Cade Barone",
+  place: "1",
+  scoreToPar: "-13",
+  hole: "16",
+  par: "4",
+  yards: "611",
+  shot: "1",
+  showMatch: true,
+  team: "white",
+  ownPlayers: "Barone",
+  opposingPlayers: "Sherrell",
+  ownStatus: "1 UP",
+  opposingStatus: "1 DN",
+};
 const PREVIEW_SCENE_BUTTONS: { scene: PreviewScene; label: string }[] = [
   ...SCENE_BUTTONS,
   { scene: "video_transition", label: "Video Transition" },
@@ -63,6 +94,7 @@ export function BroadcastControlsPanel({
   const [trackUrlTitle, setTrackUrlTitle] = useState("");
   const [previewYear, setPreviewYear] = useState(initialDisplayYear);
   const [previewScene, setPreviewScene] = useState<PreviewScene>("individual_leaderboard");
+  const [previewVideo, setPreviewVideo] = useState<PreviewVideoSettings>(DEFAULT_PREVIEW_VIDEO);
 
   // Lets a host actually hear whatever's selected in the Playlist below,
   // whether rehearsing or live — audible only in this browser tab, since
@@ -85,7 +117,32 @@ export function BroadcastControlsPanel({
   // announcement already auto-expired on its own; clicking it then is a no-op.
   const overlayActive = Boolean(state.overlayText);
 
-  const previewSrc = isLive ? "/broadcast" : `/broadcast?preview=1&year=${previewYear}&scene=${previewScene}`;
+  const previewSrc = (() => {
+    if (isLive) return "/broadcast";
+    const params = new URLSearchParams({
+      preview: "1",
+      year: String(previewYear),
+      scene: previewScene,
+      videoPlayer: previewVideo.player,
+      videoPlace: previewVideo.place,
+      videoToPar: previewVideo.scoreToPar,
+      videoHole: previewVideo.hole,
+      videoPar: previewVideo.par,
+      videoYards: previewVideo.yards,
+      videoShot: previewVideo.shot,
+      videoMatch: previewVideo.showMatch ? "1" : "0",
+      videoTeam: previewVideo.team,
+      videoOwn: previewVideo.ownPlayers,
+      videoOpposing: previewVideo.opposingPlayers,
+      videoOwnStatus: previewVideo.ownStatus,
+      videoOpposingStatus: previewVideo.opposingStatus,
+    });
+    return `/broadcast?${params.toString()}`;
+  })();
+
+  function updatePreviewVideo<Key extends keyof PreviewVideoSettings>(key: Key, value: PreviewVideoSettings[Key]) {
+    setPreviewVideo((current) => ({ ...current, [key]: value }));
+  }
 
   async function postAnnouncement() {
     const text = announcementText.trim();
@@ -465,6 +522,82 @@ export function BroadcastControlsPanel({
               </button>
             ))}
           </div>
+
+          {previewScene === "player_video" && (
+            <section className="mt-4 rounded-lg border-2 border-gold-400 bg-gold-50/40 p-4">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+                <h2 className="font-serif text-lg font-bold text-ink-900">Live Player Video rehearsal controls</h2>
+                <p className="font-sans text-xs text-ink-500">Preview only — this never changes the real broadcast.</p>
+              </div>
+              <p className="mt-1 font-sans text-xs text-ink-600">Use commas to stack partners or opponents in the match overlay.</p>
+
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <label className="col-span-2 flex flex-col gap-1 font-sans text-xs text-ink-700">
+                  Player name
+                  <input value={previewVideo.player} onChange={(e) => updatePreviewVideo("player", e.target.value)} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm" />
+                </label>
+                <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
+                  Tournament place
+                  <input type="number" min="1" value={previewVideo.place} onChange={(e) => updatePreviewVideo("place", e.target.value)} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm" />
+                </label>
+                <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
+                  Score to par
+                  <input value={previewVideo.scoreToPar} onChange={(e) => updatePreviewVideo("scoreToPar", e.target.value)} placeholder="-13" className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm" />
+                </label>
+                <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
+                  Hole
+                  <input type="number" min="1" max="18" value={previewVideo.hole} onChange={(e) => updatePreviewVideo("hole", e.target.value)} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm" />
+                </label>
+                <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
+                  Par
+                  <input type="number" min="3" max="6" value={previewVideo.par} onChange={(e) => updatePreviewVideo("par", e.target.value)} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm" />
+                </label>
+                <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
+                  Yardage
+                  <input type="number" min="1" value={previewVideo.yards} onChange={(e) => updatePreviewVideo("yards", e.target.value)} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm" />
+                </label>
+                <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
+                  Shot being hit
+                  <input type="number" min="1" value={previewVideo.shot} onChange={(e) => updatePreviewVideo("shot", e.target.value)} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm" />
+                </label>
+              </div>
+
+              <div className="mt-4 border-t border-gold-300 pt-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-condensed text-sm font-semibold uppercase tracking-wide text-ink-900">Match group</h3>
+                  <label className="flex items-center gap-2 font-sans text-xs font-semibold text-ink-700">
+                    <input type="checkbox" checked={previewVideo.showMatch} onChange={(e) => updatePreviewVideo("showMatch", e.target.checked)} className="size-4 accent-maroon-700" />
+                    Show match overlay
+                  </label>
+                </div>
+                <div className={["mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2", !previewVideo.showMatch ? "opacity-45" : ""].join(" ")}>
+                  <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
+                    Player&apos;s team
+                    <select disabled={!previewVideo.showMatch} value={previewVideo.team} onChange={(e) => updatePreviewVideo("team", e.target.value as "maroon" | "white")} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm disabled:cursor-not-allowed">
+                      <option value="white">White</option>
+                      <option value="maroon">Maroon</option>
+                    </select>
+                  </label>
+                  <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
+                    Player&apos;s match status
+                    <input disabled={!previewVideo.showMatch} value={previewVideo.ownStatus} onChange={(e) => updatePreviewVideo("ownStatus", e.target.value)} placeholder="1 UP" className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm disabled:cursor-not-allowed" />
+                  </label>
+                  <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
+                    Player / partner last name(s)
+                    <input disabled={!previewVideo.showMatch} value={previewVideo.ownPlayers} onChange={(e) => updatePreviewVideo("ownPlayers", e.target.value)} placeholder="Barone, Smith" className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm disabled:cursor-not-allowed" />
+                  </label>
+                  <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
+                    Opponent last name(s)
+                    <input disabled={!previewVideo.showMatch} value={previewVideo.opposingPlayers} onChange={(e) => updatePreviewVideo("opposingPlayers", e.target.value)} placeholder="Sherrell, Jones" className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm disabled:cursor-not-allowed" />
+                  </label>
+                  <label className="flex flex-col gap-1 font-sans text-xs text-ink-700 sm:col-start-2">
+                    Opponent&apos;s match status
+                    <input disabled={!previewVideo.showMatch} value={previewVideo.opposingStatus} onChange={(e) => updatePreviewVideo("opposingStatus", e.target.value)} placeholder="1 DN" className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm disabled:cursor-not-allowed" />
+                  </label>
+                </div>
+              </div>
+            </section>
+          )}
         </div>
       ) : (
         <div className="mt-4">
