@@ -7,7 +7,7 @@ export function TournamentHeader({ tournament, title }: { tournament: Tournament
   return (
     <div className="flex items-end justify-between mb-2 gap-4 flex-wrap">
       <div>
-        <div className="font-condensed text-[11px] font-semibold tracking-eyebrow uppercase text-maroon-600 mb-[6px]">
+        <div className="hidden font-condensed text-[11px] font-semibold tracking-eyebrow uppercase text-maroon-600 mb-[6px] lg:block">
           {tournament.editionLabel} · {tournament.venue} · {tournament.dateLabel}
         </div>
         <h1 className="font-sans text-[36px] font-extrabold text-ink-900 m-0">{title}</h1>
