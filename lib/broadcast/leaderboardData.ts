@@ -5,6 +5,7 @@ import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
 import { leaderboard } from "@/lib/live/scoring";
 import { buildLiveTournamentSnapshot } from "./liveSnapshot";
 import type { BroadcastStanding } from "./types";
+import { compareLeaderboardOrder } from "@/lib/leaderboard/sort";
 
 export interface BroadcastLeaderboard {
   seasonYear: number;
@@ -95,11 +96,11 @@ export async function getBroadcastLeaderboard(overrideYear?: number): Promise<Br
 
   const archived = pastTournaments.find((t) => t.year === seasonYear);
   if (archived) {
-    const standings = archivedStandings(seasonYear, [...archived.individualLeaderboard].sort((a, b) => a.toPar - b.toPar));
+    const standings = archivedStandings(seasonYear, [...archived.individualLeaderboard].sort((a, b) => a.toPar - b.toPar)).sort(compareLeaderboardOrder);
     return { seasonYear, standings, final: true };
   }
 
   const snapshot = await buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true });
   const standings = liveStandings(snapshot);
-  return { seasonYear, standings, final: false };
+  return { seasonYear, standings: standings.sort(compareLeaderboardOrder), final: false };
 }
