@@ -24,11 +24,11 @@ function rankRows(standings: BroadcastStanding[]): Row[] {
 }
 
 function todayLabel(value: number | null | undefined) {
-  return value == null ? <span className="text-[color:var(--color-ink-400)]">â€”</span> : <ScoreBadge value={value} size="lg" />;
+  return value == null ? <span className="text-[color:var(--color-ink-400)]">-</span> : <ScoreBadge value={value} size="lg" />;
 }
 
 function thruLabel(value: number | null | undefined) {
-  return value == null ? "â€”" : value >= 18 ? "F" : String(value);
+  return value == null ? "-" : value >= 18 ? "F" : String(value);
 }
 
 function MockLeaderboardScene({ elapsedMs, videoDurationMs, seed, animation, forcedEventKind }: { elapsedMs: number; videoDurationMs: number | null; seed: number; animation: { birdieEnabled: boolean; birdieDelayMs: number; rowMoveMs: number } | null; forcedEventKind?: "birdie" | "eagle" | "bogey" }) {
