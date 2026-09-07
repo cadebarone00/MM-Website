@@ -9,7 +9,8 @@
 // from lib/data/index.ts.
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { nextTournament, nextVenue, pastVenues } from "./index";
-import type { UpcomingTournament, VenueSchedule, NextTournamentOverride } from "./types";
+import { buildVenueCoursesFromLive } from "./liveCourseSchedule";
+import type { UpcomingTournament, VenueSchedule, VenueCourse, NextTournamentOverride } from "./types";
 
 interface ActiveSeasonSettings {
   seasonYear: number;
@@ -78,11 +79,37 @@ export async function getNextTournament(): Promise<UpcomingTournament> {
   };
 }
 
-/** Same overlay, applied to `nextVenue`'s `venueName`. */
+/**
+ * The courses assigned to any of this season's rounds in Tiger Center's
+ * round setup (`live_round_state.course_id` -> `live_courses`), converted
+ * to the public VenueCourse shape. Empty until a host assigns at least one
+ * course to a round.
+ */
+async function getActiveSeasonCourses(seasonYear: number): Promise<VenueCourse[]> {
+  const service = createSupabaseServiceRoleClient();
+  const { data: rounds } = await service.from("live_round_state").select("course_id").eq("season_year", seasonYear);
+  const courseIds = [...new Set((rounds ?? []).map((round) => round.course_id).filter((id): id is string => Boolean(id)))];
+  if (!courseIds.length) return [];
+
+  const { data: courses } = await service.from("live_courses").select("id, name, holes").in("id", courseIds);
+  return buildVenueCoursesFromLive((courses ?? []).map((course) => ({ id: course.id, name: course.name, holes: course.holes })));
+}
+
+/**
+ * `nextVenue`, with venue name and courses overlaid from Tiger Center for
+ * whichever year is currently marked active. Courses come straight from
+ * the round setup (Task 10's live schedule), not the static venue file's
+ * `courses` array, which has never been filled in for any year.
+ */
 export async function getNextVenue(): Promise<VenueSchedule> {
   const override = await getActiveSeasonSettings();
-  if (!override || override.seasonYear !== nextVenue.year || !override.venueName) return nextVenue;
-  return { ...nextVenue, venueName: override.venueName };
+  if (!override || override.seasonYear !== nextVenue.year) return nextVenue;
+  const courses = await getActiveSeasonCourses(override.seasonYear);
+  return {
+    ...nextVenue,
+    venueName: override.venueName ?? nextVenue.venueName,
+    courses: courses.length ? courses : nextVenue.courses,
+  };
 }
 
 /** Async counterpart of lib/data/index.ts's getVenueBySlug — same slug match, live-overlaid venue. */

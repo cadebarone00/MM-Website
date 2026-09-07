@@ -7,6 +7,7 @@ import { ChevronDown } from "lucide-react";
 import { pastTournaments } from "@/lib/data";
 import { CourseScorecardTable } from "./CourseScorecardTable";
 import type { VenueCourse, VenueSchedule, VenueSession } from "@/lib/data/types";
+import type { UpcomingRoundScheduleItem } from "@/lib/data/activeSeasonOverlay";
 
 function PastVenuesDropdown() {
   const years = [...pastTournaments].sort((a, b) => b.year - a.year);
@@ -43,6 +44,25 @@ function SessionBox({ session, courseName }: { session: VenueSession; courseName
       <div className="font-condensed text-[10px] font-semibold uppercase tracking-wide text-maroon-600">Session {session.session}</div>
       <div className="mt-2 font-sans text-sm font-bold text-ink-900">{session.format ?? "TBD"}</div>
       <div className="mt-1 font-sans text-xs text-ink-500">{courseName ?? "Course TBD"}</div>
+    </div>
+  );
+}
+
+// "YYYY-MM-DD" -> "M/D/YYYY", matching QuickScheduleCard's date display on
+// the home page so the two live-schedule surfaces read the same way.
+function roundDateLabel(date: string): string {
+  const [year, month, day] = date.split("-");
+  return `${Number(month)}/${Number(day)}/${year}`;
+}
+
+function RoundBox({ round }: { round: UpcomingRoundScheduleItem }) {
+  return (
+    <div className="rounded-md border border-ink-200 bg-white px-3 py-4 text-center">
+      <div className="font-condensed text-[10px] font-semibold uppercase tracking-wide text-maroon-600">
+        Round {round.round}{round.date ? ` · ${roundDateLabel(round.date)}` : ""}
+      </div>
+      <div className="mt-2 font-sans text-sm font-bold text-ink-900">{round.format ?? "Format TBD"}</div>
+      <div className="mt-1 font-sans text-xs text-ink-500">{round.courseName ?? "Course TBD"}</div>
     </div>
   );
 }
@@ -106,7 +126,7 @@ function CourseBox({ course, expanded, onToggle, venueName }: { course: VenueCou
   );
 }
 
-export function VenueSchedulePage({ venue }: { venue: VenueSchedule }) {
+export function VenueSchedulePage({ venue, rounds = [] }: { venue: VenueSchedule; rounds?: UpcomingRoundScheduleItem[] }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const courseName = (id: string | null) => venue.courses.find((c) => c.id === id)?.name ?? null;
 
@@ -120,7 +140,16 @@ export function VenueSchedulePage({ venue }: { venue: VenueSchedule }) {
         <PastVenuesDropdown />
       </div>
 
-      {venue.sessions.length > 0 && (
+      {rounds.length > 0 ? (
+        <section className="mb-9">
+          <div className="mb-3 font-condensed text-[11px] font-semibold uppercase tracking-eyebrow text-maroon-600">Rounds</div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {rounds.map((round) => (
+              <RoundBox key={round.round} round={round} />
+            ))}
+          </div>
+        </section>
+      ) : venue.sessions.length > 0 ? (
         <section className="mb-9">
           <div className="mb-3 font-condensed text-[11px] font-semibold uppercase tracking-eyebrow text-maroon-600">Sessions 1–8</div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
@@ -129,7 +158,7 @@ export function VenueSchedulePage({ venue }: { venue: VenueSchedule }) {
             ))}
           </div>
         </section>
-      )}
+      ) : null}
 
       {venue.courses.length > 0 ? (
         <section className="space-y-5">

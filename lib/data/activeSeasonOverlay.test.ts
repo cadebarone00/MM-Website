@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { formatDateLabel, getNextTournament } from "./activeSeasonOverlay.ts";
+import { formatDateLabel, getNextTournament, getNextVenue } from "./activeSeasonOverlay.ts";
 
 test("formatDateLabel formats a same-month range", () => {
   assert.equal(formatDateLabel("2027-01-06", "2027-01-09"), "January 6–9, 2027");
@@ -19,4 +19,12 @@ test("formatDateLabel formats a cross-month range", () => {
 // route/helper in this codebase already has in its own tests.
 test("getNextTournament rejects with no Supabase configuration in the test environment", async () => {
   await assert.rejects(() => getNextTournament());
+});
+
+// Same limitation as above: getNextVenue's course overlay (Tiger Center's
+// live_round_state/live_courses) needs real Supabase configuration, which
+// this test environment doesn't have. Confirms it propagates rather than
+// silently returning the static nextVenue.
+test("getNextVenue rejects with no Supabase configuration in the test environment", async () => {
+  await assert.rejects(() => getNextVenue());
 });
