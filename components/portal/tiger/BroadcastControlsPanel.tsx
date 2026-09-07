@@ -8,7 +8,7 @@ import { useAutoScene } from "@/lib/broadcast/useAutoScene";
 import { useLiveBroadcastAudio } from "@/lib/broadcast/useLiveBroadcastAudio";
 import { Volume2, VolumeX } from "lucide-react";
 import { BroadcastPreview } from "./BroadcastPreview";
-import { MOCK_RUN_TOTAL_MS } from "@/lib/broadcast/mockRun";
+import { getMockRunTotalMs, MOCK_RUN_DEFAULT_VIDEO_MS } from "@/lib/broadcast/mockRun";
 
 const SCENE_BUTTONS: { scene: BroadcastScene; label: string }[] = [
   { scene: "individual_leaderboard", label: "Individual Leaderboard" },
@@ -35,7 +35,11 @@ type PreviewVideoSettings = {
   ownStatus: string;
   opposingStatus: string;
 };
-type MockRunState = { status: "running" | "paused"; offsetMs: number; startedAt: number | null };
+type MockRunState = { status: "running" | "paused"; offsetMs: number; startedAt: number | null; videoDurationMs: number };
+type RehearsalClip = {
+  playerSlug: string; playerName: string; round: number; hole: number; shotNumber: number;
+  course: string; format: string; par: number | null; yards: number | null; url: string;
+};
 
 const DEFAULT_PREVIEW_VIDEO: PreviewVideoSettings = {
   player: "Cade Barone",
@@ -108,6 +112,9 @@ export function BroadcastControlsPanel({
   const [clipBusy, setClipBusy] = useState(false);
   const [mockRun, setMockRun] = useState<MockRunState | null>(null);
   const [mockClock, setMockClock] = useState(Date.now());
+  const [mockPickerOpen, setMockPickerOpen] = useState(false);
+  const [mockClips, setMockClips] = useState<RehearsalClip[]>([]);
+  const [mockClipsBusy, setMockClipsBusy] = useState(false);
 
   // Lets a host actually hear whatever's selected in the Playlist below,
   // whether rehearsing or live — audible only in this browser tab, since
@@ -135,8 +142,9 @@ export function BroadcastControlsPanel({
   const previewMatchReady = previewNameCount(previewVideo.ownPlayers) === matchPlayerCount && previewNameCount(previewVideo.opposingPlayers) === matchPlayerCount;
   const ownTeamLabel = previewVideo.team === "white" ? "White" : "Maroon";
   const opposingTeamLabel = previewVideo.team === "white" ? "Maroon" : "White";
+  const mockTotalMs = getMockRunTotalMs(mockRun?.videoDurationMs);
   const mockElapsed = mockRun
-    ? Math.min(MOCK_RUN_TOTAL_MS, mockRun.offsetMs + (mockRun.status === "running" && mockRun.startedAt ? Math.max(0, mockClock - mockRun.startedAt) : 0))
+    ? Math.min(mockTotalMs, mockRun.offsetMs + (mockRun.status === "running" && mockRun.startedAt ? Math.max(0, mockClock - mockRun.startedAt) : 0))
     : 0;
 
   useEffect(() => {
@@ -145,7 +153,7 @@ export function BroadcastControlsPanel({
     const offsetMs = mockRun.offsetMs;
     const timer = window.setInterval(() => {
       const elapsed = offsetMs + Math.max(0, Date.now() - startedAt);
-      if (elapsed >= MOCK_RUN_TOTAL_MS) {
+      if (elapsed >= getMockRunTotalMs(mockRun.videoDurationMs)) {
         setMockRun(null);
         return;
       }
@@ -181,6 +189,7 @@ export function BroadcastControlsPanel({
     if (mockRun) {
       params.set("mock", "1");
       params.set("mockOffset", String(mockRun.status === "running" ? mockRun.offsetMs : mockElapsed));
+      params.set("mockVideoDuration", String(mockRun.videoDurationMs));
       if (mockRun.status === "running" && mockRun.startedAt) params.set("mockStart", String(mockRun.startedAt));
     }
     return `/broadcast?${params.toString()}`;
@@ -190,9 +199,9 @@ export function BroadcastControlsPanel({
     setPreviewVideo((current) => ({ ...current, [key]: value }));
   }
 
-  function startMockRun() {
+  function startMockRun(videoDurationMs = MOCK_RUN_DEFAULT_VIDEO_MS) {
     setMockClock(Date.now());
-    setMockRun({ status: "running", offsetMs: 0, startedAt: Date.now() });
+    setMockRun({ status: "running", offsetMs: 0, startedAt: Date.now(), videoDurationMs });
   }
 
   function pauseMockRun() {
@@ -207,11 +216,54 @@ export function BroadcastControlsPanel({
   }
 
   function seekMockRun(offsetMs: number) {
-    const clamped = Math.min(MOCK_RUN_TOTAL_MS, Math.max(0, offsetMs));
+    const clamped = Math.min(mockTotalMs, Math.max(0, offsetMs));
     setMockClock(Date.now());
     setMockRun((current) => current?.status === "running"
       ? { ...current, offsetMs: clamped, startedAt: Date.now() }
-      : { status: "paused", offsetMs: clamped, startedAt: null });
+      : { status: "paused", offsetMs: clamped, startedAt: null, videoDurationMs: MOCK_RUN_DEFAULT_VIDEO_MS });
+  }
+
+  async function openMockPicker() {
+    setMockPickerOpen((open) => !open);
+    if (mockClips.length > 0 || mockClipsBusy) return;
+    setMockClipsBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/portal/tiger/broadcast/rehearsal-videos?year=${previewYear}`);
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error ?? "Could not load archived clips.");
+        return;
+      }
+      setMockClips(data.clips);
+    } finally {
+      setMockClipsBusy(false);
+    }
+  }
+
+  async function startMockFromClip(clip: RehearsalClip) {
+    setPreviewVideo((current) => ({
+      ...current,
+      player: clip.playerName,
+      round: String(clip.round),
+      hole: String(clip.hole),
+      shot: String(clip.shotNumber),
+      par: clip.par == null ? current.par : String(clip.par),
+      yards: clip.yards == null ? current.yards : String(clip.yards),
+      course: clip.course,
+      format: clip.format === "Foursome" ? "Foursome" : clip.format === "Fourball" ? "Fourball" : "Singles",
+      videoUrl: clip.url,
+    }));
+    setMockPickerOpen(false);
+    const durationMs = await new Promise<number>((resolve) => {
+      const probe = document.createElement("video");
+      const done = () => resolve(Number.isFinite(probe.duration) && probe.duration > 0 ? Math.round(probe.duration * 1000) : MOCK_RUN_DEFAULT_VIDEO_MS);
+      probe.preload = "metadata";
+      probe.onloadedmetadata = done;
+      probe.onerror = done;
+      probe.src = clip.url;
+    });
+    startMockRun(durationMs);
   }
 
   async function loadCamRoundThreeClip() {
