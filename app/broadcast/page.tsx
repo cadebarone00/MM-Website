@@ -6,6 +6,7 @@ import { getNextTournament } from "@/lib/data/activeSeasonOverlay";
 import { BroadcastStage } from "@/components/broadcast/BroadcastStage";
 import { DEFAULT_SCENE_DURATIONS_MS, type BroadcastPayload, type BroadcastPlayerVideo, type BroadcastScene } from "@/lib/broadcast/types";
 import { isValidDisplayYear } from "@/lib/broadcast/displayYears";
+import { getMockRunPosition } from "@/lib/broadcast/mockRun";
 
 export const metadata: Metadata = {
   title: "Watch Live — The Maroon Masters",
@@ -62,7 +63,7 @@ function previewVideoFromParams(params: { [key: string]: string | undefined }): 
  * that's real tournament data, not "the show" itself, so there's no reason
  * to fake it.
  */
-function previewPayload(year: number, scene: PreviewScene, video: BroadcastPlayerVideo): BroadcastPayload {
+function previewPayload(year: number, scene: PreviewScene, video: BroadcastPlayerVideo, mock = false): BroadcastPayload {
   const videoPhase = scene === "video_transition" ? "transition" : scene === "player_video" ? "playing" : null;
   return {
     seasonYear: year,
@@ -85,7 +86,7 @@ function previewPayload(year: number, scene: PreviewScene, video: BroadcastPlaye
     },
     config: { seasonYear: year, sceneDurationsMs: DEFAULT_SCENE_DURATIONS_MS, overlayDurationMs: 6000, takeoverDurationMs: 8000 },
     events: [],
-    activeVideo: videoPhase ? video : null,
+    activeVideo: videoPhase || mock ? video : null,
   };
 }
 
@@ -97,9 +98,18 @@ export default async function BroadcastPage({
   const params = await searchParams;
   const previewYear = Number(params.year);
   const preview = params.preview === "1" && isValidDisplayYear(previewYear) && VALID_SCENES.includes(params.scene as PreviewScene);
+  const mock = preview && params.mock === "1";
+  const mockOffsetMs = Math.max(0, Number(params.mockOffset) || 0);
+  const mockStartedAt = Number(params.mockStart);
+  const mockRun = mock
+    ? { startedAt: Number.isFinite(mockStartedAt) && mockStartedAt > 0 ? mockStartedAt : null, offsetMs: mockOffsetMs }
+    : null;
+  const initialMockPosition = mockRun
+    ? getMockRunPosition(mockRun.offsetMs + (mockRun.startedAt ? Math.max(0, Date.now() - mockRun.startedAt) : 0))
+    : null;
 
   const [broadcast, { standings, final: leaderboardFinal }, matchPlay, nextTournament] = await Promise.all([
-    preview ? previewPayload(previewYear, params.scene as PreviewScene, previewVideoFromParams(params)) : getBroadcastPayload(),
+    preview ? previewPayload(previewYear, initialMockPosition?.videoPhase === "transition" ? "video_transition" : initialMockPosition?.videoPhase === "playing" ? "player_video" : (initialMockPosition?.scene ?? params.scene as PreviewScene), previewVideoFromParams(params), mock) : getBroadcastPayload(),
     getBroadcastLeaderboard(preview ? previewYear : undefined),
     getBroadcastMatchPlay(preview ? previewYear : undefined),
     getNextTournament(),
@@ -113,6 +123,7 @@ export default async function BroadcastPage({
       matchPlay={matchPlay}
       holding={{ venue: nextTournament.venue, dateLabel: nextTournament.dateLabel }}
       preview={preview}
+      mockRun={mockRun}
     />
   );
 }

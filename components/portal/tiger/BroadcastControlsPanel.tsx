@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { BroadcastConfig, BroadcastScene, BroadcastState } from "@/lib/broadcast/types";
 import type { PlaylistTrack } from "@/lib/broadcast/playlist";
 import { DISPLAY_YEARS } from "@/lib/broadcast/displayYears";
@@ -8,6 +8,7 @@ import { useAutoScene } from "@/lib/broadcast/useAutoScene";
 import { useLiveBroadcastAudio } from "@/lib/broadcast/useLiveBroadcastAudio";
 import { Volume2, VolumeX } from "lucide-react";
 import { BroadcastPreview } from "./BroadcastPreview";
+import { MOCK_RUN_TOTAL_MS } from "@/lib/broadcast/mockRun";
 
 const SCENE_BUTTONS: { scene: BroadcastScene; label: string }[] = [
   { scene: "individual_leaderboard", label: "Individual Leaderboard" },
@@ -32,6 +33,7 @@ type PreviewVideoSettings = {
   ownStatus: string;
   opposingStatus: string;
 };
+type MockRunState = { status: "running" | "paused"; offsetMs: number; startedAt: number | null };
 
 const DEFAULT_PREVIEW_VIDEO: PreviewVideoSettings = {
   player: "Cade Barone",
@@ -99,6 +101,8 @@ export function BroadcastControlsPanel({
   const [previewYear, setPreviewYear] = useState(initialDisplayYear);
   const [previewScene, setPreviewScene] = useState<PreviewScene>("individual_leaderboard");
   const [previewVideo, setPreviewVideo] = useState<PreviewVideoSettings>(DEFAULT_PREVIEW_VIDEO);
+  const [mockRun, setMockRun] = useState<MockRunState | null>(null);
+  const [mockClock, setMockClock] = useState(Date.now());
 
   // Lets a host actually hear whatever's selected in the Playlist below,
   // whether rehearsing or live — audible only in this browser tab, since
@@ -126,6 +130,24 @@ export function BroadcastControlsPanel({
   const previewMatchReady = previewNameCount(previewVideo.ownPlayers) === matchPlayerCount && previewNameCount(previewVideo.opposingPlayers) === matchPlayerCount;
   const ownTeamLabel = previewVideo.team === "white" ? "White" : "Maroon";
   const opposingTeamLabel = previewVideo.team === "white" ? "Maroon" : "White";
+  const mockElapsed = mockRun
+    ? Math.min(MOCK_RUN_TOTAL_MS, mockRun.offsetMs + (mockRun.status === "running" && mockRun.startedAt ? Math.max(0, mockClock - mockRun.startedAt) : 0))
+    : 0;
+
+  useEffect(() => {
+    if (!mockRun || mockRun.status !== "running" || !mockRun.startedAt) return;
+    const startedAt = mockRun.startedAt;
+    const offsetMs = mockRun.offsetMs;
+    const timer = window.setInterval(() => {
+      const elapsed = offsetMs + Math.max(0, Date.now() - startedAt);
+      if (elapsed >= MOCK_RUN_TOTAL_MS) {
+        setMockRun(null);
+        return;
+      }
+      setMockClock(Date.now());
+    }, 250);
+    return () => window.clearInterval(timer);
+  }, [mockRun]);
 
   const previewSrc = (() => {
     if (isLive) return "/broadcast";
@@ -149,11 +171,40 @@ export function BroadcastControlsPanel({
       videoOwnStatus: previewVideo.ownStatus,
       videoOpposingStatus: previewVideo.opposingStatus,
     });
+    if (mockRun) {
+      params.set("mock", "1");
+      params.set("mockOffset", String(mockRun.status === "running" ? mockRun.offsetMs : mockElapsed));
+      if (mockRun.status === "running" && mockRun.startedAt) params.set("mockStart", String(mockRun.startedAt));
+    }
     return `/broadcast?${params.toString()}`;
   })();
 
   function updatePreviewVideo<Key extends keyof PreviewVideoSettings>(key: Key, value: PreviewVideoSettings[Key]) {
     setPreviewVideo((current) => ({ ...current, [key]: value }));
+  }
+
+  function startMockRun() {
+    setMockClock(Date.now());
+    setMockRun({ status: "running", offsetMs: 0, startedAt: Date.now() });
+  }
+
+  function pauseMockRun() {
+    if (!mockRun || mockRun.status !== "running") return;
+    setMockRun({ status: "paused", offsetMs: mockElapsed, startedAt: null });
+  }
+
+  function resumeMockRun() {
+    if (!mockRun || mockRun.status !== "paused") return;
+    setMockClock(Date.now());
+    setMockRun({ ...mockRun, status: "running", startedAt: Date.now() });
+  }
+
+  function seekMockRun(offsetMs: number) {
+    const clamped = Math.min(MOCK_RUN_TOTAL_MS, Math.max(0, offsetMs));
+    setMockClock(Date.now());
+    setMockRun((current) => current?.status === "running"
+      ? { ...current, offsetMs: clamped, startedAt: Date.now() }
+      : { status: "paused", offsetMs: clamped, startedAt: null });
   }
 
   async function postAnnouncement() {
@@ -486,16 +537,32 @@ export function BroadcastControlsPanel({
             {busy === "end" ? "Ending…" : "End Broadcast"}
           </button>
         ) : (
-          <button
-            type="button"
-            disabled={busy !== null}
-            onClick={goLive}
-            className="rounded-lg bg-maroon-700 px-4 py-2 font-condensed text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-maroon-800 disabled:opacity-50"
-          >
-            {busy === "golive" ? "Going Live…" : `Go Live (${previewYear})`}
-          </button>
+          <div className="flex items-center gap-2">
+            <button type="button" disabled={busy !== null} onClick={startMockRun} className="rounded-lg border-2 border-gold-500 bg-gold-50 px-4 py-2 font-condensed text-sm font-semibold uppercase tracking-wide text-ink-900 transition hover:bg-gold-100 disabled:opacity-50">Mock Run</button>
+            <button type="button" disabled={busy !== null} onClick={goLive} className="rounded-lg bg-maroon-700 px-4 py-2 font-condensed text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-maroon-800 disabled:opacity-50">
+              {busy === "golive" ? "Going Live…" : `Go Live (${previewYear})`}
+            </button>
+          </div>
         )}
       </div>
+      {!isLive && mockRun && (
+        <section className="rounded-b-lg border-x-2 border-b-2 border-gold-400 bg-gold-50/50 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-condensed text-sm font-semibold uppercase tracking-wide text-ink-900">Two-cycle mock run</h2>
+              <p className="font-sans text-xs text-ink-600">Leaderboard, Match Play, Holding, player transition, and player video — then repeated once.</p>
+            </div>
+            <div className="flex gap-2">
+              <button type="button" onClick={mockRun.status === "running" ? pauseMockRun : resumeMockRun} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-800">{mockRun.status === "running" ? "Pause" : "Resume"}</button>
+              <button type="button" onClick={() => setMockRun(null)} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-800">End Mock</button>
+            </div>
+          </div>
+          <div className="mt-3 flex items-center gap-3">
+            <input type="range" min="0" max={MOCK_RUN_TOTAL_MS} step="1000" value={mockElapsed} onChange={(e) => seekMockRun(Number(e.target.value))} className="min-w-0 flex-1 accent-maroon-700" aria-label="Rewind mock broadcast" />
+            <span className="w-20 text-right font-mono text-xs text-ink-700">{Math.floor(mockElapsed / 60000)}:{String(Math.floor((mockElapsed % 60000) / 1000)).padStart(2, "0")} / 2:00</span>
+          </div>
+        </section>
+      )}
       {error && <p className="mt-2 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
 
       {!isLive ? (

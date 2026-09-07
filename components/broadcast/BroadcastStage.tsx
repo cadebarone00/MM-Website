@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { BroadcastPayload, BroadcastStanding } from "@/lib/broadcast/types";
 import type { BroadcastMatchPlay } from "@/lib/broadcast/matchPlayData";
 import { useLiveBroadcastData } from "@/lib/broadcast/useLiveBroadcastData";
 import { useLiveBroadcastState } from "@/lib/broadcast/useLiveBroadcastState";
 import { useReloadOnDisplayYearChange } from "@/lib/broadcast/useReloadOnDisplayYearChange";
 import { useBroadcastQueue } from "@/lib/broadcast/useBroadcastQueue";
+import { getMockRunPosition } from "@/lib/broadcast/mockRun";
 import { SceneRenderer } from "./SceneRenderer";
 
 /**
@@ -27,6 +29,7 @@ export function BroadcastStage({
   matchPlay: initialMatchPlay,
   holding,
   preview = false,
+  mockRun = null,
 }: {
   broadcast: BroadcastPayload;
   standings: BroadcastStanding[];
@@ -34,7 +37,14 @@ export function BroadcastStage({
   matchPlay: BroadcastMatchPlay;
   holding: { venue: string; dateLabel: string };
   preview?: boolean;
+  mockRun?: { startedAt: number | null; offsetMs: number } | null;
 }) {
+  const [mockClock, setMockClock] = useState(Date.now());
+  useEffect(() => {
+    if (!mockRun?.startedAt) return;
+    const timer = window.setInterval(() => setMockClock(Date.now()), 250);
+    return () => window.clearInterval(timer);
+  }, [mockRun?.startedAt]);
   const { standings, leaderboardFinal, matchPlay } = useLiveBroadcastData(broadcast.seasonYear, {
     standings: initialStandings,
     leaderboardFinal: initialLeaderboardFinal,
@@ -43,10 +53,16 @@ export function BroadcastStage({
   const state = useLiveBroadcastState(broadcast.seasonYear, broadcast.state, !preview);
   const activeEvent = useBroadcastQueue(broadcast.seasonYear, broadcast.events, broadcast.config, !preview);
   useReloadOnDisplayYearChange(broadcast.seasonYear, !preview);
+  const mockPosition = mockRun
+    ? getMockRunPosition(mockRun.offsetMs + (mockRun.startedAt ? Math.max(0, mockClock - mockRun.startedAt) : 0))
+    : null;
+  const displayState = mockPosition
+    ? { ...state, tournamentLive: true, automationMode: "producer" as const, currentScene: mockPosition.scene, videoPhase: mockPosition.videoPhase }
+    : state;
 
   return (
     <SceneRenderer
-      state={state}
+      state={displayState}
       config={broadcast.config}
       standings={standings}
       leaderboardFinal={leaderboardFinal}
