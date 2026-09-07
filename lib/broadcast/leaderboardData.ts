@@ -1,5 +1,6 @@
 // lib/broadcast/leaderboardData.ts
 import { pastTournaments } from "@/lib/data";
+import { careerArchiveRecords } from "@/lib/data/careerArchive";
 import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
 import { leaderboard } from "@/lib/live/scoring";
 import { buildLiveTournamentSnapshot } from "./liveSnapshot";
@@ -14,14 +15,23 @@ export interface BroadcastLeaderboard {
 
 /**
  * TDY and THRU are round-specific values, unlike the tournament total. We
- * only expose them for an actively live own-ball round: Foursome is a shared
- * ball and is deliberately not an individual-stat sample.
+ * prefer an actively live own-ball round. Between rounds, they fall back to
+ * the most recent completed own-ball round. Foursome is a shared ball and is
+ * deliberately not an individual-stat sample.
  */
 function liveStandings(snapshot: Awaited<ReturnType<typeof buildLiveTournamentSnapshot>>): BroadcastStanding[] {
   const totals = leaderboard(snapshot);
   const liveRound = Math.max(...snapshot.matchBoxes.filter((box) => box.state === "Live").map((box) => box.round), 0);
-  const format = liveRound ? snapshot.matchBoxes.find((box) => box.round === liveRound)?.format : null;
-  const today = liveRound && format !== "Foursome" ? new Map(leaderboard(snapshot, [liveRound]).map((entry) => [entry.player, entry])) : null;
+  const liveFormat = liveRound ? snapshot.matchBoxes.find((box) => box.round === liveRound)?.format : null;
+  const individualRounds = new Set(snapshot.matchBoxes.filter((box) => box.format !== "Foursome").map((box) => box.round));
+  const mostRecentIndividualRound = Math.max(
+    ...[...snapshot.scores.values()]
+      .filter((score) => score.score != null && score.score > 0 && individualRounds.has(score.round))
+      .map((score) => score.round),
+    0
+  );
+  const roundForTdy = liveRound ? (liveFormat === "Foursome" ? 0 : liveRound) : mostRecentIndividualRound;
+  const today = roundForTdy ? new Map(leaderboard(snapshot, [roundForTdy]).map((entry) => [entry.player, entry])) : null;
 
   return totals.map((entry) => {
     const round = today?.get(entry.player);
@@ -32,6 +42,37 @@ function liveStandings(snapshot: Awaited<ReturnType<typeof buildLiveTournamentSn
       todayToPar: round && round.played > 0 ? round.toPar : null,
       thru: round && round.played > 0 ? Math.min(18, round.played) : null,
     };
+  });
+}
+
+function archiveKey(player: string) {
+  return player.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+/** Completed years read TDY directly from the reconciled per-hole archive. */
+function archivedStandings(year: number, standings: BroadcastStanding[]): BroadcastStanding[] {
+  const roundTotals = new Map<string, { player: string; round: number; toPar: number; holes: number }>();
+  for (const record of careerArchiveRecords) {
+    if (record.year !== year || record.format === "Foursome" || record.format === "Alternate Shot" || record.score <= 0) continue;
+    const key = `${archiveKey(record.player)}:${record.round}`;
+    const current = roundTotals.get(key) ?? { player: record.player, round: record.round, toPar: 0, holes: 0 };
+    current.toPar += record.score - record.par;
+    current.holes += 1;
+    roundTotals.set(key, current);
+  }
+
+  const latestByPlayer = new Map<string, { round: number; toPar: number; holes: number }>();
+  for (const round of roundTotals.values()) {
+    const key = archiveKey(round.player);
+    const current = latestByPlayer.get(key);
+    if (!current || round.round > current.round) {
+      latestByPlayer.set(key, { round: round.round, toPar: round.toPar, holes: round.holes });
+    }
+  }
+
+  return standings.map((standing) => {
+    const latest = latestByPlayer.get(archiveKey(standing.player));
+    return { ...standing, todayToPar: latest?.toPar ?? null, thru: latest ? Math.min(18, latest.holes) : null };
   });
 }
 
@@ -54,9 +95,7 @@ export async function getBroadcastLeaderboard(overrideYear?: number): Promise<Br
 
   const archived = pastTournaments.find((t) => t.year === seasonYear);
   if (archived) {
-    const standings: BroadcastStanding[] = [...archived.individualLeaderboard]
-      .sort((a, b) => a.toPar - b.toPar)
-      .map((standing) => ({ ...standing, todayToPar: null, thru: 18 }));
+    const standings = archivedStandings(seasonYear, [...archived.individualLeaderboard].sort((a, b) => a.toPar - b.toPar));
     return { seasonYear, standings, final: true };
   }
 
