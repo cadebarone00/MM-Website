@@ -194,6 +194,20 @@ export default async function PlayerStatsPage({ params }: { params: Promise<{ pl
   ];
 
   const isMaroon = team === "maroon";
+  const latest = yearStats.at(-1)?.stats;
+  const careerPoints = sumIfAny(yearStats.map((year) => year.stats?.teamPointsWon));
+  const chartValues = [
+    Math.max(0, Math.min(100, (95 - (latest?.scoringAverage ?? 95)) * 5)),
+    latest?.firPct ?? 0,
+    latest?.girPct ?? 0,
+    latest?.upAndDown?.pct ?? 0,
+    Math.max(0, Math.min(100, 50 + (latest?.strokesGained?.putting ?? 0) * 12)),
+  ];
+  const chartPoints = chartValues.map((value, index) => {
+    const angle = (-Math.PI / 2) + (index * Math.PI * 2) / chartValues.length;
+    const radius = 62 * (value / 100);
+    return `${100 + Math.cos(angle) * radius},${100 + Math.sin(angle) * radius}`;
+  }).join(" ");
 
   return (
     <div className="max-w-[1200px] mx-auto px-7 pt-8 pb-16">
@@ -214,7 +228,31 @@ export default async function PlayerStatsPage({ params }: { params: Promise<{ pl
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-md border border-ink-100">
+      <section className="mb-6 grid gap-4 lg:grid-cols-[1.25fr_0.9fr]">
+        <div className="rounded-2xl bg-maroon-800 p-5 text-white shadow-sm sm:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div><p className="font-condensed text-2xs font-semibold uppercase tracking-[0.16em] text-gold-200">Career profile</p><h2 className="mt-1 font-serif text-2xl font-bold">Performance at a glance</h2></div>
+            <span className="rounded-full bg-white/10 px-2.5 py-1 font-condensed text-2xs font-semibold uppercase tracking-wide text-white/85">{years.length} seasons</span>
+          </div>
+          <div className="mt-2 flex items-center justify-center">
+            <svg viewBox="0 0 200 200" className="h-56 w-56 overflow-visible" aria-label="Five-category performance graphic">
+              {[62, 42, 22].map((radius) => <polygon key={radius} points={[0, 1, 2, 3, 4].map((index) => { const angle = (-Math.PI / 2) + (index * Math.PI * 2) / 5; return `${100 + Math.cos(angle) * radius},${100 + Math.sin(angle) * radius}`; }).join(" ")} fill="none" stroke="rgba(255,255,255,.25)" strokeWidth="1" />)}
+              {[0, 1, 2, 3, 4].map((index) => { const angle = (-Math.PI / 2) + (index * Math.PI * 2) / 5; return <line key={index} x1="100" y1="100" x2={100 + Math.cos(angle) * 62} y2={100 + Math.sin(angle) * 62} stroke="rgba(255,255,255,.25)" strokeWidth="1" />; })}
+              <polygon points={chartPoints} fill="rgba(213,171,82,.45)" stroke="rgb(246,210,120)" strokeWidth="2" />
+              {[[100, 25, "Score"], [171, 77, "Fairways"], [145, 169, "Greens"], [55, 169, "Up & Down"], [29, 77, "Putting"]].map(([x, y, label]) => <text key={label as string} x={x as number} y={y as number} textAnchor="middle" className="fill-white text-[9px] font-semibold">{label}</text>)}
+            </svg>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            ["Scoring avg.", latest?.scoringAverage != null ? fmtNum(latest.scoringAverage) : "—", "Latest season"],
+            ["Career points", careerPoints != null ? fmtNum(careerPoints) : "—", "All tournaments"],
+            ["Fairways", latest?.firPct != null ? fmtPct(latest.firPct) : "—", "Latest season"],
+            ["Greens", latest?.girPct != null ? fmtPct(latest.girPct) : "—", "Latest season"],
+          ].map(([label, value, note]) => <div key={label} className="flex min-h-36 flex-col justify-between rounded-xl border border-stone-300 bg-white p-4 shadow-sm"><p className="font-condensed text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">{label}</p><p className="font-serif text-3xl font-bold text-ink-900">{value}</p><p className="font-sans text-xs text-ink-500">{note}</p></div>)}
+        </div>
+      </section>
+      <div className="overflow-x-auto rounded-xl border border-ink-100 bg-white">
         <table className="w-full text-left">
           <thead>
             <tr className="bg-cream-100 font-condensed text-2xs font-semibold uppercase tracking-wide text-ink-500">
