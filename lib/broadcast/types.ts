@@ -40,6 +40,10 @@ export interface BroadcastStanding {
   player: string;
   team: BroadcastTeam;
   toPar: number;
+  /** Confirmed score to par in the currently live individual round. */
+  todayToPar?: number | null;
+  /** Confirmed holes completed in the currently live individual round. */
+  thru?: number | null;
 }
 
 export interface BroadcastState {

@@ -39,7 +39,7 @@ export function BroadcastStage({
   holding: { venue: string; dateLabel: string };
   preview?: boolean;
   mockRun?: { startedAt: number | null; offsetMs: number; videoDurationMs: number; seed: number; leaderboardAnimation: { birdieEnabled: boolean; birdieDelayMs: number; rowMoveMs: number } } | null;
-  animationTest?: { kind: "birdie" | "eagle"; startedAt: number; seed: number } | null;
+  animationTest?: { kind: "birdie" | "eagle" | "bogey"; startedAt: number; seed: number } | null;
 }) {
   const [mockClock, setMockClock] = useState(Date.now());
   useEffect(() => {

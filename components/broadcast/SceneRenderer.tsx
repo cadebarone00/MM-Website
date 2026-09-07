@@ -42,7 +42,7 @@ export function SceneRenderer({
   mockVideoDurationMs?: number | null;
   mockSeed?: number;
   mockLeaderboardAnimation?: { birdieEnabled: boolean; birdieDelayMs: number; rowMoveMs: number } | null;
-  mockForcedEventKind?: "birdie" | "eagle";
+  mockForcedEventKind?: "birdie" | "eagle" | "bogey";
 }) {
   const isAuto = state.automationMode === "auto";
   // Producer Mode (including a host's Pause — see BroadcastControlsPanel):

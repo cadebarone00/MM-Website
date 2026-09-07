@@ -53,10 +53,21 @@ export function getMockStandings(seed: number, scoreChangeApplied: boolean, cycl
   const eventKind = forcedEventKind ?? (roll === 0 ? "eagle" : roll <= 2 ? "bogey" : "birdie");
   const moverIndex = eventKind === "bogey" ? Math.abs(seed + cycle) % 3 : 2 + (Math.abs(seed + cycle) % 5);
   const eventPlayer = players[moverIndex]?.player ?? players[2].player;
-  const standings = players.map((entry, index) => ({ ...entry, toPar: -6 + index }));
+  const take = random(seed + cycle * 409);
+  const commonThru = 9 + Math.floor(take() * 7);
+  const standings = players.map((entry, index) => ({
+    ...entry,
+    toPar: -6 + index,
+    todayToPar: Math.floor(take() * 6) - 2,
+    thru: Math.max(1, Math.min(18, commonThru - 2 + Math.floor(take() * 5))),
+  }));
   if (scoreChangeApplied) {
     const mover = standings.find((entry) => entry.player === eventPlayer);
-    if (mover) mover.toPar += eventKind === "eagle" ? -2 : eventKind === "birdie" ? -1 : 1;
+    if (mover) {
+      const strokeChange = eventKind === "eagle" ? -2 : eventKind === "birdie" ? -1 : 1;
+      mover.toPar += strokeChange;
+      mover.todayToPar = (mover.todayToPar ?? 0) + strokeChange;
+    }
   }
   return { standings: standings.sort((a, b) => a.toPar - b.toPar), eventPlayer, eventKind };
 }

@@ -119,7 +119,7 @@ export function BroadcastControlsPanel({
   const [mockClipsBusy, setMockClipsBusy] = useState(false);
   const [playlistOpen, setPlaylistOpen] = useState(false);
   const [leaderboardAnimation] = useState<LeaderboardAnimationSettings>({ birdieEnabled: true, birdieDelayMs: 7000, rowMoveMs: 1000 });
-  const [animationTest, setAnimationTest] = useState<{ kind: "birdie" | "eagle"; startedAt: number; seed: number } | null>(null);
+  const [animationTest, setAnimationTest] = useState<{ kind: "birdie" | "eagle" | "bogey"; startedAt: number; seed: number } | null>(null);
 
   // Lets a host actually hear whatever's selected in the Playlist below,
   // whether rehearsing or live — audible only in this browser tab, since
@@ -213,7 +213,7 @@ export function BroadcastControlsPanel({
     setPreviewVideo((current) => ({ ...current, [key]: value }));
   }
 
-  function testScoringAnimation(kind: "birdie" | "eagle") {
+  function testScoringAnimation(kind: "birdie" | "eagle" | "bogey") {
     let seed = Math.floor(Math.random() * 2_147_483_647);
     if (seed % 3 === 0) seed += 1;
     setPreviewScene("individual_leaderboard");
@@ -763,6 +763,13 @@ export function BroadcastControlsPanel({
                   <p className="mt-1 font-sans text-xs text-ink-600">Two strokes better, then the row moves if the new score changes position.</p>
                 </div>
                 <button type="button" onClick={() => testScoringAnimation("eagle")} className="rounded-lg bg-maroon-700 px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide text-white hover:bg-maroon-800">Test Animation</button>
+              </div>
+              <div className="mt-2 flex items-center justify-between rounded-lg border-2 border-stone-300 bg-white px-3 py-3">
+                <div>
+                  <h3 className="font-condensed text-sm font-semibold uppercase tracking-wide text-ink-900">Bogey</h3>
+                  <p className="mt-1 font-sans text-xs text-ink-600">The full row flashes twice, then the score gets one stroke worse and moves only if its placement changes.</p>
+                </div>
+                <button type="button" onClick={() => testScoringAnimation("bogey")} className="rounded-lg bg-maroon-700 px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide text-white hover:bg-maroon-800">Test Animation</button>
               </div>
             </section>
           )}
