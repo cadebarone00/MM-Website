@@ -2,7 +2,7 @@ import Image from "next/image";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import { ScoreBadge } from "@/components/ui/ScoreBadge";
 import type { BroadcastStanding } from "@/lib/broadcast/types";
-import { getMockRunCycleMs } from "@/lib/broadcast/mockRun";
+import { getMockRunCycleMs, getMockStandings } from "@/lib/broadcast/mockRun";
 
 interface Row extends BroadcastStanding {
   pos: number;
@@ -23,25 +23,13 @@ function rankRows(standings: BroadcastStanding[]): Row[] {
   });
 }
 
-const MOCK_STARTING_STANDINGS: BroadcastStanding[] = [
-  { player: "Cade", team: "white", toPar: -5 },
-  { player: "Luke", team: "maroon", toPar: -4 },
-  { player: "Cam", team: "maroon", toPar: -3 },
-  { player: "Collin", team: "white", toPar: -2 },
-  { player: "Jackson", team: "white", toPar: -1 },
-  { player: "Drew", team: "maroon", toPar: 0 },
-];
-
-function MockLeaderboardScene({ elapsedMs, videoDurationMs }: { elapsedMs: number; videoDurationMs: number | null }) {
+function MockLeaderboardScene({ elapsedMs, videoDurationMs, seed }: { elapsedMs: number; videoDurationMs: number | null; seed: number }) {
   const cycleMs = getMockRunCycleMs(videoDurationMs ?? undefined);
   const cycle = Math.floor(Math.max(0, elapsedMs) / cycleMs) % 2;
   const timeInCycle = Math.max(0, elapsedMs) % cycleMs;
-  const birdiePlayer = cycle === 0 ? "Cam" : "Jackson";
   const birdieShowing = timeInCycle >= 7_000 && timeInCycle < 8_900;
   const birdieApplied = timeInCycle >= 8_500;
-  const standings = MOCK_STARTING_STANDINGS
-    .map((standing) => standing.player === birdiePlayer && birdieApplied ? { ...standing, toPar: cycle === 0 ? -6 : -5 } : standing)
-    .sort((a, b) => a.toPar - b.toPar);
+  const { standings, birdiePlayer } = getMockStandings(seed, birdieApplied, cycle);
   const rows = rankRows(standings);
 
   return (
@@ -89,8 +77,8 @@ function MockLeaderboardScene({ elapsedMs, videoDurationMs }: { elapsedMs: numbe
  * (ScoreBadge, shared with every scorecard on the site) — gold here is a
  * pure accent, never a score meaning. See the Round 1 redesign spec.
  */
-export function IndividualLeaderboardScene({ standings, final = false, mockElapsedMs = null, mockVideoDurationMs = null }: { standings: BroadcastStanding[]; final?: boolean; mockElapsedMs?: number | null; mockVideoDurationMs?: number | null }) {
-  if (mockElapsedMs != null) return <MockLeaderboardScene elapsedMs={mockElapsedMs} videoDurationMs={mockVideoDurationMs} />;
+export function IndividualLeaderboardScene({ standings, final = false, mockElapsedMs = null, mockVideoDurationMs = null, mockSeed = 1 }: { standings: BroadcastStanding[]; final?: boolean; mockElapsedMs?: number | null; mockVideoDurationMs?: number | null; mockSeed?: number }) {
+  if (mockElapsedMs != null) return <MockLeaderboardScene elapsedMs={mockElapsedMs} videoDurationMs={mockVideoDurationMs} seed={mockSeed} />;
   const rows = rankRows(standings);
 
   return (

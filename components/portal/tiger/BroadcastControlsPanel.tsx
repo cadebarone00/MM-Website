@@ -35,7 +35,8 @@ type PreviewVideoSettings = {
   ownStatus: string;
   opposingStatus: string;
 };
-type MockRunState = { status: "running" | "paused"; offsetMs: number; startedAt: number | null; videoDurationMs: number };
+type LeaderboardAnimationSettings = { birdieEnabled: boolean; birdieDelayMs: number; rowMoveMs: number };
+type MockRunState = { status: "running" | "paused"; offsetMs: number; startedAt: number | null; videoDurationMs: number; seed: number; leaderboardAnimation: LeaderboardAnimationSettings };
 type RehearsalClip = {
   playerSlug: string; playerName: string; round: number; hole: number; shotNumber: number;
   course: string; format: string; par: number | null; yards: number | null; url: string;
@@ -117,6 +118,7 @@ export function BroadcastControlsPanel({
   const [mockClips, setMockClips] = useState<RehearsalClip[]>([]);
   const [mockClipsBusy, setMockClipsBusy] = useState(false);
   const [playlistOpen, setPlaylistOpen] = useState(false);
+  const [leaderboardAnimation, setLeaderboardAnimation] = useState<LeaderboardAnimationSettings>({ birdieEnabled: true, birdieDelayMs: 7000, rowMoveMs: 1000 });
 
   // Lets a host actually hear whatever's selected in the Playlist below,
   // whether rehearsing or live — audible only in this browser tab, since
@@ -192,6 +194,10 @@ export function BroadcastControlsPanel({
       params.set("mock", "1");
       params.set("mockOffset", String(mockRun.status === "running" ? mockRun.offsetMs : mockElapsed));
       params.set("mockVideoDuration", String(mockRun.videoDurationMs));
+      params.set("mockSeed", String(mockRun.seed));
+      params.set("mockBirdieEnabled", mockRun.leaderboardAnimation.birdieEnabled ? "1" : "0");
+      params.set("mockBirdieDelay", String(mockRun.leaderboardAnimation.birdieDelayMs));
+      params.set("mockRowMove", String(mockRun.leaderboardAnimation.rowMoveMs));
       if (mockRun.status === "running" && mockRun.startedAt) params.set("mockStart", String(mockRun.startedAt));
     }
     return `/broadcast?${params.toString()}`;
@@ -201,14 +207,14 @@ export function BroadcastControlsPanel({
     setPreviewVideo((current) => ({ ...current, [key]: value }));
   }
 
-  function startMockRun(videoDurationMs = MOCK_RUN_DEFAULT_VIDEO_MS) {
+  function startMockRun(videoDurationMs = MOCK_RUN_DEFAULT_VIDEO_MS, seed = Math.floor(Math.random() * 2_147_483_647)) {
     setMockClock(Date.now());
-    setMockRun({ status: "running", offsetMs: 0, startedAt: Date.now(), videoDurationMs });
+    setMockRun({ status: "running", offsetMs: 0, startedAt: Date.now(), videoDurationMs, seed, leaderboardAnimation });
   }
 
   function pauseMockRun() {
     if (!mockRun || mockRun.status !== "running") return;
-    setMockRun({ status: "paused", offsetMs: mockElapsed, startedAt: null, videoDurationMs: mockRun.videoDurationMs });
+    setMockRun({ status: "paused", offsetMs: mockElapsed, startedAt: null, videoDurationMs: mockRun.videoDurationMs, seed: mockRun.seed, leaderboardAnimation: mockRun.leaderboardAnimation });
   }
 
   function resumeMockRun() {
@@ -222,7 +228,7 @@ export function BroadcastControlsPanel({
     setMockClock(Date.now());
     setMockRun((current) => current?.status === "running"
       ? { ...current, offsetMs: clamped, startedAt: Date.now() }
-      : { status: "paused", offsetMs: clamped, startedAt: null, videoDurationMs: MOCK_RUN_DEFAULT_VIDEO_MS });
+      : { status: "paused", offsetMs: clamped, startedAt: null, videoDurationMs: MOCK_RUN_DEFAULT_VIDEO_MS, seed: Math.floor(Math.random() * 2_147_483_647), leaderboardAnimation });
   }
 
   async function openMockPicker() {
@@ -675,6 +681,7 @@ export function BroadcastControlsPanel({
             </div>
             <div className="flex gap-2">
               <button type="button" onClick={mockRun.status === "running" ? pauseMockRun : resumeMockRun} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-800">{mockRun.status === "running" ? "Pause" : "Resume"}</button>
+              <button type="button" onClick={() => startMockRun(mockRun.videoDurationMs)} className="rounded-lg border-2 border-gold-500 bg-gold-50 px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-800">Randomize</button>
               <button type="button" onClick={() => setMockRun(null)} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-800">End Mock</button>
             </div>
           </div>
@@ -730,6 +737,24 @@ export function BroadcastControlsPanel({
             <section className="mt-4 rounded-lg border-2 border-gold-400 bg-gold-50/40 p-4">
               <h2 className="font-serif text-lg font-bold text-ink-900">Individual Leaderboard animation</h2>
               <p className="mt-1 font-sans text-xs text-ink-600">The mock uses generated standings only. A birdie callout appears first, then the affected row changes score and slides to its new position; unchanged rows remain still.</p>
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <label className="flex items-center gap-2 rounded-lg border-2 border-stone-300 bg-white px-3 py-2 font-sans text-xs font-semibold text-ink-700">
+                  <input type="checkbox" checked={leaderboardAnimation.birdieEnabled} onChange={(e) => setLeaderboardAnimation((current) => ({ ...current, birdieEnabled: e.target.checked }))} className="size-4 accent-maroon-700" />
+                  Show birdie callout
+                </label>
+                <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
+                  Birdie timing
+                  <select value={leaderboardAnimation.birdieDelayMs} onChange={(e) => setLeaderboardAnimation((current) => ({ ...current, birdieDelayMs: Number(e.target.value) }))} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm">
+                    <option value={4000}>4 seconds</option><option value={7000}>7 seconds</option><option value={9000}>9 seconds</option>
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
+                  Row-slide speed
+                  <select value={leaderboardAnimation.rowMoveMs} onChange={(e) => setLeaderboardAnimation((current) => ({ ...current, rowMoveMs: Number(e.target.value) }))} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm">
+                    <option value={350}>Quick · 0.35s</option><option value={700}>Standard · 0.7s</option><option value={1000}>Smooth · 1.0s</option><option value={1500}>Slow · 1.5s</option>
+                  </select>
+                </label>
+              </div>
             </section>
           )}
           {openRehearsalPanel === "match_play" && (

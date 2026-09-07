@@ -103,8 +103,17 @@ export default async function BroadcastPage({
   const mockOffsetMs = Math.max(0, Number(params.mockOffset) || 0);
   const mockStartedAt = Number(params.mockStart);
   const mockVideoDurationMs = Math.max(1_000, Number(params.mockVideoDuration) || 16_000);
+  const mockSeed = Number.isFinite(Number(params.mockSeed)) ? Number(params.mockSeed) : 1;
+  const mockBirdieDelayMs = Math.max(0, Number(params.mockBirdieDelay) || 7000);
+  const mockRowMoveMs = Math.max(0, Number(params.mockRowMove) || 1000);
   const mockRun = mock
-    ? { startedAt: Number.isFinite(mockStartedAt) && mockStartedAt > 0 ? mockStartedAt : null, offsetMs: mockOffsetMs, videoDurationMs: mockVideoDurationMs }
+    ? {
+        startedAt: Number.isFinite(mockStartedAt) && mockStartedAt > 0 ? mockStartedAt : null,
+        offsetMs: mockOffsetMs,
+        videoDurationMs: mockVideoDurationMs,
+        seed: mockSeed,
+        leaderboardAnimation: { birdieEnabled: params.mockBirdieEnabled !== "0", birdieDelayMs: mockBirdieDelayMs, rowMoveMs: mockRowMoveMs },
+      }
     : null;
   const initialMockPosition = mockRun
     ? getMockRunPosition(mockRun.offsetMs + (mockRun.startedAt ? Math.max(0, Date.now() - mockRun.startedAt) : 0), mockRun.videoDurationMs)

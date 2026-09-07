@@ -7,7 +7,7 @@ import { useLiveBroadcastData } from "@/lib/broadcast/useLiveBroadcastData";
 import { useLiveBroadcastState } from "@/lib/broadcast/useLiveBroadcastState";
 import { useReloadOnDisplayYearChange } from "@/lib/broadcast/useReloadOnDisplayYearChange";
 import { useBroadcastQueue } from "@/lib/broadcast/useBroadcastQueue";
-import { getMockRunPosition } from "@/lib/broadcast/mockRun";
+import { getMockMatchPlay, getMockRunPosition } from "@/lib/broadcast/mockRun";
 import { SceneRenderer } from "./SceneRenderer";
 
 /**
@@ -37,7 +37,7 @@ export function BroadcastStage({
   matchPlay: BroadcastMatchPlay;
   holding: { venue: string; dateLabel: string };
   preview?: boolean;
-  mockRun?: { startedAt: number | null; offsetMs: number; videoDurationMs: number } | null;
+  mockRun?: { startedAt: number | null; offsetMs: number; videoDurationMs: number; seed: number } | null;
 }) {
   const [mockClock, setMockClock] = useState(Date.now());
   useEffect(() => {
@@ -69,13 +69,14 @@ export function BroadcastStage({
       config={broadcast.config}
       standings={standings}
       leaderboardFinal={leaderboardFinal}
-      matchPlay={matchPlay}
+      matchPlay={mockRun ? getMockMatchPlay(mockRun.seed) : matchPlay}
       holding={holding}
       activeEvent={activeEvent}
       activeVideo={broadcast.activeVideo}
       preview={preview}
       mockElapsedMs={mockElapsedMs}
       mockVideoDurationMs={mockRun?.videoDurationMs ?? null}
+      mockSeed={mockRun?.seed ?? 1}
     />
   );
 }

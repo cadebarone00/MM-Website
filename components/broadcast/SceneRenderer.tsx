@@ -25,6 +25,7 @@ export function SceneRenderer({
   preview = false,
   mockElapsedMs = null,
   mockVideoDurationMs = null,
+  mockSeed = 1,
 }: {
   state: BroadcastState;
   config: BroadcastConfig;
@@ -37,6 +38,7 @@ export function SceneRenderer({
   preview?: boolean;
   mockElapsedMs?: number | null;
   mockVideoDurationMs?: number | null;
+  mockSeed?: number;
 }) {
   const isAuto = state.automationMode === "auto";
   // Producer Mode (including a host's Pause — see BroadcastControlsPanel):
@@ -63,7 +65,7 @@ export function SceneRenderer({
         <EventTakeover event={activeEvent} matchPlay={matchPlay} />
       ) : (
         <>
-          {scene === "individual_leaderboard" && <IndividualLeaderboardScene standings={standings} final={leaderboardFinal} mockElapsedMs={mockElapsedMs} mockVideoDurationMs={mockVideoDurationMs} />}
+          {scene === "individual_leaderboard" && <IndividualLeaderboardScene standings={standings} final={leaderboardFinal} mockElapsedMs={mockElapsedMs} mockVideoDurationMs={mockVideoDurationMs} mockSeed={mockSeed} />}
           {scene === "match_play" && <MatchPlayScene matchPlay={matchPlay} />}
           {scene === "holding" && <HoldingScene venue={holding.venue} dateLabel={holding.dateLabel} />}
           <EventOverlay event={activeEvent} matchPlay={matchPlay} />
