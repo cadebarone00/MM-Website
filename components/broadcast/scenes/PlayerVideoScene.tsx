@@ -22,6 +22,7 @@ export function PlayerVideoScene({ video, preview = false }: { video: BroadcastP
   const match = video.match;
   const opposingTeam: BroadcastTeam = match?.team === "white" ? "maroon" : "white";
   const scoreBoxClass = video.scoreToPar != null && video.scoreToPar < 0 ? "bg-red-700" : "bg-black";
+  const playerTeamClass = match ? teamStatusClass(match.team) : "bg-maroon-800 text-white";
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black">
@@ -32,7 +33,7 @@ export function PlayerVideoScene({ video, preview = false }: { video: BroadcastP
       <aside className="absolute right-8 top-8 w-[570px] overflow-hidden border border-black/20 bg-white font-condensed font-bold uppercase shadow-2xl">
         <div className="flex h-20 items-stretch text-white">
           <span className="grid w-24 place-items-center bg-gold-400 text-3xl">{video.individualPlace ?? "—"}</span>
-          <span className="flex flex-1 items-center bg-maroon-800 px-5 text-3xl tracking-wide">{video.playerName}</span>
+          <span className={`flex flex-1 items-center px-5 text-3xl tracking-wide ${playerTeamClass}`}>{video.playerName}</span>
           <span className={`grid w-24 place-items-center text-3xl ${scoreBoxClass}`}>{toPar(video.scoreToPar)}</span>
         </div>
         <div className="flex min-h-13 items-center bg-stone-200 px-5 text-xl tracking-wide text-ink-900">
@@ -45,10 +46,12 @@ export function PlayerVideoScene({ video, preview = false }: { video: BroadcastP
             })}
           </div>
         </div>
-        <div className="flex min-h-11 items-center bg-white px-5 text-lg tracking-wide text-ink-900">
-          <span className="truncate">{video.courseName ?? "Course to be confirmed"}</span>
+        <div className="flex min-h-11 items-center justify-center bg-white px-5 text-center text-lg tracking-wide text-ink-900">
+          <span>Round {video.round}</span>
           <span className="mx-3 text-gold-600">&bull;</span>
           <span>{video.format ?? "Format to be confirmed"}</span>
+          <span className="mx-3 text-gold-600">&bull;</span>
+          <span className="truncate">{video.courseName ?? "Course to be confirmed"}</span>
         </div>
         {match && (
           <div className="flex min-h-20 border-t border-stone-300">
