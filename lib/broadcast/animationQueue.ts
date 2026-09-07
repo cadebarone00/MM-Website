@@ -29,6 +29,11 @@ export const ANIMATION_START_GAP_MS = 4_000;
 export const ANIMATION_SCENE_EXTENSION_MS = 5_000;
 export const SCORE_ANIMATION_DURATION_MS = 1_900;
 
+/** A confirmed par has no leaderboard animation; it simply advances THRU. */
+export function requiresScoreAnimation(scoreToPar: number): boolean {
+  return scoreToPar <= -1 || scoreToPar >= 1;
+}
+
 export function emptyAnimationQueue(): AnimationQueueState {
   return { pending: [], active: null, lastStartedAt: {}, exitNotBefore: {} };
 }

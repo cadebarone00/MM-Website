@@ -67,6 +67,9 @@ export function getMockStandings(seed: number, scoreChangeApplied: boolean, cycl
       const strokeChange = eventKind === "eagle" ? -2 : eventKind === "birdie" ? -1 : 1;
       mover.toPar += strokeChange;
       mover.todayToPar = (mover.todayToPar ?? 0) + strokeChange;
+      // THRU is a live progress field, not an animation. It advances with
+      // the confirmed scoring result while the score animation is running.
+      mover.thru = Math.min(18, (mover.thru ?? 0) + 1);
     }
   }
   return { standings: reorderForPlacement ? standings.sort((a, b) => a.toPar - b.toPar) : standings, eventPlayer, eventKind };
