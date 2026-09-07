@@ -54,7 +54,9 @@ export async function getBroadcastLeaderboard(overrideYear?: number): Promise<Br
 
   const archived = pastTournaments.find((t) => t.year === seasonYear);
   if (archived) {
-    const standings: BroadcastStanding[] = [...archived.individualLeaderboard].sort((a, b) => a.toPar - b.toPar);
+    const standings: BroadcastStanding[] = [...archived.individualLeaderboard]
+      .sort((a, b) => a.toPar - b.toPar)
+      .map((standing) => ({ ...standing, todayToPar: null, thru: 18 }));
     return { seasonYear, standings, final: true };
   }
 
