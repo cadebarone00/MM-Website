@@ -88,11 +88,15 @@ export async function getBroadcastPayload(): Promise<BroadcastPayload> {
         return standing.player.toLowerCase() === data.player_slug.toLowerCase() || standingProfile?.id === profile?.id || standing.player.toLowerCase() === profile?.id.toLowerCase();
       });
       const { data: maroonBox } = await service
-        .from("live_match_boxes").select("id, maroon_players, white_players").eq("season_year", seasonYear).eq("round", data.round).contains("maroon_players", [data.player_slug]).maybeSingle();
+        .from("live_match_boxes").select("id, maroon_players, white_players, format").eq("season_year", seasonYear).eq("round", data.round).contains("maroon_players", [data.player_slug]).maybeSingle();
       const { data: whiteBox } = maroonBox ? { data: null } : await service
-        .from("live_match_boxes").select("id, maroon_players, white_players").eq("season_year", seasonYear).eq("round", data.round).contains("white_players", [data.player_slug]).maybeSingle();
+        .from("live_match_boxes").select("id, maroon_players, white_players, format").eq("season_year", seasonYear).eq("round", data.round).contains("white_players", [data.player_slug]).maybeSingle();
       const box = maroonBox ?? whiteBox;
       const team = maroonBox ? "maroon" : whiteBox ? "white" : null;
+      const { data: roundState } = await service.from("live_round_state").select("course_id").eq("season_year", seasonYear).eq("round", data.round).maybeSingle();
+      const { data: course } = roundState?.course_id
+        ? await service.from("live_courses").select("name").eq("id", roundState.course_id).maybeSingle()
+        : { data: null };
       let match: BroadcastPlayerVideo["match"] = null;
       if (box && team) {
         const { data: official } = await service.from("live_match_official_state").select("leader, margin").eq("match_box_id", box.id).maybeSingle();
@@ -109,7 +113,8 @@ export async function getBroadcastPayload(): Promise<BroadcastPayload> {
       }
       activeVideo = {
         id: data.id, playerSlug: data.player_slug, playerName: data.player_name, round: data.round, hole: data.hole,
-        shotNumber: data.shot_number, par: data.par, yards: data.yards, scoreToPar: data.score_to_par, individualPlace: placement >= 0 ? placement + 1 : null, match, videoUrl: data.video_url,
+        shotNumber: data.shot_number, par: data.par, yards: data.yards, scoreToPar: data.score_to_par, individualPlace: placement >= 0 ? placement + 1 : null,
+        courseName: course?.name ?? null, format: box?.format ?? null, match, videoUrl: data.video_url,
       };
     }
   }
