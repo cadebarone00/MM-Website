@@ -169,7 +169,7 @@ export function Header({ nextTournamentOverride }: { nextTournamentOverride: Nex
           </div>
 
           <div className="flex items-center gap-3">
-            <RoundCountdown className="text-gold-100" />
+            <RoundCountdown className="text-white" />
             <a
               href="https://www.instagram.com/themaroonmasters/"
               target="_blank"
