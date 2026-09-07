@@ -126,7 +126,6 @@ export function BroadcastControlsPanel({
   // real /watch-live viewers only get this hook mounted once tournamentLive
   // is true (see WatchLiveExperience.tsx). Muted by default, same
   // one-click-to-unmute pattern as the real viewer player.
-  const { nowPlayingTitle, muted: previewMuted, setMuted: setPreviewMuted } = useLiveBroadcastAudio(state, tracks, state.videoPhase !== null);
 
   const isLive = state.tournamentLive;
   const isAuto = state.automationMode === "auto";
@@ -151,6 +150,12 @@ export function BroadcastControlsPanel({
   const mockElapsed = mockRun
     ? Math.min(mockTotalMs, mockRun.offsetMs + (mockRun.status === "running" && mockRun.startedAt ? Math.max(0, mockClock - mockRun.startedAt) : 0))
     : 0;
+  const mockVideoOwnsAudio = Boolean(mockRun && mockElapsed > 0 && mockElapsed < mockTotalMs && (() => {
+    const cycleMs = mockTotalMs / 2;
+    const timeInCycle = mockElapsed % cycleMs;
+    return timeInCycle >= cycleMs - mockRun.videoDurationMs - 4_000;
+  })());
+  const { nowPlayingTitle, muted: previewMuted, setMuted: setPreviewMuted } = useLiveBroadcastAudio(state, tracks, state.videoPhase !== null || mockVideoOwnsAudio);
 
   useEffect(() => {
     if (!mockRun || mockRun.status !== "running" || !mockRun.startedAt) return;
@@ -221,6 +226,9 @@ export function BroadcastControlsPanel({
   }
 
   function startMockRun(videoDurationMs = MOCK_RUN_DEFAULT_VIDEO_MS, seed = Math.floor(Math.random() * 2_147_483_647)) {
+    // This call is made directly from Tiger's button click, so it also
+    // satisfies the browser's audio-gesture rule for the rehearsal music.
+    setPreviewMuted(false);
     setMockClock(Date.now());
     setMockRun({ status: "running", offsetMs: 0, startedAt: Date.now(), videoDurationMs, seed, leaderboardAnimation });
   }

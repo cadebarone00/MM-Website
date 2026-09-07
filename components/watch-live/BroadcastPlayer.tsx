@@ -60,10 +60,15 @@ export function BroadcastPlayer({ state, tracks }: { state: BroadcastState; trac
     return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
   }, []);
 
-  function toggleFullscreen() {
+  async function toggleFullscreen() {
     revealControls();
-    if (document.fullscreenElement) document.exitFullscreen();
-    else containerRef.current?.requestFullscreen();
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await containerRef.current?.requestFullscreen();
+    } catch {
+      // A browser may refuse fullscreen outside a direct user gesture.
+      // The controls stay available in the normal player in that case.
+    }
   }
 
   function toggleMuted() {
@@ -114,7 +119,7 @@ export function BroadcastPlayer({ state, tracks }: { state: BroadcastState; trac
           className="w-20 accent-maroon-700 sm:w-28"
         />
         {nowPlayingTitle && <span className="flex-1 truncate font-condensed text-xs uppercase tracking-wide text-white/80">{nowPlayingTitle}</span>}
-        <button type="button" onClick={toggleFullscreen} aria-label={fullscreen ? "Exit fullscreen" : "Fullscreen"} className="ml-auto text-white">
+        <button type="button" onClick={() => { void toggleFullscreen(); }} aria-label={fullscreen ? "Exit fullscreen" : "Fullscreen"} className="ml-auto text-white">
           {fullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
         </button>
       </div>
