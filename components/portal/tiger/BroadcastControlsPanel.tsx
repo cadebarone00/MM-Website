@@ -118,7 +118,8 @@ export function BroadcastControlsPanel({
   const [mockClips, setMockClips] = useState<RehearsalClip[]>([]);
   const [mockClipsBusy, setMockClipsBusy] = useState(false);
   const [playlistOpen, setPlaylistOpen] = useState(false);
-  const [leaderboardAnimation, setLeaderboardAnimation] = useState<LeaderboardAnimationSettings>({ birdieEnabled: true, birdieDelayMs: 7000, rowMoveMs: 1000 });
+  const [leaderboardAnimation] = useState<LeaderboardAnimationSettings>({ birdieEnabled: true, birdieDelayMs: 7000, rowMoveMs: 1000 });
+  const [animationTest, setAnimationTest] = useState<{ kind: "birdie"; startedAt: number; seed: number } | null>(null);
 
   // Lets a host actually hear whatever's selected in the Playlist below,
   // whether rehearsing or live — audible only in this browser tab, since
@@ -200,11 +201,23 @@ export function BroadcastControlsPanel({
       params.set("mockRowMove", String(mockRun.leaderboardAnimation.rowMoveMs));
       if (mockRun.status === "running" && mockRun.startedAt) params.set("mockStart", String(mockRun.startedAt));
     }
+    if (animationTest) {
+      params.set("animationTest", animationTest.kind);
+      params.set("animationTestStart", String(animationTest.startedAt));
+      params.set("animationTestSeed", String(animationTest.seed));
+    }
     return `/broadcast?${params.toString()}`;
   })();
 
   function updatePreviewVideo<Key extends keyof PreviewVideoSettings>(key: Key, value: PreviewVideoSettings[Key]) {
     setPreviewVideo((current) => ({ ...current, [key]: value }));
+  }
+
+  function testBirdieAnimation() {
+    let seed = Math.floor(Math.random() * 2_147_483_647);
+    if (seed % 3 === 0) seed += 1; // the mock generator reserves multiples of three for bogeys
+    setPreviewScene("individual_leaderboard");
+    setAnimationTest({ kind: "birdie", seed, startedAt: Date.now() });
   }
 
   function startMockRun(videoDurationMs = MOCK_RUN_DEFAULT_VIDEO_MS, seed = Math.floor(Math.random() * 2_147_483_647)) {
@@ -721,6 +734,7 @@ export function BroadcastControlsPanel({
                 type="button"
                 onClick={() => {
                   setPreviewScene(b.scene);
+                  setAnimationTest(null);
                   setOpenRehearsalPanel((open) => open === b.scene ? null : b.scene);
                 }}
                 className={[
@@ -735,25 +749,13 @@ export function BroadcastControlsPanel({
 
           {openRehearsalPanel === "individual_leaderboard" && (
             <section className="mt-4 rounded-lg border-2 border-gold-400 bg-gold-50/40 p-4">
-              <h2 className="font-serif text-lg font-bold text-ink-900">Individual Leaderboard animation</h2>
-              <p className="mt-1 font-sans text-xs text-ink-600">The mock uses generated standings only. A birdie or bogey callout appears first, then the affected row changes score and slides to its new position; unchanged rows remain still.</p>
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <label className="flex items-center gap-2 rounded-lg border-2 border-stone-300 bg-white px-3 py-2 font-sans text-xs font-semibold text-ink-700">
-                  <input type="checkbox" checked={leaderboardAnimation.birdieEnabled} onChange={(e) => setLeaderboardAnimation((current) => ({ ...current, birdieEnabled: e.target.checked }))} className="size-4 accent-maroon-700" />
-                  Show scoring callout
-                </label>
-                <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
-                  Scoring-event timing
-                  <select value={leaderboardAnimation.birdieDelayMs} onChange={(e) => setLeaderboardAnimation((current) => ({ ...current, birdieDelayMs: Number(e.target.value) }))} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm">
-                    <option value={4000}>4 seconds</option><option value={7000}>7 seconds</option><option value={9000}>9 seconds</option>
-                  </select>
-                </label>
-                <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
-                  Row-slide speed
-                  <select value={leaderboardAnimation.rowMoveMs} onChange={(e) => setLeaderboardAnimation((current) => ({ ...current, rowMoveMs: Number(e.target.value) }))} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm">
-                    <option value={350}>Quick · 0.35s</option><option value={700}>Standard · 0.7s</option><option value={1000}>Smooth · 1.0s</option><option value={1500}>Slow · 1.5s</option>
-                  </select>
-                </label>
+              <h2 className="font-serif text-lg font-bold text-ink-900">Individual Leaderboard animations</h2>
+              <div className="mt-3 flex items-center justify-between rounded-lg border-2 border-stone-300 bg-white px-3 py-3">
+                <div>
+                  <h3 className="font-condensed text-sm font-semibold uppercase tracking-wide text-ink-900">Birdie</h3>
+                  <p className="mt-1 font-sans text-xs text-ink-600">Callout, score update, then row movement.</p>
+                </div>
+                <button type="button" onClick={testBirdieAnimation} className="rounded-lg bg-maroon-700 px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide text-white hover:bg-maroon-800">Test Animation</button>
               </div>
             </section>
           )}

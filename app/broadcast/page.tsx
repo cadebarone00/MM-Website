@@ -115,6 +115,13 @@ export default async function BroadcastPage({
         leaderboardAnimation: { birdieEnabled: params.mockBirdieEnabled !== "0", birdieDelayMs: mockBirdieDelayMs, rowMoveMs: mockRowMoveMs },
       }
     : null;
+  const animationTest = preview && params.animationTest === "birdie"
+    ? {
+        kind: "birdie" as const,
+        startedAt: Number(params.animationTestStart) || Date.now(),
+        seed: Number.isFinite(Number(params.animationTestSeed)) ? Number(params.animationTestSeed) : 1,
+      }
+    : null;
   const initialMockPosition = mockRun
     ? getMockRunPosition(mockRun.offsetMs + (mockRun.startedAt ? Math.max(0, Date.now() - mockRun.startedAt) : 0), mockRun.videoDurationMs)
     : null;
@@ -135,6 +142,7 @@ export default async function BroadcastPage({
       holding={{ venue: nextTournament.venue, dateLabel: nextTournament.dateLabel }}
       preview={preview}
       mockRun={mockRun}
+      animationTest={animationTest}
     />
   );
 }

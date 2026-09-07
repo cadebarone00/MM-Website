@@ -30,6 +30,7 @@ export function BroadcastStage({
   holding,
   preview = false,
   mockRun = null,
+  animationTest = null,
 }: {
   broadcast: BroadcastPayload;
   standings: BroadcastStanding[];
@@ -38,6 +39,7 @@ export function BroadcastStage({
   holding: { venue: string; dateLabel: string };
   preview?: boolean;
   mockRun?: { startedAt: number | null; offsetMs: number; videoDurationMs: number; seed: number; leaderboardAnimation: { birdieEnabled: boolean; birdieDelayMs: number; rowMoveMs: number } } | null;
+  animationTest?: { kind: "birdie"; startedAt: number; seed: number } | null;
 }) {
   const [mockClock, setMockClock] = useState(Date.now());
   useEffect(() => {
@@ -45,6 +47,11 @@ export function BroadcastStage({
     const timer = window.setInterval(() => setMockClock(Date.now()), 250);
     return () => window.clearInterval(timer);
   }, [mockRun?.startedAt]);
+  useEffect(() => {
+    if (!animationTest) return;
+    const timer = window.setInterval(() => setMockClock(Date.now()), 250);
+    return () => window.clearInterval(timer);
+  }, [animationTest?.startedAt]);
   const { standings, leaderboardFinal, matchPlay } = useLiveBroadcastData(broadcast.seasonYear, {
     standings: initialStandings,
     leaderboardFinal: initialLeaderboardFinal,
@@ -56,11 +63,14 @@ export function BroadcastStage({
   const mockElapsedMs = mockRun
     ? mockRun.offsetMs + (mockRun.startedAt ? Math.max(0, mockClock - mockRun.startedAt) : 0)
     : null;
+  const animationTestElapsedMs = animationTest ? Math.max(0, mockClock - animationTest.startedAt) : null;
   const mockPosition = mockRun
     ? getMockRunPosition(mockElapsedMs ?? 0, mockRun.videoDurationMs)
     : null;
   const displayState = mockPosition
     ? { ...state, tournamentLive: true, automationMode: "producer" as const, currentScene: mockPosition.scene, videoPhase: mockPosition.videoPhase }
+    : animationTest
+      ? { ...state, tournamentLive: true, automationMode: "producer" as const, currentScene: "individual_leaderboard" as const, videoPhase: null }
     : state;
 
   return (
@@ -74,10 +84,10 @@ export function BroadcastStage({
       activeEvent={activeEvent}
       activeVideo={broadcast.activeVideo}
       preview={preview}
-      mockElapsedMs={mockElapsedMs}
+      mockElapsedMs={mockElapsedMs ?? animationTestElapsedMs}
       mockVideoDurationMs={mockRun?.videoDurationMs ?? null}
-      mockSeed={mockRun?.seed ?? 1}
-      mockLeaderboardAnimation={mockRun?.leaderboardAnimation ?? null}
+      mockSeed={mockRun?.seed ?? animationTest?.seed ?? 1}
+      mockLeaderboardAnimation={mockRun?.leaderboardAnimation ?? (animationTest ? { birdieEnabled: true, birdieDelayMs: 2000, rowMoveMs: 1000 } : null)}
     />
   );
 }
