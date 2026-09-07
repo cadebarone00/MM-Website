@@ -14,7 +14,9 @@ function rankRows(standings: BroadcastStanding[]): Row[] {
 }
 
 function todayLabel(value: number | null | undefined) {
-  return value == null ? <span className="text-[color:var(--color-ink-400)]">-</span> : <ScoreBadge value={value} size="lg" />;
+  return value == null
+    ? <span className="text-[color:var(--color-ink-400)]">-</span>
+    : <ScoreBadge value={value} size="lg" className={value < 0 ? "text-score-under" : "text-white"} />;
 }
 
 function thruLabel(value: number | null | undefined) {

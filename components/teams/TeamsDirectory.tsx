@@ -59,9 +59,9 @@ function PlayerRow({
         className="h-[72px] w-[72px] border border-ink-100 bg-white text-ink-400 sm:h-[88px] sm:w-[88px]"
       />
       <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          {rank != null && <span className="font-condensed text-lg font-bold text-maroon-700 tabular-nums">{rank}</span>}
-          <h2 className="m-0 truncate font-sans text-xl font-extrabold text-ink-900 sm:text-2xl">{displayName}</h2>
+        <div className="flex flex-nowrap items-center gap-x-2 sm:gap-x-3">
+          {rank != null && <span className="shrink-0 font-condensed text-lg font-bold text-maroon-700 tabular-nums">{rank}</span>}
+          <h2 className="m-0 min-w-0 flex-1 truncate font-sans text-xl font-extrabold text-ink-900 sm:text-2xl">{displayName}</h2>
           {favorite && <Star size={18} fill="currentColor" className="shrink-0 text-gold-500" aria-label="Favorited player" />}
         </div>
         <div
