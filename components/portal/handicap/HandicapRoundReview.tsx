@@ -38,12 +38,12 @@ export function HandicapRoundReview({
       const data = await res.json();
       if (!data.ok) {
         setError(data.error ?? "Could not submit this round.");
+        setSubmitting(false);
         return;
       }
       onSubmitted();
     } catch {
       setError("Could not submit this round. Check your connection and try again.");
-    } finally {
       setSubmitting(false);
     }
   }

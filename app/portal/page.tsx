@@ -24,7 +24,10 @@ export default async function PortalPage() {
   const team = findPlayerTeam(playerSlug);
   const [currentMatch, handicapSummary] = await Promise.all([
     findCurrentRoundForPlayer(playerSlug),
-    getHandicapSummaryForPlayer(playerSlug),
+    getHandicapSummaryForPlayer(playerSlug).catch((err) => {
+      console.error("Failed to load handicap summary for portal hero:", err);
+      return { index: null, lowIndex: null, rounds: [] };
+    }),
   ]);
   const isLive = currentMatch?.state === "Live";
   const teamName = team ? `Team ${team === "maroon" ? "Maroon" : "White"}` : "Team pending";

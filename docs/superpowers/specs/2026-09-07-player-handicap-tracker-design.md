@@ -110,15 +110,15 @@ same reasoning `live_round_state.course_setup` already uses for tournament round
 - **Differential** = `((totalScore - rating) * 113 / slope)` rounded to 1 decimal.
   No Playing Conditions Calculation (PCC) adjustment (see Out of scope).
 - **Handicap Index** = average of the best differentials from the player's most
-  recent ≤20 rounds (by `date_played`), per the official WHS "rounds used" table:
+  recent ≤20 rounds (by `date_played`), per the real WHS Rule 5.2a "rounds used"
+  table. Fewer than 3 rounds produces no index at all — real WHS never computes
+  a Handicap Index below that minimum:
 
   | Rounds | Differentials averaged | Adjustment |
   |---|---|---|
-  | 1 | lowest 1 | −2.0 |
-  | 2 | lowest 1 | −1.0 |
-  | 3 | lowest 1 | 0 |
-  | 4 | lowest 1 | +1.0 |
-  | 5 | lowest 1 | +2.0 |
+  | 3 | lowest 1 | −2.0 |
+  | 4 | lowest 1 | −1.0 |
+  | 5 | lowest 1 | 0 |
   | 6 | lowest 2 | −1.0 |
   | 7–8 | lowest 2 | 0 |
   | 9–11 | lowest 3 | 0 |
@@ -128,7 +128,8 @@ same reasoning `live_round_state.course_setup` already uses for tournament round
   | 19 | lowest 7 | 0 |
   | 20 | lowest 8 | 0 |
 
-  Result rounded to 1 decimal. Zero rounds → index is `null` ("No index yet").
+  Result rounded to 1 decimal. Fewer than 3 rounds → index is `null` ("No index
+  yet").
 - **Low Index** (display only) = the lowest Handicap Index value that would have
   been computed at any point across the player's round history (i.e., replay the
   Handicap Index calculation as of each round in order, take the minimum). This is
@@ -223,6 +224,9 @@ same reasoning `live_round_state.course_setup` already uses for tournament round
 - HCP Calculator / HCP Lookup tools shown in the GHIN reference screenshots —
   only "Post Score" (submit + view own history) is being built.
 - Editing or deleting a previously submitted round.
+- Counting a player's past Maroon Masters tournament rounds toward this index
+  (not just rounds logged through this feature) — considered and explicitly
+  deferred to a future spec/plan.
 
 ## What "done" looks like
 

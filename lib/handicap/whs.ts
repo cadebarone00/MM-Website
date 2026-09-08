@@ -2,9 +2,12 @@
 /**
  * USGA World Handicap System math: differential per round, and Handicap
  * Index as the (adjusted) average of the best differentials from a player's
- * most recent rounds. Deliberately excludes the Playing Conditions
- * Calculation (PCC) and the official soft-cap/hard-cap rules that limit how
- * fast a real GHIN index can rise — see the design spec's "Out of scope".
+ * most recent rounds, using the real WHS Rule 5.2a "rounds used" table.
+ * Deliberately excludes the Playing Conditions Calculation (PCC) and the
+ * official soft-cap/hard-cap rules that limit how fast a real GHIN index
+ * can rise — see the design spec's "Out of scope". Everything else here
+ * matches the real table: no index is produced with fewer than 3 rounds,
+ * and no adjustment is ever positive.
  */
 
 interface RoundsUsedRow {
@@ -12,13 +15,13 @@ interface RoundsUsedRow {
   adjustment: number;
 }
 
-// Index 0 = 1 round used, index 19 = 20 rounds used. Official WHS table.
+// Index 0 = 3 rounds used, index 17 = 20 rounds used. Real WHS Rule 5.2a
+// table — fewer than 3 rounds produces no index at all (see
+// calculateHandicapIndex's early return).
 const ROUNDS_USED_TABLE: RoundsUsedRow[] = [
-  { use: 1, adjustment: -2.0 }, // 1 round
-  { use: 1, adjustment: -1.0 }, // 2
-  { use: 1, adjustment: 0 },    // 3
-  { use: 1, adjustment: 1.0 },  // 4
-  { use: 1, adjustment: 2.0 },  // 5
+  { use: 1, adjustment: -2.0 }, // 3 rounds
+  { use: 1, adjustment: -1.0 }, // 4
+  { use: 1, adjustment: 0 },    // 5
   { use: 2, adjustment: -1.0 }, // 6
   { use: 2, adjustment: 0 },    // 7
   { use: 2, adjustment: 0 },    // 8
@@ -36,6 +39,8 @@ const ROUNDS_USED_TABLE: RoundsUsedRow[] = [
   { use: 8, adjustment: 0 },    // 20
 ];
 
+const MIN_ROUNDS_FOR_INDEX = 3;
+
 function round1(value: number): number {
   return Math.round(value * 10) / 10;
 }
@@ -47,12 +52,14 @@ export function calculateDifferential(totalScore: number, rating: number, slope:
 /**
  * `differentials` must already be limited by the caller to the rounds that
  * should count (most recent ones) — this function only knows counts and
- * values, never dates. Any extra entries past 20 are dropped defensively.
+ * values, never dates. Returns null with fewer than 3 rounds — real WHS
+ * does not produce a Handicap Index below that minimum. Any entries past
+ * 20 are dropped defensively.
  */
 export function calculateHandicapIndex(differentials: number[]): number | null {
-  if (differentials.length === 0) return null;
+  if (differentials.length < MIN_ROUNDS_FOR_INDEX) return null;
   const considered = differentials.slice(0, 20);
-  const row = ROUNDS_USED_TABLE[considered.length - 1];
+  const row = ROUNDS_USED_TABLE[considered.length - MIN_ROUNDS_FOR_INDEX];
   const lowest = [...considered].sort((a, b) => a - b).slice(0, row.use);
   const average = lowest.reduce((sum, d) => sum + d, 0) / lowest.length;
   return round1(average + row.adjustment);
@@ -63,6 +70,7 @@ export function calculateHandicapIndex(differentials: number[]): number | null {
  * oldest first. Replays what the Handicap Index would have been after each
  * round (using only that round and the ones before it, capped at the most
  * recent 20 as of that point) and returns the lowest index ever reached.
+ * Returns null until the player has logged at least 3 rounds.
  */
 export function calculateLowIndex(differentialsChronological: number[]): number | null {
   let low: number | null = null;

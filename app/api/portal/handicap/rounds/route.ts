@@ -23,7 +23,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
   }
 
-  const body = (await request.json()) as SubmitHandicapRoundInput;
+  let body: SubmitHandicapRoundInput;
+  try {
+    body = (await request.json()) as SubmitHandicapRoundInput;
+  } catch {
+    return NextResponse.json({ ok: false, error: "Invalid request body." }, { status: 400 });
+  }
+
   const result = await submitHandicapRound(player.playerSlug, body);
   return NextResponse.json(result, { status: result.ok ? 200 : 400 });
 }

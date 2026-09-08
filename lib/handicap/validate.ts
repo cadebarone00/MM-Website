@@ -3,6 +3,7 @@ import type { SubmitHandicapRoundInput } from "./types.ts";
 type ValidationResult = { ok: true } | { ok: false; error: string };
 
 export function validateSubmitInput(input: SubmitHandicapRoundInput): ValidationResult {
+  if (!input || typeof input !== "object") return { ok: false, error: "Invalid submission." };
   if (typeof input.courseId !== "string" || !input.courseId) return { ok: false, error: "Course is required." };
   if (typeof input.teeSetId !== "string" || !input.teeSetId) return { ok: false, error: "Tee set is required." };
   if (typeof input.datePlayed !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(input.datePlayed)) {
