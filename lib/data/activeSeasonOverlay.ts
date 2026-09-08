@@ -10,7 +10,9 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { nextTournament, nextVenue, pastVenues } from "./index";
 import { buildVenueCoursesFromLive } from "./liveCourseSchedule";
+import { filterLockedRoster } from "./confirmedRoster";
 import type { UpcomingTournament, VenueSchedule, VenueCourse, NextTournamentOverride } from "./types";
+import type { RosterEntry } from "@/lib/live/types";
 
 interface ActiveSeasonSettings {
   seasonYear: number;
@@ -160,4 +162,31 @@ export async function getUpcomingRoundSchedule(): Promise<UpcomingRoundScheduleI
     courseName: round.course_id ? courseNames.get(round.course_id) ?? null : null,
     format: round.format ?? null,
   }));
+}
+
+/**
+ * The players a host has locked into a team for the active season
+ * (`live_roster_assignment_locks`) — a draft assignment in `live_roster`
+ * alone doesn't count as confirmed, since a host can still change it. This
+ * is what the public Teams page shows for the upcoming year; players not
+ * yet locked just don't appear.
+ */
+export async function getConfirmedRoster(): Promise<RosterEntry[]> {
+  const service = createSupabaseServiceRoleClient();
+  const { data: active } = await service
+    .from("live_active_season")
+    .select("season_year")
+    .eq("id", true)
+    .maybeSingle();
+
+  if (!active) return [];
+
+  const [{ data: roster, error }, { data: locks, error: locksError }] = await Promise.all([
+    service.from("live_roster").select("player_slug, team").eq("season_year", active.season_year),
+    service.from("live_roster_assignment_locks").select("player_slug").eq("season_year", active.season_year),
+  ]);
+  if (error || locksError || !roster?.length) return [];
+
+  const entries: RosterEntry[] = roster.map((row) => ({ seasonYear: active.season_year, playerSlug: row.player_slug, team: row.team }));
+  return filterLockedRoster(entries, (locks ?? []).map((lock) => lock.player_slug));
 }
