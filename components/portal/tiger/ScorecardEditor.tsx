@@ -42,12 +42,15 @@ export function ScorecardEditor({
   initialScorecard,
   initialVideoUrls,
   backHref,
+  videoOnly = false,
 }: {
   tournamentSlug: string;
   playerSlug: string;
   initialScorecard: RoundScorecard;
   initialVideoUrls: Record<number, Record<number, string>>;
   backHref: string;
+  /** Player Portal mode: score information remains read-only. */
+  videoOnly?: boolean;
 }) {
   const router = useRouter();
   const [holes, setHoles] = useState<HoleStat[]>(initialScorecard.holes);
@@ -248,8 +251,9 @@ export function ScorecardEditor({
         ← Back to rounds
       </button>
       <h1 className="mt-2 font-serif text-2xl font-bold text-ink-900">
-        Round {initialScorecard.round} — {initialScorecard.course}
+        {videoOnly ? "Round Video" : `Round ${initialScorecard.round} — ${initialScorecard.course}`}
       </h1>
+      {videoOnly && <p className="mt-1 font-sans text-sm text-ink-500">Round {initialScorecard.round} — {initialScorecard.course}. Scores and stats are official and locked; you can upload video for any shot below.</p>}
 
       {error && <p className="mt-3 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
       {savedMessage && <p className="mt-3 rounded-sm bg-green-50 px-3 py-2 font-sans text-sm text-green-700">{savedMessage}</p>}
@@ -266,7 +270,7 @@ export function ScorecardEditor({
 
       {holeStat && (
         <div className="mt-3">
-          <EditableHoleDetail key={selectedHole} hole={holeStat} onChange={updateHole} />
+          {!videoOnly && <EditableHoleDetail key={selectedHole} hole={holeStat} onChange={updateHole} />}
           <div className="mt-3">
             <EditableShotVideoPanel
               key={selectedHole}
@@ -287,7 +291,7 @@ export function ScorecardEditor({
           onClick={save}
           className="rounded-lg bg-maroon-700 px-6 py-3 font-condensed text-xs font-semibold uppercase tracking-wide text-white disabled:opacity-50"
         >
-          {saving ? "Saving…" : "Save"}
+          {saving ? "Saving…" : videoOnly ? "Save Videos" : "Save"}
         </button>
       </div>
 

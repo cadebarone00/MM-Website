@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { requireHost } from "@/lib/portal/requireHost";
+import { requirePlayer } from "@/lib/portal/requirePlayer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { r2PublicUrl } from "@/lib/r2/client";
@@ -16,11 +17,6 @@ import { queuePlayerVideo } from "@/lib/broadcast/playerVideoQueue";
  * it.
  */
 export async function POST(request: Request) {
-  const host = await requireHost();
-  if (!host) {
-    return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
-  }
-
   const { tournamentSlug, playerSlug, round, hole, shotNumber, extension } = await request.json();
   if (
     typeof tournamentSlug !== "string" ||
@@ -34,6 +30,14 @@ export async function POST(request: Request) {
     typeof extension !== "string"
   ) {
     return NextResponse.json({ ok: false, error: "Missing or invalid fields." }, { status: 400 });
+  }
+
+  // Tiger can manage every scorecard. A player may only link video to their
+  // own archived rounds; score values remain untouched by this endpoint.
+  const host = await requireHost();
+  const player = host ? null : await requirePlayer();
+  if (!host && (!player || player.playerSlug !== playerSlug)) {
+    return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
   }
 
   const service = createSupabaseServiceRoleClient();
@@ -64,7 +68,7 @@ export async function POST(request: Request) {
   // client-supplied storage path, derive it fresh from the validated
   // identifying fields so this can only ever confirm the exact object this
   // hole/shot's signed URL was actually issued for.
-  const storagePath = `${tournamentSlug}/round-${round}/hole-${hole}/shot-${shotNumber}${extension}`;
+  const storagePath = `${tournamentSlug}/${playerSlug}/round-${round}/hole-${hole}/shot-${shotNumber}${extension}`;
 
   const { data: videoRow, error: dbError } = await service
     .from("archived_shot_videos")

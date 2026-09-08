@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { requireHost } from "@/lib/portal/requireHost";
+import { requirePlayer } from "@/lib/portal/requirePlayer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { createR2Client, R2_BUCKET } from "@/lib/r2/client";
 
@@ -20,11 +21,6 @@ import { createR2Client, R2_BUCKET } from "@/lib/r2/client";
  * the client already knows its own file's real MIME type at upload time.
  */
 export async function POST(request: Request) {
-  const host = await requireHost();
-  if (!host) {
-    return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
-  }
-
   const { tournamentSlug, playerSlug, round, hole, shotNumber, extension } = await request.json();
   if (
     typeof tournamentSlug !== "string" ||
@@ -38,6 +34,14 @@ export async function POST(request: Request) {
     typeof extension !== "string"
   ) {
     return NextResponse.json({ ok: false, error: "Missing or invalid fields." }, { status: 400 });
+  }
+
+  // Tiger can manage every scorecard. A player can only sign an upload for
+  // the scorecards tied to their own linked player slot.
+  const host = await requireHost();
+  const player = host ? null : await requirePlayer();
+  if (!host && (!player || player.playerSlug !== playerSlug)) {
+    return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
   }
 
   const service = createSupabaseServiceRoleClient();
@@ -64,7 +68,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "That shot number doesn't exist for this hole's score." }, { status: 400 });
   }
 
-  const storagePath = `${tournamentSlug}/round-${round}/hole-${hole}/shot-${shotNumber}${extension}`;
+  const storagePath = `${tournamentSlug}/${playerSlug}/round-${round}/hole-${hole}/shot-${shotNumber}${extension}`;
 
   try {
     const r2 = createR2Client();
