@@ -78,17 +78,21 @@ export function HandicapHoleEntry({
               <input
                 type="number"
                 min={1}
+                step={1}
                 placeholder="Score"
                 value={entry.score}
                 onChange={(e) => setField(hole.number, "score", e.target.value)}
+                aria-label={`Hole ${hole.number} score`}
                 className="w-16 rounded-sm border border-ink-200 px-2 py-1 font-sans text-sm"
               />
               <input
                 type="number"
                 min={0}
+                step={1}
                 placeholder="Putts"
                 value={entry.putts}
                 onChange={(e) => setField(hole.number, "putts", e.target.value)}
+                aria-label={`Hole ${hole.number} putts`}
                 className="w-16 rounded-sm border border-ink-200 px-2 py-1 font-sans text-sm"
               />
               {!isPar3 && (
@@ -103,7 +107,7 @@ export function HandicapHoleEntry({
           );
         })}
       </div>
-      {error && <p className="mt-3 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
+      {error && <p aria-live="polite" className="mt-3 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
       <button
         type="button"
         onClick={handleContinue}

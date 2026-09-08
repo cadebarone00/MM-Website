@@ -15,6 +15,7 @@ export function validateSubmitInput(input: SubmitHandicapRoundInput): Validation
 
   const seenHoles = new Set<number>();
   for (const hole of input.holes) {
+    if (!hole || typeof hole !== "object") return { ok: false, error: "Invalid hole entry." };
     if (typeof hole.hole !== "number" || hole.hole < 1 || hole.hole > 18) {
       return { ok: false, error: "Invalid hole number." };
     }
@@ -22,10 +23,10 @@ export function validateSubmitInput(input: SubmitHandicapRoundInput): Validation
       return { ok: false, error: `Hole ${hole.hole} was entered more than once.` };
     }
     seenHoles.add(hole.hole);
-    if (typeof hole.score !== "number" || hole.score < 1) {
+    if (typeof hole.score !== "number" || !Number.isInteger(hole.score) || hole.score < 1) {
       return { ok: false, error: `Hole ${hole.hole} needs a score.` };
     }
-    if (typeof hole.putts !== "number" || hole.putts < 0) {
+    if (typeof hole.putts !== "number" || !Number.isInteger(hole.putts) || hole.putts < 0) {
       return { ok: false, error: `Hole ${hole.hole} needs a valid putts count.` };
     }
   }

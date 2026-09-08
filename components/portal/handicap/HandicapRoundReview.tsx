@@ -74,7 +74,7 @@ export function HandicapRoundReview({
 
       <p className="mt-3 font-serif text-xl font-bold text-ink-900">Total: {totalScore}</p>
 
-      {error && <p className="mt-3 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
+      {error && <p aria-live="polite" className="mt-3 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
 
       <button
         type="button"

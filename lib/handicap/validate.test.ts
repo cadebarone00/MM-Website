@@ -51,3 +51,24 @@ test("validateSubmitInput rejects a negative putts count", () => {
   const result = validateSubmitInput(validInput({ holes }));
   assert.equal(result.ok, false);
 });
+
+test("validateSubmitInput rejects a non-object input", () => {
+  // @ts-expect-error deliberately invalid for the test
+  const result = validateSubmitInput(null);
+  assert.equal(result.ok, false);
+});
+
+test("validateSubmitInput rejects a non-object hole entry", () => {
+  const holes = validHoles();
+  // @ts-expect-error deliberately invalid for the test
+  holes[0] = null;
+  const result = validateSubmitInput(validInput({ holes }));
+  assert.equal(result.ok, false);
+});
+
+test("validateSubmitInput rejects a decimal score", () => {
+  const holes = validHoles();
+  holes[0] = { ...holes[0], score: 4.5 };
+  const result = validateSubmitInput(validInput({ holes }));
+  assert.equal(result.ok, false);
+});

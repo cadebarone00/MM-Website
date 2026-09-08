@@ -54,7 +54,10 @@ export function HandicapRoundWizard({ courses }: { courses: HandicapCourseOption
         setup={state.setup}
         holes={state.holes}
         onBack={() => setState({ step: "holes", setup: state.setup, initialHoles: state.holes })}
-        onSubmitted={() => router.push("/portal/scoring")}
+        onSubmitted={() => {
+          router.refresh();
+          router.push("/portal/scoring");
+        }}
       />
     );
   }

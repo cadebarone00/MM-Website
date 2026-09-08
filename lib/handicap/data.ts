@@ -57,7 +57,8 @@ export async function getHandicapSummaryForPlayer(playerSlug: string): Promise<H
     .from("handicap_rounds")
     .select("id, tee_set_name, rating, slope, date_played, tee_time, total_score, differential, live_courses(name)")
     .eq("player_slug", playerSlug)
-    .order("date_played", { ascending: false });
+    .order("date_played", { ascending: false })
+    .order("created_at", { ascending: false });
   if (error) throw new Error("Could not load handicap rounds.");
 
   const rows = (data ?? []) as unknown as RoundRow[];
