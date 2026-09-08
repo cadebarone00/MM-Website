@@ -1200,3 +1200,63 @@ end $$;
 -- order without a new random-order column. Ignored entirely when
 -- audio_loop_mode is 'one'.
 alter table broadcast_state add column if not exists audio_shuffle boolean not null default false;
+
+-- === Player Handicap Tracker ================================================
+-- Personal (non-tournament) rounds a player logs from /portal to build a real
+-- WHS handicap index. Deliberately separate from live_hole_scores (tournament
+-- rounds) and archived_scorecard_rounds (Tiger-entered historical tournament
+-- scorecards) — this is player-entered, not tournament-tied, and private to
+-- the player (plus Tiger) rather than publicly readable.
+--
+-- Depends on live_courses.tee_sets (jsonb), added by
+-- supabase/course_library_tee_setups.sql. Repeated here (idempotently) so
+-- schema.sql stops being out of sync with what this feature needs — this
+-- repo has hit exactly this "migration file exists but wasn't captured in
+-- schema.sql, and might not have been run in production" gap before (the
+-- Courses & Format phase).
+alter table live_courses add column if not exists tee_sets jsonb not null default '[]'::jsonb;
+
+create table if not exists handicap_rounds (
+  id uuid primary key default gen_random_uuid(),
+  player_slug text not null references player_slots(player_slug),
+  course_id uuid not null references live_courses(id),
+  tee_set_id text not null,
+  tee_set_name text not null,       -- snapshot: a later course-library edit must never change a past round's math
+  rating numeric not null,
+  slope integer not null check (slope between 55 and 155),
+  date_played date not null,
+  tee_time text,                    -- freeform "HH:MM", no timezone concerns for a personal round
+  total_score integer not null,
+  differential numeric not null,    -- (total_score - rating) * 113 / slope, rounded to 1 decimal
+  created_at timestamptz not null default now()
+);
+create index if not exists handicap_rounds_player_idx on handicap_rounds (player_slug, date_played desc);
+
+create table if not exists handicap_round_holes (
+  id uuid primary key default gen_random_uuid(),
+  round_id uuid not null references handicap_rounds(id) on delete cascade,
+  hole integer not null check (hole between 1 and 18),
+  par integer not null,
+  yards integer not null,
+  score integer not null,
+  putts integer not null,
+  fir text not null check (fir in ('0', '1', 'X')),
+  gir boolean not null,
+  unique (round_id, hole)
+);
+
+alter table handicap_rounds enable row level security;
+alter table handicap_round_holes enable row level security;
+
+-- Private to the player (plus service-role, which bypasses RLS entirely for
+-- every write and for the Route Handlers' own reads) — unlike live_courses/
+-- live_hole_scores, this is not public tournament data. Matches
+-- profiles_select_own's auth.uid()-based pattern rather than the
+-- "select using (true)" pattern used for public live_* tables.
+drop policy if exists handicap_rounds_select_own on handicap_rounds;
+create policy handicap_rounds_select_own on handicap_rounds for select
+  using (player_slug = (select player_slug from profiles where id = auth.uid()));
+
+drop policy if exists handicap_round_holes_select_own on handicap_round_holes;
+create policy handicap_round_holes_select_own on handicap_round_holes for select
+  using (round_id in (select id from handicap_rounds where player_slug = (select player_slug from profiles where id = auth.uid())));
