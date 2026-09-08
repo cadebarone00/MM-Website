@@ -252,6 +252,17 @@ export function BroadcastControlsPanel({
     // This call is made directly from Tiger's button click, so it also
     // satisfies the browser's audio-gesture rule for the rehearsal music.
     setPreviewMuted(false);
+
+    // A rehearsal uses the real broadcast playlist. If the host has not
+    // already anchored a track, begin with the first saved playlist item so
+    // Mock Run never requires a second "Play" click just to hear music.
+    const trackId = state.audioTrackId ?? tracks[0]?.id;
+    if (trackId) {
+      if (!state.audioTrackId) void playTrack(trackId);
+    } else {
+      setError("Add a song to the Broadcast Playlist before starting a mock run.");
+    }
+
     setMockClock(Date.now());
     setMockRun({ status: "running", offsetMs: 0, startedAt: Date.now(), videoDurationMs, seed, leaderboardAnimation });
   }
