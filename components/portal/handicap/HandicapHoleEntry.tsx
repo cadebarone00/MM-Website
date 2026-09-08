@@ -13,16 +13,33 @@ function emptyDraft(teeSet: HandicapCourseTeeSet): Draft {
   return draft;
 }
 
+function seedDraftFromHoles(teeSet: HandicapCourseTeeSet, initialHoles: HandicapHoleInput[]): Draft {
+  const draft = emptyDraft(teeSet);
+  for (const hole of initialHoles) {
+    draft[hole.hole] = {
+      score: String(hole.score),
+      putts: String(hole.putts),
+      fir: hole.fir,
+      gir: hole.gir,
+    };
+  }
+  return draft;
+}
+
 export function HandicapHoleEntry({
   teeSet,
   onBack,
   onComplete,
+  initialHoles,
 }: {
   teeSet: HandicapCourseTeeSet;
   onBack: () => void;
   onComplete: (holes: HandicapHoleInput[]) => void;
+  initialHoles?: HandicapHoleInput[];
 }) {
-  const [draft, setDraft] = useState<Draft>(() => emptyDraft(teeSet));
+  const [draft, setDraft] = useState<Draft>(() =>
+    initialHoles ? seedDraftFromHoles(teeSet, initialHoles) : emptyDraft(teeSet)
+  );
   const [error, setError] = useState<string | null>(null);
 
   function setField(holeNumber: number, field: keyof Draft[number], value: string | boolean) {

@@ -15,7 +15,7 @@ export interface RoundSetup {
 
 type WizardState =
   | { step: "setup" }
-  | { step: "holes"; setup: RoundSetup }
+  | { step: "holes"; setup: RoundSetup; initialHoles?: HandicapHoleInput[] }
   | { step: "review"; setup: RoundSetup; holes: HandicapHoleInput[] };
 
 function todayIso(): string {
@@ -41,6 +41,7 @@ export function HandicapRoundWizard({ courses }: { courses: HandicapCourseOption
     return (
       <HandicapHoleEntry
         teeSet={state.setup.teeSet}
+        initialHoles={state.initialHoles}
         onBack={() => setState({ step: "setup" })}
         onComplete={(holes) => setState({ step: "review", setup: state.setup, holes })}
       />
@@ -52,7 +53,7 @@ export function HandicapRoundWizard({ courses }: { courses: HandicapCourseOption
       <HandicapRoundReview
         setup={state.setup}
         holes={state.holes}
-        onBack={() => setState({ step: "holes", setup: state.setup })}
+        onBack={() => setState({ step: "holes", setup: state.setup, initialHoles: state.holes })}
         onSubmitted={() => router.push("/portal/scoring")}
       />
     );
