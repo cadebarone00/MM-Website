@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { findPlayerTeam } from "@/lib/portal/findPlayerTeam";
 import { findCurrentRoundForPlayer, matchupLabel } from "@/lib/live/currentRoundForPlayer";
+import { getHandicapSummaryForPlayer } from "@/lib/handicap/data";
 import { Avatar } from "@/components/ui/Avatar";
 
 export default async function PortalPage() {
@@ -21,7 +22,10 @@ export default async function PortalPage() {
   const playerProfile = getPlayerProfileBySlug(playerSlug);
   const playerName = playerProfile?.fullName ?? profile.display_name ?? "Player";
   const team = findPlayerTeam(playerSlug);
-  const currentMatch = await findCurrentRoundForPlayer(playerSlug);
+  const [currentMatch, handicapSummary] = await Promise.all([
+    findCurrentRoundForPlayer(playerSlug),
+    getHandicapSummaryForPlayer(playerSlug),
+  ]);
   const isLive = currentMatch?.state === "Live";
   const teamName = team ? `Team ${team === "maroon" ? "Maroon" : "White"}` : "Team pending";
   const heroTextClass = team === "maroon" ? "text-maroon-300" : "text-white";
@@ -41,7 +45,7 @@ export default async function PortalPage() {
             <Avatar name={playerName} src={playerProfile?.avatarSrc ?? null} size="md" team={team} />
             <div className="min-w-0 pt-0.5"><h1 className="truncate font-serif text-2xl font-bold sm:text-3xl">{playerName}</h1><p className="mt-0.5 font-sans text-xs sm:text-sm">{teamName} · @{profile.username}</p></div>
           </div>
-          <div className="text-right text-white"><p className="font-condensed text-2xs font-semibold uppercase tracking-[0.16em] text-white/75">Handicap</p><p className="font-serif text-2xl font-bold leading-none">0.0</p></div>
+          <div className="text-right text-white"><p className="font-condensed text-2xs font-semibold uppercase tracking-[0.16em] text-white/75">Handicap</p><p className="font-serif text-2xl font-bold leading-none">{handicapSummary.index != null ? handicapSummary.index.toFixed(1) : "—"}</p></div>
         </div>
       </section>
 
