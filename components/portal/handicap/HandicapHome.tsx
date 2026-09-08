@@ -29,7 +29,7 @@ export function HandicapHome({ playerName, summary }: { playerName: string; summ
 
       <section className="mx-auto mt-4 max-w-4xl px-4 sm:px-6">
         <Link
-          href="/portal/scoring/new"
+          href="/portal/handicap/new"
           className="block w-full rounded-pill bg-maroon-700 px-4 py-3 text-center font-condensed text-sm font-semibold uppercase tracking-wide text-white shadow-sm transition hover:bg-maroon-800"
         >
           Submit a score

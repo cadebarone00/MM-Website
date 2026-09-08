@@ -8,7 +8,7 @@ import { useAccountSession } from "@/lib/useAccountSession";
 const SEGMENTS = [
   { href: "/", label: "Website" },
   { href: "/portal", label: "Portal" },
-  { href: "/portal/scoring", label: "My Handicap" },
+  { href: "/portal/scoring", label: "Live Scoring" },
 ] as const;
 
 const TIGER_SEGMENTS = [

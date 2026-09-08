@@ -56,7 +56,7 @@ export function HandicapRoundWizard({ courses }: { courses: HandicapCourseOption
         onBack={() => setState({ step: "holes", setup: state.setup, initialHoles: state.holes })}
         onSubmitted={() => {
           router.refresh();
-          router.push("/portal/scoring");
+          router.push("/portal/handicap");
         }}
       />
     );

@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
-import { findCurrentRoundForPlayer } from "@/lib/live/currentRoundForPlayer";
-import { ScoringStatusScreen } from "@/components/portal/ScoringStatusScreen";
+import { getHandicapSummaryForPlayer } from "@/lib/handicap/data";
+import { HandicapHome } from "@/components/portal/handicap/HandicapHome";
 
-export default async function ScoringPage() {
+export default async function HandicapPage() {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -23,8 +23,8 @@ export default async function ScoringPage() {
 
   const playerSlug = profile.player_slug!;
   const playerProfile = getPlayerProfileBySlug(playerSlug);
-  const playerName = playerProfile?.fullName ?? profile.display_name;
-  const result = await findCurrentRoundForPlayer(playerSlug);
+  const playerName = playerProfile?.fullName ?? profile.display_name ?? "Player";
+  const summary = await getHandicapSummaryForPlayer(playerSlug);
 
-  return <ScoringStatusScreen playerName={playerName} playerSlug={playerSlug} result={result} />;
+  return <HandicapHome playerName={playerName} summary={summary} />;
 }

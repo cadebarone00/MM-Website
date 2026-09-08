@@ -10,7 +10,7 @@ import { AccountBadge } from "@/components/AccountBadge";
 // the Tiger Center. Mirrors HOME_PAGES in components/Header.tsx: exact
 // match only, so a sub-page like /portal/admin/matchups still gets a back
 // arrow and only the bare hub itself is exempt.
-const HOME_PAGES = new Set(["/portal", "/portal/scoring", "/portal/admin"]);
+const HOME_PAGES = new Set(["/portal", "/portal/scoring", "/portal/handicap", "/portal/admin"]);
 
 function isHomePage(pathname: string): boolean {
   return HOME_PAGES.has(pathname);
