@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { getHandicapSummaryForPlayer } from "@/lib/handicap/data";
 import { HandicapHome } from "@/components/portal/handicap/HandicapHome";
+import { findPlayerTeam } from "@/lib/portal/findPlayerTeam";
 
 export default async function HandicapPage() {
   const supabase = await createSupabaseServerClient();
@@ -26,5 +27,5 @@ export default async function HandicapPage() {
   const playerName = playerProfile?.fullName ?? profile.display_name ?? "Player";
   const summary = await getHandicapSummaryForPlayer(playerSlug);
 
-  return <HandicapHome playerName={playerName} summary={summary} />;
+  return <HandicapHome playerName={playerName} summary={summary} team={findPlayerTeam(playerSlug)} />;
 }
