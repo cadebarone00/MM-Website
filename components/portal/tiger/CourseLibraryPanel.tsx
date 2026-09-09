@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { LiveCourse } from "@/lib/live/types";
 import { AddCourseForm } from "./AddCourseForm";
 import { CourseCsvImport } from "./CourseCsvImport";
+import { DeleteCourseButton } from "./DeleteCourseButton";
 
 export function CourseLibraryPanel({ initialCourses }: { initialCourses: LiveCourse[] }) {
   const [courses, setCourses] = useState(initialCourses);
@@ -23,7 +24,7 @@ export function CourseLibraryPanel({ initialCourses }: { initialCourses: LiveCou
     <section className="mt-6">
       <div className="flex items-baseline justify-between gap-3"><h2 className="font-serif text-2xl font-bold text-ink-900">Saved courses</h2><span className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">{courses.length} total</span></div>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        {courses.map((course) => <article key={course.id} className="rounded-lg border border-stone-300 bg-white p-4"><div className="flex items-start justify-between gap-2"><div><h3 className="font-serif text-lg font-bold text-ink-900">{course.name}</h3><p className="mt-1 font-sans text-sm text-ink-600">Par {course.holes.reduce((sum, hole) => sum + hole.par, 0)} · {course.holes.reduce((sum, hole) => sum + hole.yards, 0).toLocaleString()} yards</p></div><Link href={`/portal/admin/course-library/${course.id}`} className="shrink-0 font-condensed text-2xs font-bold uppercase text-maroon-700 underline">Edit course</Link></div><p className="mt-1 font-sans text-xs text-ink-500">{course.teeSets?.length ?? 1} tee set{(course.teeSets?.length ?? 1) === 1 ? "" : "s"} · {course.rating != null ? `Rating ${course.rating}` : "Rating not entered"}{course.slope != null ? ` · Slope ${course.slope}` : ""}</p></article>)}
+        {courses.map((course) => <article key={course.id} className="rounded-lg border border-stone-300 bg-white p-4"><div className="flex items-start justify-between gap-2"><div><h3 className="font-serif text-lg font-bold text-ink-900">{course.name}</h3><p className="mt-1 font-sans text-sm text-ink-600">Par {course.holes.reduce((sum, hole) => sum + hole.par, 0)} · {course.holes.reduce((sum, hole) => sum + hole.yards, 0).toLocaleString()} yards</p></div><Link href={`/portal/admin/course-library/${course.id}`} className="shrink-0 font-condensed text-2xs font-bold uppercase text-maroon-700 underline">Edit course</Link></div><p className="mt-1 font-sans text-xs text-ink-500">{course.teeSets?.length ?? 1} tee set{(course.teeSets?.length ?? 1) === 1 ? "" : "s"} · {course.rating != null ? `Rating ${course.rating}` : "Rating not entered"}{course.slope != null ? ` · Slope ${course.slope}` : ""}</p><DeleteCourseButton course={course} onDeleted={() => setCourses((current) => current.filter((entry) => entry.id !== course.id))} /></article>)}
         {courses.length === 0 && <p className="font-sans text-sm text-ink-500">No saved courses yet. Import the corrected historical setups or add one from a scorecard.</p>}
       </div>
     </section>

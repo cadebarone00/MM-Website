@@ -77,3 +77,20 @@ export async function PUT(request: Request) {
   if (error) return NextResponse.json({ ok: false, error: "Could not save tee sets. Run the Course Library SQL migration first." }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
+
+export async function DELETE(request: Request) {
+  if (!await requireHost()) return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
+  let body: { id?: unknown; confirmationName?: unknown };
+  try { body = await request.json(); } catch { return NextResponse.json({ ok: false, error: "Invalid request." }, { status: 400 }); }
+  if (!body || typeof body.id !== "string" || typeof body.confirmationName !== "string") return NextResponse.json({ ok: false, error: "Type the course name to confirm deletion." }, { status: 400 });
+  const service = createSupabaseServiceRoleClient();
+  const { data: course, error: lookupError } = await service.from("live_courses").select("id, name").eq("id", body.id).maybeSingle();
+  if (lookupError) return NextResponse.json({ ok: false, error: "Could not load the course. Try again." }, { status: 500 });
+  if (!course) return NextResponse.json({ ok: false, error: "Course not found. Refresh the library." }, { status: 404 });
+  if (body.confirmationName !== course.name) return NextResponse.json({ ok: false, error: "The name must match the course name exactly." }, { status: 400 });
+  // Foreign keys prevent deleting a course referenced by scores or round setups.
+  const { data: deleted, error } = await service.from("live_courses").delete().eq("id", course.id).eq("name", body.confirmationName).select("id");
+  if (error) return NextResponse.json({ ok: false, error: error.code === "23503" ? "This course is used by saved scores or tournament rounds and cannot be deleted." : "Could not delete the course. Please try again." }, { status: error.code === "23503" ? 409 : 500 });
+  if (!deleted?.length) return NextResponse.json({ ok: false, error: "The course changed. Refresh the library and try again." }, { status: 409 });
+  return NextResponse.json({ ok: true });
+}
