@@ -4,11 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import type { LiveCourse } from "@/lib/live/types";
 import { AddCourseForm } from "./AddCourseForm";
+import { CourseCsvImport } from "./CourseCsvImport";
 
 export function CourseLibraryPanel({ initialCourses }: { initialCourses: LiveCourse[] }) {
   const [courses, setCourses] = useState(initialCourses);
   const [adding, setAdding] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   return <div className="mt-6">
     <section className="rounded-xl border border-gold-300 bg-cream-50 p-5">
@@ -16,8 +16,8 @@ export function CourseLibraryPanel({ initialCourses }: { initialCourses: LiveCou
       <h1 className="mt-1 font-serif text-3xl font-bold text-ink-900">Course Library</h1>
       <p className="mt-2 font-sans text-sm text-ink-600">Every course setup lives here once. Any tournament year can select a saved course, while the archive and odds model use the same hole, par, and yardage data.</p>
       <div className="mt-4"><button type="button" onClick={() => setAdding((value) => !value)} className="rounded-sm border border-maroon-700 px-4 py-2 font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700">{adding ? "Cancel" : "Add a course"}</button></div>
-      {error && <p className="mt-4 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
       {adding && <AddCourseForm onSaved={(course) => { setCourses((current) => [...current, course].sort((a, b) => a.name.localeCompare(b.name))); setAdding(false); }} />}
+      <CourseCsvImport onSaved={(course) => setCourses((current) => [...current, course].sort((a, b) => a.name.localeCompare(b.name)))} />
     </section>
 
     <section className="mt-6">
