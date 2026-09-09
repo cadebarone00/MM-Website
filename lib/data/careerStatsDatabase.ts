@@ -5,11 +5,13 @@ import { buildHandicapCareerRecords, type PersonalRoundRow, type PersonalHoleRow
 
 type HoleRow = { year: number; player: string; round: number; round_holes: number | null; course: string; format: string | null; hole: number; par: number; yards: number; score: number; putts: number | null; fairway_in_regulation: boolean | null; green_in_regulation: boolean | null; penalties: number | null };
 
-async function loadAll<T>(table: string): Promise<{ rows: T[]; ready: boolean }> {
+async function loadAll<T>(table: string, order: string[] = []): Promise<{ rows: T[]; ready: boolean }> {
   const service = createSupabaseServiceRoleClient();
   const rows: T[] = [];
   for (let from = 0; ; from += 1000) {
-    const { data, error } = await service.from(table).select("*").range(from, from + 999);
+    let query = service.from(table).select("*");
+    for (const column of order) query = query.order(column);
+    const { data, error } = await query.range(from, from + 999);
     if (error) return { rows: [], ready: false };
     const page = (data ?? []) as T[];
     rows.push(...page);
@@ -19,9 +21,9 @@ async function loadAll<T>(table: string): Promise<{ rows: T[]; ready: boolean }>
 
 export async function getHandicapCareerRecords(): Promise<CareerHoleRecord[]> {
   const [rounds, holes, courses] = await Promise.all([
-    loadAll<PersonalRoundRow>("handicap_rounds"),
-    loadAll<PersonalHoleRow>("handicap_round_holes"),
-    loadAll<{ id: string; name: string }>("live_courses"),
+    loadAll<PersonalRoundRow>("handicap_rounds", ["id"]),
+    loadAll<PersonalHoleRow>("handicap_round_holes", ["round_id", "hole"]),
+    loadAll<{ id: string; name: string }>("live_courses", ["id"]),
   ]);
   if (!rounds.ready || !holes.ready || !courses.ready) throw new Error("Could not load submitted rounds for the Career Archive.");
   return buildHandicapCareerRecords(rounds.rows, holes.rows, courses.rows);
