@@ -15,8 +15,8 @@ export function HandicapHome({ playerName, summary, archivedRounds, team }: { pl
   const [activeTab, setActiveTab] = useState<"maroon-masters" | "overall">("maroon-masters");
   const [scoreView, setScoreView] = useState<ScoreView>("recent");
   const rounds = selectHandicapScores(handicapHistory(archivedRounds, summary.rounds, activeTab), scoreView);
-  const index = activeTab === "overall" ? summary.index : null;
-  const lowIndex = activeTab === "overall" ? summary.lowIndex : null;
+  const index = summary.index;
+  const lowIndex = summary.lowIndex;
   return (
     <main className="w-full pb-10">
       <section className="relative isolate overflow-hidden bg-maroon-950">
@@ -33,8 +33,16 @@ export function HandicapHome({ playerName, summary, archivedRounds, team }: { pl
         <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 text-white sm:p-6">
           <div>
             <p className="font-condensed text-2xs font-semibold uppercase tracking-[0.16em] text-white/75">{playerName}</p>
-            <p className="mt-1 font-serif text-4xl font-bold leading-none">{index != null ? index.toFixed(1) : "—"}</p>
-            <p className="mt-1 font-condensed text-2xs font-semibold uppercase tracking-wide text-white/75">Handicap Index</p>
+            <div className="mt-2 flex items-end gap-4 sm:gap-6">
+              <div>
+                <p className="font-serif text-4xl font-bold leading-none">{index != null ? index.toFixed(1) : "—"}</p>
+                <p className="mt-1 font-condensed text-2xs font-semibold uppercase tracking-wide text-white/75">Overall Handicap</p>
+              </div>
+              <div className="text-stone-300" title="Maroon Masters handicap will be available once archived rounds have the required tee data.">
+                <p className="font-serif text-2xl font-bold leading-none">—</p>
+                <p className="mt-1 font-condensed text-[10px] font-semibold uppercase tracking-wide">Maroon Masters</p>
+              </div>
+            </div>
           </div>
           <div className="text-right">
             <p className="font-serif text-xl font-bold leading-none">{lowIndex != null ? lowIndex.toFixed(1) : "—"}</p>
