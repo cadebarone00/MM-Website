@@ -4,6 +4,20 @@ export type HandicapHistoryRound =
   | { source: "archive"; round: ArchivedHandicapRound }
   | { source: "submitted"; round: HandicapRoundSummary };
 
+export type ScoreView = "recent" | "all" | "highest" | "lowest";
+
+/** Input is newest first from handicapHistory; score ties retain that order. */
+export function selectHandicapScores(rounds: HandicapHistoryRound[], view: ScoreView): HandicapHistoryRound[] {
+  if (view === "recent") return rounds.slice(0, 20);
+  if (view === "all") return [...rounds];
+  return [...rounds].sort((a, b) => {
+    const left = a.round.totalScore, right = b.round.totalScore;
+    if (left == null) return right == null ? 0 : 1;
+    if (right == null) return -1;
+    return view === "highest" ? right - left : left - right;
+  });
+}
+
 export function handicapHistory(
   archived: ArchivedHandicapRound[],
   submitted: HandicapRoundSummary[],

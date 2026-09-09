@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Team } from "@/lib/data";
 import type { ArchivedHandicapRound, HandicapSummary } from "@/lib/handicap/types";
-import { handicapHistory } from "@/lib/handicap/history";
+import { handicapHistory, selectHandicapScores, type ScoreView } from "@/lib/handicap/history";
 
 function formatDate(iso: string): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -13,7 +13,8 @@ function formatDate(iso: string): string {
 
 export function HandicapHome({ playerName, summary, archivedRounds, team }: { playerName: string; summary: HandicapSummary; archivedRounds: ArchivedHandicapRound[]; team: Team | null }) {
   const [activeTab, setActiveTab] = useState<"maroon-masters" | "overall">("maroon-masters");
-  const rounds = handicapHistory(archivedRounds, summary.rounds, activeTab);
+  const [scoreView, setScoreView] = useState<ScoreView>("recent");
+  const rounds = selectHandicapScores(handicapHistory(archivedRounds, summary.rounds, activeTab), scoreView);
   const index = activeTab === "overall" ? summary.index : null;
   const lowIndex = activeTab === "overall" ? summary.lowIndex : null;
   return (
@@ -54,35 +55,34 @@ export function HandicapHome({ playerName, summary, archivedRounds, team }: { pl
       </section>
 
       <section id="handicap-scores" role="tabpanel" aria-labelledby={`handicap-tab-${activeTab}`} className="mx-auto mt-6 max-w-4xl px-4 sm:px-6">
-        <h2 className="font-serif text-xl font-bold text-ink-900">Scores</h2>
+        <div className="flex items-center gap-2 border-b border-stone-200 pb-3">
+          <h2 className="font-condensed text-sm font-bold text-maroon-700">Scores —</h2>
+          <select aria-label="Score display order" value={scoreView} onChange={(event) => setScoreView(event.target.value as ScoreView)} className="min-w-0 rounded bg-transparent py-2 pr-2 font-condensed text-sm font-bold text-maroon-700 focus-visible:outline-2 focus-visible:outline-maroon-700">
+            <option value="recent">20 Most Recent</option>
+            <option value="all">All Scores</option>
+            <option value="highest">Highest to Lowest</option>
+            <option value="lowest">Lowest to Highest</option>
+          </select>
+        </div>
         {archivedRounds.length > 0 && <p className="mt-2 font-sans text-xs text-ink-500">Archived scores appear below. They will count toward the handicap index once their historical tee ratings and slopes are available.</p>}
         {rounds.length === 0 ? (
           <p className="mt-3 font-sans text-sm text-ink-500">{activeTab === "maroon-masters" ? "No archived Maroon Masters rounds yet." : "No rounds yet — submit your first score above."}</p>
         ) : (
-          <div className="mt-3 flex flex-col gap-2">
-            {rounds.map((entry) => entry.source === "archive" ? (
-              <article key={`archive-${entry.round.id}`} className="rounded-lg border border-stone-300 bg-white p-4">
-                <p className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700">{entry.round.tournamentLabel} · Round {entry.round.round}</p>
-                <h3 className="mt-1 font-serif text-base font-bold text-ink-900">{entry.round.courseName}</h3>
-                {entry.round.format && <p className="mt-0.5 font-sans text-xs text-ink-500">{entry.round.format}</p>}
-                <div className="mt-2 flex items-baseline gap-4">
-                  <span className="font-serif text-2xl font-bold text-ink-900">{entry.round.totalScore ?? "—"}</span>
-                  <span className="font-sans text-sm text-ink-600">{entry.round.holesPlayed} holes recorded</span>
+          <div className="mt-3 divide-y divide-stone-200 border-y border-stone-200 bg-white">
+            {rounds.map((entry) => (
+              <article key={`${entry.source}-${entry.round.id}`} className="grid grid-cols-[56px_minmax(0,1fr)_76px] items-center gap-3 py-3 pr-2 sm:grid-cols-[72px_minmax(0,1fr)_100px]">
+                <div className="border-r border-stone-200 px-1 text-center">
+                  <p className="font-sans text-2xl font-medium tabular-nums text-maroon-700">{entry.round.totalScore ?? "—"}</p>
+                  <p className="mt-0.5 font-sans text-[10px] text-ink-500">{entry.source === "archive" ? entry.round.holesPlayed : 18} holes</p>
                 </div>
-              </article>
-            ) : (
-              <article key={`submitted-${entry.round.id}`} className="rounded-lg border border-stone-300 bg-white p-4">
-                <p className="mb-1 font-condensed text-2xs font-semibold uppercase tracking-wide text-ink-500">Submitted score</p>
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h3 className="font-serif text-base font-bold text-ink-900">{entry.round.courseName}</h3>
-                    <p className="mt-0.5 font-sans text-xs text-ink-500">{entry.round.teeSetName} · Rating {entry.round.rating} · Slope {entry.round.slope}</p>
-                  </div>
-                  <p className="font-sans text-xs text-ink-500">{formatDate(entry.round.datePlayed)}</p>
+                <div className="min-w-0">
+                  <p className="truncate font-sans text-xs text-ink-600">{entry.source === "submitted" ? formatDate(entry.round.datePlayed) : `${entry.round.tournamentLabel} · Round ${entry.round.round}`}</p>
+                  <h3 title={entry.round.courseName} className="mt-1 truncate font-sans text-sm font-semibold text-ink-900">{entry.round.courseName}</h3>
+                  <p className="mt-0.5 truncate font-sans text-xs text-ink-500">{entry.source === "submitted" ? entry.round.teeSetName : entry.round.format}</p>
                 </div>
-                <div className="mt-2 flex items-baseline gap-4">
-                  <span className="font-serif text-2xl font-bold text-ink-900">{entry.round.totalScore}</span>
-                  <span className="font-sans text-sm text-ink-600">Differential {entry.round.differential.toFixed(1)}</span>
+                <div className="text-right font-sans text-xs tabular-nums">
+                  <p aria-label="Course rating and slope" className="text-maroon-700">{entry.source === "submitted" ? `${entry.round.rating}/${entry.round.slope}` : "— / —"}</p>
+                  <p className="mt-1 text-[10px] text-ink-500">{entry.source === "submitted" ? `Diff. ${entry.round.differential.toFixed(1)}` : "Rating / slope"}</p>
                 </div>
               </article>
             ))}
