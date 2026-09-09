@@ -9,6 +9,9 @@ test("only explicitly locked, complete tees can be selected", () => {
   assert.deepEqual(availableTeeSets([{ ...tee, rating: null }]), []);
 });
 test("drafts can save missing ratings; locking requires complete data", () => {
+  const incomplete = { ...tee, locked: false, holes: tee.holes.map((hole) => ({ ...hole, par: 0, yards: 0 })) };
+  assert.ok(validTeeSets([incomplete]));
+  assert.equal(validTeeSets([{ ...incomplete, locked: true }]), false);
   assert.ok(validTeeSets([{ ...tee, locked: false, rating: null, slope: null }]));
   assert.equal(validTeeSets([{ ...tee, rating: null }]), false);
   assert.equal(validTeeSets([{ ...tee, holes: tee.holes.map((hole) => ({ ...hole, yards: 0 })) }]), false);

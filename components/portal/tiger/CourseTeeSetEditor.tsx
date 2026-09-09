@@ -9,7 +9,7 @@ const inputClass = "mt-1 block w-full min-w-0 rounded border border-stone-300 bg
 const labelClass = "min-w-0 font-condensed text-xs font-bold uppercase tracking-wide text-ink-500";
 const leaveMessage = "You have unsaved changes. Are you sure you want to continue without saving your progress?";
 function editable(tee: LiveTeeSet): LiveTeeSet {
-  return { ...tee, color: tee.color ?? "#800020", locked: tee.locked ?? false, holes: Array.from({ length: 18 }, (_, i) => ({ ...(tee.holes.find((hole) => hole.number === i + 1) ?? { number: i + 1, par: 4, yards: 0 }) })) };
+  return { ...tee, color: tee.color ?? "#800020", locked: tee.locked ?? false, holes: Array.from({ length: 18 }, (_, i) => ({ ...(tee.holes.find((hole) => hole.number === i + 1) ?? { number: i + 1, par: 0, yards: 0 }) })) };
 }
 
 export function CourseTeeSetEditor({ course, onSaved }: { course: LiveCourse; onSaved?: (teeSets: LiveTeeSet[]) => void }) {
@@ -86,7 +86,7 @@ export function CourseTeeSetEditor({ course, onSaved }: { course: LiveCourse; on
         </div>
         <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-6">{[0, 9].map((start) => { const holes = draft.holes.slice(start, start + 9); return <table key={start} className="w-full table-fixed text-center font-sans text-sm">
           <thead><tr className="border-b border-stone-300 text-xs text-ink-500"><th className="w-9 py-2">Hole</th><th>Par</th><th>Yardage</th></tr></thead>
-          <tbody>{holes.map((hole) => <tr key={hole.number} className="border-b border-stone-100"><th scope="row">{hole.number}</th>{(["par", "yards"] as const).map((field) => <td key={field} className="px-0.5 py-1"><input type="number" min={field === "par" ? 3 : 0} max={field === "par" ? 6 : undefined} aria-label={`Hole ${hole.number} ${field === "yards" ? "yardage" : "par"}`} className="w-full min-w-0 rounded border border-stone-300 px-1 py-2 text-center disabled:bg-stone-100" value={hole[field]} onChange={(e) => setDraft({ ...draft, holes: draft.holes.map((entry) => entry.number === hole.number ? { ...entry, [field]: Number(e.target.value) } : entry) })} /></td>)}</tr>)}</tbody>
+          <tbody>{holes.map((hole) => <tr key={hole.number} className="border-b border-stone-100"><th scope="row">{hole.number}</th>{(["par", "yards"] as const).map((field) => <td key={field} className="px-0.5 py-1"><input type="number" min={field === "par" ? 3 : 0} max={field === "par" ? 6 : undefined} aria-label={`Hole ${hole.number} ${field === "yards" ? "yardage" : "par"}`} className="w-full min-w-0 rounded border border-stone-300 px-1 py-2 text-center disabled:bg-stone-100" value={hole[field] || ""} onChange={(e) => setDraft({ ...draft, holes: draft.holes.map((entry) => entry.number === hole.number ? { ...entry, [field]: Number(e.target.value) } : entry) })} /></td>)}</tr>)}</tbody>
           <tfoot><tr className="bg-cream-100 font-bold"><th className="py-3">{start === 0 ? "Out" : "In"}</th><td>{holes.reduce((sum, hole) => sum + hole.par, 0)}</td><td>{holes.reduce((sum, hole) => sum + hole.yards, 0).toLocaleString()}</td></tr></tfoot>
         </table>; })}</div>
       </fieldset>

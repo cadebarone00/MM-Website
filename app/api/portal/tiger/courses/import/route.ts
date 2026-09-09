@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     const file = form.get("file");
     if (!(file instanceof File) || !file.name.toLowerCase().endsWith(".csv")) throw new Error("Choose a CSV file.");
     if (file.size > COURSE_CSV_MAX_BYTES) throw new Error("CSV files must be 1 MB or smaller.");
-    parsed = parseCourseCsv(await file.text());
+    parsed = parseCourseCsv(await file.text(), file.name.replace(/\.csv$/i, "").trim() || "Imported course");
   } catch (err) {
     return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "Could not read the CSV." }, { status: 400 });
   }

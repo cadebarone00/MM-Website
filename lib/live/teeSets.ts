@@ -15,7 +15,7 @@ export function validTeeSets(value: unknown): value is LiveTeeSet[] {
     if (!tee.holes.every((hole: LiveTeeSet["holes"][number]) => {
       if (!hole || !Number.isInteger(hole.number) || hole.number < 1 || hole.number > 18 || numbers.has(hole.number)) return false;
       numbers.add(hole.number);
-      return Number.isInteger(hole.par) && hole.par >= 3 && hole.par <= 6 && Number.isInteger(hole.yards) && hole.yards >= 0;
+      return Number.isInteger(hole.par) && (hole.par === 0 && !tee.locked || hole.par >= 3 && hole.par <= 6) && Number.isInteger(hole.yards) && hole.yards >= 0;
     })) return false;
     return !tee.locked || (tee.rating != null && tee.slope != null && tee.holes.every((hole: LiveTeeSet["holes"][number]) => hole.yards > 0));
   });

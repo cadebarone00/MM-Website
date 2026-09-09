@@ -11,7 +11,8 @@ export function CourseCsvImport({ onSaved }: { onSaved: (course: LiveCourse) => 
   const [imported, setImported] = useState<LiveCourse | null>(null);
   return <div className="mt-4 rounded-lg border border-gold-300 bg-white p-4">
     <h2 className="font-serif text-lg font-bold text-ink-900">Import a course CSV</h2>
-    <p className="mt-2 font-sans text-sm text-ink-600">Use one row per hole, with 18 rows for each tee set. Include the course name, tee name, hole, par, and yards. Color, rating, and slope can be included or filled in later. Totals are calculated automatically.</p>
+    <p className="mt-2 font-sans text-sm text-ink-600">Upload whatever course information you have. Missing holes, par, yardage, rating, and slope can be filled in later. Use one row per hole; without hole numbers, rows are assigned in order. Totals are calculated automatically.</p>
+    <p className="mt-2 font-sans text-xs text-ink-500">If names are missing, the filename becomes the course name and the tee set is named Standard. Blank names on later rows continue the previous course and tee set.</p>
     <p className="mt-2 font-sans text-xs text-ink-500">One new course per file, up to 1 MB. Imported tee sets save as unlocked drafts. Review and lock them to make them available for rounds.</p>
     <div className="mt-3 flex flex-wrap items-center gap-4">
       <a href="/templates/course-library.csv" download className="font-condensed text-xs font-bold uppercase text-maroon-700 underline">Download CSV template</a>
