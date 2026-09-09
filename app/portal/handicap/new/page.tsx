@@ -19,7 +19,7 @@ export default async function NewHandicapRoundPage() {
 
   return (
     <div className="mx-auto max-w-[720px] px-4 py-8 sm:px-7">
-      <Link href="/portal/handicap" className="font-condensed text-xs font-bold uppercase tracking-wide text-ink-500 hover:text-maroon-700">
+      <Link href="/portal/handicap" className="hidden lg:inline-block font-condensed text-xs font-bold uppercase tracking-wide text-ink-500 hover:text-maroon-700">
         ← Back to My Handicap
       </Link>
       <div className="mt-5">

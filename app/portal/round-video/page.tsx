@@ -20,7 +20,7 @@ export default async function RoundVideoPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 sm:px-7">
-      <Link href="/portal" className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline">← Back to Portal</Link>
+      <Link href="/portal" className="hidden lg:inline-block font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline">← Back to Portal</Link>
       <h1 className="mt-3 font-serif text-3xl font-bold text-ink-900">Round Video</h1>
       <p className="mt-2 max-w-xl font-sans text-sm text-ink-600">Choose one of your recorded rounds to upload or replace videos. Your official scores and statistics are visible but cannot be changed here.</p>
 

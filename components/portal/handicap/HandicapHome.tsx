@@ -10,7 +10,7 @@ export function HandicapHome({ playerName, summary }: { playerName: string; summ
   return (
     <main className="w-full pb-10">
       <div className="mx-auto max-w-4xl px-4 py-5 sm:px-6">
-        <Link href="/portal" className="font-condensed text-xs font-bold uppercase tracking-wide text-ink-500 hover:text-maroon-700">
+        <Link href="/portal" className="hidden lg:inline-block font-condensed text-xs font-bold uppercase tracking-wide text-ink-500 hover:text-maroon-700">
           ← Back to Portal
         </Link>
         <h1 className="mt-3 font-serif text-3xl font-bold text-ink-900">My Handicap</h1>

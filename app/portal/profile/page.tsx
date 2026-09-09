@@ -35,7 +35,7 @@ export default async function PortalProfilePage() {
 
   return (
     <div className="mx-auto max-w-[720px] px-4 py-12 sm:px-7">
-      <Link href="/portal" className="font-condensed text-xs font-semibold uppercase tracking-wide text-ink-500 hover:text-maroon-700">
+      <Link href="/portal" className="hidden lg:inline-block font-condensed text-xs font-semibold uppercase tracking-wide text-ink-500 hover:text-maroon-700">
         ← Back to Portal
       </Link>
       <h1 className="mt-4 font-serif text-2xl font-bold text-ink-900">Edit My Bio</h1>
