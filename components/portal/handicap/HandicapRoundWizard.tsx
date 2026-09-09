@@ -34,7 +34,7 @@ export function HandicapRoundWizard({ courses }: { courses: HandicapCourseOption
   const selectedTeeSet = selectedCourse?.teeSets.find((t) => t.id === teeSetId) ?? null;
 
   if (courses.length === 0) {
-    return <p className="font-sans text-sm text-ink-500">No courses are set up yet — ask Tiger to add one from the Course Library first.</p>;
+    return <p className="font-sans text-sm text-ink-500">No tee sets are available yet — ask Tiger to save and lock a tee set in the Course Library first.</p>;
   }
 
   if (state.step === "holes") {

@@ -3,9 +3,7 @@ import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import type { LiveCourse, LiveHole, LiveTeeSet } from "@/lib/live/types";
 
-function validTeeSets(value: unknown): value is LiveTeeSet[] {
-  return Array.isArray(value) && value.length > 0 && value.every((tee) => typeof tee?.id === "string" && typeof tee?.name === "string" && Array.isArray(tee?.holes) && tee.holes.length === 18 && tee.holes.every((hole: unknown) => typeof (hole as LiveHole)?.number === "number" && typeof (hole as LiveHole)?.par === "number" && typeof (hole as LiveHole)?.yards === "number"));
-}
+import { validTeeSets } from "@/lib/live/teeSets";
 
 export async function GET() {
   const host = await requireHost();
@@ -72,7 +70,7 @@ export async function PUT(request: Request) {
   const host = await requireHost();
   if (!host) return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
   const { id, teeSets } = await request.json();
-  if (typeof id !== "string" || !validTeeSets(teeSets)) return NextResponse.json({ ok: false, error: "Every tee set needs a name and exactly 18 holes." }, { status: 400 });
+  if (typeof id !== "string" || !validTeeSets(teeSets)) return NextResponse.json({ ok: false, error: "Enter a name, valid color, and holes 1–18 with par and yardage. Locked tees also require positive yardages, rating, and slope (55–155)." }, { status: 400 });
   const primary = teeSets[0];
   const service = createSupabaseServiceRoleClient();
   const { error } = await service.from("live_courses").update({ tee_sets: teeSets, holes: primary.holes, rating: primary.rating, slope: primary.slope }).eq("id", id);

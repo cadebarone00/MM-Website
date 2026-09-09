@@ -8,7 +8,7 @@ test("mapCourseRow keeps only well-formed tee sets", () => {
     id: "course-1",
     name: "Pebble Beach",
     tee_sets: [
-      { id: "blue", name: "Blue", rating: 74.5, slope: 142, holes: [{ number: 1, par: 4, yards: 400 }] },
+      { id: "blue", name: "Blue", locked: true, rating: 74.5, slope: 142, holes: Array.from({ length: 18 }, (_, i) => ({ number: i + 1, par: 4, yards: 400 })) },
       { id: "no-rating", name: "White", rating: null, slope: null, holes: [] }, // never set up — must be dropped
       { id: "broken" }, // malformed — must be dropped
     ],

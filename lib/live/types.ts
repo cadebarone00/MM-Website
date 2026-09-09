@@ -10,6 +10,8 @@ export interface LiveHole {
 }
 
 export interface LiveTeeSet {
+  color?: string;
+  locked?: boolean;
   id: string;
   name: string;
   holes: LiveHole[];

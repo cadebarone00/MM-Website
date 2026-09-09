@@ -3,6 +3,7 @@ import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
 import type { LiveRoundState, LiveTeeSet, MatchFormat } from "@/lib/live/types";
+import { availableTeeSets } from "@/lib/live/teeSets";
 
 const VALID_FORMATS: MatchFormat[] = ["Fourball", "Foursome", "Singles"];
 
@@ -74,11 +75,11 @@ export async function POST(request: Request) {
 
   if (courseSetup !== undefined) {
     const { data: course } = await service.from("live_courses").select("holes, rating, slope, tee_sets").eq("id", courseId).single();
-    const teeSets = (Array.isArray(course?.tee_sets) ? course.tee_sets : []) as LiveTeeSet[];
-    const fallback: LiveTeeSet = { id: "standard", name: "Standard", holes: course?.holes ?? [], rating: course?.rating ?? null, slope: course?.slope ?? null };
-    const selected = teeSets.find((tee) => tee.id === courseSetup.teeSetId) ?? (courseSetup.teeSetId === "standard" ? fallback : null);
+    const teeSets = availableTeeSets((Array.isArray(course?.tee_sets) ? course.tee_sets : []) as LiveTeeSet[]);
+    const selected = teeSets.find((tee) => tee.id === courseSetup.teeSetId);
     if (!selected || selected.holes.length !== 18) return NextResponse.json({ ok: false, error: "That tee set is not available for this course." }, { status: 400 });
-    const byId = new Map([...teeSets, fallback].map((tee) => [tee.id, tee]));
+    const byId = new Map(teeSets.map((tee) => [tee.id, tee]));
+    if (Object.values(courseSetup.holeTeeSetIds).some((id) => typeof id !== "string" || !byId.has(id))) return NextResponse.json({ ok: false, error: "Every selected tee set must be locked and available." }, { status: 400 });
     const holes = selected.holes.map((hole) => {
       const tee = byId.get(courseSetup.holeTeeSetIds[String(hole.number)]) ?? selected;
       const override = tee.holes.find((candidate) => candidate.number === hole.number);

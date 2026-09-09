@@ -1,6 +1,8 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { calculateDifferential, calculateHandicapIndex, calculateLowIndex } from "./whs";
 import { validateSubmitInput } from "./validate";
+import { availableTeeSets } from "@/lib/live/teeSets";
+import type { LiveTeeSet } from "@/lib/live/types";
 import type { HandicapCourseOption, HandicapCourseTeeSet, HandicapRoundSummary, HandicapSummary, SubmitHandicapRoundInput } from "./types";
 
 interface CourseRow {
@@ -23,7 +25,7 @@ function isWellFormedTeeSet(value: unknown): value is HandicapCourseTeeSet {
 
 /** Pure — no I/O — so it's directly unit-testable without a live Supabase instance. */
 export function mapCourseRow(row: CourseRow): HandicapCourseOption {
-  const teeSets = Array.isArray(row.tee_sets) ? row.tee_sets.filter(isWellFormedTeeSet) : [];
+  const teeSets = Array.isArray(row.tee_sets) ? availableTeeSets(row.tee_sets as LiveTeeSet[]).filter(isWellFormedTeeSet) : [];
   return { id: row.id, name: row.name, teeSets };
 }
 

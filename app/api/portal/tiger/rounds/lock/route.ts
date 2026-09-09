@@ -4,6 +4,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
 import { roundIsComplete, validateMatchBox } from "@/lib/live/orchestration";
 import { syncLockedRoundToCareerArchive } from "@/lib/live/syncLockedRound";
+import { availableTeeSets } from "@/lib/live/teeSets";
 import type { LiveMatchBox, LiveTournamentSnapshot, MatchFormat, MatchState, Team } from "@/lib/live/types";
 
 export async function POST(request: Request) {
@@ -21,9 +22,14 @@ export async function POST(request: Request) {
 
   if (lock === "course") {
     if (value) {
-      const { data: current } = await service.from("live_round_state").select("date, course_id, format").eq("season_year", year).eq("round", round).single();
+      const { data: current } = await service.from("live_round_state").select("date, course_id, format, course_setup").eq("season_year", year).eq("round", round).single();
       if (!current?.date || !current?.course_id || !current?.format) {
         return NextResponse.json({ ok: false, error: "Set a date, course, and format before locking this round." }, { status: 400 });
+      }
+      const { data: course } = await service.from("live_courses").select("tee_sets").eq("id", current.course_id).single();
+      const availableIds = new Set(availableTeeSets(Array.isArray(course?.tee_sets) ? course.tee_sets : []).map((tee) => tee.id));
+      if (!availableIds.has(current.course_setup?.teeSetId) || Object.values(current.course_setup?.holeTeeSetIds ?? {}).some((id) => typeof id !== "string" || !availableIds.has(id))) {
+        return NextResponse.json({ ok: false, error: "Choose locked tee sets from the Course Library before locking this round." }, { status: 400 });
       }
     }
     const { error } = await service
