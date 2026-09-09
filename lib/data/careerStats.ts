@@ -3,6 +3,9 @@ import type { RealMatch, PlayerScorecard } from "./types";
 export type CareerScorecardSet = { year: number; scorecards: PlayerScorecard[] };
 
 export type CareerHoleRecord = {
+  source?: "maroon-masters" | "other";
+  roundId?: string;
+  datePlayed?: string;
   year: number;
   player: string;
   round: number;
@@ -18,6 +21,10 @@ export type CareerHoleRecord = {
   greenInRegulation: boolean | null;
   penalties: number | null;
 };
+
+export function careerRoundKey(row: CareerHoleRecord): string {
+  return row.roundId ?? `${row.year}:${row.round}:${row.course}:${row.format}`;
+}
 
 export type CareerPartnership = { player: string; partner: string; year: number; format: string; result: "win" | "loss" | "halve" };
 export type CareerCourseHole = { year: number; course: string; tee: string | null; hole: number; par: number; yards: number; holeType: string | null; holeLengthBucket: string | null };

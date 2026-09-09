@@ -1,8 +1,8 @@
 import { buildLiveTournamentSnapshot } from "@/lib/broadcast/liveSnapshot";
-import { getLiveCareerArchiveRecords, getLiveCareerArchiveTeamRecords } from "@/lib/data/careerStatsDatabase";
-import { careerArchiveCourseHoles, careerArchiveRecords, careerArchiveTeamRecords } from "@/lib/data/careerArchive.generated";
+import { getCombinedCareerArchive } from "@/lib/data/combinedCareerArchive";
+import { careerArchiveCourseHoles } from "@/lib/data/careerArchive.generated";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
-import type { CareerCourseHole, CareerHoleRecord } from "@/lib/data/careerStats";
+import type { CareerCourseHole } from "@/lib/data/careerStats";
 import { calculatePreRoundAlternateShotOdds, calculatePreRoundFourballOdds, calculatePreRoundSinglesOdds, type PreRoundSinglesResult } from "@/lib/odds/preRoundSingles";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import type { LiveMatchBox } from "@/lib/live/types";
@@ -20,27 +20,13 @@ function modelPlayer(slug: string): string {
   return getPlayerProfileBySlug(slug)?.id ?? slug;
 }
 
-function recordWithModelPlayer(row: CareerHoleRecord): CareerHoleRecord {
-  return { ...row, player: getPlayerProfileBySlug(row.player)?.id ?? row.player };
-}
-
 /** Builds and persists the single odds output consumed by all live surfaces. */
 export async function publishMatchOdds(seasonYear: number, box: LiveMatchBox, state: OfficialMatchState): Promise<PreRoundSinglesResult | null> {
   const snapshot = await buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true });
   const course = snapshot.courses[snapshot.roundCourses[box.round]];
   if (!course) return null;
   const courseHoles: CareerCourseHole[] = course.holes.map((hole) => ({ year: seasonYear, course: course.name, tee: null, hole: hole.number, par: hole.par, yards: hole.yards, holeType: `Par ${hole.par}`, holeLengthBucket: null }));
-  const [liveArchiveRecords, liveArchiveTeamRecords] = await Promise.all([
-    getLiveCareerArchiveRecords({ includeTestSeason: isTestSeason(seasonYear) }),
-    getLiveCareerArchiveTeamRecords({ includeTestSeason: isTestSeason(seasonYear) }),
-  ]);
-  const liveRecords = liveArchiveRecords.map(recordWithModelPlayer);
-  const records = [...careerArchiveRecords, ...liveRecords];
-  const teamRecords = [...careerArchiveTeamRecords, ...liveArchiveTeamRecords.map((row) => ({
-    ...row,
-    player1: modelPlayer(row.player1),
-    player2: modelPlayer(row.player2),
-  }))];
+  const { records, teamRecords } = await getCombinedCareerArchive({ includeTestSeason: isTestSeason(seasonYear) });
   const a = box.maroonPlayers.map(modelPlayer);
   const b = box.whitePlayers.map(modelPlayer);
   const scores = snapshot.scores;

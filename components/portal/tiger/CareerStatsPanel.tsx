@@ -5,6 +5,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import { CareerRoundArchive } from "@/components/portal/tiger/CareerRoundArchive";
 import { CareerBuckets } from "@/components/portal/tiger/CareerBuckets";
 import { getPlayerDisplayName } from "@/lib/data/players";
+import { careerRoundKey } from "@/lib/data/careerStats";
 import { canonicalCourseName } from "@/lib/data/canonicalCourse";
 import type { CareerHoleRecord, CareerPartnership, CareerTeamHoleRecord } from "@/lib/data/careerStats";
 
@@ -29,14 +30,14 @@ export function CareerStatsPanel({ records, partnerships, teamRecords }: { recor
   const formats = [...new Set([...allPlayerRows.map((r) => r.format), ...teamRecords.filter((r) => r.player1 === player || r.player2 === player).map((r) => r.format)])].sort();
   const rows = allPlayerRows.filter((r) => (year === ALL || r.year === Number(year)) && (format === ALL || r.format === format));
   const roundGroups = new Map<string, CareerHoleRecord[]>();
-  rows.forEach((r) => { const key = `${r.year}-${r.round}-${r.course}`; roundGroups.set(key, [...(roundGroups.get(key) ?? []), r]); });
+  rows.forEach((r) => { const key = careerRoundKey(r); roundGroups.set(key, [...(roundGroups.get(key) ?? []), r]); });
   const totals = [...roundGroups.values()].map((round) => round.reduce((sum, r) => sum + r.score, 0));
   const holes = rows.length;
   const byDiff = (diff: (value: number) => boolean) => rows.filter((r) => diff(r.score - r.par)).length;
   const partners = [...new Set(partnerships.filter((p) => p.player === player).map((p) => p.partner))].sort();
   const partnershipFormats = [...new Set(partnerships.filter((p) => p.player === player).map((p) => p.format))].sort();
   const pairings = partnerships.filter((p) => p.player === player && (year === ALL || p.year === Number(year)) && (partnershipFormat === ALL || p.format === partnershipFormat) && (partner === ALL || p.partner === partner));
-  const trends = years.map((trendYear) => { const yearRows = allPlayerRows.filter((r) => String(r.year) === trendYear && (format === ALL || r.format === format)); const groups = new Map<string, CareerHoleRecord[]>(); yearRows.forEach((r) => { const key = `${r.round}-${r.course}`; groups.set(key, [...(groups.get(key) ?? []), r]); }); const scores = [...groups.values()].map((round) => round.reduce((sum, r) => sum + r.score, 0)); return { year: trendYear, rounds: scores.length, average: scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0 }; });
+  const trends = years.map((trendYear) => { const yearRows = allPlayerRows.filter((r) => String(r.year) === trendYear && (format === ALL || r.format === format)); const groups = new Map<string, CareerHoleRecord[]>(); yearRows.forEach((r) => { const key = careerRoundKey(r); groups.set(key, [...(groups.get(key) ?? []), r]); }); const scores = [...groups.values()].map((round) => round.reduce((sum, r) => sum + r.score, 0)); return { year: trendYear, rounds: scores.length, average: scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0 }; });
   if (!player) return <p className="rounded-md border border-gold-300 bg-cream-50 px-4 py-5 font-sans text-sm text-ink-500">No archived scorecards are available yet. Import the 2024–2026 scorecards and this page will calculate every view automatically.</p>;
   return <div>
     <div role="tablist" aria-label="Player archive" className="flex flex-wrap gap-2 border-b border-gold-200 pb-4">

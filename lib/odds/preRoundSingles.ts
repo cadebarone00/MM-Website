@@ -1,5 +1,6 @@
 import { canonicalCourseName } from "@/lib/data/canonicalCourse";
 import type { CareerCourseHole, CareerHoleRecord, CareerTeamHoleRecord } from "@/lib/data/careerStats";
+import { careerRoundKey } from "@/lib/data/careerStats";
 
 type Category = "eagles" | "birdies" | "pars" | "bogeys" | "doubles";
 type Profile = Record<Category, { mean: number; sd: number }>;
@@ -25,7 +26,7 @@ const bucket = (yards: number) => Math.floor((yards - 101) / 10);
 // have a running roundHoles count below 18 and intentionally enter the raw
 // sampling pool immediately; an unplayed hole has no record to include.
 const isEligibleIndividualHole = (row: CareerHoleRecord) =>
-  row.roundHoles !== 9 && (row.format === "Singles" || row.format === "Fourball");
+  row.roundHoles !== 9 && (row.format === "Singles" || row.format === "Fourball" || (row.source === "other" && row.format === "Stroke Play" && row.roundHoles === 18));
 
 function counts(rows: Score[]): Record<Category, number> {
   return rows.reduce<Record<Category, number>>((result, row) => {
@@ -41,7 +42,7 @@ function counts(rows: Score[]): Record<Category, number> {
 
 function profile(rows: CareerHoleRecord[]): Profile {
   const rounds = new Map<string, CareerHoleRecord[]>();
-  rows.forEach((row) => { const id = `${row.year}:${row.round}:${row.course}:${row.format}`; rounds.set(id, [...(rounds.get(id) ?? []), row]); });
+  rows.forEach((row) => { const id = careerRoundKey(row); rounds.set(id, [...(rounds.get(id) ?? []), row]); });
   const complete = [...rounds.values()].filter((round) => round.length === 18).map(counts);
   return Object.fromEntries(categories.map((category) => {
     const values = complete.map((round) => round[category]);
@@ -82,8 +83,12 @@ export function calculatePreRoundSinglesOdds({ records, courseHoles, playerA, pl
   const validPairs = pairs as NonNullable<typeof pairs[number]>[];
   const profileA = profile(aRows); const profileB = profile(bRows);
   const mean = (rows: CareerHoleRecord[]) => rows.reduce((sum, row) => sum + row.score - row.par, 0) / rows.length;
-  const formatDeltaA = mean(aRows.filter((row) => row.format === "Singles")) - mean(aRows);
-  const formatDeltaB = mean(bRows.filter((row) => row.format === "Singles")) - mean(bRows);
+  const singlesDelta = (rows: CareerHoleRecord[]) => {
+    const singles = rows.filter((row) => row.format === "Singles");
+    return singles.length ? mean(singles) - mean(rows) : 0;
+  };
+  const formatDeltaA = singlesDelta(aRows);
+  const formatDeltaB = singlesDelta(bRows);
   let weightedA = 0; let weightedTie = 0; let weightedB = 0;
   const finalLeads = new Map<number, number>();
   for (let simulation = 0; simulation < MATCH_SIMULATIONS; simulation += 1) {

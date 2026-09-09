@@ -1,6 +1,7 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { canonicalCourseName } from "@/lib/data/canonicalCourse";
 import type { CareerHoleRecord, CareerPartnership, CareerTeamHoleRecord } from "./careerStats";
+import { buildHandicapCareerRecords, type PersonalRoundRow, type PersonalHoleRow } from "./handicapCareerRecords";
 
 type HoleRow = { year: number; player: string; round: number; round_holes: number | null; course: string; format: string | null; hole: number; par: number; yards: number; score: number; putts: number | null; fairway_in_regulation: boolean | null; green_in_regulation: boolean | null; penalties: number | null };
 
@@ -14,6 +15,16 @@ async function loadAll<T>(table: string): Promise<{ rows: T[]; ready: boolean }>
     rows.push(...page);
     if (page.length < 1000) return { rows, ready: true };
   }
+}
+
+export async function getHandicapCareerRecords(): Promise<CareerHoleRecord[]> {
+  const [rounds, holes, courses] = await Promise.all([
+    loadAll<PersonalRoundRow>("handicap_rounds"),
+    loadAll<PersonalHoleRow>("handicap_round_holes"),
+    loadAll<{ id: string; name: string }>("live_courses"),
+  ]);
+  if (!rounds.ready || !holes.ready || !courses.ready) throw new Error("Could not load submitted rounds for the Career Archive.");
+  return buildHandicapCareerRecords(rounds.rows, holes.rows, courses.rows);
 }
 
 export async function getCareerStatsDatabase() {
