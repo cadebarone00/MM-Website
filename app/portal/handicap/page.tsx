@@ -4,6 +4,7 @@ import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { getHandicapSummaryForPlayer } from "@/lib/handicap/data";
 import { HandicapHome } from "@/components/portal/handicap/HandicapHome";
 import { findPlayerTeam } from "@/lib/portal/findPlayerTeam";
+import { getArchivedHandicapRounds } from "@/lib/data/archivedScorecards";
 
 export default async function HandicapPage() {
   const supabase = await createSupabaseServerClient();
@@ -25,7 +26,10 @@ export default async function HandicapPage() {
   const playerSlug = profile.player_slug!;
   const playerProfile = getPlayerProfileBySlug(playerSlug);
   const playerName = playerProfile?.fullName ?? profile.display_name ?? "Player";
-  const summary = await getHandicapSummaryForPlayer(playerSlug);
+  const [summary, archivedRounds] = await Promise.all([
+    getHandicapSummaryForPlayer(playerSlug),
+    getArchivedHandicapRounds(playerSlug),
+  ]);
 
-  return <HandicapHome playerName={playerName} summary={summary} team={findPlayerTeam(playerSlug)} />;
+  return <HandicapHome playerName={playerName} summary={summary} archivedRounds={archivedRounds} team={findPlayerTeam(playerSlug)} />;
 }

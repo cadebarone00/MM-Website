@@ -3,6 +3,56 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { r2PublicUrl } from "@/lib/r2/client";
 import type { HoleStat, PlayerScorecard, RoundScorecard, Team, Tournament } from "./types";
 import { playerProfiles } from "./players";
+import { getTournament } from "./index";
+import type { ArchivedHandicapRound } from "@/lib/handicap/types";
+
+/** Read the player's complete archive without copying or changing official scores. */
+export async function getArchivedHandicapRounds(playerSlug: string): Promise<ArchivedHandicapRound[]> {
+  const service = createSupabaseServiceRoleClient();
+  const rounds: (RoundRow & { tournament_slug: string })[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await service.from("archived_scorecard_rounds")
+      .select("id, player_slug, tournament_slug, round, course, format")
+      .eq("player_slug", playerSlug).order("id").range(from, from + 999);
+    if (error) throw new Error("Could not load archived handicap rounds.");
+    rounds.push(...(data ?? []));
+    if (!data || data.length < 1000) break;
+  }
+  const totals = new Map<string, { total: number; holes: number }>();
+  // Batch IDs and paginate holes so a long career cannot hit the response cap.
+  for (let offset = 0; offset < rounds.length; offset += 100) {
+    const ids = rounds.slice(offset, offset + 100).map((round) => round.id);
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await service.from("archived_scorecard_holes")
+        .select("round_id, hole, score").in("round_id", ids)
+        .order("round_id").order("hole").range(from, from + 999);
+      if (error) throw new Error("Could not load archived handicap scores.");
+      for (const hole of data ?? []) {
+        if (hole.score <= 0) continue;
+        const total = totals.get(hole.round_id) ?? { total: 0, holes: 0 };
+        total.total += hole.score;
+        total.holes += 1;
+        totals.set(hole.round_id, total);
+      }
+      if (!data || data.length < 1000) break;
+    }
+  }
+  return rounds.map((round) => {
+    const tournament = getTournament(round.tournament_slug);
+    const total = totals.get(round.id);
+    return {
+      id: round.id,
+      tournamentSlug: round.tournament_slug,
+      tournamentLabel: tournament?.editionLabel ?? round.tournament_slug,
+      tournamentDate: tournament?.startDate ?? "",
+      round: round.round,
+      courseName: round.course,
+      format: round.format,
+      totalScore: total?.total ?? null,
+      holesPlayed: total?.holes ?? 0,
+    };
+  });
+}
 
 // PostgREST caps a single request at 1000 rows by default — silently, with
 // no error, just a truncated result. A whole tournament's hole rows (players

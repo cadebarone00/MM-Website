@@ -38,6 +38,18 @@ export interface HandicapSummary {
   rounds: HandicapRoundSummary[];
 }
 
+export interface ArchivedHandicapRound {
+  id: string;
+  tournamentSlug: string;
+  tournamentLabel: string;
+  tournamentDate: string;
+  round: number;
+  courseName: string;
+  format: string | null;
+  totalScore: number | null;
+  holesPlayed: number;
+}
+
 export interface SubmitHandicapRoundInput {
   courseId: string;
   teeSetId: string;
