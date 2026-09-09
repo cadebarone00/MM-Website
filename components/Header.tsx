@@ -45,7 +45,7 @@ function isSet(value: string): boolean {
 // site should be uniform about this" requirement. Exact match only — a
 // sub-page under one of these (e.g. /leaderboard/2027) still gets a back
 // arrow, only the bare hub itself is exempt.
-const HOME_PAGES = new Set(["/", "/leaderboard", "/watch-live", "/teams", "/portal", "/portal/scoring", "/portal/handicap", "/portal/admin"]);
+const HOME_PAGES = new Set(["/", "/leaderboard", "/watch-live", "/teams", "/portal", "/portal/scoring", "/portal/admin"]);
 
 function isHomePage(pathname: string): boolean {
   return HOME_PAGES.has(pathname);

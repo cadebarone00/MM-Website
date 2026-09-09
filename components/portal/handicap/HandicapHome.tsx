@@ -9,6 +9,12 @@ function formatDate(iso: string): string {
 export function HandicapHome({ playerName, summary }: { playerName: string; summary: HandicapSummary }) {
   return (
     <main className="w-full pb-10">
+      <div className="mx-auto max-w-4xl px-4 py-5 sm:px-6">
+        <Link href="/portal" className="font-condensed text-xs font-bold uppercase tracking-wide text-ink-500 hover:text-maroon-700">
+          ← Back to Portal
+        </Link>
+        <h1 className="mt-3 font-serif text-3xl font-bold text-ink-900">My Handicap</h1>
+      </div>
       <section className="relative isolate overflow-hidden bg-maroon-950">
         <div className="relative aspect-[16/7] min-h-52 sm:min-h-64">
           <Image src="/loading/desktop.png" alt="Maroon Masters course view" fill priority sizes="100vw" className="object-cover" />
