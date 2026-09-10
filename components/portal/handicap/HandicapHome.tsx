@@ -38,8 +38,8 @@ export function HandicapHome({ playerName, summary, archivedRounds, team }: { pl
                 <p className="font-serif text-4xl font-bold leading-none">{index != null ? index.toFixed(1) : "—"}</p>
                 <p className="mt-1 font-condensed text-2xs font-semibold uppercase tracking-wide text-white/75">Overall Handicap</p>
               </div>
-              <div className="text-stone-300" title="Maroon Masters handicap will be available once archived rounds have the required tee data.">
-                <p className="font-serif text-2xl font-bold leading-none">—</p>
+              <div className={summary.maroonMastersIndex == null ? "text-stone-300" : undefined} title={summary.maroonMastersIndex == null ? "Maroon Masters handicap will be available once archived rounds have the required tee data." : undefined}>
+                <p className="font-serif text-2xl font-bold leading-none">{summary.maroonMastersIndex != null ? summary.maroonMastersIndex.toFixed(1) : "—"}</p>
                 <p className="mt-1 font-condensed text-[10px] font-semibold uppercase tracking-wide">Maroon Masters</p>
               </div>
             </div>
@@ -86,10 +86,16 @@ export function HandicapHome({ playerName, summary, archivedRounds, team }: { pl
                 <div className="min-w-0">
                   <p className="truncate font-sans text-xs text-ink-600">{entry.source === "submitted" ? formatDate(entry.round.datePlayed) : `${entry.round.tournamentLabel} · Round ${entry.round.round}`}</p>
                   <h3 title={entry.round.courseName} className="mt-1 truncate font-sans text-sm font-semibold text-ink-900">{entry.round.courseName}</h3>
-                  <p className="mt-0.5 truncate font-sans text-xs text-ink-500">{entry.source === "submitted" ? entry.round.teeSetName : entry.round.format}</p>
+                  <p className="mt-0.5 truncate font-sans text-xs text-ink-500">{entry.source === "submitted" ? entry.round.teeSetName : entry.round.teeSetup?.teeSetName ?? entry.round.format}</p>
                 </div>
                 <div className="text-right font-sans text-xs tabular-nums">
-                  <p aria-label="Course rating and slope" className="text-maroon-700">{entry.source === "submitted" ? `${entry.round.rating}/${entry.round.slope}` : "— / —"}</p>
+                  <p aria-label="Course rating and slope" className="text-maroon-700">
+                    {entry.source === "submitted"
+                      ? `${entry.round.rating}/${entry.round.slope}`
+                      : entry.round.teeSetup?.rating != null && entry.round.teeSetup?.slope != null
+                        ? `${entry.round.teeSetup.rating}/${entry.round.teeSetup.slope}`
+                        : "— / —"}
+                  </p>
                 </div>
               </article>
             ))}

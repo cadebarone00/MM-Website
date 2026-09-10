@@ -810,6 +810,15 @@ create table if not exists archived_scorecard_rounds (
 );
 create index if not exists archived_scorecard_rounds_tournament_idx on archived_scorecard_rounds (tournament_slug);
 
+-- Added by supabase/archived_handicap_tees.sql, repeated here (idempotently)
+-- so schema.sql stops drifting from what's actually needed in production —
+-- this repo has hit the "migration file exists but wasn't captured in
+-- schema.sql" gap before (the Courses & Format phase). Verified historical
+-- course/tee snapshot for a round, set via the Tiger Center's "Assign tees
+-- for handicap tracking" panel — independent of later course-library edits.
+alter table archived_scorecard_rounds add column if not exists handicap_setup jsonb;
+alter table archived_scorecard_rounds add column if not exists played_on date;
+
 create table if not exists archived_scorecard_holes (
   id uuid primary key default gen_random_uuid(),
   round_id uuid not null references archived_scorecard_rounds(id) on delete cascade,

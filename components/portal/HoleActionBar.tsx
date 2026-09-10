@@ -24,7 +24,7 @@ export function HoleActionBar({
         <button
           type="button"
           onClick={() => setShowGpsNotice(true)}
-          className="flex items-center gap-1.5 rounded-lg bg-red-600 px-4 py-3 font-condensed text-xs font-bold uppercase tracking-wide text-white"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-red-600 px-4 py-3 font-condensed text-xs font-bold uppercase tracking-wide text-white"
         >
           <MapPin size={14} /> GPS
         </button>

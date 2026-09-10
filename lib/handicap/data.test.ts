@@ -1,7 +1,7 @@
 // lib/handicap/data.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mapCourseRow, mapRoundRow } from "./data.ts";
+import { mapCourseRow, mapRoundRow, buildArchiveTeeSetup } from "./data.ts";
 
 test("mapCourseRow keeps only well-formed tee sets", () => {
   const row = {
@@ -56,4 +56,20 @@ test("mapRoundRow handles a missing joined course", () => {
     live_courses: null,
   });
   assert.equal(result.courseName, "Unknown course");
+});
+
+test("buildArchiveTeeSetup builds a snapshot from the course's tee set", () => {
+  const course = {
+    id: "course-1",
+    name: "Pebble Beach",
+    teeSets: [{ id: "blue", name: "Blue", rating: 74.5, slope: 142, holes: Array.from({ length: 18 }, (_, i) => ({ number: i + 1, par: 4, yards: 400 })) }],
+  };
+  const result = buildArchiveTeeSetup(course, "blue");
+  assert.deepEqual(result, { courseId: "course-1", teeSetId: "blue", teeSetName: "Blue", rating: 74.5, slope: 142, holes: course.teeSets[0].holes });
+});
+
+test("buildArchiveTeeSetup returns null when the tee set isn't on the course", () => {
+  const course = { id: "course-1", name: "Pebble Beach", teeSets: [] };
+  const result = buildArchiveTeeSetup(course, "missing");
+  assert.equal(result, null);
 });

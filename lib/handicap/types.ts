@@ -82,3 +82,12 @@ export interface SubmitHandicapRoundInput {
   teeTime: string | null;
   holes: HandicapHoleInput[]; // exactly 18, each hole 1-18 exactly once
 }
+
+/** Body of the Tiger-only "assign tees to an archived round" bulk action — applies to every player's archived row for one tournament + round at once. */
+export interface AssignArchiveTeesInput {
+  tournamentSlug: string;
+  round: number;
+  courseId: string;
+  teeSetId: string;
+  datePlayed: string; // ISO date
+}

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { getHandicapSummaryForPlayer } from "@/lib/handicap/data";
+import { combinedHandicapIndexes } from "@/lib/handicap/archiveIndex";
 import { HandicapHome } from "@/components/portal/handicap/HandicapHome";
 import { findPlayerTeam } from "@/lib/portal/findPlayerTeam";
 import { getArchivedHandicapRounds } from "@/lib/data/archivedScorecards";
@@ -30,6 +31,10 @@ export default async function HandicapPage() {
     getHandicapSummaryForPlayer(playerSlug),
     getArchivedHandicapRounds(playerSlug),
   ]);
+  // getHandicapSummaryForPlayer's index/lowIndex only account for rounds the
+  // player submitted themselves; combine in Maroon Masters archive rounds
+  // that now carry a verified tee/rating/slope (see archiveIndex.ts).
+  const fullSummary = { ...summary, ...combinedHandicapIndexes(summary.rounds, archivedRounds) };
 
-  return <HandicapHome playerName={playerName} summary={summary} archivedRounds={archivedRounds} team={findPlayerTeam(playerSlug)} />;
+  return <HandicapHome playerName={playerName} summary={fullSummary} archivedRounds={archivedRounds} team={findPlayerTeam(playerSlug)} />;
 }

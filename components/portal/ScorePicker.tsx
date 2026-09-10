@@ -12,20 +12,19 @@ function bubbleShape(score: number, par: number): { shape: "circle" | "box" | "p
   return { shape: "plain", doubled: false };
 }
 
-function ScoreBubble({ score, par, selected }: { score: number; par: number; selected: boolean }) {
+/** Always shows its own par-relative shape — selection is shown by the picker's fixed center box, not by recoloring the bubble. */
+function ScoreBubble({ score, par }: { score: number; par: number }) {
   const { shape, doubled } = bubbleShape(score, par);
-  const radiusClass = shape === "circle" ? "rounded-full" : shape === "box" ? "rounded-md" : "rounded-md";
-  const ringClass = shape === "plain" ? "border-transparent" : selected ? "border-maroon-700" : "border-ink-300";
+  const radiusClass = shape === "circle" ? "rounded-full" : "rounded-md";
+  const borderClass = shape === "plain" ? "border-transparent" : "border-ink-300";
   const inner = (
-    <span
-      className={`flex h-14 w-14 items-center justify-center border-2 ${radiusClass} ${ringClass} font-sans text-2xl font-bold ${selected ? "bg-maroon-700 text-white" : "bg-white text-ink-800"}`}
-    >
+    <span className={`flex h-16 w-16 items-center justify-center border-[3px] ${radiusClass} ${borderClass} font-sans text-3xl font-bold text-ink-900`}>
       {score}
     </span>
   );
   if (!doubled) return inner;
   return (
-    <span className={`flex h-[4.25rem] w-[4.25rem] items-center justify-center border-2 ${radiusClass} ${selected ? "border-maroon-700" : "border-ink-300"} p-0.5`}>
+    <span className={`flex h-20 w-20 items-center justify-center border-[3px] ${radiusClass} border-ink-300 p-0.5`}>
       {inner}
     </span>
   );
@@ -33,8 +32,10 @@ function ScoreBubble({ score, par, selected }: { score: number; par: number; sel
 
 /**
  * Horizontal scorecard-style strip: par-relative bubbles (circle=birdie,
- * box=bogey, doubled=2-or-more), score capped at double par. The selected
- * score always sits centered — tap any bubble or swipe the strip to it.
+ * box=bogey, doubled=2-or-more), scored from 1 up to double par. A
+ * translucent maroon box stays fixed in the center — swipe the strip or tap
+ * a bubble to slide that score into it; the bubble keeps its own shape
+ * either way.
  */
 export function ScorePicker({
   value,
@@ -83,32 +84,35 @@ export function ScorePicker({
   }
 
   return (
-    <div
-      ref={containerRef}
-      onScroll={handleScroll}
-      role="group"
-      aria-label={ariaLabel}
-      className="flex snap-x snap-mandatory items-center gap-4 overflow-x-auto px-[calc(50%-1.75rem)] py-2"
-    >
-      {scores.map((score) => {
-        const selected = value === score;
-        return (
-          <button
-            key={score}
-            ref={(el) => {
-              if (el) itemRefs.current.set(score, el);
-              else itemRefs.current.delete(score);
-            }}
-            type="button"
-            disabled={disabled}
-            onClick={() => onChange(score)}
-            aria-pressed={selected}
-            className="shrink-0 snap-center disabled:opacity-50"
-          >
-            <ScoreBubble score={score} par={par} selected={selected} />
-          </button>
-        );
-      })}
+    <div className="relative">
+      <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-maroon-700/25 ring-2 ring-maroon-700/40" />
+      <div
+        ref={containerRef}
+        onScroll={handleScroll}
+        role="group"
+        aria-label={ariaLabel}
+        className="relative z-10 flex snap-x snap-mandatory items-center gap-4 overflow-x-auto px-[calc(50%-2rem)] py-4"
+      >
+        {scores.map((score) => {
+          const selected = value === score;
+          return (
+            <button
+              key={score}
+              ref={(el) => {
+                if (el) itemRefs.current.set(score, el);
+                else itemRefs.current.delete(score);
+              }}
+              type="button"
+              disabled={disabled}
+              onClick={() => onChange(score)}
+              aria-pressed={selected}
+              className="shrink-0 snap-center disabled:opacity-50"
+            >
+              <ScoreBubble score={score} par={par} />
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

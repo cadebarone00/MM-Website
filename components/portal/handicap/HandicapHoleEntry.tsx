@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import type { HandicapCourseTeeSet, HandicapHoleInput, ShotDirection } from "@/lib/handicap/types";
-import { ScoreToParHeader } from "@/components/portal/ScoreToParHeader";
 import { ScorePicker } from "@/components/portal/ScorePicker";
 import { PuttsPicker } from "@/components/portal/PuttsPicker";
 import { ShotDirectionPicker, type ShotResult } from "@/components/portal/ShotDirectionPicker";
@@ -35,12 +34,17 @@ function seedDraftFromHoles(teeSet: HandicapCourseTeeSet, initialHoles: Handicap
   return draft;
 }
 
+function formatToPar(toPar: number | null): string {
+  if (toPar == null) return "—";
+  if (toPar === 0) return "E";
+  return toPar > 0 ? `+${toPar}` : `${toPar}`;
+}
+
 export function HandicapHoleEntry({
   teeSet,
   onBack,
   onComplete,
   initialHoles,
-  courseName,
 }: {
   teeSet: HandicapCourseTeeSet;
   onBack: () => void;
@@ -101,46 +105,48 @@ export function HandicapHoleEntry({
   const isLastHole = selectedHole === 18;
 
   return (
-    <div className="fixed inset-0 z-40 flex h-dvh flex-col overflow-hidden bg-white px-4 py-3 lg:static lg:z-auto lg:h-auto lg:flex-none lg:overflow-visible lg:bg-transparent lg:p-0">
-      <div className="flex items-baseline justify-between">
-        <h1 className="font-serif text-xl font-bold text-ink-900 lg:text-2xl">Your round</h1>
-        <button type="button" onClick={onBack} className="font-condensed text-2xs font-semibold uppercase tracking-wide text-ink-500 underline">Edit setup</button>
+    <div className="fixed inset-0 z-40 flex h-dvh flex-col overflow-hidden bg-white lg:static lg:z-auto lg:h-auto lg:flex-none lg:overflow-visible lg:bg-transparent">
+      {/* Flush nav bar — hole/par/yards, then total/to-par centered underneath */}
+      <div className="bg-maroon-950 px-4 pb-3 pt-3 text-white lg:rounded-lg">
+        <button type="button" onClick={onBack} className="font-condensed text-2xs font-semibold uppercase tracking-wide text-white/70 underline">✕ Edit setup</button>
+        <p className="mt-1 font-condensed text-xl font-bold uppercase tracking-wide">
+          Hole {selectedHole} <span className="font-sans text-sm font-normal normal-case text-white/75">· Par {hole.par} · {hole.yards} yards</span>
+        </p>
+        <div className="mt-2 flex items-center justify-center gap-3">
+          <span className="font-condensed text-xs font-semibold uppercase tracking-wide">Total Score: {totalScore}</span>
+          <span className="text-white/40">|</span>
+          <span className="font-condensed text-xs font-semibold uppercase tracking-wide">To Par: {formatToPar(toPar)}</span>
+        </div>
       </div>
-      <p className="mt-0.5 font-sans text-xs text-ink-500 lg:text-sm">{courseName ? `${courseName} · ` : ""}{teeSet.name}</p>
 
-      {error && <p role="alert" className="mt-2 rounded-sm bg-red-50 px-3 py-2 font-sans text-xs text-red-700">{error}</p>}
+      <div className="flex flex-1 flex-col justify-center overflow-hidden px-4 py-3 lg:flex-none lg:overflow-visible">
+        {error && <p role="alert" className="mb-2 rounded-sm bg-red-50 px-3 py-2 font-sans text-xs text-red-700">{error}</p>}
 
-      <div className="mt-3">
-        <ScoreToParHeader totalScore={totalScore} toPar={toPar} />
-      </div>
+        <ScorePicker ariaLabel={`Hole ${selectedHole} score`} par={hole.par} value={entry.score ? Number(entry.score) : null} onChange={(score) => setField(selectedHole, "score", String(score))} />
 
-      <div className="mt-3 flex flex-1 flex-col justify-center overflow-hidden rounded-lg border-2 border-stone-300 p-3 lg:flex-none lg:overflow-visible lg:p-4">
-        <div className="flex items-baseline justify-between">
-          <span className="font-condensed text-sm font-bold uppercase tracking-wide text-ink-900">Hole {selectedHole}</span>
-          <span className="font-sans text-xs text-ink-500">Par {hole.par} · {hole.yards} yards</span>
+        <div className="mt-4 grid grid-cols-2 divide-x divide-ink-200">
+          <div className="flex items-center justify-center">
+            {hole.par !== 3 && (
+              <ShotDirectionPicker label="Fairway" value={firValue} onChange={(result) => setShotResult(selectedHole, "fir", result)} />
+            )}
+          </div>
+          <div className="flex items-center justify-center">
+            <ShotDirectionPicker label="GIR" penaltyOption value={girValue} onChange={(result) => setShotResult(selectedHole, "gir", result)} />
+          </div>
         </div>
 
-        <div className="mt-2">
-          <ScorePicker ariaLabel={`Hole ${selectedHole} score`} par={hole.par} value={entry.score ? Number(entry.score) : null} onChange={(score) => setField(selectedHole, "score", String(score))} />
-        </div>
-
-        <div className="mt-3 flex items-start justify-center gap-6">
-          {hole.par !== 3 && (
-            <ShotDirectionPicker label="Fairway" value={firValue} onChange={(result) => setShotResult(selectedHole, "fir", result)} />
-          )}
-          <ShotDirectionPicker label="GIR" penaltyOption value={girValue} onChange={(result) => setShotResult(selectedHole, "gir", result)} />
-        </div>
-
-        <p className="mt-3 text-center font-condensed text-xs font-semibold uppercase tracking-wide text-ink-500">Putts</p>
+        <p className="mt-4 text-center font-condensed text-xs font-semibold uppercase tracking-wide text-ink-500">Putts</p>
         <div className="mt-1">
           <PuttsPicker ariaLabel={`Hole ${selectedHole} putts`} value={entry.putts ? Number(entry.putts) : null} onChange={(putts) => setField(selectedHole, "putts", String(putts))} />
         </div>
       </div>
 
-      <HoleActionBar
-        nextLabel={isLastHole ? "Review Round" : "Next Hole"}
-        onNext={() => (isLastHole ? handleContinue() : setSelectedHole((h) => Math.min(h + 1, 18)))}
-      />
+      <div className="px-4 pb-3">
+        <HoleActionBar
+          nextLabel={isLastHole ? "Review Round" : "Next Hole"}
+          onNext={() => (isLastHole ? handleContinue() : setSelectedHole((h) => Math.min(h + 1, 18)))}
+        />
+      </div>
     </div>
   );
 }

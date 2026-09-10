@@ -4,6 +4,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { pastTournaments, latestCompleted, playersOf } from "@/lib/data";
 import { getPlayerDisplayName, getPlayerProfile } from "@/lib/data/players";
 import { YearPicker } from "@/components/portal/tiger/YearPicker";
+import { getArchivedTournamentRounds } from "@/lib/data/archivedScorecards";
+import { getCourseLibraryForHandicap } from "@/lib/handicap/data";
+import { ArchiveTeeAssigner } from "@/components/portal/tiger/ArchiveTeeAssigner";
 
 export default async function ScorecardsYearPickerPage({ searchParams }: { searchParams: Promise<{ tournament?: string }> }) {
   const supabase = await createSupabaseServerClient();
@@ -16,6 +19,10 @@ export default async function ScorecardsYearPickerPage({ searchParams }: { searc
 
   const { tournament: tournamentSlug } = await searchParams;
   const activeTournament = pastTournaments.find((t) => t.slug === tournamentSlug) ?? latestCompleted;
+  const [archiveRounds, courses] = await Promise.all([
+    getArchivedTournamentRounds(activeTournament.slug),
+    getCourseLibraryForHandicap(),
+  ]);
 
   return (
     <div className="mx-auto max-w-[720px] px-4 py-12 sm:px-7">
@@ -43,6 +50,8 @@ export default async function ScorecardsYearPickerPage({ searchParams }: { searc
           );
         })}
       </div>
+
+      <ArchiveTeeAssigner tournamentSlug={activeTournament.slug} rounds={archiveRounds} courses={courses} />
     </div>
   );
 }

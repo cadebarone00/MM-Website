@@ -4,7 +4,26 @@ import { r2PublicUrl } from "@/lib/r2/client";
 import type { HoleStat, PlayerScorecard, RoundScorecard, Team, Tournament } from "./types";
 import { playerProfiles } from "./players";
 import { getTournament } from "./index";
-import type { ArchivedHandicapRound } from "@/lib/handicap/types";
+import type { ArchivedHandicapRound, ArchivedTeeSetup } from "@/lib/handicap/types";
+
+/** Pure — no I/O. Defensively validates a `handicap_setup` jsonb value read back from archived_scorecard_rounds; malformed or never-assigned data becomes null rather than a bad round in the handicap archive. */
+export function mapHandicapSetup(value: unknown): ArchivedTeeSetup | null {
+  if (!value || typeof value !== "object") return null;
+  const v = value as Partial<ArchivedTeeSetup>;
+  if (typeof v.courseId !== "string" || typeof v.teeSetId !== "string" || typeof v.teeSetName !== "string") return null;
+  if (!Array.isArray(v.holes)) return null;
+  if (v.rating !== null && typeof v.rating !== "number") return null;
+  if (v.slope !== null && typeof v.slope !== "number") return null;
+  return {
+    courseId: v.courseId,
+    teeSetId: v.teeSetId,
+    teeSetName: v.teeSetName,
+    rating: v.rating ?? null,
+    slope: v.slope ?? null,
+    holes: v.holes,
+    ...(v.holeTeeSetIds ? { holeTeeSetIds: v.holeTeeSetIds } : {}),
+  };
+}
 
 /** Read the player's complete archive without copying or changing official scores. */
 export async function getArchivedHandicapRounds(playerSlug: string): Promise<ArchivedHandicapRound[]> {
@@ -12,7 +31,7 @@ export async function getArchivedHandicapRounds(playerSlug: string): Promise<Arc
   const rounds: (RoundRow & { tournament_slug: string })[] = [];
   for (let from = 0; ; from += 1000) {
     const { data, error } = await service.from("archived_scorecard_rounds")
-      .select("id, player_slug, tournament_slug, round, course, format")
+      .select("id, player_slug, tournament_slug, round, course, format, handicap_setup, played_on")
       .eq("player_slug", playerSlug).order("id").range(from, from + 999);
     if (error) throw new Error("Could not load archived handicap rounds.");
     rounds.push(...(data ?? []));
@@ -50,6 +69,8 @@ export async function getArchivedHandicapRounds(playerSlug: string): Promise<Arc
       format: round.format,
       totalScore: total?.total ?? null,
       holesPlayed: total?.holes ?? 0,
+      datePlayed: round.played_on ?? null,
+      teeSetup: mapHandicapSetup(round.handicap_setup),
     };
   });
 }
@@ -88,6 +109,8 @@ interface RoundRow {
   round: number;
   course: string;
   format: string | null;
+  handicap_setup?: unknown;
+  played_on?: string | null;
 }
 
 interface HoleRow {
@@ -179,6 +202,47 @@ export async function getScorecardsForTournament(tournament: Pick<Tournament, "s
       rounds: playerRounds.sort((a, b) => a.round - b.round).map((r) => toRoundScorecard(r, holes)),
     };
   });
+}
+
+/** Distinct rounds recorded for a tournament (any player), for the Tiger Center's "assign tees to a round" picker — one entry per round number, not per player. `assigned` is true once any player row for that round already carries a tee setup. */
+export async function getArchivedTournamentRounds(tournamentSlug: string): Promise<{ round: number; course: string; format: string | null; assigned: boolean }[]> {
+  const service = createSupabaseServiceRoleClient();
+  const { data, error } = await service
+    .from("archived_scorecard_rounds")
+    .select("round, course, format, handicap_setup")
+    .eq("tournament_slug", tournamentSlug)
+    .order("round");
+  if (error) {
+    console.error("getArchivedTournamentRounds: failed to load rounds", error);
+    return [];
+  }
+  const byRound = new Map<number, { round: number; course: string; format: string | null; assigned: boolean }>();
+  for (const row of data ?? []) {
+    const existing = byRound.get(row.round);
+    const assigned = mapHandicapSetup(row.handicap_setup) != null;
+    if (!existing) byRound.set(row.round, { round: row.round, course: row.course, format: row.format, assigned });
+    else if (assigned) existing.assigned = true;
+  }
+  return [...byRound.values()].sort((a, b) => a.round - b.round);
+}
+
+/** Bulk-assigns a tee setup (and the date it was played) to every player's archived row for one tournament + round — same course/tees for the whole field, matching how a round is already modeled during live scoring. */
+export async function assignArchiveTeeSetup(
+  tournamentSlug: string,
+  round: number,
+  teeSetup: ArchivedTeeSetup,
+  datePlayed: string
+): Promise<{ ok: true; updated: number } | { ok: false; error: string }> {
+  const service = createSupabaseServiceRoleClient();
+  const { data, error } = await service
+    .from("archived_scorecard_rounds")
+    .update({ handicap_setup: teeSetup, played_on: datePlayed })
+    .eq("tournament_slug", tournamentSlug)
+    .eq("round", round)
+    .select("id");
+  if (error) return { ok: false, error: "Could not save this tee assignment. Has the archived_handicap_tees.sql migration been run?" };
+  if (!data || data.length === 0) return { ok: false, error: "No archived rounds found for that tournament and round." };
+  return { ok: true, updated: data.length };
 }
 
 /** Round labels for the Tiger Center's player → rounds list ("Round 1 — Palmer"). */

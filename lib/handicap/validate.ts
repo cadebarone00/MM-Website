@@ -1,4 +1,4 @@
-import type { SubmitHandicapRoundInput } from "./types.ts";
+import type { AssignArchiveTeesInput, SubmitHandicapRoundInput } from "./types.ts";
 
 type ValidationResult = { ok: true } | { ok: false; error: string };
 
@@ -43,5 +43,17 @@ export function validateSubmitInput(input: SubmitHandicapRoundInput): Validation
   }
   if (seenHoles.size !== 18) return { ok: false, error: "All 18 holes are required." };
 
+  return { ok: true };
+}
+
+export function validateAssignArchiveTeesInput(input: AssignArchiveTeesInput): ValidationResult {
+  if (!input || typeof input !== "object") return { ok: false, error: "Invalid submission." };
+  if (typeof input.tournamentSlug !== "string" || !input.tournamentSlug) return { ok: false, error: "Tournament is required." };
+  if (typeof input.round !== "number" || !Number.isInteger(input.round) || input.round < 1) return { ok: false, error: "Invalid round number." };
+  if (typeof input.courseId !== "string" || !input.courseId) return { ok: false, error: "Course is required." };
+  if (typeof input.teeSetId !== "string" || !input.teeSetId) return { ok: false, error: "Tee set is required." };
+  if (typeof input.datePlayed !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(input.datePlayed)) {
+    return { ok: false, error: "A valid date played is required." };
+  }
   return { ok: true };
 }

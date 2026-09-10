@@ -3,7 +3,7 @@ import { calculateDifferential, calculateHandicapIndex, calculateLowIndex } from
 import { validateSubmitInput } from "./validate";
 import { availableTeeSets } from "@/lib/live/teeSets";
 import type { LiveTeeSet } from "@/lib/live/types";
-import type { HandicapCourseOption, HandicapCourseTeeSet, HandicapRoundSummary, HandicapSummary, SubmitHandicapRoundInput } from "./types";
+import type { ArchivedTeeSetup, HandicapCourseOption, HandicapCourseTeeSet, HandicapRoundSummary, HandicapSummary, SubmitHandicapRoundInput } from "./types";
 
 interface CourseRow {
   id: string;
@@ -27,6 +27,13 @@ function isWellFormedTeeSet(value: unknown): value is HandicapCourseTeeSet {
 export function mapCourseRow(row: CourseRow): HandicapCourseOption {
   const teeSets = Array.isArray(row.tee_sets) ? availableTeeSets(row.tee_sets as LiveTeeSet[]).filter(isWellFormedTeeSet) : [];
   return { id: row.id, name: row.name, teeSets };
+}
+
+/** Pure — no I/O. Snapshots a course's tee set into the shape archived_scorecard_rounds.handicap_setup stores, so a later course-library edit never changes an already-assigned round's math. */
+export function buildArchiveTeeSetup(course: HandicapCourseOption, teeSetId: string): ArchivedTeeSetup | null {
+  const teeSet = course.teeSets.find((t) => t.id === teeSetId);
+  if (!teeSet) return null;
+  return { courseId: course.id, teeSetId: teeSet.id, teeSetName: teeSet.name, rating: teeSet.rating, slope: teeSet.slope, holes: teeSet.holes };
 }
 
 export async function getCourseLibraryForHandicap(): Promise<HandicapCourseOption[]> {
