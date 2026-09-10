@@ -1,6 +1,7 @@
 // components/portal/ScoringPanel.tsx
 "use client";
 
+import { ScoringHoleSelector } from "./ScoringHoleSelector";
 import { useCallback, useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { canScoreStrokesFor } from "@/lib/live/orchestration";
@@ -163,21 +164,7 @@ export function ScoringPanel({
       <h1 className="font-serif text-2xl font-bold text-ink-900">Round {round} — Hole {selectedHole}</h1>
       <p className="mt-1 font-sans text-sm text-ink-500">Welcome, {playerFullName}</p>
 
-      <div className="mt-4 flex flex-wrap gap-1">
-        {Array.from({ length: 18 }, (_, i) => i + 1).map((hole) => (
-          <button
-            key={hole}
-            type="button"
-            onClick={() => setSelectedHole(hole)}
-            className={[
-              "h-8 w-8 rounded-sm font-condensed text-xs font-bold",
-              hole === selectedHole ? "bg-maroon-700 text-white" : "bg-stone-100 text-ink-700",
-            ].join(" ")}
-          >
-            {hole}
-          </button>
-        ))}
-      </div>
+      <ScoringHoleSelector selectedHole={selectedHole} onSelect={setSelectedHole} />
 
       {error && <p className="mt-3 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
 

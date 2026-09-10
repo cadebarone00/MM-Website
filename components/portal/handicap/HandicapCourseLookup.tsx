@@ -1,11 +1,50 @@
 "use client";
 
 import { useState } from "react";
+import { Star } from "lucide-react";
 import type { HandicapCourseOption } from "@/lib/handicap/types";
+import { useFavoriteCourses } from "./useFavoriteCourses";
+
+type Tab = "recent" | "nearby" | "my-courses";
+const TABS: { id: Tab; label: string }[] = [
+  { id: "recent", label: "Recently Played" },
+  { id: "nearby", label: "Nearby" },
+  { id: "my-courses", label: "My Courses" },
+];
+
+function CourseRow({
+  course,
+  favorited,
+  onToggleFavorite,
+  onSelect,
+}: {
+  course: HandicapCourseOption;
+  favorited: boolean;
+  onToggleFavorite: () => void;
+  onSelect: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      <button type="button" onClick={onSelect} className="block flex-1 py-3 pl-1 text-left font-sans text-sm text-ink-900 hover:text-maroon-700">
+        {course.name}
+      </button>
+      <button
+        type="button"
+        onClick={onToggleFavorite}
+        aria-label={favorited ? `Remove ${course.name} from My Courses` : `Add ${course.name} to My Courses`}
+        aria-pressed={favorited}
+        className="shrink-0 p-2 text-ink-300 hover:text-gold-500"
+      >
+        <Star size={18} fill={favorited ? "currentColor" : "none"} className={favorited ? "text-gold-500" : ""} />
+      </button>
+    </div>
+  );
+}
 
 /**
- * First screen of "Submit a score": search a course, or tap one you've
- * recently played. Selecting a course hands it back to the wizard.
+ * First screen of "Submit a score": search a course, or tap one from
+ * Recently Played / Nearby / My Courses. Selecting a course hands it back
+ * to the wizard.
  */
 export function HandicapCourseLookup({
   courses,
@@ -17,16 +56,24 @@ export function HandicapCourseLookup({
   onSelect: (course: HandicapCourseOption) => void;
 }) {
   const [search, setSearch] = useState("");
+  const [tab, setTab] = useState<Tab>("recent");
+  const { isFavorite, toggleFavorite } = useFavoriteCourses();
+
   const trimmed = search.trim().toLowerCase();
   const isSearching = trimmed.length > 0;
 
   const recentCourses = recentCourseIds
     .map((id) => courses.find((course) => course.id === id))
     .filter((course): course is HandicapCourseOption => !!course);
+  const myCourses = courses.filter((course) => isFavorite(course.id));
 
   const results = isSearching
     ? courses.filter((course) => course.name.toLowerCase().includes(trimmed))
-    : recentCourses;
+    : tab === "recent"
+    ? recentCourses
+    : tab === "my-courses"
+    ? myCourses
+    : [];
 
   return (
     <div className="rounded-md border border-ink-100 bg-white p-4">
@@ -43,25 +90,42 @@ export function HandicapCourseLookup({
         />
       </label>
 
-      {!isSearching && results.length > 0 && (
-        <p className="mt-4 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-500">Recently played</p>
+      {!isSearching && (
+        <div className="mt-4 flex border-b border-ink-200" role="tablist" aria-label="Course list">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.id}
+              onClick={() => setTab(t.id)}
+              className={`relative flex-1 px-1 pb-2 font-condensed text-xs font-bold uppercase tracking-wide transition-colors ${tab === t.id ? "text-maroon-700" : "text-ink-400 hover:text-ink-700"}`}
+            >
+              {t.label}
+              {tab === t.id && <span className="absolute inset-x-0 bottom-0 h-0.5 bg-maroon-700" />}
+            </button>
+          ))}
+        </div>
       )}
 
       {isSearching && results.length === 0 && (
         <p className="mt-4 font-sans text-sm text-ink-500">No courses match &ldquo;{search.trim()}&rdquo;.</p>
       )}
 
+      {!isSearching && tab === "nearby" && (
+        <p className="mt-4 font-sans text-sm text-ink-500">Nearby is coming in a later round.</p>
+      )}
+
       {results.length > 0 && (
         <div className="mt-2 divide-y divide-stone-200 border-y border-stone-200">
           {results.map((course) => (
-            <button
+            <CourseRow
               key={course.id}
-              type="button"
-              onClick={() => onSelect(course)}
-              className="block w-full px-1 py-3 text-left font-sans text-sm text-ink-900 hover:text-maroon-700"
-            >
-              {course.name}
-            </button>
+              course={course}
+              favorited={isFavorite(course.id)}
+              onToggleFavorite={() => toggleFavorite(course.id)}
+              onSelect={() => onSelect(course)}
+            />
           ))}
         </div>
       )}

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCourseLibraryForHandicap, getHandicapSummaryForPlayer } from "@/lib/handicap/data";
 import { HandicapRoundWizard } from "@/components/portal/handicap/HandicapRoundWizard";
+import { getPlayerProfileBySlug } from "@/lib/data/players";
 
 const MAX_RECENT_COURSES = 8;
 
@@ -41,7 +42,7 @@ export default async function NewHandicapRoundPage() {
         ← Back to My Handicap
       </Link>
       <div className="mt-5">
-        <HandicapRoundWizard courses={courses} recentCourseIds={recentCourseIds(summary.rounds)} />
+        <HandicapRoundWizard courses={courses} recentCourseIds={recentCourseIds(summary.rounds)} playerName={getPlayerProfileBySlug(profile.player_slug!)?.fullName} />
       </div>
     </div>
   );

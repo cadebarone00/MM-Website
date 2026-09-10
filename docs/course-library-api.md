@@ -1,27 +1,28 @@
-Course Library API setup
-========================
+Course Library API
+==================
 
-The Course Library uses GolfAPI.io v2.3 for host-only course search, import,
-and refresh. Documentation: https://www.golfapi.io/docs/ (linked Postman reference).
+The host-only course search, import, and refresh use GolfCore:
+https://www.golfcore.org/developers/
+No account, API key, or database migration is required.
 
-1. Obtain a GolfAPI.io account/key and a plan allowing course storage.
-2. Set GOLF_API_KEY in the server environment locally and on the deployment.
-   Never use a NEXT_PUBLIC variable for this key. Restart the server afterward.
-3. Open Tiger Center → Course Library, search by club name, and import an
-   18-hole course. Review the imported drafts and lock complete tee sets.
+Open Tiger Center > Course Library, search for a course, and import it.
+For a course already saved, choose Save to existing course or Find course online.
+Review the imported tee sets, fill missing fields, and save and lock them for play.
+Only 18-hole courses are supported. The catalog is searched on demand; this does
+not download every course into the saved library automatically.
 
-Existing manual courses can use Find course online to attach provider tee sets.
-Manual tee sets are retained. Men's and women's ratings use separate tee sets.
-Meters are converted to yards. Missing values remain draft placeholders.
+GolfCore attribution and source course links appear on search results and saved
+course cards. Structured data may be persisted under GolfCore's API terms:
+https://www.golfcore.org/terms/
+Course imagery is not imported. Requests identify Maroon Masters in User-Agent.
 
-Refresh compares each value to its previous provider snapshot. Locally edited
-values stay local; untouched values receive updates. Changed tee sets unlock
-for review. Unchanged locked tees remain available. Removed provider tees are
-retained locally so saved references are not broken.
+Missing tee-specific hole data stays blank; reference layout yardages are never
+substituted. Men's and women's ratings remain separate. Imports start unlocked.
+Refresh preserves manual overrides and unlocks changed tees for review.
+Provider-removed tees remain saved to preserve score references.
 
-Provider IDs and snapshots live in the existing tee_sets JSON column; no new
-database migration is required. Stable course IDs prevent duplicate new imports.
-CSV and manual entry remain available as fallback workflows.
-
-Search/import consumes provider API credits. Bulk catalog download is not enabled.
-No provider account or key has been provisioned by this implementation.
+Existing manual and legacy GolfAPI courses remain intact. Link them to GolfCore
+using Find course online. Matching tee names keep existing IDs and values.
+Stable provider course IDs prevent repeated new imports; normalized matching
+course names block new duplicates and direct the host to link the saved course.
+CSV import, manual creation, and historical auto-seeding have been removed.

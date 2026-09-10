@@ -6,6 +6,9 @@ const object = (value: unknown): Row => value && typeof value === "object" && !A
 const str = (value: unknown) => typeof value === "string" ? value : "";
 const number = (value: unknown) => value !== "" && value != null && Number.isFinite(Number(value)) ? Number(value) : null;
 export type GolfSearchResult = { id: string; name: string; location: string; holes: number };
+export function normalizedCourseName(name: string): string {
+  return name.toLowerCase().normalize("NFKD").replace(/\p{M}/gu, "").replace(/&/g, "and").replace(/[^a-z0-9]/g, "");
+}
 export function courseName(row: Row): string {
   const club = str(row.clubName), course = str(row.courseName);
   return !course || course === "18-hole course" || course === club ? club : club ? `${club} — ${course}` : course;
@@ -52,7 +55,20 @@ export function mapGolfCourse(payload: unknown, expectedId: string, syncedAt: st
 export function refreshGolfTees(existing: LiveTeeSet[], incoming: LiveTeeSet[]): LiveTeeSet[] {
   const result = [...existing];
   for (const fresh of incoming) {
-    const index = result.findIndex((tee) => tee.apiSource?.courseId === fresh.apiSource?.courseId && tee.apiSource?.teeId === fresh.apiSource?.teeId);
+    let index = result.findIndex((tee) => tee.apiSource?.provider === fresh.apiSource?.provider && tee.apiSource?.courseId === fresh.apiSource?.courseId && tee.apiSource?.teeId === fresh.apiSource?.teeId);
+    if (index < 0) {
+      const names = [fresh.name.toLowerCase().trim(), fresh.name.replace(/ \(Men\)$/, "").toLowerCase().trim()];
+      const matches = result.map((tee, i) => (!tee.apiSource || fresh.apiSource?.provider === "golfcore" && tee.apiSource.provider !== "golfcore") && names.includes(tee.name.toLowerCase().trim()) ? i : -1).filter((i) => i >= 0);
+      if (matches.length > 1) throw new Error(`Multiple existing tees match ${fresh.name}. Give them distinct names before linking.`);
+      if (matches.length === 1) {
+        index = matches[0];
+        const old = result[index];
+        result[index] = { ...old, apiSource: fresh.apiSource, locked: false, color: old.color ?? fresh.color, rating: old.rating ?? fresh.rating, slope: old.slope ?? fresh.slope,
+          holes: fresh.holes.map((hole) => { const existing = old.holes.find((h) => h.number === hole.number); return { ...hole, par: existing?.par || hole.par, yards: existing?.yards || hole.yards }; }),
+        };
+        continue;
+      }
+    }
     if (index < 0) { result.push(fresh); continue; }
     const old = result[index], base = old.apiSource!.baseline;
     const next = { ...old, apiSource: fresh.apiSource,

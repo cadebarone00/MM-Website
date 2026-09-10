@@ -3,15 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { LiveCourse } from "@/lib/live/types";
-import { AddCourseForm } from "./AddCourseForm";
-import { CourseCsvImport } from "./CourseCsvImport";
 import { DeleteCourseButton } from "./DeleteCourseButton";
+import { golfCoreUrl } from "@/lib/live/golfCoreMapping";
 import { CourseApiSearch } from "./CourseApiSearch";
 
-export function CourseLibraryPanel({ initialCourses, apiConfigured = false }: { initialCourses: LiveCourse[]; apiConfigured?: boolean }) {
+export function CourseLibraryPanel({ initialCourses, apiConfigured = true }: { initialCourses: LiveCourse[]; apiConfigured?: boolean }) {
   const [courses, setCourses] = useState(initialCourses);
-  const [adding, setAdding] = useState(false);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [linkingId, setLinkingId] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -21,7 +18,7 @@ export function CourseLibraryPanel({ initialCourses, apiConfigured = false }: { 
     setCourses((current) => [...current.filter((entry) => entry.id !== course.id), course].sort((a, b) => a.name.localeCompare(b.name)));
   }
   async function refresh(course: LiveCourse) {
-    const providerId = course.teeSets?.find((tee) => tee.apiSource)?.apiSource?.courseId;
+    const providerId = course.teeSets?.find((tee) => tee.apiSource?.provider === "golfcore")?.apiSource?.courseId;
     if (!providerId) return;
     setBusyId(course.id); setError(null); setMessage("");
     try {
@@ -38,11 +35,6 @@ export function CourseLibraryPanel({ initialCourses, apiConfigured = false }: { 
       <h1 className="font-serif text-3xl font-bold text-ink-900">Course Library</h1>
       <p className="mt-2 text-sm text-ink-600">Find a course, download its tee sets, and make it ready for play.</p>
       <CourseApiSearch configured={apiConfigured} courses={courses} onSaved={save} />
-      <details className="mt-4"><summary className="cursor-pointer font-condensed text-xs font-bold uppercase text-maroon-700">CSV and manual entry</summary>
-        <button type="button" onClick={() => setAdding((value) => !value)} className="mt-4 rounded border border-maroon-700 px-4 py-2 text-sm text-maroon-700">{adding ? "Cancel manual entry" : "Add a course manually"}</button>
-        {adding && <AddCourseForm onSaved={(course) => { save(course); setAdding(false); }} />}
-        <CourseCsvImport onSaved={save} />
-      </details>
     </section>
     <section className="mt-6">
       <div className="flex items-baseline justify-between gap-3"><h2 className="font-serif text-2xl font-bold">Saved courses</h2><span className="text-xs text-ink-500">{courses.length} total</span></div>
@@ -50,19 +42,18 @@ export function CourseLibraryPanel({ initialCourses, apiConfigured = false }: { 
       {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
       {message && <p role="status" className="mt-3 text-sm text-maroon-700">{message}</p>}
       <div className="mt-3 grid gap-3 sm:grid-cols-2">{visible.map((course) => {
-        const source = course.teeSets?.find((tee) => tee.apiSource)?.apiSource;
+        const source = course.teeSets?.find((tee) => tee.apiSource?.provider === "golfcore")?.apiSource;
         const locked = course.teeSets?.filter((tee) => tee.locked).length ?? 0;
         return <article key={course.id} className="rounded-lg border border-stone-300 bg-white p-4">
           <h3 className="font-serif text-lg font-bold">{course.name}</h3>
           <p className="mt-1 text-sm text-ink-600">{course.teeSets?.length ?? 1} tee sets · {locked} available</p>
-          <p className="mt-1 text-xs text-ink-500">{source ? `GolfAPI · Updated ${new Date(source.syncedAt).toLocaleDateString()}` : "Manually maintained"}</p>
+          <p className="mt-1 text-xs text-ink-500">{source ? `GolfCore · Updated ${new Date(source.syncedAt).toLocaleDateString()}` : "Manually maintained"}</p>
+          {source && <a href={golfCoreUrl(source.courseId)} target="_blank" rel="noreferrer" className="text-xs underline">Course data: GolfCore</a>}
           <div className="mt-3 flex flex-wrap gap-4 text-xs font-bold text-maroon-700">
             <Link href={`/portal/admin/course-library/${course.id}`} className="underline">Review / edit tees</Link>
             {source ? <button type="button" disabled={!!busyId || !apiConfigured} onClick={() => refresh(course)} className="underline disabled:opacity-40">{busyId === course.id ? "Refreshing…" : "Refresh from API"}</button> : <button type="button" onClick={() => setLinkingId(linkingId === course.id ? null : course.id)} className="underline">Find course online</button>}
-            <button type="button" onClick={() => setUpdatingId(updatingId === course.id ? null : course.id)} className="underline">{updatingId === course.id ? "Close CSV" : "Update course CSV"}</button>
           </div>
           {linkingId === course.id && <CourseApiSearch key={course.id} configured={apiConfigured} courses={courses} target={course} onSaved={save} onCancel={() => setLinkingId(null)} />}
-          {updatingId === course.id && <CourseCsvImport courseId={course.id} onSaved={save} />}
           <DeleteCourseButton course={course} onDeleted={() => setCourses((current) => current.filter((entry) => entry.id !== course.id))} />
         </article>;
       })}</div>

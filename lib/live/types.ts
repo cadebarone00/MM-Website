@@ -11,6 +11,7 @@ export interface LiveHole {
 
 export interface LiveTeeSet {
   apiSource?: {
+    provider?: "golfcore";
     courseId: string;
     teeId: string;
     syncedAt: string;

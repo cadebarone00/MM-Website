@@ -24,7 +24,7 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function HandicapRoundWizard({ courses, recentCourseIds }: { courses: HandicapCourseOption[]; recentCourseIds: string[] }) {
+export function HandicapRoundWizard({ courses, recentCourseIds, playerName }: { courses: HandicapCourseOption[]; recentCourseIds: string[]; playerName?: string }) {
   const router = useRouter();
   const [state, setState] = useState<WizardState>({ step: "course" });
   const [teeSetId, setTeeSetId] = useState("");
@@ -51,6 +51,8 @@ export function HandicapRoundWizard({ courses, recentCourseIds }: { courses: Han
   if (state.step === "holes") {
     return (
       <HandicapHoleEntry
+        playerName={playerName}
+        courseName={state.setup.course.name}
         teeSet={state.setup.teeSet}
         initialHoles={state.initialHoles}
         onBack={() => setState({ step: "setup", course: state.setup.course })}

@@ -99,6 +99,27 @@ All pages are public, no auth.
   and "Website" as plain-text links stacked underneath instead of the old
   boxed buttons; the existing server-side redirect (fan-only accounts skip
   straight to `/`) is unchanged.
+- Course lookup on "Submit a score" (`/portal/handicap/new`): the wizard's first
+  step is now a course-lookup screen — a search box that filters the course
+  library live as you type, plus a "Recently played" list of this player's own
+  most-recently-played courses (deduplicated, newest first, capped at 8; empty if
+  they've never submitted a round). Picking a course moves into the existing tee
+  set/date/tee-time step (unchanged, just without the course dropdown), then
+  holes entry, then review, same as before. New
+  `components/portal/handicap/HandicapCourseLookup.tsx`; `HandicapRoundSummary`
+  gained a `courseId` field so "recently played" can map back to a course in the
+  library reliably. `npm test`, `npx tsc --noEmit`, `npm run lint`, and
+  `npm run build` all clean.
+- 3-tab course picker on that same course-lookup screen: below the search box,
+  **Recently Played** (default tab, same list as above), **Nearby**, and
+  **My Courses**. My Courses = courses starred via a toggle on every course row
+  (search results, Recently Played, My Courses alike); favorites live in
+  `localStorage` (new `components/portal/handicap/useFavoriteCourses.ts`,
+  mirrors the existing unused `useFavoritePlayers` hook) — per-device, not
+  account-synced. Nearby is a "coming in a later round" placeholder (no course
+  location data exists to compare against yet — see Known gaps below). Search
+  still overrides all 3 tabs regardless of which is active. `npm test`,
+  `npx tsc --noEmit`, `npm run lint`, and `npm run build` all clean.
 
 ## Known gaps / not yet built
 
@@ -119,21 +140,16 @@ All pages are public, no auth.
   something like this, but its code was never part of this repository — it
   lived in that other app's own repo, whose current status is unknown to
   this project. This needs its own spec before any code is written.
-
-- Course lookup on "Submit a score" (`/portal/handicap/new`): the wizard's first
-  step is now a course-lookup screen — a search box that filters the course
-  library live as you type, plus a "Recently played" list of this player's own
-  most-recently-played courses (deduplicated, newest first, capped at 8; empty if
-  they've never submitted a round). Picking a course moves into the existing tee
-  set/date/tee-time step (unchanged, just without the course dropdown), then
-  holes entry, then review, same as before. New
-  `components/portal/handicap/HandicapCourseLookup.tsx`; `HandicapRoundSummary`
-  gained a `courseId` field so "recently played" can map back to a course in the
-  library reliably. `npm test`, `npx tsc --noEmit`, `npm run lint`, and
-  `npm run build` all clean.
+- **Course "Nearby" tab has no location data.** `live_courses` has no
+  lat/long or city/state column at all, and nothing populates one today
+  (GolfAPI.io's course-search endpoint returns a location string, but the
+  import path that saves a course into the library discards it). The "Nearby"
+  tab (My Handicap → Submit a score → course lookup) is a visible "coming in a
+  later round" placeholder for this reason.
 
 ## Out of scope for this round
 
 Any functional Real Wagers mode, real fourball market data, the final
 entry-splash image asset (placeholder background until provided), the host
-scoring tools listed above, or player profile editing.
+scoring tools listed above, player profile editing, or making "Nearby" actually
+work (needs course location data — see Known gaps above).

@@ -1,10 +1,23 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mapGolfCourse, mapGolfSearch, refreshGolfTees } from "./golfApiMapping.ts";
+import { mapGolfCourse, mapGolfSearch, refreshGolfTees, normalizedCourseName } from "./golfApiMapping.ts";
 
 function payload() {
   return { courseID: "123", clubName: "Example Club", courseName: "North", numHoles: "18", measure: "y", parsMen: Array(18).fill(4), parsWomen: Array(18).fill(5), tees: [{ teeID: "1", teeName: "Blue", teeColor: "#0000ff", courseRatingMen: 72, slopeMen: 130, courseRatingWomen: 75, slopeWomen: 140, ...Object.fromEntries(Array.from({ length: 18 }, (_, i) => [`length${i + 1}`, 400])) }] };
 }
+
+test("linking manual tees preserves IDs, avoids duplicates, and keeps edits", () => {
+  const incoming = mapGolfCourse(payload(), "123", "now").teeSets;
+  const existing = [{ ...incoming[0], id: "existing-id", name: "Blue", apiSource: undefined, rating: 71, locked: true }];
+  const linked = refreshGolfTees(existing, incoming);
+  assert.equal(linked.length, 2);
+  assert.equal(linked[0].id, "existing-id");
+  assert.equal(linked[0].rating, 71);
+  assert.equal(linked[0].locked, false);
+  assert.equal(linked[0].apiSource?.courseId, "123");
+  assert.equal(refreshGolfTees(linked, incoming).length, 2);
+  assert.equal(normalizedCourseName(" Golf Club at Texas A&M "), normalizedCourseName("Golf Club at Texas A and M"));
+});
 test("search mapping preserves provider IDs and disambiguates course layouts", () => {
   const result = mapGolfSearch({ courses: [payload()], numAllCourses: 400 });
   assert.equal(result.courses[0].id, "123");
