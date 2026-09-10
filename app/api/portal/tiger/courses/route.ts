@@ -40,6 +40,20 @@ export async function PUT(request: Request) {
   return NextResponse.json({ ok: true });
 }
 
+export async function PATCH(request: Request) {
+  if (!await requireHost()) return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
+  let body: { id?: unknown; name?: unknown };
+  try { body = await request.json(); } catch { return NextResponse.json({ ok: false, error: "Invalid request." }, { status: 400 }); }
+  const name = typeof body?.name === "string" ? body.name.trim() : "";
+  if (typeof body?.id !== "string" || !name || name.length > 200) return NextResponse.json({ ok: false, error: "Enter a course name between 1 and 200 characters." }, { status: 400 });
+  const service = createSupabaseServiceRoleClient();
+  // Only change the display name; IDs, provider metadata and score references stay intact.
+  const { data, error } = await service.from("live_courses").update({ name }).eq("id", body.id).select("id, name").maybeSingle();
+  if (error) return NextResponse.json({ ok: false, error: "Could not rename the course. Please try again." }, { status: 500 });
+  if (!data) return NextResponse.json({ ok: false, error: "Course not found. Refresh the library." }, { status: 404 });
+  return NextResponse.json({ ok: true, course: data });
+}
+
 export async function DELETE(request: Request) {
   if (!await requireHost()) return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
   let body: { id?: unknown; confirmationName?: unknown };

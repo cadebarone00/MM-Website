@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { LiveCourse } from "@/lib/live/types";
+import { CourseNameEditor } from "./CourseNameEditor";
 import { DeleteCourseButton } from "./DeleteCourseButton";
 import { golfCoreUrl } from "@/lib/live/golfCoreMapping";
 import { CourseApiSearch } from "./CourseApiSearch";
@@ -45,7 +46,7 @@ export function CourseLibraryPanel({ initialCourses, apiConfigured = true }: { i
         const source = course.teeSets?.find((tee) => tee.apiSource?.provider === "golfcore")?.apiSource;
         const locked = course.teeSets?.filter((tee) => tee.locked).length ?? 0;
         return <article key={course.id} className="rounded-lg border border-stone-300 bg-white p-4">
-          <h3 className="font-serif text-lg font-bold">{course.name}</h3>
+          <h3 className="font-serif text-lg font-bold">{course.name}</h3><CourseNameEditor id={course.id} name={course.name} onSaved={(name) => save({ ...course, name })} />
           <p className="mt-1 text-sm text-ink-600">{course.teeSets?.length ?? 1} tee sets · {locked} available</p>
           <p className="mt-1 text-xs text-ink-500">{source ? `GolfCore · Updated ${new Date(source.syncedAt).toLocaleDateString()}` : "Manually maintained"}</p>
           {source && <a href={golfCoreUrl(source.courseId)} target="_blank" rel="noreferrer" className="text-xs underline">Course data: GolfCore</a>}
