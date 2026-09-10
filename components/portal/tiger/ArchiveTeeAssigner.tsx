@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { HandicapCourseOption } from "@/lib/handicap/types";
 
 interface ArchiveRound {
@@ -19,6 +20,7 @@ interface ArchiveRound {
  * during live scoring — see docs/superpowers/specs for the design.
  */
 export function ArchiveTeeAssigner({ tournamentSlug, rounds, courses }: { tournamentSlug: string; rounds: ArchiveRound[]; courses: HandicapCourseOption[] }) {
+  const router = useRouter();
   const [round, setRound] = useState<number | "">(rounds[0]?.round ?? "");
   const [courseId, setCourseId] = useState(courses[0]?.id ?? "");
   const [teeSetId, setTeeSetId] = useState(courses[0]?.teeSets[0]?.id ?? "");
@@ -49,6 +51,7 @@ export function ArchiveTeeAssigner({ tournamentSlug, rounds, courses }: { tourna
         return;
       }
       setMessage({ ok: true, text: `Assigned tees to ${data.updated} player row${data.updated === 1 ? "" : "s"} for Round ${round}.` });
+      router.refresh();
     } catch {
       setMessage({ ok: false, text: "Could not reach the server. Try again." });
     } finally {
