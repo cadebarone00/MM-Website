@@ -13,7 +13,7 @@ function editable(tee: LiveTeeSet): LiveTeeSet {
 }
 
 export function CourseTeeSetEditor({ course, onSaved }: { course: LiveCourse; onSaved?: (teeSets: LiveTeeSet[]) => void }) {
-  const [saved, setSaved] = useState<LiveTeeSet[]>(() => (course.teeSets?.length ? course.teeSets : [{ id: "standard", name: "Standard", holes: course.holes, rating: course.rating, slope: course.slope }]).map(editable));
+  const [saved, setSaved] = useState<LiveTeeSet[]>(() => (Array.isArray(course.teeSets) ? course.teeSets : [{ id: "standard", name: "Standard", holes: course.holes, rating: course.rating, slope: course.slope }]).map(editable));
   const [draft, setDraft] = useState<LiveTeeSet | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +52,22 @@ export function CourseTeeSetEditor({ course, onSaved }: { course: LiveCourse; on
     setDraft(editable(tee)); setError(null); setMessage("");
   }
   function create() { open({ id: crypto.randomUUID(), name: "New tee set", color: "#800020", locked: false, holes: course.holes, rating: null, slope: null }); }
+  async function remove(tee: LiveTeeSet) {
+    if (saving || reordering.current) return;
+    const unsaved = dirty && draft?.id === tee.id ? " Unsaved edits to this tee set will also be deleted." : "";
+    if (!window.confirm(`Delete ${tee.name} from this course?${unsaved}`)) return;
+    const tees = saved.filter((entry) => entry.id !== tee.id);
+    reordering.current = true; setSaving(true); setError(null); setMessage("");
+    try {
+      const response = await fetch("/api/portal/tiger/courses", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: course.id, teeSets: tees }) });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error ?? "Could not delete tee set.");
+      setSaved(tees);
+      if (draft?.id === tee.id) setDraft(null);
+      setMessage(`${tee.name} deleted.`); onSaved?.(tees);
+    } catch (err) { setError(err instanceof Error ? err.message : "Could not delete tee set. Please try again."); }
+    finally { reordering.current = false; setSaving(false); }
+  }
   async function reorder(id: string, target: string) {
     if (saving || reordering.current || id === target) return;
     const from = saved.findIndex((tee) => tee.id === id), to = saved.findIndex((tee) => tee.id === target);
@@ -118,7 +134,7 @@ export function CourseTeeSetEditor({ course, onSaved }: { course: LiveCourse; on
       <span aria-hidden="true" className="h-5 w-5 shrink-0 rounded-full border border-ink-300" style={{ backgroundColor: tee.color }} /><span className="flex-1 font-serif font-bold">{tee.name}</span>
       <span className="font-sans text-sm">{tee.holes.reduce((sum, hole) => sum + hole.yards, 0).toLocaleString()} yards · {tee.rating ?? "—"}/{tee.slope ?? "—"}</span>
       <span className="flex items-center gap-1 font-sans text-xs text-ink-500">{tee.locked ? <Lock size={14} /> : <LockOpen size={14} />}{tee.locked ? "Available" : "Draft"}</span>
-    </button></div>)}</div>
+    </button><button type="button" disabled={saving} onClick={() => remove(tee)} aria-label={`Delete ${tee.name}`} className="mr-2 shrink-0 rounded px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-40">Delete</button></div>)}</div>
     {message && <p role="status" className="mt-3 text-sm text-maroon-700">{message}</p>}
     {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
     {draft && <div className="mt-5 rounded-lg border border-stone-300 bg-white p-3 sm:p-5">
