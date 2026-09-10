@@ -147,6 +147,97 @@ All pages are public, no auth.
   tab (My Handicap → Submit a score → course lookup) is a visible "coming in a
   later round" placeholder for this reason.
 
+## Current round: GHIN-style hole scoring card
+
+**Where:** two screens get the new look —
+`components/portal/handicap/HandicapHoleEntry.tsx` (Submit a score) and the
+signed-in player's own score/putts/fairway/GIR fields inside
+`components/portal/ScoringPanel.tsx` (live scoring). Per your answers:
+Fairway/GIR direction gets saved for real, Stroke Index is skipped, live
+scoring keeps its current page layout (just restyles the self-entry fields),
+and the GPS button is decorative for now (built for real later).
+
+**New shared pieces** (`components/portal/`, reused by both screens):
+- `ShotDirectionPicker.tsx` — the 4-arrow-and-checkmark compass for Fairway
+  and GIR. Center check = Hit. Up/Down/Left/Right = miss Long/Short/Left/Right.
+  Selected button highlighted in the site's maroon (not the screenshot's blue —
+  matching the site's own colors). Fairway is hidden on par-3 holes, same as
+  today.
+- `ScorePicker.tsx` — horizontal scrollable strip of scores (1–12, covers any
+  realistic hole) replacing the number input, current score highlighted.
+- `PuttsPicker.tsx` — pill row `0 1 2 3 4+`, replacing the number input.
+  Tapping "4+" records exactly 4 (putts isn't used in the handicap formula,
+  same as today — this is display/personal-stats only, like FIR/GIR).
+- A small total-score / to-par line at the top of the card ("Total Score: 6 |
+  To Par: +2"), computed from whatever holes have a score entered so far —
+  neither screen shows this today.
+
+**Data model change (needed for "direction saved too"):** both
+`handicap_round_holes` and `live_hole_scores` get two new optional columns,
+`fir_direction` and `gir_direction` (`'left' | 'right' | 'short' | 'long'`,
+null when the shot was a Hit or not recorded). The existing `fir`/`gir`
+hit-or-miss values stay exactly as they are today and keep meaning exactly
+what they mean today — this is purely additive, doesn't touch the handicap
+math, and old rows just read as "no direction recorded." New migration file
+`supabase/hole_shot_directions.sql`, following this repo's existing pattern
+(e.g. `supabase/course_library_tee_setups.sql`):
+
+```sql
+-- Run once in Supabase after schema.sql. Adds optional miss-direction
+-- tracking alongside the existing fir/gir hit-or-miss columns — purely
+-- additive, doesn't change what fir/gir mean or touch the handicap formula.
+alter table handicap_round_holes add column if not exists fir_direction text check (fir_direction in ('left', 'right', 'short', 'long'));
+alter table handicap_round_holes add column if not exists gir_direction text check (gir_direction in ('left', 'right', 'short', 'long'));
+alter table live_hole_scores add column if not exists fir_direction text check (fir_direction in ('left', 'right', 'short', 'long'));
+alter table live_hole_scores add column if not exists gir_direction text check (gir_direction in ('left', 'right', 'short', 'long'));
+
+comment on column handicap_round_holes.fir_direction is 'Which way the fairway shot missed, if it missed. Null = hit, or not recorded.';
+comment on column handicap_round_holes.gir_direction is 'Which way the approach missed the green, if it missed. Null = hit, or not recorded.';
+comment on column live_hole_scores.fir_direction is 'Which way the fairway shot missed, if it missed. Null = hit, or not recorded.';
+comment on column live_hole_scores.gir_direction is 'Which way the approach missed the green, if it missed. Null = hit, or not recorded.';
+```
+
+I'll walk you through running this in Supabase (SQL Editor → paste → Run) once
+the rest is built, same as the existing setup docs do it.
+
+**Other data plumbing this needs:**
+- `HandicapHoleInput`/`SubmitHandicapRoundInput` (`lib/handicap/types.ts`) and
+  the submit route gain `firDirection`/`girDirection`.
+- `/api/portal/scoring/state` doesn't return each hole's par/yards today (only
+  scores) — needed to show "Par 4 · 387 yards" on the live-scoring card, so
+  it starts including the round's course holes.
+- `/api/portal/scoring/stats` accepts and stores `firDirection`/`girDirection`
+  the same way it already handles `fir`/`gir`.
+
+**GPS button:** shown in both places (matching the screenshot's spot/color),
+tapping it shows "GPS distance is coming in a later round" — no location
+permission requested, no new data yet.
+
+**Kept as-is, not changed to match the screenshot literally:** both screens
+stay inside the site's normal page chrome (header, back links) rather than
+becoming a full-screen modal with a blue title bar and ✕ button — that ✕ has
+no equivalent today, the existing "Edit round setup" link / hole-selector row
+of 18 numbered buttons already does that job and is staying. Only the score
+card itself (score/putts/fairway/GIR + the new total/to-par line + GPS)
+adopts the screenshot's look.
+
+**Files touched:** `supabase/hole_shot_directions.sql` (new),
+`lib/handicap/types.ts`, `lib/handicap/validate.ts`, `lib/handicap/data.ts`
+(+ tests), `app/api/portal/handicap/rounds/route.ts`,
+`app/api/portal/scoring/state/route.ts`, `app/api/portal/scoring/stats/route.ts`
+(+ their tests), `components/portal/handicap/HandicapHoleEntry.tsx`,
+`components/portal/ScoringPanel.tsx`, new
+`components/portal/ShotDirectionPicker.tsx`, `ScorePicker.tsx`,
+`PuttsPicker.tsx`.
+
+**Done looks like:** both screens show the new score/putts/fairway-GIR-with-
+direction card and a total/to-par line; live scoring also shows par/yards for
+the selected hole; the GPS button is present and shows the "coming later"
+message; everything else on both screens (hole selector, agreement dots,
+foursome team-score entry, submit flow) behaves exactly as before. `npm test`,
+`npx tsc --noEmit`, `npm run lint`, and `npm run build` all clean — plus you
+running the SQL migration and clicking through both screens locally.
+
 ## Out of scope for this round
 
 Any functional Real Wagers mode, real fourball market data, the final
