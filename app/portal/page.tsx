@@ -1,11 +1,11 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ChartNoAxesCombined, CircleUserRound, ClipboardPenLine, Trophy, Video } from "lucide-react";
+import { PortalMatches, type PortalMatch } from "@/components/portal/PortalMatches";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { findPlayerTeam } from "@/lib/portal/findPlayerTeam";
-import { findCurrentRoundForPlayer, matchupLabel } from "@/lib/live/currentRoundForPlayer";
+import { findUpcomingMatchesForPlayer, matchupLabel } from "@/lib/live/currentRoundForPlayer";
 import { getHandicapSummaryForPlayer } from "@/lib/handicap/data";
 import { Avatar } from "@/components/ui/Avatar";
 
@@ -22,14 +22,20 @@ export default async function PortalPage() {
   const playerProfile = getPlayerProfileBySlug(playerSlug);
   const playerName = playerProfile?.fullName ?? profile.display_name ?? "Player";
   const team = findPlayerTeam(playerSlug);
-  const [currentMatch, handicapSummary] = await Promise.all([
-    findCurrentRoundForPlayer(playerSlug),
+  const [upcomingMatches, handicapSummary] = await Promise.all([
+    findUpcomingMatchesForPlayer(playerSlug),
     getHandicapSummaryForPlayer(playerSlug).catch((err) => {
       console.error("Failed to load handicap summary for portal hero:", err);
       return { index: null, lowIndex: null, rounds: [] };
     }),
   ]);
-  const isLive = currentMatch?.state === "Live";
+  const matches: PortalMatch[] = upcomingMatches.map((match) => ({
+    id: match.matchBox.id ?? `round-${match.round.round}-box-${match.matchBox.boxNumber}`,
+    label: matchupLabel(playerSlug, match.matchBox),
+    details: `Round ${match.round.round} ? ${match.matchBox.format} ? ${match.matchBox.teeTime.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" })} CT`,
+    live: match.state === "Live",
+  }));
+  matches.push({ id: "portal-preview-match", label: "You & Alex Morgan vs. Jordan Lee & Sam Taylor", details: "Round 2 ? Fourball ? Saturday, 9:30 AM ? The Tribute Golf Links", preview: true });
   const teamName = team ? `Team ${team === "maroon" ? "Maroon" : "White"}` : "Team pending";
   const heroTextClass = team === "maroon" ? "text-maroon-300" : "text-white";
   const heroOverlayClass = team === "white"
@@ -48,34 +54,17 @@ export default async function PortalPage() {
             <Avatar name={playerName} src={playerProfile?.avatarSrc ?? null} size="md" team={team} />
             <div className="min-w-0 pt-0.5"><h1 className="truncate font-serif text-2xl font-bold sm:text-3xl">{playerName}</h1><p className="mt-0.5 font-sans text-xs sm:text-sm">{teamName} · @{profile.username}</p></div>
           </div>
-          <div className="text-right text-white"><p className="font-condensed text-2xs font-semibold uppercase tracking-[0.16em] text-white/75">Handicap</p><p className="font-serif text-2xl font-bold leading-none">{handicapSummary.index != null ? handicapSummary.index.toFixed(1) : "—"}</p></div>
+          <div className="shrink-0 text-right text-white"><Link href="/portal/handicap" className="mb-3 inline-block rounded border border-gold-300 bg-maroon-950/60 px-3 py-2 font-condensed text-xs font-semibold text-white transition hover:bg-maroon-900">Submit a score</Link><p className="font-condensed text-2xs font-semibold uppercase tracking-[0.16em] text-white/75">Handicap</p><p className="font-serif text-2xl font-bold leading-none">{handicapSummary.index != null ? handicapSummary.index.toFixed(1) : "—"}</p></div>
         </div>
       </section>
 
-      <section className="relative flex aspect-[16/7] min-h-52 items-center bg-cream-50 sm:min-h-64">
-        <div className="mx-auto w-full max-w-4xl px-4 sm:px-6">
-          <div className="flex items-start justify-between gap-4">
-            <div><p className="font-condensed text-2xs font-semibold uppercase tracking-[0.16em] text-ink-500">My match</p><h2 className="mt-1 font-serif text-2xl font-bold text-ink-900 sm:text-3xl">{currentMatch ? matchupLabel(playerSlug, currentMatch.matchBox) : "Waiting for an upcoming match"}</h2></div>
-            <span className={`shrink-0 rounded-full px-2.5 py-1 font-condensed text-2xs font-semibold uppercase tracking-wide ${isLive ? "bg-maroon-700 text-white" : "bg-stone-200 text-ink-600"}`}>{isLive ? "Live now" : currentMatch ? "Upcoming" : "Waiting"}</span>
-          </div>
-          {currentMatch ? (
-            <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 font-sans text-sm text-ink-600">
-              <span>Round {currentMatch.round.round}</span><span>{currentMatch.matchBox.format}</span><span>{currentMatch.matchBox.teeTime.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
-              {isLive && <Link href="/portal/scoring/play" className="rounded-pill bg-maroon-700 px-4 py-2 font-condensed text-xs font-semibold uppercase tracking-wide text-white">Open live scoring</Link>}
-            </div>
-          ) : <p className="mt-3 font-sans text-sm text-ink-500">Tiger will add your matchup here once the next round is ready.</p>}
-        </div>
-      </section>
+      <PortalMatches matches={matches} team={team} />
 
-      <section className="mx-auto mt-4 max-w-4xl px-3 sm:px-6">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <Link href="/portal/profile" className="group flex aspect-[4/3] flex-col justify-between rounded-xl border border-stone-300 bg-white p-4 shadow-sm transition hover:border-maroon-400 hover:shadow-md"><CircleUserRound size={22} className="text-maroon-700" aria-hidden="true" /><h2 className="font-serif text-lg font-bold text-ink-900">Profile</h2></Link>
-          <Link href="/portal/career" className="group flex aspect-[4/3] flex-col justify-between rounded-xl border border-stone-300 bg-white p-4 shadow-sm transition hover:border-maroon-400 hover:shadow-md"><ChartNoAxesCombined size={22} className="text-maroon-700" aria-hidden="true" /><h2 className="font-serif text-lg font-bold text-ink-900">Career</h2></Link>
-          <Link href="/portal/round-video" className="group flex aspect-[4/3] flex-col justify-between rounded-xl border border-stone-300 bg-white p-4 shadow-sm transition hover:border-maroon-400 hover:shadow-md"><Video size={22} className="text-maroon-700" aria-hidden="true" /><h2 className="font-serif text-lg font-bold text-ink-900">Round video</h2></Link>
-          <Link href="/portal/handicap" className="group flex aspect-[4/3] flex-col justify-between rounded-xl border border-stone-300 bg-white p-4 shadow-sm transition hover:border-maroon-400 hover:shadow-md"><ClipboardPenLine size={22} className="text-maroon-700" aria-hidden="true" /><h2 className="font-serif text-lg font-bold text-ink-900">Submit a score</h2></Link>
-          <Link href="/wagers/portfolio" className="group flex aspect-[4/3] flex-col justify-between rounded-xl border border-stone-300 bg-white p-4 shadow-sm transition hover:border-maroon-400 hover:shadow-md"><Trophy size={22} className="text-maroon-700" aria-hidden="true" /><h2 className="font-serif text-lg font-bold text-ink-900">Wagers</h2></Link>
+      <nav aria-label="Player portal" className="mx-auto mt-5 max-w-4xl px-4 sm:px-6">
+        <div className="overflow-hidden rounded-xl border-2 border-gold-300 bg-white divide-y divide-gold-300/50">
+          {[{ href: "/portal/profile", name: "Profile" }, { href: "/portal/career", name: "Career" }, { href: "/portal/round-video", name: "Round video" }, { href: "/wagers/portfolio", name: "Wagers" }].map((item) => <Link key={item.href} href={item.href} className="block px-6 py-6 font-serif text-2xl font-bold text-maroon-900 transition hover:bg-cream-50 focus-visible:bg-cream-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-maroon-700">{item.name}</Link>)}
         </div>
-      </section>
+      </nav>
     </main>
   );
 }
