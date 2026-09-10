@@ -28,6 +28,20 @@ export async function GET() {
   return NextResponse.json({ ok: true, courses }, { headers: { "Cache-Control": "no-store" } });
 }
 
+export async function POST(request: Request) {
+  if (!await requireHost()) return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
+  try {
+    const body = await request.json();
+    const name = typeof body?.name === "string" ? body.name.trim() : "";
+    if (!name || name.length > 200) return NextResponse.json({ ok: false, error: "Enter a course name between 1 and 200 characters." }, { status: 400 });
+    const service = createSupabaseServiceRoleClient();
+    const holes = Array.from({ length: 18 }, (_, i) => ({ number: i + 1, par: 0, yards: 0 }));
+    const { data, error } = await service.from("live_courses").insert({ id: crypto.randomUUID(), name, holes, tee_sets: [], rating: null, slope: null }).select("id,name,holes,rating,slope").single();
+    if (error) throw new Error("Could not create the course. Please try again.");
+    return NextResponse.json({ ok: true, course: { ...data, teeSets: [] } });
+  } catch (err) { return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "Invalid request." }, { status: 400 }); }
+}
+
 export async function PUT(request: Request) {
   const host = await requireHost();
   if (!host) return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
