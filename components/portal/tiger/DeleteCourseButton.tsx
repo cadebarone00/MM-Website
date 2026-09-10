@@ -8,9 +8,9 @@ export function DeleteCourseButton({ course, onDeleted }: { course: { id: string
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!open) return <button type="button" onClick={() => setOpen(true)} className="mt-3 font-condensed text-xs font-bold uppercase text-red-700 underline" aria-label={`Delete ${course.name}`}>Delete course</button>;
+  if (!open) return <button type="button" onClick={() => setOpen(true)} className="font-condensed text-xs font-bold uppercase text-red-700 underline" aria-label={`Delete ${course.name}`}>Delete course</button>;
 
-  return <form className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3" onSubmit={async (event) => {
+  return <form className="w-full rounded-lg border border-red-200 bg-red-50 p-3" onSubmit={async (event) => {
     event.preventDefault();
     if (busy || name !== course.name) return;
     setBusy(true); setError(null);
