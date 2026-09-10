@@ -172,6 +172,23 @@ All pages are public, no auth.
   compass centered in its half. `HoleActionBar`'s GPS and Next Hole buttons
   are now equal width. Live scoring is unchanged by this pass. `npm test`,
   `npx tsc --noEmit`, `npm run lint`, and `npm run build` all clean.
+- Wired archived Maroon Masters tournament rounds into the real handicap
+  index, closing a gap where the types/math for it already existed
+  (`ArchivedHandicapRound.teeSetup`, `archiveIndex.ts`'s
+  `combinedHandicapIndexes`) but nothing populated or read the data.
+  `getArchivedHandicapRounds` (`lib/data/archivedScorecards.ts`) now reads
+  the `handicap_setup`/`played_on` columns `supabase/archived_handicap_tees.sql`
+  added (also folded into `schema.sql`); `/portal/handicap`'s page now calls
+  `combinedHandicapIndexes` so "Overall Handicap"/"Low Index" include
+  archived rounds and "Maroon Masters" shows a real number instead of a
+  hardcoded "—"; `HandicapHome.tsx`'s archive rows show the assigned tee
+  name/rating/slope instead of always "— / —". New Tiger-only bulk action
+  ("Assign tees for handicap tracking" on `/portal/admin/scorecards`,
+  `components/portal/tiger/ArchiveTeeAssigner.tsx` →
+  `POST /api/portal/tiger/scorecards/archive-tees`) sets the course/tee
+  set/date-played for every player's archived row of one tournament round
+  at once — the write path that table never had. `npm test`,
+  `npx tsc --noEmit`, `npm run lint`, and `npm run build` all clean.
 
 ## Known gaps / not yet built
 
@@ -206,6 +223,17 @@ All pages are public, no auth.
   import path that saves a course into the library discards it). The "Nearby"
   tab (My Handicap → Submit a score → course lookup) is a visible "coming in a
   later round" placeholder for this reason.
+- **`supabase/archived_handicap_tees.sql` has not been run yet — this is what
+  makes every archived Maroon Masters round in `/portal/handicap` show
+  "— / —" instead of a real tee/rating/slope right now.** Confirmed missing
+  by querying production directly (`column
+  archived_scorecard_rounds.handicap_setup does not exist`). Run it in the
+  SQL Editor before using the new "Assign tees for handicap tracking" panel
+  on `/portal/admin/scorecards` — until then that panel's saves will fail.
+  Even after it's run, each tournament round still needs tees assigned
+  through that panel one round at a time; nothing is backfilled
+  automatically, and the Maroon Masters index needs at least 3 assigned,
+  eligible rounds before it shows a number (real WHS rule).
 
 ## Out of scope for this round
 
