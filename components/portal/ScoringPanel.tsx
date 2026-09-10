@@ -2,10 +2,16 @@
 "use client";
 
 import { ScoringHoleSelector } from "./ScoringHoleSelector";
+import { ScoreToParHeader } from "./ScoreToParHeader";
+import { ScorePicker } from "./ScorePicker";
+import { PuttsPicker } from "./PuttsPicker";
+import { ShotDirectionPicker, type ShotResult } from "./ShotDirectionPicker";
+import { HoleActionBar } from "./HoleActionBar";
 import { useCallback, useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { canScoreStrokesFor } from "@/lib/live/orchestration";
 import type { LiveMatchBox, MatchFormat } from "@/lib/live/types";
+import type { ShotDirection } from "@/lib/handicap/types";
 
 interface HoleScore {
   player: string;
@@ -14,6 +20,8 @@ interface HoleScore {
   putts: number | null;
   fir: boolean | null;
   gir: boolean | null;
+  firDirection: ShotDirection | null;
+  girDirection: ShotDirection | null;
   didNotFinish: boolean;
   selfReportedScore: number | null;
   confirmedBy: string | null;
@@ -21,6 +29,7 @@ interface HoleScore {
 
 interface ScoringState {
   matchBox: { id: string; boxNumber: number; format: MatchFormat; teeTime: string; maroonPlayers: string[]; whitePlayers: string[]; state: string };
+  holes: { number: number; par: number; yards: number }[];
   scores: HoleScore[];
   submittedPlayers: string[];
 }
@@ -118,14 +127,14 @@ export function ScoringPanel({
     }
   }
 
-  async function submitStats(putts: number, fir: boolean | null, gir: boolean, selfReportedScore?: number) {
+  async function submitStats(putts: number, fir: boolean | null, gir: boolean, firDirection: ShotDirection | null, girDirection: ShotDirection | null, selfReportedScore?: number) {
     setBusy(true);
     setError(null);
     try {
       const res = await fetch("/api/portal/scoring/stats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ round, hole: selectedHole, putts, fir, gir, selfReportedScore }),
+        body: JSON.stringify({ round, hole: selectedHole, putts, fir, gir, firDirection, girDirection, selfReportedScore }),
       });
       const data = await res.json();
       if (!data.ok) setError(data.error);
@@ -158,15 +167,32 @@ export function ScoringPanel({
 
   const isFoursome = matchBox.format === "Foursome";
   const displayPlayers = isFoursome ? [] : [...matchBox.maroonPlayers, ...matchBox.whitePlayers];
+  const selectedHoleInfo = state.holes.find((h) => h.number === selectedHole) ?? null;
+  const myHoleValues = state.holes
+    .map((h) => {
+      const s = scoreFor(playerSlug, h.number);
+      const value = s?.score ?? s?.selfReportedScore ?? null;
+      return { par: h.par, value };
+    })
+    .filter((h): h is { par: number; value: number } => h.value != null);
+  const myTotal = myHoleValues.reduce((sum, h) => sum + h.value, 0);
+  const myToPar = myHoleValues.length > 0 ? myTotal - myHoleValues.reduce((sum, h) => sum + h.par, 0) : null;
 
   return (
     <div>
       <h1 className="font-serif text-2xl font-bold text-ink-900">Round {round} — Hole {selectedHole}</h1>
-      <p className="mt-1 font-sans text-sm text-ink-500">Welcome, {playerFullName}</p>
+      <p className="mt-1 font-sans text-sm text-ink-500">
+        Welcome, {playerFullName}
+        {selectedHoleInfo && ` · Par ${selectedHoleInfo.par} · ${selectedHoleInfo.yards} yards`}
+      </p>
 
       <ScoringHoleSelector selectedHole={selectedHole} onSelect={setSelectedHole} />
 
       {error && <p className="mt-3 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
+
+      <div className="mt-4">
+        <ScoreToParHeader totalScore={myTotal} toPar={myToPar} />
+      </div>
 
       {isFoursome ? (
         <div className="mt-4 space-y-3">
@@ -242,62 +268,58 @@ export function ScoringPanel({
                   {!existing?.confirmedBy && existing?.score != null && existing?.selfReportedScore != null && (
                     <span className="h-3 w-3 rounded-full bg-amber-500" title="Your entries don't match yet" />
                   )}
-                  {isSelf && !existing?.didNotFinish && (
-                    <>
-                      <label className="flex items-center gap-1 font-sans text-xs text-ink-700">
-                        Your Score
-                        <input
-                          type="number"
-                          min={1}
-                          disabled={alreadySubmitted || busy}
-                          defaultValue={existing?.selfReportedScore ?? ""}
-                          onBlur={(e) => {
-                            const value = Number(e.target.value);
-                            if (value >= 1) submitStats(existing?.putts ?? 0, existing?.fir ?? null, existing?.gir ?? false, value);
-                          }}
-                          className="w-16 rounded-lg border-2 border-stone-300 px-2 py-1 text-sm"
-                        />
-                      </label>
-                      <label className="flex items-center gap-1 font-sans text-xs text-ink-700">
-                        Putts
-                        <input
-                          type="number"
-                          min={0}
-                          disabled={alreadySubmitted || busy}
-                          defaultValue={existing?.putts ?? ""}
-                          onBlur={(e) => {
-                            const value = Number(e.target.value);
-                            submitStats(value, existing?.fir ?? null, existing?.gir ?? false, existing?.selfReportedScore ?? undefined);
-                          }}
-                          className="w-16 rounded-lg border-2 border-stone-300 px-2 py-1 text-sm"
-                        />
-                      </label>
-                      <label className="flex items-center gap-1 font-sans text-xs text-ink-700">
-                        <input
-                          type="checkbox"
-                          disabled={alreadySubmitted || busy}
-                          defaultChecked={existing?.fir ?? false}
-                          onChange={(e) => submitStats(existing?.putts ?? 0, e.target.checked, existing?.gir ?? false, existing?.selfReportedScore ?? undefined)}
-                        />
-                        FIR
-                      </label>
-                      <label className="flex items-center gap-1 font-sans text-xs text-ink-700">
-                        <input
-                          type="checkbox"
-                          disabled={alreadySubmitted || busy}
-                          defaultChecked={existing?.gir ?? false}
-                          onChange={(e) => submitStats(existing?.putts ?? 0, existing?.fir ?? null, e.target.checked, existing?.selfReportedScore ?? undefined)}
-                        />
-                        GIR
-                      </label>
-                    </>
-                  )}
                 </div>
+                {isSelf && !existing?.didNotFinish && (
+                  <div className="mt-3 border-t border-stone-200 pt-3">
+                    <p className="text-center font-condensed text-xs font-semibold uppercase tracking-wide text-ink-500">Your Score</p>
+                    <div className="mt-1">
+                      <ScorePicker
+                        ariaLabel="Your score"
+                        disabled={alreadySubmitted || busy}
+                        value={existing?.selfReportedScore ?? null}
+                        onChange={(value) => submitStats(existing?.putts ?? 0, existing?.fir ?? null, existing?.gir ?? false, existing?.firDirection ?? null, existing?.girDirection ?? null, value)}
+                      />
+                    </div>
+
+                    <div className="mt-4 flex items-start justify-center gap-6">
+                      {selectedHoleInfo?.par !== 3 && (
+                        <ShotDirectionPicker
+                          label="Fairway"
+                          disabled={alreadySubmitted || busy}
+                          value={existing?.fir ? "hit" : (existing?.firDirection as ShotResult | null)}
+                          onChange={(result) =>
+                            submitStats(existing?.putts ?? 0, result === "hit", existing?.gir ?? false, result === "hit" ? null : result, existing?.girDirection ?? null, existing?.selfReportedScore ?? undefined)
+                          }
+                        />
+                      )}
+                      <ShotDirectionPicker
+                        label="GIR"
+                        disabled={alreadySubmitted || busy}
+                        value={existing?.gir ? "hit" : (existing?.girDirection as ShotResult | null)}
+                        onChange={(result) =>
+                          submitStats(existing?.putts ?? 0, existing?.fir ?? null, result === "hit", existing?.firDirection ?? null, result === "hit" ? null : result, existing?.selfReportedScore ?? undefined)
+                        }
+                      />
+                    </div>
+
+                    <p className="mt-4 text-center font-condensed text-xs font-semibold uppercase tracking-wide text-ink-500">Putts</p>
+                    <div className="mt-1">
+                      <PuttsPicker
+                        ariaLabel="Your putts"
+                        disabled={alreadySubmitted || busy}
+                        value={existing?.putts ?? null}
+                        onChange={(value) => submitStats(value, existing?.fir ?? null, existing?.gir ?? false, existing?.firDirection ?? null, existing?.girDirection ?? null, existing?.selfReportedScore ?? undefined)}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       )}
+
+      <HoleActionBar nextLabel="Next Hole" disabled={selectedHole === 18} onNext={() => setSelectedHole((h) => Math.min(h + 1, 18))} />
 
       <div className="mt-6 border-t border-stone-200 pt-4">
         {alreadySubmitted ? (

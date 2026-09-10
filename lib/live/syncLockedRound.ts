@@ -10,7 +10,7 @@ export async function syncLockedRoundToCareerArchive(seasonYear: number, round: 
   const service = createSupabaseServiceRoleClient();
   const { data: roundState, error: roundError } = await service
     .from("live_round_state")
-    .select("date, course_id, format, course_locked, matchups_locked, started")
+    .select("date, course_id, format, course_locked, matchups_locked, started, course_setup")
     .eq("season_year", seasonYear)
     .eq("round", round)
     .single();
@@ -35,7 +35,8 @@ export async function syncLockedRoundToCareerArchive(seasonYear: number, round: 
       partner_slug: side.length === 2 ? side[1 - index] : null,
       opponent_slugs: opponents,
       status: "scheduled",
-      holes: course.holes,
+      holes: roundState.course_setup?.holes ?? course.holes,
+      handicap_setup: roundState.course_setup ? { ...roundState.course_setup, courseId: roundState.course_id } : null,
     })));
   });
   const activePlayers = rows.map((row) => row.player_slug);

@@ -65,8 +65,8 @@ export function HandicapRoundReview({
               <span className="w-14 text-ink-400">Par {holeInfo.par}</span>
               <span className="w-20">Score {hole.score}</span>
               <span className="w-20">Putts {hole.putts}</span>
-              <span className="w-24">{holeInfo.par === 3 ? "FIR n/a" : hole.fir ? "Fairway hit" : "Fairway missed"}</span>
-              <span>{hole.gir ? "GIR" : "No GIR"}</span>
+              <span className="w-32">{holeInfo.par === 3 ? "FIR n/a" : hole.fir ? "Fairway hit" : `Fairway missed${hole.firDirection ? ` (${hole.firDirection})` : ""}`}</span>
+              <span>{hole.gir ? "GIR" : `No GIR${hole.girDirection ? ` (${hole.girDirection})` : ""}`}</span>
             </div>
           );
         })}

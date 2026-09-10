@@ -22,6 +22,8 @@ interface HoleScoreRow {
   putts: number | null;
   fir: boolean | null;
   gir: boolean | null;
+  fir_direction: string | null;
+  gir_direction: string | null;
   did_not_finish: boolean;
   self_reported_score: number | null;
   confirmed_by: string | null;
@@ -55,15 +57,22 @@ export async function GET(request: Request) {
   }
 
   const allPlayers = [...box.maroon_players, ...box.white_players];
-  const [{ data: scoreRows }, { data: submissionRows }] = await Promise.all([
+  const [{ data: scoreRows }, { data: submissionRows }, { data: roundState }] = await Promise.all([
     service
       .from("live_hole_scores")
-      .select("player_slug, hole, score, putts, fir, gir, did_not_finish, self_reported_score, confirmed_by")
+      .select("player_slug, hole, score, putts, fir, gir, fir_direction, gir_direction, did_not_finish, self_reported_score, confirmed_by")
       .eq("season_year", seasonYear)
       .eq("round", round)
       .in("player_slug", allPlayers),
     service.from("live_match_box_submissions").select("player_slug").eq("match_box_id", box.id),
+    service.from("live_round_state").select("course_id").eq("season_year", seasonYear).eq("round", round).single(),
   ]);
+
+  let holes: { number: number; par: number; yards: number }[] = [];
+  if (roundState?.course_id) {
+    const { data: course } = await service.from("live_courses").select("holes").eq("id", roundState.course_id).single();
+    holes = Array.isArray(course?.holes) ? (course.holes as { number: number; par: number; yards: number }[]) : [];
+  }
 
   return NextResponse.json(
     {
@@ -77,6 +86,7 @@ export async function GET(request: Request) {
         whitePlayers: box.white_players,
         state: box.state as MatchState,
       },
+      holes,
       scores: (scoreRows as HoleScoreRow[] | null ?? []).map((r) => ({
         player: r.player_slug,
         hole: r.hole,
@@ -84,6 +94,8 @@ export async function GET(request: Request) {
         putts: r.putts,
         fir: r.fir,
         gir: r.gir,
+        firDirection: r.fir_direction,
+        girDirection: r.gir_direction,
         didNotFinish: r.did_not_finish,
         selfReportedScore: r.self_reported_score,
         confirmedBy: r.confirmed_by,

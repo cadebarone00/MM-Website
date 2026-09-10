@@ -21,7 +21,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
   }
 
-  const { round, hole, putts, fir, gir, selfReportedScore } = await request.json();
+  const { round, hole, putts, fir, gir, firDirection, girDirection, selfReportedScore } = await request.json();
+  const validDirections = new Set(["left", "right", "short", "long"]);
+  const isValidDirection = (value: unknown) => value == null || (typeof value === "string" && validDirections.has(value));
   if (
     typeof round !== "number" ||
     !Number.isInteger(round) ||
@@ -34,6 +36,8 @@ export async function POST(request: Request) {
     putts < 0 ||
     (fir !== null && typeof fir !== "boolean") ||
     typeof gir !== "boolean" ||
+    !isValidDirection(firDirection) ||
+    !isValidDirection(girDirection) ||
     (selfReportedScore !== undefined && selfReportedScore !== null && (typeof selfReportedScore !== "number" || !Number.isInteger(selfReportedScore) || selfReportedScore < 1))
   ) {
     return NextResponse.json({ ok: false, error: "Missing or invalid fields." }, { status: 400 });
@@ -93,6 +97,8 @@ export async function POST(request: Request) {
     isPar3 = holeInfo?.par === 3;
   }
   const normalizedFir = isPar3 ? null : fir;
+  const normalizedFirDirection = isPar3 || normalizedFir ? null : firDirection ?? null;
+  const normalizedGirDirection = gir ? null : girDirection ?? null;
 
   const { data: existingRow } = await service
     .from("live_hole_scores")
@@ -110,13 +116,13 @@ export async function POST(request: Request) {
   if (existingRow) {
     const { error } = await service
       .from("live_hole_scores")
-      .update({ putts, fir: normalizedFir, gir, self_reported_score: nextSelfReported, confirmed_by: confirmedBy })
+      .update({ putts, fir: normalizedFir, gir, fir_direction: normalizedFirDirection, gir_direction: normalizedGirDirection, self_reported_score: nextSelfReported, confirmed_by: confirmedBy })
       .eq("id", existingRow.id);
     if (error) return NextResponse.json({ ok: false, error: "Could not save that." }, { status: 500 });
   } else {
     const { error } = await service
       .from("live_hole_scores")
-      .insert({ season_year: seasonYear, player_slug: player.playerSlug, round, hole, putts, fir: normalizedFir, gir, self_reported_score: nextSelfReported, confirmed_by: confirmedBy });
+      .insert({ season_year: seasonYear, player_slug: player.playerSlug, round, hole, putts, fir: normalizedFir, gir, fir_direction: normalizedFirDirection, gir_direction: normalizedGirDirection, self_reported_score: nextSelfReported, confirmed_by: confirmedBy });
     if (error) return NextResponse.json({ ok: false, error: "Could not save that." }, { status: 500 });
   }
 

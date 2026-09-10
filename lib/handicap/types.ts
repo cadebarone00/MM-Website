@@ -39,12 +39,16 @@ export interface HandicapRoundSummary {
 }
 
 export interface HandicapSummary {
+  maroonMastersIndex?: number | null;
   index: number | null;
   lowIndex: number | null;
   rounds: HandicapRoundSummary[];
 }
 
 export interface ArchivedHandicapRound {
+  datePlayed?: string | null;
+  teeSetup?: ArchivedTeeSetup | null;
+  live?: boolean;
   id: string;
   tournamentSlug: string;
   tournamentLabel: string;
@@ -54,6 +58,16 @@ export interface ArchivedHandicapRound {
   format: string | null;
   totalScore: number | null;
   holesPlayed: number;
+}
+
+export interface ArchivedTeeSetup {
+  courseId: string;
+  teeSetId: string;
+  teeSetName: string;
+  rating: number | null;
+  slope: number | null;
+  holes: { number: number; par: number; yards: number }[];
+  holeTeeSetIds?: Record<string, string>;
 }
 
 export interface SubmitHandicapRoundInput {
