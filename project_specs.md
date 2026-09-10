@@ -157,6 +157,21 @@ All pages are public, no auth.
   fixed-screen fit is a best-effort first pass and the most likely thing to
   need visual tuning once seen on a real phone. `npm test`, `npx tsc --noEmit`,
   `npm run lint`, and `npm run build` all clean.
+- Second follow-up pass on the Submit-a-score card, on top of the round
+  above: dropped the bordered card — the fixed full screen itself is now the
+  only "box". Hole/Par/Yards and Total/To Par merged into one flush,
+  edge-to-edge dark nav bar at the very top (bigger text), with a small "✕
+  Edit setup" link in its corner replacing the old separate title/link.
+  `ScorePicker` bubbles no longer recolor on selection — they always show
+  their own par-relative shape (bigger now too); a translucent maroon box
+  stays fixed in the picker's center and the strip slides scores through it.
+  `ShotDirectionPicker` is bigger, moved its Penalty toggle next to the "GIR"
+  label instead of into the compass grid (which also fixed uneven Left/Right
+  spacing — the grid is now a fixed width so all 3 columns stay equal), and
+  Fairway/GIR now sit in a 2-column layout split by a center divider, each
+  compass centered in its half. `HoleActionBar`'s GPS and Next Hole buttons
+  are now equal width. Live scoring is unchanged by this pass. `npm test`,
+  `npx tsc --noEmit`, `npm run lint`, and `npm run build` all clean.
 
 ## Known gaps / not yet built
 
