@@ -24,7 +24,9 @@ export async function POST(request: Request) {
   if (!body || typeof body.providerId !== "string" || !/^[a-z0-9][a-z0-9-]{0,199}$/.test(body.providerId) || body.courseId !== undefined && typeof body.courseId !== "string") return NextResponse.json({ ok: false, error: "Choose a course from search results." }, { status: 400 });
   const service = createSupabaseServiceRoleClient();
   try {
-    const { data: linked, error: linkedError } = await service.from("live_courses").select("id").contains("tee_sets", [{ apiSource: { provider: "golfcore", courseId: body.providerId } }]).limit(1);
+    // tee_sets is JSONB. Passing a JS array makes PostgREST encode a SQL
+    // array literal instead of JSON, which PostgreSQL rejects.
+    const { data: linked, error: linkedError } = await service.from("live_courses").select("id").contains("tee_sets", JSON.stringify([{ apiSource: { provider: "golfcore", courseId: body.providerId } }])).limit(1);
     if (linkedError) throw new Error("Could not check the Course Library.");
     if (linked?.length && body.courseId !== linked[0].id) throw new Error("This provider course is already saved. Use Refresh from API on its course card.");
     const imported = await fetchGolfCourse(body.providerId);
