@@ -90,7 +90,6 @@ export function HandicapHome({ playerName, summary, archivedRounds, team }: { pl
                 </div>
                 <div className="text-right font-sans text-xs tabular-nums">
                   <p aria-label="Course rating and slope" className="text-maroon-700">{entry.source === "submitted" ? `${entry.round.rating}/${entry.round.slope}` : "— / —"}</p>
-                  <p className="mt-1 text-[10px] text-ink-500">{entry.source === "submitted" ? `Diff. ${entry.round.differential.toFixed(1)}` : "Rating / slope"}</p>
                 </div>
               </article>
             ))}

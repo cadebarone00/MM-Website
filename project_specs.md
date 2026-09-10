@@ -120,6 +120,55 @@ All pages are public, no auth.
   lived in that other app's own repo, whose current status is unknown to
   this project. This needs its own spec before any code is written.
 
+## Current round: course lookup on "Submit a score"
+
+**Where:** `/portal/handicap/new` (the "Submit a score" wizard for My Handicap,
+`components/portal/handicap/HandicapRoundWizard.tsx`). This screen and the rest of
+My Handicap already exist in code (`app/portal/handicap/`,
+`components/portal/handicap/`, `lib/handicap/`) — they predate this spec file
+catching up to them.
+
+**What changes:** Today the wizard's first step is one form: a course dropdown, a
+tee-set dropdown, date, and tee time, all together. Split the course part out into
+its own first screen, a course lookup — modeled on the reference screenshot
+(search box on top, a plain list underneath, tap a row to pick it):
+
+- Search box at the top ("Enter course name") — filters the course library live as
+  you type.
+- Below it, "Recently played" — this player's own most recently played courses
+  (from their submitted handicap rounds, newest first, deduplicated, capped at 8).
+  If they haven't submitted any rounds yet, this section shows nothing — no empty
+  state message.
+- Only courses that are actually available to submit against (the same
+  locked-tee-set course library the wizard already uses) are listed or selectable.
+- No "My Courses" / "Nearby" tabs from the screenshot — this app has no such data
+  (no per-player course list beyond recently played, no geolocation), so those
+  aren't part of this task.
+- Picking a course moves to the existing tee set / date / tee time step (unchanged
+  fields, just without the course dropdown), then holes entry, then review —
+  same as today.
+
+**Data change needed:** `getHandicapSummaryForPlayer` returns each round's
+`courseName` but not its `courseId`, so there's no reliable way to map a
+"recently played" row back to a course in the library (two courses could share a
+name). Add `courseId` to `HandicapRoundSummary` and the underlying query.
+
+**Files touched:**
+- `lib/handicap/types.ts`, `lib/handicap/data.ts` (+ `data.test.ts`) — add
+  `courseId` to round summaries.
+- `app/portal/handicap/new/page.tsx` — fetch this player's recent rounds, derive
+  the recently-played course ID list, pass it to the wizard.
+- `components/portal/handicap/HandicapRoundWizard.tsx` — add a "course" step
+  before "setup".
+- New `components/portal/handicap/HandicapCourseLookup.tsx` — the search +
+  recently-played screen.
+
+**Done looks like:** opening "Submit a score" starts on the course lookup screen;
+search narrows the list; recently played courses (if any) are listed for one tap;
+picking a course continues into the existing tee set/date/time step and the rest
+of the flow is unchanged. `npm test`, `npx tsc --noEmit`, and `npm run lint` all
+pass; manually click through the flow on the dev server.
+
 ## Out of scope for this round
 
 Any functional Real Wagers mode, real fourball market data, the final
