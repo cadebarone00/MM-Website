@@ -1,8 +1,23 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getCourseLibraryForHandicap } from "@/lib/handicap/data";
+import { getCourseLibraryForHandicap, getHandicapSummaryForPlayer } from "@/lib/handicap/data";
 import { HandicapRoundWizard } from "@/components/portal/handicap/HandicapRoundWizard";
+
+const MAX_RECENT_COURSES = 8;
+
+/** Most-recently-played course IDs for this player, newest first, no duplicates. */
+function recentCourseIds(rounds: { courseId: string }[]): string[] {
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const round of rounds) {
+    if (seen.has(round.courseId)) continue;
+    seen.add(round.courseId);
+    ids.push(round.courseId);
+    if (ids.length === MAX_RECENT_COURSES) break;
+  }
+  return ids;
+}
 
 export default async function NewHandicapRoundPage() {
   const supabase = await createSupabaseServerClient();
@@ -15,7 +30,10 @@ export default async function NewHandicapRoundPage() {
   if (!profile || (!profile.is_host && !profile.player_slug)) redirect("/");
   if (profile.is_host) redirect("/portal/admin");
 
-  const courses = await getCourseLibraryForHandicap();
+  const [courses, summary] = await Promise.all([
+    getCourseLibraryForHandicap(),
+    getHandicapSummaryForPlayer(profile.player_slug!),
+  ]);
 
   return (
     <div className="mx-auto max-w-[720px] px-4 py-8 sm:px-7">
@@ -23,7 +41,7 @@ export default async function NewHandicapRoundPage() {
         ← Back to My Handicap
       </Link>
       <div className="mt-5">
-        <HandicapRoundWizard courses={courses} />
+        <HandicapRoundWizard courses={courses} recentCourseIds={recentCourseIds(summary.rounds)} />
       </div>
     </div>
   );

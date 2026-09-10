@@ -31,7 +31,7 @@ function csvRows(text: string): string[][] {
   return rows;
 }
 
-export function parseCourseCsv(text: string, fallbackName = "Imported course"): { name: string; teeSets: LiveTeeSet[] } {
+export function parseCourseCsv(text: string, fallbackName = "Imported course", updating = false): { name: string; teeSets: LiveTeeSet[] } {
   const rows = csvRows(text);
   if (rows.length < 2) throw new Error("The CSV needs a header and hole rows.");
   const aliases: Record<string, string> = { course: "course_name", tee: "tee_name", tee_set: "tee_name", tee_set_name: "tee_name", yardage: "yards", course_rating: "rating", slope_rating: "slope", tee_color: "color" };
@@ -76,8 +76,28 @@ export function parseCourseCsv(text: string, fallbackName = "Imported course"): 
   const teeSets = [...tees.values()];
   for (const tee of teeSets) {
     tee.holes = Array.from({ length: 18 }, (_, i) => tee.holes.find((hole) => hole.number === i + 1) ?? { number: i + 1, par: 0, yards: 0 });
-    tee.color ??= colors[tee.name.toLowerCase()] ?? "#800020";
+    if (!updating) tee.color ??= colors[tee.name.toLowerCase()] ?? "#800020";
   }
   if (!validTeeSets(teeSets)) throw new Error("The CSV contains invalid tee sets.");
   return { name: name || fallbackName, teeSets };
+}
+
+export function mergeCourseTees(existing: LiveTeeSet[], imported: LiveTeeSet[]): LiveTeeSet[] {
+  const result = [...existing];
+  for (const incoming of imported) {
+    const index = result.findIndex((tee) => tee.name.trim().toLowerCase() === incoming.name.trim().toLowerCase());
+    const previous = result[index];
+    const tee: LiveTeeSet = previous ? {
+      ...previous, name: incoming.name, locked: false,
+      color: incoming.color ?? previous.color,
+      rating: incoming.rating ?? previous.rating, slope: incoming.slope ?? previous.slope,
+      holes: incoming.holes.map((hole) => {
+        const old = previous.holes.find((entry) => entry.number === hole.number);
+        return { ...hole, par: hole.par || old?.par || 0, yards: hole.yards || old?.yards || 0 };
+      }),
+    } : { ...incoming, id: crypto.randomUUID(), locked: false };
+    if (previous) result[index] = tee;
+    else result.push(tee);
+  }
+  return result;
 }

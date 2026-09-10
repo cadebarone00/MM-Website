@@ -1,9 +1,30 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseCourseCsv } from "./courseCsv.ts";
+import { parseCourseCsv, mergeCourseTees } from "./courseCsv.ts";
 
 const header = "course_name,tee_name,color,rating,slope,hole,par,yards";
 const rows = (tee = "Blue") => Array.from({ length: 18 }, (_, i) => `Example,${tee},blue,72.4,130,${i + 1},4,400`);
+
+test("CSV updates preserve IDs and omitted data, unlock changed tees, and add new tees without duplicates", () => {
+  const original = parseCourseCsv([header, ...rows(), ...rows("White")].join("\n")).teeSets.map((tee) => ({ ...tee, locked: true }));
+  const incoming = parseCourseCsv("tee,hole,yards\nblue,1,450\nRed,1,300", "Example", true).teeSets;
+  const updated = mergeCourseTees(original, incoming);
+  assert.equal(updated.length, 3);
+  assert.equal(updated[0].id, original[0].id);
+  assert.equal(updated[0].holes[0].yards, 450);
+  assert.equal(updated[0].holes[1].yards, 400);
+  assert.equal(updated[0].holes[0].par, 4);
+  assert.equal(updated[0].rating, 72.4);
+  assert.equal(updated[0].color, original[0].color);
+  assert.equal(updated[0].locked, false);
+  assert.equal(updated[1].locked, true);
+  assert.equal(updated[2].locked, false);
+  assert.equal(new Set(updated.map((tee) => tee.id)).size, 3);
+  const repeated = mergeCourseTees(updated, incoming);
+  assert.equal(repeated.length, 3);
+  assert.equal(repeated[2].id, updated[2].id);
+  assert.equal(original[0].holes[0].yards, 400);
+});
 test("imports multiple tees as drafts with sorted holes and complete metadata", () => {
   const result = parseCourseCsv([header, ...rows().reverse(), ...rows("Forward")].join("\r\n"));
   assert.equal(result.name, "Example");

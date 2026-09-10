@@ -10,6 +10,12 @@ export interface LiveHole {
 }
 
 export interface LiveTeeSet {
+  apiSource?: {
+    courseId: string;
+    teeId: string;
+    syncedAt: string;
+    baseline: { name: string; color?: string; rating: number | null; slope: number | null; holes: LiveHole[] };
+  };
   color?: string;
   locked?: boolean;
   id: string;

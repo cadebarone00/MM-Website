@@ -22,6 +22,7 @@ export interface HandicapCourseOption {
 
 export interface HandicapRoundSummary {
   id: string;
+  courseId: string;
   courseName: string;
   teeSetName: string;
   rating: number;

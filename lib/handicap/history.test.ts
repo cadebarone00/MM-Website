@@ -9,7 +9,7 @@ const archived: ArchivedHandicapRound[] = [1, 2].map((round) => ({
   round, courseName: "Palmer", format: "Fourball", totalScore: 75, holesPlayed: 18,
 }));
 const submitted: HandicapRoundSummary[] = [{
-  id: "personal", courseName: "Other course", teeSetName: "Blue", rating: 72,
+  id: "personal", courseId: "course-other", courseName: "Other course", teeSetName: "Blue", rating: 72,
   slope: 113, datePlayed: "2026-09-09", teeTime: null, totalScore: 80, differential: 8,
 }];
 

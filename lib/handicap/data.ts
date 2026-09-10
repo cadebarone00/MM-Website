@@ -38,6 +38,7 @@ export async function getCourseLibraryForHandicap(): Promise<HandicapCourseOptio
 
 interface RoundRow {
   id: string;
+  course_id: string;
   tee_set_name: string;
   rating: number;
   slope: number;
@@ -53,19 +54,11 @@ function courseNameFromJoin(joined: RoundRow["live_courses"]): string {
   return Array.isArray(joined) ? (joined[0]?.name ?? "Unknown course") : joined.name;
 }
 
-export async function getHandicapSummaryForPlayer(playerSlug: string): Promise<HandicapSummary> {
-  const service = createSupabaseServiceRoleClient();
-  const { data, error } = await service
-    .from("handicap_rounds")
-    .select("id, tee_set_name, rating, slope, date_played, tee_time, total_score, differential, live_courses(name)")
-    .eq("player_slug", playerSlug)
-    .order("date_played", { ascending: false })
-    .order("created_at", { ascending: false });
-  if (error) throw new Error("Could not load handicap rounds.");
-
-  const rows = (data ?? []) as unknown as RoundRow[];
-  const rounds: HandicapRoundSummary[] = rows.map((row) => ({
+/** Pure — no I/O — so it's directly unit-testable without a live Supabase instance. */
+export function mapRoundRow(row: RoundRow): HandicapRoundSummary {
+  return {
     id: row.id,
+    courseId: row.course_id,
     courseName: courseNameFromJoin(row.live_courses),
     teeSetName: row.tee_set_name,
     rating: row.rating,
@@ -74,7 +67,21 @@ export async function getHandicapSummaryForPlayer(playerSlug: string): Promise<H
     teeTime: row.tee_time,
     totalScore: row.total_score,
     differential: row.differential,
-  }));
+  };
+}
+
+export async function getHandicapSummaryForPlayer(playerSlug: string): Promise<HandicapSummary> {
+  const service = createSupabaseServiceRoleClient();
+  const { data, error } = await service
+    .from("handicap_rounds")
+    .select("id, course_id, tee_set_name, rating, slope, date_played, tee_time, total_score, differential, live_courses(name)")
+    .eq("player_slug", playerSlug)
+    .order("date_played", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (error) throw new Error("Could not load handicap rounds.");
+
+  const rows = (data ?? []) as unknown as RoundRow[];
+  const rounds: HandicapRoundSummary[] = rows.map(mapRoundRow);
 
   const mostRecent20Differentials = rounds.slice(0, 20).map((r) => r.differential);
   const chronologicalDifferentials = [...rounds].reverse().map((r) => r.differential);
