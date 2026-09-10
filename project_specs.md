@@ -130,15 +130,32 @@ All pages are public, no auth.
   `HoleActionBar.tsx` (the GPS + Next Hole bar; GPS is decorative — taps show
   "coming in a later round", no location call). Miss direction is now actually
   saved: `handicap_round_holes` and `live_hole_scores` each gained nullable
-  `fir_direction`/`gir_direction` columns (new migration
-  `supabase/hole_shot_directions.sql`, not yet run against production — see
-  Known gaps below); the existing `fir`/`gir` hit-or-miss values are unchanged
-  and the handicap formula doesn't use any of this. `/api/portal/scoring/state`
-  now also returns the round's course holes (par/yards), which live scoring
-  didn't have before. Both screens otherwise still work exactly as before
-  (hole selector, agreement dots, foursome team-score entry, submit flow); no
-  Stroke Index, and both stay inside the normal page chrome rather than a
-  full-screen modal, per your answers. `npm test`, `npx tsc --noEmit`,
+  `fir_direction`/`gir_direction` columns (migration
+  `supabase/hole_shot_directions.sql`, run in Supabase 2026-09-10); the
+  existing `fir`/`gir` hit-or-miss values are unchanged and the handicap
+  formula doesn't use any of this. `/api/portal/scoring/state` now also
+  returns the round's course holes (par/yards), which live scoring didn't have
+  before. `npm test`, `npx tsc --noEmit`, `npm run lint`, and `npm run build`
+  all clean.
+- Reworked that same scoring card per follow-up feedback: `ScorePicker` now
+  shows real scorecard bubble notation (circle = birdie, double circle = 2-or-more
+  under, box = bogey, double box = 2-or-more over, plain = par), sized larger,
+  scored from 1 up to double par, and always keeps the selected score centered
+  — tap a bubble or swipe the strip to it. `ShotDirectionPicker` gained a
+  GIR-only "Penalty" button (top-right of the compass) for a missed green from
+  a penalty stroke/lost ball rather than a directional miss — new
+  `ShotDirection` value `"penalty"`, needs another migration (see Known gaps).
+  Submit-a-score specifically (not live scoring, which still needs to jump
+  between holes to confirm a partner's entries) also: dropped the 18-button
+  hole selector and the player-name label — the card's top-left now shows
+  "Hole N · Par P · Y yards" instead; score preselects at par per hole, and
+  whatever's showing when you tap Next Hole is what's recorded (no separate
+  "N of 18 entered" gate); Next Hole becomes "Review Round" on hole 18,
+  replacing the old always-visible Review button; on mobile the whole screen
+  becomes a fixed, non-scrolling full-screen card (`fixed inset-0`, `h-dvh`) —
+  reverts to the normal in-page layout at the `lg` breakpoint. That mobile
+  fixed-screen fit is a best-effort first pass and the most likely thing to
+  need visual tuning once seen on a real phone. `npm test`, `npx tsc --noEmit`,
   `npm run lint`, and `npm run build` all clean.
 
 ## Known gaps / not yet built
@@ -151,15 +168,14 @@ All pages are public, no auth.
 - **`SCOREKEEPER_SERVER_SECRET` is not yet configured** in `.env` or in the
   Google Sheet's Apps Script properties — player scoring will not work live
   until this is set on both sides (see Rule-2 walkthrough owed to the user).
-- **`supabase/hole_shot_directions.sql` has not been run yet — this one is
-  urgent, not just a nice-to-have.** The new Fairway/GIR code (see the shipped
-  round above) always sends `fir_direction`/`gir_direction` when saving a
-  hole, and until those 2 columns exist on `handicap_round_holes` and
-  `live_hole_scores`, Supabase rejects the whole save — meaning **Submit a
-  score and live scoring's stats saves will fail** wherever this code is
-  running against a database that hasn't had this script run yet. Run it in
-  the SQL Editor before (or immediately after) this reaches wherever the site
-  is actually live for players.
+- **`supabase/hole_shot_directions_penalty.sql` has not been run yet — same
+  urgency as the migration before it.** The GIR compass's new "Penalty"
+  button sends `gir_direction: "penalty"`, which the database will reject
+  (its check constraint still only allows left/right/short/long) until this
+  script runs once in the SQL Editor. Until then, tapping Penalty on the GIR
+  compass will fail to save — everything else on both scoring screens is
+  unaffected. (`hole_shot_directions.sql`, the migration this one follows, was
+  run 2026-09-10.)
 - **Players cannot edit their own profile info** (bio, contact info, photo,
   or any other `PlayerProfile` field in `lib/data/players/*.ts`). All of
   that data is still hand-edited, static TypeScript files — there is no

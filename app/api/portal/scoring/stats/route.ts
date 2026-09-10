@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   }
 
   const { round, hole, putts, fir, gir, firDirection, girDirection, selfReportedScore } = await request.json();
-  const validDirections = new Set(["left", "right", "short", "long"]);
+  const validDirections = new Set(["left", "right", "short", "long", "penalty"]);
   const isValidDirection = (value: unknown) => value == null || (typeof value === "string" && validDirections.has(value));
   if (
     typeof round !== "number" ||

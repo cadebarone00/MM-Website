@@ -1,5 +1,10 @@
-/** Which way a fairway or green shot missed. Null on the hit/miss field itself means "hit" or "not recorded". */
-export type ShotDirection = "left" | "right" | "short" | "long";
+/**
+ * Which way a fairway or green shot missed. Null on the hit/miss field
+ * itself means "hit" or "not recorded". "penalty" (missed green due to a
+ * penalty stroke / lost ball, not a directional miss) is GIR-only — the UI
+ * never offers it for Fairway.
+ */
+export type ShotDirection = "left" | "right" | "short" | "long" | "penalty";
 
 export interface HandicapHoleInput {
   hole: number;   // 1-18

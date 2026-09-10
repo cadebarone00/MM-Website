@@ -2,7 +2,7 @@ import type { SubmitHandicapRoundInput } from "./types.ts";
 
 type ValidationResult = { ok: true } | { ok: false; error: string };
 
-const validDirections = new Set(["left", "right", "short", "long"]);
+const validDirections = new Set(["left", "right", "short", "long", "penalty"]);
 function isValidDirection(value: unknown): boolean {
   return value == null || (typeof value === "string" && validDirections.has(value));
 }

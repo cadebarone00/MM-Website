@@ -275,6 +275,7 @@ export function ScoringPanel({
                     <div className="mt-1">
                       <ScorePicker
                         ariaLabel="Your score"
+                        par={selectedHoleInfo?.par ?? 4}
                         disabled={alreadySubmitted || busy}
                         value={existing?.selfReportedScore ?? null}
                         onChange={(value) => submitStats(existing?.putts ?? 0, existing?.fir ?? null, existing?.gir ?? false, existing?.firDirection ?? null, existing?.girDirection ?? null, value)}
@@ -294,6 +295,7 @@ export function ScoringPanel({
                       )}
                       <ShotDirectionPicker
                         label="GIR"
+                        penaltyOption
                         disabled={alreadySubmitted || busy}
                         value={existing?.gir ? "hit" : (existing?.girDirection as ShotResult | null)}
                         onChange={(result) =>

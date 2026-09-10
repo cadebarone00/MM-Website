@@ -24,17 +24,21 @@ function DirectionButton({ selected, onClick, disabled, label, icon: Icon }: { s
 /**
  * Fairway/GIR compass: center check = hit, the 4 arrows = which way it
  * missed. Used by both the live-scoring card and the Submit-a-score card.
+ * GIR only: a "Penalty" button (top-right) for a missed green that wasn't a
+ * directional miss — a penalty stroke or lost ball.
  */
 export function ShotDirectionPicker({
   label,
   value,
   onChange,
   disabled,
+  penaltyOption,
 }: {
   label: string;
   value: ShotResult | null;
   onChange: (result: ShotResult) => void;
   disabled?: boolean;
+  penaltyOption?: boolean;
 }) {
   return (
     <div>
@@ -42,7 +46,19 @@ export function ShotDirectionPicker({
       <div className="mx-auto mt-2 grid w-fit grid-cols-3 grid-rows-3 items-center justify-items-center gap-1.5">
         <div />
         <DirectionButton label={`${label} missed long`} icon={ArrowUp} selected={value === "long"} onClick={() => onChange("long")} disabled={disabled} />
-        <div />
+        {penaltyOption ? (
+          <button
+            type="button"
+            onClick={() => onChange("penalty")}
+            disabled={disabled}
+            aria-pressed={value === "penalty"}
+            className={`whitespace-nowrap rounded-full border px-2 py-1 font-condensed text-2xs font-bold uppercase tracking-wide transition-colors ${value === "penalty" ? "border-maroon-700 bg-maroon-700 text-white" : "border-ink-200 bg-white text-ink-500 hover:border-maroon-300"} disabled:opacity-50`}
+          >
+            Penalty
+          </button>
+        ) : (
+          <div />
+        )}
         <DirectionButton label={`${label} missed left`} icon={ArrowLeft} selected={value === "left"} onClick={() => onChange("left")} disabled={disabled} />
         <DirectionButton label={`${label} hit`} icon={Check} selected={value === "hit"} onClick={() => onChange("hit")} disabled={disabled} />
         <DirectionButton label={`${label} missed right`} icon={ArrowRight} selected={value === "right"} onClick={() => onChange("right")} disabled={disabled} />
