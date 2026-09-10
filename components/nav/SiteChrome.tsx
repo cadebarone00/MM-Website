@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { PortalHeader } from "@/components/nav/PortalHeader";
 import { PlayerAreaNav } from "@/components/nav/PlayerAreaNav";
 import type { NextTournamentOverride } from "@/lib/data/types";
+import { AreaNavigation } from "./AreaNavigation";
 
 /**
  * Picks the site chrome for the current route. `/broadcast` gets nothing at
@@ -18,6 +19,10 @@ import type { NextTournamentOverride } from "@/lib/data/types";
  * sessions).
  */
 export function SiteChrome({ children, nextTournamentOverride }: { children: ReactNode; nextTournamentOverride: NextTournamentOverride }) {
+  return <AreaNavigation><AreaChrome nextTournamentOverride={nextTournamentOverride}>{children}</AreaChrome></AreaNavigation>;
+}
+
+function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode; nextTournamentOverride: NextTournamentOverride }) {
   const pathname = usePathname();
   const inPortal = pathname.startsWith("/portal");
   const inBroadcast = pathname.startsWith("/broadcast");

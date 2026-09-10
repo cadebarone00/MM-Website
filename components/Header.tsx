@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useAreaBack } from "@/components/nav/AreaNavigation";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { UserRound, ArrowLeft } from "lucide-react";
 import { RoundCountdown } from "@/components/ui/RoundCountdown";
 import { Avatar } from "@/components/ui/Avatar";
@@ -53,7 +54,7 @@ function isHomePage(pathname: string): boolean {
 
 export function Header({ nextTournamentOverride }: { nextTournamentOverride: NextTournamentOverride }) {
   const pathname = usePathname();
-  const router = useRouter();
+  const back = useAreaBack();
   const live = isLiveNow();
   const champ = champion(latestCompleted);
   const nextVenueKnown = isSet(nextTournamentOverride.venue);
@@ -83,15 +84,15 @@ export function Header({ nextTournamentOverride }: { nextTournamentOverride: Nex
         <div className="lg:hidden grid grid-cols-3 items-end gap-2 bg-white px-4 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem+2vh)]">
           <div className="flex min-w-0 items-center gap-1.5 justify-self-start">
             {showBack ? (
-              <button
-                type="button"
-                onClick={() => router.back()}
+              <Link
+                href={back.href}
+                onNavigate={back.onNavigate}
                 aria-label="Back"
                 title="Back"
                 className="inline-flex h-6 w-6 shrink-0 items-center justify-center text-maroon-700"
               >
                 <ArrowLeft size={16} />
-              </button>
+              </Link>
             ) : (
               <a
                 href="https://www.instagram.com/themaroonmasters/"

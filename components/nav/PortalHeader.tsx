@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { useAreaBack } from "./AreaNavigation";
 import { AccountBadge } from "@/components/AccountBadge";
 
 // The "home" page of each Portal-chrome area — Player Portal, Scoring, and
@@ -30,46 +31,23 @@ function isHomePage(pathname: string): boolean {
  */
 export function PortalHeader() {
   const pathname = usePathname();
-  const router = useRouter();
+  const back = useAreaBack();
   const inTigerCenter = pathname.startsWith("/portal/admin");
   const tigerChildPage = inTigerCenter && pathname !== "/portal/admin";
   const title = inTigerCenter ? "The Tiger Center" : pathname.startsWith("/portal/scoring") ? "Official Scoring" : "The Player Portal";
   const showBack = !isHomePage(pathname);
-  const handicapBackHref = pathname === "/portal/handicap" ? "/portal" : pathname.startsWith("/portal/handicap/") ? "/portal/handicap" : null;
 
   return (
     <header className="sticky top-0 z-[300] shadow-lg bg-maroon-900">
       <div className="grid grid-cols-3 items-center gap-2 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] lg:px-7 lg:py-4">
         <div className="justify-self-start shrink-0">
-          {tigerChildPage ? (
-            <Link
-              href="/portal/admin"
-              aria-label="Back to Tiger Center"
-              className="inline-flex items-center gap-1 font-condensed text-2xs font-bold uppercase tracking-wide text-cream-50 hover:text-white"
-            >
+          {showBack && (
+            <Link href={back.href} onNavigate={back.onNavigate} aria-label="Back within this area" title="Back" className={tigerChildPage ? "inline-flex items-center gap-1 font-condensed text-2xs font-bold uppercase text-cream-50" : "inline-flex h-6 w-6 items-center justify-center text-cream-50 lg:hidden"}>
               <ArrowLeft size={18} />
-              <span> Tiger Center</span>
+              {tigerChildPage && <span>Back</span>}
             </Link>
-          ) : showBack && (handicapBackHref ? (
-            <Link
-              href={handicapBackHref}
-              aria-label={handicapBackHref === "/portal" ? "Back to Portal" : "Back to My Handicap"}
-              className="inline-flex h-6 w-6 shrink-0 items-center justify-center text-cream-50 lg:hidden"
-            >
-              <ArrowLeft size={18} />
-            </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={() => router.back()}
-              aria-label="Back"
-              title="Back"
-              className="inline-flex h-6 w-6 shrink-0 items-center justify-center text-cream-50 lg:hidden"
-            >
-              <ArrowLeft size={18} />
-            </button>
-          ))}
-          <Link href="/portal" className={tigerChildPage ? "hidden" : showBack ? "hidden lg:block" : "block"}>
+          )}
+          <Link href={pathname.startsWith("/portal/scoring") ? "/portal/scoring" : inTigerCenter ? "/portal/admin" : "/portal"} className={tigerChildPage ? "hidden" : showBack ? "hidden lg:block" : "block"}>
             <Image src="/assets/wordmark-light.svg" alt="The Maroon Masters" width={520} height={92} className="h-5 w-auto lg:h-7" priority />
           </Link>
         </div>
