@@ -1,9 +1,14 @@
+/** Which way a fairway or green shot missed. Null on the hit/miss field itself means "hit" or "not recorded". */
+export type ShotDirection = "left" | "right" | "short" | "long";
+
 export interface HandicapHoleInput {
   hole: number;   // 1-18
   score: number;
   putts: number;
   fir: boolean;   // ignored for par-3 holes — server always records 'X' there
   gir: boolean;
+  firDirection: ShotDirection | null; // set only when fir is false
+  girDirection: ShotDirection | null; // set only when gir is false
 }
 
 export interface HandicapCourseTeeSet {

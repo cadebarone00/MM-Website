@@ -140,6 +140,7 @@ export async function submitHandicapRound(
 
   const holeRows = input.holes.map((hole) => {
     const info = holeInfoByNumber.get(hole.hole)!;
+    const firMissed = info.par !== 3 && !hole.fir;
     return {
       round_id: roundRow.id,
       hole: hole.hole,
@@ -149,6 +150,8 @@ export async function submitHandicapRound(
       putts: hole.putts,
       fir: info.par === 3 ? "X" : hole.fir ? "1" : "0",
       gir: hole.gir,
+      fir_direction: firMissed ? hole.firDirection : null,
+      gir_direction: hole.gir ? null : hole.girDirection,
     };
   });
 

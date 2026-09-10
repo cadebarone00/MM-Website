@@ -2,6 +2,11 @@ import type { SubmitHandicapRoundInput } from "./types.ts";
 
 type ValidationResult = { ok: true } | { ok: false; error: string };
 
+const validDirections = new Set(["left", "right", "short", "long"]);
+function isValidDirection(value: unknown): boolean {
+  return value == null || (typeof value === "string" && validDirections.has(value));
+}
+
 export function validateSubmitInput(input: SubmitHandicapRoundInput): ValidationResult {
   if (!input || typeof input !== "object") return { ok: false, error: "Invalid submission." };
   if (typeof input.courseId !== "string" || !input.courseId) return { ok: false, error: "Course is required." };
@@ -28,6 +33,12 @@ export function validateSubmitInput(input: SubmitHandicapRoundInput): Validation
     }
     if (typeof hole.putts !== "number" || !Number.isInteger(hole.putts) || hole.putts < 0) {
       return { ok: false, error: `Hole ${hole.hole} needs a valid putts count.` };
+    }
+    if (!isValidDirection(hole.firDirection)) {
+      return { ok: false, error: `Hole ${hole.hole} has an invalid fairway direction.` };
+    }
+    if (!isValidDirection(hole.girDirection)) {
+      return { ok: false, error: `Hole ${hole.hole} has an invalid green direction.` };
     }
   }
   if (seenHoles.size !== 18) return { ok: false, error: "All 18 holes are required." };

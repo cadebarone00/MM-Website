@@ -4,7 +4,7 @@ import { validateSubmitInput } from "./validate.ts";
 import type { HandicapHoleInput, SubmitHandicapRoundInput } from "./types.ts";
 
 function validHoles(): HandicapHoleInput[] {
-  return Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, score: 4, putts: 2, fir: true, gir: true }));
+  return Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, score: 4, putts: 2, fir: true, gir: true, firDirection: null, girDirection: null }));
 }
 
 function validInput(overrides: Partial<SubmitHandicapRoundInput> = {}): SubmitHandicapRoundInput {
@@ -69,6 +69,20 @@ test("validateSubmitInput rejects a non-object hole entry", () => {
 test("validateSubmitInput rejects a decimal score", () => {
   const holes = validHoles();
   holes[0] = { ...holes[0], score: 4.5 };
+  const result = validateSubmitInput(validInput({ holes }));
+  assert.equal(result.ok, false);
+});
+
+test("validateSubmitInput accepts a valid miss direction", () => {
+  const holes = validHoles();
+  holes[0] = { ...holes[0], fir: false, firDirection: "left", gir: false, girDirection: "short" };
+  assert.deepEqual(validateSubmitInput(validInput({ holes })), { ok: true });
+});
+
+test("validateSubmitInput rejects an invalid fairway direction", () => {
+  const holes = validHoles();
+  // @ts-expect-error deliberately invalid for the test
+  holes[0] = { ...holes[0], firDirection: "sideways" };
   const result = validateSubmitInput(validInput({ holes }));
   assert.equal(result.ok, false);
 });
