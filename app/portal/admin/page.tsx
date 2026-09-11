@@ -43,6 +43,7 @@ export default async function TigerCenterPage() {
         <h2 className="mt-1 font-serif text-2xl font-bold text-ink-900">Shared archive, models, and presentation</h2>
         <p className="mt-1 font-sans text-sm text-ink-600">These tools are not a season setup screen. They use the Career Archive, coded wager rules, and the active live data only where their individual page explicitly says so.</p>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Link href="/portal/admin/scoring-preview" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-7 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Live Scoring Page Editor</Link>
           <Link href="/portal/admin/career-stats" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-7 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Career Stats</Link>
           <Link href="/portal/admin/wager-types" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-7 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Wager Types</Link>
           <Link href="/portal/admin/odds-model" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-7 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Odds Model</Link>

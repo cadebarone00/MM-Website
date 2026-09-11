@@ -27,7 +27,7 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
   const inPortal = pathname.startsWith("/portal");
   const inBroadcast = pathname.startsWith("/broadcast");
 
-  if (inBroadcast) {
+  if (inBroadcast || pathname === "/portal/admin/scoring-preview/mobile") {
     return <>{children}</>;
   }
 

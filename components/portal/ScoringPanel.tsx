@@ -27,7 +27,7 @@ interface HoleScore {
   confirmedBy: string | null;
 }
 
-interface ScoringState {
+export interface ScoringState {
   matchBox: { id: string; boxNumber: number; format: MatchFormat; teeTime: string; maroonPlayers: string[]; whitePlayers: string[]; state: string };
   holes: { number: number; par: number; yards: number }[];
   scores: HoleScore[];
@@ -40,20 +40,23 @@ export function ScoringPanel({
   round,
   matchBox,
   nameBySlug,
+  previewState,
 }: {
   playerSlug: string;
   playerFullName: string;
   round: number;
   matchBox: Pick<LiveMatchBox, "id" | "format" | "maroonPlayers" | "whitePlayers">;
   nameBySlug: Record<string, string>;
+  previewState?: ScoringState;
 }) {
-  const [state, setState] = useState<ScoringState | null>(null);
+  const [state, setState] = useState<ScoringState | null>(previewState ?? null);
   const [selectedHole, setSelectedHole] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmingSubmit, setConfirmingSubmit] = useState(false);
 
   const load = useCallback(async () => {
+    if (previewState) return;
     try {
       const res = await fetch(`/api/portal/scoring/state?round=${round}`, { cache: "no-store" });
       const data = await res.json();
@@ -66,9 +69,10 @@ export function ScoringPanel({
     } catch {
       setError("Could not load this round. Check your connection and try again.");
     }
-  }, [round]);
+  }, [round, previewState]);
 
   useEffect(() => {
+    if (previewState) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch-on-mount + Realtime resubscribe, matching components/portal/PlayerScoringPanel.tsx; `load` is reused by the mutation handlers so it can't be nested inside this effect.
     load();
 
@@ -97,7 +101,7 @@ export function ScoringPanel({
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("online", load);
     };
-  }, [round, matchBox.id, load]);
+  }, [round, matchBox.id, load, previewState]);
 
   if (!state) {
     return error ? (
@@ -110,7 +114,26 @@ export function ScoringPanel({
   const alreadySubmitted = state.submittedPlayers.includes(playerSlug);
   const scoreFor = (player: string, hole: number) => state.scores.find((s) => s.player === player && s.hole === hole) ?? null;
 
+  function updatePreviewScore(players: string[], changes: Partial<HoleScore>) {
+    setState((current) => {
+      if (!current) return current;
+      const scores = [...current.scores];
+      for (const player of players) {
+        const index = scores.findIndex((score) => score.player === player && score.hole === selectedHole);
+        const existing: HoleScore = index >= 0 ? scores[index] : { player, hole: selectedHole, score: null, putts: 0, fir: null, gir: false, firDirection: null, girDirection: null, didNotFinish: false, selfReportedScore: null, confirmedBy: null };
+        const updated = { ...existing, ...changes };
+        if (index >= 0) scores[index] = updated;
+        else scores.push(updated);
+      }
+      return { ...current, scores };
+    });
+  }
+
   async function submitStroke(targetPlayerSlugs: string[], score: number, didNotFinish = false) {
+    if (previewState) {
+      updatePreviewScore(targetPlayerSlugs, { score: didNotFinish ? (state?.holes.find((hole) => hole.number === selectedHole)?.par ?? 4) * 2 : score, didNotFinish });
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -128,6 +151,10 @@ export function ScoringPanel({
   }
 
   async function submitStats(putts: number, fir: boolean | null, gir: boolean, firDirection: ShotDirection | null, girDirection: ShotDirection | null, selfReportedScore?: number) {
+    if (previewState) {
+      updatePreviewScore([playerSlug], { putts, fir, gir, firDirection, girDirection, ...(selfReportedScore === undefined ? {} : { selfReportedScore }) });
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -145,6 +172,11 @@ export function ScoringPanel({
   }
 
   async function submitScores() {
+    if (previewState) {
+      setState((current) => current ? { ...current, submittedPlayers: [...current.submittedPlayers, playerSlug] } : current);
+      setConfirmingSubmit(false);
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
