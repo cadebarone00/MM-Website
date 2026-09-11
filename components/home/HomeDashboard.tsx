@@ -313,9 +313,9 @@ function SocialsSection() {
 
   return (
     <section>
-      <div className="grid grid-cols-2 gap-3 sm:gap-5">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-5">
         <div className="min-w-0">
-          <SectionHead title="Our Insta" />
+          <SectionHead title="Socials" />
           <div className="grid grid-cols-2 gap-2 sm:gap-4">
             {shownReels.map((reel, index) => (
               <a
@@ -348,7 +348,7 @@ function SocialsSection() {
         </div>
 
         <div className="min-w-0">
-          <SectionHead title="Our Videos" action="Other Videos" actionHref={ALL_VIDEOS_HREF} />
+          <SectionHead title="Videos" action="Other Videos" actionHref={ALL_VIDEOS_HREF} />
           <div className="flex flex-col gap-2 sm:gap-4">
             {hypeVideoSlots.map((video) => (
               <a
