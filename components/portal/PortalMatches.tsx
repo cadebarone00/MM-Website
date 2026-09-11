@@ -2,13 +2,75 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { getPlayerLastName } from "@/lib/data/players";
+import type { PortalMatchCard } from "@/lib/portal/matchCards";
 
-export type PortalMatch = { id: string; label: string; details: string; status: "Live" | "Upcoming" | "Past" };
+function lastName(player: string) {
+  const name = getPlayerLastName(player);
+  if (name.toLowerCase() === "wojciechowski") return "WOJO";
+  return name.toUpperCase();
+}
 
-export function PortalMatches({ matches, team, year }: { matches: PortalMatch[]; team: "maroon" | "white" | null; year: number }) {
+/** Team-filled, stacked-last-name side — same look as components/leaderboard/CompactMatchRow.tsx's TeamSide. */
+function TeamSide({ players, isMaroon, odds }: { players: string[]; isMaroon: boolean; odds: number | null }) {
+  return (
+    <div className={["flex min-w-0 flex-col justify-center self-stretch", isMaroon ? "items-end bg-maroon-700 text-white" : "items-start bg-white text-maroon-700"].join(" ")}>
+      {players.map((player, i) => (
+        <span key={player} className={["relative block w-full px-2 py-1.5 font-sans text-xs font-semibold", isMaroon ? "text-right" : "text-left"].join(" ")}>
+          <span className="block truncate">{lastName(player)}</span>
+          {players.length === 1 && (
+            <span
+              className={[
+                "absolute top-1/2 flex h-4 w-8 -translate-y-1/2 items-center justify-center bg-transparent font-condensed text-[7px] font-extrabold uppercase tracking-tight",
+                isMaroon ? "left-1/4 -translate-x-1/2 border border-white text-white" : "right-1/4 translate-x-1/2 border border-maroon-700 text-maroon-700",
+              ].join(" ")}
+            >
+              {odds == null ? "Odds" : `${Math.round(odds * 100)}%`}
+            </span>
+          )}
+          {i > 0 && (
+            <>
+              <span aria-hidden className={isMaroon ? "absolute right-0 top-0 h-px w-1/2 bg-gold-600" : "absolute left-0 top-0 h-px w-1/2 bg-gold-600"} />
+              <span
+                className={[
+                  "absolute top-0 flex h-4 w-8 -translate-y-1/2 items-center justify-center bg-transparent font-condensed text-[7px] font-extrabold uppercase tracking-tight",
+                  isMaroon ? "left-[calc(25%-16px)] border border-white text-white" : "right-[calc(25%-16px)] border border-maroon-700 text-maroon-700",
+                ].join(" ")}
+              >
+                {odds == null ? "Odds" : `${Math.round(odds * 100)}%`}
+              </span>
+            </>
+          )}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Boxed match card — course/round/format header, maroon-vs-white team sides, status+progress in the middle. Deliberately styled after components/leaderboard/CompactMatchRow.tsx. */
+function MatchCard({ card }: { card: PortalMatchCard }) {
+  return (
+    <div className="mx-auto w-full max-w-sm overflow-hidden border border-gold-500 bg-white text-maroon-900">
+      <div className="border-b border-gold-300 bg-cream-50 px-3 py-1.5 text-center">
+        <p className="truncate font-serif text-sm font-bold">{card.course ?? "Course TBD"}</p>
+        <p className="mt-0.5 font-condensed text-3xs font-black uppercase tracking-wide text-ink-400">{card.roundFormatLabel}</p>
+      </div>
+      <div className="grid grid-cols-[minmax(0,1fr)_74px_minmax(0,1fr)] items-stretch">
+        <TeamSide players={card.maroonPlayers} isMaroon odds={card.maroonOdds} />
+        <div className="flex flex-col items-center justify-center gap-0.5 border-x border-gold-300 bg-cream-100 px-1 py-2 text-center">
+          <span className="font-sans text-base font-black leading-tight text-maroon-700">{card.statusLabel}</span>
+          <span className="font-sans text-2xs font-bold leading-tight text-ink-500">{card.progressLabel}</span>
+        </div>
+        <TeamSide players={card.whitePlayers} isMaroon={false} odds={card.whiteOdds} />
+      </div>
+    </div>
+  );
+}
+
+export function PortalMatches({ matches, team, year }: { matches: PortalMatchCard[]; team: "maroon" | "white" | null; year: number }) {
   const track = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
-  const [selected, setSelected] = useState<PortalMatch["status"]>("Live");
+  const [selected, setSelected] = useState<PortalMatchCard["status"]>("Live");
   useEffect(() => {
     const reset = () => { setSelected("Live"); setActive(0); };
     window.addEventListener("pageshow", reset);
@@ -39,10 +101,8 @@ export function PortalMatches({ matches, team, year }: { matches: PortalMatch[];
     <div id="matches-panel" role="tabpanel" aria-labelledby={`matches-tab-${selected}`} tabIndex={0}>
     {visibleMatches.length === 0 && <p className={`px-4 py-4 text-center text-sm ${maroon ? "text-white/75" : "text-ink-600"}`}>No {selected.toLowerCase()} matches for {year}.</p>}
     <div key={selected} ref={track} onScroll={(event) => { const node = event.currentTarget; setActive(Math.round(node.scrollLeft / node.clientWidth)); }} className="flex w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {visibleMatches.map((match, index) => <article key={match.id} aria-label={`Match ${index + 1} of ${visibleMatches.length}`} className="flex w-full shrink-0 snap-center flex-col items-center justify-start px-4 py-3 text-center">
-        <p className={`rounded-full border px-3 py-1 font-condensed text-xs font-semibold uppercase tracking-[0.15em] ${maroon ? "border-white/30 text-white/80" : "border-maroon-200 text-maroon-700"}`}>{match.status === "Live" ? "Live now" : match.status === "Past" ? "Final" : "Upcoming"}</p>
-        <h3 className="mx-auto mt-2 max-w-2xl font-serif text-lg font-bold sm:text-xl">{match.label}</h3>
-        <p className={`mt-1 max-w-xl text-xs leading-relaxed ${maroon ? "text-white/75" : "text-ink-600"}`}>{match.details}</p>
+      {visibleMatches.map((match, index) => <article key={match.id} aria-label={`Match ${index + 1} of ${visibleMatches.length}`} className="flex w-full shrink-0 snap-center flex-col items-center justify-start px-4 py-3">
+        <MatchCard card={match} />
         {match.status === "Live" && <Link href="/portal/scoring/play" className="mt-3 rounded-full border border-current px-5 py-2 text-sm font-semibold">Open live scoring</Link>}
       </article>)}
     </div>
