@@ -47,6 +47,19 @@ function TeamSide({ players, isMaroon, odds }: { players: string[]; isMaroon: bo
   );
 }
 
+/** Center status box — cream while undecided; fills with the winning team's color once final, same as CompactMatchRow's finalLabelColor. */
+function CenterBox({ card }: { card: PortalMatchCard }) {
+  const fillClass =
+    card.leader === "maroon" ? "bg-maroon-700 text-white" : card.leader === "white" ? "bg-white text-maroon-700" : "bg-cream-100 text-maroon-700";
+  const progressClass = card.leader === "maroon" ? "text-white/80" : card.leader === "white" ? "text-maroon-700/70" : "text-ink-500";
+  return (
+    <div className={["flex flex-col items-center justify-center gap-0.5 border-x border-gold-300 px-1 py-2 text-center", fillClass].join(" ")}>
+      <span className="font-sans text-base font-black leading-tight">{card.statusLabel}</span>
+      <span className={["font-sans text-2xs font-bold leading-tight", progressClass].join(" ")}>{card.progressLabel}</span>
+    </div>
+  );
+}
+
 /** Boxed match card — course/round/format header, maroon-vs-white team sides, status+progress in the middle. Deliberately styled after components/leaderboard/CompactMatchRow.tsx. */
 function MatchCard({ card }: { card: PortalMatchCard }) {
   return (
@@ -57,10 +70,7 @@ function MatchCard({ card }: { card: PortalMatchCard }) {
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)_74px_minmax(0,1fr)] items-stretch">
         <TeamSide players={card.maroonPlayers} isMaroon odds={card.maroonOdds} />
-        <div className="flex flex-col items-center justify-center gap-0.5 border-x border-gold-300 bg-cream-100 px-1 py-2 text-center">
-          <span className="font-sans text-base font-black leading-tight text-maroon-700">{card.statusLabel}</span>
-          <span className="font-sans text-2xs font-bold leading-tight text-ink-500">{card.progressLabel}</span>
-        </div>
+        <CenterBox card={card} />
         <TeamSide players={card.whitePlayers} isMaroon={false} odds={card.whiteOdds} />
       </div>
     </div>

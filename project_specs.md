@@ -189,6 +189,21 @@ All pages are public, no auth.
   set/date-played for every player's archived row of one tournament round
   at once — the write path that table never had. `npm test`,
   `npx tsc --noEmit`, `npm run lint`, and `npm run build` all clean.
+- **Course location (City, State, Zip).** `live_courses` gained optional
+  `city`, `state` (two-letter code), `zip_code` columns — new migration
+  `supabase/course_library_location.sql`, **not yet run in production.**
+  Course Library home page and the Review/edit tees page both show "City, ST"
+  in small grey text under the course name (blank if not set), with an "Edit
+  location" control (new `components/portal/tiger/CourseLocationEditor.tsx`)
+  that opens a City text box / State dropdown / optional Zip box, next to the
+  existing "Edit course name" control (the name column was widened to fit
+  both). My Handicap → Submit a score shows the same "City, ST" line
+  everywhere a course name appears: the lookup/search list, the confirmed-course
+  step, and the final review screen. Zip is never displayed — it's stored only
+  for a future "Nearby" lookup (see Known gaps). New shared
+  `lib/data/usStates.ts` (dropdown options) and `lib/data/courseLocation.ts`
+  (`formatCourseLocation`, pure, tested). `npm test`, `npx tsc --noEmit`,
+  `npm run lint`, and `npm run build` all clean.
 
 ## Known gaps / not yet built
 
@@ -245,12 +260,13 @@ All pages are public, no auth.
   something like this, but its code was never part of this repository — it
   lived in that other app's own repo, whose current status is unknown to
   this project. This needs its own spec before any code is written.
-- **Course "Nearby" tab has no location data.** `live_courses` has no
-  lat/long or city/state column at all, and nothing populates one today
-  (GolfAPI.io's course-search endpoint returns a location string, but the
-  import path that saves a course into the library discards it). The "Nearby"
-  tab (My Handicap → Submit a score → course lookup) is a visible "coming in a
-  later round" placeholder for this reason.
+- **Course "Nearby" tab still has no distance data.** `live_courses` now has
+  optional `city`/`state`/`zip_code` columns (see the Course location round
+  above), entered by hand per course in the Course Library — but there's still
+  no lat/long and nothing computes distance from the player, so "Nearby"
+  can't actually sort/filter by proximity yet. It remains a visible "coming in
+  a later round" placeholder (My Handicap → Submit a score → course lookup)
+  until that's built.
 - **`supabase/archived_handicap_tees.sql` has not been run yet — this is what
   makes every archived Maroon Masters round in `/portal/handicap` show
   "— / —" instead of a real tee/rating/slope right now.** Confirmed missing

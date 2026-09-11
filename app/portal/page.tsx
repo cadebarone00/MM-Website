@@ -10,6 +10,7 @@ import { pastTournaments } from "@/lib/data";
 import { archivedMatchesForPlayer } from "@/lib/portal/archivedMatches";
 import { buildLiveMatchCards } from "@/lib/portal/liveMatchCards";
 import type { PortalMatchCard } from "@/lib/portal/matchCards";
+import { getScorecardsForTournament } from "@/lib/data/archivedScorecards";
 import { getHandicapSummaryForPlayer } from "@/lib/handicap/data";
 import { Avatar } from "@/components/ui/Avatar";
 
@@ -28,15 +29,21 @@ export default async function PortalPage() {
   const team = findPlayerTeam(playerSlug);
   const year = Number(new Intl.DateTimeFormat("en-US", { year: "numeric", timeZone: "America/Chicago" }).format(new Date()));
   const archivedTournament = pastTournaments.find((tournament) => tournament.year === year);
-  const [upcomingMatches, handicapSummary] = await Promise.all([
+  const [upcomingMatches, archivedScorecards, handicapSummary] = await Promise.all([
     archivedTournament ? Promise.resolve([]) : findMatchesForPlayer(playerSlug, year),
+    archivedTournament
+      ? getScorecardsForTournament(archivedTournament).catch((err) => {
+          console.error("Failed to load archived scorecards for portal matches:", err);
+          return [];
+        })
+      : Promise.resolve([]),
     getHandicapSummaryForPlayer(playerSlug).catch((err) => {
       console.error("Failed to load handicap summary for portal hero:", err);
       return { index: null, lowIndex: null, rounds: [] };
     }),
   ]);
   const matches: PortalMatchCard[] = await buildLiveMatchCards(upcomingMatches);
-  if (archivedTournament) matches.push(...archivedMatchesForPlayer(archivedTournament, playerSlug));
+  if (archivedTournament) matches.push(...archivedMatchesForPlayer(archivedTournament, playerSlug, archivedScorecards));
   const teamName = team ? `Team ${team === "maroon" ? "Maroon" : "White"}` : "Team pending";
   const heroTextClass = team === "maroon" ? "text-maroon-300" : "text-white";
   const heroOverlayClass = team === "white"

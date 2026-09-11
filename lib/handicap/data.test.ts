@@ -25,6 +25,15 @@ test("mapCourseRow handles a non-array tee_sets value", () => {
   assert.deepEqual(result.teeSets, []);
 });
 
+test("mapCourseRow carries city/state through, defaulting to null when absent", () => {
+  const withLocation = mapCourseRow({ id: "course-3", name: "The Tribute", tee_sets: [], city: "The Colony", state: "TX" });
+  assert.equal(withLocation.city, "The Colony");
+  assert.equal(withLocation.state, "TX");
+  const withoutLocation = mapCourseRow({ id: "course-4", name: "Some Course", tee_sets: [] });
+  assert.equal(withoutLocation.city, null);
+  assert.equal(withoutLocation.state, null);
+});
+
 test("mapRoundRow carries the course id through and reads the joined course name", () => {
   const result = mapRoundRow({
     id: "round-1",
@@ -62,6 +71,8 @@ test("buildArchiveTeeSetup builds a snapshot from the course's tee set", () => {
   const course = {
     id: "course-1",
     name: "Pebble Beach",
+    city: null,
+    state: null,
     teeSets: [{ id: "blue", name: "Blue", rating: 74.5, slope: 142, holes: Array.from({ length: 18 }, (_, i) => ({ number: i + 1, par: 4, yards: 400 })) }],
   };
   const result = buildArchiveTeeSetup(course, "blue");
@@ -69,7 +80,7 @@ test("buildArchiveTeeSetup builds a snapshot from the course's tee set", () => {
 });
 
 test("buildArchiveTeeSetup returns null when the tee set isn't on the course", () => {
-  const course = { id: "course-1", name: "Pebble Beach", teeSets: [] };
+  const course = { id: "course-1", name: "Pebble Beach", city: null, state: null, teeSets: [] };
   const result = buildArchiveTeeSetup(course, "missing");
   assert.equal(result, null);
 });
