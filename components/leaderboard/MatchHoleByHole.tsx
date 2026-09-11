@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { HoleMarkerForDiff } from "@/components/scorecard/HoleMarker";
-import { getPlayerDisplayName } from "@/lib/data/players";
+import { getPlayerLastName } from "@/lib/data/players";
 import { getMatchHoleByHole, type MatchHoleByHole as MatchHoleByHoleData, type MatchHoleStatus } from "@/lib/data/matchHoleByHole";
 import { matchLabel, matchLeader } from "@/components/leaderboard/matchUtils";
 import type { RealMatch, Team, Tournament } from "@/lib/data/types";
@@ -13,7 +13,7 @@ const SQUARE_ROW = "h-12 w-12 shrink-0";
 function lastNames(players: string[]) {
   return players
     .map((player) => {
-      const name = getPlayerDisplayName(player).split(" ").pop() ?? player;
+      const name = getPlayerLastName(player);
       if (name.toLowerCase() === "wojciechowski") return "WOJO";
       return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
     })

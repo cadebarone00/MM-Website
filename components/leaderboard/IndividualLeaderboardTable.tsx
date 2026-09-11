@@ -6,7 +6,7 @@ import { ScoreBadge } from "@/components/ui/ScoreBadge";
 import { TrophyBadge } from "@/components/ui/TrophyBadge";
 import { WinnerBadge } from "@/components/ui/WinnerBadge";
 import { defendingIndividualChampion, getPlayerScorecard } from "@/lib/data";
-import { getPlayerDisplayName } from "@/lib/data/players";
+import { getPlayerLastName } from "@/lib/data/players";
 import type { RoundScorecard, Tournament } from "@/lib/data/types";
 import type { LiveIndividualStanding } from "./LeaderboardBoard";
 import { placementLabel, placementNumber } from "@/lib/leaderboard/placement";
@@ -16,7 +16,7 @@ const POS_W = 36;
 const PLAYER_W = 96;
 
 function lastName(player: string): string {
-  return getPlayerDisplayName(player).split(" ").pop() ?? player;
+  return getPlayerLastName(player);
 }
 
 function thruLabel(round: RoundScorecard | undefined): string {

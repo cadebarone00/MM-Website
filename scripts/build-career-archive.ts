@@ -1,3 +1,4 @@
+import { requirePlayerSlug } from "../lib/data/players/index";
 import fs from "node:fs";
 import path from "node:path";
 import * as XLSX from "xlsx";
@@ -37,7 +38,7 @@ function value(row: SheetRow, name: string) { return row[key(name)]; }
 const workbook = XLSX.readFile(input);
 const records = rowsFromSheet(workbook, "Raw_Hole_Results", ["year", "player", "score"])
   .map((row) => ({
-    year: integer(value(row, "year")), player: text(value(row, "player")), round: integer(value(row, "round")), roundHoles: integer(value(row, "round_holes")),
+    year: integer(value(row, "year")), player: requirePlayerSlug(text(value(row, "player"))), round: integer(value(row, "round")), roundHoles: integer(value(row, "round_holes")),
     course: canonicalCourseName(text(value(row, "course"))), format: text(value(row, "format")) || "Unspecified", hole: integer(value(row, "hole")), par: integer(value(row, "par")), yards: integer(value(row, "yards")), score: integer(value(row, "score")), putts: integer(value(row, "putts")), fairwayInRegulation: bool(value(row, "fairway_in_regulation")), greenInRegulation: bool(value(row, "green_in_regulation")), penalties: integer(value(row, "penalties")),
   }))
   .filter((row) => row.roundHoles === 18 && row.year && row.player && row.round && row.course && row.hole && row.par && row.yards && row.score);
@@ -45,15 +46,15 @@ const records = rowsFromSheet(workbook, "Raw_Hole_Results", ["year", "player", "
 const teamRecords = rowsFromSheet(workbook, "Raw_Team_Hole_Results", ["year", "team_id", "team_score"])
   .map((row) => ({
     year: integer(value(row, "year")), round: integer(value(row, "round")), format: text(value(row, "format")) || "Unspecified", matchId: text(value(row, "match_id")),
-    teamId: text(value(row, "team_id")), player1: text(value(row, "player_1")), player2: text(value(row, "player_2")), course: canonicalCourseName(text(value(row, "course"))),
+    teamId: text(value(row, "team_id")), player1: requirePlayerSlug(text(value(row, "player_1"))), player2: (text(value(row, "player_2")) ? requirePlayerSlug(text(value(row, "player_2"))) : ""), course: canonicalCourseName(text(value(row, "course"))),
     hole: integer(value(row, "hole")), par: integer(value(row, "par")), yards: integer(value(row, "yards")), score: integer(value(row, "team_score")), putts: null, fairwayInRegulation: null, greenInRegulation: null, penalties: null,
   }))
   .filter((row) => row.year && row.round && row.matchId && row.teamId && row.player1 && row.course && row.hole && row.par && row.yards && row.score);
 
 const partnerships = rowsFromSheet(workbook, "Match_Participants", ["year", "match_id", "player"])
   .flatMap((row) => {
-    const player = text(value(row, "player"));
-    const partner = text(value(row, "partner"));
+    const player = requirePlayerSlug(text(value(row, "player")));
+    const partner = text(value(row, "partner")) ? requirePlayerSlug(text(value(row, "partner"))) : "";
     const winningSide = text(value(row, "winning_side")).toUpperCase();
     const teamId = text(value(row, "team_id")).toUpperCase();
     if (!player || !partner) return [];

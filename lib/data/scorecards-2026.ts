@@ -2,7 +2,7 @@ import type { PlayerScorecard } from "./types";
 
 export const scorecards2026: PlayerScorecard[] = [
   {
-    player: "Cam",
+    player: "cam-latto",
     team: "maroon",
     rounds: [
       {
@@ -194,7 +194,7 @@ export const scorecards2026: PlayerScorecard[] = [
     ],
   },
   {
-    player: "Drew",
+    player: "drew-weisser",
     team: "maroon",
     rounds: [
       {
@@ -386,7 +386,7 @@ export const scorecards2026: PlayerScorecard[] = [
     ],
   },
   {
-    player: "Hugo",
+    player: "hugo-moebel",
     team: "maroon",
     rounds: [
       {
@@ -578,7 +578,7 @@ export const scorecards2026: PlayerScorecard[] = [
     ],
   },
   {
-    player: "Luke",
+    player: "luke-sherrell",
     team: "maroon",
     rounds: [
       {
@@ -770,7 +770,7 @@ export const scorecards2026: PlayerScorecard[] = [
     ],
   },
   {
-    player: "Nate",
+    player: "nate-wojciechowski",
     team: "maroon",
     rounds: [
       {
@@ -962,7 +962,7 @@ export const scorecards2026: PlayerScorecard[] = [
     ],
   },
   {
-    player: "Pete",
+    player: "pete-peabody",
     team: "maroon",
     rounds: [
       {
@@ -1154,7 +1154,7 @@ export const scorecards2026: PlayerScorecard[] = [
     ],
   },
   {
-    player: "Cade",
+    player: "cade-barone",
     team: "white",
     rounds: [
       {
@@ -1346,7 +1346,7 @@ export const scorecards2026: PlayerScorecard[] = [
     ],
   },
   {
-    player: "Collin",
+    player: "collin-ross",
     team: "white",
     rounds: [
       {
@@ -1538,7 +1538,7 @@ export const scorecards2026: PlayerScorecard[] = [
     ],
   },
   {
-    player: "Dalton",
+    player: "dalton-spriggs",
     team: "white",
     rounds: [
       {
@@ -1730,7 +1730,7 @@ export const scorecards2026: PlayerScorecard[] = [
     ],
   },
   {
-    player: "Jackson",
+    player: "jackson-collins",
     team: "white",
     rounds: [
       {
@@ -1922,7 +1922,7 @@ export const scorecards2026: PlayerScorecard[] = [
     ],
   },
   {
-    player: "Kyle",
+    player: "kyle-schnabel",
     team: "white",
     rounds: [
       {
@@ -2114,7 +2114,7 @@ export const scorecards2026: PlayerScorecard[] = [
     ],
   },
   {
-    player: "Quez",
+    player: "quez-currier",
     team: "white",
     rounds: [
       {

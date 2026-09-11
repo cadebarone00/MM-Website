@@ -2,7 +2,7 @@
 
 import { matchStatus, matchLeader, liveLabel } from "@/components/leaderboard/matchUtils";
 import { MatchHoleByHole } from "@/components/leaderboard/MatchHoleByHole";
-import { getPlayerDisplayName } from "@/lib/data/players";
+import { getPlayerLastName } from "@/lib/data/players";
 import type { RealMatch, Team, Tournament } from "@/lib/data/types";
 
 function labelColor(match: RealMatch) {
@@ -13,7 +13,7 @@ function labelColor(match: RealMatch) {
 }
 
 function lastName(player: string) {
-  const name = getPlayerDisplayName(player).split(" ").pop() ?? player;
+  const name = getPlayerLastName(player);
   if (name.toLowerCase() === "wojciechowski") return "WOJO";
   return name.toUpperCase();
 }

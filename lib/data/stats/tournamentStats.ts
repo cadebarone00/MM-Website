@@ -1,3 +1,4 @@
+import { getPlayerSlug } from "../players";
 import { holeMarker, playersOf } from "@/lib/data";
 import type { PlayerScorecard, Tournament } from "@/lib/data";
 import { getPlayerStatsByYear } from "@/lib/data/stats";
@@ -15,13 +16,13 @@ import type { StrokesGained } from "@/lib/data/stats/types";
  */
 
 function findScorecard(tournament: Tournament, player: string): PlayerScorecard | undefined {
-  return tournament.scorecards?.find((s) => s.player.toLowerCase() === player.toLowerCase());
+  return tournament.scorecards?.find((s) => getPlayerSlug(s.player) === getPlayerSlug(player));
 }
 
 function otherPlayers(tournament: Tournament, excludePlayer: string): string[] {
   return playersOf(tournament)
     .map((p) => p.name)
-    .filter((name) => name.toLowerCase() !== excludePlayer.toLowerCase());
+    .filter((name) => getPlayerSlug(name) !== getPlayerSlug(excludePlayer));
 }
 
 function average(values: number[]): number | null {

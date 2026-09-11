@@ -1,3 +1,4 @@
+import { normalizeArchivePlayerFields } from "@/lib/data/players/archiveIdentity";
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { requireHost } from "@/lib/portal/requireHost";
@@ -97,6 +98,13 @@ export async function POST(request: Request) {
   const teamHoles = rowsFromSheet(workbook, "Raw_Team_Hole_Results", ["year", "team_id", "team_score"]).map(mapTeam);
   const matches = rowsFromSheet(workbook, "Raw_Match_Results", ["year", "match_id", "format"]).map(mapMatch);
   const participants = rowsFromSheet(workbook, "Match_Participants", ["year", "match_id", "player"]).map(mapParticipant);
+  try {
+    for (const rows of [individual, teamHoles, matches, participants]) {
+      for (const row of rows) Object.assign(row, normalizeArchivePlayerFields(row));
+    }
+  } catch (error) {
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Unrecognized player in archive." }, { status: 400 });
+  }
   const invalidIndividual = individual.some((row) => !row.event_id || !row.year || !row.player || !row.round || !row.course || !row.hole || !row.par || !row.yards || !row.score || !row.source_record_id);
   if (!individual.length || invalidIndividual) return NextResponse.json({ ok: false, error: "Raw_Hole_Results is missing required source-traceable values." }, { status: 400 });
   if (new Set(individual.map((row) => row.source_record_id)).size !== individual.length) return NextResponse.json({ ok: false, error: "Raw_Hole_Results contains duplicate source record IDs." }, { status: 400 });

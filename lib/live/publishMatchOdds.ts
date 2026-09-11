@@ -1,7 +1,7 @@
 import { buildLiveTournamentSnapshot } from "@/lib/broadcast/liveSnapshot";
 import { getCombinedCareerArchive } from "@/lib/data/combinedCareerArchive";
 import { careerArchiveCourseHoles } from "@/lib/data/careerArchive.generated";
-import { getPlayerProfileBySlug } from "@/lib/data/players";
+import { getPlayerSlug } from "@/lib/data/players";
 import type { CareerCourseHole } from "@/lib/data/careerStats";
 import { calculatePreRoundAlternateShotOdds, calculatePreRoundFourballOdds, calculatePreRoundSinglesOdds, type PreRoundSinglesResult } from "@/lib/odds/preRoundSingles";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
@@ -17,7 +17,7 @@ function fairAmericanOdds(probability: number): number | null {
 }
 
 function modelPlayer(slug: string): string {
-  return getPlayerProfileBySlug(slug)?.id ?? slug;
+  return getPlayerSlug(slug);
 }
 
 /** Builds and persists the single odds output consumed by all live surfaces. */

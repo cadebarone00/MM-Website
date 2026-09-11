@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getPlayerProfileBySlug } from "@/lib/data/players";
+import { getPlayerProfileBySlug, getPlayerFirstName } from "@/lib/data/players";
 
 export interface PlayerSession {
   userId: string;
@@ -31,6 +31,6 @@ export async function requirePlayer(): Promise<PlayerSession | null> {
     userId: user.id,
     playerSlug: profile.player_slug,
     playerFullName: playerProfile.fullName,
-    playerFirstName: playerProfile.id,
+    playerFirstName: getPlayerFirstName(playerProfile.slug),
   };
 }

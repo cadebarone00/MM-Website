@@ -1,3 +1,4 @@
+import { getPlayerSlug } from "./players";
 import { upcoming2027 } from "./2027-upcoming";
 import type { IndividualStanding, PlayerScorecard, RealMatch, Tournament } from "./types";
 
@@ -20,7 +21,7 @@ function matchPoints(matches: RealMatch[], team: "maroon" | "white"): number {
 
 export function mergeLiveTournament(payload: LiveFeedPayload | null): Tournament {
   const base = upcoming2027;
-  const matches = payload?.matches ?? [];
+  const matches = (payload?.matches ?? []).map((match) => ({ ...match, maroonPlayers: match.maroonPlayers.map(getPlayerSlug), whitePlayers: match.whitePlayers.map(getPlayerSlug) }));
   const maroonPts = typeof payload?.maroonPts === "number" ? payload.maroonPts : matchPoints(matches, "maroon");
   const whitePts = typeof payload?.whitePts === "number" ? payload.whitePts : matchPoints(matches, "white");
 
@@ -33,14 +34,14 @@ export function mergeLiveTournament(payload: LiveFeedPayload | null): Tournament
     dateLabel: base.dateLabel,
     startDate: base.startDate,
     endDate: base.endDate,
-    roster: payload?.roster ?? base.roster ?? { maroon: [], white: [] },
+    roster: { maroon: (payload?.roster?.maroon ?? base.roster?.maroon ?? []).map(getPlayerSlug), white: (payload?.roster?.white ?? base.roster?.white ?? []).map(getPlayerSlug) },
     maroonPts,
     whitePts,
     pointsAvailable: 33,
     pointsToWin: 17,
     matches,
-    individualLeaderboard: payload?.individualLeaderboard ?? payload?.leaderboard ?? [],
-    scorecards: payload?.scorecards ?? [],
+    individualLeaderboard: (payload?.individualLeaderboard ?? payload?.leaderboard ?? []).map((entry) => ({ ...entry, player: getPlayerSlug(entry.player) })),
+    scorecards: (payload?.scorecards ?? []).map((card) => ({ ...card, player: getPlayerSlug(card.player) })),
     notes: base.notes,
   };
 }

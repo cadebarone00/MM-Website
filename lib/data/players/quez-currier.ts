@@ -1,7 +1,7 @@
 import type { PlayerProfile } from "../types";
 
 export const quezCurrier: PlayerProfile = {
-  id: "Quez",
+  id: "quez-currier",
   slug: "quez-currier",
   fullName: "Quez Currier",
   avatarSrc: null,

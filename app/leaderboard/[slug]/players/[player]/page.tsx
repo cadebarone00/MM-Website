@@ -3,7 +3,7 @@ import { PlayerScorecardView } from "@/components/scorecard/PlayerScorecardView"
 import { PlayerProfileHeader } from "@/components/scorecard/PlayerProfileHeader";
 import { LivePlayerScorecard } from "@/components/scorecard/LivePlayerScorecard";
 import { pastTournaments, nextTournament, getTournament, getPlayerScorecard, playersOf } from "@/lib/data";
-import { getPlayerAvatar, getPlayerDisplayName, getPlayerProfile } from "@/lib/data/players";
+import { getPlayerSlug, getPlayerAvatar, getPlayerDisplayName, getPlayerProfile } from "@/lib/data/players";
 import { placementValueLabel } from "@/lib/leaderboard/placement";
 import { getScorecardsForTournament, getShotVideoUrls } from "@/lib/data/archivedScorecards";
 
@@ -30,7 +30,7 @@ export default async function PlayerScorecardPage({ params }: { params: Promise<
   const scorecards = await getScorecardsForTournament(tournament);
   const tournamentWithScorecards = { ...tournament, scorecards };
 
-  const entry = playersOf(tournament).find((p) => p.name.toLowerCase() === player.toLowerCase());
+  const entry = playersOf(tournament).find((p) => getPlayerSlug(p.name) === getPlayerSlug(player));
   if (!entry) notFound();
 
   const scorecard = getPlayerScorecard(tournamentWithScorecards, entry.name);
@@ -38,7 +38,7 @@ export default async function PlayerScorecardPage({ params }: { params: Promise<
   const avatar = getPlayerAvatar(entry.name);
 
   const ranked = [...tournamentWithScorecards.individualLeaderboard].sort((a, b) => a.toPar - b.toPar);
-  const standing = ranked.find((p) => p.player.toLowerCase() === player.toLowerCase());
+  const standing = ranked.find((p) => getPlayerSlug(p.player) === getPlayerSlug(player));
   const position = standing ? placementValueLabel(ranked, ranked.indexOf(standing)) : null;
   const total = standing?.toPar ?? null;
   const lastRound = scorecard?.rounds[scorecard.rounds.length - 1];

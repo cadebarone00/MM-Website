@@ -1,3 +1,4 @@
+import { getPlayerSlug } from "./players";
 import { pinehurst2024 } from "./2024-pinehurst";
 import { danzante2025 } from "./2025-danzante";
 import { palmSprings2026 } from "./2026-palm-springs";
@@ -84,7 +85,7 @@ export function getTournament(slug: string): Tournament | undefined {
 }
 
 export function individualTitleCount(playerId: string): number {
-  return pastTournaments.filter((t) => t.individualChampion === playerId).length;
+  return pastTournaments.filter((t) => t.individualChampion === getPlayerSlug(playerId)).length;
 }
 
 // The individual title holder defending entering `t`: the individual
@@ -109,7 +110,7 @@ export function matchesByDay(t: Tournament): { day: number; matches: Tournament[
 }
 
 export function getPlayerScorecard(t: Tournament, player: string): PlayerScorecard | undefined {
-  return t.scorecards?.find((s) => s.player.toLowerCase() === player.toLowerCase());
+  return t.scorecards?.find((s) => getPlayerSlug(s.player) === getPlayerSlug(player));
 }
 
 export function getRoundScorecard(t: Tournament, player: string, round: number): RoundScorecard | undefined {
