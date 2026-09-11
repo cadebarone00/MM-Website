@@ -1,5 +1,6 @@
 "use client";
 
+import { getPlayerSlug } from "@/lib/data/players";
 import { useEffect, useState } from "react";
 import type { BroadcastConfig, BroadcastScene, BroadcastState } from "@/lib/broadcast/types";
 import type { PlaylistTrack } from "@/lib/broadcast/playlist";
@@ -311,8 +312,8 @@ export function BroadcastControlsPanel({
 
   async function startMockFromClip(clip: RehearsalClip, seed = Math.floor(Math.random() * 2_147_483_647)) {
     const mockStandings = getMockStandings(seed, false, 0).standings;
-    const playerFirstName = clip.playerName.trim().split(/\s+/)[0];
-    const playerIndex = mockStandings.findIndex((standing) => standing.player.toLowerCase() === playerFirstName.toLowerCase());
+    const playerSlug = getPlayerSlug(clip.playerName);
+    const playerIndex = mockStandings.findIndex((standing) => getPlayerSlug(standing.player) === playerSlug);
     const playerStanding = playerIndex >= 0 ? mockStandings[playerIndex] : null;
     setPreviewVideo((current) => ({
       ...current,
