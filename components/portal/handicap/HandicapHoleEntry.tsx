@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { HandicapCourseTeeSet, HandicapHoleInput, ShotDirection } from "@/lib/handicap/types";
+import { ScoringRoundHeader } from "@/components/portal/ScoringRoundHeader";
 import { ScorePicker } from "@/components/portal/ScorePicker";
 import { PuttsPicker } from "@/components/portal/PuttsPicker";
 import { ShotDirectionPicker, type ShotResult } from "@/components/portal/ShotDirectionPicker";
@@ -32,12 +33,6 @@ function seedDraftFromHoles(teeSet: HandicapCourseTeeSet, initialHoles: Handicap
     };
   }
   return draft;
-}
-
-function formatToPar(toPar: number | null): string {
-  if (toPar == null) return "—";
-  if (toPar === 0) return "E";
-  return toPar > 0 ? `+${toPar}` : `${toPar}`;
 }
 
 export function HandicapHoleEntry({
@@ -97,7 +92,7 @@ export function HandicapHoleEntry({
 
   const hole = teeSet.holes.find((entry) => entry.number === selectedHole)!;
   const entry = draft[selectedHole];
-  const enteredHoles = teeSet.holes.filter((h) => Number(draft[h.number]?.score) > 0);
+  const enteredHoles = teeSet.holes.filter((h) => h.number <= selectedHole && Number(draft[h.number]?.score) > 0);
   const totalScore = enteredHoles.reduce((sum, h) => sum + Number(draft[h.number].score), 0);
   const toPar = enteredHoles.length > 0 ? totalScore - enteredHoles.reduce((sum, h) => sum + h.par, 0) : null;
   const firValue: ShotResult | null = entry.fir ? "hit" : entry.firDirection;
@@ -105,37 +100,26 @@ export function HandicapHoleEntry({
   const isLastHole = selectedHole === 18;
 
   return (
-    <div className="fixed inset-0 z-40 flex h-dvh flex-col overflow-hidden bg-white lg:static lg:z-auto lg:h-auto lg:flex-none lg:overflow-visible lg:bg-transparent">
-      {/* Flush nav bar — hole/par/yards, then total/to-par centered underneath */}
-      <div className="bg-maroon-950 px-4 pb-3 pt-3 text-white lg:rounded-lg">
-        <button type="button" onClick={onBack} className="font-condensed text-2xs font-semibold uppercase tracking-wide text-white/70 underline">✕ Edit setup</button>
-        <p className="mt-1 font-condensed text-xl font-bold uppercase tracking-wide">
-          Hole {selectedHole} <span className="font-sans text-sm font-normal normal-case text-white/75">· Par {hole.par} · {hole.yards} yards</span>
-        </p>
-        <div className="mt-2 flex items-center justify-center gap-3">
-          <span className="font-condensed text-xs font-semibold uppercase tracking-wide">Total Score: {totalScore}</span>
-          <span className="text-white/40">|</span>
-          <span className="font-condensed text-xs font-semibold uppercase tracking-wide">To Par: {formatToPar(toPar)}</span>
-        </div>
-      </div>
+    <div className="-mx-4 -mt-[3.25rem] bg-white sm:-mx-7 lg:mx-0 lg:mt-0">
+      <ScoringRoundHeader hole={selectedHole} par={hole.par} yards={hole.yards} totalScore={totalScore} toPar={toPar} />
 
-      <div className="flex flex-1 flex-col justify-center overflow-hidden px-4 py-3 lg:flex-none lg:overflow-visible">
+      <div className="flex flex-col px-4 pb-2 pt-5">
         {error && <p role="alert" className="mb-2 rounded-sm bg-red-50 px-3 py-2 font-sans text-xs text-red-700">{error}</p>}
 
         <ScorePicker ariaLabel={`Hole ${selectedHole} score`} par={hole.par} value={entry.score ? Number(entry.score) : null} onChange={(score) => setField(selectedHole, "score", String(score))} />
 
         <div className="mt-4 grid grid-cols-2 divide-x divide-ink-200">
-          <div className="flex items-center justify-center">
+          <div className="flex items-start justify-center">
             {hole.par !== 3 && (
               <ShotDirectionPicker label="Fairway" value={firValue} onChange={(result) => setShotResult(selectedHole, "fir", result)} />
             )}
           </div>
-          <div className="flex items-center justify-center">
+          <div className="flex items-start justify-center">
             <ShotDirectionPicker label="GIR" penaltyOption value={girValue} onChange={(result) => setShotResult(selectedHole, "gir", result)} />
           </div>
         </div>
 
-        <p className="mt-4 text-center font-condensed text-xs font-semibold uppercase tracking-wide text-ink-500">Putts</p>
+        <p className="mt-6 text-center font-condensed text-xs font-semibold uppercase tracking-wide text-ink-500">Putts</p>
         <div className="mt-1">
           <PuttsPicker ariaLabel={`Hole ${selectedHole} putts`} value={entry.putts ? Number(entry.putts) : null} onChange={(putts) => setField(selectedHole, "putts", String(putts))} />
         </div>
@@ -146,6 +130,7 @@ export function HandicapHoleEntry({
           nextLabel={isLastHole ? "Review Round" : "Next Hole"}
           onNext={() => (isLastHole ? handleContinue() : setSelectedHole((h) => Math.min(h + 1, 18)))}
         />
+        <button type="button" onClick={onBack} className="mt-4 font-condensed text-xs font-semibold uppercase tracking-wide text-maroon-700 underline">Edit setup</button>
       </div>
     </div>
   );

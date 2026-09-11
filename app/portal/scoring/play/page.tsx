@@ -23,7 +23,7 @@ export default async function ScoringPlayPage() {
   const nameBySlug = new Map(playerProfiles.map((p) => [p.slug, p.fullName]));
 
   return (
-    <div className="mx-auto max-w-[720px] px-4 py-8 sm:px-7">
+    <div className="mx-auto max-w-[720px] px-4 pb-8 sm:px-7">
       <ScoringPanel
         playerSlug={playerSlug}
         playerFullName={getPlayerProfileBySlug(playerSlug)?.fullName ?? playerSlug}

@@ -63,7 +63,7 @@ export function PlayerAreaNav() {
   const active = isTiger ? tigerActiveSegment(pathname) : activeSegment(pathname);
 
   return (
-    <nav className="sticky z-[210] flex h-12 items-stretch bg-maroon-900" style={{ top: headerOffset }}>
+    <nav data-player-area-nav className="sticky z-[210] flex h-12 items-stretch bg-maroon-900" style={{ top: headerOffset }}>
       {segments.map((segment) => {
         const on = segment.href === active;
         return (

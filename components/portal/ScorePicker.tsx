@@ -60,14 +60,19 @@ export function ScorePicker({
 
   useEffect(() => {
     if (value == null) return;
-    itemRefs.current.get(value)?.scrollIntoView({ inline: "center", block: "nearest", behavior: "auto" });
+    const container = containerRef.current;
+    const item = itemRefs.current.get(value);
+    if (container && item) container.scrollTo({ left: item.offsetLeft + item.offsetWidth / 2 - container.clientWidth / 2, behavior: "instant" });
   }, [value, par]);
 
+  useEffect(() => () => { if (scrollTimeout.current) clearTimeout(scrollTimeout.current); }, []);
+
   function handleScroll() {
+    if (disabled) return;
     if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
     scrollTimeout.current = setTimeout(() => {
       const container = containerRef.current;
-      if (!container) return;
+      if (!container || disabled) return;
       const centerX = container.getBoundingClientRect().left + container.getBoundingClientRect().width / 2;
       let closest: number | null = null;
       let closestDistance = Infinity;
@@ -84,14 +89,14 @@ export function ScorePicker({
   }
 
   return (
-    <div className="relative">
-      <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-maroon-700/25 ring-2 ring-maroon-700/40" />
+    <div className="relative mx-auto w-full max-w-[420px]">
+      <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-28 w-[calc(100%/3-8px)] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-maroon-700/25 ring-2 ring-maroon-700/40" />
       <div
         ref={containerRef}
         onScroll={handleScroll}
         role="group"
         aria-label={ariaLabel}
-        className="relative z-10 flex snap-x snap-mandatory items-center gap-4 overflow-x-auto px-[calc(50%-2rem)] py-4"
+        className="relative z-10 flex snap-x snap-mandatory items-center overflow-x-auto py-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden before:w-1/3 before:shrink-0 before:content-[''] after:w-1/3 after:shrink-0 after:content-['']"
       >
         {scores.map((score) => {
           const selected = value === score;
@@ -106,7 +111,7 @@ export function ScorePicker({
               disabled={disabled}
               onClick={() => onChange(score)}
               aria-pressed={selected}
-              className="shrink-0 snap-center disabled:opacity-50"
+              className="flex h-20 w-1/3 shrink-0 snap-center items-center justify-center disabled:opacity-50"
             >
               <ScoreBubble score={score} par={par} />
             </button>

@@ -2,7 +2,7 @@
 "use client";
 
 import { ScoringHoleSelector } from "./ScoringHoleSelector";
-import { ScoreToParHeader } from "./ScoreToParHeader";
+import { ScoringRoundHeader } from "./ScoringRoundHeader";
 import { ScorePicker } from "./ScorePicker";
 import { PuttsPicker } from "./PuttsPicker";
 import { ShotDirectionPicker, type ShotResult } from "./ShotDirectionPicker";
@@ -169,6 +169,7 @@ export function ScoringPanel({
   const displayPlayers = isFoursome ? [] : [...matchBox.maroonPlayers, ...matchBox.whitePlayers];
   const selectedHoleInfo = state.holes.find((h) => h.number === selectedHole) ?? null;
   const myHoleValues = state.holes
+    .filter((h) => h.number <= selectedHole)
     .map((h) => {
       const s = scoreFor(playerSlug, h.number);
       const value = s?.score ?? s?.selfReportedScore ?? null;
@@ -180,7 +181,10 @@ export function ScoringPanel({
 
   return (
     <div>
-      <h1 className="font-serif text-2xl font-bold text-ink-900">Round {round} — Hole {selectedHole}</h1>
+      <div className="-mx-4 sm:-mx-7">
+        <ScoringRoundHeader hole={selectedHole} par={selectedHoleInfo?.par ?? null} yards={selectedHoleInfo?.yards ?? null} totalScore={myTotal} toPar={myToPar} />
+      </div>
+      <h1 className="mt-4 font-serif text-2xl font-bold text-ink-900">Round {round} — Hole {selectedHole}</h1>
       <p className="mt-1 font-sans text-sm text-ink-500">
         Welcome, {playerFullName}
         {selectedHoleInfo && ` · Par ${selectedHoleInfo.par} · ${selectedHoleInfo.yards} yards`}
@@ -190,9 +194,6 @@ export function ScoringPanel({
 
       {error && <p className="mt-3 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
 
-      <div className="mt-4">
-        <ScoreToParHeader totalScore={myTotal} toPar={myToPar} />
-      </div>
 
       {isFoursome ? (
         <div className="mt-4 space-y-3">
@@ -282,7 +283,7 @@ export function ScoringPanel({
                       />
                     </div>
 
-                    <div className="mt-4 flex items-start justify-center gap-6">
+                    <div className="mt-4 grid grid-cols-2 items-start gap-2">
                       {selectedHoleInfo?.par !== 3 && (
                         <ShotDirectionPicker
                           label="Fairway"
@@ -304,7 +305,7 @@ export function ScoringPanel({
                       />
                     </div>
 
-                    <p className="mt-4 text-center font-condensed text-xs font-semibold uppercase tracking-wide text-ink-500">Putts</p>
+                    <p className="mt-6 text-center font-condensed text-xs font-semibold uppercase tracking-wide text-ink-500">Putts</p>
                     <div className="mt-1">
                       <PuttsPicker
                         ariaLabel="Your putts"
@@ -313,6 +314,7 @@ export function ScoringPanel({
                         onChange={(value) => submitStats(value, existing?.fir ?? null, existing?.gir ?? false, existing?.firDirection ?? null, existing?.girDirection ?? null, existing?.selfReportedScore ?? undefined)}
                       />
                     </div>
+                    <HoleActionBar nextLabel="Next Hole" disabled={selectedHole === 18} onNext={() => setSelectedHole((h) => Math.min(h + 1, 18))} />
                   </div>
                 )}
               </div>
@@ -321,7 +323,7 @@ export function ScoringPanel({
         </div>
       )}
 
-      <HoleActionBar nextLabel="Next Hole" disabled={selectedHole === 18} onNext={() => setSelectedHole((h) => Math.min(h + 1, 18))} />
+      {(isFoursome || scoreFor(playerSlug, selectedHole)?.didNotFinish) && <HoleActionBar nextLabel="Next Hole" disabled={selectedHole === 18} onNext={() => setSelectedHole((h) => Math.min(h + 1, 18))} />}
 
       <div className="mt-6 border-t border-stone-200 pt-4">
         {alreadySubmitted ? (

@@ -19,7 +19,7 @@ export function HoleActionBar({
   const [showGpsNotice, setShowGpsNotice] = useState(false);
 
   return (
-    <div className="mt-4">
+    <div className="mt-2">
       <div className="flex items-center gap-3">
         <button
           type="button"
