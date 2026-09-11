@@ -87,7 +87,7 @@ export function HandicapRoundWizard({ courses, recentCourseIds, playerName }: { 
         <div className="flex items-center justify-between gap-2 rounded-sm border border-ink-200 px-3 py-2">
           <span className="font-sans text-sm text-ink-900">
             {course.name}
-            {formatCourseLocation(course.city, course.state) && <span className="block text-xs text-ink-500">{formatCourseLocation(course.city, course.state)}</span>}
+            {courseLocation && <span className="block text-xs text-ink-500">{courseLocation}</span>}
           </span>
           <button
             type="button"

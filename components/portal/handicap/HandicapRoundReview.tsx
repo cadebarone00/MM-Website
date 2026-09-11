@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { HandicapHoleInput } from "@/lib/handicap/types";
+import { formatCourseLocation } from "@/lib/data/courseLocation";
 import type { RoundSetup } from "./HandicapRoundWizard";
 
 export function HandicapRoundReview({
