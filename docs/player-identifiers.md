@@ -25,3 +25,5 @@ npx tsx scripts/migrate-archive-player-ids.ts
 The first command validates every proposed change and checks participant collisions before any write. The apply command updates identity fields only, checks the previous values to avoid overwriting concurrent edits, and never deletes scores. The last command should report zero pending updates. If interrupted, fix the reported issue and rerun the dry run before applying again.
 
 The local migration could not inspect or update the database because its URL/service-role credentials were unavailable in this workspace.
+
+Player labels should normally display the last name using getPlayerLastName; use first or full names where that screen needs them. Lookups accept unique first names, unique last names, full names, and canonical slugs, ignoring case and extra whitespace. Ambiguous shortened names do not resolve: callers must use a full name or slug.

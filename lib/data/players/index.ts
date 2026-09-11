@@ -1,3 +1,4 @@
+import { createPlayerResolver } from "./resolvePlayer";
 import { cadeBarone } from "./cade-barone";
 import { camLatto } from "./cam-latto";
 import { collinRoss } from "./collin-ross";
@@ -29,30 +30,11 @@ export const playerProfiles: PlayerProfile[] = [
   quezCurrier,
 ];
 
-// Historical aliases are accepted on reads; new records always use the profile slug.
-const legacyAliases: Record<string, string> = {
-  "cade": "cade-barone",
-  "cam": "cam-latto",
-  "collin": "collin-ross",
-  "dalton": "dalton-spriggs",
-  "drew": "drew-weisser",
-  "hugo": "hugo-moebel",
-  "jackson": "jackson-collins",
-  "kyle": "kyle-schnabel",
-  "luke": "luke-sherrell",
-  "nate": "nate-wojciechowski",
-  "pete": "pete-peabody",
-  "peyton": "peyton-vos",
-  "quez": "quez-currier"
-};
-
-const byId = new Map(playerProfiles.map((profile) => [profile.id.toLowerCase(), profile]));
+const resolvePlayer = createPlayerResolver(playerProfiles);
 const bySlug = new Map(playerProfiles.map((profile) => [profile.slug, profile]));
-const byFullName = new Map(playerProfiles.map((profile) => [profile.fullName.toLowerCase(), profile]));
 
 export function getPlayerProfile(player: string): PlayerProfile | undefined {
-  const key = player.trim().toLowerCase();
-  return byId.get(key) ?? bySlug.get(key) ?? byFullName.get(key) ?? bySlug.get(legacyAliases[key]);
+  return resolvePlayer(player);
 }
 
 export function getPlayerProfileBySlug(slug: string): PlayerProfile | undefined {
