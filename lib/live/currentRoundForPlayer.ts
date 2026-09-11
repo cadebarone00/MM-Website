@@ -109,9 +109,8 @@ function matchBoxFromRow(row: MatchBoxRow, seasonYear: number): LiveMatchBox {
 // lifecycle, same documented limitation as lib/portal/requireHost.test.mts
 // and app/api/portal/profile/route.test.mts. pickCurrentRound() above (the
 // actual selection rule) is where the real logic lives and is fully tested.
-export async function findUpcomingMatchesForPlayer(playerSlug: string): Promise<CurrentRoundResult[]> {
+export async function findMatchesForPlayer(playerSlug: string, seasonYear: number): Promise<CurrentRoundResult[]> {
   const supabase = await createSupabaseServerClient();
-  const seasonYear = await getActiveSeasonYear();
 
   const [{ data: roundRows, error: roundError }, { data: boxRows, error: boxError }] = await Promise.all([
     supabase
@@ -139,8 +138,11 @@ export async function findUpcomingMatchesForPlayer(playerSlug: string): Promise<
   return rounds.filter((round) => round.courseLocked && round.matchupsLocked).flatMap((round) =>
     matchBoxes.filter((box) => box.round === round.round && (box.maroonPlayers.includes(playerSlug) || box.whitePlayers.includes(playerSlug)))
       .map((matchBox) => ({ round, matchBox, state: effectiveMatchState(EMPTY_SNAPSHOT, matchBox) }))
-      .filter((match) => match.state !== "Final")
   );
+}
+
+export async function findUpcomingMatchesForPlayer(playerSlug: string): Promise<CurrentRoundResult[]> {
+  return (await findMatchesForPlayer(playerSlug, await getActiveSeasonYear())).filter((match) => match.state !== "Final");
 }
 
 export async function findCurrentRoundForPlayer(playerSlug: string): Promise<CurrentRoundResult | null> {

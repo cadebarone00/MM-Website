@@ -5,7 +5,9 @@ import { PortalMatches, type PortalMatch } from "@/components/portal/PortalMatch
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { findPlayerTeam } from "@/lib/portal/findPlayerTeam";
-import { findUpcomingMatchesForPlayer, matchupLabel } from "@/lib/live/currentRoundForPlayer";
+import { findMatchesForPlayer, matchupLabel } from "@/lib/live/currentRoundForPlayer";
+import { pastTournaments } from "@/lib/data";
+import { getPlayerDisplayName } from "@/lib/data/players";
 import { getHandicapSummaryForPlayer } from "@/lib/handicap/data";
 import { Avatar } from "@/components/ui/Avatar";
 
@@ -22,8 +24,10 @@ export default async function PortalPage() {
   const playerProfile = getPlayerProfileBySlug(playerSlug);
   const playerName = playerProfile?.fullName ?? profile.display_name ?? "Player";
   const team = findPlayerTeam(playerSlug);
+  const year = Number(new Intl.DateTimeFormat("en-US", { year: "numeric", timeZone: "America/Chicago" }).format(new Date()));
+  const archivedTournament = pastTournaments.find((tournament) => tournament.year === year);
   const [upcomingMatches, handicapSummary] = await Promise.all([
-    findUpcomingMatchesForPlayer(playerSlug),
+    archivedTournament ? Promise.resolve([]) : findMatchesForPlayer(playerSlug, year),
     getHandicapSummaryForPlayer(playerSlug).catch((err) => {
       console.error("Failed to load handicap summary for portal hero:", err);
       return { index: null, lowIndex: null, rounds: [] };
@@ -33,9 +37,21 @@ export default async function PortalPage() {
     id: match.matchBox.id ?? `round-${match.round.round}-box-${match.matchBox.boxNumber}`,
     label: matchupLabel(playerSlug, match.matchBox),
     details: `Round ${match.round.round} ? ${match.matchBox.format} ? ${match.matchBox.teeTime.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" })} CT`,
-    live: match.state === "Live",
+    status: match.state === "Final" ? "Past" : match.state === "Live" ? "Live" : "Upcoming",
   }));
-  matches.push({ id: "portal-preview-match", label: "You & Alex Morgan vs. Jordan Lee & Sam Taylor", details: "Round 2 ? Fourball ? Saturday, 9:30 AM ? The Tribute Golf Links", preview: true });
+  for (const match of archivedTournament?.matches ?? []) {
+    const isPlayer = (name: string) => name.toLowerCase() === playerSlug.toLowerCase();
+    if (![...match.maroonPlayers, ...match.whitePlayers].some(isPlayer)) continue;
+    const onMaroon = match.maroonPlayers.some(isPlayer);
+    const ownSide = onMaroon ? match.maroonPlayers : match.whitePlayers;
+    const opponents = onMaroon ? match.whitePlayers : match.maroonPlayers;
+    matches.push({
+      id: match.id,
+      label: `${["You", ...ownSide.filter((name) => !isPlayer(name)).map(getPlayerDisplayName)].join(" & ")} vs. ${opponents.map(getPlayerDisplayName).join(" & ")}`,
+      details: `Day ${match.day} · ${match.session} · ${match.format} · ${archivedTournament!.venue}`,
+      status: "Past",
+    });
+  }
   const teamName = team ? `Team ${team === "maroon" ? "Maroon" : "White"}` : "Team pending";
   const heroTextClass = team === "maroon" ? "text-maroon-300" : "text-white";
   const heroOverlayClass = team === "white"
@@ -58,7 +74,7 @@ export default async function PortalPage() {
         </div>
       </section>
 
-      <PortalMatches matches={matches} team={team} />
+      <PortalMatches matches={matches} team={team} year={year} />
 
       <nav aria-label="Player portal" className="mx-auto mt-5 max-w-4xl px-4 sm:px-6">
         <div className="overflow-hidden rounded-xl border-2 border-gold-300 bg-white divide-y divide-gold-300/50">

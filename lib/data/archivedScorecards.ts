@@ -2,6 +2,7 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { r2PublicUrl } from "@/lib/r2/client";
 import type { HoleStat, PlayerScorecard, RoundScorecard, Team, Tournament } from "./types";
+import { canonicalCourseName } from "./canonicalCourse";
 import { playerProfiles } from "./players";
 import { getTournament } from "./index";
 import type { ArchivedHandicapRound, ArchivedTeeSetup } from "@/lib/handicap/types";
@@ -220,7 +221,11 @@ export async function getArchivedTournamentRounds(tournamentSlug: string): Promi
   for (const row of data ?? []) {
     const existing = byRound.get(row.round);
     const assigned = mapHandicapSetup(row.handicap_setup) != null;
-    if (!existing) byRound.set(row.round, { round: row.round, course: row.course, format: row.format, assigned });
+    // canonicalCourseName matches how the round archive on Career Stats
+    // (CareerRoundArchive.tsx, via getCareerStatsDatabase) displays course
+    // names, so Tiger sees the same label in both places for the same round.
+    const course = canonicalCourseName(row.course);
+    if (!existing) byRound.set(row.round, { round: row.round, course, format: row.format, assigned });
     else if (assigned) existing.assigned = true;
   }
   return [...byRound.values()].sort((a, b) => a.round - b.round);

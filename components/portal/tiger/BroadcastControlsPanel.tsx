@@ -868,7 +868,7 @@ export function BroadcastControlsPanel({
                   onClick={loadCamRoundThreeClip}
                   className="rounded-lg border border-gold-500 bg-white px-3 py-1 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-800 hover:bg-gold-50"
                 >
-                  {clipBusy ? "Loading Cam clip…" : "Load Cam R3 · Classic · H5 · Shot 4"}
+                  {clipBusy ? "Loading Cam clip…" : "Load Cam R3 · Cove · H5 · Shot 4"}
                 </button>
               </div>
               <SceneQueue title="Live Player Video" items={visibleQueues.filter((item) => item.scene === "video")} />

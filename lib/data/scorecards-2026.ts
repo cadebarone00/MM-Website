@@ -38,7 +38,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 2,
-        course: "Cove",
+        course: "Classic",
         total: 77,
         toPar: 5,
         putts: 28,
@@ -69,7 +69,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 3,
-        course: "Classic",
+        course: "Cove",
         total: 76,
         toPar: 4,
         putts: 30,
@@ -230,7 +230,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 2,
-        course: "Cove",
+        course: "Classic",
         total: 75,
         toPar: 3,
         putts: 27,
@@ -261,7 +261,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 3,
-        course: "Classic",
+        course: "Cove",
         total: 76,
         toPar: 4,
         putts: 29,
@@ -422,7 +422,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 2,
-        course: "Cove",
+        course: "Classic",
         total: 85,
         toPar: 13,
         putts: 34,
@@ -453,7 +453,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 3,
-        course: "Classic",
+        course: "Cove",
         total: 83,
         toPar: 11,
         putts: 31,
@@ -614,7 +614,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 2,
-        course: "Cove",
+        course: "Classic",
         total: 78,
         toPar: 6,
         putts: 28,
@@ -645,7 +645,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 3,
-        course: "Classic",
+        course: "Cove",
         total: 77,
         toPar: 5,
         putts: 30,
@@ -806,7 +806,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 2,
-        course: "Cove",
+        course: "Classic",
         total: 71,
         toPar: -1,
         putts: 29,
@@ -837,7 +837,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 3,
-        course: "Classic",
+        course: "Cove",
         total: 78,
         toPar: 6,
         putts: 30,
@@ -998,7 +998,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 2,
-        course: "Cove",
+        course: "Classic",
         total: 76,
         toPar: 4,
         putts: 31,
@@ -1029,7 +1029,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 3,
-        course: "Classic",
+        course: "Cove",
         total: 77,
         toPar: 5,
         putts: 29,
@@ -1190,7 +1190,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 2,
-        course: "Cove",
+        course: "Classic",
         total: 66,
         toPar: -6,
         putts: 30,
@@ -1221,7 +1221,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 3,
-        course: "Classic",
+        course: "Cove",
         total: 78,
         toPar: 6,
         putts: 30,
@@ -1382,7 +1382,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 2,
-        course: "Cove",
+        course: "Classic",
         total: 78,
         toPar: 6,
         putts: 33,
@@ -1413,7 +1413,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 3,
-        course: "Classic",
+        course: "Cove",
         total: 72,
         toPar: 0,
         putts: 28,
@@ -1574,7 +1574,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 2,
-        course: "Cove",
+        course: "Classic",
         total: 81,
         toPar: 9,
         putts: 26,
@@ -1605,7 +1605,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 3,
-        course: "Classic",
+        course: "Cove",
         total: 80,
         toPar: 8,
         putts: 27,
@@ -1766,7 +1766,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 2,
-        course: "Cove",
+        course: "Classic",
         total: 81,
         toPar: 9,
         putts: 28,
@@ -1797,7 +1797,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 3,
-        course: "Classic",
+        course: "Cove",
         total: 79,
         toPar: 7,
         putts: 31,
@@ -1958,7 +1958,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 2,
-        course: "Cove",
+        course: "Classic",
         total: 74,
         toPar: 2,
         putts: 28,
@@ -1989,7 +1989,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 3,
-        course: "Classic",
+        course: "Cove",
         total: 77,
         toPar: 5,
         putts: 30,
@@ -2150,7 +2150,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 2,
-        course: "Cove",
+        course: "Classic",
         total: 77,
         toPar: 5,
         putts: 33,
@@ -2181,7 +2181,7 @@ export const scorecards2026: PlayerScorecard[] = [
       },
       {
         round: 3,
-        course: "Classic",
+        course: "Cove",
         total: 76,
         toPar: 4,
         putts: 30,

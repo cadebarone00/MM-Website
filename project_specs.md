@@ -192,6 +192,34 @@ All pages are public, no auth.
 
 ## Known gaps / not yet built
 
+- **2026 Palm Springs "Cove"/"Classic" course-name swap has not been run in
+  production yet — SQL below is waiting on the user.** Two rounds were
+  mislabeled with each other's course name (confirmed against the "Verified
+  Mission Hills sequence" comment already in
+  `scripts/reconcile-mission-hills-2026.ts`). The code-side fix already
+  shipped: `lib/data/careerArchive.generated.ts`, `lib/data/scorecards-2026.ts`,
+  `lib/data/stats/courses-2026.ts`, and the "Assign tees" broadcast rehearsal
+  button label are all corrected and committed. The two Supabase tables still
+  need this run once in the SQL Editor (blocked from running it directly —
+  see Rule-2 walkthrough owed to the user):
+  ```sql
+  update archived_scorecard_rounds set course = 'Classic' where tournament_slug = '2026-palm-springs' and round = 2 and course = 'Cove';
+  update archived_scorecard_rounds set course = 'Cove' where tournament_slug = '2026-palm-springs' and round = 3 and course = 'Classic';
+  update career_stat_holes set course = 'Classic' where year = 2026 and round = 3 and course = 'Cove';
+  update career_stat_holes set course = 'Cove' where year = 2026 and round = 4 and course = 'Classic';
+  update career_stat_team_holes set course = 'Classic' where year = 2026 and round = 3 and course = 'Cove';
+  ```
+  Until this runs, the public leaderboard scorecards (`archived_scorecard_rounds`)
+  and the "Assign tees for handicap tracking" panel still show the swapped
+  names — only the Career Stats admin round archive and the static stats
+  pages are fixed so far. Also found but **out of scope, not touched**:
+  `careerArchiveCourseHoles` (same file) has many other 2026 rows whose
+  `course` field holds junk like "Cade Round 3 Scorecard" instead of a real
+  course name — a separate, pre-existing data-quality gap; and
+  `appscript/write-scores.gs`'s `SEASON_REBUILD_ROUNDS` test-season seed data
+  reuses the old swapped course/round pairing — low-stakes (test-only) and
+  needs a manual paste into the Apps Script editor to fix, so left alone
+  pending a decision from the user.
 - **Host scoring tools (Tasks 5-7 of the live scoring plan, not started):**
   `/portal/host` — pairings, round start/reset, direct score edits for
   Tiger — does not exist yet. `/portal`'s host view still shows "Host tools
