@@ -7,7 +7,7 @@ import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { findPlayerTeam } from "@/lib/portal/findPlayerTeam";
 import { findMatchesForPlayer, matchupLabel } from "@/lib/live/currentRoundForPlayer";
 import { pastTournaments } from "@/lib/data";
-import { getPlayerDisplayName } from "@/lib/data/players";
+import { archivedMatchesForPlayer } from "@/lib/portal/archivedMatches";
 import { getHandicapSummaryForPlayer } from "@/lib/handicap/data";
 import { Avatar } from "@/components/ui/Avatar";
 
@@ -39,19 +39,7 @@ export default async function PortalPage() {
     details: `Round ${match.round.round} ? ${match.matchBox.format} ? ${match.matchBox.teeTime.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" })} CT`,
     status: match.state === "Final" ? "Past" : match.state === "Live" ? "Live" : "Upcoming",
   }));
-  for (const match of archivedTournament?.matches ?? []) {
-    const isPlayer = (name: string) => name.toLowerCase() === playerSlug.toLowerCase();
-    if (![...match.maroonPlayers, ...match.whitePlayers].some(isPlayer)) continue;
-    const onMaroon = match.maroonPlayers.some(isPlayer);
-    const ownSide = onMaroon ? match.maroonPlayers : match.whitePlayers;
-    const opponents = onMaroon ? match.whitePlayers : match.maroonPlayers;
-    matches.push({
-      id: match.id,
-      label: `${["You", ...ownSide.filter((name) => !isPlayer(name)).map(getPlayerDisplayName)].join(" & ")} vs. ${opponents.map(getPlayerDisplayName).join(" & ")}`,
-      details: `Day ${match.day} · ${match.session} · ${match.format} · ${archivedTournament!.venue}`,
-      status: "Past",
-    });
-  }
+  if (archivedTournament) matches.push(...archivedMatchesForPlayer(archivedTournament, playerSlug));
   const teamName = team ? `Team ${team === "maroon" ? "Maroon" : "White"}` : "Team pending";
   const heroTextClass = team === "maroon" ? "text-maroon-300" : "text-white";
   const heroOverlayClass = team === "white"
