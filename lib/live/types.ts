@@ -33,6 +33,9 @@ export interface LiveCourse {
   teeSets?: LiveTeeSet[];
   rating: number | null; // e.g. 72.4 — null until set
   slope: number | null; // USGA range 55-155 — null until set
+  city?: string | null;
+  state?: string | null; // two-letter code, e.g. "TX"
+  zipCode?: string | null; // optional; never displayed, reserved for a nearby-courses lookup
 }
 
 export interface LiveHoleScore {

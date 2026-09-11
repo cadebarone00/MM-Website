@@ -9,6 +9,8 @@ interface CourseRow {
   id: string;
   name: string;
   tee_sets: unknown;
+  city?: string | null;
+  state?: string | null;
 }
 
 function isWellFormedTeeSet(value: unknown): value is HandicapCourseTeeSet {
@@ -26,7 +28,7 @@ function isWellFormedTeeSet(value: unknown): value is HandicapCourseTeeSet {
 /** Pure — no I/O — so it's directly unit-testable without a live Supabase instance. */
 export function mapCourseRow(row: CourseRow): HandicapCourseOption {
   const teeSets = Array.isArray(row.tee_sets) ? availableTeeSets(row.tee_sets as LiveTeeSet[]).filter(isWellFormedTeeSet) : [];
-  return { id: row.id, name: row.name, teeSets };
+  return { id: row.id, name: row.name, city: row.city ?? null, state: row.state ?? null, teeSets };
 }
 
 /** Pure — no I/O. Snapshots a course's tee set into the shape archived_scorecard_rounds.handicap_setup stores, so a later course-library edit never changes an already-assigned round's math. */
@@ -38,7 +40,7 @@ export function buildArchiveTeeSetup(course: HandicapCourseOption, teeSetId: str
 
 export async function getCourseLibraryForHandicap(): Promise<HandicapCourseOption[]> {
   const service = createSupabaseServiceRoleClient();
-  const { data, error } = await service.from("live_courses").select("id, name, tee_sets").order("name");
+  const { data, error } = await service.from("live_courses").select("id, name, tee_sets, city, state").order("name");
   if (error) throw new Error("Could not load the course library.");
   return (data ?? []).map(mapCourseRow).filter((course) => course.teeSets.length > 0);
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Star } from "lucide-react";
 import type { HandicapCourseOption } from "@/lib/handicap/types";
+import { formatCourseLocation } from "@/lib/data/courseLocation";
 import { useFavoriteCourses } from "./useFavoriteCourses";
 
 type Tab = "recent" | "nearby" | "my-courses";
@@ -23,10 +24,12 @@ function CourseRow({
   onToggleFavorite: () => void;
   onSelect: () => void;
 }) {
+  const location = formatCourseLocation(course.city, course.state);
   return (
     <div className="flex items-center gap-1">
       <button type="button" onClick={onSelect} className="block flex-1 py-3 pl-1 text-left font-sans text-sm text-ink-900 hover:text-maroon-700">
         {course.name}
+        {location && <span className="block text-xs text-ink-500">{location}</span>}
       </button>
       <button
         type="button"

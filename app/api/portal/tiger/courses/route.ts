@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import type { LiveCourse, LiveHole, LiveTeeSet } from "@/lib/live/types";
+import { US_STATE_CODES } from "@/lib/data/usStates";
 
 import { validTeeSets } from "@/lib/live/teeSets";
 
@@ -12,7 +13,7 @@ export async function GET() {
   }
 
   const service = createSupabaseServiceRoleClient();
-  const { data, error } = await service.from("live_courses").select("id, name, holes, rating, slope, tee_sets").order("name");
+  const { data, error } = await service.from("live_courses").select("id, name, holes, rating, slope, tee_sets, city, state, zip_code").order("name");
   if (error) {
     return NextResponse.json({ ok: false, error: "Could not load the course bank." }, { status: 500 });
   }
@@ -24,6 +25,9 @@ export async function GET() {
     rating: row.rating,
     slope: row.slope,
     teeSets: Array.isArray(row.tee_sets) ? row.tee_sets as LiveTeeSet[] : [],
+    city: row.city,
+    state: row.state,
+    zipCode: row.zip_code,
   }));
   return NextResponse.json({ ok: true, courses }, { headers: { "Cache-Control": "no-store" } });
 }
@@ -56,16 +60,36 @@ export async function PUT(request: Request) {
 
 export async function PATCH(request: Request) {
   if (!await requireHost()) return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
-  let body: { id?: unknown; name?: unknown };
+  let body: { id?: unknown; name?: unknown; city?: unknown; state?: unknown; zipCode?: unknown };
   try { body = await request.json(); } catch { return NextResponse.json({ ok: false, error: "Invalid request." }, { status: 400 }); }
-  const name = typeof body?.name === "string" ? body.name.trim() : "";
-  if (typeof body?.id !== "string" || !name || name.length > 200) return NextResponse.json({ ok: false, error: "Enter a course name between 1 and 200 characters." }, { status: 400 });
+  if (typeof body?.id !== "string") return NextResponse.json({ ok: false, error: "Invalid request." }, { status: 400 });
+
+  // Only change the fields the caller sent (name via CourseNameEditor, location via
+  // CourseLocationEditor); IDs, provider metadata and score references stay intact.
+  const update: Record<string, unknown> = {};
+  if (body.name !== undefined) {
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    if (!name || name.length > 200) return NextResponse.json({ ok: false, error: "Enter a course name between 1 and 200 characters." }, { status: 400 });
+    update.name = name;
+  }
+  if (body.city !== undefined || body.state !== undefined || body.zipCode !== undefined) {
+    const city = typeof body.city === "string" ? body.city.trim() : "";
+    const state = typeof body.state === "string" ? body.state.trim().toUpperCase() : "";
+    const zipCode = typeof body.zipCode === "string" ? body.zipCode.trim() : "";
+    if (city.length > 100) return NextResponse.json({ ok: false, error: "City is too long." }, { status: 400 });
+    if (state && !US_STATE_CODES.has(state)) return NextResponse.json({ ok: false, error: "Choose a valid state." }, { status: 400 });
+    if (zipCode.length > 10) return NextResponse.json({ ok: false, error: "Zip code is too long." }, { status: 400 });
+    update.city = city || null;
+    update.state = state || null;
+    update.zip_code = zipCode || null;
+  }
+  if (!Object.keys(update).length) return NextResponse.json({ ok: false, error: "Nothing to update." }, { status: 400 });
+
   const service = createSupabaseServiceRoleClient();
-  // Only change the display name; IDs, provider metadata and score references stay intact.
-  const { data, error } = await service.from("live_courses").update({ name }).eq("id", body.id).select("id, name").maybeSingle();
-  if (error) return NextResponse.json({ ok: false, error: "Could not rename the course. Please try again." }, { status: 500 });
+  const { data, error } = await service.from("live_courses").update(update).eq("id", body.id).select("id, name, city, state, zip_code").maybeSingle();
+  if (error) return NextResponse.json({ ok: false, error: "Could not save the course. Please try again." }, { status: 500 });
   if (!data) return NextResponse.json({ ok: false, error: "Course not found. Refresh the library." }, { status: 404 });
-  return NextResponse.json({ ok: true, course: data });
+  return NextResponse.json({ ok: true, course: { id: data.id, name: data.name, city: data.city, state: data.state, zipCode: data.zip_code } });
 }
 
 export async function DELETE(request: Request) {

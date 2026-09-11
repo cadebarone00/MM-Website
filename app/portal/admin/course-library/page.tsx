@@ -11,7 +11,7 @@ export default async function CourseLibraryPage() {
   if (!profile?.is_host) redirect("/");
 
   const service = createSupabaseServiceRoleClient();
-  const { data } = await service.from("live_courses").select("id, name, holes, rating, slope, tee_sets").order("name");
-  const courses: LiveCourse[] = (data ?? []).map((course) => ({ id: course.id, name: course.name, holes: course.holes as LiveHole[], rating: course.rating, slope: course.slope, teeSets: Array.isArray(course.tee_sets) ? course.tee_sets : [] }));
+  const { data } = await service.from("live_courses").select("id, name, holes, rating, slope, tee_sets, city, state, zip_code").order("name");
+  const courses: LiveCourse[] = (data ?? []).map((course) => ({ id: course.id, name: course.name, holes: course.holes as LiveHole[], rating: course.rating, slope: course.slope, teeSets: Array.isArray(course.tee_sets) ? course.tee_sets : [], city: course.city, state: course.state, zipCode: course.zip_code }));
   return <main className="mx-auto max-w-4xl px-4 py-8 sm:px-7"><CourseLibraryPanel initialCourses={courses} /></main>;
 }

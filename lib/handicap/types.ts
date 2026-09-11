@@ -27,6 +27,8 @@ export interface HandicapCourseTeeSet {
 export interface HandicapCourseOption {
   id: string;
   name: string;
+  city: string | null;
+  state: string | null; // two-letter code, e.g. "TX"
   teeSets: HandicapCourseTeeSet[];
 }
 

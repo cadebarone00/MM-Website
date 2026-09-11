@@ -3,7 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { LiveCourse } from "@/lib/live/types";
+import { formatCourseLocation } from "@/lib/data/courseLocation";
 import { CourseNameEditor } from "./CourseNameEditor";
+import { CourseLocationEditor } from "./CourseLocationEditor";
 import { DeleteCourseButton } from "./DeleteCourseButton";
 
 import { CourseCsvImport } from "./CourseCsvImport";
@@ -42,10 +44,15 @@ export function CourseLibraryPanel({ initialCourses }: { initialCourses: LiveCou
       {message && <p role="status" className="mt-3 text-sm text-maroon-700">{message}</p>}
       <div className="mt-3 flex flex-col gap-2">{visible.map((course) => {
         const locked = course.teeSets?.filter((tee) => tee.locked).length ?? 0;
+        const location = formatCourseLocation(course.city, course.state);
         return <article key={course.id} className="flex flex-wrap items-start gap-x-5 gap-y-2 rounded-lg border border-stone-300 bg-white p-3">
-          <div className="min-w-[8rem] flex-1 basis-32">
+          <div className="min-w-[11rem] flex-1 basis-48">
             <h3 className="truncate font-serif text-sm font-bold">{course.name}</h3>
-            <CourseNameEditor id={course.id} name={course.name} onSaved={(name) => save({ ...course, name })} />
+            <div className="mt-1 flex flex-wrap items-start justify-between gap-x-3">
+              {location && <p className="text-xs text-ink-500">{location}</p>}
+              <CourseNameEditor id={course.id} name={course.name} onSaved={(name) => save({ ...course, name })} />
+            </div>
+            <CourseLocationEditor id={course.id} city={course.city ?? null} state={course.state ?? null} zipCode={course.zipCode ?? null} onSaved={(loc) => save({ ...course, ...loc })} />
           </div>
           <div className="min-w-[9rem] flex-1 basis-40">
             <p className="text-xs text-ink-600">{course.teeSets?.length ?? 1} tee sets · {locked} available</p>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { HandicapCourseOption, HandicapCourseTeeSet, HandicapHoleInput } from "@/lib/handicap/types";
+import { formatCourseLocation } from "@/lib/data/courseLocation";
 import { HandicapCourseLookup } from "./HandicapCourseLookup";
 import { HandicapHoleEntry } from "./HandicapHoleEntry";
 import { HandicapRoundReview } from "./HandicapRoundReview";
@@ -77,13 +78,17 @@ export function HandicapRoundWizard({ courses, recentCourseIds, playerName }: { 
 
   const course = state.course;
   const selectedTeeSet = course.teeSets.find((t) => t.id === teeSetId) ?? null;
+  const courseLocation = formatCourseLocation(course.city, course.state);
 
   return (
     <div className="rounded-md border border-ink-100 bg-white p-4">
       <h1 className="font-serif text-2xl font-bold text-ink-900">Submit a score</h1>
       <div className="mt-4 flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2 rounded-sm border border-ink-200 px-3 py-2">
-          <span className="font-sans text-sm text-ink-900">{course.name}</span>
+          <span className="font-sans text-sm text-ink-900">
+            {course.name}
+            {formatCourseLocation(course.city, course.state) && <span className="block text-xs text-ink-500">{formatCourseLocation(course.city, course.state)}</span>}
+          </span>
           <button
             type="button"
             onClick={() => setState({ step: "course" })}

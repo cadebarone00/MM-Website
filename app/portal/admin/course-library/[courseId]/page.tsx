@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { CourseNameEditor } from "@/components/portal/tiger/CourseNameEditor";
+import { CourseLocationEditor } from "@/components/portal/tiger/CourseLocationEditor";
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { CourseTeeSetEditor } from "@/components/portal/tiger/CourseTeeSetEditor";
 import type { LiveCourse, LiveHole } from "@/lib/live/types";
+import { formatCourseLocation } from "@/lib/data/courseLocation";
 
 export default async function EditCoursePage({ params }: { params: Promise<{ courseId: string }> }) {
   const { courseId } = await params;
@@ -13,8 +15,9 @@ export default async function EditCoursePage({ params }: { params: Promise<{ cou
   const { data: profile } = await supabase.from("profiles").select("is_host").eq("id", user.id).single();
   if (!profile?.is_host) redirect("/");
   const service = createSupabaseServiceRoleClient();
-  const { data } = await service.from("live_courses").select("id, name, holes, rating, slope, tee_sets").eq("id", courseId).maybeSingle();
+  const { data } = await service.from("live_courses").select("id, name, holes, rating, slope, tee_sets, city, state, zip_code").eq("id", courseId).maybeSingle();
   if (!data) notFound();
-  const course: LiveCourse = { id: data.id, name: data.name, holes: data.holes as LiveHole[], rating: data.rating, slope: data.slope, teeSets: Array.isArray(data.tee_sets) ? data.tee_sets : [] };
-  return <main className="mx-auto max-w-4xl px-4 py-8 sm:px-7"><Link href="/portal/admin/course-library" className="font-condensed text-xs font-bold uppercase tracking-wide text-ink-500 hover:text-maroon-700">← Course Library</Link><section className="mt-5 rounded-xl border border-gold-300 bg-cream-50 p-5"><p className="font-condensed text-2xs font-bold uppercase tracking-[0.16em] text-ink-500">Global course</p><h1 className="mt-1 font-serif text-3xl font-bold text-ink-900">{course.name}</h1><CourseNameEditor id={course.id} name={course.name} /><p className="mt-2 font-sans text-sm text-ink-600">Create every tee set here. Each has its own yardages, course rating, and slope; individual rounds can mix these tee sets hole by hole.</p><CourseTeeSetEditor course={course} /></section></main>;
+  const course: LiveCourse = { id: data.id, name: data.name, holes: data.holes as LiveHole[], rating: data.rating, slope: data.slope, teeSets: Array.isArray(data.tee_sets) ? data.tee_sets : [], city: data.city, state: data.state, zipCode: data.zip_code };
+  const location = formatCourseLocation(course.city, course.state);
+  return <main className="mx-auto max-w-4xl px-4 py-8 sm:px-7"><Link href="/portal/admin/course-library" className="font-condensed text-xs font-bold uppercase tracking-wide text-ink-500 hover:text-maroon-700">← Course Library</Link><section className="mt-5 rounded-xl border border-gold-300 bg-cream-50 p-5"><p className="font-condensed text-2xs font-bold uppercase tracking-[0.16em] text-ink-500">Global course</p><h1 className="mt-1 font-serif text-3xl font-bold text-ink-900">{course.name}</h1>{location && <p className="mt-1 text-sm text-ink-500">{location}</p>}<div className="mt-2 flex flex-wrap gap-x-5"><CourseNameEditor id={course.id} name={course.name} /><CourseLocationEditor id={course.id} city={course.city ?? null} state={course.state ?? null} zipCode={course.zipCode ?? null} /></div><p className="mt-2 font-sans text-sm text-ink-600">Create every tee set here. Each has its own yardages, course rating, and slope; individual rounds can mix these tee sets hole by hole.</p><CourseTeeSetEditor course={course} /></section></main>;
 }
