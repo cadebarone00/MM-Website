@@ -8,96 +8,58 @@
 // rounds have an individual score to count. Alternate Shot/Foursomes
 // rounds never get an archived per-player scorecard in the first place
 // (confirmed with Cade, 2026-09-11) — a player doesn't play their own ball
-// the whole round — so they're simply skipped, never zeroed out.
+// the whole round — so they never show up here to tag.
 //
-// The archive doesn't record which schedule match a round came from, so
-// this matches by ORDER: for one player in one tournament, take their
-// scheduled Fourball/Singles matches in chronological order (day, then
-// Morning before Afternoon) and zip that 1:1 with their archived rounds
-// sorted by round number. Verified against the one tournament with real
-// dates already recorded — 2026-palm-springs rounds 1-3 land on exactly
-// the days the schedule says they should.
-//
-// Safe to re-run: never overwrites a format that's already set, and only
-// touches a player/tournament pair where the schedule's eligible-match
-// count (plus any MANUAL_ROUND_FORMAT entries below) exactly equals the
-// archived-round count — anything else is reported, never guessed.
+// Requires the round's `round` number to already be the TRUE round of the
+// trip (Alternate Shot included in the count, even though it has no row) —
+// see tournamentRoundSequence.ts and scripts/rebuild-2026-round-numbering.ts,
+// which is what makes 2026-palm-springs eligible for this script. A
+// tournament whose rounds haven't been renumbered that way yet is skipped
+// entirely (reported, never guessed) until it's ready.
 import { createSupabaseServiceRoleClient } from "../lib/supabase/server";
-import { isIndividualScoreFormat } from "../lib/handicap/archiveIndex";
+import { tournamentRoundSequence } from "../lib/data/tournamentRoundSequence";
 import { palmSprings2026 } from "../lib/data/2026-palm-springs";
 import { danzante2025 } from "../lib/data/2025-danzante";
-import type { RealMatch, Tournament } from "../lib/data/types";
+import type { Tournament } from "../lib/data/types";
 
-// 2025-danzante has 5 archived rounds per player but the schedule below
-// only accounts for 4 (2 Fourball + 2 Singles) — round 5 has no schedule
-// entry at all (likely a stroke-play/individual day that was never part
-// of `matches`). Fill in its real format here once confirmed; left empty,
-// round 5 is reported but not written.
-const MANUAL_ROUND_FORMAT: Record<string, Record<number, string>> = {
-  "2025-danzante": {
-    // 5: "Singles",
-  },
-};
-
-function sessionOrder(match: RealMatch): number {
-  return match.day * 2 + (match.session === "Afternoon" ? 1 : 0);
-}
-
-function eligibleMatchesForPlayer(tournament: Tournament, playerSlug: string): RealMatch[] {
-  return tournament.matches
-    .filter((m) => (m.maroonPlayers.includes(playerSlug) || m.whitePlayers.includes(playerSlug)) && isIndividualScoreFormat(m.format))
-    .sort((a, b) => sessionOrder(a) - sessionOrder(b));
-}
+// Tournaments whose archived `round` numbers are confirmed to already be
+// the TRUE round-of-the-trip numbering. Add a tournament here only after
+// its one-time renumbering script has been run — see
+// scripts/rebuild-2026-round-numbering.ts for the 2026 example.
+const READY_TOURNAMENTS: Tournament[] = [palmSprings2026];
+void danzante2025; // not ready yet — round 5 of 5 has no schedule match (see chat 2026-09-11); add here once resolved and renumbered.
 
 async function main() {
   const apply = process.argv.includes("--apply");
   const service = createSupabaseServiceRoleClient();
-  const tournaments: Tournament[] = [palmSprings2026, danzante2025];
   const toWrite: { id: string; player: string; round: number; course: string; format: string }[] = [];
-  let skippedPairs = 0;
 
-  for (const tournament of tournaments) {
-    const manual = MANUAL_ROUND_FORMAT[tournament.slug] ?? {};
-    const players = [...tournament.roster.maroon, ...tournament.roster.white];
+  for (const tournament of READY_TOURNAMENTS) {
+    const sequence = tournamentRoundSequence(tournament);
     console.log(`\n=== ${tournament.slug} ===`);
-
-    for (const playerSlug of players) {
-      const eligible = eligibleMatchesForPlayer(tournament, playerSlug);
-      const { data: rounds, error } = await service
-        .from("archived_scorecard_rounds")
-        .select("id, round, course, format")
-        .eq("tournament_slug", tournament.slug)
-        .eq("player_slug", playerSlug)
-        .order("round");
-      if (error) {
-        console.error(`  ${playerSlug}: query failed — ${error.message}`);
+    const { data: rows, error } = await service
+      .from("archived_scorecard_rounds")
+      .select("id, player_slug, round, course, format")
+      .eq("tournament_slug", tournament.slug)
+      .order("player_slug")
+      .order("round");
+    if (error) {
+      console.error(`  query failed — ${error.message}`);
+      continue;
+    }
+    for (const row of rows ?? []) {
+      if (row.format) continue; // never overwrite an existing value
+      const format = sequence[row.round - 1]?.format;
+      if (!format) {
+        console.log(`  ${row.player_slug} round ${row.round} (${row.course}): no schedule entry for this round number — skipped`);
         continue;
       }
-
-      const expectedCount = eligible.length + Object.keys(manual).length;
-      if ((rounds?.length ?? 0) !== expectedCount) {
-        console.log(`  ${playerSlug}: SKIPPED — ${rounds?.length ?? 0} archived rounds vs ${eligible.length} eligible schedule matches + ${Object.keys(manual).length} manual. Not touching this player.`);
-        skippedPairs++;
-        continue;
-      }
-
-      let eligibleIndex = 0;
-      for (const round of rounds ?? []) {
-        const manualFormat = manual[round.round];
-        const scheduledFormat = manualFormat ?? eligible[eligibleIndex]?.format;
-        if (manualFormat === undefined) eligibleIndex++;
-        if (round.format) continue; // never overwrite an existing value
-        if (!scheduledFormat) {
-          console.log(`  ${playerSlug} round ${round.round} (${round.course}): no format available yet (add it to MANUAL_ROUND_FORMAT)`);
-          continue;
-        }
-        console.log(`  ${playerSlug} round ${round.round} (${round.course}): -> "${scheduledFormat}"`);
-        toWrite.push({ id: round.id, player: playerSlug, round: round.round, course: round.course, format: scheduledFormat });
-      }
+      console.log(`  ${row.player_slug} round ${row.round} (${row.course}): -> "${format}"`);
+      toWrite.push({ id: row.id, player: row.player_slug, round: row.round, course: row.course, format });
     }
   }
 
-  console.log(`\n${toWrite.length} rows would be tagged. ${skippedPairs} player/tournament pairs skipped (count mismatch, needs a look).`);
+  console.log(`\n${toWrite.length} rows would be tagged.`);
   if (!apply) {
     console.log("Dry run only — nothing written. Re-run with --apply to save these.");
     return;
