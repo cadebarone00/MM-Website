@@ -1,13 +1,15 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { PortalMatches, type PortalMatch } from "@/components/portal/PortalMatches";
+import { PortalMatches } from "@/components/portal/PortalMatches";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { findPlayerTeam } from "@/lib/portal/findPlayerTeam";
-import { findMatchesForPlayer, matchupLabel } from "@/lib/live/currentRoundForPlayer";
+import { findMatchesForPlayer } from "@/lib/live/currentRoundForPlayer";
 import { pastTournaments } from "@/lib/data";
 import { archivedMatchesForPlayer } from "@/lib/portal/archivedMatches";
+import { buildLiveMatchCards } from "@/lib/portal/liveMatchCards";
+import type { PortalMatchCard } from "@/lib/portal/matchCards";
 import { getHandicapSummaryForPlayer } from "@/lib/handicap/data";
 import { Avatar } from "@/components/ui/Avatar";
 
@@ -33,12 +35,7 @@ export default async function PortalPage() {
       return { index: null, lowIndex: null, rounds: [] };
     }),
   ]);
-  const matches: PortalMatch[] = upcomingMatches.map((match) => ({
-    id: match.matchBox.id ?? `round-${match.round.round}-box-${match.matchBox.boxNumber}`,
-    label: matchupLabel(playerSlug, match.matchBox),
-    details: `Round ${match.round.round} ? ${match.matchBox.format} ? ${match.matchBox.teeTime.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" })} CT`,
-    status: match.state === "Final" ? "Past" : match.state === "Live" ? "Live" : "Upcoming",
-  }));
+  const matches: PortalMatchCard[] = await buildLiveMatchCards(upcomingMatches);
   if (archivedTournament) matches.push(...archivedMatchesForPlayer(archivedTournament, playerSlug));
   const teamName = team ? `Team ${team === "maroon" ? "Maroon" : "White"}` : "Team pending";
   const heroTextClass = team === "maroon" ? "text-maroon-300" : "text-white";
