@@ -1,3 +1,4 @@
+import { getPlayerSlug } from "./players";
 export type FeedRecord = Record<string, unknown>;
 export type MatchLeader = "maroon" | "white" | "tie";
 
@@ -78,8 +79,8 @@ export function normalizeMatch(item: unknown, index: number): WebsiteMatch {
     day: asNumber(match.day, 1),
     session: asSession(match.session),
     format: String(match.format ?? "Fourball"),
-    maroonPlayers: asStringArray(match.maroonPlayers ?? match.maroon_players),
-    whitePlayers: asStringArray(match.whitePlayers ?? match.white_players),
+    maroonPlayers: asStringArray(match.maroonPlayers ?? match.maroon_players).map(getPlayerSlug),
+    whitePlayers: asStringArray(match.whitePlayers ?? match.white_players).map(getPlayerSlug),
     maroonPts: asNumber(match.maroonPts ?? match.maroon_points),
     whitePts: asNumber(match.whitePts ?? match.white_points),
     status: mapStatus(match.state ?? match.status),
