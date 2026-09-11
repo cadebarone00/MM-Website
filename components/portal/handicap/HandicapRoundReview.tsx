@@ -20,6 +20,7 @@ export function HandicapRoundReview({
   const [error, setError] = useState<string | null>(null);
 
   const totalScore = holes.reduce((sum, h) => sum + h.score, 0);
+  const courseLocation = formatCourseLocation(setup.course.city, setup.course.state);
 
   async function handleSubmit() {
     setSubmitting(true);
@@ -55,6 +56,7 @@ export function HandicapRoundReview({
         <h1 className="font-serif text-2xl font-bold text-ink-900">Review round</h1>
         <button type="button" onClick={onBack} disabled={submitting} className="font-condensed text-xs font-semibold uppercase tracking-wide text-maroon-700">Back</button>
       </div>
+      {courseLocation && <p className="mt-1 font-sans text-xs text-ink-500">{courseLocation}</p>}
       <p className="mt-1 font-sans text-sm text-ink-600">{setup.course.name} · {setup.teeSet.name} · Rating {setup.teeSet.rating} · Slope {setup.teeSet.slope}</p>
 
       <div className="mt-3 flex flex-col gap-1">
