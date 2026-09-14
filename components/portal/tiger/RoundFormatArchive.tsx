@@ -5,6 +5,8 @@ import { getPlayerDisplayName } from "@/lib/data/players";
 import { formatRoundLabel } from "@/lib/data/roundLabel";
 import { groupRoundFormatArchiveByDay, type RoundFormatEntry, type RoundFormatMatchup } from "@/lib/data/roundFormatArchive";
 import type { OrphanArchivedRound } from "@/lib/data/archivedScorecards";
+import type { HandicapCourseOption } from "@/lib/handicap/types";
+import { RoundFormatSetupForm } from "./RoundFormatSetupForm";
 
 export interface RoundFormatTournament {
   slug: string;
@@ -46,19 +48,19 @@ function MatchBox({ matchup }: { matchup: RoundFormatMatchup }) {
   );
 }
 
-function SetupDetails({ setup }: { setup: RoundFormatEntry["setup"] }) {
-  if (!setup) return null;
+function SetupDetails({ seasonYear, round, setup, courses }: { seasonYear: number; round: number; setup: RoundFormatEntry["setup"]; courses: HandicapCourseOption[] }) {
+  if (!setup) return <RoundFormatSetupForm seasonYear={seasonYear} round={round} courses={courses} />;
   return <p className="mt-2 font-sans text-xs text-ink-600">{setup.courseName} &middot; {setup.teeSetup.teeSetName} &middot; Rating {setup.teeSetup.rating ?? "Pending"} / Slope {setup.teeSetup.slope ?? "Pending"} &middot; {dateLabel(setup.datePlayed)}</p>;
 }
 
-function SessionBox({ session, entry }: { session: "Morning" | "Afternoon"; entry: RoundFormatEntry | null }) {
+function SessionBox({ session, entry, seasonYear, courses }: { session: "Morning" | "Afternoon"; entry: RoundFormatEntry | null; seasonYear: number; courses: HandicapCourseOption[] }) {
   return (
     <div className="flex-1 rounded-xl border border-gold-300 bg-cream-50 p-3">
       <p className="font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700">
         {session}
         {entry && <span className="text-ink-500"> · {formatRoundLabel(entry.round)} · {entry.format}</span>}
       </p>
-      <SetupDetails setup={entry?.setup} />
+      {entry && <SetupDetails seasonYear={seasonYear} round={entry.round} setup={entry.setup} courses={courses} />}
       {!entry ? (
         <p className="mt-2 font-sans text-sm text-ink-400">No Rounds Played</p>
       ) : (
@@ -109,7 +111,7 @@ function DaySelector({ options, activeKey, onSelect }: { options: { key: string;
   );
 }
 
-function YearArchive({ tournament }: { tournament: RoundFormatTournament }) {
+function YearArchive({ tournament, courses }: { tournament: RoundFormatTournament; courses: HandicapCourseOption[] }) {
   const days = groupRoundFormatArchiveByDay(tournament.entries, tournament.dayDates);
   const dayOptions = days.map((d) => ({ key: String(d.day), label: tournament.dayDates[d.day] ? `Day ${d.day} · ${dateLabel(tournament.dayDates[d.day])}` : `Day ${d.day}` }));
   // Round INDI never fits the Day/Morning/Afternoon structure — no day, no
@@ -127,7 +129,7 @@ function YearArchive({ tournament }: { tournament: RoundFormatTournament }) {
         {tournament.orphans.map((orphan) => (
           <div key={orphan.round} className="rounded-xl border border-gold-300 bg-cream-50 p-3">
             <p className="font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700">{formatRoundLabel(orphan.round)} · {orphan.format ?? "Format not set"}</p>
-            <SetupDetails setup={orphan.setup} />
+            <SetupDetails seasonYear={tournament.year} round={orphan.round} setup={orphan.setup} courses={courses} />
             <p className="mt-1 font-sans text-xs text-ink-500">Not part of the Maroon-vs-White match play schedule.</p>
             <p className="mt-2 font-sans text-sm text-ink-900">{names(orphan.players).join(", ")}</p>
           </div>
@@ -141,8 +143,8 @@ function YearArchive({ tournament }: { tournament: RoundFormatTournament }) {
     <div>
       <DaySelector options={options} activeKey={activeKey} onSelect={setActiveKey} />
       <div className="flex flex-col gap-3 sm:flex-row">
-        <SessionBox session="Morning" entry={activeDay.morning} />
-        <SessionBox session="Afternoon" entry={activeDay.afternoon} />
+        <SessionBox session="Morning" entry={activeDay.morning} seasonYear={tournament.year} courses={courses} />
+        <SessionBox session="Afternoon" entry={activeDay.afternoon} seasonYear={tournament.year} courses={courses} />
       </div>
     </div>
   );
@@ -156,7 +158,7 @@ function YearArchive({ tournament }: { tournament: RoundFormatTournament }) {
  * hand-reconciled) plus any archived round outside that schedule (like
  * 2025's Round INDI).
  */
-export function RoundFormatArchive({ tournaments }: { tournaments: RoundFormatTournament[] }) {
+export function RoundFormatArchive({ tournaments, courses }: { tournaments: RoundFormatTournament[]; courses: HandicapCourseOption[] }) {
   const [slug, setSlug] = useState(tournaments[0]?.slug);
   const active = tournaments.find((t) => t.slug === slug) ?? tournaments[0];
   if (!active) return null;
@@ -178,7 +180,7 @@ export function RoundFormatArchive({ tournaments }: { tournaments: RoundFormatTo
           </button>
         ))}
       </div>
-      <div className="mt-4"><YearArchive key={active.slug} tournament={active} /></div>
+      <div className="mt-4"><YearArchive key={active.slug} tournament={active} courses={courses} /></div>
     </section>
   );
 }
