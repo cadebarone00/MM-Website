@@ -76,6 +76,9 @@ export async function GET(request: Request) {
     const { data: course } = await service.from("live_courses").select("holes").eq("id", roundState.course_id).single();
     holes = Array.isArray(course?.holes) ? (course.holes as { number: number; par: number; yards: number }[]) : [];
   }
+  if (Array.isArray(roundState?.course_setup?.holes)) {
+    holes = roundState.course_setup.holes;
+  }
 
   return NextResponse.json(
     {

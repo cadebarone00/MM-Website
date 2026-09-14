@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTournament } from "@/lib/data";
 import { getArchivedRoundLabels } from "@/lib/data/archivedScorecards";
 import { getPlayerProfileBySlug, getPlayerDisplayName } from "@/lib/data/players";
+import { formatRoundLabel } from "@/lib/data/roundLabel";
 
 export default async function ScorecardsRoundPickerPage({ params }: { params: Promise<{ tournament: string; player: string }> }) {
   const supabase = await createSupabaseServerClient();
@@ -38,7 +39,7 @@ export default async function ScorecardsRoundPickerPage({ params }: { params: Pr
               href={`/portal/admin/scorecards/${tournamentSlug}/${playerSlug}/${r.round}`}
               className="block rounded-lg border-2 border-stone-300 px-4 py-3 font-serif text-lg font-bold text-ink-900 hover:border-maroon-700"
             >
-              Round {r.round} — {r.course}
+              {formatRoundLabel(r.round)} — {r.course}
               {r.format && <span className="ml-2 font-sans text-sm font-normal text-ink-500">({r.format})</span>}
             </Link>
           ))}

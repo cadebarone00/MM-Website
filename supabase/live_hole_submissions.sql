@@ -1,4 +1,5 @@
--- Apply after live_match_publication.sql. Submit Score is one atomic transaction.
+-- Apply after live_match_publication.sql and course_library_tee_setups.sql.
+-- Submit Score is one atomic transaction. Deploy this before the scoring UI.
 begin;
 
 create table if not exists public.live_hole_submissions (
@@ -10,6 +11,8 @@ create table if not exists public.live_hole_submissions (
   primary key (match_box_id, player_slug, hole)
 );
 alter table public.live_hole_submissions enable row level security;
+grant select on public.live_hole_submissions to authenticated;
+grant all on public.live_hole_submissions to service_role;
 drop policy if exists live_hole_submissions_read on public.live_hole_submissions;
 create policy live_hole_submissions_read on public.live_hole_submissions for select to authenticated
 using (exists (

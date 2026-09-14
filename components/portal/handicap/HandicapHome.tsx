@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { Team } from "@/lib/data";
 import type { ArchivedHandicapRound, HandicapSummary } from "@/lib/handicap/types";
 import { handicapHistory, selectHandicapScores, type ScoreView } from "@/lib/handicap/history";
+import { formatRoundLabel } from "@/lib/data/roundLabel";
 
 function formatDate(iso: string): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -84,7 +85,7 @@ export function HandicapHome({ playerName, summary, archivedRounds, team }: { pl
                   <p className="mt-0.5 font-sans text-[10px] text-ink-500">{entry.source === "archive" ? entry.round.holesPlayed : 18} holes</p>
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate font-sans text-xs text-ink-600">{entry.source === "submitted" ? formatDate(entry.round.datePlayed) : `${entry.round.tournamentLabel} · Round ${entry.round.round}`}</p>
+                  <p className="truncate font-sans text-xs text-ink-600">{entry.source === "submitted" ? formatDate(entry.round.datePlayed) : `${entry.round.tournamentLabel} · ${formatRoundLabel(entry.round.round)}`}</p>
                   <h3 title={entry.round.courseName} className="mt-1 truncate font-sans text-sm font-semibold text-ink-900">{entry.round.courseName}</h3>
                   <p className="mt-0.5 truncate font-sans text-xs text-ink-500">{entry.source === "submitted" ? entry.round.teeSetName : entry.round.teeSetup?.teeSetName ?? entry.round.format}</p>
                 </div>

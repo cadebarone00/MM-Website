@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { HandicapCourseOption } from "@/lib/handicap/types";
+import { formatRoundLabel } from "@/lib/data/roundLabel";
 
 interface ArchiveRound {
   round: number;
@@ -50,7 +51,7 @@ export function ArchiveTeeAssigner({ tournamentSlug, rounds, courses }: { tourna
         setMessage({ ok: false, text: data.error ?? "Could not save this tee assignment." });
         return;
       }
-      setMessage({ ok: true, text: `Assigned tees to ${data.updated} player row${data.updated === 1 ? "" : "s"} for Round ${round}.` });
+      setMessage({ ok: true, text: `Assigned tees to ${data.updated} player row${data.updated === 1 ? "" : "s"} for ${formatRoundLabel(round)}.` });
       router.refresh();
     } catch {
       setMessage({ ok: false, text: "Could not reach the server. Try again." });
@@ -72,7 +73,7 @@ export function ArchiveTeeAssigner({ tournamentSlug, rounds, courses }: { tourna
           <select value={round} onChange={(e) => setRound(Number(e.target.value))} className="rounded-lg border-2 border-stone-300 px-2 py-2 font-sans text-sm">
             {rounds.map((r) => (
               <option key={r.round} value={r.round}>
-                Round {r.round} — {r.course}
+                {formatRoundLabel(r.round)} — {r.course}
                 {r.assigned ? " (assigned)" : ""}
               </option>
             ))}

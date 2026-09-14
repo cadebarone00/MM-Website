@@ -12,6 +12,7 @@ import { PlayerBioSection } from "./PlayerBioSection";
 import { StatsSection } from "@/components/stats/StatsSection";
 import { holePhotoCandidates } from "@/lib/data/holePhotos";
 import { getPlayerProfile } from "@/lib/data/players";
+import { formatRoundLabel } from "@/lib/data/roundLabel";
 import type { PlayerScorecard, RoundScorecard, Tournament } from "@/lib/data";
 
 // A finished round opens on hole 1. A round still in progress opens on
@@ -77,7 +78,7 @@ export function PlayerScorecardView({
         >
           {scorecard.rounds.map((r) => (
             <option key={r.round} value={String(r.round)}>
-              Round {r.round} – {r.course}
+              {formatRoundLabel(r.round)} – {r.course}
               {r.format ? ` (${r.format})` : ""}
             </option>
           ))}
@@ -158,7 +159,7 @@ export function PlayerScorecardView({
             </div>
           </>
         ) : (
-          <RoundVideoPlaceholder roundLabel={`Round ${active.round}`} />
+          <RoundVideoPlaceholder roundLabel={formatRoundLabel(active.round)} />
         )}
       </div>
 

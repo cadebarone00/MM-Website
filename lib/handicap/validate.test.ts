@@ -105,8 +105,13 @@ test("validateAssignArchiveTeesInput rejects a non-integer round", () => {
   assert.equal(result.ok, false);
 });
 
-test("validateAssignArchiveTeesInput rejects a round below 1", () => {
+test("validateAssignArchiveTeesInput accepts round 0 (the Round INDI sentinel)", () => {
   const result = validateAssignArchiveTeesInput(validAssignInput({ round: 0 }));
+  assert.equal(result.ok, true);
+});
+
+test("validateAssignArchiveTeesInput rejects a negative round", () => {
+  const result = validateAssignArchiveTeesInput(validAssignInput({ round: -1 }));
   assert.equal(result.ok, false);
 });
 

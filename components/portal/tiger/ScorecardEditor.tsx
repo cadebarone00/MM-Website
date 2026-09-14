@@ -9,6 +9,7 @@ import { MobileScorecardGrid } from "@/components/scorecard/MobileScorecardGrid"
 import { EditableHoleDetail } from "./EditableHoleDetail";
 import { EditableShotVideoPanel, type StagedVideo } from "./EditableShotVideoPanel";
 import type { HoleStat, RoundScorecard } from "@/lib/data";
+import { formatRoundLabel } from "@/lib/data/roundLabel";
 
 /**
  * Uploads a file straight to a Cloudflare R2 presigned PUT URL with real
@@ -251,9 +252,9 @@ export function ScorecardEditor({
         ← Back to rounds
       </button>
       <h1 className="mt-2 font-serif text-2xl font-bold text-ink-900">
-        {videoOnly ? "Round Video" : `Round ${initialScorecard.round} — ${initialScorecard.course}`}
+        {videoOnly ? "Round Video" : `${formatRoundLabel(initialScorecard.round)} — ${initialScorecard.course}`}
       </h1>
-      {videoOnly && <p className="mt-1 font-sans text-sm text-ink-500">Round {initialScorecard.round} — {initialScorecard.course}. Scores and stats are official and locked; you can upload video for any shot below.</p>}
+      {videoOnly && <p className="mt-1 font-sans text-sm text-ink-500">{formatRoundLabel(initialScorecard.round)} — {initialScorecard.course}. Scores and stats are official and locked; you can upload video for any shot below.</p>}
 
       {error && <p className="mt-3 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
       {savedMessage && <p className="mt-3 rounded-sm bg-green-50 px-3 py-2 font-sans text-sm text-green-700">{savedMessage}</p>}
