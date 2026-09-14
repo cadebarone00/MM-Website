@@ -256,20 +256,20 @@ export function ScoringPanel({
     {error && <p role="alert" className="mt-2 text-center text-sm text-red-700">{error}</p>}
 
     <div className="mt-3">
-      <p className="text-center font-condensed text-sm font-bold uppercase tracking-wide text-maroon-800">{isFoursome ? "Your team?s score" : "Your score"}</p>
+      <p className="text-center font-condensed text-sm font-bold uppercase tracking-wide text-maroon-800">{isFoursome ? "Your team score" : "Your score"}</p>
       <ScorePicker key={"self-" + selectedHole} ariaLabel={isFoursome ? "Your team score" : "Your score"} par={par} value={yourScore} disabled={locked || isFoursome || mine?.didNotFinish}
         onChange={(value) => submitStats(mine?.putts ?? 0, mine?.fir ?? null, mine?.gir ?? false, mine?.firDirection ?? null, mine?.girDirection ?? null, value)} />
       {isFoursome && <p className="text-center text-xs text-ink-500">Recorded by the opposing team</p>}
-      {mine?.didNotFinish && <p className="text-center text-xs text-ink-500">Did not finish ? double par</p>}
+      {mine?.didNotFinish && <p className="text-center text-xs text-ink-500">Did not finish - double par</p>}
     </div>
 
     {targets.length > 0 && <div className="mt-2">
-      <p className="text-center font-condensed text-sm font-bold uppercase tracking-wide text-maroon-800">{targetLabel} ? {isFoursome ? "team score" : "score"}</p>
+      <p className="text-center font-condensed text-sm font-bold uppercase tracking-wide text-maroon-800">{targetLabel} &middot; {isFoursome ? "team score" : "score"}</p>
       <ScorePicker key={"opponent-" + selectedHole} ariaLabel={targetLabel + " score"} par={par} value={opponentScore} disabled={locked}
         onChange={(value) => submitStroke(targets, value)} />
       {matchBox.format === "Fourball" && <button type="button" disabled={locked} aria-pressed={opponent?.didNotFinish ?? false}
         onClick={() => { if (window.confirm("Record double par for a player who did not finish this hole?")) void submitStroke(targets, 0, true); }}
-        className="mx-auto block text-xs text-ink-500 underline disabled:opacity-50">{opponent?.didNotFinish ? "Did not finish ? double par" : "Did not finish (X)"}</button>}
+        className="mx-auto block text-xs text-ink-500 underline disabled:opacity-50">{opponent?.didNotFinish ? "Did not finish - double par" : "Did not finish (X)"}</button>}
     </div>}
 
     {!isFoursome && !mine?.didNotFinish && <>
