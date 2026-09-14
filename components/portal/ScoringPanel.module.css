@@ -1,5 +1,5 @@
-/* Scoped to the live card, including both editor phones. Keep the shared
-   handicap controls at their usual size. 7rem is the two navigation bars. */
+/* Shared hole-entry layout, including both editor phones.
+   7rem is the two navigation bars. */
 .panel {
   --compass-size: 40px;
   --bubble-size: 52px;
@@ -38,6 +38,15 @@
 .actions > div { margin-top: 0; position: relative; }
 .actions button { min-height: 42px; padding-block: 6px; }
 .actions p { position: absolute; bottom: 100%; left: 0; right: 0; padding: 8px; background: #fff; border: 1px solid #c5a45d; border-radius: 4px; }
+.handicap { justify-content: space-between; }
+.handicap .scores { flex: 0 0 clamp(80px, 15dvh, 120px); min-height: 0; }
+.handicap .notice { height: 0; z-index: 1; }
+.handicap .notice p { bottom: auto; min-height: 28px; }
+.handicap .stats { margin-top: 6px; }
+.handicap .actions > button { min-height: 28px; padding-block: 4px; }
+:global([data-handicap-round-page]):has(.handicap) { padding-block: 0; }
+:global([data-handicap-round-page]):has(.handicap) > a { display: none; }
+:global([data-handicap-round-page]):has(.handicap) > div { margin-top: 0; }
 @media (max-height: 740px) {
   .panel { --compass-size: 36px; --bubble-size: 44px; gap: 2px; }
   .panel [data-hole-header] :global(.grid) { padding-block: 2px; font-size: 16px; line-height: 22px; }

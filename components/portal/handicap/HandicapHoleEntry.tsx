@@ -7,6 +7,7 @@ import { ScorePicker } from "@/components/portal/ScorePicker";
 import { PuttsPicker } from "@/components/portal/PuttsPicker";
 import { ShotDirectionPicker, type ShotResult } from "@/components/portal/ShotDirectionPicker";
 import { HoleActionBar } from "@/components/portal/HoleActionBar";
+import styles from "@/components/portal/ScoringPanel.module.css";
 
 type Draft = Record<number, { score: string; putts: string; fir: boolean; gir: boolean; firDirection: ShotDirection | null; girDirection: ShotDirection | null }>;
 
@@ -100,37 +101,27 @@ export function HandicapHoleEntry({
   const isLastHole = selectedHole === 18;
 
   return (
-    <div className="-mx-4 -mt-[3.25rem] bg-white sm:-mx-7 lg:mx-0 lg:mt-0">
-      <ScoringRoundHeader hole={selectedHole} par={hole.par} yards={hole.yards} totalScore={totalScore} toPar={toPar} />
-
-      <div className="flex flex-col px-4 pb-2 pt-5">
-        {error && <p role="alert" className="mb-2 rounded-sm bg-red-50 px-3 py-2 font-sans text-xs text-red-700">{error}</p>}
-
-        <ScorePicker ariaLabel={`Hole ${selectedHole} score`} par={hole.par} value={entry.score ? Number(entry.score) : null} onChange={(score) => setField(selectedHole, "score", String(score))} />
-
-        <div className="mt-4 grid grid-cols-2 divide-x divide-ink-200">
-          <div className="flex items-start justify-center">
-            {(
-              <ShotDirectionPicker label="Fairway" notApplicable={hole.par === 3} value={firValue} onChange={(result) => setShotResult(selectedHole, "fir", result)} />
-            )}
-          </div>
-          <div className="flex items-start justify-center">
-            <ShotDirectionPicker label="GIR" penaltyOption value={girValue} onChange={(result) => setShotResult(selectedHole, "gir", result)} />
-          </div>
-        </div>
-
-        <p className="mt-6 text-center font-condensed text-xs font-semibold uppercase tracking-wide text-ink-500">Putts</p>
-        <div className="mt-1">
-          <PuttsPicker ariaLabel={`Hole ${selectedHole} putts`} value={entry.putts ? Number(entry.putts) : null} onChange={(putts) => setField(selectedHole, "putts", String(putts))} />
+    <div className={styles.panel + " " + styles.handicap}>
+      <div data-hole-header className="-mx-4 sm:-mx-7"><ScoringRoundHeader hole={selectedHole} par={hole.par} yards={hole.yards} totalScore={totalScore} toPar={toPar} /></div>
+      <div className={styles.notice} aria-live="polite">{error && <p role="alert">{error}</p>}</div>
+      <div className={styles.scores}>
+        <div className="-mx-4 bg-white px-4 text-maroon-800 sm:-mx-7 sm:px-7">
+          <p className="text-center font-condensed font-bold uppercase tracking-wide">Your score</p>
+          <ScorePicker key={selectedHole} ariaLabel={"Hole " + selectedHole + " score"} par={hole.par} value={entry.score ? Number(entry.score) : null} onChange={(score) => setField(selectedHole, "score", String(score))} />
         </div>
       </div>
-
-      <div className="px-4 pb-3">
-        <HoleActionBar
-          nextLabel={isLastHole ? "Review Round" : "Next Hole"}
-          onNext={() => (isLastHole ? handleContinue() : setSelectedHole((h) => Math.min(h + 1, 18)))}
-        />
-        <button type="button" onClick={onBack} className="mt-4 font-condensed text-xs font-semibold uppercase tracking-wide text-maroon-700 underline">Edit setup</button>
+      <div className={styles.stats}>
+        <div data-compasses className="relative grid grid-cols-2 items-start gap-4">
+          <div aria-hidden className="absolute bottom-0 left-1/2 top-5 w-px bg-gold-400" />
+          <div className="flex justify-center"><ShotDirectionPicker label="Fairway" notApplicable={hole.par === 3} value={firValue} onChange={(result) => setShotResult(selectedHole, "fir", result)} /></div>
+          <div className="flex justify-center"><ShotDirectionPicker label="GIR" penaltyOption value={girValue} onChange={(result) => setShotResult(selectedHole, "gir", result)} /></div>
+        </div>
+        <p data-putts-label className="text-center font-condensed font-bold uppercase tracking-wide text-maroon-800">Putts</p>
+        <div className="mt-1"><PuttsPicker ariaLabel="Your putts" value={entry.putts ? Number(entry.putts) : null} onChange={(putts) => setField(selectedHole, "putts", String(putts))} /></div>
+      </div>
+      <div className={styles.actions}>
+        <HoleActionBar nextLabel={isLastHole ? "Review Round" : "Next Hole"} onNext={() => (isLastHole ? handleContinue() : setSelectedHole((h) => Math.min(h + 1, 18)))} />
+        <button type="button" onClick={onBack} className="mx-auto block font-condensed text-xs font-semibold uppercase tracking-wide text-maroon-700 underline">Edit setup</button>
       </div>
     </div>
   );
