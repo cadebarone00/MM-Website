@@ -4,6 +4,7 @@ import { tournamentRoundSequence } from "./tournamentRoundSequence";
 export interface RoundFormatMatchup {
   side: string[]; // player slugs — the lone player for Singles, both partners for Fourball/Alt Shot
   opponent: string[];
+  teeTime?: string; // RealMatch.teeTimeCst — blank for every historical match until hand-entered
 }
 
 export interface RoundFormatEntry {
@@ -12,6 +13,30 @@ export interface RoundFormatEntry {
   session: "Morning" | "Afternoon";
   format: string;
   matchups: RoundFormatMatchup[];
+}
+
+export interface RoundFormatDayGroup {
+  day: number;
+  date: string | null; // from Tournament.dayDates, hand-entered separately — null until filled in
+  morning: RoundFormatEntry | null; // null = no round that session ("No Rounds Played")
+  afternoon: RoundFormatEntry | null;
+}
+
+/**
+ * `roundFormatArchive`'s entries regrouped by day, one Morning/Afternoon
+ * slot each (either can be empty — a day doesn't always have both). Pure —
+ * no I/O. `dayDates` is optional and separate from the schedule itself
+ * (see Tournament.dayDates); a day with no entry there just shows without
+ * a date rather than guessing one.
+ */
+export function groupRoundFormatArchiveByDay(entries: RoundFormatEntry[], dayDates: Record<number, string> = {}): RoundFormatDayGroup[] {
+  const days = [...new Set(entries.map((entry) => entry.day))].sort((a, b) => a - b);
+  return days.map((day) => ({
+    day,
+    date: dayDates[day] ?? null,
+    morning: entries.find((entry) => entry.day === day && entry.session === "Morning") ?? null,
+    afternoon: entries.find((entry) => entry.day === day && entry.session === "Afternoon") ?? null,
+  }));
 }
 
 /**
@@ -30,6 +55,6 @@ export function roundFormatArchive(tournament: Pick<Tournament, "matches">): Rou
     format: representative.format,
     matchups: tournament.matches
       .filter((match) => match.day === representative.day && match.session === representative.session)
-      .map((match) => ({ side: match.maroonPlayers, opponent: match.whitePlayers })),
+      .map((match) => ({ side: match.maroonPlayers, opponent: match.whitePlayers, teeTime: match.teeTimeCst })),
   }));
 }

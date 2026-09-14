@@ -21,7 +21,7 @@ export default async function ScorecardsYearPickerPage({ searchParams }: { searc
   const activeTournament = pastTournaments.find((t) => t.slug === tournamentSlug) ?? latestCompleted;
   const [archiveRounds, courses] = await Promise.all([
     getArchivedTournamentRounds(activeTournament.slug),
-    getCourseLibraryForHandicap(),
+    getCourseLibraryForHandicap(true),
   ]);
 
   return (
@@ -51,7 +51,7 @@ export default async function ScorecardsYearPickerPage({ searchParams }: { searc
         })}
       </div>
 
-      <ArchiveTeeAssigner tournamentSlug={activeTournament.slug} rounds={archiveRounds} courses={courses} />
+      <ArchiveTeeAssigner key={activeTournament.slug} tournamentSlug={activeTournament.slug} rounds={archiveRounds} courses={courses} />
     </div>
   );
 }

@@ -53,6 +53,7 @@ export interface HandicapSummary {
 }
 
 export interface ArchivedHandicapRound {
+  courseLibraryId?: string | null;
   datePlayed?: string | null;
   teeSetup?: ArchivedTeeSetup | null;
   live?: boolean;

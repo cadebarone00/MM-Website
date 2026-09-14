@@ -1,21 +1,144 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import { formatRoundLabel } from "@/lib/data/roundLabel";
-import type { RoundFormatEntry } from "@/lib/data/roundFormatArchive";
+import { groupRoundFormatArchiveByDay, type RoundFormatEntry, type RoundFormatMatchup } from "@/lib/data/roundFormatArchive";
 import type { OrphanArchivedRound } from "@/lib/data/archivedScorecards";
-import { Tabs } from "@/components/ui/Tabs";
 
 export interface RoundFormatTournament {
   slug: string;
-  editionLabel: string;
+  year: number;
+  venue: string;
   entries: RoundFormatEntry[];
   orphans: OrphanArchivedRound[];
+  dayDates: Record<number, string>;
 }
 
-function names(slugs: string[]): string {
-  return slugs.map(getPlayerDisplayName).join(" & ");
+function names(slugs: string[]): string[] {
+  return slugs.map(getPlayerDisplayName);
+}
+
+function dateLabel(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+/** A single match's box — Fourball/Alt Shot get the full 2-per-side card; Singles gets a narrower one sized to just the two opponents, per Cade (2026-09-14). */
+function MatchBox({ matchup }: { matchup: RoundFormatMatchup }) {
+  const singles = matchup.side.length === 1 && matchup.opponent.length === 1;
+  return (
+    <div className={`rounded-lg border border-gold-200 bg-white p-3 ${singles ? "mx-auto w-fit" : ""}`}>
+      <p className="text-center font-condensed text-2xs font-bold uppercase tracking-wide text-ink-400">{matchup.teeTime ?? "Tee time TBD"}</p>
+      <div className={`mt-2 flex items-center gap-3 ${singles ? "" : "justify-between"}`}>
+        <div className={singles ? "" : "flex-1 text-right"}>
+          {names(matchup.side).map((name) => (
+            <p key={name} className="font-sans text-sm font-semibold text-maroon-700 whitespace-nowrap">{name}</p>
+          ))}
+        </div>
+        <span className="shrink-0 font-condensed text-2xs font-bold uppercase text-ink-400">vs</span>
+        <div className={singles ? "" : "flex-1"}>
+          {names(matchup.opponent).map((name) => (
+            <p key={name} className="font-sans text-sm font-semibold text-ink-900 whitespace-nowrap">{name}</p>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SessionBox({ session, entry }: { session: "Morning" | "Afternoon"; entry: RoundFormatEntry | null }) {
+  return (
+    <div className="flex-1 rounded-xl border border-gold-300 bg-cream-50 p-3">
+      <p className="font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700">
+        {session}
+        {entry && <span className="text-ink-500"> · {formatRoundLabel(entry.round)} · {entry.format}</span>}
+      </p>
+      {!entry ? (
+        <p className="mt-2 font-sans text-sm text-ink-400">No Rounds Played</p>
+      ) : (
+        <div className="mt-2 flex flex-col gap-2">
+          {entry.matchups.map((matchup, i) => (
+            <MatchBox key={i} matchup={matchup} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** "Day N · date" pill that expands to show the other days (plus a trailing "INDI" entry when the tournament has one) on tap — same interaction as the public leaderboard's day selector. */
+function DaySelector({ options, activeKey, onSelect }: { options: { key: string; label: string }[]; activeKey: string; onSelect: (key: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const active = options.find((o) => o.key === activeKey) ?? options[0];
+
+  useEffect(() => {
+    if (!open) return;
+    function closeWhenClickedOutside(event: MouseEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", closeWhenClickedOutside);
+    return () => document.removeEventListener("mousedown", closeWhenClickedOutside);
+  }, [open]);
+
+  return (
+    <div ref={containerRef} className="mb-3 inline-flex flex-wrap rounded-pill border border-gold-400 bg-white p-[3px]">
+      <button type="button" aria-expanded={open} onClick={() => setOpen((current) => !current)} className="rounded-pill bg-maroon-700 px-3 py-1 font-condensed text-2xs font-bold uppercase tracking-wide text-cream-50">
+        {active?.label}
+      </button>
+      <div className={["flex flex-wrap overflow-hidden transition-[max-width,opacity,margin] duration-200 ease-out", open ? "ml-1 max-w-[600px] opacity-100" : "max-w-0 opacity-0"].join(" ")}>
+        {options.map((option) => (
+          <button
+            key={option.key}
+            type="button"
+            aria-pressed={option.key === activeKey}
+            onClick={() => { onSelect(option.key); setOpen(false); }}
+            className={`shrink-0 rounded-pill px-3 py-1 font-condensed text-2xs font-bold tabular-nums transition-colors ${option.key === activeKey ? "bg-maroon-700 text-cream-50" : "text-ink-500 hover:bg-cream-100"}`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function YearArchive({ tournament }: { tournament: RoundFormatTournament }) {
+  const days = groupRoundFormatArchiveByDay(tournament.entries, tournament.dayDates);
+  const dayOptions = days.map((d) => ({ key: String(d.day), label: tournament.dayDates[d.day] ? `Day ${d.day} · ${dateLabel(tournament.dayDates[d.day])}` : `Day ${d.day}` }));
+  // Round INDI never fits the Day/Morning/Afternoon structure — no day, no
+  // opponent — so it's tacked on as its own trailing option instead
+  // (per Cade, 2026-09-14: "off to the side or the last selection").
+  const options = tournament.orphans.length ? [...dayOptions, { key: "INDI", label: "Round INDI" }] : dayOptions;
+  const [activeKey, setActiveKey] = useState(options[0]?.key);
+
+  if (options.length === 0) return <p className="mt-4 font-sans text-sm text-ink-500">No rounds recorded yet for this year.</p>;
+
+  if (activeKey === "INDI") {
+    return (
+      <div>
+        <DaySelector options={options} activeKey={activeKey} onSelect={setActiveKey} />
+        {tournament.orphans.map((orphan) => (
+          <div key={orphan.round} className="rounded-xl border border-gold-300 bg-cream-50 p-3">
+            <p className="font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700">{formatRoundLabel(orphan.round)} · {orphan.format ?? "Format not set"}</p>
+            <p className="mt-1 font-sans text-xs text-ink-500">Not part of the Maroon-vs-White match play schedule.</p>
+            <p className="mt-2 font-sans text-sm text-ink-900">{names(orphan.players).join(", ")}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const activeDay = days.find((d) => String(d.day) === activeKey) ?? days[0];
+  return (
+    <div>
+      <DaySelector options={options} activeKey={activeKey} onSelect={setActiveKey} />
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <SessionBox session="Morning" entry={activeDay.morning} />
+        <SessionBox session="Afternoon" entry={activeDay.afternoon} />
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -35,37 +158,20 @@ export function RoundFormatArchive({ tournaments }: { tournaments: RoundFormatTo
     <section className="rounded-xl border-2 border-gold-300 bg-cream-50 p-4 sm:p-5">
       <h2 className="font-serif text-2xl font-bold text-ink-900">Round &amp; Format Archive</h2>
       <p className="mt-1 font-sans text-sm text-ink-500">The source of truth for which round was which day, format, and matchup — every year, straight from the schedule.</p>
-      <div className="mt-4"><Tabs items={tournaments.map((t) => ({ value: t.slug, label: t.editionLabel }))} value={slug} onChange={setSlug} /></div>
-
-      {active.entries.length === 0 && active.orphans.length === 0 ? (
-        <p className="mt-4 font-sans text-sm text-ink-500">No rounds recorded yet for this year.</p>
-      ) : (
-        <div className="mt-4 flex flex-col gap-3">
-          {active.entries.map((entry) => (
-            <article key={entry.round} className="rounded-lg border border-gold-200 bg-white p-3">
-              <p className="font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700">
-                {formatRoundLabel(entry.round)} · Day {entry.day} {entry.session} · {entry.format}
-              </p>
-              <ul className="mt-2 flex flex-col gap-1 font-sans text-sm text-ink-900">
-                {entry.matchups.map((matchup, i) => (
-                  <li key={i}>
-                    {names(matchup.side)} <span className="text-ink-400">vs</span> {names(matchup.opponent)}
-                  </li>
-                ))}
-              </ul>
-            </article>
-          ))}
-          {active.orphans.map((orphan) => (
-            <article key={orphan.round} className="rounded-lg border border-gold-200 bg-white p-3">
-              <p className="font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700">
-                {formatRoundLabel(orphan.round)} · {orphan.format ?? "Format not set"}
-              </p>
-              <p className="mt-1 font-sans text-xs text-ink-500">Not part of the Maroon-vs-White match play schedule.</p>
-              <p className="mt-2 font-sans text-sm text-ink-900">{names(orphan.players)}</p>
-            </article>
-          ))}
-        </div>
-      )}
+      <div className="mt-4 flex flex-wrap gap-2">
+        {tournaments.map((t) => (
+          <button
+            key={t.slug}
+            type="button"
+            aria-pressed={t.slug === slug}
+            onClick={() => setSlug(t.slug)}
+            className={`rounded-pill border px-3 py-1.5 font-condensed text-xs font-bold uppercase tracking-wide ${t.slug === slug ? "border-maroon-700 bg-maroon-700 text-cream-50" : "border-gold-300 bg-white text-ink-600 hover:bg-cream-100"}`}
+          >
+            {t.year} · {t.venue}
+          </button>
+        ))}
+      </div>
+      <div className="mt-4"><YearArchive key={active.slug} tournament={active} /></div>
     </section>
   );
 }

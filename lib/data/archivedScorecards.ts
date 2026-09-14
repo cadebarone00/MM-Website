@@ -2,6 +2,7 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { r2PublicUrl } from "@/lib/r2/client";
 import type { HoleStat, PlayerScorecard, RoundScorecard, Team, Tournament } from "./types";
+import { matchCourseLibrary } from "./courseLibraryMatch";
 import { canonicalCourseName } from "./canonicalCourse";
 import { playerProfiles } from "./players";
 import { getTournament } from "./index";
@@ -57,21 +58,26 @@ export async function getArchivedHandicapRounds(playerSlug: string): Promise<Arc
       if (!data || data.length < 1000) break;
     }
   }
+  const { data: library, error: libraryError } = await service.from("live_courses").select("id, name");
+  if (libraryError) throw new Error("Could not match archived courses to the course library.");
   return rounds.map((round) => {
     const tournament = getTournament(round.tournament_slug);
     const total = totals.get(round.id);
+    const teeSetup = mapHandicapSetup(round.handicap_setup);
+    const course = (library ?? []).find((entry) => entry.id === teeSetup?.courseId) ?? matchCourseLibrary(round.course, library ?? []);
     return {
       id: round.id,
       tournamentSlug: round.tournament_slug,
       tournamentLabel: tournament?.editionLabel ?? round.tournament_slug,
       tournamentDate: tournament?.startDate ?? "",
       round: round.round,
-      courseName: round.course,
+      courseName: course?.name ?? round.course,
+      courseLibraryId: course?.id ?? null,
       format: round.format,
       totalScore: total?.total ?? null,
       holesPlayed: total?.holes ?? 0,
       datePlayed: round.played_on ?? null,
-      teeSetup: mapHandicapSetup(round.handicap_setup),
+      teeSetup,
     };
   });
 }

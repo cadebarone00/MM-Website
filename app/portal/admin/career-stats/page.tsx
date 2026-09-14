@@ -23,7 +23,7 @@ export default async function CareerStatsPage() {
         console.error(`Failed to load orphan archived rounds for ${tournament.slug}:`, err);
         return [];
       });
-      return { slug: tournament.slug, editionLabel: tournament.editionLabel, entries, orphans };
+      return { slug: tournament.slug, year: tournament.year, venue: tournament.venue, entries, orphans, dayDates: tournament.dayDates ?? {} };
     })
   );
 

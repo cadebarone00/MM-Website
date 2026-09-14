@@ -78,6 +78,8 @@ export interface Tournament {
   pointsAvailable: number;
   pointsToWin: number;
   matches: RealMatch[];
+  /** Calendar date for each trip day (day number -> "YYYY-MM-DD"), hand-entered separately from `matches` — used by the Round & Format Archive's day selector. Missing days show without a date rather than guessing one. */
+  dayDates?: Record<number, string>;
   individualLeaderboard: IndividualStanding[];
   scorecards?: PlayerScorecard[];
   notes?: string;

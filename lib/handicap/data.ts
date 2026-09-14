@@ -38,11 +38,11 @@ export function buildArchiveTeeSetup(course: HandicapCourseOption, teeSetId: str
   return { courseId: course.id, teeSetId: teeSet.id, teeSetName: teeSet.name, rating: teeSet.rating, slope: teeSet.slope, holes: teeSet.holes };
 }
 
-export async function getCourseLibraryForHandicap(): Promise<HandicapCourseOption[]> {
+export async function getCourseLibraryForHandicap(includeCoursesWithoutTees = false): Promise<HandicapCourseOption[]> {
   const service = createSupabaseServiceRoleClient();
   const { data, error } = await service.from("live_courses").select("id, name, tee_sets, city, state").order("name");
   if (error) throw new Error("Could not load the course library.");
-  return (data ?? []).map(mapCourseRow).filter((course) => course.teeSets.length > 0);
+  return (data ?? []).map(mapCourseRow).filter((course) => includeCoursesWithoutTees || course.teeSets.length > 0);
 }
 
 interface RoundRow {

@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { HandicapCourseOption } from "@/lib/handicap/types";
+import { matchCourseLibrary } from "@/lib/data/courseLibraryMatch";
 import { formatRoundLabel } from "@/lib/data/roundLabel";
 
 interface ArchiveRound {
@@ -23,8 +24,8 @@ interface ArchiveRound {
 export function ArchiveTeeAssigner({ tournamentSlug, rounds, courses }: { tournamentSlug: string; rounds: ArchiveRound[]; courses: HandicapCourseOption[] }) {
   const router = useRouter();
   const [round, setRound] = useState<number | "">(rounds[0]?.round ?? "");
-  const [courseId, setCourseId] = useState(courses[0]?.id ?? "");
-  const [teeSetId, setTeeSetId] = useState(courses[0]?.teeSets[0]?.id ?? "");
+  const [courseId, setCourseId] = useState(() => matchCourseLibrary(rounds[0]?.course ?? "", courses)?.id ?? "");
+  const [teeSetId, setTeeSetId] = useState("");
   const [datePlayed, setDatePlayed] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -64,13 +65,20 @@ export function ArchiveTeeAssigner({ tournamentSlug, rounds, courses }: { tourna
     <div className="mt-6 rounded-lg border-2 border-stone-300 p-4">
       <h2 className="font-serif text-lg font-bold text-ink-900">Assign tees for handicap tracking</h2>
       <p className="mt-1 font-sans text-sm text-ink-500">
-        Pick the course, tee set, and date this round was actually played. It applies to every player&apos;s archived round for this round number, and lets it count toward the Maroon Masters handicap index.
+        Matching archived course names are recognized automatically. Choose the tee set and date this round was actually played. It applies to every player&apos;s archived round for this round number, and lets it count toward the Maroon Masters handicap index.
       </p>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           <span className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Round</span>
-          <select value={round} onChange={(e) => setRound(Number(e.target.value))} className="rounded-lg border-2 border-stone-300 px-2 py-2 font-sans text-sm">
+          <select value={round} onChange={(e) => {
+            const nextRound = Number(e.target.value);
+            setRound(nextRound);
+            setCourseId(matchCourseLibrary(rounds.find((r) => r.round === nextRound)?.course ?? "", courses)?.id ?? "");
+            setTeeSetId("");
+            setDatePlayed("");
+            setMessage(null);
+          }} className="rounded-lg border-2 border-stone-300 px-2 py-2 font-sans text-sm">
             {rounds.map((r) => (
               <option key={r.round} value={r.round}>
                 {formatRoundLabel(r.round)} — {r.course}
@@ -90,13 +98,13 @@ export function ArchiveTeeAssigner({ tournamentSlug, rounds, courses }: { tourna
           <select
             value={courseId}
             onChange={(e) => {
-              const next = courses.find((c) => c.id === e.target.value);
+
               setCourseId(e.target.value);
-              setTeeSetId(next?.teeSets[0]?.id ?? "");
+              setTeeSetId("");
             }}
             className="rounded-lg border-2 border-stone-300 px-2 py-2 font-sans text-sm"
           >
-            {courses.length === 0 && <option value="">No courses with locked tees yet</option>}
+            <option value="">{courses.length === 0 ? "No courses with locked tees yet" : "Choose course"}</option>
             {courses.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
@@ -106,6 +114,7 @@ export function ArchiveTeeAssigner({ tournamentSlug, rounds, courses }: { tourna
         <label className="flex flex-col gap-1">
           <span className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Tee set</span>
           <select value={teeSetId} onChange={(e) => setTeeSetId(e.target.value)} className="rounded-lg border-2 border-stone-300 px-2 py-2 font-sans text-sm">
+            <option value="">{selectedCourse && selectedCourse.teeSets.length === 0 ? "Save and lock tees in Course Library first" : "Choose the tees played"}</option>
             {selectedCourse?.teeSets.map((tee) => (
               <option key={tee.id} value={tee.id}>{tee.name} · Rating {tee.rating} · Slope {tee.slope}</option>
             ))}
