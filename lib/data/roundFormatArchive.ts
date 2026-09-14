@@ -1,3 +1,4 @@
+import type { RoundFormatSetup } from "./roundFormatSetups";
 import type { Tournament } from "./types";
 import { tournamentRoundSequence } from "./tournamentRoundSequence";
 
@@ -8,6 +9,7 @@ export interface RoundFormatMatchup {
 }
 
 export interface RoundFormatEntry {
+  setup?: RoundFormatSetup | null;
   round: number; // true round-of-the-trip number (Alt Shot included in the count) — matches tournamentRoundSequence order
   day: number;
   session: "Morning" | "Afternoon";

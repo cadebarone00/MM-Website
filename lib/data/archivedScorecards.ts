@@ -5,27 +5,14 @@ import type { HoleStat, PlayerScorecard, RoundScorecard, Team, Tournament } from
 import { matchCourseLibrary } from "./courseLibraryMatch";
 import { canonicalCourseName } from "./canonicalCourse";
 import { playerProfiles } from "./players";
+import { getRoundFormatSetups, saveRoundFormatSetup } from "./roundFormatSetups";
+import { getFutureHandicapRounds } from "@/lib/handicap/futureRounds";
 import { getTournament } from "./index";
 import type { ArchivedHandicapRound, ArchivedTeeSetup } from "@/lib/handicap/types";
 
 /** Pure — no I/O. Defensively validates a `handicap_setup` jsonb value read back from archived_scorecard_rounds; malformed or never-assigned data becomes null rather than a bad round in the handicap archive. */
-export function mapHandicapSetup(value: unknown): ArchivedTeeSetup | null {
-  if (!value || typeof value !== "object") return null;
-  const v = value as Partial<ArchivedTeeSetup>;
-  if (typeof v.courseId !== "string" || typeof v.teeSetId !== "string" || typeof v.teeSetName !== "string") return null;
-  if (!Array.isArray(v.holes)) return null;
-  if (v.rating !== null && typeof v.rating !== "number") return null;
-  if (v.slope !== null && typeof v.slope !== "number") return null;
-  return {
-    courseId: v.courseId,
-    teeSetId: v.teeSetId,
-    teeSetName: v.teeSetName,
-    rating: v.rating ?? null,
-    slope: v.slope ?? null,
-    holes: v.holes,
-    ...(v.holeTeeSetIds ? { holeTeeSetIds: v.holeTeeSetIds } : {}),
-  };
-}
+export { mapHandicapSetup } from "@/lib/handicap/teeSetup";
+import { mapHandicapSetup } from "@/lib/handicap/teeSetup";
 
 /** Read the player's complete archive without copying or changing official scores. */
 export async function getArchivedHandicapRounds(playerSlug: string): Promise<ArchivedHandicapRound[]> {
@@ -60,10 +47,12 @@ export async function getArchivedHandicapRounds(playerSlug: string): Promise<Arc
   }
   const { data: library, error: libraryError } = await service.from("live_courses").select("id, name");
   if (libraryError) throw new Error("Could not match archived courses to the course library.");
-  return rounds.map((round) => {
+  const setups = await getRoundFormatSetups();
+  const historical = rounds.map((round) => {
     const tournament = getTournament(round.tournament_slug);
     const total = totals.get(round.id);
-    const teeSetup = mapHandicapSetup(round.handicap_setup);
+    const setup = setups.find((entry) => entry.seasonYear === tournament?.year && entry.round === round.round);
+    const teeSetup = mapHandicapSetup(setup ? setup.teeSetup : round.handicap_setup);
     const course = (library ?? []).find((entry) => entry.id === teeSetup?.courseId) ?? matchCourseLibrary(round.course, library ?? []);
     return {
       id: round.id,
@@ -71,18 +60,22 @@ export async function getArchivedHandicapRounds(playerSlug: string): Promise<Arc
       tournamentLabel: tournament?.editionLabel ?? round.tournament_slug,
       tournamentDate: tournament?.startDate ?? "",
       round: round.round,
-      courseName: course?.name ?? round.course,
+      courseName: setup?.courseName ?? course?.name ?? round.course,
       courseLibraryId: course?.id ?? null,
       format: round.format,
       totalScore: total?.total ?? null,
       holesPlayed: total?.holes ?? 0,
-      datePlayed: round.played_on ?? null,
+      datePlayed: setup?.datePlayed ?? round.played_on ?? null,
       teeSetup,
     };
   });
+  const future = await getFutureHandicapRounds(playerSlug, setups);
+  const historicalKeys = new Set(rounds.map((r) => `${getTournament(r.tournament_slug)?.year}:${r.round}`));
+  return [...historical, ...future.filter((r) => !historicalKeys.has(`${r.seasonYear}:${r.round}`))];
 }
 
 export interface OrphanArchivedRound {
+  setup?: import("./roundFormatSetups").RoundFormatSetup | null;
   round: number;
   format: string | null;
   players: string[]; // player slugs, sorted
@@ -253,14 +246,16 @@ export async function getArchivedTournamentRounds(tournamentSlug: string): Promi
     console.error("getArchivedTournamentRounds: failed to load rounds", error);
     return [];
   }
+  const sharedSetups = (await getRoundFormatSetups()).filter((s) => s.seasonYear === getTournament(tournamentSlug)?.year);
   const byRound = new Map<number, { round: number; course: string; format: string | null; assigned: boolean }>();
   for (const row of data ?? []) {
     const existing = byRound.get(row.round);
-    const assigned = mapHandicapSetup(row.handicap_setup) != null;
+    const shared = sharedSetups.find((s) => s.round === row.round);
+    const assigned = mapHandicapSetup(shared ? shared.teeSetup : row.handicap_setup) != null;
     // canonicalCourseName matches how the round archive on Career Stats
     // (CareerRoundArchive.tsx, via getCareerStatsDatabase) displays course
     // names, so Tiger sees the same label in both places for the same round.
-    const course = canonicalCourseName(row.course);
+    const course = shared?.courseName ?? canonicalCourseName(row.course);
     if (!existing) byRound.set(row.round, { round: row.round, course, format: row.format, assigned });
     else if (assigned) existing.assigned = true;
   }
@@ -275,15 +270,16 @@ export async function assignArchiveTeeSetup(
   datePlayed: string
 ): Promise<{ ok: true; updated: number } | { ok: false; error: string }> {
   const service = createSupabaseServiceRoleClient();
-  const { data, error } = await service
-    .from("archived_scorecard_rounds")
-    .update({ handicap_setup: teeSetup, played_on: datePlayed })
-    .eq("tournament_slug", tournamentSlug)
-    .eq("round", round)
-    .select("id");
-  if (error) return { ok: false, error: "Could not save this tee assignment. Has the archived_handicap_tees.sql migration been run?" };
-  if (!data || data.length === 0) return { ok: false, error: "No archived rounds found for that tournament and round." };
-  return { ok: true, updated: data.length };
+  const tournament = getTournament(tournamentSlug);
+  if (!tournament) return { ok: false, error: "Unknown archived tournament." };
+  const { count, error } = await service.from("archived_scorecard_rounds").select("id", { count: "exact", head: true }).eq("tournament_slug", tournamentSlug).eq("round", round);
+  if (error || !count) return { ok: false, error: "No archived rounds found for that tournament and round." };
+  const { data: course } = await service.from("live_courses").select("name").eq("id", teeSetup.courseId).maybeSingle();
+  try {
+    await saveRoundFormatSetup({ seasonYear: tournament.year, round, courseName: course?.name ?? teeSetup.courseId, datePlayed, teeSetup });
+    return { ok: true, updated: count };
+  } catch (error) { return { ok: false, error: error instanceof Error ? error.message : "Could not save round setup." }; }
+
 }
 
 /** Round labels for the Tiger Center's player → rounds list ("Round 1 — Palmer"). */

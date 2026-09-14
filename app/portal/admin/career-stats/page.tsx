@@ -5,6 +5,7 @@ import { RoundFormatArchive, type RoundFormatTournament } from "@/components/por
 import { careerArchivePartnerships } from "@/lib/data/careerArchive";
 import { getCombinedCareerArchive } from "@/lib/data/combinedCareerArchive";
 import { pastTournaments } from "@/lib/data";
+import { getRoundFormatSetups } from "@/lib/data/roundFormatSetups";
 import { roundFormatArchive } from "@/lib/data/roundFormatArchive";
 import { getOrphanArchivedRounds } from "@/lib/data/archivedScorecards";
 
@@ -16,14 +17,16 @@ export default async function CareerStatsPage() {
   if (!profile?.is_host) redirect("/");
   const { records, teamRecords } = await getCombinedCareerArchive();
 
+  const setups = await getRoundFormatSetups();
   const roundFormatTournaments: RoundFormatTournament[] = await Promise.all(
     pastTournaments.map(async (tournament) => {
-      const entries = roundFormatArchive(tournament);
+      const setupFor = (round: number) => setups.find((s) => s.seasonYear === tournament.year && s.round === round) ?? null;
+      const entries = roundFormatArchive(tournament).map((entry) => ({ ...entry, setup: setupFor(entry.round) }));
       const orphans = await getOrphanArchivedRounds(tournament.slug, entries.length).catch((err) => {
         console.error(`Failed to load orphan archived rounds for ${tournament.slug}:`, err);
         return [];
       });
-      return { slug: tournament.slug, year: tournament.year, venue: tournament.venue, entries, orphans, dayDates: tournament.dayDates ?? {} };
+      return { slug: tournament.slug, year: tournament.year, venue: tournament.venue, entries, orphans: orphans.map((entry) => ({ ...entry, setup: setupFor(entry.round) })), dayDates: tournament.dayDates ?? {} };
     })
   );
 

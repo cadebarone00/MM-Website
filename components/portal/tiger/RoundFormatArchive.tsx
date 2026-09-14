@@ -46,6 +46,11 @@ function MatchBox({ matchup }: { matchup: RoundFormatMatchup }) {
   );
 }
 
+function SetupDetails({ setup }: { setup: RoundFormatEntry["setup"] }) {
+  if (!setup) return null;
+  return <p className="mt-2 font-sans text-xs text-ink-600">{setup.courseName} &middot; {setup.teeSetup.teeSetName} &middot; Rating {setup.teeSetup.rating ?? "Pending"} / Slope {setup.teeSetup.slope ?? "Pending"} &middot; {dateLabel(setup.datePlayed)}</p>;
+}
+
 function SessionBox({ session, entry }: { session: "Morning" | "Afternoon"; entry: RoundFormatEntry | null }) {
   return (
     <div className="flex-1 rounded-xl border border-gold-300 bg-cream-50 p-3">
@@ -53,6 +58,7 @@ function SessionBox({ session, entry }: { session: "Morning" | "Afternoon"; entr
         {session}
         {entry && <span className="text-ink-500"> · {formatRoundLabel(entry.round)} · {entry.format}</span>}
       </p>
+      <SetupDetails setup={entry?.setup} />
       {!entry ? (
         <p className="mt-2 font-sans text-sm text-ink-400">No Rounds Played</p>
       ) : (
@@ -121,6 +127,7 @@ function YearArchive({ tournament }: { tournament: RoundFormatTournament }) {
         {tournament.orphans.map((orphan) => (
           <div key={orphan.round} className="rounded-xl border border-gold-300 bg-cream-50 p-3">
             <p className="font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700">{formatRoundLabel(orphan.round)} · {orphan.format ?? "Format not set"}</p>
+            <SetupDetails setup={orphan.setup} />
             <p className="mt-1 font-sans text-xs text-ink-500">Not part of the Maroon-vs-White match play schedule.</p>
             <p className="mt-2 font-sans text-sm text-ink-900">{names(orphan.players).join(", ")}</p>
           </div>
