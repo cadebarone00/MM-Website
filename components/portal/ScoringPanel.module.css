@@ -1,0 +1,57 @@
+/* Scoped to the live card, including both editor phones. Keep the shared
+   handicap controls at their usual size. 7rem is the two navigation bars. */
+.panel {
+  --compass-size: 40px;
+  --bubble-size: 52px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - 7rem);
+  min-height: 440px;
+  padding-bottom: max(4px, env(safe-area-inset-bottom));
+  gap: 3px;
+}
+.panel > * { flex-shrink: 0; }
+.panel [data-hole-header] > div { padding-block: 2px; }
+.panel [data-hole-header] :global(.grid) { padding-block: 4px; font-size: 18px; line-height: 24px; }
+.panel [aria-label="Select hole"] { margin-top: 0; padding-block: 2px; }
+.panel [aria-label="Select hole"] button { height: 38px; min-width: 0; }
+.notice { position: relative; height: 28px; font-size: 11px; line-height: 13px; text-align: center; color: #991b1b; }
+.notice p { position: absolute; inset: 0; overflow-y: auto; margin: 0; }
+.scores { display: flex; flex-direction: column; gap: 6px; flex: 1 1 0; min-height: 144px; max-height: 240px; }
+.scores > div { padding-block: 2px; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.scores p { font-size: 12px; line-height: 16px; }
+.scores p + div { flex: 1; min-height: 0; }
+.scores [aria-hidden] { height: calc(100% - 6px); max-height: 80px; }
+.scores [role="group"] { height: 100%; padding-block: 3px; }
+.scores button { height: 100%; }
+.scores button > span { height: var(--bubble-size); width: var(--bubble-size); font-size: 26px; }
+.scores button > span > span { height: calc(var(--bubble-size) - 12px); width: calc(var(--bubble-size) - 12px); font-size: 26px; }
+.stats { margin-top: auto; }
+.stats [data-compasses] > div > div { max-width: 144px; }
+.stats [data-compasses] p { font-size: 12px; line-height: 16px; }
+.stats :global(.grid-rows-3) { margin-top: 3px; gap: 2px; }
+.stats :global(.grid-rows-3) button, .stats :global(.grid-rows-3) span { width: var(--compass-size); max-width: 100%; }
+.stats :global(.grid-rows-3) + div { margin-top: 2px; min-height: 26px; }
+.stats :global(.grid-rows-3) + div button { padding-block: 2px; }
+.stats [data-putts-label] { margin-top: 2px; font-size: 12px; line-height: 16px; }
+.stats [aria-label="Your putts"] button { height: 36px; width: 40px; }
+.actions > div { margin-top: 0; position: relative; }
+.actions button { min-height: 42px; padding-block: 6px; }
+.actions p { position: absolute; bottom: 100%; left: 0; right: 0; padding: 8px; background: #fff; border: 1px solid #c5a45d; border-radius: 4px; }
+@media (max-height: 740px) {
+  .panel { --compass-size: 36px; --bubble-size: 44px; gap: 2px; }
+  .panel [data-hole-header] :global(.grid) { padding-block: 2px; font-size: 16px; line-height: 22px; }
+  .panel [aria-label="Select hole"] button { height: 32px; }
+  .scores { min-height: 124px; }
+  .scores button > span, .scores button > span > span { font-size: 22px; }
+  .stats [aria-label="Your putts"] button { height: 32px; }
+  .actions button { min-height: 38px; }
+}
+@media (max-height: 640px) {
+  .panel { --compass-size: 28px; --bubble-size: 32px; gap: 0; }
+  .panel [data-hole-header] :global(.grid) { padding-block: 0; line-height: 20px; }
+  .notice { height: 22px; font-size: 10px; line-height: 11px; }
+  .scores { min-height: 110px; gap: 4px; }
+  .scores button > span, .scores button > span > span { font-size: 18px; border-width: 2px; }
+  .stats [aria-label="Your putts"] button { height: 28px; }
+}

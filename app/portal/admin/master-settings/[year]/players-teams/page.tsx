@@ -19,7 +19,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ ye
   if (!profile?.is_host) redirect("/");
 
   const service = createSupabaseServiceRoleClient();
-  const { data: slots } = await service.from("player_slots").select("player_slug, username, claimed_by");
+  const { data: slots } = await service.from("player_slots").select("player_slug, username, claimed_by, email");
   const byslug = new Map((slots ?? []).map((s) => [s.player_slug, s]));
 
   const [{ data: roster }, { data: locks }] = await Promise.all([
@@ -44,6 +44,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ ye
     fullName: p.fullName,
     username: byslug.get(p.slug)?.username ?? null,
     claimedBy: byslug.get(p.slug)?.claimed_by ?? null,
+    email: byslug.get(p.slug)?.email ?? null,
     team: rosterBySlug.get(p.slug) ?? null,
     teamLocked: lockedSlugs.has(p.slug),
     pendingEdits: pendingBySlug.get(p.slug) ?? [],

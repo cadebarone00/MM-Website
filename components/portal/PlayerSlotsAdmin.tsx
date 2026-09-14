@@ -52,6 +52,7 @@ export interface PlayerSlotAdminRow {
   fullName: string;
   username: string | null;
   claimedBy: string | null;
+  email: string | null;
   team: "maroon" | "white" | null;
   teamLocked: boolean;
   pendingEdits: PendingProfileEdit[];
@@ -59,10 +60,11 @@ export interface PlayerSlotAdminRow {
 
 export function PlayerSlotsAdmin({ year, rows: initialRows }: { year: number; rows: PlayerSlotAdminRow[] }) {
   const [busy, setBusy] = useState<string | null>(null);
-  const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
   const [rows, setRowsState] = useState(initialRows);
+  const [inviteSlug, setInviteSlug] = useState<string | null>(null);
+  const [inviteEmail, setInviteEmail] = useState("");
 
   async function handleApprove(playerSlug: string, field: string, submittedAt: string) {
     setBusy(playerSlug);
@@ -151,16 +153,25 @@ export function PlayerSlotsAdmin({ year, rows: initialRows }: { year: number; ro
     }
   }
 
-  async function handleCopyLink(playerSlug: string, username: string) {
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const link = `${origin}/signup?code=${username}`;
+  async function handleSendInvite(playerSlug: string) {
+    setBusy(playerSlug);
+    setError(null);
     try {
-      await navigator.clipboard.writeText(link);
-      setCopiedSlug(playerSlug);
-      setTimeout(() => setCopiedSlug((current) => (current === playerSlug ? null : current)), 2000);
+      const res = await fetch("/api/portal/tiger/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playerSlug, email: inviteEmail }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error);
+        return;
+      }
+      window.location.reload();
     } catch {
-      // Clipboard access can fail (permissions, non-secure context) — the
-      // link is still visible in the row for manual copying if needed.
+      setError("Something went wrong — try again.");
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -325,14 +336,42 @@ export function PlayerSlotsAdmin({ year, rows: initialRows }: { year: number; ro
                   ) : row.username ? (
                     <button
                       type="button"
-                      onClick={() => handleCopyLink(row.playerSlug, row.username!)}
+                      onClick={() => {
+                        setInviteSlug((current) => (current === row.playerSlug ? null : row.playerSlug));
+                        setInviteEmail(row.email ?? "");
+                        setError(null);
+                      }}
                       className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline"
                     >
-                      {copiedSlug === row.playerSlug ? "Copied!" : "Copy Invite Link"}
+                      Send Invite
                     </button>
                   ) : null}
                 </td>
               </tr>
+              {inviteSlug === row.playerSlug && (
+                <tr key={`${row.playerSlug}-invite`} className="border-b border-ink-100 bg-cream-50">
+                  <td colSpan={5} className="py-3">
+                    <div className="flex items-center gap-2 px-2">
+                      <input
+                        type="email"
+                        required
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        placeholder="player@email.com"
+                        className="flex-1 rounded-sm border border-ink-200 px-2 py-1 font-sans text-xs"
+                      />
+                      <button
+                        type="button"
+                        disabled={busy === row.playerSlug || !inviteEmail.trim()}
+                        onClick={() => handleSendInvite(row.playerSlug)}
+                        className="rounded-pill bg-maroon-700 px-3 py-1.5 font-sans text-xs font-semibold text-white disabled:opacity-50"
+                      >
+                        {busy === row.playerSlug ? "Sending…" : "Send Invite"}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )}
               {expandedSlug === row.playerSlug && row.pendingEdits.length > 0 && (
                 <tr key={`${row.playerSlug}-pending`} className="border-b border-ink-100 bg-cream-50">
                   <td colSpan={5} className="py-3">

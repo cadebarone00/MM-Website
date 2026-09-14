@@ -76,6 +76,36 @@ export async function getArchivedHandicapRounds(playerSlug: string): Promise<Arc
   });
 }
 
+export interface OrphanArchivedRound {
+  round: number;
+  format: string | null;
+  players: string[]; // player slugs, sorted
+}
+
+/**
+ * Archived rounds for a tournament that fall outside its match-play
+ * schedule — e.g. 2025-danzante's Round INDI (round 0), an
+ * individual-champion round with no Maroon-vs-White matchup at all. Used
+ * by the Round & Format Archive to surface these alongside the real
+ * schedule instead of silently dropping them. `knownRounds` is the count
+ * from `roundFormatArchive` — any archived round number outside 1..that
+ * count is treated as an orphan.
+ */
+export async function getOrphanArchivedRounds(tournamentSlug: string, knownRounds: number): Promise<OrphanArchivedRound[]> {
+  const service = createSupabaseServiceRoleClient();
+  const rows = await fetchAllRows<{ round: number; format: string | null; player_slug: string }>("getOrphanArchivedRounds", (from, to) =>
+    service.from("archived_scorecard_rounds").select("round, format, player_slug").eq("tournament_slug", tournamentSlug).range(from, to)
+  );
+  const groups = new Map<number, OrphanArchivedRound>();
+  for (const row of rows) {
+    if (row.round >= 1 && row.round <= knownRounds) continue; // already covered by the match schedule
+    const group = groups.get(row.round) ?? { round: row.round, format: row.format, players: [] };
+    group.players.push(row.player_slug);
+    groups.set(row.round, group);
+  }
+  return [...groups.values()].map((group) => ({ ...group, players: group.players.sort() })).sort((a, b) => a.round - b.round);
+}
+
 // PostgREST caps a single request at 1000 rows by default — silently, with
 // no error, just a truncated result. A whole tournament's hole rows (players
 // × rounds × 18) crosses that once there are enough players/rounds (2026

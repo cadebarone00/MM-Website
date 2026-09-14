@@ -11,6 +11,7 @@ import { ScorePicker } from "./ScorePicker";
 import { PuttsPicker } from "./PuttsPicker";
 import { ShotDirectionPicker } from "./ShotDirectionPicker";
 import { HoleActionBar } from "./HoleActionBar";
+import styles from "./ScoringPanel.module.css";
 
 export interface ScoringState {
   matchBox: { id: string; boxNumber: number; format: MatchFormat; teeTime: string; maroonPlayers: string[]; whitePlayers: string[]; state: string };
@@ -103,13 +104,13 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
     finally { setBusy(false); }
   }
   const rowClass = (maroon: boolean) => `-mx-4 px-4 py-2 sm:-mx-7 sm:px-7 ${maroon ? "bg-maroon-800 text-white" : "bg-white text-maroon-800"}`;
-  return <div>
-    <div className="-mx-4 sm:-mx-7"><ScoringRoundHeader hole={selectedHole} par={info?.par ?? null} yards={info?.yards ?? null} totalScore={total} toPar={toPar} /></div>
+  return <div className={styles.panel}>
+    <div data-hole-header className="-mx-4 sm:-mx-7"><ScoringRoundHeader hole={selectedHole} par={info?.par ?? null} yards={info?.yards ?? null} totalScore={total} toPar={toPar} /></div>
     <ScoringHoleSelector selectedHole={selectedHole} onSelect={select} disabled={busy} statuses={statuses} />
-    {error && <p role="alert" className="my-2 text-center text-sm text-red-700">{error}</p>}
-    {status === "disputed" && <p role="alert" className="my-2 text-center text-sm font-semibold text-red-700">Scores disagree. Compare both entries, correct the score, and submit again. This hole is not in the archive.</p>}
-    {status === "submitted" && <p className="my-2 text-center text-xs text-ink-500">Submitted. Waiting for the other scorer to confirm this hole.</p>}
-    <div className="mt-3 space-y-3">
+    <div className={styles.notice} aria-live="polite">
+      {error ? <p role="alert">{error}</p> : status === "disputed" ? <p role="alert">Scores disagree. Correct both entries and resubmit to confirm this hole.</p> : status === "submitted" ? <p>Submitted. Waiting for the other scorer.</p> : null}
+    </div>
+    <div className={styles.scores}>
       <div className={rowClass(sides.maroon)}>
         <p className="text-center font-condensed text-sm font-bold uppercase tracking-wide">{isFoursome ? "Your team score" : "Your score"}</p>
         <ScorePicker key={"self-" + selectedHole} ariaLabel="Your score" par={par} value={draft.ownScore} disabled={locked} tone={sides.maroon ? "maroon" : "light"} onChange={(ownScore) => edit({ ownScore })} />
@@ -119,16 +120,18 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
         <ScorePicker key={"opponent-" + selectedHole} ariaLabel={targetLabel + " score"} par={par} value={draft.opponentScore} disabled={locked} tone={sides.maroon ? "light" : "maroon"} onChange={(opponentScore) => edit({ opponentScore })} />
       </div>
     </div>
+    <div className={styles.stats}>
     {!isFoursome && <>
-      <div className="relative mt-3 grid grid-cols-2 items-start gap-4">
+      <div data-compasses className="relative grid grid-cols-2 items-start gap-4">
         <div aria-hidden className="absolute bottom-0 left-1/2 top-5 w-px bg-gold-400" />
         <div className="flex justify-center"><ShotDirectionPicker label="Fairway" notApplicable={par === 3} disabled={locked} value={draft.fairway} onChange={(fairway) => edit({ fairway })} /></div>
         <div className="flex justify-center"><ShotDirectionPicker label="GIR" penaltyOption disabled={locked} value={draft.green} onChange={(green) => edit({ green })} /></div>
       </div>
-      <p className="mt-1 text-center font-condensed text-sm font-bold uppercase tracking-wide text-maroon-800">Putts</p>
+      <p data-putts-label className="mt-1 text-center font-condensed text-sm font-bold uppercase tracking-wide text-maroon-800">Putts</p>
       <div className="mt-1"><PuttsPicker ariaLabel="Your putts" disabled={locked} value={draft.putts} onChange={(putts) => edit({ putts })} /></div>
     </>}
-    <HoleActionBar nextLabel="Next Hole" disabled={busy || selectedHole === 18} onNext={() => select(Math.min(selectedHole + 1, 18))}
-      submitLabel={unchanged ? "Submitted" : "Submit Score"} submitDisabled={locked || unchanged} onSubmit={() => void submitHole()} />
+    </div>
+    <div className={styles.actions}><HoleActionBar nextLabel="Next Hole" disabled={busy || selectedHole === 18} onNext={() => select(Math.min(selectedHole + 1, 18))}
+      submitLabel={unchanged ? "Submitted" : "Submit Score"} submitDisabled={locked || unchanged} onSubmit={() => void submitHole()} /></div>
   </div>;
 }

@@ -273,50 +273,40 @@ All pages are public, no auth.
   --noEmit`, `npm run lint` (pre-existing, unrelated failures elsewhere
   untouched), and `npm run build` all clean.
 
-## Current task (defined, awaiting approval to build)
-
-**Restore a real "send invite" button on Players & Teams**
-(`/portal/admin/master-settings/[year]/players-teams`,
-`components/portal/PlayerSlotsAdmin.tsx`). Today the only invite tool is
-"Copy Invite Link," which copies a `/signup?code=<username>` URL for Tiger
-to send by hand — nothing in this repo has ever emailed a player. This
-round replaces that button with "Send Invite":
-
-- **Data model:** `player_slots` gains a nullable `email` column
-  (migration `supabase/player_slots_email.sql`, folded into `schema.sql`;
-  Tiger-only via the service-role key, same RLS posture as the rest of
-  the table). Remembers the address so it doesn't need retyping on a
-  resend.
-- **UI:** the row's invite action becomes a toggle ("Send Invite") that
-  expands to an email box (pre-filled from the stored `email` if any) and
-  a submit button — same expand-a-row pattern the page already uses for
-  "Edit directly." Errors surface in the page's existing error banner;
-  success reloads the page (same pattern as Unlink/team assignment),
-  which flips Status from "Open" to "Claimed."
-- **Backend:** new `POST /api/portal/tiger/invite` route (host-gated,
-  service-role client, mirrors `/api/auth/signup`'s create-then-rollback
-  shape): calls Supabase's `auth.admin.inviteUserByEmail(email, {
-  redirectTo: "<origin>/auth/callback?next=/reset-password" })`, which
-  creates the player's login and sends Supabase's own built-in invite
-  email — no new third-party service or secret. On success, inserts their
-  `profiles` row (email, known `fullName` as `display_name`, the
-  slot's already-assigned `username`, `is_host: false`, `player_slug`)
-  and marks the slot claimed, same as self-serve signup does today. The
-  player's landing page after clicking the email is the *existing*
-  `/reset-password` screen (unchanged) — they set a password, no separate
-  sign-up form, since name/username/team are already known.
-- **Undo path:** the existing "Unlink" button covers a wrong email or an
-  invite the player never completes — no new undo mechanism needed.
-- **Third-party services:** none new. Uses Supabase's built-in invite
-  email on the project's default (rate-limited, ~a handful/hour on the
-  free tier unless custom SMTP is configured later — not part of this
-  round) email sending.
-- **Done looks like:** migration written (and run once in Supabase by the
-  user); Send Invite visibly replaces Copy Invite Link; sending an
-  invite in a real Supabase project creates the login, sends the email,
-  flips the row to Claimed, and Unlink still cleanly undoes it;
-  `npm test`, `npx tsc --noEmit`, `npm run lint`, and `npm run build` all
-  clean before this is called done.
+- **Real "Send Invite" button on Players & Teams**, replacing "Copy
+  Invite Link" (`/portal/admin/master-settings/[year]/players-teams`,
+  `components/portal/PlayerSlotsAdmin.tsx`). Copy Invite Link only ever
+  copied a `/signup?code=<username>` URL for Tiger to send by hand —
+  nothing in this repo had ever emailed a player. Clicking "Send Invite"
+  now expands an email box (pre-filled from any address already on file,
+  same expand-a-row pattern as "Edit directly") and, on submit, calls new
+  `POST /api/portal/tiger/invite` (host-gated, mirrors
+  `/api/auth/signup`'s create-then-rollback shape): Supabase's
+  `auth.admin.inviteUserByEmail()` creates the player's login and sends
+  Supabase's own built-in invite email (no new third-party service or
+  secret), then their `profiles` row is inserted (known `fullName`, the
+  slot's already-assigned `username`, `player_slug`) and the slot is
+  marked claimed — Status flips straight to "Claimed," same as self-serve
+  signup does today. The emailed link lands them on the *existing*
+  `/reset-password` screen (unchanged) to set a password — no separate
+  sign-up form, since name/username/team are already known. `player_slots`
+  gained a nullable `email` column to remember the address for a resend
+  (migration `supabase/player_slots_email.sql`, a standalone one-off file
+  like `course_library_location.sql`/`hole_shot_directions.sql` —
+  `schema.sql` turns out not to actually carry those later columns either,
+  despite an earlier round's notes claiming otherwise; not fixed now, just
+  not repeated here). The existing "Unlink" button is the undo path for a
+  wrong email or an invite the player never completes — no new undo
+  mechanism needed. `npm test` (one pre-existing, unrelated failure in
+  `lib/wagers/navBarContent.test.ts`, confirmed to fail the same way with
+  this round's changes stashed out), `npx tsc --noEmit`, `npm run lint`
+  (clean on every file this round touched), and `npm run build` all
+  clean. **Not yet verified against a real Supabase project** — running
+  `supabase/player_slots_email.sql` once in the SQL Editor and sending a
+  real invite end-to-end is the one remaining step (see Known gaps).
+  Also: Supabase's built-in invite email is rate-limited on the free plan
+  (~a handful/hour) unless custom SMTP is configured later — fine for a
+  few invites at a time, not for blasting the whole roster at once.
 
 ## Known gaps / not yet built
 
@@ -337,6 +327,13 @@ round replaces that button with "Send Invite":
   reuses the old swapped course/round pairing — low-stakes (test-only) and
   needs a manual paste into the Apps Script editor to fix, so left alone
   pending a decision from the user.
+- **`supabase/player_slots_email.sql` has not been run yet.** Until it
+  runs once in the Supabase SQL Editor, `player_slots` has no `email`
+  column and the new "Send Invite" button's `POST
+  /api/portal/tiger/invite` will fail on the `profiles`/`player_slots`
+  update step. Also not yet verified end-to-end against a real Supabase
+  project (does the invite email actually arrive, does the link land
+  cleanly on `/reset-password`) — code review only so far.
 - **Host scoring tools (Tasks 5-7 of the live scoring plan, not started):**
   `/portal/host` — pairings, round start/reset, direct score edits for
   Tiger — does not exist yet. `/portal`'s host view still shows "Host tools
