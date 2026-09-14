@@ -1,11 +1,12 @@
 // components/portal/ScoringPanel.tsx
 "use client";
 
+import { getPlayerLastName } from "@/lib/data/players";
 import { ScoringHoleSelector } from "./ScoringHoleSelector";
 import { ScoringRoundHeader } from "./ScoringRoundHeader";
 import { ScorePicker } from "./ScorePicker";
 import { PuttsPicker } from "./PuttsPicker";
-import { ShotDirectionPicker, type ShotResult } from "./ShotDirectionPicker";
+import { ShotDirectionPicker } from "./ShotDirectionPicker";
 import { HoleActionBar } from "./HoleActionBar";
 import { useCallback, useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -36,7 +37,6 @@ export interface ScoringState {
 
 export function ScoringPanel({
   playerSlug,
-  playerFullName,
   round,
   matchBox,
   nameBySlug,
@@ -132,7 +132,7 @@ export function ScoringPanel({
   async function submitStroke(targetPlayerSlugs: string[], score: number, didNotFinish = false) {
     if (previewState) {
       updatePreviewScore(targetPlayerSlugs, { score: didNotFinish ? (state?.holes.find((hole) => hole.number === selectedHole)?.par ?? 4) * 2 : score, didNotFinish });
-      return;
+      return true;
     }
     setBusy(true);
     setError(null);
@@ -143,8 +143,12 @@ export function ScoringPanel({
         body: JSON.stringify({ round, hole: selectedHole, targetPlayerSlugs, score, didNotFinish }),
       });
       const data = await res.json();
-      if (!data.ok) setError(data.error);
-      else load();
+      if (!data.ok) { setError(data.error); return false; }
+      await load();
+      return true;
+    } catch {
+      setError("Could not save your scores. Please try again.");
+      return false;
     } finally {
       setBusy(false);
     }
@@ -153,7 +157,7 @@ export function ScoringPanel({
   async function submitStats(putts: number, fir: boolean | null, gir: boolean, firDirection: ShotDirection | null, girDirection: ShotDirection | null, selfReportedScore?: number) {
     if (previewState) {
       updatePreviewScore([playerSlug], { putts, fir, gir, firDirection, girDirection, ...(selfReportedScore === undefined ? {} : { selfReportedScore }) });
-      return;
+      return true;
     }
     setBusy(true);
     setError(null);
@@ -164,8 +168,12 @@ export function ScoringPanel({
         body: JSON.stringify({ round, hole: selectedHole, putts, fir, gir, firDirection, girDirection, selfReportedScore }),
       });
       const data = await res.json();
-      if (!data.ok) setError(data.error);
-      else load();
+      if (!data.ok) { setError(data.error); return false; }
+      await load();
+      return true;
+    } catch {
+      setError("Could not save your scores. Please try again.");
+      return false;
     } finally {
       setBusy(false);
     }
@@ -192,196 +200,97 @@ export function ScoringPanel({
       }
       setConfirmingSubmit(false);
       load();
+    } catch {
+      setError("Could not save your scores. Please try again.");
+      return false;
     } finally {
       setBusy(false);
     }
   }
 
   const isFoursome = matchBox.format === "Foursome";
-  const displayPlayers = isFoursome ? [] : [...matchBox.maroonPlayers, ...matchBox.whitePlayers];
+
   const selectedHoleInfo = state.holes.find((h) => h.number === selectedHole) ?? null;
   const myHoleValues = state.holes
     .filter((h) => h.number <= selectedHole)
     .map((h) => {
       const s = scoreFor(playerSlug, h.number);
-      const value = s?.score ?? s?.selfReportedScore ?? null;
+      const value = isFoursome ? s?.score ?? null : s?.selfReportedScore ?? s?.score ?? null;
       return { par: h.par, value };
     })
     .filter((h): h is { par: number; value: number } => h.value != null);
   const myTotal = myHoleValues.reduce((sum, h) => sum + h.value, 0);
   const myToPar = myHoleValues.length > 0 ? myTotal - myHoleValues.reduce((sum, h) => sum + h.par, 0) : null;
 
-  return (
-    <div>
-      <div className="-mx-4 sm:-mx-7">
-        <ScoringRoundHeader hole={selectedHole} par={selectedHoleInfo?.par ?? null} yards={selectedHoleInfo?.yards ?? null} totalScore={myTotal} toPar={myToPar} />
-      </div>
-      <h1 className="mt-4 font-serif text-2xl font-bold text-ink-900">Round {round} — Hole {selectedHole}</h1>
-      <p className="mt-1 font-sans text-sm text-ink-500">
-        Welcome, {playerFullName}
-        {selectedHoleInfo && ` · Par ${selectedHoleInfo.par} · ${selectedHoleInfo.yards} yards`}
-      </p>
 
-      <ScoringHoleSelector selectedHole={selectedHole} onSelect={setSelectedHole} />
+  const par = selectedHoleInfo?.par ?? 4;
+  const ownSide = matchBox.maroonPlayers.includes(playerSlug) ? matchBox.maroonPlayers : matchBox.whitePlayers;
+  const otherSide = matchBox.maroonPlayers.includes(playerSlug) ? matchBox.whitePlayers : matchBox.maroonPlayers;
+  const targets = isFoursome ? otherSide : otherSide.filter((slug) => canScoreStrokesFor(matchBox, playerSlug, [slug]));
+  const mine = scoreFor(isFoursome ? ownSide[0] : playerSlug, selectedHole);
+  const opponent = targets.length ? scoreFor(targets[0], selectedHole) : null;
+  const targetLabel = targets.map((slug) => getPlayerLastName(nameBySlug[slug] ?? slug)).join(" & ");
+  const locked = alreadySubmitted || busy;
+  const yourScore = isFoursome ? mine?.score ?? null : mine?.didNotFinish ? par * 2 : mine?.selfReportedScore ?? par;
+  const opponentScore = opponent?.score ?? par;
 
-      {error && <p className="mt-3 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
+  async function nextHole() {
+    // Save the displayed par defaults before leaving an untouched hole.
+    if (!alreadySubmitted) {
+      if (!isFoursome && !mine?.didNotFinish && mine?.selfReportedScore == null) {
+        if (!await submitStats(mine?.putts ?? 0, mine?.fir ?? null, mine?.gir ?? false, mine?.firDirection ?? null, mine?.girDirection ?? null, par)) return;
+      }
+      if (targets.length && opponent?.score == null) {
+        if (!await submitStroke(targets, par)) return;
+      }
+    }
+    if (selectedHole === 18) setConfirmingSubmit(true);
+    else setSelectedHole((hole) => hole + 1);
+  }
 
-
-      {isFoursome ? (
-        <div className="mt-4 space-y-3">
-          {(["maroon", "white"] as const).map((side) => {
-            const sidePlayers = side === "maroon" ? matchBox.maroonPlayers : matchBox.whitePlayers;
-            const canScore = !alreadySubmitted && canScoreStrokesFor(matchBox, playerSlug, sidePlayers);
-            const existing = scoreFor(sidePlayers[0], selectedHole);
-            return (
-              <div key={`${side}-${selectedHole}`} className="rounded-lg border-2 border-stone-300 p-3">
-                <span className="font-condensed text-2xs font-semibold uppercase tracking-wide text-ink-500">
-                  {side === "maroon" ? "Maroon" : "White"} side ({sidePlayers.map((p) => nameBySlug[p] ?? p).join(" & ")})
-                </span>
-                <div className="mt-2">
-                  <input
-                    type="number"
-                    min={1}
-                    disabled={!canScore || busy}
-                    defaultValue={existing?.score ?? ""}
-                    onBlur={(e) => {
-                      const value = Number(e.target.value);
-                      if (value >= 1) submitStroke(sidePlayers, value);
-                    }}
-                    className="w-20 rounded-lg border-2 border-stone-300 px-2 py-1 text-sm"
-                    placeholder="Score"
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="mt-4 space-y-3">
-          {displayPlayers.map((slug) => {
-            const existing = scoreFor(slug, selectedHole);
-            const isSelf = slug === playerSlug;
-            const canScoreThis = !alreadySubmitted && canScoreStrokesFor(matchBox, playerSlug, [slug]);
-            return (
-              <div key={`${slug}-${selectedHole}`} className="rounded-lg border-2 border-stone-300 p-3">
-                <span className="font-condensed text-2xs font-semibold uppercase tracking-wide text-ink-500">{nameBySlug[slug] ?? slug}</span>
-                <div className="mt-2 flex flex-wrap items-center gap-3">
-                  <label className="flex items-center gap-1 font-sans text-xs text-ink-700">
-                    Score
-                    <input
-                      type="number"
-                      min={1}
-                      disabled={!canScoreThis || busy}
-                      defaultValue={existing?.score ?? ""}
-                      onBlur={(e) => {
-                        const value = Number(e.target.value);
-                        if (value >= 1) submitStroke([slug], value);
-                      }}
-                      className="w-16 rounded-lg border-2 border-stone-300 px-2 py-1 text-sm"
-                    />
-                  </label>
-                  {matchBox.format === "Fourball" && canScoreThis && (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => {
-                        if (window.confirm("If this player does not finish the hole, the recorded score will be double par. Continue?")) {
-                          submitStroke([slug], 0, true);
-                        }
-                      }}
-                      className="rounded border border-ink-300 px-2 py-1 font-condensed text-2xs font-semibold text-ink-700"
-                    >
-                      X
-                    </button>
-                  )}
-                  {existing?.confirmedBy && (
-                    <span className="h-3 w-3 rounded-full bg-green-500" title="Your entries agree" />
-                  )}
-                  {existing?.didNotFinish && <span className="font-condensed text-2xs font-semibold uppercase text-ink-500">Double par (X)</span>}
-                  {!existing?.confirmedBy && existing?.score != null && existing?.selfReportedScore != null && (
-                    <span className="h-3 w-3 rounded-full bg-amber-500" title="Your entries don't match yet" />
-                  )}
-                </div>
-                {isSelf && !existing?.didNotFinish && (
-                  <div className="mt-3 border-t border-stone-200 pt-3">
-                    <p className="text-center font-condensed text-xs font-semibold uppercase tracking-wide text-ink-500">Your Score</p>
-                    <div className="mt-1">
-                      <ScorePicker
-                        ariaLabel="Your score"
-                        par={selectedHoleInfo?.par ?? 4}
-                        disabled={alreadySubmitted || busy}
-                        value={existing?.selfReportedScore ?? null}
-                        onChange={(value) => submitStats(existing?.putts ?? 0, existing?.fir ?? null, existing?.gir ?? false, existing?.firDirection ?? null, existing?.girDirection ?? null, value)}
-                      />
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-2 items-start gap-2">
-                      {selectedHoleInfo?.par !== 3 && (
-                        <ShotDirectionPicker
-                          label="Fairway"
-                          disabled={alreadySubmitted || busy}
-                          value={existing?.fir ? "hit" : (existing?.firDirection as ShotResult | null)}
-                          onChange={(result) =>
-                            submitStats(existing?.putts ?? 0, result === "hit", existing?.gir ?? false, result === "hit" ? null : result, existing?.girDirection ?? null, existing?.selfReportedScore ?? undefined)
-                          }
-                        />
-                      )}
-                      <ShotDirectionPicker
-                        label="GIR"
-                        penaltyOption
-                        disabled={alreadySubmitted || busy}
-                        value={existing?.gir ? "hit" : (existing?.girDirection as ShotResult | null)}
-                        onChange={(result) =>
-                          submitStats(existing?.putts ?? 0, existing?.fir ?? null, result === "hit", existing?.firDirection ?? null, result === "hit" ? null : result, existing?.selfReportedScore ?? undefined)
-                        }
-                      />
-                    </div>
-
-                    <p className="mt-6 text-center font-condensed text-xs font-semibold uppercase tracking-wide text-ink-500">Putts</p>
-                    <div className="mt-1">
-                      <PuttsPicker
-                        ariaLabel="Your putts"
-                        disabled={alreadySubmitted || busy}
-                        value={existing?.putts ?? null}
-                        onChange={(value) => submitStats(value, existing?.fir ?? null, existing?.gir ?? false, existing?.firDirection ?? null, existing?.girDirection ?? null, existing?.selfReportedScore ?? undefined)}
-                      />
-                    </div>
-                    <HoleActionBar nextLabel="Next Hole" disabled={selectedHole === 18} onNext={() => setSelectedHole((h) => Math.min(h + 1, 18))} />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {(isFoursome || scoreFor(playerSlug, selectedHole)?.didNotFinish) && <HoleActionBar nextLabel="Next Hole" disabled={selectedHole === 18} onNext={() => setSelectedHole((h) => Math.min(h + 1, 18))} />}
-
-      <div className="mt-6 border-t border-stone-200 pt-4">
-        {alreadySubmitted ? (
-          <p className="font-sans text-sm text-ink-500">You&apos;ve submitted your scores for this round.</p>
-        ) : confirmingSubmit ? (
-          <div className="rounded-lg bg-red-50 p-3">
-            <p className="font-sans text-sm text-red-700">Submit your scores? You can&apos;t edit after this.</p>
-            <div className="mt-2 flex gap-3">
-              <button type="button" disabled={busy} onClick={submitScores} className="font-condensed text-2xs font-semibold uppercase tracking-wide text-red-700 underline">
-                Yes, submit
-              </button>
-              <button type="button" onClick={() => setConfirmingSubmit(false)} className="font-condensed text-2xs font-semibold uppercase tracking-wide text-ink-500 underline">
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setConfirmingSubmit(true)}
-            className="rounded-lg bg-maroon-700 px-4 py-2 font-condensed text-xs font-semibold uppercase tracking-wide text-white"
-          >
-            Submit Scores
-          </button>
-        )}
-      </div>
+  return <div>
+    <div className="-mx-4 sm:-mx-7">
+      <ScoringRoundHeader hole={selectedHole} par={selectedHoleInfo?.par ?? null} yards={selectedHoleInfo?.yards ?? null} totalScore={myTotal} toPar={myToPar} />
     </div>
-  );
+    <ScoringHoleSelector selectedHole={selectedHole} onSelect={(hole) => { setSelectedHole(hole); setConfirmingSubmit(false); }} disabled={busy} />
+    {error && <p role="alert" className="mt-2 text-center text-sm text-red-700">{error}</p>}
+
+    <div className="mt-3">
+      <p className="text-center font-condensed text-sm font-bold uppercase tracking-wide text-maroon-800">{isFoursome ? "Your team?s score" : "Your score"}</p>
+      <ScorePicker key={"self-" + selectedHole} ariaLabel={isFoursome ? "Your team score" : "Your score"} par={par} value={yourScore} disabled={locked || isFoursome || mine?.didNotFinish}
+        onChange={(value) => submitStats(mine?.putts ?? 0, mine?.fir ?? null, mine?.gir ?? false, mine?.firDirection ?? null, mine?.girDirection ?? null, value)} />
+      {isFoursome && <p className="text-center text-xs text-ink-500">Recorded by the opposing team</p>}
+      {mine?.didNotFinish && <p className="text-center text-xs text-ink-500">Did not finish ? double par</p>}
+    </div>
+
+    {targets.length > 0 && <div className="mt-2">
+      <p className="text-center font-condensed text-sm font-bold uppercase tracking-wide text-maroon-800">{targetLabel} ? {isFoursome ? "team score" : "score"}</p>
+      <ScorePicker key={"opponent-" + selectedHole} ariaLabel={targetLabel + " score"} par={par} value={opponentScore} disabled={locked}
+        onChange={(value) => submitStroke(targets, value)} />
+      {matchBox.format === "Fourball" && <button type="button" disabled={locked} aria-pressed={opponent?.didNotFinish ?? false}
+        onClick={() => { if (window.confirm("Record double par for a player who did not finish this hole?")) void submitStroke(targets, 0, true); }}
+        className="mx-auto block text-xs text-ink-500 underline disabled:opacity-50">{opponent?.didNotFinish ? "Did not finish ? double par" : "Did not finish (X)"}</button>}
+    </div>}
+
+    {!isFoursome && !mine?.didNotFinish && <>
+      <div className="relative mt-4 grid grid-cols-2 items-start gap-4">
+        <div aria-hidden className="absolute bottom-5 left-1/2 top-5 w-px bg-gold-400" />
+        <div className="flex justify-center">{par !== 3 && <ShotDirectionPicker label="Fairway" disabled={locked} value={mine?.fir ? "hit" : mine?.firDirection ?? null}
+          onChange={(result) => submitStats(mine?.putts ?? 0, result === "hit", mine?.gir ?? false, result === "hit" ? null : result, mine?.girDirection ?? null, mine?.selfReportedScore ?? par)} />}</div>
+        <div className="flex justify-center"><ShotDirectionPicker label="GIR" penaltyOption disabled={locked} value={mine?.gir ? "hit" : mine?.girDirection ?? null}
+          onChange={(result) => submitStats(mine?.putts ?? 0, mine?.fir ?? null, result === "hit", mine?.firDirection ?? null, result === "hit" ? null : result, mine?.selfReportedScore ?? par)} /></div>
+      </div>
+      <p className="mt-6 text-center font-condensed text-sm font-bold uppercase tracking-wide text-maroon-800">Putts</p>
+      <div className="mb-3 mt-1"><PuttsPicker ariaLabel="Your putts" disabled={locked} value={mine?.putts ?? null}
+        onChange={(value) => submitStats(value, mine?.fir ?? null, mine?.gir ?? false, mine?.firDirection ?? null, mine?.girDirection ?? null, mine?.selfReportedScore ?? par)} /></div>
+    </>}
+
+    {alreadySubmitted && <p className="mt-3 text-center text-sm text-ink-500">Scores submitted for this round.</p>}
+    {confirmingSubmit && !alreadySubmitted && <div className="mt-3 text-center">
+      <p className="text-sm text-maroon-800">Submit your round? Scores cannot be edited after submission.</p>
+      <button type="button" disabled={busy} onClick={() => setConfirmingSubmit(false)} className="mt-1 text-xs text-ink-500 underline">Keep editing</button>
+    </div>}
+    <HoleActionBar nextLabel={selectedHole === 18 ? alreadySubmitted ? "Round submitted" : confirmingSubmit ? "Confirm submission" : "Finish round" : "Next Hole"}
+      disabled={busy || (selectedHole === 18 && alreadySubmitted)} onNext={() => { if (confirmingSubmit) void submitScores(); else void nextHole(); }} />
+  </div>;
 }

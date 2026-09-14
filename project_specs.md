@@ -190,8 +190,8 @@ All pages are public, no auth.
   at once — the write path that table never had. `npm test`,
   `npx tsc --noEmit`, `npm run lint`, and `npm run build` all clean.
 - **Course location (City, State, Zip).** `live_courses` gained optional
-  `city`, `state` (two-letter code), `zip_code` columns — new migration
-  `supabase/course_library_location.sql`, **not yet run in production.**
+  `city`, `state` (two-letter code), `zip_code` columns — migration
+  `supabase/course_library_location.sql`, run in production 2026-09-11.
   Course Library home page and the Review/edit tees page both show "City, ST"
   in small grey text under the course name (blank if not set), with an "Edit
   location" control (new `components/portal/tiger/CourseLocationEditor.tsx`)
@@ -204,30 +204,65 @@ All pages are public, no auth.
   `lib/data/usStates.ts` (dropdown options) and `lib/data/courseLocation.ts`
   (`formatCourseLocation`, pure, tested). `npm test`, `npx tsc --noEmit`,
   `npm run lint`, and `npm run build` all clean.
+- **Real handicap calculation, live end-to-end.** Two bugs kept
+  `/portal/handicap`'s "Maroon Masters"/"Overall Handicap" (and the smaller
+  copy of the same number on the `/portal` home screen) stuck on "—" for
+  every player, even though the WHS math itself was already correct and
+  Tiger had already assigned tees for several rounds:
+  1. `/portal`'s home-screen number only ever looked at self-submitted
+     "Submit a score" rounds (none exist yet), ignoring the Maroon Masters
+     archive the dedicated page already combines in — now it calls the same
+     `combinedHandicapIndexes` the dedicated page uses, so the two screens
+     never disagree.
+  2. Every archived tournament round had a blank `format`, so
+     `archivedDifferential` (`lib/handicap/archiveIndex.ts`) — which only
+     counts rounds where a player posts their own individual score
+     (Fourball, Singles; never Alternate Shot/Foursomes, confirmed with
+     Cade 2026-09-11 — you don't play your own ball the whole round) — threw
+     every single round out.
+  Fixing #2 turned into a real data-model correction, not just a backfill:
+  the archived `round` numbers for 2026-palm-springs only counted rounds
+  with an individual score (1-6), skipping Alternate Shot entirely, so
+  "Round 5" in the archive was actually the trip's 7th round. Cade wanted
+  `round` to always mean the true round of the trip going forward. Fixed
+  for **2026-palm-springs only** (12 players): `scripts/rebuild-2026-round-numbering.ts`
+  renumbered every row (old 1→1, 2→3, 3→4, 4→5, 5→7, 6→8 — 2 and 6 are
+  Alt Shot, no row exists for them) and, while there, ran the already-coded
+  but never-executed Cove/Classic course-name swap from the gap below —
+  turned out that swap had already happened some other way (0 rows
+  matched), so it was a no-op. Then `scripts/backfill-archived-round-format.ts`
+  (rewritten to read format straight from the new
+  `lib/data/tournamentRoundSequence.ts`, tested) tagged all 72 rows.
+  Verified end-to-end against real production data:
+  `combinedHandicapIndexes` now returns a real number for every 2026
+  player. **2025-danzante is not renumbered/tagged yet** — every player has
+  5 archived rounds but the match schedule only accounts for 4 (2 Fourball
+  + 2 Singles); the 5th has no schedule entry at all and needs Cade to say
+  what it actually was and where it falls chronologically before it can be
+  touched (see Known gaps). `npm test`, `npx tsc --noEmit`, `npm run lint`
+  (pre-existing, unrelated failures elsewhere untouched), and `npm run
+  build` all clean.
 
 ## Known gaps / not yet built
 
-- **2026 Palm Springs "Cove"/"Classic" course-name swap has not been run in
-  production yet — SQL below is waiting on the user.** Two rounds were
-  mislabeled with each other's course name (confirmed against the "Verified
-  Mission Hills sequence" comment already in
-  `scripts/reconcile-mission-hills-2026.ts`). The code-side fix already
-  shipped: `lib/data/careerArchive.generated.ts`, `lib/data/scorecards-2026.ts`,
-  `lib/data/stats/courses-2026.ts`, and the "Assign tees" broadcast rehearsal
-  button label are all corrected and committed. The two Supabase tables still
-  need this run once in the SQL Editor (blocked from running it directly —
-  see Rule-2 walkthrough owed to the user):
-  ```sql
-  update archived_scorecard_rounds set course = 'Classic' where tournament_slug = '2026-palm-springs' and round = 2 and course = 'Cove';
-  update archived_scorecard_rounds set course = 'Cove' where tournament_slug = '2026-palm-springs' and round = 3 and course = 'Classic';
-  update career_stat_holes set course = 'Classic' where year = 2026 and round = 3 and course = 'Cove';
-  update career_stat_holes set course = 'Cove' where year = 2026 and round = 4 and course = 'Classic';
-  update career_stat_team_holes set course = 'Classic' where year = 2026 and round = 3 and course = 'Cove';
-  ```
-  Until this runs, the public leaderboard scorecards (`archived_scorecard_rounds`)
-  and the "Assign tees for handicap tracking" panel still show the swapped
-  names — only the Career Stats admin round archive and the static stats
-  pages are fixed so far. Also found but **out of scope, not touched**:
+- **2025-danzante's archived rounds are not yet renumbered to the true
+  round-of-the-trip scheme (see the "Real handicap calculation" round
+  above) — blocked on one open question for Cade.** Every player has 5
+  archived rounds; the match schedule (`lib/data/2025-danzante.ts`) only
+  accounts for 4 individually-scored rounds (Day 1 & Day 2 morning
+  Fourball, Day 4 morning & afternoon Singles — `matches` jumps straight
+  from `day: 2` to `day: 4`, so there's no Day 3 in the schedule at all).
+  The 5th archived round has no corresponding schedule entry — need to know
+  what it was (an individual/stroke-play Day 3, most likely) and its real
+  format before `scripts/backfill-archived-round-format.ts` can add
+  `danzante2025` to its `READY_TOURNAMENTS` list. Until this is resolved,
+  2025 rounds never count toward any player's handicap index (same "format
+  is blank" issue 2026 had, just not yet fixed for this year).
+  `career_stat_holes`/`career_stat_team_holes` (the separate Career Stats
+  tables) were **not** touched by the 2026 renumbering and still use
+  whatever round numbering they had before — a known, accepted difference
+  between that system and the handicap archive, not a bug.
+- Also found but **out of scope, not touched**:
   `careerArchiveCourseHoles` (same file) has many other 2026 rows whose
   `course` field holds junk like "Cade Round 3 Scorecard" instead of a real
   course name — a separate, pre-existing data-quality gap; and
@@ -267,17 +302,12 @@ All pages are public, no auth.
   can't actually sort/filter by proximity yet. It remains a visible "coming in
   a later round" placeholder (My Handicap → Submit a score → course lookup)
   until that's built.
-- **`supabase/archived_handicap_tees.sql` has not been run yet — this is what
-  makes every archived Maroon Masters round in `/portal/handicap` show
-  "— / —" instead of a real tee/rating/slope right now.** Confirmed missing
-  by querying production directly (`column
-  archived_scorecard_rounds.handicap_setup does not exist`). Run it in the
-  SQL Editor before using the new "Assign tees for handicap tracking" panel
-  on `/portal/admin/scorecards` — until then that panel's saves will fail.
-  Even after it's run, each tournament round still needs tees assigned
-  through that panel one round at a time; nothing is backfilled
-  automatically, and the Maroon Masters index needs at least 3 assigned,
-  eligible rounds before it shows a number (real WHS rule).
+- **Most archived rounds still need tees assigned via "Assign tees for
+  handicap tracking"** (`/portal/admin/scorecards`) before they count
+  toward anyone's index — nothing is backfilled automatically, one
+  tournament round at a time. Only 2026-palm-springs rounds 1/3/4 (renamed
+  from the old 1/2/3 — see the "Real handicap calculation" round above)
+  are done. 2026 rounds 5/7/8 and all of 2025-danzante still need it.
 
 ## Out of scope for this round
 
