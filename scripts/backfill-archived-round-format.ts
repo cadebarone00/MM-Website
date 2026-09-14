@@ -25,9 +25,9 @@ import type { Tournament } from "../lib/data/types";
 // Tournaments whose archived `round` numbers are confirmed to already be
 // the TRUE round-of-the-trip numbering. Add a tournament here only after
 // its one-time renumbering script has been run — see
-// scripts/rebuild-2026-round-numbering.ts for the 2026 example.
-const READY_TOURNAMENTS: Tournament[] = [palmSprings2026];
-void danzante2025; // not ready yet — round 5 of 5 has no schedule match (see chat 2026-09-11); add here once resolved and renumbered.
+// scripts/rebuild-2026-round-numbering.ts and
+// scripts/rebuild-2025-round-numbering.ts.
+const READY_TOURNAMENTS: Tournament[] = [palmSprings2026, danzante2025];
 
 async function main() {
   const apply = process.argv.includes("--apply");

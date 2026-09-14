@@ -110,8 +110,8 @@ export function HandicapHoleEntry({
 
         <div className="mt-4 grid grid-cols-2 divide-x divide-ink-200">
           <div className="flex items-start justify-center">
-            {hole.par !== 3 && (
-              <ShotDirectionPicker label="Fairway" value={firValue} onChange={(result) => setShotResult(selectedHole, "fir", result)} />
+            {(
+              <ShotDirectionPicker label="Fairway" notApplicable={hole.par === 3} value={firValue} onChange={(result) => setShotResult(selectedHole, "fir", result)} />
             )}
           </div>
           <div className="flex items-start justify-center">

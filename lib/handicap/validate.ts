@@ -49,7 +49,10 @@ export function validateSubmitInput(input: SubmitHandicapRoundInput): Validation
 export function validateAssignArchiveTeesInput(input: AssignArchiveTeesInput): ValidationResult {
   if (!input || typeof input !== "object") return { ok: false, error: "Invalid submission." };
   if (typeof input.tournamentSlug !== "string" || !input.tournamentSlug) return { ok: false, error: "Tournament is required." };
-  if (typeof input.round !== "number" || !Number.isInteger(input.round) || input.round < 1) return { ok: false, error: "Invalid round number." };
+  // 0 is a valid archived round number — the individual-champion "Round INDI"
+  // sentinel (see scripts/rebuild-2025-round-numbering.ts) — only negative or
+  // non-integer values are rejected.
+  if (typeof input.round !== "number" || !Number.isInteger(input.round) || input.round < 0) return { ok: false, error: "Invalid round number." };
   if (typeof input.courseId !== "string" || !input.courseId) return { ok: false, error: "Course is required." };
   if (typeof input.teeSetId !== "string" || !input.teeSetId) return { ok: false, error: "Tee set is required." };
   if (typeof input.datePlayed !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(input.datePlayed)) {

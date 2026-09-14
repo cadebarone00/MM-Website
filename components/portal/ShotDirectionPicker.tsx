@@ -34,13 +34,16 @@ export function ShotDirectionPicker({
   onChange,
   disabled,
   penaltyOption,
+  notApplicable,
 }: {
   label: string;
   value: ShotResult | null;
   onChange: (result: ShotResult) => void;
   disabled?: boolean;
   penaltyOption?: boolean;
+  notApplicable?: boolean;
 }) {
+  if (notApplicable) return <div className="w-full max-w-44"><p className="text-center font-condensed text-sm font-semibold uppercase tracking-wide text-ink-500">{label}</p><div className="mt-3 grid w-full grid-cols-3 grid-rows-3 justify-items-center gap-2"><span aria-hidden className="col-start-2 row-start-1 aspect-square w-full max-w-12" /><span className="col-start-2 row-start-2 flex aspect-square w-full max-w-12 items-center justify-center font-condensed text-sm font-bold text-ink-500" aria-label={`${label} not applicable`}>N/A</span><span aria-hidden className="col-start-2 row-start-3 aspect-square w-full max-w-12" /></div></div>;
   return (
     <div className="w-full max-w-44">
       <div className="flex items-center justify-center gap-2">

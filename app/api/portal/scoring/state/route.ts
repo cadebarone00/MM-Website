@@ -57,7 +57,7 @@ export async function GET(request: Request) {
   }
 
   const allPlayers = [...box.maroon_players, ...box.white_players];
-  const [{ data: scoreRows }, { data: submissionRows }, { data: roundState }] = await Promise.all([
+  const [{ data: scoreRows }, { data: submissionRows }, { data: roundState }, { data: holeSubmissions, error: holeSubmissionError }] = await Promise.all([
     service
       .from("live_hole_scores")
       .select("player_slug, hole, score, putts, fir, gir, fir_direction, gir_direction, did_not_finish, self_reported_score, confirmed_by")
@@ -65,8 +65,11 @@ export async function GET(request: Request) {
       .eq("round", round)
       .in("player_slug", allPlayers),
     service.from("live_match_box_submissions").select("player_slug").eq("match_box_id", box.id),
-    service.from("live_round_state").select("course_id").eq("season_year", seasonYear).eq("round", round).single(),
+    service.from("live_round_state").select("course_id, course_setup").eq("season_year", seasonYear).eq("round", round).single(),
+    service.from("live_hole_submissions").select("player_slug, hole, payload, submitted_at").eq("match_box_id", box.id),
   ]);
+
+  if (holeSubmissionError) return NextResponse.json({ ok: false, error: "Scoring is temporarily unavailable. Please try again shortly." }, { status: 503 });
 
   let holes: { number: number; par: number; yards: number }[] = [];
   if (roundState?.course_id) {
@@ -100,6 +103,7 @@ export async function GET(request: Request) {
         selfReportedScore: r.self_reported_score,
         confirmedBy: r.confirmed_by,
       })),
+      holeSubmissions: (holeSubmissions ?? []).map((row) => ({ ...row.payload, player: row.player_slug, hole: row.hole, submittedAt: row.submitted_at })),
       submittedPlayers: (submissionRows ?? []).map((r) => r.player_slug as string),
     },
     { headers: { "Cache-Control": "no-store" } }

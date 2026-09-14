@@ -11,28 +11,35 @@ export function HoleActionBar({
   nextLabel,
   onNext,
   disabled,
+  submitLabel,
+  submitDisabled,
+  onSubmit,
 }: {
   nextLabel: string;
   onNext: () => void;
   disabled?: boolean;
+  submitLabel?: string;
+  submitDisabled?: boolean;
+  onSubmit?: () => void;
 }) {
   const [showGpsNotice, setShowGpsNotice] = useState(false);
 
   return (
     <div className="mt-2">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={() => setShowGpsNotice(true)}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-red-600 px-4 py-3 font-condensed text-xs font-bold uppercase tracking-wide text-white"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-red-600 px-2 py-3 font-condensed text-xs font-bold uppercase tracking-wide text-white"
         >
           <MapPin size={14} /> GPS
         </button>
+        {onSubmit && <button type="button" onClick={onSubmit} disabled={submitDisabled} className="flex-1 rounded-lg bg-maroon-700 px-2 py-3 font-condensed text-xs font-bold uppercase tracking-wide text-white disabled:bg-ink-200 disabled:text-ink-500">{submitLabel ?? "Submit Score"}</button>}
         <button
           type="button"
           onClick={onNext}
           disabled={disabled}
-          className="flex-1 rounded-lg bg-maroon-700 px-4 py-3 font-condensed text-xs font-bold uppercase tracking-wide text-white disabled:opacity-50"
+          className="flex-1 rounded-lg bg-maroon-700 px-2 py-3 font-condensed text-xs font-bold uppercase tracking-wide text-white disabled:opacity-50"
         >
           {nextLabel}
         </button>

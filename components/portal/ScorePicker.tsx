@@ -13,18 +13,18 @@ function bubbleShape(score: number, par: number): { shape: "circle" | "box" | "p
 }
 
 /** Always shows its own par-relative shape — selection is shown by the picker's fixed center box, not by recoloring the bubble. */
-function ScoreBubble({ score, par }: { score: number; par: number }) {
+function ScoreBubble({ score, par, tone }: { score: number; par: number; tone: "light" | "maroon" }) {
   const { shape, doubled } = bubbleShape(score, par);
   const radiusClass = shape === "circle" ? "rounded-full" : "rounded-md";
-  const borderClass = shape === "plain" ? "border-transparent" : "border-ink-300";
+  const borderClass = shape === "plain" ? "border-transparent" : tone === "maroon" ? "border-white/60" : "border-ink-300";
   const inner = (
-    <span className={`flex h-16 w-16 items-center justify-center border-[3px] ${radiusClass} ${borderClass} font-sans text-3xl font-bold text-ink-900`}>
+    <span className={`flex h-16 w-16 items-center justify-center border-[3px] ${radiusClass} ${borderClass} font-sans text-3xl font-bold ${tone === "maroon" ? "text-white" : "text-ink-900"}`}>
       {score}
     </span>
   );
   if (!doubled) return inner;
   return (
-    <span className={`flex h-20 w-20 items-center justify-center border-[3px] ${radiusClass} border-ink-300 p-0.5`}>
+    <span className={`flex h-20 w-20 items-center justify-center border-[3px] ${radiusClass} ${tone === "maroon" ? "border-white/60" : "border-ink-300"} p-0.5`}>
       {inner}
     </span>
   );
@@ -43,12 +43,14 @@ export function ScorePicker({
   par,
   ariaLabel,
   disabled,
+  tone = "light",
 }: {
   value: number | null;
   onChange: (score: number) => void;
   par: number;
   ariaLabel: string;
   disabled?: boolean;
+  tone?: "light" | "maroon";
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef(new Map<number, HTMLButtonElement>());
@@ -90,7 +92,7 @@ export function ScorePicker({
 
   return (
     <div className="relative mx-auto w-full max-w-[420px]">
-      <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-28 w-[calc(100%/3-8px)] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-maroon-700/25 ring-2 ring-maroon-700/40" />
+      <div aria-hidden className={`pointer-events-none absolute left-1/2 top-1/2 z-0 h-28 w-[calc(100%/3-8px)] -translate-x-1/2 -translate-y-1/2 rounded-2xl ring-2 ${tone === "maroon" ? "bg-white/20 ring-white/50" : "bg-maroon-700/25 ring-maroon-700/40"}`} />
       <div
         ref={containerRef}
         onScroll={handleScroll}
@@ -113,7 +115,7 @@ export function ScorePicker({
               aria-pressed={selected}
               className="flex h-20 w-1/3 shrink-0 snap-center items-center justify-center disabled:opacity-50"
             >
-              <ScoreBubble score={score} par={par} />
+              <ScoreBubble score={score} par={par} tone={tone} />
             </button>
           );
         })}

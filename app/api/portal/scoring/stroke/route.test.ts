@@ -1,11 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { POST } from "./route.ts";
 
-test("POST /api/portal/scoring/stroke rejects when requirePlayer resolves null", async () => {
-  const { POST } = await import("./route.ts");
-  const request = new Request("http://localhost/api/portal/scoring/stroke", {
-    method: "POST",
-    body: JSON.stringify({ round: 1, hole: 1, targetPlayerSlugs: ["cade-barone"], score: 4 }),
-  });
-  await assert.rejects(() => POST(request));
+test("legacy stroke autosaves cannot bypass complete-hole submission", async () => {
+  const result = await POST();
+  assert.equal(result.status, 409);
+  assert.match((await result.json()).error, /Submit Score/);
 });
