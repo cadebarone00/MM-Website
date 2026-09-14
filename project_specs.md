@@ -235,31 +235,98 @@ All pages are public, no auth.
   `lib/data/tournamentRoundSequence.ts`, tested) tagged all 72 rows.
   Verified end-to-end against real production data:
   `combinedHandicapIndexes` now returns a real number for every 2026
-  player. **2025-danzante is not renumbered/tagged yet** — every player has
-  5 archived rounds but the match schedule only accounts for 4 (2 Fourball
-  + 2 Singles); the 5th has no schedule entry at all and needs Cade to say
-  what it actually was and where it falls chronologically before it can be
-  touched (see Known gaps). `npm test`, `npx tsc --noEmit`, `npm run lint`
-  (pre-existing, unrelated failures elsewhere untouched), and `npm run
-  build` all clean.
+  player. `npm test`, `npx tsc --noEmit`, `npm run lint` (pre-existing,
+  unrelated failures elsewhere untouched), and `npm run build` all clean.
+- **Real handicap calculation, part 2 — 2025-danzante.** Same fix as above,
+  applied to the other tournament. Every player had 5 archived rounds
+  where only 4 were expected (2 Fourball + 2 Singles); opened the actual
+  trip spreadsheet (`Maroon Masters Danzante (1).xlsx`, "Player Input"
+  sheet) to find the real cause instead of guessing — its own column
+  headers label 5 saved scorecards "Round 1/2/3/5/6" (genuinely skipping
+  "Round 4"), and per Cade (2026-09-14) the real story is: the trip played
+  7 rounds total (2 Fourball, 2 Alt Shot, 2 Singles, **plus one extra
+  individual-champion round unrelated to the Maroon-vs-White match play**),
+  and that extra round got saved under "Round 2" in the original
+  spreadsheet by mistake — Alt Shot still has no archived row for either
+  of its two rounds, same as every other year. Fixed via
+  `scripts/rebuild-2025-round-numbering.ts`: old round 1→1, **2→0** (the
+  individual-champion round, format set directly to "Individual"), 3→3,
+  4→5, 5→6. Round 0 is a new concept — a real archived round that isn't
+  part of a tournament's numbered match-play sequence — so it needed an
+  actual display convention, not just a backfill: new
+  `lib/data/roundLabel.ts` (`formatRoundLabel`, tested) shows it as **"Round
+  INDI"** everywhere a round number appears (My Handicap history, the
+  admin scorecard editor + rounds list, the "Assign tees" panel, the public
+  leaderboard scorecard page). Surfaced and fixed a real bug along the way:
+  `validateAssignArchiveTeesInput` (`lib/handicap/validate.ts`) rejected
+  round 0 outright, which would have permanently blocked assigning a
+  tee/date to Round INDI. Before writing anything, built a full
+  player-by-player verification table (round, partner, opponents, real
+  score, cross-checked against the database) and had Cade manually confirm
+  it — Alt Shot's match-level results (no individual score exists, but the
+  team result does, in `lib/data/2025-danzante.ts`'s `matches`, a
+  completely separate table from the handicap archive) were checked the
+  same way. Verified end-to-end after applying: hole-by-hole totals
+  unchanged, formats correctly tagged, `combinedHandicapIndexes` computes
+  correctly (still `null` for 2025-only players like Peyton Vos until tees
+  are assigned — see Known gaps, not a bug). `npm test`, `npx tsc
+  --noEmit`, `npm run lint` (pre-existing, unrelated failures elsewhere
+  untouched), and `npm run build` all clean.
+
+## Current task (defined, awaiting approval to build)
+
+**Restore a real "send invite" button on Players & Teams**
+(`/portal/admin/master-settings/[year]/players-teams`,
+`components/portal/PlayerSlotsAdmin.tsx`). Today the only invite tool is
+"Copy Invite Link," which copies a `/signup?code=<username>` URL for Tiger
+to send by hand — nothing in this repo has ever emailed a player. This
+round replaces that button with "Send Invite":
+
+- **Data model:** `player_slots` gains a nullable `email` column
+  (migration `supabase/player_slots_email.sql`, folded into `schema.sql`;
+  Tiger-only via the service-role key, same RLS posture as the rest of
+  the table). Remembers the address so it doesn't need retyping on a
+  resend.
+- **UI:** the row's invite action becomes a toggle ("Send Invite") that
+  expands to an email box (pre-filled from the stored `email` if any) and
+  a submit button — same expand-a-row pattern the page already uses for
+  "Edit directly." Errors surface in the page's existing error banner;
+  success reloads the page (same pattern as Unlink/team assignment),
+  which flips Status from "Open" to "Claimed."
+- **Backend:** new `POST /api/portal/tiger/invite` route (host-gated,
+  service-role client, mirrors `/api/auth/signup`'s create-then-rollback
+  shape): calls Supabase's `auth.admin.inviteUserByEmail(email, {
+  redirectTo: "<origin>/auth/callback?next=/reset-password" })`, which
+  creates the player's login and sends Supabase's own built-in invite
+  email — no new third-party service or secret. On success, inserts their
+  `profiles` row (email, known `fullName` as `display_name`, the
+  slot's already-assigned `username`, `is_host: false`, `player_slug`)
+  and marks the slot claimed, same as self-serve signup does today. The
+  player's landing page after clicking the email is the *existing*
+  `/reset-password` screen (unchanged) — they set a password, no separate
+  sign-up form, since name/username/team are already known.
+- **Undo path:** the existing "Unlink" button covers a wrong email or an
+  invite the player never completes — no new undo mechanism needed.
+- **Third-party services:** none new. Uses Supabase's built-in invite
+  email on the project's default (rate-limited, ~a handful/hour on the
+  free tier unless custom SMTP is configured later — not part of this
+  round) email sending.
+- **Done looks like:** migration written (and run once in Supabase by the
+  user); Send Invite visibly replaces Copy Invite Link; sending an
+  invite in a real Supabase project creates the login, sends the email,
+  flips the row to Claimed, and Unlink still cleanly undoes it;
+  `npm test`, `npx tsc --noEmit`, `npm run lint`, and `npm run build` all
+  clean before this is called done.
 
 ## Known gaps / not yet built
 
-- **2025-danzante's archived rounds are not yet renumbered to the true
-  round-of-the-trip scheme (see the "Real handicap calculation" round
-  above) — blocked on one open question for Cade.** Every player has 5
-  archived rounds; the match schedule (`lib/data/2025-danzante.ts`) only
-  accounts for 4 individually-scored rounds (Day 1 & Day 2 morning
-  Fourball, Day 4 morning & afternoon Singles — `matches` jumps straight
-  from `day: 2` to `day: 4`, so there's no Day 3 in the schedule at all).
-  The 5th archived round has no corresponding schedule entry — need to know
-  what it was (an individual/stroke-play Day 3, most likely) and its real
-  format before `scripts/backfill-archived-round-format.ts` can add
-  `danzante2025` to its `READY_TOURNAMENTS` list. Until this is resolved,
-  2025 rounds never count toward any player's handicap index (same "format
-  is blank" issue 2026 had, just not yet fixed for this year).
+- **2025-danzante's 8 players still need tees assigned** via "Assign tees
+  for handicap tracking" (`/portal/admin/scorecards`) before any of their
+  rounds count — the round numbering/format problem itself is fixed (see
+  the "Real handicap calculation, part 2" round below), this is just the
+  same manual per-round step 2026 already had done for its first 3 rounds.
   `career_stat_holes`/`career_stat_team_holes` (the separate Career Stats
-  tables) were **not** touched by the 2026 renumbering and still use
+  tables) were **not** touched by either year's renumbering and still use
   whatever round numbering they had before — a known, accepted difference
   between that system and the handicap archive, not a bug.
 - Also found but **out of scope, not touched**:
