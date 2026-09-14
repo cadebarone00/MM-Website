@@ -26,7 +26,7 @@
 .scores button { height: 100%; }
 .scores button > span { height: var(--bubble-size); width: var(--bubble-size); font-size: 26px; }
 .scores button > span > span { height: calc(var(--bubble-size) - 12px); width: calc(var(--bubble-size) - 12px); font-size: 26px; }
-.stats { margin-top: auto; }
+.stats { margin-top: 6px; }
 .stats [data-compasses] > div > div { max-width: 144px; }
 .stats [data-compasses] p { font-size: 12px; line-height: 16px; }
 .stats :global(.grid-rows-3) { margin-top: 3px; gap: 2px; }
