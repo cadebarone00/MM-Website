@@ -6,7 +6,7 @@ import Link from "next/link";
 import type { Team } from "@/lib/data";
 import type { ArchivedHandicapRound, HandicapSummary } from "@/lib/handicap/types";
 import { handicapHistory, selectHandicapScores, type ScoreView } from "@/lib/handicap/history";
-import { archivedDifferential } from "@/lib/handicap/archiveIndex";
+import { archivedDifferential, contributingRoundIds } from "@/lib/handicap/archiveIndex";
 import { calculateDifferential } from "@/lib/handicap/whs";
 import { formatDifferential, formatHandicapIndex } from "@/lib/handicap/format";
 import { formatRoundLabel } from "@/lib/data/roundLabel";
@@ -19,6 +19,7 @@ export function HandicapHome({ playerName, summary, archivedRounds, team }: { pl
   const [activeTab, setActiveTab] = useState<"maroon-masters" | "overall">("maroon-masters");
   const [scoreView, setScoreView] = useState<ScoreView>("recent");
   const rounds = selectHandicapScores(handicapHistory(archivedRounds, summary.rounds, activeTab), scoreView);
+  const contributing = contributingRoundIds(summary.rounds, archivedRounds, activeTab);
   const index = summary.index;
   const lowIndex = summary.lowIndex;
   return (
@@ -77,6 +78,7 @@ export function HandicapHome({ playerName, summary, archivedRounds, team }: { pl
           </select>
         </div>
         {archivedRounds.length > 0 && <p className="mt-2 font-sans text-xs text-ink-500">Differential = (score minus course rating) x 113 / slope. Negative differentials are better than the course rating; negative calculated indexes display as plus handicaps. Rounds missing required data show no differential.</p>}
+        <p className="mt-2 font-sans text-xs text-ink-500">* Used in the {activeTab === "maroon-masters" ? "Maroon Masters" : "overall"} handicap calculation.</p>
         {rounds.length === 0 ? (
           <p className="mt-3 font-sans text-sm text-ink-500">{activeTab === "maroon-masters" ? "No archived Maroon Masters rounds yet." : "No rounds yet — submit your first score above."}</p>
         ) : (
@@ -84,17 +86,19 @@ export function HandicapHome({ playerName, summary, archivedRounds, team }: { pl
             {rounds.map((entry) => {
               const differential = entry.source === "archive" ? archivedDifferential(entry.round) : calculateDifferential(entry.round.totalScore, entry.round.rating, entry.round.slope);
               return (
-              <article key={`${entry.source}-${entry.round.id}`} className="grid grid-cols-[56px_minmax(0,1fr)_76px] items-center gap-3 py-3 pr-2 sm:grid-cols-[72px_minmax(0,1fr)_100px]">
+              <article key={`${entry.source}-${entry.round.id}`} className="grid grid-cols-[42px_50px_minmax(0,1fr)_70px] items-center gap-1.5 py-3 pr-2 sm:grid-cols-[60px_64px_minmax(0,1fr)_90px]">
                 <div className="border-r border-stone-200 px-1 text-center">
                   <p className="font-sans text-2xl font-medium tabular-nums text-maroon-700">{entry.round.totalScore ?? "—"}</p>
-                  <p className="mt-0.5 font-sans text-[10px] text-ink-500">{entry.source === "archive" ? entry.round.holesPlayed : 18} holes</p>
                 </div>
-                <div className="min-w-0">
+                <div className="text-center font-sans text-lg font-medium tabular-nums text-maroon-700" aria-label="Score differential">
+                  {formatDifferential(differential)}{contributing.has(entry.source + "-" + entry.round.id) && <sup className="ml-0.5 text-xs" aria-label="Used in handicap calculation">*</sup>}
+                </div>
+                <div className="min-w-0 pl-1">
                   <p className="truncate font-sans text-xs text-ink-600">{entry.source === "submitted" ? formatDate(entry.round.datePlayed) : `${entry.round.tournamentLabel} · ${formatRoundLabel(entry.round.round)}`}</p>
                   <h3 title={entry.round.courseName} className="mt-1 truncate font-sans text-sm font-semibold text-ink-900">{entry.round.courseName}</h3>
                   <p className="mt-0.5 truncate font-sans text-xs text-ink-500">{entry.source === "submitted" ? entry.round.teeSetName : entry.round.teeSetup?.teeSetName ?? entry.round.format}</p>
                 </div>
-                <div className="text-right font-sans text-xs tabular-nums">
+                <div className="border-l border-stone-200 pl-2 text-right font-sans text-xs tabular-nums">
                   <p aria-label="Course rating and slope" className="text-maroon-700">
                     {entry.source === "submitted"
                       ? `${entry.round.rating}/${entry.round.slope}`
@@ -102,7 +106,6 @@ export function HandicapHome({ playerName, summary, archivedRounds, team }: { pl
                         ? `${entry.round.teeSetup.rating}/${entry.round.teeSetup.slope}`
                         : "— / —"}
                   </p>
-                  <p className="mt-2 font-semibold text-maroon-700" aria-label="Score differential">Diff: {formatDifferential(differential)}</p>
                 </div>
               </article>
             ); })}

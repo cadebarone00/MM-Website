@@ -56,11 +56,18 @@ export function calculateDifferential(totalScore: number, rating: number, slope:
  * does not produce a Handicap Index below that minimum. Any entries past
  * 20 are dropped defensively.
  */
+export function contributingDifferentialIndexes(differentials: number[]): number[] {
+  if (differentials.length < MIN_ROUNDS_FOR_INDEX) return [];
+  const considered = differentials.slice(0, 20);
+  return considered.map((value, index) => ({ value, index })).sort((a, b) => a.value - b.value)
+    .slice(0, ROUNDS_USED_TABLE[considered.length - MIN_ROUNDS_FOR_INDEX].use).map((entry) => entry.index);
+}
+
 export function calculateHandicapIndex(differentials: number[]): number | null {
   if (differentials.length < MIN_ROUNDS_FOR_INDEX) return null;
   const considered = differentials.slice(0, 20);
   const row = ROUNDS_USED_TABLE[considered.length - MIN_ROUNDS_FOR_INDEX];
-  const lowest = [...considered].sort((a, b) => a - b).slice(0, row.use);
+  const lowest = contributingDifferentialIndexes(considered).map((index) => considered[index]);
   const average = lowest.reduce((sum, d) => sum + d, 0) / lowest.length;
   return round1(average + row.adjustment);
 }

@@ -1,11 +1,12 @@
 // scripts/migrate-archived-scorecards.ts
 // Run once with: npx tsx scripts/migrate-archived-scorecards.ts
-// Copies today's hardcoded 2025/2026 scorecards into the database, exactly
-// as-is — this only relocates the source of truth, no values change.
-// Safe to re-run: every insert is keyed by the same unique constraints the
-// schema defines, so a second run just no-ops on rows already present
-// rather than duplicating them (see the onConflict below).
+// Copies today's hardcoded 2024/2025/2026 scorecards into the database,
+// exactly as-is — this only relocates the source of truth, no values
+// change. Safe to re-run: every insert is keyed by the same unique
+// constraints the schema defines, so a second run just no-ops on rows
+// already present rather than duplicating them (see the onConflict below).
 import { createSupabaseServiceRoleClient } from "../lib/supabase/server";
+import { scorecards2024 } from "../lib/data/scorecards-2024";
 import { scorecards2025 } from "../lib/data/scorecards-2025";
 import { scorecards2026 } from "../lib/data/scorecards-2026";
 import { playerProfiles } from "../lib/data/players";
@@ -55,6 +56,7 @@ async function migrateTournament(tournamentSlug: string, scorecards: PlayerScore
 }
 
 async function main() {
+  await migrateTournament("2024-pinehurst", scorecards2024);
   await migrateTournament("2025-danzante", scorecards2025);
   await migrateTournament("2026-palm-springs", scorecards2026);
 }

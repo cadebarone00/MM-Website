@@ -1,5 +1,5 @@
 import type { ArchivedHandicapRound, HandicapRoundSummary } from "./types";
-import { calculateDifferential, calculateHandicapIndex, calculateLowIndex } from "./whs";
+import { calculateDifferential, calculateHandicapIndex, calculateLowIndex, contributingDifferentialIndexes } from "./whs";
 
 // Only formats where a player posts their own individual score count toward
 // a handicap (real WHS rule). Alternate Shot/Foursomes never has one — the
@@ -22,12 +22,23 @@ export function archivedDifferential(round: ArchivedHandicapRound): number | nul
   return calculateDifferential(round.totalScore, tee.rating, tee.slope);
 }
 
-export function combinedHandicapIndexes(submitted: HandicapRoundSummary[], archived: ArchivedHandicapRound[]) {
+function handicapInputs(submitted: HandicapRoundSummary[], archived: ArchivedHandicapRound[]) {
   const eligible = archived.flatMap((round) => {
     const differential = archivedDifferential(round);
-    return differential == null ? [] : [{ date: round.datePlayed!, differential, round: round.round }];
+    return differential == null ? [] : [{ id: "archive-" + round.id, date: round.datePlayed!, differential, round: round.round }];
   }).sort((a, b) => b.date.localeCompare(a.date) || b.round - a.round);
-  const all = [...submitted.map((r) => ({ date: r.datePlayed, differential: calculateDifferential(r.totalScore, r.rating, r.slope), round: 0 })), ...eligible].sort((a, b) => b.date.localeCompare(a.date) || b.round - a.round);
+  const all = [...submitted.map((r) => ({ id: "submitted-" + r.id, date: r.datePlayed, differential: calculateDifferential(r.totalScore, r.rating, r.slope), round: 0 })), ...eligible].sort((a, b) => b.date.localeCompare(a.date) || b.round - a.round);
+  return { all, eligible };
+}
+
+export function contributingRoundIds(submitted: HandicapRoundSummary[], archived: ArchivedHandicapRound[], section: "overall" | "maroon-masters") {
+  const { all, eligible } = handicapInputs(submitted, archived);
+  const inputs = section === "overall" ? all : eligible;
+  return new Set(contributingDifferentialIndexes(inputs.map((r) => r.differential)).map((index) => inputs[index].id));
+}
+
+export function combinedHandicapIndexes(submitted: HandicapRoundSummary[], archived: ArchivedHandicapRound[]) {
+  const { all, eligible } = handicapInputs(submitted, archived);
   return {
     index: calculateHandicapIndex(all.map((r) => r.differential)),
     maroonMastersIndex: calculateHandicapIndex(eligible.map((r) => r.differential)),
