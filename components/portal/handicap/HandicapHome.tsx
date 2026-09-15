@@ -6,6 +6,9 @@ import Link from "next/link";
 import type { Team } from "@/lib/data";
 import type { ArchivedHandicapRound, HandicapSummary } from "@/lib/handicap/types";
 import { handicapHistory, selectHandicapScores, type ScoreView } from "@/lib/handicap/history";
+import { archivedDifferential } from "@/lib/handicap/archiveIndex";
+import { calculateDifferential } from "@/lib/handicap/whs";
+import { formatDifferential, formatHandicapIndex } from "@/lib/handicap/format";
 import { formatRoundLabel } from "@/lib/data/roundLabel";
 
 function formatDate(iso: string): string {
@@ -36,17 +39,17 @@ export function HandicapHome({ playerName, summary, archivedRounds, team }: { pl
             <p className="font-condensed text-2xs font-semibold uppercase tracking-[0.16em] text-white/75">{playerName}</p>
             <div className="mt-2 flex items-end gap-4 sm:gap-6">
               <div>
-                <p className="font-serif text-4xl font-bold leading-none">{index != null ? index.toFixed(1) : "—"}</p>
+                <p className="font-serif text-4xl font-bold leading-none">{formatHandicapIndex(index)}</p>
                 <p className="mt-1 font-condensed text-2xs font-semibold uppercase tracking-wide text-white/75">Overall Handicap</p>
               </div>
               <div className={summary.maroonMastersIndex == null ? "text-stone-300" : undefined} title={summary.maroonMastersIndex == null ? "Maroon Masters handicap will be available once archived rounds have the required tee data." : undefined}>
-                <p className="font-serif text-2xl font-bold leading-none">{summary.maroonMastersIndex != null ? summary.maroonMastersIndex.toFixed(1) : "—"}</p>
+                <p className="font-serif text-2xl font-bold leading-none">{formatHandicapIndex(summary.maroonMastersIndex)}</p>
                 <p className="mt-1 font-condensed text-[10px] font-semibold uppercase tracking-wide">Maroon Masters</p>
               </div>
             </div>
           </div>
           <div className="text-right">
-            <p className="font-serif text-xl font-bold leading-none">{lowIndex != null ? lowIndex.toFixed(1) : "—"}</p>
+            <p className="font-serif text-xl font-bold leading-none">{formatHandicapIndex(lowIndex)}</p>
             <p className="mt-1 font-condensed text-2xs font-semibold uppercase tracking-wide text-white/75">Low Index</p>
           </div>
         </div>
@@ -73,12 +76,14 @@ export function HandicapHome({ playerName, summary, archivedRounds, team }: { pl
             <option value="lowest">Lowest to Highest</option>
           </select>
         </div>
-        {archivedRounds.length > 0 && <p className="mt-2 font-sans text-xs text-ink-500">Archived scores appear below. They will count toward the handicap index once their historical tee ratings and slopes are available.</p>}
+        {archivedRounds.length > 0 && <p className="mt-2 font-sans text-xs text-ink-500">Differential = (score minus course rating) x 113 / slope. Negative differentials are better than the course rating; negative calculated indexes display as plus handicaps. Rounds missing required data show no differential.</p>}
         {rounds.length === 0 ? (
           <p className="mt-3 font-sans text-sm text-ink-500">{activeTab === "maroon-masters" ? "No archived Maroon Masters rounds yet." : "No rounds yet — submit your first score above."}</p>
         ) : (
           <div className="mt-3 divide-y divide-stone-200 border-y border-stone-200 bg-white">
-            {rounds.map((entry) => (
+            {rounds.map((entry) => {
+              const differential = entry.source === "archive" ? archivedDifferential(entry.round) : calculateDifferential(entry.round.totalScore, entry.round.rating, entry.round.slope);
+              return (
               <article key={`${entry.source}-${entry.round.id}`} className="grid grid-cols-[56px_minmax(0,1fr)_76px] items-center gap-3 py-3 pr-2 sm:grid-cols-[72px_minmax(0,1fr)_100px]">
                 <div className="border-r border-stone-200 px-1 text-center">
                   <p className="font-sans text-2xl font-medium tabular-nums text-maroon-700">{entry.round.totalScore ?? "—"}</p>
@@ -97,9 +102,10 @@ export function HandicapHome({ playerName, summary, archivedRounds, team }: { pl
                         ? `${entry.round.teeSetup.rating}/${entry.round.teeSetup.slope}`
                         : "— / —"}
                   </p>
+                  <p className="mt-2 font-semibold text-maroon-700" aria-label="Score differential">Diff: {formatDifferential(differential)}</p>
                 </div>
               </article>
-            ))}
+            ); })}
           </div>
         )}
       </section>
