@@ -39,7 +39,7 @@ function MatchBox({ matchup }: { matchup: RoundFormatMatchup }) {
     const player = names([...matchup.side, ...matchup.opponent])[0];
     return (
       <div className="mx-auto w-fit rounded-lg border border-gold-200 bg-white p-3 text-center">
-        <p className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-400">{matchup.teeTime ?? "Tee time TBD"}</p>
+        <p className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-400">{matchup.teeTime ?? "Tee time N/A"}</p>
         <p className="mt-2 font-sans text-sm font-semibold text-ink-900 whitespace-nowrap">{player}</p>
         <p className="mt-1 font-condensed text-3xs font-bold uppercase tracking-wide text-ink-400">No match played — no points awarded</p>
       </div>
@@ -47,7 +47,7 @@ function MatchBox({ matchup }: { matchup: RoundFormatMatchup }) {
   }
   return (
     <div className={`rounded-lg border border-gold-200 bg-white p-3 ${singles ? "mx-auto w-fit" : ""}`}>
-      <p className="text-center font-condensed text-2xs font-bold uppercase tracking-wide text-ink-400">{matchup.teeTime ?? "Tee time TBD"}</p>
+      <p className="text-center font-condensed text-2xs font-bold uppercase tracking-wide text-ink-400">{matchup.teeTime ?? "Tee time N/A"}</p>
       <div className={`mt-2 flex items-center gap-3 ${singles ? "" : "justify-between"}`}>
         <div className={singles ? "" : "flex-1 text-right"}>
           {names(matchup.side).map((name) => (

@@ -23,7 +23,11 @@ export function handicapHistory(
   submitted: HandicapRoundSummary[],
   section: "maroon-masters" | "overall",
 ): HandicapHistoryRound[] {
-  const rounds: HandicapHistoryRound[] = archived.map((round) => ({ source: "archive", round }));
+  // A non-18-hole round (e.g. 2024's 9-hole Cradle "Play 4, Take 3" round)
+  // is never a real personal round — already excluded from the index math
+  // (archivedDifferential), and per Cade (2026-09-15) it shouldn't even
+  // show up in the scores list, not just be excluded from the average.
+  const rounds: HandicapHistoryRound[] = archived.filter((round) => round.holesPlayed === 18).map((round) => ({ source: "archive", round }));
   if (section === "overall") rounds.push(...submitted.map((round) => ({ source: "submitted" as const, round })));
   return rounds.sort((a, b) => {
     // Archives have a tournament date, not an exact date for each round.

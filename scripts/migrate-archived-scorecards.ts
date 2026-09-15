@@ -23,10 +23,16 @@ async function migrateTournament(tournamentSlug: string, scorecards: PlayerScore
     }
 
     for (const round of card.rounds) {
+      // Only include `format` in the write when this scorecard actually
+      // carries one. Omitting the key (rather than sending null) means a
+      // re-run never clobbers a format already backfilled by
+      // scripts/backfill-archived-round-format.ts — a real incident,
+      // 2026-09-15: re-running this to add 2024 wiped format on every
+      // 2025/2026 row because scorecards-2025/2026.ts never set it.
       const { data: roundRow, error: roundError } = await service
         .from("archived_scorecard_rounds")
         .upsert(
-          { tournament_slug: tournamentSlug, player_slug: profile.slug, round: round.round, course: round.course, format: round.format ?? null },
+          { tournament_slug: tournamentSlug, player_slug: profile.slug, round: round.round, course: round.course, ...(round.format ? { format: round.format } : {}) },
           { onConflict: "tournament_slug,player_slug,round" }
         )
         .select("id")

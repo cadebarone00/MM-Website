@@ -38,6 +38,13 @@ test("every archived round appears in both sections, personal scores only in Ove
   assert.equal(archived[0].round, 1, "sorting does not mutate the archive");
 });
 
+test("a non-18-hole archived round (e.g. the 9-hole Cradle round) never appears in the scores list", () => {
+  const withNineHoleRound = [...archived, { ...archived[0], id: "archive-cradle", holesPlayed: 9 }];
+  const masters = handicapHistory(withNineHoleRound, submitted, "maroon-masters");
+  assert.ok(!masters.some((entry) => entry.round.id === "archive-cradle"));
+  assert.equal(masters.length, 2);
+});
+
 test("players without archived rounds still see personal scores only in Overall", () => {
   assert.deepEqual(handicapHistory([], submitted, "maroon-masters"), []);
   assert.equal(handicapHistory([], submitted, "overall").length, 1);
