@@ -9,6 +9,9 @@ export const danzante2025: Tournament = {
   dateLabel: "January 7–12, 2025",
   startDate: "2025-01-07",
   endDate: "2025-01-12",
+  // Day 3 (Jan 10) had no golf — a fishing day, confirmed against the trip
+  // spreadsheet's own "Day 3" sheet ("8 Retards Attempt Fishing").
+  dayDates: { 1: "2025-01-08", 2: "2025-01-09", 3: "2025-01-10", 4: "2025-01-11" },
   roster: {
     maroon: ["cam-latto", "drew-weisser", "luke-sherrell", "nate-wojciechowski"],
     white: ["cade-barone", "collin-ross", "dalton-spriggs", "peyton-vos"],

@@ -9,6 +9,7 @@ export const palmSprings2026: Tournament = {
   dateLabel: "January 2026",
   startDate: "2026-01-03",
   endDate: "2026-01-06",
+  dayDates: { 1: "2026-01-07", 2: "2026-01-08", 3: "2026-01-09", 4: "2026-01-10" },
   roster: {
     maroon: ["cam-latto", "drew-weisser", "hugo-moebel", "luke-sherrell", "nate-wojciechowski", "pete-peabody"],
     white: ["cade-barone", "collin-ross", "dalton-spriggs", "jackson-collins", "kyle-schnabel", "quez-currier"],
