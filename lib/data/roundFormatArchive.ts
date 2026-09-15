@@ -4,7 +4,7 @@ import { tournamentRoundSequence } from "./tournamentRoundSequence";
 
 export interface RoundFormatMatchup {
   side: string[]; // player slugs — the lone player for Singles, both partners for Fourball/Alt Shot
-  opponent: string[];
+  opponent: string[]; // empty = played solo, no real match (e.g. an absent opponent) — see archiveOnlyMatches
   teeTime?: string; // RealMatch.teeTimeCst — blank for every historical match until hand-entered
 }
 
@@ -49,13 +49,16 @@ export function groupRoundFormatArchiveByDay(entries: RoundFormatEntry[], dayDat
  * from the tournament's own `matches` array, so it's always exactly what
  * the schedule says, nothing hand-reconciled.
  */
-export function roundFormatArchive(tournament: Pick<Tournament, "matches">): RoundFormatEntry[] {
+export function roundFormatArchive(tournament: Pick<Tournament, "matches" | "archiveOnlyMatches">): RoundFormatEntry[] {
+  // archiveOnlyMatches never affects the round sequence itself (tournamentRoundSequence
+  // reads `matches` only) — it only adds extra matchups to a round that's already real.
+  const allMatches = [...tournament.matches, ...(tournament.archiveOnlyMatches ?? [])];
   return tournamentRoundSequence(tournament).map((representative, index) => ({
     round: index + 1,
     day: representative.day,
     session: representative.session,
     format: representative.format,
-    matchups: tournament.matches
+    matchups: allMatches
       .filter((match) => match.day === representative.day && match.session === representative.session)
       .map((match) => ({ side: match.maroonPlayers, opponent: match.whitePlayers, teeTime: match.teeTimeCst })),
   }));

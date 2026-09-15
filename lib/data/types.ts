@@ -78,6 +78,15 @@ export interface Tournament {
   pointsAvailable: number;
   pointsToWin: number;
   matches: RealMatch[];
+  /**
+   * Extra matchups the Round & Format Archive shows alongside `matches`
+   * that must never reach a public page — e.g. 2024's Round 7 Luke/Collin
+   * slot, where Luke couldn't play, no points were awarded, and it was
+   * never a real match (confirmed with Cade, 2026-09-15). Every public
+   * component (leaderboard, team boards, wagers) reads only `matches`;
+   * only `roundFormatArchive` reads this one too.
+   */
+  archiveOnlyMatches?: RealMatch[];
   /** Calendar date for each trip day (day number -> "YYYY-MM-DD"), hand-entered separately from `matches` — used by the Round & Format Archive's day selector. Missing days show without a date rather than guessing one. */
   dayDates?: Record<number, string>;
   individualLeaderboard: IndividualStanding[];

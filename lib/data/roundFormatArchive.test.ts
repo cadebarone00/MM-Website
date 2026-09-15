@@ -30,6 +30,15 @@ test("roundFormatArchive carries a match's tee time through when it's set", () =
   assert.equal(result[0].matchups[0].teeTime, "8:30 AM");
 });
 
+test("roundFormatArchive merges in archiveOnlyMatches without letting them create new rounds", () => {
+  const matches: RealMatch[] = [match({ id: "m1", day: 1, session: "Morning", format: "Singles", maroonPlayers: ["a"], whitePlayers: ["b"] })];
+  const archiveOnlyMatches: RealMatch[] = [match({ id: "solo", day: 1, session: "Morning", format: "Singles", maroonPlayers: [], whitePlayers: ["c"] })];
+  const result = roundFormatArchive({ matches, archiveOnlyMatches });
+  assert.equal(result.length, 1); // still one round, not two
+  assert.equal(result[0].matchups.length, 2);
+  assert.deepEqual(result[0].matchups[1], { side: [], opponent: ["c"], teeTime: undefined });
+});
+
 test("roundFormatArchive returns an empty list for a tournament with no matches", () => {
   assert.deepEqual(roundFormatArchive({ matches: [] }), []);
 });

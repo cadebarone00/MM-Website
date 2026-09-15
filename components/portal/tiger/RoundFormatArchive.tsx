@@ -25,9 +25,26 @@ function dateLabel(iso: string): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-/** A single match's box — Fourball/Alt Shot get the full 2-per-side card; Singles gets a narrower one sized to just the two opponents, per Cade (2026-09-14). */
+/**
+ * A single match's box — Fourball/Alt Shot get the full 2-per-side card;
+ * Singles gets a narrower one sized to just the two opponents, per Cade
+ * (2026-09-14). A matchup with an empty side never played out as a real
+ * match (e.g. 2024 Round 7: Luke couldn't play, no points awarded) — shown
+ * as a single name with no "vs", not a match result, per Cade (2026-09-15).
+ */
 function MatchBox({ matchup }: { matchup: RoundFormatMatchup }) {
-  const singles = matchup.side.length === 1 && matchup.opponent.length === 1;
+  const solo = matchup.side.length === 0 || matchup.opponent.length === 0;
+  const singles = !solo && matchup.side.length === 1 && matchup.opponent.length === 1;
+  if (solo) {
+    const player = names([...matchup.side, ...matchup.opponent])[0];
+    return (
+      <div className="mx-auto w-fit rounded-lg border border-gold-200 bg-white p-3 text-center">
+        <p className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-400">{matchup.teeTime ?? "Tee time TBD"}</p>
+        <p className="mt-2 font-sans text-sm font-semibold text-ink-900 whitespace-nowrap">{player}</p>
+        <p className="mt-1 font-condensed text-3xs font-bold uppercase tracking-wide text-ink-400">No match played — no points awarded</p>
+      </div>
+    );
+  }
   return (
     <div className={`rounded-lg border border-gold-200 bg-white p-3 ${singles ? "mx-auto w-fit" : ""}`}>
       <p className="text-center font-condensed text-2xs font-bold uppercase tracking-wide text-ink-400">{matchup.teeTime ?? "Tee time TBD"}</p>
