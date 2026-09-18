@@ -6,14 +6,17 @@ import { useHoleQueue, type QueuedHole } from "@/lib/live/useHoleQueue";
 import { getPlayerLastName } from "@/lib/data/players";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { LiveMatchBox, MatchFormat } from "@/lib/live/types";
-import { holeSubmissionStatus, sameHoleDraft, submittedPair, scoringSides, validHoleDraft, type HoleDraft, type HoleSubmission } from "@/lib/live/holeSubmission";
+import { buildRecapRows, holeSubmissionStatus, sameHoleDraft, submittedPair, scoringSides, validHoleDraft, type HoleDraft, type HoleSubmission } from "@/lib/live/holeSubmission";
 import { ScoringHoleSelector } from "./ScoringHoleSelector";
 import { ScoringRoundHeader } from "./ScoringRoundHeader";
+import { RoundRecapCard } from "./RoundRecapCard";
 import { ScorePicker } from "./ScorePicker";
 import { PuttsPicker } from "./PuttsPicker";
 import { ShotDirectionPicker } from "./ShotDirectionPicker";
 import { HoleActionBar } from "./HoleActionBar";
 import styles from "./ScoringPanel.module.css";
+
+const STATUS_LABELS = { empty: null, submitted: "Waiting for confirmation", confirmed: "Confirmed", disputed: "Scores disagree" } as const;
 
 export interface ScoringState {
   matchBox: { id: string; boxNumber: number; format: MatchFormat; teeTime: string; maroonPlayers: string[]; whitePlayers: string[]; state: string };
@@ -33,6 +36,7 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
 }) {
   const [state, setState] = useState<ScoringState | null>(previewState ?? null);
   const [selectedHole, setSelectedHole] = useState(1);
+  const [showRecap, setShowRecap] = useState(false);
   const [drafts, setDrafts, draftStorage] = usePersistentState<Record<number, HoleDraft>>(previewState ? null : `live-drafts:${playerSlug}:${matchBox.id}`, {});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -111,9 +115,31 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
     } catch (err) { setError(err instanceof Error ? err.message : "Could not submit this hole. Please try again."); }
     finally { setBusy(false); }
   }
+  if (showRecap) {
+    const rows = buildRecapRows(state.holes, playerSlug, submissions, matchBox.format);
+    const enteredRows = rows.filter((row) => row.score != null);
+    const recapTotal = enteredRows.reduce((sum, row) => sum + (row.score ?? 0), 0);
+    const recapToPar = enteredRows.length > 0 ? recapTotal - enteredRows.reduce((sum, row) => sum + row.par, 0) : null;
+    const competitorSlug = sides.opponents[0];
+    return (
+      <RoundRecapCard
+        rows={rows}
+        totalScore={recapTotal}
+        toPar={recapToPar}
+        onEditHole={(hole) => { select(hole); setShowRecap(false); }}
+        onBack={() => setShowRecap(false)}
+        competitor={competitorSlug ? {
+          label: targetLabel,
+          rows: buildRecapRows(state.holes, competitorSlug, submissions, matchBox.format),
+          statusLabel: (hole) => STATUS_LABELS[holeSubmissionStatus(matchBox, playerSlug, hole, submissions)],
+        } : undefined}
+      />
+    );
+  }
+
   const rowClass = (maroon: boolean) => `-mx-4 px-4 py-2 sm:-mx-7 sm:px-7 ${maroon ? "bg-maroon-800 text-white" : "bg-white text-maroon-800"}`;
   return <div className={styles.panel}>
-    <div data-hole-header className="-mx-4 sm:-mx-7"><ScoringRoundHeader hole={selectedHole} par={info?.par ?? null} yards={info?.yards ?? null} totalScore={total} toPar={toPar} /></div>
+    <div data-hole-header className="-mx-4 sm:-mx-7"><ScoringRoundHeader hole={selectedHole} par={info?.par ?? null} yards={info?.yards ?? null} totalScore={total} toPar={toPar} onRecap={() => setShowRecap(true)} /></div>
     <ScoringHoleSelector selectedHole={selectedHole} onSelect={select} disabled={busy || queue.sending} statuses={statuses} />
     <div className={styles.notice} aria-live="polite">
       {error || queue.message || draftStorage.storageError ? <p role="alert">{error ?? queue.message ?? "Browser storage unavailable; keep this page open."}</p> : status === "disputed" ? <p role="alert">Scores disagree. Correct both entries and resubmit to confirm this hole.</p> : status === "submitted" ? <p>Submitted. Waiting for the other scorer.</p> : null}

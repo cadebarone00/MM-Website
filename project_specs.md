@@ -345,9 +345,44 @@ All pages are public, no auth.
   row padding went from `py-2` to `py-4` to fit the extra line
   comfortably. `npm test` (283/283), `npx tsc --noEmit`, `npm run lint`,
   and `npm run build` all clean.
+- **Round Recap** — a new scrollable hole-by-hole review card, shared by
+  both "Submit a score" and live scoring: new `components/portal/RoundRecapCard.tsx`
+  lists all 18 holes (hole/par/yards, then compact read-only Score/Putts/
+  GIR/Fairway rows reusing `ScorePicker`'s bubble notation and
+  `ShotDirectionPicker`'s icon set), tap a hole to jump back and fix it.
+  A new "Round Recap" link sits under the Total/To Par row in the shared
+  `ScoringRoundHeader` and is reachable from any hole, not just at the
+  end. A hole only counts as entered once putts/GIR/fairway are actually
+  set — the score field alone defaulting to par doesn't count (new pure
+  `buildRecapRows` in `lib/handicap/roundRecap.ts` for the handicap
+  draft, and in `lib/live/holeSubmission.ts` for live scoring's
+  submissions; `isRoundComplete`/`firstIncompleteHole` live in the
+  shared `lib/portal/roundRecap.ts`, all TDD'd). This replaces
+  `HandicapRoundReview.tsx` entirely (deleted) — `HandicapHoleEntry` now
+  owns the recap overlay and the final submit call itself, and the
+  wizard's separate "review" step is gone; hole 18's button still reads
+  "Review Round" and opens the same card, whose Submit button stays
+  disabled ("Finish all 18 holes to submit") until every hole is
+  entered. Live scoring's recap additionally shows the playing
+  competitor's own entries in a second row per hole (labeled with their
+  name, plus their existing confirmed/disputed status) — it's read-only
+  navigation only; live scoring still submits hole-by-hole exactly as
+  before, since the round-level "can't submit until both sides agree"
+  gating is a separate, later piece of work. `npm test` (291/291), `npx
+  tsc --noEmit`, `npm run lint` (clean on every file this round
+  touched), `npm run build`, and `npm run test:browser` (extended with
+  Round Recap coverage for both flows) all clean.
 
 ## Known gaps / not yet built
 
+- **Live scoring still has no round-level "everyone agrees" submit gate.**
+  Round Recap (see above) shows the competitor's entries per hole
+  alongside your own, including the existing confirmed/disputed status,
+  but that's read-only — live scoring still submits and confirms
+  hole-by-hole exactly as it always has, with no final "Submit Round"
+  step for that flow (unlike the handicap flow, which does gate its
+  Submit on every hole being entered). Designing that gate is explicitly
+  future work, called out by the user when Round Recap was scoped.
 - **2025-danzante's 8 players still need tees assigned** via "Assign tees
   for handicap tracking" (`/portal/admin/scorecards`) before any of their
   rounds count — the round numbering/format problem itself is fixed (see
