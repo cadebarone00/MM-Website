@@ -4,7 +4,7 @@ import Link from "next/link";
 import { PortalMatches } from "@/components/portal/PortalMatches";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
-import { findPlayerTeam } from "@/lib/portal/findPlayerTeam";
+import { getLiveTeamForPlayer } from "@/lib/data/activeSeasonOverlay";
 import { findMatchesForPlayer } from "@/lib/live/currentRoundForPlayer";
 import { pastTournaments } from "@/lib/data";
 import { archivedMatchesForPlayer } from "@/lib/portal/archivedMatches";
@@ -27,10 +27,10 @@ export default async function PortalPage() {
   const playerSlug = profile.player_slug!;
   const playerProfile = getPlayerProfileBySlug(playerSlug);
   const playerName = playerProfile?.fullName ?? profile.display_name ?? "Player";
-  const team = findPlayerTeam(playerSlug);
   const year = Number(new Intl.DateTimeFormat("en-US", { year: "numeric", timeZone: "America/Chicago" }).format(new Date()));
   const archivedTournament = pastTournaments.find((tournament) => tournament.year === year);
-  const [upcomingMatches, archivedScorecards, handicapSummary, archivedHandicapRounds] = await Promise.all([
+  const [team, upcomingMatches, archivedScorecards, handicapSummary, archivedHandicapRounds] = await Promise.all([
+    getLiveTeamForPlayer(playerSlug),
     archivedTournament ? Promise.resolve([]) : findMatchesForPlayer(playerSlug, year),
     archivedTournament
       ? getScorecardsForTournament(archivedTournament).catch((err) => {
@@ -53,7 +53,7 @@ export default async function PortalPage() {
   const heroHandicapIndex = combinedHandicapIndexes(handicapSummary.rounds, archivedHandicapRounds).index;
   const matches: PortalMatchCard[] = await buildLiveMatchCards(upcomingMatches);
   if (archivedTournament) matches.push(...archivedMatchesForPlayer(archivedTournament, playerSlug, archivedScorecards));
-  const teamName = team ? `Team ${team === "maroon" ? "Maroon" : "White"}` : "Team pending";
+  const teamName = team ? `Team ${team === "maroon" ? "Maroon" : "White"}` : "Unassigned";
   const heroTextClass = team === "maroon" ? "text-maroon-300" : "text-white";
   const heroOverlayClass = team === "white"
     ? "bg-gradient-to-t from-maroon-950/90 via-maroon-800/55 to-maroon-950/25"

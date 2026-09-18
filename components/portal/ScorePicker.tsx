@@ -12,8 +12,8 @@ function bubbleShape(score: number, par: number): { shape: "circle" | "box" | "p
   return { shape: "plain", doubled: false };
 }
 
-/** Always shows its own par-relative shape — selection is shown by the picker's fixed center box, not by recoloring the bubble. */
-function ScoreBubble({ score, par, tone }: { score: number; par: number; tone: "light" | "maroon" }) {
+/** Always shows its own par-relative shape — selection is shown by the picker's fixed center box, not by recoloring the bubble. Exported for reuse by RoundRecapCard's read-only score display. */
+export function ScoreBubble({ score, par, tone }: { score: number; par: number; tone: "light" | "maroon" }) {
   const { shape, doubled } = bubbleShape(score, par);
   const radiusClass = shape === "circle" ? "rounded-full" : "rounded-md";
   const borderClass = shape === "plain" ? "border-transparent" : tone === "maroon" ? "border-white/60" : "border-ink-300";

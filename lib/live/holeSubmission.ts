@@ -1,4 +1,5 @@
 import type { MatchFormat } from "./types";
+import type { RecapHoleRow } from "@/lib/portal/roundRecap";
 
 export type ShotChoice = "hit" | "long" | "short" | "left" | "right" | "penalty";
 export type HoleDraft = { ownScore: number; opponentScore: number; putts: number | null; fairway: ShotChoice | null; green: ShotChoice | null };
@@ -41,4 +42,28 @@ export function holeSubmissionStatus(box: ScoringPair, player: string, hole: num
 export function sameHoleDraft(a: HoleDraft, b: HoleDraft, par: number, format: MatchFormat) {
   return a.ownScore === b.ownScore && a.opponentScore === b.opponentScore
     && (format === "Foursome" || (a.putts === b.putts && a.green === b.green && (par === 3 || a.fairway === b.fairway)));
+}
+
+/** Maps one player's submitted holes into Round Recap rows. Alternate Shot never collects putts/fairway/green, so those come back null (not applicable) even on an entered hole; fairway is also null on a par 3. */
+export function buildRecapRows(holes: { number: number; par: number; yards: number }[], player: string, submissions: HoleSubmission[], format: MatchFormat): RecapHoleRow[] {
+  return holes.map((hole) => {
+    const entry = submissions.filter((s) => s.hole === hole.number && s.player === player).sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))[0];
+    const isFoursome = format === "Foursome";
+    const par3 = hole.par === 3;
+    const shot = (choice: ShotChoice | null): { hit: boolean | null; direction: RecapHoleRow["firDirection"] } =>
+      choice == null ? { hit: null, direction: null } : { hit: choice === "hit", direction: choice === "hit" ? null : choice };
+    const fairway = !entry || isFoursome || par3 ? { hit: null, direction: null } : shot(entry.fairway);
+    const green = !entry || isFoursome ? { hit: null, direction: null } : shot(entry.green);
+    return {
+      hole: hole.number,
+      par: hole.par,
+      yards: hole.yards,
+      score: entry?.ownScore ?? null,
+      putts: !entry || isFoursome ? null : entry.putts,
+      fir: fairway.hit,
+      firDirection: fairway.direction,
+      gir: green.hit,
+      girDirection: green.direction,
+    };
+  });
 }

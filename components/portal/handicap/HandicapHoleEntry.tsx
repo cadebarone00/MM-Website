@@ -3,7 +3,10 @@
 import { usePersistentState } from "@/lib/usePersistentState";
 import { useState } from "react";
 import type { HandicapCourseTeeSet, HandicapHoleInput, ShotDirection } from "@/lib/handicap/types";
+import { buildRecapRows } from "@/lib/handicap/roundRecap";
+import type { RecapHoleRow } from "@/lib/portal/roundRecap";
 import { ScoringRoundHeader } from "@/components/portal/ScoringRoundHeader";
+import { RoundRecapCard } from "@/components/portal/RoundRecapCard";
 import { ScorePicker } from "@/components/portal/ScorePicker";
 import { PuttsPicker } from "@/components/portal/PuttsPicker";
 import { ShotDirectionPicker, type ShotResult } from "@/components/portal/ShotDirectionPicker";
@@ -41,13 +44,13 @@ export function HandicapHoleEntry({
   teeSet,
   draftKey,
   onBack,
-  onComplete,
+  onSubmit,
   initialHoles,
 }: {
   teeSet: HandicapCourseTeeSet;
   draftKey?: string;
   onBack: () => void;
-  onComplete: (holes: HandicapHoleInput[]) => void;
+  onSubmit: (holes: HandicapHoleInput[]) => Promise<{ ok: boolean; error?: string }>;
   initialHoles?: HandicapHoleInput[];
   playerName?: string;
   courseName?: string;
@@ -55,8 +58,10 @@ export function HandicapHoleEntry({
   const [draft, setDraft, storage] = usePersistentState<Draft>(draftKey ?? null, () =>
     initialHoles ? seedDraftFromHoles(teeSet, initialHoles) : emptyDraft(teeSet)
   );
-  const [error, setError] = useState<string | null>(null);
   const [selectedHole, setSelectedHole] = useState(1);
+  const [showRecap, setShowRecap] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   function setField(holeNumber: number, field: "score" | "putts", value: string) {
     setDraft((current) => ({ ...current, [holeNumber]: { ...current[holeNumber], [field]: value } }));
@@ -73,25 +78,23 @@ export function HandicapHoleEntry({
     });
   }
 
-  function handleContinue() {
-    const holes: HandicapHoleInput[] = [];
-    for (const hole of teeSet.holes) {
-      const entry = draft[hole.number];
-      const score = Number(entry?.score);
-      if (!entry?.score || !Number.isInteger(score) || score < 1) {
-        setError(`Enter a score for hole ${hole.number}.`);
-        setSelectedHole(hole.number);
-        return;
-      }
-      if (entry.putts === "" || !Number.isInteger(Number(entry.putts)) || Number(entry.putts) < 0 || Number(entry.putts) > score || (!entry.gir && !entry.girDirection) || (hole.par !== 3 && !entry.fir && !entry.firDirection)) {
-        setError(`Complete putts, fairway, and green for hole ${hole.number}. Putts cannot exceed score.`);
-        setSelectedHole(hole.number);
-        return;
-      }
-      holes.push({ hole: hole.number, score, putts: Number(entry.putts) || 0, fir: entry.fir, gir: entry.gir, firDirection: entry.firDirection, girDirection: entry.girDirection });
+  async function handleSubmit(rows: RecapHoleRow[]) {
+    const holes: HandicapHoleInput[] = rows.map((row) => ({
+      hole: row.hole,
+      score: row.score ?? 0,
+      putts: row.putts ?? 0,
+      fir: row.fir ?? false,
+      gir: row.gir ?? false,
+      firDirection: row.firDirection,
+      girDirection: row.girDirection,
+    }));
+    setSubmitting(true);
+    setSubmitError(null);
+    const result = await onSubmit(holes);
+    if (!result.ok) {
+      setSubmitError(result.error ?? "Could not submit this round.");
+      setSubmitting(false);
     }
-    setError(null);
-    onComplete(holes);
   }
 
   if (!storage.ready) return <p>Restoring hole entries...</p>;
@@ -105,10 +108,29 @@ export function HandicapHoleEntry({
   const girValue: ShotResult | null = entry.gir ? "hit" : entry.girDirection;
   const isLastHole = selectedHole === 18;
 
+  if (showRecap) {
+    const rows = buildRecapRows(teeSet, draft);
+    const enteredRows = rows.filter((row) => row.score != null);
+    const recapTotal = enteredRows.reduce((sum, row) => sum + (row.score ?? 0), 0);
+    const recapToPar = enteredRows.length > 0 ? recapTotal - enteredRows.reduce((sum, row) => sum + row.par, 0) : null;
+    return (
+      <RoundRecapCard
+        rows={rows}
+        totalScore={recapTotal}
+        toPar={recapToPar}
+        onEditHole={(hole) => { setSelectedHole(hole); setShowRecap(false); }}
+        onBack={() => setShowRecap(false)}
+        onSubmit={() => handleSubmit(rows)}
+        submitting={submitting}
+        submitError={submitError}
+      />
+    );
+  }
+
   return (
     <div className={styles.panel + " " + styles.handicap}>
-      <div data-hole-header className="-mx-4 sm:-mx-7"><ScoringRoundHeader hole={selectedHole} par={hole.par} yards={hole.yards} totalScore={totalScore} toPar={toPar} /></div>
-      <div className={styles.notice} aria-live="polite">{(error || storage.storageError) && <p role="alert">{error ?? "Browser storage is unavailable. Keep this page open until you submit."}</p>}</div>
+      <div data-hole-header className="-mx-4 sm:-mx-7"><ScoringRoundHeader hole={selectedHole} par={hole.par} yards={hole.yards} totalScore={totalScore} toPar={toPar} onRecap={() => setShowRecap(true)} /></div>
+      <div className={styles.notice} aria-live="polite">{storage.storageError && <p role="alert">Browser storage is unavailable. Keep this page open until you submit.</p>}</div>
       <div className={styles.scores}>
         <div className="-mx-4 bg-white px-4 text-maroon-800 sm:-mx-7 sm:px-7">
           <p className="text-center font-condensed font-bold uppercase tracking-wide">Your score</p>
@@ -125,7 +147,7 @@ export function HandicapHoleEntry({
         <div className="mt-1"><PuttsPicker ariaLabel="Your putts" value={entry.putts ? Number(entry.putts) : null} onChange={(putts) => setField(selectedHole, "putts", String(putts))} /></div>
       </div>
       <div className={styles.actions}>
-        <HoleActionBar nextLabel={isLastHole ? "Review Round" : "Next Hole"} onNext={() => (isLastHole ? handleContinue() : setSelectedHole((h) => Math.min(h + 1, 18)))} />
+        <HoleActionBar nextLabel={isLastHole ? "Review Round" : "Next Hole"} onNext={() => (isLastHole ? setShowRecap(true) : setSelectedHole((h) => Math.min(h + 1, 18)))} />
         <button type="button" onClick={onBack} className="mx-auto block font-condensed text-xs font-semibold uppercase tracking-wide text-maroon-700 underline">Edit setup</button>
       </div>
     </div>

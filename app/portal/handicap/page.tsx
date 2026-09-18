@@ -4,7 +4,7 @@ import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { getHandicapSummaryForPlayer } from "@/lib/handicap/data";
 import { combinedHandicapIndexes } from "@/lib/handicap/archiveIndex";
 import { HandicapHome } from "@/components/portal/handicap/HandicapHome";
-import { findPlayerTeam } from "@/lib/portal/findPlayerTeam";
+import { getLiveTeamForPlayer } from "@/lib/data/activeSeasonOverlay";
 import { getArchivedHandicapRounds } from "@/lib/data/archivedScorecards";
 
 export default async function HandicapPage() {
@@ -27,14 +27,15 @@ export default async function HandicapPage() {
   const playerSlug = profile.player_slug!;
   const playerProfile = getPlayerProfileBySlug(playerSlug);
   const playerName = playerProfile?.fullName ?? profile.display_name ?? "Player";
-  const [summary, archivedRounds] = await Promise.all([
+  const [summary, archivedRounds, team] = await Promise.all([
     getHandicapSummaryForPlayer(playerSlug),
     getArchivedHandicapRounds(playerSlug),
+    getLiveTeamForPlayer(playerSlug),
   ]);
   // getHandicapSummaryForPlayer's index/lowIndex only account for rounds the
   // player submitted themselves; combine in Maroon Masters archive rounds
   // that now carry a verified tee/rating/slope (see archiveIndex.ts).
   const fullSummary = { ...summary, ...combinedHandicapIndexes(summary.rounds, archivedRounds) };
 
-  return <HandicapHome playerName={playerName} summary={fullSummary} archivedRounds={archivedRounds} team={findPlayerTeam(playerSlug)} />;
+  return <HandicapHome playerName={playerName} summary={fullSummary} archivedRounds={archivedRounds} team={team} />;
 }

@@ -13,6 +13,7 @@ import { buildVenueCoursesFromLive } from "./liveCourseSchedule";
 import { filterLockedRoster } from "./confirmedRoster";
 import type { UpcomingTournament, VenueSchedule, VenueCourse, NextTournamentOverride } from "./types";
 import type { RosterEntry } from "@/lib/live/types";
+import type { Team } from "./types";
 
 interface ActiveSeasonSettings {
   seasonYear: number;
@@ -189,4 +190,16 @@ export async function getConfirmedRoster(): Promise<RosterEntry[]> {
 
   const entries: RosterEntry[] = roster.map((row) => ({ seasonYear: active.season_year, playerSlug: row.player_slug, team: row.team }));
   return filterLockedRoster(entries, (locks ?? []).map((lock) => lock.player_slug));
+}
+
+/**
+ * A player's own team for the active season — same "locked, not just
+ * drafted" rule as getConfirmedRoster, so a player never sees their team
+ * before Tiger's ready to reveal it. This is what portal pages should use
+ * for "my team"; the old findPlayerTeam read a hand-edited static file
+ * instead of the live roster and is retired by this function.
+ */
+export async function getLiveTeamForPlayer(playerSlug: string): Promise<Team | null> {
+  const roster = await getConfirmedRoster();
+  return roster.find((entry) => entry.playerSlug === playerSlug)?.team ?? null;
 }

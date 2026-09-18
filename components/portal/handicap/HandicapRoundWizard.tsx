@@ -7,7 +7,6 @@ import type { HandicapCourseOption, HandicapCourseTeeSet, HandicapHoleInput } fr
 import { formatCourseLocation } from "@/lib/data/courseLocation";
 import { HandicapCourseLookup } from "./HandicapCourseLookup";
 import { HandicapHoleEntry } from "./HandicapHoleEntry";
-import { HandicapRoundReview } from "./HandicapRoundReview";
 
 export interface RoundSetup {
   submissionId: string;
@@ -20,8 +19,7 @@ export interface RoundSetup {
 type WizardState =
   | { step: "course" }
   | { step: "setup"; course: HandicapCourseOption }
-  | { step: "holes"; setup: RoundSetup; initialHoles?: HandicapHoleInput[] }
-  | { step: "review"; setup: RoundSetup; holes: HandicapHoleInput[] };
+  | { step: "holes"; setup: RoundSetup; initialHoles?: HandicapHoleInput[] };
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -54,30 +52,39 @@ export function HandicapRoundWizard({ courses, recentCourseIds, playerName, play
   }
 
   if (state.step === "holes") {
+    const setup = state.setup;
     return (
       <HandicapHoleEntry
-        draftKey={"handicap-holes:" + playerSlug + ":" + state.setup.submissionId}
+        draftKey={"handicap-holes:" + playerSlug + ":" + setup.submissionId}
         playerName={playerName}
-        courseName={state.setup.course.name}
-        teeSet={state.setup.teeSet}
+        courseName={setup.course.name}
+        teeSet={setup.teeSet}
         initialHoles={state.initialHoles}
-        onBack={() => setState({ step: "setup", course: state.setup.course })}
-        onComplete={(holes) => setState({ step: "review", setup: state.setup, holes })}
-      />
-    );
-  }
-
-  if (state.step === "review") {
-    return (
-      <HandicapRoundReview
-        setup={state.setup}
-        holes={state.holes}
-        onBack={() => setState({ step: "holes", setup: state.setup, initialHoles: state.holes })}
-        onSubmitted={() => {
-          storage.clear();
-          try { localStorage.removeItem("handicap-holes:" + playerSlug + ":" + state.setup.submissionId); } catch { /* The submitted round is already saved on the server. */ }
-          router.refresh();
-          router.push("/portal/handicap");
+        onBack={() => setState({ step: "setup", course: setup.course })}
+        onSubmit={async (holes) => {
+          try {
+            const res = await fetch("/api/portal/handicap/rounds", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                submissionId: setup.submissionId,
+                courseId: setup.course.id,
+                teeSetId: setup.teeSet.id,
+                datePlayed: setup.datePlayed,
+                teeTime: setup.teeTime || null,
+                holes,
+              }),
+            });
+            const data = await res.json();
+            if (!data.ok) return { ok: false as const, error: data.error ?? "Could not submit this round." };
+            storage.clear();
+            try { localStorage.removeItem("handicap-holes:" + playerSlug + ":" + setup.submissionId); } catch { /* The submitted round is already saved on the server. */ }
+            router.refresh();
+            router.push("/portal/handicap");
+            return { ok: true as const };
+          } catch {
+            return { ok: false as const, error: "Could not submit this round. Check your connection and try again." };
+          }
         }}
       />
     );

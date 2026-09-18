@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { getPlayerLastName } from "@/lib/data/players";
+import { nextTournament } from "@/lib/data";
 import type { PortalMatchCard } from "@/lib/portal/matchCards";
 
 function lastName(player: string) {
@@ -90,6 +91,16 @@ export function PortalMatches({ matches, team, year }: { matches: PortalMatchCar
       reset();
     };
   }, []);
+  // Not on this year's roster at all — nothing to show in the timeframe
+  // tabs, so skip straight to a friendly heads-up instead of "No live/
+  // upcoming/past matches for {year}." three times over.
+  if (team === null) {
+    return <section aria-label="My Matches" className="flex flex-col items-center justify-center gap-1 bg-white px-4 py-10 text-center text-maroon-900">
+      <p className="font-serif text-xl font-bold sm:text-2xl">There will always be next year</p>
+      <p className="font-sans text-sm text-ink-500">See you in {nextTournament.year + 1}!</p>
+    </section>;
+  }
+
   const visibleMatches = matches.filter((match) => match.status === selected);
   const maroon = team === "maroon";
   return <section aria-label="My Matches" className={`flex flex-col justify-start pb-2 pt-3 ${maroon ? "bg-maroon-800 text-white" : "bg-white text-maroon-900"}`}>
