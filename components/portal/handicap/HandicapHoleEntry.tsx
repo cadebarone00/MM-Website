@@ -3,10 +3,10 @@
 import { usePersistentState } from "@/lib/usePersistentState";
 import { useState } from "react";
 import type { HandicapCourseTeeSet, HandicapHoleInput, ShotDirection } from "@/lib/handicap/types";
-import { buildRecapRows } from "@/lib/handicap/roundRecap";
-import type { RecapHoleRow } from "@/lib/portal/roundRecap";
+import { buildScorecardRows } from "@/lib/handicap/scorecard";
+import type { ScorecardHoleRow } from "@/lib/portal/scorecard";
 import { ScoringRoundHeader } from "@/components/portal/ScoringRoundHeader";
-import { RoundRecapCard } from "@/components/portal/RoundRecapCard";
+import { Scorecard } from "@/components/portal/Scorecard";
 import { ScorePicker } from "@/components/portal/ScorePicker";
 import { PuttsPicker } from "@/components/portal/PuttsPicker";
 import { ShotDirectionPicker, type ShotResult } from "@/components/portal/ShotDirectionPicker";
@@ -59,7 +59,7 @@ export function HandicapHoleEntry({
     initialHoles ? seedDraftFromHoles(teeSet, initialHoles) : emptyDraft(teeSet)
   );
   const [selectedHole, setSelectedHole] = useState(1);
-  const [showRecap, setShowRecap] = useState(false);
+  const [showScorecard, setShowScorecard] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -78,7 +78,7 @@ export function HandicapHoleEntry({
     });
   }
 
-  async function handleSubmit(rows: RecapHoleRow[]) {
+  async function handleSubmit(rows: ScorecardHoleRow[]) {
     const holes: HandicapHoleInput[] = rows.map((row) => ({
       hole: row.hole,
       score: row.score ?? 0,
@@ -108,18 +108,18 @@ export function HandicapHoleEntry({
   const girValue: ShotResult | null = entry.gir ? "hit" : entry.girDirection;
   const isLastHole = selectedHole === 18;
 
-  if (showRecap) {
-    const rows = buildRecapRows(teeSet, draft);
+  if (showScorecard) {
+    const rows = buildScorecardRows(teeSet, draft);
     const enteredRows = rows.filter((row) => row.score != null);
-    const recapTotal = enteredRows.reduce((sum, row) => sum + (row.score ?? 0), 0);
-    const recapToPar = enteredRows.length > 0 ? recapTotal - enteredRows.reduce((sum, row) => sum + row.par, 0) : null;
+    const scorecardTotal = enteredRows.reduce((sum, row) => sum + (row.score ?? 0), 0);
+    const scorecardToPar = enteredRows.length > 0 ? scorecardTotal - enteredRows.reduce((sum, row) => sum + row.par, 0) : null;
     return (
-      <RoundRecapCard
+      <Scorecard
         rows={rows}
-        totalScore={recapTotal}
-        toPar={recapToPar}
-        onEditHole={(hole) => { setSelectedHole(hole); setShowRecap(false); }}
-        onBack={() => setShowRecap(false)}
+        totalScore={scorecardTotal}
+        toPar={scorecardToPar}
+        onEditHole={(hole) => { setSelectedHole(hole); setShowScorecard(false); }}
+        onBack={() => setShowScorecard(false)}
         onSubmit={() => handleSubmit(rows)}
         submitting={submitting}
         submitError={submitError}
@@ -129,7 +129,8 @@ export function HandicapHoleEntry({
 
   return (
     <div className={styles.panel + " " + styles.handicap}>
-      <div data-hole-header className="-mx-4 sm:-mx-7"><ScoringRoundHeader hole={selectedHole} par={hole.par} yards={hole.yards} totalScore={totalScore} toPar={toPar} onRecap={() => setShowRecap(true)} /></div>
+      <div data-hole-header className="-mx-4 sm:-mx-7"><ScoringRoundHeader hole={selectedHole} par={hole.par} yards={hole.yards} totalScore={totalScore} toPar={toPar} /></div>
+      <button type="button" onClick={() => setShowScorecard(true)} className="mx-auto block font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700 underline underline-offset-2">Scorecard</button>
       <div className={styles.notice} aria-live="polite">{storage.storageError && <p role="alert">Browser storage is unavailable. Keep this page open until you submit.</p>}</div>
       <div className={styles.scores}>
         <div className="-mx-4 bg-white px-4 text-maroon-800 sm:-mx-7 sm:px-7">
@@ -147,7 +148,7 @@ export function HandicapHoleEntry({
         <div className="mt-1"><PuttsPicker ariaLabel="Your putts" value={entry.putts ? Number(entry.putts) : null} onChange={(putts) => setField(selectedHole, "putts", String(putts))} /></div>
       </div>
       <div className={styles.actions}>
-        <HoleActionBar nextLabel={isLastHole ? "Review Round" : "Next Hole"} onNext={() => (isLastHole ? setShowRecap(true) : setSelectedHole((h) => Math.min(h + 1, 18)))} />
+        <HoleActionBar nextLabel={isLastHole ? "Review Round" : "Next Hole"} onNext={() => (isLastHole ? setShowScorecard(true) : setSelectedHole((h) => Math.min(h + 1, 18)))} />
         <button type="button" onClick={onBack} className="mx-auto block font-condensed text-xs font-semibold uppercase tracking-wide text-maroon-700 underline">Edit setup</button>
       </div>
     </div>

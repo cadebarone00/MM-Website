@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildRecapRows, holeSubmissionStatus, scoringSides, validHoleDraft, sameHoleDraft, type HoleSubmission, type ScoringPair } from "./holeSubmission.ts";
+import { buildScorecardRows, holeSubmissionStatus, scoringSides, validHoleDraft, sameHoleDraft, type HoleSubmission, type ScoringPair } from "./holeSubmission.ts";
 
 const box: ScoringPair = { format: "Singles", maroonPlayers: ["cam-latto"], whitePlayers: ["cade-barone"] };
 const cam: HoleSubmission = { player: "cam-latto", hole: 1, ownScore: 4, opponentScore: 5, putts: 2, fairway: "hit", green: "short", submittedAt: "2026-09-14T10:00:00Z" };
@@ -53,24 +53,24 @@ test("Alternate Shot compares both team scores without individual stats", () => 
 
 const holes = [{ number: 1, par: 4, yards: 410 }, { number: 2, par: 3, yards: 165 }];
 
-test("buildRecapRows fills a row from a player's own submission, and null for a hole they haven't submitted", () => {
-  const rows = buildRecapRows(holes, cam.player, [cam], "Singles");
+test("buildScorecardRows fills a row from a player's own submission, and null for a hole they haven't submitted", () => {
+  const rows = buildScorecardRows(holes, cam.player, [cam], "Singles");
   assert.deepEqual(rows[0], { hole: 1, par: 4, yards: 410, score: 4, putts: 2, fir: true, firDirection: null, gir: false, girDirection: "short" });
   assert.deepEqual(rows[1], { hole: 2, par: 3, yards: 165, score: null, putts: null, fir: null, firDirection: null, gir: null, girDirection: null });
 });
 
-test("buildRecapRows shows fairway as not applicable on a par 3, even though a score is in", () => {
+test("buildScorecardRows shows fairway as not applicable on a par 3, even though a score is in", () => {
   const par3 = [{ number: 1, par: 3, yards: 165 }];
   const submission: HoleSubmission = { ...cam, hole: 1, fairway: null, green: "hit" };
-  const rows = buildRecapRows(par3, cam.player, [submission], "Singles");
+  const rows = buildScorecardRows(par3, cam.player, [submission], "Singles");
   assert.equal(rows[0].score, 4);
   assert.equal(rows[0].fir, null);
   assert.equal(rows[0].gir, true);
 });
 
-test("buildRecapRows shows putts/fairway/green as not applicable for Alternate Shot, which never collects them", () => {
+test("buildScorecardRows shows putts/fairway/green as not applicable for Alternate Shot, which never collects them", () => {
   const submission: HoleSubmission = { ...cam, hole: 1, putts: null, fairway: null, green: null };
-  const rows = buildRecapRows(holes, cam.player, [submission], "Foursome");
+  const rows = buildScorecardRows(holes, cam.player, [submission], "Foursome");
   assert.equal(rows[0].score, 4);
   assert.equal(rows[0].putts, null);
   assert.equal(rows[0].fir, null);

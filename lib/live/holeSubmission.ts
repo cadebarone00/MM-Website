@@ -1,5 +1,5 @@
 import type { MatchFormat } from "./types";
-import type { RecapHoleRow } from "@/lib/portal/roundRecap";
+import type { ScorecardHoleRow } from "@/lib/portal/scorecard";
 
 export type ShotChoice = "hit" | "long" | "short" | "left" | "right" | "penalty";
 export type HoleDraft = { ownScore: number; opponentScore: number; putts: number | null; fairway: ShotChoice | null; green: ShotChoice | null };
@@ -44,13 +44,13 @@ export function sameHoleDraft(a: HoleDraft, b: HoleDraft, par: number, format: M
     && (format === "Foursome" || (a.putts === b.putts && a.green === b.green && (par === 3 || a.fairway === b.fairway)));
 }
 
-/** Maps one player's submitted holes into Round Recap rows. Alternate Shot never collects putts/fairway/green, so those come back null (not applicable) even on an entered hole; fairway is also null on a par 3. */
-export function buildRecapRows(holes: { number: number; par: number; yards: number }[], player: string, submissions: HoleSubmission[], format: MatchFormat): RecapHoleRow[] {
+/** Maps one player's submitted holes into Scorecard rows. Alternate Shot never collects putts/fairway/green, so those come back null (not applicable) even on an entered hole; fairway is also null on a par 3. */
+export function buildScorecardRows(holes: { number: number; par: number; yards: number }[], player: string, submissions: HoleSubmission[], format: MatchFormat): ScorecardHoleRow[] {
   return holes.map((hole) => {
     const entry = submissions.filter((s) => s.hole === hole.number && s.player === player).sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))[0];
     const isFoursome = format === "Foursome";
     const par3 = hole.par === 3;
-    const shot = (choice: ShotChoice | null): { hit: boolean | null; direction: RecapHoleRow["firDirection"] } =>
+    const shot = (choice: ShotChoice | null): { hit: boolean | null; direction: ScorecardHoleRow["firDirection"] } =>
       choice == null ? { hit: null, direction: null } : { hit: choice === "hit", direction: choice === "hit" ? null : choice };
     const fairway = !entry || isFoursome || par3 ? { hit: null, direction: null } : shot(entry.fairway);
     const green = !entry || isFoursome ? { hit: null, direction: null } : shot(entry.green);

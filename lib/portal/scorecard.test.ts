@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { firstIncompleteHole, isRoundComplete, type RecapHoleRow } from "./roundRecap.ts";
+import { firstIncompleteHole, isRoundComplete, type ScorecardHoleRow } from "./scorecard.ts";
 
-function row(hole: number, score: number | null): RecapHoleRow {
+function row(hole: number, score: number | null): ScorecardHoleRow {
   return { hole, par: 4, yards: 400, score, putts: score == null ? null : 2, fir: score == null ? null : true, firDirection: null, gir: score == null ? null : true, girDirection: null };
 }
 

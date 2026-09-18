@@ -1,8 +1,8 @@
 import type { HandicapCourseTeeSet, ShotDirection } from "./types";
-import type { RecapHoleRow } from "@/lib/portal/roundRecap";
+import type { ScorecardHoleRow } from "@/lib/portal/scorecard";
 
 /** Shape of one hole's entry in HandicapHoleEntry's in-progress draft. */
-export interface RecapHoleDraftEntry {
+export interface ScorecardDraftEntry {
   score: string;
   putts: string;
   fir: boolean;
@@ -12,7 +12,7 @@ export interface RecapHoleDraftEntry {
 }
 
 /** Same completeness rule HandicapHoleEntry's own submit validation uses: putts must be set, GIR must be set (hit or a miss direction), and fairway must be set too unless the hole is a par 3. Score always holds a par default from the moment the draft is created, so it alone can't signal "not entered yet". */
-function isHoleEntered(entry: RecapHoleDraftEntry, par: number): boolean {
+function isHoleEntered(entry: ScorecardDraftEntry, par: number): boolean {
   if (entry.putts === "") return false;
   if (!entry.gir && !entry.girDirection) return false;
   if (par !== 3 && !entry.fir && !entry.firDirection) return false;
@@ -20,11 +20,11 @@ function isHoleEntered(entry: RecapHoleDraftEntry, par: number): boolean {
 }
 
 /**
- * Maps the in-progress hole-entry draft into recap rows. A hole that
+ * Maps the in-progress hole-entry draft into scorecard rows. A hole that
  * hasn't actually been filled in yet is shown as not-entered (all nulls)
  * even though the draft already holds a par-default score for it.
  */
-export function buildRecapRows(teeSet: HandicapCourseTeeSet, draft: Record<number, RecapHoleDraftEntry>): RecapHoleRow[] {
+export function buildScorecardRows(teeSet: HandicapCourseTeeSet, draft: Record<number, ScorecardDraftEntry>): ScorecardHoleRow[] {
   return teeSet.holes.map((hole) => {
     const entry = draft[hole.number];
     const par3 = hole.par === 3;
