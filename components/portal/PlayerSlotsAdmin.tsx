@@ -288,28 +288,26 @@ export function PlayerSlotsAdmin({ year, rows: initialRows }: { year: number; ro
           {rows.map((row) => (
             <Fragment key={row.playerSlug}>
               <tr className="border-b border-ink-100">
-                <td className="py-2">
+                <td className="py-4">
                   {row.fullName}
-                  {!row.claimedBy && (
-                    <div className="mt-0.5 flex items-center gap-2 font-sans text-2xs text-ink-400">
-                      <span>{row.email ?? "No email on file"}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEmailEditSlug((current) => (current === row.playerSlug ? null : row.playerSlug));
-                          setEmailEditValue(row.email ?? "");
-                          setError(null);
-                        }}
-                        className="font-semibold text-maroon-700 underline"
-                      >
-                        Edit email
-                      </button>
-                    </div>
-                  )}
+                  <div className="mt-1 flex flex-col gap-0.5 font-sans text-2xs text-ink-400">
+                    <span>{row.email ?? "No email on file"}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmailEditSlug((current) => (current === row.playerSlug ? null : row.playerSlug));
+                        setEmailEditValue(row.email ?? "");
+                        setError(null);
+                      }}
+                      className="self-start font-semibold text-maroon-700 underline"
+                    >
+                      Edit email
+                    </button>
+                  </div>
                 </td>
-                <td className="py-2 font-mono">{row.username ?? "—"}</td>
-                <td className="py-2">{row.claimedBy ? "Claimed" : "Open"}</td>
-                <td className="py-2">
+                <td className="py-4 font-mono">{row.username ?? "—"}</td>
+                <td className="py-4">{row.claimedBy ? "Claimed" : "Open"}</td>
+                <td className="py-4">
                   <div className="flex flex-wrap items-center gap-1">
                     {([
                       [null, "Unassigned"],
@@ -347,7 +345,7 @@ export function PlayerSlotsAdmin({ year, rows: initialRows }: { year: number; ro
                     </button>
                   </div>
                 </td>
-                <td className="py-2 text-right">
+                <td className="py-4 text-right">
                   {row.pendingEdits.length > 0 && (
                     <button
                       type="button"
