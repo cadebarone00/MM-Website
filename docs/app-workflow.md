@@ -387,3 +387,10 @@ Vercel Preview and Production have separate environment-variable scopes. The ear
 This map identifies remaining distinctions worth reviewing: portal handicap sign formatting; static versus corrected career summaries; independent year controls; model exclusion at exactly nine holes; incomplete event emission wiring; legacy market/feed consumers; future live-video/archive-edition transitions; and unfinished GPS, placeholders, pickups, and official full-handicap features.
 
 These are observations from the documentation review. No application behavior was changed while creating this map.
+
+
+## What changed
+
+**September 18, 2026 ? Living guide enabled (documentation only).** This guide now has a visible change history. Future application changes must update the affected descriptions and flowchart in the same change, with a dated explanation here. No application behavior or production deployment changed in this documentation update.
+
+**Maintaining this guide:** Edit `docs/app-workflow.md`, add the newest change above the previous entries, then run `npm run docs:workflow`. The command rebuilds the browser version. Run `npm run docs:workflow:check` to check that the two versions match. Refresh the open browser page to see the latest generated copy; it does not automatically watch files or production.
