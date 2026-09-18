@@ -1,0 +1,389 @@
+# Maroon Masters: complete application workflow
+
+Reviewed September 18, 2026 against release `ce85a83`. This describes the current implementation, including older data paths and unfinished features. It is not a promise that everything in earlier design plans is implemented.
+
+Open **app-workflow.html** for the interactive version. Select a workflow box to expand its description, or search for a feature or database table.
+
+## Whole-app flowchart
+
+```mermaid
+flowchart TD
+  A[Account and player identity] --> P[Player portal]
+  A --> T[Tiger Center]
+  T --> C[Course Library and tee snapshots]
+  T --> S[Season roster, rounds and matchups]
+  C --> S
+  S --> R[Lock and start round]
+  R --> L[Live scoring]
+  L --> D[Local draft and submission queue]
+  D --> V[Validate and compare both scoring perspectives]
+  V --> Q{Both comparisons agree?}
+  Q -- Pending or disputed --> L
+  Q -- Confirmed --> H[Confirmed scores and archive records]
+  H --> O[Official match state and odds publication]
+  H --> K[Career and handicap inputs]
+  O --> B[Leaderboard, broadcast and live markets]
+  O --> F[Tiger closeout and MM Coins settlement]
+  P --> N[Personal 18-hole round entry]
+  C --> N
+  N --> E[Atomic personal-round save]
+  E --> K
+  T --> X[Historical scorecard corrections]
+  X --> K
+  K --> M[Handicap calculations and odds model]
+  M --> O
+  B --> W[Watch Live]
+  P --> U[Round video upload]
+  U --> W
+  Z[Static history and legacy feed] -. selected older pages and markets .-> B
+```
+
+The branches are related but not interchangeable. A personal round is not a tournament submission. Turning on the broadcast does not start scoring. A submitted hole is not necessarily confirmed. A mathematically completed match is not necessarily administratively closed out.
+
+## 1. Accounts, identity, and permissions
+
+A visitor can browse public pages. Signing up creates a Supabase Auth account and a `profiles` row. A reserved MM username can claim an unclaimed `player_slots` entry, linking that account to a particular golfer. An ordinary fan account does not automatically receive player access.
+
+The stable player identifier is a `firstname-lastname` slug, such as `cade-barone`. Display helpers turn it into a first name, last name, or full name. Some historical code still accepts old IDs and first-name aliases. These are compatibility translations, not a safe substitute for identity or permissions.
+
+Player actions use `requirePlayer` to derive the golfer from the authenticated session. Tiger actions check the account's `is_host` permission. Hiding a button is not the authorization mechanism: the server checks access again. Supabase row-level policies provide another boundary; the privileged service-role client stays on the server.
+
+**Input:** account credentials, a profile, and an optional linked player slot. **Output:** public browsing, fan account features, player tools, or Tiger tools. Login, verification, password reset, and logout belong to this layer.
+
+**Code:** `app/api/auth/signup/route.ts`, `lib/portal/requirePlayer.ts`, `lib/portal/requireHost.ts`, `lib/data/players`.
+
+## 2. Calendar year, active season, and broadcast year
+
+These are three separate controls:
+
+| Context | How its year is selected | What it controls |
+|---|---|---|
+| Player portal My Matches | Current calendar year in America/Chicago | Which year's match cards appear |
+| Native scoring | `live_active_season` | Which tournament receives real scores |
+| Broadcast | `broadcast_display_year` | Which season the broadcast displays |
+| Historical website page | Tournament slug in the URL | Which archived edition is shown |
+| Tiger Master Settings | Year being edited | Which season's setup Tiger is viewing/changing |
+
+Merely browsing a different Master Settings year does not switch the active scoring season. Switching the broadcast year does not move scores to another tournament. Starting a round and marking the broadcast live are also different actions.
+
+For example, in September 2026, My Matches can correctly show 2026 matches as Past while Tiger prepares active season 2027 and rehearses an older broadcast. Supported live-season years are currently a configured range; creating future historical website editions is not automatic.
+
+**Code:** `app/portal/page.tsx`, `lib/live/activeSeason.ts`, `lib/live/seasonYears.ts`, `lib/broadcast/displayYear.ts`, `lib/data/index.ts`.
+
+## 3. Public website and navigation
+
+Home, schedule, teams, players, history, tournament leaderboards, match pages, and player scorecards present tournament information publicly. Historical editions and much descriptive content originate in committed `lib/data` files. Upcoming venue/dates, round courses/formats, and confirmed roster receive Tiger-managed database overlays where the relevant loaders are used.
+
+The Website / Portal / Scoring selector changes the destination, not the account or database. The More menu contains secondary destinations. Public teams can show locked roster assignments rather than exposing every draft assignment as confirmed.
+
+Historical pages use their own edition's definitions. The current registry explicitly lists 2024-2026 as past tournaments and 2027 as next. Recording future live scores does not by itself create a fully populated new historical website edition.
+
+Some pages are statically generated or cached; others render dynamically or refetch in the browser. A changed database row therefore does not imply that every number on every page refreshes in exactly the same way.
+
+The live leaderboard specifically polls native matches and standings every ten seconds, while also retaining the legacy live-feed loader. Available native matches/standings override that presentation; otherwise feed or historical fallback content can remain. The upcoming tournament's leaderboard route also has a calendar switchover check that can redirect visitors to the latest completed edition before the new season.
+
+**Reads:** committed tournament/player content plus selected live database overlays. **Writes:** generally none from browsing. **Code:** `app/page.tsx`, `app/leaderboard`, `app/teams`, `app/schedule`, `lib/data/activeSeasonOverlay.ts`.
+
+## 4. Player portal and My Matches
+
+After login, a host goes to Tiger Center. A linked player receives a hero, team label, handicap, match cards, and links to Profile, Career, Round Video, and Wagers. A fan account does not get player-only tools.
+
+My Matches opens on Live after reopening. Live / Upcoming / Past filter cards for the portal's calendar year. For an already completed registered year, historical match definitions and archived scorecards construct those cards. Otherwise, the portal reads native rounds and match boxes. An empty Live tab can be correct even when Past contains matches.
+
+Opening actual scoring requires a scoreable assigned match in the active scoring season. A displayed historical match is not an invitation to resubmit that old tournament through live scoring.
+
+The hero computes the same combined handicap as My Handicap, but currently prints it using `toFixed(1)`. My Handicap uses the plus-handicap formatting helper. This means a negative underlying index can still display with different signs between those two surfaces.
+
+**Reads:** profile, match data, scorecards, personal rounds, and eligible archive rounds. **Code:** `app/portal/page.tsx`, `components/portal/PortalMatches.tsx`, `lib/portal/liveMatchCards.ts`, `lib/portal/archivedMatches.ts`.
+
+## 5. Player profile edits
+
+The editor loads the original player profile, merges approved overrides, and shows pending proposals separately. Submitting a bio change writes a proposal to `player_profile_edits`; it does not immediately replace the published biography.
+
+Tiger can approve or deny a proposal and can set an override directly. Approved values are merged by the profile-loading helpers. Only allowed fields can be proposed. A biography or display-name edit does not change score ownership or the canonical player slug.
+
+**Flow:** player proposal → pending edit → Tiger decision → approved override → profile display. **Code:** `app/api/portal/profile/route.ts`, `app/api/portal/tiger/profile-edits`, `lib/data/players/overrides.ts`.
+
+## 6. Tiger Center and tournament preparation
+
+Tiger Center separates year-specific tournament operations from global tools. Season setup contains roster, teams, venue/dates, round count, round schedule, formats, tee times, and matchups. Global tools include Course Library, Career Stats, scorecard administration, Odds Model, Wager Types, Broadcast Controls, and the Live Scoring Page Editor.
+
+The preparation sequence is:
+
+1. Select the intended season and confirm which season is active for real scoring.
+2. Assign players and teams; lock assignments intended to be published.
+3. Configure each round's date, format, course, and tee setup.
+4. Create match boxes with the correct players on each side and tee times.
+5. Lock the course and matchups.
+6. Start the round when play should be enabled.
+
+Singles has one player per side. Fourball and Foursome have two per side. Match/roster validators enforce the relevant assignment rules. These setup steps are separate state changes, not one universal Publish Everything action.
+
+**Writes:** `live_tournament_settings`, `live_roster`, `live_roster_assignment_locks`, `live_round_state`, `live_match_boxes`. **Consumers:** public upcoming schedule/roster, player match discovery, scoring, and tournament calculations.
+
+**Code:** `app/portal/admin/page.tsx`, `app/api/portal/tiger/master-settings`, `app/api/portal/tiger/rounds`, `app/api/portal/tiger/matchboxes`.
+
+## 7. Course Library, tees, and historical snapshots
+
+A library course is a reusable identity with named tee configurations. A tee setup provides hole numbers, pars, yardages, course rating, and slope. Imports help populate these fields. A similar course name does not prove which tee box was played in a past round.
+
+When a round chooses a locked setup, the server resolves the library tee and takes a snapshot. The shared Round & Format source is `round_format_setups`, keyed by season year and round. It currently applies one setup to the whole field for that round; it is not a per-player tee override system.
+
+Future live rounds automatically populate/update live-sourced snapshots when course and matchups are locked before play. After play starts, ordinary library changes do not rewrite historical snapshots. Explicit archive assignments are preserved separately from automatic live setup updates.
+
+Course aliases connect older labels to library identities. Missing tee, date, rating, or slope is not invented. The handicap eligibility code rejects setups with differing hole tee IDs; mixed tees need an appropriate verified composite design. Players using different tees within the same round need an additional override mechanism.
+
+**Flow:** reusable library → selected locked tee → round snapshot → historical display and handicap metadata. **Code:** `lib/data/roundFormatSetups.ts`, `lib/data/courseLibraryMatch.ts`, `supabase/round_format_setups.sql`.
+
+## 8. Starting a round and opening scoring
+
+Tiger starts a round after its course and matchups are locked and match boxes exist. `start_live_round_atomic` changes the round and match-box started flags in one transaction. Failure cannot leave only half of that start operation committed.
+
+A started round can still contain matches waiting for tee time. A match becomes scoreable when its start conditions and tee time are satisfied, or Tiger explicitly starts that match. Final matches are closed to entry.
+
+The player's scoring entry point finds the lowest relevant locked round containing that player whose match is not final. Without an appropriate live match, it shows the scoring landing state instead of allowing arbitrary score entry.
+
+Starting the round also attempts a broadcast event, but broadcasting and scoring remain independent controls.
+
+**Code:** `app/api/portal/tiger/rounds/start/route.ts`, `lib/live/currentRoundForPlayer.ts`, `app/portal/scoring/play/page.tsx`.
+
+## 9. Live hole entry and local drafts
+
+The phone shows hole/par/yards, running totals, the horizontal hole selector, the scorer's score slider, the assigned opposing player's score slider, and applicable personal statistics. Team-colored rows put the scorer's side first. Par-three fairway is N/A. Putts retains the requested 4+ choice.
+
+In Singles/Fourball, a player records their own score and the assigned opposing player's score. Fourball scoring pairs are position-based within the two sides. Putts, fairway, and green refer to the scorer's own ball. Foursome uses shared side scores and omits individual-ball shot statistics.
+
+Changing a control writes a browser draft scoped to player and match. **Next Hole only navigates. Submit Score validates, submits, and advances after a successful response.** Actual strokes are not capped at double par; the slider has 1-20 plus Other score for larger values.
+
+Drafts survive reloads in that browser. They are not cloud backups, and the app still needs server-provided match/setup data to open normally. This is not a fully offline-installed application.
+
+**Code:** `components/portal/ScoringPanel.tsx`, `components/portal/ScorePicker.tsx`, `lib/usePersistentState.ts`, `lib/live/holeSubmission.ts`.
+
+## 10. Submission, agreement, disputes, and retry
+
+An explicit submission is queued locally with a unique request ID and the last saved timestamp. The API derives player identity from the session. The database verifies the match, season, membership, start/lock conditions, scores, and required statistics under a match lock.
+
+The transaction records the scorer's perspective and compares both score values against the opposing perspective. An identical successful retry returns its receipt rather than creating a duplicate. A stale write from another device is rejected for review.
+
+| State | Meaning | Archive effect |
+|---|---|---|
+| Draft | Changed locally; no explicit submission | None |
+| Queued | Submit was requested; delivery is unresolved | Not proof of confirmation |
+| Submitted | This perspective was saved; the other may be missing | Unconfirmed holes excluded |
+| Confirmed | Both score comparisons agree | Eligible confirmed holes mirrored |
+| Disputed | Either comparison disagrees | The pair's archived holes retracted |
+| Edited after submission | Local values differ from the saved version | Requires resubmission |
+
+Correcting and resubmitting matching values restores the archive entries. Red marks a discrepancy. Maroon submission styling alone is not proof that both players have confirmed it.
+
+Network/server failures retain the queue and retry while the page is open, on reconnection, or after reopening online. Reviewable client errors stop the queued attempt while retaining the draft. Editing a queued hole cancels that older queued version. Successful saves are acknowledged before background model calculations finish.
+
+**Writes:** `live_hole_submissions`, `live_hole_scores`, `live_submission_receipts`, audit records, and triggered archive updates. Full 18-hole confirmation also updates round-submission tracking. **Code:** `lib/live/useHoleQueue.ts`, `app/api/portal/scoring/hole/route.ts`, `supabase/live_hole_submissions.sql`, `supabase/scoring_reliability.sql`.
+
+## 11. Match results, standings, and published odds
+
+Confirmed live scores feed the native tournament snapshot. Singles compares two scores. Fourball uses the best score on each side. Foursome compares the shared side scores. The match calculation processes contiguous completed holes and stops at the first mathematical win; later stroke scores cannot reverse that result.
+
+A completed match awards one team point to its winner, or half a point each for a tie. Own-ball gross and score-to-par statistics are separate calculations. Foursome team scores are excluded from individual stroke-performance samples.
+
+Score changes create durable `live_publication_jobs`. Publication derives `live_match_official_state` and a model-produced `live_match_odds_snapshots` row. They commit together only if the score revision still matches, preventing slower old calculations from overwriting newer results.
+
+The scoring API starts publication after acknowledging the hole. Scoring-state, public match, and standings requests retry unfinished jobs. These retries are activity-driven; this release has no independent scheduled publication worker. Some displays derive directly from confirmed snapshots, while match/odds APIs read stored publication results.
+
+**Code:** `lib/broadcast/liveSnapshot.ts`, `lib/live/scoring.ts`, `lib/live/orchestration.ts`, `lib/live/publishOfficialMatchState.ts`, `lib/live/retryPublication.ts`, `app/api/live`.
+
+## 12. Tiger closeout and final settlement
+
+Mathematically complete and administratively closed out are different states. Players may continue actual stroke scoring after the match is decided until Tiger closes it. Tiger's closeout cards identify complete published matches and refresh periodically.
+
+Closeout recomputes the contiguous confirmed result in the database. It saves final official state, marks the match Final, marks its archive rounds final, records an audit event, and settles that live-match MM Coins market in one transaction.
+
+If settlement fails, the entire closeout rolls back. Retrying a successful closeout does not pay twice. An early finish is allowed once the lead exceeds holes remaining, but no unplayed holes are invented. A partial round does not become a complete handicap round.
+
+This finalizes one match and its associated market. It does not automatically create a historical website edition, settle every unrelated future/prop, or implement a dedicated pickup/concession workflow.
+
+**Code:** `components/portal/tiger/MatchCloseoutCards.tsx`, `app/api/portal/tiger/matchboxes/closeout/route.ts`, `supabase/scoring_reliability.sql`.
+
+## 13. Personal round submission outside a tournament
+
+**Flow:** Course → Tee/date/time → 18 hole entries → Review → Submit Round.
+
+This shares the live scoring controls but removes the opposing score, live hole selector, and per-hole Submit Score button. Final review is the round-level submission point. It does not require an opponent's agreement or affect tournament match points.
+
+The player enters actual score, putts, fairway, green, and required miss directions. Par-three fairway is not applicable. Missing entries block review/submission instead of silently becoming zero putts or missed shots. Drafts are retained in the browser.
+
+The server validates all holes, resolves the selected library tee itself, computes the total and differential, and snapshots the tee metadata and hole setup. `handicap_rounds` and all `handicap_round_holes` save atomically. An identical retry returns the existing round through its submission ID.
+
+These rounds feed the overall handicap and the combined Career Archive's personal/Other input. That does not mean every older public career summary includes them.
+
+**Code:** `components/portal/handicap`, `lib/handicap/data.ts`, `lib/handicap/validate.ts`, `app/api/portal/handicap/rounds/route.ts`.
+
+## 14. Differentials, handicap selection, and asterisks
+
+The app computes:
+
+`Differential = ((gross score - course rating) × 113) / slope`, rounded to one decimal.
+
+Example: 78 against rating 74.0 and slope 133 produces **3.4**. This describes the implementation, not an official GHIN certification.
+
+Tournament archive eligibility requires 18 individual-ball holes, a date, and verified tee/rating/slope metadata. Foursome and incomplete rounds do not qualify. Future archive readers also exclude did-not-finish entries. A matched course name alone does not establish eligibility.
+
+The overall index combines personal and eligible tournament rounds, orders them newest first, keeps up to 20, selects the lowest differentials using this table, averages them, applies the adjustment, and rounds to one decimal:
+
+| Available rounds | Lowest differentials used | Adjustment |
+|---|---:|---:|
+| Fewer than 3 | No index | — |
+| 3 | 1 | -2.0 |
+| 4 | 1 | -1.0 |
+| 5 | 1 | 0 |
+| 6 | 2 | -1.0 |
+| 7-8 | 2 | 0 |
+| 9-11 | 3 | 0 |
+| 12-14 | 4 | 0 |
+| 15-16 | 5 | 0 |
+| 17-18 | 6 | 0 |
+| 19 | 7 | 0 |
+| 20 | 8 | 0 |
+
+The asterisk identifies rounds selected for the displayed overall or MM-only calculation. MM-only excludes personal rounds. Low Index replays available history and takes the lowest calculated index. My Handicap displays a negative calculated index as a plus handicap; a differential retains its mathematical sign.
+
+The current math uses raw gross, not a net-double-bogey adjusted gross. It does not implement PCC, official soft/hard caps, exceptional-score adjustment, GHIN synchronization, or a nine-hole expected-score conversion. Its Low Index is an available-history minimum, not a separately maintained official rolling Low Handicap Index.
+
+**Code:** `lib/handicap/whs.ts`, `lib/handicap/archiveIndex.ts`, `lib/handicap/futureRounds.ts`, `lib/handicap/format.ts`, `components/portal/handicap/HandicapHome.tsx`.
+
+## 15. Archives, corrections, and career statistics
+
+The archive is a family of sources, not one universal table:
+
+| Source | What it holds |
+|---|---|
+| Committed tournament files and generated career data | Imported historical editions and model records |
+| `archived_scorecard_rounds` / `archived_scorecard_holes` | Editable historical player scorecards |
+| `round_format_setups` | Shared course, date, and tee snapshots |
+| `career_archive_rounds` / `career_archive_live_holes` | Native live-round metadata and confirmed individual holes |
+| `career_archive_team_holes` | Shared-ball team observations |
+| `handicap_rounds` / `handicap_round_holes` | Personal submitted rounds |
+| Legacy `career_stat_*` tables | Workbook-imported career datasets used by some readers |
+
+Tiger's historical scorecard edits save as a transaction. The combined Career Archive replaces an imported individual round with its editable counterpart, including removal of obsolete imported holes. It combines historical, live, and personal inputs while keeping team observations separate. Large archive readers paginate instead of truncating at 1,000 rows.
+
+This combined loader feeds Tiger Career Stats, the Odds Model, and live odds publication. Public archived-score/stat APIs also apply historical overrides but use a different composition that does not add personal rounds. Some older career summary tables and archived broadcast summaries still read committed per-year data directly.
+
+Consequently, an edit is not guaranteed to change every historical number everywhere. Database scorecards, combined model inputs, static yearly summaries, and archived broadcasts must be distinguished. A complete single-source conversion of all older presentation surfaces has not been done.
+
+Round & Format metadata supplies course/tee/date information; it is not the table containing every player's scores. Workbook import is an administrative ingestion path, not a spreadsheet consulted during each live submission.
+
+**Code:** `lib/data/combinedCareerArchive.ts`, `lib/data/careerStatsDatabase.ts`, `lib/data/mergeCareerRecords.ts`, `lib/data/archivedScorecards.ts`, `components/stats/PlayerCareerPage.tsx`, `lib/broadcast/leaderboardData.ts`.
+
+## 16. Odds model and simulator
+
+The simulator combines scoring history with the target course's holes, format, sides, completed holes, and current lead. It samples historical scores by hole characteristics, applies round-shape/format calibration, and simulates possible remaining outcomes.
+
+Singles models two players. Fourball models four players and uses each side's best score. Foursome uses player histories with shared-team/pair calibration. Outputs are Maroon-win, tie, and White-win probabilities, converted to fair American odds without an added sportsbook margin.
+
+Live publication calls the same model family and stores a snapshot. Tiger's simulator is an inspection/hypothetical calculation tool; changing its inputs does not submit real scores or settle bets. Missing setup or insufficient samples can produce no model result.
+
+Model eligibility differs from handicap eligibility. Personal Stroke Play requires a complete 18-hole round. Singles/Fourball and confirmed live holes follow their own filters. The current filter excludes records whose `roundHoles` equals nine, including a live round exactly nine holes through. This deserves review rather than assuming every partial live round always enters the model.
+
+**Code:** `lib/odds/preRoundSingles.ts`, `lib/live/publishMatchOdds.ts`, `app/portal/admin/odds-model/page.tsx`.
+
+## 17. Wagers, MM Coins, and the portfolio
+
+An authenticated account chooses a market, selection, and stake. It need not be linked to a player. The server resolves the selection and offered odds rather than accepting arbitrary browser-supplied odds.
+
+Native live-match markets read official match state and the latest odds snapshot. Markets marked complete or closed_out are rejected. The betting RPC records selection, odds, stake, potential payout, and pending status while changing the account balance. Portfolio and coin leaderboard read those bet/account records.
+
+Tiger closeout settles the associated live-match market: winning pending bets receive their stored payout, losing bets become lost, and `wagers_market_settlements` prevents duplicate settlement. Other markets have their own settlement path; one match closeout does not settle every tournament future.
+
+Market sources are still mixed. The bet route first checks the legacy-feed market catalog before its native live-match fallback. Wager Types defines/publishes rulebooks, but several items are explicitly `in_design`. A named card or published definition does not prove its calculation and settlement are implemented.
+
+The verified functioning currency path is MM Coins. This map does not describe a real-money deposit, withdrawal, or payment-processing service. Older/mock market presentations are not universally driven by the new stored live odds.
+
+**Code:** `app/api/wagers/mm-coins/bet/route.ts`, `lib/wagers/marketKeys.ts`, `lib/wagers/liveMatchMarket.ts`, `lib/wagers/publicWagerCatalog.ts`, `supabase/schema.sql`.
+
+## 18. Broadcast engine and producer controls
+
+Tiger controls display year, auto/producer mode, scene timing, pause state, announcements, playlist behavior, and tournament-live presentation. `broadcast_state` and `broadcast_config` hold these controls. The normal broadcast follows its configured display year; host previews support separate rehearsal inputs.
+
+The scene layer displays holding content, individual leaderboard, and match play, with supported event overlays/takeovers and queued player-video transitions. Live data refreshes through Supabase Realtime notifications followed by API refetches, with visibility/reconnect recovery. Archived-year scenes use historical data sources.
+
+The event queue selects active, unexpired rows using effective priority and age. An event type existing in the library does not prove every scoring path emits it. The atomic hole endpoint publishes official state/odds but does not directly call `publishBroadcastEvent` for every score. Standings may update without every potential celebratory event firing.
+
+Broadcast consumes tournament data. Changing its year, scene, or live flag does not submit scores, start a tournament round, or change handicap calculations.
+
+**Code:** `lib/broadcast/state.ts`, `lib/broadcast/queue.ts`, `lib/broadcast/useLiveBroadcastData.ts`, `components/broadcast/BroadcastStage.tsx`, `app/portal/admin/broadcast-controls`.
+
+## 19. Watch Live, comments, and highlights
+
+Watch Live is the public viewing page. If a YouTube live video ID is configured, it embeds that video. Otherwise, when Tiger marks the broadcast live, it displays the app's custom broadcast. Before that it shows countdown/holding content.
+
+The viewer follows broadcast-state and playlist changes. The custom output consists primarily of tournament graphics and queued media; it is not itself a complete camera-stream ingestion/production service.
+
+Comments and Highlights are currently placeholder panels: they display explanatory text, not a functioning realtime chat backend or automatically generated highlight collection. They must be distinguished from the functioning broadcast-state and video presentation paths.
+
+**Code:** `app/watch-live/page.tsx`, `components/watch-live/WatchLiveExperience.tsx`, `components/watch-live/BroadcastPlayer.tsx`.
+
+## 20. Round videos and stored media
+
+A player can attach shot video to their own eligible archived scorecard; Tiger can manage others. An authorized request obtains a signed upload URL, and the browser uploads bytes directly to Cloudflare R2. A confirmation request then validates the player/round/hole/shot and saves the storage-object link in Supabase.
+
+The scorecard can display the linked video, and the confirmation path can queue it for the broadcast. Video bytes live in object storage; ownership and scorecard references live in the database. Uploading video does not change strokes, resolve a scoring dispute, or create a missing historical round.
+
+The current linking route specifically looks for `archived_scorecard_rounds`. Do not assume that every future native live archive round automatically supports the same upload path. Playlist audio and video presentation metadata are separate from tournament results.
+
+**Code:** `app/api/portal/tiger/scorecards/video/sign/route.ts`, `app/api/portal/tiger/scorecards/video/confirm/route.ts`, `lib/r2/client.ts`, `lib/broadcast/playerVideoQueue.ts`.
+
+## 21. Live Scoring Page Editor and test season
+
+The editor displays two connected sample phones, Maroon and White. Submitting both demonstrates agreement, disagreement, correction/resubmission, team styling, and the compact mobile layout. Desktop places them side by side; mobile stacks them.
+
+It uses local sample state and shared scoring components. It does not call the real live-hole API or save real scores. It is a visual rehearsal surface, not a general drag-and-drop layout editor; layout changes still require code.
+
+The separate test-season controls operate on a designated database season. This is different from local preview. Test data is excluded from normal combined archive/model reads unless the relevant loader explicitly opts into test data. Resetting the test season is a host action.
+
+**Code:** `components/portal/tiger/LiveScoringPreview.tsx`, `components/portal/tiger/ScoringPreviewPhone.tsx`, `components/portal/tiger/TestSeasonPanel.tsx`, `lib/live/testSeason.ts`.
+
+## 22. Legacy integrations and unfinished pages
+
+Current native scoring uses the Supabase transaction path. The repository still contains the older `PlayerScoringPanel`, `/api/portal/score` routes, `LIVE_FEED_URL` integration, and Python API client. The old panel is not mounted by the current app routes found in this review, but some external-feed consumers and endpoints remain.
+
+The obsolete native stroke/stat autosave endpoints reject requests, preventing them from bypassing complete-hole submission. That does not mean all older external integrations have been removed.
+
+Fantasy, Merchandise, Vault, Settings, My Team, and Sponsorship currently render Coming Soon. GPS shows a notice rather than distances. Dedicated pickups/concessions are not a complete workflow. A destination, schema field, or old design document is not proof of a complete connected feature.
+
+**Code:** `components/portal/PlayerScoringPanel.tsx`, `app/api/portal/score`, `lib/scorekeeper`, `lib/data/fetchLiveTournament.ts`, `components/portal/HoleActionBar.tsx`, the corresponding placeholder page files.
+
+## 23. Hosting, storage, and release workflow
+
+| Component | Responsibility |
+|---|---|
+| Browser | Interface, local drafts, retry queue, some preferences |
+| Vercel / Next.js | Website rendering and API routes |
+| Supabase Auth | Sessions and account authentication |
+| Supabase PostgreSQL | Scores, setups, archives, profiles, wagers, transactions |
+| Supabase Realtime | Change notifications that trigger refetching |
+| Cloudflare R2 | Uploaded media files |
+| GitHub | Code, migration files, committed historical data |
+
+Database migrations and website deployments are separate. Deploying code does not automatically run the SQL files. For a required additive migration: test code/SQL → apply migration → verify functions → deploy matching code → verify production domain assignment → smoke-test live endpoints.
+
+Vercel Preview and Production have separate environment-variable scopes. The earlier preview failed for missing Supabase settings; production succeeded with its configured settings. A staged Ready build does not necessarily mean the live domain points at it.
+
+**Code:** `package.json`, `lib/supabase`, `lib/r2`, `supabase/*.sql`, `docs/scoring-reliability-release.md`.
+
+## 24. One hole, end to end
+
+1. Tiger locks the round's setup and matchups, starts the round, and its tee-time/start conditions open scoring.
+2. Cade records his score, the assigned opponent's score, and his own statistics. These are browser drafts until Submit.
+3. Submit sends a uniquely identified request. The server validates and commits the saved perspective.
+4. If the opponent is missing, it waits. If either score comparison disagrees, the pair remains disputed and is excluded/retracted from the confirmed archive.
+5. Matching submissions confirm the holes. The phone receives acknowledgment; background publication updates official state and odds. Live consumers refresh their appropriate data.
+6. If the match is mathematically won, that result stops changing. Players may record further actual strokes until Tiger closes the match.
+7. Tiger closeout atomically finalizes the match and settles its MM Coins market.
+8. If the individual round has all 18 eligible holes and verified tee/date data, it can contribute a handicap differential. A partial or shared-ball round cannot become a complete individual handicap round.
+
+## Review findings
+
+This map identifies remaining distinctions worth reviewing: portal handicap sign formatting; static versus corrected career summaries; independent year controls; model exclusion at exactly nine holes; incomplete event emission wiring; legacy market/feed consumers; future live-video/archive-edition transitions; and unfinished GPS, placeholders, pickups, and official full-handicap features.
+
+These are observations from the documentation review. No application behavior was changed while creating this map.
