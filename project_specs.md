@@ -330,6 +330,21 @@ All pages are public, no auth.
   something else fixed in the meantime), `npx tsc --noEmit`, `npm run
   lint` (clean on every file this round touched), and `npm run build`
   all clean.
+- **Show every player's email, not just unclaimed ones; stack "Edit
+  email" under it; taller rows.** Follow-up to the round above. Claimed
+  players who signed up the old way (self-serve via a copied invite
+  link, before `player_slots.email` existed) had no email saved there —
+  the page now falls back to their real Supabase Auth account email
+  (`profiles.email`, looked up via `claimed_by`) whenever
+  `player_slots.email` is empty, so a real address (or a clear
+  path to add one) shows for every player. `player_slots.email` still
+  wins whenever it's set, since that's the one "Edit email" writes to —
+  editing a claimed player's email is guaranteed to visibly take effect
+  rather than being silently shadowed by the account-email fallback.
+  "Edit email" moved from beside the email to its own line below it, and
+  row padding went from `py-2` to `py-4` to fit the extra line
+  comfortably. `npm test` (283/283), `npx tsc --noEmit`, `npm run lint`,
+  and `npm run build` all clean.
 
 ## Known gaps / not yet built
 
