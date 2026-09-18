@@ -9,22 +9,28 @@ import { getPlayerDisplayName } from "@/lib/data/players";
 // user, insert their profile, claim the slot; unwind on any failure so a
 // half-finished invite never leaves an orphaned auth user or a wrongly
 // claimed slot.
+//
+// Deliberately does not take an email in the request body — it always
+// sends to whatever's on file in player_slots.email (set via
+// /api/portal/tiger/player-email, "Edit email" on Players & Teams), so
+// there's exactly one place an address is entered per player, not one typed
+// fresh on every invite.
 export async function POST(request: Request) {
   const host = await requireHost();
   if (!host) {
     return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
   }
 
-  const { playerSlug, email } = await request.json();
-  if (typeof playerSlug !== "string" || typeof email !== "string" || !email.trim()) {
-    return NextResponse.json({ ok: false, error: "Missing playerSlug or email." }, { status: 400 });
+  const { playerSlug } = await request.json();
+  if (typeof playerSlug !== "string") {
+    return NextResponse.json({ ok: false, error: "Missing playerSlug." }, { status: 400 });
   }
 
   const service = createSupabaseServiceRoleClient();
 
   const { data: slot } = await service
     .from("player_slots")
-    .select("username, claimed_by")
+    .select("username, claimed_by, email")
     .eq("player_slug", playerSlug)
     .single();
   if (!slot || !slot.username) {
@@ -33,6 +39,10 @@ export async function POST(request: Request) {
   if (slot.claimed_by) {
     return NextResponse.json({ ok: false, error: "Already claimed — unlink first to re-invite." }, { status: 409 });
   }
+  if (!slot.email) {
+    return NextResponse.json({ ok: false, error: "Add an email for this player first." }, { status: 400 });
+  }
+  const email = slot.email;
 
   const origin = new URL(request.url).origin;
   const { data: invited, error: inviteError } = await service.auth.admin.inviteUserByEmail(email, {
@@ -60,7 +70,7 @@ export async function POST(request: Request) {
 
   const { data: claimed } = await service
     .from("player_slots")
-    .update({ claimed_by: invited.user.id, claimed_at: new Date().toISOString(), email })
+    .update({ claimed_by: invited.user.id, claimed_at: new Date().toISOString() })
     .eq("player_slug", playerSlug)
     .is("claimed_by", null)
     .select();

@@ -307,6 +307,29 @@ All pages are public, no auth.
   Also: Supabase's built-in invite email is rate-limited on the free plan
   (~a handful/hour) unless custom SMTP is configured later — fine for a
   few invites at a time, not for blasting the whole roster at once.
+  **Update 2026-09-18: live-verified by Cade — sending an invite email
+  through the app works.**
+- **Send Invite now always uses one saved email per player, instead of
+  retyping it at send time.** Follow-up to the round above, same files.
+  There's no "email" field anywhere in a player's info/bio/portal area —
+  that system is entirely public bio content (Instagram, hometown, etc,
+  `lib/data/players/overrides.ts`'s `EDITABLE_PLAYER_FIELDS`, rendered on
+  the public `PlayerBioSection`) — so a real per-player email needed its
+  own place to live rather than piggybacking on that public system.
+  Players & Teams now shows each unclaimed player's email (or "No email
+  on file") right under their name, with an "Edit email" toggle
+  (identical expand-a-row pattern) that saves through a new, tiny `POST
+  /api/portal/tiger/player-email` straight to `player_slots.email` — no
+  more typing an address inside the invite flow itself. "Send Invite" is
+  now a plain one-click button (disabled with no email on file); `POST
+  /api/portal/tiger/invite` dropped `email` from its request body
+  entirely and always reads `player_slots.email` server-side, so there is
+  exactly one place an address is entered per player and every consumer
+  (today, just the invite) reads from it. `npm test` (283/283, including
+  the previously-noted unrelated `navBarContent.test.ts` failure, which
+  something else fixed in the meantime), `npx tsc --noEmit`, `npm run
+  lint` (clean on every file this round touched), and `npm run build`
+  all clean.
 
 ## Known gaps / not yet built
 
@@ -327,13 +350,6 @@ All pages are public, no auth.
   reuses the old swapped course/round pairing — low-stakes (test-only) and
   needs a manual paste into the Apps Script editor to fix, so left alone
   pending a decision from the user.
-- **`supabase/player_slots_email.sql` has not been run yet.** Until it
-  runs once in the Supabase SQL Editor, `player_slots` has no `email`
-  column and the new "Send Invite" button's `POST
-  /api/portal/tiger/invite` will fail on the `profiles`/`player_slots`
-  update step. Also not yet verified end-to-end against a real Supabase
-  project (does the invite email actually arrive, does the link land
-  cleanly on `/reset-password`) — code review only so far.
 - **Host scoring tools (Tasks 5-7 of the live scoring plan, not started):**
   `/portal/host` — pairings, round start/reset, direct score edits for
   Tiger — does not exist yet. `/portal`'s host view still shows "Host tools

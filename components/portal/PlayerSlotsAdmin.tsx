@@ -63,8 +63,8 @@ export function PlayerSlotsAdmin({ year, rows: initialRows }: { year: number; ro
   const [error, setError] = useState<string | null>(null);
   const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
   const [rows, setRowsState] = useState(initialRows);
-  const [inviteSlug, setInviteSlug] = useState<string | null>(null);
-  const [inviteEmail, setInviteEmail] = useState("");
+  const [emailEditSlug, setEmailEditSlug] = useState<string | null>(null);
+  const [emailEditValue, setEmailEditValue] = useState("");
 
   async function handleApprove(playerSlug: string, field: string, submittedAt: string) {
     setBusy(playerSlug);
@@ -153,6 +153,32 @@ export function PlayerSlotsAdmin({ year, rows: initialRows }: { year: number; ro
     }
   }
 
+  async function handleSaveEmail(playerSlug: string) {
+    setBusy(playerSlug);
+    setError(null);
+    try {
+      const res = await fetch("/api/portal/tiger/player-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playerSlug, email: emailEditValue }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error);
+        return;
+      }
+      setRowsState((current) => current.map((r) => (r.playerSlug === playerSlug ? { ...r, email: data.email } : r)));
+      setEmailEditSlug(null);
+    } catch {
+      setError("Something went wrong — try again.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  // Always sends to whatever email is on file for this player (set via "Edit
+  // email" above) — there's deliberately no separate address to type here,
+  // so the invite can never go somewhere different from what's on record.
   async function handleSendInvite(playerSlug: string) {
     setBusy(playerSlug);
     setError(null);
@@ -160,7 +186,7 @@ export function PlayerSlotsAdmin({ year, rows: initialRows }: { year: number; ro
       const res = await fetch("/api/portal/tiger/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playerSlug, email: inviteEmail }),
+        body: JSON.stringify({ playerSlug }),
       });
       const data = await res.json();
       if (!data.ok) {
@@ -262,7 +288,25 @@ export function PlayerSlotsAdmin({ year, rows: initialRows }: { year: number; ro
           {rows.map((row) => (
             <Fragment key={row.playerSlug}>
               <tr className="border-b border-ink-100">
-                <td className="py-2">{row.fullName}</td>
+                <td className="py-2">
+                  {row.fullName}
+                  {!row.claimedBy && (
+                    <div className="mt-0.5 flex items-center gap-2 font-sans text-2xs text-ink-400">
+                      <span>{row.email ?? "No email on file"}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmailEditSlug((current) => (current === row.playerSlug ? null : row.playerSlug));
+                          setEmailEditValue(row.email ?? "");
+                          setError(null);
+                        }}
+                        className="font-semibold text-maroon-700 underline"
+                      >
+                        Edit email
+                      </button>
+                    </div>
+                  )}
+                </td>
                 <td className="py-2 font-mono">{row.username ?? "—"}</td>
                 <td className="py-2">{row.claimedBy ? "Claimed" : "Open"}</td>
                 <td className="py-2">
@@ -336,37 +380,34 @@ export function PlayerSlotsAdmin({ year, rows: initialRows }: { year: number; ro
                   ) : row.username ? (
                     <button
                       type="button"
-                      onClick={() => {
-                        setInviteSlug((current) => (current === row.playerSlug ? null : row.playerSlug));
-                        setInviteEmail(row.email ?? "");
-                        setError(null);
-                      }}
-                      className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline"
+                      disabled={busy === row.playerSlug || !row.email}
+                      title={row.email ? undefined : "Add an email first"}
+                      onClick={() => handleSendInvite(row.playerSlug)}
+                      className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline disabled:cursor-not-allowed disabled:text-ink-300"
                     >
-                      Send Invite
+                      {busy === row.playerSlug ? "Sending…" : "Send Invite"}
                     </button>
                   ) : null}
                 </td>
               </tr>
-              {inviteSlug === row.playerSlug && (
-                <tr key={`${row.playerSlug}-invite`} className="border-b border-ink-100 bg-cream-50">
+              {emailEditSlug === row.playerSlug && (
+                <tr key={`${row.playerSlug}-email`} className="border-b border-ink-100 bg-cream-50">
                   <td colSpan={5} className="py-3">
                     <div className="flex items-center gap-2 px-2">
                       <input
                         type="email"
-                        required
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
+                        value={emailEditValue}
+                        onChange={(e) => setEmailEditValue(e.target.value)}
                         placeholder="player@email.com"
                         className="flex-1 rounded-sm border border-ink-200 px-2 py-1 font-sans text-xs"
                       />
                       <button
                         type="button"
-                        disabled={busy === row.playerSlug || !inviteEmail.trim()}
-                        onClick={() => handleSendInvite(row.playerSlug)}
+                        disabled={busy === row.playerSlug}
+                        onClick={() => handleSaveEmail(row.playerSlug)}
                         className="rounded-pill bg-maroon-700 px-3 py-1.5 font-sans text-xs font-semibold text-white disabled:opacity-50"
                       >
-                        {busy === row.playerSlug ? "Sending…" : "Send Invite"}
+                        {busy === row.playerSlug ? "Saving…" : "Save email"}
                       </button>
                     </div>
                   </td>
