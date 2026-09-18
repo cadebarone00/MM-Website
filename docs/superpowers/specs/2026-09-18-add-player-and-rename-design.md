@@ -2,9 +2,8 @@
 
 ## Goal
 
-Two additions to Players & Teams
-([app/portal/admin/master-settings/[year]/players-teams/page.tsx](../../../app/portal/admin/master-settings/%5Byear%5D/players-teams/page.tsx),
-[PlayerSlotsAdmin.tsx](../../../components/portal/PlayerSlotsAdmin.tsx)):
+Three things, all landing together because the third reshapes where the
+first two live:
 
 1. **Add Player** — a "+ Add Player" control that creates a brand-new
    player from just a name and an email. Today every player on this site
@@ -14,9 +13,16 @@ Two additions to Players & Teams
 2. **Edit name** — Tiger can correct a player's *visible* name, for any
    player, existing or new — without ever touching their `slug` (the
    permanent identifier every join, URL, and historical record uses).
+3. **Split player identity out of the per-year page.** Today
+   [Players & Teams](../../../app/portal/admin/master-settings/%5Byear%5D/players-teams/page.tsx)
+   (nested under one year's Master Settings) does two unrelated jobs:
+   managing *who a player is* (name, email, invite, bio) and managing
+   *what team they're on this year*. Only the second is actually
+   per-year. This spec moves the first job to a new Global Tools page —
+   Add Player and Edit Name land there, not on the per-year page.
 
-Both build directly on the invite work already shipped this week
-(`player_slots.email`, `POST /api/portal/tiger/invite`,
+Add Player and Edit Name build directly on the invite work already
+shipped this week (`player_slots.email`, `POST /api/portal/tiger/invite`,
 `POST /api/portal/tiger/player-email`) — a newly added player is simply a
 `player_slots` row that starts unclaimed with no team, exactly like any
 of the 13 existing players before they're invited.
@@ -77,13 +83,14 @@ links on — this migration never touches it.
 
 ## Add Player
 
-**UI**: a "+ Add Player" toggle above the table (same expand-panel
-pattern as every other control on this page) opens two fields — Name,
-Email — and a submit button. On success, the page reloads and the new
-player appears as an ordinary unclaimed row: "No team," "Open," and
-(because an email was given) "Send Invite" already enabled — reusing
-100% of the invite flow shipped this week. No team assignment, no bio,
-no photo — exactly the two fields asked for.
+**UI**: a "+ Add Player" toggle above the table on the new Global
+Players page (see below) — same expand-panel pattern as every other
+control already on the old Players & Teams page — opens two fields:
+Name, Email, and a submit button. On success, the page reloads and the
+new player appears as an ordinary unclaimed row: "Open," and (because
+an email was given) "Send Invite" already enabled — reusing 100% of the
+invite flow shipped this week. No team assignment (that's the per-year
+page's job now), no bio, no photo — exactly the two fields asked for.
 
 **Backend**: new `POST /api/portal/tiger/player-add`, host-gated
 (`requireHost`), same create-then-validate shape as the rest of this
@@ -109,9 +116,10 @@ page's routes:
 
 **UI**: the existing "Edit email" panel (shipped this week) gains a
 second field and becomes "Edit name & email" — one toggle, one panel,
-Name and Email inputs, one Save. Applies to every row, static or
-dynamic alike; pre-filled with whatever's currently displayed (the
-override if set, otherwise the hand-written name).
+Name and Email inputs, one Save. Lives on the new Global Players page,
+alongside Add Player; applies to every row, static or dynamic alike;
+pre-filled with whatever's currently displayed (the override if set,
+otherwise the hand-written name).
 
 **Backend**: new `POST /api/portal/tiger/player-name`, mirroring
 `player-email` exactly:
@@ -125,6 +133,41 @@ The panel's Save button fires both requests (name, email) and reports
 either error inline, matching how every other multi-field action on
 this page already surfaces errors.
 
+## Global Players page vs. per-year Players & Teams
+
+**New Global Tools page**: `/portal/admin/players`, a new box on Tiger
+Center's Global Tools grid
+([app/portal/admin/page.tsx](../../../app/portal/admin/page.tsx)),
+alongside Career Stats, Course Library, Wager Types, etc. — the existing
+grid of standalone, non-year-scoped admin pages. This page gets
+everything on today's Players & Teams that isn't about a specific
+year's team assignment: the Player column (name + email, both editable
+via "Edit name & email"), Username, Status (Open/Claimed), pending
+bio-edit approvals, "Edit directly" (bio fields), Unlink, Send Invite —
+plus the two new controls above. It's built from today's
+[PlayerSlotsAdmin.tsx](../../../components/portal/PlayerSlotsAdmin.tsx),
+relocated here with its Team column and `year` prop removed (team
+assignment isn't this page's job anymore) and "+ Add Player" added.
+
+**Per-year Players & Teams stays**, same URL
+(`/portal/admin/master-settings/[year]/players-teams`), but shrinks to
+exactly two things per row: the player's name (read-only — corrections
+happen on the Global Players page now) and the Maroon/White/Unassigned
+buttons + lock, unchanged from today. A new, much smaller component
+(e.g. `PlayerTeamAssignment.tsx`) replaces `PlayerSlotsAdmin.tsx` here.
+
+**Shared player list**: both pages need "every player, with a resolved
+display name" — today that union-and-resolve logic lives inline in
+`players-teams/page.tsx`'s loader. It moves into one small shared
+server-only helper (e.g. `lib/portal/allPlayers.ts`), used by both
+pages' loaders, so the union logic (static `playerProfiles` + every
+`player_slots` row not already in it, name resolved as
+`slot?.full_name ?? staticProfile?.fullName ?? slot.player_slug`) is
+written once. The Global Players page additionally needs each row's
+`username`/`claimedBy`/`email`/pending-edits (already fetched
+server-side, same as today); the per-year page only needs `playerSlug`
+and the resolved name.
+
 ## The 5 spots that resolve a name/identity
 
 Each of these already does server-side Supabase work today, so each
@@ -132,12 +175,13 @@ gets the same small addition rather than a shared new abstraction (the
 lookups differ enough — one row already in hand vs. a fresh query — that
 forcing one helper across all 5 would obscure more than it'd save):
 
-1. **Players & Teams' row list** (`page.tsx`): today `rows` is built by
-   mapping over the static `playerProfiles` array alone. It becomes the
-   union of that array and every `player_slots` row not already in it
-   (the dynamically-added ones), with `fullName` resolved per row as
-   `slot?.full_name ?? staticProfile?.fullName ?? slot.player_slug`. No
-   extra query — `slots` is already fetched.
+1. **Both the Global Players page and the per-year Players & Teams
+   page's row lists**: both call the shared `lib/portal/allPlayers.ts`
+   helper described above instead of mapping over the static
+   `playerProfiles` array alone (today's behavior, which would leave a
+   dynamically-added player off both tables entirely). No extra query on
+   either page — the underlying `player_slots` fetch each already does
+   is what the helper wraps.
 2. **Portal home** (`app/portal/page.tsx`): `playerName` prefers
    `player_slots.full_name` over `playerProfile?.fullName` over
    `profile.display_name`. This page currently only creates the
@@ -208,6 +252,11 @@ feature before it.
 
 - `supabase/player_slots_full_name.sql` written (run once by the user,
   same as every prior migration in this project).
+- `/portal/admin/players` exists as a new Global Tools box, hosting
+  everything player-identity-related (Add Player, Edit name & email,
+  Status, Send Invite, Unlink, bio editing/approval).
+- The per-year Players & Teams page shows only name + team assignment,
+  for every player from the shared list (static or dynamic).
 - "+ Add Player" creates a real, invitable row with no code change.
 - "Edit name & email" works on every row, static or dynamic.
 - The 5 spots above show a resolved name (override, then hand-written,
