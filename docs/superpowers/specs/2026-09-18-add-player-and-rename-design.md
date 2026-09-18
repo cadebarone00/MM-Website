@@ -49,14 +49,14 @@ hand-written file for this slug" — that's the whole scope of this spec:
 - The portal home screen (`app/portal/page.tsx`)
 - The player's own "Edit My Bio" page (`app/portal/profile/page.tsx`,
   today hard-redirects if there's no hand-written file)
-- The public bio page (`app/teams/[slug]/[player]/page.tsx`)
 - The public "confirmed roster" block for the upcoming year
   (`getConfirmedRoster`, `ConfirmedRoster.tsx`)
 
 Renaming one of the 13 *existing* players rides the same mechanism:
-those 5 spots start preferring an override name when one is set; the
-~60 historical/leaderboard/wagers/broadcast files are explicitly left
-alone (see "Out of scope").
+those 4 spots start preferring an override name when one is set; the
+~60 historical/leaderboard/wagers/broadcast files (and the live
+in-progress `LivePlayerScorecard.tsx`) are explicitly left alone (see
+"Out of scope").
 
 ## Data model
 
@@ -168,12 +168,25 @@ written once. The Global Players page additionally needs each row's
 server-side, same as today); the per-year page only needs `playerSlug`
 and the resolved name.
 
-## The 5 spots that resolve a name/identity
+## The 4 spots that resolve a name/identity
 
 Each of these already does server-side Supabase work today, so each
 gets the same small addition rather than a shared new abstraction (the
 lookups differ enough — one row already in hand vs. a fresh query — that
-forcing one helper across all 5 would obscure more than it'd save):
+forcing one helper across all 4 would obscure more than it'd save).
+
+One spot originally planned here doesn't hold up: `app/teams/[slug]/[player]/page.tsx`
+turns out to be a dead redirect shim (forwards to
+`/leaderboard/[tournamentSlug]/players/[player]`, and only when the
+player already appears in a *past* tournament's roster) — not a real
+public bio page, and not fixable by this spec's fallback logic since a
+brand-new player has no past-tournament appearance to redirect to. The
+actual live bio+scorecard view for the *current* season
+(`components/scorecard/LivePlayerScorecard.tsx`) is a `"use client"`
+component fed by a polling hook over live tournament JSON, not a Server
+Component doing a database read — fixing its display name properly means
+threading a resolved name through that live-feed pipeline, real work on
+its own. Moved to "Out of scope" below rather than silently dropped.
 
 1. **Both the Global Players page and the per-year Players & Teams
    page's row lists**: both call the shared `lib/portal/allPlayers.ts`
@@ -196,9 +209,7 @@ forcing one helper across all 5 would obscure more than it'd save):
    avatarSrc: null, bio: "", history: [] }`) instead of redirecting away.
    If a static profile *does* exist but an override name is set, apply
    it to `fullName` before merging in the bio overrides.
-4. **Public bio page** (`app/teams/[slug]/[player]/page.tsx`): identical
-   fallback/override logic to #3.
-5. **Confirmed roster** (`lib/data/activeSeasonOverlay.ts`'s
+4. **Confirmed roster** (`lib/data/activeSeasonOverlay.ts`'s
    `getConfirmedRoster`, `ConfirmedRoster.tsx`): resolve `displayName`
    and `avatarSrc` per entry inside `getConfirmedRoster` itself (already
    async/server-only) using the same override-then-static-then-slug
@@ -207,7 +218,7 @@ forcing one helper across all 5 would obscure more than it'd save):
    instead of calling `getPlayerDisplayName`/`getPlayerAvatar` itself —
    a simplification, not just a fix.
 
-Avatar is unaffected by any of this beyond #5 reusing the existing
+Avatar is unaffected by any of this beyond #4 reusing the existing
 null-avatarSrc → generic-initials behavior the `Avatar` component
 already has. No photo upload is part of this spec.
 
@@ -233,11 +244,21 @@ feature before it.
   directly and are, by this project's existing design, a frozen record
   of past years (`project_specs.md`: "Historical years are hand-entered
   once... there is no live sync for past years"). A rename shows up on
-  the 5 forward-facing spots above immediately; it reaches a past
+  the 4 forward-facing spots above immediately; it reaches a past
   tournament's leaderboard/scorecard/wagers page only if a developer
   also edits that player's hand-written file by hand later. Confirmed
   with Cade as the intended behavior — this should rarely if ever
   matter in practice.
+- **Renaming does not reach `LivePlayerScorecard.tsx`** (the current
+  season's live scorecard+bio view) either, for a different reason than
+  the historical pages: it's a `"use client"` component fed by a
+  polling hook over live tournament JSON, not a Server Component that
+  can do a database read. A dynamically-added player still shows up
+  there without crashing — `getPlayerDisplayName` falls back to their
+  raw slug rather than a real name, same cosmetic gap as the historical
+  pages, just for a different structural reason. Fixing it means
+  threading a resolved name through the live-feed pipeline itself —
+  real work on its own, not part of this spec.
 - **No photo upload.** A new player, or a renamed existing one, keeps
   whatever avatar they already had (null → generic initials for a new
   player).
@@ -259,7 +280,7 @@ feature before it.
   for every player from the shared list (static or dynamic).
 - "+ Add Player" creates a real, invitable row with no code change.
 - "Edit name & email" works on every row, static or dynamic.
-- The 5 spots above show a resolved name (override, then hand-written,
+- The 4 spots above show a resolved name (override, then hand-written,
   then slug) with no redirect/crash for a player with no hand-written
   file.
 - `npm test`, `npx tsc --noEmit`, `npm run lint`, `npm run build` all
