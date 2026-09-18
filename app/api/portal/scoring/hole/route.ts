@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { requirePlayer } from "@/lib/portal/requirePlayer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getActiveSeasonYear } from "@/lib/live/activeSeason";
@@ -31,7 +31,11 @@ export async function POST(request: Request) {
     console.error("Hole submission failed:", error);
     return NextResponse.json({ ok: false, error: error.code === "P0001" ? error.message : "Scoring is temporarily unavailable. Your entries have not been submitted; please try again." }, { status: error.code === "P0001" ? 400 : 503 });
   }
-  try { await publishOfficialMatchState(seasonYear, data.matchBoxId); }
-  catch (err) { console.error("Official match refresh failed after hole submission:", err); }
+  // Acknowledge the committed hole immediately; model calculations must not
+  // make a successful save look like a connection timeout on the phone.
+  after(async () => {
+    try { await publishOfficialMatchState(seasonYear, data.matchBoxId); }
+    catch (err) { console.error("Official match refresh remains queued:", err); }
+  });
   return NextResponse.json({ ok: true, submissions: data.submissions });
 }
