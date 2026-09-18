@@ -141,6 +141,8 @@ export function matchBoxResult(snapshot: LiveTournamentSnapshot, matchBox: LiveM
     const whiteBest = Math.min(...matchBox.whitePlayers.map((player) => readScore(snapshot, player, round, hole).score ?? 0));
     if (maroonBest < whiteBest) maroonHoles++;
     else if (whiteBest < maroonBest) whiteHoles++;
+    // Scores after a match is won belong to the individual round, not its result.
+    if (Math.abs(maroonHoles - whiteHoles) > 18 - completed) break;
   }
 
   const holesRemaining = 18 - completed;

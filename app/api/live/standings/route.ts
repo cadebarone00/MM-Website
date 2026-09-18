@@ -1,3 +1,4 @@
+import { retryPendingPublications } from "@/lib/live/retryPublication";
 import { NextResponse } from "next/server";
 import { buildLiveTournamentSnapshot } from "@/lib/broadcast/liveSnapshot";
 import { getActiveSeasonYear } from "@/lib/live/activeSeason";
@@ -7,6 +8,7 @@ import { leaderboard } from "@/lib/live/scoring";
  * scoring rule, while confirmed Singles/Fourball strokes count immediately. */
 export async function GET() {
   const seasonYear = await getActiveSeasonYear();
+  await retryPendingPublications(seasonYear);
   const snapshot = await buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true });
   const standings = leaderboard(snapshot).filter((entry) => entry.played > 0).map((entry) => ({
     player: entry.player,

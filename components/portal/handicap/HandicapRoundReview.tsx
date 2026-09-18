@@ -30,6 +30,7 @@ export function HandicapRoundReview({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          submissionId: setup.submissionId,
           courseId: setup.course.id,
           teeSetId: setup.teeSet.id,
           datePlayed: setup.datePlayed,

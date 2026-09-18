@@ -1,3 +1,4 @@
+import { retryPendingPublications } from "@/lib/live/retryPublication";
 import { NextResponse } from "next/server";
 import { requirePlayer } from "@/lib/portal/requirePlayer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
@@ -56,6 +57,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: "You don't have a match box in this round." }, { status: 404 });
   }
 
+  await retryPendingPublications(seasonYear, box.id);
   const allPlayers = [...box.maroon_players, ...box.white_players];
   const [{ data: scoreRows }, { data: submissionRows }, { data: roundState }, { data: holeSubmissions, error: holeSubmissionError }] = await Promise.all([
     service

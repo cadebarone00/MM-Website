@@ -1,3 +1,4 @@
+import { retryPendingPublications } from "@/lib/live/retryPublication";
 import { NextResponse } from "next/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 
@@ -7,8 +8,10 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const service = createSupabaseServiceRoleClient();
-  const [{ data: match }, { data: state }, { data: odds }] = await Promise.all([
-    service.from("live_match_boxes").select("id, season_year, round, box_number, format, tee_time, maroon_players, white_players, state").eq("id", id).maybeSingle(),
+  const { data: match } = await service.from("live_match_boxes").select("id, season_year, round, box_number, format, tee_time, maroon_players, white_players, state").eq("id", id).maybeSingle();
+  if (!match) return NextResponse.json({ ok: false, error: "Match not found." }, { status: 404 });
+  await retryPendingPublications(match.season_year, id);
+  const [{ data: state }, { data: odds }] = await Promise.all([
     service.from("live_match_official_state").select("*").eq("match_box_id", id).maybeSingle(),
     service.from("live_match_odds_snapshots").select("*").eq("match_box_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
   ]);

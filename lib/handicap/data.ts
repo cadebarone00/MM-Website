@@ -123,35 +123,17 @@ export async function submitHandicapRound(
 
   const holeInfoByNumber = new Map(teeSet.holes.map((h) => [h.number, h]));
   for (const hole of input.holes) {
+    if (holeInfoByNumber.get(hole.hole)?.par !== 3 && !hole.fir && !hole.firDirection) return { ok: false, error: `Complete fairway information for hole ${hole.hole}.` };
     if (!holeInfoByNumber.has(hole.hole)) return { ok: false, error: `Tee set has no data for hole ${hole.hole}.` };
   }
 
   const totalScore = input.holes.reduce((sum, h) => sum + h.score, 0);
   const differential = calculateDifferential(totalScore, teeSet.rating, teeSet.slope);
 
-  const { data: roundRow, error: roundError } = await service
-    .from("handicap_rounds")
-    .insert({
-      player_slug: playerSlug,
-      course_id: course.id,
-      tee_set_id: teeSet.id,
-      tee_set_name: teeSet.name,
-      rating: teeSet.rating,
-      slope: teeSet.slope,
-      date_played: input.datePlayed,
-      tee_time: input.teeTime,
-      total_score: totalScore,
-      differential,
-    })
-    .select("id")
-    .single();
-  if (roundError || !roundRow) return { ok: false, error: "Could not save this round." };
-
   const holeRows = input.holes.map((hole) => {
     const info = holeInfoByNumber.get(hole.hole)!;
     const firMissed = info.par !== 3 && !hole.fir;
     return {
-      round_id: roundRow.id,
       hole: hole.hole,
       par: info.par,
       yards: info.yards,
@@ -164,11 +146,13 @@ export async function submitHandicapRound(
     };
   });
 
-  const { error: holesError } = await service.from("handicap_round_holes").insert(holeRows);
-  if (holesError) {
-    await service.from("handicap_rounds").delete().eq("id", roundRow.id);
-    return { ok: false, error: "Could not save this round's holes. Please try again." };
-  }
-
-  return { ok: true, roundId: roundRow.id };
+  if (!input.submissionId) return { ok: false, error: "Refresh the score entry page before submitting." };
+  const { data: roundId, error: saveError } = await service.rpc("save_handicap_round_atomic", {
+    p_player: playerSlug, p_request: input.submissionId,
+    p_round: { course_id: course.id, tee_set_id: teeSet.id, tee_set_name: teeSet.name, rating: teeSet.rating, slope: teeSet.slope,
+      date_played: input.datePlayed, tee_time: input.teeTime, total_score: totalScore, differential },
+    p_holes: holeRows,
+  });
+  if (saveError) return { ok: false, error: saveError.code === "P0001" ? saveError.message : "Could not save this round. Your draft is retained; retry when connected." };
+  return { ok: true, roundId };
 }

@@ -21,7 +21,7 @@ function modelPlayer(slug: string): string {
 }
 
 /** Builds and persists the single odds output consumed by all live surfaces. */
-export async function publishMatchOdds(seasonYear: number, box: LiveMatchBox, state: OfficialMatchState): Promise<PreRoundSinglesResult | null> {
+export async function publishMatchOdds(seasonYear: number, box: LiveMatchBox, state: OfficialMatchState, prepareOnly = false) {
   const snapshot = await buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true });
   const course = snapshot.courses[snapshot.roundCourses[box.round]];
   if (!course) return null;
@@ -53,7 +53,7 @@ export async function publishMatchOdds(seasonYear: number, box: LiveMatchBox, st
   if (!result) return null;
 
   const service = createSupabaseServiceRoleClient();
-  const { error } = await service.from("live_match_odds_snapshots").insert({
+  const oddsRow = {
     match_box_id: box.id,
     season_year: seasonYear,
     model_version: LIVE_MATCH_ODDS_MODEL_VERSION,
@@ -66,7 +66,9 @@ export async function publishMatchOdds(seasonYear: number, box: LiveMatchBox, st
     tie_american_odds: fairAmericanOdds(result.tie),
     white_american_odds: fairAmericanOdds(result.b),
     details: { measureOneMinimum: result.measureOneMinimum, measureTwoMinimum: result.measureTwoMinimum, formatDeltas: result.formatDeltas },
-  });
+  };
+  if (prepareOnly) return oddsRow;
+  const { error } = await service.from("live_match_odds_snapshots").insert(oddsRow);
   if (error) throw error;
   await service.from("live_score_audit_events").insert({ season_year: seasonYear, match_box_id: box.id, round: box.round, kind: "odds_snapshot_created", payload: { modelVersion: LIVE_MATCH_ODDS_MODEL_VERSION, thru: state.thru } });
   return result;

@@ -1,5 +1,6 @@
 "use client";
 
+import { usePersistentState } from "@/lib/usePersistentState";
 import { useState } from "react";
 import type { HandicapCourseTeeSet, HandicapHoleInput, ShotDirection } from "@/lib/handicap/types";
 import { ScoringRoundHeader } from "@/components/portal/ScoringRoundHeader";
@@ -38,18 +39,20 @@ function seedDraftFromHoles(teeSet: HandicapCourseTeeSet, initialHoles: Handicap
 
 export function HandicapHoleEntry({
   teeSet,
+  draftKey,
   onBack,
   onComplete,
   initialHoles,
 }: {
   teeSet: HandicapCourseTeeSet;
+  draftKey?: string;
   onBack: () => void;
   onComplete: (holes: HandicapHoleInput[]) => void;
   initialHoles?: HandicapHoleInput[];
   playerName?: string;
   courseName?: string;
 }) {
-  const [draft, setDraft] = useState<Draft>(() =>
+  const [draft, setDraft, storage] = usePersistentState<Draft>(draftKey ?? null, () =>
     initialHoles ? seedDraftFromHoles(teeSet, initialHoles) : emptyDraft(teeSet)
   );
   const [error, setError] = useState<string | null>(null);
@@ -80,8 +83,8 @@ export function HandicapHoleEntry({
         setSelectedHole(hole.number);
         return;
       }
-      if (!Number.isInteger(Number(entry.putts)) || Number(entry.putts) < 0) {
-        setError(`Enter a valid putts count for hole ${hole.number}.`);
+      if (entry.putts === "" || !Number.isInteger(Number(entry.putts)) || Number(entry.putts) < 0 || Number(entry.putts) > score || (!entry.gir && !entry.girDirection) || (hole.par !== 3 && !entry.fir && !entry.firDirection)) {
+        setError(`Complete putts, fairway, and green for hole ${hole.number}. Putts cannot exceed score.`);
         setSelectedHole(hole.number);
         return;
       }
@@ -90,6 +93,8 @@ export function HandicapHoleEntry({
     setError(null);
     onComplete(holes);
   }
+
+  if (!storage.ready) return <p>Restoring hole entries...</p>;
 
   const hole = teeSet.holes.find((entry) => entry.number === selectedHole)!;
   const entry = draft[selectedHole];
@@ -103,7 +108,7 @@ export function HandicapHoleEntry({
   return (
     <div className={styles.panel + " " + styles.handicap}>
       <div data-hole-header className="-mx-4 sm:-mx-7"><ScoringRoundHeader hole={selectedHole} par={hole.par} yards={hole.yards} totalScore={totalScore} toPar={toPar} /></div>
-      <div className={styles.notice} aria-live="polite">{error && <p role="alert">{error}</p>}</div>
+      <div className={styles.notice} aria-live="polite">{(error || storage.storageError) && <p role="alert">{error ?? "Browser storage is unavailable. Keep this page open until you submit."}</p>}</div>
       <div className={styles.scores}>
         <div className="-mx-4 bg-white px-4 text-maroon-800 sm:-mx-7 sm:px-7">
           <p className="text-center font-condensed font-bold uppercase tracking-wide">Your score</p>

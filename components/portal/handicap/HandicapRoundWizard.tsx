@@ -1,5 +1,6 @@
 "use client";
 
+import { usePersistentState } from "@/lib/usePersistentState";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { HandicapCourseOption, HandicapCourseTeeSet, HandicapHoleInput } from "@/lib/handicap/types";
@@ -9,6 +10,7 @@ import { HandicapHoleEntry } from "./HandicapHoleEntry";
 import { HandicapRoundReview } from "./HandicapRoundReview";
 
 export interface RoundSetup {
+  submissionId: string;
   course: HandicapCourseOption;
   teeSet: HandicapCourseTeeSet;
   datePlayed: string;
@@ -25,12 +27,14 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function HandicapRoundWizard({ courses, recentCourseIds, playerName }: { courses: HandicapCourseOption[]; recentCourseIds: string[]; playerName?: string }) {
+export function HandicapRoundWizard({ courses, recentCourseIds, playerName, playerSlug }: { courses: HandicapCourseOption[]; recentCourseIds: string[]; playerName?: string; playerSlug: string }) {
   const router = useRouter();
-  const [state, setState] = useState<WizardState>({ step: "course" });
+  const [state, setState, storage] = usePersistentState<WizardState>("handicap-wizard:" + playerSlug, { step: "course" });
   const [teeSetId, setTeeSetId] = useState("");
   const [datePlayed, setDatePlayed] = useState(todayIso());
   const [teeTime, setTeeTime] = useState("");
+
+  if (!storage.ready) return <p>Restoring your round...</p>;
 
   if (courses.length === 0) {
     return <p className="font-sans text-sm text-ink-500">No tee sets are available yet — ask Tiger to save and lock a tee set in the Course Library first.</p>;
@@ -52,6 +56,7 @@ export function HandicapRoundWizard({ courses, recentCourseIds, playerName }: { 
   if (state.step === "holes") {
     return (
       <HandicapHoleEntry
+        draftKey={"handicap-holes:" + playerSlug + ":" + state.setup.submissionId}
         playerName={playerName}
         courseName={state.setup.course.name}
         teeSet={state.setup.teeSet}
@@ -69,6 +74,8 @@ export function HandicapRoundWizard({ courses, recentCourseIds, playerName }: { 
         holes={state.holes}
         onBack={() => setState({ step: "holes", setup: state.setup, initialHoles: state.holes })}
         onSubmitted={() => {
+          storage.clear();
+          try { localStorage.removeItem("handicap-holes:" + playerSlug + ":" + state.setup.submissionId); } catch { /* The submitted round is already saved on the server. */ }
           router.refresh();
           router.push("/portal/handicap");
         }}
@@ -77,7 +84,7 @@ export function HandicapRoundWizard({ courses, recentCourseIds, playerName }: { 
   }
 
   const course = state.course;
-  const selectedTeeSet = course.teeSets.find((t) => t.id === teeSetId) ?? null;
+  const selectedTeeSet = course.teeSets.find((t) => t.id === teeSetId) ?? course.teeSets[0] ?? null;
   const courseLocation = formatCourseLocation(course.city, course.state);
 
   return (
@@ -122,7 +129,7 @@ export function HandicapRoundWizard({ courses, recentCourseIds, playerName }: { 
           disabled={!selectedTeeSet}
           onClick={() => {
             if (!selectedTeeSet) return;
-            setState({ step: "holes", setup: { course, teeSet: selectedTeeSet, datePlayed, teeTime } });
+            setState({ step: "holes", setup: { submissionId: crypto.randomUUID(), course, teeSet: selectedTeeSet, datePlayed, teeTime } });
           }}
           className="mt-2 rounded-pill bg-maroon-700 px-4 py-3 font-condensed text-sm font-semibold uppercase tracking-wide text-white disabled:opacity-50"
         >

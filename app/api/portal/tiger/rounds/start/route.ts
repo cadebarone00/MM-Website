@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
-import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
 import { publishBroadcastEvent } from "@/lib/broadcast/publish";
 
@@ -15,27 +15,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Missing round." }, { status: 400 });
   }
 
-  const service = createSupabaseServiceRoleClient();
-  const { data: current } = await service.from("live_round_state").select("course_locked, matchups_locked, started").eq("season_year", year).eq("round", round).single();
-  if (!current) {
-    return NextResponse.json({ ok: false, error: "Round not found." }, { status: 404 });
-  }
-  if (!current.course_locked || !current.matchups_locked) {
-    return NextResponse.json({ ok: false, error: "Lock both Courses & Format and Matchups before starting this round." }, { status: 400 });
-  }
-  if (current.started) {
-    return NextResponse.json({ ok: false, error: "This round has already started." }, { status: 400 });
-  }
-
-  const { error } = await service.from("live_round_state").update({ started: true }).eq("season_year", year).eq("round", round);
-  if (error) {
-    return NextResponse.json({ ok: false, error: "Could not start that round." }, { status: 500 });
-  }
-
-  const { error: boxesError } = await service.from("live_match_boxes").update({ started: true }).eq("season_year", year).eq("round", round);
-  if (boxesError) {
-    return NextResponse.json({ ok: false, error: "Round was marked started, but could not open its match boxes." }, { status: 500 });
-  }
+  const client = await createSupabaseServerClient();
+  const { error } = await client.rpc("start_live_round_atomic", { p_year: year, p_round: round });
+  if (error) return NextResponse.json({ ok: false, error: error.code === "P0001" ? error.message : "Could not start this round. Retry safely." }, { status: 400 });
 
   try {
     await publishBroadcastEvent({ kind: "ROUND_STARTED", seasonYear: year, round });

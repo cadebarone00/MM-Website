@@ -135,3 +135,15 @@ test("validateAssignArchiveTeesInput rejects a non-object input", () => {
   const result = validateAssignArchiveTeesInput(null);
   assert.equal(result.ok, false);
 });
+
+test("missing green details and putts greater than strokes cannot be submitted", () => {
+ const holes=validHoles();
+ holes[0]={...holes[0],gir:false,girDirection:null};
+ assert.equal(validateSubmitInput(validInput({holes})).ok,false);
+ holes[0]={...holes[0],gir:true,putts:5};
+ assert.equal(validateSubmitInput(validInput({holes})).ok,false);
+});
+test("4+ putts and actual scores above double par remain valid", () => {
+ const holes=validHoles();holes[0]={...holes[0],score:12,putts:4};
+ assert.equal(validateSubmitInput(validInput({holes})).ok,true);
+});

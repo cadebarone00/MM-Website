@@ -42,7 +42,7 @@ export default async function NewHandicapRoundPage() {
         ← Back to My Handicap
       </Link>
       <div className="mt-5">
-        <HandicapRoundWizard courses={courses} recentCourseIds={recentCourseIds(summary.rounds)} playerName={getPlayerProfileBySlug(profile.player_slug!)?.fullName} />
+        <HandicapRoundWizard playerSlug={profile.player_slug!} courses={courses} recentCourseIds={recentCourseIds(summary.rounds)} playerName={getPlayerProfileBySlug(profile.player_slug!)?.fullName} />
       </div>
     </div>
   );

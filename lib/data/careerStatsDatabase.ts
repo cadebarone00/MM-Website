@@ -1,3 +1,5 @@
+import { careerRoundKey, mergeCareerRecords } from "./mergeCareerRecords";
+import { isIndividualScoreFormat } from "@/lib/handicap/archiveIndex";
 import { getPlayerSlug } from "./players";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { canonicalCourseName } from "@/lib/data/canonicalCourse";
@@ -31,12 +33,13 @@ export async function getHandicapCareerRecords(): Promise<CareerHoleRecord[]> {
 }
 
 export async function getCareerStatsDatabase() {
-  const [holes, participants] = await Promise.all([
+  const [holes, participants, edited] = await Promise.all([
     loadAll<HoleRow>("career_stat_holes"),
     loadAll<{ player: string; partner: string | null; year: number; format: string | null; team_id: string | null; winning_side: string | null }>("career_match_participants"),
+    getHistoricalCareerRecords(),
   ]);
   return {
-    records: holes.rows.filter((row) => (row.round_holes ?? 18) === 18).map((row): CareerHoleRecord => ({ year: row.year, player: getPlayerSlug(row.player), round: row.round, roundHoles: row.round_holes ?? 18, course: canonicalCourseName(row.course), format: row.format ?? "Unspecified", hole: row.hole, par: row.par, yards: row.yards, score: row.score, putts: row.putts, fairwayInRegulation: row.fairway_in_regulation, greenInRegulation: row.green_in_regulation, penalties: row.penalties })),
+    records: mergeCareerRecords(holes.rows.filter((row) => (row.round_holes ?? 18) === 18).map((row): CareerHoleRecord => ({ year: row.year, player: getPlayerSlug(row.player), round: row.round, roundHoles: row.round_holes ?? 18, course: canonicalCourseName(row.course), format: row.format ?? "Unspecified", hole: row.hole, par: row.par, yards: row.yards, score: row.score, putts: row.putts, fairwayInRegulation: row.fairway_in_regulation, greenInRegulation: row.green_in_regulation, penalties: row.penalties })), edited.records, edited.keys),
     partnerships: participants.rows.filter((row) => row.partner).map((row): CareerPartnership => ({
       player: getPlayerSlug(row.player), partner: getPlayerSlug(row.partner!), year: row.year, format: row.format ?? "Unspecified",
       result: row.winning_side?.toUpperCase() === "HALVED" ? "halve" : row.winning_side?.toUpperCase() === row.team_id?.toUpperCase() ? "win" : "loss",
@@ -51,12 +54,14 @@ export async function getCareerStatsDatabase() {
  * confirmed holes arrive; nine-hole historical rounds stay excluded by the
  * odds model's eligibility rule. */
 export async function getLiveCareerArchiveRecords(options: { includeTestSeason?: boolean } = {}): Promise<CareerHoleRecord[]> {
-  const service = createSupabaseServiceRoleClient();
-  const [{ data: rounds, error: roundsError }, { data: holes, error: holesError }] = await Promise.all([
-    service.from("career_archive_rounds").select("season_year, round, player_slug, course, format, holes"),
-    service.from("career_archive_live_holes").select("season_year, round, player_slug, hole, score, putts, fir, gir, did_not_finish"),
+  type LiveRound = { season_year: number; round: number; player_slug: string; course: string; format: string; holes: { number: number; par: number; yards: number }[] };
+  type LiveHole = { season_year: number; round: number; player_slug: string; hole: number; score: number; putts: number | null; fir: boolean | null; gir: boolean | null; did_not_finish: boolean };
+  const [roundData, holeData] = await Promise.all([
+    loadAll<LiveRound>("career_archive_rounds", ["season_year", "round", "player_slug"]),
+    loadAll<LiveHole>("career_archive_live_holes", ["season_year", "round", "player_slug", "hole"]),
   ]);
-  if (roundsError || holesError) return [];
+  if (!roundData.ready || !holeData.ready) throw new Error("Could not load confirmed tournament scores.");
+  const rounds = roundData.rows, holes = holeData.rows;
   const permittedRounds = (rounds ?? []).filter((row) => options.includeTestSeason || row.season_year !== 2034);
   const permittedSeasonYears = new Set(permittedRounds.map((row) => row.season_year as number));
   const metadata = new Map(permittedRounds.map((row) => [`${row.season_year}:${row.round}:${row.player_slug}`, row]));
@@ -76,11 +81,9 @@ export async function getLiveCareerArchiveRecords(options: { includeTestSeason?:
  * separate archive. The model calls the format "Alternate Shot" to match
  * the historical workbook vocabulary; the application calls it Foursome. */
 export async function getLiveCareerArchiveTeamRecords(options: { includeTestSeason?: boolean } = {}): Promise<CareerTeamHoleRecord[]> {
-  const service = createSupabaseServiceRoleClient();
-  const { data, error } = await service
-    .from("career_archive_team_holes")
-    .select("season_year, round, match_box_id, team, player_1, player_2, course, hole, par, yards, team_score");
-  if (error) return [];
+  type TeamRow = { season_year: number; round: number; match_box_id: string; team: string; player_1: string; player_2: string; course: string; hole: number; par: number; yards: number; team_score: number };
+  const { rows: data, ready } = await loadAll<TeamRow>("career_archive_team_holes", ["season_year", "round", "match_box_id", "team", "hole"]);
+  if (!ready) throw new Error("Could not load confirmed team scores.");
   return (data ?? []).filter((row) => options.includeTestSeason || row.season_year !== 2034).map((row) => ({
     year: row.season_year as number,
     round: row.round as number,
@@ -99,4 +102,24 @@ export async function getLiveCareerArchiveTeamRecords(options: { includeTestSeas
     greenInRegulation: null,
     penalties: null,
   }));
+}
+
+export async function getHistoricalCareerRecords() {
+  const [rounds, holes] = await Promise.all([
+    loadAll<{ id: string; tournament_slug: string; player_slug: string; round: number; course: string; format: string | null }>("archived_scorecard_rounds", ["id"]),
+    loadAll<{ round_id: string; hole: number; par: number; yards: number; score: number; putts: number; fir: string; gir: boolean }>("archived_scorecard_holes", ["round_id", "hole"]),
+  ]);
+  if (!rounds.ready || !holes.ready) throw new Error("Could not load editable historical scores.");
+  const keys = new Set<string>();
+  const records: CareerHoleRecord[] = rounds.rows.flatMap((round) => {
+    const year = Number(round.tournament_slug.slice(0,4));
+    if (!Number.isInteger(year)) return [];
+    keys.add(careerRoundKey(year,round.player_slug,round.round));
+    if (!isIndividualScoreFormat(round.format)) return [];
+    const entries = holes.rows.filter((hole) => hole.round_id === round.id && hole.score > 0);
+    return entries.map((hole) => ({ year, player: getPlayerSlug(round.player_slug), round: round.round, roundHoles: entries.length,
+      course: canonicalCourseName(round.course), format: round.format ?? "Unspecified", hole: hole.hole, par: hole.par, yards: hole.yards,
+      score: hole.score, putts: hole.putts, fairwayInRegulation: hole.par === 3 || hole.fir === "X" ? null : hole.fir === "1", greenInRegulation: hole.gir, penalties: null }));
+  });
+  return { records, keys };
 }

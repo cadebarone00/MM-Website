@@ -79,6 +79,7 @@ export interface ArchivedTeeSetup {
 }
 
 export interface SubmitHandicapRoundInput {
+  submissionId?: string;
   courseId: string;
   teeSetId: string;
   datePlayed: string; // ISO date

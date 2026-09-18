@@ -225,3 +225,16 @@ test("canScoreStrokesFor requires the whole opposing side for Foursome", () => {
   assert.equal(canScoreStrokesFor(foursome, "cam", ["cade"]), false, "must name the whole opposing side, not one player");
   assert.equal(canScoreStrokesFor(foursome, "cam", ["cam", "drew"]), false, "cannot score your own side");
 });
+
+test("continuing a round after a mathematical win does not change the match result", () => {
+  const snapshot = seedSnapshot();
+  const singles = box(1, 1, ["cam"], ["cade"], "Singles");
+  for (let hole=1;hole<=18;hole++) {
+    updateScore(snapshot,"cam",1,hole,hole<=10?4:8,2,true,true);
+    updateScore(snapshot,"cade",1,hole,5,2,true,true);
+  }
+  const result=matchBoxResult(snapshot,singles);
+  assert.equal(result.margin,10);
+  assert.equal(result.holesRemaining,8);
+  assert.equal(result.leader,"maroon");
+});

@@ -51,16 +51,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "That round hasn't been recorded yet." }, { status: 404 });
   }
 
-  for (const edit of holes as HoleEdit[]) {
-    const { error } = await service
-      .from("archived_scorecard_holes")
-      .update({ score: edit.score, putts: edit.putts, fir: edit.fir, gir: edit.gir, host_edited: true, updated_at: new Date().toISOString() })
-      .eq("round_id", roundRow.id)
-      .eq("hole", edit.hole);
-    if (error) {
-      console.error("save/route: failed to update hole", error);
-      return NextResponse.json({ ok: false, error: `Could not save hole ${edit.hole}.` }, { status: 500 });
-    }
+  const { error } = await service.rpc("save_archived_scorecard_atomic", { p_round: roundRow.id, p_holes: holes });
+  if (error) {
+    console.error("Could not save archived scorecard:", error);
+    return NextResponse.json({ ok: false, error: "Could not save this scorecard. No changes were saved." }, { status: 500 });
   }
 
   const profile = getPlayerProfileBySlug(playerSlug);

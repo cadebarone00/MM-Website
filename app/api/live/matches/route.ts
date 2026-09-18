@@ -1,3 +1,4 @@
+import { retryPendingPublications } from "@/lib/live/retryPublication";
 import { NextResponse } from "next/server";
 import { getActiveSeasonYear } from "@/lib/live/activeSeason";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
@@ -5,6 +6,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 /** Public list of real live-season matches and their latest official price. */
 export async function GET() {
   const seasonYear = await getActiveSeasonYear();
+  await retryPendingPublications(seasonYear);
   const service = createSupabaseServiceRoleClient();
   const { data: matches, error } = await service
     .from("live_match_boxes")

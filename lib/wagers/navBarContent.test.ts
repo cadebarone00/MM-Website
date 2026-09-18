@@ -30,8 +30,8 @@ test("a market detail route backs to the hub with its category's display title",
 });
 
 test("every category slug maps to a display title, regardless of route depth", () => {
-  assert.equal(wagersNavBarContent("/wagers/team-futures/team-winner").title, "Team Futures");
-  assert.equal(wagersNavBarContent("/wagers/player-futures/tournament-winner").title, "Player Futures");
+  assert.equal(wagersNavBarContent("/wagers/team-futures/team-winner").title, "Futures");
+  assert.equal(wagersNavBarContent("/wagers/player-futures/tournament-winner").title, "Players");
   assert.equal(wagersNavBarContent("/wagers/fourballs").title, "Fourballs");
   assert.equal(wagersNavBarContent("/wagers/props/day1-am-match2").title, "Props");
 });

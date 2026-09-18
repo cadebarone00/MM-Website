@@ -21,7 +21,7 @@ export function validateSubmitInput(input: SubmitHandicapRoundInput): Validation
   const seenHoles = new Set<number>();
   for (const hole of input.holes) {
     if (!hole || typeof hole !== "object") return { ok: false, error: "Invalid hole entry." };
-    if (typeof hole.hole !== "number" || hole.hole < 1 || hole.hole > 18) {
+    if (!Number.isInteger(hole.hole) || hole.hole < 1 || hole.hole > 18) {
       return { ok: false, error: "Invalid hole number." };
     }
     if (seenHoles.has(hole.hole)) {
@@ -31,9 +31,10 @@ export function validateSubmitInput(input: SubmitHandicapRoundInput): Validation
     if (typeof hole.score !== "number" || !Number.isInteger(hole.score) || hole.score < 1) {
       return { ok: false, error: `Hole ${hole.hole} needs a score.` };
     }
-    if (typeof hole.putts !== "number" || !Number.isInteger(hole.putts) || hole.putts < 0) {
+    if (typeof hole.putts !== "number" || !Number.isInteger(hole.putts) || hole.putts < 0 || hole.putts > hole.score) {
       return { ok: false, error: `Hole ${hole.hole} needs a valid putts count.` };
     }
+    if (typeof hole.fir !== "boolean" || typeof hole.gir !== "boolean" || (!hole.gir && !hole.girDirection)) return { ok: false, error: `Complete green information for hole ${hole.hole}.` };
     if (!isValidDirection(hole.firDirection)) {
       return { ok: false, error: `Hole ${hole.hole} has an invalid fairway direction.` };
     }

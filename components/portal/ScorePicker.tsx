@@ -32,7 +32,7 @@ function ScoreBubble({ score, par, tone }: { score: number; par: number; tone: "
 
 /**
  * Horizontal scorecard-style strip: par-relative bubbles (circle=birdie,
- * box=bogey, doubled=2-or-more), scored from 1 up to double par. A
+ * box=bogey, doubled=2-or-more), with an entry option for scores over 20. A
  * translucent maroon box stays fixed in the center — swipe the strip or tap
  * a bubble to slide that score into it; the bubble keeps its own shape
  * either way.
@@ -57,8 +57,9 @@ export function ScorePicker({
   const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const min = 1;
-  const max = par * 2;
+  const max = 20;
   const scores = Array.from({ length: Math.max(0, max - min + 1) }, (_, i) => min + i);
+  if (value != null && value > max) scores.push(value);
 
   useEffect(() => {
     if (value == null) return;
@@ -119,6 +120,12 @@ export function ScorePicker({
             </button>
           );
         })}
+        <button type="button" disabled={disabled} className="w-1/3 shrink-0 snap-center text-sm underline" onClick={() => {
+          const entered = window.prompt("Enter the actual number of strokes for this hole:", String(value ?? par));
+          if (entered === null) return;
+          const score = Number(entered);
+          if (Number.isSafeInteger(score) && score > 0 && score <= 2147483647) onChange(score);
+        }}>Other score</button>
       </div>
     </div>
   );

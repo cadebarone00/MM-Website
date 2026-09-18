@@ -29,7 +29,7 @@ export function buildOfficialMatchState(snapshot: LiveTournamentSnapshot, box: L
 
   return {
     status,
-    thru,
+    thru: mathematicallyComplete ? 18 - result.holesRemaining : thru,
     maroonHoles: result.maroonHoles ?? 0,
     whiteHoles: result.whiteHoles ?? 0,
     leader: result.leader,

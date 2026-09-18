@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { usePersistentState } from "@/lib/usePersistentState";
+import { useHoleQueue, type QueuedHole } from "@/lib/live/useHoleQueue";
 import { getPlayerLastName } from "@/lib/data/players";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { LiveMatchBox, MatchFormat } from "@/lib/live/types";
-import { holeSubmissionStatus, sameHoleDraft, scoringSides, validHoleDraft, type HoleDraft, type HoleSubmission } from "@/lib/live/holeSubmission";
+import { holeSubmissionStatus, sameHoleDraft, submittedPair, scoringSides, validHoleDraft, type HoleDraft, type HoleSubmission } from "@/lib/live/holeSubmission";
 import { ScoringHoleSelector } from "./ScoringHoleSelector";
 import { ScoringRoundHeader } from "./ScoringRoundHeader";
 import { ScorePicker } from "./ScorePicker";
@@ -31,7 +33,7 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
 }) {
   const [state, setState] = useState<ScoringState | null>(previewState ?? null);
   const [selectedHole, setSelectedHole] = useState(1);
-  const [drafts, setDrafts] = useState<Record<number, HoleDraft>>({});
+  const [drafts, setDrafts, draftStorage] = usePersistentState<Record<number, HoleDraft>>(previewState ? null : `live-drafts:${playerSlug}:${matchBox.id}`, {});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const load = useCallback(async () => {
@@ -39,7 +41,7 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
     try {
       const res = await fetch(`/api/portal/scoring/state?round=${round}`, { cache: "no-store" });
       const data = await res.json();
-      if (data.ok) setState(data);
+      if (data.ok) { setState(data); setError(null); }
       else setError(data.error ?? "Could not load this round.");
     } catch { setError("Could not load this round. Check your connection and try again."); }
   }, [round, previewState]);
@@ -58,28 +60,35 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
     return () => { void supabase.removeChannel(channel); document.removeEventListener("visibilitychange", visible); window.removeEventListener("online", load); window.clearInterval(poll); };
   }, [round, matchBox.id, load, previewState]);
 
+  const onSaved = useCallback((entry: QueuedHole, submissions: HoleSubmission[]) => {
+    setState((current) => current ? { ...current, holeSubmissions: submissions } : current);
+    setDrafts((current) => { const next = { ...current }; if (JSON.stringify(next[entry.hole]) === JSON.stringify({ ownScore: entry.ownScore, opponentScore: entry.opponentScore, putts: entry.putts, fairway: entry.fairway, green: entry.green })) delete next[entry.hole]; return next; });
+    void load();
+  }, [setDrafts, load]);
+  const queue = useHoleQueue(previewState ? null : "live-queue:" + playerSlug + ":" + matchBox.id, onSaved);
+  if (!draftStorage.ready || !queue.ready) return <p>Restoring saved entries...</p>;
   if (!state) return <p role="status">{error ?? "Loading scoring..."}</p>;
   const submissions = previewSubmissions ?? state.holeSubmissions ?? [];
   const info = state.holes.find((hole) => hole.number === selectedHole);
   const par = info?.par ?? 4;
   const sides = scoringSides(matchBox, playerSlug);
   const isFoursome = matchBox.format === "Foursome";
-  const saved = submissions.find((entry) => entry.player === playerSlug && entry.hole === selectedHole);
+  const saved = submittedPair(matchBox, playerSlug, selectedHole, submissions).mine;
   const draft: HoleDraft = drafts[selectedHole] ?? saved ?? { ownScore: par, opponentScore: par, putts: null, fairway: null, green: null };
   const unchanged = !!saved && sameHoleDraft(draft, saved, par, matchBox.format);
   const status = holeSubmissionStatus(matchBox, playerSlug, selectedHole, submissions);
   const statuses = Object.fromEntries(state.holes.map((hole) => {
     const status = holeSubmissionStatus(matchBox, playerSlug, hole.number, submissions);
-    const submitted = submissions.find((entry) => entry.player === playerSlug && entry.hole === hole.number);
+    const submitted = submittedPair(matchBox, playerSlug, hole.number, submissions).mine;
     const dirty = drafts[hole.number] && (!submitted || !sameHoleDraft(drafts[hole.number], submitted, hole.par, matchBox.format));
     return [hole.number, dirty && status !== "disputed" ? "empty" : status];
   }));
-  const ownEntries = submissions.filter((entry) => entry.player === playerSlug && entry.hole <= selectedHole);
+  const ownEntries = state.holes.filter((hole) => hole.number <= selectedHole).flatMap((hole) => { const entry = submittedPair(matchBox, playerSlug, hole.number, submissions).mine; return entry ? [entry] : []; });
   const total = ownEntries.reduce((sum, entry) => sum + entry.ownScore, 0);
   const toPar = ownEntries.length ? total - ownEntries.reduce((sum, entry) => sum + (state.holes.find((hole) => hole.number === entry.hole)?.par ?? 0), 0) : null;
   const targetLabel = sides.opponents.map((slug) => getPlayerLastName(nameBySlug[slug] ?? slug)).join(" & ");
-  const locked = busy || state.matchBox.state === "Final";
-  function edit(patch: Partial<HoleDraft>) { setDrafts((all) => ({ ...all, [selectedHole]: { ...draft, ...patch } })); setError(null); }
+  const locked = busy || queue.sending || state.matchBox.state === "Final";
+  function edit(patch: Partial<HoleDraft>) { queue.cancel(selectedHole); setDrafts((all) => ({ ...all, [selectedHole]: { ...draft, ...patch } })); setError(null); }
   function select(hole: number) { setSelectedHole(hole); setError(null); }
   async function submitHole() {
     if (!validHoleDraft(draft, par, matchBox.format)) {
@@ -93,10 +102,9 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
         if (!onPreviewSubmit) throw new Error("Preview connection is not ready.");
         await onPreviewSubmit({ ...payload, player: playerSlug, hole: selectedHole, submittedAt: new Date().toISOString() });
       } else {
-        const res = await fetch("/api/portal/scoring/hole", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ round, hole: selectedHole, ...payload }) });
-        const result = await res.json();
-        if (!res.ok || !result.ok) throw new Error(result.error ?? "Could not submit this hole.");
-        setState((current) => current ? { ...current, holeSubmissions: result.submissions } : current);
+        const sent = await queue.submit({ ...payload, round, hole: selectedHole, matchBoxId: matchBox.id!, requestId: crypto.randomUUID(), expectedSubmission: saved?.submittedAt ?? null });
+        if (!sent) { void load(); return; }
+
       }
       setDrafts((all) => { const next = { ...all }; delete next[selectedHole]; return next; });
       setSelectedHole((hole) => Math.min(hole + 1, 18));
@@ -106,9 +114,9 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
   const rowClass = (maroon: boolean) => `-mx-4 px-4 py-2 sm:-mx-7 sm:px-7 ${maroon ? "bg-maroon-800 text-white" : "bg-white text-maroon-800"}`;
   return <div className={styles.panel}>
     <div data-hole-header className="-mx-4 sm:-mx-7"><ScoringRoundHeader hole={selectedHole} par={info?.par ?? null} yards={info?.yards ?? null} totalScore={total} toPar={toPar} /></div>
-    <ScoringHoleSelector selectedHole={selectedHole} onSelect={select} disabled={busy} statuses={statuses} />
+    <ScoringHoleSelector selectedHole={selectedHole} onSelect={select} disabled={busy || queue.sending} statuses={statuses} />
     <div className={styles.notice} aria-live="polite">
-      {error ? <p role="alert">{error}</p> : status === "disputed" ? <p role="alert">Scores disagree. Correct both entries and resubmit to confirm this hole.</p> : status === "submitted" ? <p>Submitted. Waiting for the other scorer.</p> : null}
+      {error || queue.message || draftStorage.storageError ? <p role="alert">{error ?? queue.message ?? "Browser storage unavailable; keep this page open."}</p> : status === "disputed" ? <p role="alert">Scores disagree. Correct both entries and resubmit to confirm this hole.</p> : status === "submitted" ? <p>Submitted. Waiting for the other scorer.</p> : null}
     </div>
     <div className={styles.scores}>
       <div className={rowClass(sides.maroon)}>
@@ -131,7 +139,7 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
       <div className="mt-1"><PuttsPicker ariaLabel="Your putts" disabled={locked} value={draft.putts} onChange={(putts) => edit({ putts })} /></div>
     </>}
     </div>
-    <div className={styles.actions}><HoleActionBar nextLabel="Next Hole" disabled={busy || selectedHole === 18} onNext={() => select(Math.min(selectedHole + 1, 18))}
+    <div className={styles.actions}><HoleActionBar nextLabel="Next Hole" disabled={busy || queue.sending || selectedHole === 18} onNext={() => select(Math.min(selectedHole + 1, 18))}
       submitLabel={unchanged ? "Submitted" : "Submit Score"} submitDisabled={locked || unchanged} onSubmit={() => void submitHole()} /></div>
   </div>;
 }

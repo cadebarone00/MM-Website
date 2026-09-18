@@ -14,27 +14,18 @@ export async function publishOfficialMatchState(
   matchBoxId: string,
   auditKind?: "match_locked" | "match_updated"
 ): Promise<OfficialMatchState | null> {
+  const service = createSupabaseServiceRoleClient();
+  const { data: job, error: jobError } = await service.from("live_publication_jobs").select("revision").eq("match_box_id", matchBoxId).maybeSingle();
+  if (jobError) throw jobError;
   const snapshot = await buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true });
   const box = snapshot.matchBoxes.find((candidate) => candidate.id === matchBoxId);
   if (!box) return null;
 
   const official = buildOfficialMatchState(snapshot, box);
-  const service = createSupabaseServiceRoleClient();
-  const { error } = await service.from("live_match_official_state").upsert({
-    match_box_id: matchBoxId,
-    season_year: seasonYear,
-    round: box.round,
-    status: official.status,
-    thru: official.thru,
-    maroon_holes: official.maroonHoles,
-    white_holes: official.whiteHoles,
-    leader: official.leader,
-    margin: official.margin,
-    mathematically_complete: official.mathematicallyComplete,
-    official_result: official.officialResult,
-    updated_at: new Date().toISOString(),
-  });
+  const odds = await publishMatchOdds(seasonYear, box, official, true);
+  const { data: published, error } = await service.rpc("publish_match_revision", { p_box: matchBoxId, p_revision: job?.revision ?? 0, p_state: official, p_odds: odds });
   if (error) throw error;
+  if (!published) throw new Error("Scores changed while publishing; queued for retry.");
 
   if (auditKind) {
     const { error: auditError } = await service.from("live_score_audit_events").insert({
@@ -47,7 +38,6 @@ export async function publishOfficialMatchState(
     if (auditError) throw auditError;
   }
 
-  await publishMatchOdds(seasonYear, box, official);
 
   return official;
 }
