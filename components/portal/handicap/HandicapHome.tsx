@@ -18,7 +18,6 @@ export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, 
   const rounds = selectHandicapScores(handicapHistory(archivedRounds, summary.rounds, activeTab), scoreView);
   const contributing = contributingRoundIds(summary.rounds, archivedRounds, activeTab);
   const index = summary.index;
-  const lowIndex = summary.lowIndex;
   return (
     <main className="w-full pb-10">
       <section className="relative isolate overflow-hidden bg-maroon-950">
@@ -45,10 +44,6 @@ export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, 
                 <p className="mt-1 font-condensed text-[10px] font-semibold uppercase tracking-wide">Maroon Masters</p>
               </div>
             </div>
-          </div>
-          <div className="text-right">
-            <p className="font-serif text-xl font-bold leading-none">{formatHandicapIndex(lowIndex)}</p>
-            <p className="mt-1 font-condensed text-2xs font-semibold uppercase tracking-wide text-white/75">Low Index</p>
           </div>
         </div>
       </section>
