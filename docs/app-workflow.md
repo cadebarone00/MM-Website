@@ -22,8 +22,9 @@ flowchart TD
   Q -- Confirmed --> H[Confirmed scores and archive records]
   H --> O[Official match state and odds publication]
   H --> K[Career and handicap inputs]
-  %% Expanded historical matchplay scorecards: continuous scroll with equal 56px hole and total columns.
+  %% Match pages preserve continuous scrolling with equal 56px hole and total columns.
   O --> B[Leaderboard, broadcast and live markets]
+  B --> MP[Match profile: opponents, scorecard and saved odds]
   O --> F[Tiger closeout and MM Coins settlement]
   P --> N[Personal 18-hole round entry]
   C --> N
@@ -83,7 +84,9 @@ Some pages are statically generated or cached; others render dynamically or refe
 
 The live leaderboard specifically polls native matches and standings every ten seconds, while also retaining the legacy live-feed loader. Available native matches/standings override that presentation; otherwise feed or historical fallback content can remain. The upcoming tournament's leaderboard route also has a calendar switchover check that can redirect visitors to the latest completed edition before the new season.
 
-Expanded historical matchplay scorecards use one continuous horizontal scroll, with equally sized 56px hole and total columns (columns 2?20 for a full Singles/Fourball card). Player labels remain pinned on the left; holes 1?9 and 10?18 are not separate snapping pages. This layout is scoped to `components/leaderboard/MatchHoleByHole.tsx`; individual player scorecards retain their own layout.
+Selecting a match in the leaderboard opens its own match profile at `/leaderboard/[slug]/matches/[matchId]`, replacing the historical dropdown and enabling navigation for native live matches. Maroon opponents appear on the left and White on the right, with player photos and profile links. The scorecard follows, then the match odds graph. Historical pages load corrected archive scorecards and reuse the previous dropdown layout: one continuous horizontal scroll with equal 56px hole and total columns and pinned labels. Individual player scorecards retain their own layout.
+
+Native match profiles poll `/api/live/matches/[id]?profile=1` every five seconds after each response. The profile payload contains that match's confirmed strokes, course holes, official state, and up to 1,000 recent saved odds updates in chronological order. Unplayed scores remain blank; match status stops at the first gap or mathematical win. Fourball displays individual and best-ball rows; Foursome displays shared side scores. The graph shows Maroon, White, and tie probabilities, with the latest probabilities and American prices above it and a slider for earlier updates. Historical matches have no saved odds history and explicitly say so; no historical probability curve is invented. Failed live refreshes retain the last successful display and show an error. Legacy feed-only match IDs have no native profile data and show an unavailable message.
 
 **Reads:** committed tournament/player content plus selected live database overlays. **Writes:** generally none from browsing. **Code:** `app/page.tsx`, `app/leaderboard`, `app/teams`, `app/schedule`, `lib/data/activeSeasonOverlay.ts`.
 
@@ -393,6 +396,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 19, 2026 - Dedicated match profiles (implemented locally; deployment not verified).** Leaderboard match clicks previously expanded historical scorecards and did nothing for live matches. They now navigate to a match page with Maroon/White opponents, the scrolling scorecard, and a match-specific odds graph with current prices. Native profiles read confirmed strokes and saved odds updates; historical odds remain unavailable. Updated section 3, the public match flowchart branch, and the interactive overview mapping. Existing wagers routes remain separate.
 
 **September 19, 2026 ? Roomier matchplay dropdown scorecards (implemented locally; deployment not verified).** Hole and total columns previously measured 48px; they now measure an equal 56px for more space. The existing continuous scroll and pinned player labels are preserved, with no front-nine/back-nine snapping. Only expanded matchplay scorecards change. Updated section 3 and the flowchart annotation; data paths and overview mappings are unchanged.
 

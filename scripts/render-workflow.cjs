@@ -12,14 +12,14 @@ function render(body){const blocks=body.split(/\n\s*\n/);return blocks.map(b=>{
  return '<p>'+inline(b.replace(/\n/g,' '))+'</p>';
 }).join('');}
 const section=n=>parts.find(p=>p.title.startsWith(n+'. '));
-const flows=[['Tournament preparation and scoring',[6,7,8,9,10,11,12]],['Personal round and handicap',[1,4,13,14]],['Historical corrections and model inputs',[6,15,16,11]],['Watching the tournament',[11,18,19]],['MM Coins',[16,17,12]],['Video upload and playback',[4,20,18,19]],['Rehearsal without real score writes',[6,21]],['Access and operating context',[1,2,3,4,5]],['Hosting and boundaries',[23,22]]];
+const flows=[['Tournament preparation and scoring',[6,7,8,9,10,11,12]],['Personal round and handicap',[1,4,13,14]],['Historical corrections and model inputs',[6,15,16,11]],['Following a match',[3,11]],['Watching the tournament',[11,18,19]],['MM Coins',[16,17,12]],['Video upload and playback',[4,20,18,19]],['Rehearsal without real score writes',[6,21]],['Access and operating context',[1,2,3,4,5]],['Hosting and boundaries',[23,22]]];
 const nodes=[
 [6,30,140,'Tiger setup'],[7,30,265,'Course / tees'],[9,285,140,'Live scoring'],[10,540,140,'Submit and compare'],[15,795,140,'Confirmed archive'],[11,1050,140,'Results and odds'],
 [4,30,15,'Player portal'],[13,285,15,'Personal round'],[14,795,15,'Handicap'],
 [16,795,265,'Odds model'],[12,1050,265,'Tiger closeout'],[17,1050,390,'MM Coins'],
-[18,540,390,'Broadcast'],[19,795,390,'Watch Live'],[20,285,390,'Round videos']
+[3,285,265,'Match profiles'],[18,540,390,'Broadcast'],[19,795,390,'Watch Live'],[20,285,390,'Round videos']
 ];
-const edges=[[0,2],[1,2],[2,3],[3,4],[4,5],[6,7],[7,8],[4,8],[4,9],[9,5],[5,10],[10,11],[5,12],[12,13],[6,14],[14,12]];
+const edges=[[0,2],[1,2],[2,3],[3,4],[4,5],[6,7],[7,8],[4,8],[4,9],[9,5],[5,10],[10,11],[5,12],[5,13],[13,14],[6,15],[15,13]];
 let svg='<svg viewBox="0 0 1280 485" role="img" aria-label="Application overview: Tiger prepares live scoring, validated scores feed archive, results, handicap, broadcast, odds and settlement; personal rounds feed handicap."><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#a78945"/></marker></defs>';
 for(const [a,b] of edges){const na=nodes[a],nb=nodes[b];let x1=na[1]+190,y1=na[2]+30,x2=nb[1],y2=nb[2]+30;if(na[1]===nb[1]){x1=na[1]+95;x2=x1;y1=na[2]+(nb[2]>na[2]?60:0);y2=nb[2]+(nb[2]>na[2]?0:60);}const middle=(x1+x2)/2;svg+='<path d="M'+x1+','+y1+' C'+middle+','+y1+' '+middle+','+y2+' '+x2+','+y2+'" fill="none" stroke="#a78945" stroke-width="1.6" opacity=".65" marker-end="url(#arrow)"/>';}
 for(const [n,x,y,label] of nodes){const s=section(n);svg+='<a href="#'+s.id+'" data-open="'+s.id+'"><rect x="'+x+'" y="'+y+'" width="190" height="60" rx="10" fill="'+(n===10||n===15?'#500001':'#fff')+'" stroke="#c7a55e"/><text x="'+(x+95)+'" y="'+(y+36)+'" text-anchor="middle" fill="'+(n===10||n===15?'#fff':'#500001')+'" font-size="16" font-weight="600">'+label+'</text></a>';}

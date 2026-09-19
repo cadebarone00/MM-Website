@@ -1,9 +1,9 @@
 "use client";
 
 import { matchStatus, matchLeader, liveLabel } from "@/components/leaderboard/matchUtils";
-import { MatchHoleByHole } from "@/components/leaderboard/MatchHoleByHole";
+import Link from "next/link";
 import { getPlayerLastName } from "@/lib/data/players";
-import type { RealMatch, Team, Tournament } from "@/lib/data/types";
+import type { RealMatch, Team } from "@/lib/data/types";
 
 function labelColor(match: RealMatch) {
   const leader = matchLeader(match);
@@ -100,20 +100,10 @@ function MatchThru({ match, status }: { match: RealMatch; status: ReturnType<typ
  */
 export function CompactMatchRow({
   match,
-  tournament,
   tournamentSlug,
-  expanded,
-  onToggle,
-  interactive = true,
 }: {
   match: RealMatch;
-  tournament: Tournament;
   tournamentSlug: string;
-  expanded: boolean;
-  onToggle: () => void;
-  /** Only static matches expand into a static scorecard. Live matches use
-   * their confirmed state directly and should not open unrelated data. */
-  interactive?: boolean;
 }) {
   const status = matchStatus(match);
   const centerLabel = status === "scheduled" ? "VS" : liveLabel(match);
@@ -122,19 +112,10 @@ export function CompactMatchRow({
 
   return (
     <div className="mb-1.5 overflow-hidden border border-gold-500 last:mb-0">
-      <div
-        role={interactive ? "button" : undefined}
-        tabIndex={interactive ? 0 : undefined}
-        aria-expanded={interactive ? expanded : undefined}
-        aria-label={interactive ? `${maroonSideLabel} vs ${whiteSideLabel}, ${centerLabel}` : undefined}
-        onClick={interactive ? onToggle : undefined}
-        onKeyDown={interactive ? (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onToggle();
-          }
-        } : undefined}
-        className={interactive ? "cursor-pointer py-0 hover:bg-cream-50" : "py-0"}
+      <Link
+        href={`/leaderboard/${tournamentSlug}/matches/${encodeURIComponent(match.id)}`}
+        aria-label={`${maroonSideLabel} vs ${whiteSideLabel}, ${centerLabel}`}
+        className="block py-0 hover:bg-cream-50 focus-visible:outline-2 focus-visible:outline-maroon-700"
       >
         <div className="grid grid-cols-[30px_minmax(0,1fr)_44px_minmax(0,1fr)_30px] items-stretch">
           <MatchStat status={status} />
@@ -158,12 +139,7 @@ export function CompactMatchRow({
           <TeamSide players={match.whitePlayers} team="white" probability={match.whiteWinProbability} />
           <MatchThru match={match} status={status} />
         </div>
-      </div>
-      {expanded && (
-        <div className="pb-2">
-          <MatchHoleByHole tournament={tournament} match={match} tournamentSlug={tournamentSlug} />
-        </div>
-      )}
+      </Link>
     </div>
   );
 }
