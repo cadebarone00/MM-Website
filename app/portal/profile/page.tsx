@@ -4,6 +4,7 @@ import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/l
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { getProfileOverrides, mergeProfile } from "@/lib/data/players/overrides";
 import { ProfileEditGrid } from "@/components/portal/ProfileEditGrid";
+import type { PlayerProfile } from "@/lib/data/types";
 
 export default async function PortalProfilePage() {
   const supabase = await createSupabaseServerClient();
@@ -15,13 +16,27 @@ export default async function PortalProfilePage() {
   const { data: profileRow } = await supabase.from("profiles").select("player_slug").eq("id", user.id).single();
   if (!profileRow?.player_slug) redirect("/portal");
 
-  const baseProfile = getPlayerProfileBySlug(profileRow.player_slug);
-  if (!baseProfile) redirect("/portal");
+  const service = createSupabaseServiceRoleClient();
+  const { data: slot } = await service.from("player_slots").select("full_name").eq("player_slug", profileRow.player_slug).single();
+
+  const staticProfile = getPlayerProfileBySlug(profileRow.player_slug);
+  // A dynamically-added player (no lib/data/players/*.ts file) has no
+  // static base to start from — synthesize a minimal one instead of
+  // redirecting away, so they can still set their own bio.
+  const baseProfile: PlayerProfile = staticProfile
+    ? { ...staticProfile, fullName: slot?.full_name ?? staticProfile.fullName }
+    : {
+        id: profileRow.player_slug,
+        slug: profileRow.player_slug,
+        fullName: slot?.full_name ?? profileRow.player_slug,
+        avatarSrc: null,
+        bio: "",
+        history: [],
+      };
 
   const overrides = await getProfileOverrides(profileRow.player_slug);
   const profile = mergeProfile(baseProfile, overrides);
 
-  const service = createSupabaseServiceRoleClient();
   const { data: pending } = await service
     .from("player_profile_edits")
     .select("field, proposed_value, submitted_at")
