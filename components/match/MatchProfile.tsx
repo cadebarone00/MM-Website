@@ -1,44 +1,47 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowLeft } from "lucide-react";
-import { Avatar } from "@/components/ui/Avatar";
-import { getPlayerAvatar, getPlayerDisplayName } from "@/lib/data/players";
-import { liveLabel, matchStatus } from "@/components/leaderboard/matchUtils";
+import { getPlayerDisplayName } from "@/lib/data/players";
+import { liveLabel, matchStatus, matchLeader } from "@/components/leaderboard/matchUtils";
 import type { RealMatch } from "@/lib/data/types";
 import type { MatchOddsPoint } from "@/lib/live/matchProfile";
 import { MatchOddsGraph } from "./MatchOddsGraph";
 
-export function MatchProfile({ match, tournamentSlug, editionLabel, scorecard, odds = [], live = false, round }: {
+export function MatchProfile({ match, tournamentSlug, editionLabel, scorecard, odds = [], live = false, round, estimateNote }: {
   match: RealMatch; tournamentSlug: string; editionLabel: string; scorecard: ReactNode;
-  odds?: MatchOddsPoint[]; live?: boolean; round?: number;
+  odds?: MatchOddsPoint[]; live?: boolean; round?: number; estimateNote?: string;
 }) {
   const status = matchStatus(match);
+  const leader = matchLeader(match);
+  const centerTone = status === "scheduled" || leader === "tie" ? "bg-cream-100 text-maroon-700" : leader === "maroon" ? "bg-maroon-700 text-white" : "bg-white text-maroon-700";
   return (
     <main className="mx-auto max-w-[1200px] px-4 pb-16 pt-5 sm:px-7 sm:pt-10">
       <Link href={`/leaderboard/${tournamentSlug}`} className="inline-flex items-center gap-1 font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700"><ArrowLeft size={16} /> Back to leaderboard</Link>
       <p className="mt-5 font-condensed text-xs font-bold uppercase tracking-wide text-ink-500">{editionLabel} · {round ? `Round ${round}` : `Day ${match.day} · ${match.session}`} · {match.format}</p>
       <h1 className="sr-only">{match.maroonPlayers.map(getPlayerDisplayName).join(" & ")} versus {match.whitePlayers.map(getPlayerDisplayName).join(" & ")}</h1>
-      <div className="mt-3 grid grid-cols-2 overflow-hidden rounded-md border border-gold-500">
-        {(["maroon", "white"] as const).map((team) => (
-          <div key={team} className={`min-w-0 p-4 sm:p-7 ${team === "maroon" ? "bg-maroon-700 text-white" : "border-l border-gold-500 bg-white text-maroon-700"}`}>
-            <p className="mb-5 font-condensed text-xs font-bold uppercase tracking-eyebrow">Team {team}</p>
-            <div className="flex flex-wrap gap-6">
-              {(team === "maroon" ? match.maroonPlayers : match.whitePlayers).map((player) => (
-                <Link key={player} href={`/leaderboard/${tournamentSlug}/players/${player.toLowerCase()}`} className="flex min-w-0 flex-col items-start gap-3 hover:opacity-80">
-                  <Avatar name={getPlayerDisplayName(player)} src={getPlayerAvatar(player)} team={team} size="lg" />
-                  <span className="break-words font-sans text-base font-bold sm:text-xl">{getPlayerDisplayName(player)}</span>
-                </Link>
-              ))}
-            </div>
+      <div className="mx-auto mt-3 max-w-2xl overflow-hidden rounded-sm border border-gold-500">
+        <div className="grid grid-cols-2 border-b border-gold-500 font-condensed text-xs font-bold uppercase tracking-wide">
+          <div className="bg-maroon-700 px-3 py-2 text-right text-white">Maroon</div>
+          <div className="border-l border-gold-500 bg-white px-3 py-2 text-maroon-700">White</div>
+        </div>
+        <div className="grid grid-cols-[minmax(0,1fr)_80px_minmax(0,1fr)] items-stretch bg-cream-50 sm:grid-cols-[minmax(0,1fr)_100px_minmax(0,1fr)]">
+          <div className="flex min-w-0 flex-col justify-center gap-2 px-2 py-4 text-right sm:px-4">
+            {match.maroonPlayers.map((player) => <Link key={player} href={`/leaderboard/${tournamentSlug}/players/${player.toLowerCase()}`} className="font-sans text-sm font-bold text-maroon-700 hover:underline sm:text-lg">{getPlayerDisplayName(player)}</Link>)}
           </div>
-        ))}
+          <div aria-label="Match status" className={`flex flex-col items-center justify-center gap-1 border-x border-gold-500 px-1 py-3 text-center ${centerTone}`}>
+            <span className="font-sans text-sm font-black sm:text-base">{status === "scheduled" ? match.teeTimeCst ?? "TBD" : liveLabel(match)}</span>
+            <span className="font-condensed text-[10px] font-bold uppercase tracking-wide">{status === "scheduled" ? "Tee time" : status === "final" ? "Final" : `Thru ${match.thru ?? 0}`}</span>
+          </div>
+          <div className="flex min-w-0 flex-col justify-center gap-2 px-2 py-4 text-left sm:px-4">
+            {match.whitePlayers.map((player) => <Link key={player} href={`/leaderboard/${tournamentSlug}/players/${player.toLowerCase()}`} className="font-sans text-sm font-bold text-maroon-700 hover:underline sm:text-lg">{getPlayerDisplayName(player)}</Link>)}
+          </div>
+        </div>
       </div>
-      <p className="mt-3 text-center font-condensed text-sm font-bold uppercase tracking-wide text-maroon-700">{status === "scheduled" ? "Upcoming · VS" : `${status === "final" ? "Final" : `Live · Thru ${match.thru ?? 0}`} · ${liveLabel(match)}`}</p>
       <section aria-label="Match scorecard" className="mt-7 min-w-0">
         <h2 className="mb-3 font-serif text-xl font-bold text-ink-900">Scorecard</h2>
         {scorecard}
       </section>
-      <div className="mt-8"><MatchOddsGraph points={odds} live={live} final={status === "final"} /></div>
+      <div className="mt-8"><MatchOddsGraph points={odds} live={live} final={status === "final"} estimateNote={estimateNote} /></div>
     </main>
   );
 }

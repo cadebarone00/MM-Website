@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { HoleMarkerForDiff } from "./HoleMarker";
+import { RoundStatsBox } from "./RoundStatsBox";
 
 type ArchiveHole = { hole: number; par: number; yards: number; score: number | null; putts: number | null; fairwayInRegulation: boolean | null; greenInRegulation: boolean | null };
 type ArchiveRound = { year: number; round: number; course: string; format: string; holes: ArchiveHole[] };
@@ -20,9 +21,6 @@ function ScoreNine({ holes, endLabel }: { holes: ArchiveHole[]; endLabel: "OUT" 
     {holes.map((hole) => <div key={hole.hole} className="flex h-10 items-center justify-center border-r border-gold-100 bg-cream-50">{hole.score == null ? <span className="text-xs text-ink-400">—</span> : <HoleMarkerForDiff diff={hole.score - hole.par} size={26} tone="maroon">{hole.score}</HoleMarkerForDiff>}</div>)}
     <div className="flex h-10 flex-col items-center justify-center bg-cream-100"><span className="font-score text-sm font-bold text-maroon-700">{nine || "—"}</span><span className="font-condensed text-[8px] font-bold text-ink-500">SCORE</span></div>
   </div>;
-}
-function Stat({ label, value, note }: { label: string; value: string; note?: string }) {
-  return <div className="min-w-0 border-r border-gold-100 px-2 text-center last:border-r-0 sm:px-3"><p className="m-0 font-condensed text-[9px] font-bold uppercase tracking-wide text-ink-500">{label}</p><p className="m-0 mt-0.5 font-sans text-sm font-black tabular-nums text-ink-900">{value}</p>{note && <p className="m-0 text-[9px] leading-3 text-ink-500">{note}</p>}</div>;
 }
 
 export function ArchivedScores({ playerSlug }: { playerSlug: string }) {
@@ -70,7 +68,7 @@ export function ArchivedScores({ playerSlug }: { playerSlug: string }) {
     </div>
     <div className="mt-5">
       <p className="m-0 font-condensed text-xs font-bold uppercase tracking-wide text-ink-700">Stats</p>
-      <div className="mt-2 grid grid-cols-5 rounded-sm border border-gold-200 bg-white py-2"><Stat label="Score" value={score === null ? "—" : String(score)} /><Stat label="To Par" value={score === null ? "—" : score === par ? "E" : score > par ? "+" + (score - par) : String(score - par)} /><Stat label="Fairways" value={fairways.length ? Math.round((firHit / fairways.length) * 100) + "%" : "—"} note={fairways.length ? firHit + "/" + fairways.length : undefined} /><Stat label="Greens" value={greens.length ? Math.round((girHit / greens.length) * 100) + "%" : "—"} note={greens.length ? girHit + "/" + greens.length : undefined} /><Stat label="Putts" value={putts === null ? "—" : String(putts)} /></div>
+      <div className="mt-2"><RoundStatsBox stats={[{ label: "Score", value: score === null ? "—" : String(score) }, { label: "To Par", value: score === null ? "—" : score === par ? "E" : score > par ? "+" + (score - par) : String(score - par) }, { label: "Fairways", value: fairways.length ? Math.round((firHit / fairways.length) * 100) + "%" : "—", note: fairways.length ? firHit + "/" + fairways.length : undefined }, { label: "Greens", value: greens.length ? Math.round((girHit / greens.length) * 100) + "%" : "—", note: greens.length ? girHit + "/" + greens.length : undefined }, { label: "Putts", value: putts === null ? "—" : String(putts) }]} /></div>
     </div>
   </section>;
 }

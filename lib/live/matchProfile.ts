@@ -4,7 +4,7 @@ import type { LiveTournamentSnapshot } from "./types";
 
 export type MatchOddsPoint = LiveOddsSnapshot & { state_thru: number; created_at: string };
 export type MatchProfileEntry = {
-  match: { id: string; season_year: number; round: number; format: string; maroon_players: string[]; white_players: string[] };
+  match: { id: string; season_year: number; round: number; format: string; tee_time?: string; maroon_players: string[]; white_players: string[] };
   officialState: { status: string; thru: number; leader: "maroon" | "white" | "tie"; margin: number } | null;
   odds: MatchOddsPoint | null;
   oddsHistory: MatchOddsPoint[];
@@ -40,6 +40,7 @@ export function profileMatch({ match, officialState: state, odds }: MatchProfile
     status: final ? "final" : state?.status === "live" ? "live" : "scheduled",
     thru: state?.thru, leader: state?.leader, margin: state?.margin,
     holesRemaining: 18 - (state?.thru ?? 0),
+    teeTimeCst: match.tee_time && Number.isFinite(Date.parse(match.tee_time)) ? new Date(match.tee_time).toLocaleTimeString("en-US", { timeZone: "America/Chicago", hour: "numeric", minute: "2-digit" }) : undefined,
     maroonWinProbability: odds?.maroon_win_probability, whiteWinProbability: odds?.white_win_probability, tieProbability: odds?.tie_probability,
   };
 }

@@ -23,3 +23,28 @@ export function isRoundComplete(rows: ScorecardHoleRow[]): boolean {
 export function firstIncompleteHole(rows: ScorecardHoleRow[]): number | null {
   return rows.find((row) => row.score == null)?.hole ?? null;
 }
+
+export interface ScorecardTotals {
+  score: number | null;
+  /** Strokes over/under par across the holes entered. */
+  toPar: number | null;
+  putts: number | null;
+  /** Par-3s (and formats that don't track it) don't count toward the total. */
+  fairways: { hit: number; total: number };
+  greens: { hit: number; total: number };
+}
+
+/** Round totals for the Scorecard's summary box, over the holes entered so far. */
+export function scorecardTotals(rows: ScorecardHoleRow[]): ScorecardTotals {
+  const entered = rows.filter((row) => row.score != null);
+  const puttRows = entered.filter((row) => row.putts != null);
+  const fairwayRows = entered.filter((row) => row.fir != null);
+  const greenRows = entered.filter((row) => row.gir != null);
+  return {
+    score: entered.length > 0 ? entered.reduce((sum, row) => sum + (row.score ?? 0), 0) : null,
+    toPar: entered.length > 0 ? entered.reduce((sum, row) => sum + (row.score ?? 0) - row.par, 0) : null,
+    putts: puttRows.length > 0 ? puttRows.reduce((sum, row) => sum + (row.putts ?? 0), 0) : null,
+    fairways: { hit: fairwayRows.filter((row) => row.fir).length, total: fairwayRows.length },
+    greens: { hit: greenRows.filter((row) => row.gir).length, total: greenRows.length },
+  };
+}
