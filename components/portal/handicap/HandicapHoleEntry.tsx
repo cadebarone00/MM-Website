@@ -4,6 +4,7 @@ import { usePersistentState } from "@/lib/usePersistentState";
 import { useState } from "react";
 import type { HandicapCourseTeeSet, HandicapHoleInput, ShotDirection } from "@/lib/handicap/types";
 import { buildScorecardRows } from "@/lib/handicap/scorecard";
+import { runningTotals } from "@/lib/handicap/roundInProgress";
 import type { ScorecardHoleRow } from "@/lib/portal/scorecard";
 import { ScoringRoundHeader } from "@/components/portal/ScoringRoundHeader";
 import { Scorecard } from "@/components/portal/Scorecard";
@@ -43,12 +44,15 @@ function seedDraftFromHoles(teeSet: HandicapCourseTeeSet, initialHoles: Handicap
 export function HandicapHoleEntry({
   teeSet,
   draftKey,
+  holeKey,
   onBack,
   onSubmit,
   initialHoles,
 }: {
   teeSet: HandicapCourseTeeSet;
   draftKey?: string;
+  /** Where the current hole is saved, so leaving and coming back resumes on the same hole. */
+  holeKey?: string;
   onBack: () => void;
   onSubmit: (holes: HandicapHoleInput[]) => Promise<{ ok: boolean; error?: string }>;
   initialHoles?: HandicapHoleInput[];
@@ -58,7 +62,8 @@ export function HandicapHoleEntry({
   const [draft, setDraft, storage] = usePersistentState<Draft>(draftKey ?? null, () =>
     initialHoles ? seedDraftFromHoles(teeSet, initialHoles) : emptyDraft(teeSet)
   );
-  const [selectedHole, setSelectedHole] = useState(1);
+  const [savedHole, setSelectedHole, holeStorage] = usePersistentState<number>(holeKey ?? null, 1);
+  const selectedHole = Math.min(Math.max(1, Math.trunc(Number(savedHole)) || 1), 18);
   const [showScorecard, setShowScorecard] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -97,13 +102,11 @@ export function HandicapHoleEntry({
     }
   }
 
-  if (!storage.ready) return <p>Restoring hole entries...</p>;
+  if (!storage.ready || !holeStorage.ready) return <p>Restoring hole entries...</p>;
 
   const hole = teeSet.holes.find((entry) => entry.number === selectedHole)!;
   const entry = draft[selectedHole];
-  const enteredHoles = teeSet.holes.filter((h) => h.number <= selectedHole && Number(draft[h.number]?.score) > 0);
-  const totalScore = enteredHoles.reduce((sum, h) => sum + Number(draft[h.number].score), 0);
-  const toPar = enteredHoles.length > 0 ? totalScore - enteredHoles.reduce((sum, h) => sum + h.par, 0) : null;
+  const { totalScore, toPar } = runningTotals(teeSet.holes, draft, selectedHole);
   const firValue: ShotResult | null = entry.fir ? "hit" : entry.firDirection;
   const girValue: ShotResult | null = entry.gir ? "hit" : entry.girDirection;
   const isLastHole = selectedHole === 18;

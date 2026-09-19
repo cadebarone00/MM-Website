@@ -5,6 +5,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { HandicapCourseOption, HandicapCourseTeeSet, HandicapHoleInput } from "@/lib/handicap/types";
 import { formatCourseLocation } from "@/lib/data/courseLocation";
+import { clearHandicapDraft, handicapHoleKey, handicapHolesKey, handicapWizardKey } from "@/lib/handicap/roundInProgress";
+import { useRegisterRoundInProgress } from "@/components/nav/RoundExit";
 import { HandicapCourseLookup } from "./HandicapCourseLookup";
 import { HandicapHoleEntry } from "./HandicapHoleEntry";
 
@@ -27,7 +29,8 @@ function todayIso(): string {
 
 export function HandicapRoundWizard({ courses, recentCourseIds, playerName, playerSlug }: { courses: HandicapCourseOption[]; recentCourseIds: string[]; playerName?: string; playerSlug: string }) {
   const router = useRouter();
-  const [state, setState, storage] = usePersistentState<WizardState>("handicap-wizard:" + playerSlug, { step: "course" });
+  const [state, setState, storage] = usePersistentState<WizardState>(handicapWizardKey(playerSlug), { step: "course" });
+  useRegisterRoundInProgress(storage.ready && state.step === "holes");
   const [teeSetId, setTeeSetId] = useState("");
   const [datePlayed, setDatePlayed] = useState(todayIso());
   const [teeTime, setTeeTime] = useState("");
@@ -55,7 +58,8 @@ export function HandicapRoundWizard({ courses, recentCourseIds, playerName, play
     const setup = state.setup;
     return (
       <HandicapHoleEntry
-        draftKey={"handicap-holes:" + playerSlug + ":" + setup.submissionId}
+        draftKey={handicapHolesKey(playerSlug, setup.submissionId)}
+        holeKey={handicapHoleKey(playerSlug, setup.submissionId)}
         playerName={playerName}
         courseName={setup.course.name}
         teeSet={setup.teeSet}
@@ -78,7 +82,7 @@ export function HandicapRoundWizard({ courses, recentCourseIds, playerName, play
             const data = await res.json();
             if (!data.ok) return { ok: false as const, error: data.error ?? "Could not submit this round." };
             storage.clear();
-            try { localStorage.removeItem("handicap-holes:" + playerSlug + ":" + setup.submissionId); } catch { /* The submitted round is already saved on the server. */ }
+            try { clearHandicapDraft(localStorage, playerSlug, setup.submissionId); } catch { /* The submitted round is already saved on the server. */ }
             router.refresh();
             router.push("/portal/handicap");
             return { ok: true as const };

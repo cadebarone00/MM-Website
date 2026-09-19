@@ -8,14 +8,11 @@ import type { ArchivedHandicapRound, HandicapSummary } from "@/lib/handicap/type
 import { handicapHistory, selectHandicapScores, type ScoreView } from "@/lib/handicap/history";
 import { archivedDifferential, contributingRoundIds } from "@/lib/handicap/archiveIndex";
 import { calculateDifferential } from "@/lib/handicap/whs";
-import { formatDifferential, formatHandicapIndex } from "@/lib/handicap/format";
+import { formatDifferential, formatHandicapIndex, formatRoundDate } from "@/lib/handicap/format";
 import { formatRoundLabel } from "@/lib/data/roundLabel";
+import { RoundInProgressCard } from "./RoundInProgressCard";
 
-function formatDate(iso: string): string {
-  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
-export function HandicapHome({ playerName, summary, archivedRounds, team }: { playerName: string; summary: HandicapSummary; archivedRounds: ArchivedHandicapRound[]; team: Team | null }) {
+export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, team }: { playerName: string; playerSlug: string; summary: HandicapSummary; archivedRounds: ArchivedHandicapRound[]; team: Team | null }) {
   const [activeTab, setActiveTab] = useState<"maroon-masters" | "overall">("maroon-masters");
   const [scoreView, setScoreView] = useState<ScoreView>("recent");
   const rounds = selectHandicapScores(handicapHistory(archivedRounds, summary.rounds, activeTab), scoreView);
@@ -67,6 +64,8 @@ export function HandicapHome({ playerName, summary, archivedRounds, team }: { pl
         </div>
       </section>
 
+      <RoundInProgressCard playerSlug={playerSlug} />
+
       <section id="handicap-scores" role="tabpanel" aria-labelledby={`handicap-tab-${activeTab}`} className="mx-auto mt-6 max-w-4xl px-4 sm:px-6">
         <div className="flex items-center gap-2 border-b border-stone-200 pb-3">
           <h2 className="font-condensed text-sm font-bold text-maroon-700">Scores —</h2>
@@ -94,7 +93,7 @@ export function HandicapHome({ playerName, summary, archivedRounds, team }: { pl
                   {formatDifferential(differential)}{contributing.has(entry.source + "-" + entry.round.id) && <sup className="ml-0.5 text-xs" aria-label="Used in handicap calculation">*</sup>}
                 </div>
                 <div className="min-w-0 pl-1">
-                  <p className="truncate font-sans text-xs text-ink-600">{entry.source === "submitted" ? formatDate(entry.round.datePlayed) : `${entry.round.tournamentLabel} · ${formatRoundLabel(entry.round.round)}`}</p>
+                  <p className="truncate font-sans text-xs text-ink-600">{entry.source === "submitted" ? formatRoundDate(entry.round.datePlayed) : `${entry.round.tournamentLabel} · ${formatRoundLabel(entry.round.round)}`}</p>
                   <h3 title={entry.round.courseName} className="mt-1 truncate font-sans text-sm font-semibold text-ink-900">{entry.round.courseName}</h3>
                   <p className="mt-0.5 truncate font-sans text-xs text-ink-500">{entry.source === "submitted" ? entry.round.teeSetName : entry.round.teeSetup?.teeSetName ?? entry.round.format}</p>
                 </div>

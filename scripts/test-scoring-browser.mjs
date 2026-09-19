@@ -10,10 +10,11 @@ const dir=resolve('node_modules/.cache/scoring-browser');await mkdir(dir,{recurs
 const entry=`import React from 'react';import {createRoot} from 'react-dom/client';
 import {ScoringPanel} from '@/components/portal/ScoringPanel';
 import {HandicapHoleEntry} from '@/components/portal/handicap/HandicapHoleEntry';
+import {RoundInProgressCard} from '@/components/portal/handicap/RoundInProgressCard';
 const holes=Array.from({length:18},(_,i)=>({number:i+1,par:4,yards:400}));
 const box={id:'test-box',format:'Singles',maroonPlayers:['cade-barone'],whitePlayers:['cam-latto']};
-createRoot(document.getElementById('root')).render(location.pathname==='/personal'?<HandicapHoleEntry draftKey="test-personal" teeSet={{id:'gold',name:'Gold',rating:72,slope:113,holes}} onBack={()=>{}} onSubmit={async(holes)=>{document.body.dataset.complete='true';document.body.dataset.holes=String(holes.length);return {ok:true}}}/>:<ScoringPanel playerSlug="cade-barone" playerFullName="Cade Barone" round={1} matchBox={box} nameBySlug={{'cam-latto':'Cam Latto'}}/>);`;
-await build({stdin:{contents:entry,loader:'tsx',resolveDir:process.cwd()},bundle:true,outfile:resolve(dir,'app.js'),jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'},plugins:[{name:'realtime-stub',setup(b){b.onResolve({filter:/lib\/supabase\/client/},()=>({path:'stub',namespace:'test'}));b.onLoad({filter:/.*/,namespace:'test'},()=>({contents:'export function createSupabaseBrowserClient(){return {channel(){const c={on(){return c},subscribe(){return c}};return c},removeChannel(){}}}',loader:'js'}));}}]});
+createRoot(document.getElementById('root')).render(location.pathname==='/card'?<RoundInProgressCard playerSlug="cade-barone"/>:location.pathname==='/personal'?<HandicapHoleEntry draftKey="test-personal" holeKey="test-personal:hole" teeSet={{id:'gold',name:'Gold',rating:72,slope:113,holes}} onBack={()=>{}} onSubmit={async(holes)=>{document.body.dataset.complete='true';document.body.dataset.holes=String(holes.length);return {ok:true}}}/>:<ScoringPanel playerSlug="cade-barone" playerFullName="Cade Barone" round={1} matchBox={box} nameBySlug={{'cam-latto':'Cam Latto'}}/>);`;
+await build({stdin:{contents:entry,loader:'tsx',resolveDir:process.cwd()},bundle:true,outfile:resolve(dir,'app.js'),jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'},plugins:[{name:'link-stub',setup(b){b.onResolve({filter:/^next\/link$/},()=>({path:'link',namespace:'link-stub'}));b.onLoad({filter:/.*/,namespace:'link-stub'},()=>({contents:"import React from 'react';export default function Link({href,children,onNavigate,...p}){return React.createElement('a',{href,...p},children)}",loader:'js',resolveDir:process.cwd()}));}},{name:'realtime-stub',setup(b){b.onResolve({filter:/lib\/supabase\/client/},()=>({path:'stub',namespace:'test'}));b.onLoad({filter:/.*/,namespace:'test'},()=>({contents:'export function createSupabaseBrowserClient(){return {channel(){const c={on(){return c},subscribe(){return c}};return c},removeChannel(){}}}',loader:'js'}));}}]});
 const css=await postcss([tailwind()]).process(await readFile('app/globals.css','utf8'),{from:resolve('app/globals.css')});await writeFile(resolve(dir,'global.css'),css.css);
 const server=createServer(async(req,res)=>{const path=req.url.split('?')[0];if(['/app.js','/app.css','/global.css'].includes(path)){res.setHeader('Content-Type',path.endsWith('.js')?'text/javascript':'text/css');res.end(await readFile(resolve(dir,path.slice(1))));}else res.end('<html><head><link rel="stylesheet" href="/global.css"><link rel="stylesheet" href="/app.css"></head><body style="margin:0;padding:112px 16px 0;background:#f5efe2"><div id="root"></div><script src="/app.js"></script></body></html>');});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port;
@@ -59,5 +60,30 @@ try{
  await page.getByRole('button',{name:'Submit Round',exact:true}).click();
  await page.waitForFunction(()=>document.body.dataset.complete==='true');
  assert.equal(await page.locator('body').getAttribute('data-holes'),'18');
- assert.deepEqual(errors,[]);console.log('PASS: personal draft survives reload, Scorecard gates Submit until every hole has putts/GIR/fairway, tapping a hole number jumps back to it, then it submits all 18 holes');
+ // The current hole is saved with the draft, so leaving and coming back lands on the same hole.
+ await page.reload();await page.getByRole('group',{name:'Hole 18 score',exact:true}).waitFor();
+ console.log('PASS: the hole you were on is remembered across a reload');
+ // My Handicap's "Round in progress" box: seeded the way the wizard saves a started round.
+ const setup={submissionId:'abc',course:{id:'c1',name:'Pebble Beach',city:'Pebble Beach',state:'CA',teeSets:[]},teeSet:{id:'t1',name:'Blue',rating:72.1,slope:131,holes:Array.from({length:18},(_,i)=>({number:i+1,par:4,yards:400}))},datePlayed:'2026-09-07',teeTime:''};
+ await page.evaluate((setup)=>{localStorage.clear();const put=(k,v)=>localStorage.setItem(k,JSON.stringify({version:1,value:v}));put('handicap-wizard:cade-barone',{step:'holes',setup});put('handicap-holes:cade-barone:abc',{1:{score:'5'},2:{score:'6'}});put('handicap-holes:cade-barone:abc:hole',2);},setup);
+ await page.goto(origin+'/card');
+ const card=page.getByRole('region',{name:'Round in progress'});
+ await card.waitFor();
+ assert.equal(await card.getByLabel('To par').innerText(),'+3','holes 1-2 scored 5 and 6 on par 4s');
+ const cardText=await card.innerText();
+ for(const part of ['Pebble Beach','Blue','72.1/131','Sep 7, 2026'])assert.ok(cardText.includes(part),'box shows '+part);
+ assert.equal(await card.getByRole('link').count(),0,'options stay hidden until the box is tapped');
+ await card.getByRole('button',{name:/Pebble Beach/}).click();
+ assert.equal(await card.getByRole('link',{name:'Continue playing'}).getAttribute('href'),'/portal/handicap/new');
+ await card.getByRole('button',{name:'Delete round',exact:true}).click();
+ await card.getByText('Delete this round?',{exact:false}).waitFor();
+ await card.getByRole('button',{name:'Cancel',exact:true}).click();
+ await card.getByRole('button',{name:'Delete round',exact:true}).waitFor();
+ assert.notEqual(await page.evaluate(()=>localStorage.getItem('handicap-wizard:cade-barone')),null,'cancelling deletes nothing');
+ await card.getByRole('button',{name:'Delete round',exact:true}).click();
+ await card.getByRole('button',{name:'Delete',exact:true}).click();
+ await card.waitFor({state:'detached'});
+ assert.deepEqual(await page.evaluate(()=>Object.keys(localStorage)),[],'deleting clears the wizard state, hole draft and saved hole');
+ assert.deepEqual(errors,[]);console.log('PASS: Round in progress box shows to-par/course/tee/rating, offers Continue or Delete (with confirm), and deleting clears everything');
+ console.log('PASS: personal draft survives reload, Scorecard gates Submit until every hole has putts/GIR/fairway, tapping a hole number jumps back to it, then it submits all 18 holes');
 }finally{await browser.close();await new Promise(r=>server.close(r));}

@@ -37,5 +37,5 @@ export default async function HandicapPage() {
   // that now carry a verified tee/rating/slope (see archiveIndex.ts).
   const fullSummary = { ...summary, ...combinedHandicapIndexes(summary.rounds, archivedRounds) };
 
-  return <HandicapHome playerName={playerName} summary={fullSummary} archivedRounds={archivedRounds} team={team} />;
+  return <HandicapHome playerName={playerName} playerSlug={playerSlug} summary={fullSummary} archivedRounds={archivedRounds} team={team} />;
 }

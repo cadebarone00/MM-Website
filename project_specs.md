@@ -383,15 +383,54 @@ All pages are public, no auth.
   `npm run build`, and `npm run test:browser` (extended with Scorecard
   coverage for both flows) all clean.
 
+- **Handicap "Round in progress" + Exit.** Once you press "Start round"
+  on Submit a score, the portal header's top-left arrow reads **Exit**
+  (all screen sizes; before that it's the normal Back). Exit just goes to
+  My Handicap — the draft is already saved on every tap. The current hole
+  is now saved too (new `holeKey`, so coming back lands on the same hole).
+  My Handicap shows a new **Round in progress** box between the Maroon
+  Masters/Overall tabs and the scores list
+  (`components/portal/handicap/RoundInProgressCard.tsx`), laid out like a
+  completed round: to-par where the score goes (E / +3 / -1, same math as
+  the hole screen's header), blank differential, date/course/tee, and
+  rating/slope. Tapping it offers **Continue playing** (reopens the round
+  on the saved hole) or **Delete round** (asks "Delete this round? This
+  can't be undone." first, then clears the wizard state, hole draft, and
+  saved hole). All key names and the read/summarize/delete logic live in
+  `lib/handicap/roundInProgress.ts` (TDD'd, with shared `runningTotals`,
+  `formatToPar`, `formatRoundDate`); `components/nav/RoundExit.tsx` is the
+  small context that lets the wizard tell `PortalHeader` a round is
+  underway. **Device-only:** a round in progress lives in that browser's
+  localStorage like the drafts always have — starting on a phone and
+  finishing on a laptop isn't supported (would need a server-side draft
+  table). "Submit a score" still reopens the round in progress rather
+  than starting a second one. Handicap only — live scoring is unchanged.
+  `npm test` (311/311), `npx tsc --noEmit`, `npm run lint` (clean on
+  every file this round touched), `npm run build`, and `npm run
+  test:browser` (extended: hole memory, the box, Continue/Delete) all
+  clean. **Not click-tested in a real browser:** the Exit label itself
+  (it sits behind login) — verified by type-check, lint, and build only.
+
 ## Known gaps / not yet built
 
-- **Live scoring still has no round-level "everyone agrees" submit gate.**
-  The Scorecard (see above) shows the competitor's grid underneath
-  yours, but that's read-only — live scoring still submits and confirms
-  hole-by-hole exactly as it always has, with no final "Submit Round"
-  step for that flow (unlike the handicap flow, which does gate its
-  Submit on every hole being entered). Designing that gate is explicitly
-  future work, called out by the user when the Scorecard was scoped.
+- **Live scoring still has no round-level "everyone agrees" submit gate
+  or "Begin Round" screen.** The Scorecard shows the competitor's grid,
+  but that's read-only — live scoring still submits and confirms
+  hole-by-hole exactly as it always has. Decided design (user,
+  2026-09-19), not yet built: the Scoring tab shows the full matchup
+  (who you play, who you score for) with a **Begin Round** button
+  (**Continue Round** once a hole is in) that opens live scoring on the
+  hole you left; there is never a delete — a live round must be
+  finished, and progress persists across leaving the tab because holes
+  save server-side. The live Scorecard gets a **Submit Round** button,
+  disabled until all 18 holes are submitted and every one matches your
+  scorer. **Every player in the match** must press it before Tiger's
+  Close Out Match card appears (today it appears as soon as the holes are
+  complete). After Submit Round the scorecard is **locked** — only Tiger
+  can change it (Edit Scores). The existing `POST
+  /api/portal/scoring/submit` route (round-level, no UI calls it) looks
+  like it predates the hole-by-hole system and should be checked before
+  reuse. Needs its own spec (database + Tiger tools).
 - **2025-danzante's 8 players still need tees assigned** via "Assign tees
   for handicap tracking" (`/portal/admin/scorecards`) before any of their
   rounds count — the round numbering/format problem itself is fixed (see

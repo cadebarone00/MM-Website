@@ -7,6 +7,7 @@ import { PortalHeader } from "@/components/nav/PortalHeader";
 import { PlayerAreaNav } from "@/components/nav/PlayerAreaNav";
 import type { NextTournamentOverride } from "@/lib/data/types";
 import { AreaNavigation } from "./AreaNavigation";
+import { RoundExitProvider } from "./RoundExit";
 
 /**
  * Picks the site chrome for the current route. `/broadcast` gets nothing at
@@ -19,7 +20,7 @@ import { AreaNavigation } from "./AreaNavigation";
  * sessions).
  */
 export function SiteChrome({ children, nextTournamentOverride }: { children: ReactNode; nextTournamentOverride: NextTournamentOverride }) {
-  return <AreaNavigation><AreaChrome nextTournamentOverride={nextTournamentOverride}>{children}</AreaChrome></AreaNavigation>;
+  return <AreaNavigation><RoundExitProvider><AreaChrome nextTournamentOverride={nextTournamentOverride}>{children}</AreaChrome></RoundExitProvider></AreaNavigation>;
 }
 
 function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode; nextTournamentOverride: NextTournamentOverride }) {
