@@ -21,9 +21,10 @@ export interface PlayerRow {
  */
 export async function getAllPlayerRows(): Promise<PlayerRow[]> {
   const service = createSupabaseServiceRoleClient();
-  const { data: slots } = await service
+  const { data: slots, error } = await service
     .from("player_slots")
     .select("player_slug, username, claimed_by, email, full_name");
+  if (error) console.error("getAllPlayerRows: could not read player_slots:", error.message);
   const bySlug = new Map((slots ?? []).map((s) => [s.player_slug, s]));
 
   const staticRows: PlayerRow[] = playerProfiles.map((p) => {
