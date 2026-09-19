@@ -181,12 +181,18 @@ export function GlobalPlayersAdmin({ rows: initialRows }: { rows: GlobalPlayerRo
     try {
       // Each request is judged on its own: one half can save while the other
       // fails, and the row must never contradict what is actually on file.
+      // An unchanged name is not sent: saving only an email must not pin a
+      // hand-written player's current name into player_slots.full_name, which
+      // would stop later edits to their hand-written file from showing.
+      const currentRow = rows.find((r) => r.playerSlug === playerSlug);
       const [nameResult, emailResult] = await Promise.allSettled([
-        fetch("/api/portal/tiger/player-name", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ playerSlug, fullName: editName }),
-        }).then((res) => res.json()),
+        currentRow && editName.trim() === currentRow.fullName
+          ? Promise.resolve({ ok: true, fullName: currentRow.fullName })
+          : fetch("/api/portal/tiger/player-name", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ playerSlug, fullName: editName }),
+            }).then((res) => res.json()),
         fetch("/api/portal/tiger/player-email", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
