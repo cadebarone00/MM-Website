@@ -28,7 +28,7 @@ export function ConfirmedRoster({ roster }: { roster: RosterEntry[] }) {
             <ul className="mt-3 space-y-3">
               {players.map((entry) => {
                 const displayName = entry.displayName ?? getPlayerDisplayName(entry.playerSlug);
-                const avatarSrc = entry.avatarSrc ?? getPlayerAvatar(entry.playerSlug);
+                const avatarSrc = entry.avatarSrc !== undefined ? entry.avatarSrc : getPlayerAvatar(entry.playerSlug);
                 return (
                   <li key={entry.playerSlug} className="flex items-center gap-3">
                     <Avatar src={avatarSrc} name={displayName} team={entry.team} size="md" />
