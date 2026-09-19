@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 
   const { data: slot } = await service
     .from("player_slots")
-    .select("username, claimed_by, email")
+    .select("username, claimed_by, email, full_name")
     .eq("player_slug", playerSlug)
     .single();
   if (!slot || !slot.username) {
@@ -55,7 +55,10 @@ export async function POST(request: Request) {
   const { error: profileError } = await service.from("profiles").insert({
     id: invited.user.id,
     email,
-    display_name: getPlayerDisplayName(playerSlug),
+    // A dynamically-added player has no hand-written file, so
+    // getPlayerDisplayName would return their raw slug — prefer the visible
+    // name saved on the slot (which "Edit name" can also correct).
+    display_name: slot.full_name ?? getPlayerDisplayName(playerSlug),
     username: slot.username,
     is_host: false,
     player_slug: playerSlug,
