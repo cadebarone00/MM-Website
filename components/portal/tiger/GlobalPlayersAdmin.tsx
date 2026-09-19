@@ -179,33 +179,49 @@ export function GlobalPlayersAdmin({ rows: initialRows }: { rows: GlobalPlayerRo
     setBusy(playerSlug);
     setError(null);
     try {
-      const [nameRes, emailRes] = await Promise.all([
+      // Each request is judged on its own: one half can save while the other
+      // fails, and the row must never contradict what is actually on file.
+      const [nameResult, emailResult] = await Promise.allSettled([
         fetch("/api/portal/tiger/player-name", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ playerSlug, fullName: editName }),
-        }),
+        }).then((res) => res.json()),
         fetch("/api/portal/tiger/player-email", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ playerSlug, email: editEmail }),
-        }),
+        }).then((res) => res.json()),
       ]);
-      const [nameData, emailData] = await Promise.all([nameRes.json(), emailRes.json()]);
-      if (!nameData.ok) {
-        setError(nameData.error);
+      const nameData = nameResult.status === "fulfilled" ? nameResult.value : null;
+      const emailData = emailResult.status === "fulfilled" ? emailResult.value : null;
+      const nameSaved = Boolean(nameData?.ok);
+      const emailSaved = Boolean(emailData?.ok);
+
+      // Apply whichever half actually saved, so the row matches the database.
+      if (nameSaved || emailSaved) {
+        setRowsState((current) =>
+          current.map((r) =>
+            r.playerSlug === playerSlug
+              ? {
+                  ...r,
+                  ...(nameSaved ? { fullName: nameData.fullName } : {}),
+                  ...(emailSaved ? { email: emailData.email } : {}),
+                }
+              : r
+          )
+        );
+      }
+
+      if (nameSaved && emailSaved) {
+        setEditSlug(null);
         return;
       }
-      if (!emailData.ok) {
-        setError(emailData.error);
-        return;
-      }
-      setRowsState((current) =>
-        current.map((r) => (r.playerSlug === playerSlug ? { ...r, fullName: nameData.fullName, email: emailData.email } : r))
-      );
-      setEditSlug(null);
-    } catch {
-      setError("Something went wrong — try again.");
+
+      const problems: string[] = [];
+      if (!nameSaved) problems.push(`Name not saved: ${nameData?.error ?? "something went wrong."}`);
+      if (!emailSaved) problems.push(`Email not saved: ${emailData?.error ?? "something went wrong."}`);
+      setError(problems.join(" "));
     } finally {
       setBusy(null);
     }
