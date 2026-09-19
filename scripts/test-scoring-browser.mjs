@@ -11,9 +11,10 @@ const entry=`import React from 'react';import {createRoot} from 'react-dom/clien
 import {ScoringPanel} from '@/components/portal/ScoringPanel';
 import {HandicapHoleEntry} from '@/components/portal/handicap/HandicapHoleEntry';
 import {RoundInProgressCard} from '@/components/portal/handicap/RoundInProgressCard';
+import {SubmitScoreButton} from '@/components/portal/handicap/SubmitScoreButton';
 const holes=Array.from({length:18},(_,i)=>({number:i+1,par:4,yards:400}));
 const box={id:'test-box',format:'Singles',maroonPlayers:['cade-barone'],whitePlayers:['cam-latto']};
-createRoot(document.getElementById('root')).render(location.pathname==='/card'?<RoundInProgressCard playerSlug="cade-barone"/>:location.pathname==='/personal'?<HandicapHoleEntry draftKey="test-personal" holeKey="test-personal:hole" teeSet={{id:'gold',name:'Gold',rating:72,slope:113,holes}} onBack={()=>{}} onSubmit={async(holes)=>{document.body.dataset.complete='true';document.body.dataset.holes=String(holes.length);return {ok:true}}}/>:<ScoringPanel playerSlug="cade-barone" playerFullName="Cade Barone" round={1} matchBox={box} nameBySlug={{'cam-latto':'Cam Latto'}}/>);`;
+createRoot(document.getElementById('root')).render(location.pathname==='/submit'?<SubmitScoreButton playerSlug="cade-barone"/>:location.pathname==='/card'?<RoundInProgressCard playerSlug="cade-barone"/>:location.pathname==='/personal'?<HandicapHoleEntry draftKey="test-personal" holeKey="test-personal:hole" teeSet={{id:'gold',name:'Gold',rating:72,slope:113,holes}} onBack={()=>{}} onSubmit={async(holes)=>{document.body.dataset.complete='true';document.body.dataset.holes=String(holes.length);return {ok:true}}}/>:<ScoringPanel playerSlug="cade-barone" playerFullName="Cade Barone" round={1} matchBox={box} nameBySlug={{'cam-latto':'Cam Latto'}}/>);`;
 await build({stdin:{contents:entry,loader:'tsx',resolveDir:process.cwd()},bundle:true,outfile:resolve(dir,'app.js'),jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'},plugins:[{name:'link-stub',setup(b){b.onResolve({filter:/^next\/link$/},()=>({path:'link',namespace:'link-stub'}));b.onLoad({filter:/.*/,namespace:'link-stub'},()=>({contents:"import React from 'react';export default function Link({href,children,onNavigate,...p}){return React.createElement('a',{href,...p},children)}",loader:'js',resolveDir:process.cwd()}));}},{name:'realtime-stub',setup(b){b.onResolve({filter:/lib\/supabase\/client/},()=>({path:'stub',namespace:'test'}));b.onLoad({filter:/.*/,namespace:'test'},()=>({contents:'export function createSupabaseBrowserClient(){return {channel(){const c={on(){return c},subscribe(){return c}};return c},removeChannel(){}}}',loader:'js'}));}}]});
 const css=await postcss([tailwind()]).process(await readFile('app/globals.css','utf8'),{from:resolve('app/globals.css')});await writeFile(resolve(dir,'global.css'),css.css);
 const server=createServer(async(req,res)=>{const path=req.url.split('?')[0];if(['/app.js','/app.css','/global.css'].includes(path)){res.setHeader('Content-Type',path.endsWith('.js')?'text/javascript':'text/css');res.end(await readFile(resolve(dir,path.slice(1))));}else res.end('<html><head><link rel="stylesheet" href="/global.css"><link rel="stylesheet" href="/app.css"></head><body style="margin:0;padding:112px 16px 0;background:#f5efe2"><div id="root"></div><script src="/app.js"></script></body></html>');});
@@ -51,8 +52,11 @@ try{
  await page.getByRole('button',{name:'Edit hole 1',exact:true}).click();
  await page.getByRole('group',{name:'Hole 1 score',exact:true}).waitFor();
  await page.getByRole('button',{name:'Fairway hit',exact:true}).click();await page.getByRole('button',{name:'GIR hit',exact:true}).click();await page.getByRole('group',{name:'Your putts',exact:true}).getByRole('button',{name:'2',exact:true}).click();
+ // The header total only counts holes you've moved past: hole 1 is scored 9, but it reads Total: 0 until you go to hole 2.
+ await page.getByText('Total: 0',{exact:true}).waitFor();
  for(let h=1;h<18;h++){
    await page.getByRole('button',{name:'Next Hole',exact:true}).click();
+   if(h===1)await page.getByText('Total: 9',{exact:true}).waitFor();
    await page.getByRole('button',{name:'Fairway hit',exact:true}).click();await page.getByRole('button',{name:'GIR hit',exact:true}).click();await page.getByRole('group',{name:'Your putts',exact:true}).getByRole('button',{name:'2',exact:true}).click();
  }
  await page.getByRole('button',{name:'Review Round',exact:true}).click();
@@ -81,11 +85,12 @@ try{
  console.log('PASS: the hole you were on is remembered across a reload');
  // My Handicap's "Round in progress" box: seeded the way the wizard saves a started round.
  const setup={submissionId:'abc',course:{id:'c1',name:'Pebble Beach',city:'Pebble Beach',state:'CA',teeSets:[]},teeSet:{id:'t1',name:'Blue',rating:72.1,slope:131,holes:Array.from({length:18},(_,i)=>({number:i+1,par:4,yards:400}))},datePlayed:'2026-09-07',teeTime:''};
- await page.evaluate((setup)=>{localStorage.clear();const put=(k,v)=>localStorage.setItem(k,JSON.stringify({version:1,value:v}));put('handicap-wizard:cade-barone',{step:'holes',setup});put('handicap-holes:cade-barone:abc',{1:{score:'5'},2:{score:'6'}});put('handicap-holes:cade-barone:abc:hole',2);},setup);
+ const seedRound=()=>page.evaluate((setup)=>{localStorage.clear();const put=(k,v)=>localStorage.setItem(k,JSON.stringify({version:1,value:v}));put('handicap-wizard:cade-barone',{step:'holes',setup});put('handicap-holes:cade-barone:abc',{1:{score:'5'},2:{score:'6'}});put('handicap-holes:cade-barone:abc:hole',3);},setup);
+ await seedRound();
  await page.goto(origin+'/card');
  const card=page.getByRole('region',{name:'Round in progress'});
  await card.waitFor();
- assert.equal(await card.getByLabel('To par').innerText(),'+3','holes 1-2 scored 5 and 6 on par 4s');
+ assert.equal(await card.getByLabel('To par').innerText(),'+3','holes 1-2 (5 and 6 on par 4s) are played and hole 3 is the one in progress');
  const cardText=await card.innerText();
  for(const part of ['Pebble Beach','Blue','72.1/131','Sep 7, 2026'])assert.ok(cardText.includes(part),'box shows '+part);
  assert.equal(await card.getByRole('link').count(),0,'options stay hidden until the box is tapped');
@@ -100,6 +105,26 @@ try{
  await card.getByRole('button',{name:'Delete',exact:true}).click();
  await card.waitFor({state:'detached'});
  assert.deepEqual(await page.evaluate(()=>Object.keys(localStorage)),[],'deleting clears the wizard state, hole draft and saved hole');
+ // "Submit a score" on My Handicap: a plain link with nothing in progress, a Continue / Start-new choice when a round is.
+ await page.goto(origin+'/submit');
+ assert.equal(await page.getByRole('link',{name:'Submit a score',exact:true}).getAttribute('href'),'/portal/handicap/new');
+ await seedRound();
+ await page.goto(origin+'/submit');
+ await page.getByRole('button',{name:'Submit a score',exact:true}).click();
+ const choice=page.getByRole('dialog');
+ await choice.getByRole('heading',{name:'Already have a round in progress',exact:true}).waitFor();
+ assert.ok((await choice.innerText()).includes('Pebble Beach'),'names the course');
+ assert.equal(await choice.getByLabel('To par').innerText(),'+3');
+ assert.equal(await choice.getByRole('link',{name:'Continue round',exact:true}).getAttribute('href'),'/portal/handicap/new');
+ assert.equal(await page.evaluate(()=>document.activeElement?.textContent),'Continue round','the safe choice has focus, not the destructive one');
+ await page.keyboard.press('Escape');
+ await choice.waitFor({state:'detached'});
+ assert.notEqual(await page.evaluate(()=>localStorage.getItem('handicap-wizard:cade-barone')),null,'closing the choice deletes nothing');
+ await page.getByRole('button',{name:'Submit a score',exact:true}).click();
+ await page.getByRole('dialog').getByRole('link',{name:'Start a new round',exact:true}).click();
+ await page.waitForURL('**/portal/handicap/new');
+ assert.deepEqual(await page.evaluate(()=>Object.keys(localStorage)),[],'starting a new round deletes the one in progress');
+ assert.deepEqual(errors,[]);console.log('PASS: Submit a score offers Continue or Start a new round when one is in progress, and starting new deletes it');
  assert.deepEqual(errors,[]);console.log('PASS: Round in progress box shows to-par/course/tee/rating, offers Continue or Delete (with confirm), and deleting clears everything');
  console.log('PASS: personal draft survives reload, Scorecard gates Submit until every hole has putts/GIR/fairway, tapping a hole number jumps back to it, then it submits all 18 holes');
 }finally{await browser.close();await new Promise(r=>server.close(r));}

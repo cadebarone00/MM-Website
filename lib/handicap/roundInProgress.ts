@@ -23,8 +23,8 @@ export interface RoundInProgress {
   datePlayed: string;
   /** The hole the player was on when they left. */
   hole: number;
-  /** Strokes over/under par through that hole, exactly as the hole screen's header shows it. */
-  toPar: number | null;
+  /** Strokes over/under par through the holes already played, exactly as the hole screen's header shows it. */
+  toPar: number;
 }
 
 /** The raw saved strings behind a round in progress; strings compare by value, which is what lets a UI subscribe to them cheaply. */
@@ -34,15 +34,20 @@ export interface RoundInProgressRaw {
   hole: string | null;
 }
 
-/** Score and to-par through `selectedHole`, matching what the hole screen's Total / To Par header shows. */
+/**
+ * Score and to-par over the holes you've already moved past — not the hole
+ * you're on. Hole 1 reads Total 0; a 5 on hole 1 shows up as Total 5 once
+ * you go to hole 2, and hole 2's score joins once you go to hole 3. Shared by
+ * the hole screen's header and the Round in progress box so they agree.
+ */
 export function runningTotals(
   holes: { number: number; par: number }[],
   draft: Record<number, { score: string } | undefined>,
   selectedHole: number
-): { totalScore: number; toPar: number | null } {
-  const entered = holes.filter((hole) => hole.number <= selectedHole && Number(draft[hole.number]?.score) > 0);
-  const totalScore = entered.reduce((sum, hole) => sum + Number(draft[hole.number]!.score), 0);
-  const toPar = entered.length > 0 ? totalScore - entered.reduce((sum, hole) => sum + hole.par, 0) : null;
+): { totalScore: number; toPar: number } {
+  const played = holes.filter((hole) => hole.number < selectedHole && Number(draft[hole.number]?.score) > 0);
+  const totalScore = played.reduce((sum, hole) => sum + Number(draft[hole.number]!.score), 0);
+  const toPar = totalScore - played.reduce((sum, hole) => sum + hole.par, 0);
   return { totalScore, toPar };
 }
 

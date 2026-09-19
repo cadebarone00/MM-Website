@@ -1,20 +1,9 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { deleteRoundInProgress, parseRoundInProgress, readRoundInProgressRaw } from "@/lib/handicap/roundInProgress";
 import { formatRoundDate, formatToPar } from "@/lib/handicap/format";
-
-const CHANGED = "mm-handicap-round-changed";
-
-function subscribe(callback: () => void) {
-  window.addEventListener("storage", callback);
-  window.addEventListener(CHANGED, callback);
-  return () => {
-    window.removeEventListener("storage", callback);
-    window.removeEventListener(CHANGED, callback);
-  };
-}
+import { useRoundInProgress } from "@/lib/handicap/useRoundInProgress";
 
 /**
  * The handicap round you started but haven't submitted, shown like a
@@ -23,22 +12,16 @@ function subscribe(callback: () => void) {
  * or Delete it. Reads this device's saved round — see roundInProgress.ts.
  */
 export function RoundInProgressCard({ playerSlug }: { playerSlug: string }) {
-  const snapshot = useSyncExternalStore(
-    subscribe,
-    () => { try { return JSON.stringify(readRoundInProgressRaw(localStorage, playerSlug)); } catch { return ""; } },
-    () => ""
-  );
-  const round = useMemo(() => (snapshot ? parseRoundInProgress(JSON.parse(snapshot)) : null), [snapshot]);
+  const { round, deleteRound } = useRoundInProgress(playerSlug);
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
   if (!round) return null;
 
   function handleDelete() {
-    try { deleteRoundInProgress(localStorage, playerSlug); } catch { /* Nothing more we can do if storage is blocked. */ }
+    deleteRound();
     setOpen(false);
     setConfirming(false);
-    window.dispatchEvent(new Event(CHANGED));
   }
 
   return (

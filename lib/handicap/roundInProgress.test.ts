@@ -38,15 +38,17 @@ test("storage keys are built from the player and round so the wizard, hole entry
   assert.equal(handicapHoleKey("cade", "abc"), "handicap-holes:cade:abc:hole");
 });
 
-test("runningTotals counts only holes up to the selected one and reports null before any score exists", () => {
+test("runningTotals only counts holes you've moved past: 0 on hole 1, then each hole joins once you go to the next", () => {
   const draft = { 1: { score: "5" }, 2: { score: "6" }, 3: { score: "9" } };
-  assert.deepEqual(runningTotals(holes, draft, 2), { totalScore: 11, toPar: 4 });
-  assert.deepEqual(runningTotals(holes, {}, 2), { totalScore: 0, toPar: null });
+  assert.deepEqual(runningTotals(holes, draft, 1), { totalScore: 0, toPar: 0 });
+  assert.deepEqual(runningTotals(holes, draft, 2), { totalScore: 5, toPar: 1 });
+  assert.deepEqual(runningTotals(holes, draft, 3), { totalScore: 11, toPar: 4 });
+  assert.deepEqual(runningTotals(holes, {}, 3), { totalScore: 0, toPar: 0 });
 });
 
-test("a saved round in progress reports course, tee, rating/slope, date, current hole, and to-par through that hole", () => {
-  const round = parseRoundInProgress({ wizard: wizardRaw, draft: draftRaw, hole: JSON.stringify({ version: 1, value: 2 }) });
-  assert.deepEqual(round, { submissionId: "abc", courseName: "Pebble Beach", teeName: "Blue", rating: 72.1, slope: 131, datePlayed: "2026-09-07", hole: 2, toPar: 4 });
+test("a saved round in progress reports course, tee, rating/slope, date, current hole, and to-par through the holes already played", () => {
+  const round = parseRoundInProgress({ wizard: wizardRaw, draft: draftRaw, hole: JSON.stringify({ version: 1, value: 3 }) });
+  assert.deepEqual(round, { submissionId: "abc", courseName: "Pebble Beach", teeName: "Blue", rating: 72.1, slope: 131, datePlayed: "2026-09-07", hole: 3, toPar: 4 });
 });
 
 test("a round started but not yet touched has no draft or hole saved, and reads as even par on hole 1", () => {

@@ -492,6 +492,32 @@ All pages are public, no auth.
   live site. `npm test` (318/318), `npx tsc --noEmit`, `npm run lint`
   (clean on every file this round touched), `npm run build`, and `npm run
   test:browser` (extended: totals, dialog, Escape/Keep editing) all clean.
+- **Handicap: "Submit a score" respects a round in progress; header total
+  only counts holes you've moved past.** With a round in progress, My
+  Handicap's **Submit a score** button (new
+  `components/portal/handicap/SubmitScoreButton.tsx`) opens an "Already
+  have a round in progress" popup showing the course and the to-par, with
+  **Continue round** (default focus; reopens the round on its saved hole)
+  and **Start a new round** (deletes the round in progress, then lands on
+  the course selector, with a line under it saying so). Escape or a tap
+  outside closes it and deletes nothing. With no round in progress it's a
+  plain link as before. The read/delete logic for the popup and the
+  Round in progress box is now one shared hook,
+  `lib/handicap/useRoundInProgress.ts`. Separately, the hole screen's
+  header **Total / To par** now counts only holes you've moved past —
+  Total: 0 on hole 1, Total: 5 on hole 2 after a 5 on hole 1, and hole 2's
+  score joins once you go to hole 3 (`runningTotals`, tested; even par
+  now reads "E" instead of a dash on hole 1). The Round in progress box's
+  to-par uses the same rule. **Live scoring's header total is unchanged**
+  (it still totals submitted holes through the one you're viewing) — to be
+  revisited with the live scoring work. Both dialogs (this one and the
+  Scorecard's Confirm) are now portaled to the page root so a parent's
+  stacking context can't put the site header over them. `npm test`
+  (318/318), `npx tsc --noEmit`, `npm run lint` (clean on every file this
+  round touched), `npm run build`, and `npm run test:browser` (extended:
+  header total, the Submit a score popup, default focus, start-new
+  deleting) all clean. The browser test caught a real bug on the way:
+  `autoFocus` doesn't work on a link, so Continue is focused explicitly.
 
 ## Known gaps / not yet built
 

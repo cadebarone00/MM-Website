@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import type { Team } from "@/lib/data";
 import type { ArchivedHandicapRound, HandicapSummary } from "@/lib/handicap/types";
 import { handicapHistory, selectHandicapScores, type ScoreView } from "@/lib/handicap/history";
@@ -11,6 +10,7 @@ import { calculateDifferential } from "@/lib/handicap/whs";
 import { formatDifferential, formatHandicapIndex, formatRoundDate } from "@/lib/handicap/format";
 import { formatRoundLabel } from "@/lib/data/roundLabel";
 import { RoundInProgressCard } from "./RoundInProgressCard";
+import { SubmitScoreButton } from "./SubmitScoreButton";
 
 export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, team, initialTab = "maroon-masters" }: { playerName: string; playerSlug: string; initialTab?: "maroon-masters" | "overall"; summary: HandicapSummary; archivedRounds: ArchivedHandicapRound[]; team: Team | null }) {
   const [activeTab, setActiveTab] = useState<"maroon-masters" | "overall">(initialTab);
@@ -27,9 +27,7 @@ export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, 
         </div>
         <div className="absolute right-4 top-4 flex flex-col items-end gap-3 text-white sm:right-6 sm:top-6">
           <h1 className="font-serif text-2xl font-bold sm:text-3xl">My Handicap</h1>
-          <Link href="/portal/handicap/new" className="rounded-lg border border-white/30 bg-maroon-700 px-4 py-2.5 font-condensed text-xs font-bold uppercase tracking-wide text-white shadow-sm transition hover:bg-maroon-800 sm:text-sm">
-            Submit a score
-          </Link>
+          <SubmitScoreButton playerSlug={playerSlug} />
         </div>
         <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 text-white sm:p-6">
           <div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Check, X, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from "lucide-react";
 import { firstIncompleteHole, isRoundComplete, scorecardTotals, type ScorecardHoleRow, type ScorecardShotDirection, type ScorecardTotals } from "@/lib/portal/scorecard";
 import { formatToPar } from "@/lib/handicap/format";
@@ -102,7 +103,8 @@ function ConfirmSubmitDialog({ submitting, error, onSubmit, onKeepEditing }: { s
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [submitting, onKeepEditing]);
-  return (
+  // Portaled to the page root so no ancestor's stacking context can put the site header on top of it.
+  return createPortal(
     <div className="fixed inset-0 z-[400] flex items-end justify-center bg-black/50 p-4 sm:items-center">
       <div role="dialog" aria-modal="true" aria-labelledby="confirm-submit-title" aria-describedby="confirm-submit-body" className="w-full max-w-sm rounded-md bg-white p-5 shadow-xl">
         <h2 id="confirm-submit-title" className="font-serif text-xl font-bold text-ink-900">Confirm</h2>
@@ -117,7 +119,8 @@ function ConfirmSubmitDialog({ submitting, error, onSubmit, onKeepEditing }: { s
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
