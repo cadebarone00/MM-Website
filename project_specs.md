@@ -345,6 +345,62 @@ All pages are public, no auth.
   row padding went from `py-2` to `py-4` to fit the extra line
   comfortably. `npm test` (283/283), `npx tsc --noEmit`, `npm run lint`,
   and `npm run build` all clean.
+- **Global Players page — Add Player, Edit name & email, and a
+  name-vs-slug split.** Player management moved out of the per-year
+  Players & Teams page into a new Tiger Center → Global Tools → **Players**
+  page (`/portal/admin/players`, `components/portal/tiger/GlobalPlayersAdmin.tsx`).
+  It has **+ Add Player** (name and email only), **Edit name & email**
+  (replaces the old email-only panel), username, claimed/unclaimed status,
+  pending bio approvals, "Edit directly", Unlink, and Send Invite — the
+  same tools as before, just in one global place. The per-year Players &
+  Teams page shrank to each player's name plus **Unassigned / Maroon /
+  White** and the lock toggle (`components/portal/PlayerTeamAssignment.tsx`);
+  it reads the same global list, so a player added once shows up in every
+  year. `components/portal/PlayerSlotsAdmin.tsx` is deleted. Both pages
+  share one helper, `getAllPlayerRows()` (`lib/portal/allPlayers.ts`): the
+  13 hand-written players first, then any DB-only `player_slots` rows.
+  **Identity:** a player's slug is permanent and never editable (it keys
+  all past history, exactly as recorded); the *visible* name is an optional
+  override in the new `player_slots.full_name` column, resolved as
+  override → hand-written name → slug. A new player's slug comes from
+  their name (`lib/portal/computePlayerSlug.ts`, `-2`/`-3` suffix if it
+  clashes with a hand-written or existing slug) and gets a username the
+  same way the seeded players did. Routes: `POST
+  /api/portal/tiger/player-add` and `/player-name` (host-only). **A new
+  player is a full working player** with no stats for 2024–2026: portal
+  home shows their name, Edit My Bio works (a profile is synthesized when
+  there's no hand-written file), Send Invite uses their visible name as
+  `display_name`, and the public Confirmed Roster shows their name (and
+  the exact-slug avatar, so a one-word name like "Cade" doesn't borrow a
+  hand-written player's photo). A player left **Unassigned** for a year has
+  no rounds or matches that year — just their portal and the site.
+  **`requirePlayer()` now accepts a player with no hand-written profile
+  file** (it used to reject them, which would have blocked bio saves,
+  handicap, and live scoring for anyone added through the page). For the 13
+  hand-written players it returns the identical session as before. Safe
+  because `profiles.player_slug` is only ever set server-side (sign-up
+  claim, Tiger invite) and is a foreign key into `player_slots`. The two
+  legacy Google-Sheet scoring routes (`score/round`, `score/submit-hole`)
+  return 403 for a DB-only player (that sheet only knows the hand-written
+  roster), and `/portal/career` now passes the slug instead of the first
+  name so a new player can't alias to a hand-written one. **Not reached by
+  a rename (and shows the raw slug for a DB-only player):** the historical
+  leaderboard, scorecard, wagers, and broadcast pages, the in-progress
+  `LivePlayerScorecard.tsx`, live-scoring partner names, and Tiger's
+  matchups lists — those still read the static hand-written name helpers.
+  `/portal/career` also 404s for a new player until they have stats.
+  **Before this works in production, run `supabase/player_slots_full_name.sql`
+  once in the Supabase SQL Editor** (adds the `full_name` column; sending
+  an invite selects it, so invites fail for every player until it's run).
+  `npm test` (311/311, including new tests for the slug helper, the
+  shared player list, both new routes, and the `requirePlayer` identity
+  helper), `npx tsc --noEmit`, and `npm run build` (which lists the new
+  Players page and both new routes) all clean; `npm run lint` is clean on
+  every file this round touched (the repo's existing lint errors are all in
+  broadcast/scorecard files and `scripts/render-workflow.cjs`, untouched
+  here). **Not click-tested in a real browser:** the Global Players page
+  and the per-year page sit behind Tiger login — verified by type-check,
+  build, and unit tests of the pure logic, not by using them.
 - **Scorecard** (first built as "Round Recap", then reworked into a real
   scorecard grid after feedback) — the hole-by-hole review screen shared
   by both "Submit a score" and live scoring: new
