@@ -5,6 +5,7 @@ import { PortalMatches } from "@/components/portal/PortalMatches";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { getLiveTeamForPlayer } from "@/lib/data/activeSeasonOverlay";
+import { getAllPlayerRows } from "@/lib/portal/allPlayers";
 import { findMatchesForPlayer } from "@/lib/live/currentRoundForPlayer";
 import { pastTournaments } from "@/lib/data";
 import { archivedMatchesForPlayer } from "@/lib/portal/archivedMatches";
@@ -26,11 +27,11 @@ export default async function PortalPage() {
 
   const playerSlug = profile.player_slug!;
   const playerProfile = getPlayerProfileBySlug(playerSlug);
-  const playerName = playerProfile?.fullName ?? profile.display_name ?? "Player";
   const year = Number(new Intl.DateTimeFormat("en-US", { year: "numeric", timeZone: "America/Chicago" }).format(new Date()));
   const archivedTournament = pastTournaments.find((tournament) => tournament.year === year);
-  const [team, upcomingMatches, archivedScorecards, handicapSummary, archivedHandicapRounds] = await Promise.all([
+  const [team, allPlayers, upcomingMatches, archivedScorecards, handicapSummary, archivedHandicapRounds] = await Promise.all([
     getLiveTeamForPlayer(playerSlug),
+    getAllPlayerRows(),
     archivedTournament ? Promise.resolve([]) : findMatchesForPlayer(playerSlug, year),
     archivedTournament
       ? getScorecardsForTournament(archivedTournament).catch((err) => {
@@ -51,6 +52,7 @@ export default async function PortalPage() {
   // scores plus Maroon Masters archive rounds that have a verified tee
   // assigned — so the two screens never show two different numbers.
   const heroHandicapIndex = combinedHandicapIndexes(handicapSummary.rounds, archivedHandicapRounds).index;
+  const playerName = allPlayers.find((p) => p.playerSlug === playerSlug)?.fullName ?? profile.display_name ?? "Player";
   const matches: PortalMatchCard[] = await buildLiveMatchCards(upcomingMatches);
   if (archivedTournament) matches.push(...archivedMatchesForPlayer(archivedTournament, playerSlug, archivedScorecards));
   const teamName = team ? `Team ${team === "maroon" ? "Maroon" : "White"}` : "Unassigned";
