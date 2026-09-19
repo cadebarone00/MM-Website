@@ -7,8 +7,8 @@ import { getMatchHoleByHole, type MatchHoleByHole as MatchHoleByHoleData, type M
 import { matchLabel, matchLeader } from "@/components/leaderboard/matchUtils";
 import type { RealMatch, Team, Tournament } from "@/lib/data/types";
 
-// Keep matchplay cells roomy and consistent as the scorecard scrolls.
-const SQUARE_ROW = "h-12 w-12 shrink-0";
+// All hole and total columns stay 56px wide in one continuous horizontal scroll.
+const SQUARE_ROW = "h-12 w-14 shrink-0";
 
 function lastNames(players: string[]) {
   return players
@@ -64,7 +64,7 @@ function SideCell({ children, className }: { children: ReactNode; className: str
 }
 
 function TotalCell({ children, className }: { children: ReactNode; className: string }) {
-  return <div className={["flex w-12 shrink-0 items-center justify-center border-l border-ink-300 px-1 text-center !h-12", className].join(" ")}>{children}</div>;
+  return <div className={["flex w-14 shrink-0 items-center justify-center border-l border-ink-300 px-1 text-center !h-12", className].join(" ")}>{children}</div>;
 }
 
 function SinglesHoleColumns({ holes, statusByHole, endedFill }: { holes: MatchHoleByHoleData["allHoles"]; statusByHole: Map<number, MatchHoleStatus>; endedFill: Team | null }) {
@@ -105,7 +105,7 @@ function SinglesMatchGrid({ tournament, match, tournamentSlug }: { tournament: T
         <SinglesHoleColumns holes={data.allHoles} statusByHole={statusByHole} endedFill={endedFill} />
       </div>
 
-      <div className="flex w-12 shrink-0 flex-col">
+      <div className="flex w-14 shrink-0 flex-col">
         <TotalCell className="h-8 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Tot</span></TotalCell>
         <TotalCell className="h-8 bg-cream-100 font-sans text-xs font-semibold tabular-nums text-maroon-700">{parTotal}</TotalCell>
         <TotalCell className="h-11 border-gold-600 bg-maroon-700 font-score text-xs font-bold tabular-nums text-white">{maroonTotal}</TotalCell>
@@ -252,7 +252,7 @@ function FourballMatchGrid({ tournament, match, tournamentSlug }: { tournament: 
         <FourballHoleColumns holes={data.allHoles} maroonPlayers={data.maroonPlayers} whitePlayers={data.whitePlayers} playerHoles={data.playerHoles} statusByHole={statusByHole} endedFill={endedFill} />
       </div>
 
-      <div className="flex w-12 shrink-0 flex-col">
+      <div className="flex w-14 shrink-0 flex-col">
         <TotalCell className="h-8 border-gold-600 bg-cream-100 text-maroon-700"><span className="font-condensed text-[10px] font-bold uppercase tracking-eyebrow">Tot</span></TotalCell>
         <TotalCell className="h-8 border-gold-600 bg-cream-100 font-sans text-xs font-semibold tabular-nums text-maroon-700">{parTotal}</TotalCell>
         <TotalCell className="h-11 border-gold-600 bg-maroon-700 font-score text-xs font-bold tabular-nums text-white">{playerTotal(maroonOne, data.playerHoles)}</TotalCell>
@@ -270,7 +270,7 @@ function FourballMatchGrid({ tournament, match, tournamentSlug }: { tournament: 
 }
 
 function LegacyHeaderCell({ value }: { value: number }) {
-  return <div className="flex h-7 w-12 shrink-0 items-center justify-center border-r border-white/15 bg-maroon-700 font-sans text-2xs font-semibold tabular-nums text-white">{value}</div>;
+  return <div className="flex h-7 w-14 shrink-0 items-center justify-center border-r border-white/15 bg-maroon-700 font-sans text-2xs font-semibold tabular-nums text-white">{value}</div>;
 }
 
 function LegacyRowLabel({ children, height }: { children: ReactNode; height: string }) {
@@ -281,10 +281,10 @@ function LegacyHoleColumns({ holes, maroonNames, whiteNames }: { holes: MatchHol
   return (
     <div className="flex w-max shrink-0 flex-col">
       <div className="flex">{holes.map((hole) => <LegacyHeaderCell key={hole.hole} value={hole.hole} />)}</div>
-      <div className="flex">{holes.map((hole) => <div key={hole.hole} className="flex h-6 w-12 shrink-0 items-center justify-center border-r border-ink-300 bg-cream-100 font-sans text-2xs tabular-nums text-maroon-500">{hole.par}</div>)}</div>
-      <div className="flex" title={maroonNames}>{holes.map((hole) => <div key={hole.hole} className="flex h-10 w-12 shrink-0 items-center justify-center border-r border-ink-300 bg-cream-100"><HoleMarkerForDiff diff={hole.maroonScore - hole.par} size={26} tone="maroon">{hole.maroonScore}</HoleMarkerForDiff></div>)}</div>
-      <div className="flex" title={whiteNames}>{holes.map((hole) => <div key={hole.hole} className="flex h-10 w-12 shrink-0 items-center justify-center border-r border-ink-300 bg-cream-100"><HoleMarkerForDiff diff={hole.whiteScore - hole.par} size={26} tone="maroon">{hole.whiteScore}</HoleMarkerForDiff></div>)}</div>
-      <div className="flex">{holes.map((hole) => <div key={hole.hole} className="flex h-8 w-12 shrink-0 items-center justify-center border-r border-ink-300 bg-cream-100 p-0.5"><span className={["flex h-full w-full items-center justify-center rounded-xs border font-condensed text-3xs font-extrabold uppercase", statusCellColor(hole.leader)].join(" ")}>{hole.label}</span></div>)}</div>
+      <div className="flex">{holes.map((hole) => <div key={hole.hole} className="flex h-6 w-14 shrink-0 items-center justify-center border-r border-ink-300 bg-cream-100 font-sans text-2xs tabular-nums text-maroon-500">{hole.par}</div>)}</div>
+      <div className="flex" title={maroonNames}>{holes.map((hole) => <div key={hole.hole} className="flex h-10 w-14 shrink-0 items-center justify-center border-r border-ink-300 bg-cream-100"><HoleMarkerForDiff diff={hole.maroonScore - hole.par} size={26} tone="maroon">{hole.maroonScore}</HoleMarkerForDiff></div>)}</div>
+      <div className="flex" title={whiteNames}>{holes.map((hole) => <div key={hole.hole} className="flex h-10 w-14 shrink-0 items-center justify-center border-r border-ink-300 bg-cream-100"><HoleMarkerForDiff diff={hole.whiteScore - hole.par} size={26} tone="maroon">{hole.whiteScore}</HoleMarkerForDiff></div>)}</div>
+      <div className="flex">{holes.map((hole) => <div key={hole.hole} className="flex h-8 w-14 shrink-0 items-center justify-center border-r border-ink-300 bg-cream-100 p-0.5"><span className={["flex h-full w-full items-center justify-center rounded-xs border font-condensed text-3xs font-extrabold uppercase", statusCellColor(hole.leader)].join(" ")}>{hole.label}</span></div>)}</div>
     </div>
   );
 }

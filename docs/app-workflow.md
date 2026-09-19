@@ -22,6 +22,7 @@ flowchart TD
   Q -- Confirmed --> H[Confirmed scores and archive records]
   H --> O[Official match state and odds publication]
   H --> K[Career and handicap inputs]
+  %% Expanded historical matchplay scorecards: continuous scroll with equal 56px hole and total columns.
   O --> B[Leaderboard, broadcast and live markets]
   O --> F[Tiger closeout and MM Coins settlement]
   P --> N[Personal 18-hole round entry]
@@ -81,6 +82,8 @@ Historical pages use their own edition's definitions. The current registry expli
 Some pages are statically generated or cached; others render dynamically or refetch in the browser. A changed database row therefore does not imply that every number on every page refreshes in exactly the same way.
 
 The live leaderboard specifically polls native matches and standings every ten seconds, while also retaining the legacy live-feed loader. Available native matches/standings override that presentation; otherwise feed or historical fallback content can remain. The upcoming tournament's leaderboard route also has a calendar switchover check that can redirect visitors to the latest completed edition before the new season.
+
+Expanded historical matchplay scorecards use one continuous horizontal scroll, with equally sized 56px hole and total columns (columns 2?20 for a full Singles/Fourball card). Player labels remain pinned on the left; holes 1?9 and 10?18 are not separate snapping pages. This layout is scoped to `components/leaderboard/MatchHoleByHole.tsx`; individual player scorecards retain their own layout.
 
 **Reads:** committed tournament/player content plus selected live database overlays. **Writes:** generally none from browsing. **Code:** `app/page.tsx`, `app/leaderboard`, `app/teams`, `app/schedule`, `lib/data/activeSeasonOverlay.ts`.
 
@@ -390,6 +393,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 19, 2026 ? Roomier matchplay dropdown scorecards (implemented locally; deployment not verified).** Hole and total columns previously measured 48px; they now measure an equal 56px for more space. The existing continuous scroll and pinned player labels are preserved, with no front-nine/back-nine snapping. Only expanded matchplay scorecards change. Updated section 3 and the flowchart annotation; data paths and overview mappings are unchanged.
 
 **September 18, 2026 — Google Sheet backup handoff prepared (design only).** The companion `docs/google-sheet-backup-handoff.md` describes the current live data model, scoring rules, and a proposed independent backup and result audit. Verbatim sources and synthetic examples accompany it. Google Sheet delivery and outage intake are not implemented or deployed. The existing scoring and publication paths are unchanged.
 
