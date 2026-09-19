@@ -54,10 +54,24 @@ export async function POST(request: Request) {
     claimed_by: null,
   });
   if (error) {
-    return NextResponse.json(
-      { ok: false, error: "That name's username is already taken — try a slightly different spelling." },
-      { status: 400 }
-    );
+    console.error("player-add: could not insert player_slots row:", error.message);
+    // 23505 = Postgres unique_violation. Only a violation on the username
+    // constraint/index deserves the "try a different spelling" advice; a
+    // slug primary-key clash (e.g. two concurrent adds) is a different
+    // problem.
+    if (error.code === "23505") {
+      const isUsernameClash = error.message.includes("username");
+      return NextResponse.json(
+        {
+          ok: false,
+          error: isUsernameClash
+            ? "That name's username is already taken — try a slightly different spelling."
+            : "A player with that name already exists.",
+        },
+        { status: 400 }
+      );
+    }
+    return NextResponse.json({ ok: false, error: "Could not add that player." }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true, playerSlug: slug });
