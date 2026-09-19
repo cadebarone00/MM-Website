@@ -22,6 +22,8 @@ test("official completion awards the correct points while upcoming matches remai
   const entry: MatchProfileEntry = { match: { id: "id", season_year: 2027, round: 2, format: "Singles", maroon_players: ["a"], white_players: ["b"] }, officialState: null, odds: null, oddsHistory: [], scorecard: null };
   assert.equal(profileMatch(entry).status, "scheduled");
   assert.equal(profileMatch(entry).maroonPts, 0);
+  entry.match.tee_time = "2027-01-06T15:30:00Z";
+  assert.equal(profileMatch(entry).teeTimeCst, "9:30 AM");
   entry.officialState = { status: "complete", thru: 16, leader: "white", margin: 3 };
   assert.equal(profileMatch(entry).status, "final");
   assert.equal(profileMatch(entry).whitePts, 1);
