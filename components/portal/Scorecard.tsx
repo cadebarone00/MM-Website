@@ -40,10 +40,10 @@ function ScoreCell({ score, par }: { score: number | null; par: number }) {
 
 function LabelColumn() {
   return (
-    <div className="flex w-16 shrink-0 flex-col border-r border-ink-200 bg-cream-50">
+    <div className="flex w-[76px] shrink-0 flex-col border-r border-ink-200 bg-cream-50">
       {ROW_LABELS.map((label, i) => (
         <Cell key={label} last={i === ROW_LABELS.length - 1}>
-          <span className="w-full truncate px-2 font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">{label}</span>
+          <span className="w-full px-2 font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">{label}</span>
         </Cell>
       ))}
     </div>

@@ -129,8 +129,10 @@ export function HandicapHoleEntry({
 
   return (
     <div className={styles.panel + " " + styles.handicap}>
-      <div data-hole-header className="-mx-4 sm:-mx-7"><ScoringRoundHeader hole={selectedHole} par={hole.par} yards={hole.yards} totalScore={totalScore} toPar={toPar} /></div>
-      <button type="button" onClick={() => setShowScorecard(true)} className="mx-auto block font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700 underline underline-offset-2">Scorecard</button>
+      <div>
+        <div data-hole-header className="-mx-4 sm:-mx-7"><ScoringRoundHeader hole={selectedHole} par={hole.par} yards={hole.yards} totalScore={totalScore} toPar={toPar} /></div>
+        <button type="button" onClick={() => setShowScorecard(true)} className="mx-auto mt-1 block font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700 underline underline-offset-2">Scorecard</button>
+      </div>
       <div className={styles.notice} aria-live="polite">{storage.storageError && <p role="alert">Browser storage is unavailable. Keep this page open until you submit.</p>}</div>
       <div className={styles.scores}>
         <div className="-mx-4 bg-white px-4 text-maroon-800 sm:-mx-7 sm:px-7">

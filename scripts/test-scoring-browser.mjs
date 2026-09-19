@@ -34,19 +34,19 @@ try{
  for(const [width,height] of [[390,844],[375,667]]){await page.setViewportSize({width,height});const button=await page.getByRole('button',{name:/Submitted|Submit Score/,exact:true}).boundingBox();assert.ok(button.y+button.height<=height,'Submit must fit on screen');}
  console.log('PASS: live validation, 4+ putts, score above double par, draft reload, reconnect retry with same request ID, mobile action visibility');
  await page.setViewportSize({width:390,height:844});
- await page.getByRole('button',{name:'Round Recap',exact:true}).click();
- assert.match(await page.locator('body').innerText(),/Latto/i,'competitor row uses their real name');
- assert.match(await page.locator('body').innerText(),/Not entered yet/,'competitor has not submitted anything yet');
+ await page.getByRole('button',{name:'Scorecard',exact:true}).click();
+ await page.getByText('Latto',{exact:false}).waitFor();
+ assert.equal(await page.getByText('Yardage',{exact:true}).count(),2,'my scorecard and the competitor scorecard both render');
  await page.getByRole('button',{name:'Back',exact:true}).click();
  await page.getByRole('button',{name:/Submitted|Submit Score/,exact:true}).waitFor();
- console.log('PASS: live scoring Round Recap shows the competitor in a separate row');
+ console.log('PASS: live scoring Scorecard shows the competitor in a second grid, under a button outside the header');
  await page.goto(origin+'/personal');await page.getByRole('button',{name:'Next Hole',exact:true}).waitFor();await page.getByRole('group',{name:'Hole 1 score',exact:true}).getByRole('button',{name:'9',exact:true}).click();await page.reload();await page.getByRole('group',{name:'Hole 1 score',exact:true}).waitFor();assert.equal(await page.getByRole('group',{name:'Hole 1 score',exact:true}).getByRole('button',{name:'9',exact:true}).getAttribute('aria-pressed'),'true');
- // A score alone (it always defaults to par) doesn't count as "entered" -- putts/GIR/fairway are still required, and Round Recap (reachable any time) reflects that.
- await page.getByRole('button',{name:'Round Recap',exact:true}).click();
- assert.match(await page.locator('body').innerText(),/Not entered yet/,'hole 1 only has a score so far, not full stats');
+ // A score alone (it always defaults to par) doesn't count as "entered" -- putts/GIR/fairway are still required, and the Scorecard (reachable any time) shows a dash for those cells until they are.
+ await page.getByRole('button',{name:'Scorecard',exact:true}).click();
+ assert.ok(await page.getByText('–',{exact:true}).count()>0,'holes 2-18 have no putts/GIR/fairway yet, so their cells show a dash');
  await page.getByRole('button',{name:'Finish all 18 holes to submit',exact:true}).waitFor();
  assert.equal(await page.getByRole('button',{name:'Finish all 18 holes to submit',exact:true}).isDisabled(),true);
- await page.getByRole('button',{name:'Back',exact:true}).click();
+ await page.getByRole('button',{name:'Edit hole 1',exact:true}).click();
  await page.getByRole('group',{name:'Hole 1 score',exact:true}).waitFor();
  await page.getByRole('button',{name:'Fairway hit',exact:true}).click();await page.getByRole('button',{name:'GIR hit',exact:true}).click();await page.getByRole('group',{name:'Your putts',exact:true}).getByRole('button',{name:'2',exact:true}).click();
  for(let h=1;h<18;h++){
@@ -55,9 +55,9 @@ try{
  }
  await page.getByRole('button',{name:'Review Round',exact:true}).click();
  await page.getByRole('button',{name:'Submit Round',exact:true}).waitFor();
- assert.equal(await page.locator('body').innerText().then((t)=>t.includes('Not entered yet')),false,'every hole is entered once all 18 have putts/GIR/fairway');
+ assert.equal(await page.getByText('–',{exact:true}).count(),0,'every hole is entered once all 18 have putts/GIR/fairway, so no dashes remain');
  await page.getByRole('button',{name:'Submit Round',exact:true}).click();
  await page.waitForFunction(()=>document.body.dataset.complete==='true');
  assert.equal(await page.locator('body').getAttribute('data-holes'),'18');
- assert.deepEqual(errors,[]);console.log('PASS: personal draft survives reload, Round Recap gates Submit until every hole has putts/GIR/fairway, then submits all 18 holes');
+ assert.deepEqual(errors,[]);console.log('PASS: personal draft survives reload, Scorecard gates Submit until every hole has putts/GIR/fairway, tapping a hole number jumps back to it, then it submits all 18 holes');
 }finally{await browser.close();await new Promise(r=>server.close(r));}
