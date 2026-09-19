@@ -13,6 +13,8 @@ import { buildVenueCoursesFromLive } from "./liveCourseSchedule";
 import { filterLockedRoster } from "./confirmedRoster";
 import type { UpcomingTournament, VenueSchedule, VenueCourse, NextTournamentOverride } from "./types";
 import type { RosterEntry } from "@/lib/live/types";
+import { getPlayerAvatar } from "@/lib/data/players";
+import { getAllPlayerRows } from "@/lib/portal/allPlayers";
 import type { Team } from "./types";
 
 interface ActiveSeasonSettings {
@@ -189,7 +191,15 @@ export async function getConfirmedRoster(): Promise<RosterEntry[]> {
   if (error || locksError || !roster?.length) return [];
 
   const entries: RosterEntry[] = roster.map((row) => ({ seasonYear: active.season_year, playerSlug: row.player_slug, team: row.team }));
-  return filterLockedRoster(entries, (locks ?? []).map((lock) => lock.player_slug));
+  const filtered = filterLockedRoster(entries, (locks ?? []).map((lock) => lock.player_slug));
+
+  const allPlayers = await getAllPlayerRows();
+  const nameBySlug = new Map(allPlayers.map((p) => [p.playerSlug, p.fullName]));
+  return filtered.map((entry) => ({
+    ...entry,
+    displayName: nameBySlug.get(entry.playerSlug) ?? entry.playerSlug,
+    avatarSrc: getPlayerAvatar(entry.playerSlug),
+  }));
 }
 
 /**

@@ -77,6 +77,8 @@ export interface RosterEntry {
   seasonYear: number;
   playerSlug: string;
   team: Team;
+  displayName?: string;
+  avatarSrc?: string | null;
 }
 
 export interface LiveRoundState {

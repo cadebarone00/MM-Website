@@ -27,10 +27,11 @@ export function ConfirmedRoster({ roster }: { roster: RosterEntry[] }) {
             <h2 className="font-condensed text-[13px] font-bold uppercase tracking-wide text-maroon-700">{label} — confirmed so far</h2>
             <ul className="mt-3 space-y-3">
               {players.map((entry) => {
-                const displayName = getPlayerDisplayName(entry.playerSlug);
+                const displayName = entry.displayName ?? getPlayerDisplayName(entry.playerSlug);
+                const avatarSrc = entry.avatarSrc ?? getPlayerAvatar(entry.playerSlug);
                 return (
                   <li key={entry.playerSlug} className="flex items-center gap-3">
-                    <Avatar src={getPlayerAvatar(entry.playerSlug)} name={displayName} team={entry.team} size="md" />
+                    <Avatar src={avatarSrc} name={displayName} team={entry.team} size="md" />
                     <span className="font-sans text-sm font-semibold text-ink-900">{displayName}</span>
                   </li>
                 );
