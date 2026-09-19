@@ -30,7 +30,7 @@ export function MatchOddsGraph({ points, live, final, estimateNote }: { points: 
       </div>
       {latest ? <>
         <div className="mt-5 overflow-x-auto">
-          <svg viewBox="0 0 1000 360" className="min-w-[540px] w-full" role="img" aria-label="Match probability balance: 100% Maroon at the top, even or tie in the middle, 100% White at the bottom">
+          <svg viewBox="0 0 1000 360" className="w-full" role="img" aria-label="Match probability balance: 100% Maroon at the top, even or tie in the middle, 100% White at the bottom">
             <defs><clipPath id={`${clip}-upper`}><rect x="145" y="30" width="815" height="140" /></clipPath><clipPath id={`${clip}-lower`}><rect x="145" y="170" width="815" height="140" /></clipPath></defs>
             {[1, 0.75, 0.5, 0.25, 0].map((value) => <g key={value}><line x1="145" x2="960" y1={y(value)} y2={y(value)} stroke={value === 0.5 ? "#a78945" : "#d9d5cd"} strokeDasharray={value === 0.5 ? undefined : "4 6"} /><text x="130" y={y(value) + 5} textAnchor="end" fontSize="17" fontWeight={value === 1 || value === 0 || value === 0.5 ? "700" : undefined} fill={value === 1 ? "#500001" : "#73695f"}>{value === 1 ? "MAROON 100%" : value === 0 ? "WHITE 100%" : value === 0.5 ? "EVEN / TIE" : ""}</text></g>)}
             {points.slice(0, -1).map((p, index) => {
@@ -38,7 +38,7 @@ export function MatchOddsGraph({ points, live, final, estimateNote }: { points: 
               return <g key={index}><polygon points={polygon} fill="#500001" opacity=".2" clipPath={`url(#${clip}-upper)`} /><polygon points={polygon} fill="#fff" clipPath={`url(#${clip}-lower)`} /></g>;
             })}
             <polyline points={points.map((p, index) => `${x(index)},${y(matchBalance(p))}`).join(" ")} fill="none" stroke="#231b18" strokeWidth="5" strokeLinejoin="round" strokeLinecap="round" />
-            {points.map((p, index) => <circle key={index} cx={x(index)} cy={y(matchBalance(p))} r={index === activeIndex ? 7 : 3} fill={matchBalance(p) > 0.5 ? "#500001" : matchBalance(p) < 0.5 ? "#73695f" : "#a78945"}><title>{p.state_thru === 0 ? "Pre-round" : `Thru ${p.state_thru}`}: Maroon {Math.round(p.maroon_win_probability * 100)}%, Tie {Math.round(p.tie_probability * 100)}%, White {Math.round(p.white_win_probability * 100)}%</title></circle>)}
+            {points.map((p, index) => <circle key={index} cx={x(index)} cy={y(matchBalance(p))} r={index === activeIndex ? 7 : 3} fill={matchBalance(p) > 0.5 ? "#500001" : matchBalance(p) < 0.5 ? "#73695f" : "#a78945"}><title>{`${p.state_thru === 0 ? "Pre-round" : `Thru ${p.state_thru}`}: Maroon ${Math.round(p.maroon_win_probability * 100)}%, Tie ${Math.round(p.tie_probability * 100)}%, White ${Math.round(p.white_win_probability * 100)}%`}</title></circle>)}
             {estimated ? [0, 3, 6, 9, 12, 15, 18].map((hole) => <text key={hole} x={145 + hole / 18 * 815} y="345" textAnchor="middle" fontSize="17" fill="#73695f">{hole === 0 ? "Pre" : `H${hole}`}</text>) : <><text x="145" y="345" fontSize="17" fill="#73695f">First shown update</text><text x="960" y="345" textAnchor="end" fontSize="17" fill="#73695f">Latest update</text></>}
           </svg>
         </div>

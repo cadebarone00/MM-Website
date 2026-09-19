@@ -1,9 +1,11 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Check, X, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from "lucide-react";
-import { firstIncompleteHole, isRoundComplete, type ScorecardHoleRow, type ScorecardShotDirection } from "@/lib/portal/scorecard";
+import { firstIncompleteHole, isRoundComplete, scorecardTotals, type ScorecardHoleRow, type ScorecardShotDirection, type ScorecardTotals } from "@/lib/portal/scorecard";
+import { formatToPar } from "@/lib/handicap/format";
 import { HoleMarkerForDiff } from "@/components/scorecard/HoleMarker";
+import { RoundStatsBox } from "@/components/scorecard/RoundStatsBox";
 import { ScoreToParHeader } from "./ScoreToParHeader";
 
 const ROW_LABELS = ["Hole", "Yardage", "Score", "Putts", "Fairway", "Green"] as const;
@@ -76,6 +78,49 @@ function ScorecardGrid({ rows, onEditHole }: { rows: ScorecardHoleRow[]; onEditH
   );
 }
 
+function percent({ hit, total }: { hit: number; total: number }): string {
+  return total > 0 ? Math.round((hit / total) * 100) + "%" : "\u2014";
+}
+
+/** The same five-across box as the player profiles' archived rounds, for this round so far. */
+function totalsStats(totals: ScorecardTotals) {
+  return [
+    { label: "Score", value: totals.score == null ? "\u2014" : String(totals.score) },
+    { label: "To Par", value: formatToPar(totals.toPar) },
+    { label: "Putts", value: totals.putts == null ? "\u2014" : String(totals.putts) },
+    { label: "Fairways", value: percent(totals.fairways), note: totals.fairways.total > 0 ? `${totals.fairways.hit}/${totals.fairways.total}` : undefined },
+    { label: "Greens", value: percent(totals.greens), note: totals.greens.total > 0 ? `${totals.greens.hit}/${totals.greens.total}` : undefined },
+  ];
+}
+
+/** "After you submit you can't edit" - the last check before a round is sent in. Keep editing is the default focus so a stray tap can't submit. */
+function ConfirmSubmitDialog({ submitting, error, onSubmit, onKeepEditing }: { submitting?: boolean; error?: string | null; onSubmit: () => void; onKeepEditing: () => void }) {
+  const keepEditingRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => { keepEditingRef.current?.focus(); }, []);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape" && !submitting) onKeepEditing(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [submitting, onKeepEditing]);
+  return (
+    <div className="fixed inset-0 z-[400] flex items-end justify-center bg-black/50 p-4 sm:items-center">
+      <div role="dialog" aria-modal="true" aria-labelledby="confirm-submit-title" aria-describedby="confirm-submit-body" className="w-full max-w-sm rounded-md bg-white p-5 shadow-xl">
+        <h2 id="confirm-submit-title" className="font-serif text-xl font-bold text-ink-900">Confirm</h2>
+        <p id="confirm-submit-body" className="mt-2 font-sans text-sm text-ink-700">After you submit scores you will not be able to edit them.</p>
+        {error && <p aria-live="polite" className="mt-3 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
+        <div className="mt-4 flex flex-col gap-2">
+          <button type="button" disabled={submitting} onClick={onSubmit} className="w-full rounded-pill bg-maroon-700 px-4 py-3 font-condensed text-sm font-semibold uppercase tracking-wide text-white disabled:opacity-50">
+            {submitting ? "Submitting\u2026" : "Submit Scores"}
+          </button>
+          <button ref={keepEditingRef} type="button" disabled={submitting} onClick={onKeepEditing} className="w-full rounded-pill border border-maroon-700 px-4 py-3 font-condensed text-sm font-semibold uppercase tracking-wide text-maroon-700 disabled:opacity-50">
+            Keep editing
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export interface ScorecardCompetitor {
   label: string;
   rows: ScorecardHoleRow[];
@@ -87,7 +132,9 @@ export interface ScorecardCompetitor {
  * number to jump back and fix it. Shared by the handicap "Submit a score"
  * flow and live scoring — live scoring passes `competitor` to show the
  * playing partner's own scorecard underneath, and omits `onSubmit` since
- * it still submits hole-by-hole as it does today.
+ * it still submits hole-by-hole as it does today. `showTotals` adds the
+ * round-totals box under the grid (handicap only for now); `onSubmit`
+ * adds the Submit Round pill, which asks for confirmation first.
  */
 export function Scorecard({
   rows,
@@ -96,6 +143,7 @@ export function Scorecard({
   onEditHole,
   onBack,
   competitor,
+  showTotals,
   onSubmit,
   submitting,
   submitError,
@@ -106,12 +154,14 @@ export function Scorecard({
   onEditHole: (hole: number) => void;
   onBack: () => void;
   competitor?: ScorecardCompetitor;
+  showTotals?: boolean;
   onSubmit?: () => void;
   submitting?: boolean;
   submitError?: string | null;
 }) {
   const complete = isRoundComplete(rows);
   const nextIncomplete = firstIncompleteHole(rows);
+  const [confirming, setConfirming] = useState(false);
 
   return (
     <div className="rounded-md border border-ink-100 bg-white p-3">
@@ -129,7 +179,7 @@ export function Scorecard({
       )}
 
       {!complete && nextIncomplete != null && (
-        <div className="mt-4 flex items-center justify-between gap-3 rounded-sm bg-gold-100 px-3 py-2">
+        <div className="mt-4 flex items-center justify-between gap-3 rounded-sm bg-gold-200 px-3 py-2">
           <span className="font-sans text-sm text-ink-700">Not every hole is entered yet.</span>
           <button type="button" onClick={() => onEditHole(nextIncomplete)} className="shrink-0 font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700 underline">
             Go to hole {nextIncomplete}
@@ -137,19 +187,21 @@ export function Scorecard({
         </div>
       )}
 
+      {showTotals && <div className="mt-4"><RoundStatsBox stats={totalsStats(scorecardTotals(rows))} /></div>}
+
       {onSubmit && (
-        <div className="mt-4">
-          {submitError && <p aria-live="polite" className="mb-2 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{submitError}</p>}
+        <div className="mt-3">
           <button
             type="button"
             disabled={!complete || submitting}
-            onClick={onSubmit}
+            onClick={() => setConfirming(true)}
             className="w-full rounded-pill bg-maroon-700 px-4 py-3 font-condensed text-sm font-semibold uppercase tracking-wide text-white disabled:opacity-50"
           >
-            {submitting ? "Submitting…" : complete ? "Submit Round" : "Finish all 18 holes to submit"}
+            {complete ? "Submit Round" : "Finish all 18 holes to submit"}
           </button>
         </div>
       )}
+      {onSubmit && confirming && <ConfirmSubmitDialog submitting={submitting} error={submitError} onSubmit={onSubmit} onKeepEditing={() => setConfirming(false)} />}
     </div>
   );
 }

@@ -7,7 +7,8 @@ import { HandicapHome } from "@/components/portal/handicap/HandicapHome";
 import { getLiveTeamForPlayer } from "@/lib/data/activeSeasonOverlay";
 import { getArchivedHandicapRounds } from "@/lib/data/archivedScorecards";
 
-export default async function HandicapPage() {
+export default async function HandicapPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const { tab } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -37,5 +38,5 @@ export default async function HandicapPage() {
   // that now carry a verified tee/rating/slope (see archiveIndex.ts).
   const fullSummary = { ...summary, ...combinedHandicapIndexes(summary.rounds, archivedRounds) };
 
-  return <HandicapHome playerName={playerName} playerSlug={playerSlug} summary={fullSummary} archivedRounds={archivedRounds} team={team} />;
+  return <HandicapHome playerName={playerName} playerSlug={playerSlug} summary={fullSummary} archivedRounds={archivedRounds} team={team} initialTab={tab === "overall" ? "overall" : "maroon-masters"} />;
 }

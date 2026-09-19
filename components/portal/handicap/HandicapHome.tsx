@@ -12,8 +12,8 @@ import { formatDifferential, formatHandicapIndex, formatRoundDate } from "@/lib/
 import { formatRoundLabel } from "@/lib/data/roundLabel";
 import { RoundInProgressCard } from "./RoundInProgressCard";
 
-export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, team }: { playerName: string; playerSlug: string; summary: HandicapSummary; archivedRounds: ArchivedHandicapRound[]; team: Team | null }) {
-  const [activeTab, setActiveTab] = useState<"maroon-masters" | "overall">("maroon-masters");
+export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, team, initialTab = "maroon-masters" }: { playerName: string; playerSlug: string; initialTab?: "maroon-masters" | "overall"; summary: HandicapSummary; archivedRounds: ArchivedHandicapRound[]; team: Team | null }) {
+  const [activeTab, setActiveTab] = useState<"maroon-masters" | "overall">(initialTab);
   const [scoreView, setScoreView] = useState<ScoreView>("recent");
   const rounds = selectHandicapScores(handicapHistory(archivedRounds, summary.rounds, activeTab), scoreView);
   const contributing = contributingRoundIds(summary.rounds, archivedRounds, activeTab);

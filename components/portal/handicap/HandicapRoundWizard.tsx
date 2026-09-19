@@ -84,7 +84,7 @@ export function HandicapRoundWizard({ courses, recentCourseIds, playerName, play
             storage.clear();
             try { clearHandicapDraft(localStorage, playerSlug, setup.submissionId); } catch { /* The submitted round is already saved on the server. */ }
             router.refresh();
-            router.push("/portal/handicap");
+            router.push("/portal/handicap?tab=overall");
             return { ok: true as const };
           } catch {
             return { ok: false as const, error: "Could not submit this round. Check your connection and try again." };

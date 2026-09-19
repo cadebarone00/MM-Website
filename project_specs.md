@@ -466,6 +466,32 @@ All pages are public, no auth.
   test:browser` (extended: hole memory, the box, Continue/Delete) all
   clean. **Not click-tested in a real browser:** the Exit label itself
   (it sits behind login) — verified by type-check, lint, and build only.
+- **Handicap Scorecard: round totals, Submit Round pill, confirm step.**
+  Under the scrolling grid on the handicap Scorecard there is now a
+  five-across totals box — Score, To Par, Putts, Fairways (% plus hit/
+  total, par-3s excluded), Greens — over the holes entered so far, then a
+  full-width **Submit Round** pill (disabled, reading "Finish all 18
+  holes to submit", until every hole is entered). The box is the same
+  component the player profiles' archived rounds use: the markup moved
+  out of `ArchivedScores.tsx` into the new shared
+  `components/scorecard/RoundStatsBox.tsx` (profile stats and their order
+  unchanged), and the totals math is the new pure, tested
+  `scorecardTotals` in `lib/portal/scorecard.ts`. Tapping Submit Round
+  opens a **Confirm** dialog — "After you submit scores you will not be
+  able to edit them." — with **Submit Scores** and **Keep editing**
+  (default focus, and Escape also backs out, so a stray tap can't submit;
+  a failed submit shows its error inside the dialog). A successful submit
+  now lands on `/portal/handicap?tab=overall` (new `initialTab`), i.e. the
+  Overall tab, where the new round's differential shows and the overall
+  index is recalculated (unchanged existing calculation; the index still
+  needs 3+ rounds). Handicap only — the live Scorecard has no totals box
+  or submit yet (see Known gaps). Also fixed the Scorecard's "not every
+  hole is entered" banner, whose background used a color (`gold-100`)
+  that isn't in the theme; noted but left alone: the profile stats box's
+  own dividers use that same missing color, so they render black on the
+  live site. `npm test` (318/318), `npx tsc --noEmit`, `npm run lint`
+  (clean on every file this round touched), `npm run build`, and `npm run
+  test:browser` (extended: totals, dialog, Escape/Keep editing) all clean.
 
 ## Known gaps / not yet built
 

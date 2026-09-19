@@ -123,6 +123,7 @@ export function HandicapHoleEntry({
         toPar={scorecardToPar}
         onEditHole={(hole) => { setSelectedHole(hole); setShowScorecard(false); }}
         onBack={() => setShowScorecard(false)}
+        showTotals
         onSubmit={() => handleSubmit(rows)}
         submitting={submitting}
         submitError={submitError}

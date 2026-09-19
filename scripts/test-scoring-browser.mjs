@@ -45,6 +45,7 @@ try{
  // A score alone (it always defaults to par) doesn't count as "entered" -- putts/GIR/fairway are still required, and the Scorecard (reachable any time) shows a dash for those cells until they are.
  await page.getByRole('button',{name:'Scorecard',exact:true}).click();
  assert.ok(await page.getByText('–',{exact:true}).count()>0,'holes 2-18 have no putts/GIR/fairway yet, so their cells show a dash');
+ assert.equal(await page.getByText('—',{exact:true}).count(),5,'no hole is fully entered yet, so all five totals read as a dash');
  await page.getByRole('button',{name:'Finish all 18 holes to submit',exact:true}).waitFor();
  assert.equal(await page.getByRole('button',{name:'Finish all 18 holes to submit',exact:true}).isDisabled(),true);
  await page.getByRole('button',{name:'Edit hole 1',exact:true}).click();
@@ -57,7 +58,22 @@ try{
  await page.getByRole('button',{name:'Review Round',exact:true}).click();
  await page.getByRole('button',{name:'Submit Round',exact:true}).waitFor();
  assert.equal(await page.getByText('–',{exact:true}).count(),0,'every hole is entered once all 18 have putts/GIR/fairway, so no dashes remain');
+ // The totals box under the grid: hole 1 was a 9 and the other 17 holes are pars, 2 putts each, every fairway and green hit.
+ for(const [text,count] of [['77',1],['+5',1],['36',1],['100%',2],['18/18',2]])assert.equal(await page.getByText(text,{exact:true}).count(),count,'totals box shows '+text);
+ // Submit Round asks first: nothing is sent until Submit Scores, and Escape / Keep editing both back out.
  await page.getByRole('button',{name:'Submit Round',exact:true}).click();
+ const dialog=page.getByRole('dialog');
+ await dialog.getByRole('heading',{name:'Confirm',exact:true}).waitFor();
+ await dialog.getByText('After you submit scores you will not be able to edit them.',{exact:true}).waitFor();
+ assert.equal(await page.locator('body').getAttribute('data-complete'),null,'opening the confirmation submits nothing');
+ await page.keyboard.press('Escape');
+ await dialog.waitFor({state:'detached'});
+ await page.getByRole('button',{name:'Submit Round',exact:true}).click();
+ await dialog.getByRole('button',{name:'Keep editing',exact:true}).click();
+ await dialog.waitFor({state:'detached'});
+ assert.equal(await page.locator('body').getAttribute('data-complete'),null,'keep editing submits nothing');
+ await page.getByRole('button',{name:'Submit Round',exact:true}).click();
+ await page.getByRole('dialog').getByRole('button',{name:'Submit Scores',exact:true}).click();
  await page.waitForFunction(()=>document.body.dataset.complete==='true');
  assert.equal(await page.locator('body').getAttribute('data-holes'),'18');
  // The current hole is saved with the draft, so leaving and coming back lands on the same hole.
