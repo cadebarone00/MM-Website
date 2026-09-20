@@ -538,7 +538,7 @@ All pages are public, no auth.
   can change it (Edit Scores). The existing `POST
   /api/portal/scoring/submit` route (round-level, no UI calls it) looks
   like it predates the hole-by-hole system and should be checked before
-  reuse. Needs its own spec (database + Tiger tools).
+  reuse. **Spec written 2026-09-20:** `docs/superpowers/specs/2026-09-20-live-scoring-round-lifecycle-design.md` (audit of every downstream consumer, 3 phases, open questions). Correction to the note above: that route's validation is sound and reusable — it only fails today because `submit_live_hole` auto-inserts the same submission row at 18 confirmed holes.
 - **2025-danzante's 8 players still need tees assigned** via "Assign tees
   for handicap tracking" (`/portal/admin/scorecards`) before any of their
   rounds count — the round numbering/format problem itself is fixed (see
