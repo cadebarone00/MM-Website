@@ -541,8 +541,9 @@ All pages are public, no auth.
   submission row at 18 confirmed holes (blocks the reusable
   `/api/portal/scoring/submit`); handicap currently counts at 18 confirmed
   holes (before anyone submits); no Tiger edit tool for live rounds; the
-  Scoring tab only moves on at `Final`. One open question remains
-  (reversing wagers if a post-closeout edit flips a winner).
+  Scoring tab only moves on at `Final`. Wager reversal (if a post-closeout edit flips a winner) is
+  decided: build it (subtract payouts, reset bets, settle again, logged).
+  No open design questions remain.
 - **2025-danzante's 8 players still need tees assigned** via "Assign tees
   for handicap tracking" (`/portal/admin/scorecards`) before any of their
   rounds count — the round numbering/format problem itself is fixed (see

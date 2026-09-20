@@ -1,6 +1,6 @@
 # Live Scoring Round Lifecycle — Design (v3)
 
-**Status:** Draft v3 (2026-09-20), answers from the user folded in. Nothing in this document is built yet.
+**Status:** v3 (2026-09-20) — all design questions answered by the user; ready for implementation planning. Nothing in this document is built yet.
 **Supersedes** two earlier drafts of the same day (v1: "everything becomes official at Tiger's closeout"; v2: side-by-side comparison of both scorers' numbers). Both were replaced after review.
 **Scope:** How a tournament (Maroon Masters) round is started, scored live, confirmed, submitted by both scorers, and reviewed by Tiger, and which outputs update when.
 **Not in scope:** Handicap "Submit a score" (personal rounds) — already built. Real-money wagers (separate spec).
@@ -59,6 +59,7 @@ Alternate Shot (Foursome) is **team-only** everywhere: one team score per hole, 
 11. Once a player and their scorer have both submitted, the player's Scoring tab moves on to their next round right away; it does not wait for Tiger.
 12. After Submit Round the card is locked for the player. Only Tiger can change it.
 13. Points and leaderboards are just a public view of the data. If a correction changes them, they adjust. They only need to be correct.
+13a. **Wagers are reversible.** Tiger's closeout is the confirmation that triggers payouts. If Tiger later edits a score so that a settled match has a different winner (very unlikely), the payouts are reversed and the market is settled again with the correct winner. A reversal path is to be built.
 14. **The public `/leaderboard` and team points come straight from live scoring.** The Google Sheet is kept as a backup copy fed from live scoring; Supabase is primary.
 
 ## 4. What updates when
@@ -73,7 +74,7 @@ Alternate Shot (Foursome) is **team-only** everywhere: one team score per hole, 
 | Broadcast, live match cards | Per matched hole | Supabase + Realtime | None — keep |
 | **Handicap** (Maroon Masters + Overall) | When player **and** scorer have submitted | Counts as soon as 18 confirmed holes exist | Must wait for both submissions |
 | **Rounds archive** (player-facing) | Same | Confirmed holes mirror in live; status `live` → `final` at Tiger's closeout | Needs an "official" state tied to both submissions |
-| **Wager results** | At Tiger's closeout | Settled at closeout | A correction *after* closeout that flips a winner (§11 Q1) |
+| **Wager results** | At Tiger's closeout | Settled at closeout | No reversal path if a correction *after* closeout flips a winner — to build (§8.3) |
 | Google Sheet | Backup copy, per matched hole | Sheet is the public feed's source; the new system never writes it | Reverse the direction (§9.4) |
 | Tiger score edits | Any time | **No tool exists for live rounds** | Missing (§8) |
 
@@ -158,8 +159,16 @@ Tiger can correct any player's hole (score, putts, fairway, green, pickup) for a
 ### 8.2 One correction reaches everything (requirement)
 Because every output derives from `live_hole_scores`, an edit must automatically re-derive: match state and result (including un-deciding or flipping a match), team points, both leaderboards, player statistics, odds, the archive holes, and — for `submitted`/`final` rounds — the handicap. It must also reach the Google Sheet backup. This is tested end to end (§10) rather than assumed.
 
-### 8.3 Wagers after a correction
-Before closeout nothing is settled, so a correction changes nothing about money. A correction **after** closeout that flips the winner is Open Question 1.
+### 8.3 Points change; wagers reverse
+- **Points and leaderboards just change.** They are derived from the hole scores, so a correction recomputes them and there is nothing to reverse.
+- **Wagers need a reversal path** because money has moved. Before Tiger's closeout nothing is settled, so a correction changes nothing about money. After closeout, if an edit changes the official result of a settled match, the system must, in **one transaction under the same market lock the settlement uses**:
+  1. subtract each previously paid `potential_payout` from the winners' `wagers_accounts.mm_coins_balance`;
+  2. set the market's settled bets (`won`/`lost`) back to `pending` and clear `settled_at`;
+  3. remove the market's `wagers_market_settlements` row, keeping a copy in a reversal log (old winner, new winner, who, when, amounts);
+  4. run the normal settlement again with the corrected winner.
+- Reversal is triggered automatically when a Tiger edit changes a *closed-out* match's result, and is also exposed as an explicit Tiger action. It is idempotent: repeating it with the same corrected result changes nothing.
+- **Edge case:** a winner may already have spent the winnings, so a balance can go below zero after a reversal. MM Coins are play money, so this is allowed and shown to Tiger in the reversal log rather than blocked. Real-money wagers (separate spec) will need a stricter rule.
+- Edits that do not change the winner never touch wagers.
 
 ### 8.4 Disputes
 A disagreement is normally resolved by the two players talking and one of them changing a number. Tiger Center also shows both entries side by side so Tiger can fix one when a player is unreachable.
@@ -179,16 +188,16 @@ A disagreement is normally resolved by the two players talking and one of them c
 - **Sheet backup:** a failing Sheet write never fails or delays a hole submission (tested with a stubbed failing endpoint).
 - **Not testable from here (login + real database):** each phase ends with a manual two-phone checklist.
 
-## 11. Open question
+## 11. Open questions
 
-1. **A correction after closeout that flips the winner.** Wagers settle at closeout, and Tiger can edit afterward. If an edit changes who won a match that was already settled, the MM Coin market must be **reversed and re-paid**. No reversal path exists in the code audited (closeout deliberately refuses to disagree with an existing settlement). *Recommended:* build automatic reversal and re-settlement (logged) in Phase 2 for MM Coins; for real-money wagers later, block the edit and require an explicit Tiger reopen. *Alternative:* block any post-closeout edit that would change the winner until reversal exists.
+None. The last one — what happens to payouts if a correction after closeout changes a winner — is resolved in §8.3.
 
-**Assumed unless corrected:** the Google Sheet backup mirrors matched holes as they arrive (not only at submit); the closeout card still waits for every player in the match to submit, with a Tiger override for a player who cannot.
+**Assumed unless corrected:** the Google Sheet backup mirrors matched holes as they arrive (not only at submit); the closeout card still waits for every player in the match to submit, with a Tiger override for a player who cannot; a wager reversal may leave a play-money balance below zero.
 
 ## 12. Delivery order
 
 1. **Phase 1 — player lifecycle.** Scoring tab states, Begin/Continue, the Scorecard status colors (removing the competitor grid), Submit Round, server changes (no auto-submit, lock, `submitted` status, tab moving on), and the handicap/archive filters that hang off it.
-2. **Phase 2 — Tiger's editing and wagers.** Edit Scores, dispute view, closeout as review stamp, post-closeout re-settlement (per Open Question 1), the end-to-end re-derivation tests.
+2. **Phase 2 — Tiger's editing and wagers.** Edit Scores, dispute view, closeout as review stamp, the wager reversal path (§8.3), the end-to-end re-derivation tests.
 3. **Phase 3 — public views.** Leaderboard, team points and futures from live data; the Sheet backup mirror; shared match wording.
 
 ## 13. Definition of done (Phase 1)
