@@ -521,24 +521,28 @@ All pages are public, no auth.
 
 ## Known gaps / not yet built
 
-- **Live scoring still has no round-level "everyone agrees" submit gate
-  or "Begin Round" screen.** The Scorecard shows the competitor's grid,
-  but that's read-only — live scoring still submits and confirms
-  hole-by-hole exactly as it always has. Decided design (user,
-  2026-09-19), not yet built: the Scoring tab shows the full matchup
-  (who you play, who you score for) with a **Begin Round** button
-  (**Continue Round** once a hole is in) that opens live scoring on the
-  hole you left; there is never a delete — a live round must be
-  finished, and progress persists across leaving the tab because holes
-  save server-side. The live Scorecard gets a **Submit Round** button,
-  disabled until all 18 holes are submitted and every one matches your
-  scorer. **Every player in the match** must press it before Tiger's
-  Close Out Match card appears (today it appears as soon as the holes are
-  complete). After Submit Round the scorecard is **locked** — only Tiger
-  can change it (Edit Scores). The existing `POST
-  /api/portal/scoring/submit` route (round-level, no UI calls it) looks
-  like it predates the hole-by-hole system and should be checked before
-  reuse. **Spec written 2026-09-20:** `docs/superpowers/specs/2026-09-20-live-scoring-round-lifecycle-design.md` (audit of every downstream consumer, 3 phases, open questions). Correction to the note above: that route's validation is sound and reusable — it only fails today because `submit_live_hole` auto-inserts the same submission row at 18 confirmed holes.
+- **Live scoring lifecycle — spec v3 written, not built.** See
+  `docs/superpowers/specs/2026-09-20-live-scoring-round-lifecycle-design.md`.
+  Model (user, 2026-09-20): everything live — leaderboards, team points,
+  match results, **player statistics**, odds, broadcast — updates **per
+  matched hole**; **handicap (Maroon Masters + Overall) and the rounds
+  archive** are written when a player **and their scorer have both
+  submitted**; wagers settle at Tiger's closeout, which is a review stamp
+  (Tiger can edit any score any time). Matches finish early (3&2) and
+  update immediately, but players still play out 18 and the tab moves on
+  once both have submitted. The other scorer's numbers are **never shown**:
+  the live Scorecard shows only your entries, with the round total white
+  (waiting on the other scorer), red (a hole disagrees — that hole number
+  turns red) or green (all match → Submit Round turns maroon); the
+  competitor grid built earlier is to be removed. After Submit Round only
+  Tiger can change the card. The public `/leaderboard` + team points should
+  come straight from live scoring, with the Google Sheet demoted to a
+  one-way backup copy. Audit findings: `submit_live_hole` auto-inserts the
+  submission row at 18 confirmed holes (blocks the reusable
+  `/api/portal/scoring/submit`); handicap currently counts at 18 confirmed
+  holes (before anyone submits); no Tiger edit tool for live rounds; the
+  Scoring tab only moves on at `Final`. One open question remains
+  (reversing wagers if a post-closeout edit flips a winner).
 - **2025-danzante's 8 players still need tees assigned** via "Assign tees
   for handicap tracking" (`/portal/admin/scorecards`) before any of their
   rounds count — the round numbering/format problem itself is fixed (see

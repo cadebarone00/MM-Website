@@ -1,170 +1,201 @@
-# Live Scoring Round Lifecycle — Design
+# Live Scoring Round Lifecycle — Design (v3)
 
-**Status:** Draft for review (2026-09-20). Nothing in this document is built yet.
-**Scope:** How a tournament (Maroon Masters) round is started, scored, submitted, locked, closed out by Tiger, and how that one official result feeds everything downstream.
-**Not in scope:** Handicap "Submit a score" (personal rounds) — already built and unchanged by this spec. Real-money wagers (separate spec).
+**Status:** Draft v3 (2026-09-20), answers from the user folded in. Nothing in this document is built yet.
+**Supersedes** two earlier drafts of the same day (v1: "everything becomes official at Tiger's closeout"; v2: side-by-side comparison of both scorers' numbers). Both were replaced after review.
+**Scope:** How a tournament (Maroon Masters) round is started, scored live, confirmed, submitted by both scorers, and reviewed by Tiger, and which outputs update when.
+**Not in scope:** Handicap "Submit a score" (personal rounds) — already built. Real-money wagers (separate spec).
 
 ---
 
-## 1. Why live scoring is different from handicap scoring
+## 1. The model in one page
+
+- **Live things update hole by hole.** Leaderboards, team points, match results, player statistics, odds, the broadcast and match cards all derive from the *matched* hole scores as they come in.
+- **Official records are created when both scorers submit.** Handicap (Maroon Masters and Overall) and the rounds archive are written when a player **and the person who scored them** have both pressed Submit Round.
+- **Trust comes from two players agreeing.** There are no paid scorers. When two independent entries match, the number is treated as legitimate and accurate.
+- **Everything public is derived, so nothing is ever stuck.** Points, leaderboards and match results are a public view of the underlying hole scores. If a score is corrected — by a player before they submit, or by Tiger at any time — the views recompute and are simply correct again.
+
+This is the same idea as the Clippd Scoreboard app used in college golf: you keep score for a playing competitor, they keep score for you, and you both confirm at the end.
+
+### Sources of truth
+From here on every statistic comes from one of two places: **live scoring** (tournament rounds) or **handicap scoring** (personal rounds). Together with the 2024–2026 archive that was uploaded because those three years were played before this app existed, these are the recorded rounds all data and stats are read from. The Google Sheet is not a source; it is a **backup copy** written from live scoring (§9.4).
+
+### The four layers of defense against a wrong score
+
+| Layer | What it is | Who |
+|---|---|---|
+| 1. Hole by hole | Each hole is entered by both scorers; a mismatch turns red and must be resolved before moving on | Players |
+| 2. End-of-round status | On your Scorecard the round total is **white** while the other scorer hasn't finished, **red** if any hole disagrees (that hole's number turns red), **green** when everything matches | Players |
+| 3. Submit Round | Available only when the totals are green; when a player and their scorer have both submitted, the round becomes their official record | Players |
+| 4. Tiger | A review "closeout" stamp, plus the ability to edit any score at any time, before or after | Tiger |
+
+Layers 1–3 are *prevention*. Layer 4 is the safety net so a mistake is never permanent. Tiger should rarely need to change a live score, because players resolve disagreements with each other until they submit.
+
+## 2. Handicap scoring vs live scoring
 
 | | Handicap scoring | Live scoring |
 |---|---|---|
-| Who starts it | The player, by choice | Tiger — matchups are locked and the round is assigned |
-| Who is scored | Only yourself | Yourself **and** the person you are scoring for; they score you independently |
-| Trust model | Trust the player | Two independent entries must agree, hole by hole |
+| Who starts it | The player | Tiger — matchups are locked and the round is assigned |
+| Who is scored | Only yourself | Yourself **and** the person you are scoring for |
+| Trust model | Trust the player | Two independent entries must agree; both then submit |
 | Saved | On the device, sent once at the end | Each hole goes to the server as you play |
-| Leaving | Exit or delete the round | You can leave the screen; you can never abandon or delete the round |
-| Feeds | The player's handicap index | Handicap, team points, match play and individual leaderboards, match results, wager results, rounds archive, player statistics, and all backend data the odds model reads |
-| Done means | Submit Scores, final | Every hole matches, every player submits, Tiger closes out; then locked |
+| Leaving | Exit, or delete the round | Leave the screen freely; you can never abandon or delete the round |
+| Feeds | The player's handicap index | Live: leaderboards, team points, match play, player statistics, odds, broadcast. On both submits: handicap (Maroon Masters + Overall) and the rounds archive |
+| Done means | Submit Scores, final | Both scorers submit; Tiger's closeout is a review stamp |
 
 Alternate Shot (Foursome) is **team-only** everywhere: one team score per hole, no putts/fairways/greens, never an individual sample, never a handicap round (already the rule; keep it).
 
-## 2. Decisions already made (by the user)
+## 3. Decisions already made (by the user)
 
-1. A live round can never be deleted. It stays the player's current round until it is finished. Leaving the Scoring tab (to the website, Portal, anywhere) and coming back leaves progress unchanged.
-2. The Scoring tab shows the full matchup — the match, who you play against, who you are scoring for — and a **Begin Round** button that opens live scoring.
-3. Submitting a hole saves it immediately; the local draft also survives leaving. There is no delete.
-4. **Submit Round** exists on the live Scorecard. It is enabled only once all 18 holes are submitted **and every hole matches** the person being scored for/by.
-5. **Every player in the match** must press Submit Round before Tiger's **Close Out Match** action appears.
-6. After Submit Round the scorecard is **locked**. Only Tiger can change it.
-7. Data is **provisional while live and official at closeout**: match status, odds and the leaderboard move with each confirmed hole; points, wager payouts, handicap, statistics and the archive become official when Tiger closes the match out.
-8. Every round is played through all 18 holes — even if the match is mathematically decided earlier.
+1. A live round can never be deleted. It stays the player's current round until it is finished, and leaving the Scoring tab and returning leaves progress unchanged.
+2. The Scoring tab shows the full matchup — the match, who you play, who you are scoring for — and a **Begin Round** button.
+3. Everything that needs to be live updates per hole. Submit Round does **not** change how live data updates.
+4. Handicap and the rounds archive are written when the player and their scorer have both submitted.
+5. **Player statistics count holes as they match** — no waiting for submit or closeout.
+6. **The other scorer's numbers are never shown.** Your Scorecard shows your own entries; the round total shows the state by color (white / red / green) and disagreeing holes show a red hole number (§7.3).
+7. Submit Round turns maroon and becomes usable only when the totals are green.
+8. Players may change scores after finishing and before submitting; they resolve any disagreement with each other.
+9. Tiger's closeout is a review stamp ("reviewed, accurate, moving on"). **Wagers settle at closeout.** Tiger can edit any score at any time, including after submission and after closeout.
+10. **Matches finish early, as a feature.** Up 3 with 2 to play means the match is over (3&2) and it updates immediately. Players still play and enter all 18 holes so their round counts.
+11. Once a player and their scorer have both submitted, the player's Scoring tab moves on to their next round right away; it does not wait for Tiger.
+12. After Submit Round the card is locked for the player. Only Tiger can change it.
+13. Points and leaderboards are just a public view of the data. If a correction changes them, they adjust. They only need to be correct.
+14. **The public `/leaderboard` and team points come straight from live scoring.** The Google Sheet is kept as a backup copy fed from live scoring; Supabase is primary.
 
-## 3. How it works today (verified in code, 2026-09-20)
+## 4. What updates when
 
-**Hole entry (`ScoringPanel` → `POST /api/portal/scoring/hole` → RPC `submit_live_hole_reliable` → `submit_live_hole`)**
-- Each player's entry (their own score, the opponent's score, and their putts/fairway/green) is stored in `live_hole_submissions`. Retries are idempotent (`live_submission_receipts`); a stale edit from another device is rejected.
-- For every player in the match the function upserts `live_hole_scores`: `score` is what the *opponent* recorded for that player, `self_reported_score` is what the player recorded, and `confirmed_by` is set only when both sides' numbers agree. A disagreement retracts **both** sides' confirmation.
-- Drafts survive on the device (`live-drafts:*`) and unsent submissions queue locally (`live-queue:*`).
-
-**Triggers on `live_hole_scores`**
-- `queue_live_publication` bumps a per-match revision → `publishOfficialMatchState` writes `live_match_official_state` (leader, margin, holes through, `complete` when mathematically decided) and a `live_match_odds_snapshots` row.
-- `mirror_live_score_to_career_archive` writes **confirmed** holes to `career_archive_live_holes` (individual formats) or `career_archive_team_holes` (Foursome, once both partners agree) and retracts them if a hole becomes disputed. It sets the archive round `live`.
-
-**Round lock → archive shell.** `syncLockedRoundToCareerArchive` creates each player's `career_archive_rounds` row (course, date, format, partner/opponents, and the tee/rating/slope in `handicap_setup`) when Tiger locks course + matchups.
-
-**Closeout (`POST /api/portal/tiger/matchboxes/closeout` → RPC `close_live_match_atomic`, host only).** Requires confirmed scores for all players on every hole played; may close early if the match is mathematically decided. In one transaction it writes the closed-out official state, sets the match `Final`, sets the archive rounds `final`, records an audit event, and settles the MM Coin market (idempotent; refuses to disagree with an existing settlement).
-
-**Tiger's card.** `MatchCloseoutCards` lists matches whose official status is `complete` — which can be true **before hole 18** because "complete" means mathematically decided.
-
-**Round submission.** `live_match_box_submissions` records "this player submitted their round". Today it is written **automatically** by `submit_live_hole` the moment a player has 18 confirmed holes (and deleted if any hole becomes unconfirmed). A separate, unused route `POST /api/portal/scoring/submit` already contains the full validation for a manual Submit Round (all responsible holes confirmed, own stats complete) and writes the same table plus a `player_submitted` audit event — but it always fails today, because the automatic insert has already created the row ("You've already submitted…").
-
-## 4. Downstream audit — where each output reads from and when it updates
-
-| Output | Reads from today | Updates today | Gap against the target model (§2.7) |
+| Output | Timing (target) | Today | Gap |
 |---|---|---|---|
-| Match status / leader / thru | `live_match_official_state` | Each confirmed hole | None — keep |
-| Odds | `live_match_odds_snapshots` (model reads confirmed archive holes) | Each confirmed hole | None — keep |
-| Broadcast (leaderboard, match play, events) | `live_hole_scores`, official state, Realtime | Each confirmed hole; team points derived only once a match is final | None — keep |
-| Portal live match cards | Official state + odds | Each confirmed hole | None — keep |
-| Wager results | `close_live_match_atomic` → `settle_mm_coin_market` | Closeout | None; a Tiger edit **after** closeout cannot change a settled market (see §6.3) |
-| Rounds archive | `career_archive_rounds` / `_live_holes` / `_team_holes` | Confirmed holes as they arrive; `final` at closeout | None — status already distinguishes live from final |
-| **Handicap** (Maroon Masters + Overall) | `getFutureHandicapRounds` → `career_archive_live_holes` + `handicap_setup`; only 18-hole rounds count; Foursome and pickups are excluded | As soon as 18 confirmed holes exist | **Does not wait for `final`.** Must count only `career_archive_rounds.status = 'final'` |
-| **Player statistics** | `careerStatsDatabase` → `career_archive_rounds` / `_live_holes` / `_team_holes` (confirmed only) | Confirmed holes as they arrive | **Does not wait for `final`.** Needs a decision (see §9 Q2) |
-| **Team points + public individual leaderboard** (`/leaderboard`, futures markets) | `LIVE_FEED_URL` → Google Apps Script reading the **Google Sheet** | Only when someone updates the Sheet | **Not fed by live scoring at all.** The new Supabase system never writes the Sheet. Only the broadcast derives team points from official state |
-| Tiger score edits for live rounds | (no route exists) | — | **Missing.** Needed for "only Tiger can change it" (see §6) |
+| Match status and result (including early finish) | Per matched hole | Derived per hole; `complete` at the clinch | Display wording ("3&2") and the same rule everywhere (§6) |
+| Team points | Per matched hole (awarded when a match is decided) | Broadcast derives them from official state | Public `/leaderboard` does not — it reads the Google Sheet (§9.4) |
+| Individual leaderboard | Per matched hole | Broadcast reads live scores | Public `/leaderboard` reads the Sheet (§9.4) |
+| Player statistics | Per matched hole | Already reads confirmed holes as they arrive | None |
+| Odds and model data | Per matched hole | Snapshot per revision; model reads confirmed archive holes | None — keep |
+| Broadcast, live match cards | Per matched hole | Supabase + Realtime | None — keep |
+| **Handicap** (Maroon Masters + Overall) | When player **and** scorer have submitted | Counts as soon as 18 confirmed holes exist | Must wait for both submissions |
+| **Rounds archive** (player-facing) | Same | Confirmed holes mirror in live; status `live` → `final` at Tiger's closeout | Needs an "official" state tied to both submissions |
+| **Wager results** | At Tiger's closeout | Settled at closeout | A correction *after* closeout that flips a winner (§11 Q1) |
+| Google Sheet | Backup copy, per matched hole | Sheet is the public feed's source; the new system never writes it | Reverse the direction (§9.4) |
+| Tiger score edits | Any time | **No tool exists for live rounds** | Missing (§8) |
 
-Everything in the first six rows already fans out correctly from one source of truth (`live_hole_scores`). The work in this spec is the **player-side lifecycle**, the **Tiger side of it**, and closing the three flagged gaps.
+Every row hangs off one source of truth, `live_hole_scores`. A correction to it must reach every row automatically — that is a requirement, not a feature (§8.2).
 
-## 5. Design — Phase 1: the player lifecycle
+## 5. How it works today (verified in code, 2026-09-20)
 
-### 5.1 Scoring tab (`/portal/scoring`, `ScoringStatusScreen`)
+**Hole entry (`ScoringPanel` → `POST /api/portal/scoring/hole` → RPC `submit_live_hole_reliable` → `submit_live_hole`).**
+- Each player's entry (own score, opponent's score, putts/fairway/green) goes to `live_hole_submissions`. Retries are idempotent; a stale edit from another device is rejected.
+- For every player the function upserts `live_hole_scores`: `score` is what the *scorer* recorded for that player, `self_reported_score` is what the player recorded, and `confirmed_by` is set only when both agree. A disagreement retracts both sides' confirmation.
+- The client already derives a per-hole state — `empty` / `submitted` (waiting on the other scorer) / `confirmed` / `disputed` (`holeSubmissionStatus`) — and shows it on the hole strip.
 
-States, driven by the player's current match (`findCurrentRoundForPlayer`, unchanged: the lowest-numbered locked round that is not `Final`):
+**Triggers on `live_hole_scores`.** `queue_live_publication` → `publishOfficialMatchState` writes `live_match_official_state` (leader, margin, holes through, `complete` when one side is up by more holes than remain) and an odds snapshot. `mirror_live_score_to_career_archive` writes **confirmed** holes to `career_archive_live_holes` (individual formats) or `career_archive_team_holes` (Foursome, once both partners agree) and retracts them if a hole becomes disputed.
+
+**The broadcast already treats a clinched match as final.** `final = closed_out || complete`; a `complete` match awards 1 (or ½ for a tie) team point and reports `thru = 18 − holes remaining`, so 3&2 is derived from `margin` and `thru`. Early finish is therefore mostly a matter of applying this same rule everywhere.
+
+**Closeout (`close_live_match_atomic`, host only).** Requires confirmed scores for every player on every hole played (may close early when decided). In one transaction it writes the closed-out state, sets the match `Final`, sets the archive rounds `final`, audits, and settles the MM Coin market once. Tiger's card lists matches whose status is `complete`.
+
+**Round submission.** `live_match_box_submissions` records "this player submitted". Today `submit_live_hole` writes it **automatically** the moment a player has 18 confirmed holes (and deletes it when a hole becomes unconfirmed). The unused manual route `POST /api/portal/scoring/submit` already holds the full Submit Round validation (all responsible holes confirmed, own stats complete) and writes the same table plus a `player_submitted` audit event — it always fails today because the automatic insert has already created the row.
+
+**The Scoring tab** picks the lowest-numbered locked round whose match is not `Final` (`findCurrentRoundForPlayer`), so today a player's tab only moves on when Tiger closes the match out.
+
+## 6. Feature: matches that finish early
+
+- A match is decided the moment one side is up by more holes than remain (existing `mathematicallyComplete`). It is shown as, for example, "Maroon def. White 3&2" (margin 3, 2 holes remaining); a tie can only occur after 18.
+- Team points and every public view update at that moment — derived, never separately stored.
+- **Players keep playing and entering holes to 18.** The round still needs 18 holes for the handicap and the archive, and it stays on the Scoring tab until it is finished and submitted. Holes after the clinch cannot change the match result (already true in `matchBoxResult`); the hole selector marks them "match decided".
+- If a later correction un-decides the match (a hole flips so the lead no longer exceeds the holes remaining), the match returns to live and the derived points and results follow.
+- If a correction flips the winner, all derived views adjust. Wagers are only affected if the match was already closed out (§11 Q1).
+
+## 7. Design — Phase 1: the player lifecycle
+
+### 7.1 Scoring tab (`/portal/scoring`)
+Driven by the player's current round, now chosen as the lowest-numbered locked round that this player has **not finished** — finished meaning the player and their scorer have both submitted, *or* the match is `Final`. (Today only `Final` counts, which is what would otherwise keep a player waiting on Tiger.)
 
 | State | Shown | Button |
 |---|---|---|
 | No match yet | "Waiting For Matchup" | — |
-| Upcoming (before tee time / not started) | Full matchup, tee time, course, format, "Waiting For Round To Begin" | disabled |
-| Live, no holes submitted | Full matchup (see below) | **Begin Round** |
-| Live, some holes submitted | Same, plus "Through N holes" | **Continue Round** |
-| Live, all 18 submitted and matching, not yet submitted | Same, plus "All holes match — submit your round" | **Continue Round** (opens the Scorecard) |
-| Player has submitted, others outstanding | "Round submitted — waiting on <names>" | **View Scorecard** (read-only) |
-| All submitted, awaiting Tiger | "Submitted — waiting for Tiger to close out" | **View Scorecard** (read-only) |
-| Match `Final` | Falls through to the next round, or "Waiting For Matchup" | — |
+| Upcoming | Full matchup, tee time, course, format, "Waiting For Round To Begin" | disabled |
+| Live, no holes submitted | Full matchup | **Begin Round** |
+| Live, holes submitted | Same, plus "Through N holes" | **Continue Round** |
+| Live, all 18 matched, not submitted | Same, plus "Your card matches — submit your round" | **Continue Round** |
+| You submitted, scorer has not | "Round submitted — waiting on <name>" | **View Scorecard** (read-only) |
+| Both submitted | Moves on to the next round, or "Waiting For Matchup" | — |
 
-**Full matchup description** = round number and format, course and tee, tee time, "You & <partner> vs <opponents>" (existing `matchupLabel`), and an explicit **"You are scoring: <name(s)>"** line (the opposing-position competitor, or the opposing team for Foursome — `scoringSides`).
+Full matchup = round and format, course and tee, tee time, "You & <partner> vs <opponents>" (existing `matchupLabel`) and an explicit **"You are scoring: <name>"** line (your scorer is the opposing-position player — `scoringSides`; for Foursome, the opposing team). Begin/Continue open `/portal/scoring/play` on the first hole not yet submitted. Beginning is navigation only.
 
-Begin Round / Continue Round both go to `/portal/scoring/play`, opening on the first hole not yet submitted (or hole 1). Beginning is navigation only — it records nothing.
+### 7.2 Scoring screen
+Unchanged: per-hole entry, confirmed/disputed hole strip, offline queue. No delete or discard; the back arrow keeps normal Back behavior.
 
-### 5.2 Scoring screen (`ScoringPanel`)
+### 7.3 The Scorecard (live) — your entries plus a status color
+The Scorecard button (already built) opens the live Scorecard. Changes from what is built today:
 
-- Unchanged: per-hole entry, hole selector with confirmed/disputed colors, offline queue.
-- **No delete, no discard.** The header back arrow keeps its normal Back behavior (it is not the handicap "Exit" — there is nothing to exit *from*; leaving never discards).
-- The **Scorecard** button (under the header, already built) opens the live Scorecard, which gains:
-  - the same **totals box** as handicap (Score, To Par, Putts, Fairways, Greens; Foursome: score/to-par only), computed from confirmed holes;
-  - a full-width **Submit Round** pill, disabled with the reason shown ("Hole 7 is not submitted", "Hole 12 doesn't match") until eligible;
-  - the same **Confirm** dialog wording adapted for live: "After you submit your round you will not be able to edit it. Only Tiger can change it." with **Submit Round** and **Keep editing**.
+- **Remove the competitor grid.** The other scorer's numbers are never shown (Decision 6), so the two entries stay independent.
+- **Grid (horizontal scroll, one column per hole):** Hole, Yardage, **Your score**, **<Opponent>'s score** (both as *you* entered them), then Putts, Fairway, Green (individual formats; your own stats). Nothing from the other scorer's entry appears.
+- **Hole number states**, taken from the existing per-hole status: normal when confirmed or not yet entered, **white/neutral** while waiting on the other scorer, **red** when that hole disagrees. Tapping a red hole jumps back to it so you can talk with your scorer, resolve it, and change it.
+- **Round totals** (your total and <Opponent>'s total, side by side) with one shared state:
+  - **White** — data is missing: either you or your scorer has not finished entering the holes. You cannot confirm yet.
+  - **Red** — one or more holes disagree. Those hole numbers are red.
+  - **Green** — all 18 holes are entered by both scorers and every hole matches.
+- **Totals box** (Score, To Par, Putts, Fairways, Greens) — the same shared box as handicap, from your confirmed values. Foursome shows team score and to-par only.
+- **Submit Round pill**, full width like the box: **grey/disabled with the reason** ("Waiting for <Scorer> to finish", "Hole 12 doesn't match") until the totals are green, then **maroon**. Pressing it opens the Confirm dialog: "After you submit your round you will not be able to edit it. Tiger can correct it later if something is wrong." — **Submit Round** / **Keep editing** (Keep editing is the default focus; Escape backs out).
+- **Fourball:** the state is between you and your opposing-position scorer only, never your partner. **Foursome:** team score against the opposing team's entry; all four players submit.
+- After you submit the card is read-only and shows "Submitted — waiting on <scorer>".
 
-### 5.3 Submit Round — server
+### 7.4 Submit Round — server
+Reuse and repair rather than add:
+1. **Stop auto-submitting.** Remove the automatic `live_match_box_submissions` insert/delete from `submit_live_hole`; the row now means "the player pressed Submit Round".
+2. **Explicit submit.** Move the validation in `POST /api/portal/scoring/submit` into one transaction (RPC `submit_live_round(p_box, p_player)`): every hole 1–18 confirmed for each player the caller is responsible for; own stats complete for individual formats (pickups marked `did_not_finish` allowed); match open for scoring; not already submitted. Insert the submission row and a `player_submitted` audit event. Idempotent for repeat presses.
+3. **Lock.** `submit_live_hole_reliable` rejects entries from a player who has submitted ("Your round is submitted. Tiger can change it."). There is no player "unsubmit".
+4. **A scorer's later edit must never un-submit anyone.** If the other scorer enters a different number afterwards, the hole shows red to *them* and they cannot submit until it matches; the submitted player's entries stay frozen. Tiger can resolve it (§8).
+5. **Official when the pair agrees.** When a player and their scorer have both submitted, their archive rounds become **`submitted`** — a new status between `live` and `final` meaning "official record". **Handicap and the player-facing archive** read `submitted` and `final` rounds only. Player statistics do **not** — they keep counting matched holes as they arrive. (Foursome: all four players.)
 
-Reuse and repair the existing pieces rather than adding new ones:
+### 7.5 Tiger's closeout
+Closeout is Tiger's review stamp — "reviewed, accurate, moving on" — and the point where **wagers settle**. It does not gate anything players or the public see: points and results already came from the live data. Its card appears once every player in the match has submitted (or Tiger overrides for a player who cannot). Closing out sets the match `Final` and the archive rounds `final`, and settles the market once (existing behavior). Tiger can still edit afterwards.
 
-1. **Stop auto-submitting.** Remove the automatic `live_match_box_submissions` insert/delete from `submit_live_hole`. The row now means "the player pressed Submit Round" and nothing else.
-2. **Explicit submit.** Promote the validation in `POST /api/portal/scoring/submit` into a single transaction (RPC `submit_live_round(p_box, p_player)`), so the check and the insert cannot race a hole edit. It must verify, for the caller: every hole 1–18 has a confirmed score for each player the caller is responsible for; for individual formats, own putts/fairway/green are complete (pickups marked `did_not_finish` are allowed); the match is open for scoring; the caller has not already submitted. On success insert the `live_match_box_submissions` row and a `player_submitted` audit event.
-3. **Lock.** `submit_live_hole_reliable` rejects any entry from a player who has a submission row ("Your round is submitted. Ask Tiger to change it.").
-4. **A partner's or opponent's later edit must not un-submit anyone.** Today a hole becoming disputed deletes the submission row; with the lock that rule is replaced by: a submitted player's entries are frozen, and if the other scorer later enters a different number the hole shows **disputed** to *them* and *they* cannot submit until it matches or Tiger resolves it (§6.2).
-5. **Foursome.** Both partners are one side: each partner presses Submit Round for themselves; closeout waits for **all four**. (Their entries are duplicated and must agree, as today.)
+## 8. Design — Phase 2: Tiger's editing
 
-### 5.4 Closeout gate (Tiger)
+### 8.1 Edit Scores for live rounds (new)
+Tiger can correct any player's hole (score, putts, fairway, green, pickup) for any live round at any time — before or after players submit, before or after closeout — through one RPC that writes `live_hole_scores` (`confirmed_by` = the host) and an audit event with before/after values. Players do not need Tiger for live corrections; this exists so a mistake is never permanent.
 
-- `close_live_match_atomic` additionally requires: all 18 holes confirmed for every player **and** a `live_match_box_submissions` row for every player in the match. The early-close branch (`abs(a_wins-w_wins) > 18-h`) is removed for closeout eligibility; the official **result** still records when the match was decided, and the match-play calculation is unchanged (continuing after a clinch does not change the result — already tested).
-- `MatchCloseoutCards` lists a match only when every player has submitted. Before that it shows the match as **Decided** (mathematically complete) or **In progress** with a "waiting on <names>" line, so Tiger can see who is holding a match up. The Close Out button is not shown.
+### 8.2 One correction reaches everything (requirement)
+Because every output derives from `live_hole_scores`, an edit must automatically re-derive: match state and result (including un-deciding or flipping a match), team points, both leaderboards, player statistics, odds, the archive holes, and — for `submitted`/`final` rounds — the handicap. It must also reach the Google Sheet backup. This is tested end to end (§10) rather than assumed.
 
-### 5.5 What each player sees after closeout
-The match becomes `Final`; the player's Scoring tab moves on to their next round. The Scorecard of a finished round stays viewable from the archive/profile (existing).
+### 8.3 Wagers after a correction
+Before closeout nothing is settled, so a correction changes nothing about money. A correction **after** closeout that flips the winner is Open Question 1.
 
-## 6. Design — Phase 2: Tiger's side
+### 8.4 Disputes
+A disagreement is normally resolved by the two players talking and one of them changing a number. Tiger Center also shows both entries side by side so Tiger can fix one when a player is unreachable.
 
-### 6.1 Edit Scores for live rounds (new)
-Tiger can correct a player's hole (score, putts, fairway, green, pickup) for a live round, before or after players submit, through one RPC that writes `live_hole_scores` with `confirmed_by` set to the host and an audit event carrying before/after. Because every downstream output hangs off `live_hole_scores` triggers, an edit re-publishes match state, odds and the archive automatically.
+## 9. Design — Phase 3: align the remaining consumers
 
-### 6.2 Resolving a dispute
-A disputed hole (both submitted, numbers differ) shows in Tiger Center with both entries and the two-click resolution: pick the correct score for each player, apply. Players are told the hole was resolved by Tiger. A frozen (submitted) player is not required to re-enter.
-
-### 6.3 Changing a round after closeout
-Closeout settles wagers and finalizes the archive. An edit after closeout that changes the match result cannot be applied silently: the RPC must refuse unless Tiger explicitly **reopens** the match, which un-finals the archive and must reverse or re-run settlement. **No path to reverse a settled MM Coin market exists in the code audited** (closeout deliberately refuses to disagree with an existing settlement), so that is out of scope for Phase 2 — until it does, a post-closeout edit that would change the winner is blocked with a clear message; edits that don't change the winner (a putt count, a non-deciding hole) are allowed.
-
-## 7. Design — Phase 3: align every consumer to "official at closeout"
-
-1. **Handicap:** `getFutureHandicapRounds` selects only rounds whose `career_archive_rounds.status = 'final'`. Live rounds then enter both the Maroon Masters and Overall handicap once Tiger closes the match; Foursome and pickups remain excluded. Verify the tee/rating/slope source: `round_format_setups` (if present) else `handicap_setup` from the locked round — a round with no usable tee setup must not silently disappear; Tiger Center shows it as "needs tee setup".
-2. **Player statistics:** decision required (§9 Q2). Recommendation: statistics count `final` rounds only, while the **odds model** keeps reading confirmed holes as they arrive (it already excludes drafts and disputes).
-3. **Team points and the public leaderboard:** decision required (§9 Q1). This is the largest gap: live scoring does not reach the Sheet-fed `/leaderboard`.
-
-## 8. Error handling and edge cases
-
-- **Offline at the end:** Submit Round is online-only and never queued; it shows "Connect to submit" rather than silently deferring an irreversible action.
-- **Double press / retry:** the RPC is idempotent for the same player and match; the second call returns success without a second audit event.
-- **Someone changes a hole while you review the Scorecard:** eligibility is re-checked by the server at submit time; a stale Scorecard cannot submit an unconfirmed hole.
-- **A player who never submits** (phone died): Tiger's card names them; Tiger can submit on their behalf through the Edit Scores tool once their holes are confirmed, with an audit event.
-- **Pickup (Fourball X):** allowed, counts as the recorded double-par match result, excluded from individual stats and handicap (existing behavior).
-- **Match starts early/late (Tiger Start Match override, tee time):** unchanged.
-- **Round already `Final`:** the Scoring tab never offers Begin/Continue for it.
-
-## 9. Open questions (need the user)
-
-1. **Public `/leaderboard` and team points.** Should the 2027 public leaderboard and team points come from live scoring (Supabase, at closeout), replacing the Google Sheet feed, or does the Sheet stay as a bridge that Tiger updates? This decides whether Phase 3 is a data-source migration or a documented exception.
-2. **Player statistics timing.** Count only final (closed-out) rounds, or as confirmed holes arrive? (Recommendation: final only for statistics; confirmed holes for odds.)
-3. **Seeing the other scorer's numbers.** The live Scorecard shows the competitor's grid under yours. Should it be hidden for a hole until you have submitted that hole, so entries stay independent?
-4. **Handicap rounds after submit (separate feature).** Can Tiger ever correct a submitted personal handicap round? Not part of this spec; recorded so it is not lost.
+1. **Handicap:** `getFutureHandicapRounds` selects only rounds whose `career_archive_rounds.status` is `submitted` or `final`. Live rounds then enter Maroon Masters and Overall together; Foursome and pickups stay excluded. Confirm the tee/rating/slope source (`round_format_setups`, else the locked round's `handicap_setup`); a round with no usable tee setup must surface in Tiger Center as "needs tee setup" rather than silently disappearing.
+2. **Rounds archive (player-facing):** same `submitted`/`final` filter. **Player statistics and the odds model keep reading matched holes as they arrive.**
+3. **Match wording:** one shared formatter for "3&2", "1 up", "Tied", "Final" used by the broadcast, portal match cards and the public pages.
+4. **Public leaderboard, team points and futures markets from live scoring.** Today they read the Google Sheet (`LIVE_FEED_URL`), which the new system never writes. They should derive from the same live scores the broadcast uses, producing the existing `Tournament` shape for the 2027 tournament. **The Sheet becomes a one-way backup:** after each matched-hole revision the server pushes the data to the Sheet (reusing the Apps Script writer, `write-scores.gs`, and its server secret). That push is best-effort with retry and reconciliation, and a failure must never slow or block scoring. The site does not read the Sheet for the 2027 tournament. This is the largest item in the spec and gets its own plan.
 
 ## 10. Testing
 
-- **SQL (PGlite, `npm run test:db`):** extend `scripts/test-scoring-reliability.mjs` — no auto-submit at 18 confirmed; `submit_live_round` accepts an eligible player and rejects each ineligible case (unconfirmed hole, missing stats, already submitted, match not open); a submitted player's later hole entry is rejected; a disagreeing edit by the other scorer does not delete the submission; closeout refuses until every player has submitted and all 18 holes are confirmed; closeout still settles once and only once; Foursome needs all four submissions.
-- **Unit (`npm test`):** pure helpers — Scoring tab state selection (`liveRoundStage`), submit eligibility with human-readable reasons (`submitBlockers`), Tiger card "waiting on" list, live scorecard totals (Foursome excludes putts/greens/fairways).
-- **Browser (`npm run test:browser`):** Begin vs Continue label, Scorecard totals, Submit Round disabled/enabled with reasons, Confirm dialog (Escape and Keep editing submit nothing), locked scorecard after submit.
-- **Not testable from here (login + real database):** the deployed round trip; each phase ends with a manual two-phone checklist for the user.
+- **SQL (PGlite, `npm run test:db`):** no auto-submit at 18 confirmed holes; `submit_live_round` accepts an eligible player and rejects each ineligible case; a submitted player's later entry is rejected; another scorer's disagreement does not delete a submission; the archive round becomes `submitted` only when the pair have both submitted; **an edit to `live_hole_scores` after submission re-derives match state, archive holes and (for `submitted` rounds) the handicap input**; early-finish, un-deciding and winner-flipping edits behave as §6 says; closeout does not change anything the public sees except `final` and the wager settlement.
+- **Unit (`npm test`):** Scoring tab state selection (including "both submitted moves on"), submit eligibility with human-readable reasons, the round-status color (white / red / green) and which hole numbers are red, the shared "3&2" formatter, Foursome exclusions, the Sheet-backup payload builder.
+- **Browser (`npm run test:browser`):** Begin vs Continue; the Scorecard shows only your entries (no competitor grid); totals white → red → green as the other scorer's entries change; red hole number jumps to that hole; Submit Round grey then maroon; the Confirm dialog (Escape and Keep editing submit nothing); read-only after submit.
+- **Sheet backup:** a failing Sheet write never fails or delays a hole submission (tested with a stubbed failing endpoint).
+- **Not testable from here (login + real database):** each phase ends with a manual two-phone checklist.
 
-## 11. Delivery order
+## 11. Open question
 
-1. **Phase 1** (player lifecycle + closeout gate) — one implementation plan.
-2. **Phase 2** (Tiger edit / dispute / reopen) — separate plan; Phase 1 is usable without it because Tiger can already close out matches whose players all agree.
-3. **Phase 3** (align handicap/stats/leaderboard) — separate plan; needs §9 answers first.
+1. **A correction after closeout that flips the winner.** Wagers settle at closeout, and Tiger can edit afterward. If an edit changes who won a match that was already settled, the MM Coin market must be **reversed and re-paid**. No reversal path exists in the code audited (closeout deliberately refuses to disagree with an existing settlement). *Recommended:* build automatic reversal and re-settlement (logged) in Phase 2 for MM Coins; for real-money wagers later, block the edit and require an explicit Tiger reopen. *Alternative:* block any post-closeout edit that would change the winner until reversal exists.
 
-## 12. Definition of done (Phase 1)
+**Assumed unless corrected:** the Google Sheet backup mirrors matched holes as they arrive (not only at submit); the closeout card still waits for every player in the match to submit, with a Tiger override for a player who cannot.
 
-- A player can begin, leave, return, and continue a live round with progress unchanged, and cannot delete it.
-- Submit Round is impossible until all 18 holes match, asks for confirmation, and locks the player's entries.
-- Tiger's Close Out is unavailable until every player in the match has submitted; closing out still finalizes the archive and settles wagers exactly once.
+## 12. Delivery order
+
+1. **Phase 1 — player lifecycle.** Scoring tab states, Begin/Continue, the Scorecard status colors (removing the competitor grid), Submit Round, server changes (no auto-submit, lock, `submitted` status, tab moving on), and the handicap/archive filters that hang off it.
+2. **Phase 2 — Tiger's editing and wagers.** Edit Scores, dispute view, closeout as review stamp, post-closeout re-settlement (per Open Question 1), the end-to-end re-derivation tests.
+3. **Phase 3 — public views.** Leaderboard, team points and futures from live data; the Sheet backup mirror; shared match wording.
+
+## 13. Definition of done (Phase 1)
+
+- A player can begin, leave, return and continue a live round with progress unchanged, and cannot delete it.
+- The Scorecard shows only your own entries; the round total is white while data is missing, red with the disagreeing hole numbers red, and green when everything matches; Submit Round is impossible until green, asks for confirmation, then locks the player.
+- A round becomes an official record (handicap, archive) only when the player and their scorer have both submitted, never earlier; player statistics are unaffected by submit.
+- Once both have submitted, the player's Scoring tab moves on without waiting for Tiger.
+- Live views (leaderboard, points, match status, odds) are unaffected by Submit Round.
 - `npm test`, `npm run test:db`, `npx tsc --noEmit`, `npm run lint` (touched files), `npm run build` and `npm run test:browser` are clean, and the manual two-phone checklist passes.
