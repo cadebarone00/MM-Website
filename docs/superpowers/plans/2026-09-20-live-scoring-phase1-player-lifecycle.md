@@ -378,7 +378,8 @@ Expected: all existing `PASS:` lines, exit 0. (If PGlite is unavailable, stop an
   assert.deepEqual(first3,{submitted:true,official:false,waitingOn:['cam-latto']});
   assert.deepEqual(await submitRound(box3,'cade-barone',host),first3);
   assert.equal(await scalar("select status from career_archive_rounds where match_box_id=$1 and player_slug='cade-barone'",[box3]),'live');
-  await assert.rejects(enter3('cade-barone',host,5,{...mine3,ownScore:6}),/Your round is submitted/);
+  const cadeSaved=await scalar("select submitted_at::text from live_hole_submissions where match_box_id=$1 and player_slug='cade-barone' and hole=5",[box3]);
+  await assert.rejects(enter3('cade-barone',host,5,{...mine3,ownScore:6},cadeSaved),/Your round is submitted/);
   let camSaved=await scalar("select submitted_at::text from live_hole_submissions where match_box_id=$1 and player_slug='cam-latto' and hole=5",[box3]);
   await enter3('cam-latto',other,5,{...theirs3,ownScore:7},camSaved);
   assert.equal(await scalar("select count(*)::int from live_match_box_submissions where match_box_id=$1 and player_slug='cade-barone'",[box3]),1,"a scorer's later edit never un-submits anyone");
@@ -398,7 +399,7 @@ Expected: all existing `PASS:` lines, exit 0. (If PGlite is unavailable, stop an
   await db.query("insert into career_archive_rounds(season_year,round,player_slug,course,format,match_box_id,holes) values(2027,4,'cade-barone','Test course','Foursome',$1,$2),(2027,4,'collin-ross','Test course','Foursome',$1,$2),(2027,4,'cam-latto','Test course','Foursome',$1,$2),(2027,4,'drew-weisser','Test course','Foursome',$1,$2)",[box4,JSON.stringify(setup)]);
   await db.exec('select start_live_round_atomic(2027,4)');
   const four=[['cade-barone',host,4,5],['collin-ross',collin,4,5],['cam-latto',other,5,4],['drew-weisser',drew,5,4]];
-  for(let h=1;h<=18;h++)for(const [player,actor,own,opp] of four)await db.query('select submit_live_hole_reliable(2027,4,$1,$2,$3,$4,$5,$6,null)',[h,player,actor,JSON.stringify({ownScore:own,opponentScore:opp,putts:null,fairway:null,green:null}),randomUUID(),box4]);
+  for(let h=1;h<=18;h++)for(const [player,actor,own,opp] of [four[0],four[2]])await db.query('select submit_live_hole_reliable(2027,4,$1,$2,$3,$4,$5,$6,null)',[h,player,actor,JSON.stringify({ownScore:own,opponentScore:opp,putts:null,fairway:null,green:null}),randomUUID(),box4]);
   for(const [player,actor] of four.slice(0,3)) assert.equal((await submitRound(box4,player,actor)).official,false);
   assert.deepEqual(await submitRound(box4,'drew-weisser',drew),{submitted:true,official:true,waitingOn:[]});
   assert.equal(await scalar("select count(*)::int from career_archive_rounds where match_box_id=$1 and status='submitted'",[box4]),4);

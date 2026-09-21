@@ -59,6 +59,7 @@ export function buildScorecardRows(holes: { number: number; par: number; yards: 
       par: hole.par,
       yards: hole.yards,
       score: entry?.ownScore ?? null,
+      opponentScore: entry?.opponentScore ?? null,
       putts: !entry || isFoursome ? null : entry.putts,
       fir: fairway.hit,
       firDirection: fairway.direction,

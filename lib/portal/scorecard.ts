@@ -7,6 +7,7 @@ export interface ScorecardHoleRow {
   par: number;
   yards: number;
   score: number | null;
+  opponentScore?: number | null; // live scoring only: the score you entered for the person you scored
   putts: number | null;
   fir: boolean | null; // null = not applicable (par 3, or a format that doesn't track it) or not entered
   firDirection: ScorecardShotDirection | null;

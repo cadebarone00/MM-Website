@@ -4,7 +4,7 @@ import { mapFutureHandicapRounds } from "./futureRoundMapping";
 import { archivedDifferential } from "./archiveIndex";
 
 const tee = { courseId: "course", teeSetId: "blue", teeSetName: "Blue", rating: 72, slope: 113, holes: [] };
-const row = { season_year: 2028, round: 1, course: "Old name", played_on: "2028-06-01", format: "Singles", handicap_setup: tee };
+const row = { season_year: 2028, round: 1, course: "Old name", played_on: "2028-06-01", format: "Singles", handicap_setup: tee, status: "final" };
 const holes = Array.from({ length: 18 }, (_, i) => ({ season_year: 2028, round: 1, hole: i + 1, score: 4, did_not_finish: false }));
 
 test("future rounds use the shared archive setup over the old player snapshot", () => {
@@ -26,4 +26,10 @@ test("setups are scoped to both year and round; alternate shot stays excluded", 
   const wrongYear = { seasonYear: 2027, round: 1, courseName: "Wrong", datePlayed: "2027-06-02", teeSetup: { ...tee, rating: 60 } };
   assert.equal(archivedDifferential(mapFutureHandicapRounds([row], holes, [wrongYear])[0]), 0);
   assert.equal(archivedDifferential(mapFutureHandicapRounds([{ ...row, format: "Foursome" }], holes, [])[0]), null);
+});
+test("only submitted or final rounds count toward handicap; live and scheduled rounds do not", () => {
+  assert.deepEqual(mapFutureHandicapRounds([{ ...row, status: "live" }], holes, []), []);
+  assert.deepEqual(mapFutureHandicapRounds([{ ...row, status: "scheduled" }], holes, []), []);
+  assert.equal(mapFutureHandicapRounds([{ ...row, status: "submitted" }], holes, []).length, 1);
+  assert.equal(mapFutureHandicapRounds([{ ...row, status: "final" }], holes, []).length, 1);
 });

@@ -2,41 +2,11 @@ import { NextResponse } from "next/server";
 import { requirePlayer } from "@/lib/portal/requirePlayer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getActiveSeasonYear } from "@/lib/live/activeSeason";
-import { canScoreStrokesFor, matchIsScoreable } from "@/lib/live/orchestration";
-import type { LiveMatchBox, MatchFormat, MatchState } from "@/lib/live/types";
 
-interface MatchBoxRow {
-  id: string;
-  round: number;
-  box_number: number;
-  format: string;
-  tee_time: string;
-  maroon_players: string[];
-  white_players: string[];
-  state: string;
-  started: boolean;
-}
-
-function rowToMatchBox(row: MatchBoxRow, seasonYear: number): LiveMatchBox {
-  return {
-    id: row.id,
-    seasonYear,
-    round: row.round,
-    boxNumber: row.box_number,
-    format: row.format as MatchFormat,
-    teeTime: new Date(row.tee_time),
-    maroonPlayers: row.maroon_players,
-    whitePlayers: row.white_players,
-    state: row.state as MatchState,
-    started: row.started,
-  };
-}
-
+/** Submit Round: all the rules live in the submit_live_round RPC so the check and the save are one transaction. */
 export async function POST(request: Request) {
   const player = await requirePlayer();
-  if (!player) {
-    return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
-  }
+  if (!player) return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
 
   const { round } = await request.json();
   if (typeof round !== "number" || !Number.isInteger(round)) {
@@ -45,101 +15,19 @@ export async function POST(request: Request) {
 
   const seasonYear = await getActiveSeasonYear();
   const service = createSupabaseServiceRoleClient();
-
   const { data: boxRows } = await service
     .from("live_match_boxes")
-    .select("id, round, box_number, format, tee_time, maroon_players, white_players, state, started")
+    .select("id, maroon_players, white_players")
     .eq("season_year", seasonYear)
     .eq("round", round);
-  const box = (boxRows as MatchBoxRow[] | null ?? [])
-    .map((row) => rowToMatchBox(row, seasonYear))
-    .find((b) => b.maroonPlayers.includes(player.playerSlug) || b.whitePlayers.includes(player.playerSlug));
-  if (!box || !box.id) {
-    return NextResponse.json({ ok: false, error: "You don't have a match box in this round." }, { status: 404 });
-  }
+  const box = (boxRows ?? []).find((b) => (b.maroon_players as string[]).includes(player.playerSlug) || (b.white_players as string[]).includes(player.playerSlug));
+  if (!box) return NextResponse.json({ ok: false, error: "You don't have a match box in this round." }, { status: 404 });
 
-  const { data: roundState } = await service
-    .from("live_round_state")
-    .select("course_locked, matchups_locked, started")
-    .eq("season_year", seasonYear)
-    .eq("round", round)
-    .single();
-  if (!roundState?.course_locked || !roundState?.matchups_locked || !roundState?.started) {
-    return NextResponse.json({ ok: false, error: "This round isn't live yet." }, { status: 400 });
-  }
-  if (!matchIsScoreable(box)) {
-    return NextResponse.json({ ok: false, error: "This match is waiting for its tee time or Tiger's Start Match override." }, { status: 400 });
-  }
-
-  const { data: existingSubmission } = await service
-    .from("live_match_box_submissions")
-    .select("player_slug")
-    .eq("match_box_id", box.id)
-    .eq("player_slug", player.playerSlug)
-    .maybeSingle();
-  if (existingSubmission) {
-    return NextResponse.json({ ok: false, error: "You've already submitted your scores for this round." }, { status: 400 });
-  }
-
-  // Figure out exactly which players' strokes this caller is responsible
-  // for, by asking canScoreStrokesFor about every plausible target set —
-  // simplest correct way to invert "who can I score" into "who must I score"
-  // without duplicating the format-specific pairing rule a second time.
-  const everyone = [...box.maroonPlayers, ...box.whitePlayers];
-  const responsibleFor = everyone.filter((candidate) => canScoreStrokesFor(box, player.playerSlug, [candidate]))
-    .concat(canScoreStrokesFor(box, player.playerSlug, box.maroonPlayers) ? box.maroonPlayers : [])
-    .concat(canScoreStrokesFor(box, player.playerSlug, box.whitePlayers) ? box.whitePlayers : []);
-  const uniqueResponsibleFor = [...new Set(responsibleFor)];
-
-  const { data: scoreRows } = await service
-    .from("live_hole_scores")
-    .select("player_slug, hole, score, putts, fir, gir, did_not_finish, confirmed_by")
-    .eq("season_year", seasonYear)
-    .eq("round", round)
-    .in("player_slug", everyone);
-  const rows = scoreRows ?? [];
-
-  const { data: roundRow } = await service
-    .from("live_round_state")
-    .select("course_id")
-    .eq("season_year", seasonYear)
-    .eq("round", round)
-    .single();
-  const { data: course } = roundRow?.course_id
-    ? await service.from("live_courses").select("holes").eq("id", roundRow.course_id).single()
-    : { data: null };
-  const holes = (course?.holes as { number: number; par: number }[] | undefined) ?? [];
-
-  for (let hole = 1; hole <= 18; hole++) {
-    for (const target of uniqueResponsibleFor) {
-      const row = rows.find((r) => r.player_slug === target && r.hole === hole);
-      if (!row || row.score === null || row.score <= 0 || !row.confirmed_by) {
-        return NextResponse.json({ ok: false, error: `Every score must match the assigned opponent before submission (hole ${hole} is not confirmed).` }, { status: 400 });
-      }
-    }
-    if (box.format !== "Foursome") {
-      const ownRow = rows.find((r) => r.player_slug === player.playerSlug && r.hole === hole);
-      const isPar3 = holes.find((h) => h.number === hole)?.par === 3;
-      if (!ownRow || !ownRow.confirmed_by || (!ownRow.did_not_finish && (ownRow.putts === null || ownRow.gir === null || (!isPar3 && ownRow.fir === null)))) {
-        return NextResponse.json({ ok: false, error: `Finish your confirmed score and stats for all 18 holes before submitting (hole ${hole}).` }, { status: 400 });
-      }
-    }
-  }
-
-  const { error } = await service.from("live_match_box_submissions").insert({ match_box_id: box.id, player_slug: player.playerSlug });
+  const { data, error } = await service.rpc("submit_live_round", { p_box: box.id, p_player: player.playerSlug, p_actor: player.userId });
   if (error) {
-    return NextResponse.json({ ok: false, error: "Could not submit your scores." }, { status: 500 });
+    const rule = error.code === "P0001";
+    if (!rule) console.error("Round submission failed:", error);
+    return NextResponse.json({ ok: false, error: rule ? error.message : "Could not submit your round. Please try again." }, { status: rule ? 400 : 503 });
   }
-
-  await service.from("live_score_audit_events").insert({
-    season_year: seasonYear,
-    match_box_id: box.id,
-    round,
-    actor_profile_id: player.userId,
-    player_slug: player.playerSlug,
-    kind: "player_submitted",
-    payload: { format: box.format },
-  });
-
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, ...data });
 }
