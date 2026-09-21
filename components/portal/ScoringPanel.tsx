@@ -25,13 +25,16 @@ export interface ScoringState {
   holeSubmissions?: HoleSubmission[];
 }
 
-export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewState, previewSubmissions, onPreviewSubmit }: {
+export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewState, previewSubmissions, previewSubmittedPlayers, onPreviewSubmit, onPreviewSubmitRound }: {
   playerSlug: string; playerFullName: string; round: number;
   matchBox: Pick<LiveMatchBox, "id" | "format" | "maroonPlayers" | "whitePlayers">;
   nameBySlug: Record<string, string>;
   previewState?: ScoringState;
   previewSubmissions?: HoleSubmission[];
   onPreviewSubmit?: (submission: HoleSubmission) => Promise<void>;
+  /** Tiger's preview: who has pressed Submit Round, and how to submit this phone's round, in place of the real server. */
+  previewSubmittedPlayers?: string[];
+  onPreviewSubmitRound?: () => Promise<void>;
 }) {
   const [state, setState] = useState<ScoringState | null>(previewState ?? null);
   const [selectedHole, setSelectedHole] = useState(1);
@@ -93,7 +96,8 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
   const total = ownEntries.reduce((sum, entry) => sum + entry.ownScore, 0);
   const toPar = ownEntries.length ? total - ownEntries.reduce((sum, entry) => sum + (state.holes.find((hole) => hole.number === entry.hole)?.par ?? 0), 0) : null;
   const targetLabel = sides.opponents.map((slug) => getPlayerLastName(nameBySlug[slug] ?? slug)).join(" & ");
-  const mySubmitted = state.submittedPlayers.includes(playerSlug);
+  const submittedPlayers = previewSubmittedPlayers ?? state.submittedPlayers;
+  const mySubmitted = submittedPlayers.includes(playerSlug);
   const locked = busy || queue.sending || state.matchBox.state === "Final" || mySubmitted;
   function edit(patch: Partial<HoleDraft>) { queue.cancel(selectedHole); setDrafts((all) => ({ ...all, [selectedHole]: { ...draft, ...patch } })); setError(null); }
   function select(hole: number) { setSelectedHole(hole); setError(null); }
@@ -121,10 +125,15 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
   async function submitRound() {
     setSubmittingRound(true); setRoundError(null);
     try {
-      const res = await fetch("/api/portal/scoring/submit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ round }) });
-      const result = await res.json();
-      if (!res.ok || !result.ok) throw new Error(result.error ?? "Could not submit your round.");
-      await load();
+      if (previewState) {
+        if (!onPreviewSubmitRound) throw new Error("Preview connection is not ready.");
+        await onPreviewSubmitRound();
+      } else {
+        const res = await fetch("/api/portal/scoring/submit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ round }) });
+        const result = await res.json();
+        if (!res.ok || !result.ok) throw new Error(result.error ?? "Could not submit your round.");
+        await load();
+      }
     } catch (err) { setRoundError(err instanceof Error ? err.message : "Could not submit your round. Check your connection and try again."); }
     finally { setSubmittingRound(false); }
   }
@@ -134,7 +143,7 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
     const scorecardTotal = enteredRows.reduce((sum, row) => sum + (row.score ?? 0), 0);
     const scorecardToPar = enteredRows.length > 0 ? scorecardTotal - enteredRows.reduce((sum, row) => sum + row.par, 0) : null;
     const roundStatus = liveRoundStatus(matchBox, playerSlug, state.holes, submissions);
-    const waitingOn = waitingOnSubmitters(matchBox, playerSlug, state.submittedPlayers).filter((slug) => slug !== playerSlug).map((slug) => getPlayerLastName(nameBySlug[slug] ?? slug));
+    const waitingOn = waitingOnSubmitters(matchBox, playerSlug, submittedPlayers).filter((slug) => slug !== playerSlug).map((slug) => getPlayerLastName(nameBySlug[slug] ?? slug));
     return (
       <Scorecard
         rows={rows}
@@ -153,7 +162,7 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
           submitted: mySubmitted,
           note: mySubmitted ? (waitingOn.length > 0 ? `Submitted \u2014 waiting on ${waitingOn.join(" & ")}` : "Submitted \u2014 your round is official") : null,
         }}
-        onSubmit={previewState ? undefined : () => void submitRound()}
+        onSubmit={previewState && !onPreviewSubmitRound ? undefined : () => void submitRound()}
         submitting={submittingRound}
         submitError={roundError}
       />

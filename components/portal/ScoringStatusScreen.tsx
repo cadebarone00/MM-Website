@@ -3,20 +3,13 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { matchupLabel, type CurrentRoundResult } from "@/lib/live/currentRoundForPlayer";
 import { scoringSides } from "@/lib/live/holeSubmission";
 import type { ScoringStage } from "@/lib/live/scoringStage";
+import { stageButtonLabel, stageNote } from "@/lib/live/scoringStageCopy";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import { nextTournament } from "@/lib/data";
 
 function formatTeeTime(date: Date): string {
   return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" });
 }
-
-const BUTTON_LABELS: Record<Exclude<ScoringStage, "none">, string> = {
-  upcoming: "Begin Round",
-  begin: "Begin Round",
-  continue: "Continue Round",
-  ready: "Continue Round",
-  submitted: "View Scorecard",
-};
 
 /**
  * The Scoring landing screen for the player's current round: the full
@@ -49,15 +42,9 @@ export function ScoringStatusScreen({
 
   const { matchBox, round } = result;
   const scoring = scoringSides(matchBox, playerSlug).opponents.map(getPlayerDisplayName).join(" & ");
-  const waitingNames = (progress?.waitingOn ?? []).map(getPlayerDisplayName).join(" & ");
   const heading = stage === "upcoming" ? "Upcoming Round" : stage === "submitted" ? "Round Submitted" : "Round Live";
-  const note =
-    stage === "upcoming" ? "Waiting For Round To Begin"
-    : stage === "continue" ? `Through ${progress?.holesEntered ?? 0} holes`
-    : stage === "ready" ? "Your card matches — submit your round"
-    : stage === "submitted" ? (waitingNames ? `Waiting on ${waitingNames}` : "Round complete")
-    : null;
-  const label = BUTTON_LABELS[stage];
+  const note = stageNote(stage, { holesEntered: progress?.holesEntered ?? 0, waitingNames: (progress?.waitingOn ?? []).map(getPlayerDisplayName) });
+  const label = stageButtonLabel(stage);
 
   return (
     <LoadingScreen heading={heading} topSlot={topSlot} raised>

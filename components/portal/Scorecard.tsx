@@ -243,7 +243,7 @@ export function Scorecard({
           </button>
         </div>
       )}
-      {onSubmit && confirming && (
+      {onSubmit && confirming && !live?.submitted && (
         <ConfirmSubmitDialog
           message={live ? "After you submit your round you will not be able to edit it. Tiger can correct it later if something is wrong." : "After you submit scores you will not be able to edit them."}
           label={live ? "Submit Round" : "Submit Scores"}

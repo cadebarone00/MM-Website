@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { DEFAULT_REAL_SEASON_YEAR, TEST_SEASON_YEAR } from "@/lib/live/testSeason";
+import { TestSeasonStatus } from "./TestSeasonStatus";
 
 export function TestSeasonPanel({ activeYear }: { activeYear: number }) {
   const [working, setWorking] = useState(false);
@@ -45,6 +46,19 @@ export function TestSeasonPanel({ activeYear }: { activeYear: number }) {
           {working ? "Resetting…" : "Reset Test Season"}
         </button>}
       </div>
+      <details className="mt-4 rounded-md bg-white/70 p-3">
+        <summary className="cursor-pointer font-sans text-sm font-semibold text-ink-800">How to rehearse Begin Round, the Scorecard colors, and Submit Round</summary>
+        <ol className="mt-2 list-decimal space-y-1 pl-5 font-sans text-sm text-ink-700">
+          <li>In Open Test Setup, lock a course and matchups for Round 1 using two players you can log in as, then Start the round from this page.</li>
+          <li>On two phones (one per player account), open Portal → Scoring. Each sees the full matchup, who they are scoring, and Begin Round.</li>
+          <li>Both players enter all 18 holes. Enter one hole differently on purpose: that hole number and the round total on the Scorecard turn red. Fix it and the total turns green.</li>
+          <li>Each player opens Scorecard and presses Submit Round (it only turns maroon when green). After both submit, each Scoring tab moves on.</li>
+          <li>Watch Rehearsal status below: it shows holes matched, who submitted, when the round becomes an official record, and whether it would count toward a handicap. Then Close Out Match.</li>
+          <li>Press Reset Test Season when you are done.</li>
+        </ol>
+        <p className="mt-2 font-sans text-xs text-ink-500">No second phone? Use Live Scoring Page Editor under Global Tools — it plays both sides on one screen.</p>
+      </details>
+      {active && <TestSeasonStatus />}
       {active && <p className="mt-3 font-sans text-xs text-ink-600">Reset returns the active season to {DEFAULT_REAL_SEASON_YEAR}, reverses test-only MM Coin changes, and removes the 2034 records.</p>}
       {message && <p className="mt-3 font-sans text-sm text-red-700">{message}</p>}
     </section>

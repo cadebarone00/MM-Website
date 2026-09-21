@@ -563,6 +563,39 @@ All pages are public, no auth.
   type-check, lint, build and the tested logic they call — so a two-phone
   check after running the migration is the remaining step.
 
+- **Tiger Center testing for the live scoring lifecycle** (follow-up to
+  Phase 1, since the tournament isn't live). Two tools, both extended.
+  **Live Scoring Page Editor** (two phones on one screen, in memory only, no
+  SQL needed): the phones now offer **Submit Round**, lock after it, and turn
+  the round official when the other phone submits too; a line above each
+  phone shows what that player's real **Scoring tab** would say (Begin /
+  Continue / View, "Through N holes", "Waiting on …", "moves on to your next
+  round"), and a banner says whether the round is official and would count
+  toward handicap and the rounds archive. The rules live in the pure, tested
+  `lib/live/scoringPreviewRoom.ts` (same rules as the database:
+  `applyPreviewHole`, `applyPreviewRoundSubmit`, lock, official-when-both).
+  The Scoring-tab wording is now shared (`lib/live/scoringStageCopy.ts`) by
+  the real screen and the preview. **2034 Test Season** (the real system with
+  disposable test data; needs `supabase/live_round_submission.sql` run once):
+  the panel gained a **How to rehearse** guide and a live **Rehearsal
+  status** (`TestSeasonStatus`, `GET /api/portal/tiger/test-season/status`,
+  pure `summarizeTestSeason`) showing per match: holes matched per player,
+  who has pressed Submit Round, whether the round is an official record, and
+  whether it *would* count toward a handicap. **Safety fix:** the 2034 test
+  season is now excluded from real handicap calculations
+  (`mapFutureHandicapRounds`, opt-in only for that status view) — before this,
+  a finished rehearsal round could have changed players' real handicaps.
+  **Bug found and fixed by the new browser test:** after confirming Submit
+  Round on the live Scorecard the Confirm dialog stayed open over the
+  "Submitted" card; it now closes (and stays open with the error if the
+  submit fails). `npm test` (341/341), `npm run test:db` (9 scenarios),
+  `npx tsc --noEmit`, `npm run lint` (clean on every file this round touched;
+  one older warning in `TestSeasonPanel.tsx`), `npm run build`, and
+  `npm run test:browser` (new: the preview path) all clean. **Not
+  click-tested in the real app:** the Page Editor, the Test Season panel and
+  its status route sit behind Tiger login; they are covered by type-check,
+  lint, build and the tested logic they call.
+
 ## Known gaps / not yet built
 
 - **Live scoring lifecycle — spec v3 written, not built.** See

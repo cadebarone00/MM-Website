@@ -1,6 +1,7 @@
 import type { RoundFormatSetup } from "@/lib/data/roundFormatSetups";
 import type { ArchivedHandicapRound } from "./types";
 import { mapHandicapSetup } from "./teeSetup";
+import { isTestSeason } from "../live/testSeason.ts";
 
 export interface FutureRoundRow {
   season_year: number; round: number; course: string; played_on: string | null;
@@ -10,8 +11,10 @@ export interface FutureRoundRow {
 }
 export interface FutureHoleRow { season_year: number; round: number; hole: number; score: number | null; did_not_finish: boolean }
 
-export function mapFutureHandicapRounds(rows: FutureRoundRow[], holes: FutureHoleRow[], setups: RoundFormatSetup[]): (ArchivedHandicapRound & { seasonYear: number })[] {
+/** `includeTestSeason` is only for Tiger's test-season status view; the real handicap never counts the 2034 rehearsal. */
+export function mapFutureHandicapRounds(rows: FutureRoundRow[], holes: FutureHoleRow[], setups: RoundFormatSetup[], options: { includeTestSeason?: boolean } = {}): (ArchivedHandicapRound & { seasonYear: number })[] {
   return rows.flatMap((row) => {
+    if (!options.includeTestSeason && isTestSeason(row.season_year)) return [];
     if (row.status !== "submitted" && row.status !== "final") return [];
     const confirmed = holes.filter((hole) => hole.season_year === row.season_year && hole.round === row.round && hole.score != null && hole.score > 0);
     if (!confirmed.length) return [];

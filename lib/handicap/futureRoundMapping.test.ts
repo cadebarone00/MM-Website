@@ -33,3 +33,10 @@ test("only submitted or final rounds count toward handicap; live and scheduled r
   assert.equal(mapFutureHandicapRounds([{ ...row, status: "submitted" }], holes, []).length, 1);
   assert.equal(mapFutureHandicapRounds([{ ...row, status: "final" }], holes, []).length, 1);
 });
+
+test("the 2034 test season never reaches a real handicap, unless the Tiger rehearsal status asks for it", () => {
+  const testRow = { ...row, season_year: 2034 };
+  const testHoles = holes.map((h) => ({ ...h, season_year: 2034 }));
+  assert.deepEqual(mapFutureHandicapRounds([testRow], testHoles, []), []);
+  assert.equal(mapFutureHandicapRounds([testRow], testHoles, [], { includeTestSeason: true }).length, 1);
+});

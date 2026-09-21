@@ -12,9 +12,20 @@ import {ScoringPanel} from '@/components/portal/ScoringPanel';
 import {HandicapHoleEntry} from '@/components/portal/handicap/HandicapHoleEntry';
 import {RoundInProgressCard} from '@/components/portal/handicap/RoundInProgressCard';
 import {SubmitScoreButton} from '@/components/portal/handicap/SubmitScoreButton';
+import {applyPreviewRoundSubmit} from '@/lib/live/scoringPreviewRoom';
 const holes=Array.from({length:18},(_,i)=>({number:i+1,par:4,yards:400}));
 const box={id:'test-box',format:'Singles',maroonPlayers:['cade-barone'],whitePlayers:['cam-latto']};
-createRoot(document.getElementById('root')).render(location.pathname==='/submit'?<SubmitScoreButton playerSlug="cade-barone"/>:location.pathname==='/card'?<RoundInProgressCard playerSlug="cade-barone"/>:location.pathname==='/personal'?<HandicapHoleEntry draftKey="test-personal" holeKey="test-personal:hole" teeSet={{id:'gold',name:'Gold',rating:72,slope:113,holes}} onBack={()=>{}} onSubmit={async(holes)=>{document.body.dataset.complete='true';document.body.dataset.holes=String(holes.length);return {ok:true}}}/>:<ScoringPanel playerSlug="cade-barone" playerFullName="Cade Barone" round={1} matchBox={box} nameBySlug={{'cam-latto':'Cam Latto'}}/>);`;
+const cardOf=(player,own,opp)=>Array.from({length:18},(_,i)=>({player,hole:i+1,ownScore:own,opponentScore:opp,putts:2,fairway:'hit',green:'hit',submittedAt:'2027-01-01T10:'+String(i+1).padStart(2,'0')+':00Z'}));
+function PreviewHarness(){
+  const [room,setRoom]=React.useState({submissions:[...cardOf('cade-barone',4,5),...cardOf('cam-latto',5,4)],submitted:[]});
+  const state={matchBox:{...box,boxNumber:1,teeTime:'2027-01-01T09:00:00Z',state:'Live'},holes,submittedPlayers:[],scores:[]};
+  return <div>
+    <ScoringPanel playerSlug="cade-barone" playerFullName="Cade Barone" round={1} matchBox={box} nameBySlug={{'cam-latto':'Cam Latto'}} previewState={state} previewSubmissions={room.submissions} previewSubmittedPlayers={room.submitted}
+      onPreviewSubmit={async()=>{}} onPreviewSubmitRound={async()=>{const r=applyPreviewRoundSubmit(box,room,'cade-barone');if(r.error)throw new Error(r.error);setRoom(r.room);}}/>
+    <button id="latto-submits" onClick={()=>{const r=applyPreviewRoundSubmit(box,room,'cam-latto');if(!r.error)setRoom(r.room);}}>Latto submits</button>
+  </div>;
+}
+createRoot(document.getElementById('root')).render(location.pathname==='/preview'?<PreviewHarness/>:location.pathname==='/submit'?<SubmitScoreButton playerSlug="cade-barone"/>:location.pathname==='/card'?<RoundInProgressCard playerSlug="cade-barone"/>:location.pathname==='/personal'?<HandicapHoleEntry draftKey="test-personal" holeKey="test-personal:hole" teeSet={{id:'gold',name:'Gold',rating:72,slope:113,holes}} onBack={()=>{}} onSubmit={async(holes)=>{document.body.dataset.complete='true';document.body.dataset.holes=String(holes.length);return {ok:true}}}/>:<ScoringPanel playerSlug="cade-barone" playerFullName="Cade Barone" round={1} matchBox={box} nameBySlug={{'cam-latto':'Cam Latto'}}/>);`;
 await build({stdin:{contents:entry,loader:'tsx',resolveDir:process.cwd()},bundle:true,outfile:resolve(dir,'app.js'),jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'},plugins:[{name:'link-stub',setup(b){b.onResolve({filter:/^next\/link$/},()=>({path:'link',namespace:'link-stub'}));b.onLoad({filter:/.*/,namespace:'link-stub'},()=>({contents:"import React from 'react';export default function Link({href,children,onNavigate,...p}){return React.createElement('a',{href,...p},children)}",loader:'js',resolveDir:process.cwd()}));}},{name:'realtime-stub',setup(b){b.onResolve({filter:/lib\/supabase\/client/},()=>({path:'stub',namespace:'test'}));b.onLoad({filter:/.*/,namespace:'test'},()=>({contents:'export function createSupabaseBrowserClient(){return {channel(){const c={on(){return c},subscribe(){return c}};return c},removeChannel(){}}}',loader:'js'}));}}]});
 const css=await postcss([tailwind()]).process(await readFile('app/globals.css','utf8'),{from:resolve('app/globals.css')});await writeFile(resolve(dir,'global.css'),css.css);
 const server=createServer(async(req,res)=>{const path=req.url.split('?')[0];if(['/app.js','/app.css','/global.css'].includes(path)){res.setHeader('Content-Type',path.endsWith('.js')?'text/javascript':'text/css');res.end(await readFile(resolve(dir,path.slice(1))));}else res.end('<html><head><link rel="stylesheet" href="/global.css"><link rel="stylesheet" href="/app.css"></head><body style="margin:0;padding:112px 16px 0;background:#f5efe2"><div id="root"></div><script src="/app.js"></script></body></html>');});
@@ -71,9 +82,24 @@ try{
  await page.getByRole('button',{name:'Submit Round',exact:true}).click();
  await page.getByRole('dialog').getByRole('button',{name:'Submit Round',exact:true}).click();
  await page.getByRole('button',{name:'Submitted',exact:true}).waitFor();
+ await page.getByRole('dialog').waitFor({state:'detached'});
  assert.deepEqual(submitRequests,[{round:1}]);
  await page.getByText('waiting on Latto',{exact:false}).waitFor();
  console.log('PASS: live Scorecard shows white / red / green round status, never the other scorer\'s numbers, and Submit Round asks first then locks');
+ // Tiger's Live Scoring Page Editor path: same screens with an in-memory room instead of a server.
+ await page.goto(origin+'/preview');
+ await page.getByRole('button',{name:'Scorecard',exact:true}).click();
+ assert.equal(await page.locator('[data-round-state]').getAttribute('data-round-state'),'match');
+ await page.getByRole('button',{name:'Submit Round',exact:true}).click();
+ await page.getByRole('dialog').getByRole('button',{name:'Submit Round',exact:true}).click();
+ await page.getByRole('button',{name:'Submitted',exact:true}).waitFor();
+ await page.getByText('waiting on Latto',{exact:false}).waitFor();
+ await page.locator('#latto-submits').click();
+ await page.getByText('your round is official',{exact:false}).waitFor();
+ await page.getByRole('button',{name:'Back',exact:true}).click();
+ await page.getByText('Your round is submitted. Tiger can change it.',{exact:false}).waitFor();
+ assert.equal(await page.getByRole('button',{name:/Submitted|Submit Score/,exact:true}).isDisabled(),true,'a submitted card is locked');
+ console.log('PASS: Tiger\'s preview shows Submit Round, locks the phone after it, and turns official when the scorer submits too');
  await page.goto(origin+'/personal');await page.getByRole('button',{name:'Next Hole',exact:true}).waitFor();await page.getByRole('group',{name:'Hole 1 score',exact:true}).getByRole('button',{name:'9',exact:true}).click();await page.reload();await page.getByRole('group',{name:'Hole 1 score',exact:true}).waitFor();assert.equal(await page.getByRole('group',{name:'Hole 1 score',exact:true}).getByRole('button',{name:'9',exact:true}).getAttribute('aria-pressed'),'true');
  // A score alone (it always defaults to par) doesn't count as "entered" -- putts/GIR/fairway are still required, and the Scorecard (reachable any time) shows a dash for those cells until they are.
  await page.getByRole('button',{name:'Scorecard',exact:true}).click();
