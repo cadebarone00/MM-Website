@@ -596,6 +596,23 @@ All pages are public, no auth.
   its status route sit behind Tiger login; they are covered by type-check,
   lint, build and the tested logic they call.
 
+- **Live Scorecard: opens itself at 18 holes, and shows whose score
+  disagrees** (follow-up to Phase 1). (1) Once you have entered all 18 holes
+  the phone goes straight to the Scorecard - after the 18th hole is saved, and
+  also when you reopen the page with everything already entered. It only does
+  this once per visit, so tapping a hole number to fix something takes you to
+  that hole and it stays there; the Scorecard button still works any time
+  mid-round. (2) The two totals boxes are now colored separately: **Your
+  score** (what you entered for yourself, checked against what your scorer
+  entered for you) and **the opponent's score** (what you entered for them,
+  checked against what they entered for themselves). White = still waiting on
+  data, green = matches, red = disagrees, and the exact hole is tinted red in
+  the matching Score row. So "Barone's score is good but Cam's isn't" shows
+  Barone's box green and Cam's box red. Your scorer's actual numbers are still
+  never shown. Logic lives in `liveRoundStatus` (`yourState`, `opponentState`,
+  `yourDisputedHoles`, `opponentDisputedHoles` in `lib/live/roundStatus.ts`,
+  unit-tested); the overall card color and Submit Round rule are unchanged.
+
 ## Known gaps / not yet built
 
 - **Live scoring lifecycle — spec v3 written, not built.** See

@@ -39,6 +39,7 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
   const [state, setState] = useState<ScoringState | null>(previewState ?? null);
   const [selectedHole, setSelectedHole] = useState(1);
   const [showScorecard, setShowScorecard] = useState(false);
+  const [autoOpenChecked, setAutoOpenChecked] = useState(false);
   const [submittingRound, setSubmittingRound] = useState(false);
   const [roundError, setRoundError] = useState<string | null>(null);
   const [drafts, setDrafts, draftStorage] = usePersistentState<Record<number, HoleDraft>>(previewState ? null : `live-drafts:${playerSlug}:${matchBox.id}`, {});
@@ -101,6 +102,15 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
   const locked = busy || queue.sending || state.matchBox.state === "Final" || mySubmitted;
   function edit(patch: Partial<HoleDraft>) { queue.cancel(selectedHole); setDrafts((all) => ({ ...all, [selectedHole]: { ...draft, ...patch } })); setError(null); }
   function select(hole: number) { setSelectedHole(hole); setError(null); }
+  /** True when you have a saved entry for every hole, counting `justSaved` (which the server reply may not have reached the list yet). */
+  function everyHoleEntered(justSaved?: number) {
+    return state!.holes.every((hole) => hole.number === justSaved || !!submittedPair(matchBox, playerSlug, hole.number, submissions).mine);
+  }
+  // Once everything is entered, open on the Scorecard instead of hole 1 - but only the first time, so tapping a hole number to fix it sticks.
+  if (!autoOpenChecked) {
+    setAutoOpenChecked(true);
+    if (everyHoleEntered()) setShowScorecard(true);
+  }
   async function submitHole() {
     if (!validHoleDraft(draft, par, matchBox.format)) {
       setError("Not all information is complete. Enter both scores, putts, fairway (except par 3), and green result. Putts cannot exceed your score.");
@@ -118,7 +128,8 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
 
       }
       setDrafts((all) => { const next = { ...all }; delete next[selectedHole]; return next; });
-      setSelectedHole((hole) => Math.min(hole + 1, 18));
+      if (everyHoleEntered(selectedHole)) setShowScorecard(true);
+      else setSelectedHole((hole) => Math.min(hole + 1, 18));
     } catch (err) { setError(err instanceof Error ? err.message : "Could not submit this hole. Please try again."); }
     finally { setBusy(false); }
   }
@@ -156,6 +167,10 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
           opponentLabel: targetLabel,
           holeStates: roundStatus.holeStates,
           state: roundStatus.state,
+          yourState: roundStatus.yourState,
+          opponentState: roundStatus.opponentState,
+          yourDisputedHoles: roundStatus.yourDisputedHoles,
+          opponentDisputedHoles: roundStatus.opponentDisputedHoles,
           yourTotal: roundStatus.yourTotal,
           opponentTotal: roundStatus.opponentTotal,
           blocker: describeBlocker(roundStatus.blocker, targetLabel),

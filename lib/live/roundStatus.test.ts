@@ -71,3 +71,32 @@ test("a round is finished for a player only when everyone required has submitted
   assert.equal(roundFinishedForPlayer(box, "cade", ["cade"]), false);
   assert.equal(roundFinishedForPlayer(box, "cade", ["cade", "cam"]), true);
 });
+
+test("each person's score is judged separately, so you can see whose score disagrees", () => {
+  const camDisagrees = [...card("cade", 4, 5), ...card("cam", 5, 4).map((e) => (e.hole === 2 ? { ...e, ownScore: 7 } : e))];
+  const a = liveRoundStatus(box, "cade", holes, camDisagrees);
+  assert.equal(a.yourState, "match");
+  assert.equal(a.opponentState, "disputed");
+  assert.deepEqual(a.yourDisputedHoles, []);
+  assert.deepEqual(a.opponentDisputedHoles, [2]);
+  assert.equal(a.state, "disputed");
+
+  const cadeDisagrees = [...card("cade", 4, 5), ...card("cam", 5, 4).map((e) => (e.hole === 3 ? { ...e, opponentScore: 9 } : e))];
+  const b = liveRoundStatus(box, "cade", holes, cadeDisagrees);
+  assert.equal(b.yourState, "disputed");
+  assert.deepEqual(b.yourDisputedHoles, [3]);
+  assert.equal(b.opponentState, "match");
+  assert.deepEqual(b.opponentDisputedHoles, []);
+});
+
+test("a person's total stays white until both scorers have entered every hole, and turns green once they all match", () => {
+  const waiting = liveRoundStatus(box, "cade", holes, card("cade", 4, 5));
+  assert.equal(waiting.yourState, "waiting");
+  assert.equal(waiting.opponentState, "waiting");
+  const half = liveRoundStatus(box, "cade", holes, [...card("cade", 4, 5), ...card("cam", 5, 4, 2)]);
+  assert.equal(half.yourState, "waiting");
+  const green = liveRoundStatus(box, "cade", holes, [...card("cade", 4, 5), ...card("cam", 5, 4)]);
+  assert.equal(green.yourState, "match");
+  assert.equal(green.opponentState, "match");
+});
+

@@ -36,7 +36,7 @@ try{
  const holes=Array.from({length:18},(_,i)=>({number:i+1,par:4,yards:400}));let submissions=[];let submittedPlayers=[];let fail=false;const requests=[];const submitRequests=[];
  await page.route('**/api/portal/scoring/state?*',r=>r.fulfill({json:{ok:true,matchBox:{id:'test-box',state:'Live',format:'Singles',maroonPlayers:['cade-barone'],whitePlayers:['cam-latto']},holes,scores:[],submittedPlayers,holeSubmissions:submissions}}));
  await page.route('**/api/portal/scoring/submit',async r=>{submitRequests.push(r.request().postDataJSON());submittedPlayers=['cade-barone'];return r.fulfill({json:{ok:true,submitted:true,official:false,waitingOn:['cam-latto']}});});
- await page.route('**/api/portal/scoring/hole',async r=>{const body=r.request().postDataJSON();requests.push(body);if(fail)return r.fulfill({status:503,json:{ok:false}});submissions=[{...body,player:'cade-barone',submittedAt:new Date().toISOString()}];return r.fulfill({json:{ok:true,submissions}});});
+ await page.route('**/api/portal/scoring/hole',async r=>{const body=r.request().postDataJSON();requests.push(body);if(fail)return r.fulfill({status:503,json:{ok:false}});submissions=[...submissions.filter(x=>!(x.player==='cade-barone'&&x.hole===body.hole)),{...body,player:'cade-barone',submittedAt:new Date().toISOString()}];return r.fulfill({json:{ok:true,submissions}});});
  await page.goto(origin);await page.getByRole('button',{name:'Submit Score',exact:true}).waitFor();
  await page.getByRole('button',{name:'Submit Score',exact:true}).click();assert.match(await page.locator('[aria-live="polite"]').innerText(),/Not all information/);assert.equal(requests.length,0);
  await page.getByRole('button',{name:'Fairway hit',exact:true}).click();await page.getByRole('button',{name:'GIR hit',exact:true}).click();await page.getByRole('group',{name:'Your putts',exact:true}).getByRole('button',{name:'4+',exact:true}).click();
@@ -50,12 +50,32 @@ try{
  await page.setViewportSize({width:390,height:844});
  const cardEntry=(player,hole,own,opp)=>({player,hole,ownScore:own,opponentScore:opp,putts:2,fairway:'hit',green:'hit',submittedAt:'2027-01-01T10:'+String(hole).padStart(2,'0')+':00Z'});
  const cardOf=(player,own,opp,upTo=18,changes={})=>Array.from({length:upTo},(_,i)=>({...cardEntry(player,i+1,own,opp),...(changes[i+1]??{})}));
- const openCard=async()=>{await page.reload();await page.getByRole('button',{name:'Scorecard',exact:true}).click();await page.getByRole('button',{name:'Edit hole 1',exact:true}).waitFor();};
+ const openCard=async()=>{await page.reload();await page.getByRole('button',{name:'Edit hole 1',exact:true}).waitFor();};
+ const scoreState=(who)=>page.locator('[data-score-box="'+who+'"]').getAttribute('data-score-state');
+ const alertCells=()=>page.locator('div.bg-red-100');
  const roundState=()=>page.locator('[data-round-state]').getAttribute('data-round-state');
+ // mid-round the hole screen stays and the Scorecard button still opens the card; entering the 18th hole opens it by itself
+ submissions=cardOf('cade-barone',4,5,17);submittedPlayers=[];
+ await page.reload();await page.getByRole('button',{name:'Scorecard',exact:true}).waitFor();
+ assert.equal(await page.getByRole('button',{name:'Edit hole 1',exact:true}).count(),0,'17 of 18 holes is still mid-round: stay on the hole screen');
+ await page.getByRole('button',{name:'Scorecard',exact:true}).click();
+ await page.getByRole('button',{name:'Edit hole 1',exact:true}).waitFor();
+ await page.getByRole('button',{name:'Back',exact:true}).click();
+ await page.getByRole('button',{name:'Hole 18',exact:true}).click();
+ await page.getByRole('button',{name:'Fairway hit',exact:true}).click();await page.getByRole('button',{name:'GIR hit',exact:true}).click();await page.getByRole('group',{name:'Your putts',exact:true}).getByRole('button',{name:'2',exact:true}).click();
+ await page.getByRole('button',{name:'Submit Score',exact:true}).click();
+ await page.getByRole('button',{name:'Edit hole 1',exact:true}).waitFor();
+ await page.getByRole('button',{name:'Edit hole 3',exact:true}).click();
+ await page.getByRole('button',{name:'Scorecard',exact:true}).waitFor();
+ assert.equal(await page.getByRole('button',{name:'Hole 3',exact:true}).getAttribute('aria-pressed'),'true');
+ await page.waitForTimeout(400);
+ assert.equal(await page.getByRole('button',{name:'Edit hole 1',exact:true}).count(),0,'tapping a hole number goes back to that hole and stays there');
+ console.log('PASS: the Scorecard opens by itself once all 18 holes are in (also on reload), the Scorecard button works mid-round, and tapping a hole number goes back to it');
  // white: your scorer has only entered holes 1-9
  submissions=[...cardOf('cade-barone',4,5),...cardOf('cam-latto',5,4,9)];
  await openCard();
  assert.equal(await roundState(),'waiting');
+ assert.deepEqual([await scoreState('you'),await scoreState('opponent')],['waiting','waiting']);
  assert.equal(await page.getByRole('button',{name:'Submit Round',exact:true}).isDisabled(),true);
  await page.getByText('Waiting for Latto to enter hole 10',{exact:false}).waitFor();
  assert.equal(await page.getByText('Yardage',{exact:true}).count(),1,'only your own card is shown, no competitor grid');
@@ -63,14 +83,24 @@ try{
  submissions=[...cardOf('cade-barone',4,5),...cardOf('cam-latto',5,4,18,{5:{ownScore:19}})];
  await openCard();
  assert.equal(await roundState(),'disputed');
+ assert.deepEqual([await scoreState('you'),await scoreState('opponent')],['match','disputed'],"your score is fine (green) but the score you entered for your opponent disagrees (red)");
+ assert.equal(await alertCells().count(),1);assert.equal(await alertCells().innerText(),'5','the red cell is in the opponent row, on the hole that disagrees');
  assert.match(await page.getByRole('button',{name:'Edit hole 5',exact:true}).getAttribute('class'),/bg-red-600/);
  await page.getByText("Hole 5 doesn't match",{exact:false}).waitFor();
  assert.equal(await page.getByText('19',{exact:true}).count(),0,"the other scorer's numbers are never shown");
  assert.equal(await page.getByRole('button',{name:'Submit Round',exact:true}).isDisabled(),true);
+ // red the other way round: your scorer disagrees with YOUR score, so yours is red and your opponent's is green
+ submissions=[...cardOf('cade-barone',4,5),...cardOf('cam-latto',5,4,18,{5:{opponentScore:19}})];
+ await openCard();
+ assert.deepEqual([await scoreState('you'),await scoreState('opponent')],['disputed','match']);
+ assert.equal(await alertCells().count(),1);assert.equal(await alertCells().innerText(),'4','the red cell is in your own score row');
+ assert.equal(await page.getByText('19',{exact:true}).count(),0,"the other scorer's numbers are never shown");
  // green: everything matches, Submit Round is usable, asks first, then locks
  submissions=[...cardOf('cade-barone',4,5),...cardOf('cam-latto',5,4)];
  await openCard();
  assert.equal(await roundState(),'match');
+ assert.deepEqual([await scoreState('you'),await scoreState('opponent')],['match','match']);
+ assert.equal(await alertCells().count(),0);
  for(const total of ['72','90'])await page.getByText(total,{exact:true}).first().waitFor();
  assert.equal(await page.getByRole('button',{name:'Submit Round',exact:true}).isDisabled(),false);
  await page.getByRole('button',{name:'Submit Round',exact:true}).click();
@@ -88,7 +118,7 @@ try{
  console.log('PASS: live Scorecard shows white / red / green round status, never the other scorer\'s numbers, and Submit Round asks first then locks');
  // Tiger's Live Scoring Page Editor path: same screens with an in-memory room instead of a server.
  await page.goto(origin+'/preview');
- await page.getByRole('button',{name:'Scorecard',exact:true}).click();
+ await page.getByRole('button',{name:'Edit hole 1',exact:true}).waitFor();
  assert.equal(await page.locator('[data-round-state]').getAttribute('data-round-state'),'match');
  await page.getByRole('button',{name:'Submit Round',exact:true}).click();
  await page.getByRole('dialog').getByRole('button',{name:'Submit Round',exact:true}).click();

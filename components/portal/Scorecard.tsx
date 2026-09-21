@@ -10,13 +10,14 @@ import { RoundStatsBox } from "@/components/scorecard/RoundStatsBox";
 import { ScoreToParHeader } from "./ScoreToParHeader";
 
 type HoleState = "empty" | "submitted" | "confirmed" | "disputed";
+type LiveCardState = "waiting" | "disputed" | "match";
 
 const CELL_HEIGHT = "h-9";
 const COLUMN_WIDTH = "w-12";
 
-function Cell({ children, last }: { children: ReactNode; last?: boolean }) {
+function Cell({ children, last, alert }: { children: ReactNode; last?: boolean; alert?: boolean }) {
   return (
-    <div className={`flex items-center justify-center ${CELL_HEIGHT} ${last ? "" : "border-b border-ink-100"}`}>
+    <div className={`flex items-center justify-center ${CELL_HEIGHT} ${last ? "" : "border-b border-ink-100"} ${alert ? "bg-red-100" : ""}`}>
       {children}
     </div>
   );
@@ -61,14 +62,14 @@ function holeNumberClass(state: HoleState | undefined): string {
   return "text-maroon-800";
 }
 
-function HoleColumn({ row, holeState, showOpponent, onEdit }: { row: ScorecardHoleRow; holeState?: HoleState; showOpponent: boolean; onEdit: () => void }) {
+function HoleColumn({ row, holeState, showOpponent, yourAlert, opponentAlert, onEdit }: { row: ScorecardHoleRow; holeState?: HoleState; showOpponent: boolean; yourAlert?: boolean; opponentAlert?: boolean; onEdit: () => void }) {
   const par3 = row.par === 3;
   return (
     <div className={`flex ${COLUMN_WIDTH} shrink-0 flex-col border-r border-ink-100 last:border-r-0`}>
       <Cell><button type="button" onClick={onEdit} aria-label={"Edit hole " + row.hole} className={`min-w-7 rounded px-1.5 py-0.5 font-sans text-sm font-bold ${holeNumberClass(holeState)}`}>{row.hole}</button></Cell>
       <Cell><span className="font-sans text-2xs text-ink-500">{row.yards}</span></Cell>
-      <Cell><ScoreCell score={row.score} par={row.par} /></Cell>
-      {showOpponent && <Cell>{row.opponentScore != null ? <span className="font-sans text-xs font-semibold text-ink-700">{row.opponentScore}</span> : <Dash />}</Cell>}
+      <Cell alert={yourAlert}><ScoreCell score={row.score} par={row.par} /></Cell>
+      {showOpponent && <Cell alert={opponentAlert}>{row.opponentScore != null ? <span className="font-sans text-xs font-semibold text-ink-700">{row.opponentScore}</span> : <Dash />}</Cell>}
       <Cell><span className="font-sans text-xs text-ink-700">{row.putts ?? <Dash />}</span></Cell>
       <Cell><ShotCell hit={row.fir} direction={row.firDirection} notApplicable={par3} /></Cell>
       <Cell last><ShotCell hit={row.gir} direction={row.girDirection} /></Cell>
@@ -85,7 +86,17 @@ function ScorecardGrid({ rows, live, onEditHole }: { rows: ScorecardHoleRow[]; l
     <div className="flex overflow-hidden rounded-sm border border-ink-200">
       <LabelColumn labels={labels} />
       <div className="flex flex-1 overflow-x-auto">
-        {rows.map((row) => <HoleColumn key={row.hole} row={row} holeState={live?.holeStates[row.hole]} showOpponent={!!live} onEdit={() => onEditHole(row.hole)} />)}
+        {rows.map((row) => (
+          <HoleColumn
+            key={row.hole}
+            row={row}
+            holeState={live?.holeStates[row.hole]}
+            showOpponent={!!live}
+            yourAlert={live?.yourDisputedHoles.includes(row.hole)}
+            opponentAlert={live?.opponentDisputedHoles.includes(row.hole)}
+            onEdit={() => onEditHole(row.hole)}
+          />
+        ))}
       </div>
     </div>
   );
@@ -142,7 +153,12 @@ export interface LiveScorecard {
   opponentLabel: string;
   holeStates: Record<number, HoleState>;
   /** white = data missing, red = a hole disagrees, green = everything matches. */
-  state: "waiting" | "disputed" | "match";
+  state: LiveCardState;
+  /** The same colors, judged separately for your own score and for the score you entered for your opponent. */
+  yourState: LiveCardState;
+  opponentState: LiveCardState;
+  yourDisputedHoles: number[];
+  opponentDisputedHoles: number[];
   yourTotal: number | null;
   opponentTotal: number | null;
   /** Why Submit Round is unavailable right now (null once the card matches). */
@@ -152,11 +168,20 @@ export interface LiveScorecard {
   note: string | null;
 }
 
-const STATE_TONES: Record<LiveScorecard["state"], string> = {
+const STATE_TONES: Record<LiveCardState, string> = {
   waiting: "border-ink-200 bg-white text-ink-700",
   disputed: "border-red-500 bg-red-50 text-red-700",
   match: "border-emerald-500 bg-emerald-50 text-emerald-700",
 };
+
+function ScoreBox({ which, label, total, state }: { which: "you" | "opponent"; label: string; total: number | null; state: LiveCardState }) {
+  return (
+    <div data-score-box={which} data-score-state={state} className={`rounded-sm border px-3 py-2 text-center ${STATE_TONES[state]}`}>
+      <p className="truncate font-condensed text-2xs font-semibold uppercase tracking-wide">{label}</p>
+      <p className="font-sans text-xl font-black tabular-nums">{total ?? "—"}</p>
+    </div>
+  );
+}
 
 /**
  * Full hole-by-hole scorecard: a horizontally-scrolling grid — tap a hole
@@ -205,18 +230,12 @@ export function Scorecard({
       <div className="mt-3"><ScorecardGrid rows={rows} live={live} onEditHole={onEditHole} /></div>
 
       {live && (
-        <div data-round-state={live.state} className={`mt-3 rounded-sm border px-3 py-2 ${STATE_TONES[live.state]}`}>
-          <div className="grid grid-cols-2 gap-3 text-center">
-            <div>
-              <p className="font-condensed text-2xs font-semibold uppercase tracking-wide">Your score</p>
-              <p className="font-sans text-xl font-black tabular-nums">{live.yourTotal ?? "—"}</p>
-            </div>
-            <div>
-              <p className="font-condensed text-2xs font-semibold uppercase tracking-wide">{live.opponentLabel}&apos;s score</p>
-              <p className="font-sans text-xl font-black tabular-nums">{live.opponentTotal ?? "—"}</p>
-            </div>
+        <div data-round-state={live.state} className="mt-3">
+          <div className="grid grid-cols-2 gap-3">
+            <ScoreBox which="you" label="Your score" total={live.yourTotal} state={live.yourState} />
+            <ScoreBox which="opponent" label={`${live.opponentLabel}'s score`} total={live.opponentTotal} state={live.opponentState} />
           </div>
-          <p className="mt-1 text-center font-sans text-xs">{live.note ?? (live.state === "match" ? "Your card matches. You can submit your round." : live.blocker)}</p>
+          <p className={`mt-2 text-center font-sans text-xs ${live.state === "disputed" ? "text-red-700" : live.state === "match" ? "text-emerald-700" : "text-ink-700"}`}>{live.note ?? (live.state === "match" ? "Your card matches. You can submit your round." : live.blocker)}</p>
         </div>
       )}
 
