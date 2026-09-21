@@ -39,6 +39,7 @@ flowchart TD
   B --> W[Watch Live]
   P --> U[Round video upload]
   U --> W
+  %% Audit 2026-09-21: historical scorecard round IDs and setup round IDs are misaligned; repair pending.
   Z[Static history and legacy feed] -. selected older pages and markets .-> B
 ```
 
@@ -263,6 +264,8 @@ The current math uses raw gross, not a net-double-bogey adjusted gross. It does 
 
 ## 15. Archives, corrections, and career statistics
 
+**September 21 audit:** The configured database contains mixed legacy and corrected round identities for 2025/2026. A read-only all-player audit found 56 Danzante individual scorecards for 40 source rounds and 96 Palm Springs scorecards for 72 source rounds. The legacy importer can overwrite corrected round keys, while the handicap loader joins setup by year/round and can consequently display the wrong course and exclude valid individual scores as Alternate Shot. The separate Career Archive round namespace also needs reconciliation. Findings and a repair plan are saved in `docs/historical-handicap-repair-handoff.md`; reproducible evidence is in `docs/historical-handicap-audit.json` and `scripts/audit-historical-handicap.ts`. No database repair or deployment was performed for this investigation.
+
 The archive is a family of sources, not one universal table:
 
 | Source | What it holds |
@@ -400,6 +403,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 21, 2026 - Historical archive identity investigation (documentation and read-only audit only).** Previously missing differentials were suspected to reflect missing setup. Database inspection confirmed overwritten/misaligned round identities, duplicate source scorecards, and course/format mismatches affecting all audited 2025/2026 players. Added a reproducible audit and repair handoff, updated section 15 and the flowchart annotation. Application behavior and database records are unchanged; repair and deployment remain pending.
 
 **September 20, 2026 - Portal handicap and score-entry layout (implemented locally; deployment not verified).** The portal previously showed a labeled handicap below a hero Submit a score button and could display a minus sign. It now shows a larger number-only overall handicap at the top right, using the same calculation and plus-handicap formatting as My Handicap. Submit a score is a separate slim, full-width pill above the portal navigation box. Low Index remains calculated but is hidden on My Handicap. Updated sections 4 and 14 and the flowchart annotation; overview paths and mappings are unchanged.
 
