@@ -22,8 +22,9 @@ await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.
 const browser=await chromium.launch({headless:true});
 try{
  const context=await browser.newContext({viewport:{width:390,height:844}});const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
- const holes=Array.from({length:18},(_,i)=>({number:i+1,par:4,yards:400}));let submissions=[];let fail=false;const requests=[];
- await page.route('**/api/portal/scoring/state?*',r=>r.fulfill({json:{ok:true,matchBox:{id:'test-box',state:'Live',format:'Singles',maroonPlayers:['cade-barone'],whitePlayers:['cam-latto']},holes,scores:[],submittedPlayers:[],holeSubmissions:submissions}}));
+ const holes=Array.from({length:18},(_,i)=>({number:i+1,par:4,yards:400}));let submissions=[];let submittedPlayers=[];let fail=false;const requests=[];const submitRequests=[];
+ await page.route('**/api/portal/scoring/state?*',r=>r.fulfill({json:{ok:true,matchBox:{id:'test-box',state:'Live',format:'Singles',maroonPlayers:['cade-barone'],whitePlayers:['cam-latto']},holes,scores:[],submittedPlayers,holeSubmissions:submissions}}));
+ await page.route('**/api/portal/scoring/submit',async r=>{submitRequests.push(r.request().postDataJSON());submittedPlayers=['cade-barone'];return r.fulfill({json:{ok:true,submitted:true,official:false,waitingOn:['cam-latto']}});});
  await page.route('**/api/portal/scoring/hole',async r=>{const body=r.request().postDataJSON();requests.push(body);if(fail)return r.fulfill({status:503,json:{ok:false}});submissions=[{...body,player:'cade-barone',submittedAt:new Date().toISOString()}];return r.fulfill({json:{ok:true,submissions}});});
  await page.goto(origin);await page.getByRole('button',{name:'Submit Score',exact:true}).waitFor();
  await page.getByRole('button',{name:'Submit Score',exact:true}).click();assert.match(await page.locator('[aria-live="polite"]').innerText(),/Not all information/);assert.equal(requests.length,0);
@@ -36,12 +37,43 @@ try{
  for(const [width,height] of [[390,844],[375,667]]){await page.setViewportSize({width,height});const button=await page.getByRole('button',{name:/Submitted|Submit Score/,exact:true}).boundingBox();assert.ok(button.y+button.height<=height,'Submit must fit on screen');}
  console.log('PASS: live validation, 4+ putts, score above double par, draft reload, reconnect retry with same request ID, mobile action visibility');
  await page.setViewportSize({width:390,height:844});
- await page.getByRole('button',{name:'Scorecard',exact:true}).click();
- await page.getByText('Latto',{exact:false}).waitFor();
- assert.equal(await page.getByText('Yardage',{exact:true}).count(),2,'my scorecard and the competitor scorecard both render');
- await page.getByRole('button',{name:'Back',exact:true}).click();
- await page.getByRole('button',{name:/Submitted|Submit Score/,exact:true}).waitFor();
- console.log('PASS: live scoring Scorecard shows the competitor in a second grid, under a button outside the header');
+ const cardEntry=(player,hole,own,opp)=>({player,hole,ownScore:own,opponentScore:opp,putts:2,fairway:'hit',green:'hit',submittedAt:'2027-01-01T10:'+String(hole).padStart(2,'0')+':00Z'});
+ const cardOf=(player,own,opp,upTo=18,changes={})=>Array.from({length:upTo},(_,i)=>({...cardEntry(player,i+1,own,opp),...(changes[i+1]??{})}));
+ const openCard=async()=>{await page.reload();await page.getByRole('button',{name:'Scorecard',exact:true}).click();await page.getByRole('button',{name:'Edit hole 1',exact:true}).waitFor();};
+ const roundState=()=>page.locator('[data-round-state]').getAttribute('data-round-state');
+ // white: your scorer has only entered holes 1-9
+ submissions=[...cardOf('cade-barone',4,5),...cardOf('cam-latto',5,4,9)];
+ await openCard();
+ assert.equal(await roundState(),'waiting');
+ assert.equal(await page.getByRole('button',{name:'Submit Round',exact:true}).isDisabled(),true);
+ await page.getByText('Waiting for Latto to enter hole 10',{exact:false}).waitFor();
+ assert.equal(await page.getByText('Yardage',{exact:true}).count(),1,'only your own card is shown, no competitor grid');
+ // red: hole 5 disagrees; that hole number turns red and your scorer's number is never shown
+ submissions=[...cardOf('cade-barone',4,5),...cardOf('cam-latto',5,4,18,{5:{ownScore:19}})];
+ await openCard();
+ assert.equal(await roundState(),'disputed');
+ assert.match(await page.getByRole('button',{name:'Edit hole 5',exact:true}).getAttribute('class'),/bg-red-600/);
+ await page.getByText("Hole 5 doesn't match",{exact:false}).waitFor();
+ assert.equal(await page.getByText('19',{exact:true}).count(),0,"the other scorer's numbers are never shown");
+ assert.equal(await page.getByRole('button',{name:'Submit Round',exact:true}).isDisabled(),true);
+ // green: everything matches, Submit Round is usable, asks first, then locks
+ submissions=[...cardOf('cade-barone',4,5),...cardOf('cam-latto',5,4)];
+ await openCard();
+ assert.equal(await roundState(),'match');
+ for(const total of ['72','90'])await page.getByText(total,{exact:true}).first().waitFor();
+ assert.equal(await page.getByRole('button',{name:'Submit Round',exact:true}).isDisabled(),false);
+ await page.getByRole('button',{name:'Submit Round',exact:true}).click();
+ const roundDialog=page.getByRole('dialog');
+ await roundDialog.getByText('Tiger can correct it later',{exact:false}).waitFor();
+ await page.keyboard.press('Escape');
+ await roundDialog.waitFor({state:'detached'});
+ assert.equal(submitRequests.length,0,'opening the confirmation submits nothing');
+ await page.getByRole('button',{name:'Submit Round',exact:true}).click();
+ await page.getByRole('dialog').getByRole('button',{name:'Submit Round',exact:true}).click();
+ await page.getByRole('button',{name:'Submitted',exact:true}).waitFor();
+ assert.deepEqual(submitRequests,[{round:1}]);
+ await page.getByText('waiting on Latto',{exact:false}).waitFor();
+ console.log('PASS: live Scorecard shows white / red / green round status, never the other scorer\'s numbers, and Submit Round asks first then locks');
  await page.goto(origin+'/personal');await page.getByRole('button',{name:'Next Hole',exact:true}).waitFor();await page.getByRole('group',{name:'Hole 1 score',exact:true}).getByRole('button',{name:'9',exact:true}).click();await page.reload();await page.getByRole('group',{name:'Hole 1 score',exact:true}).waitFor();assert.equal(await page.getByRole('group',{name:'Hole 1 score',exact:true}).getByRole('button',{name:'9',exact:true}).getAttribute('aria-pressed'),'true');
  // A score alone (it always defaults to par) doesn't count as "entered" -- putts/GIR/fairway are still required, and the Scorecard (reachable any time) shows a dash for those cells until they are.
  await page.getByRole('button',{name:'Scorecard',exact:true}).click();

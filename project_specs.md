@@ -519,6 +519,50 @@ All pages are public, no auth.
   deleting) all clean. The browser test caught a real bug on the way:
   `autoFocus` doesn't work on a link, so Continue is focused explicitly.
 
+- **Live scoring Phase 1 — player lifecycle** (spec
+  `docs/superpowers/specs/2026-09-20-live-scoring-round-lifecycle-design.md`,
+  plan `docs/superpowers/plans/2026-09-20-live-scoring-phase1-player-lifecycle.md`).
+  The **Scoring tab** now shows the full matchup (round, format, course, tee
+  time, "You & X vs. Y", and "You are scoring: <name>") with **Begin Round**
+  (**Continue Round** once a hole is in, **View Scorecard** after you have
+  submitted); it moves on to the next round as soon as you **and your scorer**
+  have both submitted, without waiting for Tiger (`withoutFinishedMatches`,
+  `scoringStage`, `loadScoringProgress`). The live **Scorecard** no longer
+  shows the competitor's grid — only your own entries, a second score row
+  with what *you* entered for your opponent, hole numbers that turn red where
+  you and your scorer disagree, and a round status box that is **white**
+  (your scorer hasn't finished), **red** (a hole disagrees) or **green**
+  (everything matches); the **Submit Round** pill is grey until green, then
+  maroon, and asks "After you submit your round you will not be able to edit
+  it. Tiger can correct it later…" before locking your card (pure logic:
+  `lib/live/roundStatus.ts`, tested). New migration
+  **`supabase/live_round_submission.sql`** — *must be run once in the
+  Supabase SQL Editor* (after `live_hole_submissions.sql` and
+  `scoring_reliability.sql`): `submit_live_hole` no longer auto-submits at 18
+  matching holes and now rejects entries from a player who has submitted;
+  new RPC `submit_live_round` (the validation from the old unused
+  `/api/portal/scoring/submit`, now one transaction) records the submission
+  and, when the player **and their scorer** (all four in Foursome) have
+  submitted, marks their archive rounds with a new `submitted` status; a
+  guard trigger stops later score writes moving an official round back to
+  `live`. **Handicap now counts a live round only when its archive status is
+  `submitted` or `final`** (`mapFutureHandicapRounds`); player statistics and
+  the odds model still read matched holes as they arrive, unchanged. Tiger's
+  Match Closeout card lists who has not submitted, disables Close Out Match
+  until everyone has, and offers "Close out anyway". Not built yet (Phases 2
+  and 3 of the spec): Tiger's Edit Scores for live rounds, wager reversal,
+  and the public leaderboard/team points coming from live scoring with the
+  Google Sheet as a backup. `npm test` (328/328), `npm run test:db` (all
+  scenarios, incl. no auto-submit, lock, scorer-edit-never-unsubmits,
+  official-only-when-both-submit, Foursome needs four), `npx tsc --noEmit`,
+  `npm run lint` (clean on every file this round touched), `npm run build`,
+  and `npm run test:browser` (white/red/green states, other scorer's numbers
+  never shown, Submit Round asks first then locks) all clean. **Not
+  click-tested against the real app:** the Scoring tab screen, its loader,
+  and Tiger's card sit behind login and a real database — covered by
+  type-check, lint, build and the tested logic they call — so a two-phone
+  check after running the migration is the remaining step.
+
 ## Known gaps / not yet built
 
 - **Live scoring lifecycle — spec v3 written, not built.** See
