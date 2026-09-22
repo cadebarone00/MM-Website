@@ -13,7 +13,6 @@
 .panel > * { flex-shrink: 0; }
 .panel [data-hole-header] > div { padding-block: 2px; }
 .panel [data-hole-header] :global(.grid), .panel [data-hole-header] :global(.flex) { padding-block: 4px; font-size: 18px; line-height: 24px; }
-.holeSelectorRow { display: flex; flex: 1 1 0; min-height: 0; flex-direction: column; justify-content: center; }
 .panel [aria-label="Select hole"] { margin-top: 0; padding-block: 2px; }
 .panel [aria-label="Select hole"] button { height: 38px; min-width: 0; }
 .notice { position: relative; height: 28px; font-size: 11px; line-height: 13px; text-align: center; color: #991b1b; }
