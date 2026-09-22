@@ -1,73 +1,26 @@
-// scripts/migrate-archived-scorecards.ts
-// Run once with: npx tsx scripts/migrate-archived-scorecards.ts
-// Copies today's hardcoded 2024/2025/2026 scorecards into the database,
-// exactly as-is — this only relocates the source of truth, no values
-// change. Safe to re-run: every insert is keyed by the same unique
-// constraints the schema defines, so a second run just no-ops on rows
-// already present rather than duplicating them (see the onConflict below).
-import { createSupabaseServiceRoleClient } from "../lib/supabase/server";
+// Export an insert-only, canonical import. Existing rounds and all their edits remain untouched.
+import { mkdir, writeFile } from "node:fs/promises";
 import { scorecards2024 } from "../lib/data/scorecards-2024";
 import { scorecards2025 } from "../lib/data/scorecards-2025";
 import { scorecards2026 } from "../lib/data/scorecards-2026";
-import { playerProfiles } from "../lib/data/players";
-import type { PlayerScorecard } from "../lib/data/types";
-
-async function migrateTournament(tournamentSlug: string, scorecards: PlayerScorecard[]) {
-  const service = createSupabaseServiceRoleClient();
-
-  for (const card of scorecards) {
-    const profile = playerProfiles.find((p) => p.id === card.player);
-    if (!profile) {
-      console.warn(`No PlayerProfile found for scorecard player "${card.player}" in ${tournamentSlug} — skipping.`);
-      continue;
-    }
-
-    for (const round of card.rounds) {
-      // Only include `format` in the write when this scorecard actually
-      // carries one. Omitting the key (rather than sending null) means a
-      // re-run never clobbers a format already backfilled by
-      // scripts/backfill-archived-round-format.ts — a real incident,
-      // 2026-09-15: re-running this to add 2024 wiped format on every
-      // 2025/2026 row because scorecards-2025/2026.ts never set it.
-      const { data: roundRow, error: roundError } = await service
-        .from("archived_scorecard_rounds")
-        .upsert(
-          { tournament_slug: tournamentSlug, player_slug: profile.slug, round: round.round, course: round.course, ...(round.format ? { format: round.format } : {}) },
-          { onConflict: "tournament_slug,player_slug,round" }
-        )
-        .select("id")
-        .single();
-      if (roundError || !roundRow) {
-        console.error(`Failed to upsert round ${round.round} for ${profile.slug} in ${tournamentSlug}:`, roundError);
-        continue;
-      }
-
-      const holeRows = round.holes.map((h) => ({
-        round_id: roundRow.id,
-        hole: h.hole,
-        par: h.par,
-        yards: h.yards,
-        score: h.score,
-        putts: h.putts,
-        fir: String(h.fir),
-        gir: h.gir === 1,
-      }));
-      const { error: holesError } = await service.from("archived_scorecard_holes").upsert(holeRows, { onConflict: "round_id,hole" });
-      if (holesError) {
-        console.error(`Failed to upsert holes for round ${round.round}, ${profile.slug}, ${tournamentSlug}:`, holesError);
-      }
+import { getPlayerSlug } from "../lib/data/players";
+import { getTournament } from "../lib/data";
+import { legacyScorecardRound } from "../lib/data/roundIdentity";
+import { tournamentRoundSequence } from "../lib/data/tournamentRoundSequence";
+async function main() {
+  const quote = (value: unknown) => value == null ? "null" : "'" + String(value).replaceAll("'", "''") + "'";
+  const statements = ["begin;"];
+  for (const [slug, year, cards] of [["2024-pinehurst", 2024, scorecards2024], ["2025-danzante", 2025, scorecards2025], ["2026-palm-springs", 2026, scorecards2026]] as const) {
+    for (const card of cards) for (const source of card.rounds) {
+      const round = legacyScorecardRound(year, source.round);
+      const format = round === 0 ? "Individual" : source.format ?? tournamentRoundSequence(getTournament(slug)!)[round - 1].format;
+      const holes = source.holes.map(h => ({ hole: h.hole, par: h.par, yards: h.yards, score: h.score, putts: h.putts, fir: String(h.fir), gir: h.gir === 1 }));
+      statements.push("with inserted as (insert into archived_scorecard_rounds(tournament_slug,player_slug,round,course,format) values (" + [slug, getPlayerSlug(card.player), round, source.course, format].map(quote).join(",") + ") on conflict(tournament_slug,player_slug,round) do nothing returning id) insert into archived_scorecard_holes(round_id,hole,par,yards,score,putts,fir,gir) select inserted.id,h.hole,h.par,h.yards,h.score,h.putts,h.fir,h.gir from inserted cross join jsonb_to_recordset(" + quote(JSON.stringify(holes)) + "::jsonb) as h(hole int,par int,yards int,score int,putts int,fir text,gir boolean);");
     }
   }
-  console.log(`Done migrating ${tournamentSlug}: ${scorecards.length} players.`);
+  statements.push("commit;");
+  await mkdir("node_modules/.cache/archive-repair", { recursive: true });
+  await writeFile("node_modules/.cache/archive-repair/import-missing.sql", statements.join("\n"));
+  console.log("Generated node_modules/.cache/archive-repair/import-missing.sql. Existing rounds will be skipped entirely. Use repair-historical-archive.ts for corrupted rows. No database writes performed.");
 }
-
-async function main() {
-  await migrateTournament("2024-pinehurst", scorecards2024);
-  await migrateTournament("2025-danzante", scorecards2025);
-  await migrateTournament("2026-palm-springs", scorecards2026);
-}
-
-main().then(() => process.exit(0)).catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main().catch(error => { console.error(error); process.exitCode = 1; });

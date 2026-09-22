@@ -41,6 +41,7 @@
 .handicap .notice { height: 0; z-index: 1; }
 .handicap .notice p { bottom: auto; min-height: 28px; }
 .handicap .stats { margin-top: 6px; }
+.handicap .actions > div { margin-top: 0; }
 .handicap .actions > button { min-height: 28px; padding-block: 4px; }
 :global([data-handicap-round-page]):has(.handicap) { padding-block: 0; }
 :global([data-handicap-round-page]):has(.handicap) > a { display: none; }

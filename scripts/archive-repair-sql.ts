@@ -21,6 +21,7 @@ export function archiveRepairSql(backup: ArchiveBackup, plan: ArchiveRepair[]): 
   return `-- Generated from a read-only full export. Run as database owner in Supabase SQL Editor.
 -- Aborts before changing scores if ANY exported row has changed. Recovery data remains private.
 begin;
+set local timezone = 'UTC';
 lock table archived_scorecard_rounds, archived_scorecard_holes, archived_shot_videos, round_format_setups in share row exclusive mode;
 create table if not exists public.archive_repair_backups (created_at timestamptz not null default now(), original jsonb not null, repaired jsonb not null);
 alter table public.archive_repair_backups enable row level security;
