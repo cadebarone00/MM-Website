@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { BroadcastPayload, BroadcastStanding } from "@/lib/broadcast/types";
 import type { BroadcastMatchPlay } from "@/lib/broadcast/matchPlayData";
+import type { LiveScoreEvent } from "@/lib/broadcast/liveScoreEvent";
 import { useLiveBroadcastData } from "@/lib/broadcast/useLiveBroadcastData";
 import { useLiveBroadcastState } from "@/lib/broadcast/useLiveBroadcastState";
 import { useReloadOnDisplayYearChange } from "@/lib/broadcast/useReloadOnDisplayYearChange";
@@ -52,11 +53,29 @@ export function BroadcastStage({
     const timer = window.setInterval(() => setMockClock(Date.now()), 250);
     return () => window.clearInterval(timer);
   }, [animationTest?.startedAt]);
-  const { standings, leaderboardFinal, matchPlay } = useLiveBroadcastData(broadcast.seasonYear, {
+  const { standings, leaderboardFinal, matchPlay, liveScoreEvent } = useLiveBroadcastData(broadcast.seasonYear, {
     standings: initialStandings,
     leaderboardFinal: initialLeaderboardFinal,
     matchPlay: initialMatchPlay,
   });
+  // Ticks mockClock for as long as a real live event is active, same
+  // pattern as the mockRun/animationTest effects below — so
+  // liveEventElapsedMs advances and the leaderboard's celebration
+  // (IndividualLeaderboardScene) can stage itself the same way the mock
+  // rehearsal does.
+  const [liveEventStartedAt, setLiveEventStartedAt] = useState<number | null>(null);
+  const prevLiveEventRef = useRef<LiveScoreEvent | null>(null);
+  useEffect(() => {
+    if (liveScoreEvent && liveScoreEvent !== prevLiveEventRef.current) setLiveEventStartedAt(Date.now());
+    if (!liveScoreEvent) setLiveEventStartedAt(null);
+    prevLiveEventRef.current = liveScoreEvent;
+  }, [liveScoreEvent]);
+  useEffect(() => {
+    if (!liveEventStartedAt) return;
+    const timer = window.setInterval(() => setMockClock(Date.now()), 100);
+    return () => window.clearInterval(timer);
+  }, [liveEventStartedAt]);
+  const liveEventElapsedMs = liveEventStartedAt ? Math.max(0, mockClock - liveEventStartedAt) : null;
   const state = useLiveBroadcastState(broadcast.seasonYear, broadcast.state, !preview);
   const activeEvent = useBroadcastQueue(broadcast.seasonYear, broadcast.events, broadcast.config, !preview);
   useReloadOnDisplayYearChange(broadcast.seasonYear, !preview);
