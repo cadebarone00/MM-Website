@@ -31,15 +31,7 @@ export interface PortalMatchCard {
   leader: Team | "tie" | null;
 }
 
-/**
- * The Nth session `playerSlug` played, in chronological (day, then Morning
- * before Afternoon) order — 1-indexed to match `RoundScorecard.round` from
- * the archived scorecard database (lib/data/archivedScorecards.ts). Per-
- * player (not a tournament-wide session count) so it stays correct even if
- * a player sits out a session some year.
- */
-
-/** Course + round number for one archived match, read from the real per-round scorecard archive rather than the tournament's single `venue` field. Falls back to `match.day` / the venue when no scorecard is on file for that session. */
+/** Resolve the canonical tournament round even when a player missed an earlier session. */
 function archivedRoundAndCourse(tournament: Tournament, match: RealMatch, scorecards: PlayerScorecard[]): { round: number; course: string | null } {
   for (const slug of [...match.maroonPlayers, ...match.whitePlayers]) {
     const playerSlug = getPlayerSlug(slug);

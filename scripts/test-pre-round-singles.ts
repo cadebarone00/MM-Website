@@ -9,7 +9,7 @@
  * A separate Singles win/loss record is deliberately neutral until that
  * canonical match-result data is present in Career Archive.
  */
-import { careerArchiveCourseHoles, careerArchiveRecords } from "../lib/data/careerArchive.generated";
+import { careerArchiveCourseHoles, careerArchiveRecords } from "../lib/data/careerArchive";
 import { canonicalCourseName } from "../lib/data/canonicalCourse";
 import type { CareerHoleRecord } from "../lib/data/careerStats";
 

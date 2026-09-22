@@ -8,7 +8,7 @@ type ArchiveHole = { hole: number; par: number; yards: number; score: number | n
 type ArchiveRound = { year: number; round: number; course: string; format: string; holes: ArchiveHole[] };
 
 const roundKey = (round: ArchiveRound) => round.year + ":" + round.round + ":" + round.course;
-function total(holes: ArchiveHole[]) { return holes.length === 18 && holes.every((hole) => hole.score !== null) ? holes.reduce((sum, hole) => sum + (hole.score ?? 0), 0) : null; }
+function total(holes: ArchiveHole[]) { return (holes.length === 18 || holes.length === 9) && holes.every((hole) => hole.score !== null) ? holes.reduce((sum, hole) => sum + (hole.score ?? 0), 0) : null; }
 function ScoreNine({ holes, endLabel }: { holes: ArchiveHole[]; endLabel: "OUT" | "IN" }) {
   const nine = holes.reduce((sum, hole) => sum + (hole.score ?? 0), 0);
   return <div className="grid grid-cols-10 overflow-hidden rounded-sm border border-gold-200 text-center">
@@ -64,7 +64,7 @@ export function ArchivedScores({ playerSlug, featuredYear }: { playerSlug: strin
         <div className="flex flex-wrap gap-1">{visible.map((round) => <button type="button" key={roundKey(round)} onClick={() => setSelectedKey(roundKey(round))} className={roundKey(round) === roundKey(selected) ? "rounded-pill bg-maroon-700 px-3 py-1.5 font-condensed text-xs font-bold text-white" : "rounded-pill bg-cream-100 px-3 py-1.5 font-condensed text-xs font-bold text-ink-600 hover:bg-gold-100"}>{round.round === 0 ? "INDI" : `R${round.round}`}</button>)}</div>
       </div>
       <p className="mt-3 mb-2 font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">{selected.course} <span className="mx-1 text-gold-500">·</span> {selected.format}</p>
-      <div className="space-y-2"><ScoreNine holes={front} endLabel="OUT" /><ScoreNine holes={back} endLabel="IN" /></div>
+      <div className="space-y-2"><ScoreNine holes={front} endLabel="OUT" />{back.length > 0 && <ScoreNine holes={back} endLabel="IN" />}</div>
     </div>
     <div className="mt-5">
       <p className="m-0 font-condensed text-xs font-bold uppercase tracking-wide text-ink-700">Stats</p>
