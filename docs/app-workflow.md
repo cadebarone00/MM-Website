@@ -31,6 +31,7 @@ flowchart TD
   Z -. 2024-2025 training and 2026 hole replay .-> MP
   O --> F[Tiger closeout and MM Coins settlement]
   %% My Handicap score list shows only the order dropdown followed by scores; explanatory paragraphs are removed.
+  %% White-team portal navigation area has a maroon backdrop behind Submit a score and the four navigation rows.
   %% Portal: overall handicap number opens My Handicap; separate Submit a score pill opens the handicap screen.
   P --> N[Personal 18-hole round entry]
   C --> N
@@ -420,6 +421,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 22, 2026 - White-team portal backdrop (implemented locally; deployment not verified).** The area behind Submit a score and the Profile, Career, Round video and Wagers navigation box now uses maroon for White-team players instead of the inherited tan background. The pill and navigation cards retain their white surfaces and gold borders. Four photographic row backdrops are pending user-provided images. Updated the flowchart annotation; workflow paths and mappings are unchanged.
 
 **September 22, 2026 - Simpler handicap score list (implemented locally; deployment not verified).** Removed the Scores label, differential explanation and contributing-round explanation above My Handicap scores. The display-order dropdown now leads directly into the score list. Calculations and contributing-round markers are unchanged. Updated the flowchart annotation; workflow paths and overview mappings are unchanged.
 

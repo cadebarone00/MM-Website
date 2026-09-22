@@ -1,9 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { BroadcastStanding } from "@/lib/broadcast/types";
 import type { BroadcastMatchPlay } from "@/lib/broadcast/matchPlayData";
+import { detectLiveScoreEvent, type LiveScoreEvent } from "@/lib/broadcast/liveScoreEvent";
+
+/**
+ * How long a real birdie/eagle/bogey stays "active" before the
+ * leaderboard scene goes back to plain rendering — matches the mock
+ * rehearsal's own choreography (celebration + score change + row move,
+ * see IndividualLeaderboardScene.tsx's MockLeaderboardScene timings).
+ */
+const LIVE_EVENT_DURATION_MS = 6_000;
 
 /**
  * Keeps the broadcast's leaderboard/match-play data fresh with no page
@@ -24,12 +33,28 @@ export function useLiveBroadcastData(
   const [standings, setStandings] = useState(initial.standings);
   const [leaderboardFinal, setLeaderboardFinal] = useState(initial.leaderboardFinal);
   const [matchPlay, setMatchPlay] = useState(initial.matchPlay);
+  const [liveScoreEvent, setLiveScoreEvent] = useState<LiveScoreEvent | null>(null);
+  const standingsRef = useRef(initial.standings);
+  const clearEventTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const reload = useCallback(async () => {
     try {
       const [leaderboardRes, matchPlayRes] = await Promise.all([fetch("/api/broadcast/leaderboard", { cache: "no-store" }), fetch("/api/broadcast/match-play", { cache: "no-store" })]);
       if (leaderboardRes.ok) {
         const data = await leaderboardRes.json();
+        // Diff against the previous snapshot BEFORE overwriting standingsRef
+        // — this is what turns a real score update into the same
+        // birdie/eagle/bogey celebration the mock rehearsal already shows
+        // (see lib/broadcast/liveScoreEvent.ts). A missed detection here
+        // just means the board updates silently, same as before this
+        // existed — never worth blocking the refresh over.
+        const event = detectLiveScoreEvent(standingsRef.current, data.standings);
+        if (event) {
+          if (clearEventTimer.current) clearTimeout(clearEventTimer.current);
+          setLiveScoreEvent(event);
+          clearEventTimer.current = setTimeout(() => setLiveScoreEvent(null), LIVE_EVENT_DURATION_MS);
+        }
+        standingsRef.current = data.standings;
         setStandings(data.standings);
         setLeaderboardFinal(data.final);
       }
@@ -38,6 +63,10 @@ export function useLiveBroadcastData(
       // A missed refresh just means the broadcast shows slightly stale data
       // until the next successful one — never worth breaking the screen over.
     }
+  }, []);
+
+  useEffect(() => () => {
+    if (clearEventTimer.current) clearTimeout(clearEventTimer.current);
   }, []);
 
   useEffect(() => {
@@ -69,5 +98,5 @@ export function useLiveBroadcastData(
     };
   }, [seasonYear, reload]);
 
-  return { standings, leaderboardFinal, matchPlay };
+  return { standings, leaderboardFinal, matchPlay, liveScoreEvent };
 }
