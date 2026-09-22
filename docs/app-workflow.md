@@ -39,6 +39,7 @@ flowchart TD
   X --> K
   K --> M[Handicap calculations and odds model]
   M --> O
+  M -- Overall handicap --> PP
   B --> W[Watch Live]
   P --> U[Round video upload]
   U --> W
@@ -61,6 +62,8 @@ Player actions use `requirePlayer` to derive the golfer from the authenticated s
 **Code:** `app/api/auth/signup/route.ts`, `lib/portal/requirePlayer.ts`, `lib/portal/requireHost.ts`, `lib/data/players`.
 
 ## 2. Calendar year, active season, and broadcast year
+
+Player bios fetch `/api/players/[slug]/handicap` without caching. This returns only the overall index calculated by `combinedHandicapIndexes` from the same submitted and archived round sources as My Handicap; static and approved bio handicap text no longer supplies the displayed number.
 
 Player bio redirects follow the same January 1 upcoming-season switch as the public leaderboard. The featured 2026 page shows only earlier years in its lower scorecard archive; a featured 2027 page shows 2024-2026 there, even before any 2027 scores are posted. The upcoming profile reads `/api/live/players/[player]` from the native confirmed snapshot for the public season, independent of the host's active rehearsal year. Career Stats adds that public season's native match boxes at the switchover. Future seasons beyond the configured next edition still need their tournament definition.
 
@@ -416,6 +419,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 22, 2026 - Player bio overall handicap (implemented locally; deployment not verified).** Player bios previously displayed a separately stored profile handicap. They now fetch the same combined overall index used by My Handicap, including submitted and eligible archived rounds, and use the same plus-handicap formatting. The public endpoint returns only the index; unavailable values show a dash. Updated the player profile description, flowchart and workflow mapping.
 
 **September 22, 2026 - Compact archive repair SQL (implemented and tested locally; database execution pending).** The generated repair previously embedded both complete snapshots and exceeded the SQL editor size limit. It now embeds SHA-256 fingerprints and deduplicated repair targets, captures the full recovery snapshots inside the locked database transaction, and verifies the complete result before commit. Section 15's repair path is unchanged; this does not indicate a deployed repair.
 

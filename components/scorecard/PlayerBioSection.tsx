@@ -5,6 +5,7 @@ import { SocialLinks } from "@/components/ui/SocialLinks";
 import { ArchivedScores } from "@/components/scorecard/ArchivedScores";
 import { CareerArchiveStats } from "@/components/scorecard/CareerArchiveStats";
 import type { PlayerProfile } from "@/lib/data/types";
+import { formatHandicapIndex } from "@/lib/handicap/format";
 
 // The data files use a literal "-" to mark a field as not filled in yet — treat that as absent, same as empty.
 function isSet(value?: string | null): value is string {
@@ -44,17 +45,31 @@ function InfoBlock({ label, value }: { label: string; value?: string | null }) {
  * (the live tournament path), so no parent component needs to change.
  */
 export function PlayerBioSection({ profile: baseProfile, featuredYear }: { profile: PlayerProfile | undefined; featuredYear?: number }) {
-  const [profile, setProfile] = useState(baseProfile);
+  const [approved, setApproved] = useState<{ base: PlayerProfile; overrides: Partial<PlayerProfile> } | null>(null);
+  const profile = baseProfile && approved?.base === baseProfile ? { ...baseProfile, ...approved.overrides } : baseProfile;
+  const [handicap, setHandicap] = useState<{ slug: string; index: number | null } | null>(null);
 
   useEffect(() => {
-    setProfile(baseProfile);
+    const slug = baseProfile?.slug;
+    if (!slug) return;
+    const controller = new AbortController();
+    fetch(`/api/players/${slug}/handicap`, { signal: controller.signal, cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!controller.signal.aborted && data.ok) setHandicap({ slug, index: data.index });
+      })
+      .catch(() => { /* Leave unavailable indexes blank rather than showing the old bio value. */ });
+    return () => controller.abort();
+  }, [baseProfile?.slug]);
+
+  useEffect(() => {
     if (!baseProfile) return;
     let cancelled = false;
     fetch(`/api/players/${baseProfile.slug}/overrides`)
       .then((res) => res.json())
       .then((data) => {
         if (cancelled || !data.ok) return;
-        setProfile((current) => (current ? { ...current, ...data.overrides } : current));
+        setApproved({ base: baseProfile, overrides: data.overrides });
       })
       .catch(() => {
         // Overrides are an enhancement, not required for the page to work —
@@ -89,7 +104,7 @@ export function PlayerBioSection({ profile: baseProfile, featuredYear }: { profi
           <InfoRow label="Residence" value={profile.residence} />
           <InfoRow label="Plays From" value={profile.playsFrom} />
           <InfoRow label="Status" value={profile.status} />
-          <InfoRow label="Handicap" value={profile.handicap} />
+          <InfoRow label="Handicap" value={formatHandicapIndex(handicap?.slug === profile.slug ? handicap.index : null)} />
           <InfoRow label="Ranking" value={profile.rankingNotes} />
           <InfoRow label="Club Golf" value={profile.clubGolfYears} />
           <InfoRow label="Debut" value={profile.debut} />
