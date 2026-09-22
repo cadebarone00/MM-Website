@@ -1,3 +1,4 @@
+import { matchRound } from "@/lib/data/roundIdentity";
 import { notFound } from "next/navigation";
 import { MatchProfile } from "@/components/match/MatchProfile";
 import { LiveMatchProfile } from "@/components/match/LiveMatchProfile";
@@ -28,5 +29,5 @@ export default async function MatchBreakdownPage({ params }: { params: Promise<{
   const [scorecards, archive] = await Promise.all([getScorecardsForTournament(tournament), getCombinedCareerArchive()]);
   const scorecard = historicalMatchScorecard(tournament, match, scorecards, archive.teamRecords);
   const estimate = reconstructHistoricalMatchOdds(tournament, match, archive.records, archive.teamRecords);
-  return <MatchProfile tournamentSlug={slug} editionLabel={tournament.editionLabel} match={match} odds={estimate.points} estimateNote={estimate.note || undefined} scorecard={<LiveMatchScorecard match={match} scorecard={scorecard} />} />;
+  return <MatchProfile round={matchRound(tournament, match) ?? undefined} tournamentSlug={slug} editionLabel={tournament.editionLabel} match={match} odds={estimate.points} estimateNote={estimate.note || undefined} scorecard={<LiveMatchScorecard match={match} scorecard={scorecard} />} />;
 }

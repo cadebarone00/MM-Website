@@ -12,7 +12,7 @@ function render(body){const blocks=body.split(/\n\s*\n/);return blocks.map(b=>{
  return '<p>'+inline(b.replace(/\n/g,' '))+'</p>';
 }).join('');}
 const section=n=>parts.find(p=>p.title.startsWith(n+'. '));
-const flows=[['Tournament preparation and scoring',[6,7,8,9,10,11,12]],['Personal round and handicap',[1,4,13,14]],['Historical corrections and model inputs',[6,15,16,11]],['Following a match',[3,11]],['2026 estimated match replay',[15,3]],['Watching the tournament',[11,18,19]],['MM Coins',[16,17,12]],['Video upload and playback',[4,20,18,19]],['Rehearsal without real score writes',[6,21]],['Access and operating context',[1,2,3,4,5]],['Hosting and boundaries',[23,22]]];
+const flows=[['Tournament preparation and scoring',[6,7,8,9,10,11,12]],['Personal round and handicap',[1,4,13,14]],['Historical corrections and model inputs',[6,15,16,11]],['Same round across player and match scorecards',[15,3,11]],['Featured season and older player cards',[2,3,15]],['2026 estimated match replay',[15,3]],['Watching the tournament',[11,18,19]],['MM Coins',[16,17,12]],['Video upload and playback',[4,20,18,19]],['Rehearsal without real score writes',[6,21]],['Access and operating context',[1,2,3,4,5]],['Hosting and boundaries',[23,22]]];
 const nodes=[
 [6,30,140,'Tiger setup'],[7,30,265,'Course / tees'],[9,285,140,'Live scoring'],[10,540,140,'Submit and compare'],[15,795,140,'Confirmed archive'],[11,1050,140,'Results and odds'],
 [4,30,15,'Player portal'],[13,285,15,'Personal round'],[14,795,15,'Handicap'],

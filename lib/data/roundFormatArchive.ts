@@ -61,6 +61,6 @@ export function roundFormatArchive(tournament: Pick<Tournament, "matches" | "arc
     format: representative.format,
     matchups: allMatches
       .filter((match) => match.day === representative.day && match.session === representative.session)
-      .map((match) => ({ href: tournament.slug && tournament.matches.includes(match) ? `/leaderboard/${tournament.slug}/matches/${match.id}` : undefined, side: match.maroonPlayers, opponent: match.whitePlayers, teeTime: match.teeTimeCst })),
+      .map((match) => ({ ...(tournament.slug && tournament.matches.includes(match) ? { href: `/leaderboard/${tournament.slug}/matches/${match.id}` } : {}), side: match.maroonPlayers, opponent: match.whitePlayers, teeTime: match.teeTimeCst })),
   }));
 }

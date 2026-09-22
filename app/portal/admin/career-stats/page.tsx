@@ -1,10 +1,12 @@
+import { buildLiveTournamentSnapshot } from "@/lib/broadcast/liveSnapshot";
+import { liveRoundFormatArchive } from "@/lib/data/liveRoundFormatArchive";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { CareerStatsPanel } from "@/components/portal/tiger/CareerStatsPanel";
 import { RoundFormatArchive, type RoundFormatTournament } from "@/components/portal/tiger/RoundFormatArchive";
 import { careerArchivePartnerships } from "@/lib/data/careerArchive";
 import { getCombinedCareerArchive } from "@/lib/data/combinedCareerArchive";
-import { pastTournaments } from "@/lib/data";
+import { nextTournament, isPastLeaderboardSwitchover, pastTournaments } from "@/lib/data";
 import { getRoundFormatSetups } from "@/lib/data/roundFormatSetups";
 import { roundFormatArchive } from "@/lib/data/roundFormatArchive";
 import { getOrphanArchivedRounds } from "@/lib/data/archivedScorecards";
@@ -31,6 +33,11 @@ export default async function CareerStatsPage() {
       return { slug: tournament.slug, year: tournament.year, venue: tournament.venue, entries, orphans: orphans.map((entry) => ({ ...entry, setup: setupFor(entry.round) })), dayDates: tournament.dayDates ?? {} };
     })
   );
+
+  if (isPastLeaderboardSwitchover()) {
+    const snapshot = await buildLiveTournamentSnapshot(nextTournament.year, { confirmedOnly: true });
+    roundFormatTournaments.unshift({ slug: nextTournament.slug, year: nextTournament.year, venue: nextTournament.venue, orphans: [], ...liveRoundFormatArchive(snapshot, nextTournament.slug, nextTournament.year, setups) });
+  }
 
   return (
     <div className="mx-auto max-w-[900px] px-4 py-12 sm:px-7">

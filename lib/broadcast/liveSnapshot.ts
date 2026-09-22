@@ -51,15 +51,25 @@ interface HoleScoreRow {
 export async function buildLiveTournamentSnapshot(seasonYear: number, options: { confirmedOnly?: boolean } = {}): Promise<LiveTournamentSnapshot> {
   const service = createSupabaseServiceRoleClient();
 
-  let scoreQuery = service.from("live_hole_scores").select("player_slug, round, hole, score, putts, fir, gir, host_edited, confirmed_by").eq("season_year", seasonYear);
-  if (options.confirmedOnly) scoreQuery = scoreQuery.not("confirmed_by", "is", null);
-  const [{ data: rosterRows }, { data: courseRows }, { data: roundRows }, { data: boxRows }, { data: scoreRows }] = await Promise.all([
-    service.from("live_roster").select("player_slug, team").eq("season_year", seasonYear),
-    // live_courses is a shared pool across years (no season_year column), so this isn't filtered.
-    service.from("live_courses").select("id, name, holes, rating, slope"),
-    service.from("live_round_state").select("round, course_id, course_setup").eq("season_year", seasonYear),
-    service.from("live_match_boxes").select("id, round, box_number, format, tee_time, maroon_players, white_players, state, started").eq("season_year", seasonYear),
-    scoreQuery,
+  async function pages<T>(label: string, query: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>): Promise<T[]> {
+    const rows: T[] = [];
+    for (let from = 0; ; from += 1000) {
+      const result = await query(from, from + 999);
+      if (result.error) throw new Error(label + ": " + result.error.message);
+      rows.push(...(result.data ?? []));
+      if ((result.data?.length ?? 0) < 1000) return rows;
+    }
+  }
+  const [rosterRows, courseRows, roundRows, boxRows, scoreRows] = await Promise.all([
+    pages<RosterRow>("Roster", (from, to) => service.from("live_roster").select("player_slug, team").eq("season_year", seasonYear).order("player_slug").range(from, to)),
+    pages<CourseRow>("Courses", (from, to) => service.from("live_courses").select("id, name, holes, rating, slope").order("id").range(from, to)),
+    pages<RoundStateRow>("Rounds", (from, to) => service.from("live_round_state").select("round, course_id, course_setup").eq("season_year", seasonYear).order("round").range(from, to)),
+    pages<MatchBoxRow>("Matches", (from, to) => service.from("live_match_boxes").select("id, round, box_number, format, tee_time, maroon_players, white_players, state, started").eq("season_year", seasonYear).order("id").range(from, to)),
+    pages<HoleScoreRow>("Scores", (from, to) => {
+      let query = service.from("live_hole_scores").select("player_slug, round, hole, score, putts, fir, gir, host_edited").eq("season_year", seasonYear);
+      if (options.confirmedOnly) query = query.not("confirmed_by", "is", null);
+      return query.order("player_slug").order("round").order("hole").range(from, to);
+    }),
   ]);
 
   const players: LiveTournamentSnapshot["players"] = {};

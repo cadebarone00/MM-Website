@@ -21,5 +21,6 @@ export function legacyScorecardRound(year: number, round: number): number {
 
 /** Generated career data uses a separate, documented 2026 day-three sequence. */
 export function generatedCareerRound(year: number, round: number): number {
+  if (year === 2024 && round >= 3) return round + 1; // Workbook omits the Cradle session.
   return year === 2026 ? round === 5 ? 6 : round === 6 ? 5 : round : round;
 }

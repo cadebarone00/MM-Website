@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPlayerProfileBySlug, getPlayerProfile } from "@/lib/data/players";
-import { getCareerStatsDatabase, getLiveCareerArchiveRecords } from "@/lib/data/careerStatsDatabase";
+import { getHistoricalCareerRecords, getLiveCareerArchiveRecords } from "@/lib/data/careerStatsDatabase";
 
 type ArchiveHole = { hole: number; par: number; yards: number; score: number | null; putts: number | null; fairwayInRegulation: boolean | null; greenInRegulation: boolean | null };
 
@@ -9,7 +9,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
   const profile = getPlayerProfileBySlug(slug);
   if (!profile) return NextResponse.json({ ok: false, error: "Unknown player." }, { status: 404 });
 
-  const [{ records }, liveRecords] = await Promise.all([getCareerStatsDatabase(), getLiveCareerArchiveRecords()]);
+  const [{ records }, liveRecords] = await Promise.all([getHistoricalCareerRecords({ includeNineHoleCards: true }), getLiveCareerArchiveRecords()]);
   const playerRecords = [...records, ...liveRecords].filter((record) => getPlayerProfile(record.player)?.slug === profile.slug);
   const rounds = new Map<string, { year: number; round: number; course: string; format: string; holes: ArchiveHole[] }>();
 

@@ -32,7 +32,7 @@ export const pinehurst2024: Tournament = {
     // Day 2 — The Cradle (9-hole short course), Afternoon, Play 4 Take 3 —
     // a team format (best 3 of 4 scores per hole), not an individual format;
     // excluded from individual scoring.
-    { id: "p24-g7", day: 2, session: "Afternoon", format: "Play 4, Take 3", maroonPlayers: ["Team Maroon"], whitePlayers: ["Team White"], maroonPts: 0, whitePts: 3, margin: 3, holesRemaining: 0 },
+    { id: "p24-g7", day: 2, session: "Afternoon", format: "Play 4, Take 3", maroonPlayers: ["cam-latto", "drew-weisser", "jackson-collins", "luke-sherrell"], whitePlayers: ["cade-barone", "collin-ross", "dalton-spriggs", "peyton-vos"], maroonPts: 0, whitePts: 3, margin: 3, holesRemaining: 0 },
 
     // Day 3 — Pine Needles GC, Morning, Fourball
     { id: "p24-g8", day: 3, session: "Morning", format: "Fourball", maroonPlayers: ["luke-sherrell", "cam-latto"], whitePlayers: ["cade-barone", "dalton-spriggs"], maroonPts: 1, whitePts: 1, teeTimeCst: "8:10 AM" },

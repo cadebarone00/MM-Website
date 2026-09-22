@@ -29,14 +29,14 @@ test("a player outside the tournament has no archived matches", () => {
   assert.deepEqual(archivedMatchesForPlayer(palmSprings2026, "unknown-player"), []);
 });
 
-test("without a scorecard on file, falls back to the tournament venue and the match's day as the round number", () => {
+test("without a scorecard on file, uses the canonical round even when its scorecard is missing", () => {
   const matches = archivedMatchesForPlayer(palmSprings2026, "cade-barone");
   const p26m10 = matches.find((match) => match.id === "p26-m10");
   assert.equal(p26m10?.course, palmSprings2026.venue);
   assert.equal(p26m10?.roundFormatLabel, "Round 2 · Afternoon · Singles");
 });
 
-test("with a scorecard on file, the course comes from the player's real per-round archive (not the venue) and the round number is that player's chronological session count", () => {
+test("with a scorecard on file, the course comes from the player's real per-round archive (not the venue) and the round number is the tournament's canonical round", () => {
   // Cade's day-2-afternoon Singles match (p26-m10) is his 4th session of the
   // trip: day1 Morning, day1 Afternoon, day2 Morning, day2 Afternoon.
   const scorecards: PlayerScorecard[] = [

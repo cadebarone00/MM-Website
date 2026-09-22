@@ -10,7 +10,9 @@ export function LiveMatchScorecard({ match, scorecard }: { match: RealMatch; sco
   const holes = scorecard.holes;
   const sideScores = (players: string[]) => holes.map((hole) => {
     const scores = players.map((player) => hole.scores[player]);
-    return scores.length && scores.every((score) => score != null) ? Math.min(...scores as number[]) : null;
+    if (!scores.length || scores.some(score => score == null)) return null;
+    const ordered = (scores as number[]).sort((a, b) => a - b);
+    return match.format === "Play 4, Take 3" ? ordered.slice(0, 3).reduce((sum, score) => sum + score, 0) : ordered[0];
   });
   const maroon = sideScores(match.maroonPlayers);
   const white = sideScores(match.whitePlayers);
@@ -21,7 +23,7 @@ export function LiveMatchScorecard({ match, scorecard }: { match: RealMatch; sco
     if (stopped || hole.number !== index + 1 || maroon[index] == null || white[index] == null) { stopped = true; statuses.push(null); continue; }
     tally += Math.sign(white[index]! - maroon[index]!);
     const status = tally;
-    if (Math.abs(tally) > 18 - hole.number) stopped = true;
+    if (Math.abs(tally) > holes.length - hole.number) stopped = true;
     statuses.push(status);
   }
   const total = (values: (number | null)[]) => values.some((value) => value != null) ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0) : "—";
@@ -34,9 +36,9 @@ export function LiveMatchScorecard({ match, scorecard }: { match: RealMatch; sco
     {row("yards", "Yards", holes.map((hole) => hole.yards ?? null), total(holes.map((hole) => hole.yards ?? null)))}
     {row("par", "Par", holes.map((hole) => hole.par), total(holes.map((hole) => hole.par)))}
     {!shared && players("maroon")}
-    {(shared || match.format === "Fourball") && scoresRow("maroon-side", shared ? "Maroon" : "Best Ball", maroon, "maroon")}
+    {(shared || (match.format === "Fourball" || match.format === "Play 4, Take 3")) && scoresRow("maroon-side", shared ? "Maroon" : match.format === "Play 4, Take 3" ? "Best 3" : "Best Ball", maroon, "maroon")}
     {row("status", "Status", statuses.map((value, index) => value == null ? "—" : <span key={index} className={`flex h-12 items-center justify-center font-bold ${value > 0 ? "bg-maroon-700 text-white" : value < 0 ? "bg-white text-maroon-700" : ""}`} aria-label={`Hole ${index + 1}: ${value === 0 ? "All square" : `${value > 0 ? "Maroon" : "White"} ${Math.abs(value)} up`}`}>{value === 0 ? "AS" : `${Math.abs(value)} ${value > 0 ? "↑" : "↓"}`}</span>), match.status === "scheduled" ? "—" : liveLabel(match))}
-    {(shared || match.format === "Fourball") && scoresRow("white-side", shared ? "White" : "Best Ball", white, "white")}
+    {(shared || match.format === "Fourball") && scoresRow("white-side", shared ? "White" : match.format === "Play 4, Take 3" ? "Best 3" : "Best Ball", white, "white")}
     {!shared && players("white")}
   </tbody></table></div></section>;
 }

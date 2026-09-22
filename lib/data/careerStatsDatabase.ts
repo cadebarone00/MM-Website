@@ -105,7 +105,7 @@ export async function getLiveCareerArchiveTeamRecords(options: { includeTestSeas
   }));
 }
 
-export async function getHistoricalCareerRecords() {
+export async function getHistoricalCareerRecords(options: { includeNineHoleCards?: boolean } = {}) {
   const [rounds, holes] = await Promise.all([
     loadAll<{ id: string; tournament_slug: string; player_slug: string; round: number; course: string; format: string | null }>("archived_scorecard_rounds", ["id"]),
     loadAll<{ round_id: string; hole: number; par: number; yards: number; score: number; putts: number; fir: string; gir: boolean }>("archived_scorecard_holes", ["round_id", "hole"]),
@@ -116,7 +116,7 @@ export async function getHistoricalCareerRecords() {
     const year = Number(round.tournament_slug.slice(0,4));
     if (!Number.isInteger(year)) return [];
     keys.add(careerRoundKey(year,round.player_slug,round.round));
-    if (!isIndividualScoreFormat(round.format)) return [];
+    if (!isIndividualScoreFormat(round.format) && !(options.includeNineHoleCards && round.format === "Play 4, Take 3")) return [];
     const entries = holes.rows.filter((hole) => hole.round_id === round.id && hole.score > 0);
     return entries.map((hole) => ({ year, player: getPlayerSlug(round.player_slug), round: round.round, roundHoles: entries.length,
       course: canonicalCourseName(round.course), format: round.format ?? "Unspecified", hole: hole.hole, par: hole.par, yards: hole.yards,
