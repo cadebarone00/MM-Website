@@ -299,7 +299,6 @@ function LiveScorecardView({ rows, totalScore, toPar, onEditHole, onBack, live, 
           {live.rating != null ? live.rating.toFixed(1) : "—"}/{live.slope ?? "—"}
         </p>
         <div className="mt-1"><ScoreToParHeader totalScore={totalScore} toPar={toPar} /></div>
-        <p className="mt-2 text-center font-sans text-2xs uppercase tracking-wide text-ink-400">Scores as you entered them</p>
       </div>
 
       <LiveScorecardGrids rows={rows} live={live} onEditHole={onEditHole} />
