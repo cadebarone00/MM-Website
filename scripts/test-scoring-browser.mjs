@@ -82,7 +82,7 @@ try{
  assert.equal(await page.getByText('Not every hole is entered yet.',{exact:true}).count(),0,'the greyed-out Submit Round button already says this');
  assert.match(await page.locator('body').innerText(),/Whistling Straits/);
  assert.match(await page.locator('body').innerText(),/76\.4\/151/);
- assert.match(await page.locator('body').innerText(),/Round 1.*Singles/);
+ assert.match(await page.locator('body').innerText(),/Round 1.*Singles/i);
  // red: hole 5 disagrees; that hole number turns red and your scorer's number is never shown
  submissions=[...cardOf('cade-barone',4,5),...cardOf('cam-latto',5,4,18,{5:{ownScore:19}})];
  await openCard();
@@ -124,7 +124,7 @@ try{
  assert.equal(await page.locator('[data-round-state]').getAttribute('data-round-state'),'match');
  // Cade wins every hole 4-to-5, so the (in-memory, no database) match-completeness card should already read the match closed out at 10&8 — derived from the same confirmed-hole rules as the real live_match_official_state row.
  const bodyText = await page.locator('body').innerText();
- assert.match(bodyText,/Round 1.*Singles/);
+ assert.match(bodyText,/Round 1.*Singles/i);
  assert.match(bodyText,/BARONE/);
  assert.match(bodyText,/LATTO/);
  assert.match(bodyText,/10&8/);

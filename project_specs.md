@@ -613,6 +613,53 @@ All pages are public, no auth.
   `yourDisputedHoles`, `opponentDisputedHoles` in `lib/live/roundStatus.ts`,
   unit-tested); the overall card color and Submit Round rule are unchanged.
 
+- **Live Scorecard redesign, and cosmetic pass on the hole-entry screen.**
+  Cosmetic tweaks to the live hole-entry screen (ScoringPanel/
+  ScoringRoundHeader/ShotDirectionPicker/HoleActionBar, all shared with the
+  handicap "Submit a score" screen unless noted): Total/To Par sit closer
+  together; the "Scorecard" link lost its underline; the Fairway/GIR compass
+  now sizes itself to its buttons so the gap between arrows is even in every
+  direction; the Penalty toggle moved into the compass's empty corner
+  (between "missed right" and "missed short") and reads "PEN"; the GPS/
+  Submit Score/Next Hole buttons are a little taller; and (live scoring
+  only) the status line that used to sit above the score rows now sits
+  between Putts and those buttons instead, so the score rows sit right under
+  the hole-number strip.
+  Then a full redesign of the **live** Scorecard (`live` prop on
+  `components/portal/Scorecard.tsx`) — the handicap "Submit a score" screen
+  is untouched, still the boxed card it always was. Live scoring's Scorecard
+  now: has no boxed card (sits directly on the page); an icon-only "←" Back
+  button, top-left; the course name and rating/slope above the Total/To Par
+  pill (`course`/`rating`/`slope`, newly returned by
+  `GET /api/portal/scoring/state`, read from `live_courses` /
+  `live_round_state.course_setup`); no "Tap hole number to edit" text; the
+  Hole/Yardage/Score/opponent-score rows and the Putts/Fairway/Green rows
+  are now two separate boxes with a little gap between them, their
+  horizontal scroll linked so the same column is always the same hole; no
+  more "Hole 1 is not entered" / "waiting for X" / "your card matches" text
+  under the two score boxes — the greyed-out Submit Round button and the
+  red hole numbers/cells already say that; and a new **match completeness**
+  card above Submit Round — round + format, then the two sides and the
+  match-play score (2 Up, AS, 3&2, Thru N / Final), styled like the "My
+  Matches" card on the player portal minus its course header (already shown
+  above). The match score comes from the same confirmed-hole rule as
+  everywhere else in live scoring (both scorers agree): the real screen
+  reads the database's own `live_match_official_state` row (trigger-
+  maintained, the same one the public match list uses); the Tiger Center's
+  Live Scoring Page Editor has no database, so it derives the identical
+  result from the preview room's submissions with a new pure function,
+  `previewOfficialState` (`lib/live/previewMatchState.ts`, unit-tested),
+  reusing the real match-play math (`matchBoxResult` in
+  `lib/live/orchestration.ts`) so the preview and the real thing never
+  disagree. `npm test` (349/349), `npm run test:db` (9 scenarios),
+  `npx tsc --noEmit`, `npm run lint`, `npm run build`, and
+  `npm run test:browser` (rewritten assertions for the new layout, plus a
+  new check that the preview's match-completeness card computes the correct
+  match-play result) all clean. **Not click-tested in the real app:** the
+  real screen needs a live match box and is gated behind player login; it's
+  covered by type-check, lint, build, the tested logic it calls, and the
+  browser test's simulated version of the same screen.
+
 ## Known gaps / not yet built
 
 - **Live scoring lifecycle — spec v3 written, not built.** See
