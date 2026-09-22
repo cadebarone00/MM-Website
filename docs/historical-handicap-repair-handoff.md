@@ -2,6 +2,16 @@
 
 Status: investigation and local documentation only. Read-only queries ran against the database configured in this workspace. No archive repair, database mutation, or deployment was performed. Re-run the audit before repairing because the database can change.
 
+## September 22 implementation and next step
+
+The application changes are implemented locally: original scorecard imports use canonical rounds; generated Pinehurst career rounds 3 onward shift by one to include the Cradle; generated Palm Springs rounds 5/6 align with the actual schedule. Career matches now link to shared scorecards, public upcoming profiles read confirmed native scores, and the calendar rollover separates the featured season from older scorecards. The legacy importer is insert-only and the old blind renumber scripts are disabled.
+
+The full repair backup is in `node_modules/.cache/archive-repair/2026-09-22T11-32-56-814Z/backup.json`. The executable transaction is `node_modules/.cache/archive-repair/2026-09-22T11-48-35-556Z/repair.sql`. These local recovery artifacts are intentionally outside Git. The tested plan retains 159 rounds and all three videos, removes 40 identical duplicates, preserves surviving IDs/hole details, and assigns shared setups. Local PostgreSQL verification passed, including repeat-run and stale-data checks. Browser checks passed for scrolling, archive links, year filtering and workflow navigation. The full application test suite passed (349 tests at verification time).
+
+**Live database status: not applied by this session.** The session has a Supabase service API key but no direct SQL execution connection. The user was asked to run the generated transaction in Supabase SQL Editor. After it succeeds, rerun the repair planner and audit against the live database; require zero duplicates and verify Cade's course, formats and differentials. If the transaction reports a stale backup, generate and test a fresh plan rather than removing the precondition. Deployment is not verified.
+
+Reproduce the local database test with `npx tsx scripts/test-archive-repair.ts node_modules/.cache/archive-repair/2026-09-22T11-48-35-556Z`. Rebuild a read-only live backup and repair plan with `npx tsx scripts/repair-historical-archive.ts`. The planner never writes to the database.
+
 ## Finding
 
 The supplied round information was sufficient. A new CSV is not needed to recover these scores. The system has multiple incompatible meanings of `round`, and the original importer remains able to overwrite the corrected archive using the old numbering.

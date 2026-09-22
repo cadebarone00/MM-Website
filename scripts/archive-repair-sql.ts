@@ -1,9 +1,11 @@
+import { PGlite } from "@electric-sql/pglite";
+
 export type ArchiveRow = Record<string, unknown> & { id: string };
 export type ArchiveBackup = { rounds: ArchiveRow[]; holes: ArchiveRow[]; videos: ArchiveRow[]; setups: Record<string, unknown>[] };
 export type ArchiveRepair = { survivor: ArchiveRow; duplicates: ArchiveRow[]; target: Record<string, unknown> };
 
 /** One transaction, exact preconditions, retained recovery data, and an idempotent second run. */
-export function archiveRepairSql(backup: ArchiveBackup, plan: ArchiveRepair[]): string {
+export async function archiveRepairSql(backup: ArchiveBackup, plan: ArchiveRepair[]): Promise<string> {
   const literal = (value: unknown) => `'${JSON.stringify(value).replaceAll("'", "''")}'::jsonb`;
   const removed = new Set(plan.flatMap(entry => entry.duplicates.map(row => row.id)));
   const targets = new Map(plan.map(entry => [entry.survivor.id, entry.target]));
@@ -13,6 +15,30 @@ export function archiveRepairSql(backup: ArchiveBackup, plan: ArchiveRepair[]): 
     videos: backup.videos,
     setups: backup.setups,
   };
+  // PostgreSQL itself supplies the canonical JSONB representation for both hashes.
+  const db = new PGlite();
+  let originalHash: string;
+  let repairedHash: string;
+  try {
+    const fingerprint = async (value: unknown) => (await db.query<{ hash: string }>(
+      "select encode(sha256(convert_to($1::jsonb::text, 'UTF8')), 'hex') as hash",
+      [JSON.stringify(value)],
+    )).rows[0].hash;
+    originalHash = await fingerprint(backup);
+    repairedHash = await fingerprint(repaired);
+  } finally { await db.close(); }
+  const definitions: Record<string, unknown>[] = [];
+  const definitionKeys = new Map<string, number>();
+  const moves = plan.map(entry => {
+    const key = JSON.stringify(entry.target);
+    let index = definitionKeys.get(key);
+    if (index === undefined) {
+      index = definitions.length;
+      definitionKeys.set(key, index);
+      definitions.push(entry.target);
+    }
+    return { id: entry.survivor.id, target: index };
+  });
   const snapshot = `jsonb_build_object(
     'rounds', (select coalesce(jsonb_agg(to_jsonb(r) order by id), '[]') from archived_scorecard_rounds r),
     'holes', (select coalesce(jsonb_agg(to_jsonb(h) order by id), '[]') from archived_scorecard_holes h),
@@ -28,32 +54,38 @@ alter table public.archive_repair_backups enable row level security;
 revoke all on public.archive_repair_backups from public, anon, authenticated;
 do $repair$
 declare
-  original jsonb := ${literal(backup)};
-  repaired jsonb := ${literal(repaired)};
+  original jsonb;
+  moves jsonb := ${literal(moves)};
+  definitions jsonb := ${literal(definitions)};
   actual jsonb;
   entry jsonb;
+  target jsonb;
+  fingerprint text;
   temporary_round integer := -10000;
 begin
   actual := ${snapshot};
-  if actual = repaired then return; end if;
-  if actual <> original then raise exception 'Archive changed since backup. Generate a fresh repair plan; nothing repaired.'; end if;
-  insert into public.archive_repair_backups(original, repaired) values (original, repaired);
-  for entry in select value from jsonb_array_elements(${literal(plan)}) loop
-    update archived_scorecard_rounds set round = temporary_round where id = (entry->'survivor'->>'id')::uuid;
+  fingerprint := encode(sha256(convert_to(actual::text, 'UTF8')), 'hex');
+  if fingerprint = '${repairedHash}' then return; end if;
+  if fingerprint <> '${originalHash}' then raise exception 'Archive changed since backup. Generate a fresh repair plan; nothing repaired.'; end if;
+  original := actual;
+  for entry in select value from jsonb_array_elements(moves) loop
+    update archived_scorecard_rounds set round = temporary_round where id = (entry->>'id')::uuid;
     temporary_round := temporary_round - 1;
   end loop;
   delete from archived_scorecard_rounds where id in (select value::uuid from jsonb_array_elements_text(${literal([...removed])}));
-  for entry in select value from jsonb_array_elements(${literal(plan)}) loop
+  for entry in select value from jsonb_array_elements(moves) loop
+    target := definitions->(entry->>'target')::integer;
     update archived_scorecard_rounds set
-      round = (entry->'target'->>'round')::integer,
-      course = entry->'target'->>'course',
-      format = entry->'target'->>'format',
-      handicap_setup = case when entry->'target' ? 'handicap_setup' then nullif(entry->'target'->'handicap_setup', 'null'::jsonb) else handicap_setup end,
-      played_on = case when entry->'target' ? 'played_on' then (entry->'target'->>'played_on')::date else played_on end
-    where id = (entry->'survivor'->>'id')::uuid;
+      round = (target->>'round')::integer,
+      course = target->>'course',
+      format = target->>'format',
+      handicap_setup = case when target ? 'handicap_setup' then nullif(target->'handicap_setup', 'null'::jsonb) else handicap_setup end,
+      played_on = case when target ? 'played_on' then (target->>'played_on')::date else played_on end
+    where id = (entry->>'id')::uuid;
   end loop;
   actual := ${snapshot};
-  if actual <> repaired then raise exception 'Repair verification failed; transaction rolled back.'; end if;
+  if encode(sha256(convert_to(actual::text, 'UTF8')), 'hex') <> '${repairedHash}' then raise exception 'Repair verification failed; transaction rolled back.'; end if;
+  insert into public.archive_repair_backups(original, repaired) values (original, actual);
 end $repair$;
 commit;
 `;

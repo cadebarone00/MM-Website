@@ -62,7 +62,7 @@ async function main() {
   await writeFile(`${folder}/plan.json`, JSON.stringify({ issues, plan }, null, 2));
   console.log(JSON.stringify({ backup: folder, sourceEvents: plan.length, duplicateRows: plan.reduce((n, p) => n + p.duplicates.length, 0), videos: videos.length, issues }, null, 2));
   if (issues.length) throw new Error("Repair blocked by unresolved evidence; database unchanged.");
-  await writeFile(folder + "/repair.sql", archiveRepairSql({ rounds, holes, videos, setups: setups ?? [] }, plan));
+  await writeFile(folder + "/repair.sql", await archiveRepairSql({ rounds, holes, videos, setups: setups ?? [] }, plan));
   console.log("Atomic SQL ready: " + folder + "/repair.sql. Database has NOT been modified.");
 }
 main().catch((error) => { console.error(error instanceof Error ? error.message : "Repair failed"); process.exitCode = 1; });

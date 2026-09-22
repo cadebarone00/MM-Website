@@ -25,8 +25,14 @@ async function main() {
       const actual = (await db.query<{ row: Record<string, unknown> }>("select to_jsonb(t) as row from " + table + " t order by " + (table === "round_format_setups" ? "season_year,round" : "id"))).rows.map(row => row.row);
       try { assert.deepEqual(actual, rows); } catch { console.log("Snapshot differs", table, Object.keys(actual[0]), Object.keys(rows[0])); for(const key of Object.keys(rows[0])) if(JSON.stringify(actual[0][key]) !== JSON.stringify(rows[0][key])) console.log(key, actual[0][key], rows[0][key]); throw new Error("Fixture schema/export mismatch"); }
     }
-    const sql = archiveRepairSql(backup, plan);
+    const sql = await archiveRepairSql(backup, plan);
+    assert.ok(Buffer.byteLength(sql) < 100_000, "SQL must fit comfortably in the editor");
     await db.exec(sql);
+    const saved = (await db.query<{ original: ArchiveBackup; repaired: ArchiveBackup }>("select original, repaired from archive_repair_backups")).rows[0];
+    assert.deepEqual(saved.original, backup);
+    const removed = new Set(plan.flatMap(entry => entry.duplicates.map(row => row.id)));
+    assert.deepEqual(saved.repaired.holes, backup.holes.filter(row => !removed.has(String(row.round_id))));
+    assert.deepEqual(saved.repaired.videos, backup.videos);
     const rows = (await db.query<{ tournament_slug: string; player_slug: string; round: number; course: string; format: string }>("select * from archived_scorecard_rounds")).rows;
     assert.equal(rows.length, 159);
     for (const [slug, count] of [["2024-pinehurst", 47], ["2025-danzante", 40], ["2026-palm-springs", 72]] as const) assert.equal(rows.filter(row => row.tournament_slug === slug).length, count);

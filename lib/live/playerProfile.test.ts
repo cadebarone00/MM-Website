@@ -19,5 +19,6 @@ test("player and match profiles share confirmed round identity, exclude shared r
   assert.equal(matchProfileScorecard(snapshot, "match-3")!.holes[1].scores.cade, null);
   assert.equal(rounds[0].toPar, -1);
   assert.equal(payload.individualLeaderboard![0].toPar, -1);
+  assert.equal(payload.matches![1].id, "match-3");
   assert.deepEqual(playerProfilePayload({ ...snapshot, scores: new Map() }, "cade").scorecards![0].rounds, []);
 });

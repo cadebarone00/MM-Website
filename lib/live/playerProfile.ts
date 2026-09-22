@@ -1,6 +1,8 @@
 import type { LiveFeedPayload } from "@/lib/data/live";
 import type { PlayerScorecard, RoundScorecard } from "@/lib/data/types";
 import { leaderboard } from "./scoring";
+import { buildOfficialMatchState } from "./officialMatchState";
+import { profileMatch } from "./matchProfile";
 import type { LiveTournamentSnapshot } from "./types";
 
 /** Confirmed-only native scores; shared-ball rounds never become personal rounds. */
@@ -26,5 +28,10 @@ export function playerProfilePayload(snapshot: LiveTournamentSnapshot, player: s
   }
   const scorecards: PlayerScorecard[] = team ? [{ player, team, rounds }] : [];
   return { roster: { maroon: Object.keys(snapshot.players).filter(key => snapshot.players[key].team === "maroon"), white: Object.keys(snapshot.players).filter(key => snapshot.players[key].team === "white") },
+    matches: snapshot.matchBoxes.filter(box => box.id).map(box => profileMatch({
+      match: { id: box.id!, season_year: box.seasonYear, round: box.round, format: box.format,
+        tee_time: box.teeTime.toISOString(), maroon_players: box.maroonPlayers, white_players: box.whitePlayers },
+      officialState: buildOfficialMatchState(snapshot, box), odds: null, oddsHistory: [], scorecard: null,
+    })),
     individualLeaderboard: leaderboard(snapshot).filter(entry => entry.played > 0).map(({ player, team, toPar }) => ({ player, team, toPar })), scorecards };
 }

@@ -31,7 +31,7 @@ try {
   page.on('pageerror',error=>console.log('Browser error:',error.message));
   await page.route('**/api/**',route=>route.fulfill({json:{ok:true,rounds:[2026,2025,2024].map(year=>({year,round:1,course:'Archive Course',format:'Singles',holes:Array.from({length:18},(_,i)=>({hole:i+1,par:4,yards:400,score:4,putts:2,fairwayInRegulation:true,greenInRegulation:true}))}))}}));
   await page.goto(origin);const scroll=page.getByLabel('Scroll match scorecard horizontally');await scroll.waitFor();
-  assert.match(await scroll.locator('table').innerText(),/Yards/);
+  assert.match(await scroll.locator('table').innerText(),/Yards/i);
   const widths=await scroll.locator('tr').first().locator('td').evaluateAll(cells=>cells.map(cell=>cell.getBoundingClientRect().width));assert.ok(widths.every(width=>width===56));
   const before=await scroll.locator('th').first().boundingBox();await scroll.evaluate(element=>{element.scrollLeft=650});const after=await scroll.locator('th').first().boundingBox();assert.equal(Math.round(before.x),Math.round(after.x));
   assert.ok(await scroll.evaluate(element=>element.scrollLeft>0));
