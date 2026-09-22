@@ -165,7 +165,7 @@ export function PlayerScorecardView({
 
       <StatsSection tournament={tournament} player={scorecard.player} />
 
-      <PlayerBioSection profile={getPlayerProfile(scorecard.player)} />
+      <PlayerBioSection featuredYear={tournament.year} profile={getPlayerProfile(scorecard.player)} />
     </div>
   );
 }

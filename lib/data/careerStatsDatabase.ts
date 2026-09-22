@@ -1,3 +1,4 @@
+import { generatedCareerRound } from "./roundIdentity";
 import { careerRoundKey, mergeCareerRecords } from "./mergeCareerRecords";
 import { isIndividualScoreFormat } from "@/lib/handicap/archiveIndex";
 import { getPlayerSlug } from "./players";
@@ -39,7 +40,7 @@ export async function getCareerStatsDatabase() {
     getHistoricalCareerRecords(),
   ]);
   return {
-    records: mergeCareerRecords(holes.rows.filter((row) => (row.round_holes ?? 18) === 18).map((row): CareerHoleRecord => ({ year: row.year, player: getPlayerSlug(row.player), round: row.round, roundHoles: row.round_holes ?? 18, course: canonicalCourseName(row.course), format: row.format ?? "Unspecified", hole: row.hole, par: row.par, yards: row.yards, score: row.score, putts: row.putts, fairwayInRegulation: row.fairway_in_regulation, greenInRegulation: row.green_in_regulation, penalties: row.penalties })), edited.records, edited.keys),
+    records: mergeCareerRecords(holes.rows.filter((row) => (row.round_holes ?? 18) === 18).map((row): CareerHoleRecord => ({ year: row.year, player: getPlayerSlug(row.player), round: generatedCareerRound(row.year, row.round), roundHoles: row.round_holes ?? 18, course: canonicalCourseName(row.course), format: row.format ?? "Unspecified", hole: row.hole, par: row.par, yards: row.yards, score: row.score, putts: row.putts, fairwayInRegulation: row.fairway_in_regulation, greenInRegulation: row.green_in_regulation, penalties: row.penalties })), edited.records, edited.keys),
     partnerships: participants.rows.filter((row) => row.partner).map((row): CareerPartnership => ({
       player: getPlayerSlug(row.player), partner: getPlayerSlug(row.partner!), year: row.year, format: row.format ?? "Unspecified",
       result: row.winning_side?.toUpperCase() === "HALVED" ? "halve" : row.winning_side?.toUpperCase() === row.team_id?.toUpperCase() ? "win" : "loss",

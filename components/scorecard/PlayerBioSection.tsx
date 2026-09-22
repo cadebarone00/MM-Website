@@ -43,7 +43,7 @@ function InfoBlock({ label, value }: { label: string; value?: string | null }) {
  * works identically whether the page rendered statically or client-side
  * (the live tournament path), so no parent component needs to change.
  */
-export function PlayerBioSection({ profile: baseProfile }: { profile: PlayerProfile | undefined }) {
+export function PlayerBioSection({ profile: baseProfile, featuredYear }: { profile: PlayerProfile | undefined; featuredYear?: number }) {
   const [profile, setProfile] = useState(baseProfile);
 
   useEffect(() => {
@@ -126,7 +126,7 @@ export function PlayerBioSection({ profile: baseProfile }: { profile: PlayerProf
         )}
       </div>
     </div>
-    <ArchivedScores playerSlug={profile.slug} />
+    <ArchivedScores featuredYear={featuredYear} playerSlug={profile.slug} />
     <CareerArchiveStats playerSlug={profile.slug} />
     </>
   );

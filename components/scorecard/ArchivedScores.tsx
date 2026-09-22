@@ -23,7 +23,7 @@ function ScoreNine({ holes, endLabel }: { holes: ArchiveHole[]; endLabel: "OUT" 
   </div>;
 }
 
-export function ArchivedScores({ playerSlug }: { playerSlug: string }) {
+export function ArchivedScores({ playerSlug, featuredYear }: { playerSlug: string; featuredYear?: number }) {
   const [rounds, setRounds] = useState<ArchiveRound[]>([]);
   const [year, setYear] = useState<number | null>(null);
   const [selectedKey, setSelectedKey] = useState("");
@@ -39,11 +39,11 @@ export function ArchivedScores({ playerSlug }: { playerSlug: string }) {
     let cancelled = false;
     fetch("/api/players/" + playerSlug + "/archived-scores", { cache: "no-store" }).then((response) => response.json()).then((data) => {
       if (cancelled || !data.ok) return;
-      const loaded = data.rounds as ArchiveRound[]; setRounds(loaded);
+      const loaded = (data.rounds as ArchiveRound[]).filter(round => featuredYear == null || round.year < featuredYear); setRounds(loaded);
       if (loaded.length) { setYear(loaded[0].year); setSelectedKey(roundKey(loaded[0])); }
     }).catch(() => !cancelled && setError("Player archives are unavailable right now."));
     return () => { cancelled = true; };
-  }, [playerSlug]);
+  }, [playerSlug, featuredYear]);
   const years = useMemo(() => [...new Set(rounds.map((round) => round.year))].sort((a, b) => b - a), [rounds]);
   const visible = rounds.filter((round) => round.year === year).sort((a, b) => a.round - b.round);
   const selected = rounds.find((round) => roundKey(round) === selectedKey) ?? visible[0];
@@ -61,7 +61,7 @@ export function ArchivedScores({ playerSlug }: { playerSlug: string }) {
       <p className="m-0 font-condensed text-xs font-bold uppercase tracking-wide text-ink-700">Scorecards</p>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <div ref={yearRef} className="flex items-center"><button type="button" aria-expanded={yearOpen} onClick={() => setYearOpen((open) => !open)} className="rounded-pill bg-maroon-700 px-3 py-1.5 font-condensed text-xs font-bold text-cream-50">{year}</button><div className={["flex overflow-hidden transition-[max-width,opacity,margin] duration-200", yearOpen ? "ml-1 max-w-40 opacity-100" : "max-w-0 opacity-0"].join(" ")}>{years.map((item) => <button key={item} type="button" onClick={() => { chooseYear(item); setYearOpen(false); }} className={item === year ? "shrink-0 rounded-pill bg-maroon-700 px-3 py-1.5 font-condensed text-xs font-bold text-cream-50" : "shrink-0 rounded-pill px-3 py-1.5 font-condensed text-xs font-bold text-ink-500 hover:bg-cream-100"}>{item}</button>)}</div></div>
-        <div className="flex flex-wrap gap-1">{visible.map((round) => <button type="button" key={roundKey(round)} onClick={() => setSelectedKey(roundKey(round))} className={roundKey(round) === roundKey(selected) ? "rounded-pill bg-maroon-700 px-3 py-1.5 font-condensed text-xs font-bold text-white" : "rounded-pill bg-cream-100 px-3 py-1.5 font-condensed text-xs font-bold text-ink-600 hover:bg-gold-100"}>R{round.round}</button>)}</div>
+        <div className="flex flex-wrap gap-1">{visible.map((round) => <button type="button" key={roundKey(round)} onClick={() => setSelectedKey(roundKey(round))} className={roundKey(round) === roundKey(selected) ? "rounded-pill bg-maroon-700 px-3 py-1.5 font-condensed text-xs font-bold text-white" : "rounded-pill bg-cream-100 px-3 py-1.5 font-condensed text-xs font-bold text-ink-600 hover:bg-gold-100"}>{round.round === 0 ? "INDI" : `R${round.round}`}</button>)}</div>
       </div>
       <p className="mt-3 mb-2 font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">{selected.course} <span className="mx-1 text-gold-500">·</span> {selected.format}</p>
       <div className="space-y-2"><ScoreNine holes={front} endLabel="OUT" /><ScoreNine holes={back} endLabel="IN" /></div>

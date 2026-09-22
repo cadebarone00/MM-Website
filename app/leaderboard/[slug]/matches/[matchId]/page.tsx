@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import { MatchProfile } from "@/components/match/MatchProfile";
 import { LiveMatchProfile } from "@/components/match/LiveMatchProfile";
-import { MatchHoleByHole } from "@/components/leaderboard/MatchHoleByHole";
+import { LiveMatchScorecard } from "@/components/match/LiveMatchScorecard";
+import { historicalMatchScorecard } from "@/lib/data/historicalMatchScorecard";
 import { getScorecardsForTournament } from "@/lib/data/archivedScorecards";
 import { pastTournaments, nextTournament, getTournament } from "@/lib/data";
-import { careerArchiveRecords, careerArchiveTeamRecords } from "@/lib/data/careerArchive.generated";
+import { getCombinedCareerArchive } from "@/lib/data/combinedCareerArchive";
 import { reconstructHistoricalMatchOdds } from "@/lib/odds/historicalMatchOdds";
 
 export function generateStaticParams() {
@@ -26,6 +27,6 @@ export default async function MatchBreakdownPage({ params }: { params: Promise<{
 
   const scorecards = await getScorecardsForTournament(tournament);
   const withScorecards = { ...tournament, scorecards };
-  const estimate = reconstructHistoricalMatchOdds(tournament, match, careerArchiveRecords, careerArchiveTeamRecords);
-  return <MatchProfile tournamentSlug={slug} editionLabel={tournament.editionLabel} match={match} odds={estimate.points} estimateNote={estimate.note || undefined} scorecard={<MatchHoleByHole tournament={withScorecards} match={match} tournamentSlug={slug} />} />;
+  const estimate = reconstructHistoricalMatchOdds(tournament, match, archive.records, archive.teamRecords);
+  return <MatchProfile tournamentSlug={slug} editionLabel={tournament.editionLabel} match={match} odds={estimate.points} estimateNote={estimate.note || undefined} scorecard={<LiveMatchScorecard match={match} scorecard={scorecard} />} />;
 }

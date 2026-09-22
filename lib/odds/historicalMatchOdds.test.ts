@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { careerArchiveRecords, careerArchiveTeamRecords } from "@/lib/data/careerArchive.generated";
+import { careerArchiveRecords, careerArchiveTeamRecords } from "@/lib/data/careerArchive";
 import { palmSprings2026 } from "@/lib/data/2026-palm-springs";
 import { reconstructHistoricalMatchOdds, remainingMatchOdds } from "./historicalMatchOdds";
 

@@ -1,7 +1,8 @@
-// Default: read-only backup and exact repair plan. --apply requires a matching preflight.
+import { archiveRepairSql, type ArchiveBackup } from "./archive-repair-sql";
+// Read-only export and executable atomic SQL. This script never mutates the database.
 import { loadEnvConfig } from "@next/env";
 import { createClient } from "@supabase/supabase-js";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { scorecards2024 } from "../lib/data/scorecards-2024";
 import { scorecards2025 } from "../lib/data/scorecards-2025";
@@ -26,8 +27,10 @@ async function read(table: string): Promise<Row[]> {
 }
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 async function main() {
-  const [rounds, holes, videos] = await Promise.all([read("archived_scorecard_rounds"), read("archived_scorecard_holes"), read("archived_shot_videos")]);
-  const { data: setups, error: setupError } = await db.from("round_format_setups").select("*").order("season_year").order("round");
+  const input = process.argv.indexOf("--backup");
+  const saved: ArchiveBackup | null = input >= 0 ? JSON.parse(await readFile(process.argv[input + 1], "utf8")) : null;
+  const [rounds, holes, videos] = saved ? [saved.rounds, saved.holes, saved.videos] : await Promise.all([read("archived_scorecard_rounds"), read("archived_scorecard_holes"), read("archived_shot_videos")]);
+  const { data: setups, error: setupError } = saved ? { data: saved.setups, error: null } : await db.from("round_format_setups").select("*").order("season_year").order("round");
   if (setupError) throw new Error(setupError.message);
   const folder = `node_modules/.cache/archive-repair/${new Date().toISOString().replace(/[:.]/g, "-")}`;
   await mkdir(folder, { recursive: true });
@@ -58,21 +61,8 @@ async function main() {
   for (const r of rounds) if (definitions.some((d) => d.slug === r.tournament_slug) && !matched.has(r.id)) issues.push(`Unmatched database row ${r.id}`);
   await writeFile(`${folder}/plan.json`, JSON.stringify({ issues, plan }, null, 2));
   console.log(JSON.stringify({ backup: folder, sourceEvents: plan.length, duplicateRows: plan.reduce((n, p) => n + p.duplicates.length, 0), videos: videos.length, issues }, null, 2));
-  if (!process.argv.includes("--apply")) return;
   if (issues.length) throw new Error("Repair blocked by unresolved evidence; database unchanged.");
-  // Optimistic precondition: fail before any mutation if the export changed.
-  const fresh = await Promise.all([read("archived_scorecard_rounds"), read("archived_scorecard_holes"), read("archived_shot_videos")]);
-  if (hash(fresh) !== hash([rounds, holes, videos])) throw new Error("Archive changed during preflight; database unchanged.");
-  // PostgREST lacks a cross-request transaction here. Keep a durable journal and
-  // restore parent identities on any failure before duplicates have been removed.
-  const journal: string[] = [];
-  async function update(id: string, values: Record<string, unknown>) {
-    const { error } = await db.from("archived_scorecard_rounds").update(values).eq("id", id);
-    if (error) throw new Error(error.message);
-    journal.push(id); await writeFile(`${folder}/journal.json`, JSON.stringify(journal));
-  }
-  const affected = plan.filter((p) => p.duplicates.length || Object.entries(p.target).some(([k, v]) => hash(p.survivor[k]) !== hash(v)));
-  if (!affected.length) { console.log("Already repaired; no changes."); return; }
-  throw new Error("Apply intentionally disabled until atomic repair transport is prepared; backup and plan are ready.");
+  await writeFile(folder + "/repair.sql", archiveRepairSql({ rounds, holes, videos, setups: setups ?? [] }, plan));
+  console.log("Atomic SQL ready: " + folder + "/repair.sql. Database has NOT been modified.");
 }
 main().catch((error) => { console.error(error instanceof Error ? error.message : "Repair failed"); process.exitCode = 1; });

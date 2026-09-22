@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import { formatRoundLabel } from "@/lib/data/roundLabel";
@@ -63,6 +64,7 @@ function MatchBox({ matchup }: { matchup: RoundFormatMatchup }) {
       </div>
     </div>
   );
+  return matchup.href ? <Link href={matchup.href} className="block rounded-lg focus-visible:outline-2 focus-visible:outline-maroon-700 hover:brightness-95">{content}</Link> : content;
 }
 
 function SetupDetails({ seasonYear, round, setup, courses }: { seasonYear: number; round: number; setup: RoundFormatEntry["setup"]; courses: HandicapCourseOption[] }) {

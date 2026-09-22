@@ -3,6 +3,7 @@ import type { Tournament } from "./types";
 import { tournamentRoundSequence } from "./tournamentRoundSequence";
 
 export interface RoundFormatMatchup {
+  href?: string;
   side: string[]; // player slugs — the lone player for Singles, both partners for Fourball/Alt Shot
   opponent: string[]; // empty = played solo, no real match (e.g. an absent opponent) — see archiveOnlyMatches
   teeTime?: string; // RealMatch.teeTimeCst — blank for every historical match until hand-entered
@@ -49,7 +50,7 @@ export function groupRoundFormatArchiveByDay(entries: RoundFormatEntry[], dayDat
  * from the tournament's own `matches` array, so it's always exactly what
  * the schedule says, nothing hand-reconciled.
  */
-export function roundFormatArchive(tournament: Pick<Tournament, "matches" | "archiveOnlyMatches">): RoundFormatEntry[] {
+export function roundFormatArchive(tournament: Pick<Tournament, "matches" | "archiveOnlyMatches" | "slug">): RoundFormatEntry[] {
   // archiveOnlyMatches never affects the round sequence itself (tournamentRoundSequence
   // reads `matches` only) — it only adds extra matchups to a round that's already real.
   const allMatches = [...tournament.matches, ...(tournament.archiveOnlyMatches ?? [])];
@@ -60,6 +61,6 @@ export function roundFormatArchive(tournament: Pick<Tournament, "matches" | "arc
     format: representative.format,
     matchups: allMatches
       .filter((match) => match.day === representative.day && match.session === representative.session)
-      .map((match) => ({ side: match.maroonPlayers, opponent: match.whitePlayers, teeTime: match.teeTimeCst })),
+      .map((match) => ({ href: tournament.matches.includes(match) ? `/leaderboard/${tournament.slug}/matches/${match.id}` : undefined, side: match.maroonPlayers, opponent: match.whitePlayers, teeTime: match.teeTimeCst })),
   }));
 }

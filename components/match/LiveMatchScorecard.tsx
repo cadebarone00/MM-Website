@@ -29,13 +29,14 @@ export function LiveMatchScorecard({ match, scorecard }: { match: RealMatch; sco
   const scoresRow = (key: string, label: string, values: (number | null)[], team: "maroon" | "white") => row(key, label, values.map((score, index) => score == null ? "—" : <HoleMarkerForDiff key={index} diff={score - holes[index].par} size={24} tone={team === "maroon" ? "white" : "maroon"}>{score}</HoleMarkerForDiff>), total(values), team === "maroon" ? "bg-maroon-700 text-white" : "bg-white text-maroon-700");
   const players = (side: "maroon" | "white") => (side === "maroon" ? match.maroonPlayers : match.whitePlayers).map((player) => scoresRow(player, getPlayerLastName(player), holes.map((hole) => hole.scores[player] ?? null), side));
   const shared = match.format === "Foursome" || match.format === "Alt Shot";
-  return <div className="overflow-x-auto border-y border-ink-300" tabIndex={0} aria-label="Scroll match scorecard horizontally"><table className="w-max table-fixed border-collapse"><tbody>
+  return <section>{scorecard.courseName && <p className="mb-3 font-condensed text-sm font-bold text-maroon-700">{scorecard.courseName}</p>}<div className="overflow-x-auto border-y border-ink-300" tabIndex={0} aria-label="Scroll match scorecard horizontally"><table className="w-max table-fixed border-collapse"><tbody>
     {row("holes", "Hole", holes.map((hole) => hole.number), "Tot")}
+    {row("yards", "Yards", holes.map((hole) => hole.yards ?? null), total(holes.map((hole) => hole.yards ?? null)))}
     {row("par", "Par", holes.map((hole) => hole.par), total(holes.map((hole) => hole.par)))}
     {!shared && players("maroon")}
     {(shared || match.format === "Fourball") && scoresRow("maroon-side", shared ? "Maroon" : "Best Ball", maroon, "maroon")}
     {row("status", "Status", statuses.map((value, index) => value == null ? "—" : <span key={index} className={`flex h-12 items-center justify-center font-bold ${value > 0 ? "bg-maroon-700 text-white" : value < 0 ? "bg-white text-maroon-700" : ""}`} aria-label={`Hole ${index + 1}: ${value === 0 ? "All square" : `${value > 0 ? "Maroon" : "White"} ${Math.abs(value)} up`}`}>{value === 0 ? "AS" : `${Math.abs(value)} ${value > 0 ? "↑" : "↓"}`}</span>), match.status === "scheduled" ? "—" : liveLabel(match))}
     {(shared || match.format === "Fourball") && scoresRow("white-side", shared ? "White" : "Best Ball", white, "white")}
     {!shared && players("white")}
-  </tbody></table></div>;
+  </tbody></table></div></section>;
 }

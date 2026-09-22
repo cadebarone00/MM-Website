@@ -12,7 +12,7 @@ test("profile exposes only this match's round and players, preserving missing st
       ["b:1:1", { seasonYear: 2027, player: "b", round: 1, hole: 1, score: 3, putts: 1, fir: true, gir: true, hostEdited: false }],
     ]),
   };
-  assert.deepEqual(matchProfileScorecard(snapshot, "match"), { holes: [{ number: 1, par: 4, scores: { a: 4, b: null } }] });
+  assert.deepEqual(matchProfileScorecard(snapshot, "match"), { courseName: "Course", holes: [{ number: 1, par: 4, yards: 400, scores: { a: 4, b: null } }] });
   assert.equal(matchProfileScorecard(snapshot, "missing"), null);
   snapshot.roundCourses = {};
   assert.equal(matchProfileScorecard(snapshot, "match"), null);

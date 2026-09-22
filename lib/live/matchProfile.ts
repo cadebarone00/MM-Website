@@ -11,7 +11,8 @@ export type MatchProfileEntry = {
   scorecard: MatchProfileScorecard | null;
 };
 export type MatchProfileScorecard = {
-  holes: { number: number; par: number; scores: Record<string, number | null> }[];
+  courseName?: string;
+  holes: { number: number; par: number; yards?: number; scores: Record<string, number | null> }[];
 };
 
 /** Call only with a confirmed-only snapshot; expose this match's strokes, never other players' statistics. */
@@ -20,9 +21,10 @@ export function matchProfileScorecard(snapshot: LiveTournamentSnapshot, id: stri
   if (!box) return null;
   const course = snapshot.courses[snapshot.roundCourses[box.round]];
   if (!course) return null;
-  return { holes: [...course.holes].sort((a, b) => a.number - b.number).map((hole) => ({
+  return { courseName: course.name, holes: [...course.holes].sort((a, b) => a.number - b.number).map((hole) => ({
     number: hole.number,
     par: hole.par,
+    yards: hole.yards,
     scores: Object.fromEntries([...box.maroonPlayers, ...box.whitePlayers].map((player) => {
       const score = snapshot.scores.get(`${player}:${box.round}:${hole.number}`)?.score;
       return [player, score != null && score > 0 ? score : null];
