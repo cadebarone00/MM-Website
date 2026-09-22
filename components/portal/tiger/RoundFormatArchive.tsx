@@ -46,7 +46,7 @@ function MatchBox({ matchup }: { matchup: RoundFormatMatchup }) {
       </div>
     );
   }
-  return (
+  const content = (
     <div className={`rounded-lg border border-gold-200 bg-white p-3 ${singles ? "mx-auto w-fit" : ""}`}>
       <p className="text-center font-condensed text-2xs font-bold uppercase tracking-wide text-ink-400">{matchup.teeTime ?? "Tee time N/A"}</p>
       <div className={`mt-2 flex items-center gap-3 ${singles ? "" : "justify-between"}`}>

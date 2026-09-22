@@ -25,8 +25,8 @@ export default async function MatchBreakdownPage({ params }: { params: Promise<{
   const match = tournament.matches.find((m) => m.id === matchId);
   if (!match) notFound();
 
-  const scorecards = await getScorecardsForTournament(tournament);
-  const withScorecards = { ...tournament, scorecards };
+  const [scorecards, archive] = await Promise.all([getScorecardsForTournament(tournament), getCombinedCareerArchive()]);
+  const scorecard = historicalMatchScorecard(tournament, match, scorecards, archive.teamRecords);
   const estimate = reconstructHistoricalMatchOdds(tournament, match, archive.records, archive.teamRecords);
   return <MatchProfile tournamentSlug={slug} editionLabel={tournament.editionLabel} match={match} odds={estimate.points} estimateNote={estimate.note || undefined} scorecard={<LiveMatchScorecard match={match} scorecard={scorecard} />} />;
 }

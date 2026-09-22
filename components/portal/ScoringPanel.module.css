@@ -33,7 +33,7 @@
 .stats :global(.grid-rows-3) button, .stats :global(.grid-rows-3) span { width: var(--compass-size); max-width: 100%; }
 .stats [data-putts-label] { margin-top: 2px; font-size: 12px; line-height: 16px; }
 .stats [aria-label="Your putts"] button { height: 36px; width: 40px; }
-.actions > div { margin-top: 0; position: relative; }
+.actions > div { margin-top: 4px; position: relative; }
 .actions button { min-height: 48px; padding-block: 8px; }
 .actions p { position: absolute; bottom: 100%; left: 0; right: 0; padding: 8px; background: #fff; border: 1px solid #c5a45d; border-radius: 4px; }
 .handicap { justify-content: space-between; }

@@ -189,9 +189,6 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
     <div data-hole-header className="-mx-4 sm:-mx-7"><ScoringRoundHeader hole={selectedHole} par={info?.par ?? null} yards={info?.yards ?? null} totalScore={total} toPar={toPar} /></div>
     <button type="button" onClick={() => setShowScorecard(true)} className="mx-auto block font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700">Scorecard</button>
     <ScoringHoleSelector selectedHole={selectedHole} onSelect={select} disabled={busy || queue.sending} statuses={statuses} />
-    <div className={styles.notice} aria-live="polite">
-      {error || queue.message || draftStorage.storageError ? <p role="alert">{error ?? queue.message ?? "Browser storage unavailable; keep this page open."}</p> : mySubmitted ? <p>Your round is submitted. Tiger can change it.</p> : status === "disputed" ? <p role="alert">Scores disagree. Correct both entries and resubmit to confirm this hole.</p> : status === "submitted" ? <p>Submitted. Waiting for the other scorer.</p> : null}
-    </div>
     <div className={styles.scores}>
       <div className={rowClass(sides.maroon)}>
         <p className="text-center font-condensed text-sm font-bold uppercase tracking-wide">{isFoursome ? "Your team score" : "Your score"}</p>
@@ -212,6 +209,9 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
       <p data-putts-label className="mt-1 text-center font-condensed text-sm font-bold uppercase tracking-wide text-maroon-800">Putts</p>
       <div className="mt-1"><PuttsPicker ariaLabel="Your putts" disabled={locked} value={draft.putts} onChange={(putts) => edit({ putts })} /></div>
     </>}
+    </div>
+    <div className={styles.notice} aria-live="polite">
+      {error || queue.message || draftStorage.storageError ? <p role="alert">{error ?? queue.message ?? "Browser storage unavailable; keep this page open."}</p> : mySubmitted ? <p>Your round is submitted. Tiger can change it.</p> : status === "disputed" ? <p role="alert">Scores disagree. Correct both entries and resubmit to confirm this hole.</p> : status === "submitted" ? <p>Submitted. Waiting for the other scorer.</p> : null}
     </div>
     <div className={styles.actions}><HoleActionBar nextLabel="Next Hole" disabled={busy || queue.sending || selectedHole === 18} onNext={() => select(Math.min(selectedHole + 1, 18))}
       submitLabel={unchanged ? "Submitted" : "Submit Score"} submitDisabled={locked || unchanged} onSubmit={() => void submitHole()} /></div>

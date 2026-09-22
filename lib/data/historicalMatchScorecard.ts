@@ -13,7 +13,7 @@ export function historicalMatchScorecard(tournament: Tournament, match: RealMatc
   const individual = (player: string) => cards.find(card => getPlayerSlug(card.player) === getPlayerSlug(player))?.rounds.find(entry => entry.round === round);
   const team = (player: string) => teams.filter(row => row.year === tournament.year && row.round === round &&
     [match.maroonPlayers, match.whitePlayers].some(side => side.includes(player) && side.includes(row.player1) && side.includes(row.player2)));
-  const setup = players.flatMap(player => shared ? team(player).map(hole => ({ course: hole.course, hole })) :
+  const setup = players.flatMap<{ course: string; hole: { hole: number; par: number; yards: number } }>(player => shared ? team(player).map(hole => ({ course: hole.course, hole })) :
     (individual(player)?.holes ?? []).map(hole => ({ course: individual(player)!.course, hole })));
   if (!setup.length) return null;
   const numbers = [...new Set(setup.map(entry => entry.hole.hole))].sort((a, b) => a - b);
