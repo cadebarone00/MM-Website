@@ -3,6 +3,7 @@
 import type { BroadcastConfig, BroadcastPlayerVideo, BroadcastStanding, BroadcastState } from "@/lib/broadcast/types";
 import type { BroadcastMatchPlay } from "@/lib/broadcast/matchPlayData";
 import type { ActiveBroadcastEvent } from "@/lib/broadcast/eventDisplay";
+import type { LiveScoreEvent } from "@/lib/broadcast/liveScoreEvent";
 import { useAutoScene } from "@/lib/broadcast/useAutoScene";
 import { IndividualLeaderboardScene } from "./scenes/IndividualLeaderboardScene";
 import { MatchPlayScene } from "./scenes/MatchPlayScene";
@@ -10,6 +11,7 @@ import { HoldingScene } from "./scenes/HoldingScene";
 import { OverlayLayer } from "./OverlayLayer";
 import { EventOverlay } from "./EventOverlay";
 import { EventTakeover } from "./EventTakeover";
+import { BroadcastTicker } from "./BroadcastTicker";
 import { PlayerVideoTransitionScene } from "./scenes/PlayerVideoTransitionScene";
 import { PlayerVideoScene } from "./scenes/PlayerVideoScene";
 
@@ -28,6 +30,8 @@ export function SceneRenderer({
   mockSeed = 1,
   mockLeaderboardAnimation = null,
   mockForcedEventKind,
+  liveScoreEvent = null,
+  liveEventElapsedMs = null,
 }: {
   state: BroadcastState;
   config: BroadcastConfig;
@@ -43,6 +47,8 @@ export function SceneRenderer({
   mockSeed?: number;
   mockLeaderboardAnimation?: { birdieEnabled: boolean; birdieDelayMs: number; rowMoveMs: number } | null;
   mockForcedEventKind?: "birdie" | "eagle" | "bogey";
+  liveScoreEvent?: LiveScoreEvent | null;
+  liveEventElapsedMs?: number | null;
 }) {
   const isAuto = state.automationMode === "auto";
   // Producer Mode (including a host's Pause — see BroadcastControlsPanel):
@@ -69,13 +75,29 @@ export function SceneRenderer({
         <EventTakeover event={activeEvent} matchPlay={matchPlay} />
       ) : (
         <>
-          {scene === "individual_leaderboard" && <IndividualLeaderboardScene standings={standings} final={leaderboardFinal} mockElapsedMs={mockElapsedMs} mockVideoDurationMs={mockVideoDurationMs} mockSeed={mockSeed} mockAnimation={mockLeaderboardAnimation} mockForcedEventKind={mockForcedEventKind} />}
+          {scene === "individual_leaderboard" && (
+            <IndividualLeaderboardScene
+              standings={standings}
+              final={leaderboardFinal}
+              mockElapsedMs={mockElapsedMs}
+              mockVideoDurationMs={mockVideoDurationMs}
+              mockSeed={mockSeed}
+              mockAnimation={mockLeaderboardAnimation}
+              mockForcedEventKind={mockForcedEventKind}
+              liveEvent={liveScoreEvent}
+              liveEventElapsedMs={liveEventElapsedMs}
+            />
+          )}
           {scene === "match_play" && <MatchPlayScene matchPlay={matchPlay} />}
           {scene === "holding" && <HoldingScene venue={holding.venue} dateLabel={holding.dateLabel} />}
           <EventOverlay event={activeEvent} matchPlay={matchPlay} />
         </>
       )}
       <OverlayLayer text={state.overlayText} expiresAt={state.overlayExpiresAt} />
+      {/* Permanent score bug — stays up through rotation AND full-screen
+          takeovers alike (2026-09-22 broadcast graphics brainstorm: the
+          ticker never comes down). */}
+      <BroadcastTicker standings={standings} />
     </>
   );
 }

@@ -66,7 +66,12 @@ export function BroadcastStage({
   const [liveEventStartedAt, setLiveEventStartedAt] = useState<number | null>(null);
   const prevLiveEventRef = useRef<LiveScoreEvent | null>(null);
   useEffect(() => {
+    // Intentional: syncs local "when did this event start" state to a
+    // prop that can change while mounted (a new live event replacing/
+    // clearing the old one) — same pattern/justification as
+    // OverlayLayer.tsx's own fetch-on-mount effect.
     if (liveScoreEvent && liveScoreEvent !== prevLiveEventRef.current) setLiveEventStartedAt(Date.now());
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!liveScoreEvent) setLiveEventStartedAt(null);
     prevLiveEventRef.current = liveScoreEvent;
   }, [liveScoreEvent]);
@@ -108,6 +113,8 @@ export function BroadcastStage({
       mockSeed={mockRun?.seed ?? animationTest?.seed ?? 1}
       mockLeaderboardAnimation={mockRun?.leaderboardAnimation ?? (animationTest ? { birdieEnabled: true, birdieDelayMs: 2000, rowMoveMs: 1000 } : null)}
       mockForcedEventKind={animationTest?.kind}
+      liveScoreEvent={mockRun || animationTest ? null : liveScoreEvent}
+      liveEventElapsedMs={liveEventElapsedMs}
     />
   );
 }
