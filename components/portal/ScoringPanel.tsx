@@ -7,7 +7,9 @@ import { getPlayerLastName } from "@/lib/data/players";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { LiveMatchBox, MatchFormat } from "@/lib/live/types";
 import { buildScorecardRows, holeSubmissionStatus, sameHoleDraft, submittedPair, scoringSides, validHoleDraft, type HoleDraft, type HoleSubmission } from "@/lib/live/holeSubmission";
-import { describeBlocker, liveRoundStatus, waitingOnSubmitters } from "@/lib/live/roundStatus";
+import { liveRoundStatus } from "@/lib/live/roundStatus";
+import { previewOfficialState } from "@/lib/live/previewMatchState";
+import { liveMatchCard } from "@/lib/portal/matchCards";
 import { ScoringHoleSelector } from "./ScoringHoleSelector";
 import { ScoringRoundHeader } from "./ScoringRoundHeader";
 import { Scorecard } from "./Scorecard";
@@ -23,6 +25,11 @@ export interface ScoringState {
   scores: { player: string; hole: number; score: number | null; selfReportedScore: number | null; putts: number | null; fir: boolean | null; gir: boolean | null; firDirection: string | null; girDirection: string | null; didNotFinish: boolean; confirmedBy: string | null }[];
   submittedPlayers: string[];
   holeSubmissions?: HoleSubmission[];
+  course?: string | null;
+  rating?: number | null;
+  slope?: number | null;
+  /** Confirmed-only match-play state, published by the database the moment both scorers agree on a hole; null before any hole is confirmed. */
+  official?: { thru: number; leader: "maroon" | "white" | "tie"; margin: number; mathematicallyComplete: boolean } | null;
 }
 
 export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewState, previewSubmissions, previewSubmittedPlayers, onPreviewSubmit, onPreviewSubmitRound }: {
@@ -154,7 +161,22 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
     const scorecardTotal = enteredRows.reduce((sum, row) => sum + (row.score ?? 0), 0);
     const scorecardToPar = enteredRows.length > 0 ? scorecardTotal - enteredRows.reduce((sum, row) => sum + row.par, 0) : null;
     const roundStatus = liveRoundStatus(matchBox, playerSlug, state.holes, submissions);
-    const waitingOn = waitingOnSubmitters(matchBox, playerSlug, submittedPlayers).filter((slug) => slug !== playerSlug).map((slug) => getPlayerLastName(nameBySlug[slug] ?? slug));
+    const official = previewState
+      ? previewOfficialState(matchBox, round, state.holes, submissions)
+      : (state.official ?? null);
+    const card = liveMatchCard({
+      id: matchBox.id ?? "preview",
+      status: "Live",
+      course: null,
+      round,
+      format: matchBox.format,
+      maroonPlayers: matchBox.maroonPlayers,
+      whitePlayers: matchBox.whitePlayers,
+      teeTime: new Date(),
+      official,
+      maroonOdds: null,
+      whiteOdds: null,
+    });
     return (
       <Scorecard
         rows={rows}
@@ -173,9 +195,18 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
           opponentDisputedHoles: roundStatus.opponentDisputedHoles,
           yourTotal: roundStatus.yourTotal,
           opponentTotal: roundStatus.opponentTotal,
-          blocker: describeBlocker(roundStatus.blocker, targetLabel),
           submitted: mySubmitted,
-          note: mySubmitted ? (waitingOn.length > 0 ? `Submitted \u2014 waiting on ${waitingOn.join(" & ")}` : "Submitted \u2014 your round is official") : null,
+          course: state.course ?? null,
+          rating: state.rating ?? null,
+          slope: state.slope ?? null,
+          matchCompleteness: {
+            roundFormatLabel: card.roundFormatLabel,
+            maroonNames: matchBox.maroonPlayers.map((slug) => getPlayerLastName(nameBySlug[slug] ?? slug).toUpperCase()),
+            whiteNames: matchBox.whitePlayers.map((slug) => getPlayerLastName(nameBySlug[slug] ?? slug).toUpperCase()),
+            statusLabel: card.statusLabel,
+            progressLabel: card.progressLabel,
+            leader: card.leader,
+          },
         }}
         onSubmit={previewState && !onPreviewSubmitRound ? undefined : () => void submitRound()}
         submitting={submittingRound}

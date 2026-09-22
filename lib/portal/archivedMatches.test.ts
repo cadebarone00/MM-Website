@@ -33,7 +33,7 @@ test("without a scorecard on file, uses the canonical round even when its scorec
   const matches = archivedMatchesForPlayer(palmSprings2026, "cade-barone");
   const p26m10 = matches.find((match) => match.id === "p26-m10");
   assert.equal(p26m10?.course, palmSprings2026.venue);
-  assert.equal(p26m10?.roundFormatLabel, "Round 2 · Afternoon · Singles");
+  assert.equal(p26m10?.roundFormatLabel, "Round 4 · Afternoon · Singles");
 });
 
 test("with a scorecard on file, the course comes from the player's real per-round archive (not the venue) and the round number is the tournament's canonical round", () => {

@@ -55,21 +55,13 @@ function LabelColumn({ labels }: { labels: string[] }) {
   );
 }
 
-/** Live: a hole where you and your scorer disagree turns red; one still waiting on your scorer is muted. */
-function holeNumberClass(state: HoleState | undefined): string {
-  if (state === "disputed") return "bg-red-600 text-white";
-  if (state === "submitted") return "text-ink-400";
-  return "text-maroon-800";
-}
-
-function HoleColumn({ row, holeState, showOpponent, yourAlert, opponentAlert, onEdit }: { row: ScorecardHoleRow; holeState?: HoleState; showOpponent: boolean; yourAlert?: boolean; opponentAlert?: boolean; onEdit: () => void }) {
+function HoleColumn({ row, onEdit }: { row: ScorecardHoleRow; onEdit: () => void }) {
   const par3 = row.par === 3;
   return (
     <div className={`flex ${COLUMN_WIDTH} shrink-0 flex-col border-r border-ink-100 last:border-r-0`}>
-      <Cell><button type="button" onClick={onEdit} aria-label={"Edit hole " + row.hole} className={`min-w-7 rounded px-1.5 py-0.5 font-sans text-sm font-bold ${holeNumberClass(holeState)}`}>{row.hole}</button></Cell>
+      <Cell><button type="button" onClick={onEdit} aria-label={"Edit hole " + row.hole} className="min-w-7 rounded px-1.5 py-0.5 font-sans text-sm font-bold text-maroon-800">{row.hole}</button></Cell>
       <Cell><span className="font-sans text-2xs text-ink-500">{row.yards}</span></Cell>
-      <Cell alert={yourAlert}><ScoreCell score={row.score} par={row.par} /></Cell>
-      {showOpponent && <Cell alert={opponentAlert}>{row.opponentScore != null ? <span className="font-sans text-xs font-semibold text-ink-700">{row.opponentScore}</span> : <Dash />}</Cell>}
+      <Cell><ScoreCell score={row.score} par={row.par} /></Cell>
       <Cell><span className="font-sans text-xs text-ink-700">{row.putts ?? <Dash />}</span></Cell>
       <Cell><ShotCell hit={row.fir} direction={row.firDirection} notApplicable={par3} /></Cell>
       <Cell last><ShotCell hit={row.gir} direction={row.girDirection} /></Cell>
@@ -77,26 +69,88 @@ function HoleColumn({ row, holeState, showOpponent, yourAlert, opponentAlert, on
   );
 }
 
-/** The horizontal grid: a fixed row-label column, then one scrollable column per hole. Live scoring adds a row for the score you entered for your opponent. */
-function ScorecardGrid({ rows, live, onEditHole }: { rows: ScorecardHoleRow[]; live?: LiveScorecard; onEditHole: (hole: number) => void }) {
-  const labels = live
-    ? ["Hole", "Yardage", "Score", live.opponentLabel, "Putts", "Fairway", "Green"]
-    : ["Hole", "Yardage", "Score", "Putts", "Fairway", "Green"];
+/** The horizontal grid: a fixed row-label column, then one scrollable column per hole. Handicap "Submit a score" only — live scoring uses the two split boxes below. */
+function ScorecardGrid({ rows, onEditHole }: { rows: ScorecardHoleRow[]; onEditHole: (hole: number) => void }) {
   return (
     <div className="flex overflow-hidden rounded-sm border border-ink-200">
-      <LabelColumn labels={labels} />
+      <LabelColumn labels={["Hole", "Yardage", "Score", "Putts", "Fairway", "Green"]} />
       <div className="flex flex-1 overflow-x-auto">
-        {rows.map((row) => (
-          <HoleColumn
-            key={row.hole}
-            row={row}
-            holeState={live?.holeStates[row.hole]}
-            showOpponent={!!live}
-            yourAlert={live?.yourDisputedHoles.includes(row.hole)}
-            opponentAlert={live?.opponentDisputedHoles.includes(row.hole)}
-            onEdit={() => onEditHole(row.hole)}
-          />
-        ))}
+        {rows.map((row) => <HoleColumn key={row.hole} row={row} onEdit={() => onEditHole(row.hole)} />)}
+      </div>
+    </div>
+  );
+}
+
+/** Live: a hole where you and your scorer disagree turns red; one still waiting on your scorer is muted. */
+function holeNumberClass(state: HoleState | undefined): string {
+  if (state === "disputed") return "bg-red-600 text-white";
+  if (state === "submitted") return "text-ink-400";
+  return "text-maroon-800";
+}
+
+/** Live box 1: Hole/Yardage/Score/opponent-score rows. */
+function ScoreHoleColumn({ row, holeState, yourAlert, opponentAlert, onEdit }: { row: ScorecardHoleRow; holeState?: HoleState; yourAlert?: boolean; opponentAlert?: boolean; onEdit: () => void }) {
+  return (
+    <div className={`flex ${COLUMN_WIDTH} shrink-0 flex-col border-r border-ink-100 last:border-r-0`}>
+      <Cell><button type="button" onClick={onEdit} aria-label={"Edit hole " + row.hole} className={`min-w-7 rounded px-1.5 py-0.5 font-sans text-sm font-bold ${holeNumberClass(holeState)}`}>{row.hole}</button></Cell>
+      <Cell><span className="font-sans text-2xs text-ink-500">{row.yards}</span></Cell>
+      <Cell alert={yourAlert}><ScoreCell score={row.score} par={row.par} /></Cell>
+      <Cell last alert={opponentAlert}>{row.opponentScore != null ? <span className="font-sans text-xs font-semibold text-ink-700">{row.opponentScore}</span> : <Dash />}</Cell>
+    </div>
+  );
+}
+
+/** Live box 2: Putts/Fairway/Green rows, scroll-linked to box 1 so the same column is always the same hole. */
+function StatsHoleColumn({ row }: { row: ScorecardHoleRow }) {
+  const par3 = row.par === 3;
+  return (
+    <div className={`flex ${COLUMN_WIDTH} shrink-0 flex-col border-r border-ink-100 last:border-r-0`}>
+      <Cell><span className="font-sans text-xs text-ink-700">{row.putts ?? <Dash />}</span></Cell>
+      <Cell><ShotCell hit={row.fir} direction={row.firDirection} notApplicable={par3} /></Cell>
+      <Cell last><ShotCell hit={row.gir} direction={row.girDirection} /></Cell>
+    </div>
+  );
+}
+
+/** Live scoring's two boxes: Hole/Yardage/Score/opponent above, Putts/Fairway/Green below, a little space between — scrolling one scrolls the other so the columns stay lined up on the same hole. */
+function LiveScorecardGrids({ rows, live, onEditHole }: { rows: ScorecardHoleRow[]; live: LiveScorecard; onEditHole: (hole: number) => void }) {
+  const scoreScroll = useRef<HTMLDivElement>(null);
+  const statsScroll = useRef<HTMLDivElement>(null);
+  const syncing = useRef(false);
+  function onScoreScroll() {
+    if (syncing.current || !scoreScroll.current || !statsScroll.current) return;
+    syncing.current = true;
+    statsScroll.current.scrollLeft = scoreScroll.current.scrollLeft;
+    syncing.current = false;
+  }
+  function onStatsScroll() {
+    if (syncing.current || !scoreScroll.current || !statsScroll.current) return;
+    syncing.current = true;
+    scoreScroll.current.scrollLeft = statsScroll.current.scrollLeft;
+    syncing.current = false;
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex overflow-hidden rounded-sm border border-ink-200">
+        <LabelColumn labels={["Hole", "Yardage", "Score", live.opponentLabel]} />
+        <div ref={scoreScroll} onScroll={onScoreScroll} className="flex flex-1 overflow-x-auto">
+          {rows.map((row) => (
+            <ScoreHoleColumn
+              key={row.hole}
+              row={row}
+              holeState={live.holeStates[row.hole]}
+              yourAlert={live.yourDisputedHoles.includes(row.hole)}
+              opponentAlert={live.opponentDisputedHoles.includes(row.hole)}
+              onEdit={() => onEditHole(row.hole)}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="flex overflow-hidden rounded-sm border border-ink-200">
+        <LabelColumn labels={["Putts", "Fairway", "Green"]} />
+        <div ref={statsScroll} onScroll={onStatsScroll} className="flex flex-1 overflow-x-auto">
+          {rows.map((row) => <StatsHoleColumn key={row.hole} row={row} />)}
+        </div>
       </div>
     </div>
   );
@@ -147,27 +201,6 @@ function ConfirmSubmitDialog({ message, label, submitting, error, onSubmit, onKe
   );
 }
 
-/** Live scoring's view of the round: your own entries plus a color for whether you and your scorer agree — never your scorer's numbers. */
-export interface LiveScorecard {
-  /** Last name of the person you are scoring, used for the second score row and the status text. */
-  opponentLabel: string;
-  holeStates: Record<number, HoleState>;
-  /** white = data missing, red = a hole disagrees, green = everything matches. */
-  state: LiveCardState;
-  /** The same colors, judged separately for your own score and for the score you entered for your opponent. */
-  yourState: LiveCardState;
-  opponentState: LiveCardState;
-  yourDisputedHoles: number[];
-  opponentDisputedHoles: number[];
-  yourTotal: number | null;
-  opponentTotal: number | null;
-  /** Why Submit Round is unavailable right now (null once the card matches). */
-  blocker: string | null;
-  /** You already pressed Submit Round: the card is read-only. */
-  submitted: boolean;
-  note: string | null;
-}
-
 const STATE_TONES: Record<LiveCardState, string> = {
   waiting: "border-ink-200 bg-white text-ink-700",
   disputed: "border-red-500 bg-red-50 text-red-700",
@@ -183,14 +216,135 @@ function ScoreBox({ which, label, total, state }: { which: "you" | "opponent"; l
   );
 }
 
+/** One side of the match-completeness card: stacked last names, team-filled. */
+function TeamNames({ names, isMaroon }: { names: string[]; isMaroon: boolean }) {
+  return (
+    <div className={`flex min-w-0 flex-col justify-center self-stretch ${isMaroon ? "items-end bg-maroon-700 text-white" : "items-start bg-white text-maroon-700"}`}>
+      {names.map((name, i) => (
+        <span key={i} className={`block w-full truncate px-2 py-1.5 font-sans text-xs font-semibold ${isMaroon ? "text-right" : "text-left"}`}>{name}</span>
+      ))}
+    </div>
+  );
+}
+
+/** How complete the match is: round/format, the two sides, and the match-play score — styled after the "My Matches" card in the player portal, minus the course header (already shown above on this screen). */
+export interface MatchCompleteness {
+  /** e.g. "Round 1 · Singles" */
+  roundFormatLabel: string;
+  maroonNames: string[];
+  whiteNames: string[];
+  /** Bigger center line, e.g. "2 Up", "AS", "3&2". */
+  statusLabel: string;
+  /** Smaller center line, e.g. "Thru 8" or "Final". */
+  progressLabel: string;
+  leader: "maroon" | "white" | "tie" | null;
+}
+
+function MatchCompletenessCard({ match }: { match: MatchCompleteness }) {
+  const fillClass = match.leader === "maroon" ? "bg-maroon-700 text-white" : match.leader === "white" ? "bg-white text-maroon-700" : "bg-cream-100 text-maroon-700";
+  const progressClass = match.leader === "maroon" ? "text-white/80" : match.leader === "white" ? "text-maroon-700/70" : "text-ink-500";
+  return (
+    <div className="overflow-hidden rounded-sm border border-gold-500 bg-white text-maroon-900">
+      <p className="border-b border-gold-300 bg-cream-50 px-3 py-1.5 text-center font-condensed text-3xs font-black uppercase tracking-wide text-ink-400">{match.roundFormatLabel}</p>
+      <div className="grid grid-cols-[minmax(0,1fr)_74px_minmax(0,1fr)] items-stretch">
+        <TeamNames names={match.maroonNames} isMaroon />
+        <div className={`flex flex-col items-center justify-center gap-0.5 border-x border-gold-300 px-1 py-2 text-center ${fillClass}`}>
+          <span className="font-sans text-base font-black leading-tight">{match.statusLabel}</span>
+          <span className={`font-sans text-2xs font-bold leading-tight ${progressClass}`}>{match.progressLabel}</span>
+        </div>
+        <TeamNames names={match.whiteNames} isMaroon={false} />
+      </div>
+    </div>
+  );
+}
+
+/** Live scoring's view of the round: your own entries plus a color for whether you and your scorer agree — never your scorer's numbers. */
+export interface LiveScorecard {
+  /** Last name of the person you are scoring, used for the second score row and the status text. */
+  opponentLabel: string;
+  holeStates: Record<number, HoleState>;
+  /** white = data missing, red = a hole disagrees, green = everything matches. */
+  state: LiveCardState;
+  /** The same colors, judged separately for your own score and for the score you entered for your opponent. */
+  yourState: LiveCardState;
+  opponentState: LiveCardState;
+  yourDisputedHoles: number[];
+  opponentDisputedHoles: number[];
+  yourTotal: number | null;
+  opponentTotal: number | null;
+  /** You already pressed Submit Round: the card is read-only. */
+  submitted: boolean;
+  course: string | null;
+  rating: number | null;
+  slope: number | null;
+  matchCompleteness: MatchCompleteness;
+}
+
+/** Live scoring's Scorecard: no boxed card, an icon-only Back button, the course/rating above the total, two linked-scroll boxes instead of explanatory text, and the match's live score at the bottom. */
+function LiveScorecardView({ rows, totalScore, toPar, onEditHole, onBack, live, onSubmit, submitting, submitError }: {
+  rows: ScorecardHoleRow[]; totalScore: number; toPar: number | null; onEditHole: (hole: number) => void; onBack: () => void;
+  live: LiveScorecard; onSubmit?: () => void; submitting?: boolean; submitError?: string | null;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const pillEnabled = live.state === "match" && !live.submitted;
+  return (
+    <div className="flex flex-col gap-3">
+      <button type="button" onClick={onBack} disabled={submitting} aria-label="Back" className="-ml-1 self-start p-1 text-maroon-700">
+        <ArrowLeft size={22} />
+      </button>
+      <div>
+        <p className="text-center font-sans text-xs text-ink-500">
+          {live.course ?? "Course TBD"}
+          <span className="mx-2 text-ink-300">|</span>
+          {live.rating != null ? live.rating.toFixed(1) : "—"}/{live.slope ?? "—"}
+        </p>
+        <div className="mt-1"><ScoreToParHeader totalScore={totalScore} toPar={toPar} /></div>
+        <p className="mt-2 text-center font-sans text-2xs uppercase tracking-wide text-ink-400">Scores as you entered them</p>
+      </div>
+
+      <LiveScorecardGrids rows={rows} live={live} onEditHole={onEditHole} />
+
+      <RoundStatsBox stats={totalsStats(scorecardTotals(rows))} />
+
+      <div data-round-state={live.state} className="grid grid-cols-2 gap-3">
+        <ScoreBox which="you" label="Your score" total={live.yourTotal} state={live.yourState} />
+        <ScoreBox which="opponent" label={`${live.opponentLabel}'s score`} total={live.opponentTotal} state={live.opponentState} />
+      </div>
+
+      <MatchCompletenessCard match={live.matchCompleteness} />
+
+      {onSubmit && (
+        <div>
+          <button
+            type="button"
+            disabled={!pillEnabled || submitting}
+            onClick={() => setConfirming(true)}
+            className="w-full rounded-pill bg-maroon-700 px-4 py-3 font-condensed text-sm font-semibold uppercase tracking-wide text-white disabled:bg-ink-200 disabled:text-ink-500"
+          >
+            {live.submitted ? "Submitted" : "Submit Round"}
+          </button>
+        </div>
+      )}
+      {onSubmit && confirming && !live.submitted && (
+        <ConfirmSubmitDialog
+          message="After you submit your round you will not be able to edit it. Tiger can correct it later if something is wrong."
+          label="Submit Round"
+          submitting={submitting}
+          error={submitError}
+          onSubmit={onSubmit}
+          onKeepEditing={() => setConfirming(false)}
+        />
+      )}
+    </div>
+  );
+}
+
 /**
  * Full hole-by-hole scorecard: a horizontally-scrolling grid — tap a hole
  * number to jump back and fix it. Shared by the handicap "Submit a score"
- * flow and live scoring. `showTotals` adds the round-totals box; `onSubmit`
- * adds the Submit Round pill, which asks for confirmation first. `live`
- * switches on live-scoring mode: a second score row (what you entered for
- * your opponent), red/muted hole numbers, and a white/red/green status for
- * whether you and your scorer agree.
+ * flow and live scoring, which look and behave quite differently (see
+ * LiveScorecardView) since live scoring is showing two players' entries
+ * instead of one.
  */
 export function Scorecard({
   rows,
@@ -215,31 +369,36 @@ export function Scorecard({
   submitting?: boolean;
   submitError?: string | null;
 }) {
+  const [confirming, setConfirming] = useState(false);
+
+  if (live) {
+    return (
+      <LiveScorecardView
+        rows={rows}
+        totalScore={totalScore}
+        toPar={toPar}
+        onEditHole={onEditHole}
+        onBack={onBack}
+        live={live}
+        onSubmit={onSubmit}
+        submitting={submitting}
+        submitError={submitError}
+      />
+    );
+  }
+
   const complete = isRoundComplete(rows);
   const nextIncomplete = firstIncompleteHole(rows);
-  const [confirming, setConfirming] = useState(false);
-  const pillEnabled = live ? live.state === "match" && !live.submitted : complete;
 
   return (
     <div className="rounded-md border border-ink-100 bg-white p-3">
       <button type="button" onClick={onBack} disabled={submitting} className="mb-2 font-condensed text-xs font-semibold uppercase tracking-wide text-maroon-700">Back</button>
       <ScoreToParHeader totalScore={totalScore} toPar={toPar} />
       <p className="mt-2 text-center font-sans text-2xs uppercase tracking-wide text-ink-400">Tap hole number to edit</p>
-      {live && <p className="text-center font-sans text-2xs uppercase tracking-wide text-ink-400">Scores as you entered them</p>}
 
-      <div className="mt-3"><ScorecardGrid rows={rows} live={live} onEditHole={onEditHole} /></div>
+      <div className="mt-3"><ScorecardGrid rows={rows} onEditHole={onEditHole} /></div>
 
-      {live && (
-        <div data-round-state={live.state} className="mt-3">
-          <div className="grid grid-cols-2 gap-3">
-            <ScoreBox which="you" label="Your score" total={live.yourTotal} state={live.yourState} />
-            <ScoreBox which="opponent" label={`${live.opponentLabel}'s score`} total={live.opponentTotal} state={live.opponentState} />
-          </div>
-          <p className={`mt-2 text-center font-sans text-xs ${live.state === "disputed" ? "text-red-700" : live.state === "match" ? "text-emerald-700" : "text-ink-700"}`}>{live.note ?? (live.state === "match" ? "Your card matches. You can submit your round." : live.blocker)}</p>
-        </div>
-      )}
-
-      {!complete && nextIncomplete != null && !live?.submitted && (
+      {!complete && nextIncomplete != null && (
         <div className="mt-4 flex items-center justify-between gap-3 rounded-sm bg-gold-200 px-3 py-2">
           <span className="font-sans text-sm text-ink-700">Not every hole is entered yet.</span>
           <button type="button" onClick={() => onEditHole(nextIncomplete)} className="shrink-0 font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700 underline">
@@ -254,18 +413,18 @@ export function Scorecard({
         <div className="mt-3">
           <button
             type="button"
-            disabled={!pillEnabled || submitting}
+            disabled={!complete || submitting}
             onClick={() => setConfirming(true)}
-            className={`w-full rounded-pill bg-maroon-700 px-4 py-3 font-condensed text-sm font-semibold uppercase tracking-wide text-white ${live ? "disabled:bg-ink-200 disabled:text-ink-500" : "disabled:opacity-50"}`}
+            className="w-full rounded-pill bg-maroon-700 px-4 py-3 font-condensed text-sm font-semibold uppercase tracking-wide text-white disabled:opacity-50"
           >
-            {live ? (live.submitted ? "Submitted" : "Submit Round") : complete ? "Submit Round" : "Finish all 18 holes to submit"}
+            {complete ? "Submit Round" : "Finish all 18 holes to submit"}
           </button>
         </div>
       )}
-      {onSubmit && confirming && !live?.submitted && (
+      {onSubmit && confirming && (
         <ConfirmSubmitDialog
-          message={live ? "After you submit your round you will not be able to edit it. Tiger can correct it later if something is wrong." : "After you submit scores you will not be able to edit them."}
-          label={live ? "Submit Round" : "Submit Scores"}
+          message="After you submit scores you will not be able to edit them."
+          label="Submit Scores"
           submitting={submitting}
           error={submitError}
           onSubmit={onSubmit}
