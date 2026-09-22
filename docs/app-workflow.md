@@ -30,6 +30,7 @@ flowchart TD
   B --> MP[Match profile: compact opponents, scorecard and odds]
   Z -. 2024-2025 training and 2026 hole replay .-> MP
   O --> F[Tiger closeout and MM Coins settlement]
+  %% My Handicap score list shows only the order dropdown followed by scores; explanatory paragraphs are removed.
   %% Portal: overall handicap number opens My Handicap; separate Submit a score pill opens the handicap screen.
   P --> N[Personal 18-hole round entry]
   C --> N
@@ -419,6 +420,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 22, 2026 - Simpler handicap score list (implemented locally; deployment not verified).** Removed the Scores label, differential explanation and contributing-round explanation above My Handicap scores. The display-order dropdown now leads directly into the score list. Calculations and contributing-round markers are unchanged. Updated the flowchart annotation; workflow paths and overview mappings are unchanged.
 
 **September 22, 2026 - Player bio overall handicap (implemented locally; deployment not verified).** Player bios previously displayed a separately stored profile handicap. They now fetch the same combined overall index used by My Handicap, including submitted and eligible archived rounds, and use the same plus-handicap formatting. The public endpoint returns only the index; unavailable values show a dash. Updated the player profile description, flowchart and workflow mapping.
 
