@@ -5,6 +5,7 @@ import type { BroadcastMatchPlay } from "@/lib/broadcast/matchPlayData";
 import type { ActiveBroadcastEvent } from "@/lib/broadcast/eventDisplay";
 import type { LiveScoreEvent } from "@/lib/broadcast/liveScoreEvent";
 import { useAutoScene } from "@/lib/broadcast/useAutoScene";
+import { getMockRunCycleMs, getMockStandings } from "@/lib/broadcast/mockRun";
 import { IndividualLeaderboardScene } from "./scenes/IndividualLeaderboardScene";
 import { MatchPlayScene } from "./scenes/MatchPlayScene";
 import { HoldingScene } from "./scenes/HoldingScene";
@@ -65,6 +66,18 @@ export function SceneRenderer({
   // broadcast's pre-show hold (spec §7/§17's Holding scene).
   const scene = !state.tournamentLive ? "holding" : isAuto ? autoScene : state.currentScene;
 
+  // During a Mock Run/animation test, IndividualLeaderboardScene switches
+  // to fake seeded standings (MockLeaderboardScene) so a host can rehearse
+  // without touching real data — the ticker needs to agree with whatever
+  // it's showing, not the real board underneath, or a rehearsal would
+  // show two different leaderboards on screen at once. `true, true` asks
+  // for the settled post-event state rather than replaying the staged
+  // reveal timing — good enough for a glance ticker, see mockRun.ts.
+  const tickerStandings =
+    mockElapsedMs != null
+      ? getMockStandings(mockSeed, true, Math.floor(Math.max(0, mockElapsedMs) / getMockRunCycleMs(mockVideoDurationMs ?? undefined)) % 2, mockForcedEventKind, true).standings
+      : standings;
+
   return (
     <>
       {(state.tournamentLive || preview) && state.videoPhase === "transition" && activeVideo ? (
@@ -97,7 +110,7 @@ export function SceneRenderer({
       {/* Permanent score bug — stays up through rotation AND full-screen
           takeovers alike (2026-09-22 broadcast graphics brainstorm: the
           ticker never comes down). */}
-      <BroadcastTicker standings={standings} />
+      <BroadcastTicker standings={tickerStandings} />
     </>
   );
 }
