@@ -34,7 +34,7 @@ function TeamSide({ players, team, probability }: { players: string[]; team: Tea
         <span
           key={player}
           className={[
-            "relative block w-full px-2 py-1.5 font-sans text-xs font-semibold capitalize",
+            "relative block w-full px-2 py-1.5 font-sans text-xs font-semibold capitalize lg:py-2.5",
             isMaroon ? "text-right" : "text-left",
           ].join(" ")}
         >

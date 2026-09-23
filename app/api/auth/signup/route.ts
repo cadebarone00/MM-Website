@@ -9,6 +9,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "All fields are required." }, { status: 400 });
   }
 
+  if (password.length < 6) {
+    return NextResponse.json({ ok: false, error: "Password must be at least 6 characters." }, { status: 400 });
+  }
+
   const service = createSupabaseServiceRoleClient();
   const isReservedPrefix = username.toUpperCase().startsWith("MM");
   let matchedSlug: string | null = null;

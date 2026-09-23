@@ -27,6 +27,7 @@ flowchart TD
   X --> PP
   %% Match pages preserve continuous scrolling with equal 56px hole and total columns.
   O --> B[Leaderboard, broadcast and live markets]
+  %% Desktop leaderboard match lists are centered at 40vw with taller rows; ticker width and mobile layout are unchanged.
   B --> MP[Match profile: compact opponents, scorecard and odds]
   Z -. 2024-2025 training and 2026 hole replay .-> MP
   O --> F[Tiger closeout and MM Coins settlement]
@@ -86,6 +87,8 @@ For example, in September 2026, My Matches can correctly show 2026 matches as Pa
 **Code:** `app/portal/page.tsx`, `lib/live/activeSeason.ts`, `lib/live/seasonYears.ts`, `lib/broadcast/displayYear.ts`, `lib/data/index.ts`.
 
 ## 3. Public website and navigation
+
+On live and archived leaderboards, Match Play boards are centered in a 40vw column at desktop widths (1024px and above), capped at the available content width. Desktop match rows add 10px vertical padding per player name instead of mobile's 6px. The ticker, individual standings, and mobile layout retain their existing sizing.
 
 Home, schedule, teams, players, history, tournament leaderboards, match pages, and player scorecards present tournament information publicly. Historical editions and much descriptive content originate in committed `lib/data` files. Upcoming venue/dates, round courses/formats, and confirmed roster receive Tiger-managed database overlays where the relevant loaders are used.
 
@@ -421,6 +424,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 23, 2026 - Desktop leaderboard match layout (implemented locally; deployment not verified).** Previously, desktop match lists filled the leaderboard content width. Live and archived Match Play boards now use a centered 40vw column on desktop, capped at the available content width, with slightly taller match rows. The ticker, individual standings, and mobile sizing are unchanged. Updated Section 3 and the flowchart annotation; workflow paths and overview mappings are unchanged.
 
 **September 22, 2026 - White-team portal backdrop (implemented locally; deployment not verified).** The area behind Submit a score and the Profile, Career, Round video and Wagers navigation box now uses maroon for White-team players instead of the inherited tan background. The pill and navigation cards retain their white surfaces and gold borders. Four photographic row backdrops are pending user-provided images. Updated the flowchart annotation; workflow paths and mappings are unchanged.
 
