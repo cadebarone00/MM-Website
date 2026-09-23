@@ -1,3 +1,4 @@
+import styles from "./MatchTimeline.module.css";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowLeft } from "lucide-react";
@@ -41,7 +42,7 @@ export function MatchProfile({ match, tournamentSlug, editionLabel, scorecard, o
         <h2 className="mb-3 font-serif text-xl font-bold text-ink-900">Scorecard</h2>
         {scorecard}
       </section>
-      <div className="mt-8"><MatchOddsGraph points={odds} live={live} final={status === "final"} estimateNote={estimateNote} result={status === "final" && leader !== "tie" ? { winner: leader, thru: match.holesRemaining != null ? 18 - match.holesRemaining : match.thru ?? 18, label: liveLabel(match) } : undefined} /></div>
+      <div className={`${styles.mobileGraph} lg:mt-8`}><MatchOddsGraph points={odds} live={live} final={status === "final"} estimateNote={estimateNote} result={status === "final" && leader !== "tie" ? { winner: leader, thru: match.holesRemaining != null ? 18 - match.holesRemaining : match.thru ?? 18, label: liveLabel(match) } : undefined} /></div>
     </main>
   );
 }

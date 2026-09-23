@@ -2,14 +2,13 @@
 
 import { useId, useState } from "react";
 import type { MatchOddsPoint } from "@/lib/live/matchProfile";
-import { MobileMatchOddsGraph } from "./MobileMatchOddsGraph";
 import styles from "./MatchTimeline.module.css";
 
 const price = (value: number | null) => value == null ? "—" : value > 0 ? `+${value}` : String(value);
 /** A tie contributes half to each side: 100% Maroon is top, 100% White bottom. */
 export const matchBalance = (point: MatchOddsPoint) => point.maroon_win_probability + point.tie_probability / 2;
 
-function DesktopMatchOddsGraph({ points, live, final, estimateNote, result }: { points: MatchOddsPoint[]; live: boolean; final: boolean; estimateNote?: string; result?: { winner: "maroon" | "white"; thru: number; label: string } }) {
+export function MatchOddsGraph({ points, live, final, estimateNote, result }: { points: MatchOddsPoint[]; live: boolean; final: boolean; estimateNote?: string; result?: { winner: "maroon" | "white"; thru: number; label: string } }) {
   const [selected, setSelected] = useState<number | null>(null);
   const clip = useId();
   // Keep the latest published price at each completed-hole boundary, including corrections.
@@ -32,7 +31,7 @@ function DesktopMatchOddsGraph({ points, live, final, estimateNote, result }: { 
   const prices = header ? [header.maroon_american_odds, header.tie_american_odds, header.white_american_odds] : [];
   return (
     <section className={styles.timeline} aria-label="Match odds">
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+      <div className={`${styles.oddsHeader} mb-5 flex flex-wrap items-start justify-between gap-4`}>
         <div><p className="font-condensed text-xs font-bold uppercase tracking-wide text-ink-500">Match win probability</p><h2 className="mt-1 font-serif text-xl font-bold">{live ? final ? "Final odds" : "Live odds" : "Match odds"}</h2></div>
         <div className="flex gap-5">
           {["Maroon", "Tie", "White"].map((label, index) => <div key={label}><p className={`font-condensed text-xs font-bold uppercase tracking-wide ${index === 1 ? "text-gold-700" : "text-maroon-700"}`}>{label}</p><p className="font-sans text-xl font-black tabular-nums">{header ? `${Math.round(values[index] * 100)}%` : "—"}</p><p className="font-sans text-xs text-ink-500">{header ? price(prices[index]) : "—"}</p></div>)}
@@ -64,7 +63,3 @@ function DesktopMatchOddsGraph({ points, live, final, estimateNote, result }: { 
   );
 }
 
-/** Preserve the original phone layout while using the aligned board on desktop. */
-export function MatchOddsGraph(props: Parameters<typeof DesktopMatchOddsGraph>[0]) {
-  return <><div className="lg:hidden"><MobileMatchOddsGraph {...props} /></div><div className="hidden lg:block"><DesktopMatchOddsGraph {...props} /></div></>;
-}

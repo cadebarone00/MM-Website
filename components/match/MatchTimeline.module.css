@@ -139,3 +139,79 @@
 }
 .maroonResult { background: #500001; color: #e2c88e; }
 .whiteResult { background: #fff; color: #500001; }
+.mobileCard { display: none; }
+@media (width < 1024px) {
+  .mobileCard {
+    display: flex;
+    background: var(--color-cream-100);
+    color: var(--color-maroon-700);
+    border-block: 1px solid var(--color-ink-300);
+  }
+  .mobileSide { width: 56px; flex-shrink: 0; }
+  .mobileScroller {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+  }
+  .mobilePage { width: 100%; flex-shrink: 0; scroll-snap-align: start; }
+  .mobileRow { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); }
+  .mobileHeader, .mobileValue, .mobileLabel {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid var(--color-ink-300);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .mobileHeader {
+    height: 32px;
+    background: var(--color-maroon-700);
+    color: white;
+    border-color: rgb(255 255 255 / 15%);
+  }
+  .mobileRow:nth-child(2) > *, .mobileRow:nth-child(3) > *,
+  .mobileSide > :nth-child(2), .mobileSide > :nth-child(3) { height: 32px; }
+  .mobileLabel {
+    padding-inline: 2px;
+    font-family: var(--font-condensed);
+    font-size: 9px;
+    text-transform: uppercase;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+  .mobileValue > span { max-width: 100%; }
+  .mobileValue > span[style] { width: 28px !important; height: 28px !important; }
+  .mobileValue > span[style] > span { color: var(--color-maroon-700); border-color: var(--color-maroon-700); }
+  .mobileValue > span:not([style]) { height: 44px; width: 100%; font-size: 10px; }
+  .mobileGraph { margin-inline: -16px; }
+  .timeline { display: flex; flex-direction: column; }
+  .timelineGrid { display: grid; grid-template-columns: minmax(0, 1fr); padding-top: 0; }
+  .plot, .resultArea { grid-column: 1; height: 140px; }
+  .plot { overflow: hidden; }
+  .labels {
+    grid-column: 1;
+    width: 52px;
+    z-index: 1;
+    font-size: 9px;
+    background: rgb(250 247 239 / 80%);
+    pointer-events: none;
+  }
+  .axisPercent:first-child { transform: none; }
+  .axisPercent:nth-child(5) { transform: translateY(-100%); }
+  .maroonLabel { top: 10%; }
+  .whiteLabel { bottom: 10%; }
+  .explore { grid-column: 1; width: calc(100% - 32px); margin: 10px 16px 0; }
+  .oddsHeader { order: 1; margin: 12px 16px 0; gap: 8px; }
+  .oddsHeader h2 { font-size: 16px; }
+  .oddsHeader > div:last-child { gap: 12px; }
+  .oddsHeader > div:last-child p { font-size: 10px; }
+  .oddsHeader > div:last-child p:nth-child(2) { font-size: 16px; }
+  .timeline > p { order: 2; margin-inline: 16px; font-size: 10px; }
+}
+@media (640px <= width < 1024px) {
+  .mobileGraph { margin-inline: -28px; }
+}

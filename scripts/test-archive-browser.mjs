@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 const dir=resolve('node_modules/.cache/archive-browser');await mkdir(dir,{recursive:true});
 const entry=`import React from 'react';import {createRoot} from 'react-dom/client';
 import {LiveMatchScorecard} from '@/components/match/LiveMatchScorecard';
+import styles from '@/components/match/MatchTimeline.module.css';
 import {MatchOddsGraph} from '@/components/match/MatchOddsGraph';
 import {RoundFormatArchive} from '@/components/portal/tiger/RoundFormatArchive';
 import {ArchivedScores} from '@/components/scorecard/ArchivedScores';
@@ -21,7 +22,7 @@ import {historicalMatchScorecard} from '@/lib/data/historicalMatchScorecard';
 const tournament=pastTournaments.find(t=>t.year===2026), match=tournament.matches.find(m=>m.day===2&&m.session==='Morning');
 const cards=scorecards2026.map(c=>({...c,rounds:c.rounds.map(r=>({...r,round:legacyScorecardRound(2026,r.round)}))}));
 const year=Number(new URLSearchParams(location.search).get('year')||2026);
-createRoot(document.getElementById('root')).render(<main className="mx-auto max-w-5xl p-4"><LiveMatchScorecard match={match} scorecard={historicalMatchScorecard(tournament,match,cards,[])}/><MatchOddsGraph live={false} final result={{winner:"maroon",thru:15,label:"4&3"}} points={[0,2,5,18].map((state_thru,i)=>({state_thru,maroon_win_probability:0.2+i*0.2,tie_probability:0.1,white_win_probability:0.7-i*0.2}))}/><RoundFormatArchive tournaments={[{...tournament,entries:roundFormatArchive(tournament).map(entry=>({...entry,setup:{courseName:"Course",datePlayed:"2026-01-07",teeSetup:{teeSetName:"Black",rating:72,slope:130}}})),orphans:[]}]} courses={[]}/><ArchivedScores playerSlug="cade-barone" featuredYear={year}/></main>);`;
+createRoot(document.getElementById('root')).render(<main className="mx-auto max-w-5xl p-4"><LiveMatchScorecard match={match} scorecard={historicalMatchScorecard(tournament,match,cards,[])}/><div className={styles.mobileGraph}><MatchOddsGraph live={false} final result={{winner:"maroon",thru:15,label:"4&3"}} points={[0,2,5,18].map((state_thru,i)=>({state_thru,maroon_win_probability:0.2+i*0.2,tie_probability:0.1,white_win_probability:0.7-i*0.2}))}/></div><RoundFormatArchive tournaments={[{...tournament,entries:roundFormatArchive(tournament).map(entry=>({...entry,setup:{courseName:"Course",datePlayed:"2026-01-07",teeSetup:{teeSetName:"Black",rating:72,slope:130}}})),orphans:[]}]} courses={[]}/><ArchivedScores playerSlug="cade-barone" featuredYear={year}/></main>);`;
 await build({stdin:{contents:entry,loader:'tsx',resolveDir:process.cwd()},bundle:true,outfile:resolve(dir,'app.js'),jsx:'automatic',define:{'process.env.NODE_ENV':'"production"','process.env':'{}'},plugins:[{name:'link',setup(b){b.onResolve({filter:/^next\/link$/},()=>({path:'link',namespace:'stub'}));b.onLoad({filter:/.*/,namespace:'stub'},()=>({contents:"import React from 'react';export default function Link({href,children,...p}){return <a href={href} {...p}>{children}</a>}",loader:'jsx',resolveDir:process.cwd()}));}}]});
 const css=await postcss([tailwind()]).process(await readFile('app/globals.css','utf8'),{from:resolve('app/globals.css')});await writeFile(resolve(dir,'global.css'),css.css+await readFile(resolve(dir,'app.css'),'utf8'));
 const server=createServer(async(req,res)=>{const path=req.url.split('?')[0];if(['/app.js','/global.css'].includes(path)){res.setHeader('Content-Type',path.endsWith('.js')?'text/javascript':'text/css');res.end(await readFile(resolve(dir,path.slice(1))));}else res.end('<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/global.css"></head><body><div id="root"></div><script src="/app.js"></script></body></html>');});
@@ -31,7 +32,7 @@ try {
   browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:390,height:844}});
   page.on('pageerror',error=>console.log('Browser error:',error.message));
   await page.route('**/api/**',route=>route.fulfill({json:{ok:true,rounds:[2026,2025,2024].map(year=>({year,round:1,course:'Archive Course',format:'Singles',holes:Array.from({length:18},(_,i)=>({hole:i+1,par:4,yards:400,score:4,putts:2,fairwayInRegulation:true,greenInRegulation:true}))}))}}));
-  await page.goto(origin);const scroll=page.getByLabel('Match scorecard table',{exact:true});await scroll.waitFor();
+  await page.goto(origin);const scroll=page.getByLabel('Match scorecard table',{exact:true});await scroll.waitFor({state:"attached"});
   assert.match(await scroll.locator('table').innerText(),/Yards/i);
   for (const width of [390, 1280]) {
     await page.setViewportSize({width,height:900});
@@ -39,16 +40,23 @@ try {
     assert.equal(cells.length,20);
     assert.ok(cells.slice(1).every(c=>Math.abs(c.width-cells[1].width)<1));
     if (width < 1024) {
-      assert.ok(cells.slice(1).every(c=>Math.abs(c.width-56)<1));
-      const before=await scroll.locator('th').first().boundingBox();
-      await scroll.evaluate(e=>{e.scrollLeft=650});
-      const after=await scroll.locator('th').first().boundingBox();
-      assert.ok(await scroll.evaluate(e=>e.scrollLeft>0));
-      assert.ok(Math.abs(before.x-after.x)<1);
-      await page.getByRole('img',{name:/Match probability balance:/}).waitFor();
+      const scroller=page.getByLabel('Scroll match holes, front nine and back nine');
+      const card=page.getByLabel('Mobile match scorecard',{exact:true});
+      const left=await card.locator(':scope > div').first().boundingBox();
+      const right=await card.locator(':scope > div').last().boundingBox();
+      const plot=await page.getByRole('img',{name:/Match probability aligned/}).boundingBox();
+      assert.ok(Math.abs(plot.x)<1 && Math.abs(plot.width-width)<1);
+      const cardBox=await card.boundingBox();
+      assert.ok(Math.abs(plot.y-cardBox.y-cardBox.height)<2);
+      await scroller.evaluate(e=>{e.scrollLeft=e.clientWidth});
+      await page.waitForTimeout(250);
+      assert.ok(await scroller.evaluate(e=>Math.abs(e.scrollLeft-e.clientWidth)<2));
+      assert.equal((await card.locator(':scope > div').first().boundingBox()).x,left.x);
+      assert.equal((await card.locator(':scope > div').last().boundingBox()).x,right.x);
+      assert.deepEqual(await page.getByRole('img',{name:/Match probability aligned/}).boundingBox(),plot);
+      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
       await page.screenshot({path:resolve(dir,'mobile.png'),fullPage:true});
-      await scroll.evaluate(e=>{e.scrollLeft=0});
-      console.log('Original mobile scorecard scroll, pinned labels and graph restored');
+      console.log('Mobile: two nines swipe with fixed labels/totals; full-width stationary graph directly below');
       continue;
     }
     assert.ok(await scroll.evaluate(e=>e.scrollWidth<=e.clientWidth+1));
@@ -78,5 +86,5 @@ try {
   await page.getByRole('searchbox').fill('canonical');assert.ok(await page.locator('details[open]:not(.hidden)').count()>0);
   await page.locator('nav a').filter({hasText:'Archives, corrections'}).click();assert.equal(await page.getByRole('searchbox').inputValue(),'');
   await page.screenshot({path:resolve(dir,'workflow.png'),fullPage:false});
-  console.log('PASS: original mobile scroll/graph, desktop fixed 20 columns and aligned hole odds, clickable archive matches, 2026/2027 archive rollover, workflow change panel/navigation/search. Screenshots: '+dir);
+  console.log('PASS: mobile nine-hole paging and edge-to-edge graph, desktop fixed 20 columns and aligned hole odds, clickable archive matches, 2026/2027 archive rollover, workflow change panel/navigation/search. Screenshots: '+dir);
 } finally {await browser?.close();await new Promise(r=>server.close(r));}
