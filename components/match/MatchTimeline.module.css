@@ -29,6 +29,7 @@
 }
 
 .labels {
+  position: relative;
   grid-column: 1;
   grid-row: 1;
   display: flex;
@@ -92,3 +93,49 @@
     font-size: 14px;
   }
 }
+
+.axisPercent {
+  position: absolute;
+  right: 6px;
+  transform: translateY(-50%);
+}
+.maroonLabel, .whiteLabel {
+  position: absolute;
+  left: 0;
+  right: 6px;
+  padding: 3px 1px;
+  text-align: center;
+  border: 1px solid;
+  border-radius: 2px;
+}
+.maroonLabel {
+  top: 8%;
+  color: #500001;
+  background: rgb(80 0 1 / 12%);
+  border-color: rgb(80 0 1 / 30%);
+}
+.whiteLabel {
+  bottom: 8%;
+  color: white;
+  background: rgb(151 121 67 / 75%);
+  border-color: #a78945;
+}
+.resultArea {
+  grid-column: 2 / span 18;
+  grid-row: 1;
+  position: relative;
+  pointer-events: none;
+}
+.resultBlock {
+  position: absolute;
+  right: 0;
+  height: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #b99a55;
+  font-size: clamp(14px, 2.4cqw, 28px);
+  font-weight: 800;
+}
+.maroonResult { background: #500001; color: #e2c88e; }
+.whiteResult { background: #fff; color: #500001; }

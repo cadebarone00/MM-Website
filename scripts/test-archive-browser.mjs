@@ -21,7 +21,7 @@ import {historicalMatchScorecard} from '@/lib/data/historicalMatchScorecard';
 const tournament=pastTournaments.find(t=>t.year===2026), match=tournament.matches.find(m=>m.day===2&&m.session==='Morning');
 const cards=scorecards2026.map(c=>({...c,rounds:c.rounds.map(r=>({...r,round:legacyScorecardRound(2026,r.round)}))}));
 const year=Number(new URLSearchParams(location.search).get('year')||2026);
-createRoot(document.getElementById('root')).render(<main className="mx-auto max-w-5xl p-4"><LiveMatchScorecard match={match} scorecard={historicalMatchScorecard(tournament,match,cards,[])}/><MatchOddsGraph live={false} final points={[0,2,5,18].map((state_thru,i)=>({state_thru,maroon_win_probability:0.2+i*0.2,tie_probability:0.1,white_win_probability:0.7-i*0.2}))}/><RoundFormatArchive tournaments={[{...tournament,entries:roundFormatArchive(tournament).map(entry=>({...entry,setup:{courseName:"Course",datePlayed:"2026-01-07",teeSetup:{teeSetName:"Black",rating:72,slope:130}}})),orphans:[]}]} courses={[]}/><ArchivedScores playerSlug="cade-barone" featuredYear={year}/></main>);`;
+createRoot(document.getElementById('root')).render(<main className="mx-auto max-w-5xl p-4"><LiveMatchScorecard match={match} scorecard={historicalMatchScorecard(tournament,match,cards,[])}/><MatchOddsGraph live={false} final result={{winner:"maroon",thru:15,label:"4&3"}} points={[0,2,5,18].map((state_thru,i)=>({state_thru,maroon_win_probability:0.2+i*0.2,tie_probability:0.1,white_win_probability:0.7-i*0.2}))}/><RoundFormatArchive tournaments={[{...tournament,entries:roundFormatArchive(tournament).map(entry=>({...entry,setup:{courseName:"Course",datePlayed:"2026-01-07",teeSetup:{teeSetName:"Black",rating:72,slope:130}}})),orphans:[]}]} courses={[]}/><ArchivedScores playerSlug="cade-barone" featuredYear={year}/></main>);`;
 await build({stdin:{contents:entry,loader:'tsx',resolveDir:process.cwd()},bundle:true,outfile:resolve(dir,'app.js'),jsx:'automatic',define:{'process.env.NODE_ENV':'"production"','process.env':'{}'},plugins:[{name:'link',setup(b){b.onResolve({filter:/^next\/link$/},()=>({path:'link',namespace:'stub'}));b.onLoad({filter:/.*/,namespace:'stub'},()=>({contents:"import React from 'react';export default function Link({href,children,...p}){return <a href={href} {...p}>{children}</a>}",loader:'jsx',resolveDir:process.cwd()}));}}]});
 const css=await postcss([tailwind()]).process(await readFile('app/globals.css','utf8'),{from:resolve('app/globals.css')});await writeFile(resolve(dir,'global.css'),css.css+await readFile(resolve(dir,'app.css'),'utf8'));
 const server=createServer(async(req,res)=>{const path=req.url.split('?')[0];if(['/app.js','/global.css'].includes(path)){res.setHeader('Content-Type',path.endsWith('.js')?'text/javascript':'text/css');res.end(await readFile(resolve(dir,path.slice(1))));}else res.end('<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/global.css"></head><body><div id="root"></div><script src="/app.js"></script></body></html>');});
@@ -58,6 +58,15 @@ try {
     const line=await page.locator('svg:visible polyline').getAttribute('points');
     assert.ok(line.split(' ')[1].startsWith('200,'));
     assert.ok(Math.abs(plot.x+plot.width*2/18-cells[3].x)<1);
+    const result=page.getByRole('note',{name:'Maroon wins 4&3 after hole 15'});
+    const block=await result.boundingBox();
+    assert.ok(Math.abs(block.x-(plot.x+plot.width*15/18))<1);
+    assert.ok(Math.abs(block.width-plot.width*3/18)<1);
+    assert.ok(Math.abs(block.height-plot.height/2)<1);
+    const fullVerticals=await page.locator('svg:visible line').evaluateAll(lines=>lines.filter(l=>l.getAttribute('x1')===l.getAttribute('x2')&&l.getAttribute('y1')==='0'&&l.getAttribute('y2')==='180').length);
+    assert.equal(fullVerticals,0);
+    assert.equal(await page.locator('[class*="axisPercent"]').filter({hasText:/^100%$/}).count(),2);
+    assert.equal(await page.locator('[class*="axisPercent"]').filter({hasText:/^50%$/}).count(),2);
     console.log('Aligned 20 columns, no scroll, and hole 2 boundary at '+width+'px');
   }
   assert.ok(await page.locator('a[href*="/matches/"]').count()>0);

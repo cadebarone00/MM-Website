@@ -9,7 +9,7 @@ const price = (value: number | null) => value == null ? "—" : value > 0 ? `+${
 /** A tie contributes half to each side: 100% Maroon is top, 100% White bottom. */
 export const matchBalance = (point: MatchOddsPoint) => point.maroon_win_probability + point.tie_probability / 2;
 
-function DesktopMatchOddsGraph({ points, live, final, estimateNote }: { points: MatchOddsPoint[]; live: boolean; final: boolean; estimateNote?: string }) {
+function DesktopMatchOddsGraph({ points, live, final, estimateNote, result }: { points: MatchOddsPoint[]; live: boolean; final: boolean; estimateNote?: string; result?: { winner: "maroon" | "white"; thru: number; label: string } }) {
   const [selected, setSelected] = useState<number | null>(null);
   const clip = useId();
   // Keep the latest published price at each completed-hole boundary, including corrections.
@@ -18,6 +18,7 @@ function DesktopMatchOddsGraph({ points, live, final, estimateNote }: { points: 
     if (Number.isInteger(point.state_thru) && point.state_thru >= 0 && point.state_thru <= 18) byHole.set(point.state_thru, point);
   });
   const history = [...byHole.values()].sort((a, b) => a.state_thru - b.state_thru);
+  const finish = final && result && result.thru > 0 && result.thru < 18 ? result : null;
   const latest = history.at(-1);
   const activeIndex = Math.min(selected ?? history.length - 1, history.length - 1);
   const active = history[activeIndex];
@@ -39,17 +40,21 @@ function DesktopMatchOddsGraph({ points, live, final, estimateNote }: { points: 
       </div>
       {latest ? <>
         <div className={styles.timelineGrid}>
-          <div className={`${styles.labels} font-condensed text-maroon-700`}><span>Maroon</span><span className="text-gold-700">Tie</span><span>White</span></div>
+          <div className={`${styles.labels} font-condensed text-maroon-700`}>
+            {["100%", "50%", "0%", "50%", "100%"].map((label, index) => <span key={index} className={styles.axisPercent} style={{ top: `${index * 25}%` }}>{label}</span>)}
+            <span className={styles.maroonLabel}>Maroon</span>
+            <span className={styles.whiteLabel}>White</span>
+          </div>
           <svg viewBox="0 0 1800 180" preserveAspectRatio="none" className={styles.plot} role="img" aria-label="Match probability aligned to scorecard holes: Maroon at the top, even or tie in the middle, White at the bottom">
             <defs><clipPath id={`${clip}-upper`}><rect width="1800" height="90" /></clipPath><clipPath id={`${clip}-lower`}><rect y="90" width="1800" height="90" /></clipPath></defs>
             <rect width="1800" height="180" fill="#eee5d5" />
             <polygon points={area} fill="#500001" fillOpacity="0.9" clipPath={`url(#${clip}-upper)`} />
             <polygon points={area} fill="#fff" clipPath={`url(#${clip}-lower)`} />
-            {Array.from({ length: 19 }, (_, hole) => <line key={hole} x1={hole * 100} x2={hole * 100} y1="0" y2="180" stroke="#a78945" strokeOpacity="0.3" vectorEffect="non-scaling-stroke" />)}
             {[0, 45, 90, 135, 180].map(value => <line key={value} x1="0" x2="1800" y1={value} y2={value} stroke="#a78945" strokeOpacity={value === center ? 0.8 : 0.3} vectorEffect="non-scaling-stroke" />)}
             <polyline points={line} fill="none" stroke="#231b18" strokeWidth="1.25" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
             {history.map(point => <line key={point.state_thru} x1={x(point)} x2={x(point)} y1={Math.max(0, y(point) - 3)} y2={Math.min(180, y(point) + 3)} stroke="#231b18" strokeWidth={point === active ? 2 : 1} vectorEffect="non-scaling-stroke"><title>{`Thru ${point.state_thru}: Maroon ${Math.round(point.maroon_win_probability * 100)}%, Tie ${Math.round(point.tie_probability * 100)}%, White ${Math.round(point.white_win_probability * 100)}%`}</title></line>)}
           </svg>
+          {finish && <div className={styles.resultArea}><div role="note" aria-label={`${finish.winner === "maroon" ? "Maroon" : "White"} wins ${finish.label} after hole ${finish.thru}`} className={`${styles.resultBlock} ${finish.winner === "maroon" ? styles.maroonResult : styles.whiteResult}`} style={{ left: `${finish.thru / 18 * 100}%`, top: finish.winner === "maroon" ? 0 : "50%" }}>{finish.label}</div></div>}
           {history.length > 1 && <input aria-label="Explore match odds" type="range" min="0" max={history.length - 1} value={activeIndex} onChange={(event) => setSelected(Number(event.target.value))} className={`${styles.explore} accent-maroon-700`} />}
         </div>
         {active && <p className="mt-2 font-sans text-xs text-ink-500">{active.state_thru === 0 ? "Before play" : final && activeIndex === history.length - 1 ? `Final · Thru ${active.state_thru}` : `Thru ${active.state_thru}`} · Maroon {Math.round(active.maroon_win_probability * 100)}% · Tie {Math.round(active.tie_probability * 100)}% · White {Math.round(active.white_win_probability * 100)}%</p>}
