@@ -38,18 +38,30 @@ try {
     const cells=await scroll.locator('tr').first().locator('th,td').evaluateAll(cells=>cells.map(cell=>{const r=cell.getBoundingClientRect();return {x:r.x,width:r.width}}));
     assert.equal(cells.length,20);
     assert.ok(cells.slice(1).every(c=>Math.abs(c.width-cells[1].width)<1));
+    if (width < 1024) {
+      assert.ok(cells.slice(1).every(c=>Math.abs(c.width-56)<1));
+      const before=await scroll.locator('th').first().boundingBox();
+      await scroll.evaluate(e=>{e.scrollLeft=650});
+      const after=await scroll.locator('th').first().boundingBox();
+      assert.ok(await scroll.evaluate(e=>e.scrollLeft>0));
+      assert.ok(Math.abs(before.x-after.x)<1);
+      await page.getByRole('img',{name:/Match probability balance:/}).waitFor();
+      await page.screenshot({path:resolve(dir,'mobile.png'),fullPage:true});
+      await scroll.evaluate(e=>{e.scrollLeft=0});
+      console.log('Original mobile scorecard scroll, pinned labels and graph restored');
+      continue;
+    }
     assert.ok(await scroll.evaluate(e=>e.scrollWidth<=e.clientWidth+1));
     const plot=await page.getByRole('img',{name:/Match probability aligned/}).boundingBox();
     assert.ok(Math.abs(plot.x-cells[1].x)<1);
     assert.ok(Math.abs(plot.x+plot.width-cells[19].x)<1);
-    const line=await page.locator('polyline').getAttribute('points');
+    const line=await page.locator('svg:visible polyline').getAttribute('points');
     assert.ok(line.split(' ')[1].startsWith('200,'));
     assert.ok(Math.abs(plot.x+plot.width*2/18-cells[3].x)<1);
     console.log('Aligned 20 columns, no scroll, and hole 2 boundary at '+width+'px');
   }
   assert.ok(await page.locator('a[href*="/matches/"]').count()>0);
   await page.getByRole('heading',{name:'Player Archives'}).waitFor();assert.equal(await page.locator('section').last().getByRole('button',{name:'2026',exact:true}).count(),0);
-  await page.screenshot({path:resolve(dir,'mobile.png'),fullPage:true});
   await page.goto(origin+'?year=2027');await page.locator('section').last().getByRole('button',{name:'2026',exact:true}).first().waitFor();
   await page.setViewportSize({width:1280,height:900});await page.screenshot({path:resolve(dir,'desktop.png'),fullPage:true});
   await page.goto(pathToFileURL(resolve('docs/app-workflow.html')).href);
@@ -57,5 +69,5 @@ try {
   await page.getByRole('searchbox').fill('canonical');assert.ok(await page.locator('details[open]:not(.hidden)').count()>0);
   await page.locator('nav a').filter({hasText:'Archives, corrections'}).click();assert.equal(await page.getByRole('searchbox').inputValue(),'');
   await page.screenshot({path:resolve(dir,'workflow.png'),fullPage:false});
-  console.log('PASS: fixed 20 columns, aligned hole odds, no horizontal scrolling, clickable archive matches, 2026/2027 archive rollover, workflow change panel/navigation/search. Screenshots: '+dir);
+  console.log('PASS: original mobile scroll/graph, desktop fixed 20 columns and aligned hole odds, clickable archive matches, 2026/2027 archive rollover, workflow change panel/navigation/search. Screenshots: '+dir);
 } finally {await browser?.close();await new Promise(r=>server.close(r));}

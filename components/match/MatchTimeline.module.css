@@ -54,3 +54,41 @@
   width: 100%;
   margin: 12px 0 0;
 }
+
+/* Keep the original readable, horizontally scrolling scorecard below desktop. */
+@media (width < 1024px) {
+  .scorecard {
+    --match-label-width: 100px;
+    overflow-x: auto;
+  }
+
+  .scorecard table {
+    width: 1164px;
+  }
+
+  .scorecard th {
+    position: sticky;
+    left: 0;
+    z-index: 20;
+    width: 100px;
+    min-width: 100px;
+    padding-inline: 4px;
+    overflow-wrap: normal;
+    font-size: 10px;
+  }
+
+  .scorecard td {
+    width: 56px;
+    min-width: 56px;
+    font-size: 12px;
+  }
+
+  .scorecard td > span[style] {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  .scorecard td > span[style] > span:last-child {
+    font-size: 14px;
+  }
+}

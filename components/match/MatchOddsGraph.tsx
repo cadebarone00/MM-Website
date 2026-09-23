@@ -2,13 +2,14 @@
 
 import { useId, useState } from "react";
 import type { MatchOddsPoint } from "@/lib/live/matchProfile";
+import { MobileMatchOddsGraph } from "./MobileMatchOddsGraph";
 import styles from "./MatchTimeline.module.css";
 
 const price = (value: number | null) => value == null ? "—" : value > 0 ? `+${value}` : String(value);
 /** A tie contributes half to each side: 100% Maroon is top, 100% White bottom. */
 export const matchBalance = (point: MatchOddsPoint) => point.maroon_win_probability + point.tie_probability / 2;
 
-export function MatchOddsGraph({ points, live, final, estimateNote }: { points: MatchOddsPoint[]; live: boolean; final: boolean; estimateNote?: string }) {
+function DesktopMatchOddsGraph({ points, live, final, estimateNote }: { points: MatchOddsPoint[]; live: boolean; final: boolean; estimateNote?: string }) {
   const [selected, setSelected] = useState<number | null>(null);
   const clip = useId();
   // Keep the latest published price at each completed-hole boundary, including corrections.
@@ -56,4 +57,9 @@ export function MatchOddsGraph({ points, live, final, estimateNote }: { points: 
       </> : <p className="py-12 text-center font-sans text-sm text-ink-500">{live ? "Odds will appear once a price is published for this match." : "No recorded odds history is available for this historical match."}</p>}
     </section>
   );
+}
+
+/** Preserve the original phone layout while using the aligned board on desktop. */
+export function MatchOddsGraph(props: Parameters<typeof DesktopMatchOddsGraph>[0]) {
+  return <><div className="lg:hidden"><MobileMatchOddsGraph {...props} /></div><div className="hidden lg:block"><DesktopMatchOddsGraph {...props} /></div></>;
 }
