@@ -1,3 +1,4 @@
+import styles from "./MatchTimeline.module.css";
 import type { ReactNode } from "react";
 import type { RealMatch } from "@/lib/data/types";
 import type { MatchProfileScorecard } from "@/lib/live/matchProfile";
@@ -27,11 +28,11 @@ export function LiveMatchScorecard({ match, scorecard }: { match: RealMatch; sco
     statuses.push(status);
   }
   const total = (values: (number | null)[]) => values.some((value) => value != null) ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0) : "—";
-  const row = (key: string, label: string, cells: ReactNode[], sum: ReactNode, tone = "bg-cream-100 text-maroon-700") => <tr key={key} className={tone}><th scope="row" className={`sticky left-0 z-20 h-12 w-[100px] min-w-[100px] border-r border-gold-600 px-1 text-center font-condensed text-[10px] uppercase ${tone}`}>{label}</th>{cells.map((cell, index) => <td key={index} className="relative isolate h-12 w-14 min-w-14 border-r border-gold-600 text-center text-xs">{cell ?? "—"}</td>)}<td className="h-12 w-14 min-w-14 border-l border-gold-600 text-center text-xs font-bold">{sum}</td></tr>;
+  const row = (key: string, label: string, cells: ReactNode[], sum: ReactNode, tone = "bg-cream-100 text-maroon-700") => <tr key={key} className={tone}><th scope="row" className={`h-12 border-r border-gold-600 px-0.5 text-center font-condensed uppercase ${tone}`}>{label}</th>{cells.map((cell, index) => <td key={index} className="relative isolate h-12 border-r border-gold-600 text-center">{cell ?? "—"}</td>)}<td className="h-12 border-l border-gold-600 text-center font-bold">{sum}</td></tr>;
   const scoresRow = (key: string, label: string, values: (number | null)[], team: "maroon" | "white", parMultiplier = 1) => row(key, label, values.map((score, index) => score == null ? "—" : <HoleMarkerForDiff key={index} diff={score - holes[index].par * parMultiplier} size={24} tone={team === "maroon" ? "white" : "maroon"}>{score}</HoleMarkerForDiff>), total(values), team === "maroon" ? "bg-maroon-700 text-white" : "bg-white text-maroon-700");
   const players = (side: "maroon" | "white") => (side === "maroon" ? match.maroonPlayers : match.whitePlayers).map((player) => scoresRow(player, getPlayerLastName(player), holes.map((hole) => hole.scores[player] ?? null), side));
   const shared = match.format === "Foursome" || match.format === "Alt Shot";
-  return <section>{scorecard.courseName && <p className="mb-3 font-condensed text-sm font-bold text-maroon-700">{scorecard.courseName}</p>}<div className="overflow-x-auto border-y border-ink-300" tabIndex={0} aria-label="Scroll match scorecard horizontally"><table className="w-max table-fixed border-collapse"><tbody>
+  return <section>{scorecard.courseName && <p className="mb-3 font-condensed text-sm font-bold text-maroon-700">{scorecard.courseName}</p>}<div className={`${styles.scorecard} border-y border-ink-300`} aria-label="Match scorecard table"><table className="w-full table-fixed border-collapse"><colgroup><col style={{ width: "var(--match-label-width)" }} />{Array.from({ length: holes.length + 1 }, (_, index) => <col key={index} />)}</colgroup><tbody>
     {row("holes", "Hole", holes.map((hole) => hole.number), "Tot")}
     {row("yards", "Yards", holes.map((hole) => hole.yards ?? null), total(holes.map((hole) => hole.yards ?? null)))}
     {row("par", "Par", holes.map((hole) => hole.par), total(holes.map((hole) => hole.par)))}

@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 const dir=resolve('node_modules/.cache/archive-browser');await mkdir(dir,{recursive:true});
 const entry=`import React from 'react';import {createRoot} from 'react-dom/client';
 import {LiveMatchScorecard} from '@/components/match/LiveMatchScorecard';
+import {MatchOddsGraph} from '@/components/match/MatchOddsGraph';
 import {RoundFormatArchive} from '@/components/portal/tiger/RoundFormatArchive';
 import {ArchivedScores} from '@/components/scorecard/ArchivedScores';
 import {pastTournaments} from '@/lib/data';
@@ -20,9 +21,9 @@ import {historicalMatchScorecard} from '@/lib/data/historicalMatchScorecard';
 const tournament=pastTournaments.find(t=>t.year===2026), match=tournament.matches.find(m=>m.day===2&&m.session==='Morning');
 const cards=scorecards2026.map(c=>({...c,rounds:c.rounds.map(r=>({...r,round:legacyScorecardRound(2026,r.round)}))}));
 const year=Number(new URLSearchParams(location.search).get('year')||2026);
-createRoot(document.getElementById('root')).render(<main className="mx-auto max-w-5xl p-4"><LiveMatchScorecard match={match} scorecard={historicalMatchScorecard(tournament,match,cards,[])}/><RoundFormatArchive tournaments={[{...tournament,entries:roundFormatArchive(tournament).map(entry=>({...entry,setup:{courseName:"Course",datePlayed:"2026-01-07",teeSetup:{teeSetName:"Black",rating:72,slope:130}}})),orphans:[]}]} courses={[]}/><ArchivedScores playerSlug="cade-barone" featuredYear={year}/></main>);`;
+createRoot(document.getElementById('root')).render(<main className="mx-auto max-w-5xl p-4"><LiveMatchScorecard match={match} scorecard={historicalMatchScorecard(tournament,match,cards,[])}/><MatchOddsGraph live={false} final points={[0,2,5,18].map((state_thru,i)=>({state_thru,maroon_win_probability:0.2+i*0.2,tie_probability:0.1,white_win_probability:0.7-i*0.2}))}/><RoundFormatArchive tournaments={[{...tournament,entries:roundFormatArchive(tournament).map(entry=>({...entry,setup:{courseName:"Course",datePlayed:"2026-01-07",teeSetup:{teeSetName:"Black",rating:72,slope:130}}})),orphans:[]}]} courses={[]}/><ArchivedScores playerSlug="cade-barone" featuredYear={year}/></main>);`;
 await build({stdin:{contents:entry,loader:'tsx',resolveDir:process.cwd()},bundle:true,outfile:resolve(dir,'app.js'),jsx:'automatic',define:{'process.env.NODE_ENV':'"production"','process.env':'{}'},plugins:[{name:'link',setup(b){b.onResolve({filter:/^next\/link$/},()=>({path:'link',namespace:'stub'}));b.onLoad({filter:/.*/,namespace:'stub'},()=>({contents:"import React from 'react';export default function Link({href,children,...p}){return <a href={href} {...p}>{children}</a>}",loader:'jsx',resolveDir:process.cwd()}));}}]});
-const css=await postcss([tailwind()]).process(await readFile('app/globals.css','utf8'),{from:resolve('app/globals.css')});await writeFile(resolve(dir,'global.css'),css.css);
+const css=await postcss([tailwind()]).process(await readFile('app/globals.css','utf8'),{from:resolve('app/globals.css')});await writeFile(resolve(dir,'global.css'),css.css+await readFile(resolve(dir,'app.css'),'utf8'));
 const server=createServer(async(req,res)=>{const path=req.url.split('?')[0];if(['/app.js','/global.css'].includes(path)){res.setHeader('Content-Type',path.endsWith('.js')?'text/javascript':'text/css');res.end(await readFile(resolve(dir,path.slice(1))));}else res.end('<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/global.css"></head><body><div id="root"></div><script src="/app.js"></script></body></html>');});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port;
 let browser;
@@ -30,11 +31,22 @@ try {
   browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:390,height:844}});
   page.on('pageerror',error=>console.log('Browser error:',error.message));
   await page.route('**/api/**',route=>route.fulfill({json:{ok:true,rounds:[2026,2025,2024].map(year=>({year,round:1,course:'Archive Course',format:'Singles',holes:Array.from({length:18},(_,i)=>({hole:i+1,par:4,yards:400,score:4,putts:2,fairwayInRegulation:true,greenInRegulation:true}))}))}}));
-  await page.goto(origin);const scroll=page.getByLabel('Scroll match scorecard horizontally');await scroll.waitFor();
+  await page.goto(origin);const scroll=page.getByLabel('Match scorecard table',{exact:true});await scroll.waitFor();
   assert.match(await scroll.locator('table').innerText(),/Yards/i);
-  const widths=await scroll.locator('tr').first().locator('td').evaluateAll(cells=>cells.map(cell=>cell.getBoundingClientRect().width));assert.ok(widths.every(width=>width===56));
-  const before=await scroll.locator('th').first().boundingBox();await scroll.evaluate(element=>{element.scrollLeft=650});const after=await scroll.locator('th').first().boundingBox();assert.equal(Math.round(before.x),Math.round(after.x));
-  assert.ok(await scroll.evaluate(element=>element.scrollLeft>0));
+  for (const width of [390, 1280]) {
+    await page.setViewportSize({width,height:900});
+    const cells=await scroll.locator('tr').first().locator('th,td').evaluateAll(cells=>cells.map(cell=>{const r=cell.getBoundingClientRect();return {x:r.x,width:r.width}}));
+    assert.equal(cells.length,20);
+    assert.ok(cells.slice(1).every(c=>Math.abs(c.width-cells[1].width)<1));
+    assert.ok(await scroll.evaluate(e=>e.scrollWidth<=e.clientWidth+1));
+    const plot=await page.getByRole('img',{name:/Match probability aligned/}).boundingBox();
+    assert.ok(Math.abs(plot.x-cells[1].x)<1);
+    assert.ok(Math.abs(plot.x+plot.width-cells[19].x)<1);
+    const line=await page.locator('polyline').getAttribute('points');
+    assert.ok(line.split(' ')[1].startsWith('200,'));
+    assert.ok(Math.abs(plot.x+plot.width*2/18-cells[3].x)<1);
+    console.log('Aligned 20 columns, no scroll, and hole 2 boundary at '+width+'px');
+  }
   assert.ok(await page.locator('a[href*="/matches/"]').count()>0);
   await page.getByRole('heading',{name:'Player Archives'}).waitFor();assert.equal(await page.locator('section').last().getByRole('button',{name:'2026',exact:true}).count(),0);
   await page.screenshot({path:resolve(dir,'mobile.png'),fullPage:true});
@@ -45,5 +57,5 @@ try {
   await page.getByRole('searchbox').fill('canonical');assert.ok(await page.locator('details[open]:not(.hidden)').count()>0);
   await page.locator('nav a').filter({hasText:'Archives, corrections'}).click();assert.equal(await page.getByRole('searchbox').inputValue(),'');
   await page.screenshot({path:resolve(dir,'workflow.png'),fullPage:false});
-  console.log('PASS: equal 56px columns, normal horizontal scroll, pinned labels, clickable archive matches, 2026/2027 archive rollover, workflow change panel/navigation/search. Screenshots: '+dir);
+  console.log('PASS: fixed 20 columns, aligned hole odds, no horizontal scrolling, clickable archive matches, 2026/2027 archive rollover, workflow change panel/navigation/search. Screenshots: '+dir);
 } finally {await browser?.close();await new Promise(r=>server.close(r));}
