@@ -660,6 +660,23 @@ All pages are public, no auth.
   covered by type-check, lint, build, the tested logic it calls, and the
   browser test's simulated version of the same screen.
 
+- **Security pass on accounts/passwords.** User asked how passwords/data are
+  protected; audit found the core setup already solid (Supabase hashes every
+  password — this repo never sees or stores one; `.env` secrets are
+  gitignored and never committed; RLS policies correctly restrict private
+  tables to their owner). Two small gaps fixed: (1) `POST /api/auth/signup`
+  now rejects a password under 6 characters (it previously accepted any
+  non-empty string; `reset-password` already had this check, signup didn't);
+  (2) `next.config.ts` now sets standard security response headers
+  (`Strict-Transport-Security`, `X-Frame-Options: DENY`,
+  `X-Content-Type-Options: nosniff`, `Referrer-Policy`) on every route.
+  **Two settings remain that only exist in the Supabase dashboard, not in
+  code — not done here:** turning on Authentication → Policies → "Leaked
+  password protection," and confirming the live production domain forces
+  HTTPS (Vercel does this automatically once a domain is attached; just
+  worth a one-time check). `npm test` (356/356), `npx tsc --noEmit`, lint on
+  both changed files, and `npm run build` all clean.
+
 ## Known gaps / not yet built
 
 - **Live scoring lifecycle — spec v3 written, not built.** See
