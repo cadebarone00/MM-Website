@@ -35,15 +35,7 @@ function useShrinkToFit(ref: React.RefObject<HTMLDivElement | null>, watch: stri
   }, [ref, watch]);
 }
 
-/**
- * Permanent bottom-left score bug — always on screen over the rotating
- * scene AND over full-screen takeovers alike, never comes down (see
- * docs/superpowers/specs/2026-09-02-watch-live-broadcast-design.md and
- * the 2026-09-22 broadcast graphics brainstorm). Idle state is the top 5
- * by standing; swapping its content for a live event (birdie/eagle/etc.)
- * is a later pass — see IndividualLeaderboardScene.tsx for where that
- * celebration lives today instead.
- */
+/** Bottom-left top-five standings, hidden while the individual board is visible. */
 export function BroadcastTicker({ standings }: { standings: BroadcastStanding[] }) {
   const rowsRef = useRef<HTMLDivElement>(null);
   const top5 = standings.slice(0, 5);
@@ -51,29 +43,28 @@ export function BroadcastTicker({ standings }: { standings: BroadcastStanding[] 
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-start">
-      <div className="flex w-full max-w-[min(66.6%,980px)] items-stretch border-t-2 border-[color:var(--color-gold-400)]/45 bg-[color:var(--color-maroon-900)]/[0.92] shadow-xl backdrop-blur-sm">
+      <div className="flex min-h-28 w-max max-w-full items-stretch border-t-2 border-[color:var(--color-gold-400)]/45 bg-[color:var(--color-maroon-900)]/[0.92] shadow-xl backdrop-blur-sm">
         <div className="flex shrink-0 items-center border-r border-[color:var(--color-gold-400)]/25 bg-[color:var(--color-maroon-700)]/60 px-5 py-3 sm:px-6">
-          <span className="whitespace-nowrap font-condensed text-lg font-bold uppercase tracking-wide text-[color:var(--color-gold-300)] sm:text-xl">
+          <span className="whitespace-nowrap font-condensed text-2xl font-bold uppercase tracking-wide text-[color:var(--color-gold-300)] sm:text-3xl">
             Leaderboard
           </span>
         </div>
-        <div ref={rowsRef} className="flex flex-1 items-center justify-between gap-5 overflow-hidden px-4 py-3 sm:gap-7 sm:px-5">
+        <div ref={rowsRef} className="flex min-w-0 items-center gap-[1em] overflow-hidden px-4 py-6 sm:px-5" style={{ fontSize: "calc(1.6rem * var(--ticker-fit-scale, 1))" }}>
           {top5.length === 0 ? (
             <span className="font-condensed text-lg text-[color:var(--color-cream-100)]/60">No scores yet</span>
           ) : (
             top5.map((standing, index) => (
               <div
                 key={standing.player}
-                className="flex shrink-0 items-baseline gap-2 whitespace-nowrap"
-                style={{ fontSize: "calc(1.3rem * var(--ticker-fit-scale, 1))" }}
+                className="flex shrink-0 items-center gap-[0.35em] whitespace-nowrap"
               >
-                <span className="font-condensed text-[0.45em] font-semibold text-[color:var(--color-cream-100)]/50">
+                <span className="font-condensed text-[0.65em] font-semibold text-[color:var(--color-cream-100)]/50">
                   {placementLabel(standings, index)}
                 </span>
                 <span className="font-condensed text-[1em] font-bold uppercase leading-none text-[color:var(--color-cream-50)]">
                   {getPlayerDisplayName(standing.player)}
                 </span>
-                <ScoreBadge value={standing.toPar} size="lg" />
+                <ScoreBadge value={standing.toPar} size="lg" style={{ fontSize: "1.15em" }} />
               </div>
             ))
           )}

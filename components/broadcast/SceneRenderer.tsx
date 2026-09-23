@@ -66,6 +66,11 @@ export function SceneRenderer({
   // broadcast's pre-show hold (spec §7/§17's Holding scene).
   const scene = !state.tournamentLive ? "holding" : isAuto ? autoScene : state.currentScene;
 
+  const videoVisible = (state.tournamentLive || preview) && activeVideo != null &&
+    (state.videoPhase === "transition" || state.videoPhase === "playing");
+  const individualBoardVisible = scene === "individual_leaderboard" &&
+    !videoVisible && activeEvent?.displayMode !== "takeover";
+
   // During a Mock Run/animation test, IndividualLeaderboardScene switches
   // to fake seeded standings (MockLeaderboardScene) so a host can rehearse
   // without touching real data — the ticker needs to agree with whatever
@@ -107,10 +112,7 @@ export function SceneRenderer({
         </>
       )}
       <OverlayLayer text={state.overlayText} expiresAt={state.overlayExpiresAt} />
-      {/* Permanent score bug — stays up through rotation AND full-screen
-          takeovers alike (2026-09-22 broadcast graphics brainstorm: the
-          ticker never comes down). */}
-      <BroadcastTicker standings={tickerStandings} />
+      {!individualBoardVisible && <BroadcastTicker standings={tickerStandings} />}
     </>
   );
 }
