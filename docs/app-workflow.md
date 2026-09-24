@@ -45,7 +45,7 @@ flowchart TD
   O --> F[Tiger closeout and MM Coins settlement]
   %% My Handicap score list shows only the order dropdown followed by scores; explanatory paragraphs are removed.
   %% White-team portal navigation area has a maroon backdrop behind Submit a score and the four navigation rows.
-  %% Portal Profile, Career, Round video and Wagers rows use their named supplied photos with white labels and contrast overlays.
+  %% Portal Profile, Career, Round video and Wagers rows use their named supplied photos with white labels, individual gold outlines, and spacing between selections.
   %% Portal: overall handicap number opens My Handicap; separate Submit a score pill opens the handicap screen.
   P --> N[Personal 18-hole round entry]
   C --> N
@@ -129,7 +129,7 @@ Native match profiles poll `/api/live/matches/[id]?profile=1` every five seconds
 
 **Reads:** committed tournament/player content plus selected live database overlays. **Writes:** generally none from browsing. **Code:** `app/page.tsx`, `app/leaderboard`, `app/teams`, `app/schedule`, `lib/data/activeSeasonOverlay.ts`.
 
-The Player Portal navigation rows for Profile, Career, Round video, and Wagers use the corresponding supplied photos from `Player Portal/Profile.Career.etc`, imported as optimized WebP assets in `public/portal/navigation`. The photos fill the existing rows, with white text and a dark overlay; link destinations and permissions are unchanged.
+The Player Portal navigation rows for Profile, Career, Round video, and Wagers use the corresponding supplied photos from `Player Portal/Profile.Career.etc`, imported as optimized WebP assets in `public/portal/navigation`. Each photo fills a separate rounded row with a gold outline and 12px spacing between selections, with white text and a dark overlay; link destinations and permissions are unchanged.
 
 ## 4. Player portal and My Matches
 
@@ -451,6 +451,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 24, 2026 - Separate gold-outlined portal selections (presentation change implemented locally; deployment not verified).** The four photo links previously shared one border with dividers. Each now has its own rounded gold outline and a 12px gap from the next selection. Updated Section 3 and the flowchart annotation; navigation and overview mappings are unchanged.
 
 **September 24, 2026 - Player password status (migration prepared and locally tested; live execution pending).** Previously player slots exposed invitation/link status but no password indicator. The new migration adds and backfills `password_created`, then automatically maintains true/false from the linked Auth account's password credential. Existing accounts are included regardless of invitation history. Updated Section 1 and the flowchart annotation; overview mappings are unchanged. This does not track portal visits or change Claimed semantics.
 
