@@ -81,10 +81,10 @@ export default async function PortalPage() {
           </div>
           <div className="shrink-0 text-right text-white">
             <Link href="/portal/handicap?tab=overall" aria-label={`Overall handicap: ${formatHandicapIndex(heroHandicapIndex)}`} className="font-serif text-4xl font-bold leading-none tabular-nums sm:text-5xl">{formatHandicapIndex(heroHandicapIndex)}</Link>
-            <div className="mt-3" aria-label={`${SKINS_YEAR} skins: ${skins?.[playerSlug] ?? "unavailable"}`} title="Sole lowest gross score on a hole across the session. Ties earn no skin.">
-              <p className="font-sans text-xs">{SKINS_YEAR}</p>
-              <p className="flex items-baseline justify-end gap-2 font-serif font-bold"><span className="text-sm">Skins</span><span className="text-2xl tabular-nums">{skins?.[playerSlug] ?? "—"}</span></p>
-            </div>
+            <Link href="/portal/skins" className="mt-3 flex min-h-11 items-center justify-end gap-2 rounded-sm font-serif font-bold focus-visible:outline-2 focus-visible:outline-white" aria-label={`${SKINS_YEAR} skins: ${skins?.[playerSlug] ?? "unavailable"}. View skins leaderboard`}>
+              <span className="flex flex-col items-center text-sm leading-5"><span>{SKINS_YEAR}</span><span>Skins</span></span>
+              <span className="text-[2.75rem] leading-none tabular-nums">{skins?.[playerSlug] ?? "—"}</span>
+            </Link>
           </div>
         </div>
         <nav aria-label="Handicap and player lookup" className="absolute inset-x-0 bottom-5 grid grid-cols-2 items-center px-4 sm:bottom-8 sm:px-6">

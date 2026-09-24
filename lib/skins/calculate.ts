@@ -6,12 +6,15 @@ export type SkinsRound = {
   round: number;
   course: string;
   format: string | null;
-  holes: { hole: number; score: number }[];
+  holes: { hole: number; score: number; par?: number }[];
 };
 
+export type SkinWin = { player: string; round: number; course: string; hole: number; score: number; par: number | null };
+
 /** Gross skins: one sole low scorer per hole, across the session's field. No carryovers. */
-export function calculateSkins(rounds: SkinsRound[]): Record<string, number> {
+export function calculateSkinsResults(rounds: SkinsRound[]): { totals: Record<string, number>; wins: SkinWin[] } {
   const totals: Record<string, number> = {};
+  const wins: SkinWin[] = [];
   const sessions = new Map<string, SkinsRound[]>();
   for (const round of rounds) {
     totals[round.player] ??= 0;
@@ -33,8 +36,16 @@ export function calculateSkins(rounds: SkinsRound[]): Record<string, number> {
       if (scores.some((score) => !Number.isInteger(score) || score <= 0)) continue;
       const low = Math.min(...scores);
       if (scores.filter((score) => score === low).length !== 1) continue;
-      totals[field[scores.indexOf(low)].player]++;
+      const winner = field[scores.indexOf(low)];
+      const par = winner.holes.find((entry) => entry.hole === hole)?.par;
+      totals[winner.player]++;
+      wins.push({ player: winner.player, round: winner.round, course: canonicalCourseName(winner.course), hole, score: low,
+        par: par != null && Number.isInteger(par) && par > 0 ? par : null });
     }
   }
-  return totals;
+  return { totals, wins: wins.sort((a, b) => a.round - b.round || a.course.localeCompare(b.course) || a.hole - b.hole) };
+}
+
+export function calculateSkins(rounds: SkinsRound[]): Record<string, number> {
+  return calculateSkinsResults(rounds).totals;
 }
