@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getPlayerDisplayName } from "@/lib/data/players";
+import { nextTournament } from "@/lib/data";
 import { liveMatchMarket, type LiveOddsSnapshot } from "@/lib/wagers/liveMatchMarket";
 import { OddsButton } from "@/components/wagers/OddsButton";
 
@@ -36,7 +37,7 @@ export function LiveMatchesList() {
         const state = officialState?.status === "live" ? `LIVE · THRU ${officialState.thru || "—"}` : officialState?.status === "complete" ? "Awaiting closeout" : "Upcoming";
         return (
           <div key={match.id} className="rounded-md border border-ink-100 bg-white p-4">
-            <Link href={`/api/live/matches/${match.id}`} className="font-sans text-sm font-semibold text-ink-900 hover:text-maroon-700">
+            <Link href={`/leaderboard/${nextTournament.slug}/matches/${encodeURIComponent(match.id)}`} className="font-sans text-sm font-semibold text-ink-900 hover:text-maroon-700">
               {names(match.maroon_players)} vs {names(match.white_players)}
             </Link>
             <p className="mt-1 font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Round {match.round} · {match.format} · {state}</p>
