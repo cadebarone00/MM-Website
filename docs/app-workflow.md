@@ -46,6 +46,7 @@ flowchart TD
   %% My Handicap score list shows only the order dropdown followed by scores; explanatory paragraphs are removed.
   %% White-team portal navigation area has a maroon backdrop behind Submit a score and the four navigation rows.
   %% Portal Profile, Career, Round video and Wagers rows use their named supplied photos with white labels, individual gold outlines, and spacing between selections.
+  %% Portal hero shows 2026 gross skins below overall handicap from archived individual scorecards; ties earn none and 2027 is not connected.
   %% Portal hero contains evenly spaced white serif My Handicap and Player Lookup links near its bottom.
   %% Portal: overall handicap number opens My Handicap; separate Submit a score pill opens the handicap screen.
   %% Player Lookup starts with its selector below navigation; the header back arrow always returns to /portal.
@@ -143,6 +144,8 @@ After login, a host goes to Tiger Center. A linked player receives a hero, team 
 My Matches opens on Live after reopening. Live / Upcoming / Past filter cards for the portal's calendar year. For an already completed registered year, historical match definitions and archived scorecards construct those cards. Otherwise, the portal reads native rounds and match boxes. An empty Live tab can be correct even when Past contains matches.
 
 Opening actual scoring requires a scoreable assigned match in the active scoring season. A displayed historical match is not an invitation to resubmit that old tournament through live scoring.
+
+The portal hero displays **2026** above a **Skins** label and total directly below the overall handicap. `lib/skins/data.ts` reads the complete paginated 2026 `archived_scorecard_rounds` and `archived_scorecard_holes` on the server, so historical corrections are reflected on the next page load. `lib/skins/calculate.ts` compares gross strokes across all individual scorecards for the same session and canonical course, hole by hole. A sole lowest score earns one skin; a tied low earns none, with no carryover or handicap adjustment. Singles and individual-ball Fourball count; shared-ball formats do not. A hole is skipped if any participating card lacks a valid positive integer score; single-player fields and duplicate player cards cannot award skins. Players with cards but no wins show zero; absent cards or load errors show a dash. The display is explicitly fixed to 2026. Confirmed live 2027 data is not connected yet; personal handicap rounds do not contribute.
 
 The portal hero uses the same combined overall handicap calculation and `formatHandicapIndex` display helper as My Handicap. Its larger, number-only link sits at the top right and opens the Overall tab: a calculated -1.4 displays as +1.4, positive indexes display without a sign, and unavailable indexes display a dash. The separate gold-bordered Submit a score pill sits between My Matches and the Profile/Career/Round video/Wagers box, matches that box's width, and opens the handicap screen.
 
@@ -456,6 +459,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 24, 2026 - 2026 player skins (implemented locally; deployment not verified).** The portal previously displayed only the overall handicap in the top-right stats area. It now adds the year above a Skins label and total below handicap, calculated from archived individual scores across each session/course. Ties earn no skin, incomplete holes are skipped, and 2027 remains a future integration. Updated Section 3 and the flowchart annotation; overview boxes and workflow mappings are unchanged.
 
 **September 24, 2026 - Portal hero navigation links (presentation change implemented locally; deployment not verified).** My Handicap and Player Lookup previously appeared as stacked pill buttons below the hero. Both now sit inside the hero near its bottom, evenly spaced in two columns, as white text links using the Fantasy heading font treatment. Destinations are unchanged. Updated Section 3 and the flowchart annotation; overview mappings are unchanged.
 
