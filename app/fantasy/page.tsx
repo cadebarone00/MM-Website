@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
 import { getNextTournamentStatus } from "@/lib/data";
 import { FantasyShell, type FantasyTab } from "@/components/fantasy/FantasyShell";
-import { FantasyWelcome } from "@/components/fantasy/FantasyWelcome";
 import { FantasyDraftTabs } from "@/components/fantasy/FantasyDraftTabs";
 import { FantasyRosterSummary } from "@/components/fantasy/FantasyRosterSummary";
 import { FantasyHowToPlay } from "@/components/fantasy/FantasyHowToPlay";
@@ -167,26 +166,19 @@ export default function FantasyPage() {
       );
     }
 
-    if (savedPicks) {
-      return (
-        <FantasyRosterSummary
-          tournament={tournament}
-          picks={savedPicks}
-          locked={locked}
-          rank={rank}
-          totalPlayers={totalPlayers}
-          updatedAt={payload?.updatedAt ?? null}
-          schedule={schedule}
-          onEdit={() => startDraft(toDraftPicks(savedPicks))}
-        />
-      );
-    }
-
-    if (locked) {
-      return <p className="mt-10 text-center font-sans text-sm text-ink-500">Fantasy picks are closed for {tournament.editionLabel}.</p>;
-    }
-
-    return <FantasyWelcome editionLabel={tournament.editionLabel} onStart={() => startDraft(EMPTY_DRAFT_PICKS)} />;
+    return (
+      <FantasyRosterSummary
+        tournament={tournament}
+        picks={savedPicks}
+        locked={locked}
+        rank={rank}
+        totalPlayers={totalPlayers}
+        updatedAt={payload?.updatedAt ?? null}
+        schedule={schedule}
+        onStart={() => startDraft(EMPTY_DRAFT_PICKS)}
+        onEdit={() => savedPicks && startDraft(toDraftPicks(savedPicks))}
+      />
+    );
   }
 
   return (

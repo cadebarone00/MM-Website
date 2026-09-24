@@ -17,7 +17,7 @@ export function FantasyRoundCircles({
   schedule,
 }: {
   tournament: Tournament;
-  picks: FantasyPicks;
+  picks: FantasyPicks | null;
   schedule: UpcomingRoundScheduleItem[];
 }) {
   const days = groupScheduleByDay(schedule);
@@ -38,7 +38,7 @@ export function FantasyRoundCircles({
 
       {days.flatMap((day) =>
         day.rounds.map((round) => {
-          const points = fantasyPointsForRound(tournament, picks, round.round);
+          const points = picks ? fantasyPointsForRound(tournament, picks, round.round) : null;
           return (
             <div key={round.round} className="flex flex-col items-center gap-1">
               <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-maroon-700 bg-white font-score text-sm font-bold tabular-nums text-ink-900">
