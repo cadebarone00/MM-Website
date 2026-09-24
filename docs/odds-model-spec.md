@@ -281,6 +281,43 @@ Guardrails:
 - Settlement is automatic when the last scheduled match is closed out
   (`supabase/team_winner_future.sql`).
 
+## Low Individual future
+
+The Low Individual market prices which player finishes with the fewest total
+strokes across every Singles and Fourball round. Foursome/Alternate Shot
+rounds are excluded because they produce no individual score. Every
+rostered player is assumed to play, and finish, every hole of every
+individual-ball round. Implementation: `lib/wagers/lowIndividualFuture.ts`
+and `lib/wagers/lowIndividualPricing.ts`.
+
+For every unplayed hole, the simulation uses the round's target course
+setup and the same eligible individual-ball Career Archive rows as the match
+model. It draws one of the player's historical scores from Measure 1 (same
+par) or Measure 2 (the three-bucket yardage pool), 50/50, or from whichever
+pool has history if only one does. Confirmed live scores are fixed. The whole
+remaining event is played 10,000 times.
+
+Ties for first settle dead heat: each tied player's winning bets are paid
+their potential payout divided by the number tied. Each simulation therefore
+credits every tied player a share of 1/k. These dead-heat win shares sum to 1
+and are priced as fair American odds without vig.
+
+Guardrails:
+
+- No odds publish while any round lacks a format, an individual-ball round
+  lacks a course, the rosters are empty, or a player has no usable history
+  for some target hole.
+- Measures 3 and 4 are not applied yet. This is a stroke-total market, not a
+  match, so the format adjustment does not apply as specified.
+- Odds refresh after every official match publication and closeout, and the
+  public read recomputes them when they are over 10 minutes old.
+- Bets are refused while newer match data exists than the odds used. Betting
+  closes once every hole is in.
+- Settlement is automatic once every match is closed out and every rostered
+  player has a confirmed score on all 18 holes of every individual-ball
+  round (`supabase/low_individual_future.sql`). A missing hole holds
+  settlement until it is entered.
+
 ## Required outputs
 
 Every odds calculation should show:

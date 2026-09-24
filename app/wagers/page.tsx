@@ -9,6 +9,7 @@ import { ComingSoonNotice } from "@/components/wagers/ComingSoonNotice";
 import { useWagersMode } from "@/components/wagers/WagersModeContext";
 import { LiveMatchesList } from "@/components/wagers/LiveMatchesList";
 import { TeamWinnerFutureCard } from "@/components/wagers/TeamWinnerFutureCard";
+import { LowIndividualFutureCard } from "@/components/wagers/LowIndividualFutureCard";
 import type { Tournament } from "@/lib/data/types";
 
 type Category = "team-futures" | "player-futures" | "matches" | "fourballs" | "props";
@@ -61,8 +62,11 @@ export default function WagersPage() {
       <Tabs items={CATEGORY_ITEMS} value={category} onChange={(v) => setCategory(v as Category)} variant="plain" />
       <div className="mt-6">
         {category === "team-futures" ? (
-          // Futures shows its odds in both modes; the card itself explains Real Wagers isn't live yet.
-          <TeamWinnerFutureCard mode={mode} />
+          // Futures shows its odds in both modes; each card explains Real Wagers isn't live yet.
+          <div className="flex flex-col gap-4">
+            <TeamWinnerFutureCard mode={mode} />
+            <LowIndividualFutureCard mode={mode} />
+          </div>
         ) : mode === "real" ? (
           <ComingSoonNotice />
         ) : loading && !payload ? (

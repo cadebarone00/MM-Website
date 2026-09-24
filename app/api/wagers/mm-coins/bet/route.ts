@@ -5,6 +5,8 @@ import type { Market } from "@/lib/wagers/marketKeys";
 import { getActiveSeasonYear } from "@/lib/live/activeSeason";
 import { currentTeamWinnerState } from "@/lib/wagers/teamWinnerPricing";
 import { teamWinnerMarketKey } from "@/lib/wagers/teamWinnerFuture";
+import { currentLowIndividualState } from "@/lib/wagers/lowIndividualPricing";
+import { lowIndividualMarketKey } from "@/lib/wagers/lowIndividualFuture";
 
 const LIVE_MATCH_PREFIX = "live-match:";
 const CLOSED = "That market isn't open for betting right now.";
@@ -12,8 +14,9 @@ const CLOSED = "That market isn't open for betting right now.";
 type Supabase = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
 /** Only markets with an automatic settlement path are accepted: the live
- * match winner (settled by Tiger's Close Out Match) and Team Winner (settled
- * when the last match closes out — see supabase/team_winner_future.sql).
+ * match winner (settled by Tiger's Close Out Match), Team Winner and Low
+ * Individual (settled when the last match closes out — see
+ * supabase/team_winner_future.sql and supabase/low_individual_future.sql).
  * Add a market type here only once its settlement is wired up. Odds always
  * come from the server's current price, never from the request. */
 async function openMarket(supabase: Supabase, marketKey: string): Promise<{ market: Market | null; error: string }> {
@@ -36,6 +39,11 @@ async function openMarket(supabase: Supabase, marketKey: string): Promise<{ mark
   if (marketKey === teamWinnerMarketKey(seasonYear)) {
     const state = await currentTeamWinnerState(seasonYear);
     if (state.status === "updating") return { market: null, error: "Team Winner odds are updating after the latest score — try again in a moment." };
+    return { market: state.status === "open" ? state.market : null, error: CLOSED };
+  }
+  if (marketKey === lowIndividualMarketKey(seasonYear)) {
+    const state = await currentLowIndividualState(seasonYear);
+    if (state.status === "updating") return { market: null, error: "Low Individual odds are updating after the latest score — try again in a moment." };
     return { market: state.status === "open" ? state.market : null, error: CLOSED };
   }
 

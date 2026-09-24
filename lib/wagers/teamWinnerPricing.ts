@@ -7,6 +7,7 @@ import { calculatePreRoundAlternateShotOdds, calculatePreRoundFourballOdds, calc
 import { isTestSeason } from "@/lib/live/testSeason";
 import type { LiveTournamentSnapshot } from "@/lib/live/types";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { latestMatchInput, later, pages, type Service } from "./futureInputs";
 import {
   TEAM_WINNER_MODEL_VERSION,
   TEAM_WINNER_SIMULATIONS,
@@ -24,8 +25,6 @@ import {
   type Roster,
 } from "./teamWinnerFuture";
 
-type Service = ReturnType<typeof createSupabaseServiceRoleClient>;
-
 type Inputs = {
   rounds: FutureRound[];
   roster: Roster;
@@ -34,27 +33,6 @@ type Inputs = {
   /** Newest match odds / official state the inputs include. */
   inputsAsOf: string | null;
 };
-
-async function pages<T>(query: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>): Promise<T[]> {
-  const rows: T[] = [];
-  for (let from = 0; ; from += 1000) {
-    const result = await query(from, from + 999);
-    if (result.error) throw new Error(result.error.message);
-    rows.push(...(result.data ?? []));
-    if ((result.data?.length ?? 0) < 1000) return rows;
-  }
-}
-
-const later = (a: string | null, b: string | null) => (!a ? b : !b ? a : a > b ? a : b);
-
-/** The newest match odds or official state change for a season — the freshness bar for Team Winner odds. */
-export async function latestMatchInput(service: Service, seasonYear: number): Promise<string | null> {
-  const [{ data: odds }, { data: state }] = await Promise.all([
-    service.from("live_match_odds_snapshots").select("created_at").eq("season_year", seasonYear).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-    service.from("live_match_official_state").select("updated_at").eq("season_year", seasonYear).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
-  ]);
-  return later(odds?.created_at ?? null, state?.updated_at ?? null);
-}
 
 /** Reads every round, the roster, finished results, and the latest odds of each paired match. */
 async function loadInputs(service: Service, seasonYear: number): Promise<Inputs> {

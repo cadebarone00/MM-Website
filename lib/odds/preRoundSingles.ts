@@ -21,11 +21,11 @@ const ROUND_SHAPE_STRENGTH = 0.015;
 const FORMAT_STRENGTH = 0.08;
 const categories: Category[] = ["eagles", "birdies", "pars", "bogeys", "doubles"];
 const pick = <T,>(rows: T[]) => rows[Math.floor(Math.random() * rows.length)];
-const bucket = (yards: number) => Math.floor((yards - 101) / 10);
+export const bucket = (yards: number) => Math.floor((yards - 101) / 10);
 // Historical nine-hole rounds remain excluded. Confirmed live 2027+ holes
 // have a running roundHoles count below 18 and intentionally enter the raw
 // sampling pool immediately; an unplayed hole has no record to include.
-const isEligibleIndividualHole = (row: CareerHoleRecord) =>
+export const isEligibleIndividualHole = (row: CareerHoleRecord) =>
   row.roundHoles !== 9 && (row.format === "Singles" || row.format === "Fourball" || (row.source === "other" && row.format === "Stroke Play" && row.roundHoles === 18));
 
 function counts(rows: Score[]): Record<Category, number> {
