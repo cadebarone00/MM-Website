@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { findCurrentRoundForPlayer } from "@/lib/live/currentRoundForPlayer";
+import { loadScoringProgress } from "@/lib/live/scoringProgress";
+import { scoringStage } from "@/lib/live/scoringStage";
 import { ScoringStatusScreen } from "@/components/portal/ScoringStatusScreen";
 
 export default async function ScoringPage() {
@@ -26,5 +28,14 @@ export default async function ScoringPage() {
   const playerName = playerProfile?.fullName ?? profile.display_name;
   const result = await findCurrentRoundForPlayer(playerSlug);
 
-  return <ScoringStatusScreen playerName={playerName} playerSlug={playerSlug} result={result} />;
+  const progress = result ? await loadScoringProgress(result, playerSlug) : null;
+  const stage = scoringStage({
+    hasMatch: !!result,
+    matchState: result?.state ?? null,
+    holesEntered: progress?.holesEntered ?? 0,
+    roundCard: progress?.roundCard ?? "waiting",
+    iSubmitted: progress?.iSubmitted ?? false,
+  });
+
+  return <ScoringStatusScreen playerName={playerName} playerSlug={playerSlug} result={result} stage={stage} progress={progress} />;
 }

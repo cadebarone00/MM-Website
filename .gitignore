@@ -48,3 +48,6 @@ next-env.d.ts
 
 # superpowers skill scratch (SDD ledgers, brainstorming mockups)
 .superpowers/
+
+# Local hype video; external hosting will be configured separately.
+/public/videos/mm-edit-silver-springs.mp4

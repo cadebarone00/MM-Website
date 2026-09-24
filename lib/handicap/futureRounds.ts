@@ -7,7 +7,7 @@ export async function getFutureHandicapRounds(player: string, setups: RoundForma
   const rows: FutureRoundRow[] = [];
   const holes: FutureHoleRow[] = [];
   for (let from = 0; ; from += 1000) {
-    const { data, error } = await service.from("career_archive_rounds").select("season_year, round, course, played_on, format, handicap_setup")
+    const { data, error } = await service.from("career_archive_rounds").select("season_year, round, course, played_on, format, handicap_setup, status")
       .eq("player_slug", player).order("season_year").order("round").range(from, from + 999);
     if (error) throw new Error("Could not load tournament handicap rounds.");
     rows.push(...(data ?? []));

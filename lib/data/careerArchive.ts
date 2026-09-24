@@ -1,6 +1,6 @@
-/**
- * The historical Career Stats source of truth. This is committed data, not a
- * runtime spreadsheet import. Rebuild it with the supplied workbook when a
- * completed season needs to be added to the archive.
- */
-export { careerArchiveCourseHoles, careerArchivePartnerships, careerArchiveRecords, careerArchiveTeamRecords } from "./careerArchive.generated";
+/** Normalize the workbook once at its import boundary; database/live rows are already canonical. */
+import { careerArchiveRecords as records, careerArchiveTeamRecords as teamRecords } from "./careerArchive.generated";
+import { generatedCareerRound } from "./roundIdentity";
+export { careerArchiveCourseHoles, careerArchivePartnerships } from "./careerArchive.generated";
+export const careerArchiveRecords = records.map(row => ({ ...row, round: generatedCareerRound(row.year, row.round) }));
+export const careerArchiveTeamRecords = teamRecords.map(row => ({ ...row, round: generatedCareerRound(row.year, row.round) }));

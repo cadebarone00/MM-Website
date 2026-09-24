@@ -1,4 +1,4 @@
-import { careerArchiveCourseHoles, careerArchiveRecords } from "../lib/data/careerArchive.generated";
+import { careerArchiveCourseHoles, careerArchiveRecords } from "../lib/data/careerArchive";
 import { canonicalCourseName } from "../lib/data/canonicalCourse";
 
 const [playerA = "CADE", playerB = "CAM", course = "TPC Danzante Bay", format = "Singles"] = process.argv.slice(2);

@@ -55,8 +55,8 @@ const holes = [{ number: 1, par: 4, yards: 410 }, { number: 2, par: 3, yards: 16
 
 test("buildScorecardRows fills a row from a player's own submission, and null for a hole they haven't submitted", () => {
   const rows = buildScorecardRows(holes, cam.player, [cam], "Singles");
-  assert.deepEqual(rows[0], { hole: 1, par: 4, yards: 410, score: 4, putts: 2, fir: true, firDirection: null, gir: false, girDirection: "short" });
-  assert.deepEqual(rows[1], { hole: 2, par: 3, yards: 165, score: null, putts: null, fir: null, firDirection: null, gir: null, girDirection: null });
+  assert.deepEqual(rows[0], { hole: 1, par: 4, yards: 410, score: 4, opponentScore: 5, putts: 2, fir: true, firDirection: null, gir: false, girDirection: "short" });
+  assert.deepEqual(rows[1], { hole: 2, par: 3, yards: 165, score: null, opponentScore: null, putts: null, fir: null, firDirection: null, gir: null, girDirection: null });
 });
 
 test("buildScorecardRows shows fairway as not applicable on a par 3, even though a score is in", () => {

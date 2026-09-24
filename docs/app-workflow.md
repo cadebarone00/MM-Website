@@ -22,11 +22,19 @@ flowchart TD
   Q -- Confirmed --> H[Confirmed scores and archive records]
   H --> O[Official match state and odds publication]
   H --> K[Career and handicap inputs]
-  %% Match pages preserve continuous scrolling with equal 56px hole and total columns.
+  H --> PP[Player profile: featured season and older scorecards]
+  X --> MP
+  X --> PP
+  %% Desktop probability graph uses horizontal percentage guides and a winner block over remaining holes.
+  %% Desktop match pages fit all 20 columns and align the odds graph; mobile uses fixed-side nine-hole swipe pages and a full-width 18-hole graph.
   O --> B[Leaderboard, broadcast and live markets]
+  %% Desktop leaderboard match lists are centered at 40vw with taller rows; ticker width and mobile layout are unchanged.
   B --> MP[Match profile: compact opponents, scorecard and odds]
   Z -. 2024-2025 training and 2026 hole replay .-> MP
   O --> F[Tiger closeout and MM Coins settlement]
+  %% My Handicap score list shows only the order dropdown followed by scores; explanatory paragraphs are removed.
+  %% White-team portal navigation area has a maroon backdrop behind Submit a score and the four navigation rows.
+  %% Portal: overall handicap number opens My Handicap; separate Submit a score pill opens the handicap screen.
   P --> N[Personal 18-hole round entry]
   C --> N
   N --> E[Atomic personal-round save]
@@ -35,9 +43,12 @@ flowchart TD
   X --> K
   K --> M[Handicap calculations and odds model]
   M --> O
+  M -- Overall handicap --> PP
+  %% Broadcast ticker: taller, content-sized top five; hidden while the individual leaderboard is visible.
   B --> W[Watch Live]
   P --> U[Round video upload]
   U --> W
+  %% Audit 2026-09-21: historical scorecard round IDs and setup round IDs are misaligned; repair pending.
   Z[Static history and legacy feed] -. selected older pages and markets .-> B
 ```
 
@@ -57,6 +68,10 @@ Player actions use `requirePlayer` to derive the golfer from the authenticated s
 
 ## 2. Calendar year, active season, and broadcast year
 
+Player bios fetch `/api/players/[slug]/handicap` without caching. This returns only the overall index calculated by `combinedHandicapIndexes` from the same submitted and archived round sources as My Handicap; static and approved bio handicap text no longer supplies the displayed number.
+
+Player bio redirects follow the same January 1 upcoming-season switch as the public leaderboard. The featured 2026 page shows only earlier years in its lower scorecard archive; a featured 2027 page shows 2024-2026 there, even before any 2027 scores are posted. The upcoming profile reads `/api/live/players/[player]` from the native confirmed snapshot for the public season, independent of the host's active rehearsal year. Career Stats adds that public season's native match boxes at the switchover. Future seasons beyond the configured next edition still need their tournament definition.
+
 These are three separate controls:
 
 | Context | How its year is selected | What it controls |
@@ -75,6 +90,8 @@ For example, in September 2026, My Matches can correctly show 2026 matches as Pa
 
 ## 3. Public website and navigation
 
+On live and archived leaderboards, Match Play boards are centered in a 40vw column at desktop widths (1024px and above), capped at the available content width. Desktop match rows add 10px vertical padding per player name instead of mobile's 6px. The ticker, individual standings, and mobile layout retain their existing sizing.
+
 Home, schedule, teams, players, history, tournament leaderboards, match pages, and player scorecards present tournament information publicly. Historical editions and much descriptive content originate in committed `lib/data` files. Upcoming venue/dates, round courses/formats, and confirmed roster receive Tiger-managed database overlays where the relevant loaders are used.
 
 The Website / Portal / Scoring selector changes the destination, not the account or database. The More menu contains secondary destinations. Public teams can show locked roster assignments rather than exposing every draft assignment as confirmed.
@@ -85,11 +102,11 @@ Some pages are statically generated or cached; others render dynamically or refe
 
 The live leaderboard specifically polls native matches and standings every ten seconds, while also retaining the legacy live-feed loader. Available native matches/standings override that presentation; otherwise feed or historical fallback content can remain. The upcoming tournament's leaderboard route also has a calendar switchover check that can redirect visitors to the latest completed edition before the new season.
 
-Selecting a match in the leaderboard opens its own match profile at `/leaderboard/[slug]/matches/[matchId]`, replacing the historical dropdown and enabling navigation for native live matches. Small Maroon and White header boxes sit above inward-aligned player names (Maroon right-aligned, White left-aligned), retaining profile links. The center displays the Central-time tee time before play, match status and Thru during play, and the final result plus Final afterward. Unknown tee times show TBD. The scorecard follows, then the match odds graph. Historical pages load corrected archive scorecards and reuse the previous dropdown layout: one continuous horizontal scroll with equal 56px hole and total columns and pinned labels. Individual player scorecards retain their own layout.
+Selecting a match in the leaderboard opens its own match profile at `/leaderboard/[slug]/matches/[matchId]`, replacing the historical dropdown and enabling navigation for native live matches. Small Maroon and White header boxes sit above inward-aligned player names (Maroon right-aligned, White left-aligned), retaining profile links. The center displays the Central-time tee time before play, match status and Thru during play, and the final result plus Final afterward. Unknown tee times show TBD. The scorecard follows, then the match odds graph. Historical pages read the editable archive by canonical tournament round and use the same basic match table as native profiles, with course name, yardages, par, individual strokes, team rows, running status and published final result: on desktop (1024px and above), a fixed-width, non-scrolling 20-column table (compact row labels, 18 holes, and total). Hole and total columns share the available width equally. The shorter probability graph starts at hole 1 and ends after hole 18, leaving the total column outside the plot; each saved odds update uses its completed-hole boundary, with the latest update retained per hole. Maroon/Tie/White labels occupy the row-label column. The desktop graph shows horizontal guides only, with 0% at the center, 50% midway toward either team, and 100% at either edge. Team labels use translucent colored boxes. An early final win fills the remaining holes on the winning half with a gold-outlined result block (for example, 4&3 after hole 15), covering the horizontal guides there. It uses a thin line, stronger team fills, and no separate x-axis labels or estimated-replay heading. Historical estimate provenance remains in the explanatory note. Below 1024px, match scorecards use the individual scorecard styling: maroon hole headers, cream score cells and score markers, 56px fixed labels and totals, and two horizontally snapping pages for holes 1-9 and 10-18. All player/team/status rows swipe together. Immediately below, the 140px-tall probability plot spans the mobile viewport edge to edge, showing all 18 holes without scrolling. It shares desktop horizontal guides, percentages, team boxes and early-win blocks, with compact labels overlaid at left and odds details below; it does not track the scorecard scroll. Individual player scorecards retain their own layout.
 
 Native match profiles poll `/api/live/matches/[id]?profile=1` every five seconds after each response. The profile payload contains that match's confirmed strokes, course holes, official state, and up to 1,000 recent saved odds updates in chronological order. Unplayed scores remain blank; match status stops at the first gap or mathematical win. Fourball displays individual and best-ball rows; Foursome displays shared side scores. The graph uses a single balance line: Maroon win probability plus half the tie probability. The top is 100% Maroon, the bottom 100% White, and the center represents equal team chances or a certain tie. The separate Maroon, tie, and White probabilities and American prices remain above it; a slider explores updates. Native headers retain the latest odds while historical replay headers follow the selected hole. Failed live refreshes retain the last successful display and show an error. Legacy feed-only match IDs have no native profile data and show an unavailable message.
 
-2026 match pages also provide explicitly labeled estimated replays, computed deterministically from committed archive data in `lib/odds/historicalMatchOdds.ts`. Only 2024 and 2025 Singles/Fourball individual scores (excluding nine-hole rounds) train individual strength; Alternate Shot uses prior shared-ball scores, broadening from exact partnerships to partner history when needed. Same-par empirical distributions approximate future holes; missing player history uses the prior field pool. Fourball uses best-ball distributions. This simplified model differs from the live Monte Carlo model and writes no prices or bets. The 2026 hole scores reveal match progress only, never train strength. Formats align to archive round occurrence, including the differently ordered day-three sessions. The last point uses the published result, and discrepancies or missing history receive a note. Other historical years still have no odds graph unless recorded data becomes available.
+2026 match pages also provide explicitly labeled estimated replays, computed deterministically from the combined, corrected career archive in `lib/odds/historicalMatchOdds.ts`. Only 2024 and 2025 Singles/Fourball individual scores (excluding nine-hole rounds) train individual strength; Alternate Shot uses prior shared-ball scores, broadening from exact partnerships to partner history when needed. Same-par empirical distributions approximate future holes; missing player history uses the prior field pool. Fourball uses best-ball distributions. This simplified model differs from the live Monte Carlo model and writes no prices or bets. The 2026 hole scores reveal match progress only, never train strength. All replay inputs use the canonical tournament round, after normalizing original workbook numbering at its import boundary. The last point uses the published result, and discrepancies or missing history receive a note. Other historical years still have no odds graph unless recorded data becomes available.
 
 **Reads:** committed tournament/player content plus selected live database overlays. **Writes:** generally none from browsing. **Code:** `app/page.tsx`, `app/leaderboard`, `app/teams`, `app/schedule`, `lib/data/activeSeasonOverlay.ts`.
 
@@ -101,7 +118,7 @@ My Matches opens on Live after reopening. Live / Upcoming / Past filter cards fo
 
 Opening actual scoring requires a scoreable assigned match in the active scoring season. A displayed historical match is not an invitation to resubmit that old tournament through live scoring.
 
-The hero computes the same combined handicap as My Handicap, but currently prints it using `toFixed(1)`. My Handicap uses the plus-handicap formatting helper. This means a negative underlying index can still display with different signs between those two surfaces.
+The portal hero uses the same combined overall handicap calculation and `formatHandicapIndex` display helper as My Handicap. Its larger, number-only link sits at the top right and opens the Overall tab: a calculated -1.4 displays as +1.4, positive indexes display without a sign, and unavailable indexes display a dash. The separate gold-bordered Submit a score pill sits between My Matches and the Profile/Career/Round video/Wagers box, matches that box's width, and opens the handicap screen.
 
 **Reads:** profile, match data, scorecards, personal rounds, and eligible archive rounds. **Code:** `app/portal/page.tsx`, `components/portal/PortalMatches.tsx`, `lib/portal/liveMatchCards.ts`, `lib/portal/archivedMatches.ts`.
 
@@ -191,6 +208,8 @@ Network/server failures retain the queue and retry while the page is open, on re
 
 ## 11. Match results, standings, and published odds
 
+The shared native snapshot paginates every source, including confirmed hole scores, so a full field cannot silently lose scores beyond the database's 1,000-row response limit. Player profiles, native match scorecards, standings, broadcast and publication use this snapshot. Source query failures surface as errors rather than an apparently empty tournament. Upcoming public player profiles no longer use the legacy sheet feed.
+
 Confirmed live scores feed the native tournament snapshot. Singles compares two scores. Fourball uses the best score on each side. Foursome compares the shared side scores. The match calculation processes contiguous completed holes and stops at the first mathematical win; later stroke scores cannot reverse that result.
 
 A completed match awards one team point to its winner, or half a point each for a tie. Own-ball gross and score-to-par statistics are separate calculations. Foursome team scores are excluded from individual stroke-performance samples.
@@ -254,13 +273,21 @@ The overall index combines personal and eligible tournament rounds, orders them 
 | 19 | 7 | 0 |
 | 20 | 8 | 0 |
 
-The asterisk identifies rounds selected for the displayed overall or MM-only calculation. MM-only excludes personal rounds. Low Index replays available history and takes the lowest calculated index. My Handicap displays a negative calculated index as a plus handicap; a differential retains its mathematical sign.
+The asterisk identifies rounds selected for the displayed overall or MM-only calculation. MM-only excludes personal rounds. Low Index still replays available history and takes the lowest calculated index internally, but is no longer shown on My Handicap. My Handicap displays a negative calculated index as a plus handicap; a differential retains its mathematical sign.
 
 The current math uses raw gross, not a net-double-bogey adjusted gross. It does not implement PCC, official soft/hard caps, exceptional-score adjustment, GHIN synchronization, or a nine-hole expected-score conversion. Its Low Index is an available-history minimum, not a separately maintained official rolling Low Handicap Index.
 
 **Code:** `lib/handicap/whs.ts`, `lib/handicap/archiveIndex.ts`, `lib/handicap/futureRounds.ts`, `lib/handicap/format.ts`, `components/portal/handicap/HandicapHome.tsx`.
 
 ## 15. Archives, corrections, and career statistics
+
+**September 22 implementation (database application pending):** Every source now has an explicit round boundary in `lib/data/roundIdentity.ts`. Original Danzante card numbers map to 1/INDI/3/5/6; Palm Springs cards map to 1/3/4/5/7/8. Generated Pinehurst career records omit the Cradle, so workbook rounds 3 onward map one round later; generated Palm Springs rounds 5/6 swap to match the scheduled Fourball/Alternate Shot sessions. Database and native live rows already use canonical IDs and are never renumbered again on read.
+
+Career Stats match boxes link to their match page. Those pages read the same editable individual holes as player profiles; shared Alternate Shot balls come from separate team records. Pinehurst's Cradle match lists its actual four players per side and its best-three-of-four scores across nine holes. The profile archive can display these nine-hole scorecards without adding them to handicap or the odds training pool. The published historical result remains authoritative when source strokes disagree; the 2026 replay labels such discrepancies.
+
+`scripts/repair-historical-archive.ts` exports a full backup, matches source scorecards by ordered hole scores, checks ancillary stats/edits/video dependencies, and generates transaction SQL. The tested plan retains 159 source rounds (47 Pinehurst, 40 Danzante, 72 Palm Springs), removes 40 identical duplicate rows, preserves the surviving hole records and all three video records, and assigns the existing verified round tees/dates. The SQL locks the affected tables, rejects stale exports, retains a private recovery snapshot, verifies the entire resulting dataset, and is idempotent. It must be executed with a database SQL connection; generation and local PostgreSQL verification are not a live repair. The old renumber scripts now stop immediately. The legacy importer exports insert-only SQL with canonical round numbers; it never overwrites existing rounds or edits.
+
+**September 21 audit:** The configured database contains mixed legacy and corrected round identities for 2025/2026. A read-only all-player audit found 56 Danzante individual scorecards for 40 source rounds and 96 Palm Springs scorecards for 72 source rounds. At the time of that audit, the legacy importer could overwrite corrected round keys, while the handicap loader joins setup by year/round and can consequently display the wrong course and exclude valid individual scores as Alternate Shot. The separate Career Archive round namespace also required reconciliation, now implemented at its source boundary. Findings and a repair plan are saved in `docs/historical-handicap-repair-handoff.md`; reproducible evidence is in `docs/historical-handicap-audit.json` and `scripts/audit-historical-handicap.ts`. No database repair or deployment was performed for this investigation.
 
 The archive is a family of sources, not one universal table:
 
@@ -311,6 +338,8 @@ The verified functioning currency path is MM Coins. This map does not describe a
 **Code:** `app/api/wagers/mm-coins/bet/route.ts`, `lib/wagers/marketKeys.ts`, `lib/wagers/liveMatchMarket.ts`, `lib/wagers/publicWagerCatalog.ts`, `supabase/schema.sql`.
 
 ## 18. Broadcast engine and producer controls
+
+The bottom-left leaderboard ticker shows the top five in a content-sized strip capped at the viewport width. It is at least 112px tall (roughly twice its previous height), with larger vertically centered names, placements and scores; text scales down together when space is limited. It hides while the individual leaderboard is visible and returns for holding, match play, player videos, transitions and full-screen event takeovers.
 
 Tiger controls display year, auto/producer mode, scene timing, pause state, announcements, playlist behavior, and tournament-live presentation. `broadcast_state` and `broadcast_config` hold these controls. The normal broadcast follows its configured display year; host previews support separate rehearsal inputs.
 
@@ -393,12 +422,40 @@ Vercel Preview and Production have separate environment-variable scopes. The ear
 
 ## Review findings
 
-This map identifies remaining distinctions worth reviewing: portal handicap sign formatting; static versus corrected career summaries; independent year controls; model exclusion at exactly nine holes; incomplete event emission wiring; legacy market/feed consumers; future live-video/archive-edition transitions; and unfinished GPS, placeholders, pickups, and official full-handicap features.
+This map identifies remaining distinctions worth reviewing: static versus corrected career summaries; independent year controls; model exclusion at exactly nine holes; incomplete event emission wiring; legacy market/feed consumers; future live-video/archive-edition transitions; and unfinished GPS, placeholders, pickups, and official full-handicap features.
 
 These are observations from the documentation review. No application behavior was changed while creating this map.
 
 
 ## What changed
+
+**September 23, 2026 - Git sync repair and local video storage (repository maintenance; deployment not verified).** Preserved the website changes and stopped tracking the large Silver Springs MP4. A concurrent push published the earlier video commits during repair, so those published commits are preserved; historical video blobs remain in Git history. The video remains locally at `public/videos/mm-edit-silver-springs.mp4` and is ignored by Git. The `/videos/hype-1` page still references that local URL, so remote playback is pending external hosting; R2 migration is not implemented in this change. Workflow paths and application logic are unchanged.
+
+**September 23, 2026 - Dedicated mobile match scorecard and graph (implemented locally; deployment not verified).** Replaced the older continuous mobile scorecard scroll with individual-scorecard styling and front/back-nine swipe pages between fixed labels and totals. Replaced the legacy mobile graph with the desktop-style 18-hole graph, compact and flush to the viewport edges directly beneath the scorecard. Desktop stays aligned to its fixed 20 columns. Updated Section 3 and the flowchart annotation; workflow paths and overview mappings are unchanged.
+
+**September 23, 2026 - Desktop probability guides and winning result (implemented locally; deployment not verified).** Removed vertical grid lines, added symmetric 100%/50%/0% labels and translucent team-name boxes, and replaced unused winning-side space after an early finish with a gold-outlined result block. Previously that space retained ordinary grid lines. Mobile retains its restored presentation. Updated Section 3 and the flowchart annotation; workflow paths and overview mappings are unchanged.
+
+**September 23, 2026 - Restore mobile match layout (implemented locally; deployment not verified).** The fixed 20-column scorecard and aligned probability graph now apply only at desktop widths (1024px and above). Mobile again uses the earlier horizontally scrolling scorecard with pinned labels and the original probability graph presentation. Updated Section 3 and the flowchart annotation; workflow paths and overview mappings are unchanged.
+
+**September 23, 2026 - Aligned match scorecard and probability graph (implemented locally; deployment not verified).** Previously, match scorecards scrolled horizontally and the taller graph used independent spacing and x-axis labels. All 20 scorecard columns now fit the available width with smaller row labels. The shorter graph shares the hole boundaries, places each update after its completed hole, and moves its side labels into the first-column area. Removed the estimated-replay heading and redundant x-axis labels; the line is thinner and team fills are stronger. Updated Section 3 and the flowchart annotation; workflow paths and overview mappings are unchanged.
+
+**September 23, 2026 - Broadcast ticker sizing and visibility (implemented locally; deployment not verified).** Previously, the top-five ticker used a fixed-width cap, smaller baseline-aligned text, and stayed visible over the individual leaderboard. It now uses a roughly double-height strip with larger vertically centered text and numbers, sizes its width to the names and scores, and hides while the individual leaderboard is visible. Updated Section 18 and the flowchart annotation; workflow paths and overview mappings are unchanged.
+
+**September 23, 2026 - Desktop leaderboard match layout (implemented locally; deployment not verified).** Previously, desktop match lists filled the leaderboard content width. Live and archived Match Play boards now use a centered 40vw column on desktop, capped at the available content width, with slightly taller match rows. The ticker, individual standings, and mobile sizing are unchanged. Updated Section 3 and the flowchart annotation; workflow paths and overview mappings are unchanged.
+
+**September 22, 2026 - White-team portal backdrop (implemented locally; deployment not verified).** The area behind Submit a score and the Profile, Career, Round video and Wagers navigation box now uses maroon for White-team players instead of the inherited tan background. The pill and navigation cards retain their white surfaces and gold borders. Four photographic row backdrops are pending user-provided images. Updated the flowchart annotation; workflow paths and mappings are unchanged.
+
+**September 22, 2026 - Simpler handicap score list (implemented locally; deployment not verified).** Removed the Scores label, differential explanation and contributing-round explanation above My Handicap scores. The display-order dropdown now leads directly into the score list. Calculations and contributing-round markers are unchanged. Updated the flowchart annotation; workflow paths and overview mappings are unchanged.
+
+**September 22, 2026 - Player bio overall handicap (implemented locally; deployment not verified).** Player bios previously displayed a separately stored profile handicap. They now fetch the same combined overall index used by My Handicap, including submitted and eligible archived rounds, and use the same plus-handicap formatting. The public endpoint returns only the index; unavailable values show a dash. Updated the player profile description, flowchart and workflow mapping.
+
+**September 22, 2026 - Compact archive repair SQL (implemented and tested locally; database execution pending).** The generated repair previously embedded both complete snapshots and exceeded the SQL editor size limit. It now embeds SHA-256 fingerprints and deduplicated repair targets, captures the full recovery snapshots inside the locked database transaction, and verifies the complete result before commit. Section 15's repair path is unchanged; this does not indicate a deployed repair.
+
+**September 22, 2026 - Canonical round identity and connected scorecards (implemented locally; live database repair and deployment pending).** Previously source numbering could misassign courses, suppress differentials, duplicate rounds and mismatch career/match data. Source imports now normalize round identity, historical match boxes open shared scorecards with yardages, upcoming profiles use confirmed native scoring, and the featured year moves older cards into the lower archive at the calendar switch. Added and locally verified the all-player atomic repair, duplicate preservation checks, a safe importer, and regression coverage. Updated sections 2, 3, 11 and 15, the flowchart and interactive workflow mapping. No live database repair or deployment is claimed by these code changes.
+
+**September 21, 2026 - Historical archive identity investigation (documentation and read-only audit only).** Previously missing differentials were suspected to reflect missing setup. Database inspection confirmed overwritten/misaligned round identities, duplicate source scorecards, and course/format mismatches affecting all audited 2025/2026 players. Added a reproducible audit and repair handoff, updated section 15 and the flowchart annotation. Application behavior and database records are unchanged; repair and deployment remain pending.
+
+**September 20, 2026 - Portal handicap and score-entry layout (implemented locally; deployment not verified).** The portal previously showed a labeled handicap below a hero Submit a score button and could display a minus sign. It now shows a larger number-only overall handicap at the top right, using the same calculation and plus-handicap formatting as My Handicap. Submit a score is a separate slim, full-width pill above the portal navigation box. Low Index remains calculated but is hidden on My Handicap. Updated sections 4 and 14 and the flowchart annotation; overview paths and mappings are unchanged.
 
 **September 19, 2026 - 2026 estimated match replay and compact match headers (implemented locally; deployment not verified).** Previously 2026 match odds were unavailable and opponents appeared in large photo panels. All 33 2026 matches now have estimated odds curves trained on 2024-2025 scores and replayed against archived 2026 progress, labeled as estimates. The new header uses small team boxes with inward-aligned names and a central tee time, live Thru/status, or Final/result. Graphs now place Maroon at the top, White at the bottom, and even/tie in the middle; the replay slider updates the displayed historical odds. Updated section 3, the flowchart and interactive mapping. Live scoring, official results, and stored betting prices are unchanged.
 

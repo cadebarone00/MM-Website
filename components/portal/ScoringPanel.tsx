@@ -7,6 +7,9 @@ import { getPlayerLastName } from "@/lib/data/players";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { LiveMatchBox, MatchFormat } from "@/lib/live/types";
 import { buildScorecardRows, holeSubmissionStatus, sameHoleDraft, submittedPair, scoringSides, validHoleDraft, type HoleDraft, type HoleSubmission } from "@/lib/live/holeSubmission";
+import { liveRoundStatus } from "@/lib/live/roundStatus";
+import { previewOfficialState } from "@/lib/live/previewMatchState";
+import { liveMatchCard } from "@/lib/portal/matchCards";
 import { ScoringHoleSelector } from "./ScoringHoleSelector";
 import { ScoringRoundHeader } from "./ScoringRoundHeader";
 import { Scorecard } from "./Scorecard";
@@ -22,19 +25,30 @@ export interface ScoringState {
   scores: { player: string; hole: number; score: number | null; selfReportedScore: number | null; putts: number | null; fir: boolean | null; gir: boolean | null; firDirection: string | null; girDirection: string | null; didNotFinish: boolean; confirmedBy: string | null }[];
   submittedPlayers: string[];
   holeSubmissions?: HoleSubmission[];
+  course?: string | null;
+  rating?: number | null;
+  slope?: number | null;
+  /** Confirmed-only match-play state, published by the database the moment both scorers agree on a hole; null before any hole is confirmed. */
+  official?: { thru: number; leader: "maroon" | "white" | "tie"; margin: number; mathematicallyComplete: boolean } | null;
 }
 
-export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewState, previewSubmissions, onPreviewSubmit }: {
+export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewState, previewSubmissions, previewSubmittedPlayers, onPreviewSubmit, onPreviewSubmitRound }: {
   playerSlug: string; playerFullName: string; round: number;
   matchBox: Pick<LiveMatchBox, "id" | "format" | "maroonPlayers" | "whitePlayers">;
   nameBySlug: Record<string, string>;
   previewState?: ScoringState;
   previewSubmissions?: HoleSubmission[];
   onPreviewSubmit?: (submission: HoleSubmission) => Promise<void>;
+  /** Tiger's preview: who has pressed Submit Round, and how to submit this phone's round, in place of the real server. */
+  previewSubmittedPlayers?: string[];
+  onPreviewSubmitRound?: () => Promise<void>;
 }) {
   const [state, setState] = useState<ScoringState | null>(previewState ?? null);
   const [selectedHole, setSelectedHole] = useState(1);
   const [showScorecard, setShowScorecard] = useState(false);
+  const [autoOpenChecked, setAutoOpenChecked] = useState(false);
+  const [submittingRound, setSubmittingRound] = useState(false);
+  const [roundError, setRoundError] = useState<string | null>(null);
   const [drafts, setDrafts, draftStorage] = usePersistentState<Record<number, HoleDraft>>(previewState ? null : `live-drafts:${playerSlug}:${matchBox.id}`, {});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -54,7 +68,8 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
     const supabase = createSupabaseBrowserClient();
     const channel = supabase.channel(`scoring-${matchBox.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "live_hole_scores", filter: `round=eq.${round}` }, load)
-      .on("postgres_changes", { event: "*", schema: "public", table: "live_hole_submissions", filter: `match_box_id=eq.${matchBox.id}` }, load).subscribe();
+      .on("postgres_changes", { event: "*", schema: "public", table: "live_hole_submissions", filter: `match_box_id=eq.${matchBox.id}` }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "live_match_box_submissions", filter: `match_box_id=eq.${matchBox.id}` }, load).subscribe();
     const visible = () => { if (document.visibilityState === "visible") void load(); };
     document.addEventListener("visibilitychange", visible);
     window.addEventListener("online", load);
@@ -89,9 +104,20 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
   const total = ownEntries.reduce((sum, entry) => sum + entry.ownScore, 0);
   const toPar = ownEntries.length ? total - ownEntries.reduce((sum, entry) => sum + (state.holes.find((hole) => hole.number === entry.hole)?.par ?? 0), 0) : null;
   const targetLabel = sides.opponents.map((slug) => getPlayerLastName(nameBySlug[slug] ?? slug)).join(" & ");
-  const locked = busy || queue.sending || state.matchBox.state === "Final";
+  const submittedPlayers = previewSubmittedPlayers ?? state.submittedPlayers;
+  const mySubmitted = submittedPlayers.includes(playerSlug);
+  const locked = busy || queue.sending || state.matchBox.state === "Final" || mySubmitted;
   function edit(patch: Partial<HoleDraft>) { queue.cancel(selectedHole); setDrafts((all) => ({ ...all, [selectedHole]: { ...draft, ...patch } })); setError(null); }
   function select(hole: number) { setSelectedHole(hole); setError(null); }
+  /** True when you have a saved entry for every hole, counting `justSaved` (which the server reply may not have reached the list yet). */
+  function everyHoleEntered(justSaved?: number) {
+    return state!.holes.every((hole) => hole.number === justSaved || !!submittedPair(matchBox, playerSlug, hole.number, submissions).mine);
+  }
+  // Once everything is entered, open on the Scorecard instead of hole 1 - but only the first time, so tapping a hole number to fix it sticks.
+  if (!autoOpenChecked) {
+    setAutoOpenChecked(true);
+    if (everyHoleEntered()) setShowScorecard(true);
+  }
   async function submitHole() {
     if (!validHoleDraft(draft, par, matchBox.format)) {
       setError("Not all information is complete. Enter both scores, putts, fairway (except par 3), and green result. Putts cannot exceed your score.");
@@ -109,16 +135,48 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
 
       }
       setDrafts((all) => { const next = { ...all }; delete next[selectedHole]; return next; });
-      setSelectedHole((hole) => Math.min(hole + 1, 18));
+      if (everyHoleEntered(selectedHole)) setShowScorecard(true);
+      else setSelectedHole((hole) => Math.min(hole + 1, 18));
     } catch (err) { setError(err instanceof Error ? err.message : "Could not submit this hole. Please try again."); }
     finally { setBusy(false); }
+  }
+  async function submitRound() {
+    setSubmittingRound(true); setRoundError(null);
+    try {
+      if (previewState) {
+        if (!onPreviewSubmitRound) throw new Error("Preview connection is not ready.");
+        await onPreviewSubmitRound();
+      } else {
+        const res = await fetch("/api/portal/scoring/submit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ round }) });
+        const result = await res.json();
+        if (!res.ok || !result.ok) throw new Error(result.error ?? "Could not submit your round.");
+        await load();
+      }
+    } catch (err) { setRoundError(err instanceof Error ? err.message : "Could not submit your round. Check your connection and try again."); }
+    finally { setSubmittingRound(false); }
   }
   if (showScorecard) {
     const rows = buildScorecardRows(state.holes, playerSlug, submissions, matchBox.format);
     const enteredRows = rows.filter((row) => row.score != null);
     const scorecardTotal = enteredRows.reduce((sum, row) => sum + (row.score ?? 0), 0);
     const scorecardToPar = enteredRows.length > 0 ? scorecardTotal - enteredRows.reduce((sum, row) => sum + row.par, 0) : null;
-    const competitorSlug = sides.opponents[0];
+    const roundStatus = liveRoundStatus(matchBox, playerSlug, state.holes, submissions);
+    const official = previewState
+      ? previewOfficialState(matchBox, round, state.holes, submissions)
+      : (state.official ?? null);
+    const card = liveMatchCard({
+      id: matchBox.id ?? "preview",
+      status: "Live",
+      course: null,
+      round,
+      format: matchBox.format,
+      maroonPlayers: matchBox.maroonPlayers,
+      whitePlayers: matchBox.whitePlayers,
+      teeTime: new Date(),
+      official,
+      maroonOdds: null,
+      whiteOdds: null,
+    });
     return (
       <Scorecard
         rows={rows}
@@ -126,10 +184,33 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
         toPar={scorecardToPar}
         onEditHole={(hole) => { select(hole); setShowScorecard(false); }}
         onBack={() => setShowScorecard(false)}
-        competitor={competitorSlug ? {
-          label: targetLabel,
-          rows: buildScorecardRows(state.holes, competitorSlug, submissions, matchBox.format),
-        } : undefined}
+        showTotals
+        live={{
+          opponentLabel: targetLabel,
+          holeStates: roundStatus.holeStates,
+          state: roundStatus.state,
+          yourState: roundStatus.yourState,
+          opponentState: roundStatus.opponentState,
+          yourDisputedHoles: roundStatus.yourDisputedHoles,
+          opponentDisputedHoles: roundStatus.opponentDisputedHoles,
+          yourTotal: roundStatus.yourTotal,
+          opponentTotal: roundStatus.opponentTotal,
+          submitted: mySubmitted,
+          course: state.course ?? null,
+          rating: state.rating ?? null,
+          slope: state.slope ?? null,
+          matchCompleteness: {
+            roundFormatLabel: card.roundFormatLabel,
+            maroonNames: matchBox.maroonPlayers.map((slug) => getPlayerLastName(nameBySlug[slug] ?? slug).toUpperCase()),
+            whiteNames: matchBox.whitePlayers.map((slug) => getPlayerLastName(nameBySlug[slug] ?? slug).toUpperCase()),
+            statusLabel: card.statusLabel,
+            progressLabel: card.progressLabel,
+            leader: card.leader,
+          },
+        }}
+        onSubmit={previewState && !onPreviewSubmitRound ? undefined : () => void submitRound()}
+        submitting={submittingRound}
+        submitError={roundError}
       />
     );
   }
@@ -137,11 +218,8 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
   const rowClass = (maroon: boolean) => `-mx-4 px-4 py-2 sm:-mx-7 sm:px-7 ${maroon ? "bg-maroon-800 text-white" : "bg-white text-maroon-800"}`;
   return <div className={styles.panel}>
     <div data-hole-header className="-mx-4 sm:-mx-7"><ScoringRoundHeader hole={selectedHole} par={info?.par ?? null} yards={info?.yards ?? null} totalScore={total} toPar={toPar} /></div>
-    <button type="button" onClick={() => setShowScorecard(true)} className="mx-auto block font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700 underline underline-offset-2">Scorecard</button>
+    <button type="button" onClick={() => setShowScorecard(true)} className="mx-auto block font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700">Scorecard</button>
     <ScoringHoleSelector selectedHole={selectedHole} onSelect={select} disabled={busy || queue.sending} statuses={statuses} />
-    <div className={styles.notice} aria-live="polite">
-      {error || queue.message || draftStorage.storageError ? <p role="alert">{error ?? queue.message ?? "Browser storage unavailable; keep this page open."}</p> : status === "disputed" ? <p role="alert">Scores disagree. Correct both entries and resubmit to confirm this hole.</p> : status === "submitted" ? <p>Submitted. Waiting for the other scorer.</p> : null}
-    </div>
     <div className={styles.scores}>
       <div className={rowClass(sides.maroon)}>
         <p className="text-center font-condensed text-sm font-bold uppercase tracking-wide">{isFoursome ? "Your team score" : "Your score"}</p>
@@ -162,6 +240,9 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
       <p data-putts-label className="mt-1 text-center font-condensed text-sm font-bold uppercase tracking-wide text-maroon-800">Putts</p>
       <div className="mt-1"><PuttsPicker ariaLabel="Your putts" disabled={locked} value={draft.putts} onChange={(putts) => edit({ putts })} /></div>
     </>}
+    </div>
+    <div className={styles.notice} aria-live="polite">
+      {error || queue.message || draftStorage.storageError ? <p role="alert">{error ?? queue.message ?? "Browser storage unavailable; keep this page open."}</p> : mySubmitted ? <p>Your round is submitted. Tiger can change it.</p> : status === "disputed" ? <p role="alert">Scores disagree. Correct both entries and resubmit to confirm this hole.</p> : status === "submitted" ? <p>Submitted. Waiting for the other scorer.</p> : null}
     </div>
     <div className={styles.actions}><HoleActionBar nextLabel="Next Hole" disabled={busy || queue.sending || selectedHole === 18} onNext={() => select(Math.min(selectedHole + 1, 18))}
       submitLabel={unchanged ? "Submitted" : "Submit Score"} submitDisabled={locked || unchanged} onSubmit={() => void submitHole()} /></div>

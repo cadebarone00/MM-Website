@@ -1,3 +1,4 @@
+import { matchRound } from "@/lib/data/roundIdentity";
 // lib/portal/matchCards.ts
 //
 // Normalizes both archived (static per-year Tournament data) and live
@@ -30,35 +31,17 @@ export interface PortalMatchCard {
   leader: Team | "tie" | null;
 }
 
-/**
- * The Nth session `playerSlug` played, in chronological (day, then Morning
- * before Afternoon) order — 1-indexed to match `RoundScorecard.round` from
- * the archived scorecard database (lib/data/archivedScorecards.ts). Per-
- * player (not a tournament-wide session count) so it stays correct even if
- * a player sits out a session some year.
- */
-function playerRoundNumber(tournament: Tournament, playerSlug: string, day: number, session: string): number | null {
-  const sessions = tournament.matches
-    .filter((m) => [...m.maroonPlayers, ...m.whitePlayers].some((p) => getPlayerSlug(p) === playerSlug))
-    .map((m) => ({ day: m.day, session: m.session }));
-  const unique = [...new Map(sessions.map((s) => [`${s.day}|${s.session}`, s])).values()].sort(
-    (a, b) => a.day - b.day || (a.session === b.session ? 0 : a.session === "Morning" ? -1 : 1)
-  );
-  const index = unique.findIndex((s) => s.day === day && s.session === session);
-  return index === -1 ? null : index + 1;
-}
-
-/** Course + round number for one archived match, read from the real per-round scorecard archive rather than the tournament's single `venue` field. Falls back to `match.day` / the venue when no scorecard is on file for that session. */
+/** Resolve the canonical tournament round even when a player missed an earlier session. */
 function archivedRoundAndCourse(tournament: Tournament, match: RealMatch, scorecards: PlayerScorecard[]): { round: number; course: string | null } {
   for (const slug of [...match.maroonPlayers, ...match.whitePlayers]) {
     const playerSlug = getPlayerSlug(slug);
-    const roundNumber = playerRoundNumber(tournament, playerSlug, match.day, match.session);
+    const roundNumber = matchRound(tournament, match);
     if (roundNumber == null) continue;
     const card = scorecards.find((c) => getPlayerSlug(c.player) === playerSlug);
     const round = card?.rounds.find((r) => r.round === roundNumber);
     if (round) return { round: roundNumber, course: round.course };
   }
-  return { round: match.day, course: tournament.venue };
+  return { round: matchRound(tournament, match) ?? match.day, course: tournament.venue };
 }
 
 export function archivedMatchCard(tournament: Tournament, match: RealMatch, scorecards: PlayerScorecard[]): PortalMatchCard {

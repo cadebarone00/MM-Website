@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import { formatRoundLabel } from "@/lib/data/roundLabel";
@@ -45,7 +46,7 @@ function MatchBox({ matchup }: { matchup: RoundFormatMatchup }) {
       </div>
     );
   }
-  return (
+  const content = (
     <div className={`rounded-lg border border-gold-200 bg-white p-3 ${singles ? "mx-auto w-fit" : ""}`}>
       <p className="text-center font-condensed text-2xs font-bold uppercase tracking-wide text-ink-400">{matchup.teeTime ?? "Tee time N/A"}</p>
       <div className={`mt-2 flex items-center gap-3 ${singles ? "" : "justify-between"}`}>
@@ -63,6 +64,7 @@ function MatchBox({ matchup }: { matchup: RoundFormatMatchup }) {
       </div>
     </div>
   );
+  return matchup.href ? <Link href={matchup.href} className="block rounded-lg focus-visible:outline-2 focus-visible:outline-maroon-700 hover:brightness-95">{content}</Link> : content;
 }
 
 function SetupDetails({ seasonYear, round, setup, courses }: { seasonYear: number; round: number; setup: RoundFormatEntry["setup"]; courses: HandicapCourseOption[] }) {

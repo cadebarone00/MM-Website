@@ -3,13 +3,16 @@
 import type { BroadcastConfig, BroadcastPlayerVideo, BroadcastStanding, BroadcastState } from "@/lib/broadcast/types";
 import type { BroadcastMatchPlay } from "@/lib/broadcast/matchPlayData";
 import type { ActiveBroadcastEvent } from "@/lib/broadcast/eventDisplay";
+import type { LiveScoreEvent } from "@/lib/broadcast/liveScoreEvent";
 import { useAutoScene } from "@/lib/broadcast/useAutoScene";
+import { getMockRunCycleMs, getMockStandings } from "@/lib/broadcast/mockRun";
 import { IndividualLeaderboardScene } from "./scenes/IndividualLeaderboardScene";
 import { MatchPlayScene } from "./scenes/MatchPlayScene";
 import { HoldingScene } from "./scenes/HoldingScene";
 import { OverlayLayer } from "./OverlayLayer";
 import { EventOverlay } from "./EventOverlay";
 import { EventTakeover } from "./EventTakeover";
+import { BroadcastTicker } from "./BroadcastTicker";
 import { PlayerVideoTransitionScene } from "./scenes/PlayerVideoTransitionScene";
 import { PlayerVideoScene } from "./scenes/PlayerVideoScene";
 
@@ -28,6 +31,8 @@ export function SceneRenderer({
   mockSeed = 1,
   mockLeaderboardAnimation = null,
   mockForcedEventKind,
+  liveScoreEvent = null,
+  liveEventElapsedMs = null,
 }: {
   state: BroadcastState;
   config: BroadcastConfig;
@@ -43,6 +48,8 @@ export function SceneRenderer({
   mockSeed?: number;
   mockLeaderboardAnimation?: { birdieEnabled: boolean; birdieDelayMs: number; rowMoveMs: number } | null;
   mockForcedEventKind?: "birdie" | "eagle" | "bogey";
+  liveScoreEvent?: LiveScoreEvent | null;
+  liveEventElapsedMs?: number | null;
 }) {
   const isAuto = state.automationMode === "auto";
   // Producer Mode (including a host's Pause — see BroadcastControlsPanel):
@@ -59,6 +66,23 @@ export function SceneRenderer({
   // broadcast's pre-show hold (spec §7/§17's Holding scene).
   const scene = !state.tournamentLive ? "holding" : isAuto ? autoScene : state.currentScene;
 
+  const videoVisible = (state.tournamentLive || preview) && activeVideo != null &&
+    (state.videoPhase === "transition" || state.videoPhase === "playing");
+  const individualBoardVisible = scene === "individual_leaderboard" &&
+    !videoVisible && activeEvent?.displayMode !== "takeover";
+
+  // During a Mock Run/animation test, IndividualLeaderboardScene switches
+  // to fake seeded standings (MockLeaderboardScene) so a host can rehearse
+  // without touching real data — the ticker needs to agree with whatever
+  // it's showing, not the real board underneath, or a rehearsal would
+  // show two different leaderboards on screen at once. `true, true` asks
+  // for the settled post-event state rather than replaying the staged
+  // reveal timing — good enough for a glance ticker, see mockRun.ts.
+  const tickerStandings =
+    mockElapsedMs != null
+      ? getMockStandings(mockSeed, true, Math.floor(Math.max(0, mockElapsedMs) / getMockRunCycleMs(mockVideoDurationMs ?? undefined)) % 2, mockForcedEventKind, true).standings
+      : standings;
+
   return (
     <>
       {(state.tournamentLive || preview) && state.videoPhase === "transition" && activeVideo ? (
@@ -69,13 +93,26 @@ export function SceneRenderer({
         <EventTakeover event={activeEvent} matchPlay={matchPlay} />
       ) : (
         <>
-          {scene === "individual_leaderboard" && <IndividualLeaderboardScene standings={standings} final={leaderboardFinal} mockElapsedMs={mockElapsedMs} mockVideoDurationMs={mockVideoDurationMs} mockSeed={mockSeed} mockAnimation={mockLeaderboardAnimation} mockForcedEventKind={mockForcedEventKind} />}
+          {scene === "individual_leaderboard" && (
+            <IndividualLeaderboardScene
+              standings={standings}
+              final={leaderboardFinal}
+              mockElapsedMs={mockElapsedMs}
+              mockVideoDurationMs={mockVideoDurationMs}
+              mockSeed={mockSeed}
+              mockAnimation={mockLeaderboardAnimation}
+              mockForcedEventKind={mockForcedEventKind}
+              liveEvent={liveScoreEvent}
+              liveEventElapsedMs={liveEventElapsedMs}
+            />
+          )}
           {scene === "match_play" && <MatchPlayScene matchPlay={matchPlay} />}
           {scene === "holding" && <HoldingScene venue={holding.venue} dateLabel={holding.dateLabel} />}
           <EventOverlay event={activeEvent} matchPlay={matchPlay} />
         </>
       )}
       <OverlayLayer text={state.overlayText} expiresAt={state.overlayExpiresAt} />
+      {!individualBoardVisible && <BroadcastTicker standings={tickerStandings} />}
     </>
   );
 }

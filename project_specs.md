@@ -519,26 +519,212 @@ All pages are public, no auth.
   deleting) all clean. The browser test caught a real bug on the way:
   `autoFocus` doesn't work on a link, so Continue is focused explicitly.
 
+- **Live scoring Phase 1 — player lifecycle** (spec
+  `docs/superpowers/specs/2026-09-20-live-scoring-round-lifecycle-design.md`,
+  plan `docs/superpowers/plans/2026-09-20-live-scoring-phase1-player-lifecycle.md`).
+  The **Scoring tab** now shows the full matchup (round, format, course, tee
+  time, "You & X vs. Y", and "You are scoring: <name>") with **Begin Round**
+  (**Continue Round** once a hole is in, **View Scorecard** after you have
+  submitted); it moves on to the next round as soon as you **and your scorer**
+  have both submitted, without waiting for Tiger (`withoutFinishedMatches`,
+  `scoringStage`, `loadScoringProgress`). The live **Scorecard** no longer
+  shows the competitor's grid — only your own entries, a second score row
+  with what *you* entered for your opponent, hole numbers that turn red where
+  you and your scorer disagree, and a round status box that is **white**
+  (your scorer hasn't finished), **red** (a hole disagrees) or **green**
+  (everything matches); the **Submit Round** pill is grey until green, then
+  maroon, and asks "After you submit your round you will not be able to edit
+  it. Tiger can correct it later…" before locking your card (pure logic:
+  `lib/live/roundStatus.ts`, tested). New migration
+  **`supabase/live_round_submission.sql`** — *must be run once in the
+  Supabase SQL Editor* (after `live_hole_submissions.sql` and
+  `scoring_reliability.sql`): `submit_live_hole` no longer auto-submits at 18
+  matching holes and now rejects entries from a player who has submitted;
+  new RPC `submit_live_round` (the validation from the old unused
+  `/api/portal/scoring/submit`, now one transaction) records the submission
+  and, when the player **and their scorer** (all four in Foursome) have
+  submitted, marks their archive rounds with a new `submitted` status; a
+  guard trigger stops later score writes moving an official round back to
+  `live`. **Handicap now counts a live round only when its archive status is
+  `submitted` or `final`** (`mapFutureHandicapRounds`); player statistics and
+  the odds model still read matched holes as they arrive, unchanged. Tiger's
+  Match Closeout card lists who has not submitted, disables Close Out Match
+  until everyone has, and offers "Close out anyway". Not built yet (Phases 2
+  and 3 of the spec): Tiger's Edit Scores for live rounds, wager reversal,
+  and the public leaderboard/team points coming from live scoring with the
+  Google Sheet as a backup. `npm test` (328/328), `npm run test:db` (all
+  scenarios, incl. no auto-submit, lock, scorer-edit-never-unsubmits,
+  official-only-when-both-submit, Foursome needs four), `npx tsc --noEmit`,
+  `npm run lint` (clean on every file this round touched), `npm run build`,
+  and `npm run test:browser` (white/red/green states, other scorer's numbers
+  never shown, Submit Round asks first then locks) all clean. **Not
+  click-tested against the real app:** the Scoring tab screen, its loader,
+  and Tiger's card sit behind login and a real database — covered by
+  type-check, lint, build and the tested logic they call — so a two-phone
+  check after running the migration is the remaining step.
+
+- **Tiger Center testing for the live scoring lifecycle** (follow-up to
+  Phase 1, since the tournament isn't live). Two tools, both extended.
+  **Live Scoring Page Editor** (two phones on one screen, in memory only, no
+  SQL needed): the phones now offer **Submit Round**, lock after it, and turn
+  the round official when the other phone submits too; a line above each
+  phone shows what that player's real **Scoring tab** would say (Begin /
+  Continue / View, "Through N holes", "Waiting on …", "moves on to your next
+  round"), and a banner says whether the round is official and would count
+  toward handicap and the rounds archive. The rules live in the pure, tested
+  `lib/live/scoringPreviewRoom.ts` (same rules as the database:
+  `applyPreviewHole`, `applyPreviewRoundSubmit`, lock, official-when-both).
+  The Scoring-tab wording is now shared (`lib/live/scoringStageCopy.ts`) by
+  the real screen and the preview. **2034 Test Season** (the real system with
+  disposable test data; needs `supabase/live_round_submission.sql` run once):
+  the panel gained a **How to rehearse** guide and a live **Rehearsal
+  status** (`TestSeasonStatus`, `GET /api/portal/tiger/test-season/status`,
+  pure `summarizeTestSeason`) showing per match: holes matched per player,
+  who has pressed Submit Round, whether the round is an official record, and
+  whether it *would* count toward a handicap. **Safety fix:** the 2034 test
+  season is now excluded from real handicap calculations
+  (`mapFutureHandicapRounds`, opt-in only for that status view) — before this,
+  a finished rehearsal round could have changed players' real handicaps.
+  **Bug found and fixed by the new browser test:** after confirming Submit
+  Round on the live Scorecard the Confirm dialog stayed open over the
+  "Submitted" card; it now closes (and stays open with the error if the
+  submit fails). `npm test` (341/341), `npm run test:db` (9 scenarios),
+  `npx tsc --noEmit`, `npm run lint` (clean on every file this round touched;
+  one older warning in `TestSeasonPanel.tsx`), `npm run build`, and
+  `npm run test:browser` (new: the preview path) all clean. **Not
+  click-tested in the real app:** the Page Editor, the Test Season panel and
+  its status route sit behind Tiger login; they are covered by type-check,
+  lint, build and the tested logic they call.
+
+- **Live Scorecard: opens itself at 18 holes, and shows whose score
+  disagrees** (follow-up to Phase 1). (1) Once you have entered all 18 holes
+  the phone goes straight to the Scorecard - after the 18th hole is saved, and
+  also when you reopen the page with everything already entered. It only does
+  this once per visit, so tapping a hole number to fix something takes you to
+  that hole and it stays there; the Scorecard button still works any time
+  mid-round. (2) The two totals boxes are now colored separately: **Your
+  score** (what you entered for yourself, checked against what your scorer
+  entered for you) and **the opponent's score** (what you entered for them,
+  checked against what they entered for themselves). White = still waiting on
+  data, green = matches, red = disagrees, and the exact hole is tinted red in
+  the matching Score row. So "Barone's score is good but Cam's isn't" shows
+  Barone's box green and Cam's box red. Your scorer's actual numbers are still
+  never shown. Logic lives in `liveRoundStatus` (`yourState`, `opponentState`,
+  `yourDisputedHoles`, `opponentDisputedHoles` in `lib/live/roundStatus.ts`,
+  unit-tested); the overall card color and Submit Round rule are unchanged.
+
+- **Live Scorecard redesign, and cosmetic pass on the hole-entry screen.**
+  Cosmetic tweaks to the live hole-entry screen (ScoringPanel/
+  ScoringRoundHeader/ShotDirectionPicker/HoleActionBar, all shared with the
+  handicap "Submit a score" screen unless noted): Total/To Par sit closer
+  together; the "Scorecard" link lost its underline; the Fairway/GIR compass
+  now sizes itself to its buttons so the gap between arrows is even in every
+  direction; the Penalty toggle moved into the compass's empty corner
+  (between "missed right" and "missed short") and reads "PEN"; the GPS/
+  Submit Score/Next Hole buttons are a little taller; and (live scoring
+  only) the status line that used to sit above the score rows now sits
+  between Putts and those buttons instead, so the score rows sit right under
+  the hole-number strip.
+  Then a full redesign of the **live** Scorecard (`live` prop on
+  `components/portal/Scorecard.tsx`) — the handicap "Submit a score" screen
+  is untouched, still the boxed card it always was. Live scoring's Scorecard
+  now: has no boxed card (sits directly on the page); an icon-only "←" Back
+  button, top-left; the course name and rating/slope above the Total/To Par
+  pill (`course`/`rating`/`slope`, newly returned by
+  `GET /api/portal/scoring/state`, read from `live_courses` /
+  `live_round_state.course_setup`); no "Tap hole number to edit" text; the
+  Hole/Yardage/Score/opponent-score rows and the Putts/Fairway/Green rows
+  are now two separate boxes with a little gap between them, their
+  horizontal scroll linked so the same column is always the same hole; no
+  more "Hole 1 is not entered" / "waiting for X" / "your card matches" text
+  under the two score boxes — the greyed-out Submit Round button and the
+  red hole numbers/cells already say that; and a new **match completeness**
+  card above Submit Round — round + format, then the two sides and the
+  match-play score (2 Up, AS, 3&2, Thru N / Final), styled like the "My
+  Matches" card on the player portal minus its course header (already shown
+  above). The match score comes from the same confirmed-hole rule as
+  everywhere else in live scoring (both scorers agree): the real screen
+  reads the database's own `live_match_official_state` row (trigger-
+  maintained, the same one the public match list uses); the Tiger Center's
+  Live Scoring Page Editor has no database, so it derives the identical
+  result from the preview room's submissions with a new pure function,
+  `previewOfficialState` (`lib/live/previewMatchState.ts`, unit-tested),
+  reusing the real match-play math (`matchBoxResult` in
+  `lib/live/orchestration.ts`) so the preview and the real thing never
+  disagree. `npm test` (349/349), `npm run test:db` (9 scenarios),
+  `npx tsc --noEmit`, `npm run lint`, `npm run build`, and
+  `npm run test:browser` (rewritten assertions for the new layout, plus a
+  new check that the preview's match-completeness card computes the correct
+  match-play result) all clean. **Not click-tested in the real app:** the
+  real screen needs a live match box and is gated behind player login; it's
+  covered by type-check, lint, build, the tested logic it calls, and the
+  browser test's simulated version of the same screen.
+
+- **Security pass on accounts/passwords.** User asked how passwords/data are
+  protected; audit found the core setup already solid (Supabase hashes every
+  password — this repo never sees or stores one; `.env` secrets are
+  gitignored and never committed; RLS policies correctly restrict private
+  tables to their owner). Two small gaps fixed: (1) `POST /api/auth/signup`
+  now rejects a password under 6 characters (it previously accepted any
+  non-empty string; `reset-password` already had this check, signup didn't);
+  (2) `next.config.ts` now sets standard security response headers
+  (`Strict-Transport-Security`, `X-Frame-Options: DENY`,
+  `X-Content-Type-Options: nosniff`, `Referrer-Policy`) on every route.
+  **Two settings remain that only exist in the Supabase dashboard, not in
+  code — not done here:** turning on Authentication → Policies → "Leaked
+  password protection," and confirming the live production domain forces
+  HTTPS (Vercel does this automatically once a domain is attached; just
+  worth a one-time check). `npm test` (356/356), `npx tsc --noEmit`, lint on
+  both changed files, and `npm run build` all clean.
+
+- **Real hype video wired into the home page's Videos slot.** The "Videos"
+  box under Socials (`components/home/HomeDashboard.tsx`'s `hypeVideoSlots`)
+  had two placeholder "Hype Video" cards that linked nowhere real. The first
+  slot now shows the user's "MM Edit - Silver Springs" video: caption
+  "Silver Springs," a real thumbnail pulled from the video itself
+  (`public/videos/mm-edit-silver-springs-thumb.jpg`), and a click takes you
+  to a new dedicated page (`/videos/hype-1`) that plays it full-size. The
+  source file was a 228MB 4K HEVC export, which most browsers can't play at
+  all — converted to a web-friendly 1080p H.264/AAC .mp4 (`public/videos/
+  mm-edit-silver-springs.mp4`, ~76MB) with `ffmpeg`. The card now uses
+  `next/link` (no "leaving the site" confirm) since the destination is
+  on-site, unlike the still-placeholder second slot and the "Other Videos"
+  link, which still point off to `ALL_VIDEOS_HREF` ("#") and keep that
+  confirm. Verified end-to-end with a real headless-browser run (Playwright):
+  the card renders on the home page, the link navigates to `/videos/hype-1`,
+  and the video actually loads and plays there. `npx tsc --noEmit` and
+  `npm run lint` clean on both changed/new files; `npm run build` clean.
+  **Found and worked around during this round:** two Claude Code terminals
+  were apparently both editing this repo at once and their auto-commits
+  interleaved (see note to the user in this round's summary) — worth
+  checking with Cade before starting further work in case the other session
+  is mid-task on something else.
+
 ## Known gaps / not yet built
 
-- **Live scoring still has no round-level "everyone agrees" submit gate
-  or "Begin Round" screen.** The Scorecard shows the competitor's grid,
-  but that's read-only — live scoring still submits and confirms
-  hole-by-hole exactly as it always has. Decided design (user,
-  2026-09-19), not yet built: the Scoring tab shows the full matchup
-  (who you play, who you score for) with a **Begin Round** button
-  (**Continue Round** once a hole is in) that opens live scoring on the
-  hole you left; there is never a delete — a live round must be
-  finished, and progress persists across leaving the tab because holes
-  save server-side. The live Scorecard gets a **Submit Round** button,
-  disabled until all 18 holes are submitted and every one matches your
-  scorer. **Every player in the match** must press it before Tiger's
-  Close Out Match card appears (today it appears as soon as the holes are
-  complete). After Submit Round the scorecard is **locked** — only Tiger
-  can change it (Edit Scores). The existing `POST
-  /api/portal/scoring/submit` route (round-level, no UI calls it) looks
-  like it predates the hole-by-hole system and should be checked before
-  reuse. Needs its own spec (database + Tiger tools).
+- **Live scoring lifecycle — spec v3 written, not built.** See
+  `docs/superpowers/specs/2026-09-20-live-scoring-round-lifecycle-design.md`.
+  Model (user, 2026-09-20): everything live — leaderboards, team points,
+  match results, **player statistics**, odds, broadcast — updates **per
+  matched hole**; **handicap (Maroon Masters + Overall) and the rounds
+  archive** are written when a player **and their scorer have both
+  submitted**; wagers settle at Tiger's closeout, which is a review stamp
+  (Tiger can edit any score any time). Matches finish early (3&2) and
+  update immediately, but players still play out 18 and the tab moves on
+  once both have submitted. The other scorer's numbers are **never shown**:
+  the live Scorecard shows only your entries, with the round total white
+  (waiting on the other scorer), red (a hole disagrees — that hole number
+  turns red) or green (all match → Submit Round turns maroon); the
+  competitor grid built earlier is to be removed. After Submit Round only
+  Tiger can change the card. The public `/leaderboard` + team points should
+  come straight from live scoring, with the Google Sheet demoted to a
+  one-way backup copy. Audit findings: `submit_live_hole` auto-inserts the
+  submission row at 18 confirmed holes (blocks the reusable
+  `/api/portal/scoring/submit`); handicap currently counts at 18 confirmed
+  holes (before anyone submits); no Tiger edit tool for live rounds; the
+  Scoring tab only moves on at `Final`. Wager reversal (if a post-closeout edit flips a winner) is
+  decided: build it (subtract payouts, reset bets, settle again, logged).
+  No open design questions remain.
 - **2025-danzante's 8 players still need tees assigned** via "Assign tees
   for handicap tracking" (`/portal/admin/scorecards`) before any of their
   rounds count — the round numbering/format problem itself is fixed (see

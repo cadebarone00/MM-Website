@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import { getActiveSeasonYear } from "./activeSeason.ts";
 import { effectiveMatchState } from "./orchestration.ts";
+import { roundFinishedForPlayer } from "./roundStatus.ts";
 import type { LiveMatchBox, LiveRoundState, LiveTournamentSnapshot, MatchFormat, MatchState } from "./types.ts";
 
 export interface CurrentRoundResult {
@@ -141,8 +142,25 @@ export async function findMatchesForPlayer(playerSlug: string, seasonYear: numbe
   );
 }
 
+/** A round is finished for a player once they and their scorer have both pressed Submit Round; the Scoring tab then moves on. */
+export function withoutFinishedMatches(matches: CurrentRoundResult[], playerSlug: string, submissions: { match_box_id: string; player_slug: string }[]): CurrentRoundResult[] {
+  return matches.filter((match) => {
+    const submitted = submissions.filter((row) => row.match_box_id === match.matchBox.id).map((row) => row.player_slug);
+    return !roundFinishedForPlayer(match.matchBox, playerSlug, submitted);
+  });
+}
+
 export async function findUpcomingMatchesForPlayer(playerSlug: string): Promise<CurrentRoundResult[]> {
-  return (await findMatchesForPlayer(playerSlug, await getActiveSeasonYear())).filter((match) => match.state !== "Final");
+  const matches = (await findMatchesForPlayer(playerSlug, await getActiveSeasonYear())).filter((match) => match.state !== "Final");
+  const ids = matches.map((match) => match.matchBox.id).filter((id): id is string => !!id);
+  if (ids.length === 0) return matches;
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.from("live_match_box_submissions").select("match_box_id, player_slug").in("match_box_id", ids);
+  if (error) {
+    console.error("Failed to fetch live_match_box_submissions:", error);
+    return matches;
+  }
+  return withoutFinishedMatches(matches, playerSlug, data ?? []);
 }
 
 export async function findCurrentRoundForPlayer(playerSlug: string): Promise<CurrentRoundResult | null> {

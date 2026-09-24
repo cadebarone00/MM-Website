@@ -63,7 +63,7 @@ export default async function PortalPage() {
     : "bg-gradient-to-t from-maroon-950/75 via-maroon-950/20 to-transparent";
 
   return (
-    <main className="w-full pb-10">
+    <main className="w-full">
       <section className="relative isolate overflow-hidden bg-maroon-950">
         <div className="relative aspect-[16/7] min-h-52 sm:min-h-64">
           <Image src="/loading/desktop.png" alt="Maroon Masters course view" fill priority sizes="100vw" className="object-cover" />
@@ -80,12 +80,14 @@ export default async function PortalPage() {
 
       <PortalMatches matches={matches} team={team} year={year} />
 
-      <nav aria-label="Player portal" className="mx-auto mt-5 max-w-4xl px-4 sm:px-6">
+      <div className={`pt-5 pb-10 ${team === "white" ? "bg-maroon-900" : ""}`}>
+      <nav aria-label="Player portal" className="mx-auto max-w-4xl px-4 sm:px-6">
         <Link href="/portal/handicap" className="mb-4 block w-full rounded-full border-2 border-gold-300 bg-white px-6 py-2.5 text-center font-condensed text-sm font-bold text-maroon-900 transition hover:bg-cream-50 focus-visible:outline-2 focus-visible:outline-maroon-700">Submit a score</Link>
         <div className="overflow-hidden rounded-xl border-2 border-gold-300 bg-white divide-y divide-gold-300/50">
           {[{ href: "/portal/profile", name: "Profile" }, { href: "/portal/career", name: "Career" }, { href: "/portal/round-video", name: "Round video" }, { href: "/wagers/portfolio", name: "Wagers" }].map((item) => <Link key={item.href} href={item.href} className="block px-6 py-6 font-serif text-2xl font-bold text-maroon-900 transition hover:bg-cream-50 focus-visible:bg-cream-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-maroon-700">{item.name}</Link>)}
         </div>
       </nav>
+      </div>
     </main>
   );
 }

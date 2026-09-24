@@ -91,3 +91,15 @@ test("matchupLabel works from either side of the box", () => {
   const expected = `You & ${getPlayerDisplayName("luke")} vs. ${getPlayerDisplayName("cam")} & ${getPlayerDisplayName("hugo")}`;
   assert.equal(matchupLabel("drew", matchBox), expected);
 });
+
+import { withoutFinishedMatches } from "./currentRoundForPlayer.ts";
+
+test("withoutFinishedMatches drops a match only when the player and their scorer have both submitted", () => {
+  const singles = box({ id: "box-1", round: 1, format: "Singles", maroonPlayers: ["cam"], whitePlayers: ["drew"], state: "Live" });
+  const match = { round: round({ round: 1 }), matchBox: singles, state: "Live" as const };
+  const rows = (...players: string[]) => players.map((player_slug) => ({ match_box_id: "box-1", player_slug }));
+  assert.equal(withoutFinishedMatches([match], "cam", []).length, 1);
+  assert.equal(withoutFinishedMatches([match], "cam", rows("cam")).length, 1);
+  assert.equal(withoutFinishedMatches([match], "cam", rows("cam", "drew")).length, 0);
+  assert.equal(withoutFinishedMatches([match], "cam", [{ match_box_id: "other-box", player_slug: "drew" }, ...rows("cam")]).length, 1);
+});

@@ -2,8 +2,14 @@ import Image from "next/image";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import { ScoreBadge } from "@/components/ui/ScoreBadge";
 import type { BroadcastStanding } from "@/lib/broadcast/types";
+import type { LiveScoreEvent } from "@/lib/broadcast/liveScoreEvent";
 import { getMockRunCycleMs, getMockStandings } from "@/lib/broadcast/mockRun";
 import { placementLabel } from "@/lib/leaderboard/placement";
+
+/** Same flash/blink/pulse durations MockLeaderboardScene uses for its own choreography — kept as one source so a real event and a rehearsed one feel identical. */
+const LIVE_CELEBRATION_MS = 1_900;
+const LIVE_BOGEY_BLINK_MS = 1_400;
+const LIVE_TOTAL_PULSE_MS = 1_900; // starts right as the celebration ends
 
 interface Row extends BroadcastStanding {
   pos: string;
@@ -111,9 +117,44 @@ function MockLeaderboardScene({ elapsedMs, videoDurationMs, seed, animation, for
  * (ScoreBadge, shared with every scorecard on the site) — gold here is a
  * pure accent, never a score meaning. See the Round 1 redesign spec.
  */
-export function IndividualLeaderboardScene({ standings, final = false, mockElapsedMs = null, mockVideoDurationMs = null, mockSeed = 1, mockAnimation = null, mockForcedEventKind }: { standings: BroadcastStanding[]; final?: boolean; mockElapsedMs?: number | null; mockVideoDurationMs?: number | null; mockSeed?: number; mockAnimation?: { birdieEnabled: boolean; birdieDelayMs: number; rowMoveMs: number } | null; mockForcedEventKind?: "birdie" | "eagle" | "bogey" }) {
+export function IndividualLeaderboardScene({
+  standings,
+  final = false,
+  mockElapsedMs = null,
+  mockVideoDurationMs = null,
+  mockSeed = 1,
+  mockAnimation = null,
+  mockForcedEventKind,
+  liveEvent = null,
+  liveEventElapsedMs = null,
+}: {
+  standings: BroadcastStanding[];
+  final?: boolean;
+  mockElapsedMs?: number | null;
+  mockVideoDurationMs?: number | null;
+  mockSeed?: number;
+  mockAnimation?: { birdieEnabled: boolean; birdieDelayMs: number; rowMoveMs: number } | null;
+  mockForcedEventKind?: "birdie" | "eagle" | "bogey";
+  /** A real birdie/eagle/bogey just detected from live standings — see lib/broadcast/liveScoreEvent.ts. Ignored whenever a mock/rehearsal run is active. */
+  liveEvent?: LiveScoreEvent | null;
+  liveEventElapsedMs?: number | null;
+}) {
   if (mockElapsedMs != null) return <MockLeaderboardScene elapsedMs={mockElapsedMs} videoDurationMs={mockVideoDurationMs} seed={mockSeed} animation={mockAnimation} forcedEventKind={mockForcedEventKind} />;
   const rows = rankRows(standings);
+
+  // Real celebration state — same three stages as the mock rehearsal
+  // (flash+giant text, bogey blink, a pulse on the score pill), just
+  // driven by an actually-detected event instead of a seeded cycle. The
+  // row is already in its final position by the time we find out about
+  // the event (the standings re-fetch already reflects it), so unlike
+  // the mock there's no old-position-to-new-position slide to animate.
+  const eventPlayer = liveEvent?.player ?? null;
+  const eventKind = liveEvent?.eventKind ?? null;
+  const elapsed = liveEventElapsedMs ?? 0;
+  const celebrationShowing = Boolean(eventKind) && eventKind !== "bogey" && elapsed < LIVE_CELEBRATION_MS;
+  const bogeyBlinking = eventKind === "bogey" && elapsed < LIVE_BOGEY_BLINK_MS;
+  const bogeyBlinkVisible = bogeyBlinking && Math.floor(elapsed / 350) % 2 === 0;
+  const totalPulsing = Boolean(eventKind) && elapsed >= LIVE_CELEBRATION_MS && elapsed < LIVE_CELEBRATION_MS + LIVE_TOTAL_PULSE_MS;
 
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden px-10 py-10">
@@ -149,34 +190,55 @@ export function IndividualLeaderboardScene({ standings, final = false, mockElaps
           </p>
         ) : (
           <div>
-            {rows.map((r, i) => (
-              <div
-                key={r.player}
-                className={[
-                  "flex items-center gap-4 border-b border-white/[0.06] px-2 py-3",
-                  i === 0 ? "bg-gradient-to-r from-[color:var(--color-gold-400)]/[0.08] to-transparent" : "",
-                ].join(" ")}
-              >
-                <span className="w-[52px] shrink-0 text-right font-score text-2xl font-bold leading-none tabular-nums text-[color:var(--color-cream-50)]">
-                  {r.pos}
-                </span>
-                <span
-                  aria-hidden
+            {rows.map((r, i) => {
+              const eventRow = r.player === eventPlayer;
+              return (
+                <div
+                  key={r.player}
                   className={[
-                    "h-2.5 w-2.5 shrink-0 rounded-full",
-                    r.team === "maroon" ? "bg-[color:var(--color-maroon-500)] shadow-[0_0_6px_rgba(168,82,88,0.9)]" : "bg-[color:var(--color-cream-100)]",
+                    "relative flex items-center gap-4 overflow-hidden border-b border-white/[0.06] px-2 py-3",
+                    i === 0 ? "bg-gradient-to-r from-[color:var(--color-gold-400)]/[0.08] to-transparent" : "",
                   ].join(" ")}
-                />
-                <span className="flex-1 truncate font-sans text-xl font-bold uppercase tracking-wide text-[color:var(--color-cream-50)]">
-                  {getPlayerDisplayName(r.player)}
-                </span>
-                <span className="inline-flex min-w-[64px] justify-center rounded-md bg-[color:var(--color-cream-50)] px-3 py-1">
-                  <ScoreBadge value={r.toPar} size="lg" />
-                </span>
-                <span className="inline-flex w-[64px] justify-center">{todayLabel(r.todayToPar)}</span>
-                <span className="inline-flex w-[56px] justify-center font-score text-2xl font-bold leading-none tabular-nums text-[color:var(--color-cream-50)]">{thruLabel(r.thru)}</span>
-              </div>
-            ))}
+                >
+                  {eventRow && eventKind && eventKind !== "bogey" && (
+                    <span
+                      aria-hidden
+                      className="absolute inset-0 bg-maroon-700 transition-[clip-path] duration-700 ease-out"
+                      style={{ clipPath: celebrationShowing ? "circle(150% at 50% 50%)" : "circle(0% at 50% 50%)" }}
+                    />
+                  )}
+                  {eventRow && bogeyBlinkVisible && <span aria-hidden className="absolute inset-0 z-20 bg-white/90" />}
+                  {eventRow && eventKind && celebrationShowing && (
+                    <span className="absolute inset-0 z-20 grid place-items-center font-condensed text-5xl font-black uppercase tracking-[0.22em] text-white [text-shadow:0_3px_0_rgba(73,20,30,0.7),0_0_24px_rgba(255,255,255,0.42)]">
+                      {eventKind.toUpperCase()}
+                    </span>
+                  )}
+                  <span className="relative z-10 w-[52px] shrink-0 text-right font-score text-2xl font-bold leading-none tabular-nums text-[color:var(--color-cream-50)]">
+                    {r.pos}
+                  </span>
+                  <span
+                    aria-hidden
+                    className={[
+                      "relative z-10 h-2.5 w-2.5 shrink-0 rounded-full",
+                      r.team === "maroon" ? "bg-[color:var(--color-maroon-500)] shadow-[0_0_6px_rgba(168,82,88,0.9)]" : "bg-[color:var(--color-cream-100)]",
+                    ].join(" ")}
+                  />
+                  <span className="relative z-10 flex-1 truncate font-sans text-xl font-bold uppercase tracking-wide text-[color:var(--color-cream-50)]">
+                    {getPlayerDisplayName(r.player)}
+                  </span>
+                  <span
+                    className={[
+                      "relative z-10 inline-flex min-w-[64px] justify-center rounded-md bg-[color:var(--color-cream-50)] px-3 py-1",
+                      eventRow && totalPulsing ? "mm-broadcast-total-change" : "",
+                    ].join(" ")}
+                  >
+                    <ScoreBadge value={r.toPar} size="lg" />
+                  </span>
+                  <span className="relative z-10 inline-flex w-[64px] justify-center">{todayLabel(r.todayToPar)}</span>
+                  <span className="relative z-10 inline-flex w-[56px] justify-center font-score text-2xl font-bold leading-none tabular-nums text-[color:var(--color-cream-50)]">{thruLabel(r.thru)}</span>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

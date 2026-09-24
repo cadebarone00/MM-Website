@@ -1,3 +1,4 @@
+import { matchRound } from "./roundIdentity";
 import { getRoundScorecard } from "@/lib/data";
 import type { RealMatch, Team, Tournament } from "@/lib/data/types";
 
@@ -32,48 +33,6 @@ export interface MatchHoleByHole {
 // "score" fields for an Alt Shot session are each player's own unrelated
 // full round, not the team's ball. So there's nothing to reconstruct.
 const SUPPORTED_FORMATS = new Set(["Fourball", "Singles"]);
-
-function sessionOrder(session: RealMatch["session"]): number {
-  return session === "Morning" ? 0 : 1;
-}
-
-/**
- * Individual scorecards are numbered sequentially by round, but Alt Shot
- * sessions were never captured as individual hole-by-hole rounds (see
- * above) — so round numbers skip those sessions entirely rather than
- * lining up 1:1 with every day/session. This walks the tournament's
- * day/session order, drops any session that's Alt-Shot-only, and assigns
- * the remaining sessions round numbers 1, 2, 3… in order.
- *
- * Verified against the 2026 Palm Springs data: round 1 = Day 1 Morning,
- * round 2 = Day 2 Morning, round 3 = Day 2 Afternoon, round 4 = Day 3
- * Morning, round 5 = Day 4 Morning, round 6 = Day 4 Afternoon. Day 1 & 3
- * Afternoon (both all-Alt-Shot sessions) have no round of their own. Every
- * Fourball/Singles match's hole-by-hole best-ball/direct comparison using
- * this mapping reproduces that match's recorded margin exactly.
- */
-function deriveRoundBySession(tournament: Tournament): Map<string, number> {
-  const formatsBySession = new Map<string, Set<string>>();
-  const order: string[] = [];
-  const sorted = [...tournament.matches].sort((a, b) => a.day - b.day || sessionOrder(a.session) - sessionOrder(b.session));
-  for (const m of sorted) {
-    const key = `${m.day}-${m.session}`;
-    if (!formatsBySession.has(key)) {
-      formatsBySession.set(key, new Set());
-      order.push(key);
-    }
-    formatsBySession.get(key)!.add(m.format);
-  }
-
-  const dataSessions = order.filter((key) => {
-    const formats = formatsBySession.get(key)!;
-    return !(formats.size === 1 && formats.has("Alt Shot"));
-  });
-
-  const map = new Map<string, number>();
-  dataSessions.forEach((key, i) => map.set(key, i + 1));
-  return map;
-}
 
 function teamHoleScores(tournament: Tournament, players: string[], round: number): { scores: number[]; pars: number[] } | null {
   const rounds = players.map((p) => getRoundScorecard(tournament, p, round));
@@ -122,7 +81,7 @@ export function getMatchHoleByHole(tournament: Tournament, match: RealMatch): Ma
   if (!SUPPORTED_FORMATS.has(match.format)) return null;
   if ((match.status ?? "final") !== "final") return null;
 
-  const round = deriveRoundBySession(tournament).get(`${match.day}-${match.session}`);
+  const round = matchRound(tournament, match);
   if (round == null) return null;
 
   const maroon = teamHoleScores(tournament, match.maroonPlayers, round);

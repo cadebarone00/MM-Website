@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { pastTournaments } from "@/lib/data";
+import { pastTournaments, nextTournament, isPastLeaderboardSwitchover } from "@/lib/data";
 import { getPlayerProfileBySlug, playerProfiles } from "@/lib/data/players";
 import type { Team } from "@/lib/data/types";
 
@@ -47,7 +47,7 @@ export default async function TeamPlayerBioRoute({ params }: { params: Promise<{
   const activeTeam = currentTeam(profile.id);
   if (activeTeam !== slug) notFound();
 
-  const tournamentSlug = mostRecentTournamentSlug(profile.id);
+  const tournamentSlug = isPastLeaderboardSwitchover() ? nextTournament.slug : mostRecentTournamentSlug(profile.id);
   if (!tournamentSlug) notFound();
 
   redirect(`/leaderboard/${tournamentSlug}/players/${profile.id.toLowerCase()}`);

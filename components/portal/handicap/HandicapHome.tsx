@@ -61,7 +61,6 @@ export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, 
 
       <section id="handicap-scores" role="tabpanel" aria-labelledby={`handicap-tab-${activeTab}`} className="mx-auto mt-6 max-w-4xl px-4 sm:px-6">
         <div className="flex items-center gap-2 border-b border-stone-200 pb-3">
-          <h2 className="font-condensed text-sm font-bold text-maroon-700">Scores —</h2>
           <select aria-label="Score display order" value={scoreView} onChange={(event) => setScoreView(event.target.value as ScoreView)} className="min-w-0 rounded bg-transparent py-2 pr-2 font-condensed text-sm font-bold text-maroon-700 focus-visible:outline-2 focus-visible:outline-maroon-700">
             <option value="recent">20 Most Recent</option>
             <option value="all">All Scores</option>
@@ -69,8 +68,6 @@ export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, 
             <option value="lowest">Lowest to Highest</option>
           </select>
         </div>
-        {archivedRounds.length > 0 && <p className="mt-2 font-sans text-xs text-ink-500">Differential = (score minus course rating) x 113 / slope. Negative differentials are better than the course rating; negative calculated indexes display as plus handicaps. Rounds missing required data show no differential.</p>}
-        <p className="mt-2 font-sans text-xs text-ink-500">* Used in the {activeTab === "maroon-masters" ? "Maroon Masters" : "overall"} handicap calculation.</p>
         {rounds.length === 0 ? (
           <p className="mt-3 font-sans text-sm text-ink-500">{activeTab === "maroon-masters" ? "No archived Maroon Masters rounds yet." : "No rounds yet — submit your first score above."}</p>
         ) : (

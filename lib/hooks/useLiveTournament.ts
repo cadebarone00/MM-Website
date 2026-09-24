@@ -6,7 +6,7 @@ import { mergeLiveTournament, type LiveFeedPayload } from "@/lib/data/live";
 export const LIVE_POLL_MS = 10000;
 export const DETAIL_POLL_MS = 5000;
 
-export function useLiveTournament(pollMs = LIVE_POLL_MS) {
+export function useLiveTournament(pollMs = LIVE_POLL_MS, endpoint = "/api/live-feed") {
   const [payload, setPayload] = useState<LiveFeedPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -16,7 +16,7 @@ export function useLiveTournament(pollMs = LIVE_POLL_MS) {
 
     async function load() {
       try {
-        const res = await fetch("/api/live-feed", { cache: "no-store" });
+        const res = await fetch(endpoint, { cache: "no-store" });
         if (!res.ok) throw new Error("feed unavailable");
         const data = await res.json();
         if (!cancelled) {
@@ -36,7 +36,7 @@ export function useLiveTournament(pollMs = LIVE_POLL_MS) {
       cancelled = true;
       clearInterval(id);
     };
-  }, [pollMs]);
+  }, [pollMs, endpoint]);
 
   const tournament = mergeLiveTournament(payload);
 

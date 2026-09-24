@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Play, Trophy, X } from "lucide-react";
 import { SectionHead } from "@/components/home/SectionHead";
@@ -100,11 +101,12 @@ type HypeVideoSlot = {
   id: string;
   caption: string;
   thumbnailUrl: string;
+  href?: string;
 };
 
-// TODO: swap these placeholders for real hype video thumbnails/links once uploaded.
+// TODO: swap the remaining placeholder for a real hype video thumbnail/link once uploaded.
 const hypeVideoSlots: HypeVideoSlot[] = [
-  { id: "hype-slot-1", caption: "Hype Video", thumbnailUrl: "/champions/2026.jpg" },
+  { id: "hype-slot-1", caption: "Silver Springs", thumbnailUrl: "/videos/mm-edit-silver-springs-thumb.jpg", href: "/videos/hype-1" },
   { id: "hype-slot-2", caption: "Hype Video", thumbnailUrl: "/champions/2025.jpg" },
 ];
 
@@ -350,29 +352,46 @@ function SocialsSection() {
         <div className="min-w-0">
           <SectionHead title="Videos" action="Other Videos" actionHref={ALL_VIDEOS_HREF} />
           <div className="flex flex-col gap-2 sm:gap-4">
-            {hypeVideoSlots.map((video) => (
-              <a
-                key={video.id}
-                href={ALL_VIDEOS_HREF}
-                onClick={(e) => {
-                  if (!confirmLeave("You're leaving The Maroon Masters to view all videos. Continue?")) e.preventDefault();
-                }}
-                className="group relative flex aspect-[16/9] w-full flex-col justify-between overflow-hidden rounded-md border border-gold-400 bg-gradient-to-b from-maroon-800 to-ink-900 p-2 text-white shadow-sm sm:rounded-lg sm:p-4 sm:shadow-lg"
-              >
-                {video.thumbnailUrl && (
-                  <Image src={video.thumbnailUrl} alt="" fill sizes="(max-width: 640px) 50vw, 360px" className="object-cover" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/10 to-maroon-950/90" />
-                <div className="relative flex items-center justify-between">
-                  <div className="font-condensed text-[9px] font-semibold uppercase tracking-wide text-gold-300 sm:text-xs">Video</div>
-                  <Play size={12} fill="currentColor" className="sm:hidden" />
-                  <Play size={16} fill="currentColor" className="hidden sm:block" />
-                </div>
-                <div className="relative">
-                  <h3 className="m-0 line-clamp-2 font-sans text-[10px] font-extrabold sm:text-base">{video.caption}</h3>
-                </div>
-              </a>
-            ))}
+            {hypeVideoSlots.map((video) => {
+              const cardClassName =
+                "group relative flex aspect-[16/9] w-full flex-col justify-between overflow-hidden rounded-md border border-gold-400 bg-gradient-to-b from-maroon-800 to-ink-900 p-2 text-white shadow-sm sm:rounded-lg sm:p-4 sm:shadow-lg";
+              const cardContent = (
+                <>
+                  {video.thumbnailUrl && (
+                    <Image src={video.thumbnailUrl} alt="" fill sizes="(max-width: 640px) 50vw, 360px" className="object-cover" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/10 to-maroon-950/90" />
+                  <div className="relative flex items-center justify-between">
+                    <div className="font-condensed text-[9px] font-semibold uppercase tracking-wide text-gold-300 sm:text-xs">Video</div>
+                    <Play size={12} fill="currentColor" className="sm:hidden" />
+                    <Play size={16} fill="currentColor" className="hidden sm:block" />
+                  </div>
+                  <div className="relative">
+                    <h3 className="m-0 line-clamp-2 font-sans text-[10px] font-extrabold sm:text-base">{video.caption}</h3>
+                  </div>
+                </>
+              );
+
+              // A real, on-site destination navigates straight there. The
+              // still-placeholder slot keeps the "leaving the site" confirm
+              // since it points at ALL_VIDEOS_HREF, an off-site fallback.
+              return video.href ? (
+                <Link key={video.id} href={video.href} className={cardClassName}>
+                  {cardContent}
+                </Link>
+              ) : (
+                <a
+                  key={video.id}
+                  href={ALL_VIDEOS_HREF}
+                  onClick={(e) => {
+                    if (!confirmLeave("You're leaving The Maroon Masters to view all videos. Continue?")) e.preventDefault();
+                  }}
+                  className={cardClassName}
+                >
+                  {cardContent}
+                </a>
+              );
+            })}
           </div>
         </div>
       </div>

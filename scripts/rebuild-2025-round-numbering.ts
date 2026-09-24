@@ -1,3 +1,5 @@
+// Retired: mixed source numbering cannot be repaired by another blind renumber.
+throw new Error("Retired migration. Use scripts/repair-historical-archive.ts to generate an evidence-checked atomic repair.");
 // scripts/rebuild-2025-round-numbering.ts
 // Preview only:  npx tsx scripts/rebuild-2025-round-numbering.ts
 // Write for real: npx tsx scripts/rebuild-2025-round-numbering.ts --apply

@@ -1,7 +1,7 @@
 import type { CareerHoleRecord, CareerTeamHoleRecord } from "@/lib/data/careerStats";
 import type { RealMatch, Tournament } from "@/lib/data/types";
 import type { MatchOddsPoint } from "@/lib/live/matchProfile";
-import { tournamentRoundSequence } from "@/lib/data/tournamentRoundSequence";
+import { matchRound } from "@/lib/data/roundIdentity";
 
 type Distribution = Map<number, number>;
 type Outcome = { a: number; tie: number; b: number };
@@ -53,12 +53,8 @@ export function reconstructHistoricalMatchOdds(tournament: Tournament, match: Re
   if (!training.length) return { points: [], note: "Not enough 2024–2025 scores to estimate this match." };
   const format = formatName(match.format);
   const shared = format === "Alternate Shot";
-  // The archive's round numbers include shared-ball rounds; align by format occurrence,
-  // including the 2026 day-three sessions whose schedule and stroke archive order differ.
-  const sessions = tournamentRoundSequence(tournament).filter((row) => formatName(row.format) === format);
-  const occurrence = sessions.findIndex((row) => row.day === match.day && row.session === match.session);
-  const current = (shared ? teamRecords : records).filter((row) => row.year === 2026 && formatName(row.format) === format);
-  const round = [...new Set(current.map((row) => row.round))].sort((a, b) => a - b)[occurrence];
+  const round = matchRound(tournament, match);
+  const current = (shared ? teamRecords : records).filter((row) => row.year === tournament.year && formatName(row.format) === format);
   const individualRound = records.filter((row) => row.year === 2026 && row.round === round && formatName(row.format) === format);
   const sharedRound = teamRecords.filter((row) => row.year === 2026 && row.round === round && formatName(row.format) === format);
   const pairMatches = (row: CareerTeamHoleRecord, players: string[]) => players.includes(row.player1) && players.includes(row.player2);

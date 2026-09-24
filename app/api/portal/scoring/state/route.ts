@@ -59,7 +59,7 @@ export async function GET(request: Request) {
 
   await retryPendingPublications(seasonYear, box.id);
   const allPlayers = [...box.maroon_players, ...box.white_players];
-  const [{ data: scoreRows }, { data: submissionRows }, { data: roundState }, { data: holeSubmissions, error: holeSubmissionError }] = await Promise.all([
+  const [{ data: scoreRows }, { data: submissionRows }, { data: roundState }, { data: holeSubmissions, error: holeSubmissionError }, { data: officialState }] = await Promise.all([
     service
       .from("live_hole_scores")
       .select("player_slug, hole, score, putts, fir, gir, fir_direction, gir_direction, did_not_finish, self_reported_score, confirmed_by")
@@ -69,17 +69,26 @@ export async function GET(request: Request) {
     service.from("live_match_box_submissions").select("player_slug").eq("match_box_id", box.id),
     service.from("live_round_state").select("course_id, course_setup").eq("season_year", seasonYear).eq("round", round).single(),
     service.from("live_hole_submissions").select("player_slug, hole, payload, submitted_at").eq("match_box_id", box.id),
+    service.from("live_match_official_state").select("thru, maroon_holes, white_holes, leader, margin, mathematically_complete").eq("match_box_id", box.id).maybeSingle(),
   ]);
 
   if (holeSubmissionError) return NextResponse.json({ ok: false, error: "Scoring is temporarily unavailable. Please try again shortly." }, { status: 503 });
 
   let holes: { number: number; par: number; yards: number }[] = [];
+  let courseName: string | null = null;
+  let rating: number | null = null;
+  let slope: number | null = null;
   if (roundState?.course_id) {
-    const { data: course } = await service.from("live_courses").select("holes").eq("id", roundState.course_id).single();
+    const { data: course } = await service.from("live_courses").select("holes, name, rating, slope").eq("id", roundState.course_id).single();
     holes = Array.isArray(course?.holes) ? (course.holes as { number: number; par: number; yards: number }[]) : [];
+    courseName = course?.name ?? null;
+    rating = course?.rating ?? null;
+    slope = course?.slope ?? null;
   }
   if (Array.isArray(roundState?.course_setup?.holes)) {
     holes = roundState.course_setup.holes;
+    rating = roundState.course_setup.rating ?? rating;
+    slope = roundState.course_setup.slope ?? slope;
   }
 
   return NextResponse.json(
@@ -110,6 +119,12 @@ export async function GET(request: Request) {
       })),
       holeSubmissions: (holeSubmissions ?? []).map((row) => ({ ...row.payload, player: row.player_slug, hole: row.hole, submittedAt: row.submitted_at })),
       submittedPlayers: (submissionRows ?? []).map((r) => r.player_slug as string),
+      course: courseName,
+      rating,
+      slope,
+      official: officialState
+        ? { thru: officialState.thru, leader: officialState.leader, margin: officialState.margin, mathematicallyComplete: officialState.mathematically_complete }
+        : null,
     },
     { headers: { "Cache-Control": "no-store" } }
   );
