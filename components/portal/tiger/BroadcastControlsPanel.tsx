@@ -757,7 +757,7 @@ export function BroadcastControlsPanel({
             <div className="flex gap-2">
               <button type="button" onClick={mockRun.status === "running" ? pauseMockRun : resumeMockRun} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-800">{mockRun.status === "running" ? "Pause" : "Resume"}</button>
               <button type="button" disabled={mockClipsBusy} onClick={() => { void startRandomMockRun(); }} className="rounded-lg border-2 border-gold-500 bg-gold-50 px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-800 disabled:opacity-50">New Random Shot</button>
-              <button type="button" onClick={() => setMockRun(null)} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-800">End Mock</button>
+              <button type="button" onClick={() => { setMockRun(null); void pausePlaylist(); }} className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 font-condensed text-xs font-semibold uppercase tracking-wide text-ink-800">End Mock</button>
             </div>
           </div>
           <div className="mt-3 flex items-center gap-3">
