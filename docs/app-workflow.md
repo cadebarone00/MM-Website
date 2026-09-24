@@ -42,6 +42,7 @@ flowchart TD
   O --> F[Tiger closeout and MM Coins settlement]
   %% My Handicap score list shows only the order dropdown followed by scores; explanatory paragraphs are removed.
   %% White-team portal navigation area has a maroon backdrop behind Submit a score and the four navigation rows.
+  %% Portal Profile, Career, Round video and Wagers rows use their named supplied photos with white labels and contrast overlays.
   %% Portal: overall handicap number opens My Handicap; separate Submit a score pill opens the handicap screen.
   P --> N[Personal 18-hole round entry]
   C --> N
@@ -438,7 +439,11 @@ This map identifies remaining distinctions worth reviewing: static versus correc
 These are observations from the documentation review. No application behavior was changed while creating this map.
 
 
+The Player Portal navigation rows for Profile, Career, Round video, and Wagers use the corresponding supplied photos from `Player Portal/Profile.Career.etc`, imported as optimized WebP assets in `public/portal/navigation`. The photos fill the existing rows, with white text and a dark overlay; link destinations and permissions are unchanged.
+
 ## What changed
+
+**September 24, 2026 - Player Portal navigation photos (implemented locally; deployment not verified).** The four plain navigation rows now use the supplied Profile, Career, Round Video and Wagers photos, with white text and contrast overlays. Existing destinations, row sizing and permissions remain unchanged. Updated the guide and flowchart annotation; overview mappings are unchanged.
 
 **September 24, 2026 - Restore clear accordion date/session labels (implemented locally; deployment not verified).** The full-screen overlay change left labels dependent on button padding and small responsive text. Labels now have explicit positioning below the controls, consistent readable type, and contrast shadows; collapsed mobile rows keep their centered horizontal labels. Updated Section 3 and the flowchart annotation; overview mappings are unchanged.
 
