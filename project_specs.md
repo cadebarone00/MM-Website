@@ -677,6 +677,29 @@ All pages are public, no auth.
   worth a one-time check). `npm test` (356/356), `npx tsc --noEmit`, lint on
   both changed files, and `npm run build` all clean.
 
+- **Real hype video wired into the home page's Videos slot.** The "Videos"
+  box under Socials (`components/home/HomeDashboard.tsx`'s `hypeVideoSlots`)
+  had two placeholder "Hype Video" cards that linked nowhere real. The first
+  slot now shows the user's "MM Edit - Silver Springs" video: caption
+  "Silver Springs," a real thumbnail pulled from the video itself
+  (`public/videos/mm-edit-silver-springs-thumb.jpg`), and a click takes you
+  to a new dedicated page (`/videos/hype-1`) that plays it full-size. The
+  source file was a 228MB 4K HEVC export, which most browsers can't play at
+  all — converted to a web-friendly 1080p H.264/AAC .mp4 (`public/videos/
+  mm-edit-silver-springs.mp4`, ~76MB) with `ffmpeg`. The card now uses
+  `next/link` (no "leaving the site" confirm) since the destination is
+  on-site, unlike the still-placeholder second slot and the "Other Videos"
+  link, which still point off to `ALL_VIDEOS_HREF` ("#") and keep that
+  confirm. Verified end-to-end with a real headless-browser run (Playwright):
+  the card renders on the home page, the link navigates to `/videos/hype-1`,
+  and the video actually loads and plays there. `npx tsc --noEmit` and
+  `npm run lint` clean on both changed/new files; `npm run build` clean.
+  **Found and worked around during this round:** two Claude Code terminals
+  were apparently both editing this repo at once and their auto-commits
+  interleaved (see note to the user in this round's summary) — worth
+  checking with Cade before starting further work in case the other session
+  is mid-task on something else.
+
 ## Known gaps / not yet built
 
 - **Live scoring lifecycle — spec v3 written, not built.** See
