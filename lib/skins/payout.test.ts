@@ -7,7 +7,7 @@ import { pastTournaments } from "@/lib/data";
 import { tournamentRoundSequence } from "@/lib/data/tournamentRoundSequence";
 import { isIndividualScoreFormat } from "@/lib/handicap/archiveIndex";
 
-const win = (player: string, round: number, hole: number): SkinWin => ({ player, round, hole, course: "Course", score: 3, par: 4 });
+const win = (player: string, round: number, hole: number): SkinWin => ({ player, round, hole, course: "Course", score: 3, par: 4, opponents: [] });
 
 test("$200 is divided separately for each round, then added to player earnings", () => {
   const result = calculateRoundPayouts(["cam", "cade", "joe"], [

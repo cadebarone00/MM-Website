@@ -39,7 +39,7 @@ export function SkinsPageView({ tab, year, totalSkins, players, sessions, eligib
             <thead><tr className="border-b border-ink-200">{["Day", "Session", "Skins", "Pot", "Per skin"].map((label) => <th scope="col" key={label} className="px-2 py-3">{label}</th>)}</tr></thead>
             <tbody>{payouts.rounds.map((round) => <tr key={round.round} className="border-b border-ink-100">
               <td className="px-2 py-3">{sessions[round.round - 1]?.day ?? "—"}</td>
-              <td className="px-2 py-3">{round.round} · {sessions[round.round - 1]?.session}</td>
+              <td className="px-2 py-3">{sessions[round.round - 1]?.session ?? "—"}</td>
               <td className="px-2 py-3 tabular-nums">{round.skins}</td>
               <td className="px-2 py-3 tabular-nums">{formatSkinsMoney(round.potCents)}</td>
               <td className="px-2 py-3 tabular-nums">{round.perSkinCents == null ? "Unawarded" : formatSkinsMoney(round.perSkinCents)}</td>

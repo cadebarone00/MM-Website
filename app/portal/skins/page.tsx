@@ -7,6 +7,7 @@ import { tournamentRoundSequence } from "@/lib/data/tournamentRoundSequence";
 import { SkinsPageView } from "@/components/skins/SkinsPageView";
 import { calculateRoundPayouts } from "@/lib/skins/payout";
 import { isIndividualScoreFormat } from "@/lib/handicap/archiveIndex";
+import { nameSkinOpponents } from "@/lib/skins/opponents";
 
 export default async function SkinsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   if (!await requirePlayer()) redirect("/portal");
@@ -19,10 +20,12 @@ export default async function SkinsPage({ searchParams }: { searchParams: Promis
   const sessions = tournament ? tournamentRoundSequence(tournament) : [];
   const eligibleRounds = sessions.flatMap((session, index) => isIndividualScoreFormat(session.format) ? [index + 1] : []);
   const payouts = results ? calculateRoundPayouts(Object.keys(results.totals), results.wins, eligibleRounds) : null;
+  const names = new Map(directory.map((player) => [player.playerSlug, player.fullName]));
   const players = Object.entries(results?.totals ?? {}).map(([slug, total]) => ({
     slug, total, name: directory.find((player) => player.playerSlug === slug)?.fullName ?? slug,
     wins: (results?.wins ?? []).filter((win) => win.player === slug).map((win) => ({
       ...win, day: sessions[win.round - 1]?.day ?? null, session: sessions[win.round - 1]?.session ?? null,
+      opponents: nameSkinOpponents(win.opponents, names),
     })),
   })).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
 

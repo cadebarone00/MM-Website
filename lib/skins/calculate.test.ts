@@ -43,7 +43,7 @@ test("winning-hole details match the totals and retain gross score and par", () 
   ]);
   assert.equal(result.totals.cam, result.wins.length);
   assert.deepEqual(result.wins, [
-    { player: "cam", round: 7, course: "Mission Hills Pete Dye", hole: 3, score: 3, par: 4 },
-    { player: "cam", round: 7, course: "Mission Hills Pete Dye", hole: 4, score: 4, par: 4 },
+    { player: "cam", round: 7, course: "Mission Hills Pete Dye", hole: 3, score: 3, par: 4, opponents: [{ player: "cade", score: 4, par: 4 }] },
+    { player: "cam", round: 7, course: "Mission Hills Pete Dye", hole: 4, score: 4, par: 4, opponents: [{ player: "cade", score: 5, par: 4 }] },
   ]);
 });
