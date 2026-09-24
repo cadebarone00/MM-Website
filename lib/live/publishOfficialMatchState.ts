@@ -2,7 +2,7 @@ import { buildLiveTournamentSnapshot } from "@/lib/broadcast/liveSnapshot";
 import { buildOfficialMatchState, type OfficialMatchState } from "@/lib/live/officialMatchState";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { publishMatchOdds } from "@/lib/live/publishMatchOdds";
-import { refreshTeamWinnerOdds } from "@/lib/wagers/teamWinnerPricing";
+import { refreshFutures } from "@/lib/wagers/refreshFutures";
 
 /**
  * Rebuild and publish a match using confirmed holes only. This is the shared
@@ -39,8 +39,8 @@ export async function publishOfficialMatchState(
     if (auditError) throw auditError;
   }
 
-  // Team Winner odds depend on every match; bets on it pause until this lands.
-  await refreshTeamWinnerOdds(seasonYear);
+  // Tournament futures depend on every match; bets on them pause until this lands.
+  await refreshFutures(seasonYear);
 
   return official;
 }
