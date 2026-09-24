@@ -22,23 +22,41 @@ export function totalBirdiesMarketKey(seasonYear: number): string {
   return `total-birdies:${seasonYear}`;
 }
 
-/** A player's chance of a birdie on a target hole: Measure 1 and Measure 2 weighted 50/50, as in the match model. */
-export function birdieChance(history: HistoryRow[], hole: { par: number; yards: number; hole: number }): number | null {
+/** A scoring outcome on one hole, e.g. a birdie. */
+export type HoleOutcome = (score: number, par: number) => boolean;
+/** Exactly one under par; an eagle is not a birdie. */
+export const isBirdie: HoleOutcome = (score, par) => score === par - 1;
+/** Two or more over par. */
+export const isDoubleOrWorse: HoleOutcome = (score, par) => score >= par + 2;
+
+/** A player's chance of an outcome on a target hole: Measure 1 and Measure 2 weighted 50/50, as in the match model. */
+export function outcomeChance(history: HistoryRow[], hole: { par: number; yards: number; hole: number }, outcome: HoleOutcome): number | null {
   const { one, two } = holePools(history, hole);
-  const rate = (pool: number[]) => pool.filter((score) => score === hole.par - 1).length / pool.length;
+  const rate = (pool: number[]) => pool.filter((score) => outcome(score, hole.par)).length / pool.length;
   if (!one.length && !two.length) return null;
   if (!one.length) return rate(two);
   if (!two.length) return rate(one);
   return (rate(one) + rate(two)) / 2;
 }
 
+/** How many times an outcome has already happened on confirmed holes. */
+export function outcomesSoFar(players: string[], rounds: IndividualRound[], played: PlayedScore, outcome: HoleOutcome): number {
+  let count = 0;
+  for (const player of players) for (const round of rounds) for (const hole of round.holes) {
+    const score = played(player, round.round, hole.hole);
+    if (score !== null && outcome(score, hole.par)) count += 1;
+  }
+  return count;
+}
+
+/** A player's chance of a birdie on a target hole. */
+export function birdieChance(history: HistoryRow[], hole: { par: number; yards: number; hole: number }): number | null {
+  return outcomeChance(history, hole, isBirdie);
+}
+
 /** Birdies already made on confirmed holes. */
 export function birdiesSoFar(players: string[], rounds: IndividualRound[], played: PlayedScore): number {
-  let birdies = 0;
-  for (const player of players) for (const round of rounds) for (const hole of round.holes) {
-    if (played(player, round.round, hole.hole) === hole.par - 1) birdies += 1;
-  }
-  return birdies;
+  return outcomesSoFar(players, rounds, played, isBirdie);
 }
 
 /** Simulated final field totals — confirmed birdies plus a draw for every unplayed hole. Check missingHistory() first. */
