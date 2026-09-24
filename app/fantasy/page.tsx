@@ -16,7 +16,9 @@ import {
   readDraftPicks,
   safeSessionStorage,
   seedDraftPicks,
+  writeDraftPick,
   type DraftPicks,
+  type FantasySlot,
 } from "@/lib/fantasy/draftState";
 import type { FantasyPicks } from "@/lib/fantasy/scoring";
 import type { UpcomingRoundScheduleItem } from "@/lib/data/activeSeasonOverlay";
@@ -112,6 +114,11 @@ export default function FantasyPage() {
     setDrafting(false);
   }
 
+  function pickPlayer(slot: FantasySlot, player: string) {
+    const next = writeDraftPick(safeSessionStorage, tournament.slug, slot, player);
+    setPicks(next);
+  }
+
   async function submitLineup() {
     const fantasyPicks = toFantasyPicks(picks);
     if (!fantasyPicks) return;
@@ -159,6 +166,7 @@ export default function FantasyPage() {
         <FantasyDraftTabs
           tournament={tournament}
           picks={picks}
+          onPick={pickPlayer}
           onSubmit={submitLineup}
           onCancel={cancelDraft}
           saving={saving}
