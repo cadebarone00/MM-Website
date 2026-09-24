@@ -24,7 +24,7 @@ export function ScheduleAccordion({ rounds, year, initialDate }: { rounds: Upcom
     const frame = requestAnimationFrame(() => {
       const panel = container.children[active] as HTMLElement;
       const mobile = window.matchMedia("(max-width: 1023px)").matches;
-      container.scrollTo({ left: mobile ? 0 : panel.offsetLeft - (container.clientWidth - panel.offsetWidth) / 2, top: mobile ? panel.offsetTop - (container.clientHeight - panel.offsetHeight) / 2 : 0, behavior: "instant" });
+      container.scrollTo({ left: 0, top: mobile ? panel.offsetTop : 0, behavior: "instant" });
     });
     return () => cancelAnimationFrame(frame);
   }, [active]);
@@ -48,18 +48,18 @@ export function ScheduleAccordion({ rounds, year, initialDate }: { rounds: Upcom
   }, []);
 
   const onScroll = () => {
-    if (Date.now() < lockedUntil.current) return;
+    if (window.innerWidth >= 1024 || Date.now() < lockedUntil.current) return;
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
       const container = track.current;
       if (!container) return;
       const mobile = window.innerWidth < 1024;
-      const center = mobile ? container.scrollTop + container.clientHeight / 2 : container.scrollLeft + container.clientWidth / 2;
+      const center = mobile ? container.scrollTop : container.scrollLeft + container.clientWidth / 2;
       let nearest = active;
       let distance = Infinity;
       Array.from(container.children).forEach((child, index) => {
         const item = child as HTMLElement;
-        const midpoint = mobile ? item.offsetTop + item.offsetHeight / 2 : item.offsetLeft + item.offsetWidth / 2;
+        const midpoint = mobile ? item.offsetTop : item.offsetLeft + item.offsetWidth / 2;
         if (Math.abs(midpoint - center) < distance) { nearest = index; distance = Math.abs(midpoint - center); }
       });
       setActive(nearest);
@@ -79,7 +79,7 @@ export function ScheduleAccordion({ rounds, year, initialDate }: { rounds: Upcom
       {panels.map((panel, index) => {
         const date = new Date(`${panel.date}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
         return <section key={panel.round} className={`${styles.panel} ${active === index ? styles.active : ""}`}>
-          <Image src="/schedule/mission-hills.webp" alt="" fill sizes="(max-width: 1023px) 100vw, 85vw" className={styles.photo} style={{ objectPosition: `${30 + index * 6}% center` }} />
+          <Image src="/schedule/mission-hills.webp" alt="" fill sizes="(max-width: 1023px) 100vw, 50vw" className={styles.photo} style={{ objectPosition: `${30 + index * 6}% center` }} />
           <div className={styles.shade} />
           <button className={styles.toggle} aria-expanded={active === index} aria-controls={`round-${panel.round}`} onClick={() => setActive(index)}><span>{date}</span><span>Session {panel.round}</span></button>
           <div id={`round-${panel.round}`} className={styles.details} hidden={active !== index}>
