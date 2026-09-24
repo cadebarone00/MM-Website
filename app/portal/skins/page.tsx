@@ -6,7 +6,8 @@ import { get2026SkinsResults, SKINS_YEAR } from "@/lib/skins/data";
 import { pastTournaments } from "@/lib/data";
 import { tournamentRoundSequence } from "@/lib/data/tournamentRoundSequence";
 import { SkinsLeaderboard } from "@/components/skins/SkinsLeaderboard";
-import { calculateSkinsPayouts, formatSkinsMoney, SKINS_2026_POT_CENTS } from "@/lib/skins/payout";
+import { calculateRoundPayouts, formatSkinsMoney, SKINS_2026_ENTRY_CENTS, SKINS_2026_ROUND_POT_CENTS } from "@/lib/skins/payout";
+import { isIndividualScoreFormat } from "@/lib/handicap/archiveIndex";
 
 export default async function SkinsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   if (!await requirePlayer()) redirect("/portal");
@@ -16,8 +17,9 @@ export default async function SkinsPage({ searchParams }: { searchParams: Promis
     getAllPlayerRows(),
   ]);
   const tournament = pastTournaments.find((entry) => entry.year === SKINS_YEAR);
-  const payouts = results ? calculateSkinsPayouts(results.totals, SKINS_2026_POT_CENTS) : null;
   const sessions = tournament ? tournamentRoundSequence(tournament) : [];
+  const eligibleRounds = sessions.flatMap((session, index) => isIndividualScoreFormat(session.format) ? [index + 1] : []);
+  const payouts = results ? calculateRoundPayouts(Object.keys(results.totals), results.wins, eligibleRounds) : null;
   const players = Object.entries(results?.totals ?? {}).map(([slug, total]) => ({
     slug, total, name: directory.find((player) => player.playerSlug === slug)?.fullName ?? slug,
     wins: (results?.wins ?? []).filter((win) => win.player === slug).map((win) => ({
@@ -39,16 +41,28 @@ export default async function SkinsPage({ searchParams }: { searchParams: Promis
       <div className="px-2 py-4 sm:px-4">
         {tab === "payout" ? <section className="space-y-4 px-3 font-sans text-sm text-ink-700">
           <h2 className="font-serif text-xl font-bold text-ink-900">2026 payout</h2>
-          <p>The total pot is split equally across all skins won. Each player earns their share based on their total skins.</p>
+          <p>Each player enters for {formatSkinsMoney(SKINS_2026_ENTRY_CENTS)}. Every individual-ball round (Fourball or Singles) has a separate {formatSkinsMoney(SKINS_2026_ROUND_POT_CENTS)} pot, split equally across the skins won in that round.</p>
           <dl className="space-y-3">
-            <div className="flex justify-between gap-4"><dt>Total pot</dt><dd className="font-bold tabular-nums">{SKINS_2026_POT_CENTS == null ? "Not set yet" : formatSkinsMoney(SKINS_2026_POT_CENTS)}</dd></div>
+            <div className="flex justify-between gap-4"><dt>Entry per player</dt><dd className="font-bold tabular-nums">{formatSkinsMoney(SKINS_2026_ENTRY_CENTS)}</dd></div>
+            <div className="flex justify-between gap-4"><dt>Pot per round</dt><dd className="font-bold tabular-nums">{formatSkinsMoney(SKINS_2026_ROUND_POT_CENTS)}</dd></div>
+            <div className="flex justify-between gap-4"><dt>Total round pots</dt><dd className="font-bold tabular-nums">{formatSkinsMoney(eligibleRounds.length * SKINS_2026_ROUND_POT_CENTS)}</dd></div>
             <div className="flex justify-between gap-4"><dt>Total skins</dt><dd className="font-bold tabular-nums">{results?.wins.length ?? "—"}</dd></div>
-            <div className="flex justify-between gap-4"><dt>Per skin</dt><dd className="font-bold tabular-nums">{SKINS_2026_POT_CENTS != null && results && results.wins.length > 0 ? formatSkinsMoney(SKINS_2026_POT_CENTS / results.wins.length) : "—"}</dd></div>
           </dl>
-          {SKINS_2026_POT_CENTS == null && <p>Dollar earnings will appear once the 2026 pot amount is confirmed.</p>}
-          <p>Player earnings are rounded to cents, with any remaining cents assigned to the largest fractional shares so the full pot is distributed.</p>
+          {payouts ? <div className="overflow-x-auto"><table className="w-full text-left text-xs sm:text-sm">
+            <caption className="sr-only">Payout by round</caption>
+            <thead><tr className="border-b border-ink-200">{["Day", "Session", "Skins", "Pot", "Per skin"].map((label) => <th scope="col" key={label} className="px-2 py-3">{label}</th>)}</tr></thead>
+            <tbody>{payouts.rounds.map((round) => <tr key={round.round} className="border-b border-ink-100">
+              <td className="px-2 py-3">{sessions[round.round - 1]?.day ?? "—"}</td>
+              <td className="px-2 py-3">{round.round} · {sessions[round.round - 1]?.session}</td>
+              <td className="px-2 py-3 tabular-nums">{round.skins}</td>
+              <td className="px-2 py-3 tabular-nums">{formatSkinsMoney(round.potCents)}</td>
+              <td className="px-2 py-3 tabular-nums">{round.perSkinCents == null ? "Unawarded" : formatSkinsMoney(round.perSkinCents)}</td>
+            </tr>)}</tbody>
+          </table></div> : <p role="status">Round payouts are unavailable right now. Please try again shortly.</p>}
+          <p>$ Earned adds up each player’s round winnings before their entry fee. Earnings are rounded to cents; remaining cents go to the largest fractional shares. Per-skin amounts are shown rounded.</p>
           <p>Each sole lowest gross score earns one skin. Tied holes earn no skin, with no carryover.</p>
-        </section> : results ? <SkinsLeaderboard players={players} payouts={payouts} /> : <p role="status" className="px-3 font-sans text-sm text-ink-500">Skins are unavailable right now. Please try again shortly.</p>}
+          <p>A round with no skins leaves its pot unawarded.</p>
+        </section> : results ? <SkinsLeaderboard players={players} payouts={payouts?.earnings ?? null} /> : <p role="status" className="px-3 font-sans text-sm text-ink-500">Skins are unavailable right now. Please try again shortly.</p>}
       </div>
     </main>
   );

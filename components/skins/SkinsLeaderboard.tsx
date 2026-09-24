@@ -42,7 +42,7 @@ export function SkinsLeaderboard({ players, payouts }: { players: SkinsLeaderboa
           </div>
         </details>
       ))}
-      {payouts == null && <p className="px-3 pt-4 font-sans text-xs text-ink-500">Earnings will appear once the total pot is set and skins are available.</p>}
+      <p className="px-3 pt-4 font-sans text-xs text-ink-500">$ Earned is the total won from each round’s $200 pot, before the $100 entry.</p>
     </section>
   );
 }

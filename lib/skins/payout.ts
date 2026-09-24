@@ -1,5 +1,22 @@
-// Set the confirmed season pot here; null means the amount has not been supplied.
-export const SKINS_2026_POT_CENTS: number | null = null;
+import type { SkinWin } from "./calculate";
+
+export const SKINS_2026_ENTRY_CENTS = 10_000;
+export const SKINS_2026_ROUND_POT_CENTS = 20_000;
+
+/** Each eligible session has its own pot; the season earnings are the sum of those shares. */
+export function calculateRoundPayouts(players: string[], wins: SkinWin[], eligibleRounds: number[]) {
+  const earnings = Object.fromEntries(players.map((player) => [player, 0]));
+  const rounds = [...new Set(eligibleRounds)].sort((a, b) => a - b).map((round) => {
+    const roundWins = wins.filter((win) => win.round === round);
+    const totals: Record<string, number> = {};
+    for (const win of roundWins) totals[win.player] = (totals[win.player] ?? 0) + 1;
+    const shares = calculateSkinsPayouts(totals, SKINS_2026_ROUND_POT_CENTS);
+    for (const [player, cents] of Object.entries(shares ?? {})) earnings[player] = (earnings[player] ?? 0) + cents;
+    return { round, skins: roundWins.length, potCents: SKINS_2026_ROUND_POT_CENTS,
+      perSkinCents: roundWins.length ? SKINS_2026_ROUND_POT_CENTS / roundWins.length : null };
+  });
+  return { earnings, rounds };
+}
 
 /** Split the whole pot proportionally, allocating leftover cents by largest remainder. */
 export function calculateSkinsPayouts(totals: Record<string, number>, potCents: number | null): Record<string, number> | null {
