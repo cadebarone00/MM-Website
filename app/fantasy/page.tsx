@@ -184,7 +184,9 @@ export default function FantasyPage() {
 
   return (
     <FantasyShell activeTab={tab} onTabChange={setTab}>
-      {tab === "roster" ? rosterTabContent() : <FantasyHowToPlay editionLabel={tournament.editionLabel} />}
+      {tab === "roster" && rosterTabContent()}
+      {tab === "leaderboard" && <FantasyLeaderboard />}
+      {tab === "how-to-play" && <FantasyHowToPlay editionLabel={tournament.editionLabel} />}
     </FantasyShell>
   );
 }
