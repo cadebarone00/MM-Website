@@ -1,9 +1,28 @@
 {
-  "palmerphotos": {
-    "name": "Palmer Photos",
+  "palmer": {
+    "name": "Palmer",
     "main": [
-      "/schedule/courses/palmerphotos/1.webp"
+      "/schedule/courses/palmer/971a4de749c961a4d9e2.webp",
+      "/schedule/courses/palmer/4dd49182bb0c2469a9d3.webp"
     ],
-    "library": []
+    "library": [
+      "/schedule/courses/palmer/bfbe255dabef24fbede5.webp",
+      "/schedule/courses/palmer/9a9460e7f508e740a03d.webp",
+      "/schedule/courses/palmer/3d06513a89c89382e9e7.webp",
+      "/schedule/courses/palmer/7258d0d718294c527291.webp"
+    ]
+  },
+  "petedye": {
+    "name": "Pete-Dye",
+    "main": [
+      "/schedule/courses/petedye/ec3fecdb5b2b02fad364.webp",
+      "/schedule/courses/petedye/37c88500018493969bee.webp"
+    ],
+    "library": [
+      "/schedule/courses/petedye/39e4de4568517e6bd388.webp",
+      "/schedule/courses/petedye/46934ecab870846d4431.webp",
+      "/schedule/courses/petedye/b5bd102e5283d4b98de6.webp",
+      "/schedule/courses/petedye/8f793ebcc0c95e01fdac.webp"
+    ]
   }
 }
