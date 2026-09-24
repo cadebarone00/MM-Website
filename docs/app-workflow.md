@@ -8,6 +8,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
+  %% Schedule landing at /schedule uses the supplied Mission Hills photo and four January 6-9 links to date-filtered schedule views.
   A[Account and player identity] --> P[Player portal]
   A --> T[Tiger Center]
   T --> C[Course Library and tee snapshots]
@@ -97,7 +98,7 @@ For example, in September 2026, My Matches can correctly show 2026 matches as Pa
 
 On live and archived leaderboards, Match Play boards are centered in a 40vw column at desktop widths (1024px and above), capped at the available content width. Desktop match rows add 10px vertical padding per player name instead of mobile's 6px. The ticker, individual standings, and mobile layout retain their existing sizing.
 
-Home, schedule, teams, players, history, tournament leaderboards, match pages, and player scorecards present tournament information publicly. Historical editions and much descriptive content originate in committed `lib/data` files. Upcoming venue/dates, round courses/formats, and confirmed roster receive Tiger-managed database overlays where the relevant loaders are used.
+Home, schedule, teams, players, history, tournament leaderboards, match pages, and player scorecards present tournament information publicly. The Schedule tab now opens a photo landing page at `/schedule`, using the supplied Mission Hills image with The Maroon Masters, Mission Hills Country Club, and Palm Springs, CA text. Four bottom links cover January 6-9 of the upcoming tournament year. They open `/schedule/[slug]?date=YYYY-MM-DD`, a basic day view showing only configured rounds for that date and their course/format, or an explicit pending-details message. More detailed day-page design is future work. The unfiltered `/schedule/[slug]` venue pages remain available. Historical editions and much descriptive content originate in committed `lib/data` files. Upcoming venue/dates, round courses/formats, and confirmed roster receive Tiger-managed database overlays where the relevant loaders are used.
 
 The Website / Portal / Scoring selector changes the destination, not the account or database. The More menu contains secondary destinations. Public teams can show locked roster assignments rather than exposing every draft assignment as confirmed.
 
@@ -435,6 +436,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 24, 2026 - Schedule photo landing (implemented locally; deployment not verified).** The Schedule tab previously redirected to the upcoming venue list. It now opens a full-width photographic landing using the supplied Schedule Landing Page Photo, with tournament branding, Mission Hills Country Club, Palm Springs, CA, and January 6-9 day links. The links use basic date-filtered views of existing round setup; detailed day-page design is still pending. The supplied PNG is served as an optimized WebP. Updated Section 3 and the flowchart annotation; overview mappings are unchanged.
 
 **September 24, 2026 - Slider endpoints and return-to-match navigation (implemented locally; deployment not verified).** Previously the slider thumb was clipped at both extremes, gray explanatory text appeared under the graph, and player Back links always returned to the leaderboard. Both endpoint thumbs are now fully visible, the graph footer is visually hidden, and Back links use a short label. Match-to-player links preserve the source match for the player Back destination; direct visits retain a leaderboard fallback. Updated Section 3 and the flowchart annotation; overview mappings are unchanged.
 
