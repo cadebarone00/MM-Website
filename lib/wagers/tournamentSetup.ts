@@ -64,6 +64,16 @@ export function referenceSetup(
   return { year, rounds, roster: roster ? { maroon: [...roster.maroon].sort(), white: [...roster.white].sort() } : null };
 }
 
+/**
+ * Whether a course Tiger picked can actually be priced: a real name (not a
+ * "To Be Determined" placeholder) and 18 holes with a real par and yardage.
+ * Anything else counts as not set yet, so the round keeps last year's course.
+ */
+export function isUsableCourse(course: { name: string; holes: { par: number | null; yards: number | null }[] } | undefined): boolean {
+  if (!course || /to be determined|\btbd\b/i.test(course.name)) return false;
+  return course.holes.length === 18 && course.holes.every((hole) => (hole.par ?? 0) >= 3 && (hole.par ?? 0) <= 6 && (hole.yards ?? 0) > 0);
+}
+
 /** "1–3, 5" for [1, 2, 3, 5]. */
 export function roundList(rounds: number[]): string {
   const parts: string[] = [];
@@ -113,13 +123,15 @@ export function buildTournamentSetup({
   if (!roundCount && count) assumptions.push(`Using ${reference!.year}'s ${count}-round schedule until the number of rounds is set.`);
 
   const rounds: SetupRound[] = [];
-  const assumedRounds: number[] = [];
+  const formatRounds: number[] = [];
+  const courseRounds: number[] = [];
   for (let number = 1; number <= (count ?? 0); number += 1) {
     const row = roundRows.find((candidate) => candidate.round === number);
     const fallback = reference?.rounds.get(number);
     const setFormat = row?.format === "Singles" || row?.format === "Fourball" || row?.format === "Foursome" ? row.format : null;
     const format = setFormat ?? fallback?.format ?? null;
-    const liveCourse = snapshot.courses[snapshot.roundCourses[number]];
+    const pickedCourse = snapshot.courses[snapshot.roundCourses[number]];
+    const liveCourse = isUsableCourse(pickedCourse) ? pickedCourse : undefined;
     const course: SetupCourse | null = liveCourse
       ? { key: liveCourse.id, name: liveCourse.name, holes: liveCourse.holes.map((hole) => ({ number: hole.number, par: hole.par, yards: hole.yards })) }
       : fallback?.course ?? null;
@@ -127,11 +139,19 @@ export function buildTournamentSetup({
     if (!course) { blockers.push(`Round ${number} needs a course.`); continue; }
     const formatAssumed = !setFormat;
     const courseAssumed = !liveCourse;
-    if (formatAssumed || courseAssumed) assumedRounds.push(number);
+    if (formatAssumed) formatRounds.push(number);
+    if (courseAssumed) courseRounds.push(number);
     rounds.push({ round: number, format, course, formatAssumed, courseAssumed, matchupsLocked: Boolean(row?.matchups_locked) });
   }
-  if (assumedRounds.length && reference) {
-    assumptions.push(`Round${assumedRounds.length > 1 ? "s" : ""} ${roundList(assumedRounds)} use${assumedRounds.length > 1 ? "" : "s"} ${reference.year}'s format and course until Tiger sets them.`);
+  if (reference) {
+    const sentence = (list: number[], what: string) =>
+      `Round${list.length > 1 ? "s" : ""} ${roundList(list)} use${list.length > 1 ? "" : "s"} ${reference.year}'s ${what} until Tiger sets ${list.length > 1 || what.includes(" and ") ? "them" : "it"}.`;
+    if (formatRounds.length && formatRounds.join() === courseRounds.join()) {
+      assumptions.push(sentence(formatRounds, "format and course"));
+    } else {
+      if (formatRounds.length) assumptions.push(sentence(formatRounds, "format"));
+      if (courseRounds.length) assumptions.push(sentence(courseRounds, "course"));
+    }
   }
   return { roster, rounds, blockers, assumptions, referenceYear: reference?.year ?? null };
 }

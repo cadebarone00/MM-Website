@@ -137,8 +137,10 @@ async function loadPairTable(service: Service, seasonYear: number): Promise<Pair
   const table: PairTable = { priced: new Map(), unpriceable: new Set(), signatures: new Map() };
   for (const row of rows) {
     table.signatures.set(row.pair_key, row.input_signature);
-    if (row.unpriceable || row.maroon_win_probability === null) table.unpriceable.add(row.pair_key);
-    else table.priced.set(row.pair_key, { maroon: Number(row.maroon_win_probability), tie: Number(row.tie_probability), white: Number(row.white_win_probability) });
+    // Rows an earlier version marked unpriceable are treated as never priced,
+    // so they're re-tried (and now fall back to even odds at worst).
+    if (row.unpriceable || row.maroon_win_probability === null) continue;
+    table.priced.set(row.pair_key, { maroon: Number(row.maroon_win_probability), tie: Number(row.tie_probability), white: Number(row.white_win_probability) });
   }
   return table;
 }
