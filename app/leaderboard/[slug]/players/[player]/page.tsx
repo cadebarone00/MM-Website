@@ -6,7 +6,7 @@ import { pastTournaments, nextTournament, getTournament, getPlayerScorecard, pla
 import { getPlayerSlug, getPlayerAvatar, getPlayerDisplayName, getPlayerProfile } from "@/lib/data/players";
 import { placementValueLabel } from "@/lib/leaderboard/placement";
 import { getScorecardsForTournament, getShotVideoUrls } from "@/lib/data/archivedScorecards";
-import type { FantasySlot } from "@/lib/fantasy/draftState";
+import { isFantasySlot, type FantasySlot } from "@/lib/fantasy/draftState";
 
 export function generateStaticParams() {
   return pastTournaments.flatMap((t) =>
@@ -15,7 +15,7 @@ export function generateStaticParams() {
 }
 
 function parseDraftSlot(value: string | string[] | undefined): FantasySlot | undefined {
-  return value === "maroon" || value === "white" || value === "wildcard" ? value : undefined;
+  return isFantasySlot(value) ? value : undefined;
 }
 
 export default async function PlayerScorecardPage({

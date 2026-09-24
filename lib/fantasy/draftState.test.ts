@@ -6,6 +6,7 @@ import {
   draftStateKey,
   hasDraftInProgress,
   isDraftComplete,
+  isFantasySlot,
   nextEmptySlot,
   readDraftPicks,
   seedDraftPicks,
@@ -83,4 +84,17 @@ test("nextEmptySlot walks maroon, then white, then wildcard, then null", () => {
   assert.equal(nextEmptySlot({ maroon: "a", white: null, wildcard: null }), "white");
   assert.equal(nextEmptySlot({ maroon: "a", white: "b", wildcard: null }), "wildcard");
   assert.equal(nextEmptySlot({ maroon: "a", white: "b", wildcard: "c" }), null);
+});
+
+test("isFantasySlot is true only for the three valid slot strings", () => {
+  assert.equal(isFantasySlot("maroon"), true);
+  assert.equal(isFantasySlot("white"), true);
+  assert.equal(isFantasySlot("wildcard"), true);
+});
+
+test("isFantasySlot is false for anything else, including arrays and undefined", () => {
+  assert.equal(isFantasySlot("gold"), false);
+  assert.equal(isFantasySlot(undefined), false);
+  assert.equal(isFantasySlot(["maroon"]), false);
+  assert.equal(isFantasySlot(null), false);
 });

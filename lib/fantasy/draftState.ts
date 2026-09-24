@@ -13,6 +13,11 @@ export const EMPTY_DRAFT_PICKS: DraftPicks = { maroon: null, white: null, wildca
 
 const SLOTS: FantasySlot[] = ["maroon", "white", "wildcard"];
 
+/** Type guard for the three valid slot values - the one place that list is defined, reused anywhere a slot arrives as untyped input (e.g. a query param). */
+export function isFantasySlot(value: unknown): value is FantasySlot {
+  return typeof value === "string" && (SLOTS as string[]).includes(value);
+}
+
 export function draftStateKey(tournamentSlug: string): string {
   return `fantasy-draft:${tournamentSlug}`;
 }
