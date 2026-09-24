@@ -744,6 +744,33 @@ All pages are public, no auth.
   real end-to-end click-test, same situation as several earlier rounds
   shipped ahead of the data existing to test against.
 
+## Current task — Add to Home Screen walkthrough
+
+**What:** A small banner that pops up automatically the first time someone
+visits the public website on their phone, showing them how to add the site
+to their phone's home screen (so it behaves like an app icon they can tap).
+Steps shown differ for iPhone (Safari) vs Android (Chrome), since those add
+it through different menus.
+
+**How it behaves:**
+- Shows once per device (remembered via the browser's local storage), not
+  every visit.
+- Never shows if they've already added it to their home screen, or if
+  they're on a laptop/desktop.
+- A close (×) button dismisses it for good on that device.
+- Public website only — not inside the Portal or the TV broadcast screen
+  (`/broadcast`), matching where `SiteChrome` already draws that line.
+
+**Where it lives:** New client component, mounted in `SiteChrome` alongside
+the existing `Header` — the same "decide once, remember via storage" pattern
+`components/home/HomeEntrySplash.tsx` already uses for the homepage splash.
+
+**Done looks like:** First visit on an iPhone shows iPhone steps (Share icon
+→ Add to Home Screen → Add); first visit on Android shows Android steps (⋮
+menu → Add to Home screen / Install app); closing it means it won't show
+again on that device; it never appears on desktop or once already installed
+(detected via `display-mode: standalone` / `navigator.standalone`).
+
 ## Known gaps / not yet built
 
 - **Live scoring lifecycle — spec v3 written, not built.** See
