@@ -3,6 +3,7 @@ import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/l
 import { fetchLiveTournament } from "@/lib/data/fetchLiveTournament";
 import { fantasyTeamScore, type FantasyPicks } from "@/lib/fantasy/scoring";
 import { rankEntries } from "@/lib/fantasy/ranking";
+import { defaultTeamName } from "@/lib/fantasy/teamName";
 
 /**
  * Everyone who's drafted a fantasy team for the current tournament, ranked
@@ -26,7 +27,7 @@ export async function GET() {
 
   const { data: rows, error } = await service
     .from("fantasy_teams")
-    .select("profile_id, maroon_player, white_player, wildcard_player")
+    .select("profile_id, maroon_player, white_player, wildcard_player, team_name")
     .eq("tournament_slug", tournament.slug);
 
   if (error) {
@@ -45,9 +46,11 @@ export async function GET() {
 
   const entries = rows.map((row) => {
     const picks: FantasyPicks = { maroonPlayer: row.maroon_player, whitePlayer: row.white_player, wildcardPlayer: row.wildcard_player };
+    const displayName = nameById.get(row.profile_id) ?? "Player";
     return {
       profileId: row.profile_id as string,
-      displayName: nameById.get(row.profile_id) ?? "Player",
+      displayName,
+      teamName: (row.team_name as string | null) ?? defaultTeamName(displayName),
       total: fantasyTeamScore(tournament, picks).total,
     };
   });
@@ -55,6 +58,7 @@ export async function GET() {
   const standings = rankEntries(entries, (entry) => entry.total).map(({ rank, rankLabel, entry }) => ({
     rank,
     rankLabel,
+    teamName: entry.teamName,
     displayName: entry.displayName,
     total: entry.total,
     isYou: entry.profileId === user.id,

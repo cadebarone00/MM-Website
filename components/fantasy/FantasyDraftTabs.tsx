@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { Shirt, ThumbsUp, Layers } from "lucide-react";
+import { Shirt, ThumbsUp, Layers, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { FantasyPlayerRow } from "./FantasyPlayerRow";
@@ -15,6 +15,13 @@ const TABS: { slot: FantasySlot; label: string; icon: typeof Shirt }[] = [
   { slot: "white", label: "White", icon: ThumbsUp },
   { slot: "wildcard", label: "Wildcard", icon: Layers },
 ];
+
+/** Before a slot has a pick, its avatar spot shows this team-colored circle instead. */
+const SLOT_PLACEHOLDER: Record<FantasySlot, { fill: string; icon: string }> = {
+  maroon: { fill: "bg-maroon-700", icon: "text-white" },
+  white: { fill: "bg-white border-2 border-ink-300", icon: "text-ink-400" },
+  wildcard: { fill: "bg-gold-400", icon: "text-white" },
+};
 
 function teamOf(tournament: Tournament, player: string): Team {
   return tournament.roster.maroon.some((p) => p.toLowerCase() === player.toLowerCase()) ? "maroon" : "white";
@@ -44,6 +51,8 @@ export function FantasyDraftTabs({
   onCancel,
   saving,
   error,
+  teamName,
+  onTeamNameChange,
 }: {
   tournament: Tournament;
   picks: DraftPicks;
@@ -52,6 +61,8 @@ export function FantasyDraftTabs({
   onCancel: () => void;
   saving: boolean;
   error: string | null;
+  teamName: string;
+  onTeamNameChange: (teamName: string) => void;
 }) {
   const [activeTab, setActiveTab] = useState<FantasySlot>(nextEmptySlot(picks) ?? "maroon");
   const complete = isDraftComplete(picks);
@@ -70,20 +81,41 @@ export function FantasyDraftTabs({
         <h1 className="m-0 font-serif text-xl font-bold uppercase tracking-wide text-ink-900">Draft Your Roster</h1>
       </div>
 
-      <div role="tablist" aria-label="Fantasy draft slots" className="mt-6 grid grid-cols-3 gap-2">
+      <input
+        type="text"
+        value={teamName}
+        onChange={(event) => onTeamNameChange(event.target.value)}
+        placeholder="Team Name"
+        maxLength={40}
+        aria-label="Team name"
+        className="mt-4 w-full rounded-md border border-ink-200 bg-white px-4 py-2 text-center font-serif text-base font-bold text-ink-900 placeholder:font-sans placeholder:text-sm placeholder:font-normal placeholder:normal-case placeholder:text-ink-300 focus:border-maroon-700 focus:outline-none"
+      />
+
+      <div aria-hidden="true" className="mt-6 flex items-center justify-between px-1">
+        {[0, 1, 2, 3].map((line) => (
+          <span key={line} className="h-4 w-[3px] rounded-pill bg-gold-500" />
+        ))}
+      </div>
+
+      <div role="tablist" aria-label="Fantasy draft slots" className="mt-2 grid grid-cols-3 gap-2">
         {TABS.map(({ slot, label, icon: Icon }) => {
           const active = activeTab === slot;
           const pickedPlayer = picks[slot];
+          const placeholder = SLOT_PLACEHOLDER[slot];
           return (
             <div key={slot} className="flex flex-col items-center gap-1">
               <div className="flex h-14 flex-col items-center justify-end">
-                {pickedPlayer && (
+                {pickedPlayer ? (
                   <>
                     <Avatar src={getPlayerAvatar(pickedPlayer)} name={getPlayerFirstName(pickedPlayer)} team={teamOf(tournament, pickedPlayer)} size="sm" />
                     <span className="mt-0.5 max-w-full truncate font-sans text-3xs font-semibold text-ink-700">
                       {getPlayerFirstName(pickedPlayer)}
                     </span>
                   </>
+                ) : (
+                  <span className={["flex h-8 w-8 items-center justify-center rounded-full", placeholder.fill].join(" ")}>
+                    <UserRound size={16} strokeWidth={1.7} className={placeholder.icon} aria-hidden="true" />
+                  </span>
                 )}
               </div>
               <button

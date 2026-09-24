@@ -22,6 +22,10 @@ export function draftStateKey(tournamentSlug: string): string {
   return `fantasy-draft:${tournamentSlug}`;
 }
 
+export function draftTeamNameKey(tournamentSlug: string): string {
+  return `fantasy-draft-name:${tournamentSlug}`;
+}
+
 export type StorageLike = {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
@@ -95,9 +99,21 @@ export function seedDraftPicks(storage: StorageLike, tournamentSlug: string, pic
   save(storage, tournamentSlug, picks);
 }
 
-/** Throws away the in-progress draft - used once a submit succeeds. */
+/** Throws away the in-progress draft (picks and team name) - used once a submit succeeds, or the draft is cancelled. */
 export function clearDraftPicks(storage: StorageLike, tournamentSlug: string): void {
   storage.removeItem(draftStateKey(tournamentSlug));
+  storage.removeItem(draftTeamNameKey(tournamentSlug));
+}
+
+/** The team name typed so far in the in-progress draft - empty string if nothing's been typed. */
+export function readDraftTeamName(storage: StorageLike, tournamentSlug: string): string {
+  const value = savedValue(storage.getItem(draftTeamNameKey(tournamentSlug)));
+  return typeof value === "string" ? value : "";
+}
+
+/** Records the team name typed so far - same {version, value} wrapper the picks use. */
+export function writeDraftTeamName(storage: StorageLike, tournamentSlug: string, teamName: string): void {
+  storage.setItem(draftTeamNameKey(tournamentSlug), JSON.stringify({ version: 1, value: teamName }));
 }
 
 export function isDraftComplete(picks: DraftPicks): picks is Record<FantasySlot, string> {

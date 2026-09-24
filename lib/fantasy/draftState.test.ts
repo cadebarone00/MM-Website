@@ -4,13 +4,16 @@ import {
   EMPTY_DRAFT_PICKS,
   clearDraftPicks,
   draftStateKey,
+  draftTeamNameKey,
   hasDraftInProgress,
   isDraftComplete,
   isFantasySlot,
   nextEmptySlot,
   readDraftPicks,
+  readDraftTeamName,
   seedDraftPicks,
   writeDraftPick,
+  writeDraftTeamName,
 } from "./draftState.ts";
 
 function fakeStorage(initial: Record<string, string> = {}) {
@@ -97,4 +100,26 @@ test("isFantasySlot is false for anything else, including arrays and undefined",
   assert.equal(isFantasySlot(undefined), false);
   assert.equal(isFantasySlot(["maroon"]), false);
   assert.equal(isFantasySlot(null), false);
+});
+
+test("readDraftTeamName is empty until something is saved", () => {
+  const storage = fakeStorage();
+  assert.equal(readDraftTeamName(storage, "2027"), "");
+  writeDraftTeamName(storage, "2027", "The Champs");
+  assert.equal(readDraftTeamName(storage, "2027"), "The Champs");
+});
+
+test("draft team name for one tournament doesn't leak into another", () => {
+  const storage = fakeStorage();
+  writeDraftTeamName(storage, "2027", "The Champs");
+  assert.equal(readDraftTeamName(storage, "2028"), "");
+});
+
+test("clearDraftPicks also clears the in-progress team name", () => {
+  const storage = fakeStorage();
+  writeDraftPick(storage, "2027", "maroon", "cade-barone");
+  writeDraftTeamName(storage, "2027", "The Champs");
+  clearDraftPicks(storage, "2027");
+  assert.equal(storage.getItem(draftTeamNameKey("2027")), null);
+  assert.equal(readDraftTeamName(storage, "2027"), "");
 });

@@ -5,6 +5,7 @@ import { validateFantasyPicks } from "@/lib/fantasy/validate";
 import { fantasyTeamScore, type FantasyPicks } from "@/lib/fantasy/scoring";
 import { fantasyPicksLocked } from "@/lib/fantasy/lock";
 import { formatRankLabel, isTiedAmong, rankAmong } from "@/lib/fantasy/ranking";
+import { sanitizeTeamName } from "@/lib/fantasy/teamName";
 import type { Tournament } from "@/lib/data/types";
 
 /**
@@ -48,7 +49,7 @@ export async function GET() {
 
   const { data: row, error } = await supabase
     .from("fantasy_teams")
-    .select("tournament_slug, maroon_player, white_player, wildcard_player")
+    .select("tournament_slug, maroon_player, white_player, wildcard_player, team_name")
     .eq("profile_id", user.id)
     .maybeSingle();
 
@@ -58,8 +59,9 @@ export async function GET() {
 
   // A team saved for a past tournament doesn't carry over — only a team
   // saved against the current tournament's slug counts as "saved".
-  const picks = row && row.tournament_slug === tournament.slug
-    ? { maroonPlayer: row.maroon_player, whitePlayer: row.white_player, wildcardPlayer: row.wildcard_player }
+  const currentRow = row && row.tournament_slug === tournament.slug ? row : null;
+  const picks = currentRow
+    ? { maroonPlayer: currentRow.maroon_player, whitePlayer: currentRow.white_player, wildcardPlayer: currentRow.wildcard_player }
     : null;
 
   const scores = picks ? fantasyTeamScore(tournament, picks) : null;
@@ -71,6 +73,7 @@ export async function GET() {
     editionLabel: tournament.editionLabel,
     roster: tournament.roster,
     picks,
+    teamName: currentRow?.team_name ?? null,
     scores,
     rank: standing?.rank ?? null,
     rankLabel: standing?.rankLabel ?? null,
@@ -104,12 +107,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: result.error }, { status: 400 });
   }
 
+  const teamName = sanitizeTeamName(body?.teamName);
+
   const { error } = await supabase.from("fantasy_teams").upsert({
     profile_id: user.id,
     tournament_slug: tournament.slug,
     maroon_player: result.picks.maroonPlayer,
     white_player: result.picks.whitePlayer,
     wildcard_player: result.picks.wildcardPlayer,
+    team_name: teamName,
     updated_at: new Date().toISOString(),
   });
 
@@ -123,6 +129,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     picks: result.picks,
+    teamName,
     scores,
     rank: standing.rank,
     rankLabel: standing.rankLabel,

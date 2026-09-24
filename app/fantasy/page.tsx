@@ -14,9 +14,11 @@ import {
   clearDraftPicks,
   hasDraftInProgress,
   readDraftPicks,
+  readDraftTeamName,
   safeSessionStorage,
   seedDraftPicks,
   writeDraftPick,
+  writeDraftTeamName,
   type DraftPicks,
   type FantasySlot,
 } from "@/lib/fantasy/draftState";
@@ -36,6 +38,8 @@ export default function FantasyPage() {
   const { tournament, loading: tournamentLoading, payload } = useLiveTournament();
   const [tab, setTab] = useState<FantasyTab>("roster");
   const [savedPicks, setSavedPicks] = useState<FantasyPicks | null>(null);
+  const [savedTeamName, setSavedTeamName] = useState<string | null>(null);
+  const [teamName, setTeamName] = useState("");
   const [rankLabel, setRankLabel] = useState<string | null>(null);
   const [totalPlayers, setTotalPlayers] = useState<number | null>(null);
   const [loadingTeam, setLoadingTeam] = useState(true);
@@ -56,6 +60,7 @@ export default function FantasyPage() {
         if (cancelled) return;
         if (data.ok && data.picks) {
           setSavedPicks(data.picks);
+          setSavedTeamName(data.teamName ?? null);
           setRankLabel(data.rankLabel ?? null);
           setTotalPlayers(data.totalPlayers ?? null);
         }
@@ -95,6 +100,7 @@ export default function FantasyPage() {
     if (!tournament.slug) return;
     if (hasDraftInProgress(safeSessionStorage, tournament.slug)) {
       setPicks(readDraftPicks(safeSessionStorage, tournament.slug));
+      setTeamName(readDraftTeamName(safeSessionStorage, tournament.slug));
       setDrafting(true);
     }
   }, [tournament.slug]);
@@ -102,9 +108,11 @@ export default function FantasyPage() {
   const locked = getNextTournamentStatus() !== "upcoming";
   const rosterIsEmpty = tournament.roster.maroon.length === 0 && tournament.roster.white.length === 0;
 
-  function startDraft(seed: DraftPicks) {
+  function startDraft(seed: DraftPicks, teamNameSeed = "") {
     seedDraftPicks(safeSessionStorage, tournament.slug, seed);
+    writeDraftTeamName(safeSessionStorage, tournament.slug, teamNameSeed);
     setPicks(seed);
+    setTeamName(teamNameSeed);
     setError(null);
     setDrafting(true);
   }
@@ -119,6 +127,11 @@ export default function FantasyPage() {
     setPicks(next);
   }
 
+  function changeTeamName(name: string) {
+    writeDraftTeamName(safeSessionStorage, tournament.slug, name);
+    setTeamName(name);
+  }
+
   async function submitLineup() {
     const fantasyPicks = toFantasyPicks(picks);
     if (!fantasyPicks) return;
@@ -129,7 +142,7 @@ export default function FantasyPage() {
       const res = await fetch("/api/fantasy/team", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(fantasyPicks),
+        body: JSON.stringify({ ...fantasyPicks, teamName }),
       });
       const data = await res.json();
       if (!data.ok) {
@@ -138,6 +151,7 @@ export default function FantasyPage() {
       }
       clearDraftPicks(safeSessionStorage, tournament.slug);
       setSavedPicks(fantasyPicks);
+      setSavedTeamName(data.teamName ?? null);
       setRankLabel(data.rankLabel ?? null);
       setTotalPlayers(data.totalPlayers ?? null);
       setDrafting(false);
@@ -171,6 +185,8 @@ export default function FantasyPage() {
           onCancel={cancelDraft}
           saving={saving}
           error={error}
+          teamName={teamName}
+          onTeamNameChange={changeTeamName}
         />
       );
     }
@@ -185,7 +201,7 @@ export default function FantasyPage() {
         updatedAt={payload?.updatedAt ?? null}
         schedule={schedule}
         onStart={() => startDraft(EMPTY_DRAFT_PICKS)}
-        onEdit={() => savedPicks && startDraft(toDraftPicks(savedPicks))}
+        onEdit={() => savedPicks && startDraft(toDraftPicks(savedPicks), savedTeamName ?? "")}
       />
     );
   }
