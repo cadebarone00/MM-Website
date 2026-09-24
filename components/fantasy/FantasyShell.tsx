@@ -75,7 +75,7 @@ export function FantasyShell({ activeTab, onTabChange, children }: { activeTab: 
         })}
       </div>
 
-      <div role="tabpanel" className="flex-1 overflow-y-auto bg-white px-4 py-4">
+      <div role="tabpanel" className="min-h-0 flex-1 overflow-y-auto bg-white px-4 py-4">
         {children}
       </div>
     </div>
