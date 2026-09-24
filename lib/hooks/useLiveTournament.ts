@@ -48,7 +48,6 @@ export function useLiveTournament(pollMs = LIVE_POLL_MS, endpoint = "/api/live-f
     loadConfirmedRoster();
     const id = setInterval(() => {
       load();
-      loadConfirmedRoster();
     }, pollMs);
     return () => {
       cancelled = true;
