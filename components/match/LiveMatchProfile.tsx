@@ -28,7 +28,7 @@ export function LiveMatchProfile({ tournamentSlug, matchId }: { tournamentSlug: 
     load();
     return () => { controller.abort(); clearTimeout(timer); };
   }, [matchId]);
-  if (!entry) return <main className="mx-auto max-w-[1200px] p-7"><Link href={`/leaderboard/${tournamentSlug}`} className="text-maroon-700">← Back to leaderboard</Link><p className="py-12 text-center" role="status">{error ?? "Loading match…"}</p></main>;
+  if (!entry) return <main className="mx-auto max-w-[1200px] p-7"><Link href={`/leaderboard/${tournamentSlug}`} className="text-maroon-700">← Back</Link><p className="py-12 text-center" role="status">{error ?? "Loading match…"}</p></main>;
   const match = profileMatch(entry);
   return <>{error && <p role="status" className="mx-auto max-w-[1200px] px-7 pt-4 text-sm text-ink-500">{error}</p>}<MatchProfile match={match} tournamentSlug={tournamentSlug} editionLabel={`${entry.match.season_year} Maroon Masters`} round={entry.match.round} live odds={entry.oddsHistory} scorecard={<LiveMatchScorecard match={match} scorecard={entry.scorecard} />} /></>;
 }

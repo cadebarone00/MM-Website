@@ -96,7 +96,7 @@
 .sliderTrack {
   grid-column: 2 / span 18;
   grid-row: 3;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .explore {

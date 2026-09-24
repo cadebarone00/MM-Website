@@ -19,7 +19,7 @@ export function MatchProfile({ match, tournamentSlug, editionLabel, scorecard, o
   const centerTone = status === "scheduled" || leader === "tie" ? "bg-cream-100 text-maroon-700" : leader === "maroon" ? "bg-maroon-700 text-white" : "bg-white text-maroon-700";
   return (
     <main className="mx-auto max-w-[1200px] px-4 pb-16 pt-5 sm:px-7 sm:pt-10">
-      <Link href={`/leaderboard/${tournamentSlug}`} className="inline-flex items-center gap-1 font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700"><ArrowLeft size={16} /> Back to leaderboard</Link>
+      <Link href={`/leaderboard/${tournamentSlug}`} className="inline-flex items-center gap-1 font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700"><ArrowLeft size={16} /> Back</Link>
       <p className="mt-5 font-condensed text-xs font-bold uppercase tracking-wide text-ink-500">{editionLabel} · {round ? `Round ${round}` : `Day ${match.day} · ${match.session}`} · {match.format}</p>
       <h1 className="sr-only">{match.maroonPlayers.map(getPlayerDisplayName).join(" & ")} versus {match.whitePlayers.map(getPlayerDisplayName).join(" & ")}</h1>
       <div className="mx-auto mt-3 max-w-2xl overflow-hidden rounded-sm border border-gold-500">
@@ -29,14 +29,14 @@ export function MatchProfile({ match, tournamentSlug, editionLabel, scorecard, o
         </div>
         <div className="grid grid-cols-[minmax(0,1fr)_80px_minmax(0,1fr)] items-stretch bg-cream-50 sm:grid-cols-[minmax(0,1fr)_100px_minmax(0,1fr)]">
           <div className="flex min-w-0 flex-col justify-center gap-2 bg-maroon-700 px-2 py-4 text-right text-white sm:px-4">
-            {match.maroonPlayers.map((player) => <Link key={player} href={`/leaderboard/${tournamentSlug}/players/${player.toLowerCase()}`} className="font-sans text-sm font-bold text-white hover:underline sm:text-lg">{getPlayerDisplayName(player)}</Link>)}
+            {match.maroonPlayers.map((player) => <Link key={player} href={`/leaderboard/${tournamentSlug}/players/${player.toLowerCase()}?fromMatch=${encodeURIComponent(match.id)}`} className="font-sans text-sm font-bold text-white hover:underline sm:text-lg">{getPlayerDisplayName(player)}</Link>)}
           </div>
           <div aria-label="Match status" className={`flex flex-col items-center justify-center gap-1 border-x border-gold-500 px-1 py-3 text-center ${centerTone}`}>
             <span className="font-sans text-sm font-black sm:text-base">{status === "scheduled" ? match.teeTimeCst ?? "TBD" : status === "live" ? `Thru ${match.thru ?? 0}` : `Final ${liveLabel(match)}`}</span>
             {status === "scheduled" && <span className="font-condensed text-[10px] font-bold uppercase tracking-wide">Tee time</span>}
           </div>
           <div className="flex min-w-0 flex-col justify-center gap-2 bg-white px-2 py-4 text-left text-maroon-700 sm:px-4">
-            {match.whitePlayers.map((player) => <Link key={player} href={`/leaderboard/${tournamentSlug}/players/${player.toLowerCase()}`} className="font-sans text-sm font-bold text-maroon-700 hover:underline sm:text-lg">{getPlayerDisplayName(player)}</Link>)}
+            {match.whitePlayers.map((player) => <Link key={player} href={`/leaderboard/${tournamentSlug}/players/${player.toLowerCase()}?fromMatch=${encodeURIComponent(match.id)}`} className="font-sans text-sm font-bold text-maroon-700 hover:underline sm:text-lg">{getPlayerDisplayName(player)}</Link>)}
           </div>
         </div>
       </div>

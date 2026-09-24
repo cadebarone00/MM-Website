@@ -9,7 +9,7 @@ import { getPlayerSlug, getPlayerDisplayName, getPlayerAvatar, getPlayerProfile 
 import type { Team } from "@/lib/data/types";
 import { placementValueLabel } from "@/lib/leaderboard/placement";
 
-export function LivePlayerScorecard({ tournamentSlug, player }: { tournamentSlug: string; player: string }) {
+export function LivePlayerScorecard({ tournamentSlug, player, backHref }: { tournamentSlug: string; player: string; backHref?: string }) {
   const { tournament, loading, payload, error } = useLiveTournament(DETAIL_POLL_MS, `/api/live/players/${encodeURIComponent(getPlayerSlug(player))}`);
 
   if (loading && !payload) {
@@ -33,8 +33,8 @@ export function LivePlayerScorecard({ tournamentSlug, player }: { tournamentSlug
     <div>
       {error && <p role="status" className="mb-4 text-sm text-maroon-700">{error}</p>}
       <PlayerProfileHeader
-        backHref={`/leaderboard/${tournamentSlug}`}
-        backLabel={`Back to ${nextTournament.editionLabel} Leaderboard`}
+        backHref={backHref ?? `/leaderboard/${tournamentSlug}`}
+        backLabel="Back"
         displayName={displayName}
         avatarSrc={getPlayerAvatar(player)}
         team={team}

@@ -13,13 +13,17 @@ export function generateStaticParams() {
   );
 }
 
-export default async function PlayerScorecardPage({ params }: { params: Promise<{ slug: string; player: string }> }) {
+export default async function PlayerScorecardPage({ params, searchParams }: { params: Promise<{ slug: string; player: string }>; searchParams: Promise<{ fromMatch?: string | string[] }> }) {
   const { slug, player } = await params;
+  const { fromMatch } = await searchParams;
+  const backHref = typeof fromMatch === "string" && fromMatch.length > 0
+    ? `/leaderboard/${encodeURIComponent(slug)}/matches/${encodeURIComponent(fromMatch)}`
+    : `/leaderboard/${slug}`;
 
   if (slug === nextTournament.slug) {
     return (
       <div className="max-w-[1200px] mx-auto px-7 pt-8 pb-16">
-        <LivePlayerScorecard tournamentSlug={slug} player={player} />
+        <LivePlayerScorecard tournamentSlug={slug} player={player} backHref={backHref} />
       </div>
     );
   }
@@ -56,8 +60,8 @@ export default async function PlayerScorecardPage({ params }: { params: Promise<
   return (
     <div className="max-w-[1200px] mx-auto px-7 pt-8 pb-16">
       <PlayerProfileHeader
-        backHref={`/leaderboard/${slug}`}
-        backLabel={`Back to ${tournamentWithScorecards.editionLabel} Leaderboard`}
+        backHref={backHref}
+        backLabel="Back"
         displayName={displayName}
         avatarSrc={avatar}
         team={entry.team}
