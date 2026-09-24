@@ -2,7 +2,7 @@ import type { PlayerScorecard } from "./types";
 
 export const scorecards2025: PlayerScorecard[] = [
   {
-    player: "Cam",
+    player: "cam-latto",
     team: "maroon",
     rounds: [
       {
@@ -163,7 +163,7 @@ export const scorecards2025: PlayerScorecard[] = [
     ],
   },
   {
-    player: "Drew",
+    player: "drew-weisser",
     team: "maroon",
     rounds: [
       {
@@ -324,7 +324,7 @@ export const scorecards2025: PlayerScorecard[] = [
     ],
   },
   {
-    player: "Luke",
+    player: "luke-sherrell",
     team: "maroon",
     rounds: [
       {
@@ -485,7 +485,7 @@ export const scorecards2025: PlayerScorecard[] = [
     ],
   },
   {
-    player: "Nate",
+    player: "nate-wojciechowski",
     team: "maroon",
     rounds: [
       {
@@ -646,7 +646,7 @@ export const scorecards2025: PlayerScorecard[] = [
     ],
   },
   {
-    player: "Cade",
+    player: "cade-barone",
     team: "white",
     rounds: [
       {
@@ -807,7 +807,7 @@ export const scorecards2025: PlayerScorecard[] = [
     ],
   },
   {
-    player: "Collin",
+    player: "collin-ross",
     team: "white",
     rounds: [
       {
@@ -968,7 +968,7 @@ export const scorecards2025: PlayerScorecard[] = [
     ],
   },
   {
-    player: "Dalton",
+    player: "dalton-spriggs",
     team: "white",
     rounds: [
       {
@@ -1129,7 +1129,7 @@ export const scorecards2025: PlayerScorecard[] = [
     ],
   },
   {
-    player: "Peyton",
+    player: "peyton-vos",
     team: "white",
     rounds: [
       {

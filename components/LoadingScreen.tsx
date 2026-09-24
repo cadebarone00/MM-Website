@@ -17,11 +17,16 @@ import type { ReactNode } from "react";
 export function LoadingScreen({
   heading,
   raised = false,
+  belowAreaNav = false,
+  headingClassName,
   topSlot,
   children,
 }: {
   heading: ReactNode;
   raised?: boolean;
+  /** Center content in the usable area beneath the persistent area switcher. */
+  belowAreaNav?: boolean;
+  headingClassName?: string;
   topSlot?: ReactNode;
   children?: ReactNode;
 }) {
@@ -55,10 +60,12 @@ export function LoadingScreen({
         className={`relative flex h-full flex-col items-center gap-6 px-6 text-center ${
           raised
             ? "justify-start pt-[22vh] lg:pt-[18vh]"
+            : belowAreaNav
+              ? "justify-center pt-24"
             : "justify-center -translate-y-[3vh] lg:translate-y-0"
         }`}
       >
-        <h1 className="font-serif text-4xl font-bold uppercase tracking-eyebrow text-cream-50 drop-shadow-lg sm:text-5xl">
+        <h1 className={`font-serif text-4xl font-bold uppercase tracking-eyebrow text-cream-50 drop-shadow-lg sm:text-5xl ${headingClassName ?? ""}`}>
           {heading}
         </h1>
         {children}

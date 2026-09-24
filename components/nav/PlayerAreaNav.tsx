@@ -11,12 +11,21 @@ const SEGMENTS = [
   { href: "/portal/scoring", label: "Scoring" },
 ] as const;
 
+const TIGER_SEGMENTS = [
+  { href: "/", label: "Website" },
+  { href: "/portal/admin", label: "Tiger Center" },
+] as const;
+
 type SegmentHref = (typeof SEGMENTS)[number]["href"];
 
 function activeSegment(pathname: string): SegmentHref {
   if (pathname.startsWith("/portal/scoring")) return "/portal/scoring";
   if (pathname.startsWith("/portal")) return "/portal";
   return "/";
+}
+
+function tigerActiveSegment(pathname: string): (typeof TIGER_SEGMENTS)[number]["href"] {
+  return pathname.startsWith("/portal/admin") ? "/portal/admin" : "/";
 }
 
 function useHeaderOffset(): number {
@@ -47,21 +56,25 @@ export function PlayerAreaNav() {
   const pathname = usePathname();
   const headerOffset = useHeaderOffset();
 
-  if (session?.kind !== "player") return null;
+  if (session?.kind !== "player" && session?.kind !== "host") return null;
 
-  const active = activeSegment(pathname);
+  const isTiger = session.kind === "host";
+  const segments = isTiger ? TIGER_SEGMENTS : SEGMENTS;
+  const active = isTiger ? tigerActiveSegment(pathname) : activeSegment(pathname);
 
   return (
-    <nav className="sticky z-[210] flex h-12 items-stretch bg-maroon-900" style={{ top: headerOffset }}>
-      {SEGMENTS.map((segment) => {
+    <nav data-player-area-nav className="sticky z-[210] flex h-12 items-stretch bg-maroon-900" style={{ top: headerOffset }}>
+      {segments.map((segment) => {
         const on = segment.href === active;
         return (
           <Link
             key={segment.href}
             href={segment.href}
             className={[
-              "flex flex-1 items-center justify-center font-condensed text-xs font-bold uppercase tracking-wide transition-colors",
-              on ? "bg-cream-50 text-maroon-700" : "text-white",
+              "flex flex-1 items-center justify-center border-b-2 font-condensed text-xs font-bold uppercase tracking-wide transition-colors",
+              isTiger
+                ? on ? "border-gold-400 text-white" : "border-transparent text-white/75 hover:text-white"
+                : on ? "border-transparent bg-cream-50 text-maroon-700" : "border-transparent text-white",
             ].join(" ")}
           >
             {segment.label}

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useAreaBack } from "@/components/nav/AreaNavigation";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -15,10 +16,12 @@ import { AccountMenu } from "@/components/nav/AccountMenu";
 import { useAccountSession } from "@/lib/useAccountSession";
 import { getPlayerAvatar, getPlayerDisplayName } from "@/lib/data/players";
 import { latestCompleted, nextTournament, champion, isLiveNow, fmtPt } from "@/lib/data";
+import type { NextTournamentOverride } from "@/lib/data/types";
 
 const nav = [
   { href: "/", label: "Home" },
   { href: "/leaderboard", label: "Leaderboard" },
+  { href: "/watch-live", label: "Watch Live" },
   { href: "/teams", label: "Teams" },
 ];
 
@@ -36,20 +39,27 @@ function isSet(value: string): boolean {
   return value.trim().length > 0 && value.trim().toLowerCase() !== "tbd";
 }
 
-// On a player profile page, the mobile header's Instagram icon is swapped
-// for a back arrow to the tournament leaderboard it was opened from.
-function playerProfileLeaderboardHref(pathname: string): string | null {
-  const match = pathname.match(/^\/leaderboard\/([^/]+)\/players\/[^/]+\/?$/);
-  return match ? `/leaderboard/${match[1]}` : null;
+// The "home" page of each section of the app — Website, Player Portal,
+// Scoring, and the Tiger Center. The mobile header's top-left Instagram
+// icon only shows on these; every other page (anything you had to click
+// into) shows a real back arrow there instead, matching the "the whole
+// site should be uniform about this" requirement. Exact match only — a
+// sub-page under one of these (e.g. /leaderboard/2027) still gets a back
+// arrow, only the bare hub itself is exempt.
+const HOME_PAGES = new Set(["/", "/leaderboard", "/watch-live", "/teams", "/portal", "/portal/scoring", "/portal/admin"]);
+
+function isHomePage(pathname: string): boolean {
+  return HOME_PAGES.has(pathname);
 }
 
-export function Header() {
+export function Header({ nextTournamentOverride }: { nextTournamentOverride: NextTournamentOverride }) {
   const pathname = usePathname();
+  const back = useAreaBack();
   const live = isLiveNow();
   const champ = champion(latestCompleted);
-  const nextVenueKnown = isSet(nextTournament.venue);
+  const nextVenueKnown = isSet(nextTournamentOverride.venue);
   const session = useAccountSession();
-  const backHref = playerProfileLeaderboardHref(pathname);
+  const showBack = !isHomePage(pathname);
   const [moreOpen, setMoreOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [lastPathname, setLastPathname] = useState(pathname);
@@ -68,18 +78,17 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-[100] shadow-lg relative">
-      <div className="h-px bg-white/15" />
-
+    <header className="sticky top-0 z-[300] relative shadow-lg">
       <div className="bg-gradient-maroon">
         {/* Mobile header row — white background to blend with the phone's status bar, 3 zones: Instagram + countdown/live (left), wordmark (center, bottom-aligned), account icon (right, always visible). */}
         <div className="lg:hidden grid grid-cols-3 items-end gap-2 bg-white px-4 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem+2vh)]">
           <div className="flex min-w-0 items-center gap-1.5 justify-self-start">
-            {backHref ? (
+            {showBack ? (
               <Link
-                href={backHref}
-                aria-label="Back to leaderboard"
-                title="Back to leaderboard"
+                href={back.href}
+                onNavigate={back.onNavigate}
+                aria-label="Back"
+                title="Back"
                 className="inline-flex h-6 w-6 shrink-0 items-center justify-center text-maroon-700"
               >
                 <ArrowLeft size={16} />
@@ -96,7 +105,7 @@ export function Header() {
                 <InstagramGlyph size={16} />
               </a>
             )}
-            {backHref ? null : live ? (
+            {showBack ? null : live ? (
               <span className="font-condensed text-3xs font-semibold uppercase tracking-wide text-maroon-700">Live Now</span>
             ) : (
               <RoundCountdown className="text-maroon-700" compact />
@@ -161,7 +170,7 @@ export function Header() {
           </div>
 
           <div className="flex items-center gap-3">
-            <RoundCountdown className="text-gold-100" />
+            <RoundCountdown className="text-white" />
             <a
               href="https://www.instagram.com/themaroonmasters/"
               target="_blank"
@@ -181,7 +190,7 @@ export function Header() {
       <div className="hidden lg:flex items-center justify-center gap-[18px] px-7 py-[7px] flex-wrap shadow-[inset_0_1px_0_rgba(0,0,0,0.25)] bg-maroon-900">
         {live ? (
           <span className="font-condensed text-[10px] font-semibold tracking-eyebrow uppercase text-gold-300 text-center">
-            {nextTournament.editionLabel} &middot; {nextTournament.venue} &middot; Underway now
+            {nextTournament.editionLabel} &middot; {nextTournamentOverride.venue} &middot; Underway now
           </span>
         ) : (
           <>
@@ -191,7 +200,7 @@ export function Header() {
             <span className="block w-px h-[14px] bg-white/15" />
             <span className="font-sans text-[11px] text-white/55 text-center">
               {fmtPt(latestCompleted.maroonPts)}&ndash;{fmtPt(latestCompleted.whitePts)} at {latestCompleted.venue} &middot; Next up{" "}
-              {nextVenueKnown ? `${nextTournament.venue} - ${nextTournament.dateLabel}` : nextTournament.dateLabel}
+              {nextVenueKnown ? `${nextTournamentOverride.venue} - ${nextTournamentOverride.dateLabel}` : nextTournamentOverride.dateLabel}
             </span>
           </>
         )}

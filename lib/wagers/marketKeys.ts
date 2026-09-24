@@ -1,7 +1,7 @@
 import type { RealMatch, Tournament, IndividualStanding } from "@/lib/data/types";
 import { matchWinnerOdds, matchPropMarkets, tournamentWinnerLadder, teamWinnerOdds } from "./mockOdds";
 import type { PropMarket } from "./types";
-import { getPlayerDisplayName } from "@/lib/data/players";
+import { getPlayerDisplayName, playerProfiles } from "@/lib/data/players";
 
 export interface MarketSelection {
   key: string;
@@ -60,8 +60,12 @@ export function futurePlayerMarketKey(tournamentSlug: string): string {
   return `future-player:${tournamentSlug}`;
 }
 
-export function futurePlayerMarket(tournamentSlug: string, standings: IndividualStanding[]): Market {
-  const ladder = tournamentWinnerLadder(standings);
+export function futurePlayerMarket(tournamentSlug: string, standings: IndividualStanding[], fallbackPlayers: string[] = playerProfiles.map((player) => player.id)): Market {
+  // Before a live leaderboard exists, use the posted field (or the current
+  // player directory) to make the market visible with deterministic mock odds.
+  const field = fallbackPlayers.length > 0 ? fallbackPlayers : playerProfiles.map((player) => player.id);
+  const contenders = standings.length > 0 ? standings : field.map((player) => ({ player, team: "maroon" as const, toPar: 0 }));
+  const ladder = tournamentWinnerLadder(contenders);
   return {
     marketKey: futurePlayerMarketKey(tournamentSlug),
     groupLabel: "Tournament Winner",
@@ -89,15 +93,54 @@ export function futureTeamMarket(tournament: Tournament): Market {
   };
 }
 
+export interface PlayerFutureDefinition {
+  id: string;
+  title: string;
+  detail: string;
+  yesDescription: string;
+  noDescription: string;
+  yesOdds: number;
+  noOdds: number;
+}
+
+/** Add new player futures here; the shared card will render each one identically. */
+export const PLAYER_FUTURES: PlayerFutureDefinition[] = [
+  {
+    id: "total-birdies",
+    title: "Total Birdies",
+    detail: "Over 8.5",
+    yesDescription: "records over 8.5 birdies",
+    noDescription: "records 8.5 or fewer birdies",
+    yesOdds: -110,
+    noOdds: -110,
+  },
+];
+
+/** Temporary player-futures market; live lines will replace this seeded placeholder. */
+export function playerFutureMarket(tournamentSlug: string, player: string, future: PlayerFutureDefinition): Market {
+  const displayName = getPlayerDisplayName(player);
+  return {
+    marketKey: `player-future:${future.id}:${tournamentSlug}:${player.toLowerCase()}`,
+    groupLabel: `${displayName} — ${future.title}`,
+    selections: [
+      { key: "yes", label: `${displayName} ${future.yesDescription}`, odds: future.yesOdds },
+      { key: "no", label: `${displayName} ${future.noDescription}`, odds: future.noOdds },
+    ],
+  };
+}
+
 /** Every currently-defined market for a tournament — used by the Tiger settlement admin page to list what can be resolved. */
 export function listAllMarkets(tournament: Tournament): Market[] {
+  const field = [...tournament.roster.maroon, ...tournament.roster.white];
+  const playerFutures = (field.length > 0 ? field : playerProfiles.map((player) => player.id)).flatMap((player) => PLAYER_FUTURES.map((future) => playerFutureMarket(tournament.slug, player, future)));
   const matchMarkets = tournament.matches.flatMap((match) => [
     matchWinnerMarket(tournament.slug, match),
     ...matchPropMarkets(match).map((prop) => propMarket(tournament.slug, match.day, prop)),
   ]);
   return [
     ...matchMarkets,
-    futurePlayerMarket(tournament.slug, tournament.individualLeaderboard),
+    futurePlayerMarket(tournament.slug, tournament.individualLeaderboard, field),
     futureTeamMarket(tournament),
+    ...playerFutures,
   ];
 }

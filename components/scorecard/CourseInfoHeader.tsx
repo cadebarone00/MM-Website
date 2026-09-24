@@ -8,18 +8,26 @@ function Cell({
   selected,
   onClick,
   registerRef,
+  hasVideo,
 }: {
   value: number | string;
   variant: RowVariant;
   selected?: boolean;
   onClick?: () => void;
   registerRef?: (el: HTMLElement | null) => void;
+  /** Small gold underline — this hole has at least one shot video. */
+  hasVideo?: boolean;
 }) {
   const isHeader = variant === "header";
   const bg = isHeader || selected ? "bg-maroon-700" : "bg-cream-100";
   const text = isHeader || selected ? "text-white" : "text-maroon-700";
   const border = isHeader ? "border-white/15" : "border-ink-300";
-  const cellClass = ["flex h-8 w-9 shrink-0 items-center justify-center border-r", border, bg].join(" ");
+  const cellClass = [
+    "flex h-8 w-9 shrink-0 items-center justify-center border-r",
+    border,
+    bg,
+    hasVideo ? "border-b-2 border-b-amber-400" : "",
+  ].join(" ");
   const content = <span className={["font-sans text-xs font-semibold tabular-nums", text].join(" ")}>{value}</span>;
 
   return onClick ? (
@@ -58,6 +66,7 @@ function InfoRow({
   inValue,
   totalValue,
   registerHoleRef,
+  holesWithVideo,
 }: {
   label: string;
   variant: RowVariant;
@@ -71,6 +80,7 @@ function InfoRow({
   inValue: number | string;
   totalValue: number | string;
   registerHoleRef?: (hole: number, el: HTMLElement | null) => void;
+  holesWithVideo?: Set<number>;
 }) {
   const isHeader = variant === "header";
   const rowBg = isHeader ? "bg-maroon-700" : "bg-cream-100";
@@ -91,6 +101,7 @@ function InfoRow({
           selected={selectedHole === frontHoles[i]}
           onClick={onHoleClick ? () => onHoleClick(frontHoles[i]) : undefined}
           registerRef={registerHoleRef ? (el) => registerHoleRef(frontHoles[i], el) : undefined}
+          hasVideo={holesWithVideo?.has(frontHoles[i])}
         />
       ))}
       <TotalCell value={outValue} variant={variant} />
@@ -105,6 +116,7 @@ function InfoRow({
               selected={selectedHole === backHoles[i]}
               onClick={onHoleClick ? () => onHoleClick(backHoles[i]) : undefined}
               registerRef={registerHoleRef ? (el) => registerHoleRef(backHoles[i], el) : undefined}
+              hasVideo={holesWithVideo?.has(backHoles[i])}
             />
           ))}
           <TotalCell value={inValue} variant={variant} />
@@ -123,11 +135,14 @@ export function CourseInfoHeader({
   onHoleClick,
   selectedHole,
   registerHoleRef,
+  holesWithVideo,
 }: {
   round: RoundScorecard;
   onHoleClick: (hole: number) => void;
   selectedHole?: number | null;
   registerHoleRef?: (hole: number, el: HTMLElement | null) => void;
+  /** Hole numbers with at least one shot video — underlined gold in the Hole row. */
+  holesWithVideo?: Set<number>;
 }) {
   const front = round.holes.slice(0, 9);
   const back = round.holes.slice(9, 18);
@@ -154,6 +169,7 @@ export function CourseInfoHeader({
         inValue="IN"
         totalValue="TOT"
         registerHoleRef={registerHoleRef}
+        holesWithVideo={holesWithVideo}
       />
       <InfoRow
         label="Yards"

@@ -2,7 +2,7 @@
 
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
 import { futureTeamMarket } from "@/lib/wagers/marketKeys";
-import { MarketSelectionList } from "@/components/wagers/MarketSelectionList";
+import { FuturesMarketCard } from "@/components/wagers/FuturesMarketCard";
 import { ComingSoonNotice } from "@/components/wagers/ComingSoonNotice";
 import { useWagersMode } from "@/components/wagers/WagersModeContext";
 
@@ -28,9 +28,7 @@ export default function TeamWinnerPage() {
     <div className="px-4 pt-5 sm:px-7">
       <h2 className="m-0 font-serif text-xl font-bold text-ink-900">Team Winner</h2>
       <div className="mt-4">
-        <MarketSelectionList
-          selections={market.selections.map((selection) => ({ ...selection, marketKey: market.marketKey }))}
-        />
+        <FuturesMarketCard title="Team Winner" marketKey={market.marketKey} selections={market.selections} />
       </div>
     </div>
   );

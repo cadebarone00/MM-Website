@@ -40,8 +40,8 @@ export function MorePanel({ open, onClose }: { open: boolean; onClose: () => voi
   if (!open) return null;
 
   const links =
-    session?.kind === "player" || session?.kind === "host"
-      ? [...MORE_LINKS, { href: "/portal", label: session.kind === "host" ? "Tiger Center" : "Player Portal" }]
+    session?.kind === "host"
+      ? [...MORE_LINKS, { href: "/portal", label: "Tiger Center" }]
       : MORE_LINKS;
 
   return (

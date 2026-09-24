@@ -1,0 +1,68 @@
+// app/api/portal/tiger/scorecards/save/route.ts
+import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
+import { requireHost } from "@/lib/portal/requireHost";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { getPlayerProfileBySlug } from "@/lib/data/players";
+
+interface HoleEdit {
+  hole: number;
+  score: number;
+  putts: number;
+  fir: "0" | "1" | "X";
+  gir: boolean;
+}
+
+export async function POST(request: Request) {
+  const host = await requireHost();
+  if (!host) {
+    return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
+  }
+
+  const { tournamentSlug, playerSlug, round, holes } = await request.json();
+  if (
+    typeof tournamentSlug !== "string" ||
+    typeof playerSlug !== "string" ||
+    typeof round !== "number" ||
+    !Array.isArray(holes) ||
+    holes.some(
+      (h: unknown): h is HoleEdit =>
+        typeof h !== "object" ||
+        h === null ||
+        typeof (h as HoleEdit).hole !== "number" ||
+        typeof (h as HoleEdit).score !== "number" ||
+        typeof (h as HoleEdit).putts !== "number" ||
+        !["0", "1", "X"].includes((h as HoleEdit).fir) ||
+        typeof (h as HoleEdit).gir !== "boolean"
+    )
+  ) {
+    return NextResponse.json({ ok: false, error: "Missing or invalid fields." }, { status: 400 });
+  }
+
+  const service = createSupabaseServiceRoleClient();
+  const { data: roundRow } = await service
+    .from("archived_scorecard_rounds")
+    .select("id")
+    .eq("tournament_slug", tournamentSlug)
+    .eq("player_slug", playerSlug)
+    .eq("round", round)
+    .maybeSingle();
+  if (!roundRow) {
+    return NextResponse.json({ ok: false, error: "That round hasn't been recorded yet." }, { status: 404 });
+  }
+
+  const { error } = await service.rpc("save_archived_scorecard_atomic", { p_round: roundRow.id, p_holes: holes });
+  if (error) {
+    console.error("Could not save archived scorecard:", error);
+    return NextResponse.json({ ok: false, error: "Could not save this scorecard. No changes were saved." }, { status: 500 });
+  }
+
+  const profile = getPlayerProfileBySlug(playerSlug);
+  const playerParam = profile?.id.toLowerCase();
+  if (playerParam) {
+    revalidatePath(`/leaderboard/${tournamentSlug}/players/${playerParam}`);
+    revalidatePath(`/leaderboard/${tournamentSlug}`);
+  }
+
+  return NextResponse.json({ ok: true });
+}

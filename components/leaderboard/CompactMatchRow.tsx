@@ -1,10 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { ResultChevron } from "@/components/match/ResultChevron";
 import { matchStatus, matchLeader, liveLabel } from "@/components/leaderboard/matchUtils";
-import { getPlayerDisplayName } from "@/lib/data/players";
+import Link from "next/link";
+import { getPlayerLastName } from "@/lib/data/players";
 import type { RealMatch, Team } from "@/lib/data/types";
 
 function labelColor(match: RealMatch) {
@@ -14,33 +12,82 @@ function labelColor(match: RealMatch) {
   return "border-ink-300 bg-ink-100 text-ink-900";
 }
 
-function TeamSide({
-  players,
-  team,
-  tournamentSlug,
-}: {
-  players: string[];
-  team: Team;
-  tournamentSlug: string;
-}) {
+function lastName(player: string) {
+  const name = getPlayerLastName(player);
+  if (name.toLowerCase() === "wojciechowski") return "WOJO";
+  return name.toUpperCase();
+}
+
+function finalLabelColor(match: RealMatch) {
+  const leader = matchLeader(match);
+  if (leader === "maroon") return "bg-maroon-700 text-white";
+  if (leader === "white") return "bg-white text-maroon-700";
+  return "bg-cream-100 text-maroon-700";
+}
+
+function TeamSide({ players, team, probability }: { players: string[]; team: Team; probability?: number }) {
   const isMaroon = team === "maroon";
 
   return (
-    <div className={["flex min-w-0 flex-col", isMaroon ? "items-end" : "items-start"].join(" ")}>
+    <div className={["flex min-w-0 flex-col justify-center self-stretch", isMaroon ? "items-end bg-maroon-700 text-white" : "items-start bg-white text-maroon-700"].join(" ")}>
       {players.map((player, i) => (
-        <Link
+        <span
           key={player}
-          href={`/leaderboard/${tournamentSlug}/players/${player.toLowerCase()}`}
-          onClick={(e) => e.stopPropagation()}
           className={[
-            "block w-full truncate py-1 font-sans text-xs font-semibold text-ink-900 transition-opacity hover:opacity-70",
+            "relative block w-full px-2 py-1.5 font-sans text-xs font-semibold capitalize",
             isMaroon ? "text-right" : "text-left",
-            i > 0 ? "border-t border-ink-100" : "",
           ].join(" ")}
         >
-          {getPlayerDisplayName(player).split(" ").pop()}
-        </Link>
+          <span className="block truncate">{lastName(player)}</span>
+          {players.length === 1 && (
+            <span
+              className={[
+                "absolute top-1/2 flex h-4 w-8 -translate-y-1/2 items-center justify-center bg-transparent font-condensed text-[7px] font-extrabold uppercase tracking-tight",
+                isMaroon ? "left-1/4 -translate-x-1/2 border border-white text-white" : "right-1/4 translate-x-1/2 border border-maroon-700 text-maroon-700",
+              ].join(" ")}
+            >
+              {probability == null ? "Odds" : `${Math.round(probability * 100)}%`}
+            </span>
+          )}
+          {i > 0 && (
+            <>
+              <span aria-hidden className={isMaroon ? "absolute right-0 top-0 h-px w-1/2 bg-gold-600" : "absolute left-0 top-0 h-px w-1/2 bg-gold-600"} />
+              <span
+                className={[
+                  "absolute top-0 flex h-4 w-8 -translate-y-1/2 items-center justify-center bg-transparent font-condensed text-[7px] font-extrabold uppercase tracking-tight",
+                  isMaroon ? "left-[calc(25%-16px)] border border-white text-white" : "right-[calc(25%-16px)] border border-maroon-700 text-maroon-700",
+                ].join(" ")}
+              >
+                {probability == null ? "Odds" : `${Math.round(probability * 100)}%`}
+              </span>
+            </>
+          )}
+        </span>
       ))}
+    </div>
+  );
+}
+
+function MatchStat({ status }: { status: ReturnType<typeof matchStatus> }) {
+  return (
+    <div className="flex min-h-[34px] items-center justify-center border-r border-gold-300 bg-cream-100">
+      {status === "live" ? (
+        <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-600" aria-label="Live" />
+      ) : status === "final" ? (
+        <span className="font-sans text-sm font-black text-maroon-700">F</span>
+      ) : (
+        <span className="font-sans text-xs font-bold text-ink-400">—</span>
+      )}
+    </div>
+  );
+}
+
+function MatchThru({ match, status }: { match: RealMatch; status: ReturnType<typeof matchStatus> }) {
+  const thru = status === "final" ? 18 : status === "live" && (match.thru ?? 0) > 0 ? match.thru : "—";
+
+  return (
+    <div className="flex min-h-[34px] items-center justify-center border-l border-gold-300 bg-cream-100 font-sans text-xs font-black tabular-nums text-maroon-700">
+      {thru}
     </div>
   );
 }
@@ -58,45 +105,41 @@ export function CompactMatchRow({
   match: RealMatch;
   tournamentSlug: string;
 }) {
-  const router = useRouter();
   const status = matchStatus(match);
   const centerLabel = status === "scheduled" ? "VS" : liveLabel(match);
-  const breakdownHref = `/leaderboard/${tournamentSlug}/matches/${match.id}`;
-  const maroonSideLabel = match.maroonPlayers.map((p) => getPlayerDisplayName(p).split(" ").pop()).join(" & ");
-  const whiteSideLabel = match.whitePlayers.map((p) => getPlayerDisplayName(p).split(" ").pop()).join(" & ");
+  const maroonSideLabel = match.maroonPlayers.map(lastName).join(" & ");
+  const whiteSideLabel = match.whitePlayers.map(lastName).join(" & ");
 
   return (
-    <div
-      role="link"
-      tabIndex={0}
-      aria-label={`${maroonSideLabel} vs ${whiteSideLabel}, ${centerLabel}`}
-      onClick={() => router.push(breakdownHref)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          router.push(breakdownHref);
-        }
-      }}
-      className="grid cursor-pointer grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-center gap-2 border-b border-ink-100 px-2 py-1 last:border-b-0 hover:bg-cream-50"
-    >
-      <TeamSide players={match.maroonPlayers} team="maroon" tournamentSlug={tournamentSlug} />
-      <div className="flex justify-center">
-        {status === "final" ? (
-          <ResultChevron winner={matchLeader(match)} size="xs">
-            {centerLabel}
-          </ResultChevron>
-        ) : (
-          <span
-            className={[
-              "inline-flex min-h-[22px] min-w-[40px] items-center justify-center rounded-pill border px-1.5 font-condensed text-3xs font-extrabold uppercase tracking-wide",
-              labelColor(match),
-            ].join(" ")}
-          >
-            {centerLabel}
-          </span>
-        )}
-      </div>
-      <TeamSide players={match.whitePlayers} team="white" tournamentSlug={tournamentSlug} />
+    <div className="mb-1.5 overflow-hidden border border-gold-500 last:mb-0">
+      <Link
+        href={`/leaderboard/${tournamentSlug}/matches/${encodeURIComponent(match.id)}`}
+        aria-label={`${maroonSideLabel} vs ${whiteSideLabel}, ${centerLabel}`}
+        className="block py-0 hover:bg-cream-50 focus-visible:outline-2 focus-visible:outline-maroon-700"
+      >
+        <div className="grid grid-cols-[30px_minmax(0,1fr)_44px_minmax(0,1fr)_30px] items-stretch">
+          <MatchStat status={status} />
+          <TeamSide players={match.maroonPlayers} team="maroon" probability={match.maroonWinProbability} />
+          <div className="flex items-stretch">
+            {status === "final" ? (
+              <span className={["flex h-full w-full items-center justify-center px-1.5 font-condensed text-3xs font-extrabold uppercase tracking-wide", finalLabelColor(match)].join(" ")}>
+                {centerLabel}
+              </span>
+            ) : (
+              <span
+                className={[
+                  "inline-flex min-h-[22px] min-w-[40px] items-center justify-center rounded-pill border px-1.5 font-condensed text-3xs font-extrabold uppercase tracking-wide",
+                  labelColor(match),
+                ].join(" ")}
+              >
+                {centerLabel}
+              </span>
+            )}
+          </div>
+          <TeamSide players={match.whitePlayers} team="white" probability={match.whiteWinProbability} />
+          <MatchThru match={match} status={status} />
+        </div>
+      </Link>
     </div>
   );
 }

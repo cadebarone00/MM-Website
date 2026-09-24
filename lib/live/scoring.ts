@@ -1,4 +1,5 @@
 import { courseForRound, scoreFor, type LiveHoleScore, type LiveTournamentSnapshot, type Team } from "./types.ts";
+import { compareLeaderboardOrder } from "@/lib/leaderboard/sort";
 
 export interface PlayerSummary {
   player: string;
@@ -18,6 +19,18 @@ export interface PlayerSummary {
 
 function holeByNumber(holes: { number: number; par: number; yards: number }[]): Map<number, { number: number; par: number; yards: number }> {
   return new Map(holes.map((hole) => [hole.number, hole]));
+}
+
+/**
+ * Alt-shot (Foursome) rounds have one shared score per side, not a real
+ * personal gross score — they count fully toward the team match result
+ * (lib/live/orchestration.ts) but never toward an individual player's own
+ * stats. Derives the round's format from its match boxes rather than
+ * adding a new field to LiveTournamentSnapshot — a box's format always
+ * equals its round's format (the plan's own long-standing invariant).
+ */
+function isIndividualStatsExcluded(snapshot: LiveTournamentSnapshot, round: number): boolean {
+  return snapshot.matchBoxes.find((box) => box.round === round)?.format === "Foursome";
 }
 
 export function normalizeBool(value: boolean | number | string | null | undefined): boolean | null {
@@ -65,6 +78,7 @@ export function summarizePlayer(snapshot: LiveTournamentSnapshot, player: string
     if (score.player !== player) continue;
     if (score.score === null || score.score <= 0) continue;
     if (roundFilter && !roundFilter.has(score.round)) continue;
+    if (isIndividualStatsExcluded(snapshot, score.round)) continue;
     played.push(score);
   }
 
@@ -99,7 +113,7 @@ export function summarizePlayer(snapshot: LiveTournamentSnapshot, player: string
 
 export function leaderboard(snapshot: LiveTournamentSnapshot, rounds?: number[]): PlayerSummary[] {
   const summaries = Object.keys(snapshot.players).map((player) => summarizePlayer(snapshot, player, rounds));
-  return summaries.sort((a, b) => a.toPar - b.toPar || b.played - a.played || a.gross - b.gross || a.player.localeCompare(b.player));
+  return summaries.sort(compareLeaderboardOrder);
 }
 
 export function teamTotals(snapshot: LiveTournamentSnapshot): Record<Team, number> {

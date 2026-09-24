@@ -17,7 +17,7 @@ export function SignInGate() {
 
   return (
     <div className="mx-auto max-w-[420px] px-4 py-12 text-center">
-      <h2 className="m-0 font-serif text-2xl font-bold text-ink-900">Sign in to see Wagers</h2>
+      <h2 className="m-0 font-serif text-2xl font-bold text-ink-900">Sign in to place a wager</h2>
       <p className="mt-2 font-sans text-sm text-ink-500">Wagers use your own account — your balance and history follow you anywhere you sign in.</p>
       <p className="mt-1 font-sans text-2xs text-ink-400">Play money only — no real currency changes hands here.</p>
       <Button className="mt-5" onClick={() => router.push("/login")}>

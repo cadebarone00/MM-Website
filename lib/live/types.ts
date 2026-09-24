@@ -9,13 +9,37 @@ export interface LiveHole {
   yards: number;
 }
 
+export interface LiveTeeSet {
+  apiSource?: {
+    provider?: "golfcore";
+    courseId: string;
+    teeId: string;
+    syncedAt: string;
+    baseline: { name: string; color?: string; rating: number | null; slope: number | null; holes: LiveHole[] };
+  };
+  color?: string;
+  locked?: boolean;
+  id: string;
+  name: string;
+  holes: LiveHole[];
+  rating: number | null;
+  slope: number | null;
+}
+
 export interface LiveCourse {
   id: string;
   name: string;
   holes: LiveHole[];
+  teeSets?: LiveTeeSet[];
+  rating: number | null; // e.g. 72.4 — null until set
+  slope: number | null; // USGA range 55-155 — null until set
+  city?: string | null;
+  state?: string | null; // two-letter code, e.g. "TX"
+  zipCode?: string | null; // optional; never displayed, reserved for a nearby-courses lookup
 }
 
 export interface LiveHoleScore {
+  seasonYear: number;
   player: string; // player_slug
   round: number;
   hole: number;
@@ -28,6 +52,7 @@ export interface LiveHoleScore {
 
 export interface LiveMatchBox {
   id: string | null;
+  seasonYear: number;
   round: number;
   boxNumber: number;
   format: MatchFormat;
@@ -41,17 +66,27 @@ export interface LiveMatchBox {
 export interface TournamentSettings {
   roundCount: number | null;
   completedAt: string | null; // ISO timestamp, null until the tournament is done
+  venueName: string | null;
+  venueLocked: boolean;
+  beginDate: string | null; // ISO date (YYYY-MM-DD)
+  endDate: string | null; // ISO date (YYYY-MM-DD)
+  datesLocked: boolean;
 }
 
 export interface RosterEntry {
+  seasonYear: number;
   playerSlug: string;
   team: Team;
+  displayName?: string;
+  avatarSrc?: string | null;
 }
 
 export interface LiveRoundState {
+  seasonYear: number;
   round: number;
   started: boolean;
   courseId: string | null;
+  courseSetup?: { teeSetId: string; teeSetName: string; holes: LiveHole[]; rating: number | null; slope: number | null; holeTeeSetIds?: Record<string, string> } | null;
   date: string | null; // ISO date (YYYY-MM-DD)
   format: MatchFormat | null;
   courseLocked: boolean;
@@ -80,7 +115,7 @@ export function scoreFor(snapshot: LiveTournamentSnapshot, player: string, round
   const key = scoreKey(player, round, hole);
   const existing = snapshot.scores.get(key);
   if (existing) return existing;
-  const blank: LiveHoleScore = { player, round, hole, score: null, putts: null, fir: null, gir: null, hostEdited: false };
+  const blank: LiveHoleScore = { seasonYear: 0, player, round, hole, score: null, putts: null, fir: null, gir: null, hostEdited: false };
   snapshot.scores.set(key, blank);
   return blank;
 }
@@ -88,7 +123,7 @@ export function scoreFor(snapshot: LiveTournamentSnapshot, player: string, round
 export function readScore(snapshot: LiveTournamentSnapshot, player: string, round: number, hole: number): LiveHoleScore {
   const key = scoreKey(player, round, hole);
   return (
-    snapshot.scores.get(key) ?? { player, round, hole, score: null, putts: null, fir: null, gir: null, hostEdited: false }
+    snapshot.scores.get(key) ?? { seasonYear: 0, player, round, hole, score: null, putts: null, fir: null, gir: null, hostEdited: false }
   );
 }
 

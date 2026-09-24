@@ -1,0 +1,183 @@
+import type { RealMatch, PlayerScorecard } from "./types";
+
+export type CareerScorecardSet = { year: number; scorecards: PlayerScorecard[] };
+
+export type CareerHoleRecord = {
+  source?: "maroon-masters" | "other";
+  roundId?: string;
+  datePlayed?: string;
+  year: number;
+  player: string;
+  round: number;
+  roundHoles: number;
+  course: string;
+  format: string;
+  hole: number;
+  par: number;
+  yards: number;
+  score: number;
+  putts: number | null;
+  fairwayInRegulation: boolean | null;
+  greenInRegulation: boolean | null;
+  penalties: number | null;
+};
+
+export function careerRoundKey(row: CareerHoleRecord): string {
+  return row.roundId ?? `${row.year}:${row.round}:${row.course}:${row.format}`;
+}
+
+export type CareerPartnership = { player: string; partner: string; year: number; format: string; result: "win" | "loss" | "halve" };
+export type CareerCourseHole = { year: number; course: string; tee: string | null; hole: number; par: number; yards: number; holeType: string | null; holeLengthBucket: string | null };
+
+/** A team score is intentionally separate from individual stroke-play data. */
+export type CareerTeamHoleRecord = {
+  year: number;
+  round: number;
+  format: string;
+  matchId: string;
+  teamId: string;
+  player1: string;
+  player2: string;
+  course: string;
+  hole: number;
+  par: number;
+  yards: number;
+  score: number;
+  putts: number | null;
+  fairwayInRegulation: boolean | null;
+  greenInRegulation: boolean | null;
+  penalties: number | null;
+};
+
+export function buildCareerHoleRecords(sets: CareerScorecardSet[]): CareerHoleRecord[] {
+  return sets.flatMap(({ year, scorecards }) =>
+    scorecards.flatMap((scorecard) =>
+      scorecard.rounds.flatMap((round) =>
+        round.holes.filter((hole) => hole.score > 0).map((hole) => ({
+          year,
+          player: scorecard.player,
+          round: round.round,
+          roundHoles: round.holes.filter((hole) => hole.score > 0).length,
+          course: round.course,
+          format: round.format ?? "Unspecified",
+          hole: hole.hole,
+          par: hole.par,
+          yards: hole.yards,
+          score: hole.score,
+          putts: hole.putts,
+          fairwayInRegulation: hole.fir === "X" ? null : hole.fir === 1,
+          greenInRegulation: hole.gir === 1,
+          penalties: null,
+        }))
+      )
+    )
+  );
+}
+
+export function buildCareerPartnerships(tournaments: { year: number; matches: RealMatch[] }[]): CareerPartnership[] {
+  return tournaments.flatMap(({ year, matches }) =>
+    matches.flatMap((match) => {
+      const maroonResult = match.maroonPts > match.whitePts ? "win" : match.maroonPts < match.whitePts ? "loss" : "halve";
+      const whiteResult = maroonResult === "win" ? "loss" : maroonResult === "loss" ? "win" : "halve";
+      const pairings: CareerPartnership[] = [];
+      for (const [players, result] of [[match.maroonPlayers, maroonResult], [match.whitePlayers, whiteResult]] as const) {
+        if (players.length !== 2) continue;
+        pairings.push(
+          { player: players[0], partner: players[1], year, format: match.format, result },
+          { player: players[1], partner: players[0], year, format: match.format, result }
+        );
+      }
+      return pairings;
+    })
+  );
+}
+
+export type CareerPlayerStat = {
+  player: string;
+  years: number[];
+  rounds: number;
+  holes: number;
+  totalStrokes: number;
+  averageRound: number;
+  averageHole: number;
+  bestRound: number;
+  worstRound: number;
+  eagleOrBetter: number;
+  birdies: number;
+  pars: number;
+  bogeys: number;
+  doublesOrWorse: number;
+  byYear: { year: number; rounds: number; averageRound: number; averageHole: number }[];
+};
+
+type MutableStat = Omit<CareerPlayerStat, "averageRound" | "averageHole" | "bestRound" | "worstRound" | "byYear"> & {
+  roundTotals: number[];
+  byYearMap: Map<number, { rounds: number; holes: number; strokes: number }>;
+};
+
+/** Rebuilds the career snapshot from the same archived hole records Tiger edits. */
+export function buildCareerStats(sets: CareerScorecardSet[]): CareerPlayerStat[] {
+  const players = new Map<string, MutableStat>();
+
+  for (const { year, scorecards } of sets) {
+    for (const scorecard of scorecards) {
+      const stat: MutableStat = players.get(scorecard.player) ?? {
+        player: scorecard.player,
+        years: [],
+        rounds: 0,
+        holes: 0,
+        totalStrokes: 0,
+        eagleOrBetter: 0,
+        birdies: 0,
+        pars: 0,
+        bogeys: 0,
+        doublesOrWorse: 0,
+        roundTotals: [],
+        byYearMap: new Map(),
+      };
+      if (!stat.years.includes(year)) stat.years.push(year);
+
+      for (const round of scorecard.rounds) {
+        const holes = round.holes.filter((hole) => hole.score > 0);
+        if (holes.length === 0) continue;
+        const strokes = holes.reduce((total, hole) => total + hole.score, 0);
+        stat.rounds += 1;
+        stat.holes += holes.length;
+        stat.totalStrokes += strokes;
+        stat.roundTotals.push(strokes);
+        const yearly = stat.byYearMap.get(year) ?? { rounds: 0, holes: 0, strokes: 0 };
+        yearly.rounds += 1;
+        yearly.holes += holes.length;
+        yearly.strokes += strokes;
+        stat.byYearMap.set(year, yearly);
+
+        for (const hole of holes) {
+          const diff = hole.score - hole.par;
+          if (diff <= -2) stat.eagleOrBetter += 1;
+          else if (diff === -1) stat.birdies += 1;
+          else if (diff === 0) stat.pars += 1;
+          else if (diff === 1) stat.bogeys += 1;
+          else stat.doublesOrWorse += 1;
+        }
+      }
+      players.set(scorecard.player, stat);
+    }
+  }
+
+  return [...players.values()]
+    .map(({ roundTotals, byYearMap, ...stat }) => ({
+      ...stat,
+      years: stat.years.sort((a, b) => a - b),
+      averageRound: stat.rounds ? stat.totalStrokes / stat.rounds : 0,
+      averageHole: stat.holes ? stat.totalStrokes / stat.holes : 0,
+      bestRound: Math.min(...roundTotals),
+      worstRound: Math.max(...roundTotals),
+      byYear: [...byYearMap.entries()].sort(([a], [b]) => a - b).map(([year, value]) => ({
+        year,
+        rounds: value.rounds,
+        averageRound: value.strokes / value.rounds,
+        averageHole: value.strokes / value.holes,
+      })),
+    }))
+    .sort((a, b) => a.averageRound - b.averageRound);
+}

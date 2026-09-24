@@ -1,3 +1,4 @@
+import { getPlayerSlug } from "../players";
 import { players2024 } from "./players-2024";
 import { players2025 } from "./players-2025";
 import { players2026 } from "./players-2026";
@@ -23,7 +24,7 @@ const coursesByYear: Record<StatsYear, CourseYearStats> = {
 };
 
 function lookupPlayer(table: Record<string, PlayerYearStats>, player: string): PlayerYearStats | null {
-  const key = Object.keys(table).find((k) => k.toLowerCase() === player.toLowerCase());
+  const key = Object.keys(table).find((k) => getPlayerSlug(k) === getPlayerSlug(player));
   return key ? table[key] : null;
 }
 

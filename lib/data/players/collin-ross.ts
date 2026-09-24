@@ -1,7 +1,7 @@
 import type { PlayerProfile } from "../types";
 
 export const collinRoss: PlayerProfile = {
-  id: "Collin",
+  id: "collin-ross",
   slug: "collin-ross",
   fullName: "Collin Ross",
   avatarSrc: "/players/collin-ross/avatar.png",

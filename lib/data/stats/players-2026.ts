@@ -1,7 +1,7 @@
 import type { PlayerYearStatsTable } from "./types";
 
 export const players2026: PlayerYearStatsTable = {
-  Cade: {
+  "cade-barone": {
     scoringAverage: 75.2,
     teamPointsWon: 4.5,
     totalEarned: 153.33,
@@ -22,7 +22,7 @@ export const players2026: PlayerYearStatsTable = {
     fallOff: { pct: 28.57, total: 4 },
     strokesGained: { total: 19.25, offTee: -18.15, approach: 23.93, aroundGreen: 5.8, putting: 1.5 },
   },
-  Cam: {
+  "cam-latto": {
     scoringAverage: 77.8,
     teamPointsWon: 5.5,
     totalEarned: 90.0,
@@ -43,7 +43,7 @@ export const players2026: PlayerYearStatsTable = {
     fallOff: { pct: 25.0, total: 2 },
     strokesGained: { total: 4.25, offTee: -15.54, approach: 20.65, aroundGreen: 4.23, putting: -6.25 },
   },
-  Collin: {
+  "collin-ross": {
     scoringAverage: 75.0,
     teamPointsWon: 4.5,
     totalEarned: 300.0,
@@ -64,7 +64,7 @@ export const players2026: PlayerYearStatsTable = {
     fallOff: { pct: 29.41, total: 5 },
     strokesGained: { total: 25.25, offTee: -22.95, approach: 28.63, aroundGreen: 7.74, putting: -0.33 },
   },
-  Dalton: {
+  "dalton-spriggs": {
     scoringAverage: 84.0,
     teamPointsWon: 3.5,
     totalEarned: 83.33,
@@ -85,7 +85,7 @@ export const players2026: PlayerYearStatsTable = {
     fallOff: { pct: 42.86, total: 3 },
     strokesGained: { total: -30.75, offTee: -19.26, approach: -2.43, aroundGreen: -0.31, putting: 2.08 },
   },
-  Drew: {
+  "drew-weisser": {
     scoringAverage: 79.2,
     teamPointsWon: 5,
     totalEarned: 0.0,
@@ -106,7 +106,7 @@ export const players2026: PlayerYearStatsTable = {
     fallOff: { pct: 83.33, total: 5 },
     strokesGained: { total: -0.75, offTee: -15.89, approach: 9.54, aroundGreen: 1.27, putting: 6.17 },
   },
-  Hugo: {
+  "hugo-moebel": {
     scoringAverage: 84.2,
     teamPointsWon: 3,
     totalEarned: 0.0,
@@ -127,7 +127,7 @@ export const players2026: PlayerYearStatsTable = {
     fallOff: { pct: 40.0, total: 2 },
     strokesGained: { total: -27.75, offTee: -21.52, approach: 18.6, aroundGreen: -7.66, putting: -3.33 },
   },
-  Jackson: {
+  "jackson-collins": {
     scoringAverage: 83.4,
     teamPointsWon: 3,
     totalEarned: 123.33,
@@ -148,7 +148,7 @@ export const players2026: PlayerYearStatsTable = {
     fallOff: { pct: 50.0, total: 3 },
     strokesGained: { total: -23.75, offTee: -22.31, approach: 8.85, aroundGreen: -4.62, putting: 1.17 },
   },
-  Kyle: {
+  "kyle-schnabel": {
     scoringAverage: 77.4,
     teamPointsWon: 3.5,
     totalEarned: 90.0,
@@ -169,7 +169,7 @@ export const players2026: PlayerYearStatsTable = {
     fallOff: { pct: 18.18, total: 2 },
     strokesGained: { total: 6.25, offTee: -13.12, approach: 17.55, aroundGreen: 3.49, putting: 0.17 },
   },
-  Luke: {
+  "luke-sherrell": {
     scoringAverage: 80.6,
     teamPointsWon: 5,
     totalEarned: 73.33,
@@ -190,7 +190,7 @@ export const players2026: PlayerYearStatsTable = {
     fallOff: { pct: 53.85, total: 7 },
     strokesGained: { total: -6.75, offTee: -13.12, approach: 14.38, aroundGreen: -5.77, putting: -2.42 },
   },
-  Nate: {
+  "nate-wojciechowski": {
     scoringAverage: 74.6,
     teamPointsWon: 4.5,
     totalEarned: 173.33,
@@ -211,7 +211,7 @@ export const players2026: PlayerYearStatsTable = {
     fallOff: { pct: 13.33, total: 2 },
     strokesGained: { total: 27.25, offTee: -12.8, approach: 26.21, aroundGreen: 2.51, putting: 1.17 },
   },
-  Pete: {
+  "pete-peabody": {
     scoringAverage: 76.6,
     teamPointsWon: 1.5,
     totalEarned: 73.33,
@@ -232,7 +232,7 @@ export const players2026: PlayerYearStatsTable = {
     fallOff: { pct: 37.5, total: 3 },
     strokesGained: { total: 16.25, offTee: -11.84, approach: 14.4, aroundGreen: 7.36, putting: -3.83 },
   },
-  Quez: {
+  "quez-currier": {
     scoringAverage: 80.6,
     teamPointsWon: 4.5,
     totalEarned: 40.0,

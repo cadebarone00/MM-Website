@@ -7,6 +7,7 @@ import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
 import { latestCompleted } from "@/lib/data";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import type { IndividualStanding } from "@/lib/data/types";
+import { placementLabel } from "@/lib/leaderboard/placement";
 
 function topFive(standings: IndividualStanding[]): IndividualStanding[] {
   return [...standings].sort((a, b) => a.toPar - b.toPar).slice(0, 5);
@@ -15,7 +16,8 @@ function topFive(standings: IndividualStanding[]): IndividualStanding[] {
 export function QuickLeaderboardCard() {
   const { tournament } = useLiveTournament();
   const isLive = tournament.matches.length > 0;
-  const rows = topFive(isLive ? tournament.individualLeaderboard : latestCompleted.individualLeaderboard);
+  const ranked = [...(isLive ? tournament.individualLeaderboard : latestCompleted.individualLeaderboard)].sort((a, b) => a.toPar - b.toPar);
+  const rows = topFive(ranked);
 
   return (
     <Link
@@ -35,7 +37,7 @@ export function QuickLeaderboardCard() {
         {rows.map((row, i) => (
           <div key={row.player} className="flex items-center justify-between gap-2 text-xs sm:text-sm">
             <span className="flex min-w-0 items-center gap-1.5">
-              <span className="font-condensed text-3xs font-bold text-ink-400 sm:text-2xs">{i + 1}</span>
+              <span className="font-condensed text-3xs font-bold text-ink-400 sm:text-2xs">{placementLabel(ranked, i)}</span>
               <span className="truncate font-sans font-semibold text-ink-900">{getPlayerDisplayName(row.player)}</span>
             </span>
             <ScoreBadge value={row.toPar} size="sm" />

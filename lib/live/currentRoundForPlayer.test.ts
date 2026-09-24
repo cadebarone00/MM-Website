@@ -6,6 +6,7 @@ import { pickCurrentRound, matchupLabel } from "./currentRoundForPlayer.ts";
 
 function round(overrides: Partial<LiveRoundState> & { round: number }): LiveRoundState {
   return {
+    seasonYear: 2027,
     started: false,
     courseId: null,
     date: "2027-01-06",
@@ -19,6 +20,7 @@ function round(overrides: Partial<LiveRoundState> & { round: number }): LiveRoun
 function box(overrides: Partial<LiveMatchBox> & { round: number; maroonPlayers: string[]; whitePlayers: string[] }): LiveMatchBox {
   return {
     id: "box-1",
+    seasonYear: 2027,
     boxNumber: 1,
     format: "Fourball",
     teeTime: new Date("2027-01-06T09:30:00-06:00"),

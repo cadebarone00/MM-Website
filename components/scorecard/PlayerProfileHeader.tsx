@@ -40,7 +40,7 @@ export function PlayerProfileHeader({
   editionLabel: string;
   bio: string | null;
   live: boolean;
-  position: number | null;
+  position: string | null;
   total: number | null;
   thru: string | null;
 }) {
@@ -74,7 +74,7 @@ export function PlayerProfileHeader({
 
       {(position != null || total != null || thru != null) && (
         <div className="flex divide-x divide-ink-100 mt-4 bg-cream-50 border border-ink-100 rounded-md w-fit">
-          {position != null && <Stat label="Position" value={String(position)} />}
+          {position != null && <Stat label="Position" value={position} />}
           {total != null && <Stat label="Total" value={total === 0 ? "E" : total > 0 ? `+${total}` : String(total)} />}
           {thru != null && <Stat label="Thru" value={thru} />}
         </div>

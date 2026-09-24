@@ -4,6 +4,7 @@ import { useState } from "react";
 import { LeaderboardRow } from "@/components/ui/LeaderboardRow";
 import { defendingIndividualChampion } from "@/lib/data";
 import type { Tournament, Team } from "@/lib/data/types";
+import { placementLabel, placementNumber } from "@/lib/leaderboard/placement";
 
 type Filter = "all" | Team;
 
@@ -18,7 +19,7 @@ export function LeaderboardTable({ tournament }: { tournament: Tournament }) {
   const champion = defendingIndividualChampion(tournament);
 
   const sorted = [...tournament.individualLeaderboard].sort((a, b) => a.toPar - b.toPar);
-  const ranked = sorted.map((p, i) => ({ ...p, pos: i + 1 }));
+  const ranked = sorted.map((p, i) => ({ ...p, pos: placementLabel(sorted, i), placement: placementNumber(sorted, i) }));
   const rows = ranked.filter((p) => filter === "all" || p.team === filter);
 
   return (
@@ -50,7 +51,7 @@ export function LeaderboardTable({ tournament }: { tournament: Tournament }) {
             name={p.player}
             team={p.team}
             total={p.toPar}
-            highlight={p.pos === 1}
+            highlight={p.placement === 1}
             href={`/leaderboard/${tournament.slug}/players/${p.player.toLowerCase()}`}
             defendingChampion={champion != null && p.player === champion}
             isWinner={tournament.individualChampion === p.player}

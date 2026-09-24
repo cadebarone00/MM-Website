@@ -13,8 +13,9 @@ export interface WagersNavBarContent {
 }
 
 const CATEGORY_TITLES: Record<string, string> = {
-  "team-futures": "Team Futures",
-  "player-futures": "Player Futures",
+  "team-futures": "Futures",
+  "player-futures": "Players",
+  players: "Players",
   matches: "Matches",
   fourballs: "Fourballs",
   props: "Props",

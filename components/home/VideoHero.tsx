@@ -2,15 +2,16 @@ import Image from "next/image";
 import { Radio } from "lucide-react";
 import Link from "next/link";
 import { latestCompleted, nextTournament, champion, isLiveNow, fmtPt } from "@/lib/data";
+import type { NextTournamentOverride } from "@/lib/data/types";
 
 function isSet(value: string): boolean {
   return value.trim().length > 0 && value.trim().toLowerCase() !== "tbd";
 }
 
-export function VideoHero() {
+export function VideoHero({ nextTournamentOverride }: { nextTournamentOverride: NextTournamentOverride }) {
   const live = isLiveNow();
   const champ = champion(latestCompleted);
-  const nextVenueKnown = isSet(nextTournament.venue);
+  const nextVenueKnown = isSet(nextTournamentOverride.venue);
 
   return (
     <section className="relative w-full h-[280px] overflow-hidden bg-maroon-900 sm:h-[420px] lg:h-[640px]">
@@ -39,7 +40,7 @@ export function VideoHero() {
           <>
             <h1 className="font-serif text-xl font-bold leading-[1.1] tracking-tighter text-cream-50 mb-1 sm:text-4xl sm:mb-3 lg:text-[58px] lg:mb-[18px]">It&rsquo;s Underway.</h1>
             <p className="font-sans text-[11px] leading-snug text-maroon-100 mb-2 max-w-[280px] sm:text-base sm:leading-relaxed sm:mb-5 sm:max-w-[420px] lg:text-lg lg:mb-7 lg:max-w-[480px]">
-              {nextTournament.editionLabel} is live at {nextTournament.venue}, {nextTournament.dateLabel}. Results will be posted here as the trip
+              {nextTournament.editionLabel} is live at {nextTournamentOverride.venue}, {nextTournamentOverride.dateLabel}. Results will be posted here as the trip
               wraps up.
             </p>
           </>
@@ -52,7 +53,7 @@ export function VideoHero() {
               {latestCompleted.editionLabel} wrapped at {latestCompleted.venue} with Team {champ === "maroon" ? "Maroon" : "White"} winning{" "}
               {fmtPt(Math.max(latestCompleted.maroonPts, latestCompleted.whitePts))}–{fmtPt(Math.min(latestCompleted.maroonPts, latestCompleted.whitePts))}.
               Next up: {nextTournament.editionLabel}
-              {nextVenueKnown ? ` at ${nextTournament.venue}` : ""}, {nextTournament.dateLabel}.
+              {nextVenueKnown ? ` at ${nextTournamentOverride.venue}` : ""}, {nextTournamentOverride.dateLabel}.
             </p>
           </>
         )}

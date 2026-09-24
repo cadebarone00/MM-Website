@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronRight, LogOut } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { TigerAvatar } from "@/components/ui/TigerAvatar";
@@ -11,6 +11,16 @@ import { getPlayerAvatar } from "@/lib/data/players";
 export function AccountBadge({ position }: { position: "header" | "footer" }) {
   const session = useAccountSession();
   const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function closeWhenClickedOutside(event: MouseEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", closeWhenClickedOutside);
+    return () => document.removeEventListener("mousedown", closeWhenClickedOutside);
+  }, [open]);
 
   if (!session) {
     if (position !== "footer") {
@@ -43,7 +53,7 @@ export function AccountBadge({ position }: { position: "header" | "footer" }) {
   const portalLabel = session.kind === "host" ? "Tiger Center" : session.kind === "player" ? "Player Portal" : null;
 
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}

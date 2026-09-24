@@ -1,11 +1,12 @@
 "use client";
 
+import { getPlayerSlug } from "@/lib/data/players";
 import { useCallback, useEffect, useState } from "react";
 
 const STORAGE_KEY = "mm.favoritePlayers";
 
 function normalize(playerId: string) {
-  return playerId.trim().toLowerCase();
+  return getPlayerSlug(playerId);
 }
 
 function readFavorites() {
@@ -13,7 +14,7 @@ function readFavorites() {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+    return Array.isArray(parsed) ? [...new Set(parsed.filter((item): item is string => typeof item === "string").map(normalize))] : [];
   } catch {
     return [];
   }

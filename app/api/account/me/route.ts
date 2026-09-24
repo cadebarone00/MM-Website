@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { findPlayerTeam } from "@/lib/portal/findPlayerTeam";
+import { getLiveTeamForPlayer } from "@/lib/data/activeSeasonOverlay";
 
 export async function GET() {
   const supabase = await createSupabaseServerClient();
@@ -35,7 +35,7 @@ export async function GET() {
         playerSlug: profile.player_slug,
         username: profile.username,
         displayName: profile.display_name,
-        team: findPlayerTeam(profile.player_slug),
+        team: await getLiveTeamForPlayer(profile.player_slug),
       },
     });
   }

@@ -1,4 +1,9 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { SocialLinks } from "@/components/ui/SocialLinks";
+import { ArchivedScores } from "@/components/scorecard/ArchivedScores";
+import { CareerArchiveStats } from "@/components/scorecard/CareerArchiveStats";
 import type { PlayerProfile } from "@/lib/data/types";
 
 // The data files use a literal "-" to mark a field as not filled in yet — treat that as absent, same as empty.
@@ -32,13 +37,40 @@ function InfoBlock({ label, value }: { label: string; value?: string | null }) {
  * profile (background, location, golf details, personal notes, career
  * highlights, and the full write-up) lives here now, directly below the
  * Statistics section on this same page.
+ *
+ * Fetches this player's approved edits (see the Player Bio Portal spec)
+ * client-side on mount and overlays them on the static baseline — this
+ * works identically whether the page rendered statically or client-side
+ * (the live tournament path), so no parent component needs to change.
  */
-export function PlayerBioSection({ profile }: { profile: PlayerProfile | undefined }) {
+export function PlayerBioSection({ profile: baseProfile }: { profile: PlayerProfile | undefined }) {
+  const [profile, setProfile] = useState(baseProfile);
+
+  useEffect(() => {
+    setProfile(baseProfile);
+    if (!baseProfile) return;
+    let cancelled = false;
+    fetch(`/api/players/${baseProfile.slug}/overrides`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled || !data.ok) return;
+        setProfile((current) => (current ? { ...current, ...data.overrides } : current));
+      })
+      .catch(() => {
+        // Overrides are an enhancement, not required for the page to work —
+        // a failed fetch just leaves the static baseline showing.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [baseProfile]);
+
   if (!profile) return null;
 
   const hasNotes = [profile.strengths, profile.careerHighlights, profile.personal, profile.hobbies, profile.goals, profile.misc].some(isSet);
 
   return (
+    <>
     <div className="mt-8">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="m-0 font-serif text-2xl font-bold text-maroon-700">Player Bio</h2>
@@ -94,5 +126,8 @@ export function PlayerBioSection({ profile }: { profile: PlayerProfile | undefin
         )}
       </div>
     </div>
+    <ArchivedScores playerSlug={profile.slug} />
+    <CareerArchiveStats playerSlug={profile.slug} />
+    </>
   );
 }

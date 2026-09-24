@@ -45,3 +45,6 @@ next-env.d.ts
 
 # git worktrees
 .worktrees/
+
+# superpowers skill scratch (SDD ledgers, brainstorming mockups)
+.superpowers/

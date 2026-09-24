@@ -12,6 +12,7 @@ import { PlayerBioSection } from "./PlayerBioSection";
 import { StatsSection } from "@/components/stats/StatsSection";
 import { holePhotoCandidates } from "@/lib/data/holePhotos";
 import { getPlayerProfile } from "@/lib/data/players";
+import { formatRoundLabel } from "@/lib/data/roundLabel";
 import type { PlayerScorecard, RoundScorecard, Tournament } from "@/lib/data";
 
 // A finished round opens on hole 1. A round still in progress opens on
@@ -22,12 +23,25 @@ function defaultSelectedHole(round: RoundScorecard): number {
   return playedCount > 0 && playedCount < round.holes.length ? playedCount : 1;
 }
 
-export function PlayerScorecardView({ scorecard, tournament }: { scorecard: PlayerScorecard; tournament: Tournament }) {
+export function PlayerScorecardView({
+  scorecard,
+  tournament,
+  shotVideos,
+}: {
+  scorecard: PlayerScorecard;
+  tournament: Tournament;
+  shotVideos?: Record<number, Record<number, Record<number, string>>>; // round -> hole -> shot -> url
+}) {
   const [round, setRound] = useState(String(scorecard.rounds[scorecard.rounds.length - 1].round));
   const [selectedHole, setSelectedHole] = useState<number>(() => defaultSelectedHole(scorecard.rounds[scorecard.rounds.length - 1]));
   const [photoIndex, setPhotoIndex] = useState(0);
   const active = scorecard.rounds.find((r) => String(r.round) === round) ?? scorecard.rounds[0];
   const holeStat = active.holes.find((h) => h.hole === selectedHole) ?? null;
+  const holesWithVideo = new Set(
+    Object.entries(shotVideos?.[active.round] ?? {})
+      .filter(([, shots]) => Object.keys(shots).length > 0)
+      .map(([hole]) => Number(hole))
+  );
   const photoCandidates = holeStat ? holePhotoCandidates(active.course, holeStat.hole) : [];
   const photoSrc = photoCandidates[photoIndex] ?? null;
 
@@ -64,7 +78,7 @@ export function PlayerScorecardView({ scorecard, tournament }: { scorecard: Play
         >
           {scorecard.rounds.map((r) => (
             <option key={r.round} value={String(r.round)}>
-              Round {r.round} – {r.course}
+              {formatRoundLabel(r.round)} – {r.course}
               {r.format ? ` (${r.format})` : ""}
             </option>
           ))}
@@ -75,7 +89,13 @@ export function PlayerScorecardView({ scorecard, tournament }: { scorecard: Play
       {/* Desktop: the full 18-hole table with OUT/IN subtotals. */}
       <div className="hidden overflow-x-auto overflow-y-hidden sm:block">
         <div className="relative w-max rounded-2xl border border-ink-300 bg-cream-100">
-          <CourseInfoHeader round={active} onHoleClick={setSelectedHole} selectedHole={selectedHole} registerHoleRef={registerHoleRef} />
+          <CourseInfoHeader
+            round={active}
+            onHoleClick={setSelectedHole}
+            selectedHole={selectedHole}
+            registerHoleRef={registerHoleRef}
+            holesWithVideo={holesWithVideo}
+          />
           <ScorecardRow round={active} onHoleClick={setSelectedHole} selectedHole={selectedHole} registerHoleRef={registerHoleRef} />
 
           {cap && (
@@ -95,13 +115,27 @@ export function PlayerScorecardView({ scorecard, tournament }: { scorecard: Play
 
       {/* Mobile: edge-to-edge, frozen name/total columns, one swipe between the front and back nine. */}
       <div className="-mx-7 sm:hidden">
-        <MobileScorecardGrid round={active} selectedHole={selectedHole} onHoleClick={setSelectedHole} initialHole={defaultSelectedHole(active)} />
+        <MobileScorecardGrid
+          round={active}
+          selectedHole={selectedHole}
+          onHoleClick={setSelectedHole}
+          initialHole={defaultSelectedHole(active)}
+          holesWithVideo={holesWithVideo}
+        />
       </div>
 
       <div className="mt-3">
         {holeStat ? (
           <>
             <HoleDetailCard hole={holeStat} />
+
+            <div className="mt-3">
+              <ShotVideoPanel
+                key={`${active.round}-${selectedHole}`}
+                shotCount={holeStat.score}
+                videoUrls={shotVideos?.[active.round]?.[selectedHole]}
+              />
+            </div>
 
             <div className="mt-3">
               <div className="font-condensed text-3xs font-semibold tracking-eyebrow uppercase text-ink-400 mb-2">Hole Overview</div>
@@ -123,13 +157,9 @@ export function PlayerScorecardView({ scorecard, tournament }: { scorecard: Play
                 </div>
               )}
             </div>
-
-            <div className="mt-3">
-              <ShotVideoPanel shotCount={holeStat.score} />
-            </div>
           </>
         ) : (
-          <RoundVideoPlaceholder roundLabel={`Round ${active.round}`} />
+          <RoundVideoPlaceholder roundLabel={formatRoundLabel(active.round)} />
         )}
       </div>
 

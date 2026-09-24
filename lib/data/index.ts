@@ -1,3 +1,4 @@
+import { getPlayerSlug } from "./players";
 import { pinehurst2024 } from "./2024-pinehurst";
 import { danzante2025 } from "./2025-danzante";
 import { palmSprings2026 } from "./2026-palm-springs";
@@ -8,13 +9,13 @@ import { venue2026 } from "./2026-venue";
 import { venue2027 } from "./2027-venue";
 import type { Team, Tournament, UpcomingTournament, PlayerScorecard, RoundScorecard, VenueSchedule } from "./types";
 
-export type { Team, Tournament, UpcomingTournament, RealMatch, IndividualStanding, PlayerScorecard, RoundScorecard, HoleStat, CourseHole, VenueCourse, VenueSession, VenueSchedule } from "./types";
+export type { Team, Tournament, UpcomingTournament, RealMatch, IndividualStanding, PlayerScorecard, RoundScorecard, HoleStat, CourseHole, VenueCourse, VenueSession, VenueSchedule, NextTournamentOverride } from "./types";
 
 export const pastTournaments: Tournament[] = [pinehurst2024, danzante2025, palmSprings2026];
 export const nextTournament: UpcomingTournament = upcoming2027;
 export const nextVenue: VenueSchedule = venue2027;
 
-const pastVenues: Record<string, VenueSchedule> = {
+export const pastVenues: Record<string, VenueSchedule> = {
   "2024-pinehurst": venue2024,
   "2025-danzante": venue2025,
   "2026-palm-springs": venue2026,
@@ -59,6 +60,24 @@ export function isLiveNow(now: Date = new Date()): boolean {
   return getNextTournamentStatus(now) === "live";
 }
 
+// The calendar date the public Leaderboard switches from defaulting to the
+// latest *completed* tournament over to `nextTournament` — independent of
+// `isLiveNow()`/`liveAt`, which track the tournament's actual first tee
+// time. The switchover happens at the start of the new year so visitors
+// land on the upcoming season ahead of the first round, instead of still
+// defaulting to last year's results (or a dead-end empty page for a season
+// that hasn't started) right up until play begins. Tied to
+// `nextTournament.year` so this doesn't need a manual date update for each
+// new season.
+export function isPastLeaderboardSwitchover(now: Date = new Date()): boolean {
+  // A date-only string ("2027-01-01") parses as UTC midnight, while a
+  // datetime string with no offset parses as local time — comparing the two
+  // directly makes the boundary shift by the server's UTC offset. Adding an
+  // explicit local midnight keeps both sides of the comparison in the same
+  // (local) time.
+  return now >= new Date(`${nextTournament.year}-01-01T00:00:00`);
+}
+
 export const latestCompleted: Tournament = pastTournaments[pastTournaments.length - 1];
 
 export function getTournament(slug: string): Tournament | undefined {
@@ -66,7 +85,7 @@ export function getTournament(slug: string): Tournament | undefined {
 }
 
 export function individualTitleCount(playerId: string): number {
-  return pastTournaments.filter((t) => t.individualChampion === playerId).length;
+  return pastTournaments.filter((t) => t.individualChampion === getPlayerSlug(playerId)).length;
 }
 
 // The individual title holder defending entering `t`: the individual
@@ -91,7 +110,7 @@ export function matchesByDay(t: Tournament): { day: number; matches: Tournament[
 }
 
 export function getPlayerScorecard(t: Tournament, player: string): PlayerScorecard | undefined {
-  return t.scorecards?.find((s) => s.player.toLowerCase() === player.toLowerCase());
+  return t.scorecards?.find((s) => getPlayerSlug(s.player) === getPlayerSlug(player));
 }
 
 export function getRoundScorecard(t: Tournament, player: string, round: number): RoundScorecard | undefined {

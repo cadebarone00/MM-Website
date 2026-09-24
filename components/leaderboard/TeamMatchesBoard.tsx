@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, Radio } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Radio } from "lucide-react";
 import { CompactMatchRow } from "./CompactMatchRow";
 import { centralDateLabel, currentRoundDay, LIVE_START_LABEL } from "./matchUtils";
+import { fmtPt } from "@/lib/data";
 import type { RealMatch, Tournament } from "@/lib/data/types";
 
 type SessionGroup = { session: string; format: string; matches: RealMatch[] };
@@ -53,35 +54,46 @@ function PlaceholderPanel() {
 /** "Day {n}" label that drops down the other available days on tap — replaces the old day-pill row. */
 function DaySelector({ days, activeDay, onSelect }: { days: number[]; activeDay: number; onSelect: (day: number) => void }) {
   const [open, setOpen] = useState(false);
-  const otherDays = days.filter((d) => d !== activeDay);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function closeWhenClickedOutside(event: MouseEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", closeWhenClickedOutside);
+    return () => document.removeEventListener("mousedown", closeWhenClickedOutside);
+  }, [open]);
 
   return (
-    <div className="relative mb-3 inline-block">
+    <div ref={containerRef} className="mb-3 inline-flex rounded-pill border border-gold-400 bg-cream-50 p-[3px]">
       <button
         type="button"
+        aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className="flex items-center gap-1 font-condensed text-base font-black uppercase tracking-wide text-ink-900"
+        className="rounded-pill bg-maroon-700 px-3 py-1 font-condensed text-2xs font-bold uppercase tracking-wide text-cream-50"
       >
         Day {activeDay}
-        {otherDays.length > 0 && <ChevronDown size={16} className={["transition-transform", open ? "rotate-180" : ""].join(" ")} />}
       </button>
-      {open && otherDays.length > 0 && (
-        <div className="absolute left-0 top-full z-20 mt-1 min-w-[110px] overflow-hidden rounded-md border border-ink-100 bg-white shadow-lg">
-          {otherDays.map((d) => (
-            <button
-              key={d}
-              type="button"
-              onClick={() => {
-                onSelect(d);
-                setOpen(false);
-              }}
-              className="block w-full px-4 py-2 text-left font-condensed text-sm font-semibold text-ink-700 hover:bg-cream-50"
-            >
-              Day {d}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className={["flex overflow-hidden transition-[max-width,opacity,margin] duration-200 ease-out", open ? "ml-1 max-w-40 opacity-100" : "max-w-0 opacity-0"].join(" ")}>
+        {days.map((day) => (
+          <button
+            key={day}
+            type="button"
+            aria-pressed={day === activeDay}
+            onClick={() => {
+              onSelect(day);
+              setOpen(false);
+            }}
+            className={[
+              "shrink-0 rounded-pill px-3 py-1 font-condensed text-2xs font-bold tabular-nums transition-colors",
+              day === activeDay ? "bg-maroon-700 text-cream-50" : "text-ink-500 hover:bg-cream-100",
+            ].join(" ")}
+          >
+            {day}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -104,27 +116,45 @@ export function TeamMatchesBoard({ tournament, live }: { tournament: Tournament;
 
   const activeDay = days.includes(day) ? day : days[days.length - 1];
   const dayMatches = tournament.matches.filter((m) => m.day === activeDay);
+  const dayMaroonPts = dayMatches.reduce((total, match) => total + match.maroonPts, 0);
+  const dayWhitePts = dayMatches.reduce((total, match) => total + match.whitePts, 0);
   const sessionGroups = groupBySession(dayMatches);
 
   return (
     <div>
       <DaySelector days={days} activeDay={activeDay} onSelect={setUserPickedDay} />
 
-      <div className="flex overflow-hidden rounded-sm">
-        <div className="flex-1 bg-maroon-700 py-1.5 text-center font-condensed text-2xs font-bold uppercase tracking-eyebrow text-white">Maroon</div>
-        <div className="flex-1 border-y border-ink-100 bg-white py-1.5 text-center font-condensed text-2xs font-bold uppercase tracking-eyebrow text-maroon-700">
-          White
+      <div className="flex overflow-hidden rounded-sm border-y border-gold-300">
+        <div className="flex h-10 flex-1 items-center justify-between bg-maroon-700 px-3 text-white">
+          <span className="font-condensed text-2xs font-bold uppercase tracking-eyebrow">Maroon</span>
+          <span className="font-sans text-xl font-black tabular-nums">{fmtPt(dayMaroonPts)}</span>
+        </div>
+        <div className="w-px bg-gold-500" />
+        <div className="flex h-10 flex-1 items-center justify-between bg-white px-3 text-maroon-700">
+          <span className="font-sans text-xl font-black tabular-nums">{fmtPt(dayWhitePts)}</span>
+          <span className="font-condensed text-2xs font-bold uppercase tracking-eyebrow">White</span>
         </div>
       </div>
 
       <div>
         {sessionGroups.map((group, index) => (
           <div key={group.session}>
-            <div className="px-1 py-1.5 font-condensed text-3xs font-black uppercase tracking-wide text-ink-400">
-              {sessionHeaderLabel(group, dayMatches, live)} &middot; {group.format}
+            <div className="pt-2">
+              <div className="px-1 pb-1 font-condensed text-2xs font-black uppercase tracking-wide text-ink-400">
+                {sessionHeaderLabel(group, dayMatches, live)} &middot; {group.format}
+              </div>
+              <div className="grid min-h-5 grid-cols-[30px_minmax(0,1fr)_44px_minmax(0,1fr)_30px] items-center font-condensed text-3xs font-black uppercase tracking-wide text-ink-400">
+                <span className="text-center">Stat</span>
+                <span className="col-span-3" />
+                <span className="text-center">Thru</span>
+              </div>
             </div>
             {group.matches.map((match) => (
-              <CompactMatchRow key={match.id} match={match} tournamentSlug={tournament.slug} />
+              <CompactMatchRow
+                key={match.id}
+                match={match}
+                tournamentSlug={tournament.slug}
+              />
             ))}
             {index < sessionGroups.length - 1 && <div className="h-px bg-ink-100" />}
           </div>

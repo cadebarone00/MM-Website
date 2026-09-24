@@ -1,7 +1,7 @@
 import type { PlayerYearStatsTable } from "./types";
 
 export const players2025: PlayerYearStatsTable = {
-  Cade: {
+  "cade-barone": {
     scoringAverage: 74.6,
     teamPointsWon: 12,
     totalEarned: 113.02,
@@ -19,7 +19,7 @@ export const players2025: PlayerYearStatsTable = {
     fallOff: { pct: 29.41, total: 5 },
     strokesGained: { total: 24.75, offTee: 2.54, approach: 20.77, aroundGreen: 4.07, putting: -2.63 },
   },
-  Cam: {
+  "cam-latto": {
     scoringAverage: 78.6,
     teamPointsWon: 9.5,
     totalEarned: 100.79,
@@ -37,7 +37,7 @@ export const players2025: PlayerYearStatsTable = {
     fallOff: { pct: 63.64, total: 7 },
     strokesGained: { total: 4.75, offTee: -1.67, approach: -17.33, aroundGreen: 10.5, putting: 13.25 },
   },
-  Collin: {
+  "collin-ross": {
     scoringAverage: 80.0,
     teamPointsWon: 9.5,
     totalEarned: 115.79,
@@ -55,7 +55,7 @@ export const players2025: PlayerYearStatsTable = {
     fallOff: { pct: 66.67, total: 6 },
     strokesGained: { total: -2.25, offTee: -0.56, approach: 0.32, aroundGreen: -3.88, putting: 1.88 },
   },
-  Dalton: {
+  "dalton-spriggs": {
     scoringAverage: 84.0,
     teamPointsWon: 6,
     totalEarned: 84.44,
@@ -73,7 +73,7 @@ export const players2025: PlayerYearStatsTable = {
     fallOff: { pct: 50.0, total: 3 },
     strokesGained: { total: -22.25, offTee: -5.62, approach: 3.45, aroundGreen: -7.58, putting: -12.5 },
   },
-  Drew: {
+  "drew-weisser": {
     scoringAverage: 80.4,
     teamPointsWon: 13,
     totalEarned: 50.79,
@@ -91,7 +91,7 @@ export const players2025: PlayerYearStatsTable = {
     fallOff: { pct: 50.0, total: 2 },
     strokesGained: { total: -4.25, offTee: -5.76, approach: -6.25, aroundGreen: 1.89, putting: 5.88 },
   },
-  Luke: {
+  "luke-sherrell": {
     scoringAverage: 77.8,
     teamPointsWon: 15,
     totalEarned: 151.59,
@@ -109,7 +109,7 @@ export const players2025: PlayerYearStatsTable = {
     fallOff: { pct: 0.0, total: 0 },
     strokesGained: { total: 8.75, offTee: -1.43, approach: 12.22, aroundGreen: 2.08, putting: -4.13 },
   },
-  Nate: {
+  "nate-wojciechowski": {
     scoringAverage: 80.6,
     teamPointsWon: 16,
     totalEarned: 80.0,
@@ -127,7 +127,7 @@ export const players2025: PlayerYearStatsTable = {
     fallOff: { pct: 60.0, total: 3 },
     strokesGained: { total: -5.25, offTee: 0.29, approach: 5.08, aroundGreen: -0.49, putting: -10.13 },
   },
-  Peyton: {
+  "peyton-vos": {
     scoringAverage: 80.4,
     teamPointsWon: 6.5,
     totalEarned: 103.57,

@@ -4,8 +4,9 @@ import { PlayerProfileHeader } from "@/components/scorecard/PlayerProfileHeader"
 import { PlayerScorecardView } from "./PlayerScorecardView";
 import { DETAIL_POLL_MS, useLiveTournament } from "@/lib/hooks/useLiveTournament";
 import { nextTournament, isLiveNow } from "@/lib/data";
-import { getPlayerAvatar, getPlayerProfile } from "@/lib/data/players";
+import { getPlayerSlug, getPlayerDisplayName, getPlayerAvatar, getPlayerProfile } from "@/lib/data/players";
 import type { Team } from "@/lib/data/types";
+import { placementValueLabel } from "@/lib/leaderboard/placement";
 
 export function LivePlayerScorecard({ tournamentSlug, player }: { tournamentSlug: string; player: string }) {
   const { tournament, loading, payload } = useLiveTournament(DETAIL_POLL_MS);
@@ -14,15 +15,14 @@ export function LivePlayerScorecard({ tournamentSlug, player }: { tournamentSlug
     return <p className="font-sans text-sm text-ink-400 py-10 text-center">Checking the live sheet...</p>;
   }
 
-  const team: Team = tournament.roster.maroon.some((n) => n.toLowerCase() === player.toLowerCase()) ? "maroon" : "white";
-  const displayName =
-    [...tournament.roster.maroon, ...tournament.roster.white].find((n) => n.toLowerCase() === player.toLowerCase()) ?? player;
-  const scorecard = tournament.scorecards?.find((s) => s.player.toLowerCase() === player.toLowerCase());
+  const team: Team = tournament.roster.maroon.some((n) => getPlayerSlug(n) === getPlayerSlug(player)) ? "maroon" : "white";
+  const displayName = getPlayerDisplayName(player);
+  const scorecard = tournament.scorecards?.find((s) => getPlayerSlug(s.player) === getPlayerSlug(player));
   const profile = getPlayerProfile(player);
 
   const ranked = [...tournament.individualLeaderboard].sort((a, b) => a.toPar - b.toPar);
-  const standing = ranked.find((p) => p.player.toLowerCase() === player.toLowerCase());
-  const position = standing ? ranked.indexOf(standing) + 1 : null;
+  const standing = ranked.find((p) => getPlayerSlug(p.player) === getPlayerSlug(player));
+  const position = standing ? placementValueLabel(ranked, ranked.indexOf(standing)) : null;
   const total = standing?.toPar ?? null;
   const lastRound = scorecard?.rounds[scorecard.rounds.length - 1];
   const playedCount = lastRound?.holes.filter((h) => h.score > 0).length ?? 0;

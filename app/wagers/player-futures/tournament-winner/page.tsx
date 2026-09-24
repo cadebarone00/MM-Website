@@ -2,7 +2,7 @@
 
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
 import { futurePlayerMarket } from "@/lib/wagers/marketKeys";
-import { MarketSelectionList } from "@/components/wagers/MarketSelectionList";
+import { FuturesMarketCard } from "@/components/wagers/FuturesMarketCard";
 import { ComingSoonNotice } from "@/components/wagers/ComingSoonNotice";
 import { useWagersMode } from "@/components/wagers/WagersModeContext";
 
@@ -22,7 +22,7 @@ export default function TournamentWinnerPage() {
     return <p className="px-4 py-10 text-center font-sans text-sm text-ink-400 sm:px-7">Checking the live sheet...</p>;
   }
 
-  const market = futurePlayerMarket(tournament.slug, tournament.individualLeaderboard);
+  const market = futurePlayerMarket(tournament.slug, tournament.individualLeaderboard, [...tournament.roster.maroon, ...tournament.roster.white]);
 
   return (
     <div className="px-4 pt-5 sm:px-7">
@@ -31,10 +31,7 @@ export default function TournamentWinnerPage() {
         {market.selections.length === 0 ? (
           <p className="font-sans text-sm text-ink-400">Tournament Winner odds post once the individual leaderboard has entries.</p>
         ) : (
-          <MarketSelectionList
-            searchPlaceholder="Search a player..."
-            selections={market.selections.map((selection) => ({ ...selection, marketKey: market.marketKey }))}
-          />
+          <FuturesMarketCard title="Tournament Winner" marketKey={market.marketKey} selections={market.selections} />
         )}
       </div>
     </div>

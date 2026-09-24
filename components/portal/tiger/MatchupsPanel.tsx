@@ -43,7 +43,17 @@ function availablePlayers(pool: RosterPlayer[], drafts: BoxDraft[], side: "maroo
   return pool.filter((p) => p.playerSlug === currentValue || !usedElsewhere.has(p.playerSlug));
 }
 
-export function MatchupsPanel({ rounds, initialMatchBoxes, roster }: { rounds: LiveRoundState[]; initialMatchBoxes: LiveMatchBox[]; roster: RosterPlayer[] }) {
+export function MatchupsPanel({
+  year,
+  rounds,
+  initialMatchBoxes,
+  roster,
+}: {
+  year: number;
+  rounds: LiveRoundState[];
+  initialMatchBoxes: LiveMatchBox[];
+  roster: RosterPlayer[];
+}) {
   // Saved match boxes only ever change via a full page reload, right after
   // a successful save/remove/lock (see saveBox/removeBox/toggleMatchupsLock
   // below) — so in-progress edits never need to live alongside them. They're
@@ -91,6 +101,7 @@ export function MatchupsPanel({ rounds, initialMatchBoxes, roster }: { rounds: L
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          year,
           round: round.round,
           boxNumber: draft.boxNumber,
           teeTime: new Date(`${round.date}T${draft.teeTime}:00`).toISOString(),
@@ -129,7 +140,7 @@ export function MatchupsPanel({ rounds, initialMatchBoxes, roster }: { rounds: L
     const res = await fetch("/api/portal/tiger/rounds/lock", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ round, lock: "matchups", value }),
+      body: JSON.stringify({ year, round, lock: "matchups", value }),
     });
     const data = await res.json();
     if (!data.ok) {
@@ -137,6 +148,26 @@ export function MatchupsPanel({ rounds, initialMatchBoxes, roster }: { rounds: L
       return;
     }
     window.location.reload();
+  }
+
+  async function startMatch(id: string) {
+    setBusyKey(`start:${id}`);
+    setError(null);
+    try {
+      const res = await fetch("/api/portal/tiger/matchboxes/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error);
+        return;
+      }
+      window.location.reload();
+    } finally {
+      setBusyKey(null);
+    }
   }
 
   return (
@@ -173,17 +204,27 @@ export function MatchupsPanel({ rounds, initialMatchBoxes, roster }: { rounds: L
                       <input
                         type="time"
                         value={draft.teeTime}
-                        disabled={round.matchupsLocked}
+                        disabled={round.started}
                         onChange={(e) => updateDraft(round.round, draft.boxNumber, { teeTime: e.target.value })}
                         className="border-2 border-stone-300 rounded-lg px-2 py-1 text-sm"
                       />
-                      {draft.id && !round.matchupsLocked && (
+                      {draft.id && !round.started && (
                         <button
                           type="button"
                           onClick={() => removeBox(draft.id!)}
                           className="font-condensed text-2xs font-semibold uppercase tracking-wide text-red-600 underline"
                         >
                           Remove
+                        </button>
+                      )}
+                      {draft.id && round.started && (
+                        <button
+                          type="button"
+                          disabled={busyKey === `start:${draft.id}`}
+                          onClick={() => startMatch(draft.id!)}
+                          className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline disabled:opacity-50"
+                        >
+                          {busyKey === `start:${draft.id}` ? "Starting…" : "Start Match"}
                         </button>
                       )}
                     </div>
@@ -196,7 +237,7 @@ export function MatchupsPanel({ rounds, initialMatchBoxes, roster }: { rounds: L
                         <select
                           key={i}
                           value={value ?? ""}
-                          disabled={round.matchupsLocked}
+                          disabled={round.started}
                           onChange={(e) => {
                             const next = [...draft.maroonPlayers];
                             next[i] = e.target.value || null;
@@ -219,7 +260,7 @@ export function MatchupsPanel({ rounds, initialMatchBoxes, roster }: { rounds: L
                         <select
                           key={i}
                           value={value ?? ""}
-                          disabled={round.matchupsLocked}
+                          disabled={round.started}
                           onChange={(e) => {
                             const next = [...draft.whitePlayers];
                             next[i] = e.target.value || null;
@@ -238,7 +279,7 @@ export function MatchupsPanel({ rounds, initialMatchBoxes, roster }: { rounds: L
                     </div>
                   </div>
 
-                  {!round.matchupsLocked && (
+                  {!round.started && (
                     <button
                       type="button"
                       disabled={busyKey === `${round.round}:${draft.boxNumber}`}

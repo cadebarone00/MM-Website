@@ -1,7 +1,7 @@
 import type { PlayerProfile } from "../types";
 
 export const nateWojciechowski: PlayerProfile = {
-  id: "Nate",
+  id: "nate-wojciechowski",
   slug: "nate-wojciechowski",
   fullName: "Nate Wojciechowski",
   avatarSrc: "/players/nate-wojciechowski/avatar.png",

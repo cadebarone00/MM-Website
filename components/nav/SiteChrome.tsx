@@ -3,20 +3,34 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
 import { PortalHeader } from "@/components/nav/PortalHeader";
 import { PlayerAreaNav } from "@/components/nav/PlayerAreaNav";
+import type { NextTournamentOverride } from "@/lib/data/types";
+import { AreaNavigation } from "./AreaNavigation";
+import { RoundExitProvider } from "./RoundExit";
 
 /**
- * Picks the site chrome for the current route. `/portal/*` (Portal,
- * Scoring) gets `PortalHeader` with no bottom tab bar and no Footer —
- * those are Website-only features. Everywhere else keeps the normal
- * `Header` + `Footer`, unchanged. `PlayerAreaNav` shows in both cases
- * (it already renders nothing for non-player sessions).
+ * Picks the site chrome for the current route. `/broadcast` gets nothing at
+ * all — no header, no footer, no nav — it's a TV-style broadcast canvas,
+ * not a webpage (see the Watch Live Broadcast spec, §6/§10). `/portal/*`
+ * (Portal, Scoring) gets `PortalHeader` with no bottom tab bar and no
+ * Footer — those are Website-only features. Everywhere else keeps the
+ * normal `Header` + `Footer`, unchanged. `PlayerAreaNav` shows in the
+ * portal/website cases (it already renders nothing for non-player
+ * sessions).
  */
-export function SiteChrome({ children }: { children: ReactNode }) {
+export function SiteChrome({ children, nextTournamentOverride }: { children: ReactNode; nextTournamentOverride: NextTournamentOverride }) {
+  return <AreaNavigation><RoundExitProvider><AreaChrome nextTournamentOverride={nextTournamentOverride}>{children}</AreaChrome></RoundExitProvider></AreaNavigation>;
+}
+
+function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode; nextTournamentOverride: NextTournamentOverride }) {
   const pathname = usePathname();
   const inPortal = pathname.startsWith("/portal");
+  const inBroadcast = pathname.startsWith("/broadcast");
+
+  if (inBroadcast || pathname === "/portal/admin/scoring-preview/mobile") {
+    return <>{children}</>;
+  }
 
   if (inPortal) {
     return (
@@ -30,10 +44,9 @@ export function SiteChrome({ children }: { children: ReactNode }) {
 
   return (
     <div className="pb-[calc(5rem+env(safe-area-inset-bottom)+2.5vh)] lg:pb-0">
-      <Header />
+      <Header nextTournamentOverride={nextTournamentOverride} />
       <PlayerAreaNav />
       {children}
-      <Footer />
     </div>
   );
 }

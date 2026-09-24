@@ -1,0 +1,49 @@
+Player,Round,Day_Sheet,Session,Format,Partner,Opponent(s),Scorecard_Sheet,Scorecard_Block,Hole_Score_Cells,Pairing_Source_Cells,Format_Source_Cell,Notes
+Cam,1,Day 1,Morning,Fourball,Drew,Dalton & Peyton,Player Input,G10:AA22,H15:Y15,AF46:AH49,D26,Individual scorecard on Player Input; matchup verified on Day sheet.
+Cam,2,Day 1,Afternoon,Alternate Shot,Luke,Cade & Dalton,Day 1,D52:Z65,"E58:M58,O58:W58",AF50:AH53,D52,Shared alternate-shot team scorecard on Day sheet.
+Cam,3,Day 2,Morning,Fourball,Nate,Collin & Dalton,Player Input,BC10:BV22,BD15:BU15,AF42:AH45,D12,Individual scorecard on Player Input; matchup verified on Day sheet.
+Cam,4,Day 2,Afternoon,Alternate Shot,Drew,Cade & Collin,Day 2,D66:Z79,"E72:M72,O72:W72",AF54:AH57,D66,Shared alternate-shot team scorecard on Day sheet.
+Cam,5,Day 4,Morning,Singles,,Cade,Player Input,CA10:CT22,CB15:CS15,AF61:AH62,D36,Individual scorecard on Player Input; matchup verified on Day sheet.
+Cam,6,Day 4,Afternoon,Singles,,Dalton,Player Input,CY10:DR22,CZ15:DQ15,AF69:AH70,D96,Individual scorecard on Player Input; matchup verified on Day sheet.
+Drew,1,Day 1,Morning,Fourball,Cam,Dalton & Peyton,Player Input,G24:AA36,H29:Y29,AF46:AH49,D26,Individual scorecard on Player Input; matchup verified on Day sheet.
+Drew,2,Day 1,Afternoon,Alternate Shot,Nate,Collin & Peyton,Day 1,D66:Z79,"E72:M72,O72:W72",AF54:AH57,D66,Shared alternate-shot team scorecard on Day sheet.
+Drew,3,Day 2,Morning,Fourball,Luke,Cade & Peyton,Player Input,BC24:BV36,BD29:BU29,AF46:AH49,D26,Individual scorecard on Player Input; matchup verified on Day sheet.
+Drew,4,Day 2,Afternoon,Alternate Shot,Cam,Cade & Collin,Day 2,D66:Z79,"E72:M72,O72:W72",AF54:AH57,D66,Shared alternate-shot team scorecard on Day sheet.
+Drew,5,Day 4,Morning,Singles,,Collin,Player Input,CA24:CT36,CB29:CS29,AF63:AH64,D48,Individual scorecard on Player Input; matchup verified on Day sheet.
+Drew,6,Day 4,Afternoon,Singles,,Peyton,Player Input,CY24:DR36,CZ29:DQ29,AF71:AH72,D108,Individual scorecard on Player Input; matchup verified on Day sheet.
+Luke,1,Day 1,Morning,Fourball,Nate,Cade & Collin,Player Input,G38:AA50,H43:Y43,AF42:AH45,D12,Individual scorecard on Player Input; matchup verified on Day sheet.
+Luke,2,Day 1,Afternoon,Alternate Shot,Cam,Cade & Dalton,Day 1,D52:Z65,"E58:M58,O58:W58",AF50:AH53,D52,Shared alternate-shot team scorecard on Day sheet.
+Luke,3,Day 2,Morning,Fourball,Drew,Cade & Peyton,Player Input,BC38:BV50,BD43:BU43,AF46:AH49,D26,Individual scorecard on Player Input; matchup verified on Day sheet.
+Luke,4,Day 2,Afternoon,Alternate Shot,Nate,Dalton & Peyton,Day 2,D52:Z65,"E58:M58,O58:W58",AF50:AH53,D52,Shared alternate-shot team scorecard on Day sheet.
+Luke,5,Day 4,Morning,Singles,,Dalton,Player Input,CA38:CT50,CB43:CS43,AF59:AH60,D24,Individual scorecard on Player Input; matchup verified on Day sheet.
+Luke,6,Day 4,Afternoon,Singles,,Collin,Player Input,CY38:DR50,CZ43:DQ43,AF67:AH68,D84,Individual scorecard on Player Input; matchup verified on Day sheet.
+Nate,1,Day 1,Morning,Fourball,Luke,Cade & Collin,Player Input,G52:AA64,H57:Y57,AF42:AH45,D12,Individual scorecard on Player Input; matchup verified on Day sheet.
+Nate,2,Day 1,Afternoon,Alternate Shot,Drew,Collin & Peyton,Day 1,D66:Z79,"E72:M72,O72:W72",AF54:AH57,D66,Shared alternate-shot team scorecard on Day sheet.
+Nate,3,Day 2,Morning,Fourball,Cam,Collin & Dalton,Player Input,BC52:BV64,BD57:BU57,AF42:AH45,D12,Individual scorecard on Player Input; matchup verified on Day sheet.
+Nate,4,Day 2,Afternoon,Alternate Shot,Luke,Dalton & Peyton,Day 2,D52:Z65,"E58:M58,O58:W58",AF50:AH53,D52,Shared alternate-shot team scorecard on Day sheet.
+Nate,5,Day 4,Morning,Singles,,Peyton,Player Input,CA52:CT64,CB57:CS57,AF57:AH58,D12,Individual scorecard on Player Input; matchup verified on Day sheet.
+Nate,6,Day 4,Afternoon,Singles,,Cade,Player Input,CY52:DR64,CZ57:DQ57,AF65:AH66,D72,Individual scorecard on Player Input; matchup verified on Day sheet.
+Cade,1,Day 1,Morning,Fourball,Collin,Nate & Luke,Player Input,G66:AA78,H71:Y71,AF42:AH45,D12,Individual scorecard on Player Input; matchup verified on Day sheet.
+Cade,2,Day 1,Afternoon,Alternate Shot,Dalton,Cam & Luke,Day 1,D52:Z65,"E60:M60,O60:W60",AF50:AH53,D52,Shared alternate-shot team scorecard on Day sheet.
+Cade,3,Day 2,Morning,Fourball,Peyton,Drew & Luke,Player Input,BC66:BV78,BD71:BU71,AF46:AH49,D26,Individual scorecard on Player Input; matchup verified on Day sheet.
+Cade,4,Day 2,Afternoon,Alternate Shot,Collin,Cam & Drew,Day 2,D66:Z79,"E74:M74,O74:W74",AF54:AH57,D66,Shared alternate-shot team scorecard on Day sheet.
+Cade,5,Day 4,Morning,Singles,,Cam,Player Input,CA66:CT78,CB71:CS71,AF61:AH62,D36,Individual scorecard on Player Input; matchup verified on Day sheet.
+Cade,6,Day 4,Afternoon,Singles,,Nate,Player Input,CY66:DR78,CZ71:DQ71,AF65:AH66,D72,Individual scorecard on Player Input; matchup verified on Day sheet.
+Collin,1,Day 1,Morning,Fourball,Cade,Nate & Luke,Player Input,G80:AA92,H85:Y85,AF42:AH45,D12,Individual scorecard on Player Input; matchup verified on Day sheet.
+Collin,2,Day 1,Afternoon,Alternate Shot,Peyton,Drew & Nate,Day 1,D66:Z79,"E74:M74,O74:W74",AF54:AH57,D66,Shared alternate-shot team scorecard on Day sheet.
+Collin,3,Day 2,Morning,Fourball,Dalton,Cam & Nate,Player Input,BC80:BV92,BD85:BU85,AF42:AH45,D12,Individual scorecard on Player Input; matchup verified on Day sheet.
+Collin,4,Day 2,Afternoon,Alternate Shot,Cade,Cam & Drew,Day 2,D66:Z79,"E74:M74,O74:W74",AF54:AH57,D66,Shared alternate-shot team scorecard on Day sheet.
+Collin,5,Day 4,Morning,Singles,,Drew,Player Input,CA80:CT92,CB85:CS85,AF63:AH64,D48,Individual scorecard on Player Input; matchup verified on Day sheet.
+Collin,6,Day 4,Afternoon,Singles,,Luke,Player Input,CY80:DR92,CZ85:DQ85,AF67:AH68,D84,Individual scorecard on Player Input; matchup verified on Day sheet.
+Dalton,1,Day 1,Morning,Fourball,Peyton,Cam & Drew,Player Input,G94:AA106,H99:Y99,AF46:AH49,D26,Individual scorecard on Player Input; matchup verified on Day sheet.
+Dalton,2,Day 1,Afternoon,Alternate Shot,Cade,Cam & Luke,Day 1,D52:Z65,"E60:M60,O60:W60",AF50:AH53,D52,Shared alternate-shot team scorecard on Day sheet.
+Dalton,3,Day 2,Morning,Fourball,Collin,Cam & Nate,Player Input,BC94:BV106,BD99:BU99,AF42:AH45,D12,Individual scorecard on Player Input; matchup verified on Day sheet.
+Dalton,4,Day 2,Afternoon,Alternate Shot,Peyton,Luke & Nate,Day 2,D52:Z65,"E60:M60,O60:W60",AF50:AH53,D52,Shared alternate-shot team scorecard on Day sheet.
+Dalton,5,Day 4,Morning,Singles,,Luke,Player Input,CA94:CT106,CB99:CS99,AF59:AH60,D24,Individual scorecard on Player Input; matchup verified on Day sheet.
+Dalton,6,Day 4,Afternoon,Singles,,Cam,Player Input,CY94:DR106,CZ99:DQ99,AF69:AH70,D96,Individual scorecard on Player Input; matchup verified on Day sheet.
+Peyton,1,Day 1,Morning,Fourball,Dalton,Cam & Drew,Player Input,G108:AA120,H113:Y113,AF46:AH49,D26,Individual scorecard on Player Input; matchup verified on Day sheet.
+Peyton,2,Day 1,Afternoon,Alternate Shot,Collin,Drew & Nate,Day 1,D66:Z79,"E74:M74,O74:W74",AF54:AH57,D66,Shared alternate-shot team scorecard on Day sheet.
+Peyton,3,Day 2,Morning,Fourball,Cade,Drew & Luke,Player Input,BC108:BV120,BD113:BU113,AF46:AH49,D26,Individual scorecard on Player Input; matchup verified on Day sheet.
+Peyton,4,Day 2,Afternoon,Alternate Shot,Dalton,Luke & Nate,Day 2,D52:Z65,"E60:M60,O60:W60",AF50:AH53,D52,Shared alternate-shot team scorecard on Day sheet.
+Peyton,5,Day 4,Morning,Singles,,Nate,Player Input,CA108:CT120,CB113:CS113,AF57:AH58,D12,Individual scorecard on Player Input; matchup verified on Day sheet.
+Peyton,6,Day 4,Afternoon,Singles,,Drew,Player Input,CY108:DR120,CZ113:DQ113,AF71:AH72,D108,Individual scorecard on Player Input; matchup verified on Day sheet.

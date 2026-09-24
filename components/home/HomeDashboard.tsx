@@ -4,14 +4,12 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Play, Trophy, X } from "lucide-react";
 import { SectionHead } from "@/components/home/SectionHead";
-import { QuickLeaderboardCard } from "@/components/home/QuickLeaderboardCard";
-import { QuickTeamsCard } from "@/components/home/QuickTeamsCard";
 import { QuickScheduleCard } from "@/components/home/QuickScheduleCard";
+import type { UpcomingRoundScheduleItem } from "@/lib/data/activeSeasonOverlay";
 import { HomeTeamsPanel } from "@/components/home/HomeTeamsPanel";
-import { Tabs } from "@/components/ui/Tabs";
-import type { TabItem } from "@/components/ui/Tabs";
 import { latestCompleted, fmtPt } from "@/lib/data";
 import { getPlayerDisplayName } from "@/lib/data/players";
+import type { NextTournamentOverride } from "@/lib/data/types";
 
 const highlights = [
   {
@@ -198,23 +196,27 @@ function HighlightsRail({ flat = false }: { flat?: boolean }) {
 
 type ToggleTab = "highlights" | "teams" | "schedule";
 
-const TOGGLE_TABS: TabItem[] = [
+const TOGGLE_TABS: { value: ToggleTab; label: string }[] = [
   { value: "highlights", label: "Highlights" },
   { value: "teams", label: "Teams" },
   { value: "schedule", label: "Schedule" },
 ];
 
-/** Mobile-only replacement for the 2-column Highlights/quick-cards block: one full-width panel, switched by a 3-way toggle, defaulting to Highlights. */
-function MobileHighlightsToggle() {
+/** Shared desktop and mobile homepage panels. */
+function HomeHighlightsToggle({ nextTournamentOverride, rounds }: { nextTournamentOverride: NextTournamentOverride; rounds: UpcomingRoundScheduleItem[] }) {
   const [tab, setTab] = useState<ToggleTab>("highlights");
 
   return (
-    <div className="lg:hidden">
-      <Tabs items={TOGGLE_TABS} value={tab} onChange={(v) => setTab(v as ToggleTab)} variant="plain" />
-      <div className="mt-4">
+    <div>
+      <div className="flex justify-center border-b border-ink-200" role="tablist" aria-label="Home content">
+        {TOGGLE_TABS.map((item) => <button key={item.value} id={`home-tab-${item.value}`} type="button" role="tab" aria-selected={tab === item.value} aria-controls="home-content-panel" onClick={() => setTab(item.value)} className={`relative px-4 pb-3 font-condensed text-sm font-bold uppercase tracking-wide transition-colors sm:px-5 ${tab === item.value ? "text-maroon-700" : "text-ink-400 hover:text-ink-700"}`}>
+          {item.label}{tab === item.value && <span className="absolute inset-x-0 bottom-0 h-0.5 bg-maroon-700" />}
+        </button>)}
+      </div>
+      <div id="home-content-panel" role="tabpanel" aria-labelledby={`home-tab-${tab}`} className="pt-8">
         {tab === "highlights" && <HighlightsRail flat />}
         {tab === "teams" && <HomeTeamsPanel />}
-        {tab === "schedule" && <QuickScheduleCard />}
+        {tab === "schedule" && <QuickScheduleCard nextTournamentOverride={nextTournamentOverride} rounds={rounds} />}
       </div>
     </div>
   );
@@ -311,9 +313,9 @@ function SocialsSection() {
 
   return (
     <section>
-      <div className="grid grid-cols-2 gap-3 sm:gap-5">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-5">
         <div className="min-w-0">
-          <SectionHead title="Our Insta" />
+          <SectionHead title="Socials" />
           <div className="grid grid-cols-2 gap-2 sm:gap-4">
             {shownReels.map((reel, index) => (
               <a
@@ -346,7 +348,7 @@ function SocialsSection() {
         </div>
 
         <div className="min-w-0">
-          <SectionHead title="Our Videos" action="Other Videos" actionHref={ALL_VIDEOS_HREF} />
+          <SectionHead title="Videos" action="Other Videos" actionHref={ALL_VIDEOS_HREF} />
           <div className="flex flex-col gap-2 sm:gap-4">
             {hypeVideoSlots.map((video) => (
               <a
@@ -378,20 +380,11 @@ function SocialsSection() {
   );
 }
 
-export function HomeDashboard() {
+export function HomeDashboard({ nextTournamentOverride, rounds }: { nextTournamentOverride: NextTournamentOverride; rounds: UpcomingRoundScheduleItem[] }) {
   return (
     <section className="bg-cream-100">
       <div className="mx-auto max-w-[1440px] px-4 py-4 sm:px-7 sm:py-8">
-        <MobileHighlightsToggle />
-
-        <div className="hidden lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(180px,320px)] gap-4 xl:gap-7">
-          <HighlightsRail />
-          <div className="flex min-w-0 flex-col gap-2 sm:gap-3 xl:gap-4">
-            <QuickScheduleCard />
-            <QuickTeamsCard />
-            <QuickLeaderboardCard />
-          </div>
-        </div>
+        <HomeHighlightsToggle nextTournamentOverride={nextTournamentOverride} rounds={rounds} />
 
         <div className="mt-6 space-y-6 sm:mt-10 sm:space-y-10">
           <NewsSection />

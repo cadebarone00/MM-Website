@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
-import { getPlayerAvatar, getPlayerDisplayName } from "@/lib/data/players";
+import { getPlayerAvatar, getPlayerDisplayName, getPlayerLastName } from "@/lib/data/players";
 import type { Tournament } from "@/lib/data/types";
+import { placementLabel } from "@/lib/leaderboard/placement";
 
 function posLabel(index: number, ranked: { toPar: number }[]): string {
-  const pos = index + 1;
-  const tied = ranked.filter((p) => p.toPar === ranked[index].toPar).length > 1;
-  return `${tied ? "T" : ""}${pos}`;
+  return placementLabel(ranked, index);
 }
 
 function scoreLabel(toPar: number): string {
@@ -34,7 +33,7 @@ export function LeaderboardStrip({ tournament }: { tournament: Tournament }) {
             </span>
           </span>
           <span className="font-sans text-[11px] font-semibold text-ink-900 truncate w-full">
-            {posLabel(i, ranked)}. {getPlayerDisplayName(entry.player).split(" ").pop()}
+            {posLabel(i, ranked)}. {getPlayerLastName(entry.player)}
           </span>
         </Link>
       ))}

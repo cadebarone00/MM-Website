@@ -3,27 +3,36 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "docs:workflow": "node scripts/render-workflow.cjs",
+    "docs:workflow:check": "node scripts/render-workflow.cjs --check",
+    "build:career-archive": "tsx scripts/build-career-archive.ts",
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test {lib,app}/**/*.test.{ts,mts}"
+    "test": "tsx --test {lib,app,components}/**/*.test.{ts,mts,tsx}",
+    "test:db": "node scripts/test-scoring-reliability.mjs",
+    "test:browser": "node scripts/test-scoring-browser.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1124.0",
+    "@aws-sdk/s3-request-presigner": "^3.1124.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.0",
     "lucide-react": "^1.21.0",
-    "next": "16.2.9",
+    "next": "^16.3.5",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.9",
+    "eslint-config-next": "^16.3.5",
     "playwright": "^1.61.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.6",
