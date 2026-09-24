@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { calculateSkins, type SkinsRound } from "./calculate";
+import { calculateSkins, calculateSkinsResults, type SkinsRound } from "./calculate";
 
 const card = (player: string, score: number, overrides: Partial<SkinsRound> = {}): SkinsRound => ({
   player, round: 7, course: "Mission Hills Pete Dye", format: "Singles",
@@ -34,4 +34,16 @@ test("missing or invalid scores and duplicate cards cannot create a winner", () 
 
 test("shared-ball scores never earn individual skins", () => {
   assert.deepEqual(calculateSkins([card("cam", 3, { format: "Alternate Shot" }), card("cade", 4, { format: "Alternate Shot" })]), { cam: 0, cade: 0 });
+});
+
+test("winning-hole details match the totals and retain gross score and par", () => {
+  const result = calculateSkinsResults([
+    card("cam", 3, { course: "Mission Hills Pete Dye #2", holes: [{ hole: 3, score: 3, par: 4 }, { hole: 4, score: 4, par: 4 }] }),
+    card("cade", 4, { holes: [{ hole: 3, score: 4, par: 4 }, { hole: 4, score: 5, par: 4 }] }),
+  ]);
+  assert.equal(result.totals.cam, result.wins.length);
+  assert.deepEqual(result.wins, [
+    { player: "cam", round: 7, course: "Mission Hills Pete Dye", hole: 3, score: 3, par: 4 },
+    { player: "cam", round: 7, course: "Mission Hills Pete Dye", hole: 4, score: 4, par: 4 },
+  ]);
 });
