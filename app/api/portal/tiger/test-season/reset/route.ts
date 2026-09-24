@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     .eq("season_year", TEST_SEASON_YEAR);
   if (boxesError) return NextResponse.json({ ok: false, error: boxesError.message }, { status: 500 });
 
-  const marketKeys = [...(boxes ?? []).map((box) => `live-match:${box.id}`), `team-winner:${TEST_SEASON_YEAR}`, `low-individual:${TEST_SEASON_YEAR}`, `hole-in-one:${TEST_SEASON_YEAR}`, `total-birdies:${TEST_SEASON_YEAR}`, `player-birdies:${TEST_SEASON_YEAR}`];
+  const marketKeys = [...(boxes ?? []).map((box) => `live-match:${box.id}`), `team-winner:${TEST_SEASON_YEAR}`, `low-individual:${TEST_SEASON_YEAR}`, `hole-in-one:${TEST_SEASON_YEAR}`, `total-birdies:${TEST_SEASON_YEAR}`, `player-birdies:${TEST_SEASON_YEAR}`, `player-doubles:${TEST_SEASON_YEAR}`];
   let wagerCount = 0;
   if (marketKeys.length) {
     const { data: bets, error: betsError } = await service
@@ -79,6 +79,7 @@ export async function POST(request: Request) {
     service.from("low_individual_odds_snapshots").delete().eq("season_year", TEST_SEASON_YEAR),
     service.from("total_birdies_odds_snapshots").delete().eq("season_year", TEST_SEASON_YEAR),
     service.from("player_birdies_odds_snapshots").delete().eq("season_year", TEST_SEASON_YEAR),
+    service.from("player_doubles_odds_snapshots").delete().eq("season_year", TEST_SEASON_YEAR),
     service.from("live_match_boxes").delete().eq("season_year", TEST_SEASON_YEAR),
     service.from("live_round_state").delete().eq("season_year", TEST_SEASON_YEAR),
     service.from("live_roster").delete().eq("season_year", TEST_SEASON_YEAR),

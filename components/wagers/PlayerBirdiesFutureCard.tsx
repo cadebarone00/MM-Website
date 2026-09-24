@@ -7,6 +7,25 @@ import type { WagersMode } from "./WagersModeContext";
 import { OddsButton } from "./OddsButton";
 import { AssumptionsNote } from "./AssumptionsNote";
 
+type StatCopy = { title: string; noun: string; endpoint: string; description: string; method: string };
+
+const COPY: Record<PlayerBirdiesState["stat"], StatCopy> = {
+  birdies: {
+    title: "Player Birdies",
+    noun: "birdies",
+    endpoint: "/api/wagers/player-birdies",
+    description: "Each player’s birdies across every Singles and Fourball round. Slide to pick a line, then take the Over or the Under. Alternate Shot doesn’t count, and an eagle isn’t a birdie.",
+    method: "birdie rate",
+  },
+  doubles: {
+    title: "Player Doubles",
+    noun: "doubles+",
+    endpoint: "/api/wagers/player-doubles",
+    description: "Each player’s double bogeys or worse (two or more over par) across every Singles and Fourball round. Slide to pick a line, then take the Over or the Under. Alternate Shot doesn’t count.",
+    method: "double-or-worse rate",
+  },
+};
+
 /** One player's line: name, an alternate-line slider, and Over / Under odds for the chosen line. */
 function PlayerLine({
   entry,
@@ -14,7 +33,9 @@ function PlayerLine({
   onChoose,
   state,
   bettable,
+  noun,
 }: {
+  noun: string;
   entry: PlayerBirdiesRow;
   chosenLine: number | undefined;
   onChoose: (line: number) => void;
@@ -42,12 +63,12 @@ function PlayerLine({
       <div className="min-w-0">
         <p className="m-0 truncate font-sans text-sm font-semibold text-ink-900">{entry.name}</p>
         <p className="m-0 font-sans text-2xs text-ink-400">
-          {entry.birdiesSoFar} so far · projected {entry.expected.toFixed(1)}
+          {entry.soFar} so far · projected {entry.expected.toFixed(1)}
         </p>
       </div>
       <label className="flex min-w-0 flex-col gap-1">
         <span className="font-condensed text-xs font-bold uppercase tracking-wide text-ink-700">
-          {line.line} birdies
+          {line.line} {noun}
         </span>
         <input
           type="range"
@@ -56,7 +77,7 @@ function PlayerLine({
           step={1}
           value={index}
           onChange={(event) => onChoose(entry.lines[Number(event.target.value)].line)}
-          aria-label={`${entry.name} birdie line`}
+          aria-label={`${entry.name} ${noun} line`}
           className="w-full accent-maroon-700"
         />
       </label>
@@ -68,8 +89,9 @@ function PlayerLine({
   );
 }
 
-/** Player Birdies — each player's own birdies across every Singles and Fourball round, with alternate lines. */
-export function PlayerBirdiesFutureCard({ mode }: { mode: WagersMode }) {
+/** A per-player Over/Under card with alternate lines — Player Birdies or Player Doubles. */
+function PlayerStatFutureCard({ mode, stat }: { mode: WagersMode; stat: PlayerBirdiesState["stat"] }) {
+  const copy = COPY[stat];
   const [state, setState] = useState<PlayerBirdiesState | null>(null);
   const [failed, setFailed] = useState(false);
   // Remembered by line value, not slider position, so a refresh that shifts
@@ -79,7 +101,7 @@ export function PlayerBirdiesFutureCard({ mode }: { mode: WagersMode }) {
   useEffect(() => {
     let active = true;
     const load = () =>
-      fetch("/api/wagers/player-birdies", { cache: "no-store" })
+      fetch(copy.endpoint, { cache: "no-store" })
         .then((res) => res.json())
         .then((data) => {
           if (!active) return;
@@ -89,22 +111,20 @@ export function PlayerBirdiesFutureCard({ mode }: { mode: WagersMode }) {
     load();
     const timer = window.setInterval(load, 20_000);
     return () => { active = false; window.clearInterval(timer); };
-  }, []);
+  }, [copy.endpoint]);
 
   const bettable = mode === "coins" && state?.status === "open";
 
   return (
     <div className="rounded-sm border border-gold-400 bg-white p-4">
       <p className="m-0 font-condensed text-2xs font-bold uppercase tracking-eyebrow text-ink-400">Player Future</p>
-      <h3 className="m-0 mt-1 font-serif text-lg font-bold text-ink-900">Player Birdies</h3>
-      <p className="m-0 mt-1 font-sans text-sm text-ink-500">
-        Each player&rsquo;s birdies across every Singles and Fourball round. Slide to pick a line, then take the Over or the Under. Alternate Shot doesn&rsquo;t count, and an eagle isn&rsquo;t a birdie.
-      </p>
+      <h3 className="m-0 mt-1 font-serif text-lg font-bold text-ink-900">{copy.title}</h3>
+      <p className="m-0 mt-1 font-sans text-sm text-ink-500">{copy.description}</p>
 
       {!state ? (
-        <p className="mt-4 font-sans text-sm text-ink-400">{failed ? "Couldn't load Player Birdies odds." : "Loading odds…"}</p>
+        <p className="mt-4 font-sans text-sm text-ink-400">{failed ? `Couldn't load ${copy.title} odds.` : "Loading odds…"}</p>
       ) : state.status === "not_ready" || !state.players.length ? (
-        state.finalBirdies && state.status === "settled" ? (
+        state.finalCounts && state.status === "settled" ? (
           <p className="mt-4 font-sans text-sm text-ink-500">Every bet was graded against the line it was placed at. Wagers have been paid out.</p>
         ) : (
           <div className="mt-4 rounded-sm bg-cream-50 p-3">
@@ -129,6 +149,7 @@ export function PlayerBirdiesFutureCard({ mode }: { mode: WagersMode }) {
                 onChoose={(line) => setChosen((current) => ({ ...current, [entry.player]: line }))}
                 state={state}
                 bettable={bettable}
+                noun={copy.noun}
               />
             ))}
           </div>
@@ -137,11 +158,19 @@ export function PlayerBirdiesFutureCard({ mode }: { mode: WagersMode }) {
               ? "Updating lines after the latest score…"
               : mode === "real"
                 ? "Real Wagers is coming soon — switch to MM Coins to bet on this now."
-                : "Each slider starts on the line nearest 50/50. Odds come from 10,000 simulations of every remaining hole using that player's Career Archive birdie rate on each hole's par and yardage. Your bet keeps the line you took."}
+                : `Each slider starts on the line nearest 50/50. Odds come from 10,000 simulations of every remaining hole using that player's Career Archive ${copy.method} on each hole's par and yardage. Your bet keeps the line you took.`}
           </p>
         </>
       )}
       {state && <AssumptionsNote assumptions={state.assumptions} />}
     </div>
   );
+}
+
+export function PlayerBirdiesFutureCard({ mode }: { mode: WagersMode }) {
+  return <PlayerStatFutureCard mode={mode} stat="birdies" />;
+}
+
+export function PlayerDoublesFutureCard({ mode }: { mode: WagersMode }) {
+  return <PlayerStatFutureCard mode={mode} stat="doubles" />;
 }

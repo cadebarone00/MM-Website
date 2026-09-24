@@ -11,8 +11,8 @@ import { currentHoleInOneState } from "@/lib/wagers/holeInOnePricing";
 import { holeInOneMarketKey } from "@/lib/wagers/holeInOneFuture";
 import { currentTotalBirdiesState } from "@/lib/wagers/totalBirdiesPricing";
 import { totalBirdiesMarketKey } from "@/lib/wagers/totalBirdiesFuture";
-import { currentPlayerBirdiesState } from "@/lib/wagers/playerBirdiesPricing";
-import { playerBirdiesMarketKey } from "@/lib/wagers/playerBirdiesFuture";
+import { currentPlayerStatState } from "@/lib/wagers/playerBirdiesPricing";
+import { PLAYER_STATS, playerStatMarketKey, type PlayerStat } from "@/lib/wagers/playerBirdiesFuture";
 
 const LIVE_MATCH_PREFIX = "live-match:";
 const CLOSED = "That market isn't open for betting right now.";
@@ -21,7 +21,7 @@ type Supabase = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
 /** Only markets with an automatic settlement path are accepted: the live
  * match winner (settled by Tiger's Close Out Match), and the Team Winner, Low
- * Individual, Hole in One, Total Birdies and Player Birdies futures (settled when the last match closes
+ * Individual, Hole in One, Total Birdies, Player Birdies and Player Doubles futures (settled when the last match closes
  * out — see supabase/*_future.sql).
  * Add a market type here only once its settlement is wired up. Odds always
  * come from the server's current price, never from the request. */
@@ -63,12 +63,13 @@ async function openMarket(supabase: Supabase, marketKey: string): Promise<{ mark
     if (state.status === "updating") return { market: null, error: "Total Birdies odds are updating after the latest score — try again in a moment." };
     return { market: state.status === "open" ? state.market : null, error: "The Total Birdies line has moved or closed — reopen the Futures tab for the current line." };
   }
-  if (marketKey === playerBirdiesMarketKey(seasonYear)) {
+  const playerStat = (Object.keys(PLAYER_STATS) as PlayerStat[]).find((stat) => marketKey === playerStatMarketKey(stat, seasonYear));
+  if (playerStat) {
     // Every alternate line is its own selection ("cam-latto:over:12.5"); a line
     // that has dropped off the slider since the page loaded is refused.
-    const state = await currentPlayerBirdiesState(seasonYear);
-    if (state.status === "updating") return { market: null, error: "Player Birdies odds are updating after the latest score — try again in a moment." };
-    return { market: state.status === "open" ? state.market : null, error: "That birdie line isn't available any more — reopen the Futures tab for the current lines." };
+    const state = await currentPlayerStatState(seasonYear, playerStat);
+    if (state.status === "updating") return { market: null, error: `${PLAYER_STATS[playerStat].title} odds are updating after the latest score — try again in a moment.` };
+    return { market: state.status === "open" ? state.market : null, error: "That line isn't available any more — reopen the Futures tab for the current lines." };
   }
 
   return { market: null, error: CLOSED };

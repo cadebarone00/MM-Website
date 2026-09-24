@@ -415,6 +415,15 @@ refused. Settlement grades each bet against that player's confirmed birdie
 count and its own line (`supabase/player_birdies_future.sql`). Refresh,
 staleness and settlement timing match Total Birdies.
 
+### Player Doubles
+
+Player Doubles runs on the same engine with a different hole outcome: a
+double bogey or worse (a score of par + 2 or higher, so a 7 on a par 4
+counts). Its per-hole probability is the player's Measure 1 and Measure 2
+double-or-worse rate, weighted 50/50. Its selections use the
+`player-doubles:<year>` market key and settle from
+`supabase/player_doubles_future.sql`.
+
 ## Required outputs
 
 Every odds calculation should show:

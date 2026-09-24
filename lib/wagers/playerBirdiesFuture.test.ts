@@ -6,8 +6,10 @@ import {
   featuredLineIndex,
   parsePlayerBirdieSelection,
   playerBirdiesMarket,
+  playerStatMarket,
   simulatePlayerBirdies,
 } from "./playerBirdiesFuture";
+import { isDoubleOrWorse } from "./totalBirdiesFuture";
 import type { HistoryRow, IndividualRound, PlayedScore } from "./lowIndividualFuture";
 
 function seeded(seed: number): () => number {
@@ -49,10 +51,31 @@ test("alternate lines stop before either side gets too unlikely, and the slider 
 
 test("every line is its own selection and keys round-trip", () => {
   const lines = birdieLines(Array(11).fill(100));
-  const market = playerBirdiesMarket(2027, [{ player: "cam-latto", birdiesSoFar: 0, expected: 5, featured: featuredLineIndex(lines), lines }], (player) => player);
+  const market = playerBirdiesMarket(2027, [{ player: "cam-latto", soFar: 0, expected: 5, featured: featuredLineIndex(lines), lines }], (player) => player);
   assert.equal(market.marketKey, "player-birdies:2027");
   assert.equal(market.selections.length, lines.length * 2);
   assert.ok(market.selections.some((selection) => selection.key === "cam-latto:over:4.5"));
   assert.deepEqual(parsePlayerBirdieSelection("cam-latto:under:12.5"), { player: "cam-latto", side: "under", line: 12.5 });
   assert.equal(parsePlayerBirdieSelection("cam-latto:sideways:1"), null);
+});
+
+test("doubles or worse counts scores two or more over par, including worse than double", () => {
+  // Par pool on a 400-yard par 4: 6 and 7 are doubles-or-worse, 5 is not -> 2 of 4 = 50%.
+  const history: HistoryRow[] = [
+    { score: 4, par: 4, yards: 400 },
+    { score: 5, par: 4, yards: 400 },
+    { score: 6, par: 4, yards: 400 },
+    { score: 7, par: 4, yards: 400 },
+  ];
+  const played: PlayedScore = (_player, roundNumber, hole) => (roundNumber === 1 ? (hole === 1 ? 6 : hole === 2 ? 8 : 4) : null);
+  const histogram = simulatePlayerBirdies({ player: "a", rounds: [round(1), round(2)], history, played, outcome: isDoubleOrWorse, random: seeded(3) });
+  // 2 banked (the 6 and the 8) + 50% of 18 holes = 11 expected.
+  assert.ok(Math.abs(expectedBirdies(histogram) - 11) < 0.2, String(expectedBirdies(histogram)));
+});
+
+test("the doubles market has its own key and wording", () => {
+  const lines = birdieLines(Array(11).fill(100));
+  const market = playerStatMarket("doubles", 2027, [{ player: "cam-latto", soFar: 0, expected: 5, featured: 0, lines }], () => "Cam");
+  assert.equal(market.marketKey, "player-doubles:2027");
+  assert.equal(market.selections[0].label, "Cam over 0.5 doubles or worse in 2027");
 });
