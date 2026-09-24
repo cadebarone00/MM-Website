@@ -61,6 +61,7 @@ export function MatchOddsGraph({ points, live, final, estimateNote, result }: { 
             <polyline points={line} fill="none" stroke="#231b18" strokeWidth="1.25" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
           </svg>
           {finish && <div className={styles.resultArea}><div role="note" aria-label={`${finish.winner === "maroon" ? "Maroon" : "White"} wins ${finish.label} after hole ${finish.thru}`} className={`${styles.resultBlock} ${finish.winner === "maroon" ? styles.maroonResult : styles.whiteResult}`} style={{ left: `${finish.thru / 18 * 100}%`, top: finish.winner === "maroon" ? 0 : "50%" }}>{finish.label}</div></div>}
+          {final && result?.thru === 18 && <div className={styles.resultArea}><div className={styles.endResult} style={{ top: result.winner === "maroon" ? 0 : "50%" }} role="note" aria-label={`${result.winner === "maroon" ? "Maroon" : "White"} wins ${result.label} after hole 18`}>{result.label.replace(/(\d+)\s*up/i, "$1 Up")}</div></div>}
           <div className={styles.holeAxis} aria-label="Hole numbers">{Array.from({ length: 18 }, (_,index) => <span key={index}>{index + 1}</span>)}</div>
           {history.length > 1 && <div className={styles.sliderTrack}><input aria-label="Explore match odds" aria-valuetext={selectedHole === 0 ? "Before play" : `After hole ${selectedHole}${active ? "" : ": no saved odds"}`} type="range" min="0" max="18" step="1" value={selectedHole} onChange={(event) => setSelected(Number(event.target.value))} className={styles.explore} /></div>}
         </div>

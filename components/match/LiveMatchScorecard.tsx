@@ -19,14 +19,21 @@ export function LiveMatchScorecard({ match, scorecard }: { match: RealMatch; sco
   const white = sideScores(match.whitePlayers);
   let tally = 0;
   let stopped = false;
+  let wonAt: number | null = null;
+  let winner: "maroon" | "white" | null = null;
   const statuses: (number | null)[] = [];
   for (const [index, hole] of holes.entries()) {
     if (stopped || hole.number !== index + 1 || maroon[index] == null || white[index] == null) { stopped = true; statuses.push(null); continue; }
     tally += Math.sign(white[index]! - maroon[index]!);
     const status = tally;
-    if (Math.abs(tally) > holes.length - hole.number) stopped = true;
+    if (Math.abs(tally) > holes.length - hole.number) { stopped = true; wonAt = hole.number; winner = tally > 0 ? "maroon" : "white"; }
     statuses.push(status);
   }
+  if (match.status === "final" && match.leader && match.leader !== "tie") {
+    wonAt = match.holesRemaining != null ? 18 - match.holesRemaining : match.thru ?? wonAt ?? 18;
+    winner = match.leader;
+  }
+  const finalStatus = (key?: number) => <span key={key} aria-label={key == null ? `Final, ${winner} wins` : `Hole ${holes[key].number}: Final, ${winner} wins`} className={`flex h-12 w-full items-center justify-center font-bold ${winner === "maroon" ? "bg-maroon-700 text-white" : "bg-white text-maroon-700"}`}>Final</span>;
   const total = (values: (number | null)[]) => values.some((value) => value != null) ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0) : "—";
   const row = (key: string, label: string, cells: ReactNode[], sum: ReactNode, tone = "bg-cream-100 text-maroon-700") => ({ key, label, cells, sum, tone });
   const scoresRow = (key: string, label: string, values: (number | null)[], team: "maroon" | "white", parMultiplier = 1) => row(key, label, values.map((score, index) => score == null ? "—" : <HoleMarkerForDiff key={index} diff={score - holes[index].par * parMultiplier} size={24} tone={team === "maroon" ? "white" : "maroon"}>{score}</HoleMarkerForDiff>), total(values), team === "maroon" ? "bg-maroon-700 text-white" : "bg-white text-maroon-700");
@@ -38,7 +45,7 @@ export function LiveMatchScorecard({ match, scorecard }: { match: RealMatch; sco
     row("par", "Par", holes.map((hole) => hole.par), total(holes.map((hole) => hole.par))),
     ...(!shared ? players("maroon") : []),
     (shared || (match.format === "Fourball" || match.format === "Play 4, Take 3")) && scoresRow("maroon-side", shared ? "Maroon" : match.format === "Play 4, Take 3" ? "Best 3" : "Best Ball", maroon, "maroon", match.format === "Play 4, Take 3" ? 3 : 1),
-    row("status", "Status", statuses.map((value, index) => value == null ? "—" : <span key={index} className={`flex h-12 items-center justify-center font-bold ${value > 0 ? "bg-maroon-700 text-white" : value < 0 ? "bg-white text-maroon-700" : ""}`} aria-label={`Hole ${index + 1}: ${value === 0 ? "All square" : `${value > 0 ? "Maroon" : "White"} ${Math.abs(value)} up`}`}>{value === 0 ? "AS" : `${Math.abs(value)} ${value > 0 ? "↑" : "↓"}`}</span>), match.status === "scheduled" ? "—" : liveLabel(match)),
+    row("status", "Status", statuses.map((value, index) => wonAt != null && holes[index].number >= wonAt ? finalStatus(index) : value == null ? "—" : <span key={index} className={`flex h-12 items-center justify-center font-bold ${value > 0 ? "bg-maroon-700 text-white" : value < 0 ? "bg-white text-maroon-700" : ""}`} aria-label={`Hole ${index + 1}: ${value === 0 ? "All square" : `${value > 0 ? "Maroon" : "White"} ${Math.abs(value)} up`}`}>{value === 0 ? "AS" : `${Math.abs(value)} ${value > 0 ? "↑" : "↓"}`}</span>), winner ? finalStatus() : match.status === "scheduled" ? "—" : liveLabel(match)),
     (shared || match.format === "Fourball" || match.format === "Play 4, Take 3") && scoresRow("white-side", shared ? "White" : match.format === "Play 4, Take 3" ? "Best 3" : "Best Ball", white, "white", match.format === "Play 4, Take 3" ? 3 : 1),
     ...(!shared ? players("white") : [])
   ].filter((item): item is ReturnType<typeof row> => !!item);
@@ -51,7 +58,7 @@ export function LiveMatchScorecard({ match, scorecard }: { match: RealMatch; sco
       <div className={styles.mobileSide}>{rows.map(r => <div key={r.key} className={r.key === "holes" ? styles.mobileHeader : styles.mobileValue}>{r.sum}</div>)}</div>
     </div>
     <div className={styles.scorecard + " hidden border-y border-ink-300 lg:block"} aria-label="Match scorecard table"><table className="w-full table-fixed border-collapse"><colgroup><col style={{ width: "var(--match-label-width)" }} />{Array.from({ length: holes.length + 1 }, (_, index) => <col key={index} />)}</colgroup><tbody>
-      {rows.map(r => <tr key={r.key} className={r.tone}><th scope="row" className={"h-12 border-r border-gold-600 px-0.5 text-center font-condensed uppercase " + r.tone}>{r.label}</th>{r.cells.map((cell, index) => <td key={index} className="relative isolate h-12 border-r border-gold-600 text-center">{cell ?? "\u2014"}</td>)}<td className="h-12 border-l border-gold-600 text-center font-bold">{r.sum}</td></tr>)}
+      {rows.map(r => <tr key={r.key} className={`${r.tone} ${["holes", "yards", "par"].includes(r.key) ? styles.compactRow : ""}`}><th scope="row" className={"h-12 border-r border-gold-600 px-0.5 text-center font-condensed uppercase " + r.tone}>{r.label}</th>{r.cells.map((cell, index) => <td key={index} className="relative isolate h-12 border-r border-gold-600 text-center">{cell ?? "\u2014"}</td>)}<td className="h-12 border-l border-gold-600 text-center font-bold">{r.sum}</td></tr>)}
     </tbody></table></div>
   </section>;
 }

@@ -13,6 +13,8 @@
   padding: 0;
   font-size: clamp(5px, 1cqw, 12px);
 }
+.scorecard .compactRow > th,
+.scorecard .compactRow > td { height: 24px; }
 
 .scorecard td > span[style] {
   width: min(24px, 3.5cqw) !important;
@@ -72,13 +74,12 @@
   content: "";
   position: absolute;
   top: 3px;
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
   height: 5px;
   width: 1px;
   background: #a78945;
 }
-.holeAxis > span:last-child { text-align: right; transform: none; }
-.holeAxis > span:last-child::before { left: 50%; }
 
 .sliderTrack {
   grid-column: 2 / span 18;
@@ -162,6 +163,10 @@
 }
 .whiteLabel {
   top: calc(100% + 10px);
+  color: #fff;
+  background: #e4dfd5;
+  border-color: #fff;
+  text-shadow: 0 1px 2px #514b42, 0 0 1px #514b42;
 }
 .resultArea {
   grid-column: 2 / span 18;
@@ -182,6 +187,17 @@
 }
 .maroonResult { background: #500001; color: #e2c88e; }
 .whiteResult { background: #fff; color: #500001; }
+.endResult {
+  position: absolute;
+  right: 4px;
+  height: 50%;
+  display: flex;
+  align-items: center;
+  color: #500001;
+  font-size: clamp(14px, 2.4cqw, 28px);
+  font-weight: 800;
+  text-shadow: 0 0 3px #fff;
+}
 .mobileCard { display: none; }
 @media (width < 1024px) {
   .mobileCard {
@@ -211,13 +227,13 @@
     font-weight: 600;
   }
   .mobileHeader {
-    height: 32px;
+    height: 16px;
     background: var(--color-maroon-700);
     color: white;
     border-color: rgb(255 255 255 / 15%);
   }
   .mobileRow:nth-child(2) > *, .mobileRow:nth-child(3) > *,
-  .mobileSide > :nth-child(2), .mobileSide > :nth-child(3) { height: 32px; }
+  .mobileSide > :nth-child(2), .mobileSide > :nth-child(3) { height: 16px; }
   .mobileLabel {
     padding-inline: 2px;
     font-family: var(--font-condensed);
@@ -232,7 +248,7 @@
   .mobileValue > span:not([style]) { height: 44px; width: 100%; font-size: 10px; }
   .mobileGraph { margin-inline: -16px; }
   .timeline { display: flex; flex-direction: column; }
-  .timelineGrid { display: grid; grid-template-columns: 52px minmax(0, 1fr); padding-top: 0; }
+  .timelineGrid { display: grid; grid-template-columns: 52px minmax(0, 1fr); padding-top: 0; padding-right: 8px; }
   .plot, .resultArea { grid-column: 2; height: 140px; }
   .plot { overflow: hidden; }
   .labels {
@@ -246,7 +262,7 @@
   .axisPercent:first-child { transform: none; }
   .axisPercent:nth-child(5) { transform: translateY(-100%); }
   .holeAxis, .sliderTrack { grid-column: 2; }
-  .oddsHeader { margin: 12px 0 28px; gap: 8px; }
+  .oddsHeader { margin: 12px 8px 28px 0; gap: 8px; }
   .oddsHeader h2 { font-size: 16px; }
   .oddsHeader > div:last-child { gap: 12px; }
   .oddsHeader > div:last-child p { font-size: 10px; }
