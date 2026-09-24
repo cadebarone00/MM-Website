@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { fetchLiveTournament } from "@/lib/data/fetchLiveTournament";
 import { validateFantasyPicks } from "@/lib/fantasy/validate";
 import { fantasyTeamScore } from "@/lib/fantasy/scoring";
+import { fantasyPicksLocked } from "@/lib/fantasy/lock";
 
 export async function GET() {
   const supabase = await createSupabaseServerClient();
@@ -43,6 +44,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (fantasyPicksLocked()) {
+    return NextResponse.json({ ok: false, error: "Fantasy picks are closed — the tournament has started." }, { status: 403 });
+  }
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
