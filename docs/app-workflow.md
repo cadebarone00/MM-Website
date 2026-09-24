@@ -47,6 +47,7 @@ flowchart TD
   %% White-team portal navigation area has a maroon backdrop behind Submit a score and the four navigation rows.
   %% Portal Profile, Career, Round video and Wagers rows use their named supplied photos with white labels, individual gold outlines, and spacing between selections.
   %% Portal: overall handicap number opens My Handicap; separate Submit a score pill opens the handicap screen.
+  %% Player Lookup starts with its selector below navigation; the header back arrow always returns to /portal.
   %% Player Lookup is an authenticated read-only player directory with handicap history and profile-stat comparisons.
   P --> N[Personal 18-hole round entry]
   C --> N
@@ -130,7 +131,7 @@ Native match profiles poll `/api/live/matches/[id]?profile=1` every five seconds
 
 **Reads:** committed tournament/player content plus selected live database overlays. **Writes:** generally none from browsing. **Code:** `app/page.tsx`, `app/leaderboard`, `app/teams`, `app/schedule`, `lib/data/activeSeasonOverlay.ts`.
 
-The portal home My Handicap button retains `/portal/handicap`; Player Lookup beneath it opens `/portal/player-lookup`. Lookup requires a player session, validates the requested player against the static-plus-slot directory, and passes only names/slugs (not slot contact/account metadata) to the client. It displays Maroon Masters handicap left and combined Overall handicap right, using the same archive and submitted-round calculations as My Handicap. Maroon Masters and 20 Most Recent are defaults; Overall, All Scores, Highest to Lowest, and Lowest to Highest reuse the existing history logic. Lookup score views are read-only: no submit action or draft card is rendered. Statistics reuses the profile career-archive statistics categories/year controls and comparison picker, defaulting to the signed-in player when viewing another player. Missing statistics and load failures show explicit states.
+The portal home My Handicap button retains `/portal/handicap`; Player Lookup beneath it opens `/portal/player-lookup`. Lookup starts directly with the player dropdown below navigation, without a separate page heading or Back link; the navigation back arrow returns to `/portal` on mobile and desktop. Lookup requires a player session, validates the requested player against the static-plus-slot directory, and passes only names/slugs (not slot contact/account metadata) to the client. It displays Maroon Masters handicap left and combined Overall handicap right, using the same archive and submitted-round calculations as My Handicap. Maroon Masters and 20 Most Recent are defaults; Overall, All Scores, Highest to Lowest, and Lowest to Highest reuse the existing history logic. Lookup score views are read-only: no submit action or draft card is rendered. Statistics reuses the profile career-archive statistics categories/year controls and comparison picker, defaulting to the signed-in player when viewing another player. Missing statistics and load failures show explicit states.
 
 The Player Portal navigation rows for Profile, Career, Round video, and Wagers use the corresponding supplied photos from `Player Portal/Profile.Career.etc`, imported as optimized WebP assets in `public/portal/navigation`. Each photo fills a separate rounded row with a gold outline and 12px spacing between selections, with white text and a dark overlay; link destinations and permissions are unchanged.
 
@@ -454,6 +455,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 24, 2026 - Compact Player Lookup header (implemented locally; deployment not verified).** Removed the separate Back link and Player Lookup heading, moving the player dropdown and remaining content upward. The navigation back arrow is visible on mobile and desktop and always returns to the Player Portal home from lookup. Updated Section 3 and the flowchart annotation; overview mappings are unchanged.
 
 **September 24, 2026 - Player Lookup and My Handicap entry (implemented locally; deployment not verified).** Renamed the portal Submit a score entry to My Handicap without changing its destination, and added Player Lookup below it. Players can select another player, read both handicap indexes and filtered round history, and open the existing profile statistics comparison with themselves preselected. Authenticated lookup reads player handicap history but provides no editing/submission controls; slot contact metadata is excluded from the client payload. Updated Section 3 and the flowchart annotation; overview mappings remain unchanged.
 

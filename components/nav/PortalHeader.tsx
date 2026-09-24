@@ -33,6 +33,7 @@ function isHomePage(pathname: string): boolean {
 export function PortalHeader() {
   const pathname = usePathname();
   const back = useAreaBack();
+  const inPlayerLookup = pathname === "/portal/player-lookup";
   const inTigerCenter = pathname.startsWith("/portal/admin");
   const tigerChildPage = inTigerCenter && pathname !== "/portal/admin";
   const title = inTigerCenter ? "The Tiger Center" : pathname.startsWith("/portal/scoring") ? "Official Scoring" : "The Player Portal";
@@ -51,12 +52,12 @@ export function PortalHeader() {
               <span>Exit</span>
             </Link>
           ) : showBack && (
-            <Link href={back.href} onNavigate={back.onNavigate} aria-label="Back within this area" title="Back" className={tigerChildPage ? "inline-flex items-center gap-1 font-condensed text-2xs font-bold uppercase text-cream-50" : "inline-flex h-6 w-6 items-center justify-center text-cream-50 lg:hidden"}>
+            <Link href={inPlayerLookup ? "/portal" : back.href} onNavigate={inPlayerLookup ? undefined : back.onNavigate} aria-label="Back within this area" title="Back" className={tigerChildPage || inPlayerLookup ? "inline-flex items-center gap-1 font-condensed text-2xs font-bold uppercase text-cream-50" : "inline-flex h-6 w-6 items-center justify-center text-cream-50 lg:hidden"}>
               <ArrowLeft size={18} />
               {tigerChildPage && <span>Back</span>}
             </Link>
           )}
-          <Link href={pathname.startsWith("/portal/scoring") ? "/portal/scoring" : inTigerCenter ? "/portal/admin" : "/portal"} className={tigerChildPage || showExit ? "hidden" : showBack ? "hidden lg:block" : "block"}>
+          <Link href={pathname.startsWith("/portal/scoring") ? "/portal/scoring" : inTigerCenter ? "/portal/admin" : "/portal"} className={tigerChildPage || inPlayerLookup || showExit ? "hidden" : showBack ? "hidden lg:block" : "block"}>
             <Image src="/assets/wordmark-light.svg" alt="The Maroon Masters" width={520} height={92} className="h-5 w-auto lg:h-7" priority />
           </Link>
         </div>
