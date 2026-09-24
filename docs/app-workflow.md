@@ -9,7 +9,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 ```mermaid
 flowchart TD
   %% Page and major section titles share the official Spectral Bold Maroon Masters title font.
-  %% Home-screen bookmarks use taller gold-outline Spectral italic MM on #240001, vertically centered and slightly right of center with no cropping or decorative rules; Apple icon metadata and Android manifest supply PNG assets.
+  %% Home-screen bookmarks use proportionally enlarged gold-outline Spectral italic MM on #240001, with lower serifs close to the bottom and intentional right-edge cropping; Apple icon metadata and Android manifest supply PNG assets.
   %% Optional password-status migration derives player_slots.password_created from the linked Auth password credential; deployment pending.
   %% Verified password setup displays the account username and authentication email above the password field.
   %% Invite URL fragments are exchanged for session cookies before password entry; recovery codes use the server callback. Invalid links offer a fresh reset.
@@ -115,7 +115,7 @@ For example, in September 2026, My Matches can correctly show 2026 matches as Pa
 
 ## 3. Public website and navigation
 
-Home-screen bookmarks use a custom icon: dark maroon `#240001`, matching the scoring portal header, with thick gold `#C9A86E` outlines around Spectral Semibold Italic MM lettering adapted from the broadcast holding screen. The taller mark spans approximately 86% of the square's width and 53% of its height, centered vertically and slightly right of center. Both letters are fully visible, with no intentional cropping. The letters have maroon interiors and no decorative border or accent rules. `app/apple-icon.png` supplies Apple's 180px touch icon; `app/manifest.ts` supplies Android/browser 192px and 512px PNG icons from `public/icons`. The manifest retains browser display mode; this change does not add offline support or redesign the installed layout. Device launchers may apply their own masks. Existing saved icons may need to be removed and re-added after deployment.
+Home-screen bookmarks use a custom icon: dark maroon `#240001`, matching the scoring portal header, with thick gold `#C9A86E` outlines around Spectral Semibold Italic MM lettering adapted from the broadcast holding screen. The mark is enlarged proportionally by 18% from the previous centered design, preserving its letter proportions. Its lower serifs sit approximately 2% above the bottom including the outline, with the second M intentionally cropped at the right edge. The letters have maroon interiors and no decorative border or accent rules. `app/apple-icon.png` supplies Apple's 180px touch icon; `app/manifest.ts` supplies Android/browser 192px and 512px PNG icons from `public/icons`. The manifest retains browser display mode; this change does not add offline support or redesign the installed layout. Device launchers may apply their own masks. Existing saved icons may need to be removed and re-added after deployment.
 
 On live and archived leaderboards, Match Play boards are centered in a 40vw column at desktop widths (1024px and above), capped at the available content width. Desktop match rows add 10px vertical padding per player name instead of mobile's 6px. The ticker, individual standings, and mobile layout retain their existing sizing.
 
@@ -467,6 +467,10 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-24 - Larger MM near the bottom edge (implemented; deployment not verified).** Enlarged both dimensions of the outline monogram by 18%, preserving its proportions, and placed its lower serifs close to the icon's bottom edge. The right M now crops intentionally at the right edge. Updated section 3 and the Mermaid annotation; workflow paths are unchanged.
+
+**2026-09-24 - Larger home-screen MM (implemented; deployment not verified).** Enlarged the centered outline monogram from 86% width and 53% height to 94% width and 58% height, keeping both letters visible and the slight rightward placement. Updated section 3 and the Mermaid annotation; workflow paths are unchanged.
 
 **2026-09-24 - Centered, uncropped home-screen MM (implemented; deployment not verified).** The outlined MM previously sat low with right and bottom cropping. Both letters are now fully visible, taller, vertically centered and slightly right of center. The dark maroon and thick gold outlines remain. Updated section 3 and the Mermaid annotation; workflow paths are unchanged.
 
