@@ -6,6 +6,7 @@ import { isTestSeason } from "@/lib/live/testSeason";
 import { scoreKey } from "@/lib/live/types";
 import { latestMatchInput, type Service } from "./futureInputs";
 import { loadTournamentSetup } from "./loadTournamentSetup";
+import { MIN_HISTORY_HOLES, fieldProxyAssumption } from "./fieldProxy";
 import { missingHistory, type HistoryRow, type IndividualRound, type PlayedScore } from "./lowIndividualFuture";
 
 /**
@@ -48,6 +49,8 @@ export async function loadIndividualInputs(service: Service, seasonYear: number,
   };
 
   const history = new Map<string, HistoryRow[]>();
+  const assumptions = [...setup.assumptions];
+  const thin: string[] = [];
   if (!blockers.length) {
     const records = (archive ?? (await getCombinedCareerArchive({ includeTestSeason: isTestSeason(seasonYear) }))).records;
     const byModelSlug = new Map<string, HistoryRow[]>();
@@ -58,10 +61,22 @@ export async function loadIndividualInputs(service: Service, seasonYear: number,
       byModelSlug.set(row.player, list);
     }
     // Career Archive rows are keyed by model slug; roster rows by player slug.
-    for (const player of players) history.set(player, byModelSlug.get(getPlayerSlug(player)) ?? []);
+    // Thin-history players (and anyone missing a comparable hole) borrow the
+    // field's scoring on top of their own (see fieldProxy.ts).
+    const field = [...byModelSlug.values()].flat();
+    for (const player of players) {
+      const own = byModelSlug.get(getPlayerSlug(player)) ?? [];
+      history.set(player, own);
+      if (own.length < MIN_HISTORY_HOLES || missingHistory([player], rounds, history, played).length) {
+        history.set(player, [...own, ...field]);
+        thin.push(player);
+      }
+    }
+    const note = fieldProxyAssumption(thin);
+    if (note) assumptions.push(note);
     const missingPlayers = [...new Set(missingHistory(players, rounds, history, played).map((entry) => entry.split(":")[0]))];
     blockers.push(...missingPlayers.map((player) => `${getPlayerDisplayName(player)} doesn't have enough Career Archive history to price.`));
   }
 
-  return { seasonYear, players, rounds, played, history, blockers, assumptions: setup.assumptions, inputsAsOf };
+  return { seasonYear, players, rounds, played, history, blockers, assumptions, inputsAsOf };
 }

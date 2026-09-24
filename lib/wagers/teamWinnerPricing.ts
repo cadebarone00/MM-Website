@@ -9,6 +9,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isStaleSnapshot, latestMatchInput, later, needsRepublish, pages, type Service } from "./futureInputs";
 import { loadTournamentSetup } from "./loadTournamentSetup";
 import type { SetupCourse } from "./tournamentSetup";
+import { fieldProxyAssumption, thinPlayers, withFieldProxies } from "./fieldProxy";
 import {
   TEAM_WINNER_MODEL_VERSION,
   TEAM_WINNER_SIMULATIONS,
@@ -44,6 +45,9 @@ type Archive = Awaited<ReturnType<typeof getCombinedCareerArchive>>;
  * displayed match price; this keeps a full live re-price to seconds.
  */
 const PAIR_SIMULATIONS = { hole: 2_500, match: 2_500 };
+
+/** Last resort when the model can't price a matchup (e.g. a course hole with no comparable history): evenly matched. */
+const NEUTRAL_MATCHUP: Outcome = { maroon: 0.45, tie: 0.1, white: 0.45 };
 
 /**
  * A fingerprint of the Career Archive data behind each player: eligible
@@ -176,6 +180,9 @@ async function priceMissing(service: Service, seasonYear: number, inputs: Inputs
   const started = Date.now();
   const pending = toPrice(inputs, table, signatures);
   if (!pending.length) return;
+  // Thin-history players borrow the field's scoring (see fieldProxy.ts).
+  const rosterModelSlugs = [...inputs.roster.maroon, ...inputs.roster.white].map(getPlayerSlug);
+  const pricingArchive = { ...archive, records: withFieldProxies(archive.records, thinPlayers(rosterModelSlugs, archive.records)) };
   let batch: Record<string, unknown>[] = [];
   const flush = async () => {
     if (!batch.length) return;
@@ -186,23 +193,19 @@ async function priceMissing(service: Service, seasonYear: number, inputs: Inputs
   for (const matchup of pending) {
     if (Date.now() - started > budgetMs) break;
     const course = inputs.courses.get(matchup.courseKey);
-    const result = course ? priceMatchup(matchup, course, archive, seasonYear) : null;
+    const result = course ? priceMatchup(matchup, course, pricingArchive, seasonYear) : null;
+    const outcome: Outcome = result && [result.a, result.tie, result.b].every(Number.isFinite) ? { maroon: result.a, tie: result.tie, white: result.b } : NEUTRAL_MATCHUP;
     const signature = matchupSignature(matchup, signatures);
     table.signatures.set(matchup.key, signature);
-    if (result) {
-      table.priced.set(matchup.key, { maroon: result.a, tie: result.tie, white: result.b });
-      table.unpriceable.delete(matchup.key);
-    } else {
-      table.priced.delete(matchup.key);
-      table.unpriceable.add(matchup.key);
-    }
+    table.priced.set(matchup.key, outcome);
+    table.unpriceable.delete(matchup.key);
     batch.push({
       season_year: seasonYear,
       pair_key: matchup.key,
-      maroon_win_probability: result?.a ?? null,
-      tie_probability: result?.tie ?? null,
-      white_win_probability: result?.b ?? null,
-      unpriceable: !result,
+      maroon_win_probability: outcome.maroon,
+      tie_probability: outcome.tie,
+      white_win_probability: outcome.white,
+      unpriceable: false,
       input_signature: signature,
       model_version: TEAM_WINNER_MODEL_VERSION,
       computed_at: new Date().toISOString(),
@@ -283,6 +286,9 @@ export async function refreshTeamWinnerOdds(seasonYear: number, { pricingBudgetM
       archive ?? getCombinedCareerArchive({ includeTestSeason: isTestSeason(seasonYear) }),
     ]);
     const signatures = playerSignatures(loadedArchive);
+    const thin = thinPlayers([...inputs.roster.maroon, ...inputs.roster.white].map(getPlayerSlug), loadedArchive.records);
+    const thinNote = fieldProxyAssumption([...inputs.roster.maroon, ...inputs.roster.white].filter((player) => thin.includes(getPlayerSlug(player))));
+    if (thinNote) inputs.assumptions.push(thinNote);
     if (pricingBudgetMs && toPrice(inputs, table, signatures).length) {
       const { data: claimed, error } = await service.rpc("claim_team_winner_pricing", { p_year: seasonYear, p_seconds: LEASE_SECONDS });
       if (error) throw new Error(error.message);

@@ -305,6 +305,14 @@ either roster is empty, both rosters. What Tiger sets always wins. Each
 public card lists the defaults in use. Settlement always uses the season's
 real rounds and results, never the defaults.
 
+Futures are a baseline, so thin history never holds a market closed. A
+rostered player with fewer than 36 eligible individual-ball holes (two
+rounds) has the whole field's eligible history blended in with their own
+(`lib/wagers/fieldProxy.ts`). Each source round keeps its own round key, so
+round-shape measures still see real 18-hole rounds. If the match model still
+can't price a Team Winner matchup, that matchup is treated as evenly matched
+(45% / 10% / 45%).
+
 ## Low Individual future
 
 The Low Individual market prices which player finishes with the fewest total
