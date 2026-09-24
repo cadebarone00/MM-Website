@@ -6,6 +6,7 @@ import { pastTournaments, nextTournament, getTournament, getPlayerScorecard, pla
 import { getPlayerSlug, getPlayerAvatar, getPlayerDisplayName, getPlayerProfile } from "@/lib/data/players";
 import { placementValueLabel } from "@/lib/leaderboard/placement";
 import { getScorecardsForTournament, getShotVideoUrls } from "@/lib/data/archivedScorecards";
+import type { FantasySlot } from "@/lib/fantasy/draftState";
 
 export function generateStaticParams() {
   return pastTournaments.flatMap((t) =>
@@ -13,17 +14,30 @@ export function generateStaticParams() {
   );
 }
 
-export default async function PlayerScorecardPage({ params, searchParams }: { params: Promise<{ slug: string; player: string }>; searchParams: Promise<{ fromMatch?: string | string[] }> }) {
+function parseDraftSlot(value: string | string[] | undefined): FantasySlot | undefined {
+  return value === "maroon" || value === "white" || value === "wildcard" ? value : undefined;
+}
+
+export default async function PlayerScorecardPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string; player: string }>;
+  searchParams: Promise<{ fromMatch?: string | string[]; draftSlot?: string | string[] }>;
+}) {
   const { slug, player } = await params;
-  const { fromMatch } = await searchParams;
-  const backHref = typeof fromMatch === "string" && fromMatch.length > 0
-    ? `/leaderboard/${encodeURIComponent(slug)}/matches/${encodeURIComponent(fromMatch)}`
-    : `/leaderboard/${slug}`;
+  const { fromMatch, draftSlot: draftSlotParam } = await searchParams;
+  const draftSlot = parseDraftSlot(draftSlotParam);
+  const backHref = draftSlot
+    ? "/fantasy"
+    : typeof fromMatch === "string" && fromMatch.length > 0
+      ? `/leaderboard/${encodeURIComponent(slug)}/matches/${encodeURIComponent(fromMatch)}`
+      : `/leaderboard/${slug}`;
 
   if (slug === nextTournament.slug) {
     return (
       <div className="max-w-[1200px] mx-auto px-7 pt-8 pb-16">
-        <LivePlayerScorecard tournamentSlug={slug} player={player} backHref={backHref} />
+        <LivePlayerScorecard tournamentSlug={slug} player={player} backHref={backHref} draftSlot={draftSlot} />
       </div>
     );
   }

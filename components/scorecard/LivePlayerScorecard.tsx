@@ -3,13 +3,25 @@
 import { PlayerBioSection } from "./PlayerBioSection";
 import { PlayerProfileHeader } from "@/components/scorecard/PlayerProfileHeader";
 import { PlayerScorecardView } from "./PlayerScorecardView";
+import { FantasyDraftActionBar } from "@/components/fantasy/FantasyDraftActionBar";
 import { DETAIL_POLL_MS, useLiveTournament } from "@/lib/hooks/useLiveTournament";
 import { nextTournament, isLiveNow } from "@/lib/data";
 import { getPlayerSlug, getPlayerDisplayName, getPlayerAvatar, getPlayerProfile } from "@/lib/data/players";
 import type { Team } from "@/lib/data/types";
+import type { FantasySlot } from "@/lib/fantasy/draftState";
 import { placementValueLabel } from "@/lib/leaderboard/placement";
 
-export function LivePlayerScorecard({ tournamentSlug, player, backHref }: { tournamentSlug: string; player: string; backHref?: string }) {
+export function LivePlayerScorecard({
+  tournamentSlug,
+  player,
+  backHref,
+  draftSlot,
+}: {
+  tournamentSlug: string;
+  player: string;
+  backHref?: string;
+  draftSlot?: FantasySlot;
+}) {
   const { tournament, loading, payload, error } = useLiveTournament(DETAIL_POLL_MS, `/api/live/players/${encodeURIComponent(getPlayerSlug(player))}`);
 
   if (loading && !payload) {
@@ -30,7 +42,7 @@ export function LivePlayerScorecard({ tournamentSlug, player, backHref }: { tour
   const thru = lastRound == null ? null : playedCount >= lastRound.holes.length ? "F" : String(playedCount);
 
   return (
-    <div>
+    <div className={draftSlot ? "pb-20" : undefined}>
       {error && <p role="status" className="mb-4 text-sm text-maroon-700">{error}</p>}
       <PlayerProfileHeader
         backHref={backHref ?? `/leaderboard/${tournamentSlug}`}
@@ -54,6 +66,8 @@ export function LivePlayerScorecard({ tournamentSlug, player, backHref }: { tour
         </div>
       )}
       {(!scorecard || scorecard.rounds.length === 0) && <PlayerBioSection profile={profile} featuredYear={nextTournament.year} />}
+
+      {draftSlot && <FantasyDraftActionBar tournamentSlug={tournamentSlug} player={player} slot={draftSlot} />}
     </div>
   );
 }
