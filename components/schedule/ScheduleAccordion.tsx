@@ -91,7 +91,7 @@ export function ScheduleAccordion({ rounds, year, initialDate }: { rounds: Upcom
         return <section key={panel.round} className={`${styles.panel} ${active === index ? styles.active : ""}`}>
           <Image src={panel.image} alt="" fill sizes="(max-width: 1023px) 100vw, 50vw" className={styles.photo} style={{ objectPosition: `${30 + index * 6}% center` }} />
           <div className={styles.shade} />
-          <button className={styles.toggle} aria-expanded={active === index} aria-controls={`round-${panel.round}`} onClick={() => setActive(index)}><span>{date}</span><span>Session {panel.round}</span></button>
+          <button className={styles.toggle} aria-expanded={active === index} aria-controls={`round-${panel.round}`} onClick={() => setActive(index)}><span className={styles.panelLabel}><span>{date}</span><span>Session {panel.round}</span></span></button>
           <div id={`round-${panel.round}`} className={styles.details} hidden={active !== index}>
             <p className={styles.eyebrow}>Mission Hills Country Club</p>
             <h2>{panel.course ?? "Course to be announced"}</h2>
