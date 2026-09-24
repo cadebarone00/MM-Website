@@ -1,0 +1,49 @@
+.oddsBoard, .predictor {
+  background: #fff;
+  border: 1px solid #e6e4df;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgb(0 0 0 / 5%);
+  color: #171717;
+  overflow: hidden;
+}
+.oddsBoard { margin-top: 40px; }
+.predictor { margin-top: 12px; }
+.boardHeader { margin: 0 20px; padding: 18px 0; border-bottom: 1px solid #eee; }
+.boardHeader h2 { margin: 0; font-size: 22px; font-weight: 700; color: #000; }
+.marketTable { width: calc(100% - 32px); margin: 10px 16px 18px; table-layout: fixed; border-collapse: separate; border-spacing: 4px 6px; font-size: 14px; }
+.marketTable th, .marketTable td { padding: 0; text-align: center; vertical-align: middle; }
+.marketTable thead th { color: #777; font-size: 12px; font-weight: 400; padding-bottom: 2px; }
+.marketTable th:first-child { width: 43%; text-align: left; }
+.marketTable th > span, .marketTable small { display: block; font-size: 11px; font-weight: 400; color: #777; }
+.marketTable th > .teamName { font-size: 17px; font-weight: 700; color: #171717; }
+.marketTable tbody th { padding-right: 8px; }
+.marketCell { min-height: 52px; display: flex; flex-direction: column; justify-content: center; border: 1px solid #dedede; border-radius: 4px; background: #fafafa; color: #500001; font-weight: 600; }
+.marketNote { margin: 0 20px; padding: 14px 0; border-top: 1px solid #eee; text-align: center; font-size: 11px; color: #777; }
+.predictionBody { position: relative; max-width: 540px; margin: 22px auto 8px; min-height: 260px; }
+.donut { position: relative; width: 260px; margin: auto; }
+.donut svg { display: block; width: 100%; }
+.donutTeams { position: absolute; inset: 30% 20%; display: grid; grid-template-columns: 1fr 1fr; align-items: stretch; font-size: 12px; font-weight: 700; }
+.donutTeams span { display: flex; align-items: center; justify-content: center; color: #500001; }
+.donutTeams span + span { border-left: 1px solid #ddd; color: #716c63; }
+.maroonPercent, .whitePercent { position: absolute; z-index: 1; display: flex; flex-direction: column; }
+.maroonPercent { top: 0; left: 20px; }
+.whitePercent { bottom: 0; right: 20px; text-align: right; }
+.maroonPercent strong, .whitePercent strong { font-size: 28px; line-height: 1.1; }
+.maroonPercent span, .whitePercent span { font-size: 11px; color: #777; }
+@media (width < 640px) {
+  .oddsBoard, .predictor { border-inline: 0; border-radius: 8px; }
+  .boardHeader { margin-inline: 14px; padding-block: 16px; }
+  .boardHeader h2 { font-size: 20px; }
+  .marketTable { width: calc(100% - 20px); margin-inline: 10px; font-size: 12px; border-spacing: 3px 5px; }
+  .marketTable th:first-child { width: 39%; }
+  .marketTable thead th { font-size: 10px; }
+  .marketTable th > span, .marketTable small { font-size: 9px; }
+  .marketTable th > .teamName { font-size: 15px; }
+  .marketTable tbody th > span { overflow-wrap: anywhere; }
+  .marketNote { margin-inline: 14px; font-size: 10px; }
+  .predictionBody { min-height: 240px; }
+  .donut { width: min(64%, 260px); padding-top: 12px; }
+  .maroonPercent { left: 14px; }
+  .whitePercent { right: 14px; }
+  .maroonPercent strong, .whitePercent strong { font-size: 25px; }
+}
