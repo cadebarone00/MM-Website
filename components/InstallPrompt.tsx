@@ -48,9 +48,15 @@ export function InstallPrompt() {
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
-    if (localStorage.getItem(STORAGE_KEY)) return;
-    if (isStandalone()) return;
-    setPlatform(detectPlatform());
+    // Deferred via setTimeout (rather than called directly in the effect
+    // body) to avoid a synchronous setState-during-effect cascade, the same
+    // pattern HomeEntrySplash uses.
+    const timer = setTimeout(() => {
+      if (localStorage.getItem(STORAGE_KEY)) return;
+      if (isStandalone()) return;
+      setPlatform(detectPlatform());
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   if (!platform) return null;
