@@ -34,7 +34,7 @@ export default function FantasyPage() {
   const { tournament, loading: tournamentLoading, payload } = useLiveTournament();
   const [tab, setTab] = useState<FantasyTab>("roster");
   const [savedPicks, setSavedPicks] = useState<FantasyPicks | null>(null);
-  const [rank, setRank] = useState<number | null>(null);
+  const [rankLabel, setRankLabel] = useState<string | null>(null);
   const [totalPlayers, setTotalPlayers] = useState<number | null>(null);
   const [loadingTeam, setLoadingTeam] = useState(true);
   const [schedule, setSchedule] = useState<UpcomingRoundScheduleItem[]>([]);
