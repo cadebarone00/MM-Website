@@ -6,6 +6,7 @@ import { getPlayerDisplayName } from "@/lib/data/players";
 import { liveLabel, matchStatus, matchLeader } from "@/components/leaderboard/matchUtils";
 import type { RealMatch } from "@/lib/data/types";
 import type { MatchOddsPoint } from "@/lib/live/matchProfile";
+import { MatchOddsBoard } from "./MatchOddsBoard";
 import { MatchOddsGraph } from "./MatchOddsGraph";
 
 export function MatchProfile({ match, tournamentSlug, editionLabel, scorecard, odds = [], live = false, round, estimateNote }: {
@@ -42,7 +43,7 @@ export function MatchProfile({ match, tournamentSlug, editionLabel, scorecard, o
         <h2 className="mb-3 font-serif text-xl font-bold text-ink-900">Scorecard</h2>
         {scorecard}
       </section>
-      <div className={`${styles.mobileGraph} lg:mt-8`}><MatchOddsGraph points={odds} live={live} final={status === "final"} estimateNote={estimateNote} result={status === "final" && leader !== "tie" ? { winner: leader, thru: match.holesRemaining != null ? 18 - match.holesRemaining : match.thru ?? 18, label: liveLabel(match) } : undefined} /></div>
+      <div className={styles.mobileGraph}><MatchOddsBoard match={match} /><MatchOddsGraph points={odds} live={live} final={status === "final"} estimateNote={estimateNote} result={status === "final" && leader !== "tie" ? { winner: leader, thru: match.holesRemaining != null ? 18 - match.holesRemaining : match.thru ?? 18, label: liveLabel(match) } : undefined} /></div>
     </main>
   );
 }

@@ -13,6 +13,8 @@
   padding: 0;
   font-size: clamp(5px, 1cqw, 12px);
 }
+.scorecard .compactRow > th,
+.scorecard .compactRow > td { height: 24px; }
 
 .scorecard td > span[style] {
   width: min(24px, 3.5cqw) !important;
@@ -27,6 +29,30 @@
   display: grid;
   grid-template-columns: var(--match-label-width) repeat(19, minmax(0, 1fr));
 }
+
+.oddsHeader {
+  display: flex;
+  justify-content: flex-start;
+  gap: 24px;
+  margin-top: 32px;
+  margin-right: calc((100% - var(--match-label-width)) / 19);
+  padding-bottom: 12px;
+}
+.oddsHeader .probabilityTitle { font-size: 28px; font-weight: 700; color: #000; }
+.oddsBoard { margin-top: 40px; border: 1px solid #c9b98f; background: #faf7ef; border-radius: 4px; overflow: hidden; }
+.boardHeader { padding: 16px; }
+.boardHeader h2 { margin: 0; font-size: 24px; font-weight: 700; color: #000; }
+.boardHeader p, .marketNote { font-size: 12px; color: #625b50; }
+.boardHeader p { margin-top: 4px; }
+.marketTable { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 14px; }
+.marketTable th, .marketTable td { padding: 12px 8px; text-align: center; border-top: 1px solid #ded4bf; }
+.marketTable th:first-child { width: 36%; text-align: left; padding-left: 16px; }
+.marketTable thead { background: #eee5d5; }
+.marketTable th > span { display: block; font-size: 11px; font-weight: 400; }
+.marketTable th > .teamName { font-size: 14px; font-weight: 700; }
+.marketTable tbody tr:first-child th { color: #500001; }
+.marketTable tbody tr:last-child th { background: #fff; color: #500001; }
+.marketNote { margin: 0; padding: 12px 16px; border-top: 1px solid #ded4bf; }
 
 .labels {
   position: relative;
@@ -49,12 +75,52 @@
   overflow: visible;
 }
 
-.explore {
+.holeAxis {
   grid-column: 2 / span 18;
-  min-width: 0;
-  width: 100%;
-  margin: 12px 0 0;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: repeat(18, minmax(0, 1fr));
+  text-align: center;
+  font-size: clamp(9px, 1.2cqw, 12px);
+  padding-top: 0;
 }
+.holeAxis > span {
+  position: relative;
+  padding-top: 12px;
+  transform: translateX(50%);
+}
+.holeAxis > span::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 5px;
+  width: 1px;
+  background: #a78945;
+}
+
+.sliderTrack {
+  grid-column: 2 / span 18;
+  grid-row: 3;
+  overflow: hidden;
+}
+
+.explore {
+  appearance: none;
+  box-sizing: border-box;
+  min-width: 0;
+  width: calc(100% + 16px);
+  height: 24px;
+  margin: 4px -8px 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.explore::-webkit-slider-runnable-track { height: 4px; background: #c9b98f; border-radius: 2px; }
+.explore::-moz-range-track { height: 4px; background: #c9b98f; border-radius: 2px; }
+.explore::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; margin-top: -6px; border: 0; border-radius: 50%; background: #500001; }
+.explore::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 50%; background: #500001; }
 
 /* Keep the original readable, horizontally scrolling scorecard below desktop. */
 @media (width < 1024px) {
@@ -107,18 +173,19 @@
   text-align: center;
   border: 1px solid;
   border-radius: 2px;
-}
-.maroonLabel {
-  top: 8%;
   color: #500001;
   background: rgb(80 0 1 / 12%);
   border-color: rgb(80 0 1 / 30%);
 }
+.maroonLabel {
+  bottom: calc(100% + 10px);
+}
 .whiteLabel {
-  bottom: 8%;
-  color: white;
-  background: rgb(151 121 67 / 75%);
-  border-color: #a78945;
+  top: calc(100% + 10px);
+  color: #fff;
+  background: #e4dfd5;
+  border-color: #fff;
+  text-shadow: 0 1px 2px #514b42, 0 0 1px #514b42;
 }
 .resultArea {
   grid-column: 2 / span 18;
@@ -139,6 +206,17 @@
 }
 .maroonResult { background: #500001; color: #e2c88e; }
 .whiteResult { background: #fff; color: #500001; }
+.endResult {
+  position: absolute;
+  right: 4px;
+  height: 50%;
+  display: flex;
+  align-items: center;
+  color: #500001;
+  font-size: clamp(14px, 2.4cqw, 28px);
+  font-weight: 800;
+  text-shadow: 0 0 3px #fff;
+}
 .mobileCard { display: none; }
 @media (width < 1024px) {
   .mobileCard {
@@ -168,13 +246,13 @@
     font-weight: 600;
   }
   .mobileHeader {
-    height: 32px;
+    height: 16px;
     background: var(--color-maroon-700);
     color: white;
     border-color: rgb(255 255 255 / 15%);
   }
   .mobileRow:nth-child(2) > *, .mobileRow:nth-child(3) > *,
-  .mobileSide > :nth-child(2), .mobileSide > :nth-child(3) { height: 32px; }
+  .mobileSide > :nth-child(2), .mobileSide > :nth-child(3) { height: 16px; }
   .mobileLabel {
     padding-inline: 2px;
     font-family: var(--font-condensed);
@@ -189,8 +267,8 @@
   .mobileValue > span:not([style]) { height: 44px; width: 100%; font-size: 10px; }
   .mobileGraph { margin-inline: -16px; }
   .timeline { display: flex; flex-direction: column; }
-  .timelineGrid { display: grid; grid-template-columns: minmax(0, 1fr); padding-top: 0; }
-  .plot, .resultArea { grid-column: 1; height: 140px; }
+  .timelineGrid { display: grid; grid-template-columns: 52px minmax(0, 1fr); padding-top: 0; padding-right: 8px; }
+  .plot, .resultArea { grid-column: 2; height: 140px; }
   .plot { overflow: hidden; }
   .labels {
     grid-column: 1;
@@ -202,11 +280,15 @@
   }
   .axisPercent:first-child { transform: none; }
   .axisPercent:nth-child(5) { transform: translateY(-100%); }
-  .maroonLabel { top: 10%; }
-  .whiteLabel { bottom: 10%; }
-  .explore { grid-column: 1; width: calc(100% - 32px); margin: 10px 16px 0; }
-  .oddsHeader { order: 1; margin: 12px 16px 0; gap: 8px; }
-  .oddsHeader h2 { font-size: 16px; }
+  .holeAxis, .sliderTrack { grid-column: 2; }
+  .oddsHeader { margin: 32px 16px 28px; gap: 16px; }
+  .oddsHeader .probabilityTitle { font-size: 24px; }
+  .oddsBoard { border-radius: 0; border-inline: 0; }
+  .marketTable { font-size: 10px; }
+  .marketTable th, .marketTable td { padding: 10px 3px; }
+  .marketTable th:first-child { width: 34%; padding-left: 12px; }
+  .marketTable th > span { font-size: 9px; overflow-wrap: anywhere; }
+  .marketTable th > .teamName { font-size: 12px; }
   .oddsHeader > div:last-child { gap: 12px; }
   .oddsHeader > div:last-child p { font-size: 10px; }
   .oddsHeader > div:last-child p:nth-child(2) { font-size: 16px; }

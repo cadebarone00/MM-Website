@@ -16,11 +16,19 @@ export function MatchOddsGraph({ points, live, final, estimateNote, result }: { 
   points.forEach(point => {
     if (Number.isInteger(point.state_thru) && point.state_thru >= 0 && point.state_thru <= 18) byHole.set(point.state_thru, point);
   });
+  const saved = [...byHole.values()].sort((a, b) => a.state_thru - b.state_thru);
+  const lastSaved = saved.at(-1);
+  const decided = final && result ? result : final && lastSaved && (lastSaved.maroon_win_probability === 1 || lastSaved.white_win_probability === 1) ? { winner: lastSaved.maroon_win_probability === 1 ? "maroon" : "white", thru: lastSaved.state_thru } : null;
+  if (decided && lastSaved) {
+    for (let hole = decided.thru; hole <= 18; hole++) {
+      byHole.set(hole, { ...lastSaved, state_thru: hole, maroon_win_probability: decided.winner === "maroon" ? 1 : 0, tie_probability: 0, white_win_probability: decided.winner === "white" ? 1 : 0, maroon_american_odds: null, tie_american_odds: null, white_american_odds: null });
+    }
+  }
   const history = [...byHole.values()].sort((a, b) => a.state_thru - b.state_thru);
   const finish = final && result && result.thru > 0 && result.thru < 18 ? result : null;
   const latest = history.at(-1);
-  const activeIndex = Math.min(selected ?? history.length - 1, history.length - 1);
-  const active = history[activeIndex];
+  const selectedHole = selected ?? lastSaved?.state_thru ?? 0;
+  const active = byHole.get(selectedHole);
   const x = (point: MatchOddsPoint) => point.state_thru * 100;
   const y = (point: MatchOddsPoint) => (1 - matchBalance(point)) * 180;
   const center = 90;
@@ -30,9 +38,9 @@ export function MatchOddsGraph({ points, live, final, estimateNote, result }: { 
   const values = header ? [header.maroon_win_probability, header.tie_probability, header.white_win_probability] : [];
   const prices = header ? [header.maroon_american_odds, header.tie_american_odds, header.white_american_odds] : [];
   return (
-    <section className={styles.timeline} aria-label="Match odds">
-      <div className={`${styles.oddsHeader} mb-5 flex flex-wrap items-start justify-between gap-4`}>
-        <div><p className="font-condensed text-xs font-bold uppercase tracking-wide text-ink-500">Match win probability</p><h2 className="mt-1 font-serif text-xl font-bold">{live ? final ? "Final odds" : "Live odds" : "Match odds"}</h2></div>
+    <section className={styles.timeline} aria-label="Win probability">
+      <div className={`${styles.oddsHeader} mb-5 flex flex-wrap items-start gap-4`}>
+        <h2 className={styles.probabilityTitle}>Win Probability</h2>
         <div className="flex gap-5">
           {["Maroon", "Tie", "White"].map((label, index) => <div key={label}><p className={`font-condensed text-xs font-bold uppercase tracking-wide ${index === 1 ? "text-gold-700" : "text-maroon-700"}`}>{label}</p><p className="font-sans text-xl font-black tabular-nums">{header ? `${Math.round(values[index] * 100)}%` : "—"}</p><p className="font-sans text-xs text-ink-500">{header ? price(prices[index]) : "—"}</p></div>)}
         </div>
@@ -51,15 +59,15 @@ export function MatchOddsGraph({ points, live, final, estimateNote, result }: { 
             <polygon points={area} fill="#fff" clipPath={`url(#${clip}-lower)`} />
             {[0, 45, 90, 135, 180].map(value => <line key={value} x1="0" x2="1800" y1={value} y2={value} stroke="#a78945" strokeOpacity={value === center ? 0.8 : 0.3} vectorEffect="non-scaling-stroke" />)}
             <polyline points={line} fill="none" stroke="#231b18" strokeWidth="1.25" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
-            {history.map(point => <line key={point.state_thru} x1={x(point)} x2={x(point)} y1={Math.max(0, y(point) - 3)} y2={Math.min(180, y(point) + 3)} stroke="#231b18" strokeWidth={point === active ? 2 : 1} vectorEffect="non-scaling-stroke"><title>{`Thru ${point.state_thru}: Maroon ${Math.round(point.maroon_win_probability * 100)}%, Tie ${Math.round(point.tie_probability * 100)}%, White ${Math.round(point.white_win_probability * 100)}%`}</title></line>)}
           </svg>
           {finish && <div className={styles.resultArea}><div role="note" aria-label={`${finish.winner === "maroon" ? "Maroon" : "White"} wins ${finish.label} after hole ${finish.thru}`} className={`${styles.resultBlock} ${finish.winner === "maroon" ? styles.maroonResult : styles.whiteResult}`} style={{ left: `${finish.thru / 18 * 100}%`, top: finish.winner === "maroon" ? 0 : "50%" }}>{finish.label}</div></div>}
-          {history.length > 1 && <input aria-label="Explore match odds" type="range" min="0" max={history.length - 1} value={activeIndex} onChange={(event) => setSelected(Number(event.target.value))} className={`${styles.explore} accent-maroon-700`} />}
+          {final && result?.thru === 18 && <div className={styles.resultArea}><div className={styles.endResult} style={{ top: result.winner === "maroon" ? 0 : "50%" }} role="note" aria-label={`${result.winner === "maroon" ? "Maroon" : "White"} wins ${result.label} after hole 18`}>{result.label.replace(/(\d+)\s*up/i, "$1 Up")}</div></div>}
+          <div className={styles.holeAxis} aria-label="Hole numbers">{Array.from({ length: 18 }, (_,index) => <span key={index}>{index + 1}</span>)}</div>
+          {history.length > 1 && <div className={styles.sliderTrack}><input aria-label="Explore match odds" aria-valuetext={selectedHole === 0 ? "Before play" : `After hole ${selectedHole}${active ? "" : ": no saved odds"}`} type="range" min="0" max="18" step="1" value={selectedHole} onChange={(event) => setSelected(Number(event.target.value))} className={styles.explore} /></div>}
         </div>
-        {active && <p className="mt-2 font-sans text-xs text-ink-500">{active.state_thru === 0 ? "Before play" : final && activeIndex === history.length - 1 ? `Final · Thru ${active.state_thru}` : `Thru ${active.state_thru}`} · Maroon {Math.round(active.maroon_win_probability * 100)}% · Tie {Math.round(active.tie_probability * 100)}% · White {Math.round(active.white_win_probability * 100)}%</p>}
+        {active ? <p className="mt-2 font-sans text-xs text-ink-500">{active.state_thru === 0 ? "Before play" : decided && selectedHole >= decided.thru || final && active === latest ? `Final · Thru ${active.state_thru}` : `Thru ${active.state_thru}`} · Maroon {Math.round(active.maroon_win_probability * 100)}% · Tie {Math.round(active.tie_probability * 100)}% · White {Math.round(active.white_win_probability * 100)}%</p> : <p className="mt-2 font-sans text-xs text-ink-500">{selectedHole === 0 ? "Before play" : `Thru ${selectedHole}`} · No saved odds for this point.</p>}
         <p className="mt-2 font-sans text-xs text-ink-500">{estimateNote ?? "Saved odds by completed hole."} The line balances the two teams’ chances, with ties pulling it toward the middle.</p>
       </> : <p className="py-12 text-center font-sans text-sm text-ink-500">{live ? "Odds will appear once a price is published for this match." : "No recorded odds history is available for this historical match."}</p>}
     </section>
   );
 }
-
