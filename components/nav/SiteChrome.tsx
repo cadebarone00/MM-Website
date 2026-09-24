@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Header } from "@/components/Header";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { PortalHeader } from "@/components/nav/PortalHeader";
 import { PlayerAreaNav } from "@/components/nav/PlayerAreaNav";
 import type { NextTournamentOverride } from "@/lib/data/types";
@@ -45,6 +46,7 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
   return (
     <div className="pb-[calc(5rem+env(safe-area-inset-bottom)+2.5vh)] lg:pb-0">
       <Header nextTournamentOverride={nextTournamentOverride} />
+      <InstallPrompt />
       <PlayerAreaNav />
       {children}
     </div>
