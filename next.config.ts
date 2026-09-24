@@ -17,6 +17,12 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
         ],
       },
+      {
+        // Tiger's Live Scoring Page Editor puts this one page inside its own iframes to show two phones side by side.
+        // Same-origin only, so the site-wide DENY above still blocks every other site from framing it.
+        source: "/portal/admin/scoring-preview/mobile",
+        headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }],
+      },
     ];
   },
 };
