@@ -20,3 +20,7 @@
 .days { gap: 10px; justify-content: space-between; }
 .days a { padding-inline: 2px; font-size: 11px; letter-spacing: .05em; }
 }
+
+.landing { position: fixed; inset: 0; z-index: 60; height: 100dvh; min-height: 0; box-sizing: border-box; overflow: hidden; padding-top: max(36px, env(safe-area-inset-top)); padding-bottom: max(38px, env(safe-area-inset-bottom)); }
+.back { position: absolute; top: 20px; left: 20px; color: white; z-index: 1; font-size: 12px; text-decoration: none; }
+@media (max-height: 550px) { .title { padding: 12px 0; } .title h1 { font-size: 30px; } .brand { gap: 4px; } }
