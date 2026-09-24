@@ -1,9 +1,34 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { fetchLiveTournament } from "@/lib/data/fetchLiveTournament";
 import { validateFantasyPicks } from "@/lib/fantasy/validate";
-import { fantasyTeamScore } from "@/lib/fantasy/scoring";
+import { fantasyTeamScore, type FantasyPicks } from "@/lib/fantasy/scoring";
 import { fantasyPicksLocked } from "@/lib/fantasy/lock";
+import { rankAmong } from "@/lib/fantasy/ranking";
+import type { Tournament } from "@/lib/data/types";
+
+/**
+ * Where you stand against everyone else who's drafted a team for this
+ * tournament — a service-role read (fantasy_teams' RLS scopes the normal
+ * cookie client to its own row only) of every saved team, scored with the
+ * same fantasyTeamScore every other view already uses, so this can never
+ * disagree with "your" score shown elsewhere.
+ */
+async function getFantasyStanding(tournament: Tournament, myTotal: number): Promise<{ rank: number; totalPlayers: number }> {
+  const service = createSupabaseServiceRoleClient();
+  const { data: rows } = await service
+    .from("fantasy_teams")
+    .select("maroon_player, white_player, wildcard_player")
+    .eq("tournament_slug", tournament.slug);
+
+  const scores = (rows ?? []).map((row) => {
+    const picks: FantasyPicks = { maroonPlayer: row.maroon_player, whitePlayer: row.white_player, wildcardPlayer: row.wildcard_player };
+    return fantasyTeamScore(tournament, picks).total;
+  });
+
+  // Always at least 1 (yourself) — your own row is one of the ones just read.
+  return { rank: rankAmong(scores, myTotal), totalPlayers: Math.max(scores.length, 1) };
+}
 
 export async function GET() {
   const supabase = await createSupabaseServerClient();
@@ -33,13 +58,18 @@ export async function GET() {
     ? { maroonPlayer: row.maroon_player, whitePlayer: row.white_player, wildcardPlayer: row.wildcard_player }
     : null;
 
+  const scores = picks ? fantasyTeamScore(tournament, picks) : null;
+  const standing = scores ? await getFantasyStanding(tournament, scores.total) : null;
+
   return NextResponse.json({
     ok: true,
     tournamentSlug: tournament.slug,
     editionLabel: tournament.editionLabel,
     roster: tournament.roster,
     picks,
-    scores: picks ? fantasyTeamScore(tournament, picks) : null,
+    scores,
+    rank: standing?.rank ?? null,
+    totalPlayers: standing?.totalPlayers ?? null,
   });
 }
 

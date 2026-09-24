@@ -38,6 +38,24 @@ export function playerFantasyPoints(tournament: Tournament, player: string): num
   return total;
 }
 
+/**
+ * Fantasy points for one player, for one specific round only — same rule as
+ * playerFantasyPoints, just scoped to a single round.round for the "My
+ * Roster" round-by-round strip. Null means that round hasn't started for
+ * this player yet (no scorecard row for it, or no holes posted), which the
+ * UI shows as a blank circle rather than a zero.
+ */
+export function playerFantasyPointsForRound(tournament: Tournament, player: string, round: number): number | null {
+  const scorecard = getPlayerScorecard(tournament, player);
+  const roundCard = scorecard?.rounds.find((r) => r.round === round);
+  if (!roundCard) return null;
+
+  const played = roundCard.holes.filter((h) => h.score > 0);
+  if (played.length === 0) return null;
+
+  return played.reduce((total, hole) => total + holeFantasyPoints(hole.diff), 0);
+}
+
 export interface FantasyPicks {
   maroonPlayer: string;
   whitePlayer: string;
@@ -61,4 +79,19 @@ export function fantasyTeamScore(tournament: Tournament, picks: FantasyPicks): F
     { player: picks.wildcardPlayer, points: playerFantasyPoints(tournament, picks.wildcardPlayer) },
   ];
   return { picks: scored, total: scored.reduce((sum, p) => sum + p.points, 0) };
+}
+
+/**
+ * The team's combined fantasy points for one specific round, for the "My
+ * Roster" round-by-round strip. Null (shown as a blank circle) until at
+ * least one of the three picks has posted a hole in that round; once any
+ * of them has, the others simply contribute 0 for that round so far,
+ * matching how the tournament-wide total already treats an unplayed hole.
+ */
+export function fantasyPointsForRound(tournament: Tournament, picks: FantasyPicks, round: number): number | null {
+  const perPlayer = [picks.maroonPlayer, picks.whitePlayer, picks.wildcardPlayer].map((player) =>
+    playerFantasyPointsForRound(tournament, player, round)
+  );
+  if (perPlayer.every((points) => points === null)) return null;
+  return perPlayer.reduce((total: number, points) => total + (points ?? 0), 0);
 }

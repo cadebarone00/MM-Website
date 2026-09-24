@@ -15,5 +15,8 @@ export default function FantasyLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  return <div className="mx-auto max-w-[900px] px-4 pb-16 pt-4 sm:px-7">{children}</div>;
+  // Signed-in: no padded wrapper here — FantasyShell (rendered by the page
+  // itself) owns the full-bleed fixed mobile layout and the centered
+  // desktop column.
+  return <>{children}</>;
 }

@@ -4,9 +4,11 @@
 import { useEffect, useState } from "react";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
 import { getNextTournamentStatus } from "@/lib/data";
+import { FantasyShell, type FantasyTab } from "@/components/fantasy/FantasyShell";
 import { FantasyWelcome } from "@/components/fantasy/FantasyWelcome";
 import { FantasyDraftTabs } from "@/components/fantasy/FantasyDraftTabs";
-import { FantasyYourTeam } from "@/components/fantasy/FantasyYourTeam";
+import { FantasyRosterSummary } from "@/components/fantasy/FantasyRosterSummary";
+import { FantasyHowToPlay } from "@/components/fantasy/FantasyHowToPlay";
 import {
   EMPTY_DRAFT_PICKS,
   clearDraftPicks,
@@ -17,6 +19,7 @@ import {
   type DraftPicks,
 } from "@/lib/fantasy/draftState";
 import type { FantasyPicks } from "@/lib/fantasy/scoring";
+import type { UpcomingRoundScheduleItem } from "@/lib/data/activeSeasonOverlay";
 
 function toFantasyPicks(picks: DraftPicks): FantasyPicks | null {
   if (!picks.maroon || !picks.white || !picks.wildcard) return null;
@@ -29,14 +32,18 @@ function toDraftPicks(picks: FantasyPicks): DraftPicks {
 
 export default function FantasyPage() {
   const { tournament, loading: tournamentLoading, payload } = useLiveTournament();
+  const [tab, setTab] = useState<FantasyTab>("roster");
   const [savedPicks, setSavedPicks] = useState<FantasyPicks | null>(null);
+  const [rank, setRank] = useState<number | null>(null);
+  const [totalPlayers, setTotalPlayers] = useState<number | null>(null);
   const [loadingTeam, setLoadingTeam] = useState(true);
+  const [schedule, setSchedule] = useState<UpcomingRoundScheduleItem[]>([]);
   const [drafting, setDrafting] = useState(false);
   const [picks, setPicks] = useState<DraftPicks>(EMPTY_DRAFT_PICKS);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load whatever team the user already has saved for the current tournament (if any).
+  // Load whatever team the user already has saved for the current tournament (if any), plus where it ranks.
   useEffect(() => {
     let cancelled = false;
 
@@ -45,7 +52,11 @@ export default function FantasyPage() {
         const res = await fetch("/api/fantasy/team", { cache: "no-store" });
         const data = await res.json();
         if (cancelled) return;
-        if (data.ok && data.picks) setSavedPicks(data.picks);
+        if (data.ok && data.picks) {
+          setSavedPicks(data.picks);
+          setRank(data.rank ?? null);
+          setTotalPlayers(data.totalPlayers ?? null);
+        }
       } catch {
         // Couldn't load a saved team - leave it empty, the user can still draft fresh.
       } finally {
@@ -54,6 +65,23 @@ export default function FantasyPage() {
     }
 
     void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // The season's round schedule (which day has how many rounds, and each
+  // round's format) — rarely changes, so a one-time fetch is enough.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/upcoming-round-schedule", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled && data.ok && Array.isArray(data.schedule)) setSchedule(data.schedule);
+      })
+      .catch(() => {
+        // No schedule yet - the round-circles strip just stays empty.
+      });
     return () => {
       cancelled = true;
     };
@@ -103,6 +131,8 @@ export default function FantasyPage() {
       }
       clearDraftPicks(safeSessionStorage, tournament.slug);
       setSavedPicks(fantasyPicks);
+      setRank(data.rank ?? null);
+      setTotalPlayers(data.totalPlayers ?? null);
       setDrafting(false);
     } catch {
       setError("Couldn't reach the server - try again.");
@@ -111,50 +141,57 @@ export default function FantasyPage() {
     }
   }
 
-  if ((tournamentLoading && !payload) || loadingTeam) {
-    return <p className="py-10 text-center font-sans text-sm text-ink-400">Loading Fantasy...</p>;
+  function rosterTabContent() {
+    if ((tournamentLoading && !payload) || loadingTeam) {
+      return <p className="py-10 text-center font-sans text-sm text-ink-400">Loading Fantasy...</p>;
+    }
+
+    if (rosterIsEmpty) {
+      return (
+        <p className="rounded-md border border-ink-100 bg-cream-50 px-4 py-6 text-center font-sans text-sm text-ink-500">
+          Rosters for {tournament.editionLabel} haven&rsquo;t been set yet — check back closer to the tournament.
+        </p>
+      );
+    }
+
+    if (drafting && !locked) {
+      return (
+        <FantasyDraftTabs
+          tournament={tournament}
+          picks={picks}
+          onSubmit={submitLineup}
+          onCancel={cancelDraft}
+          saving={saving}
+          error={error}
+        />
+      );
+    }
+
+    if (savedPicks) {
+      return (
+        <FantasyRosterSummary
+          tournament={tournament}
+          picks={savedPicks}
+          locked={locked}
+          rank={rank}
+          totalPlayers={totalPlayers}
+          updatedAt={payload?.updatedAt ?? null}
+          schedule={schedule}
+          onEdit={() => startDraft(toDraftPicks(savedPicks))}
+        />
+      );
+    }
+
+    if (locked) {
+      return <p className="mt-10 text-center font-sans text-sm text-ink-500">Fantasy picks are closed for {tournament.editionLabel}.</p>;
+    }
+
+    return <FantasyWelcome editionLabel={tournament.editionLabel} onStart={() => startDraft(EMPTY_DRAFT_PICKS)} />;
   }
 
-  if (rosterIsEmpty) {
-    return (
-      <p className="rounded-md border border-ink-100 bg-cream-50 px-4 py-6 text-center font-sans text-sm text-ink-500">
-        Rosters for {tournament.editionLabel} haven&rsquo;t been set yet — check back closer to the tournament.
-      </p>
-    );
-  }
-
-  if (drafting && !locked) {
-    return (
-      <FantasyDraftTabs
-        tournament={tournament}
-        picks={picks}
-        onSubmit={submitLineup}
-        onCancel={cancelDraft}
-        saving={saving}
-        error={error}
-      />
-    );
-  }
-
-  if (savedPicks) {
-    return (
-      <FantasyYourTeam
-        tournament={tournament}
-        picks={savedPicks}
-        locked={locked}
-        onEdit={() => startDraft(toDraftPicks(savedPicks))}
-      />
-    );
-  }
-
-  if (locked) {
-    return (
-      <div className="mt-10 text-center">
-        <h1 className="m-0 font-serif text-2xl font-bold text-ink-900">Fantasy</h1>
-        <p className="mt-3 font-sans text-sm text-ink-500">Fantasy picks are closed for {tournament.editionLabel}.</p>
-      </div>
-    );
-  }
-
-  return <FantasyWelcome editionLabel={tournament.editionLabel} onStart={() => startDraft(EMPTY_DRAFT_PICKS)} />;
+  return (
+    <FantasyShell activeTab={tab} onTabChange={setTab}>
+      {tab === "roster" ? rosterTabContent() : <FantasyHowToPlay editionLabel={tournament.editionLabel} />}
+    </FantasyShell>
+  );
 }
