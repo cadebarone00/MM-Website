@@ -11,6 +11,7 @@ import { LiveMatchesList } from "@/components/wagers/LiveMatchesList";
 import { TeamWinnerFutureCard } from "@/components/wagers/TeamWinnerFutureCard";
 import { LowIndividualFutureCard } from "@/components/wagers/LowIndividualFutureCard";
 import { HoleInOneFutureCard } from "@/components/wagers/HoleInOneFutureCard";
+import { TotalBirdiesFutureCard } from "@/components/wagers/TotalBirdiesFutureCard";
 import type { Tournament } from "@/lib/data/types";
 
 type Category = "team-futures" | "player-futures" | "matches" | "fourballs" | "props";
@@ -68,6 +69,7 @@ export default function WagersPage() {
             <TeamWinnerFutureCard mode={mode} />
             <LowIndividualFutureCard mode={mode} />
             <HoleInOneFutureCard mode={mode} />
+            <TotalBirdiesFutureCard mode={mode} />
           </div>
         ) : mode === "real" ? (
           <ComingSoonNotice />

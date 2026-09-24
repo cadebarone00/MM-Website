@@ -9,6 +9,8 @@ import { currentLowIndividualState } from "@/lib/wagers/lowIndividualPricing";
 import { lowIndividualMarketKey } from "@/lib/wagers/lowIndividualFuture";
 import { currentHoleInOneState } from "@/lib/wagers/holeInOnePricing";
 import { holeInOneMarketKey } from "@/lib/wagers/holeInOneFuture";
+import { currentTotalBirdiesState } from "@/lib/wagers/totalBirdiesPricing";
+import { totalBirdiesMarketKey } from "@/lib/wagers/totalBirdiesFuture";
 
 const LIVE_MATCH_PREFIX = "live-match:";
 const CLOSED = "That market isn't open for betting right now.";
@@ -17,7 +19,7 @@ type Supabase = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
 /** Only markets with an automatic settlement path are accepted: the live
  * match winner (settled by Tiger's Close Out Match), and the Team Winner, Low
- * Individual and Hole in One futures (settled when the last match closes
+ * Individual, Hole in One and Total Birdies futures (settled when the last match closes
  * out — see supabase/*_future.sql).
  * Add a market type here only once its settlement is wired up. Odds always
  * come from the server's current price, never from the request. */
@@ -51,6 +53,13 @@ async function openMarket(supabase: Supabase, marketKey: string): Promise<{ mark
   if (marketKey === holeInOneMarketKey(seasonYear)) {
     const state = await currentHoleInOneState(seasonYear);
     return { market: state.status === "open" ? state.market : null, error: CLOSED };
+  }
+  if (marketKey === totalBirdiesMarketKey(seasonYear)) {
+    // Selection keys carry the line ("over:41.5"), so a bet at a line that has
+    // since moved finds no matching selection and is refused.
+    const state = await currentTotalBirdiesState(seasonYear);
+    if (state.status === "updating") return { market: null, error: "Total Birdies odds are updating after the latest score — try again in a moment." };
+    return { market: state.status === "open" ? state.market : null, error: "The Total Birdies line has moved or closed — reopen the Futures tab for the current line." };
   }
 
   return { market: null, error: CLOSED };

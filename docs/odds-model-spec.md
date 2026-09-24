@@ -338,6 +338,32 @@ Betting closes once any confirmed score of 1 exists (Yes is locked in) or
 no par-3 tee shots remain. Settlement is automatic when the last match is
 closed out (`supabase/hole_in_one_future.sql`).
 
+## Total Birdies future (field Over/Under)
+
+The Total Birdies market prices every birdie (a score exactly one under par;
+an eagle is not a birdie) made by the whole rostered field across every
+Singles and Fourball round, as an Over/Under. Foursome is excluded because it
+produces no individual scores. Implementation:
+`lib/wagers/totalBirdiesFuture.ts` and `lib/wagers/totalBirdiesPricing.ts`,
+sharing Low Individual's inputs (`lib/wagers/individualInputs.ts`).
+
+For each unplayed player-hole, the birdie probability is that player's
+birdie rate in Measure 1 (same par) and Measure 2 (the three-bucket yardage
+pool), weighted 50/50, or whichever pool has history if only one does. A
+birdie on the target hole means a sampled raw score equal to its par minus
+one, which matches Low Individual's draws. Confirmed birdies are fixed. The
+event is played 10,000 times.
+
+The featured line is the half-birdie total whose Over probability is
+closest to 50%. Over and Under are priced as fair American odds from the
+simulated shares. The line re-centres on every refresh. Selection keys
+carry the line (`over:41.5`), so a bet only matches the current line and is
+settled against its own line. Half lines mean no pushes.
+
+Refresh, staleness, readiness blockers and settlement timing match Low
+Individual (`supabase/total_birdies_future.sql`). Measures 3 and 4 are not
+applied. Holes are independent, so no hot or cold round is modelled.
+
 ## Required outputs
 
 Every odds calculation should show:
