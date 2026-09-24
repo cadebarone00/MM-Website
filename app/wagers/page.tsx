@@ -4,15 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
 import { getPlayerDisplayName, getPlayerProfile, playerProfiles } from "@/lib/data/players";
-import { currentRoundDay } from "@/components/leaderboard/matchUtils";
 import { Tabs, type TabItem } from "@/components/ui/Tabs";
-import { MarketRow } from "@/components/wagers/MarketRow";
-import { FuturesMarketCard } from "@/components/wagers/FuturesMarketCard";
 import { ComingSoonNotice } from "@/components/wagers/ComingSoonNotice";
 import { useWagersMode } from "@/components/wagers/WagersModeContext";
-import { futurePlayerMarket, futureTeamMarket } from "@/lib/wagers/marketKeys";
 import { LiveMatchesList } from "@/components/wagers/LiveMatchesList";
-import type { RealMatch, Tournament } from "@/lib/data/types";
+import type { Tournament } from "@/lib/data/types";
 
 type Category = "team-futures" | "player-futures" | "matches" | "fourballs" | "props";
 
@@ -24,57 +20,13 @@ const CATEGORY_ITEMS: TabItem[] = [
   { value: "props", label: "Props" },
 ];
 
-function sideLabel(players: string[]): string {
-  return players.map((p) => getPlayerDisplayName(p).split(" ").pop()).join(" & ");
-}
-
-function matchTitle(match: RealMatch): string {
-  return `${sideLabel(match.maroonPlayers)} vs ${sideLabel(match.whitePlayers)}`;
-}
-
-function PropsList({ tournament }: { tournament: Tournament }) {
-  const todaysMatches = tournament.matches.filter((match) => match.day === currentRoundDay(tournament));
-  if (todaysMatches.length === 0) {
-    return <p className="font-sans text-sm text-ink-400">No player props posted yet.</p>;
-  }
+/** Shown for categories whose markets have no settlement path yet. Bets are
+ * only accepted on markets that settle automatically (live matches today). */
+function LinesComingSoon({ label }: { label: string }) {
   return (
-    <div className="flex flex-col divide-y divide-ink-100">
-      {todaysMatches.map((match) => (
-        <MarketRow key={match.id} href={`/wagers/props/${match.id}`} label={`${matchTitle(match)} — Props`} />
-      ))}
-    </div>
-  );
-}
-
-function FuturesList({ tournament }: { tournament: Tournament }) {
-  const [futureType, setFutureType] = useState<"team" | "player">("team");
-  const market = futurePlayerMarket(tournament.slug, tournament.individualLeaderboard, [...tournament.roster.maroon, ...tournament.roster.white]);
-  const teamMarket = futureTeamMarket(tournament);
-
-  return (
-    <div>
-      <Tabs
-        items={[
-          { value: "team", label: "Team" },
-          { value: "player", label: "Player" },
-        ]}
-        value={futureType}
-        onChange={(value) => setFutureType(value as "team" | "player")}
-        variant="plain"
-      />
-      <div className="mt-4">
-        {futureType === "team" ? (
-          <FuturesMarketCard title="Team Winner" marketKey={teamMarket.marketKey} selections={teamMarket.selections} href="/wagers/team-futures/team-winner" />
-        ) : (
-          <FuturesMarketCard
-            title="Tournament Winner"
-            marketKey={market.marketKey}
-            selections={market.selections}
-            href="/wagers/player-futures/tournament-winner"
-            limit={3}
-          />
-        )}
-      </div>
+    <div className="rounded-lg border border-dashed border-ink-200 bg-cream-50 p-6 text-center">
+      <p className="m-0 font-sans text-sm font-semibold text-ink-500">{label} lines are coming soon.</p>
+      <p className="mt-1 font-sans text-2xs text-ink-400">Live match markets are open on the Matches tab.</p>
     </div>
   );
 }
@@ -113,10 +65,10 @@ export default function WagersPage() {
           <p className="py-10 text-center font-sans text-sm text-ink-400">Checking the live sheet...</p>
         ) : (
           <>
-            {category === "team-futures" && <FuturesList tournament={tournament} />}
+            {category === "team-futures" && <LinesComingSoon label="Futures" />}
             {category === "player-futures" && <PlayersList tournament={tournament} />}
             {category === "matches" && <LiveMatchesList />}
-            {category === "props" && <PropsList tournament={tournament} />}
+            {category === "props" && <LinesComingSoon label="Prop" />}
             {category === "fourballs" && <p className="font-sans text-sm text-ink-400">No fourball markets posted yet.</p>}
           </>
         )}
