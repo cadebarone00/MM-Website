@@ -1,5 +1,7 @@
 import { mergeLiveTournament } from "./live";
 import { normalizePayload } from "./liveFeedNormalize";
+import { overlayConfirmedRoster } from "./confirmedRosterOverlay";
+import { getConfirmedRoster } from "./activeSeasonOverlay";
 import type { Tournament } from "./types";
 
 /**
@@ -11,14 +13,21 @@ import type { Tournament } from "./types";
  *
  * Always returns a valid Tournament, never null — mirrors
  * mergeLiveTournament()'s own contract and the client's useLiveTournament()
- * hook: no live feed configured/reachable degrades gracefully to the
- * upcoming2027-based fallback (empty matches/leaderboard), not a fatal
- * error. This matters because futures markets (Team Winner, Tournament
- * Winner) only need tournament.slug/individualLeaderboard, both valid on
- * that fallback, so they stay bettable with zero live feed data — exactly
- * the state this app is in most of the time before a tournament goes live.
+ * hook: no live feed configured/reachable degrades to a roster confirmed
+ * via Tiger's Master Settings (getConfirmedRoster()), or an empty roster if
+ * that isn't set either — never a fatal error. This matters because
+ * futures markets (Team Winner, Tournament Winner) only need
+ * tournament.slug/individualLeaderboard, both valid on that fallback, so
+ * they stay bettable with zero live feed data — exactly the state this app
+ * is in most of the time before a tournament goes live.
  */
 export async function fetchLiveTournament(): Promise<Tournament> {
+  const tournament = await fetchLiveFeedTournament();
+  const confirmedRoster = await getConfirmedRoster();
+  return overlayConfirmedRoster(tournament, confirmedRoster);
+}
+
+async function fetchLiveFeedTournament(): Promise<Tournament> {
   const url = process.env.LIVE_FEED_URL;
   if (!url) return mergeLiveTournament(null);
 

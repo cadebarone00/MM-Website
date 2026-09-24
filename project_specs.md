@@ -700,6 +700,50 @@ All pages are public, no auth.
   checking with Cade before starting further work in case the other session
   is mid-task on something else.
 
+- **Fantasy draft redesign, plus a real pre-tournament roster bug fix.**
+  `/fantasy` used to be a single flat picker; it's now a five-state flow
+  (`app/fantasy/page.tsx`): a welcome hero (`FantasyWelcome`) with a "Make
+  Your Selections" button, a 3-tab draft screen (`FantasyDraftTabs` — Maroon /
+  White / Wildcard) where each row (`FantasyPlayerRow`) drills into that
+  player's real profile page and a floating action bar
+  (`FantasyDraftActionBar`) lets you draft them from there, a Submit Lineup
+  step once all three slots are filled, a locked "Your Team" results view
+  once the tournament goes live (`FantasyYourTeam`), and an Edit Lineup path
+  that reopens the draft pre-seeded with your saved picks. In-progress
+  drafts persist to `sessionStorage` per tournament
+  (`lib/fantasy/draftState.ts`, unit-tested) so going to a profile and back
+  doesn't lose your picks, and the lock is now enforced for real:
+  `fantasyPicksLocked` (`lib/fantasy/lock.ts`, unit-tested) checks the
+  tournament's actual live/completed status instead of trusting the client.
+  Along the way, fixed a real bug: the pre-tournament roster (who Tiger has
+  locked into Maroon/White in Master Settings → Players & Teams) and the
+  live-tournament roster (only populated once the Google Sheet feed is
+  running) were two disconnected sources, so `tournament.roster` — and
+  Fantasy's entire draft pool — was empty for the whole pre-tournament
+  window. `overlayConfirmedRoster` (`lib/data/confirmedRosterOverlay.ts`,
+  unit-tested) now fills in the confirmed roster whenever the live one is
+  empty, wired into both places a `Tournament` gets built
+  (`lib/data/fetchLiveTournament.ts` server-side,
+  `lib/hooks/useLiveTournament.ts` client-side via the new
+  `GET /api/confirmed-roster` route). Because `LivePlayerScorecard` already
+  reads `tournament.roster` through that same client hook, its team badge —
+  previously always showing White for every player pre-tournament (the
+  roster was always empty, so the maroon-membership check in its team
+  ternary was always false) — now shows the right team for free, with
+  no changes to that component's own logic. Also deleted
+  `components/fantasy/PlayerPickerSlot.tsx`, the old flat picker's row
+  component, left behind as dead code by the rewrite (confirmed unused
+  repo-wide before deleting). `npm test` (383/383), `npx tsc --noEmit`,
+  `npm run lint`, and `npm run build` all clean (`/fantasy`,
+  `/api/confirmed-roster`, and `/api/fantasy/team` all present among the
+  build's routes). **Not click-tested against a real locked roster yet:** no
+  2027 roster has been confirmed in production, so the full welcome → draft
+  tabs → profile → Draft → Submit Lineup → Your Team → Edit Lineup path is
+  covered by unit tests, type-check, lint, and build plus a manual check
+  that the empty-roster message still renders without crashing — not yet a
+  real end-to-end click-test, same situation as several earlier rounds
+  shipped ahead of the data existing to test against.
+
 ## Known gaps / not yet built
 
 - **Live scoring lifecycle — spec v3 written, not built.** See
