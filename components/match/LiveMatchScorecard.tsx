@@ -52,16 +52,18 @@ export function LiveMatchScorecard({ match, scorecard }: { match: RealMatch; sco
     (shared || match.format === "Fourball" || match.format === "Play 4, Take 3") && scoresRow("white-side", shared ? "White" : match.format === "Play 4, Take 3" ? "Best 3" : "Best Ball", white, "white", match.format === "Play 4, Take 3" ? 3 : 1),
     ...(!shared ? players("white") : [])
   ].filter((item): item is ReturnType<typeof row> => !!item);
+  const groupClass = (key: string) => match.format !== "Fourball" ? "" : key === "maroon-side" ? styles.groupStart : key === "white-side" ? styles.groupEnd : key === "status" ? styles.groupMiddle : "";
+  const mobileClass = (r: ReturnType<typeof row>, label = false) => `${r.key === "holes" ? styles.mobileHeader : label ? styles.mobileLabel : styles.mobileValue} ${r.key === "holes" ? "" : r.tone} ${groupClass(r.key)}`;
   return <section>{scorecard.courseName && <p className="mb-3 font-condensed text-sm font-bold text-maroon-700">{scorecard.courseName}</p>}
     <div className={styles.mobileCard} aria-label="Mobile match scorecard">
-      <div className={styles.mobileSide}>{rows.map(r => <div key={r.key} className={r.key === "holes" ? styles.mobileHeader : styles.mobileLabel}>{r.label}</div>)}</div>
+      <div className={styles.mobileSide}>{rows.map(r => <div key={r.key} className={mobileClass(r, true)}>{r.label}</div>)}</div>
       <div className={styles.mobileScroller} tabIndex={0} aria-label="Scroll match holes, front nine and back nine">
-        {[0, 9].map(start => <div key={start} className={styles.mobilePage}>{rows.map(r => <div key={r.key} className={styles.mobileRow}>{r.cells.slice(start, start + 9).map((cell, index) => <div key={index} className={r.key === "holes" ? styles.mobileHeader : styles.mobileValue}>{cell ?? "\u2014"}</div>)}</div>)}</div>)}
+        {[0, 9].map(start => <div key={start} className={styles.mobilePage}>{rows.map(r => <div key={r.key} className={`${styles.mobileRow} ${r.tone} ${groupClass(r.key)}`}>{r.cells.slice(start, start + 9).map((cell, index) => <div key={index} className={r.key === "holes" ? styles.mobileHeader : styles.mobileValue}>{cell ?? "\u2014"}</div>)}</div>)}</div>)}
       </div>
-      <div className={styles.mobileSide}>{rows.map(r => <div key={r.key} className={r.key === "holes" ? styles.mobileHeader : styles.mobileValue}>{r.sum}</div>)}</div>
+      <div className={styles.mobileSide}>{rows.map(r => <div key={r.key} className={mobileClass(r)}>{r.sum}</div>)}</div>
     </div>
     <div className={styles.scorecard + " hidden border-y border-ink-300 lg:block"} aria-label="Match scorecard table"><table className="w-full table-fixed border-collapse"><colgroup><col style={{ width: "var(--match-label-width)" }} />{Array.from({ length: holes.length + 1 }, (_, index) => <col key={index} />)}</colgroup><tbody>
-      {rows.map(r => <tr key={r.key} className={`${r.tone} ${["holes", "yards", "par"].includes(r.key) ? styles.compactRow : ""}`}><th scope="row" className={"h-12 border-r border-gold-600 px-0.5 text-center font-condensed uppercase " + r.tone}>{r.label}</th>{r.cells.map((cell, index) => <td key={index} className="relative isolate h-12 border-r border-gold-600 text-center">{cell ?? "\u2014"}</td>)}<td className="h-12 border-l border-gold-600 text-center font-bold">{r.sum}</td></tr>)}
+      {rows.map(r => <tr key={r.key} className={`${r.tone} ${groupClass(r.key)} ${["holes", "yards", "par"].includes(r.key) ? styles.compactRow : ""}`}><th scope="row" className={"h-12 border-r border-gold-600 px-0.5 text-center font-condensed uppercase " + r.tone}>{r.label}</th>{r.cells.map((cell, index) => <td key={index} className="relative isolate h-12 border-r border-gold-600 text-center">{cell ?? "\u2014"}</td>)}<td className="h-12 border-l border-gold-600 text-center font-bold">{r.sum}</td></tr>)}
     </tbody></table></div>
   </section>;
 }

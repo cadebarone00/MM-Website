@@ -16,6 +16,12 @@
 .scorecard .compactRow > th,
 .scorecard .compactRow > td { height: 24px; }
 
+/* Fourball best-ball/status block: gaps outside, a gold outline inside. */
+.scorecard .groupStart > * { border-top: 10px solid var(--color-cream-100); box-shadow: inset 0 2px #a78945; }
+.scorecard .groupEnd > * { border-bottom: 10px solid var(--color-cream-100); box-shadow: inset 0 -2px #a78945; }
+.scorecard :is(.groupStart, .groupMiddle, .groupEnd) > :first-child { border-left: 2px solid #a78945; }
+.scorecard :is(.groupStart, .groupMiddle, .groupEnd) > :last-child { border-right: 2px solid #a78945; }
+
 .scorecard td > span[style] {
   width: min(24px, 3.5cqw) !important;
   height: min(24px, 3.5cqw) !important;
@@ -215,6 +221,10 @@
   }
   .mobileSide { width: 56px; flex-shrink: 0; }
   .mobileSide:last-child { width: 36px; }
+  .groupStart { margin-top: 10px; box-shadow: inset 0 2px #a78945; }
+  .groupEnd { margin-bottom: 10px; box-shadow: inset 0 -2px #a78945; }
+  .mobileSide:first-child > :is(.groupStart, .groupMiddle, .groupEnd) { border-left: 2px solid #a78945; }
+  .mobileSide:last-child > :is(.groupStart, .groupMiddle, .groupEnd) { border-right: 2px solid #a78945; }
   .mobileScroller {
     display: flex;
     flex: 1;
@@ -252,7 +262,6 @@
   }
   .mobileValue > span { max-width: 100%; }
   .mobileValue > span[style] { width: 28px !important; height: 28px !important; }
-  .mobileValue > span[style] > span { color: var(--color-maroon-700); border-color: var(--color-maroon-700); }
   .mobileValue > span:not([style]) { height: 44px; width: 100%; font-size: 10px; }
   .mobileGraph { margin-inline: -16px; }
   .probabilityCard { padding-inline: 0; border-inline: 0; border-radius: 8px; }
