@@ -76,14 +76,15 @@ export default async function PortalPage() {
           </div>
           <Link href="/portal/handicap?tab=overall" aria-label={`Overall handicap: ${formatHandicapIndex(heroHandicapIndex)}`} className="shrink-0 text-right font-serif text-4xl font-bold leading-none tabular-nums text-white sm:text-5xl">{formatHandicapIndex(heroHandicapIndex)}</Link>
         </div>
+        <nav aria-label="Handicap and player lookup" className="absolute inset-x-0 bottom-5 grid grid-cols-2 items-center px-4 sm:bottom-8 sm:px-6">
+          {[{ href: "/portal/handicap", label: "My Handicap" }, { href: "/portal/player-lookup", label: "Player Lookup" }].map(item => <Link key={item.href} href={item.href} className="flex min-h-11 items-center justify-center px-2 text-center font-serif text-sm font-bold uppercase tracking-wide text-white underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-white sm:text-lg">{item.label}</Link>)}
+        </nav>
       </section>
 
       <PortalMatches matches={matches} team={team} year={year} />
 
       <div className={`pt-5 pb-10 ${team === "white" ? "bg-maroon-900" : ""}`}>
       <nav aria-label="Player portal" className="mx-auto max-w-4xl px-4 sm:px-6">
-        <Link href="/portal/handicap" className="mb-4 block w-full rounded-full border-2 border-gold-300 bg-white px-6 py-2.5 text-center font-condensed text-sm font-bold text-maroon-900 transition hover:bg-cream-50 focus-visible:outline-2 focus-visible:outline-maroon-700">My Handicap</Link>
-        <Link href="/portal/player-lookup" className="mb-4 block w-full rounded-full border-2 border-gold-300 bg-white px-6 py-2.5 text-center font-condensed text-sm font-bold text-maroon-900 hover:bg-cream-50">Player Lookup</Link>
         <div className="space-y-3">
           {[{ href: "/portal/profile", name: "Profile", image: "profile" }, { href: "/portal/career", name: "Career", image: "career" }, { href: "/portal/round-video", name: "Round video", image: "round-video" }, { href: "/wagers/portfolio", name: "Wagers", image: "wagers" }].map((item) => <Link key={item.href} href={item.href} className="group relative isolate block overflow-hidden rounded-xl border-2 border-gold-300 px-6 py-6 font-serif text-2xl font-bold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-gold-300"><Image src={`/portal/navigation/${item.image}.webp`} alt="" fill sizes="(max-width: 896px) 100vw, 896px" className="-z-20 object-cover" /><span aria-hidden="true" className="absolute inset-0 -z-10 bg-black/45 transition group-hover:bg-black/30 group-focus-visible:bg-black/30" />{item.name}</Link>)}
         </div>

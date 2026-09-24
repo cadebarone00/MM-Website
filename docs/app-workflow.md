@@ -46,6 +46,7 @@ flowchart TD
   %% My Handicap score list shows only the order dropdown followed by scores; explanatory paragraphs are removed.
   %% White-team portal navigation area has a maroon backdrop behind Submit a score and the four navigation rows.
   %% Portal Profile, Career, Round video and Wagers rows use their named supplied photos with white labels, individual gold outlines, and spacing between selections.
+  %% Portal hero contains evenly spaced white serif My Handicap and Player Lookup links near its bottom.
   %% Portal: overall handicap number opens My Handicap; separate Submit a score pill opens the handicap screen.
   %% Player Lookup starts with its selector below navigation; the header back arrow always returns to /portal.
   %% Player Lookup is an authenticated read-only player directory with handicap history and profile-stat comparisons.
@@ -131,7 +132,7 @@ Native match profiles poll `/api/live/matches/[id]?profile=1` every five seconds
 
 **Reads:** committed tournament/player content plus selected live database overlays. **Writes:** generally none from browsing. **Code:** `app/page.tsx`, `app/leaderboard`, `app/teams`, `app/schedule`, `lib/data/activeSeasonOverlay.ts`.
 
-The portal home My Handicap button retains `/portal/handicap`; Player Lookup beneath it opens `/portal/player-lookup`. Lookup starts directly with the player dropdown below navigation, without a separate page heading or Back link; the navigation back arrow returns to `/portal` on mobile and desktop. Lookup requires a player session, validates the requested player against the static-plus-slot directory, and passes only names/slugs (not slot contact/account metadata) to the client. It displays Maroon Masters handicap left and combined Overall handicap right, using the same archive and submitted-round calculations as My Handicap. Maroon Masters and 20 Most Recent are defaults; Overall, All Scores, Highest to Lowest, and Lowest to Highest reuse the existing history logic. Lookup score views are read-only: no submit action or draft card is rendered. Statistics reuses the profile career-archive statistics categories/year controls and comparison picker, defaulting to the signed-in player when viewing another player. Missing statistics and load failures show explicit states.
+The portal hero contains two evenly spaced white text links near its bottom: My Handicap retains `/portal/handicap` and Player Lookup opens `/portal/player-lookup`. Both use the bold uppercase serif treatment from the Maroon Masters Fantasy heading, with no filled button backgrounds or borders. Lookup starts directly with the player dropdown below navigation, without a separate page heading or Back link; the navigation back arrow returns to `/portal` on mobile and desktop. Lookup requires a player session, validates the requested player against the static-plus-slot directory, and passes only names/slugs (not slot contact/account metadata) to the client. It displays Maroon Masters handicap left and combined Overall handicap right, using the same archive and submitted-round calculations as My Handicap. Maroon Masters and 20 Most Recent are defaults; Overall, All Scores, Highest to Lowest, and Lowest to Highest reuse the existing history logic. Lookup score views are read-only: no submit action or draft card is rendered. Statistics reuses the profile career-archive statistics categories/year controls and comparison picker, defaulting to the signed-in player when viewing another player. Missing statistics and load failures show explicit states.
 
 The Player Portal navigation rows for Profile, Career, Round video, and Wagers use the corresponding supplied photos from `Player Portal/Profile.Career.etc`, imported as optimized WebP assets in `public/portal/navigation`. Each photo fills a separate rounded row with a gold outline and 12px spacing between selections, with white text and a dark overlay; link destinations and permissions are unchanged.
 
@@ -455,6 +456,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 24, 2026 - Portal hero navigation links (presentation change implemented locally; deployment not verified).** My Handicap and Player Lookup previously appeared as stacked pill buttons below the hero. Both now sit inside the hero near its bottom, evenly spaced in two columns, as white text links using the Fantasy heading font treatment. Destinations are unchanged. Updated Section 3 and the flowchart annotation; overview mappings are unchanged.
 
 **September 24, 2026 - Compact Player Lookup header (implemented locally; deployment not verified).** Removed the separate Back link and Player Lookup heading, moving the player dropdown and remaining content upward. The navigation back arrow is visible on mobile and desktop and always returns to the Player Portal home from lookup. Updated Section 3 and the flowchart annotation; overview mappings are unchanged.
 
