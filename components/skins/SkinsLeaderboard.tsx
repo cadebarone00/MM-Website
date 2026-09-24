@@ -21,16 +21,16 @@ export function SkinsLeaderboard({ players, payouts }: { players: SkinsLeaderboa
           <div className="bg-cream-100 px-3 pb-4 pt-2">
             {player.wins.length === 0 ? <p className="py-3 font-sans text-sm text-ink-500">No skins won in 2026.</p> : (
               <div className="overflow-x-auto" role="region" aria-label={`${player.name}'s winning holes`} tabIndex={0}>
-                <table className="w-full min-w-[520px] text-left font-sans text-xs sm:text-sm">
+                <table className="w-full text-left font-sans text-xs sm:text-sm">
                   <caption className="sr-only">Winning holes for {player.name}</caption>
                   <thead><tr className="border-b border-ink-200 font-condensed text-xs uppercase text-ink-500">{["Day", "Session", "Course", "Hole", "Score"].map((label) => <th key={label} scope="col" className="px-2 py-3">{label}</th>)}</tr></thead>
                   <tbody>{player.wins.map((win) => (
                     <tr key={`${win.round}:${win.course}:${win.hole}`} className="border-b border-ink-200 last:border-0">
                       <td className="px-2 py-3 tabular-nums">{win.day ?? "—"}</td>
-                      <td className="whitespace-nowrap px-2 py-3">{win.round}{win.session ? ` · ${win.session}` : ""}</td>
+                      <td className="px-2 py-3"><span className="tabular-nums">{win.round}</span>{win.session && <span className="block text-[10px] text-ink-500 sm:text-xs">{win.session}</span>}</td>
                       <td className="px-2 py-3">{win.course}</td>
                       <td className="px-2 py-3 tabular-nums">{win.hole}</td>
-                      <td className="px-2 py-3"><span className="flex items-center gap-2 whitespace-nowrap">
+                      <td className="px-2 py-3"><span className="flex flex-col items-center gap-1 text-center sm:flex-row sm:gap-2 sm:text-left">
                         {win.par == null ? <span className="inline-flex h-8 w-8 items-center justify-center font-score font-bold">{win.score}</span> : <HoleMarkerForDiff diff={win.score - win.par} size={30}>{win.score}</HoleMarkerForDiff>}
                         <span>{skinsScoreLabel(win.score, win.par)}</span>
                       </span></td>
