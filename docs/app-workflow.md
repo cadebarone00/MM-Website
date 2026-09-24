@@ -120,6 +120,8 @@ Native match profiles poll `/api/live/matches/[id]?profile=1` every five seconds
 
 **Reads:** committed tournament/player content plus selected live database overlays. **Writes:** generally none from browsing. **Code:** `app/page.tsx`, `app/leaderboard`, `app/teams`, `app/schedule`, `lib/data/activeSeasonOverlay.ts`.
 
+The Player Portal navigation rows for Profile, Career, Round video, and Wagers use the corresponding supplied photos from `Player Portal/Profile.Career.etc`, imported as optimized WebP assets in `public/portal/navigation`. The photos fill the existing rows, with white text and a dark overlay; link destinations and permissions are unchanged.
+
 ## 4. Player portal and My Matches
 
 After login, a host goes to Tiger Center. A linked player receives a hero, team label, handicap, match cards, and links to Profile, Career, Round Video, and Wagers. A fan account does not get player-only tools.
@@ -438,8 +440,6 @@ This map identifies remaining distinctions worth reviewing: static versus correc
 
 These are observations from the documentation review. No application behavior was changed while creating this map.
 
-
-The Player Portal navigation rows for Profile, Career, Round video, and Wagers use the corresponding supplied photos from `Player Portal/Profile.Career.etc`, imported as optimized WebP assets in `public/portal/navigation`. The photos fill the existing rows, with white text and a dark overlay; link destinations and permissions are unchanged.
 
 ## What changed
 
