@@ -7,10 +7,12 @@ export function ComparePicker({
   players,
   value,
   onChange,
+  includeField = true,
 }: {
   players: string[];
   value: string;
   onChange: (value: string) => void;
+  includeField?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -37,7 +39,7 @@ export function ComparePicker({
       </button>
       {open && (
         <div className="absolute right-0 z-20 mt-1 max-h-64 w-40 overflow-y-auto rounded-md border border-ink-200 bg-white shadow-lg">
-          <button
+          {includeField && <button
             type="button"
             onClick={() => {
               onChange("field");
@@ -49,7 +51,7 @@ export function ComparePicker({
             ].join(" ")}
           >
             The Field
-          </button>
+          </button>}
           {players.map((p) => (
             <button
               key={p}

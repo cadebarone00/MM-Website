@@ -47,6 +47,7 @@ flowchart TD
   %% White-team portal navigation area has a maroon backdrop behind Submit a score and the four navigation rows.
   %% Portal Profile, Career, Round video and Wagers rows use their named supplied photos with white labels, individual gold outlines, and spacing between selections.
   %% Portal: overall handicap number opens My Handicap; separate Submit a score pill opens the handicap screen.
+  %% Player Lookup is an authenticated read-only player directory with handicap history and profile-stat comparisons.
   P --> N[Personal 18-hole round entry]
   C --> N
   N --> E[Atomic personal-round save]
@@ -128,6 +129,8 @@ Native match profiles poll `/api/live/matches/[id]?profile=1` every five seconds
 2026 match pages also provide explicitly labeled estimated replays, computed deterministically from the combined, corrected career archive in `lib/odds/historicalMatchOdds.ts`. Only 2024 and 2025 Singles/Fourball individual scores (excluding nine-hole rounds) train individual strength; Alternate Shot uses prior shared-ball scores, broadening from exact partnerships to partner history when needed. Same-par empirical distributions approximate future holes; missing player history uses the prior field pool. Fourball uses best-ball distributions. This simplified model differs from the live Monte Carlo model and writes no prices or bets. The 2026 hole scores reveal match progress only, never train strength. All replay inputs use the canonical tournament round, after normalizing original workbook numbering at its import boundary. The last point uses the published result, and discrepancies or missing history receive a note. Other historical years still have no odds graph unless recorded data becomes available.
 
 **Reads:** committed tournament/player content plus selected live database overlays. **Writes:** generally none from browsing. **Code:** `app/page.tsx`, `app/leaderboard`, `app/teams`, `app/schedule`, `lib/data/activeSeasonOverlay.ts`.
+
+The portal home My Handicap button retains `/portal/handicap`; Player Lookup beneath it opens `/portal/player-lookup`. Lookup requires a player session, validates the requested player against the static-plus-slot directory, and passes only names/slugs (not slot contact/account metadata) to the client. It displays Maroon Masters handicap left and combined Overall handicap right, using the same archive and submitted-round calculations as My Handicap. Maroon Masters and 20 Most Recent are defaults; Overall, All Scores, Highest to Lowest, and Lowest to Highest reuse the existing history logic. Lookup score views are read-only: no submit action or draft card is rendered. Statistics reuses the profile career-archive statistics categories/year controls and comparison picker, defaulting to the signed-in player when viewing another player. Missing statistics and load failures show explicit states.
 
 The Player Portal navigation rows for Profile, Career, Round video, and Wagers use the corresponding supplied photos from `Player Portal/Profile.Career.etc`, imported as optimized WebP assets in `public/portal/navigation`. Each photo fills a separate rounded row with a gold outline and 12px spacing between selections, with white text and a dark overlay; link destinations and permissions are unchanged.
 
@@ -451,6 +454,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 24, 2026 - Player Lookup and My Handicap entry (implemented locally; deployment not verified).** Renamed the portal Submit a score entry to My Handicap without changing its destination, and added Player Lookup below it. Players can select another player, read both handicap indexes and filtered round history, and open the existing profile statistics comparison with themselves preselected. Authenticated lookup reads player handicap history but provides no editing/submission controls; slot contact metadata is excluded from the client payload. Updated Section 3 and the flowchart annotation; overview mappings remain unchanged.
 
 **September 24, 2026 - Separate gold-outlined portal selections (presentation change implemented locally; deployment not verified).** The four photo links previously shared one border with dividers. Each now has its own rounded gold outline and a 12px gap from the next selection. Updated Section 3 and the flowchart annotation; navigation and overview mappings are unchanged.
 

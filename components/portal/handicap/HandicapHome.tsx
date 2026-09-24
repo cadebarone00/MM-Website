@@ -12,14 +12,15 @@ import { formatRoundLabel } from "@/lib/data/roundLabel";
 import { RoundInProgressCard } from "./RoundInProgressCard";
 import { SubmitScoreButton } from "./SubmitScoreButton";
 
-export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, team, initialTab = "maroon-masters" }: { playerName: string; playerSlug: string; initialTab?: "maroon-masters" | "overall"; summary: HandicapSummary; archivedRounds: ArchivedHandicapRound[]; team: Team | null }) {
+export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, team, initialTab = "maroon-masters", readOnly = false }: { playerName: string; playerSlug: string; readOnly?: boolean; initialTab?: "maroon-masters" | "overall"; summary: HandicapSummary; archivedRounds: ArchivedHandicapRound[]; team: Team | null }) {
   const [activeTab, setActiveTab] = useState<"maroon-masters" | "overall">(initialTab);
   const [scoreView, setScoreView] = useState<ScoreView>("recent");
   const rounds = selectHandicapScores(handicapHistory(archivedRounds, summary.rounds, activeTab), scoreView);
   const contributing = contributingRoundIds(summary.rounds, archivedRounds, activeTab);
   const index = summary.index;
   return (
-    <main className="w-full pb-10">
+    <div className="w-full pb-10">
+      {!readOnly && <>
       <section className="relative isolate overflow-hidden bg-maroon-950">
         <div className="relative aspect-[16/7] min-h-52 sm:min-h-64">
           <Image src="/loading/desktop.png" alt="Maroon Masters course view" fill priority sizes="100vw" className="object-cover" />
@@ -58,8 +59,9 @@ export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, 
       </section>
 
       <RoundInProgressCard playerSlug={playerSlug} />
+      </>}
 
-      <section id="handicap-scores" role="tabpanel" aria-labelledby={`handicap-tab-${activeTab}`} className="mx-auto mt-6 max-w-4xl px-4 sm:px-6">
+      <section id="handicap-scores" role="tabpanel" aria-labelledby={readOnly ? undefined : `handicap-tab-${activeTab}`} aria-label={readOnly ? "Player handicap scores" : undefined} className="mx-auto mt-6 max-w-4xl px-4 sm:px-6">
         <div className="flex items-center gap-2 border-b border-stone-200 pb-3">
           <select aria-label="Score display order" value={scoreView} onChange={(event) => setScoreView(event.target.value as ScoreView)} className="min-w-0 rounded bg-transparent py-2 pr-2 font-condensed text-sm font-bold text-maroon-700 focus-visible:outline-2 focus-visible:outline-maroon-700">
             <option value="recent">20 Most Recent</option>
@@ -101,6 +103,6 @@ export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, 
           </div>
         )}
       </section>
-    </main>
+    </div>
   );
 }
