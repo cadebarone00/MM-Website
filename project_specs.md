@@ -702,8 +702,8 @@ All pages are public, no auth.
 
 - **Fantasy draft redesign, plus a real pre-tournament roster bug fix.**
   `/fantasy` used to be a single flat picker; it's now a five-state flow
-  (`app/fantasy/page.tsx`): a welcome hero (`FantasyWelcome`) with a "Start
-  Your Draft" button, a 3-tab draft screen (`FantasyDraftTabs` — Maroon /
+  (`app/fantasy/page.tsx`): a welcome hero (`FantasyWelcome`) with a "Make
+  Your Selections" button, a 3-tab draft screen (`FantasyDraftTabs` — Maroon /
   White / Wildcard) where each row (`FantasyPlayerRow`) drills into that
   player's real profile page and a floating action bar
   (`FantasyDraftActionBar`) lets you draft them from there, a Submit Lineup
@@ -727,7 +727,9 @@ All pages are public, no auth.
   `lib/hooks/useLiveTournament.ts` client-side via the new
   `GET /api/confirmed-roster` route). Because `LivePlayerScorecard` already
   reads `tournament.roster` through that same client hook, its team badge —
-  previously blank pre-tournament — now shows the right team for free, with
+  previously always showing White for every player pre-tournament (the
+  roster was always empty, so the maroon-membership check in its team
+  ternary was always false) — now shows the right team for free, with
   no changes to that component's own logic. Also deleted
   `components/fantasy/PlayerPickerSlot.tsx`, the old flat picker's row
   component, left behind as dead code by the rewrite (confirmed unused
