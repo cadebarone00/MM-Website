@@ -1,21 +1,26 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-// Exchanges the PKCE `code` query param (from verification / password-reset
-// email links) for a real session cookie, then redirects on to `next`. The
-// server client defaults to the PKCE flow, so without this step
-// `updateUser({ password })` on /reset-password fails with "Auth session
-// missing!" — there is otherwise no route anywhere in the app that does
-// this exchange.
+// Password-reset codes are exchanged here. Invite tokens arrive in a URL
+// fragment (invisible to the server); the browser carries that fragment through
+// the redirect and the password form exchanges it for session cookies.
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/reset-password";
+  // Both invite and recovery send users to the password form. Do not allow
+  // arbitrary redirect destinations to receive inherited session fragments.
+  const destination = new URL("/reset-password", origin);
+
+  if (searchParams.has("error") || searchParams.has("error_code")) {
+    destination.searchParams.set("error", "invalid_link");
+    return NextResponse.redirect(destination);
+  }
 
   if (code) {
     const supabase = await createSupabaseServerClient();
-    await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) destination.searchParams.set("error", "invalid_link");
   }
 
-  return NextResponse.redirect(`${origin}${next}`);
+  return NextResponse.redirect(destination);
 }

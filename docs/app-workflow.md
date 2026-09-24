@@ -8,6 +8,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
+  %% Invite URL fragments are exchanged for session cookies before password entry; recovery codes use the server callback. Invalid links offer a fresh reset.
   %% Course photo imports support nested photo folders and replacement/removal of Main labels; Palmer and Pete Dye assets are imported.
   %% Accordion date/session labels are explicitly positioned below the top overlay and remain horizontal in every panel.
   %% Schedule landing and accordion are fixed edge-to-edge viewports; Photo Library shows non-main imported images for the active course.
@@ -67,6 +68,8 @@ The branches are related but not interchangeable. A personal round is not a tour
 ## 1. Accounts, identity, and permissions
 
 A visitor can browse public pages. Signing up creates a Supabase Auth account and a `profiles` row. A reserved MM username can claim an unclaimed `player_slots` entry, linking that account to a particular golfer. An ordinary fan account does not automatically receive player access.
+
+Tiger invitations create a login and linked player profile before the player sets a password. Invite links return session tokens in a browser-only URL fragment. The password form removes that fragment from browser history and posts the tokens to `/api/auth/password-session`, which uses Supabase to establish session cookies. Password-recovery links with a code instead establish cookies in `/auth/callback`. The callback always returns to `/reset-password`. The form verifies the session before enabling Save; expired, incomplete, or failed links show a fresh-password-link option instead of letting the player submit without a session. Recovery links should be requested and opened in the same browser. No email-template or database migration is required for the standard invite flow.
 
 The stable player identifier is a `firstname-lastname` slug, such as `cade-barone`. Display helpers turn it into a first name, last name, or full name. Some historical code still accepts old IDs and first-name aliases. These are compatibility translations, not a safe substitute for identity or permissions.
 
@@ -442,6 +445,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 24, 2026 - Repair invitation password setup (implemented locally; deployment not verified).** Previously invitation session tokens were ignored and Save could fail with “Auth session missing.” The password form now exchanges invite tokens for server session cookies, clears the URL fragment, and verifies the session before enabling Save. Recovery-code errors and invalid links now show a new-link option; callback redirects are restricted to the password page. Updated Section 1 and the flowchart annotation; overview boxes and mappings are unchanged.
 
 **September 24, 2026 - Player Portal navigation photos (implemented locally; deployment not verified).** The four plain navigation rows now use the supplied Profile, Career, Round Video and Wagers photos, with white text and contrast overlays. Existing destinations, row sizing and permissions remain unchanged. Updated the guide and flowchart annotation; overview mappings are unchanged.
 
