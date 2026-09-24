@@ -23,6 +23,14 @@ const nextConfig: NextConfig = {
         source: "/portal/admin/scoring-preview/mobile",
         headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }],
       },
+      {
+        // The Tiger portal's Broadcast Controls preview (and Mock Run) puts
+        // /broadcast inside its own iframe (BroadcastPreview.tsx). Same-origin
+        // only, so the site-wide DENY above still blocks every other site
+        // from framing it.
+        source: "/broadcast",
+        headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }],
+      },
     ];
   },
 };
