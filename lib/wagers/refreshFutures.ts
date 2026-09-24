@@ -3,6 +3,7 @@ import { isTestSeason } from "@/lib/live/testSeason";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { loadIndividualInputs } from "./individualInputs";
 import { publishLowIndividualOdds } from "./lowIndividualPricing";
+import { publishPlayerBirdiesOdds } from "./playerBirdiesPricing";
 import { refreshTeamWinnerOdds } from "./teamWinnerPricing";
 import { publishTotalBirdiesOdds } from "./totalBirdiesPricing";
 
@@ -41,6 +42,7 @@ export async function refreshFutures(seasonYear: number, { teamWinnerPricingBudg
       await Promise.all([
         logged("Low Individual", () => publishLowIndividualOdds(service, inputs)),
         logged("Total Birdies", () => publishTotalBirdiesOdds(service, inputs)),
+        logged("Player Birdies", () => publishPlayerBirdiesOdds(service, inputs)),
       ]);
     }),
   ]);

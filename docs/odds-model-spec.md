@@ -396,6 +396,25 @@ Refresh, staleness, readiness blockers and settlement timing match Low
 Individual (`supabase/total_birdies_future.sql`). Measures 3 and 4 are not
 applied. Holes are independent, so no hot or cold round is modelled.
 
+## Player Birdies future (per-player Over/Under, alternate lines)
+
+The Player Birdies market prices each rostered player's own birdies (exactly
+one under par) across every Singles and Fourball round. It uses the same
+per-hole birdie probabilities as Total Birdies (Measure 1 and Measure 2,
+50/50) and the same shared inputs. Each player's remaining holes are played
+10,000 times to build a full distribution of their final count.
+Implementation: `lib/wagers/playerBirdiesFuture.ts` and
+`lib/wagers/playerBirdiesPricing.ts`.
+
+Every half-birdie line where both Over and Under keep at least a 3% chance
+is offered as an alternate line, priced as fair American odds from the
+simulated shares. The public slider starts on the line whose Over is closest
+to 50%. Every line is its own selection (`cam-latto:over:12.5`), so a bet
+keeps its line, and a line that drops off the slider after a refresh is
+refused. Settlement grades each bet against that player's confirmed birdie
+count and its own line (`supabase/player_birdies_future.sql`). Refresh,
+staleness and settlement timing match Total Birdies.
+
 ## Required outputs
 
 Every odds calculation should show:
