@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { createPortal } from "react-dom";
 
 const STORAGE_KEY = "mm-a2hs-dismissed";
 
@@ -24,9 +24,10 @@ function isStandalone(): boolean {
 
 const STEPS: Record<Platform, string[]> = {
   ios: [
-    'Tap the Share icon (square with an arrow) at the bottom of Safari.',
+    'Tap the "•••" button in the bottom-left corner.',
+    "Tap the Share button.",
+    'Tap "View More" in the bottom-right.',
     'Scroll down and tap "Add to Home Screen."',
-    'Tap "Add" in the top corner.',
   ],
   android: [
     "Tap the ⋮ menu in the top right of Chrome.",
@@ -36,16 +37,15 @@ const STEPS: Record<Platform, string[]> = {
 };
 
 /**
- * A one-time-per-device nudge to add the site to the phone's home screen.
- * iOS Safari and Android Chrome each use their own menu for this (there's
- * no shared browser API for it), so the steps shown depend on the detected
- * platform. Skipped on desktop and once the site is already installed.
- * Dismissing it is permanent for that device (localStorage) — the same
- * "decide once, remember via storage" pattern as HomeEntrySplash.
+ * A one-time-per-device modal that walks a phone visitor through adding the
+ * site to their home screen. Skipped on desktop and once already installed.
+ * It blocks the page behind it on purpose (no backdrop-click or Escape
+ * dismiss) — closing it takes an explicit tap on "Got it," which is also
+ * what makes the dismissal permanent for that device (localStorage), the
+ * same "decide once, remember via storage" pattern as HomeEntrySplash.
  */
 export function InstallPrompt() {
   const [platform, setPlatform] = useState<Platform | null>(null);
-  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     // Deferred via setTimeout (rather than called directly in the effect
@@ -66,27 +66,26 @@ export function InstallPrompt() {
     setPlatform(null);
   }
 
-  return (
-    <div className="mm-fade border-b border-gold-300 bg-maroon-50 px-4 py-3">
-      <div className="mx-auto flex max-w-(--container-mm-lg) items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="font-condensed text-sm font-semibold text-maroon-700">Add The Maroon Masters to your Home Screen</p>
-          {expanded ? (
-            <ol className="mt-2 list-decimal space-y-1 pl-4 text-sm text-ink-700">
-              {STEPS[platform].map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ol>
-          ) : (
-            <button type="button" onClick={() => setExpanded(true)} className="mt-1 text-sm font-semibold text-maroon-600 underline">
-              Show me how
-            </button>
-          )}
-        </div>
-        <button type="button" onClick={dismiss} aria-label="Dismiss" className="shrink-0 text-ink-500">
-          <X size={18} />
+  return createPortal(
+    <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/60 p-4">
+      <div role="dialog" aria-modal="true" aria-labelledby="install-prompt-title" className="w-full max-w-sm rounded-2xl bg-cream-50 p-6 text-ink-900 shadow-xl">
+        <h2 id="install-prompt-title" className="font-title text-xl font-bold text-maroon-700">
+          Add The Maroon Masters to your Home Screen
+        </h2>
+        <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm text-ink-700">
+          {STEPS[platform].map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
+        <button
+          type="button"
+          onClick={dismiss}
+          className="mt-5 w-full rounded-pill bg-maroon-700 px-4 py-3 font-condensed text-sm font-semibold uppercase tracking-wide text-white"
+        >
+          Got it
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

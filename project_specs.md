@@ -744,27 +744,33 @@ All pages are public, no auth.
   real end-to-end click-test, same situation as several earlier rounds
   shipped ahead of the data existing to test against.
 
-- **Add to Home Screen walkthrough.** A small banner (new
-  `components/InstallPrompt.tsx`, mounted in `SiteChrome` next to `Header`)
+- **Add to Home Screen walkthrough.** A blocking modal (new
+  `components/InstallPrompt.tsx`, mounted in `SiteChrome` next to `Header`,
+  portaled to `document.body` above everything else on the page, `z-[500]`)
   now shows the first time a visitor opens the public website on their
-  phone, offering to show them how to add the site to their home screen.
-  Tapping "Show me how" expands the exact steps for their device — iPhone
-  Safari (Share icon → Add to Home Screen → Add) or Android Chrome (⋮ menu →
-  Add to Home screen/Install app → Add/Install) — detected from the
-  browser's user agent. It never appears on desktop, and never appears once
-  the site is already installed (checked via `display-mode: standalone` /
-  `navigator.standalone`). Closing it with the × remembers that choice for
-  good on that device (`localStorage`), the same one-time pattern
-  `HomeEntrySplash` already uses for the homepage splash. Portal and
-  `/broadcast` are unaffected — it only mounts on the public-site branch of
-  `SiteChrome`. `npx tsc --noEmit`, `npm run lint` (clean on both changed
-  files), `npm test` (457/457), and `npm run build` all clean. **Verified
-  live in a real headless browser** (Playwright, not just unit tests): the
-  banner shows the correct iPhone steps under an iPhone user agent and the
-  correct Android steps under an Android user agent, never appears under a
-  desktop user agent, disappears immediately on dismiss and stays gone after
-  a reload, and stays hidden when `navigator.standalone` is set (simulating
-  an already-installed visit).
+  phone, centered on screen with a dark backdrop, showing the exact steps to
+  add the site to their home screen for their detected device — iPhone
+  ("•••" bottom-left → Share → "View More" bottom-right → scroll down →
+  "Add to Home Screen," matching the real current Safari flow rather than
+  the older documented one) or Android Chrome (⋮ menu → Add to Home
+  screen/Install app → Add/Install) — detected from the browser's user
+  agent. It never appears on desktop, and never appears once the site is
+  already installed (checked via `display-mode: standalone` /
+  `navigator.standalone`). It's deliberately not dismissible by clicking the
+  backdrop or pressing Escape — only the "Got it" button closes it, which is
+  also what remembers that choice for good on that device (`localStorage`),
+  the same one-time pattern `HomeEntrySplash` already uses for the homepage
+  splash. Portal and `/broadcast` are unaffected — it only mounts on the
+  public-site branch of `SiteChrome`. `npx tsc --noEmit`, `npm run lint`
+  (clean), `npm test` (459/459), and `npm run build` all clean. **Verified
+  live in a real headless browser** (Playwright, not just unit tests): shows
+  the correct steps for iPhone vs. Android user agents, stays open (and the
+  page behind it stays unclickable) through both a backdrop click and
+  Escape, closes and stays dismissed after a reload once "Got it" is
+  tapped, and stays hidden when `navigator.standalone` is set (simulating an
+  already-installed visit). Desktop non-display uses the same detection
+  function as before, unchanged by this round, so it wasn't re-verified
+  live here.
 
 ## Known gaps / not yet built
 
