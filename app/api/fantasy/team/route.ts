@@ -4,7 +4,7 @@ import { fetchLiveTournament } from "@/lib/data/fetchLiveTournament";
 import { validateFantasyPicks } from "@/lib/fantasy/validate";
 import { fantasyTeamScore, type FantasyPicks } from "@/lib/fantasy/scoring";
 import { fantasyPicksLocked } from "@/lib/fantasy/lock";
-import { rankAmong } from "@/lib/fantasy/ranking";
+import { formatRankLabel, isTiedAmong, rankAmong } from "@/lib/fantasy/ranking";
 import type { Tournament } from "@/lib/data/types";
 
 /**
@@ -14,7 +14,10 @@ import type { Tournament } from "@/lib/data/types";
  * same fantasyTeamScore every other view already uses, so this can never
  * disagree with "your" score shown elsewhere.
  */
-async function getFantasyStanding(tournament: Tournament, myTotal: number): Promise<{ rank: number; totalPlayers: number }> {
+async function getFantasyStanding(
+  tournament: Tournament,
+  myTotal: number
+): Promise<{ rank: number; rankLabel: string; totalPlayers: number }> {
   const service = createSupabaseServiceRoleClient();
   const { data: rows } = await service
     .from("fantasy_teams")
@@ -26,8 +29,9 @@ async function getFantasyStanding(tournament: Tournament, myTotal: number): Prom
     return fantasyTeamScore(tournament, picks).total;
   });
 
+  const rank = rankAmong(scores, myTotal);
   // Always at least 1 (yourself) — your own row is one of the ones just read.
-  return { rank: rankAmong(scores, myTotal), totalPlayers: Math.max(scores.length, 1) };
+  return { rank, rankLabel: formatRankLabel(rank, isTiedAmong(scores, myTotal)), totalPlayers: Math.max(scores.length, 1) };
 }
 
 export async function GET() {
@@ -69,6 +73,7 @@ export async function GET() {
     picks,
     scores,
     rank: standing?.rank ?? null,
+    rankLabel: standing?.rankLabel ?? null,
     totalPlayers: standing?.totalPlayers ?? null,
   });
 }
@@ -112,5 +117,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Couldn't save your fantasy team." }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, picks: result.picks, scores: fantasyTeamScore(tournament, result.picks) });
+  const scores = fantasyTeamScore(tournament, result.picks);
+  const standing = await getFantasyStanding(tournament, scores.total);
+
+  return NextResponse.json({
+    ok: true,
+    picks: result.picks,
+    scores,
+    rank: standing.rank,
+    rankLabel: standing.rankLabel,
+    totalPlayers: standing.totalPlayers,
+  });
 }

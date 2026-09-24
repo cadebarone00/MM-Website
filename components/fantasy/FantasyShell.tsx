@@ -2,10 +2,11 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 
-export type FantasyTab = "roster" | "how-to-play";
+export type FantasyTab = "roster" | "leaderboard" | "how-to-play";
 
 const TABS: { id: FantasyTab; label: string }[] = [
   { id: "roster", label: "My Roster" },
+  { id: "leaderboard", label: "Leaderboard" },
   { id: "how-to-play", label: "How To Play" },
 ];
 
@@ -49,8 +50,8 @@ export function FantasyShell({ activeTab, onTabChange, children }: { activeTab: 
       className="fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom)+2.5vh)] flex flex-col overflow-hidden bg-white lg:static lg:inset-auto lg:mx-auto lg:my-8 lg:w-[40%] lg:min-w-[380px] lg:max-w-[520px] lg:overflow-visible lg:rounded-md lg:border lg:border-ink-100"
       style={{ top }}
     >
-      <div className="shrink-0 bg-maroon-700 px-4 py-3 text-center lg:rounded-t-md">
-        <h1 className="m-0 font-condensed text-base font-bold uppercase tracking-wide text-white">Maroon Masters Fantasy</h1>
+      <div className="mx-2 mt-1 flex min-h-24 shrink-0 items-center justify-center rounded-md border-2 border-gold-500 bg-maroon-700 px-4 text-center">
+        <h1 className="m-0 font-serif text-lg font-bold uppercase tracking-wide text-white">Maroon Masters Fantasy</h1>
       </div>
 
       <div role="tablist" aria-label="Fantasy" className="flex shrink-0 justify-center border-b border-ink-200 bg-white">
