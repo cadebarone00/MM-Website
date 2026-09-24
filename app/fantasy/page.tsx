@@ -54,7 +54,7 @@ export default function FantasyPage() {
         if (cancelled) return;
         if (data.ok && data.picks) {
           setSavedPicks(data.picks);
-          setRank(data.rank ?? null);
+          setRankLabel(data.rankLabel ?? null);
           setTotalPlayers(data.totalPlayers ?? null);
         }
       } catch {
@@ -131,7 +131,7 @@ export default function FantasyPage() {
       }
       clearDraftPicks(safeSessionStorage, tournament.slug);
       setSavedPicks(fantasyPicks);
-      setRank(data.rank ?? null);
+      setRankLabel(data.rankLabel ?? null);
       setTotalPlayers(data.totalPlayers ?? null);
       setDrafting(false);
     } catch {
@@ -172,7 +172,7 @@ export default function FantasyPage() {
         tournament={tournament}
         picks={savedPicks}
         locked={locked}
-        rank={rank}
+        rankLabel={rankLabel}
         totalPlayers={totalPlayers}
         updatedAt={payload?.updatedAt ?? null}
         schedule={schedule}
