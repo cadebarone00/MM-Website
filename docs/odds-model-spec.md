@@ -318,6 +318,26 @@ Guardrails:
   round (`supabase/low_individual_future.sql`). A missing hole holds
   settlement until it is entered.
 
+## Hole in One future
+
+The Hole in One market prices whether anyone makes a hole in one during the
+event, in any round and any format. The Career Archive contains no aces, so
+this market is deliberately not player-specific. It uses the commonly quoted
+low-handicap amateur rate of 1 in 5,000 per par-3 tee shot
+(`ACE_PROBABILITY_PER_TEE_SHOT` in `lib/wagers/holeInOneFuture.ts`).
+
+Remaining tee shots are each round's par 3s times the players teeing off.
+In Singles and Fourball every rostered player tees off. In Foursome each
+two-player side hits one tee shot, so each player counts as half. A hole
+stops counting once it has a confirmed score (in Foursome, once either
+partner does). With N tee shots left, P(Yes) = 1 − (1 − 1/5,000)^N, priced
+as fair American odds without vig. It is computed on every read and every
+bet, so it never goes stale.
+
+Betting closes once any confirmed score of 1 exists (Yes is locked in) or
+no par-3 tee shots remain. Settlement is automatic when the last match is
+closed out (`supabase/hole_in_one_future.sql`).
+
 ## Required outputs
 
 Every odds calculation should show:

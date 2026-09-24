@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     .eq("season_year", TEST_SEASON_YEAR);
   if (boxesError) return NextResponse.json({ ok: false, error: boxesError.message }, { status: 500 });
 
-  const marketKeys = [...(boxes ?? []).map((box) => `live-match:${box.id}`), `team-winner:${TEST_SEASON_YEAR}`, `low-individual:${TEST_SEASON_YEAR}`];
+  const marketKeys = [...(boxes ?? []).map((box) => `live-match:${box.id}`), `team-winner:${TEST_SEASON_YEAR}`, `low-individual:${TEST_SEASON_YEAR}`, `hole-in-one:${TEST_SEASON_YEAR}`];
   let wagerCount = 0;
   if (marketKeys.length) {
     const { data: bets, error: betsError } = await service

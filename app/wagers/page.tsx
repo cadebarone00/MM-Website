@@ -10,6 +10,7 @@ import { useWagersMode } from "@/components/wagers/WagersModeContext";
 import { LiveMatchesList } from "@/components/wagers/LiveMatchesList";
 import { TeamWinnerFutureCard } from "@/components/wagers/TeamWinnerFutureCard";
 import { LowIndividualFutureCard } from "@/components/wagers/LowIndividualFutureCard";
+import { HoleInOneFutureCard } from "@/components/wagers/HoleInOneFutureCard";
 import type { Tournament } from "@/lib/data/types";
 
 type Category = "team-futures" | "player-futures" | "matches" | "fourballs" | "props";
@@ -66,6 +67,7 @@ export default function WagersPage() {
           <div className="flex flex-col gap-4">
             <TeamWinnerFutureCard mode={mode} />
             <LowIndividualFutureCard mode={mode} />
+            <HoleInOneFutureCard mode={mode} />
           </div>
         ) : mode === "real" ? (
           <ComingSoonNotice />
