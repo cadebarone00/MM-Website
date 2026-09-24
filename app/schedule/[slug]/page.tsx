@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { ScheduleAccordion } from "@/components/schedule/ScheduleAccordion";
 import { notFound } from "next/navigation";
 import { VenueSchedulePage } from "@/components/schedule/VenueSchedulePage";
 import { pastTournaments, nextTournament } from "@/lib/data";
@@ -27,13 +27,7 @@ export default async function ScheduleYearPage({ params, searchParams }: { param
   const { date } = await searchParams;
   if (date !== undefined) {
     if (slug !== nextTournament.slug || typeof date !== "string" || ![6, 7, 8, 9].some(day => date === `${nextTournament.year}-01-0${day}`)) notFound();
-    const dayRounds = rounds.filter(round => round.date === date);
-    return <main className="mx-auto max-w-5xl px-5 py-10">
-      <Link href="/schedule" className="text-maroon-700">Back to Schedule</Link>
-      <h1 className="mt-6 font-serif text-4xl">January {Number(date.slice(-2))}</h1>
-      <p className="mt-2 text-ink-500">Mission Hills Country Club &middot; Palm Springs, CA</p>
-      {dayRounds.length ? <div className="mt-8 grid gap-4 sm:grid-cols-2">{dayRounds.map(round => <section key={round.round} className="rounded border border-gold-300 p-6"><h2 className="font-serif text-2xl">Round {round.round}</h2><p className="mt-3">{round.format ?? "Format to be announced"}</p><p>{round.courseName ?? "Course to be announced"}</p></section>)}</div> : <p className="mt-8">The schedule and course details for this day will be added here.</p>}
-    </main>;
+    return <ScheduleAccordion key={date} rounds={rounds} year={nextTournament.year} initialDate={date} />;
   }
 
   return (

@@ -1,0 +1,34 @@
+.page { background: #171b14; color: #fff; }
+.header { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 20px 28px; }
+.header a { color: white; font-size: 13px; }
+.header h1 { margin: 0; font-size: 14px; letter-spacing: .15em; text-transform: uppercase; text-align: center; }
+.header h1 span { display: block; margin-top: 5px; font-size: 12px; }
+.hint { font-size: 11px; opacity: .65; }
+.track { position: relative; display: flex; overflow-x: auto; overflow-y: hidden; height: max(560px, calc(100svh - 210px)); overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #bda477 #171b14; }
+.panel { position: relative; isolation: isolate; flex: 0 0 100px; border-right: 1px solid #ffffff60; overflow: hidden; }
+.active { flex-basis: calc(100% - 200px); }
+.photo { z-index: -2; object-fit: cover; }
+.shade { position: absolute; z-index: -1; inset: 0; background: linear-gradient(180deg,#0007,#0003 40%,#000b); }
+.toggle { background: transparent; border: 0; font-family: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; width: 100%; height: 100%; padding: 14px; color: white; cursor: pointer; letter-spacing: .12em; text-transform: uppercase; font-size: 12px; }
+.panel:not(.active) .toggle { writing-mode: vertical-rl; }
+.active .toggle { height: 90px; flex-direction: row; justify-content: space-between; padding-inline: 32px; }
+.toggle:focus-visible { outline: 2px solid #e2c88e; outline-offset: -6px; }
+.details { text-align: center; padding: clamp(50px,12vh,130px) 28px 30px; }
+.details[hidden] { display: none; }
+.eyebrow { text-transform: uppercase; font-size: 12px; letter-spacing: .17em; }
+.details h2 { margin: 22px 0; font-family: var(--font-spectral), Georgia, serif; font-size: clamp(28px,4vw,62px); font-weight: 300; line-height: 1.2; }
+.format { font-size: 20px; margin-bottom: 10px; }
+.note { margin-top: 40px; font-size: 12px; opacity: .75; }
+@media (width < 1024px) {
+ .header { padding: 16px; }
+ .hint { display: none; }
+ .header h1 { font-size: 11px; }
+ .track { flex-direction: column; height: max(520px,calc(100svh - 225px)); overflow-x: hidden; overflow-y: auto; }
+ .panel { flex-basis: 80px; border-right: 0; border-bottom: 1px solid #ffffff60; }
+ .active { flex-basis: calc(100% - 100px); min-height: 420px; }
+ .panel:not(.active) .toggle { writing-mode: horizontal-tb; flex-direction: row; justify-content: space-between; padding: 24px; }
+ .active .toggle { height: 64px; padding-inline: 24px; }
+ .details { padding: 45px 22px 30px; }
+ .details h2 { font-size: 34px; }
+ .note { margin-top: 26px; }
+}

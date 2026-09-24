@@ -8,7 +8,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
-  %% Schedule landing at /schedule uses the supplied Mission Hills photo and four January 6-9 links to date-filtered schedule views.
+  %% Schedule landing at /schedule uses the supplied Mission Hills photo and four January 6-9 links into an eight-session photo accordion.
   A[Account and player identity] --> P[Player portal]
   A --> T[Tiger Center]
   T --> C[Course Library and tee snapshots]
@@ -98,7 +98,7 @@ For example, in September 2026, My Matches can correctly show 2026 matches as Pa
 
 On live and archived leaderboards, Match Play boards are centered in a 40vw column at desktop widths (1024px and above), capped at the available content width. Desktop match rows add 10px vertical padding per player name instead of mobile's 6px. The ticker, individual standings, and mobile layout retain their existing sizing.
 
-Home, schedule, teams, players, history, tournament leaderboards, match pages, and player scorecards present tournament information publicly. The Schedule tab now opens a photo landing page at `/schedule`, using the supplied Mission Hills image with The Maroon Masters, Mission Hills Country Club, and Palm Springs, CA text. Four bottom links cover January 6-9 of the upcoming tournament year. They open `/schedule/[slug]?date=YYYY-MM-DD`, a basic day view showing only configured rounds for that date and their course/format, or an explicit pending-details message. More detailed day-page design is future work. The unfiltered `/schedule/[slug]` venue pages remain available. Historical editions and much descriptive content originate in committed `lib/data` files. Upcoming venue/dates, round courses/formats, and confirmed roster receive Tiger-managed database overlays where the relevant loaders are used.
+Home, schedule, teams, players, history, tournament leaderboards, match pages, and player scorecards present tournament information publicly. The Schedule tab now opens a photo landing page at `/schedule`, using the supplied Mission Hills image with The Maroon Masters, Mission Hills Country Club, and Palm Springs, CA text. Four bottom links cover January 6-9 of the upcoming tournament year. They open `/schedule/[slug]?date=YYYY-MM-DD`, an eight-session image accordion that initially expands the selected date's first session. Desktop uses vertical strips with horizontal scrolling (mouse wheel, trackpad, or scrollbar); mobile stacks strips for vertical scrolling. Clicking a strip or using arrow keys also selects it. Collapsed strips show only date and session; the expanded panel shows course, format, venue, and location. Saved round dates/course/format are used where available; missing rounds use a two-sessions-per-day January 6-9 layout with explicit pending course/format text. All eight panels currently reuse the supplied Mission Hills photo with varied crops until session-specific images are supplied. The unfiltered `/schedule/[slug]` venue pages remain available. Historical editions and much descriptive content originate in committed `lib/data` files. Upcoming venue/dates, round courses/formats, and confirmed roster receive Tiger-managed database overlays where the relevant loaders are used.
 
 The Website / Portal / Scoring selector changes the destination, not the account or database. The More menu contains secondary destinations. Public teams can show locked roster assignments rather than exposing every draft assignment as confirmed.
 
@@ -436,6 +436,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 24, 2026 - Eight-session schedule image accordion (implemented locally; deployment not verified).** Day links previously opened a simple round list. They now open an eight-panel photo accordion at that date's first session. Desktop expands vertical strips horizontally; mobile expands stacked panels while scrolling down. Strip buttons and arrow keys provide alternate navigation. Configured course/format/date appear in the active panel, while missing details remain explicitly pending. The existing photo is reused pending session-specific photos. Updated Section 3 and the flowchart annotation; overview mappings are unchanged.
 
 **September 24, 2026 - Schedule photo landing (implemented locally; deployment not verified).** The Schedule tab previously redirected to the upcoming venue list. It now opens a full-width photographic landing using the supplied Schedule Landing Page Photo, with tournament branding, Mission Hills Country Club, Palm Springs, CA, and January 6-9 day links. The links use basic date-filtered views of existing round setup; detailed day-page design is still pending. The supplied PNG is served as an optimized WebP. Updated Section 3 and the flowchart annotation; overview mappings are unchanged.
 
