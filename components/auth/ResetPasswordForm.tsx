@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { PASSWORD_LINK_ERROR, preparePasswordSession } from "@/lib/auth/passwordSession";
+import { PASSWORD_LINK_ERROR, preparePasswordSession, type PasswordAccount } from "@/lib/auth/passwordSession";
 
 export function ResetPasswordForm() {
   const router = useRouter();
@@ -11,7 +11,8 @@ export function ResetPasswordForm() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [sessionState, setSessionState] = useState<"checking" | "ready" | "failed">("checking");
-  const preparation = useRef<Promise<void> | null>(null);
+  const [account, setAccount] = useState<PasswordAccount | null>(null);
+  const preparation = useRef<Promise<PasswordAccount> | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -19,8 +20,11 @@ export function ResetPasswordForm() {
     preparation.current ??= preparePasswordSession(window.location.href, () => {
       window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
     });
-    preparation.current.then(() => {
-      if (active) setSessionState("ready");
+    preparation.current.then((verifiedAccount) => {
+      if (active) {
+        setAccount(verifiedAccount);
+        setSessionState("ready");
+      }
     }).catch(() => {
       if (active) {
         setSessionState("failed");
@@ -57,6 +61,12 @@ export function ResetPasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="mx-auto flex max-w-[420px] flex-col gap-4 px-4 py-16 sm:px-7">
       <h1 className="font-serif text-2xl font-bold text-ink-900">Set a new password</h1>
+      {sessionState === "ready" && account && (
+        <div className="space-y-2 break-words font-sans text-sm text-ink-700">
+          {account.username && <p>Your username is <strong className="text-ink-900">{account.username}</strong></p>}
+          {account.email && <p>{account.username ? "Or log in with " : "Log in with "}<strong className="text-ink-900">{account.email}</strong></p>}
+        </div>
+      )}
       {sessionState === "checking" && <p role="status">Verifying your password link…</p>}
       {error && <p className="rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
       <input

@@ -8,6 +8,8 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
+  %% Optional password-status migration derives player_slots.password_created from the linked Auth password credential; deployment pending.
+  %% Verified password setup displays the account username and authentication email above the password field.
   %% Invite URL fragments are exchanged for session cookies before password entry; recovery codes use the server callback. Invalid links offer a fresh reset.
   %% Course photo imports support nested photo folders and replacement/removal of Main labels; Palmer and Pete Dye assets are imported.
   %% Accordion date/session labels are explicitly positioned below the top overlay and remain horizontal in every panel.
@@ -66,6 +68,10 @@ flowchart TD
 The branches are related but not interchangeable. A personal round is not a tournament submission. Turning on the broadcast does not start scoring. A submitted hole is not necessarily confirmed. A mathematically completed match is not necessarily administratively closed out.
 
 ## 1. Accounts, identity, and permissions
+
+The `supabase/player_slots_password_created.sql` migration adds a read-only-in-practice `password_created` boolean to `player_slots` for inspection in Supabase Table Editor. It backfills existing linked accounts and database triggers maintain the value when passwords or `claimed_by` links change, including unlinking/deletion. True means the linked Auth account has a password credential; false means no linked password credential. No password or hash is copied into player data. It does not prove email verification, successful password login, or a portal visit, and does not change the current Claimed label or access rules. Run the migration in Supabase SQL Editor to enable this feature; live execution has not been verified.
+
+After invitation or recovery verification, the Set Password screen shows “Your username is” with the signed-in profile's username and “Or log in with” with the authenticated account's email above the password field. These details come from the verified session, not link parameters. Accounts without a profile username see only the email login option.
 
 A visitor can browse public pages. Signing up creates a Supabase Auth account and a `profiles` row. A reserved MM username can claim an unclaimed `player_slots` entry, linking that account to a particular golfer. An ordinary fan account does not automatically receive player access.
 
@@ -445,6 +451,10 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 24, 2026 - Player password status (migration prepared and locally tested; live execution pending).** Previously player slots exposed invitation/link status but no password indicator. The new migration adds and backfills `password_created`, then automatically maintains true/false from the linked Auth account's password credential. Existing accounts are included regardless of invitation history. Updated Section 1 and the flowchart annotation; overview mappings are unchanged. This does not track portal visits or change Claimed semantics.
+
+**September 24, 2026 - Show login details during password setup (implemented locally; deployment not verified).** Previously the password screen did not tell invited players their assigned username. It now shows the verified account's username and email as alternative login options above the password field. Updated Section 1 and the flowchart annotation; overview mappings are unchanged.
 
 **September 24, 2026 - Repair invitation password setup (implemented locally; deployment not verified).** Previously invitation session tokens were ignored and Save could fail with “Auth session missing.” The password form now exchanges invite tokens for server session cookies, clears the URL fragment, and verifies the session before enabling Save. Recovery-code errors and invalid links now show a new-link option; callback redirects are restricted to the password page. Updated Section 1 and the flowchart annotation; overview boxes and mappings are unchanged.
 

@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-function result(ok: boolean) {
-  return NextResponse.json({ ok }, { status: ok ? 200 : 401, headers: { "Cache-Control": "no-store" } });
+function result(ok: boolean, account?: { username: string | null; email: string | null }) {
+  return NextResponse.json({ ok, ...(account ? { account } : {}) }, { status: ok ? 200 : 401, headers: { "Cache-Control": "no-store" } });
 }
 
 export async function GET() {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.getUser();
-  return result(!error && !!data.user);
+  if (error || !data.user) return result(false);
+  const { data: profile } = await supabase.from("profiles").select("username").eq("id", data.user.id).single();
+  return result(true, { username: profile?.username ?? null, email: data.user.email ?? null });
 }
 
 export async function POST(request: Request) {
@@ -27,5 +29,6 @@ export async function POST(request: Request) {
     access_token: body.access_token,
     refresh_token: body.refresh_token,
   });
-  return result(!error && !!data.session);
+  if (error || !data.session) return result(false);
+  return GET();
 }

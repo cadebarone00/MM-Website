@@ -1,12 +1,14 @@
 export const PASSWORD_LINK_ERROR = "This password link has expired or could not be verified. Request a new link below and open it in the same browser where you requested it.";
 
+export type PasswordAccount = { username: string | null; email: string | null };
+
 // Fragments are only visible in the browser. Exchange invite tokens for the
 // server cookies used by the password API, and remove them from browser history.
 export async function preparePasswordSession(
   href: string,
   clearFragment: () => void,
   request: typeof fetch = fetch,
-): Promise<void> {
+): Promise<PasswordAccount> {
   const url = new URL(href);
   const fragment = new URLSearchParams(url.hash.slice(1));
   const access_token = fragment.get("access_token");
@@ -29,4 +31,6 @@ export async function preparePasswordSession(
     } : {}),
   });
   if (!response.ok) throw new Error(PASSWORD_LINK_ERROR);
+  const { account } = await response.json();
+  return { username: account?.username ?? null, email: account?.email ?? null };
 }
