@@ -49,12 +49,37 @@
   overflow: visible;
 }
 
-.explore {
+.holeAxis {
   grid-column: 2 / span 18;
-  min-width: 0;
-  width: 100%;
-  margin: 12px 0 0;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: repeat(18, minmax(0, 1fr));
+  text-align: center;
+  font-size: clamp(9px, 1.2cqw, 12px);
+  padding-top: 6px;
 }
+
+.sliderTrack {
+  grid-column: 2 / span 18;
+  grid-row: 3;
+  overflow: hidden;
+}
+
+.explore {
+  appearance: none;
+  box-sizing: border-box;
+  min-width: 0;
+  width: calc(100% + 16px);
+  height: 24px;
+  margin: 4px -8px 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.explore::-webkit-slider-runnable-track { height: 4px; background: #c9b98f; border-radius: 2px; }
+.explore::-moz-range-track { height: 4px; background: #c9b98f; border-radius: 2px; }
+.explore::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; margin-top: -6px; border: 0; border-radius: 50%; background: #500001; }
+.explore::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 50%; background: #500001; }
 
 /* Keep the original readable, horizontally scrolling scorecard below desktop. */
 @media (width < 1024px) {
@@ -204,7 +229,7 @@
   .axisPercent:nth-child(5) { transform: translateY(-100%); }
   .maroonLabel { top: 10%; }
   .whiteLabel { bottom: 10%; }
-  .explore { grid-column: 1; width: calc(100% - 32px); margin: 10px 16px 0; }
+  .holeAxis, .sliderTrack { grid-column: 1; }
   .oddsHeader { order: 1; margin: 12px 16px 0; gap: 8px; }
   .oddsHeader h2 { font-size: 16px; }
   .oddsHeader > div:last-child { gap: 12px; }

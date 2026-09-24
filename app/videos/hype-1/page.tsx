@@ -9,7 +9,7 @@ export default function HypeVideoPage() {
         Back to Home
       </Link>
       <h1 className="m-0 mt-4 font-serif text-2xl font-bold text-ink-900 sm:text-3xl">Hype Video</h1>
-      <video controls autoPlay playsInline className="mt-6 aspect-video w-full rounded-md bg-ink-900" src="/videos/mm-edit-silver-springs.mp4" />
+      <video controls autoPlay playsInline className="mt-6 aspect-video w-full rounded-md bg-ink-900" src="https://pub-6a86d18bc79d43b99b2c02fa816169dc.r2.dev/MM%20Edit%20-%20Silver%20Springs.mp4" />
     </div>
   );
 }
