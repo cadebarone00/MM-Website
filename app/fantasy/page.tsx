@@ -7,6 +7,7 @@ import { getNextTournamentStatus } from "@/lib/data";
 import { FantasyShell, type FantasyTab } from "@/components/fantasy/FantasyShell";
 import { FantasyDraftTabs } from "@/components/fantasy/FantasyDraftTabs";
 import { FantasyRosterSummary } from "@/components/fantasy/FantasyRosterSummary";
+import { FantasyLeaderboard } from "@/components/fantasy/FantasyLeaderboard";
 import { FantasyHowToPlay } from "@/components/fantasy/FantasyHowToPlay";
 import {
   EMPTY_DRAFT_PICKS,
