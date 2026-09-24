@@ -79,6 +79,11 @@ export default function FantasyPage() {
     setDrafting(true);
   }
 
+  function cancelDraft() {
+    clearDraftPicks(safeSessionStorage, tournament.slug);
+    setDrafting(false);
+  }
+
   async function submitLineup() {
     const fantasyPicks = toFantasyPicks(picks);
     if (!fantasyPicks) return;
@@ -119,7 +124,16 @@ export default function FantasyPage() {
   }
 
   if (drafting && !locked) {
-    return <FantasyDraftTabs tournament={tournament} picks={picks} onSubmit={submitLineup} saving={saving} error={error} />;
+    return (
+      <FantasyDraftTabs
+        tournament={tournament}
+        picks={picks}
+        onSubmit={submitLineup}
+        onCancel={cancelDraft}
+        saving={saving}
+        error={error}
+      />
+    );
   }
 
   if (savedPicks) {

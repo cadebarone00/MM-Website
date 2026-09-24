@@ -34,12 +34,14 @@ export function FantasyDraftTabs({
   tournament,
   picks,
   onSubmit,
+  onCancel,
   saving,
   error,
 }: {
   tournament: Tournament;
   picks: DraftPicks;
   onSubmit: () => void;
+  onCancel: () => void;
   saving: boolean;
   error: string | null;
 }) {
@@ -49,8 +51,13 @@ export function FantasyDraftTabs({
   const excluded = otherPicks(picks, activeTab);
 
   return (
-    <div className="pb-28">
-      <h1 className="m-0 font-serif text-2xl font-bold text-ink-900">Draft Your Team</h1>
+    <div className="pb-48">
+      <div className="flex items-start justify-between gap-3">
+        <h1 className="m-0 font-serif text-2xl font-bold text-ink-900">Draft Your Team</h1>
+        <Button variant="ghost" size="sm" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
       <p className="mt-2 font-sans text-sm text-ink-500">Pick one Maroon player, one White player, and a Wildcard from either team.</p>
 
       <div role="tablist" aria-label="Fantasy draft slots" className="mt-5 flex gap-2 border-b-2 border-ink-100">
@@ -94,7 +101,7 @@ export function FantasyDraftTabs({
 
       {error && <p className="mt-4 font-sans text-2xs text-score-under">{error}</p>}
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-ink-100 bg-white px-4 py-4">
+      <div className="fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom)+2.5vh)] z-30 border-t border-ink-100 bg-white px-4 py-4 lg:bottom-0">
         <p className="mb-2 font-sans text-2xs text-ink-500">{complete ? "All three picked." : `Still need: ${missing.join(", ")}`}</p>
         <Button fullWidth disabled={!complete || saving} onClick={onSubmit}>
           {saving ? "Submitting..." : "Submit Lineup"}

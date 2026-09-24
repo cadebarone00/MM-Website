@@ -28,7 +28,7 @@ export function FantasyDraftActionBar({
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-100 bg-white px-4 py-3 shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
+    <div className="fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom)+2.5vh)] z-40 border-t border-ink-100 bg-white px-4 py-3 shadow-[0_-2px_12px_rgba(0,0,0,0.06)] lg:bottom-0">
       <Button fullWidth onClick={handleDraft}>
         Draft {getPlayerFirstName(player)}
       </Button>

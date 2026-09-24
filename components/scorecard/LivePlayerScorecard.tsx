@@ -42,7 +42,7 @@ export function LivePlayerScorecard({
   const thru = lastRound == null ? null : playedCount >= lastRound.holes.length ? "F" : String(playedCount);
 
   return (
-    <div className={draftSlot ? "pb-20" : undefined}>
+    <div className={draftSlot ? "pb-40" : undefined}>
       {error && <p role="status" className="mb-4 text-sm text-maroon-700">{error}</p>}
       <PlayerProfileHeader
         backHref={backHref ?? `/leaderboard/${tournamentSlug}`}
