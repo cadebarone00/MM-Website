@@ -813,10 +813,6 @@ const TABS: { slot: FantasySlot; label: string; icon: typeof Shirt }[] = [
   { slot: "wildcard", label: "Wildcard", icon: Layers },
 ];
 
-function slotLabel(slot: FantasySlot): string {
-  return TABS.find((tab) => tab.slot === slot)!.label;
-}
-
 function rosterFor(tournament: Tournament, picks: DraftPicks, slot: FantasySlot): { player: string; team: Team }[] {
   if (slot === "maroon") return tournament.roster.maroon.map((player) => ({ player, team: "maroon" as Team }));
   if (slot === "white") return tournament.roster.white.map((player) => ({ player, team: "white" as Team }));
@@ -908,7 +904,7 @@ export function FantasyDraftTabs({
 }
 ```
 
-(`pb-28` on the wrapper keeps the fixed bottom bar from covering the last row in the list; `slotLabel` is exported implicitly via `missing` above but kept as a small helper in case a later task needs it - if `tsc`/lint flags it as unused once the rest of the page is wired up, inline it into `missing`'s `.map()` instead.)
+(`pb-28` on the wrapper keeps the fixed bottom bar from covering the last row in the list.)
 
 - [ ] **Step 2: Verify it compiles**
 
