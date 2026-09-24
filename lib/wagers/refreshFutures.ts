@@ -1,3 +1,5 @@
+import { getCombinedCareerArchive } from "@/lib/data/combinedCareerArchive";
+import { isTestSeason } from "@/lib/live/testSeason";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { loadIndividualInputs } from "./individualInputs";
 import { publishLowIndividualOdds } from "./lowIndividualPricing";
@@ -12,21 +14,34 @@ async function logged(label: string, work: () => Promise<unknown>) {
   }
 }
 
-/** Individual-ball futures share one load of the field, scores, and Career Archive. */
-async function refreshIndividualFutures(seasonYear: number) {
+/**
+ * Re-prices every tournament future from the latest Career Archive, which
+ * includes every confirmed live hole and submitted handicap round. The
+ * archive is loaded once and shared. Errors are logged and swallowed, so
+ * this never fails the caller. Hole in One needs no refresh: it's computed
+ * on every read.
+ *
+ * `teamWinnerPricingBudgetMs` lets Team Winner also re-price matchups whose
+ * players' data changed. Pass it only from background work (after()), never
+ * from a request someone is waiting on.
+ */
+export async function refreshFutures(seasonYear: number, { teamWinnerPricingBudgetMs = 0 }: { teamWinnerPricingBudgetMs?: number } = {}) {
+  let archive: Awaited<ReturnType<typeof getCombinedCareerArchive>>;
+  try {
+    archive = await getCombinedCareerArchive({ includeTestSeason: isTestSeason(seasonYear) });
+  } catch (error) {
+    console.error("Futures refresh couldn't load the Career Archive:", error);
+    return;
+  }
   const service = createSupabaseServiceRoleClient();
-  await logged("Individual futures", async () => {
-    const inputs = await loadIndividualInputs(service, seasonYear);
-    await Promise.all([
-      logged("Low Individual", () => publishLowIndividualOdds(service, inputs)),
-      logged("Total Birdies", () => publishTotalBirdiesOdds(service, inputs)),
-    ]);
-  });
-}
-
-/** Re-prices every tournament future after a match update. Errors are logged
- * and swallowed, so this never fails the caller's publication. Hole in One
- * needs no refresh: it's computed on every read. */
-export async function refreshFutures(seasonYear: number) {
-  await Promise.all([refreshTeamWinnerOdds(seasonYear), refreshIndividualFutures(seasonYear)]);
+  await Promise.all([
+    refreshTeamWinnerOdds(seasonYear, { pricingBudgetMs: teamWinnerPricingBudgetMs, archive }),
+    logged("Individual futures", async () => {
+      const inputs = await loadIndividualInputs(service, seasonYear, archive);
+      await Promise.all([
+        logged("Low Individual", () => publishLowIndividualOdds(service, inputs)),
+        logged("Total Birdies", () => publishTotalBirdiesOdds(service, inputs)),
+      ]);
+    }),
+  ]);
 }

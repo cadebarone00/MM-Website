@@ -260,7 +260,21 @@ probabilities come from this match model:
 - A paired match with no snapshot, and every matchup that could be posted in
   a round whose pairings aren't locked, uses the pre-round model for that
   round's format and course. These pre-round results are stored per season in
-  `team_winner_pair_odds` when Tiger runs Price Team Winner.
+  `team_winner_pair_odds`. They are priced automatically in the background,
+  in chunks under a single-worker lease. Each stored matchup records a
+  fingerprint of its players' Career Archive data (eligible individual-ball
+  and Alternate Shot holes: count and stroke total). A new hole from live
+  scoring, a Tiger correction, or a submitted handicap round changes the
+  fingerprint and queues that player's matchups for a re-price. This runs
+  after every confirmed hole and handicap round and on public reads. The
+  previous price stays in use until the new one lands. Never-priced
+  matchups go first, then stale ones in round order. Matchups the model
+  can't price are recorded as unpriceable and retried only when their data
+  changes.
+- Because the market aggregates dozens of matchups over 10,000 tournament
+  simulations, each pre-round matchup here runs 2,500 hole-pair and 2,500
+  match simulations instead of 10,000 (`PAIR_SIMULATIONS`). Displayed match
+  odds and live match snapshots are unaffected and keep 10,000.
 
 The market then plays the rest of the event 10,000 times. Rounds without
 locked pairings draw a fresh, legal random pairing of each team's roster in
@@ -271,15 +285,25 @@ probability, priced as fair American odds without vig.
 
 Guardrails:
 
-- The market does not publish odds while any round lacks a format or course,
-  the rosters are empty, or any needed matchup couldn't be priced (for
-  example, a player without Career Archive history on that course).
+- The market does not publish odds while any needed matchup is still being
+  priced or couldn't be priced (for example, a player without Career Archive
+  history on that course).
 - Odds refresh after every official match publication and closeout. A bet is
   refused while newer match odds or official state exist than the published
   Team Winner odds used.
 - Betting closes once a team can no longer be caught, or a tie is locked in.
 - Settlement is automatic when the last scheduled match is closed out
   (`supabase/team_winner_future.sql`).
+
+## Default tournament setup (all futures)
+
+Futures price before the season is configured. Anything Tiger hasn't set for
+the season uses the most recent past tournament in the Career Archive
+(`lib/wagers/tournamentSetup.ts`). That covers the number of rounds, each
+round's format and course (with its hole-by-hole par and yardage), and, when
+either roster is empty, both rosters. What Tiger sets always wins. Each
+public card lists the defaults in use. Settlement always uses the season's
+real rounds and results, never the defaults.
 
 ## Low Individual future
 

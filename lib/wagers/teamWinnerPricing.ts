@@ -3,11 +3,12 @@ import { getCombinedCareerArchive } from "@/lib/data/combinedCareerArchive";
 import { careerArchiveCourseHoles } from "@/lib/data/careerArchive.generated";
 import type { CareerCourseHole } from "@/lib/data/careerStats";
 import { getPlayerDisplayName, getPlayerSlug } from "@/lib/data/players";
-import { calculatePreRoundAlternateShotOdds, calculatePreRoundFourballOdds, calculatePreRoundSinglesOdds, type PreRoundSinglesResult } from "@/lib/odds/preRoundSingles";
+import { calculatePreRoundAlternateShotOdds, calculatePreRoundFourballOdds, calculatePreRoundSinglesOdds, isEligibleIndividualHole, type PreRoundSinglesResult } from "@/lib/odds/preRoundSingles";
 import { isTestSeason } from "@/lib/live/testSeason";
-import type { LiveTournamentSnapshot } from "@/lib/live/types";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { latestMatchInput, later, pages, type Service } from "./futureInputs";
+import { isStaleSnapshot, latestMatchInput, later, needsRepublish, pages, type Service } from "./futureInputs";
+import { loadTournamentSetup } from "./loadTournamentSetup";
+import type { SetupCourse } from "./tournamentSetup";
 import {
   TEAM_WINNER_MODEL_VERSION,
   TEAM_WINNER_SIMULATIONS,
@@ -17,7 +18,6 @@ import {
   simulateTeamWinner,
   teamPoints,
   teamWinnerMarket,
-  type FutureFormat,
   type FutureRound,
   type Matchup,
   type Outcome,
@@ -28,150 +28,215 @@ import {
 type Inputs = {
   rounds: FutureRound[];
   roster: Roster;
+  courses: Map<string, SetupCourse>;
   blockers: string[];
-  snapshot: LiveTournamentSnapshot;
+  assumptions: string[];
   /** Newest match odds / official state the inputs include. */
   inputsAsOf: string | null;
 };
 
-/** Reads every round, the roster, finished results, and the latest odds of each paired match. */
+type PairTable = { priced: Map<string, Outcome>; unpriceable: Set<string>; signatures: Map<string, string | null> };
+type Archive = Awaited<ReturnType<typeof getCombinedCareerArchive>>;
+
+/**
+ * Per-matchup simulation counts. The market aggregates dozens of matchups
+ * over 10,000 tournament simulations, so each needs less precision than a
+ * displayed match price; this keeps a full live re-price to seconds.
+ */
+const PAIR_SIMULATIONS = { hole: 2_500, match: 2_500 };
+
+/**
+ * A fingerprint of the Career Archive data behind each player: eligible
+ * individual-ball holes and Alternate Shot team holes (count and stroke
+ * total). Any new hole (live scoring, a Tiger correction, or a submitted
+ * handicap round) changes it, which marks that player's matchups for a
+ * re-price.
+ */
+function playerSignatures(archive: Archive): Map<string, string> {
+  const totals = new Map<string, { count: number; strokes: number; teamCount: number; teamStrokes: number }>();
+  const entry = (player: string) => {
+    let value = totals.get(player);
+    if (!value) totals.set(player, (value = { count: 0, strokes: 0, teamCount: 0, teamStrokes: 0 }));
+    return value;
+  };
+  for (const row of archive.records) {
+    if (row.score <= 0 || !isEligibleIndividualHole(row)) continue;
+    const value = entry(row.player);
+    value.count += 1;
+    value.strokes += row.score;
+  }
+  for (const row of archive.teamRecords) {
+    if (row.score <= 0) continue;
+    for (const player of [row.player1, row.player2]) {
+      if (!player) continue;
+      const value = entry(player);
+      value.teamCount += 1;
+      value.teamStrokes += row.score;
+    }
+  }
+  return new Map([...totals].map(([player, value]) => [player, `${value.count}:${value.strokes}/${value.teamCount}:${value.teamStrokes}`]));
+}
+
+function matchupSignature(matchup: Matchup, signatures: Map<string, string>): string {
+  const players = [...matchup.maroon, ...matchup.white].map(getPlayerSlug).sort();
+  return [TEAM_WINNER_MODEL_VERSION, PAIR_SIMULATIONS.hole, PAIR_SIMULATIONS.match, ...players.map((player) => `${player}=${signatures.get(player) ?? "none"}`)].join("|");
+}
+
+/** Pricing runs in the background in chunks this long, under a lease so only one worker runs at a time. */
+export const TEAM_WINNER_PRICING_BUDGET_MS = 40_000;
+const LEASE_SECONDS = 55;
+/** While matchups are pricing or re-pricing, page views start another chunk at most this often. */
+const WORK_POLL_MS = 15_000;
+
+/** Every round (Tiger's setup, else last year's), the roster, finished results, and each paired match's latest odds. */
 async function loadInputs(service: Service, seasonYear: number): Promise<Inputs> {
-  const [{ data: settings, error: settingsError }, roundRows, stateRows, oddsRows, snapshot] = await Promise.all([
-    service.from("live_tournament_settings").select("round_count").eq("season_year", seasonYear).maybeSingle(),
-    pages<{ round: number; format: FutureFormat | null; matchups_locked: boolean }>((from, to) => service.from("live_round_state").select("round, format, matchups_locked").eq("season_year", seasonYear).order("round").range(from, to)),
+  const [stateRows, oddsRows, snapshot] = await Promise.all([
     pages<{ match_box_id: string; status: string; official_result: Result | null; updated_at: string }>((from, to) => service.from("live_match_official_state").select("match_box_id, status, official_result, updated_at").eq("season_year", seasonYear).order("match_box_id").range(from, to)),
     pages<{ match_box_id: string; maroon_win_probability: number; tie_probability: number; white_win_probability: number; created_at: string }>((from, to) =>
       service.from("live_match_odds_snapshots").select("match_box_id, maroon_win_probability, tie_probability, white_win_probability, created_at").eq("season_year", seasonYear).order("created_at", { ascending: false }).range(from, to)),
     buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true }),
   ]);
-  if (settingsError) throw new Error(settingsError.message);
+  const setup = await loadTournamentSetup(service, seasonYear, snapshot);
 
   let inputsAsOf: string | null = null;
   const states = new Map(stateRows.map((row) => [row.match_box_id, row]));
-  stateRows.forEach((row) => { inputsAsOf = later(inputsAsOf, row.updated_at); });
+  for (const row of stateRows) inputsAsOf = later(inputsAsOf, row.updated_at);
   const latestOdds = new Map<string, Outcome>();
   for (const row of oddsRows) {
     inputsAsOf = later(inputsAsOf, row.created_at);
     if (!latestOdds.has(row.match_box_id)) latestOdds.set(row.match_box_id, { maroon: Number(row.maroon_win_probability), tie: Number(row.tie_probability), white: Number(row.white_win_probability) });
   }
 
-  const roster: Roster = { maroon: [], white: [] };
-  for (const [player, { team }] of Object.entries(snapshot.players)) roster[team].push(player);
-  roster.maroon.sort();
-  roster.white.sort();
-
-  const blockers: string[] = [];
-  const roundCount = settings?.round_count ?? null;
-  if (!roundCount) blockers.push("Tiger hasn't set the number of rounds yet.");
-  if (!roster.maroon.length || !roster.white.length) blockers.push("Both team rosters need to be set.");
-
-  const rounds: FutureRound[] = [];
-  for (let number = 1; number <= (roundCount ?? 0); number += 1) {
-    const row = roundRows.find((candidate) => candidate.round === number);
-    const courseKey = snapshot.roundCourses[number];
-    if (!row?.format) { blockers.push(`Round ${number} needs a format.`); continue; }
-    if (!courseKey) { blockers.push(`Round ${number} needs a course.`); continue; }
-    const boxes = snapshot.matchBoxes.filter((box) => box.round === number && box.id);
-    rounds.push({
-      round: number,
-      format: row.format,
-      courseKey,
-      matches: row.matchups_locked && boxes.length
+  const courses = new Map<string, SetupCourse>();
+  const rounds: FutureRound[] = setup.rounds.map((round) => {
+    courses.set(round.course.key, round.course);
+    const boxes = snapshot.matchBoxes.filter((box) => box.round === round.round && box.id);
+    return {
+      round: round.round,
+      format: round.format,
+      courseKey: round.course.key,
+      matches: round.matchupsLocked && boxes.length
         ? boxes.map((box) => {
             const state = states.get(box.id!);
             const result = state && (state.status === "complete" || state.status === "closed_out") ? state.official_result : null;
             return { maroon: box.maroonPlayers, white: box.whitePlayers, result, odds: result ? null : latestOdds.get(box.id!) ?? null };
           })
         : null,
-    });
+    };
+  });
+  return { rounds, roster: setup.roster, courses, blockers: setup.blockers, assumptions: setup.assumptions, inputsAsOf };
+}
+
+async function loadPairTable(service: Service, seasonYear: number): Promise<PairTable> {
+  const rows = await pages<{ pair_key: string; maroon_win_probability: number | null; tie_probability: number | null; white_win_probability: number | null; unpriceable: boolean; input_signature: string | null }>((from, to) =>
+    service.from("team_winner_pair_odds").select("pair_key, maroon_win_probability, tie_probability, white_win_probability, unpriceable, input_signature").eq("season_year", seasonYear).order("pair_key").range(from, to));
+  const table: PairTable = { priced: new Map(), unpriceable: new Set(), signatures: new Map() };
+  for (const row of rows) {
+    table.signatures.set(row.pair_key, row.input_signature);
+    if (row.unpriceable || row.maroon_win_probability === null) table.unpriceable.add(row.pair_key);
+    else table.priced.set(row.pair_key, { maroon: Number(row.maroon_win_probability), tie: Number(row.tie_probability), white: Number(row.white_win_probability) });
   }
-  return { rounds, roster, blockers, snapshot, inputsAsOf };
+  return table;
 }
-
-async function loadPairTable(service: Service, seasonYear: number): Promise<Map<string, Outcome>> {
-  const rows = await pages<{ pair_key: string; maroon_win_probability: number; tie_probability: number; white_win_probability: number }>((from, to) =>
-    service.from("team_winner_pair_odds").select("pair_key, maroon_win_probability, tie_probability, white_win_probability").eq("season_year", seasonYear).order("pair_key").range(from, to));
-  return new Map(rows.map((row) => [row.pair_key, { maroon: Number(row.maroon_win_probability), tie: Number(row.tie_probability), white: Number(row.white_win_probability) }]));
-}
-
-type Archive = Awaited<ReturnType<typeof getCombinedCareerArchive>>;
 
 /** One matchup through the canonical pre-round match model — the same engine live match odds use. */
-function priceMatchup(matchup: Matchup, snapshot: LiveTournamentSnapshot, archive: Archive, seasonYear: number): PreRoundSinglesResult | null {
-  const course = snapshot.courses[matchup.courseKey];
-  if (!course) return null;
+function priceMatchup(matchup: Matchup, course: SetupCourse, archive: Archive, seasonYear: number): PreRoundSinglesResult | null {
   const courseHoles: CareerCourseHole[] = course.holes.map((hole) => ({ year: seasonYear, course: course.name, tee: null, hole: hole.number, par: hole.par, yards: hole.yards, holeType: `Par ${hole.par}`, holeLengthBucket: null }));
   const common = { records: archive.records, courseHoles: [...careerArchiveCourseHoles, ...courseHoles], course: course.name };
   const a = matchup.maroon.map(getPlayerSlug);
   const b = matchup.white.map(getPlayerSlug);
-  if (matchup.format === "Singles") return calculatePreRoundSinglesOdds({ ...common, playerA: a[0], playerB: b[0] });
-  if (matchup.format === "Fourball") return calculatePreRoundFourballOdds({ ...common, teamA: [a[0], a[1]], teamB: [b[0], b[1]] });
-  return calculatePreRoundAlternateShotOdds({ ...common, teamRecords: archive.teamRecords, teamA: [a[0], a[1]], teamB: [b[0], b[1]] });
+  if (matchup.format === "Singles") return calculatePreRoundSinglesOdds({ ...common, playerA: a[0], playerB: b[0], simulations: PAIR_SIMULATIONS });
+  if (matchup.format === "Fourball") return calculatePreRoundFourballOdds({ ...common, teamA: [a[0], a[1]], teamB: [b[0], b[1]], simulations: PAIR_SIMULATIONS });
+  return calculatePreRoundAlternateShotOdds({ ...common, teamRecords: archive.teamRecords, teamA: [a[0], a[1]], teamB: [b[0], b[1]], simulations: PAIR_SIMULATIONS });
 }
 
-const sideName = (players: string[]) => players.map(getPlayerDisplayName).join(" & ");
-
-export type PricingProgress = { priced: number; remaining: number; failures: string[]; blockers: string[] };
+/** Every matchup the current setup can need (unpaired rounds' possibilities plus paired matches without live odds). */
+function neededMatchups(inputs: Inputs): Matchup[] {
+  return inputs.blockers.length ? [] : missingOdds(inputs.rounds, inputs.roster, new Map());
+}
 
 /**
- * Tiger-only, resumable: prices missing matchups until `budgetMs` runs out and
- * saves them, so a long first run finishes over several requests instead of
- * hitting a server timeout. `reset` discards the season's saved matchup odds
- * first (e.g. after the Career Archive changed).
+ * Work queue, most urgent first: matchups never tried (they hold the market
+ * closed), then ones whose players' data has changed since they were priced
+ * (the market keeps using the old price meanwhile). Needed matchups come in
+ * round order, so the next round to be played re-prices first.
  */
-export async function priceTeamWinnerMatchups(seasonYear: number, { budgetMs, reset = false }: { budgetMs: number; reset?: boolean }): Promise<PricingProgress> {
+function toPrice(inputs: Inputs, table: PairTable, signatures: Map<string, string>): Matchup[] {
+  const needed = neededMatchups(inputs);
+  const tried = (matchup: Matchup) => table.priced.has(matchup.key) || table.unpriceable.has(matchup.key);
+  const stale = (matchup: Matchup) => tried(matchup) && table.signatures.get(matchup.key) !== matchupSignature(matchup, signatures);
+  return [...needed.filter((matchup) => !tried(matchup)), ...needed.filter(stale)];
+}
+
+/**
+ * Prices missing matchups until the budget runs out, saving every few so a
+ * worker cut off by a server timeout loses little. Updates `table` in place.
+ */
+async function priceMissing(service: Service, seasonYear: number, inputs: Inputs, table: PairTable, archive: Archive, signatures: Map<string, string>, budgetMs: number) {
   const started = Date.now();
-  const service = createSupabaseServiceRoleClient();
-  if (reset) {
-    const { error } = await service.from("team_winner_pair_odds").delete().eq("season_year", seasonYear);
+  const pending = toPrice(inputs, table, signatures);
+  if (!pending.length) return;
+  let batch: Record<string, unknown>[] = [];
+  const flush = async () => {
+    if (!batch.length) return;
+    const { error } = await service.from("team_winner_pair_odds").upsert(batch, { onConflict: "season_year,pair_key" });
+    batch = [];
     if (error) throw new Error(error.message);
-  }
-  const [inputs, pairTable] = await Promise.all([loadInputs(service, seasonYear), loadPairTable(service, seasonYear)]);
-  if (inputs.blockers.length) return { priced: 0, remaining: 0, failures: [], blockers: inputs.blockers };
-
-  const missing = missingOdds(inputs.rounds, inputs.roster, pairTable);
-  if (!missing.length) return { priced: 0, remaining: 0, failures: [], blockers: [] };
-  const archive = await getCombinedCareerArchive({ includeTestSeason: isTestSeason(seasonYear) });
-
-  const rows: Record<string, unknown>[] = [];
-  const failures: string[] = [];
-  let attempted = 0;
-  for (const matchup of missing) {
+  };
+  for (const matchup of pending) {
     if (Date.now() - started > budgetMs) break;
-    attempted += 1;
-    const result = priceMatchup(matchup, inputs.snapshot, archive, seasonYear);
-    if (!result) {
-      failures.push(`${matchup.format}: ${sideName(matchup.maroon)} vs ${sideName(matchup.white)} — not enough Career Archive history on this course.`);
-      continue;
+    const course = inputs.courses.get(matchup.courseKey);
+    const result = course ? priceMatchup(matchup, course, archive, seasonYear) : null;
+    const signature = matchupSignature(matchup, signatures);
+    table.signatures.set(matchup.key, signature);
+    if (result) {
+      table.priced.set(matchup.key, { maroon: result.a, tie: result.tie, white: result.b });
+      table.unpriceable.delete(matchup.key);
+    } else {
+      table.priced.delete(matchup.key);
+      table.unpriceable.add(matchup.key);
     }
-    rows.push({ season_year: seasonYear, pair_key: matchup.key, maroon_win_probability: result.a, tie_probability: result.tie, white_win_probability: result.b, model_version: TEAM_WINNER_MODEL_VERSION });
+    batch.push({
+      season_year: seasonYear,
+      pair_key: matchup.key,
+      maroon_win_probability: result?.a ?? null,
+      tie_probability: result?.tie ?? null,
+      white_win_probability: result?.b ?? null,
+      unpriceable: !result,
+      input_signature: signature,
+      model_version: TEAM_WINNER_MODEL_VERSION,
+      computed_at: new Date().toISOString(),
+    });
+    if (batch.length >= 25) await flush();
   }
-  for (let index = 0; index < rows.length; index += 500) {
-    const { error } = await service.from("team_winner_pair_odds").upsert(rows.slice(index, index + 500), { onConflict: "season_year,pair_key" });
-    if (error) throw new Error(error.message);
-  }
-  return { priced: rows.length, remaining: missing.length - attempted, failures, blockers: [] };
+  await flush();
 }
 
 /**
- * Cheap: simulates the rest of the tournament from saved matchup odds and the
- * latest live match odds, then publishes a new snapshot. Runs after every
- * official match update and after Tiger prices matchups.
+ * Cheap once matchups are priced: simulates the rest of the tournament and
+ * publishes a snapshot. While matchups are still being priced, the snapshot
+ * carries progress instead of odds.
  */
-export async function publishTeamWinnerOdds(seasonYear: number) {
-  const service = createSupabaseServiceRoleClient();
-  const [inputs, pairTable] = await Promise.all([loadInputs(service, seasonYear), loadPairTable(service, seasonYear)]);
+async function publish(service: Service, seasonYear: number, inputs: Inputs, table: PairTable, signatures: Map<string, string>) {
   const points = teamPoints(inputs.rounds, inputs.roster);
   const blockers = [...inputs.blockers];
-  const missing = inputs.blockers.length ? [] : missingOdds(inputs.rounds, inputs.roster, pairTable);
-  if (missing.length) blockers.push(`${missing.length} possible matchups still need pricing — Tiger: press Price Team Winner.`);
+  const needed = inputs.blockers.length ? [] : missingOdds(inputs.rounds, inputs.roster, table.priced);
+  const failed = needed.filter((matchup) => table.unpriceable.has(matchup.key));
+  const waiting = needed.length - failed.length;
+  if (failed.length) {
+    const players = [...new Set(failed.flatMap((matchup) => [...matchup.maroon, ...matchup.white]))];
+    blockers.push(`${failed.length} possible matchups can't be priced — check Career Archive history for ${players.map(getPlayerDisplayName).join(", ")}.`);
+  }
+  const pricing = waiting ? { remaining: waiting } : null;
+  // Priced with older data and queued for a re-price; the old price is used meanwhile.
+  const updating = neededMatchups(inputs).filter((matchup) => table.priced.has(matchup.key) && table.signatures.get(matchup.key) !== matchupSignature(matchup, signatures)).length;
 
-  const decided = blockers.length ? null : decidedResult(points);
-  const outcome: Outcome | null = blockers.length
+  const decided = blockers.length || pricing ? null : decidedResult(points);
+  const outcome: Outcome | null = blockers.length || pricing
     ? null
     : decided
       ? { maroon: decided === "maroon" ? 1 : 0, tie: decided === "tie" ? 1 : 0, white: decided === "white" ? 1 : 0 }
-      : simulateTeamWinner({ rounds: inputs.rounds, roster: inputs.roster, pairTable });
+      : simulateTeamWinner({ rounds: inputs.rounds, roster: inputs.roster, pairTable: table.priced });
 
   const row = {
     season_year: seasonYear,
@@ -190,6 +255,9 @@ export async function publishTeamWinnerOdds(seasonYear: number) {
     inputs_as_of: inputs.inputsAsOf,
     details: {
       simulations: TEAM_WINNER_SIMULATIONS,
+      assumptions: inputs.assumptions,
+      pricing: pricing ? { remaining: pricing.remaining, priced: neededMatchups(inputs).length - needed.length } : null,
+      updating,
       rounds: inputs.rounds.map((round) => ({ round: round.round, format: round.format, paired: round.matches !== null })),
     },
   };
@@ -198,16 +266,42 @@ export async function publishTeamWinnerOdds(seasonYear: number) {
   return row;
 }
 
-/** Never lets a Team Winner refresh fail the match publication that triggered it. */
-export async function refreshTeamWinnerOdds(seasonYear: number) {
+/**
+ * Refreshes Team Winner. With a pricing budget it first prices never-tried
+ * matchups and re-prices ones whose players' Career Archive data changed,
+ * but only if it wins the lease, so concurrent triggers don't duplicate the
+ * work. Never throws: a refresh must not fail the hole submission, match
+ * publication, or page view that triggered it. Pass `archive` to reuse one
+ * already loaded for this refresh.
+ */
+export async function refreshTeamWinnerOdds(seasonYear: number, { pricingBudgetMs = 0, archive }: { pricingBudgetMs?: number; archive?: Archive } = {}) {
   try {
-    await publishTeamWinnerOdds(seasonYear);
+    const service = createSupabaseServiceRoleClient();
+    const [inputs, table, loadedArchive] = await Promise.all([
+      loadInputs(service, seasonYear),
+      loadPairTable(service, seasonYear),
+      archive ?? getCombinedCareerArchive({ includeTestSeason: isTestSeason(seasonYear) }),
+    ]);
+    const signatures = playerSignatures(loadedArchive);
+    if (pricingBudgetMs && toPrice(inputs, table, signatures).length) {
+      const { data: claimed, error } = await service.rpc("claim_team_winner_pricing", { p_year: seasonYear, p_seconds: LEASE_SECONDS });
+      if (error) throw new Error(error.message);
+      if (claimed) {
+        try {
+          await priceMissing(service, seasonYear, inputs, table, loadedArchive, signatures, pricingBudgetMs);
+        } finally {
+          // Release early so the next trigger can start the next chunk right away.
+          await service.from("team_winner_pricing_lease").update({ locked_until: new Date().toISOString() }).eq("season_year", seasonYear);
+        }
+      }
+    }
+    await publish(service, seasonYear, inputs, table, signatures);
   } catch (error) {
     console.error("Team Winner odds refresh failed:", error);
   }
 }
 
-export type TeamWinnerStatus = "not_ready" | "open" | "updating" | "decided" | "settled";
+export type TeamWinnerStatus = "not_ready" | "pricing" | "open" | "updating" | "decided" | "settled";
 
 export type TeamWinnerState = {
   seasonYear: number;
@@ -217,42 +311,65 @@ export type TeamWinnerState = {
   points: { maroon: number; white: number; remaining: number } | null;
   result: Result | null;
   blockers: string[];
+  assumptions: string[];
+  /** While matchups are being priced for the first time. */
+  pricing: { priced: number; remaining: number } | null;
+  /** Matchups being re-priced with the latest scores (the market stays open on their previous prices). */
+  updatingMatchups: number;
   updatedAt: string | null;
+  /** Whether a background refresh should run (missing, old, stale, or still pricing). */
+  needsRefresh: boolean;
 };
 
 /** The public read model — also the bet route's check that the market is open at these exact odds. */
 export async function currentTeamWinnerState(seasonYear: number): Promise<TeamWinnerState> {
   const service = createSupabaseServiceRoleClient();
-  const [{ data: snapshot, error }, { data: settlement }, latestInput] = await Promise.all([
+  const [{ data: snapshot, error }, { data: settlement }, latestInput, { data: lease }] = await Promise.all([
     service.from("team_winner_odds_snapshots").select("*").eq("season_year", seasonYear).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     service.from("wagers_market_settlements").select("winning_selection_key").eq("market_key", `team-winner:${seasonYear}`).maybeSingle(),
     latestMatchInput(service, seasonYear),
+    service.from("team_winner_pricing_lease").select("locked_until").eq("season_year", seasonYear).maybeSingle(),
   ]);
+  // Pricing work in flight, or finished moments ago: don't pile on another refresh.
+  const workerBusy = Boolean(lease && new Date(lease.locked_until).getTime() > Date.now());
   if (error) throw new Error(error.message);
 
-  const empty = { seasonYear, probabilities: null, market: null, points: null, result: null, updatedAt: null };
-  if (!snapshot) return { ...empty, status: settlement ? "settled" : "not_ready", result: (settlement?.winning_selection_key as Result) ?? null, blockers: ["Tiger hasn't priced Team Winner yet."] };
+  const settledResult = (settlement?.winning_selection_key as Result | undefined) ?? null;
+  if (!snapshot) {
+    return { seasonYear, status: settlement ? "settled" : "pricing", probabilities: null, market: null, points: null, result: settledResult, blockers: [], assumptions: [], pricing: { priced: 0, remaining: 0 }, updatingMatchups: 0, updatedAt: null, needsRefresh: !settlement && !workerBusy };
+  }
 
   const points = { maroon: Number(snapshot.maroon_points), white: Number(snapshot.white_points), remaining: Number(snapshot.points_remaining) };
   const probabilities = snapshot.maroon_win_probability === null ? null : { maroon: Number(snapshot.maroon_win_probability), tie: Number(snapshot.tie_probability), white: Number(snapshot.white_win_probability) };
   const market = probabilities ? teamWinnerMarket(seasonYear, { maroon: snapshot.maroon_american_odds, tie: snapshot.tie_american_odds, white: snapshot.white_american_odds }) : null;
+  const pricing: { priced: number; remaining: number } | null = snapshot.details?.pricing ?? null;
+  const updatingMatchups = Number(snapshot.details?.updating ?? 0);
+  const blockers: string[] = snapshot.blockers ?? [];
   const status: TeamWinnerStatus = settlement
     ? "settled"
-    : !probabilities
+    : blockers.length
       ? "not_ready"
-      : snapshot.decided_result
-        ? "decided"
-        : latestInput && (!snapshot.inputs_as_of || latestInput > snapshot.inputs_as_of)
-          ? "updating"
-          : "open";
+      : pricing
+        ? "pricing"
+        : !probabilities
+          ? "not_ready"
+          : snapshot.decided_result
+            ? "decided"
+            : isStaleSnapshot(snapshot, latestInput)
+              ? "updating"
+              : "open";
   return {
     seasonYear,
     status,
     probabilities,
     market,
     points,
-    result: (settlement?.winning_selection_key as Result | undefined) ?? snapshot.decided_result ?? null,
-    blockers: snapshot.blockers ?? [],
+    result: settledResult ?? snapshot.decided_result ?? null,
+    blockers,
+    assumptions: snapshot.details?.assumptions ?? [],
+    pricing,
+    updatingMatchups,
     updatedAt: snapshot.created_at,
+    needsRefresh: !settlement && !workerBusy && (((Boolean(pricing) || updatingMatchups > 0) && Date.now() - new Date(snapshot.created_at).getTime() > WORK_POLL_MS) || needsRepublish(snapshot, latestInput)),
   };
 }

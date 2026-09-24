@@ -5,6 +5,7 @@ import { formatAmericanOdds } from "@/lib/wagers/americanOdds";
 import type { TotalBirdiesState } from "@/lib/wagers/totalBirdiesPricing";
 import type { WagersMode } from "./WagersModeContext";
 import { OddsButton } from "./OddsButton";
+import { AssumptionsNote } from "./AssumptionsNote";
 
 const percent = (value: number | null) => (value === null ? "—" : `${Math.round(value * 100)}%`);
 
@@ -91,6 +92,7 @@ export function TotalBirdiesFutureCard({ mode }: { mode: WagersMode }) {
           </p>
         </>
       )}
+      {state && <AssumptionsNote assumptions={state.assumptions} />}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { formatAmericanOdds } from "@/lib/wagers/americanOdds";
 import type { HoleInOneState } from "@/lib/wagers/holeInOnePricing";
 import type { WagersMode } from "./WagersModeContext";
 import { OddsButton } from "./OddsButton";
+import { AssumptionsNote } from "./AssumptionsNote";
 
 const SIDES = [
   { key: "yes", name: "Yes" },
@@ -91,6 +92,7 @@ export function HoleInOneFutureCard({ mode }: { mode: WagersMode }) {
           </p>
         </>
       )}
+      {state && <AssumptionsNote assumptions={state.assumptions} />}
     </div>
   );
 }

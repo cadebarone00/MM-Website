@@ -17,6 +17,8 @@ export type PreRoundSinglesResult = {
 
 const HOLE_SIMULATIONS = 10_000;
 const MATCH_SIMULATIONS = 10_000;
+/** Defaults are the canonical 10,000. Only callers that aggregate many matchups (the Team Winner future) pass fewer. */
+export type SimulationCounts = { hole?: number; match?: number };
 const ROUND_SHAPE_STRENGTH = 0.015;
 const FORMAT_STRENGTH = 0.08;
 const categories: Category[] = ["eagles", "birdies", "pars", "bogeys", "doubles"];
@@ -57,7 +59,8 @@ function shapeDistance(round: Score[], shape: Profile) {
   return categories.reduce((sum, category) => sum + ((actual[category] - shape[category].mean) / shape[category].sd) ** 2, 0);
 }
 
-export function calculatePreRoundSinglesOdds({ records, courseHoles, playerA, playerB, course, holesFinished = 0, playerALead = 0, completedScores = [] }: { records: CareerHoleRecord[]; courseHoles: CareerCourseHole[]; playerA: string; playerB: string; course: string; holesFinished?: number; playerALead?: number; completedScores?: { a: number; b: number; par: number }[] }): PreRoundSinglesResult | null {
+export function calculatePreRoundSinglesOdds({ records, courseHoles, playerA, playerB, course, holesFinished = 0, playerALead = 0, completedScores = [], simulations = {} }: { records: CareerHoleRecord[]; courseHoles: CareerCourseHole[]; playerA: string; playerB: string; course: string; holesFinished?: number; playerALead?: number; completedScores?: { a: number; b: number; par: number }[]; simulations?: SimulationCounts }): PreRoundSinglesResult | null {
+  const holeSimulations = simulations.hole ?? HOLE_SIMULATIONS; const matchSimulations = simulations.match ?? MATCH_SIMULATIONS;
   const canonicalCourse = canonicalCourseName(course);
   const setup = [...new Map(courseHoles.filter((row) => canonicalCourseName(row.course) === canonicalCourse).map((row) => [row.hole, row])).values()].sort((a, b) => a.hole - b.hole);
   const individual = records.filter(isEligibleIndividualHole);
@@ -75,8 +78,8 @@ export function calculatePreRoundSinglesOdds({ records, courseHoles, playerA, pl
     const bTwo = bRows.filter((row) => Math.abs(bucket(row.yards) - targetBucket) <= 1);
     if (!aOne.length || !bOne.length || !aTwo.length || !bTwo.length) return null;
     const outcomes: Pair[] = [];
-    for (let i = 0; i < HOLE_SIMULATIONS; i += 1) outcomes.push({ a: pick(aOne).score, b: pick(bOne).score });
-    for (let i = 0; i < HOLE_SIMULATIONS; i += 1) outcomes.push({ a: pick(aTwo).score, b: pick(bTwo).score });
+    for (let i = 0; i < holeSimulations; i += 1) outcomes.push({ a: pick(aOne).score, b: pick(bOne).score });
+    for (let i = 0; i < holeSimulations; i += 1) outcomes.push({ a: pick(aTwo).score, b: pick(bTwo).score });
     return { hole, outcomes, one: [aOne.length, bOne.length] as [number, number], two: [aTwo.length, bTwo.length] as [number, number] };
   });
   if (pairs.some((row) => row === null)) return null;
@@ -91,7 +94,7 @@ export function calculatePreRoundSinglesOdds({ records, courseHoles, playerA, pl
   const formatDeltaB = singlesDelta(bRows);
   let weightedA = 0; let weightedTie = 0; let weightedB = 0;
   const finalLeads = new Map<number, number>();
-  for (let simulation = 0; simulation < MATCH_SIMULATIONS; simulation += 1) {
+  for (let simulation = 0; simulation < matchSimulations; simulation += 1) {
     const scoresA: Score[] = completedScores.map((score) => ({ score: score.a, par: score.par })); const scoresB: Score[] = completedScores.map((score) => ({ score: score.b, par: score.par })); let lead = playerALead;
     validPairs.forEach(({ hole, outcomes }) => { const outcome = pick(outcomes); scoresA.push({ score: outcome.a, par: hole.par }); scoresB.push({ score: outcome.b, par: hole.par }); if (outcome.a < outcome.b) lead += 1; else if (outcome.b < outcome.a) lead -= 1; });
     const toParA = scoresA.reduce((sum, row) => sum + row.score - row.par, 0);
@@ -105,7 +108,8 @@ export function calculatePreRoundSinglesOdds({ records, courseHoles, playerA, pl
   return { a: weightedA / total, tie: weightedTie / total, b: weightedB / total, measureOneMinimum: [Math.min(...validPairs.map((row) => row.one[0])), Math.min(...validPairs.map((row) => row.one[1]))], measureTwoMinimum: [Math.min(...validPairs.map((row) => row.two[0])), Math.min(...validPairs.map((row) => row.two[1]))], formatDeltas: [formatDeltaA, formatDeltaB], finalLeadDistribution: Object.fromEntries([...finalLeads.entries()].map(([lead, value]) => [String(lead), value / total])) };
 }
 
-export function calculatePreRoundFourballOdds({ records, courseHoles, teamA, teamB, course, holesFinished = 0, teamALead = 0, completedScores = [] }: { records: CareerHoleRecord[]; courseHoles: CareerCourseHole[]; teamA: [string, string]; teamB: [string, string]; course: string; holesFinished?: number; teamALead?: number; completedScores?: { a1: number; a2: number; b1: number; b2: number; par: number }[] }): PreRoundSinglesResult | null {
+export function calculatePreRoundFourballOdds({ records, courseHoles, teamA, teamB, course, holesFinished = 0, teamALead = 0, completedScores = [], simulations = {} }: { records: CareerHoleRecord[]; courseHoles: CareerCourseHole[]; teamA: [string, string]; teamB: [string, string]; course: string; holesFinished?: number; teamALead?: number; completedScores?: { a1: number; a2: number; b1: number; b2: number; par: number }[]; simulations?: SimulationCounts }): PreRoundSinglesResult | null {
+  const holeSimulations = simulations.hole ?? HOLE_SIMULATIONS; const matchSimulations = simulations.match ?? MATCH_SIMULATIONS;
   const canonicalCourse = canonicalCourseName(course);
   const setup = [...new Map(courseHoles.filter((row) => canonicalCourseName(row.course) === canonicalCourse).map((row) => [row.hole, row])).values()].sort((a, b) => a.hole - b.hole);
   const individual = records.filter(isEligibleIndividualHole);
@@ -119,8 +123,8 @@ export function calculatePreRoundFourballOdds({ records, courseHoles, teamA, tea
     const two = playerRows.map((rows) => rows.filter((row) => Math.abs(bucket(row.yards) - targetBucket) <= 1));
     if (one.some((rows) => !rows.length) || two.some((rows) => !rows.length)) return null;
     const outcomes: { a1: number; a2: number; b1: number; b2: number }[] = [];
-    for (let i = 0; i < HOLE_SIMULATIONS; i += 1) outcomes.push({ a1: pick(one[0]).score, a2: pick(one[1]).score, b1: pick(one[2]).score, b2: pick(one[3]).score });
-    for (let i = 0; i < HOLE_SIMULATIONS; i += 1) outcomes.push({ a1: pick(two[0]).score, a2: pick(two[1]).score, b1: pick(two[2]).score, b2: pick(two[3]).score });
+    for (let i = 0; i < holeSimulations; i += 1) outcomes.push({ a1: pick(one[0]).score, a2: pick(one[1]).score, b1: pick(one[2]).score, b2: pick(one[3]).score });
+    for (let i = 0; i < holeSimulations; i += 1) outcomes.push({ a1: pick(two[0]).score, a2: pick(two[1]).score, b1: pick(two[2]).score, b2: pick(two[3]).score });
     return { hole, outcomes, one: [Math.min(one[0].length, one[1].length), Math.min(one[2].length, one[3].length)] as [number, number], two: [Math.min(two[0].length, two[1].length), Math.min(two[2].length, two[3].length)] as [number, number] };
   });
   if (pairs.some((row) => row === null)) return null;
@@ -130,7 +134,7 @@ export function calculatePreRoundFourballOdds({ records, courseHoles, teamA, tea
   const deltas = playerRows.map((rows) => { const fourball = rows.filter((row) => row.format === "Fourball"); return fourball.length ? mean(fourball) - mean(rows) : 0; });
   let weightedA = 0; let weightedTie = 0; let weightedB = 0;
   const finalLeads = new Map<number, number>();
-  for (let simulation = 0; simulation < MATCH_SIMULATIONS; simulation += 1) {
+  for (let simulation = 0; simulation < matchSimulations; simulation += 1) {
     const scores: Score[][] = [completedScores.map((score) => ({ score: score.a1, par: score.par })), completedScores.map((score) => ({ score: score.a2, par: score.par })), completedScores.map((score) => ({ score: score.b1, par: score.par })), completedScores.map((score) => ({ score: score.b2, par: score.par }))]; let lead = teamALead;
     validPairs.forEach(({ hole, outcomes }) => { const outcome = pick(outcomes); const values = [outcome.a1, outcome.a2, outcome.b1, outcome.b2]; values.forEach((score, index) => scores[index].push({ score, par: hole.par })); const teamAValue = Math.min(outcome.a1, outcome.a2); const teamBValue = Math.min(outcome.b1, outcome.b2); if (teamAValue < teamBValue) lead += 1; else if (teamBValue < teamAValue) lead -= 1; });
     const teamAToPar = scores[0].reduce((sum, row, index) => sum + Math.min(row.score, scores[1][index].score) - row.par, 0);
@@ -148,7 +152,8 @@ export function calculatePreRoundFourballOdds({ records, courseHoles, teamA, tea
 /** Alternate Shot keeps target-hole matching in Measures 1/2. Format
  * calibration uses every historical Alternate Shot team hole; an exact-pair
  * adjustment is shrunk toward zero when the partnership has little history. */
-export function calculatePreRoundAlternateShotOdds({ records, teamRecords, courseHoles, teamA, teamB, course, holesFinished = 0, teamALead = 0 }: { records: CareerHoleRecord[]; teamRecords: CareerTeamHoleRecord[]; courseHoles: CareerCourseHole[]; teamA: [string, string]; teamB: [string, string]; course: string; holesFinished?: number; teamALead?: number }): PreRoundSinglesResult | null {
+export function calculatePreRoundAlternateShotOdds({ records, teamRecords, courseHoles, teamA, teamB, course, holesFinished = 0, teamALead = 0, simulations = {} }: { records: CareerHoleRecord[]; teamRecords: CareerTeamHoleRecord[]; courseHoles: CareerCourseHole[]; teamA: [string, string]; teamB: [string, string]; course: string; holesFinished?: number; teamALead?: number; simulations?: SimulationCounts }): PreRoundSinglesResult | null {
+  const holeSimulations = simulations.hole ?? HOLE_SIMULATIONS; const matchSimulations = simulations.match ?? MATCH_SIMULATIONS;
   const canonicalCourse = canonicalCourseName(course);
   const setup = [...new Map(courseHoles.filter((row) => canonicalCourseName(row.course) === canonicalCourse).map((row) => [row.hole, row])).values()].sort((a, b) => a.hole - b.hole);
   const individual = records.filter(isEligibleIndividualHole);
@@ -174,13 +179,13 @@ export function calculatePreRoundAlternateShotOdds({ records, teamRecords, cours
     if (one.some((rows) => !rows.length) || two.some((rows) => !rows.length)) return null;
     const combine = (left: CareerHoleRecord, right: CareerHoleRecord, adjustment: number) => Math.max(1, Math.round(hole.par + 0.75 * (((left.score - left.par) + (right.score - right.par)) / 2) + 0.25 * formatRelative + adjustment));
     const outcomes: Pair[] = [];
-    for (let i = 0; i < HOLE_SIMULATIONS; i += 1) outcomes.push({ a: combine(pick(one[0]), pick(one[1]), aAdjustment), b: combine(pick(one[2]), pick(one[3]), bAdjustment) });
-    for (let i = 0; i < HOLE_SIMULATIONS; i += 1) outcomes.push({ a: combine(pick(two[0]), pick(two[1]), aAdjustment), b: combine(pick(two[2]), pick(two[3]), bAdjustment) });
+    for (let i = 0; i < holeSimulations; i += 1) outcomes.push({ a: combine(pick(one[0]), pick(one[1]), aAdjustment), b: combine(pick(one[2]), pick(one[3]), bAdjustment) });
+    for (let i = 0; i < holeSimulations; i += 1) outcomes.push({ a: combine(pick(two[0]), pick(two[1]), aAdjustment), b: combine(pick(two[2]), pick(two[3]), bAdjustment) });
     return { hole, outcomes, one: [Math.min(one[0].length, one[1].length), Math.min(one[2].length, one[3].length)] as [number, number], two: [Math.min(two[0].length, two[1].length), Math.min(two[2].length, two[3].length)] as [number, number] };
   });
   if (holes.some((row) => row === null)) return null;
   const validHoles = holes as NonNullable<typeof holes[number]>[];
   let aWins = 0; let ties = 0; let bWins = 0;
-  for (let simulation = 0; simulation < MATCH_SIMULATIONS; simulation += 1) { let lead = teamALead; validHoles.forEach(({ outcomes }) => { const score = pick(outcomes); if (score.a < score.b) lead += 1; else if (score.b < score.a) lead -= 1; }); if (lead > 0) aWins += 1; else if (lead < 0) bWins += 1; else ties += 1; }
-  return { a: aWins / MATCH_SIMULATIONS, tie: ties / MATCH_SIMULATIONS, b: bWins / MATCH_SIMULATIONS, measureOneMinimum: [Math.min(...validHoles.map((row) => row.one[0])), Math.min(...validHoles.map((row) => row.one[1]))], measureTwoMinimum: [Math.min(...validHoles.map((row) => row.two[0])), Math.min(...validHoles.map((row) => row.two[1]))], formatDeltas: [0, 0] };
+  for (let simulation = 0; simulation < matchSimulations; simulation += 1) { let lead = teamALead; validHoles.forEach(({ outcomes }) => { const score = pick(outcomes); if (score.a < score.b) lead += 1; else if (score.b < score.a) lead -= 1; }); if (lead > 0) aWins += 1; else if (lead < 0) bWins += 1; else ties += 1; }
+  return { a: aWins / matchSimulations, tie: ties / matchSimulations, b: bWins / matchSimulations, measureOneMinimum: [Math.min(...validHoles.map((row) => row.one[0])), Math.min(...validHoles.map((row) => row.one[1]))], measureTwoMinimum: [Math.min(...validHoles.map((row) => row.two[0])), Math.min(...validHoles.map((row) => row.two[1]))], formatDeltas: [0, 0] };
 }

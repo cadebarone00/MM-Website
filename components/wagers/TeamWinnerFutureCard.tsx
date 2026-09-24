@@ -5,6 +5,7 @@ import { formatAmericanOdds } from "@/lib/wagers/americanOdds";
 import type { TeamWinnerState } from "@/lib/wagers/teamWinnerPricing";
 import type { WagersMode } from "./WagersModeContext";
 import { OddsButton } from "./OddsButton";
+import { AssumptionsNote } from "./AssumptionsNote";
 
 const SIDES = [
   { key: "maroon", name: "Maroon", accent: "text-maroon-700" },
@@ -57,6 +58,16 @@ export function TeamWinnerFutureCard({ mode }: { mode: WagersMode }) {
 
       {!state ? (
         <p className="mt-4 font-sans text-sm text-ink-400">{failed ? "Couldn't load Team Winner odds." : "Loading odds…"}</p>
+      ) : state.status === "pricing" ? (
+        <div className="mt-4 rounded-sm bg-cream-50 p-3">
+          <p className="m-0 font-sans text-sm font-semibold text-ink-500">Calculating odds…</p>
+          <p className="m-0 mt-1 font-sans text-2xs text-ink-400">
+            {state.pricing && state.pricing.priced + state.pricing.remaining > 0
+              ? `${state.pricing.priced.toLocaleString()} of ${(state.pricing.priced + state.pricing.remaining).toLocaleString()} possible matchups priced. `
+              : ""}
+            Every possible pairing is run through the match model once; this updates on its own.
+          </p>
+        </div>
       ) : state.status === "not_ready" ? (
         <div className="mt-4 rounded-sm bg-cream-50 p-3">
           <p className="m-0 font-sans text-sm font-semibold text-ink-500">Odds post once the tournament is set up.</p>
@@ -94,10 +105,11 @@ export function TeamWinnerFutureCard({ mode }: { mode: WagersMode }) {
                   ? "Updating odds after the latest score…"
                   : mode === "real"
                     ? "Real Wagers is coming soon — switch to MM Coins to bet on this now."
-                    : "Odds from 10,000 simulations of the rest of the event, using every player's Career Archive history."}
+                    : `Odds from 10,000 simulations of the rest of the event, using every player's Career Archive history — live, including every new hole and handicap round.${state.updatingMatchups > 0 ? ` Re-pricing ${state.updatingMatchups.toLocaleString()} matchups with the latest scores…` : ""}`}
           </p>
         </>
       )}
+      {state && <AssumptionsNote assumptions={state.assumptions} />}
     </div>
   );
 }

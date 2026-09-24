@@ -13,7 +13,8 @@ import { refreshFutures } from "@/lib/wagers/refreshFutures";
 export async function publishOfficialMatchState(
   seasonYear: number,
   matchBoxId: string,
-  auditKind?: "match_locked" | "match_updated"
+  auditKind?: "match_locked" | "match_updated",
+  { futuresPricingBudgetMs = 0 }: { futuresPricingBudgetMs?: number } = {}
 ): Promise<OfficialMatchState | null> {
   const service = createSupabaseServiceRoleClient();
   const { data: job, error: jobError } = await service.from("live_publication_jobs").select("revision").eq("match_box_id", matchBoxId).maybeSingle();
@@ -39,8 +40,10 @@ export async function publishOfficialMatchState(
     if (auditError) throw auditError;
   }
 
-  // Tournament futures depend on every match; bets on them pause until this lands.
-  await refreshFutures(seasonYear);
+  // Tournament futures depend on every match and on every new hole in the
+  // Career Archive; bets on them pause until this lands. A pricing budget
+  // (background callers only) also re-prices affected Team Winner matchups.
+  await refreshFutures(seasonYear, { teamWinnerPricingBudgetMs: futuresPricingBudgetMs });
 
   return official;
 }

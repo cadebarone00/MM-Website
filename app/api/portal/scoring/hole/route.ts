@@ -5,6 +5,10 @@ import { getActiveSeasonYear } from "@/lib/live/activeSeason";
 import { validHoleDraft } from "@/lib/live/holeSubmission";
 import { publishOfficialMatchState } from "@/lib/live/publishOfficialMatchState";
 
+// The background refresh after a hole (match odds, then every future,
+// including re-pricing Team Winner matchups) runs within this limit.
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   const player = await requirePlayer();
   if (!player) return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
@@ -34,7 +38,7 @@ export async function POST(request: Request) {
   // Acknowledge the committed hole immediately; model calculations must not
   // make a successful save look like a connection timeout on the phone.
   after(async () => {
-    try { await publishOfficialMatchState(seasonYear, data.matchBoxId); }
+    try { await publishOfficialMatchState(seasonYear, data.matchBoxId, undefined, { futuresPricingBudgetMs: 30_000 }); }
     catch (err) { console.error("Official match refresh remains queued:", err); }
   });
   return NextResponse.json({ ok: true, submissions: data.submissions });

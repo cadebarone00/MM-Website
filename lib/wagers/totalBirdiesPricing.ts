@@ -1,6 +1,6 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { latestMatchInput, type Service } from "./futureInputs";
-import { isStaleSnapshot, loadIndividualInputs, needsRepublish, type IndividualInputs } from "./individualInputs";
+import { isStaleSnapshot, latestMatchInput, needsRepublish, type Service } from "./futureInputs";
+import { loadIndividualInputs, type IndividualInputs } from "./individualInputs";
 import {
   TOTAL_BIRDIES_MODEL_VERSION,
   TOTAL_BIRDIES_SIMULATIONS,
@@ -29,7 +29,7 @@ export async function publishTotalBirdiesOdds(service: Service, inputs: Individu
     holes_remaining: holesRemaining,
     blockers,
     inputs_as_of: inputs.inputsAsOf,
-    details: { simulations: TOTAL_BIRDIES_SIMULATIONS, rounds: rounds.map((round) => round.round) },
+    details: { simulations: TOTAL_BIRDIES_SIMULATIONS, rounds: rounds.map((round) => round.round), assumptions: inputs.assumptions },
   };
   const { error } = await service.from("total_birdies_odds_snapshots").insert(row);
   if (error) throw new Error(error.message);
@@ -57,6 +57,8 @@ export type TotalBirdiesState = {
   holesRemaining: number;
   finalTotal: number | null;
   blockers: string[];
+  /** Defaults taken from last year's setup. */
+  assumptions: string[];
   updatedAt: string | null;
 };
 
@@ -81,7 +83,7 @@ export async function currentTotalBirdiesState(seasonYear: number, { selfHeal = 
   // Settlement records the final field total as "total:<n>".
   const finalTotal = settlement ? Number(String(settlement.winning_selection_key).replace("total:", "")) : null;
   if (!snapshot) {
-    return { seasonYear, status: settlement ? "settled" : "not_ready", marketKey, market: null, line: null, over: null, under: null, expectedTotal: null, birdiesSoFar: 0, holesRemaining: 0, finalTotal, blockers: ["Odds haven't been calculated yet."], updatedAt: null };
+    return { seasonYear, status: settlement ? "settled" : "not_ready", marketKey, market: null, line: null, over: null, under: null, expectedTotal: null, birdiesSoFar: 0, holesRemaining: 0, finalTotal, blockers: ["Odds haven't been calculated yet."], assumptions: [], updatedAt: null };
   }
 
   const line = snapshot.line === null ? null : Number(snapshot.line);
@@ -111,6 +113,7 @@ export async function currentTotalBirdiesState(seasonYear: number, { selfHeal = 
     holesRemaining,
     finalTotal,
     blockers,
+    assumptions: snapshot.details?.assumptions ?? [],
     updatedAt: snapshot.created_at,
   };
 }

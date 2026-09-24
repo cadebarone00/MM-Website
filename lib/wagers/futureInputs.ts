@@ -27,3 +27,20 @@ export async function latestMatchInput(service: Service, seasonYear: number): Pr
   ]);
   return later(odds?.created_at ?? null, state?.updated_at ?? null);
 }
+
+/** Pre-tournament nothing publishes match odds, so public reads reprice on this cadence. */
+export const MAX_SNAPSHOT_AGE_MS = 10 * 60 * 1000;
+/** If a score landed but no refresh followed it, public reads self-heal after this long. */
+export const STALE_GRACE_MS = 30 * 1000;
+
+/** Whether a snapshot predates the latest match data. */
+export function isStaleSnapshot(snapshot: { inputs_as_of?: string | null } | null, latestInput: string | null): boolean {
+  return Boolean(latestInput && (!snapshot?.inputs_as_of || latestInput > snapshot.inputs_as_of));
+}
+
+/** Whether a public read should recompute before answering. */
+export function needsRepublish(snapshot: { created_at: string; inputs_as_of?: string | null } | null, latestInput: string | null): boolean {
+  const age = snapshot ? Date.now() - new Date(snapshot.created_at).getTime() : Infinity;
+  const staleTooLong = isStaleSnapshot(snapshot, latestInput) && latestInput !== null && Date.now() - new Date(latestInput).getTime() > STALE_GRACE_MS;
+  return age > MAX_SNAPSHOT_AGE_MS || staleTooLong;
+}

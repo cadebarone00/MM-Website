@@ -1,7 +1,7 @@
 import { getPlayerDisplayName } from "@/lib/data/players";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { latestMatchInput, type Service } from "./futureInputs";
-import { isStaleSnapshot, loadIndividualInputs, needsRepublish, type IndividualInputs } from "./individualInputs";
+import { isStaleSnapshot, latestMatchInput, needsRepublish, type Service } from "./futureInputs";
+import { loadIndividualInputs, type IndividualInputs } from "./individualInputs";
 import {
   LOW_INDIVIDUAL_MODEL_VERSION,
   LOW_INDIVIDUAL_SIMULATIONS,
@@ -38,7 +38,7 @@ export async function publishLowIndividualOdds(service: Service, inputs: Individ
     holes_remaining: holesRemaining,
     blockers,
     inputs_as_of: inputs.inputsAsOf,
-    details: { simulations: LOW_INDIVIDUAL_SIMULATIONS, rounds: rounds.map((round) => round.round) },
+    details: { simulations: LOW_INDIVIDUAL_SIMULATIONS, rounds: rounds.map((round) => round.round), assumptions: inputs.assumptions },
   };
   const { error } = await service.from("low_individual_odds_snapshots").insert(row);
   if (error) throw new Error(error.message);
@@ -64,6 +64,8 @@ export type LowIndividualState = {
   started: boolean;
   winners: string[];
   blockers: string[];
+  /** Defaults taken from last year's setup. */
+  assumptions: string[];
   updatedAt: string | null;
 };
 
@@ -92,7 +94,7 @@ export async function currentLowIndividualState(seasonYear: number, { selfHeal =
 
   const winners = settlement ? String(settlement.winning_selection_key).split(",") : [];
   if (!snapshot) {
-    return { seasonYear, status: settlement ? "settled" : "not_ready", marketKey, market: null, entries: [], started: false, winners, blockers: ["Odds haven't been calculated yet."], updatedAt: null };
+    return { seasonYear, status: settlement ? "settled" : "not_ready", marketKey, market: null, entries: [], started: false, winners, blockers: ["Odds haven't been calculated yet."], assumptions: [], updatedAt: null };
   }
 
   const probabilities: Record<string, number> | null = snapshot.probabilities ?? null;
@@ -119,6 +121,7 @@ export async function currentLowIndividualState(seasonYear: number, { selfHeal =
     started: standings.some((standing) => standing.holesPlayed > 0),
     winners,
     blockers: snapshot.blockers ?? [],
+    assumptions: snapshot.details?.assumptions ?? [],
     updatedAt: snapshot.created_at,
   };
 }

@@ -5,6 +5,7 @@ import { formatAmericanOdds } from "@/lib/wagers/americanOdds";
 import type { LowIndividualState } from "@/lib/wagers/lowIndividualPricing";
 import type { WagersMode } from "./WagersModeContext";
 import { OddsButton } from "./OddsButton";
+import { AssumptionsNote } from "./AssumptionsNote";
 
 const percent = (value: number) => (value > 0 && value < 0.005 ? "<1%" : `${Math.round(value * 100)}%`);
 const toPar = (value: number) => (value === 0 ? "E" : value > 0 ? `+${value}` : String(value));
@@ -89,6 +90,7 @@ export function LowIndividualFutureCard({ mode }: { mode: WagersMode }) {
           </p>
         </>
       )}
+      {state && <AssumptionsNote assumptions={state.assumptions} />}
     </div>
   );
 }
