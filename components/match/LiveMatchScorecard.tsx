@@ -33,7 +33,10 @@ export function LiveMatchScorecard({ match, scorecard }: { match: RealMatch; sco
     wonAt = match.holesRemaining != null ? 18 - match.holesRemaining : match.thru ?? wonAt ?? 18;
     winner = match.leader;
   }
-  const finalStatus = (key?: number) => <span key={key} aria-label={key == null ? `Final, ${winner} wins` : `Hole ${holes[key].number}: Final, ${winner} wins`} className={`flex h-12 w-full items-center justify-center font-bold ${winner === "maroon" ? "bg-maroon-700 text-white" : "bg-white text-maroon-700"}`}>Final</span>;
+  const finalResult = match.margin == null && wonAt != null && tally !== 0
+    ? (18 - wonAt > 0 ? Math.abs(tally) + "&" + (18 - wonAt) : Math.abs(tally) + " Up")
+    : liveLabel(match);
+  const finalStatus = (key?: number) => <span key={key} aria-label={key == null ? `Final, ${winner} wins ${finalResult}` : `Hole ${holes[key].number}: Final, ${winner} wins`} className={`flex h-12 w-full items-center justify-center font-bold ${winner === "maroon" ? "bg-maroon-700 text-white" : "bg-white text-maroon-700"}`}>{key == null ? finalResult : "Final"}</span>;
   const total = (values: (number | null)[]) => values.some((value) => value != null) ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0) : "—";
   const row = (key: string, label: string, cells: ReactNode[], sum: ReactNode, tone = "bg-cream-100 text-maroon-700") => ({ key, label, cells, sum, tone });
   const scoresRow = (key: string, label: string, values: (number | null)[], team: "maroon" | "white", parMultiplier = 1) => row(key, label, values.map((score, index) => score == null ? "—" : <HoleMarkerForDiff key={index} diff={score - holes[index].par * parMultiplier} size={24} tone={team === "maroon" ? "white" : "maroon"}>{score}</HoleMarkerForDiff>), total(values), team === "maroon" ? "bg-maroon-700 text-white" : "bg-white text-maroon-700");

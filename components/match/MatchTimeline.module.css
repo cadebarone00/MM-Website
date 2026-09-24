@@ -31,9 +31,28 @@
 }
 
 .oddsHeader {
+  display: flex;
+  justify-content: flex-start;
+  gap: 24px;
+  margin-top: 32px;
   margin-right: calc((100% - var(--match-label-width)) / 19);
   padding-bottom: 12px;
 }
+.oddsHeader .probabilityTitle { font-size: 28px; font-weight: 700; color: #000; }
+.oddsBoard { margin-top: 40px; border: 1px solid #c9b98f; background: #faf7ef; border-radius: 4px; overflow: hidden; }
+.boardHeader { padding: 16px; }
+.boardHeader h2 { margin: 0; font-size: 24px; font-weight: 700; color: #000; }
+.boardHeader p, .marketNote { font-size: 12px; color: #625b50; }
+.boardHeader p { margin-top: 4px; }
+.marketTable { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 14px; }
+.marketTable th, .marketTable td { padding: 12px 8px; text-align: center; border-top: 1px solid #ded4bf; }
+.marketTable th:first-child { width: 36%; text-align: left; padding-left: 16px; }
+.marketTable thead { background: #eee5d5; }
+.marketTable th > span { display: block; font-size: 11px; font-weight: 400; }
+.marketTable th > .teamName { font-size: 14px; font-weight: 700; }
+.marketTable tbody tr:first-child th { color: #500001; }
+.marketTable tbody tr:last-child th { background: #fff; color: #500001; }
+.marketNote { margin: 0; padding: 12px 16px; border-top: 1px solid #ded4bf; }
 
 .labels {
   position: relative;
@@ -262,8 +281,14 @@
   .axisPercent:first-child { transform: none; }
   .axisPercent:nth-child(5) { transform: translateY(-100%); }
   .holeAxis, .sliderTrack { grid-column: 2; }
-  .oddsHeader { margin: 12px 8px 28px 0; gap: 8px; }
-  .oddsHeader h2 { font-size: 16px; }
+  .oddsHeader { margin: 32px 16px 28px; gap: 16px; }
+  .oddsHeader .probabilityTitle { font-size: 24px; }
+  .oddsBoard { border-radius: 0; border-inline: 0; }
+  .marketTable { font-size: 10px; }
+  .marketTable th, .marketTable td { padding: 10px 3px; }
+  .marketTable th:first-child { width: 34%; padding-left: 12px; }
+  .marketTable th > span { font-size: 9px; overflow-wrap: anywhere; }
+  .marketTable th > .teamName { font-size: 12px; }
   .oddsHeader > div:last-child { gap: 12px; }
   .oddsHeader > div:last-child p { font-size: 10px; }
   .oddsHeader > div:last-child p:nth-child(2) { font-size: 16px; }

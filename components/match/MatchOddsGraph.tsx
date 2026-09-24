@@ -38,9 +38,9 @@ export function MatchOddsGraph({ points, live, final, estimateNote, result }: { 
   const values = header ? [header.maroon_win_probability, header.tie_probability, header.white_win_probability] : [];
   const prices = header ? [header.maroon_american_odds, header.tie_american_odds, header.white_american_odds] : [];
   return (
-    <section className={styles.timeline} aria-label="Match odds">
-      <div className={`${styles.oddsHeader} mb-5 flex flex-wrap items-start justify-between gap-4`}>
-        <div><p className="font-condensed text-xs font-bold uppercase tracking-wide text-ink-500">Match win probability</p><h2 className="mt-1 font-serif text-xl font-bold">{live ? final ? "Final odds" : "Live odds" : "Match odds"}</h2></div>
+    <section className={styles.timeline} aria-label="Win probability">
+      <div className={`${styles.oddsHeader} mb-5 flex flex-wrap items-start gap-4`}>
+        <h2 className={styles.probabilityTitle}>Win Probability</h2>
         <div className="flex gap-5">
           {["Maroon", "Tie", "White"].map((label, index) => <div key={label}><p className={`font-condensed text-xs font-bold uppercase tracking-wide ${index === 1 ? "text-gold-700" : "text-maroon-700"}`}>{label}</p><p className="font-sans text-xl font-black tabular-nums">{header ? `${Math.round(values[index] * 100)}%` : "—"}</p><p className="font-sans text-xs text-ink-500">{header ? price(prices[index]) : "—"}</p></div>)}
         </div>
