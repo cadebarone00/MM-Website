@@ -8,6 +8,7 @@ import { Tabs, type TabItem } from "@/components/ui/Tabs";
 import { ComingSoonNotice } from "@/components/wagers/ComingSoonNotice";
 import { useWagersMode } from "@/components/wagers/WagersModeContext";
 import { LiveMatchesList } from "@/components/wagers/LiveMatchesList";
+import { TeamWinnerFutureCard } from "@/components/wagers/TeamWinnerFutureCard";
 import type { Tournament } from "@/lib/data/types";
 
 type Category = "team-futures" | "player-futures" | "matches" | "fourballs" | "props";
@@ -59,13 +60,15 @@ export default function WagersPage() {
     <div className="px-4 pt-4 sm:px-7">
       <Tabs items={CATEGORY_ITEMS} value={category} onChange={(v) => setCategory(v as Category)} variant="plain" />
       <div className="mt-6">
-        {mode === "real" ? (
+        {category === "team-futures" ? (
+          // Futures shows its odds in both modes; the card itself explains Real Wagers isn't live yet.
+          <TeamWinnerFutureCard mode={mode} />
+        ) : mode === "real" ? (
           <ComingSoonNotice />
         ) : loading && !payload ? (
           <p className="py-10 text-center font-sans text-sm text-ink-400">Checking the live sheet...</p>
         ) : (
           <>
-            {category === "team-futures" && <LinesComingSoon label="Futures" />}
             {category === "player-futures" && <PlayersList tournament={tournament} />}
             {category === "matches" && <LiveMatchesList />}
             {category === "props" && <LinesComingSoon label="Prop" />}

@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     .eq("season_year", TEST_SEASON_YEAR);
   if (boxesError) return NextResponse.json({ ok: false, error: boxesError.message }, { status: 500 });
 
-  const marketKeys = (boxes ?? []).map((box) => `live-match:${box.id}`);
+  const marketKeys = [...(boxes ?? []).map((box) => `live-match:${box.id}`), `team-winner:${TEST_SEASON_YEAR}`];
   let wagerCount = 0;
   if (marketKeys.length) {
     const { data: bets, error: betsError } = await service
@@ -74,6 +74,8 @@ export async function POST(request: Request) {
     service.from("career_archive_team_holes").delete().eq("season_year", TEST_SEASON_YEAR),
     service.from("career_archive_rounds").delete().eq("season_year", TEST_SEASON_YEAR),
     service.from("live_hole_scores").delete().eq("season_year", TEST_SEASON_YEAR),
+    service.from("team_winner_odds_snapshots").delete().eq("season_year", TEST_SEASON_YEAR),
+    service.from("team_winner_pair_odds").delete().eq("season_year", TEST_SEASON_YEAR),
     service.from("live_match_boxes").delete().eq("season_year", TEST_SEASON_YEAR),
     service.from("live_round_state").delete().eq("season_year", TEST_SEASON_YEAR),
     service.from("live_roster").delete().eq("season_year", TEST_SEASON_YEAR),

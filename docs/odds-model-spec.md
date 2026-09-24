@@ -244,6 +244,43 @@ As player scoring is entered, the Career Archive is updated. Re-running the
 model therefore uses the latest archive and current match state without any
 Excel upload.
 
+## Team Winner future (Maroon vs White)
+
+The Team Winner market prices which team finishes the whole event with more
+points. Every match is worth 1 point and a halved match is 0.5 to each side,
+so the event can end tied; Maroon, Tie and White are separate selections.
+Implementation: `lib/wagers/teamWinnerFuture.ts` (pure simulation) and
+`lib/wagers/teamWinnerPricing.ts` (data loading and publishing).
+
+It never computes its own match probabilities. Each match's win/tie/loss
+probabilities come from this match model:
+
+- A match with a mathematically complete official result counts that result.
+- A paired, unfinished match uses its latest live match odds snapshot.
+- A paired match with no snapshot, and every matchup that could be posted in
+  a round whose pairings aren't locked, uses the pre-round model for that
+  round's format and course. These pre-round results are stored per season in
+  `team_winner_pair_odds` when Tiger runs Price Team Winner.
+
+The market then plays the rest of the event 10,000 times. Rounds without
+locked pairings draw a fresh, legal random pairing of each team's roster in
+every simulation (every player plays; Fourball and Foursome use two-player
+sides), so every possible matchup contributes. Match outcomes are treated as
+independent. The share of simulations each team wins, or ties, becomes the
+probability, priced as fair American odds without vig.
+
+Guardrails:
+
+- The market does not publish odds while any round lacks a format or course,
+  the rosters are empty, or any needed matchup couldn't be priced (for
+  example, a player without Career Archive history on that course).
+- Odds refresh after every official match publication and closeout. A bet is
+  refused while newer match odds or official state exist than the published
+  Team Winner odds used.
+- Betting closes once a team can no longer be caught, or a tie is locked in.
+- Settlement is automatic when the last scheduled match is closed out
+  (`supabase/team_winner_future.sql`).
+
 ## Required outputs
 
 Every odds calculation should show:
