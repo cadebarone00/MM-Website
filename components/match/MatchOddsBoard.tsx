@@ -9,7 +9,7 @@ export function MatchOddsBoard({ match }: { match: RealMatch }) {
   return <section className={styles.oddsBoard} aria-label="Match odds markets">
     <header className={styles.boardHeader}><h2>Match Odds</h2></header>
     <table className={styles.marketTable}>
-      <thead><tr><th scope="col"><span>Tee time {match.teeTimeCst ?? "TBD"}</span>{status === "final" ? <span>Final · {liveLabel(match)}</span> : status === "live" ? <span>Thru {match.thru ?? 0}</span> : null}</th><th scope="col">Open<span>Spread / ML</span></th><th scope="col">Spread</th><th scope="col">Total<span>Birdies</span></th><th scope="col" aria-label="Moneyline">ML</th></tr></thead>
+      <thead><tr><th scope="col"><span>{status === "scheduled" ? `Tee time ${match.teeTimeCst ?? "TBD"}` : status === "final" ? `Final ${liveLabel(match)}` : `Thru ${match.thru ?? 0}`}</span></th><th scope="col">Open<span>Spread / ML</span></th><th scope="col">Spread</th><th scope="col">Total<span>Birdies</span></th><th scope="col" aria-label="Moneyline">ML</th></tr></thead>
       <tbody>{(["maroon", "white"] as const).map((team, index) => <tr key={team}>
         <th scope="row"><span className={styles.teamName}>{team === "maroon" ? "Maroon" : "White"}</span><span>{(team === "maroon" ? match.maroonPlayers : match.whitePlayers).map(getPlayerDisplayName).join(" & ")}</span></th>
         <td aria-label={team + " opening spread and moneyline not posted"}><span>—</span><small>—</small></td>

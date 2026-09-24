@@ -207,12 +207,14 @@
 .mobileCard { display: none; }
 @media (width < 1024px) {
   .mobileCard {
+    margin-inline: -16px;
     display: flex;
     background: var(--color-cream-100);
     color: var(--color-maroon-700);
     border-block: 1px solid var(--color-ink-300);
   }
   .mobileSide { width: 56px; flex-shrink: 0; }
+  .mobileSide:last-child { width: 36px; }
   .mobileScroller {
     display: flex;
     flex: 1;
@@ -233,13 +235,13 @@
     font-weight: 600;
   }
   .mobileHeader {
-    height: 16px;
+    height: 44px;
     background: var(--color-maroon-700);
     color: white;
     border-color: rgb(255 255 255 / 15%);
   }
   .mobileRow:nth-child(2) > *, .mobileRow:nth-child(3) > *,
-  .mobileSide > :nth-child(2), .mobileSide > :nth-child(3) { height: 16px; }
+  .mobileSide > :nth-child(2), .mobileSide > :nth-child(3) { height: 44px; }
   .mobileLabel {
     padding-inline: 2px;
     font-family: var(--font-condensed);
@@ -266,6 +268,7 @@
     background: rgb(250 247 239 / 80%);
     pointer-events: none;
   }
+  .maroonLabel, .whiteLabel { left: 12px; right: 2px; padding: 2px 0; font-size: 8px; }
   .axisPercent:first-child { transform: none; }
   .axisPercent:nth-child(5) { transform: translateY(-100%); }
   .holeAxis, .sliderTrack { grid-column: 2; }
@@ -277,5 +280,5 @@
   .timeline > p { order: 2; margin-inline: 16px; font-size: 10px; }
 }
 @media (640px <= width < 1024px) {
-  .mobileGraph { margin-inline: -28px; }
+  .mobileGraph, .mobileCard { margin-inline: -28px; }
 }

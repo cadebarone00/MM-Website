@@ -28,14 +28,14 @@ export function MatchProfile({ match, tournamentSlug, editionLabel, scorecard, o
           <div className="border-l border-gold-500 bg-white px-3 py-2 text-maroon-700">White</div>
         </div>
         <div className="grid grid-cols-[minmax(0,1fr)_80px_minmax(0,1fr)] items-stretch bg-cream-50 sm:grid-cols-[minmax(0,1fr)_100px_minmax(0,1fr)]">
-          <div className="flex min-w-0 flex-col justify-center gap-2 px-2 py-4 text-right sm:px-4">
-            {match.maroonPlayers.map((player) => <Link key={player} href={`/leaderboard/${tournamentSlug}/players/${player.toLowerCase()}`} className="font-sans text-sm font-bold text-maroon-700 hover:underline sm:text-lg">{getPlayerDisplayName(player)}</Link>)}
+          <div className="flex min-w-0 flex-col justify-center gap-2 bg-maroon-700 px-2 py-4 text-right text-white sm:px-4">
+            {match.maroonPlayers.map((player) => <Link key={player} href={`/leaderboard/${tournamentSlug}/players/${player.toLowerCase()}`} className="font-sans text-sm font-bold text-white hover:underline sm:text-lg">{getPlayerDisplayName(player)}</Link>)}
           </div>
           <div aria-label="Match status" className={`flex flex-col items-center justify-center gap-1 border-x border-gold-500 px-1 py-3 text-center ${centerTone}`}>
-            <span className="font-sans text-sm font-black sm:text-base">{status === "scheduled" ? match.teeTimeCst ?? "TBD" : liveLabel(match)}</span>
-            <span className="font-condensed text-[10px] font-bold uppercase tracking-wide">{status === "scheduled" ? "Tee time" : status === "final" ? "Final" : `Thru ${match.thru ?? 0}`}</span>
+            <span className="font-sans text-sm font-black sm:text-base">{status === "scheduled" ? match.teeTimeCst ?? "TBD" : status === "live" ? `Thru ${match.thru ?? 0}` : `Final ${liveLabel(match)}`}</span>
+            {status === "scheduled" && <span className="font-condensed text-[10px] font-bold uppercase tracking-wide">Tee time</span>}
           </div>
-          <div className="flex min-w-0 flex-col justify-center gap-2 px-2 py-4 text-left sm:px-4">
+          <div className="flex min-w-0 flex-col justify-center gap-2 bg-white px-2 py-4 text-left text-maroon-700 sm:px-4">
             {match.whitePlayers.map((player) => <Link key={player} href={`/leaderboard/${tournamentSlug}/players/${player.toLowerCase()}`} className="font-sans text-sm font-bold text-maroon-700 hover:underline sm:text-lg">{getPlayerDisplayName(player)}</Link>)}
           </div>
         </div>
