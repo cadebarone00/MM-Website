@@ -52,12 +52,19 @@ export function deriveMatchTeeTime(date: string | null, timeOfDay: string | null
   const [hour, minute] = timeOfDay.split(":").map(Number);
   if ([year, month, day, hour, minute].some((value) => Number.isNaN(value))) return null;
   // First guess: treat the wall-clock time as if it were already UTC, then
-  // measure Pacific's real offset at that instant and correct for it. One
-  // correction is enough for a same-day tee time (never near midnight UTC,
-  // the only place a single-pass guess could straddle a DST boundary).
+  // measure Pacific's real offset at that instant and correct for it. On the
+  // two DST transition days each year that first measurement can land on the
+  // wrong side of the change — a morning Pacific tee time is exactly where
+  // this happens, because its UTC-shaped guess falls before the transition
+  // while the real instant falls after it (or vice versa in November). So
+  // re-measure the offset at the corrected instant and, if it moved, correct
+  // again from the original guess using the offset that actually applies.
   const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute));
-  const offsetMinutes = pacificOffsetMinutes(utcGuess);
-  return new Date(utcGuess.getTime() - offsetMinutes * 60000);
+  const firstOffset = pacificOffsetMinutes(utcGuess);
+  const firstPass = new Date(utcGuess.getTime() - firstOffset * 60000);
+  const secondOffset = pacificOffsetMinutes(firstPass);
+  if (secondOffset === firstOffset) return firstPass;
+  return new Date(utcGuess.getTime() - secondOffset * 60000);
 }
 
 /** "7:30 AM PT" — for displaying an already-absolute tee time back in Pacific. */

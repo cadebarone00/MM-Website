@@ -97,7 +97,7 @@ export function ScheduleAccordion({ rounds, year, initialDate }: { rounds: Upcom
             <h2>{panel.course ?? "Course to be announced"}</h2>
             <p className={styles.format}>{panel.format ?? "Format to be announced"}</p>
             <p>Palm Springs, CA</p>
-            <p className={styles.note}>Round {panel.round} · {date}{!panel.course || !panel.format ? " · More details to come" : ""}</p>
+            <p className={styles.note}>Session {panel.round} · {date}{!panel.course || !panel.format ? " · More details to come" : ""}</p>
           </div>
         </section>;
       })}

@@ -30,6 +30,18 @@ test("deriveMatchTeeTime converts a Pacific wall-clock time to the correct UTC i
   assert.equal(result?.toISOString(), "2027-01-06T15:30:00.000Z");
 });
 
+test("deriveMatchTeeTime is correct on the spring-forward transition day (2027-03-14)", () => {
+  const result = deriveMatchTeeTime("2027-03-14", "07:30");
+  assert.equal(result?.toISOString(), "2027-03-14T14:30:00.000Z");
+  assert.equal(formatPacificTeeTime(result!), "7:30 AM PT");
+});
+
+test("deriveMatchTeeTime is correct on the fall-back transition day (2027-11-07)", () => {
+  const result = deriveMatchTeeTime("2027-11-07", "07:30");
+  assert.equal(result?.toISOString(), "2027-11-07T15:30:00.000Z");
+  assert.equal(formatPacificTeeTime(result!), "7:30 AM PT");
+});
+
 test("deriveMatchTeeTime returns null when the date or the time of day is missing", () => {
   assert.equal(deriveMatchTeeTime(null, "07:30"), null);
   assert.equal(deriveMatchTeeTime("2027-01-06", null), null);

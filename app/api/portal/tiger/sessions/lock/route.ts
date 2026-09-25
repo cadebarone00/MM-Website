@@ -3,6 +3,7 @@ import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
 import { sessionIsComplete, validateMatchBox } from "@/lib/live/orchestration";
+import { deriveMatchTeeTime, teeTimeSlotForMatch } from "@/lib/live/sessionTeeTimes";
 import { syncLockedSessionToCareerArchive } from "@/lib/live/syncLockedRound";
 import { availableTeeSets } from "@/lib/live/teeSets";
 import type { LiveMatch, LiveTournamentSnapshot, MatchFormat, MatchState, Team } from "@/lib/live/types";
@@ -34,6 +35,34 @@ export async function POST(request: Request) {
       const availableIds = new Set(availableTeeSets(Array.isArray(course?.tee_sets) ? course.tee_sets : []).map((tee) => tee.id));
       if (!availableIds.has(current.course_setup?.teeSetId) || Object.values(current.course_setup?.holeTeeSetIds ?? {}).some((id) => typeof id !== "string" || !availableIds.has(id))) {
         return NextResponse.json({ ok: false, error: "Choose locked tee sets from the Course Library before locking this session." }, { status: 400 });
+      }
+
+      // Locking is the single point where this session's tee times become
+      // authoritative. Matches created earlier derived their own tee_time from
+      // whatever the slots held at creation time, so if Tiger unlocked the
+      // course, edited a slot, and re-locked, those stored instants are stale —
+      // and tee_time (not the session's slots) is what drives the automatic
+      // Scheduled -> Armed -> Live transition. Re-derive every existing match.
+      const { data: existingMatches, error: existingError } = await service
+        .from("live_match_boxes")
+        .select("id, box_number, format, tee_time")
+        .eq("season_year", year)
+        .eq("round", session);
+      if (existingError) {
+        return NextResponse.json({ ok: false, error: "Could not re-check this session's match tee times." }, { status: 500 });
+      }
+      for (const match of existingMatches ?? []) {
+        const slot = teeTimeSlotForMatch(match.format as MatchFormat, match.box_number);
+        const derived = deriveMatchTeeTime(current.date, teeTimes[slot] ?? null);
+        if (!derived) continue;
+        if (match.tee_time && new Date(match.tee_time).getTime() === derived.getTime()) continue;
+        const { error: teeTimeError } = await service
+          .from("live_match_boxes")
+          .update({ tee_time: derived.toISOString() })
+          .eq("id", match.id);
+        if (teeTimeError) {
+          return NextResponse.json({ ok: false, error: "Could not update this session's match tee times." }, { status: 500 });
+        }
       }
     }
     const { error } = await service

@@ -26,7 +26,7 @@ const highlights = [
     body: "Individual leaderboard notes will rotate into this rail once tournament scoring begins.",
   },
   {
-    title: "Round 1 starts at 9:30 CST",
+    title: "Session 1 starts at 7:30 AM PST",
     body: "January 6, 2027 is the live flip point for the tournament experience.",
   },
   {

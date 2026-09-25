@@ -51,7 +51,7 @@ export function currentRoundDay(tournament: Tournament): number {
   return activeDay ?? days[days.length - 1];
 }
 
-export const LIVE_START_LABEL = "9:30 AM CST on January 6";
+export const LIVE_START_LABEL = "7:30 AM PST on January 6";
 
 export function centralDateLabel(): string {
   const parts = new Intl.DateTimeFormat("en-US", {

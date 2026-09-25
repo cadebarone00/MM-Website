@@ -57,6 +57,12 @@ export function parseThru(value: unknown): number | undefined {
   return Number.isFinite(thru) && thru > 0 ? thru : undefined;
 }
 
+/**
+ * Tee times are Pacific Time everywhere. The function's name and the
+ * `teeTimeCst` field it feeds are legacy: the field is shared with the
+ * hand-typed historical per-year data files, so it keeps its old spelling
+ * even though the value it now carries is Pacific, labeled "PT".
+ */
 export function formatCentralTime(value: unknown): string | undefined {
   if (!value) return undefined;
   const date = new Date(String(value));
@@ -64,10 +70,10 @@ export function formatCentralTime(value: unknown): string | undefined {
   const time = new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
     minute: "2-digit",
-    timeZone: "America/Chicago",
+    timeZone: "America/Los_Angeles",
   }).format(date);
 
-  return `${time} CST`;
+  return `${time} PT`;
 }
 
 export function normalizeMatch(item: unknown, index: number): WebsiteMatch {

@@ -30,7 +30,7 @@ function asOfficialMatches(entries: OfficialEntry[]): RealMatch[] {
     leader: officialState?.leader,
     margin: officialState?.margin,
     holesRemaining: officialState ? 18 - officialState.thru : 18,
-    teeTimeCst: new Date(match.tee_time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+    teeTimeCst: `${new Date(match.tee_time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" })} PT`,
     maroonWinProbability: odds?.maroon_win_probability,
     tieProbability: odds?.tie_probability,
     whiteWinProbability: odds?.white_win_probability,

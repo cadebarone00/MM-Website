@@ -44,7 +44,7 @@ export function FantasyRoundCircles({
               <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-maroon-700 bg-white font-score text-sm font-bold tabular-nums text-ink-900">
                 {points === null ? "–" : points}
               </div>
-              <span className="font-condensed text-3xs font-bold text-ink-600">Rd {round.session}</span>
+              <span className="font-condensed text-3xs font-bold text-ink-600">Session {round.session}</span>
               {round.format && <span className="max-w-full truncate font-sans text-[9px] leading-tight text-ink-400">{round.format}</span>}
             </div>
           );
