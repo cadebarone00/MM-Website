@@ -24,17 +24,14 @@ export async function POST(request: Request) {
   if (lock === "course") {
     if (value) {
       const { data: current } = await service.from("live_round_state").select("date, course_id, format, course_setup, match_tee_times").eq("season_year", year).eq("round", session).single();
-      if (!current?.date || !current?.course_id || !current?.format) {
-        return NextResponse.json({ ok: false, error: "Set a date, course, and format before locking this session." }, { status: 400 });
-      }
+      if (!current) return NextResponse.json({ ok: false, error: "Session not found." }, { status: 404 });
       const teeTimes = (current.match_tee_times as (string | null)[] | null) ?? [null, null, null];
-      if (teeTimes.length !== 3 || teeTimes.some((slot) => !slot)) {
-        return NextResponse.json({ ok: false, error: "Set all 3 match tee times before locking this session." }, { status: 400 });
-      }
-      const { data: course } = await service.from("live_courses").select("tee_sets").eq("id", current.course_id).single();
-      const availableIds = new Set(availableTeeSets(Array.isArray(course?.tee_sets) ? course.tee_sets : []).map((tee) => tee.id));
-      if (!availableIds.has(current.course_setup?.teeSetId) || Object.values(current.course_setup?.holeTeeSetIds ?? {}).some((id) => typeof id !== "string" || !availableIds.has(id))) {
-        return NextResponse.json({ ok: false, error: "Choose locked tee sets from the Course Library before locking this session." }, { status: 400 });
+      if (current.course_setup) {
+        const { data: course } = await service.from("live_courses").select("tee_sets").eq("id", current.course_id).single();
+        const availableIds = new Set(availableTeeSets(Array.isArray(course?.tee_sets) ? course.tee_sets : []).map((tee) => tee.id));
+        if (!availableIds.has(current.course_setup?.teeSetId) || Object.values(current.course_setup?.holeTeeSetIds ?? {}).some((id) => typeof id !== "string" || !availableIds.has(id))) {
+          return NextResponse.json({ ok: false, error: "Choose locked tee sets from the Course Library before locking this session." }, { status: 400 });
+        }
       }
 
       // Locking is the single point where this session's tee times become
@@ -51,9 +48,10 @@ export async function POST(request: Request) {
       if (existingError) {
         return NextResponse.json({ ok: false, error: "Could not re-check this session's match tee times." }, { status: 500 });
       }
+      const { data: seasonSettings } = await service.from("live_tournament_settings").select("timezone").eq("season_year", year).maybeSingle();
       for (const match of existingMatches ?? []) {
         const slot = teeTimeSlotForMatch(match.format as MatchFormat, match.box_number);
-        const derived = deriveMatchTeeTime(current.date, teeTimes[slot] ?? null);
+        const derived = deriveMatchTeeTime(current.date, teeTimes[slot] ?? null, seasonSettings?.timezone ?? "America/Los_Angeles");
         if (!derived) continue;
         if (match.tee_time && new Date(match.tee_time).getTime() === derived.getTime()) continue;
         const { error: teeTimeError } = await service
@@ -78,9 +76,13 @@ export async function POST(request: Request) {
 
   // lock === "matchups"
   if (value) {
-    const { data: current } = await service.from("live_round_state").select("course_locked, format, course_id, date").eq("season_year", year).eq("round", session).single();
+    const { data: current } = await service.from("live_round_state").select("course_locked, format, course_id, date, course_setup, match_tee_times").eq("season_year", year).eq("round", session).single();
     if (!current?.course_locked || !current.format) {
       return NextResponse.json({ ok: false, error: "Lock this session's course and format before locking matchups." }, { status: 400 });
+    }
+
+    if (!current.course_id || !current.date || !current.course_setup || !Array.isArray(current.match_tee_times) || current.match_tee_times.length !== 3 || current.match_tee_times.some((time: string | null) => !time)) {
+      return NextResponse.json({ ok: false, error: "Complete the course, date, tee setup and tee times before locking matchups. The session itself can stay partially locked." }, { status: 400 });
     }
 
     const { data: matchRows } = await service

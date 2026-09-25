@@ -1,4 +1,8 @@
 // app/portal/admin/master-settings/[year]/courses-format/page.tsx
+import { getBroadcastPayload } from "@/lib/broadcast/state";
+import { getBroadcastMatchPlay } from "@/lib/broadcast/matchPlayData";
+import { isPastLeaderboardSwitchover, nextTournament } from "@/lib/data";
+import { getActiveSeasonYear } from "@/lib/live/activeSeason";
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
@@ -23,7 +27,7 @@ export default async function CoursesFormatPage({ params }: { params: Promise<{ 
   const [{ data: settingsRow }, { data: sessionRows }, { data: courseRows }] = await Promise.all([
     service
       .from("live_tournament_settings")
-      .select("round_count, completed_at, venue_name, venue_locked, begin_date, end_date, dates_locked")
+      .select("round_count, completed_at, venue_name, venue_locked, timezone, begin_date, end_date, dates_locked")
       .eq("season_year", year)
       .maybeSingle(),
     service
@@ -34,7 +38,18 @@ export default async function CoursesFormatPage({ params }: { params: Promise<{ 
     service.from("live_courses").select("id, name, holes, rating, slope, tee_sets").order("name"),
   ]);
 
+  const [activeYear, matches, archives] = await Promise.all([
+    getActiveSeasonYear(),
+    service.from("live_match_boxes").select("round, tee_time, started, state").eq("season_year", year),
+    service.from("career_archive_rounds").select("round").eq("season_year", year),
+  ]);
+  const [broadcastResult, matchPlayResult] = await Promise.allSettled([getBroadcastPayload(), getBroadcastMatchPlay()]);
+  const broadcast = broadcastResult.status === "fulfilled" ? broadcastResult.value : null;
+  const matchPlay = matchPlayResult.status === "fulfilled" ? matchPlayResult.value : null;
+  const destinations = { activeYear, timezone: settingsRow?.timezone ?? "America/Los_Angeles", leaderboardOpen: isPastLeaderboardSwitchover(), upcomingYear: nextTournament.year, broadcastSession: broadcast?.state.seasonYear === year && broadcast.state.tournamentLive && broadcast.state.currentScene === "match_play" && !broadcast.state.videoPhase && matchPlay?.roundLabel?.startsWith("Round ") ? Number(matchPlay.roundLabel.slice(6)) : null, matches: matches.data ?? [], archiveSessions: [...new Set((archives.data ?? []).map(row => row.round as number))], unavailable: Boolean(matches.error || archives.error || !broadcast || !matchPlay) };
+
   const settings: TournamentSettings = {
+    timezone: settingsRow?.timezone ?? "America/Los_Angeles",
     sessionCount: settingsRow?.round_count ?? null,
     completedAt: settingsRow?.completed_at ?? null,
     venueName: settingsRow?.venue_name ?? null,
@@ -60,7 +75,7 @@ export default async function CoursesFormatPage({ params }: { params: Promise<{ 
   return (
     <div className="mx-auto max-w-[960px] px-4 py-12 sm:px-7">
       <h1 className="font-serif text-2xl font-bold text-ink-900">Courses & Format</h1>
-      <CoursesFormatPanel year={year} initialSettings={settings} initialSessions={sessions} initialCourses={courses} />
+      <CoursesFormatPanel year={year} initialSettings={settings} initialSessions={sessions} initialCourses={courses} destinations={destinations} />
     </div>
   );
 }

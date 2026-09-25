@@ -92,7 +92,7 @@ export async function getNextTournament(): Promise<UpcomingTournament> {
  */
 async function getActiveSeasonCourses(seasonYear: number): Promise<VenueCourse[]> {
   const service = createSupabaseServiceRoleClient();
-  const { data: rounds } = await service.from("live_round_state").select("course_id").eq("season_year", seasonYear);
+  const { data: rounds } = await service.from("live_round_state").select("course_id").eq("season_year", seasonYear).eq("course_locked", true);
   const courseIds = [...new Set((rounds ?? []).map((round) => round.course_id).filter((id): id is string => Boolean(id)))];
   if (!courseIds.length) return [];
 
@@ -149,6 +149,7 @@ export async function getUpcomingRoundSchedule(): Promise<UpcomingRoundScheduleI
     .from("live_round_state")
     .select("round, date, format, course_id")
     .eq("season_year", active.season_year)
+    .eq("course_locked", true)
     .order("round");
 
   if (error || !rounds?.length) return [];

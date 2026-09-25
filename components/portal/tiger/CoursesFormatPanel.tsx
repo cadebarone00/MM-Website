@@ -2,6 +2,8 @@
 "use client";
 import { availableTeeSets } from "@/lib/live/teeSets";
 
+import { SessionDestinations, type DestinationContext } from "./SessionDestinations";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import type { LiveCourse, LiveSessionState, LiveTeeSet, MatchFormat, TournamentSettings } from "@/lib/live/types";
@@ -18,11 +20,13 @@ export function CoursesFormatPanel({
   initialSettings,
   initialSessions,
   initialCourses,
+  destinations,
 }: {
   year: number;
   initialSettings: TournamentSettings;
   initialSessions: LiveSessionState[];
   initialCourses: LiveCourse[];
+  destinations: DestinationContext;
 }) {
   // null (never configured yet) shows a blank placeholder instead of
   // defaulting to a real number like 8 — picking "8" from a dropdown that
@@ -30,6 +34,8 @@ export function CoursesFormatPanel({
   // fires change when the value actually changes), so nothing would ever
   // save on first setup. Every option is a real value once one is chosen,
   // since sessionCount then reflects a real, already-saved number.
+  const router = useRouter();
+  const fieldClass = (live: boolean) => `border-2 rounded-lg px-2 py-2 text-sm disabled:opacity-100 ${live ? "border-green-600 bg-green-50 text-green-900" : "border-stone-300 bg-white"}`;
   const [sessionCount, setSessionCount] = useState<number | null>(initialSettings.sessionCount);
   const [sessions, setSessions] = useState(initialSessions);
   const courses = initialCourses;
@@ -114,7 +120,8 @@ export function CoursesFormatPanel({
       setError(data.error);
       return;
     }
-    setSessions((current) => current.map((s) => (s.session === session ? { ...s, courseLocked: value } : s)));
+    setSessions((current) => current.map((s) => (s.session === session ? { ...s, courseLocked: value, matchupsLocked: value && s.matchupsLocked } : s)));
+    router.refresh();
   }
 
   async function removeSession(session: number) {
@@ -159,7 +166,8 @@ export function CoursesFormatPanel({
 
       <div className="mt-6 space-y-4">
         {sessions.map((session) => (
-          <div key={session.session} className="rounded-lg border-2 border-stone-300 p-4">
+          <div key={session.session} className="grid gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(240px,1fr)]">
+          <div className={`rounded-lg border-2 p-4 ${session.courseLocked ? "border-green-600" : "border-stone-300"}`}>
             <div className="flex items-center justify-between">
               <span className="font-serif text-lg font-bold text-ink-900">Session {session.session}</span>
               <div className="flex items-center gap-3">
@@ -182,19 +190,20 @@ export function CoursesFormatPanel({
               </div>
             </div>
 
+            <p className="mt-2 text-xs text-ink-500">{session.courseLocked ? "Locked: chosen details are published. Blank fields stay pending. Unlock to edit." : "Draft: lock whenever you are ready, even with blank fields."}</p>
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
               <input
                 type="date"
                 value={session.date ?? ""}
                 disabled={session.courseLocked}
                 onChange={(e) => updateSession(session.session, { date: e.target.value })}
-                className="border-2 border-stone-300 rounded-lg px-2 py-2 text-sm"
+                aria-label="Session date" className={fieldClass(session.courseLocked && Boolean(session.date))}
               />
               <select
                 value={session.courseId ?? ""}
                 disabled={session.courseLocked}
                 onChange={(e) => updateSession(session.session, { courseId: e.target.value })}
-                className="border-2 border-stone-300 rounded-lg px-2 py-2 text-sm"
+                aria-label="Course" className={fieldClass(session.courseLocked && Boolean(session.courseId))}
               >
                 <option value="" disabled>
                   Choose a course
@@ -209,7 +218,7 @@ export function CoursesFormatPanel({
                 value={session.format ?? ""}
                 disabled={session.courseLocked}
                 onChange={(e) => updateSession(session.session, { format: e.target.value as MatchFormat })}
-                className="border-2 border-stone-300 rounded-lg px-2 py-2 text-sm"
+                aria-label="Format" className={fieldClass(session.courseLocked && Boolean(session.format))}
               >
                 <option value="" disabled>
                   Choose a format
@@ -232,14 +241,15 @@ export function CoursesFormatPanel({
                       value={session.matchTeeTimes[slot] ?? ""}
                       disabled={session.courseLocked}
                       onChange={(e) => updateTeeTimeSlot(session, slot, e.target.value)}
-                      className="mt-1 block w-full rounded-sm border border-gold-300 bg-white px-2 py-2 font-sans text-sm normal-case text-ink-900"
+                      className={`mt-1 block w-full font-sans normal-case ${fieldClass(session.courseLocked && Boolean(session.matchTeeTimes[slot]))}`}
                     />
                   </label>
                 ))}
               </div>
-              <p className="mt-2 font-sans text-xs text-ink-500">Tee times are Pacific Time.</p>
+              <p className="mt-2 font-sans text-xs text-ink-500">Tee times use {initialSettings.timezone.replaceAll("_", " ")}.</p>
             </div>
 
+            {session.courseLocked && session.courseSetup && <div className="mt-3 rounded-lg border-2 border-green-600 bg-green-50 p-3 text-sm text-green-900">Tee setup: {session.courseSetup.teeSetName || courses.find(course => course.id === session.courseId)?.teeSets?.find(tee => tee.id === session.courseSetup?.teeSetId)?.name}<p className="mt-1 text-xs">Locked base tee and per-hole selections</p></div>}
             {!session.courseLocked && session.courseId && (() => {
               const course = courses.find((entry) => entry.id === session.courseId);
               if (!course) return null;
@@ -273,6 +283,8 @@ export function CoursesFormatPanel({
                 </div>
               </div>
             )}
+          </div>
+          <SessionDestinations session={session} year={year} context={destinations} />
           </div>
         ))}
       </div>
