@@ -89,9 +89,12 @@ export async function POST(request: Request) {
   }
   const format = sessionRow.format as MatchFormat;
 
+  const { data: tournamentRow } = await service.from("live_tournament_settings").select("timezone").eq("season_year", year).maybeSingle();
+  const timezone = tournamentRow?.timezone ?? "America/Los_Angeles";
+
   const teeTimes = (sessionRow.match_tee_times as (string | null)[] | null) ?? [null, null, null];
   const slot = teeTimeSlotForMatch(format, matchNumber);
-  const teeTime = deriveMatchTeeTime(sessionRow.date, teeTimes[slot] ?? null);
+  const teeTime = deriveMatchTeeTime(sessionRow.date, teeTimes[slot] ?? null, timezone);
   if (!teeTime) {
     return NextResponse.json({ ok: false, error: "This session's tee times aren't set yet — set and lock them in Courses & Format first." }, { status: 400 });
   }
