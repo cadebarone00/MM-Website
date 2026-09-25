@@ -21,7 +21,7 @@ export default async function MatchupsPage({ params }: { params: Promise<{ year:
   if (!profile?.is_host) redirect("/");
 
   const service = createSupabaseServiceRoleClient();
-  const [{ data: sessionRows }, { data: matchRows }, { data: rosterRows }] = await Promise.all([
+  const [{ data: sessionRows }, { data: matchRows }, { data: rosterRows }, { data: settingsRow }] = await Promise.all([
     service
       .from("live_round_state")
       .select("round, started, course_id, date, format, course_locked, matchups_locked, match_tee_times")
@@ -34,7 +34,10 @@ export default async function MatchupsPage({ params }: { params: Promise<{ year:
       .order("round")
       .order("box_number"),
     service.from("live_roster").select("player_slug, team").eq("season_year", year),
+    service.from("live_tournament_settings").select("timezone").eq("season_year", year).maybeSingle(),
   ]);
+
+  const timezone = settingsRow?.timezone ?? "America/Los_Angeles";
 
   const sessions: LiveSessionState[] = (sessionRows ?? []).map((r) => ({
     seasonYear: year,
@@ -73,7 +76,7 @@ export default async function MatchupsPage({ params }: { params: Promise<{ year:
         Assign players into matches for each session whose course, format, and tee times are locked. Lock Matchups
         once a session is fully set to make it visible on the Website and Player Portals.
       </p>
-      <MatchupsPanel year={year} sessions={sessions} initialMatches={matches} roster={roster} />
+      <MatchupsPanel year={year} sessions={sessions} initialMatches={matches} roster={roster} timezone={timezone} />
     </div>
   );
 }

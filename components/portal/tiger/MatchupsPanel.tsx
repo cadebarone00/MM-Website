@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { matchesPerSession, playersPerTeamPerMatch } from "@/lib/live/orchestration";
-import { deriveMatchTeeTime, formatPacificTeeTime, teeTimeSlotForMatch } from "@/lib/live/sessionTeeTimes";
+import { deriveMatchTeeTime, formatTeeTimeInZone, teeTimeSlotForMatch } from "@/lib/live/sessionTeeTimes";
 import type { LiveMatch, LiveSessionState, MatchFormat } from "@/lib/live/types";
 
 export interface RosterPlayer {
@@ -90,11 +90,13 @@ export function MatchupsPanel({
   sessions,
   initialMatches,
   roster,
+  timezone,
 }: {
   year: number;
   sessions: LiveSessionState[];
   initialMatches: LiveMatch[];
   roster: RosterPlayer[];
+  timezone: string;
 }) {
   // Saved matches only ever change via a full page reload, right after a
   // successful save/remove/lock (see saveMatch/removeMatch/toggleMatchupsLock
@@ -129,14 +131,14 @@ export function MatchupsPanel({
 
   function teeTimeLabelFor(session: LiveSessionState & { format: MatchFormat }, matchNumber: number): string {
     const slot = teeTimeSlotForMatch(session.format, matchNumber);
-    const teeTime = deriveMatchTeeTime(session.date, session.matchTeeTimes[slot] ?? null);
-    if (teeTime) return formatPacificTeeTime(teeTime);
+    const teeTime = deriveMatchTeeTime(session.date, session.matchTeeTimes[slot] ?? null, timezone);
+    if (teeTime) return formatTeeTimeInZone(teeTime, timezone);
     // The session's own slots can be empty while its matches already hold a
     // real tee_time — e.g. right after session_tee_times.sql adds the column
     // to a season whose sessions were locked (and matches built) beforehand.
     // Show what the match is actually running on rather than "TBD".
     const saved = initialMatches.find((m) => m.session === session.session && m.matchNumber === matchNumber);
-    if (saved?.teeTime && !Number.isNaN(saved.teeTime.getTime())) return formatPacificTeeTime(saved.teeTime);
+    if (saved?.teeTime && !Number.isNaN(saved.teeTime.getTime())) return formatTeeTimeInZone(saved.teeTime, timezone);
     return "Tee time TBD";
   }
 
