@@ -1,7 +1,7 @@
 import { buildLiveTournamentSnapshot } from "@/lib/broadcast/liveSnapshot";
 import { liveRoundFormatArchive } from "@/lib/data/liveRoundFormatArchive";
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { CareerStatsPanel } from "@/components/portal/tiger/CareerStatsPanel";
 import { RoundFormatArchive, type RoundFormatTournament } from "@/components/portal/tiger/RoundFormatArchive";
 import { careerArchivePartnerships } from "@/lib/data/careerArchive";
@@ -36,7 +36,10 @@ export default async function CareerStatsPage() {
 
   if (isPastLeaderboardSwitchover()) {
     const snapshot = await buildLiveTournamentSnapshot(nextTournament.year, { confirmedOnly: true });
-    roundFormatTournaments.unshift({ slug: nextTournament.slug, year: nextTournament.year, venue: nextTournament.venue, orphans: [], ...liveRoundFormatArchive(snapshot, nextTournament.slug, nextTournament.year, setups) });
+    const service = createSupabaseServiceRoleClient();
+    const { data: settingsRow } = await service.from("live_tournament_settings").select("timezone").eq("season_year", nextTournament.year).maybeSingle();
+    const timezone = settingsRow?.timezone ?? "America/Los_Angeles";
+    roundFormatTournaments.unshift({ slug: nextTournament.slug, year: nextTournament.year, venue: nextTournament.venue, orphans: [], ...liveRoundFormatArchive(snapshot, nextTournament.slug, nextTournament.year, setups, timezone) });
   }
 
   return (
