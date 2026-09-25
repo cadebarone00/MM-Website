@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Radio } from "lucide-react";
 import { CompactMatchRow } from "./CompactMatchRow";
 import { centralDateLabel, currentRoundDay, LIVE_START_LABEL } from "./matchUtils";
@@ -99,9 +100,20 @@ function DaySelector({ days, activeDay, onSelect }: { days: number[]; activeDay:
 }
 
 export function TeamMatchesBoard({ tournament, live }: { tournament: Tournament; live: boolean }) {
+  return <Suspense fallback={<p role="status">Loading matches…</p>}><DayMatchesBoard tournament={tournament} live={live} /></Suspense>;
+}
+
+function DayMatchesBoard({ tournament, live }: { tournament: Tournament; live: boolean }) {
   const days = [...new Set(tournament.matches.map((m) => m.day))].sort((a, b) => a - b);
-  const [userPickedDay, setUserPickedDay] = useState<number | null>(null);
-  const day = userPickedDay ?? currentRoundDay(tournament);
+  const searchParams = useSearchParams();
+  const requestedDay = Number(searchParams.get("day"));
+  const day = days.includes(requestedDay) ? requestedDay : currentRoundDay(tournament);
+
+  function selectDay(day: number) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("day", String(day));
+    window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+  }
 
   if (days.length === 0) {
     if (!live) {
@@ -122,7 +134,7 @@ export function TeamMatchesBoard({ tournament, live }: { tournament: Tournament;
 
   return (
     <div>
-      <DaySelector days={days} activeDay={activeDay} onSelect={setUserPickedDay} />
+      <DaySelector days={days} activeDay={activeDay} onSelect={selectDay} />
 
       <div className="flex overflow-hidden rounded-sm border-y border-gold-300">
         <div className="flex h-10 flex-1 items-center justify-between bg-maroon-700 px-3 text-white">

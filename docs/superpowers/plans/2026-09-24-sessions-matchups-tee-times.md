@@ -443,11 +443,11 @@ git commit -m "Rename orchestration.ts to the Session/Match vocabulary"
 ### Task 5: Rename the remaining `lib/live/*.ts` consumers
 
 **Files:**
-- Modify: `lib/live/currentRoundForPlayer.ts` (+ its test if one exists — check for `currentRoundForPlayer.test.ts`), `lib/live/officialMatchState.ts`, `lib/live/syncLockedRound.ts`, `lib/live/matchProfile.ts` (+ `matchProfile.test.ts`), `lib/live/playerProfile.ts` (+ test if present), `lib/live/publishOfficialMatchState.ts`, `lib/live/publishMatchOdds.ts`, `lib/live/previewMatchState.ts` (+ `previewMatchState.test.ts`), `lib/live/scoringPreviewRoom.ts` (+ test if present)
+- Modify: `lib/live/currentRoundForPlayer.ts` (+ `lib/live/currentRoundForPlayer.test.ts` if it exists), `lib/live/officialMatchState.ts`, `lib/live/syncLockedRound.ts`, `lib/live/matchProfile.ts` (+ `matchProfile.test.ts`), `lib/live/playerProfile.ts` (+ test if present), `lib/live/publishOfficialMatchState.ts`, `lib/live/publishMatchOdds.ts`, `lib/live/previewMatchState.ts` (+ `previewMatchState.test.ts`), `lib/live/scoringPreviewRoom.ts` (+ test if present), `lib/live/scoringProgress.ts`, `app/portal/scoring/page.tsx`, `app/portal/scoring/play/page.tsx`, `lib/portal/liveMatchCards.ts` (this last group — Step 9 below — are consumers of this file's own renamed exports, found by a repo-wide search during design; do not skip them).
 
 **Interfaces:**
 - Consumes: `LiveSessionState`, `LiveMatch`, `matchesPerSession`, `sessionIsComplete` from Tasks 3–4.
-- Produces: `findCurrentSessionForPlayer` (was `findCurrentRoundForPlayer`), `findMatchesForPlayer` (unchanged name — already generic), `findUpcomingMatchesForPlayer` (unchanged), `pickCurrentSession` (was `pickCurrentRound`), `CurrentSessionResult` (was `CurrentRoundResult`, with its `round` field renamed to `session: LiveSessionState`). Task 6, 9, 10 import these new names.
+- Produces: `findCurrentSessionForPlayer` (was `findCurrentRoundForPlayer`), `findMatchesForPlayer` (unchanged name — already generic), `findUpcomingMatchesForPlayer` (unchanged), `pickCurrentSession` (was `pickCurrentRound`), `CurrentSessionResult` (was `CurrentRoundResult`, with its `round` field renamed to `session: LiveSessionState`). Tasks 6, 9, 10 import these new names. Task 12 Step 7 later renames `LiveMatchCardInput.round`→`.session` in `lib/portal/matchCards.ts` — this task's Step 9 deliberately leaves the `round:` *key* passed to `liveMatchCard(...)` from `liveMatchCards.ts` unchanged (only its value), so the two tasks don't conflict over that one call site.
 
 - [ ] **Step 1: `lib/live/currentRoundForPlayer.ts`**
 
@@ -2498,7 +2498,37 @@ export function liveMatchCard(input: LiveMatchCardInput): PortalMatchCard {
   // ...rest of the function unchanged
 ```
 
-Find every caller that builds a `LiveMatchCardInput` (grep for `LiveMatchCardInput` and `liveMatchCard(`) and rename the `round:` key they pass to `session:`.
+Two confirmed callers, both found by grepping `LiveMatchCardInput|liveMatchCard\(` during design — fix both exactly:
+
+`lib/portal/liveMatchCards.ts` (already touched by Task 5 Step 9, which deliberately left this one line's key as `round:` for this exact reason): change
+
+```typescript
+round: session.session,
+```
+
+to
+
+```typescript
+session: session.session,
+```
+
+`components/portal/ScoringPanel.tsx` line ~171, inside its `liveMatchCard({ ... })` call — this component's own `round: number` prop is the deep live-scoring-engine wire parameter (Task 5 Step 9's carve-out: never renamed). Change the shorthand property:
+
+```typescript
+    const card = liveMatchCard({
+      round,
+```
+
+to
+
+```typescript
+    const card = liveMatchCard({
+      session: round,
+```
+
+(only this one line changes — every other `round` in `ScoringPanel.tsx`, including its own prop declaration, the `/api/portal/scoring/*` calls, the Realtime filter, and the submission queue payload, stays exactly as-is, per the same carve-out).
+
+Re-run the grep once more after these two fixes to confirm no third caller was missed.
 
 - [ ] **Step 8: `lib/data/liveRoundFormatArchive.ts`**
 

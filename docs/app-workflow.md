@@ -43,6 +43,7 @@ flowchart TD
   O --> B[Leaderboard, broadcast and live markets]
   %% Desktop leaderboard match lists are centered at 40vw with taller rows; ticker width and mobile layout are unchanged.
   B --> MP[Match profile: compact opponents, scorecard and odds]
+  %% Match Back links return to the match day; leaderboard day selection lives in the URL for browser Back and reloads.
   Z -. 2024-2025 training and 2026 hole replay .-> MP
   O --> F[Tiger closeout and MM Coins settlement]
   %% My Handicap score list shows only the order dropdown followed by scores; explanatory paragraphs are removed.
@@ -467,6 +468,10 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+### 2026-09-24 — Preserve the leaderboard day when returning from a match
+
+Previously, returning from a match reset the match list to its default day (Day 4 for completed tournaments). Live and archived match Back links now open the leaderboard with the match's day selected. The leaderboard stores day selections in the URL so browser Back and reloads also retain the chosen day; missing or unavailable days keep the existing default. This also works after visiting a player from a match and returning. Affected sections: public leaderboard and match navigation, whole-app flowchart. Implemented locally; deployment not verified.
 
 **2026-09-24 - Small leftward icon adjustment (implemented; deployment not verified).** Shifted the home-screen MM another 2% of the square's width to the left. Letter size, outlines and vertical spacing are unchanged. Applies to section 3's home-screen artwork and the Mermaid annotation; workflow paths are unchanged.
 
