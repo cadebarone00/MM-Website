@@ -9,7 +9,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 ```mermaid
 flowchart TD
   %% Page and major section titles share the official Spectral Bold Maroon Masters title font.
-  %% Home-screen bookmarks use wider gold-outline Spectral italic MM on #240001, nudged another 2% left with approximately 10% top and bottom margins and intentional horizontal cropping; Apple icon metadata and Android manifest supply PNG assets.
+  %% Home-screen bookmarks use shorter, broad gold-outline Spectral italic MM on #240001, shifted left with approximately 20% top and 15% bottom margins and intentional horizontal cropping; Apple icon metadata and Android manifest supply PNG assets.
   %% Optional password-status migration derives player_slots.password_created from the linked Auth password credential; deployment pending.
   %% Verified password setup displays the account username and authentication email above the password field.
   %% Invite URL fragments are exchanged for session cookies before password entry; recovery codes use the server callback. Invalid links offer a fresh reset.
@@ -116,7 +116,7 @@ For example, in September 2026, My Matches can correctly show 2026 matches as Pa
 
 ## 3. Public website and navigation
 
-Home-screen bookmarks use a custom icon: dark maroon `#240001`, matching the scoring portal header, with thick gold `#C9A86E` outlines around Spectral Semibold Italic MM lettering adapted from the broadcast holding screen. The mark is slightly wider and shorter than the previous oversized design and remains shifted left. Its outlines sit approximately 10% from both the top and bottom edges. The oversized artwork intentionally crops at the left and right edges. The letters have maroon interiors and no decorative border or accent rules. `app/apple-icon.png` supplies Apple's 180px touch icon; `app/manifest.ts` supplies Android/browser 192px and 512px PNG icons from `public/icons`. The manifest retains browser display mode; this change does not add offline support or redesign the installed layout. Device launchers may apply their own masks. Existing saved icons may need to be removed and re-added after deployment.
+Home-screen bookmarks use a custom icon: dark maroon `#240001`, matching the scoring portal header, with thick gold `#C9A86E` outlines around Spectral Semibold Italic MM lettering adapted from the broadcast holding screen. The mark has shorter, broader proportions and remains shifted left. Its outlines sit approximately 20% below the top and 15% above the bottom. The oversized artwork intentionally crops at the left and right edges. The letters have maroon interiors and no decorative border or accent rules. `app/apple-icon.png` supplies Apple's 180px touch icon; `app/manifest.ts` supplies Android/browser 192px and 512px PNG icons from `public/icons`. The manifest retains browser display mode; this change does not add offline support or redesign the installed layout. Device launchers may apply their own masks. Existing saved icons may need to be removed and re-added after deployment.
 
 On live and archived leaderboards, Match Play boards are centered in a 40vw column at desktop widths (1024px and above), capped at the available content width. Desktop match rows add 10px vertical padding per player name instead of mobile's 6px. The ticker, individual standings, and mobile layout retain their existing sizing.
 
@@ -468,6 +468,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-25 - Shorter, broader home-screen MM (implemented; deployment not verified).** Reduced the monogram's height while retaining its width and leftward placement, giving the letters broader proportions. The previous roughly 10% top and bottom margins are now approximately 20% above and 15% below the outlines. Updated section 3 and the Mermaid annotation; workflow paths are unchanged.
 
 ### 2026-09-24 — Preserve the leaderboard day when returning from a match
 
