@@ -10,9 +10,9 @@ import styles from "./ScheduleAccordion.module.css";
 export function ScheduleAccordion({ rounds, year, initialDate }: { rounds: UpcomingRoundScheduleItem[]; year: number; initialDate: string }) {
   const libraryDialog = useRef<HTMLDialogElement>(null);
   const photosByCourse = coursePhotos as Record<string, { name: string; main: string[]; library: string[] }>;
-  const panels = Array.from({ length: 8 }, (_, index) => {
+  const panels = Array.from({ length: Math.max(rounds.length, ...rounds.map(round => round.session), 1) }, (_, index) => {
     const round = rounds.find(round => round.session === index + 1);
-    const date = round?.date ?? `${year}-01-0${6 + Math.floor(index / 2)}`;
+    const date = round?.date ?? "Date pending";
     const courseKey = (round?.courseName ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
     const candidates = Object.values(photosByCourse).filter(entry => {
       const key = entry.name.replace(/\s+photos$/i, "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -50,12 +50,12 @@ export function ScheduleAccordion({ rounds, year, initialDate }: { rounds: Upcom
       accumulated += Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
       if (Math.abs(accumulated) < 40) return;
       const direction = Math.sign(accumulated);
-      setActive(index => Math.max(0, Math.min(7, index + direction)));
+      setActive(index => Math.max(0, Math.min(panels.length - 1, index + direction)));
       accumulated = 0;
     };
     container.addEventListener("wheel", wheel, { passive: false });
     return () => { container.removeEventListener("wheel", wheel); if (timer.current) clearTimeout(timer.current); };
-  }, []);
+  }, [panels.length]);
 
   const onScroll = () => {
     if (window.innerWidth >= 1024 || Date.now() < lockedUntil.current) return;

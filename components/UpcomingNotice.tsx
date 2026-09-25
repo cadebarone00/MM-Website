@@ -1,5 +1,7 @@
+"use client";
+import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 import { CalendarClock } from "lucide-react";
-import { nextTournament } from "@/lib/data";
+
 import type { NextTournamentOverride } from "@/lib/data/types";
 
 function isSet(value: string): boolean {
@@ -7,6 +9,7 @@ function isSet(value: string): boolean {
 }
 
 export function UpcomingNotice({ what, nextTournamentOverride }: { what: string; nextTournamentOverride: NextTournamentOverride }) {
+  const { nextTournament } = useSeasonCatalog();
   const rosterKnown = !!nextTournament.roster && (nextTournament.roster.maroon.length > 0 || nextTournament.roster.white.length > 0);
   const details = [nextTournamentOverride.venue, nextTournament.location].filter(isSet).join(" · ");
 

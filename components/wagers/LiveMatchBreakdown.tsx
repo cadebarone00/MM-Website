@@ -1,10 +1,11 @@
 "use client";
-
+import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 import { MatchBreakdownView } from "./MatchBreakdownView";
 import { DETAIL_POLL_MS, useLiveTournament } from "@/lib/hooks/useLiveTournament";
-import { nextTournament } from "@/lib/data";
+
 
 export function LiveMatchBreakdown({ tournamentSlug, matchId }: { tournamentSlug: string; matchId: string }) {
+  const { nextTournament } = useSeasonCatalog();
   const { tournament, loading, payload } = useLiveTournament(DETAIL_POLL_MS);
 
   if (loading && !payload) {

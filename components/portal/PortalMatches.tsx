@@ -1,9 +1,9 @@
 "use client";
-
+import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { getPlayerLastName } from "@/lib/data/players";
-import { nextTournament } from "@/lib/data";
+
 import type { PortalMatchCard } from "@/lib/portal/matchCards";
 
 function lastName(player: string) {
@@ -79,6 +79,7 @@ function MatchCard({ card }: { card: PortalMatchCard }) {
 }
 
 export function PortalMatches({ matches, team, year }: { matches: PortalMatchCard[]; team: "maroon" | "white" | null; year: number }) {
+  const { nextTournament } = useSeasonCatalog();
   const track = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const [selected, setSelected] = useState<PortalMatchCard["status"]>("Live");

@@ -1,9 +1,9 @@
 "use client";
-
+import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 import Link from "next/link";
 import { CalendarDays } from "lucide-react";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
-import { nextTournament } from "@/lib/data";
+
 import type { NextTournamentOverride } from "@/lib/data/types";
 import type { UpcomingRoundScheduleItem } from "@/lib/data/activeSeasonOverlay";
 
@@ -13,6 +13,7 @@ function placeholderDateLabel(startDate: string): string {
 }
 
 export function QuickScheduleCard({ nextTournamentOverride, rounds }: { nextTournamentOverride: NextTournamentOverride; rounds: UpcomingRoundScheduleItem[] }) {
+  const { nextTournament } = useSeasonCatalog();
   const { tournament } = useLiveTournament();
   const liveMatch = tournament.matches.find((match) => match.status === "live");
 

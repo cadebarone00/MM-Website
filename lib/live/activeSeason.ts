@@ -1,3 +1,4 @@
+import { getSeasonCalendar } from "./seasonCalendarServer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { SEASON_YEARS } from "@/lib/live/seasonYears";
 
@@ -16,5 +17,6 @@ export async function getActiveSeasonYear(): Promise<number> {
     console.warn("No active season is configured; using the default season.");
     return SEASON_YEARS[0];
   }
-  return data.season_year;
+  if (data.season_year === 2034) return 2034;
+  return (await getSeasonCalendar()).activeYear;
 }

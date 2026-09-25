@@ -8,16 +8,12 @@ import { CupSection } from "@/components/recap/CupSection";
 import { MatchesSection } from "@/components/recap/MatchesSection";
 import { LeaderboardTable } from "@/components/leaderboard/LeaderboardTable";
 import { SectionHead } from "@/components/home/SectionHead";
-import { champion, latestCompleted, pastTournaments } from "@/lib/data";
-
-const champions = [...pastTournaments]
-  .sort((a, b) => b.year - a.year)
-  .filter((t) => t.individualChampion)
-  .map((t) => ({ year: t.year, playerId: t.individualChampion as string, photo: t.individualChampionPhoto ?? null }));
-
-const pastYearsDescending = [...pastTournaments].sort((a, b) => b.year - a.year);
+import { champion } from "@/lib/data";
+import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 
 function YearDropdown({ value, onChange }: { value: number; onChange: (year: number) => void }) {
+  const { pastTournaments } = useSeasonCatalog();
+  const pastYearsDescending = [...pastTournaments].sort((a,b)=>b.year-a.year);
   return (
     <div className="group relative z-30 inline-block">
       <button
@@ -52,6 +48,15 @@ function YearDropdown({ value, onChange }: { value: number; onChange: (year: num
 }
 
 export function HistoryPageContent() {
+  const { latestCompleted, pastTournaments } = useSeasonCatalog();
+const champions = [...pastTournaments]
+  .sort((a, b) => b.year - a.year)
+  .filter((t) => t.individualChampion)
+  .map((t) => ({ year: t.year, playerId: t.individualChampion as string, photo: t.individualChampionPhoto ?? null }));
+
+const pastYearsDescending = [...pastTournaments].sort((a, b) => b.year - a.year);
+
+
   const [year, setYear] = useState(latestCompleted.year);
   const selected = pastYearsDescending.find((t) => t.year === year) ?? latestCompleted;
   const winnerText = champion(selected) === "maroon" ? "Maroon Wins" : "White Wins";

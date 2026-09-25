@@ -1,9 +1,9 @@
 "use client";
-
+import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getPlayerDisplayName } from "@/lib/data/players";
-import { nextTournament } from "@/lib/data";
+
 import { liveMatchMarket, type LiveOddsSnapshot } from "@/lib/wagers/liveMatchMarket";
 import { OddsButton } from "@/components/wagers/OddsButton";
 
@@ -18,6 +18,7 @@ function names(players: string[]) { return players.map(getPlayerDisplayName).joi
 /** Wagers' live-season match market list. It reads saved snapshots instead
  * of reproducing probability logic in the browser. */
 export function LiveMatchesList() {
+  const { nextTournament } = useSeasonCatalog();
   const [entries, setEntries] = useState<Entry[] | null>(null);
 
   useEffect(() => {

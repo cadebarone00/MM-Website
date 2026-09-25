@@ -1,3 +1,4 @@
+import { nativeSeasonYear } from "@/lib/data/seasonCatalog";
 import { matchRound } from "@/lib/data/roundIdentity";
 import { notFound } from "next/navigation";
 import { MatchProfile } from "@/components/match/MatchProfile";
@@ -5,7 +6,7 @@ import { LiveMatchProfile } from "@/components/match/LiveMatchProfile";
 import { LiveMatchScorecard } from "@/components/match/LiveMatchScorecard";
 import { historicalMatchScorecard } from "@/lib/data/historicalMatchScorecard";
 import { getScorecardsForTournament } from "@/lib/data/archivedScorecards";
-import { pastTournaments, nextTournament, getTournament } from "@/lib/data";
+import { pastTournaments, getTournament } from "@/lib/data";
 import { getCombinedCareerArchive } from "@/lib/data/combinedCareerArchive";
 import { reconstructHistoricalMatchOdds } from "@/lib/odds/historicalMatchOdds";
 
@@ -16,7 +17,7 @@ export function generateStaticParams() {
 export default async function MatchBreakdownPage({ params }: { params: Promise<{ slug: string; matchId: string }> }) {
   const { slug, matchId } = await params;
 
-  if (slug === nextTournament.slug) {
+  if (nativeSeasonYear(slug)) {
     return <LiveMatchProfile key={matchId} tournamentSlug={slug} matchId={matchId} />;
   }
 

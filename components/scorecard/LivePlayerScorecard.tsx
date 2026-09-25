@@ -1,10 +1,10 @@
 "use client";
-
+import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 import { PlayerBioSection } from "./PlayerBioSection";
 import { PlayerProfileHeader } from "@/components/scorecard/PlayerProfileHeader";
 import { PlayerScorecardView } from "./PlayerScorecardView";
 import { DETAIL_POLL_MS, useLiveTournament } from "@/lib/hooks/useLiveTournament";
-import { nextTournament, isLiveNow } from "@/lib/data";
+
 import { getPlayerSlug, getPlayerDisplayName, getPlayerAvatar, getPlayerProfile } from "@/lib/data/players";
 import type { Team } from "@/lib/data/types";
 import { placementValueLabel } from "@/lib/leaderboard/placement";
@@ -18,6 +18,7 @@ export function LivePlayerScorecard({
   player: string;
   backHref?: string;
 }) {
+  const { nextTournament, isLiveNow } = useSeasonCatalog();
   const { tournament, loading, payload, error } = useLiveTournament(DETAIL_POLL_MS, `/api/live/players/${encodeURIComponent(getPlayerSlug(player))}`);
 
   if (loading && !payload) {

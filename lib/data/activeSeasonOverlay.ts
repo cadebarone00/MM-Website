@@ -1,3 +1,5 @@
+import { getSeasonCatalog, nativeSeasonYear } from "./seasonCatalog";
+import { getSeasonCalendar } from "@/lib/live/seasonCalendarServer";
 // lib/data/activeSeasonOverlay.ts
 //
 // Server-only. This file imports @/lib/supabase/server, which pulls in
@@ -8,7 +10,7 @@
 // — that would poison every Client Component that imports anything else
 // from lib/data/index.ts.
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { nextTournament, nextVenue, pastVenues } from "./index";
+import { pastVenues } from "./index";
 import { buildVenueCoursesFromLive } from "./liveCourseSchedule";
 import { filterLockedRoster } from "./confirmedRoster";
 import type { UpcomingTournament, VenueSchedule, VenueCourse, NextTournamentOverride } from "./types";
@@ -17,35 +19,11 @@ import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { getAllPlayerRows } from "@/lib/portal/allPlayers";
 import type { Team } from "./types";
 
-interface ActiveSeasonSettings {
-  seasonYear: number;
-  venueName: string | null;
-  beginDate: string | null;
-  endDate: string | null;
-}
-
 export interface UpcomingRoundScheduleItem {
   session: number;
   date: string | null;
   courseName: string | null;
   format: string | null;
-}
-
-async function getActiveSeasonSettings(): Promise<ActiveSeasonSettings | null> {
-  const service = createSupabaseServiceRoleClient();
-  const { data: active } = await service.from("live_active_season").select("season_year").eq("id", true).maybeSingle();
-  if (!active) return null;
-  const { data: settings } = await service
-    .from("live_tournament_settings")
-    .select("venue_name, begin_date, end_date")
-    .eq("season_year", active.season_year)
-    .maybeSingle();
-  return {
-    seasonYear: active.season_year,
-    venueName: settings?.venue_name ?? null,
-    beginDate: settings?.begin_date ?? null,
-    endDate: settings?.end_date ?? null,
-  };
 }
 
 // Formats an inclusive date range the same way the hand-written
@@ -73,15 +51,7 @@ export function formatDateLabel(begin: string, end: string): string {
  * untouched if no active-season row/settings exist yet.
  */
 export async function getNextTournament(): Promise<UpcomingTournament> {
-  const override = await getActiveSeasonSettings();
-  if (!override || override.seasonYear !== nextTournament.year) return nextTournament;
-  return {
-    ...nextTournament,
-    venue: override.venueName ?? nextTournament.venue,
-    startDate: override.beginDate ?? nextTournament.startDate,
-    endDate: override.endDate ?? nextTournament.endDate,
-    dateLabel: override.beginDate && override.endDate ? formatDateLabel(override.beginDate, override.endDate) : nextTournament.dateLabel,
-  };
+  return (await getSeasonCatalog()).nextTournament;
 }
 
 /**
@@ -107,19 +77,15 @@ async function getActiveSeasonCourses(seasonYear: number): Promise<VenueCourse[]
  * `courses` array, which has never been filled in for any year.
  */
 export async function getNextVenue(): Promise<VenueSchedule> {
-  const override = await getActiveSeasonSettings();
-  if (!override || override.seasonYear !== nextVenue.year) return nextVenue;
-  const courses = await getActiveSeasonCourses(override.seasonYear);
-  return {
-    ...nextVenue,
-    venueName: override.venueName ?? nextVenue.venueName,
-    courses: courses.length ? courses : nextVenue.courses,
-  };
+  const current = await getNextTournament();
+  const courses = await getActiveSeasonCourses(current.year);
+  return { year: current.year, venueName: current.venue, courses, sessions: [] };
 }
 
 /** Async counterpart of lib/data/index.ts's getVenueBySlug — same slug match, live-overlaid venue. */
 export async function getVenueBySlugAsync(slug: string): Promise<VenueSchedule | undefined> {
-  if (slug === nextTournament.slug) return getNextVenue();
+  const year = nativeSeasonYear(slug);
+  if (year) { const courses = await getActiveSeasonCourses(year); return { year, courses, sessions: [] }; }
   return pastVenues[slug];
 }
 
@@ -135,20 +101,16 @@ export async function getNextTournamentOverride(): Promise<NextTournamentOverrid
  * setup. Courses and formats are never duplicated in static website data:
  * changing either field in Tiger Center changes this list automatically.
  */
-export async function getUpcomingRoundSchedule(): Promise<UpcomingRoundScheduleItem[]> {
+export async function getUpcomingRoundSchedule(seasonYear?: number): Promise<UpcomingRoundScheduleItem[]> {
   const service = createSupabaseServiceRoleClient();
-  const { data: active } = await service
-    .from("live_active_season")
-    .select("season_year")
-    .eq("id", true)
-    .maybeSingle();
+  const active = { season_year: (await getSeasonCalendar()).activeYear };
 
   if (!active) return [];
 
   const { data: rounds, error } = await service
     .from("live_round_state")
     .select("round, date, format, course_id")
-    .eq("season_year", active.season_year)
+    .eq("season_year", seasonYear ?? active.season_year)
     .eq("course_locked", true)
     .order("round");
 
@@ -177,11 +139,7 @@ export async function getUpcomingRoundSchedule(): Promise<UpcomingRoundScheduleI
  */
 export async function getConfirmedRoster(): Promise<RosterEntry[]> {
   const service = createSupabaseServiceRoleClient();
-  const { data: active } = await service
-    .from("live_active_season")
-    .select("season_year")
-    .eq("id", true)
-    .maybeSingle();
+  const active = { season_year: (await getSeasonCalendar()).activeYear };
 
   if (!active) return [];
 

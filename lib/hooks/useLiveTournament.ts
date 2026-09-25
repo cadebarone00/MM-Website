@@ -1,5 +1,6 @@
 "use client";
 
+import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 import { useEffect, useState } from "react";
 import { mergeLiveTournament, type LiveFeedPayload } from "@/lib/data/live";
 import { overlayConfirmedRoster } from "@/lib/data/confirmedRosterOverlay";
@@ -9,6 +10,8 @@ export const LIVE_POLL_MS = 10000;
 export const DETAIL_POLL_MS = 5000;
 
 export function useLiveTournament(pollMs = LIVE_POLL_MS, endpoint = "/api/live-feed") {
+  const catalog = useSeasonCatalog();
+  if (catalog.scheduled && endpoint === "/api/live-feed") endpoint = "/api/season-feed";
   const [payload, setPayload] = useState<LiveFeedPayload | null>(null);
   const [confirmedRoster, setConfirmedRoster] = useState<RosterEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -53,9 +56,10 @@ export function useLiveTournament(pollMs = LIVE_POLL_MS, endpoint = "/api/live-f
       cancelled = true;
       clearInterval(id);
     };
-  }, [pollMs, endpoint]);
+  }, [pollMs, endpoint, catalog.nextTournament.year]);
 
-  const tournament = overlayConfirmedRoster(mergeLiveTournament(payload), confirmedRoster);
+  const merged = mergeLiveTournament(payload);
+  const tournament = overlayConfirmedRoster({ ...merged, ...catalog.nextTournament, roster: merged.roster }, confirmedRoster);
 
   return { tournament, payload, error, loading };
 }

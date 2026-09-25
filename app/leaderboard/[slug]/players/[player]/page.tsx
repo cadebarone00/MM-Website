@@ -1,8 +1,9 @@
+import { getSeasonCatalog, getCatalogTournament } from "@/lib/data/seasonCatalog";
 import { notFound } from "next/navigation";
 import { PlayerScorecardView } from "@/components/scorecard/PlayerScorecardView";
 import { PlayerProfileHeader } from "@/components/scorecard/PlayerProfileHeader";
 import { LivePlayerScorecard } from "@/components/scorecard/LivePlayerScorecard";
-import { pastTournaments, nextTournament, getTournament, getPlayerScorecard, playersOf } from "@/lib/data";
+import { pastTournaments, nextTournament, getPlayerScorecard, playersOf } from "@/lib/data";
 import { getPlayerSlug, getPlayerAvatar, getPlayerDisplayName, getPlayerProfile } from "@/lib/data/players";
 import { placementValueLabel } from "@/lib/leaderboard/placement";
 import { getScorecardsForTournament, getShotVideoUrls } from "@/lib/data/archivedScorecards";
@@ -21,12 +22,13 @@ export default async function PlayerScorecardPage({
   searchParams: Promise<{ fromMatch?: string | string[] }>;
 }) {
   const { slug, player } = await params;
+  const catalog = await getSeasonCatalog();
   const { fromMatch } = await searchParams;
   const backHref = typeof fromMatch === "string" && fromMatch.length > 0
     ? `/leaderboard/${encodeURIComponent(slug)}/matches/${encodeURIComponent(fromMatch)}`
     : `/leaderboard/${slug}`;
 
-  if (slug === nextTournament.slug) {
+  if (slug === catalog.nextTournament.slug) {
     return (
       <div className="max-w-[1200px] mx-auto px-7 pt-8 pb-16">
         <LivePlayerScorecard tournamentSlug={slug} player={player} backHref={backHref} />
@@ -34,7 +36,7 @@ export default async function PlayerScorecardPage({
     );
   }
 
-  const tournament = getTournament(slug);
+  const tournament = await getCatalogTournament(slug);
   if (!tournament) notFound();
 
   const scorecards = await getScorecardsForTournament(tournament);

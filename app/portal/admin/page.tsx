@@ -1,3 +1,5 @@
+import { SeasonOverview } from "@/components/portal/tiger/SeasonOverview";
+import { getSeasonOverview } from "@/lib/live/seasonOverviewServer";
 // app/portal/admin/page.tsx
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -16,6 +18,7 @@ export default async function TigerCenterPage() {
   if (!profile?.is_host) redirect("/");
 
   const activeYear = await getActiveSeasonYear();
+  const overview = await getSeasonOverview();
   const service = createSupabaseServiceRoleClient();
   const [{ data: sessionRows }, { data: courseRows }] = await Promise.all([
     service.from("live_round_state").select("round, date, format, course_id, course_locked, matchups_locked, started").eq("season_year", activeYear).order("round"),
@@ -26,11 +29,12 @@ export default async function TigerCenterPage() {
   const startable: StartableSession | null = nextSession ? { year: activeYear, session: nextSession.round, format: nextSession.format ?? "", courseName: nextSession.course_id ? courseNameById.get(nextSession.course_id) ?? null : null, date: nextSession.date } : null;
 
   return (
-    <div className="mx-auto max-w-[720px] px-4 py-12 sm:px-7">
+    <div className="mx-auto max-w-[1100px] px-4 py-12 sm:px-7">
       <h1 className="font-serif text-3xl font-bold text-ink-900">The Tiger Center</h1>
       <TestSeasonPanel activeYear={activeYear} />
       {startable && <StartSessionBanner session={startable} />}
       <MatchCloseoutCards />
+      <SeasonOverview initial={overview} />
       <section className="mt-6 rounded-xl border border-gold-300 bg-cream-50 p-5">
         <p className="font-condensed text-2xs font-bold uppercase tracking-[0.16em] text-ink-500">Year-Specific Setup</p>
         <h2 className="mt-1 font-serif text-2xl font-bold text-ink-900">{activeYear} tournament operations</h2>

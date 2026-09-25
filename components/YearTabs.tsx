@@ -1,7 +1,10 @@
+"use client";
+import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 import Link from "next/link";
-import { pastTournaments, nextTournament, isLiveNow } from "@/lib/data";
+
 
 export function YearTabs({ basePath, activeSlug, includeLive = false }: { basePath: string; activeSlug: string; includeLive?: boolean }) {
+  const { pastTournaments, nextTournament, isLiveNow } = useSeasonCatalog();
   const items = [
     ...pastTournaments.map((t) => ({ slug: t.slug, label: String(t.year) })),
     ...(includeLive ? [{ slug: nextTournament.slug, label: isLiveNow() ? `${nextTournament.year} · Live` : `${nextTournament.year}` }] : []),

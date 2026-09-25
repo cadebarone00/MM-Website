@@ -1,6 +1,4 @@
 import { redirect } from "next/navigation";
-import { latestCompleted, nextTournament, isLiveNow } from "@/lib/data";
-
-export default function TeamsIndex() {
-  redirect(`/teams/${isLiveNow() ? nextTournament.slug : latestCompleted.slug}`);
-}
+import { getSeasonCatalog } from "@/lib/data/seasonCatalog";
+export const dynamic = "force-dynamic";
+export default async function Index(){const catalog=await getSeasonCatalog();redirect("/teams/"+(catalog.leaderboardOpen?catalog.nextTournament.slug:catalog.latestCompleted.slug));}

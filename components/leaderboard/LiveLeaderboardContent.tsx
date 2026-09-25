@@ -1,11 +1,11 @@
 "use client";
-
+import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { PointsRibbon } from "./PointsRibbon";
 import { LeaderboardBoard } from "./LeaderboardBoard";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
-import { getNextTournamentStatus, latestCompleted } from "@/lib/data";
+
 import { formatViewerLocalTeeTime } from "@/lib/live/viewerLocalTime";
 import type { RealMatch, Tournament } from "@/lib/data/types";
 
@@ -56,6 +56,7 @@ function timeAgo(iso: string): string {
  * posted yet" reads honestly if the feed hasn't caught up yet.
  */
 export function LiveLeaderboardContent() {
+  const { getNextTournamentStatus, latestCompleted } = useSeasonCatalog();
   const { tournament, payload, error, loading } = useLiveTournament();
   const [officialEntries, setOfficialEntries] = useState<OfficialEntry[] | null>(null);
   const [officialStandings, setOfficialStandings] = useState<OfficialStanding[] | null>(null);

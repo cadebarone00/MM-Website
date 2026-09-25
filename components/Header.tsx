@@ -1,5 +1,5 @@
 "use client";
-
+import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 import Link from "next/link";
 import { useAreaBack } from "@/components/nav/AreaNavigation";
 import Image from "next/image";
@@ -15,7 +15,7 @@ import { MorePanel, MORE_LINKS, onOpenMoreMenuRequested } from "@/components/nav
 import { AccountMenu } from "@/components/nav/AccountMenu";
 import { useAccountSession } from "@/lib/useAccountSession";
 import { getPlayerAvatar, getPlayerDisplayName } from "@/lib/data/players";
-import { latestCompleted, nextTournament, champion, isLiveNow, fmtPt } from "@/lib/data";
+import { champion, fmtPt } from "@/lib/data";
 import type { NextTournamentOverride } from "@/lib/data/types";
 
 const nav = [
@@ -53,6 +53,7 @@ function isHomePage(pathname: string): boolean {
 }
 
 export function Header({ nextTournamentOverride }: { nextTournamentOverride: NextTournamentOverride }) {
+  const { latestCompleted, nextTournament, isLiveNow } = useSeasonCatalog();
   const pathname = usePathname();
   const back = useAreaBack();
   const live = isLiveNow();

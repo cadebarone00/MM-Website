@@ -1,7 +1,8 @@
+import { getSeasonCatalog, getCatalogTournament } from "@/lib/data/seasonCatalog";
 import { notFound, redirect } from "next/navigation";
 import { YearLeaderboardContent } from "@/components/leaderboard/YearLeaderboardContent";
 import { LiveLeaderboardContent } from "@/components/leaderboard/LiveLeaderboardContent";
-import { pastTournaments, nextTournament, latestCompleted, getTournament, isPastLeaderboardSwitchover } from "@/lib/data";
+import { pastTournaments, nextTournament } from "@/lib/data";
 import { getScorecardsForTournament } from "@/lib/data/archivedScorecards";
 
 export function generateStaticParams() {
@@ -10,13 +11,14 @@ export function generateStaticParams() {
 
 export default async function LeaderboardYearPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  const catalog = await getSeasonCatalog();
 
-  if (slug === nextTournament.slug) {
+  if (slug === catalog.nextTournament.slug) {
     // Before the season switchover, `nextTournament` isn't live yet and has
     // nothing to show — send visitors to the latest completed tournament
     // instead of a dead-end empty page.
-    if (!isPastLeaderboardSwitchover()) {
-      redirect(`/leaderboard/${latestCompleted.slug}`);
+    if (!catalog.leaderboardOpen) {
+      redirect(`/leaderboard/${catalog.latestCompleted.slug}`);
     }
     return (
       <div className="max-w-[1200px] mx-auto px-4 pb-8 sm:px-7 sm:pb-16">
@@ -25,7 +27,7 @@ export default async function LeaderboardYearPage({ params }: { params: Promise<
     );
   }
 
-  const tournament = getTournament(slug);
+  const tournament = await getCatalogTournament(slug);
   if (!tournament) notFound();
 
   const scorecards = await getScorecardsForTournament(tournament);

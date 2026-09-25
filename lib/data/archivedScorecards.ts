@@ -1,4 +1,5 @@
 // lib/data/archivedScorecards.ts
+import { nativeSeasonYear, getSeasonTournament } from "./seasonCatalog";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { r2PublicUrl } from "@/lib/r2/client";
 import type { HoleStat, PlayerScorecard, RoundScorecard, Team, Tournament } from "./types";
@@ -197,6 +198,8 @@ function teamFor(roster: Tournament["roster"], playerId: string): Team {
  * `scorecards2025`/`scorecards2026` file imports.
  */
 export async function getScorecardsForTournament(tournament: Pick<Tournament, "slug" | "roster">): Promise<PlayerScorecard[]> {
+  const nativeYear = nativeSeasonYear(tournament.slug);
+  if (nativeYear) return (await getSeasonTournament(nativeYear)).scorecards ?? [];
   const service = createSupabaseServiceRoleClient();
   const rounds = await fetchAllRows<RoundRow>("getScorecardsForTournament", (from, to) =>
     service

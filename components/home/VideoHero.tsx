@@ -1,7 +1,9 @@
+"use client";
+import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 import Image from "next/image";
 import { Radio } from "lucide-react";
 import Link from "next/link";
-import { latestCompleted, nextTournament, champion, isLiveNow, fmtPt } from "@/lib/data";
+import { champion, fmtPt } from "@/lib/data";
 import type { NextTournamentOverride } from "@/lib/data/types";
 
 function isSet(value: string): boolean {
@@ -9,6 +11,7 @@ function isSet(value: string): boolean {
 }
 
 export function VideoHero({ nextTournamentOverride }: { nextTournamentOverride: NextTournamentOverride }) {
+  const { latestCompleted, nextTournament, isLiveNow } = useSeasonCatalog();
   const live = isLiveNow();
   const champ = champion(latestCompleted);
   const nextVenueKnown = isSet(nextTournamentOverride.venue);

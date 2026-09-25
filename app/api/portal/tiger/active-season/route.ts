@@ -1,3 +1,4 @@
+import { getSeasonCalendar } from "@/lib/live/seasonCalendarServer";
 import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
@@ -14,6 +15,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Invalid year." }, { status: 400 });
   }
 
+  const calendar = await getSeasonCalendar();
+  if (calendar.scheduled && year !== 2034 && year !== calendar.activeYear) return NextResponse.json({ ok: false, error: "The locked season calendar controls the active year. Update the handoff dates in the overview." }, { status: 409 });
   const service = createSupabaseServiceRoleClient();
   const { error } = await service.from("live_active_season").update({ season_year: year }).eq("id", true);
   if (error) {

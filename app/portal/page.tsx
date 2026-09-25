@@ -1,3 +1,4 @@
+import { getSeasonCatalog } from "@/lib/data/seasonCatalog";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -7,7 +8,7 @@ import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { getLiveTeamForPlayer } from "@/lib/data/activeSeasonOverlay";
 import { getAllPlayerRows } from "@/lib/portal/allPlayers";
 import { findMatchesForPlayer } from "@/lib/live/currentRoundForPlayer";
-import { pastTournaments } from "@/lib/data";
+
 import { archivedMatchesForPlayer } from "@/lib/portal/archivedMatches";
 import { buildLiveMatchCards } from "@/lib/portal/liveMatchCards";
 import type { PortalMatchCard } from "@/lib/portal/matchCards";
@@ -29,7 +30,8 @@ export default async function PortalPage() {
 
   const playerSlug = profile.player_slug!;
   const playerProfile = getPlayerProfileBySlug(playerSlug);
-  const year = Number(new Intl.DateTimeFormat("en-US", { year: "numeric", timeZone: "America/Chicago" }).format(new Date()));
+  const { nextTournament, pastTournaments } = await getSeasonCatalog();
+  const year = nextTournament.year;
   const archivedTournament = pastTournaments.find((tournament) => tournament.year === year);
   const [team, allPlayers, upcomingMatches, archivedScorecards, handicapSummary, archivedHandicapRounds, skins] = await Promise.all([
     getLiveTeamForPlayer(playerSlug),

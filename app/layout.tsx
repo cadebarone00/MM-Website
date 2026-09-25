@@ -1,3 +1,5 @@
+import { SeasonCatalogProvider } from "@/components/SeasonCatalogProvider";
+import { getSeasonCatalog } from "@/lib/data/seasonCatalog";
 import type { Metadata, Viewport } from "next";
 import { Spectral, Barlow, Barlow_Semi_Condensed } from "next/font/google";
 import "./globals.css";
@@ -44,14 +46,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const nextTournamentOverride = await getNextTournamentOverride();
+  const [nextTournamentOverride, catalog] = await Promise.all([getNextTournamentOverride(), getSeasonCatalog()]);
   return (
     <html
       lang="en"
       className={`${spectral.variable} ${barlow.variable} ${barlowCondensed.variable}`}
     >
       <body className="min-h-screen bg-cream-50 font-sans text-ink-900 antialiased">
-        <SiteChrome nextTournamentOverride={nextTournamentOverride}>{children}</SiteChrome>
+        <SeasonCatalogProvider initial={catalog}><SiteChrome nextTournamentOverride={nextTournamentOverride}>{children}</SiteChrome></SeasonCatalogProvider>
       </body>
     </html>
   );

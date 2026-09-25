@@ -1,3 +1,4 @@
+import { nativeSeasonYear } from "@/lib/data/seasonCatalog";
 import { ScheduleAccordion } from "@/components/schedule/ScheduleAccordion";
 import { notFound } from "next/navigation";
 import { VenueSchedulePage } from "@/components/schedule/VenueSchedulePage";
@@ -22,12 +23,13 @@ export default async function ScheduleYearPage({ params, searchParams }: { param
 
   // Only the upcoming year has a Tiger Center round setup to read — past
   // years stay on the static venue.sessions/venue.courses data below.
-  const rounds = slug === nextTournament.slug ? await getUpcomingRoundSchedule() : [];
+  const year = nativeSeasonYear(slug);
+  const rounds = year ? await getUpcomingRoundSchedule(year) : [];
 
   const { date } = await searchParams;
   if (date !== undefined) {
-    if (slug !== nextTournament.slug || typeof date !== "string" || ![6, 7, 8, 9].some(day => date === `${nextTournament.year}-01-0${day}`)) notFound();
-    return <ScheduleAccordion key={date} rounds={rounds} year={nextTournament.year} initialDate={date} />;
+    if (!year || typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) notFound();
+    return <ScheduleAccordion key={date} rounds={rounds} year={year} initialDate={date} />;
   }
 
   return (

@@ -1,10 +1,10 @@
 "use client";
-
+import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 import Link from "next/link";
 import { Trophy } from "lucide-react";
 import { ScoreBadge } from "@/components/ui/ScoreBadge";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
-import { latestCompleted } from "@/lib/data";
+
 import { getPlayerDisplayName } from "@/lib/data/players";
 import type { IndividualStanding } from "@/lib/data/types";
 import { placementLabel } from "@/lib/leaderboard/placement";
@@ -14,6 +14,7 @@ function topFive(standings: IndividualStanding[]): IndividualStanding[] {
 }
 
 export function QuickLeaderboardCard() {
+  const { latestCompleted } = useSeasonCatalog();
   const { tournament } = useLiveTournament();
   const isLive = tournament.matches.length > 0;
   const ranked = [...(isLive ? tournament.individualLeaderboard : latestCompleted.individualLeaderboard)].sort((a, b) => a.toPar - b.toPar);

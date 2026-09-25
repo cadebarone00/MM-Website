@@ -1,15 +1,16 @@
 "use client";
-
+import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
-import { pastTournaments } from "@/lib/data";
+
 import { CourseScorecardTable } from "./CourseScorecardTable";
 import type { VenueCourse, VenueSchedule, VenueSession } from "@/lib/data/types";
 import type { UpcomingRoundScheduleItem } from "@/lib/data/activeSeasonOverlay";
 
 function PastVenuesDropdown() {
+  const { pastTournaments } = useSeasonCatalog();
   const years = [...pastTournaments].sort((a, b) => b.year - a.year);
 
   return (

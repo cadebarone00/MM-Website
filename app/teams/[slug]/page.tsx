@@ -1,10 +1,11 @@
+import { getSeasonCatalog, getCatalogTournament } from "@/lib/data/seasonCatalog";
 import { notFound } from "next/navigation";
 import { YearTabs } from "@/components/YearTabs";
 import { TournamentHeader } from "@/components/TournamentHeader";
 import { UpcomingNotice } from "@/components/UpcomingNotice";
 import { TeamsDirectory } from "@/components/teams/TeamsDirectory";
 import { ConfirmedRoster } from "@/components/teams/ConfirmedRoster";
-import { pastTournaments, nextTournament, getTournament } from "@/lib/data";
+import { pastTournaments, nextTournament } from "@/lib/data";
 import { getNextTournamentOverride, getConfirmedRoster } from "@/lib/data/activeSeasonOverlay";
 
 // See app/schedule/[slug]/page.tsx for why this is needed: without it,
@@ -18,8 +19,9 @@ export function generateStaticParams() {
 
 export default async function TeamsYearPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  const catalog = await getSeasonCatalog();
 
-  if (slug === nextTournament.slug) {
+  if (slug === catalog.nextTournament.slug) {
     const [nextTournamentOverride, confirmedRoster] = await Promise.all([
       getNextTournamentOverride(),
       getConfirmedRoster(),
@@ -33,7 +35,7 @@ export default async function TeamsYearPage({ params }: { params: Promise<{ slug
     );
   }
 
-  const tournament = getTournament(slug);
+  const tournament = await getCatalogTournament(slug);
   if (!tournament) notFound();
 
   return (

@@ -1,12 +1,13 @@
 "use client";
-
+import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 import Link from "next/link";
 import { Shield } from "lucide-react";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
-import { latestCompleted, fmtPt } from "@/lib/data";
+import { fmtPt } from "@/lib/data";
 import { getPlayerDisplayName } from "@/lib/data/players";
 
 export function QuickTeamsCard() {
+  const { latestCompleted } = useSeasonCatalog();
   const { tournament } = useLiveTournament();
   const isLive = tournament.matches.length > 0;
   const source = isLive ? tournament : latestCompleted;

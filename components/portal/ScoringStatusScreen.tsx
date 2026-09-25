@@ -1,5 +1,5 @@
 "use client";
-
+import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 import Link from "next/link";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import type { CurrentSessionResult } from "@/lib/live/currentRoundForPlayer";
@@ -8,7 +8,7 @@ import { scoringSides } from "@/lib/live/holeSubmission";
 import type { ScoringStage } from "@/lib/live/scoringStage";
 import { stageButtonLabel, stageNote } from "@/lib/live/scoringStageCopy";
 import { getPlayerDisplayName } from "@/lib/data/players";
-import { nextTournament } from "@/lib/data";
+
 import { formatViewerLocalTeeTime } from "@/lib/live/viewerLocalTime";
 
 /**
@@ -30,6 +30,7 @@ export function ScoringStatusScreen({
   stage: ScoringStage;
   progress: { holesEntered: number; waitingOn: string[]; courseName: string | null } | null;
 }) {
+  const { nextTournament } = useSeasonCatalog();
   const topSlot = <>Welcome, {playerName}</>;
 
   if (!result || stage === "none") {

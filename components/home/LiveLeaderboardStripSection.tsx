@@ -1,8 +1,8 @@
 "use client";
-
+import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 import { LeaderboardStrip } from "@/components/leaderboard/LeaderboardStrip";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
-import { latestCompleted, getNextTournamentStatus } from "@/lib/data";
+
 
 /**
  * Mobile: always visible under the hero — live 2027 data once the feed has
@@ -12,6 +12,7 @@ import { latestCompleted, getNextTournamentStatus } from "@/lib/data";
  * live tournament window.
  */
 export function LiveLeaderboardStripSection() {
+  const { latestCompleted, getNextTournamentStatus } = useSeasonCatalog();
   const { tournament } = useLiveTournament();
   const isLive = tournament.matches.length > 0;
   const mobileSource = isLive ? tournament : latestCompleted;
