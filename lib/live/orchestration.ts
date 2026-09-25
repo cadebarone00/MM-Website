@@ -1,23 +1,23 @@
-import { readScore, type LiveMatchBox, type LiveTournamentSnapshot, type MatchFormat, type MatchState, type Team } from "./types.ts";
+import { readScore, type LiveMatch, type LiveTournamentSnapshot, type MatchFormat, type MatchState, type Team } from "./types.ts";
 
 const ROSTER_SIZE = 12; // 6 Maroon + 6 White — fixed roster size across formats
 
-export function boxesPerRound(format: MatchFormat): number {
+export function matchesPerSession(format: MatchFormat): number {
   return format === "Singles" ? 6 : 3;
 }
 
-export function playersPerTeamPerBox(format: MatchFormat): number {
+export function playersPerTeamPerMatch(format: MatchFormat): number {
   return format === "Singles" ? 1 : 2;
 }
 
-export function validateMatchBox(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox): string[] {
+export function validateMatchBox(snapshot: LiveTournamentSnapshot, matchBox: LiveMatch): string[] {
   const errors: string[] = [];
-  const maxBoxes = boxesPerRound(matchBox.format);
-  if (matchBox.boxNumber < 1 || matchBox.boxNumber > maxBoxes) {
+  const maxBoxes = matchesPerSession(matchBox.format);
+  if (matchBox.matchNumber < 1 || matchBox.matchNumber > maxBoxes) {
     errors.push(`Match box must be between 1 and ${maxBoxes} for ${matchBox.format}.`);
   }
 
-  const perTeam = playersPerTeamPerBox(matchBox.format);
+  const perTeam = playersPerTeamPerMatch(matchBox.format);
   if (matchBox.maroonPlayers.length !== perTeam) errors.push(`Pick exactly ${perTeam} Maroon player${perTeam === 1 ? "" : "s"}.`);
   if (matchBox.whitePlayers.length !== perTeam) errors.push(`Pick exactly ${perTeam} White player${perTeam === 1 ? "" : "s"}.`);
 
@@ -28,7 +28,7 @@ export function validateMatchBox(snapshot: LiveTournamentSnapshot, matchBox: Liv
     if (snapshot.players[player]?.team !== "white") errors.push(`${player} is not on Team White.`);
   }
 
-  const roundBoxes = snapshot.matchBoxes.filter((box) => box.round === matchBox.round && box.boxNumber !== matchBox.boxNumber);
+  const roundBoxes = snapshot.matchBoxes.filter((box) => box.session === matchBox.session && box.matchNumber !== matchBox.matchNumber);
   const used = new Set(roundBoxes.flatMap((box) => [...box.maroonPlayers, ...box.whitePlayers]));
   const duplicates = [...matchBox.maroonPlayers, ...matchBox.whitePlayers].filter((player) => used.has(player));
   if (duplicates.length > 0) errors.push(`Players already assigned in this round: ${[...new Set(duplicates)].sort().join(", ")}.`);
@@ -46,7 +46,7 @@ export function validateMatchBox(snapshot: LiveTournamentSnapshot, matchBox: Liv
  * your side may enter it, since it's one shared real-world number).
  */
 export function canScoreStrokesFor(
-  matchBox: Pick<LiveMatchBox, "format" | "maroonPlayers" | "whitePlayers">,
+  matchBox: Pick<LiveMatch, "format" | "maroonPlayers" | "whitePlayers">,
   scorerSlug: string,
   targetSlugs: string[]
 ): boolean {
@@ -76,14 +76,14 @@ export function scoresAgree(officialScore: number | null, selfReportedScore: num
   return officialScore !== null && selfReportedScore !== null && officialScore === selfReportedScore;
 }
 
-export function roundIsComplete(snapshot: LiveTournamentSnapshot, round: number, format: MatchFormat): boolean {
-  const boxes = snapshot.matchBoxes.filter((box) => box.round === round);
-  if (boxes.length !== boxesPerRound(format)) return false;
+export function sessionIsComplete(snapshot: LiveTournamentSnapshot, round: number, format: MatchFormat): boolean {
+  const boxes = snapshot.matchBoxes.filter((box) => box.session === round);
+  if (boxes.length !== matchesPerSession(format)) return false;
   const players = boxes.flatMap((box) => [...box.maroonPlayers, ...box.whitePlayers]);
   return players.length === ROSTER_SIZE && new Set(players).size === ROSTER_SIZE;
 }
 
-export function effectiveMatchState(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox, now?: Date): MatchState {
+export function effectiveMatchState(snapshot: LiveTournamentSnapshot, matchBox: LiveMatch, now?: Date): MatchState {
   if (matchBox.state === "Final") return "Final";
   if (matchBoxStartedThru(snapshot, matchBox) === 18) return "Final";
   if (!matchBox.started) return "Scheduled";
@@ -92,7 +92,7 @@ export function effectiveMatchState(snapshot: LiveTournamentSnapshot, matchBox: 
   return current >= matchBox.teeTime ? "Live" : "Armed";
 }
 
-export function matchBoxStartedThru(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox): number {
+export function matchBoxStartedThru(snapshot: LiveTournamentSnapshot, matchBox: LiveMatch): number {
   let completed = 0;
   for (let hole = 1; hole <= 18; hole++) {
     if (!holeComplete(snapshot, matchBox, hole)) break;
@@ -101,17 +101,17 @@ export function matchBoxStartedThru(snapshot: LiveTournamentSnapshot, matchBox: 
   return completed;
 }
 
-export function thruLabel(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox): string {
+export function thruLabel(snapshot: LiveTournamentSnapshot, matchBox: LiveMatch): string {
   const thru = matchBoxStartedThru(snapshot, matchBox);
   if (thru === 0) return "Thru";
   if (thru >= 18) return "Final";
   return `Thru ${thru}`;
 }
 
-export function holeComplete(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox, hole: number): boolean {
+export function holeComplete(snapshot: LiveTournamentSnapshot, matchBox: LiveMatch, hole: number): boolean {
   const players = [...matchBox.maroonPlayers, ...matchBox.whitePlayers];
   return players.every((player) => {
-    const score = readScore(snapshot, player, matchBox.round, hole);
+    const score = readScore(snapshot, player, matchBox.session, hole);
     return score.score !== null && score.score > 0;
   });
 }
@@ -128,8 +128,8 @@ export interface MatchBoxResult {
   holesRemaining: number;
 }
 
-export function matchBoxResult(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox): MatchBoxResult {
-  const round = matchBox.round;
+export function matchBoxResult(snapshot: LiveTournamentSnapshot, matchBox: LiveMatch): MatchBoxResult {
+  const round = matchBox.session;
   let maroonHoles = 0;
   let whiteHoles = 0;
   let completed = 0;
@@ -166,17 +166,17 @@ export function matchBoxResult(snapshot: LiveTournamentSnapshot, matchBox: LiveM
 
 /** A round may be armed while this box is waiting for tee time. Tiger can
  * override that wait by setting the persisted box state to Live. */
-export function matchIsScoreable(matchBox: Pick<LiveMatchBox, "state" | "started" | "teeTime">, now = new Date()): boolean {
+export function matchIsScoreable(matchBox: Pick<LiveMatch, "state" | "started" | "teeTime">, now = new Date()): boolean {
   return matchBox.started && matchBox.state !== "Final" && (matchBox.state === "Live" || now >= matchBox.teeTime);
 }
 
-export function matchBoxPayload(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox, now?: Date): Record<string, unknown> {
+export function matchBoxPayload(snapshot: LiveTournamentSnapshot, matchBox: LiveMatch, now?: Date): Record<string, unknown> {
   const state = effectiveMatchState(snapshot, matchBox, now);
   const result = matchBoxResult(snapshot, matchBox);
   return {
     id: matchBox.id,
-    round: matchBox.round,
-    boxNumber: matchBox.boxNumber,
+    round: matchBox.session,
+    boxNumber: matchBox.matchNumber,
     format: matchBox.format,
     teeTime: matchBox.teeTime.toISOString(),
     state,

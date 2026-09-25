@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import type { LiveMatchBox, LiveTournamentSnapshot } from "./types.ts";
+import type { LiveMatch, LiveTournamentSnapshot } from "./types.ts";
 import { updateScore } from "./scoring.ts";
-import { canScoreStrokesFor, effectiveMatchState, holeComplete, matchBoxResult, matchBoxStartedThru, roundIsComplete, scoresAgree, thruLabel, validateMatchBox } from "./orchestration.ts";
+import { canScoreStrokesFor, effectiveMatchState, holeComplete, matchBoxResult, matchBoxStartedThru, sessionIsComplete, scoresAgree, thruLabel, validateMatchBox } from "./orchestration.ts";
 
 const SEED_HOLES = Array.from({ length: 18 }, (_, i) => ({ number: i + 1, par: i === 3 || i === 5 || i === 12 ? 3 : i === 4 || i === 7 || i === 13 || i === 17 ? 5 : 4, yards: 400 }));
 
@@ -21,12 +21,12 @@ function seedSnapshot(): LiveTournamentSnapshot {
   };
 }
 
-function box(round: number, boxNumber: number, maroon: string[], white: string[], format: LiveMatchBox["format"] = "Fourball"): LiveMatchBox {
+function box(round: number, boxNumber: number, maroon: string[], white: string[], format: LiveMatch["format"] = "Fourball"): LiveMatch {
   return {
     id: null,
     seasonYear: 2027,
-    round,
-    boxNumber,
+    session: round,
+    matchNumber: boxNumber,
     format,
     teeTime: new Date("2027-01-06T09:30:00-06:00"),
     maroonPlayers: maroon,
@@ -36,43 +36,43 @@ function box(round: number, boxNumber: number, maroon: string[], white: string[]
   };
 }
 
-test("roundIsComplete requires the right box count and full, non-overlapping roster for the format", () => {
+test("sessionIsComplete requires the right box count and full, non-overlapping roster for the format", () => {
   const snapshot = seedSnapshot();
-  assert.equal(roundIsComplete(snapshot, 1, "Fourball"), false);
+  assert.equal(sessionIsComplete(snapshot, 1, "Fourball"), false);
 
   snapshot.matchBoxes = [
     box(1, 1, ["cam", "drew"], ["cade", "collin"]),
     box(1, 2, ["hugo", "luke"], ["dalton", "jackson"]),
     box(1, 3, ["nate", "pete"], ["kyle", "quez"]),
   ];
-  assert.equal(roundIsComplete(snapshot, 1, "Fourball"), true);
+  assert.equal(sessionIsComplete(snapshot, 1, "Fourball"), true);
   // Same players, but Singles needs 6 boxes of 1v1, not 3 boxes of 2v2 —
   // right roster, wrong box count for this format.
-  assert.equal(roundIsComplete(snapshot, 1, "Singles"), false);
+  assert.equal(sessionIsComplete(snapshot, 1, "Singles"), false);
 });
 
 test("validateMatchBox requires 2 players per side for Fourball/Foursome and 1 for Singles", () => {
   const snapshot = seedSnapshot();
-  const shortHanded: LiveMatchBox = { id: null, seasonYear: 2027, round: 1, boxNumber: 1, format: "Fourball", teeTime: new Date("2027-01-06T09:30:00-06:00"), maroonPlayers: ["cam"], whitePlayers: ["drew", "collin"], state: "Scheduled", started: false };
+  const shortHanded: LiveMatch = { id: null, seasonYear: 2027, session: 1, matchNumber: 1, format: "Fourball", teeTime: new Date("2027-01-06T09:30:00-06:00"), maroonPlayers: ["cam"], whitePlayers: ["drew", "collin"], state: "Scheduled", started: false };
   assert.deepEqual(validateMatchBox(snapshot, shortHanded), ["Pick exactly 2 Maroon players."]);
 
-  const singlesBox: LiveMatchBox = { id: null, seasonYear: 2027, round: 1, boxNumber: 1, format: "Singles", teeTime: new Date("2027-01-06T09:30:00-06:00"), maroonPlayers: ["cam"], whitePlayers: ["drew"], state: "Scheduled", started: false };
+  const singlesBox: LiveMatch = { id: null, seasonYear: 2027, session: 1, matchNumber: 1, format: "Singles", teeTime: new Date("2027-01-06T09:30:00-06:00"), maroonPlayers: ["cam"], whitePlayers: ["drew"], state: "Scheduled", started: false };
   assert.deepEqual(validateMatchBox(snapshot, singlesBox), []);
 });
 
 test("validateMatchBox caps box number at the format's box count", () => {
   const snapshot = seedSnapshot();
-  const outOfRange: LiveMatchBox = { id: null, seasonYear: 2027, round: 1, boxNumber: 4, format: "Fourball", teeTime: new Date("2027-01-06T09:30:00-06:00"), maroonPlayers: ["cam", "cade"], whitePlayers: ["drew", "collin"], state: "Scheduled", started: false };
+  const outOfRange: LiveMatch = { id: null, seasonYear: 2027, session: 1, matchNumber: 4, format: "Fourball", teeTime: new Date("2027-01-06T09:30:00-06:00"), maroonPlayers: ["cam", "cade"], whitePlayers: ["drew", "collin"], state: "Scheduled", started: false };
   assert.deepEqual(validateMatchBox(snapshot, outOfRange), ["Match box must be between 1 and 3 for Fourball."]);
 
-  const inRangeForSingles: LiveMatchBox = { ...outOfRange, format: "Singles", maroonPlayers: ["cam"], whitePlayers: ["drew"] };
+  const inRangeForSingles: LiveMatch = { ...outOfRange, format: "Singles", maroonPlayers: ["cam"], whitePlayers: ["drew"] };
   assert.deepEqual(validateMatchBox(snapshot, inRangeForSingles), []);
 });
 
 test("validateMatchBox rejects a player already assigned elsewhere in the round", () => {
   const snapshot = seedSnapshot();
   snapshot.matchBoxes = [box(1, 1, ["cam", "cade"], ["drew", "collin"])];
-  const conflicting: LiveMatchBox = { id: null, seasonYear: 2027, round: 1, boxNumber: 2, format: "Fourball", teeTime: new Date("2027-01-06T09:30:00-06:00"), maroonPlayers: ["cam", "hugo"], whitePlayers: ["luke", "jackson"], state: "Scheduled", started: false };
+  const conflicting: LiveMatch = { id: null, seasonYear: 2027, session: 1, matchNumber: 2, format: "Fourball", teeTime: new Date("2027-01-06T09:30:00-06:00"), maroonPlayers: ["cam", "hugo"], whitePlayers: ["luke", "jackson"], state: "Scheduled", started: false };
   assert.deepEqual(validateMatchBox(snapshot, conflicting), ["Players already assigned in this round: cam."]);
 });
 
@@ -92,7 +92,7 @@ test("validateMatchBox catches a player whose roster team no longer matches thei
 
   // A round can still look complete while those boxes are wrong.
   snapshot.matchBoxes = [built, box(1, 2, ["cade", "dalton"], ["luke", "jackson"]), box(1, 3, ["nate", "kyle"], ["pete", "quez"])];
-  assert.equal(roundIsComplete(snapshot, 1, "Fourball"), true);
+  assert.equal(sessionIsComplete(snapshot, 1, "Fourball"), true);
 });
 
 test("match state moves from scheduled to armed to live", () => {
@@ -204,7 +204,7 @@ test("canScoreStrokesFor requires the exact opposing pair position for Fourball/
   assert.equal(canScoreStrokesFor(fourball, "cam", ["cade", "collin"]), false, "exactly one target for Fourball");
   assert.equal(canScoreStrokesFor(fourball, "cam", ["cam"]), false, "cannot score your own strokes");
 
-  const singles: LiveMatchBox = { ...fourball, format: "Singles", maroonPlayers: ["cam"], whitePlayers: ["cade"] };
+  const singles: LiveMatch = { ...fourball, format: "Singles", maroonPlayers: ["cam"], whitePlayers: ["cade"] };
   assert.equal(canScoreStrokesFor(singles, "cam", ["cade"]), true);
   assert.equal(canScoreStrokesFor(singles, "cade", ["cam"]), true);
 });
