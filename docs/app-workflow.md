@@ -9,7 +9,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 ```mermaid
 flowchart TD
   %% Page and major section titles share the official Spectral Bold Maroon Masters title font.
-  %% Home-screen bookmarks use shorter, broad gold-outline Spectral italic MM on #240001, shifted left with approximately 20% top and 15% bottom margins and intentional horizontal cropping; Apple icon metadata and Android manifest supply PNG assets.
+  %% Home-screen bookmarks use shorter, broad gold-outline Spectral italic MM on #240001, shifted farther left to reveal more of the second M, with approximately 20% top and 15% bottom margins and intentional horizontal cropping; Apple icon metadata and Android manifest supply PNG assets.
   %% Optional password-status migration derives player_slots.password_created from the linked Auth password credential; deployment pending.
   %% Verified password setup displays the account username and authentication email above the password field.
   %% Invite URL fragments are exchanged for session cookies before password entry; recovery codes use the server callback. Invalid links offer a fresh reset.
@@ -468,6 +468,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-25 - Reveal more of the right M (implemented; deployment not verified).** Shifted the home-screen monogram another 18% of the square's width left to reveal more of the second M near its right stem. Letter dimensions, colors and vertical margins are unchanged. Applies to section 3's icon artwork and the Mermaid annotation; workflow paths are unchanged.
 
 **2026-09-25 - Shorter, broader home-screen MM (implemented; deployment not verified).** Reduced the monogram's height while retaining its width and leftward placement, giving the letters broader proportions. The previous roughly 10% top and bottom margins are now approximately 20% above and 15% below the outlines. Updated section 3 and the Mermaid annotation; workflow paths are unchanged.
 
