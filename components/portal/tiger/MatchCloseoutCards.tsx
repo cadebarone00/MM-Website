@@ -14,7 +14,7 @@ export function MatchCloseoutCards() {
   async function closeMatch(id: string) {
     setBusy(id); setError(null);
     try {
-      const res = await fetch("/api/portal/tiger/matchboxes/closeout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }), signal: AbortSignal.timeout(15000) });
+      const res = await fetch("/api/portal/tiger/matches/closeout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }), signal: AbortSignal.timeout(15000) });
       const data = await res.json();
       if (!data.ok) setError(data.error);
       await load();
