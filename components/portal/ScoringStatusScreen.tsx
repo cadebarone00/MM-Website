@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { matchupLabel, type CurrentSessionResult } from "@/lib/live/currentRoundForPlayer";
@@ -6,10 +8,7 @@ import type { ScoringStage } from "@/lib/live/scoringStage";
 import { stageButtonLabel, stageNote } from "@/lib/live/scoringStageCopy";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import { nextTournament } from "@/lib/data";
-
-function formatTeeTime(date: Date): string {
-  return `${date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" })} PT`;
-}
+import { formatViewerLocalTeeTime } from "@/lib/live/viewerLocalTime";
 
 /**
  * The Scoring landing screen for the player's current round: the full
@@ -49,7 +48,7 @@ export function ScoringStatusScreen({
   return (
     <LoadingScreen heading={heading} topSlot={topSlot} raised>
       <p className="font-sans text-base text-cream-50/80">Session {session.session} &middot; {matchBox.format}{progress?.courseName ? ` · ${progress.courseName}` : ""}</p>
-      <p className="font-sans text-lg text-cream-50/90">{formatTeeTime(matchBox.teeTime)}</p>
+      <p className="font-sans text-lg text-cream-50/90">{formatViewerLocalTeeTime(matchBox.teeTime)}</p>
       <p className="font-sans text-base text-cream-50/80">{matchupLabel(playerSlug, matchBox)}</p>
       {scoring && <p className="font-sans text-sm text-cream-50/80">You are scoring: {scoring}</p>}
       {stage === "upcoming" ? (
