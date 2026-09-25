@@ -4,19 +4,24 @@ import { availableTeeSets } from "@/lib/live/teeSets";
 
 import { useState } from "react";
 import Link from "next/link";
-import type { LiveCourse, LiveRoundState, LiveTeeSet, MatchFormat, TournamentSettings } from "@/lib/live/types";
+import type { LiveCourse, LiveSessionState, LiveTeeSet, MatchFormat, TournamentSettings } from "@/lib/live/types";
 
 const FORMATS: MatchFormat[] = ["Fourball", "Foursome", "Singles"];
+
+function matchTeeTimeLabels(format: MatchFormat | null): [string, string, string] {
+  if (format === "Singles") return ["Match 1 & 2", "Match 3 & 4", "Match 5 & 6"];
+  return ["Match 1", "Match 2", "Match 3"];
+}
 
 export function CoursesFormatPanel({
   year,
   initialSettings,
-  initialRounds,
+  initialSessions,
   initialCourses,
 }: {
   year: number;
   initialSettings: TournamentSettings;
-  initialRounds: LiveRoundState[];
+  initialSessions: LiveSessionState[];
   initialCourses: LiveCourse[];
 }) {
   // null (never configured yet) shows a blank placeholder instead of
@@ -24,15 +29,15 @@ export function CoursesFormatPanel({
   // already shows "8" fires no onChange event at all (the browser only
   // fires change when the value actually changes), so nothing would ever
   // save on first setup. Every option is a real value once one is chosen,
-  // since roundCount then reflects a real, already-saved number.
-  const [roundCount, setRoundCount] = useState<number | null>(initialSettings.roundCount);
-  const [rounds, setRounds] = useState(initialRounds);
+  // since sessionCount then reflects a real, already-saved number.
+  const [sessionCount, setSessionCount] = useState<number | null>(initialSettings.sessionCount);
+  const [sessions, setSessions] = useState(initialSessions);
   const courses = initialCourses;
   const [removeTarget, setRemoveTarget] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function saveRoundCount(count: number) {
-    setRoundCount(count);
+  async function saveSessionCount(count: number) {
+    setSessionCount(count);
     const res = await fetch("/api/portal/tiger/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -46,32 +51,33 @@ export function CoursesFormatPanel({
     window.location.reload();
   }
 
-  async function updateRound(round: number, patch: { date?: string; courseId?: string; format?: MatchFormat; courseSetup?: { teeSetId: string; holeTeeSetIds: Record<string, string> } }) {
+  async function updateSession(session: number, patch: { date?: string; courseId?: string; format?: MatchFormat; courseSetup?: { teeSetId: string; holeTeeSetIds: Record<string, string> }; matchTeeTimes?: (string | null)[] }) {
     setError(null);
     // An empty string from a cleared <input type="date"> means "no date
     // set" — normalize it to null so it matches how a blank date is
-    // represented elsewhere in LiveRoundState, instead of sending "" to a
+    // represented elsewhere in LiveSessionState, instead of sending "" to a
     // Postgres `date` column (which would 500).
     const date = patch.date === "" ? null : patch.date;
-    const res = await fetch("/api/portal/tiger/rounds", {
+    const res = await fetch("/api/portal/tiger/sessions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ year, round, ...patch, date }),
+      body: JSON.stringify({ year, session, ...patch, date }),
     });
     const data = await res.json();
     if (!data.ok) {
       setError(data.error);
       return;
     }
-    setRounds((current) =>
-      current.map((r) => {
-        if (r.round !== round) return r;
+    setSessions((current) =>
+      current.map((s) => {
+        if (s.session !== session) return s;
         return {
-          ...r,
-          date: patch.date !== undefined ? (date ?? null) : r.date,
-          courseId: patch.courseId ?? r.courseId,
-          format: patch.format ?? r.format,
-          courseSetup: patch.courseSetup ? { teeSetId: patch.courseSetup.teeSetId, teeSetName: "", holes: r.courseSetup?.holes ?? [], rating: r.courseSetup?.rating ?? null, slope: r.courseSetup?.slope ?? null, holeTeeSetIds: patch.courseSetup.holeTeeSetIds } : patch.courseId ? null : r.courseSetup,
+          ...s,
+          date: patch.date !== undefined ? (date ?? null) : s.date,
+          courseId: patch.courseId ?? s.courseId,
+          format: patch.format ?? s.format,
+          courseSetup: patch.courseSetup ? { teeSetId: patch.courseSetup.teeSetId, teeSetName: "", holes: s.courseSetup?.holes ?? [], rating: s.courseSetup?.rating ?? null, slope: s.courseSetup?.slope ?? null, holeTeeSetIds: patch.courseSetup.holeTeeSetIds } : patch.courseId ? null : s.courseSetup,
+          matchTeeTimes: patch.matchTeeTimes ?? s.matchTeeTimes,
         };
       })
     );
@@ -81,36 +87,42 @@ export function CoursesFormatPanel({
     return availableTeeSets(course.teeSets);
   }
 
-  async function saveCourseSetup(round: LiveRoundState, teeSetId: string, changedHole?: number, changedTeeSetId?: string) {
-    const course = courses.find((entry) => entry.id === round.courseId);
+  async function saveCourseSetup(session: LiveSessionState, teeSetId: string, changedHole?: number, changedTeeSetId?: string) {
+    const course = courses.find((entry) => entry.id === session.courseId);
     if (!course) return;
-    const current = round.courseSetup?.teeSetId ?? teeSetId;
-    const holeTeeSetIds = changedHole ? { ...(round.courseSetup?.holeTeeSetIds ?? Object.fromEntries(course.holes.map((hole) => [String(hole.number), current]))) } : Object.fromEntries(course.holes.map((hole) => [String(hole.number), teeSetId]));
+    const current = session.courseSetup?.teeSetId ?? teeSetId;
+    const holeTeeSetIds = changedHole ? { ...(session.courseSetup?.holeTeeSetIds ?? Object.fromEntries(course.holes.map((hole) => [String(hole.number), current]))) } : Object.fromEntries(course.holes.map((hole) => [String(hole.number), teeSetId]));
     if (changedHole && changedTeeSetId) holeTeeSetIds[String(changedHole)] = changedTeeSetId;
-    await updateRound(round.round, { courseId: course.id, courseSetup: { teeSetId, holeTeeSetIds } });
+    await updateSession(session.session, { courseId: course.id, courseSetup: { teeSetId, holeTeeSetIds } });
   }
 
-  async function toggleLock(round: number, value: boolean) {
+  function updateTeeTimeSlot(session: LiveSessionState, slot: number, value: string) {
+    const next = [...session.matchTeeTimes];
+    next[slot] = value === "" ? null : value;
+    void updateSession(session.session, { matchTeeTimes: next });
+  }
+
+  async function toggleLock(session: number, value: boolean) {
     setError(null);
-    const res = await fetch("/api/portal/tiger/rounds/lock", {
+    const res = await fetch("/api/portal/tiger/sessions/lock", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ year, round, lock: "course", value }),
+      body: JSON.stringify({ year, session, lock: "course", value }),
     });
     const data = await res.json();
     if (!data.ok) {
       setError(data.error);
       return;
     }
-    setRounds((current) => current.map((r) => (r.round === round ? { ...r, courseLocked: value } : r)));
+    setSessions((current) => current.map((s) => (s.session === session ? { ...s, courseLocked: value } : s)));
   }
 
-  async function removeRound(round: number) {
+  async function removeSession(session: number) {
     setError(null);
-    const res = await fetch("/api/portal/tiger/rounds/remove", {
+    const res = await fetch("/api/portal/tiger/sessions/remove", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ year, round }),
+      body: JSON.stringify({ year, session }),
     });
     const data = await res.json();
     if (!data.ok) {
@@ -118,7 +130,7 @@ export function CoursesFormatPanel({
       setRemoveTarget(null);
       return;
     }
-    setRounds((current) => current.filter((r) => r.round !== round));
+    setSessions((current) => current.filter((s) => s.session !== session));
     setRemoveTarget(null);
   }
 
@@ -126,10 +138,10 @@ export function CoursesFormatPanel({
     <div className="mt-6">
       <p className="mb-4 rounded-sm border border-gold-300 bg-cream-100 px-3 py-2 font-sans text-sm text-ink-700">Courses are selected from the shared <Link href="/portal/admin/course-library" className="font-semibold text-maroon-700 underline">Course Library</Link>, so adding or editing a course never belongs to one season.</p>
       <label className="font-sans text-sm font-semibold text-ink-700">
-        Number of rounds:{" "}
+        Number of sessions:{" "}
         <select
-          value={roundCount ?? ""}
-          onChange={(e) => saveRoundCount(Number(e.target.value))}
+          value={sessionCount ?? ""}
+          onChange={(e) => saveSessionCount(Number(e.target.value))}
           className="border-2 border-stone-300 rounded-lg px-2 py-1"
         >
           <option value="" disabled>
@@ -146,22 +158,22 @@ export function CoursesFormatPanel({
       {error && <p className="mt-3 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
 
       <div className="mt-6 space-y-4">
-        {rounds.map((round) => (
-          <div key={round.round} className="rounded-lg border-2 border-stone-300 p-4">
+        {sessions.map((session) => (
+          <div key={session.session} className="rounded-lg border-2 border-stone-300 p-4">
             <div className="flex items-center justify-between">
-              <span className="font-serif text-lg font-bold text-ink-900">Round {round.round}</span>
+              <span className="font-serif text-lg font-bold text-ink-900">Session {session.session}</span>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => toggleLock(round.round, !round.courseLocked)}
+                  onClick={() => toggleLock(session.session, !session.courseLocked)}
                   className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline"
                 >
-                  {round.courseLocked ? "Unlock" : "Lock"}
+                  {session.courseLocked ? "Unlock" : "Lock"}
                 </button>
-                {!round.courseLocked && (
+                {!session.courseLocked && (
                   <button
                     type="button"
-                    onClick={() => setRemoveTarget(round.round)}
+                    onClick={() => setRemoveTarget(session.session)}
                     className="font-condensed text-2xs font-semibold uppercase tracking-wide text-red-600 underline"
                   >
                     Remove
@@ -173,15 +185,15 @@ export function CoursesFormatPanel({
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
               <input
                 type="date"
-                value={round.date ?? ""}
-                disabled={round.courseLocked}
-                onChange={(e) => updateRound(round.round, { date: e.target.value })}
+                value={session.date ?? ""}
+                disabled={session.courseLocked}
+                onChange={(e) => updateSession(session.session, { date: e.target.value })}
                 className="border-2 border-stone-300 rounded-lg px-2 py-2 text-sm"
               />
               <select
-                value={round.courseId ?? ""}
-                disabled={round.courseLocked}
-                onChange={(e) => updateRound(round.round, { courseId: e.target.value })}
+                value={session.courseId ?? ""}
+                disabled={session.courseLocked}
+                onChange={(e) => updateSession(session.session, { courseId: e.target.value })}
                 className="border-2 border-stone-300 rounded-lg px-2 py-2 text-sm"
               >
                 <option value="" disabled>
@@ -194,9 +206,9 @@ export function CoursesFormatPanel({
                 ))}
               </select>
               <select
-                value={round.format ?? ""}
-                disabled={round.courseLocked}
-                onChange={(e) => updateRound(round.round, { format: e.target.value as MatchFormat })}
+                value={session.format ?? ""}
+                disabled={session.courseLocked}
+                onChange={(e) => updateSession(session.session, { format: e.target.value as MatchFormat })}
                 className="border-2 border-stone-300 rounded-lg px-2 py-2 text-sm"
               >
                 <option value="" disabled>
@@ -210,25 +222,43 @@ export function CoursesFormatPanel({
               </select>
             </div>
 
-            {!round.courseLocked && round.courseId && (() => {
-              const course = courses.find((entry) => entry.id === round.courseId);
+            <div className="mt-3 border-t border-gold-200 pt-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {matchTeeTimeLabels(session.format).map((label, slot) => (
+                  <label key={slot} className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">
+                    {label}
+                    <input
+                      type="time"
+                      value={session.matchTeeTimes[slot] ?? ""}
+                      disabled={session.courseLocked}
+                      onChange={(e) => updateTeeTimeSlot(session, slot, e.target.value)}
+                      className="mt-1 block w-full rounded-sm border border-gold-300 bg-white px-2 py-2 font-sans text-sm normal-case text-ink-900"
+                    />
+                  </label>
+                ))}
+              </div>
+              <p className="mt-2 font-sans text-xs text-ink-500">Tee times are Pacific Time.</p>
+            </div>
+
+            {!session.courseLocked && session.courseId && (() => {
+              const course = courses.find((entry) => entry.id === session.courseId);
               if (!course) return null;
               const teeSets = teeSetsFor(course);
-              if (!teeSets.length) return <p className="mt-4 text-sm text-ink-500">Lock a tee set in the Course Library to make it available for this round.</p>;
-              const selectedTeeId = round.courseSetup?.teeSetId ?? "";
+              if (!teeSets.length) return <p className="mt-4 text-sm text-ink-500">Lock a tee set in the Course Library to make it available for this session.</p>;
+              const selectedTeeId = session.courseSetup?.teeSetId ?? "";
               return <div className="mt-4 border-t border-gold-200 pt-3">
-                <div className="flex flex-wrap items-end justify-between gap-3"><label className="min-w-48 font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Base tee set<select value={selectedTeeId} onChange={(event) => saveCourseSetup(round, event.target.value)} className="mt-1 block w-full rounded-sm border border-gold-300 bg-white px-2 py-2 font-sans text-sm normal-case text-ink-900"><option value="" disabled>Choose locked tees</option>{teeSets.map((tee) => <option key={tee.id} value={tee.id}>{tee.name}{tee.rating != null ? ` · ${tee.rating}/${tee.slope ?? "—"}` : ""}</option>)}</select></label><span className="font-sans text-xs text-ink-500">Choose a tee for the whole round, then adjust individual holes below.</span></div>
-                <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">{course.holes.map((hole) => <label key={hole.number} className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Hole {hole.number}<select value={round.courseSetup?.holeTeeSetIds?.[String(hole.number)] ?? selectedTeeId} onChange={(event) => saveCourseSetup(round, selectedTeeId, hole.number, event.target.value)} className="mt-1 block w-full rounded-sm border border-gold-300 bg-white px-1 py-1.5 font-sans text-xs normal-case text-ink-900"><option value="" disabled>Choose locked tees</option>{teeSets.map((tee) => <option key={tee.id} value={tee.id}>{tee.name} · {tee.holes.find((entry) => entry.number === hole.number)?.yards ?? "—"}</option>)}</select></label>)}</div>
+                <div className="flex flex-wrap items-end justify-between gap-3"><label className="min-w-48 font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Base tee set<select value={selectedTeeId} onChange={(event) => saveCourseSetup(session, event.target.value)} className="mt-1 block w-full rounded-sm border border-gold-300 bg-white px-2 py-2 font-sans text-sm normal-case text-ink-900"><option value="" disabled>Choose locked tees</option>{teeSets.map((tee) => <option key={tee.id} value={tee.id}>{tee.name}{tee.rating != null ? ` · ${tee.rating}/${tee.slope ?? "—"}` : ""}</option>)}</select></label><span className="font-sans text-xs text-ink-500">Choose a tee for the whole session, then adjust individual holes below.</span></div>
+                <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">{course.holes.map((hole) => <label key={hole.number} className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Hole {hole.number}<select value={session.courseSetup?.holeTeeSetIds?.[String(hole.number)] ?? selectedTeeId} onChange={(event) => saveCourseSetup(session, selectedTeeId, hole.number, event.target.value)} className="mt-1 block w-full rounded-sm border border-gold-300 bg-white px-1 py-1.5 font-sans text-xs normal-case text-ink-900"><option value="" disabled>Choose locked tees</option>{teeSets.map((tee) => <option key={tee.id} value={tee.id}>{tee.name} · {tee.holes.find((entry) => entry.number === hole.number)?.yards ?? "—"}</option>)}</select></label>)}</div>
               </div>;
             })()}
 
-            {removeTarget === round.round && (
+            {removeTarget === session.session && (
               <div className="mt-3 rounded-lg bg-red-50 p-3">
-                <p className="font-sans text-sm text-red-700">Remove Round {round.round}? This can&apos;t be undone.</p>
+                <p className="font-sans text-sm text-red-700">Remove Session {session.session}? This can&apos;t be undone.</p>
                 <div className="mt-2 flex gap-3">
                   <button
                     type="button"
-                    onClick={() => removeRound(round.round)}
+                    onClick={() => removeSession(session.session)}
                     className="font-condensed text-2xs font-semibold uppercase tracking-wide text-red-700 underline"
                   >
                     Yes, remove it
