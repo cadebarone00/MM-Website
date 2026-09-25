@@ -4,7 +4,7 @@ import Link from "next/link";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getActiveSeasonYear } from "@/lib/live/activeSeason";
 import { YearAndMasterSettingsNav } from "@/components/portal/tiger/YearAndMasterSettingsNav";
-import { StartRoundBanner, type StartableRound } from "@/components/portal/tiger/StartRoundBanner";
+import { StartSessionBanner, type StartableSession } from "@/components/portal/tiger/StartSessionBanner";
 import { MatchCloseoutCards } from "@/components/portal/tiger/MatchCloseoutCards";
 import { TestSeasonPanel } from "@/components/portal/tiger/TestSeasonPanel";
 
@@ -17,19 +17,19 @@ export default async function TigerCenterPage() {
 
   const activeYear = await getActiveSeasonYear();
   const service = createSupabaseServiceRoleClient();
-  const [{ data: roundRows }, { data: courseRows }] = await Promise.all([
+  const [{ data: sessionRows }, { data: courseRows }] = await Promise.all([
     service.from("live_round_state").select("round, date, format, course_id, course_locked, matchups_locked, started").eq("season_year", activeYear).order("round"),
     service.from("live_courses").select("id, name"),
   ]);
   const courseNameById = new Map((courseRows ?? []).map((course) => [course.id, course.name as string]));
-  const nextRound = (roundRows ?? []).find((round) => round.course_locked && round.matchups_locked && !round.started);
-  const startable: StartableRound | null = nextRound ? { year: activeYear, round: nextRound.round, format: nextRound.format ?? "", courseName: nextRound.course_id ? courseNameById.get(nextRound.course_id) ?? null : null, date: nextRound.date } : null;
+  const nextSession = (sessionRows ?? []).find((session) => session.course_locked && session.matchups_locked && !session.started);
+  const startable: StartableSession | null = nextSession ? { year: activeYear, session: nextSession.round, format: nextSession.format ?? "", courseName: nextSession.course_id ? courseNameById.get(nextSession.course_id) ?? null : null, date: nextSession.date } : null;
 
   return (
     <div className="mx-auto max-w-[720px] px-4 py-12 sm:px-7">
       <h1 className="font-serif text-3xl font-bold text-ink-900">The Tiger Center</h1>
       <TestSeasonPanel activeYear={activeYear} />
-      {startable && <StartRoundBanner round={startable} />}
+      {startable && <StartSessionBanner session={startable} />}
       <MatchCloseoutCards />
       <section className="mt-6 rounded-xl border border-gold-300 bg-cream-50 p-5">
         <p className="font-condensed text-2xs font-bold uppercase tracking-[0.16em] text-ink-500">Year-Specific Setup</p>
