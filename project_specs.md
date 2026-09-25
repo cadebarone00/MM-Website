@@ -772,6 +772,97 @@ All pages are public, no auth.
   function as before, unchanged by this round, so it wasn't re-verified
   live here.
 
+- **Round → Session rename (live/upcoming tournament only), 3 Pacific-Time
+  match tee times, and a per-format Matchups redesign.** Spec
+  `docs/superpowers/specs/2026-09-24-sessions-matchups-tee-times-design.md`,
+  plan `docs/superpowers/plans/2026-09-24-sessions-matchups-tee-times.md`
+  (13 tasks). Every place a person sees "Round" for the *live, upcoming*
+  tournament — Courses & Format, Matchups, the public Schedule page's
+  upcoming-tournament boxes, the live Scoring tab, the "Ready to start"
+  banner (`StartRoundBanner` → `StartSessionBanner`), Match Closeout,
+  broadcast controls, and the 2034 test-season rehearsal tools — now reads
+  "Session," and the code identifiers match it: `LiveRoundState` →
+  `LiveSessionState` (`.round` → `.session`), `LiveMatchBox` → `LiveMatch`
+  (`.boxNumber` → `.matchNumber`), `TournamentSettings.roundCount` →
+  `.sessionCount`, `/api/portal/tiger/rounds*` → `/sessions*`,
+  `/matchboxes*` → `/matches*`. **Exact boundary, deliberately not
+  touched:** the historical/archived "Round" concept (2024-2026 static
+  `lib/data/*.ts`, the Career Stats archive, "Round INDI",
+  `ArchiveTeeAssigner`) and the handicap system's own separate "round"
+  concept (`RoundInProgressCard`, `/api/portal/handicap/rounds`, etc.) — a
+  different, older feature the user does not want touched — plus the
+  `live_round_state`/`live_match_boxes` Supabase table and column names,
+  which also stay exactly as-is (renaming a live production table buys
+  nothing visually; the API layer is the translation point, reading
+  `round`/`box_number` columns and mapping them onto `session`/
+  `matchNumber` fields in code). Each Session on Courses & Format now shows
+  3 tee-time inputs below the date/course/format row (Fourball/Foursome:
+  "Match 1/2/3"; Singles: "Match 1 & 2" / "3 & 4" / "5 & 6"), always
+  interpreted as Pacific Time (`America/Los_Angeles`) regardless of the
+  browser's own timezone, stored in a new `match_tee_times jsonb` column —
+  **migration `supabase/session_tee_times.sql`, not yet run in
+  production** (see Known gaps). The existing Lock control on Courses &
+  Format now locks date/course/format and all 3 tee times together (no
+  second lock added). Each Matchups match's own tee time is now *derived*
+  from its Session's locked tee times (Fourball/Foursome 1:1 per match;
+  Singles's 3 times are each shared by 2 matches) instead of being typed
+  independently per match — feeding the same already-existing,
+  already-tested `effectiveMatchState()` auto Scheduled→Armed→Live
+  transition, unchanged. **Locking still requires a manual Start Session /
+  Start Match exactly as before — no new auto-start behavior was added:**
+  Tiger still has to press "Start Session" (`/portal/admin` shows a "Ready
+  to start" `StartSessionBanner` once a session is locked but not yet
+  started) and, separately, "Start Match" remains a manual per-match
+  override for when a real tee time slips. Matchups' per-match
+  player-assignment layout was redesigned by format to show the real
+  opponent-scoring relationship `canScoreStrokesFor()` already used
+  (already shipped, unit-tested, unchanged by this task): Fourball shows
+  two Maroon-vs-White rows, each with its own "Scoring For" label
+  (opponent-paired, not partner-paired); Foursome/Alternate Shot shows the
+  same 2×2 boxes with one shared "Scoring For" label (team-to-team, one
+  shared ball); Singles shows the same left/right shape as one Fourball
+  row, with a divider between the two matches sharing a tee time. Tee
+  times now display everywhere as read-only text, e.g. "7:30 AM PT"
+  (Matchups, the public Schedule page, the live Scoring tab,
+  `StartSessionBanner`) instead of the old per-match editable time input.
+
+  Task 13 (this plan's final task) ran the full verification sweep and
+  closed out three genuine gaps Tasks 8 and 9's briefs had explicitly
+  deferred to it: `lib/broadcast/*` (`leaderboardData.ts`,
+  `liveSnapshot.ts`, `matchEvents.ts` + its test, `matchPlayData.ts`) and
+  `lib/wagers/holeInOnePricing.ts` / `teamWinnerPricing.ts` still read the
+  old `LiveMatchBox`/`.round`/`.boxNumber` names — these read the *live*
+  tournament's match state, not historical/archived data, so this was a
+  real gap, not a historical carve-out, and one of them was silently
+  hiding a real bug: `matchEvents.test.ts`'s fixtures never set `.session`,
+  so `matchBoxResult()` read `undefined` and always reported a round
+  un-closed, failing `npm test`. Also fixed: `components/portal/
+  ScoringPanel.tsx` still imported `LiveMatchBox`; `scripts/
+  build-sheet-handoff.mts` (a dev-only documentation/fixture script) still
+  imported `roundIsComplete`/`LiveMatchBox` and listed stale
+  `tiger/matchboxes`/`tiger/rounds` source paths; and
+  `/api/portal/tiger/settings` (`route.ts` + its caller
+  `CoursesFormatPanel.tsx` + `route.test.ts`) still spoke `roundCount` in
+  its request/response body, per Task 9's explicit deferral note — both
+  sides now say `sessionCount`, the `round_count` DB column unchanged.
+  `npm test` (465/465, was 464/465 before the `matchEvents.test.ts` fix
+  above), `npx tsc --noEmit` (0 errors, was 30), `npm run lint` (clean — 0
+  errors — on every file this whole 13-task plan touched; one pre-existing
+  warning in `TestSeasonPanel.tsx`, already noted in an earlier round), and
+  `npm run build` (clean; route list confirms `/api/portal/tiger/
+  sessions*` and `/api/portal/tiger/matches*`, and no `/rounds*`/
+  `/matchboxes*` — the unrelated `/api/portal/handicap/rounds` is the
+  untouched handicap feature) all clean. **Not click-tested in a real
+  browser:** no host login or real Supabase project is available in this
+  environment, so the full Courses & Format → Matchups → Lock → Start
+  Session walkthrough the plan describes wasn't run live; verified instead
+  by type-check, lint, build, the tested logic (`sessionTeeTimes.ts`,
+  `orchestration.ts`), and a smoke test against a running dev server
+  confirming every touched route (`/portal/admin/master-settings/[year]/
+  courses-format`, `/matchups`, `/portal/admin`, `/api/portal/tiger/
+  sessions`, `/matches`, `/settings`) redirects or 401s correctly for an
+  unauthenticated request rather than 500ing.
+
 ## Known gaps / not yet built
 
 - **Live scoring lifecycle — spec v3 written, not built.** See
@@ -797,6 +888,13 @@ All pages are public, no auth.
   Scoring tab only moves on at `Final`. Wager reversal (if a post-closeout edit flips a winner) is
   decided: build it (subtract payouts, reset bets, settle again, logged).
   No open design questions remain.
+- **`supabase/session_tee_times.sql` has not been run yet.** The Session
+  rename's 3 Pacific-Time match tee-time inputs on Courses & Format
+  (see the Session rename round above) read/write
+  `live_round_state.match_tee_times`, which doesn't exist until this
+  migration runs once in the Supabase SQL Editor — until then, saving a
+  session's tee times (and so locking it, and so Matchups deriving each
+  match's tee time from it) will fail.
 - **2025-danzante's 8 players still need tees assigned** via "Assign tees
   for handicap tracking" (`/portal/admin/scorecards`) before any of their
   rounds count — the round numbering/format problem itself is fixed (see
