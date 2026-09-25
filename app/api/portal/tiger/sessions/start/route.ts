@@ -10,17 +10,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
   }
 
-  const { year, round } = await request.json();
-  if (!isValidSeasonYear(year) || typeof round !== "number" || !Number.isInteger(round)) {
-    return NextResponse.json({ ok: false, error: "Missing round." }, { status: 400 });
+  const { year, session } = await request.json();
+  if (!isValidSeasonYear(year) || typeof session !== "number" || !Number.isInteger(session)) {
+    return NextResponse.json({ ok: false, error: "Missing session." }, { status: 400 });
   }
 
   const client = await createSupabaseServerClient();
-  const { error } = await client.rpc("start_live_round_atomic", { p_year: year, p_round: round });
-  if (error) return NextResponse.json({ ok: false, error: error.code === "P0001" ? error.message : "Could not start this round. Retry safely." }, { status: 400 });
+  const { error } = await client.rpc("start_live_round_atomic", { p_year: year, p_round: session });
+  if (error) return NextResponse.json({ ok: false, error: error.code === "P0001" ? error.message : "Could not start this session. Retry safely." }, { status: 400 });
 
   try {
-    await publishBroadcastEvent({ kind: "ROUND_STARTED", seasonYear: year, round });
+    await publishBroadcastEvent({ kind: "ROUND_STARTED", seasonYear: year, round: session });
   } catch (err) {
     console.error("broadcast publish failed:", err);
   }

@@ -6,11 +6,11 @@ import assert from "node:assert/strict";
 // app/api/portal/profile/route.test.mts already documented. This test
 // covers the one pure piece: an unauthenticated request never reaches
 // Supabase writes.
-test("POST /api/portal/tiger/rounds rejects when requireHost resolves null", async () => {
+test("POST /api/portal/tiger/sessions rejects when requireHost resolves null", async () => {
   const { POST } = await import("./route.ts");
-  const request = new Request("http://localhost/api/portal/tiger/rounds", {
+  const request = new Request("http://localhost/api/portal/tiger/sessions", {
     method: "POST",
-    body: JSON.stringify({ round: 1, format: "Fourball" }),
+    body: JSON.stringify({ session: 1, format: "Fourball" }),
   });
   await assert.rejects(() => POST(request));
 });

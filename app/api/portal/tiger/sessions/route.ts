@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
-import type { LiveRoundState, LiveTeeSet, MatchFormat } from "@/lib/live/types";
+import type { LiveSessionState, LiveTeeSet, MatchFormat } from "@/lib/live/types";
 import { availableTeeSets } from "@/lib/live/teeSets";
 
 const VALID_FORMATS: MatchFormat[] = ["Fourball", "Foursome", "Singles"];
@@ -22,16 +22,16 @@ export async function GET(request: Request) {
   const service = createSupabaseServiceRoleClient();
   const { data, error } = await service
     .from("live_round_state")
-    .select("round, started, course_id, date, format, course_locked, matchups_locked, course_setup")
+    .select("round, started, course_id, date, format, course_locked, matchups_locked, course_setup, match_tee_times")
     .eq("season_year", year)
     .order("round");
   if (error) {
-    return NextResponse.json({ ok: false, error: "Could not load the rounds." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "Could not load the sessions." }, { status: 500 });
   }
 
-  const rounds: LiveRoundState[] = (data ?? []).map((row) => ({
+  const sessions: LiveSessionState[] = (data ?? []).map((row) => ({
     seasonYear: year,
-    round: row.round,
+    session: row.round,
     started: row.started,
     courseId: row.course_id,
     date: row.date,
@@ -39,8 +39,9 @@ export async function GET(request: Request) {
     courseLocked: row.course_locked,
     matchupsLocked: row.matchups_locked,
     courseSetup: row.course_setup,
+    matchTeeTimes: (row.match_tee_times as (string | null)[] | null) ?? [null, null, null],
   }));
-  return NextResponse.json({ ok: true, rounds }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json({ ok: true, sessions }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(request: Request) {
@@ -49,9 +50,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
   }
 
-  const { year, round, date, courseId, format, courseSetup } = await request.json();
-  if (!isValidSeasonYear(year) || typeof round !== "number") {
-    return NextResponse.json({ ok: false, error: "Missing round." }, { status: 400 });
+  const { year, session, date, courseId, format, courseSetup, matchTeeTimes } = await request.json();
+  if (!isValidSeasonYear(year) || typeof session !== "number") {
+    return NextResponse.json({ ok: false, error: "Missing session." }, { status: 400 });
   }
   if (format !== undefined && !VALID_FORMATS.includes(format)) {
     return NextResponse.json({ ok: false, error: "Invalid format." }, { status: 400 });
@@ -61,11 +62,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Choose a course and tee set before saving yardages." }, { status: 400 });
   }
 
+  if (matchTeeTimes !== undefined) {
+    const valid = Array.isArray(matchTeeTimes) && matchTeeTimes.length === 3 && matchTeeTimes.every((value) => value === null || (typeof value === "string" && /^\d{2}:\d{2}$/.test(value)));
+    if (!valid) {
+      return NextResponse.json({ ok: false, error: "matchTeeTimes must be an array of 3 \"HH:MM\" strings (or null)." }, { status: 400 });
+    }
+  }
+
   const update: Record<string, unknown> = {};
   if (date !== undefined) update.date = date;
   if (courseId !== undefined) update.course_id = courseId;
   if (courseId !== undefined && courseSetup === undefined) update.course_setup = null;
   if (format !== undefined) update.format = format;
+  if (matchTeeTimes !== undefined) update.match_tee_times = matchTeeTimes;
 
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ ok: false, error: "Nothing to update." }, { status: 400 });
@@ -89,18 +98,18 @@ export async function POST(request: Request) {
   }
 
   if (format !== undefined) {
-    const { data: current } = await service.from("live_round_state").select("format").eq("season_year", year).eq("round", round).single();
+    const { data: current } = await service.from("live_round_state").select("format").eq("season_year", year).eq("round", session).single();
     if (current && current.format !== format) {
-      const { error: boxesError } = await service.from("live_match_boxes").delete().eq("season_year", year).eq("round", round);
-      if (boxesError) {
-        return NextResponse.json({ ok: false, error: "Could not clear this round's match boxes for the new format." }, { status: 500 });
+      const { error: matchesError } = await service.from("live_match_boxes").delete().eq("season_year", year).eq("round", session);
+      if (matchesError) {
+        return NextResponse.json({ ok: false, error: "Could not clear this session's matches for the new format." }, { status: 500 });
       }
     }
   }
 
-  const { error } = await service.from("live_round_state").update(update).eq("season_year", year).eq("round", round);
+  const { error } = await service.from("live_round_state").update(update).eq("season_year", year).eq("round", session);
   if (error) {
-    return NextResponse.json({ ok: false, error: "Could not save that round." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "Could not save that session." }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
