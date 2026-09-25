@@ -15,19 +15,19 @@ export async function POST(request: Request) {
 
   const service = createSupabaseServiceRoleClient();
 
-  const { data: box } = await service.from("live_match_boxes").select("season_year, round").eq("id", id).single();
-  if (!box) {
-    return NextResponse.json({ ok: false, error: "Match box not found." }, { status: 404 });
+  const { data: match } = await service.from("live_match_boxes").select("season_year, round").eq("id", id).single();
+  if (!match) {
+    return NextResponse.json({ ok: false, error: "Match not found." }, { status: 404 });
   }
 
-  const { data: roundRow } = await service.from("live_round_state").select("matchups_locked").eq("season_year", box.season_year).eq("round", box.round).single();
-  if (roundRow?.matchups_locked) {
-    return NextResponse.json({ ok: false, error: "Unlock this round's matchups before removing a match box." }, { status: 400 });
+  const { data: sessionRow } = await service.from("live_round_state").select("matchups_locked").eq("season_year", match.season_year).eq("round", match.round).single();
+  if (sessionRow?.matchups_locked) {
+    return NextResponse.json({ ok: false, error: "Unlock this session's matchups before removing a match." }, { status: 400 });
   }
 
   const { error } = await service.from("live_match_boxes").delete().eq("id", id);
   if (error) {
-    return NextResponse.json({ ok: false, error: "Could not remove that match box." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "Could not remove that match." }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
