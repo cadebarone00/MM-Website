@@ -6,6 +6,7 @@ import { PointsRibbon } from "./PointsRibbon";
 import { LeaderboardBoard } from "./LeaderboardBoard";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
 import { getNextTournamentStatus, latestCompleted } from "@/lib/data";
+import { formatViewerLocalTeeTime } from "@/lib/live/viewerLocalTime";
 import type { RealMatch, Tournament } from "@/lib/data/types";
 
 type OfficialEntry = {
@@ -30,7 +31,7 @@ function asOfficialMatches(entries: OfficialEntry[]): RealMatch[] {
     leader: officialState?.leader,
     margin: officialState?.margin,
     holesRemaining: officialState ? 18 - officialState.thru : 18,
-    teeTimeCst: `${new Date(match.tee_time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" })} PT`,
+    teeTimeCst: formatViewerLocalTeeTime(new Date(match.tee_time)),
     maroonWinProbability: odds?.maroon_win_probability,
     tieProbability: odds?.tie_probability,
     whiteWinProbability: odds?.white_win_probability,

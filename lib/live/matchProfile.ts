@@ -1,6 +1,7 @@
 import type { RealMatch } from "@/lib/data/types";
 import type { LiveOddsSnapshot } from "@/lib/wagers/liveMatchMarket";
 import type { LiveTournamentSnapshot } from "./types";
+import { formatViewerLocalTeeTime } from "./viewerLocalTime";
 
 export type MatchOddsPoint = LiveOddsSnapshot & { state_thru: number; created_at: string };
 export type MatchProfileEntry = {
@@ -42,7 +43,7 @@ export function profileMatch({ match, officialState: state, odds }: MatchProfile
     status: final ? "final" : state?.status === "live" ? "live" : "scheduled",
     thru: state?.thru, leader: state?.leader, margin: state?.margin,
     holesRemaining: 18 - (state?.thru ?? 0),
-    teeTimeCst: match.tee_time && Number.isFinite(Date.parse(match.tee_time)) ? `${new Date(match.tee_time).toLocaleTimeString("en-US", { timeZone: "America/Los_Angeles", hour: "numeric", minute: "2-digit" })} PT` : undefined,
+    teeTimeCst: match.tee_time && Number.isFinite(Date.parse(match.tee_time)) ? formatViewerLocalTeeTime(new Date(match.tee_time)) : undefined,
     maroonWinProbability: odds?.maroon_win_probability, whiteWinProbability: odds?.white_win_probability, tieProbability: odds?.tie_probability,
   };
 }
