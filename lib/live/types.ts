@@ -50,11 +50,11 @@ export interface LiveHoleScore {
   hostEdited: boolean;
 }
 
-export interface LiveMatchBox {
+export interface LiveMatch {
   id: string | null;
   seasonYear: number;
-  round: number;
-  boxNumber: number;
+  session: number;
+  matchNumber: number;
   format: MatchFormat;
   teeTime: Date;
   maroonPlayers: string[]; // player_slug[]
@@ -64,7 +64,7 @@ export interface LiveMatchBox {
 }
 
 export interface TournamentSettings {
-  roundCount: number | null;
+  sessionCount: number | null;
   completedAt: string | null; // ISO timestamp, null until the tournament is done
   venueName: string | null;
   venueLocked: boolean;
@@ -81,14 +81,16 @@ export interface RosterEntry {
   avatarSrc?: string | null;
 }
 
-export interface LiveRoundState {
+export interface LiveSessionState {
   seasonYear: number;
-  round: number;
+  session: number;
   started: boolean;
   courseId: string | null;
   courseSetup?: { teeSetId: string; teeSetName: string; holes: LiveHole[]; rating: number | null; slope: number | null; holeTeeSetIds?: Record<string, string> } | null;
   date: string | null; // ISO date (YYYY-MM-DD)
   format: MatchFormat | null;
+  /** 3 "HH:MM" Pacific wall-clock times, or null where not yet set. Fourball/Foursome: one per match. Singles: shared 1&2 / 3&4 / 5&6. See lib/live/sessionTeeTimes.ts. */
+  matchTeeTimes: (string | null)[];
   courseLocked: boolean;
   matchupsLocked: boolean;
 }
@@ -102,9 +104,9 @@ export interface LiveRoundState {
 export interface LiveTournamentSnapshot {
   players: Record<string, { team: Team }>; // keyed by player_slug
   courses: Record<string, LiveCourse>; // keyed by course id
-  roundCourses: Record<number, string>; // round -> course id
+  roundCourses: Record<number, string>; // session -> course id
   scores: Map<string, LiveHoleScore>; // keyed by `${player}:${round}:${hole}`
-  matchBoxes: LiveMatchBox[];
+  matchBoxes: LiveMatch[];
 }
 
 export function scoreKey(player: string, round: number, hole: number): string {
