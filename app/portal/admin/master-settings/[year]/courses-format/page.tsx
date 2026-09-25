@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
 import { CoursesFormatPanel } from "@/components/portal/tiger/CoursesFormatPanel";
-import type { LiveCourse, LiveRoundState, MatchFormat, TournamentSettings } from "@/lib/live/types";
+import type { LiveCourse, LiveSessionState, MatchFormat, TournamentSettings } from "@/lib/live/types";
 
 export default async function CoursesFormatPage({ params }: { params: Promise<{ year: string }> }) {
   const { year: yearParam } = await params;
@@ -20,7 +20,7 @@ export default async function CoursesFormatPage({ params }: { params: Promise<{ 
   if (!profile?.is_host) redirect("/");
 
   const service = createSupabaseServiceRoleClient();
-  const [{ data: settingsRow }, { data: roundRows }, { data: courseRows }] = await Promise.all([
+  const [{ data: settingsRow }, { data: sessionRows }, { data: courseRows }] = await Promise.all([
     service
       .from("live_tournament_settings")
       .select("round_count, completed_at, venue_name, venue_locked, begin_date, end_date, dates_locked")
@@ -28,14 +28,14 @@ export default async function CoursesFormatPage({ params }: { params: Promise<{ 
       .maybeSingle(),
     service
       .from("live_round_state")
-      .select("round, started, course_id, date, format, course_locked, matchups_locked, course_setup")
+      .select("round, started, course_id, date, format, course_locked, matchups_locked, course_setup, match_tee_times")
       .eq("season_year", year)
       .order("round"),
     service.from("live_courses").select("id, name, holes, rating, slope, tee_sets").order("name"),
   ]);
 
   const settings: TournamentSettings = {
-    roundCount: settingsRow?.round_count ?? null,
+    sessionCount: settingsRow?.round_count ?? null,
     completedAt: settingsRow?.completed_at ?? null,
     venueName: settingsRow?.venue_name ?? null,
     venueLocked: settingsRow?.venue_locked ?? false,
@@ -43,9 +43,9 @@ export default async function CoursesFormatPage({ params }: { params: Promise<{ 
     endDate: settingsRow?.end_date ?? null,
     datesLocked: settingsRow?.dates_locked ?? false,
   };
-  const rounds: LiveRoundState[] = (roundRows ?? []).map((r) => ({
+  const sessions: LiveSessionState[] = (sessionRows ?? []).map((r) => ({
     seasonYear: year,
-    round: r.round,
+    session: r.round,
     started: r.started,
     courseId: r.course_id,
     date: r.date,
@@ -53,13 +53,14 @@ export default async function CoursesFormatPage({ params }: { params: Promise<{ 
     courseLocked: r.course_locked,
     matchupsLocked: r.matchups_locked,
     courseSetup: r.course_setup,
+    matchTeeTimes: (r.match_tee_times as (string | null)[] | null) ?? [null, null, null],
   }));
   const courses: LiveCourse[] = (courseRows ?? []).map((c) => ({ id: c.id, name: c.name, holes: c.holes, rating: c.rating, slope: c.slope, teeSets: Array.isArray(c.tee_sets) ? c.tee_sets : [] }));
 
   return (
     <div className="mx-auto max-w-[960px] px-4 py-12 sm:px-7">
       <h1 className="font-serif text-2xl font-bold text-ink-900">Courses & Format</h1>
-      <CoursesFormatPanel year={year} initialSettings={settings} initialRounds={rounds} initialCourses={courses} />
+      <CoursesFormatPanel year={year} initialSettings={settings} initialSessions={sessions} initialCourses={courses} />
     </div>
   );
 }
