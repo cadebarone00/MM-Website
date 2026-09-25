@@ -5,7 +5,7 @@ import { getPlayerSlug } from "@/lib/data/players";
 import type { CareerCourseHole } from "@/lib/data/careerStats";
 import { calculatePreRoundAlternateShotOdds, calculatePreRoundFourballOdds, calculatePreRoundSinglesOdds, type PreRoundSinglesResult } from "@/lib/odds/preRoundSingles";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import type { LiveMatchBox } from "@/lib/live/types";
+import type { LiveMatch } from "@/lib/live/types";
 import type { OfficialMatchState } from "@/lib/live/officialMatchState";
 import { isTestSeason } from "@/lib/live/testSeason";
 
@@ -21,16 +21,16 @@ function modelPlayer(slug: string): string {
 }
 
 /** Builds and persists the single odds output consumed by all live surfaces. */
-export async function publishMatchOdds(seasonYear: number, box: LiveMatchBox, state: OfficialMatchState, prepareOnly = false) {
+export async function publishMatchOdds(seasonYear: number, box: LiveMatch, state: OfficialMatchState, prepareOnly = false) {
   const snapshot = await buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true });
-  const course = snapshot.courses[snapshot.roundCourses[box.round]];
+  const course = snapshot.courses[snapshot.roundCourses[box.session]];
   if (!course) return null;
   const courseHoles: CareerCourseHole[] = course.holes.map((hole) => ({ year: seasonYear, course: course.name, tee: null, hole: hole.number, par: hole.par, yards: hole.yards, holeType: `Par ${hole.par}`, holeLengthBucket: null }));
   const { records, teamRecords } = await getCombinedCareerArchive({ includeTestSeason: isTestSeason(seasonYear) });
   const a = box.maroonPlayers.map(modelPlayer);
   const b = box.whitePlayers.map(modelPlayer);
   const scores = snapshot.scores;
-  const score = (player: string, hole: number) => scores.get(`${player}:${box.round}:${hole}`)?.score ?? null;
+  const score = (player: string, hole: number) => scores.get(`${player}:${box.session}:${hole}`)?.score ?? null;
   let result: PreRoundSinglesResult | null = null;
 
   if (box.format === "Singles" && a.length === 1 && b.length === 1) {
@@ -70,6 +70,6 @@ export async function publishMatchOdds(seasonYear: number, box: LiveMatchBox, st
   if (prepareOnly) return oddsRow;
   const { error } = await service.from("live_match_odds_snapshots").insert(oddsRow);
   if (error) throw error;
-  await service.from("live_score_audit_events").insert({ season_year: seasonYear, match_box_id: box.id, round: box.round, kind: "odds_snapshot_created", payload: { modelVersion: LIVE_MATCH_ODDS_MODEL_VERSION, thru: state.thru } });
+  await service.from("live_score_audit_events").insert({ season_year: seasonYear, match_box_id: box.id, round: box.session, kind: "odds_snapshot_created", payload: { modelVersion: LIVE_MATCH_ODDS_MODEL_VERSION, thru: state.thru } });
   return result;
 }

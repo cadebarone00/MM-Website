@@ -6,15 +6,15 @@
 // live_match_odds_snapshots — see lib/broadcast/matchPlayData.ts), plus a
 // small live_courses name lookup. No score computation happens here.
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import type { CurrentRoundResult } from "@/lib/live/currentRoundForPlayer";
+import type { CurrentSessionResult } from "@/lib/live/currentRoundForPlayer";
 import { liveMatchCard, type PortalMatchCard } from "./matchCards";
 
-export async function buildLiveMatchCards(matches: CurrentRoundResult[]): Promise<PortalMatchCard[]> {
+export async function buildLiveMatchCards(matches: CurrentSessionResult[]): Promise<PortalMatchCard[]> {
   if (matches.length === 0) return [];
 
   const service = createSupabaseServiceRoleClient();
   const boxIds = matches.map((m) => m.matchBox.id).filter((id): id is string => Boolean(id));
-  const courseIds = [...new Set(matches.map((m) => m.round.courseId).filter((id): id is string => Boolean(id)))];
+  const courseIds = [...new Set(matches.map((m) => m.session.courseId).filter((id): id is string => Boolean(id)))];
 
   const [{ data: officialRows }, { data: oddsRows }, { data: courseRows }] = await Promise.all([
     boxIds.length
@@ -33,14 +33,14 @@ export async function buildLiveMatchCards(matches: CurrentRoundResult[]): Promis
   for (const row of oddsRows ?? []) if (!oddsByBox.has(row.match_box_id)) oddsByBox.set(row.match_box_id, row);
   const courseNameById = new Map((courseRows ?? []).map((row) => [row.id, row.name]));
 
-  return matches.map(({ round, matchBox, state }) => {
+  return matches.map(({ session, matchBox, state }) => {
     const official = matchBox.id ? officialByBox.get(matchBox.id) : null;
     const odds = matchBox.id ? oddsByBox.get(matchBox.id) : null;
     return liveMatchCard({
-      id: matchBox.id ?? `round-${round.round}-box-${matchBox.boxNumber}`,
+      id: matchBox.id ?? `round-${session.session}-box-${matchBox.matchNumber}`,
       status: state === "Final" ? "Past" : state === "Live" ? "Live" : "Upcoming",
-      course: round.courseId ? courseNameById.get(round.courseId) ?? null : null,
-      round: round.round,
+      course: session.courseId ? courseNameById.get(session.courseId) ?? null : null,
+      round: session.session,
       format: matchBox.format,
       maroonPlayers: matchBox.maroonPlayers,
       whitePlayers: matchBox.whitePlayers,

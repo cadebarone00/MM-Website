@@ -6,7 +6,7 @@ import type { LiveTournamentSnapshot } from "./types";
 test("profile exposes only this match's round and players, preserving missing strokes", () => {
   const snapshot: LiveTournamentSnapshot = {
     players: {}, courses: { course: { id: "course", name: "Course", holes: [{ number: 1, par: 4, yards: 400 }], rating: null, slope: null } }, roundCourses: { 2: "course" },
-    matchBoxes: [{ id: "match", seasonYear: 2027, round: 2, boxNumber: 1, format: "Singles", teeTime: new Date(), maroonPlayers: ["a"], whitePlayers: ["b"], state: "Live", started: true }],
+    matchBoxes: [{ id: "match", seasonYear: 2027, session: 2, matchNumber: 1, format: "Singles", teeTime: new Date(), maroonPlayers: ["a"], whitePlayers: ["b"], state: "Live", started: true }],
     scores: new Map([
       ["a:2:1", { seasonYear: 2027, player: "a", round: 2, hole: 1, score: 4, putts: 2, fir: true, gir: true, hostEdited: false }],
       ["b:1:1", { seasonYear: 2027, player: "b", round: 1, hole: 1, score: 3, putts: 1, fir: true, gir: true, hostEdited: false }],

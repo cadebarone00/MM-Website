@@ -33,7 +33,7 @@ export async function publishOfficialMatchState(
     const { error: auditError } = await service.from("live_score_audit_events").insert({
       season_year: seasonYear,
       match_box_id: matchBoxId,
-      round: box.round,
+      round: box.session,
       kind: auditKind,
       payload: { thru: official.thru, leader: official.leader, margin: official.margin, mathematicallyComplete: official.mathematicallyComplete },
     });

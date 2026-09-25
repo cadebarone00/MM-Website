@@ -1,5 +1,5 @@
 import { effectiveMatchState, matchBoxResult, matchBoxStartedThru } from "@/lib/live/orchestration";
-import type { LiveMatchBox, LiveTournamentSnapshot } from "@/lib/live/types";
+import type { LiveMatch, LiveTournamentSnapshot } from "@/lib/live/types";
 
 export type OfficialMatchStatus = "upcoming" | "live" | "complete" | "closed_out";
 
@@ -19,7 +19,7 @@ export type OfficialMatchState = {
  * confirmed scores only. It deliberately knows nothing about drafts or
  * scorer devices: callers must filter those before invoking it.
  */
-export function buildOfficialMatchState(snapshot: LiveTournamentSnapshot, box: LiveMatchBox, now = new Date()): OfficialMatchState {
+export function buildOfficialMatchState(snapshot: LiveTournamentSnapshot, box: LiveMatch, now = new Date()): OfficialMatchState {
   const startedState = effectiveMatchState(snapshot, box, now);
   const result = matchBoxResult(snapshot, box);
   const thru = matchBoxStartedThru(snapshot, box);

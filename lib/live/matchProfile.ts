@@ -19,14 +19,14 @@ export type MatchProfileScorecard = {
 export function matchProfileScorecard(snapshot: LiveTournamentSnapshot, id: string): MatchProfileScorecard | null {
   const box = snapshot.matchBoxes.find((match) => match.id === id);
   if (!box) return null;
-  const course = snapshot.courses[snapshot.roundCourses[box.round]];
+  const course = snapshot.courses[snapshot.roundCourses[box.session]];
   if (!course) return null;
   return { courseName: course.name, holes: [...course.holes].sort((a, b) => a.number - b.number).map((hole) => ({
     number: hole.number,
     par: hole.par,
     yards: hole.yards,
     scores: Object.fromEntries([...box.maroonPlayers, ...box.whitePlayers].map((player) => {
-      const score = snapshot.scores.get(`${player}:${box.round}:${hole.number}`)?.score;
+      const score = snapshot.scores.get(`${player}:${box.session}:${hole.number}`)?.score;
       return [player, score != null && score > 0 ? score : null];
     })),
   })) };

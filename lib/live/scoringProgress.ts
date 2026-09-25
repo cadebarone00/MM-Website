@@ -1,6 +1,6 @@
 // lib/live/scoringProgress.ts
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import type { CurrentRoundResult } from "./currentRoundForPlayer.ts";
+import type { CurrentSessionResult } from "./currentRoundForPlayer.ts";
 import { submittedPair, type HoleDraft, type HoleSubmission } from "./holeSubmission.ts";
 import { liveRoundStatus, waitingOnSubmitters, type RoundCardState } from "./roundStatus.ts";
 
@@ -17,9 +17,9 @@ export interface ScoringProgress {
 
 // Not unit tested: it needs a real request lifecycle (same documented limitation as findMatchesForPlayer).
 // The decisions it feeds are tested: liveRoundStatus, waitingOnSubmitters and scoringStage.
-export async function loadScoringProgress(result: CurrentRoundResult, playerSlug: string): Promise<ScoringProgress> {
+export async function loadScoringProgress(result: CurrentSessionResult, playerSlug: string): Promise<ScoringProgress> {
   const boxId = result.matchBox.id;
-  const courseId = result.round.courseId;
+  const courseId = result.session.courseId;
   const supabase = await createSupabaseServerClient();
   const service = createSupabaseServiceRoleClient();
   const [holeRows, submittedRows, course] = await Promise.all([

@@ -9,7 +9,7 @@
 // match-completeness card behaves like the real one.
 import { matchBoxResult, matchBoxStartedThru } from "./orchestration.ts";
 import { holeSubmissionStatus, submittedPair, type HoleSubmission, type ScoringPair } from "./holeSubmission.ts";
-import type { LiveHoleScore, LiveMatchBox, LiveTournamentSnapshot } from "./types.ts";
+import type { LiveHoleScore, LiveMatch, LiveTournamentSnapshot } from "./types.ts";
 
 export interface PreviewOfficialState {
   leader: "maroon" | "white" | "tie";
@@ -20,7 +20,7 @@ export interface PreviewOfficialState {
 
 export function previewOfficialState(
   box: ScoringPair,
-  round: number,
+  session: number,
   holes: { number: number }[],
   submissions: HoleSubmission[]
 ): PreviewOfficialState {
@@ -31,14 +31,14 @@ export function previewOfficialState(
       if (holeSubmissionStatus(box, player, hole.number, submissions) !== "confirmed") continue;
       const mine = submittedPair(box, player, hole.number, submissions).mine;
       if (!mine) continue;
-      scores.set(`${player}:${round}:${hole.number}`, {
-        seasonYear: 0, player, round, hole: hole.number, score: mine.ownScore, putts: null, fir: null, gir: null, hostEdited: false,
+      scores.set(`${player}:${session}:${hole.number}`, {
+        seasonYear: 0, player, round: session, hole: hole.number, score: mine.ownScore, putts: null, fir: null, gir: null, hostEdited: false,
       });
     }
   }
   const snapshot: LiveTournamentSnapshot = { players: {}, courses: {}, roundCourses: {}, scores, matchBoxes: [] };
-  const matchBox: LiveMatchBox = {
-    id: null, seasonYear: 0, round, boxNumber: 0, format: box.format, teeTime: new Date(0),
+  const matchBox: LiveMatch = {
+    id: null, seasonYear: 0, session, matchNumber: 0, format: box.format, teeTime: new Date(0),
     maroonPlayers: box.maroonPlayers, whitePlayers: box.whitePlayers, state: "Live", started: true,
   };
   const result = matchBoxResult(snapshot, matchBox);

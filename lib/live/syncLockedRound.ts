@@ -6,19 +6,19 @@ import { publishOfficialMatchState } from "@/lib/live/publishOfficialMatchState"
  * It runs at initial lock and after a pre-start matchup edit, so downstream
  * data never remains pointed at an old tee time, course, partner, or opponent.
  */
-export async function syncLockedRoundToCareerArchive(seasonYear: number, round: number): Promise<void> {
+export async function syncLockedSessionToCareerArchive(seasonYear: number, session: number): Promise<void> {
   const service = createSupabaseServiceRoleClient();
   const { data: roundState, error: roundError } = await service
     .from("live_round_state")
     .select("date, course_id, format, course_locked, matchups_locked, started, course_setup")
     .eq("season_year", seasonYear)
-    .eq("round", round)
+    .eq("round", session)
     .single();
   if (roundError || !roundState?.course_locked || !roundState.matchups_locked || roundState.started || !roundState.course_id || !roundState.format) return;
 
   const [{ data: course, error: courseError }, { data: boxes, error: boxesError }] = await Promise.all([
     service.from("live_courses").select("name, holes").eq("id", roundState.course_id).single(),
-    service.from("live_match_boxes").select("id, format, maroon_players, white_players").eq("season_year", seasonYear).eq("round", round),
+    service.from("live_match_boxes").select("id, format, maroon_players, white_players").eq("season_year", seasonYear).eq("round", session),
   ]);
   if (courseError || boxesError || !course) throw new Error("Could not load the locked round for archive publishing.");
 
@@ -26,7 +26,7 @@ export async function syncLockedRoundToCareerArchive(seasonYear: number, round: 
     const sides = [[box.maroon_players as string[], box.white_players as string[]], [box.white_players as string[], box.maroon_players as string[]]] as const;
     return sides.flatMap(([side, opponents]) => side.map((playerSlug, index) => ({
       season_year: seasonYear,
-      round,
+      round: session,
       player_slug: playerSlug,
       course: course.name,
       played_on: roundState.date,
@@ -44,11 +44,11 @@ export async function syncLockedRoundToCareerArchive(seasonYear: number, round: 
     .from("career_archive_rounds")
     .select("player_slug")
     .eq("season_year", seasonYear)
-    .eq("round", round)
+    .eq("round", session)
     .eq("status", "scheduled");
   const stale = (previous ?? []).map((row) => row.player_slug as string).filter((playerSlug) => !activePlayers.includes(playerSlug));
   if (stale.length > 0) {
-    const { error } = await service.from("career_archive_rounds").delete().eq("season_year", seasonYear).eq("round", round).eq("status", "scheduled").in("player_slug", stale);
+    const { error } = await service.from("career_archive_rounds").delete().eq("season_year", seasonYear).eq("round", session).eq("status", "scheduled").in("player_slug", stale);
     if (error) throw error;
   }
 

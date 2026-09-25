@@ -3,11 +3,11 @@ import { getPlayerDisplayName } from "@/lib/data/players";
 import { getActiveSeasonYear } from "./activeSeason.ts";
 import { effectiveMatchState } from "./orchestration.ts";
 import { roundFinishedForPlayer } from "./roundStatus.ts";
-import type { LiveMatchBox, LiveRoundState, LiveTournamentSnapshot, MatchFormat, MatchState } from "./types.ts";
+import type { LiveMatch, LiveSessionState, LiveTournamentSnapshot, MatchFormat, MatchState } from "./types.ts";
 
-export interface CurrentRoundResult {
-  round: LiveRoundState;
-  matchBox: LiveMatchBox;
+export interface CurrentSessionResult {
+  session: LiveSessionState;
+  matchBox: LiveMatch;
   state: MatchState;
 }
 
@@ -20,24 +20,24 @@ const EMPTY_SNAPSHOT: LiveTournamentSnapshot = {
 };
 
 /**
- * The next round relevant to this player: the lowest-numbered fully locked
- * round (course + matchups) that has a match box containing them, whose
+ * The next session relevant to this player: the lowest-numbered fully locked
+ * session (course + matchups) that has a match containing them, whose
  * computed state isn't yet Final. Pure — no I/O — so the selection rule is
  * fully unit-testable without a live Supabase instance.
  */
-export function pickCurrentRound(rounds: LiveRoundState[], matchBoxes: LiveMatchBox[], playerSlug: string): CurrentRoundResult | null {
-  const lockedRounds = rounds.filter((r) => r.courseLocked && r.matchupsLocked).sort((a, b) => a.round - b.round);
+export function pickCurrentSession(sessions: LiveSessionState[], matches: LiveMatch[], playerSlug: string): CurrentSessionResult | null {
+  const lockedSessions = sessions.filter((s) => s.courseLocked && s.matchupsLocked).sort((a, b) => a.session - b.session);
 
-  for (const round of lockedRounds) {
-    const matchBox = matchBoxes.find(
-      (box) => box.round === round.round && (box.maroonPlayers.includes(playerSlug) || box.whitePlayers.includes(playerSlug))
+  for (const session of lockedSessions) {
+    const matchBox = matches.find(
+      (match) => match.session === session.session && (match.maroonPlayers.includes(playerSlug) || match.whitePlayers.includes(playerSlug))
     );
     if (!matchBox) continue;
 
     const state = effectiveMatchState(EMPTY_SNAPSHOT, matchBox);
     if (state === "Final") continue;
 
-    return { round, matchBox, state };
+    return { session, matchBox, state };
   }
 
   return null;
@@ -47,7 +47,7 @@ export function pickCurrentRound(rounds: LiveRoundState[], matchBoxes: LiveMatch
  * "You & Cam vs. Drew & Hugo" (Fourball/Foursome) or "You vs. Drew"
  * (Singles) — this player's side first, teammate before opponents.
  */
-export function matchupLabel(playerSlug: string, matchBox: LiveMatchBox): string {
+export function matchupLabel(playerSlug: string, matchBox: LiveMatch): string {
   const onMaroon = matchBox.maroonPlayers.includes(playerSlug);
   const ownSide = onMaroon ? matchBox.maroonPlayers : matchBox.whitePlayers;
   const otherSide = onMaroon ? matchBox.whitePlayers : matchBox.maroonPlayers;
@@ -56,7 +56,7 @@ export function matchupLabel(playerSlug: string, matchBox: LiveMatchBox): string
   return `${["You", ...teammates].join(" & ")} vs. ${opponents.join(" & ")}`;
 }
 
-interface RoundRow {
+interface SessionRow {
   round: number;
   started: boolean;
   course_id: string | null;
@@ -66,20 +66,21 @@ interface RoundRow {
   matchups_locked: boolean;
 }
 
-function roundFromRow(row: RoundRow, seasonYear: number): LiveRoundState {
+function sessionFromRow(row: SessionRow, seasonYear: number): LiveSessionState {
   return {
     seasonYear,
-    round: row.round,
+    session: row.round,
     started: row.started,
     courseId: row.course_id,
     date: row.date,
     format: row.format as MatchFormat | null,
     courseLocked: row.course_locked,
     matchupsLocked: row.matchups_locked,
+    matchTeeTimes: [null, null, null],
   };
 }
 
-interface MatchBoxRow {
+interface MatchRow {
   id: string;
   round: number;
   box_number: number;
@@ -91,12 +92,12 @@ interface MatchBoxRow {
   started: boolean;
 }
 
-function matchBoxFromRow(row: MatchBoxRow, seasonYear: number): LiveMatchBox {
+function matchFromRow(row: MatchRow, seasonYear: number): LiveMatch {
   return {
     id: row.id,
     seasonYear,
-    round: row.round,
-    boxNumber: row.box_number,
+    session: row.round,
+    matchNumber: row.box_number,
     format: row.format as MatchFormat,
     teeTime: new Date(row.tee_time),
     maroonPlayers: row.maroon_players,
@@ -108,12 +109,12 @@ function matchBoxFromRow(row: MatchBoxRow, seasonYear: number): LiveMatchBox {
 
 // Not unit tested: createSupabaseServerClient() needs a real request
 // lifecycle, same documented limitation as lib/portal/requireHost.test.mts
-// and app/api/portal/profile/route.test.mts. pickCurrentRound() above (the
+// and app/api/portal/profile/route.test.mts. pickCurrentSession() above (the
 // actual selection rule) is where the real logic lives and is fully tested.
-export async function findMatchesForPlayer(playerSlug: string, seasonYear: number): Promise<CurrentRoundResult[]> {
+export async function findMatchesForPlayer(playerSlug: string, seasonYear: number): Promise<CurrentSessionResult[]> {
   const supabase = await createSupabaseServerClient();
 
-  const [{ data: roundRows, error: roundError }, { data: boxRows, error: boxError }] = await Promise.all([
+  const [{ data: sessionRows, error: sessionError }, { data: matchRows, error: matchError }] = await Promise.all([
     supabase
       .from("live_round_state")
       .select("round, started, course_id, date, format, course_locked, matchups_locked")
@@ -126,31 +127,31 @@ export async function findMatchesForPlayer(playerSlug: string, seasonYear: numbe
       .order("round"),
   ]);
 
-  if (roundError) {
-    console.error("Failed to fetch live_round_state:", roundError);
+  if (sessionError) {
+    console.error("Failed to fetch live_round_state:", sessionError);
   }
-  if (boxError) {
-    console.error("Failed to fetch live_match_boxes:", boxError);
+  if (matchError) {
+    console.error("Failed to fetch live_match_boxes:", matchError);
   }
 
-  const rounds = (roundRows ?? []).map((row) => roundFromRow(row, seasonYear));
-  const matchBoxes = (boxRows ?? []).map((row) => matchBoxFromRow(row, seasonYear));
+  const sessions = (sessionRows ?? []).map((row) => sessionFromRow(row, seasonYear));
+  const matches = (matchRows ?? []).map((row) => matchFromRow(row, seasonYear));
 
-  return rounds.filter((round) => round.courseLocked && round.matchupsLocked).flatMap((round) =>
-    matchBoxes.filter((box) => box.round === round.round && (box.maroonPlayers.includes(playerSlug) || box.whitePlayers.includes(playerSlug)))
-      .map((matchBox) => ({ round, matchBox, state: effectiveMatchState(EMPTY_SNAPSHOT, matchBox) }))
+  return sessions.filter((session) => session.courseLocked && session.matchupsLocked).flatMap((session) =>
+    matches.filter((match) => match.session === session.session && (match.maroonPlayers.includes(playerSlug) || match.whitePlayers.includes(playerSlug)))
+      .map((matchBox) => ({ session, matchBox, state: effectiveMatchState(EMPTY_SNAPSHOT, matchBox) }))
   );
 }
 
-/** A round is finished for a player once they and their scorer have both pressed Submit Round; the Scoring tab then moves on. */
-export function withoutFinishedMatches(matches: CurrentRoundResult[], playerSlug: string, submissions: { match_box_id: string; player_slug: string }[]): CurrentRoundResult[] {
+/** A session is finished for a player once they and their scorer have both pressed Submit Round; the Scoring tab then moves on. */
+export function withoutFinishedMatches(matches: CurrentSessionResult[], playerSlug: string, submissions: { match_box_id: string; player_slug: string }[]): CurrentSessionResult[] {
   return matches.filter((match) => {
     const submitted = submissions.filter((row) => row.match_box_id === match.matchBox.id).map((row) => row.player_slug);
     return !roundFinishedForPlayer(match.matchBox, playerSlug, submitted);
   });
 }
 
-export async function findUpcomingMatchesForPlayer(playerSlug: string): Promise<CurrentRoundResult[]> {
+export async function findUpcomingMatchesForPlayer(playerSlug: string): Promise<CurrentSessionResult[]> {
   const matches = (await findMatchesForPlayer(playerSlug, await getActiveSeasonYear())).filter((match) => match.state !== "Final");
   const ids = matches.map((match) => match.matchBox.id).filter((id): id is string => !!id);
   if (ids.length === 0) return matches;
@@ -163,6 +164,6 @@ export async function findUpcomingMatchesForPlayer(playerSlug: string): Promise<
   return withoutFinishedMatches(matches, playerSlug, data ?? []);
 }
 
-export async function findCurrentRoundForPlayer(playerSlug: string): Promise<CurrentRoundResult | null> {
+export async function findCurrentSessionForPlayer(playerSlug: string): Promise<CurrentSessionResult | null> {
   return (await findUpcomingMatchesForPlayer(playerSlug))[0] ?? null;
 }

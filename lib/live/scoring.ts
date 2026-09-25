@@ -30,7 +30,7 @@ function holeByNumber(holes: { number: number; par: number; yards: number }[]): 
  * equals its round's format (the plan's own long-standing invariant).
  */
 function isIndividualStatsExcluded(snapshot: LiveTournamentSnapshot, round: number): boolean {
-  return snapshot.matchBoxes.find((box) => box.round === round)?.format === "Foursome";
+  return snapshot.matchBoxes.find((box) => box.session === round)?.format === "Foursome";
 }
 
 export function normalizeBool(value: boolean | number | string | null | undefined): boolean | null {
