@@ -23,7 +23,7 @@ export default async function MasterSettingsPage({ params }: { params: Promise<{
   const [{ data: settingsRow }, activeYear] = await Promise.all([
     service
       .from("live_tournament_settings")
-      .select("round_count, completed_at, venue_name, venue_locked, begin_date, end_date, dates_locked")
+      .select("round_count, completed_at, venue_name, venue_locked, timezone, begin_date, end_date, dates_locked")
       .eq("season_year", year)
       .maybeSingle(),
     getActiveSeasonYear(),
@@ -34,6 +34,7 @@ export default async function MasterSettingsPage({ params }: { params: Promise<{
     completedAt: settingsRow?.completed_at ?? null,
     venueName: settingsRow?.venue_name ?? null,
     venueLocked: settingsRow?.venue_locked ?? false,
+    timezone: settingsRow?.timezone ?? "America/Los_Angeles",
     beginDate: settingsRow?.begin_date ?? null,
     endDate: settingsRow?.end_date ?? null,
     datesLocked: settingsRow?.dates_locked ?? false,

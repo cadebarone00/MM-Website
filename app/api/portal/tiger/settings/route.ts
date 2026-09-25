@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   const service = createSupabaseServiceRoleClient();
   const { data } = await service
     .from("live_tournament_settings")
-    .select("round_count, completed_at, venue_name, venue_locked, begin_date, end_date, dates_locked")
+    .select("round_count, completed_at, venue_name, venue_locked, timezone, begin_date, end_date, dates_locked")
     .eq("season_year", year)
     .maybeSingle();
 
@@ -28,6 +28,7 @@ export async function GET(request: Request) {
     completedAt: data?.completed_at ?? null,
     venueName: data?.venue_name ?? null,
     venueLocked: data?.venue_locked ?? false,
+    timezone: data?.timezone ?? "America/Los_Angeles",
     beginDate: data?.begin_date ?? null,
     endDate: data?.end_date ?? null,
     datesLocked: data?.dates_locked ?? false,

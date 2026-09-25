@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
+import { TIMEZONE_IDS } from "@/lib/data/timezones";
 
 export async function POST(request: Request) {
   const host = await requireHost();
@@ -9,7 +10,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
   }
 
-  const { year, beginDate, endDate, datesLocked, venueName, venueLocked } = await request.json();
+  const { year, beginDate, endDate, datesLocked, venueName, venueLocked, timezone } = await request.json();
   if (!isValidSeasonYear(year)) {
     return NextResponse.json({ ok: false, error: "Invalid year." }, { status: 400 });
   }
@@ -24,6 +25,9 @@ export async function POST(request: Request) {
   }
   if (venueName !== null && typeof venueName !== "string") {
     return NextResponse.json({ ok: false, error: "Invalid venue name." }, { status: 400 });
+  }
+  if (typeof timezone !== "string" || !TIMEZONE_IDS.has(timezone)) {
+    return NextResponse.json({ ok: false, error: "Invalid timezone." }, { status: 400 });
   }
   if (datesLocked && (!beginDate || !endDate)) {
     return NextResponse.json({ ok: false, error: "Set both dates before locking them." }, { status: 400 });
@@ -40,14 +44,15 @@ export async function POST(request: Request) {
     dates_locked: datesLocked,
     venue_name: venueName,
     venue_locked: venueLocked,
+    timezone,
   });
   if (error) {
     console.error("Master Settings save failed:", error);
-    const needsMultiYearMigration = /season_year|venue_name|venue_locked|begin_date|end_date|dates_locked|primary key|duplicate key/i.test(error.message);
+    const needsMultiYearMigration = /season_year|venue_name|venue_locked|begin_date|end_date|dates_locked|timezone|primary key|duplicate key/i.test(error.message);
     return NextResponse.json({
       ok: false,
       error: needsMultiYearMigration
-        ? "Your Supabase database needs the current multi-year setup. Run the full supabase/live_match_publication.sql file in the Supabase SQL Editor, then save again."
+        ? "Your Supabase database needs the current multi-year setup. Run the full supabase/live_match_publication.sql file (and supabase/tournament_timezone.sql) in the Supabase SQL Editor, then save again."
         : `Could not save Master Settings: ${error.message}`,
     }, { status: 500 });
   }

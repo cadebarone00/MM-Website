@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { TournamentSettings } from "@/lib/live/types";
+import { TIMEZONES } from "@/lib/data/timezones";
 
 const SETUP_BOXES = [
   { label: "Players & Teams", path: "players-teams" },
@@ -16,6 +17,7 @@ export function MasterSettingsPanel({ year, initialSettings, isActiveYear }: { y
   const [datesLocked, setDatesLocked] = useState(initialSettings.datesLocked);
   const [venueName, setVenueName] = useState(initialSettings.venueName ?? "");
   const [venueLocked, setVenueLocked] = useState(initialSettings.venueLocked);
+  const [timezone, setTimezone] = useState(initialSettings.timezone);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [settingActive, setSettingActive] = useState(false);
@@ -23,7 +25,7 @@ export function MasterSettingsPanel({ year, initialSettings, isActiveYear }: { y
   async function save() {
     setSaving(true); setError(null);
     try {
-      const response = await fetch("/api/portal/tiger/master-settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ year, beginDate: beginDate || null, endDate: endDate || null, datesLocked, venueName: venueName.trim() || null, venueLocked }) });
+      const response = await fetch("/api/portal/tiger/master-settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ year, beginDate: beginDate || null, endDate: endDate || null, datesLocked, venueName: venueName.trim() || null, venueLocked, timezone }) });
       const data = await response.json();
       if (!data.ok) { setError(data.error); return; }
       window.location.reload();
@@ -51,8 +53,15 @@ export function MasterSettingsPanel({ year, initialSettings, isActiveYear }: { y
     </section>
 
     <section className="mt-4 rounded-lg border-2 border-stone-300 p-4">
-      <div className="flex items-center justify-between"><h2 className="font-serif text-lg font-bold text-ink-900">Venue Name</h2><button type="button" disabled={!venueLocked && !venueName.trim()} onClick={() => setVenueLocked((value) => !value)} className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline disabled:opacity-50">{venueLocked ? "Unlock" : "Lock"}</button></div>
+      <div className="flex items-center justify-between"><h2 className="font-serif text-lg font-bold text-ink-900">Venue Name & Timezone</h2><button type="button" disabled={!venueLocked && !venueName.trim()} onClick={() => setVenueLocked((value) => !value)} className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline disabled:opacity-50">{venueLocked ? "Unlock" : "Lock"}</button></div>
       <input type="text" value={venueName} disabled={venueLocked} onChange={(event) => setVenueName(event.target.value)} placeholder="e.g. Mission Hills CC" className="mt-3 w-full rounded-lg border-2 border-stone-300 px-2 py-2 text-sm" />
+      <label className="mt-3 block font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">
+        Venue timezone
+        <select value={timezone} disabled={venueLocked} onChange={(event) => setTimezone(event.target.value)} className="mt-1 block w-full rounded-lg border-2 border-stone-300 px-2 py-2 font-sans text-sm normal-case text-ink-900">
+          {TIMEZONES.map((zone) => <option key={zone.id} value={zone.id}>{zone.label}</option>)}
+        </select>
+      </label>
+      <p className="mt-2 font-sans text-xs text-ink-500">Match tee times on Courses & Format are entered in this timezone. Everywhere else on the site shows each visitor's own local time.</p>
     </section>
 
     <button type="button" disabled={saving} onClick={save} className="mt-4 rounded-lg bg-maroon-700 px-5 py-2 font-condensed text-sm font-semibold uppercase tracking-wide text-white disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
