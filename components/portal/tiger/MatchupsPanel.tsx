@@ -2,8 +2,9 @@
 "use client";
 
 import { useState } from "react";
-import { boxesPerRound, playersPerTeamPerBox } from "@/lib/live/orchestration";
-import type { LiveMatchBox, LiveRoundState, MatchFormat } from "@/lib/live/types";
+import { matchesPerSession, playersPerTeamPerMatch } from "@/lib/live/orchestration";
+import { deriveMatchTeeTime, formatPacificTeeTime, teeTimeSlotForMatch } from "@/lib/live/sessionTeeTimes";
+import type { LiveMatch, LiveSessionState, MatchFormat } from "@/lib/live/types";
 
 export interface RosterPlayer {
   playerSlug: string;
@@ -11,100 +12,146 @@ export interface RosterPlayer {
   team: "maroon" | "white";
 }
 
-interface BoxDraft {
+interface MatchDraft {
   id: string | null;
-  boxNumber: number;
-  teeTime: string; // "HH:MM", browser-local wall-clock time
+  matchNumber: number;
   maroonPlayers: (string | null)[];
   whitePlayers: (string | null)[];
 }
 
-function blankBox(boxNumber: number, format: MatchFormat): BoxDraft {
-  const perTeam = playersPerTeamPerBox(format);
-  return { id: null, boxNumber, teeTime: "", maroonPlayers: Array(perTeam).fill(null), whitePlayers: Array(perTeam).fill(null) };
+function blankMatch(matchNumber: number, format: MatchFormat): MatchDraft {
+  const perTeam = playersPerTeamPerMatch(format);
+  return { id: null, matchNumber, maroonPlayers: Array(perTeam).fill(null), whitePlayers: Array(perTeam).fill(null) };
 }
 
-// Renders a saved tee time (an absolute instant) back into an
-// <input type="time"> using LOCAL hours/minutes, matching how saveBox()
-// below interprets the typed "HH:MM" as local time when building the
-// instant it sends to the server. Using toISOString() here instead would
-// shift the displayed time by the browser's UTC offset on every reload.
-function timeInputValue(date: Date): string {
-  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
-}
-
-function availablePlayers(pool: RosterPlayer[], drafts: BoxDraft[], side: "maroonPlayers" | "whitePlayers", currentBoxNumber: number, currentValue: string | null): RosterPlayer[] {
+function availablePlayers(pool: RosterPlayer[], drafts: MatchDraft[], side: "maroonPlayers" | "whitePlayers", currentMatchNumber: number, currentValue: string | null): RosterPlayer[] {
   const usedElsewhere = new Set(
     drafts
-      .filter((d) => d.boxNumber !== currentBoxNumber)
+      .filter((d) => d.matchNumber !== currentMatchNumber)
       .flatMap((d) => d[side])
       .filter((p): p is string => p !== null)
   );
   return pool.filter((p) => p.playerSlug === currentValue || !usedElsewhere.has(p.playerSlug));
 }
 
+/** A left player, "Scoring For", right player — the shape every format's opponent pairing reduces to. */
+function OpponentSelectRow({
+  maroonValue,
+  whiteValue,
+  maroonOptions,
+  whiteOptions,
+  disabled,
+  onMaroonChange,
+  onWhiteChange,
+}: {
+  maroonValue: string | null;
+  whiteValue: string | null;
+  maroonOptions: RosterPlayer[];
+  whiteOptions: RosterPlayer[];
+  disabled: boolean;
+  onMaroonChange: (value: string | null) => void;
+  onWhiteChange: (value: string | null) => void;
+}) {
+  return (
+    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+      <select
+        value={maroonValue ?? ""}
+        disabled={disabled}
+        onChange={(e) => onMaroonChange(e.target.value || null)}
+        className="w-full rounded-lg border-2 border-maroon-700 bg-maroon-50 px-2 py-1 text-sm"
+      >
+        <option value="">Choose a player</option>
+        {maroonOptions.map((p) => (
+          <option key={p.playerSlug} value={p.playerSlug}>
+            {p.fullName}
+          </option>
+        ))}
+      </select>
+      <span className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Scoring For</span>
+      <select
+        value={whiteValue ?? ""}
+        disabled={disabled}
+        onChange={(e) => onWhiteChange(e.target.value || null)}
+        className="w-full rounded-lg border-2 border-stone-400 bg-stone-50 px-2 py-1 text-sm"
+      >
+        <option value="">Choose a player</option>
+        {whiteOptions.map((p) => (
+          <option key={p.playerSlug} value={p.playerSlug}>
+            {p.fullName}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 export function MatchupsPanel({
   year,
-  rounds,
-  initialMatchBoxes,
+  sessions,
+  initialMatches,
   roster,
 }: {
   year: number;
-  rounds: LiveRoundState[];
-  initialMatchBoxes: LiveMatchBox[];
+  sessions: LiveSessionState[];
+  initialMatches: LiveMatch[];
   roster: RosterPlayer[];
 }) {
-  // Saved match boxes only ever change via a full page reload, right after
-  // a successful save/remove/lock (see saveBox/removeBox/toggleMatchupsLock
+  // Saved matches only ever change via a full page reload, right after a
+  // successful save/remove/lock (see saveMatch/removeMatch/toggleMatchupsLock
   // below) — so in-progress edits never need to live alongside them. They're
-  // kept separately here, as plain strings/arrays keyed by "round:boxNumber"
+  // kept separately here, as plain strings/arrays keyed by "session:matchNumber"
   // and layered onto the saved data in draftFor() on every render. A reload
   // naturally clears this map along with the rest of the component's state.
-  const [overrides, setOverrides] = useState<Record<string, Partial<BoxDraft>>>({});
+  const [overrides, setOverrides] = useState<Record<string, Partial<MatchDraft>>>({});
   const [error, setError] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
 
   const maroonRoster = roster.filter((p) => p.team === "maroon");
   const whiteRoster = roster.filter((p) => p.team === "white");
-  const readyRounds = rounds.filter((r): r is LiveRoundState & { format: MatchFormat } => r.courseLocked && r.format !== null);
+  const readySessions = sessions.filter((s): s is LiveSessionState & { format: MatchFormat } => s.courseLocked && s.format !== null);
 
-  function draftKey(round: number, boxNumber: number): string {
-    return `${round}:${boxNumber}`;
+  function draftKey(session: number, matchNumber: number): string {
+    return `${session}:${matchNumber}`;
   }
 
-  function draftFor(round: number, format: MatchFormat, boxNumber: number): BoxDraft {
-    const saved = initialMatchBoxes.find((b) => b.round === round && b.boxNumber === boxNumber);
-    const base: BoxDraft = saved
-      ? { id: saved.id, boxNumber, teeTime: timeInputValue(saved.teeTime), maroonPlayers: saved.maroonPlayers, whitePlayers: saved.whitePlayers }
-      : blankBox(boxNumber, format);
-    return { ...base, ...overrides[draftKey(round, boxNumber)] };
+  function draftFor(session: number, format: MatchFormat, matchNumber: number): MatchDraft {
+    const saved = initialMatches.find((m) => m.session === session && m.matchNumber === matchNumber);
+    const base: MatchDraft = saved
+      ? { id: saved.id, matchNumber, maroonPlayers: saved.maroonPlayers, whitePlayers: saved.whitePlayers }
+      : blankMatch(matchNumber, format);
+    return { ...base, ...overrides[draftKey(session, matchNumber)] };
   }
 
-  function updateDraft(round: number, boxNumber: number, patch: Partial<BoxDraft>) {
-    const key = draftKey(round, boxNumber);
+  function updateDraft(session: number, matchNumber: number, patch: Partial<MatchDraft>) {
+    const key = draftKey(session, matchNumber);
     setOverrides((current) => ({ ...current, [key]: { ...current[key], ...patch } }));
   }
 
-  async function saveBox(round: LiveRoundState & { format: MatchFormat }, draft: BoxDraft) {
-    const perTeam = playersPerTeamPerBox(round.format);
+  function teeTimeLabelFor(session: LiveSessionState & { format: MatchFormat }, matchNumber: number): string {
+    const slot = teeTimeSlotForMatch(session.format, matchNumber);
+    const teeTime = deriveMatchTeeTime(session.date, session.matchTeeTimes[slot] ?? null);
+    return teeTime ? formatPacificTeeTime(teeTime) : "Tee time TBD";
+  }
+
+  async function saveMatch(session: LiveSessionState & { format: MatchFormat }, draft: MatchDraft) {
+    const perTeam = playersPerTeamPerMatch(session.format);
     const maroonPlayers = draft.maroonPlayers.filter((p): p is string => p !== null);
     const whitePlayers = draft.whitePlayers.filter((p): p is string => p !== null);
-    if (maroonPlayers.length !== perTeam || whitePlayers.length !== perTeam || !draft.teeTime) {
-      setError(`Box ${draft.boxNumber}: fill in ${perTeam} player${perTeam === 1 ? "" : "s"} per side and a tee time before saving.`);
+    if (maroonPlayers.length !== perTeam || whitePlayers.length !== perTeam) {
+      setError(`Match ${draft.matchNumber}: fill in ${perTeam} player${perTeam === 1 ? "" : "s"} per side before saving.`);
       return;
     }
-    const key = `${round.round}:${draft.boxNumber}`;
+    const key = `${session.session}:${draft.matchNumber}`;
     setBusyKey(key);
     setError(null);
     try {
-      const res = await fetch("/api/portal/tiger/matchboxes", {
+      const res = await fetch("/api/portal/tiger/matches", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           year,
-          round: round.round,
-          boxNumber: draft.boxNumber,
-          teeTime: new Date(`${round.date}T${draft.teeTime}:00`).toISOString(),
+          session: session.session,
+          matchNumber: draft.matchNumber,
           maroonPlayers,
           whitePlayers,
         }),
@@ -120,9 +167,9 @@ export function MatchupsPanel({
     }
   }
 
-  async function removeBox(id: string) {
+  async function removeMatch(id: string) {
     setError(null);
-    const res = await fetch("/api/portal/tiger/matchboxes/remove", {
+    const res = await fetch("/api/portal/tiger/matches/remove", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
@@ -135,12 +182,12 @@ export function MatchupsPanel({
     window.location.reload();
   }
 
-  async function toggleMatchupsLock(round: number, value: boolean) {
+  async function toggleMatchupsLock(session: number, value: boolean) {
     setError(null);
-    const res = await fetch("/api/portal/tiger/rounds/lock", {
+    const res = await fetch("/api/portal/tiger/sessions/lock", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ year, round, lock: "matchups", value }),
+      body: JSON.stringify({ year, session, lock: "matchups", value }),
     });
     const data = await res.json();
     if (!data.ok) {
@@ -154,7 +201,7 @@ export function MatchupsPanel({
     setBusyKey(`start:${id}`);
     setError(null);
     try {
-      const res = await fetch("/api/portal/tiger/matchboxes/start", {
+      const res = await fetch("/api/portal/tiger/matches/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
@@ -170,127 +217,127 @@ export function MatchupsPanel({
     }
   }
 
+  function renderMatchControls(session: LiveSessionState & { format: MatchFormat }, draft: MatchDraft, drafts: MatchDraft[]) {
+    const disabled = session.started;
+    if (session.format === "Foursome") {
+      return (
+        <div className="relative grid grid-cols-2 gap-x-6 gap-y-3">
+          <select value={draft.maroonPlayers[0] ?? ""} disabled={disabled} onChange={(e) => { const next = [...draft.maroonPlayers]; next[0] = e.target.value || null; updateDraft(session.session, draft.matchNumber, { maroonPlayers: next }); }} className="w-full rounded-lg border-2 border-maroon-700 bg-maroon-50 px-2 py-1 text-sm">
+            <option value="">Choose a player</option>
+            {availablePlayers(maroonRoster, drafts, "maroonPlayers", draft.matchNumber, draft.maroonPlayers[0]).map((p) => <option key={p.playerSlug} value={p.playerSlug}>{p.fullName}</option>)}
+          </select>
+          <select value={draft.whitePlayers[0] ?? ""} disabled={disabled} onChange={(e) => { const next = [...draft.whitePlayers]; next[0] = e.target.value || null; updateDraft(session.session, draft.matchNumber, { whitePlayers: next }); }} className="w-full rounded-lg border-2 border-stone-400 bg-stone-50 px-2 py-1 text-sm">
+            <option value="">Choose a player</option>
+            {availablePlayers(whiteRoster, drafts, "whitePlayers", draft.matchNumber, draft.whitePlayers[0]).map((p) => <option key={p.playerSlug} value={p.playerSlug}>{p.fullName}</option>)}
+          </select>
+          <select value={draft.maroonPlayers[1] ?? ""} disabled={disabled} onChange={(e) => { const next = [...draft.maroonPlayers]; next[1] = e.target.value || null; updateDraft(session.session, draft.matchNumber, { maroonPlayers: next }); }} className="w-full rounded-lg border-2 border-maroon-700 bg-maroon-50 px-2 py-1 text-sm">
+            <option value="">Choose a player</option>
+            {availablePlayers(maroonRoster, drafts, "maroonPlayers", draft.matchNumber, draft.maroonPlayers[1]).map((p) => <option key={p.playerSlug} value={p.playerSlug}>{p.fullName}</option>)}
+          </select>
+          <select value={draft.whitePlayers[1] ?? ""} disabled={disabled} onChange={(e) => { const next = [...draft.whitePlayers]; next[1] = e.target.value || null; updateDraft(session.session, draft.matchNumber, { whitePlayers: next }); }} className="w-full rounded-lg border-2 border-stone-400 bg-stone-50 px-2 py-1 text-sm">
+            <option value="">Choose a player</option>
+            {availablePlayers(whiteRoster, drafts, "whitePlayers", draft.matchNumber, draft.whitePlayers[1]).map((p) => <option key={p.playerSlug} value={p.playerSlug}>{p.fullName}</option>)}
+          </select>
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <span className="rounded-full border border-ink-200 bg-white px-3 py-1 font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500 shadow-sm">Scoring For</span>
+          </div>
+        </div>
+      );
+    }
+
+    // Fourball and Singles both reduce to 1 or 2 opponent rows.
+    const rows = playersPerTeamPerMatch(session.format);
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: rows }, (_, i) => (
+          <OpponentSelectRow
+            key={i}
+            maroonValue={draft.maroonPlayers[i] ?? null}
+            whiteValue={draft.whitePlayers[i] ?? null}
+            disabled={disabled}
+            maroonOptions={availablePlayers(maroonRoster, drafts, "maroonPlayers", draft.matchNumber, draft.maroonPlayers[i] ?? null)}
+            whiteOptions={availablePlayers(whiteRoster, drafts, "whitePlayers", draft.matchNumber, draft.whitePlayers[i] ?? null)}
+            onMaroonChange={(value) => { const next = [...draft.maroonPlayers]; next[i] = value; updateDraft(session.session, draft.matchNumber, { maroonPlayers: next }); }}
+            onWhiteChange={(value) => { const next = [...draft.whitePlayers]; next[i] = value; updateDraft(session.session, draft.matchNumber, { whitePlayers: next }); }}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  function renderMatchCard(session: LiveSessionState & { format: MatchFormat }, draft: MatchDraft, drafts: MatchDraft[]) {
+    return (
+      <div key={draft.matchNumber} className="rounded-lg border border-stone-200 p-3">
+        <div className="flex items-center justify-between">
+          <span className="font-condensed text-xs font-semibold uppercase tracking-wide text-ink-500">
+            Match {draft.matchNumber} · {teeTimeLabelFor(session, draft.matchNumber)}
+          </span>
+          <div className="flex items-center gap-3">
+            {draft.id && !session.started && (
+              <button type="button" onClick={() => removeMatch(draft.id!)} className="font-condensed text-2xs font-semibold uppercase tracking-wide text-red-600 underline">
+                Remove
+              </button>
+            )}
+            {draft.id && session.started && (
+              <button type="button" disabled={busyKey === `start:${draft.id}`} onClick={() => startMatch(draft.id!)} className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline disabled:opacity-50">
+                {busyKey === `start:${draft.id}` ? "Starting…" : "Start Match"}
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-2">{renderMatchControls(session, draft, drafts)}</div>
+
+        {!session.started && (
+          <button
+            type="button"
+            disabled={busyKey === `${session.session}:${draft.matchNumber}`}
+            onClick={() => saveMatch(session, draft)}
+            className="mt-3 font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline"
+          >
+            {busyKey === `${session.session}:${draft.matchNumber}` ? "Saving…" : "Save Match"}
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="mt-6 space-y-6">
       {error && <p className="rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
 
-      {readyRounds.length === 0 && (
-        <p className="font-sans text-sm text-ink-500">No rounds have their course and format locked yet — set that up in Courses & Format first.</p>
+      {readySessions.length === 0 && (
+        <p className="font-sans text-sm text-ink-500">No sessions have their course, format, and tee times locked yet — set that up in Courses & Format first.</p>
       )}
 
-      {readyRounds.map((round) => {
-        const drafts = Array.from({ length: boxesPerRound(round.format) }, (_, i) => draftFor(round.round, round.format, i + 1));
+      {readySessions.map((session) => {
+        const drafts = Array.from({ length: matchesPerSession(session.format) }, (_, i) => draftFor(session.session, session.format, i + 1));
         return (
-          <div key={round.round} className="rounded-lg border-2 border-stone-300 p-4">
+          <div key={session.session} className="rounded-lg border-2 border-stone-300 p-4">
             <div className="flex items-center justify-between">
               <span className="font-serif text-lg font-bold text-ink-900">
-                Round {round.round} — {round.format}
+                Session {session.session} — {session.format}
               </span>
               <button
                 type="button"
-                onClick={() => toggleMatchupsLock(round.round, !round.matchupsLocked)}
+                onClick={() => toggleMatchupsLock(session.session, !session.matchupsLocked)}
                 className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline"
               >
-                {round.matchupsLocked ? "Unlock Matchups" : "Lock Matchups"}
+                {session.matchupsLocked ? "Unlock Matchups" : "Lock Matchups"}
               </button>
             </div>
 
             <div className="mt-4 space-y-4">
-              {drafts.map((draft) => (
-                <div key={draft.boxNumber} className="rounded-lg border border-stone-200 p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-condensed text-xs font-semibold uppercase tracking-wide text-ink-500">Box {draft.boxNumber}</span>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="time"
-                        value={draft.teeTime}
-                        disabled={round.started}
-                        onChange={(e) => updateDraft(round.round, draft.boxNumber, { teeTime: e.target.value })}
-                        className="border-2 border-stone-300 rounded-lg px-2 py-1 text-sm"
-                      />
-                      {draft.id && !round.started && (
-                        <button
-                          type="button"
-                          onClick={() => removeBox(draft.id!)}
-                          className="font-condensed text-2xs font-semibold uppercase tracking-wide text-red-600 underline"
-                        >
-                          Remove
-                        </button>
-                      )}
-                      {draft.id && round.started && (
-                        <button
-                          type="button"
-                          disabled={busyKey === `start:${draft.id}`}
-                          onClick={() => startMatch(draft.id!)}
-                          className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline disabled:opacity-50"
-                        >
-                          {busyKey === `start:${draft.id}` ? "Starting…" : "Start Match"}
-                        </button>
-                      )}
+              {session.format === "Singles"
+                ? [0, 1, 2].map((slot) => (
+                    <div key={slot} className={slot > 0 ? "space-y-4 border-t border-stone-200 pt-4" : "space-y-4"}>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        {renderMatchCard(session, drafts[slot * 2], drafts)}
+                        {renderMatchCard(session, drafts[slot * 2 + 1], drafts)}
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <span className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700">Maroon</span>
-                      {draft.maroonPlayers.map((value, i) => (
-                        <select
-                          key={i}
-                          value={value ?? ""}
-                          disabled={round.started}
-                          onChange={(e) => {
-                            const next = [...draft.maroonPlayers];
-                            next[i] = e.target.value || null;
-                            updateDraft(round.round, draft.boxNumber, { maroonPlayers: next });
-                          }}
-                          className="w-full border-2 border-stone-300 rounded-lg px-2 py-1 text-sm"
-                        >
-                          <option value="">Choose a player</option>
-                          {availablePlayers(maroonRoster, drafts, "maroonPlayers", draft.boxNumber, value).map((p) => (
-                            <option key={p.playerSlug} value={p.playerSlug}>
-                              {p.fullName}
-                            </option>
-                          ))}
-                        </select>
-                      ))}
-                    </div>
-                    <div className="space-y-2">
-                      <span className="font-condensed text-2xs font-semibold uppercase tracking-wide text-ink-700">White</span>
-                      {draft.whitePlayers.map((value, i) => (
-                        <select
-                          key={i}
-                          value={value ?? ""}
-                          disabled={round.started}
-                          onChange={(e) => {
-                            const next = [...draft.whitePlayers];
-                            next[i] = e.target.value || null;
-                            updateDraft(round.round, draft.boxNumber, { whitePlayers: next });
-                          }}
-                          className="w-full border-2 border-stone-300 rounded-lg px-2 py-1 text-sm"
-                        >
-                          <option value="">Choose a player</option>
-                          {availablePlayers(whiteRoster, drafts, "whitePlayers", draft.boxNumber, value).map((p) => (
-                            <option key={p.playerSlug} value={p.playerSlug}>
-                              {p.fullName}
-                            </option>
-                          ))}
-                        </select>
-                      ))}
-                    </div>
-                  </div>
-
-                  {!round.started && (
-                    <button
-                      type="button"
-                      disabled={busyKey === `${round.round}:${draft.boxNumber}`}
-                      onClick={() => saveBox(round, draft)}
-                      className="mt-3 font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline"
-                    >
-                      {busyKey === `${round.round}:${draft.boxNumber}` ? "Saving…" : "Save Box"}
-                    </button>
-                  )}
-                </div>
-              ))}
+                  ))
+                : drafts.map((draft) => renderMatchCard(session, draft, drafts))}
             </div>
           </div>
         );
