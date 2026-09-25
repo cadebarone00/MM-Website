@@ -1,8 +1,9 @@
+import { matchupLabel } from "./matchupLabel.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { LiveMatch, LiveSessionState } from "./types.ts";
 import { getPlayerDisplayName } from "../data/players/index.ts";
-import { pickCurrentSession, matchupLabel } from "./currentRoundForPlayer.ts";
+import { pickCurrentSession } from "./currentRoundForPlayer.ts";
 
 function round(overrides: Partial<LiveSessionState> & { session: number }): LiveSessionState {
   return {

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { LoadingScreen } from "@/components/LoadingScreen";
-import { matchupLabel, type CurrentSessionResult } from "@/lib/live/currentRoundForPlayer";
+import type { CurrentSessionResult } from "@/lib/live/currentRoundForPlayer";
+import { matchupLabel } from "@/lib/live/matchupLabel";
 import { scoringSides } from "@/lib/live/holeSubmission";
 import type { ScoringStage } from "@/lib/live/scoringStage";
 import { stageButtonLabel, stageNote } from "@/lib/live/scoringStageCopy";

@@ -26,6 +26,7 @@ flowchart TD
   %% Sessions may lock partially; chosen locked fields publish to schedule, while destination indicators explain separate matchup, time and broadcast gates.
   S --> R[Lock and start round]
   R --> L[Live scoring]
+  %% Scoring screen imports browser-safe matchup labels; Supabase session loading remains on the server.
   L --> D[Local draft and submission queue]
   D --> V[Validate and compare both scoring perspectives]
   V --> Q{Both comparisons agree?}
@@ -474,6 +475,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 25, 2026 - Scoring client/server build fix (implemented locally; deployment not verified).** The production build failed because the scoring screen imported its matchup label formatter through the server-side session loader, pulling in `next/headers`. The formatter now lives in a browser-safe module; session loading stays on the server and scoring behavior is unchanged. Updated the flowchart annotation; overview paths and mappings are unchanged.
 
 **September 25, 2026 - Lock the number of sessions (implemented locally; migration and deployment not verified).** Previously the session-count selector was always editable. It now has a separate persisted Lock/Unlock button with green styling for a chosen locked count, disabled editing while locked, and server/database enforcement. Blank counts can also be locked. Updated Section 6 and the Mermaid annotation; overview paths and mappings are unchanged.
 
