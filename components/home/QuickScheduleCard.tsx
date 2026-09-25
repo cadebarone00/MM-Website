@@ -35,9 +35,9 @@ export function QuickScheduleCard({ nextTournamentOverride, rounds }: { nextTour
       ) : (
         <div className="space-y-2">
           {rounds.length ? rounds.map((round) => (
-            <div key={round.round} className="border-b border-ink-100 pb-2 last:border-b-0 last:pb-0">
+            <div key={round.session} className="border-b border-ink-100 pb-2 last:border-b-0 last:pb-0">
               <div className="font-sans text-xs font-bold text-ink-900 sm:text-sm">
-                Round {round.round}{round.date ? ` · ${placeholderDateLabel(round.date)}` : ""}
+                Round {round.session}{round.date ? ` · ${placeholderDateLabel(round.date)}` : ""}
               </div>
               <div className="font-sans text-2xs text-ink-500 sm:text-xs">
                 {round.courseName ?? "Course not set"} · {round.format ?? "Format not set"}

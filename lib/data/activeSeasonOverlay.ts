@@ -25,7 +25,7 @@ interface ActiveSeasonSettings {
 }
 
 export interface UpcomingRoundScheduleItem {
-  round: number;
+  session: number;
   date: string | null;
   courseName: string | null;
   format: string | null;
@@ -160,7 +160,7 @@ export async function getUpcomingRoundSchedule(): Promise<UpcomingRoundScheduleI
   const courseNames = new Map((courses ?? []).map((course) => [course.id, course.name]));
 
   return rounds.map((round) => ({
-    round: round.round,
+    session: round.round,
     date: round.date ?? null,
     courseName: round.course_id ? courseNames.get(round.course_id) ?? null : null,
     format: round.format ?? null,

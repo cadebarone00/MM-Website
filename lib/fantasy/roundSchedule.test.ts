@@ -5,9 +5,9 @@ import type { UpcomingRoundScheduleItem } from "@/lib/data/activeSeasonOverlay";
 
 test("groupScheduleByDay numbers distinct dates in chronological order", () => {
   const schedule: UpcomingRoundScheduleItem[] = [
-    { round: 1, date: "2027-01-06", courseName: "Course A", format: "Fourball" },
-    { round: 3, date: "2027-01-07", courseName: "Course A", format: "Singles" },
-    { round: 2, date: "2027-01-07", courseName: "Course A", format: "Alt Shot" },
+    { session: 1, date: "2027-01-06", courseName: "Course A", format: "Fourball" },
+    { session: 3, date: "2027-01-07", courseName: "Course A", format: "Singles" },
+    { session: 2, date: "2027-01-07", courseName: "Course A", format: "Alt Shot" },
   ];
   const days = groupScheduleByDay(schedule);
   assert.deepEqual(
@@ -21,21 +21,21 @@ test("groupScheduleByDay numbers distinct dates in chronological order", () => {
 
 test("groupScheduleByDay keeps every round slated for a day, sorted by round number", () => {
   const schedule: UpcomingRoundScheduleItem[] = [
-    { round: 3, date: "2027-01-07", courseName: null, format: "Singles" },
-    { round: 2, date: "2027-01-07", courseName: null, format: "Alt Shot" },
+    { session: 3, date: "2027-01-07", courseName: null, format: "Singles" },
+    { session: 2, date: "2027-01-07", courseName: null, format: "Alt Shot" },
   ];
   const days = groupScheduleByDay(schedule);
   assert.equal(days.length, 1);
   assert.deepEqual(
-    days[0].rounds.map((r) => r.round),
+    days[0].rounds.map((r) => r.session),
     [2, 3]
   );
 });
 
 test("groupScheduleByDay drops rounds with no date yet", () => {
   const schedule: UpcomingRoundScheduleItem[] = [
-    { round: 1, date: "2027-01-06", courseName: null, format: null },
-    { round: 2, date: null, courseName: null, format: null },
+    { session: 1, date: "2027-01-06", courseName: null, format: null },
+    { session: 2, date: null, courseName: null, format: null },
   ];
   const days = groupScheduleByDay(schedule);
   assert.equal(days.length, 1);

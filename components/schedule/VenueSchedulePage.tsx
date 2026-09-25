@@ -55,14 +55,14 @@ function roundDateLabel(date: string): string {
   return `${Number(month)}/${Number(day)}/${year}`;
 }
 
-function RoundBox({ round }: { round: UpcomingRoundScheduleItem }) {
+function UpcomingSessionBox({ session }: { session: UpcomingRoundScheduleItem }) {
   return (
     <div className="rounded-md border border-ink-200 bg-white px-3 py-4 text-center">
       <div className="font-condensed text-[10px] font-semibold uppercase tracking-wide text-maroon-600">
-        Round {round.round}{round.date ? ` · ${roundDateLabel(round.date)}` : ""}
+        Session {session.session}{session.date ? ` · ${roundDateLabel(session.date)}` : ""}
       </div>
-      <div className="mt-2 font-sans text-sm font-bold text-ink-900">{round.format ?? "Format TBD"}</div>
-      <div className="mt-1 font-sans text-xs text-ink-500">{round.courseName ?? "Course TBD"}</div>
+      <div className="mt-2 font-sans text-sm font-bold text-ink-900">{session.format ?? "Format TBD"}</div>
+      <div className="mt-1 font-sans text-xs text-ink-500">{session.courseName ?? "Course TBD"}</div>
     </div>
   );
 }
@@ -142,10 +142,10 @@ export function VenueSchedulePage({ venue, rounds = [] }: { venue: VenueSchedule
 
       {rounds.length > 0 ? (
         <section className="mb-9">
-          <div className="mb-3 font-condensed text-[11px] font-semibold uppercase tracking-eyebrow text-maroon-600">Rounds</div>
+          <div className="mb-3 font-condensed text-[11px] font-semibold uppercase tracking-eyebrow text-maroon-600">Sessions</div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {rounds.map((round) => (
-              <RoundBox key={round.round} round={round} />
+            {rounds.map((session) => (
+              <UpcomingSessionBox key={session.session} session={session} />
             ))}
           </div>
         </section>

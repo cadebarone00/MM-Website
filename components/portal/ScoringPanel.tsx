@@ -168,7 +168,7 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
       id: matchBox.id ?? "preview",
       status: "Live",
       course: null,
-      round,
+      session: round,
       format: matchBox.format,
       maroonPlayers: matchBox.maroonPlayers,
       whitePlayers: matchBox.whitePlayers,

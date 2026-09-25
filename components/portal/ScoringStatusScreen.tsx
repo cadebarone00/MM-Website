@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { LoadingScreen } from "@/components/LoadingScreen";
-import { matchupLabel, type CurrentRoundResult } from "@/lib/live/currentRoundForPlayer";
+import { matchupLabel, type CurrentSessionResult } from "@/lib/live/currentRoundForPlayer";
 import { scoringSides } from "@/lib/live/holeSubmission";
 import type { ScoringStage } from "@/lib/live/scoringStage";
 import { stageButtonLabel, stageNote } from "@/lib/live/scoringStageCopy";
@@ -8,7 +8,7 @@ import { getPlayerDisplayName } from "@/lib/data/players";
 import { nextTournament } from "@/lib/data";
 
 function formatTeeTime(date: Date): string {
-  return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" });
+  return `${date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" })} PT`;
 }
 
 /**
@@ -26,7 +26,7 @@ export function ScoringStatusScreen({
 }: {
   playerName: string;
   playerSlug: string;
-  result: CurrentRoundResult | null;
+  result: CurrentSessionResult | null;
   stage: ScoringStage;
   progress: { holesEntered: number; waitingOn: string[]; courseName: string | null } | null;
 }) {
@@ -40,7 +40,7 @@ export function ScoringStatusScreen({
     );
   }
 
-  const { matchBox, round } = result;
+  const { matchBox, session } = result;
   const scoring = scoringSides(matchBox, playerSlug).opponents.map(getPlayerDisplayName).join(" & ");
   const heading = stage === "upcoming" ? "Upcoming Round" : stage === "submitted" ? "Round Submitted" : "Round Live";
   const note = stageNote(stage, { holesEntered: progress?.holesEntered ?? 0, waitingNames: (progress?.waitingOn ?? []).map(getPlayerDisplayName) });
@@ -48,7 +48,7 @@ export function ScoringStatusScreen({
 
   return (
     <LoadingScreen heading={heading} topSlot={topSlot} raised>
-      <p className="font-sans text-base text-cream-50/80">Round {round.round} &middot; {matchBox.format}{progress?.courseName ? ` · ${progress.courseName}` : ""}</p>
+      <p className="font-sans text-base text-cream-50/80">Session {session.session} &middot; {matchBox.format}{progress?.courseName ? ` · ${progress.courseName}` : ""}</p>
       <p className="font-sans text-lg text-cream-50/90">{formatTeeTime(matchBox.teeTime)}</p>
       <p className="font-sans text-base text-cream-50/80">{matchupLabel(playerSlug, matchBox)}</p>
       {scoring && <p className="font-sans text-sm text-cream-50/80">You are scoring: {scoring}</p>}

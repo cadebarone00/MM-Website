@@ -28,7 +28,7 @@ export function MatchCloseoutCards() {
   return (
     <div key={match.id} className="flex flex-wrap items-center justify-between gap-3 rounded bg-white p-3">
       <div>
-        <p className="font-sans text-sm font-semibold text-ink-900">Round {match.round}, Match {match.box_number}: {officialState?.leader === "tie" ? "Tied" : `${officialState?.leader} ${officialState?.margin} up`}</p>
+        <p className="font-sans text-sm font-semibold text-ink-900">Session {match.round}, Match {match.box_number}: {officialState?.leader === "tie" ? "Tied" : `${officialState?.leader} ${officialState?.margin} up`}</p>
         {waiting.length > 0 && <p className="font-sans text-xs text-ink-500">Waiting on {waiting.map(getPlayerDisplayName).join(", ")} to submit their round</p>}
       </div>
       <button type="button" disabled={busy === match.id || waiting.length > 0} onClick={() => closeMatch(match.id)} className="rounded bg-maroon-700 px-3 py-2 font-condensed text-2xs font-bold uppercase text-white disabled:bg-ink-200 disabled:text-ink-500">{busy === match.id ? "Closing…" : "Close Out Match"}</button>

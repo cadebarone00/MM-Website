@@ -1017,7 +1017,7 @@ export function BroadcastControlsPanel({
                 value={announcementText}
                 onChange={(e) => setAnnouncementText(e.target.value)}
                 maxLength={120}
-                placeholder="e.g. Round 1 tee times pushed back 15 minutes"
+                placeholder="e.g. Session 1 tee times pushed back 15 minutes"
                 className="flex-1 rounded-lg border-2 border-stone-300 px-3 py-2 text-sm"
               />
               <button

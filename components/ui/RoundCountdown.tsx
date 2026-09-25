@@ -107,7 +107,7 @@ export function RoundCountdown({ className = "", compact = false }: { className?
   if (compact) {
     return (
       <div
-        aria-label="Countdown to Round 1 at 9:30 AM CST on January 6, 2027"
+        aria-label="Countdown to Session 1 at 7:30 AM PST on January 6, 2027"
         className={["shrink-0 text-right font-condensed text-3xs font-bold tabular-nums", className].join(" ")}
       >
         <span suppressHydrationWarning>
@@ -119,7 +119,7 @@ export function RoundCountdown({ className = "", compact = false }: { className?
 
   return (
     <div
-      aria-label="Countdown to Round 1 at 9:30 AM CST on January 6, 2027"
+      aria-label="Countdown to Session 1 at 7:30 AM PST on January 6, 2027"
       className={["shrink-0 text-right font-condensed font-bold tabular-nums", className].join(" ")}
     >
       <span className="text-xs sm:hidden" suppressHydrationWarning>

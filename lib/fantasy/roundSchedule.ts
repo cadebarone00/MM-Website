@@ -20,6 +20,6 @@ export function groupScheduleByDay(schedule: UpcomingRoundScheduleItem[]): Sched
   return dates.map((date, index) => ({
     day: index + 1,
     date,
-    rounds: dated.filter((item) => item.date === date).sort((a, b) => a.round - b.round),
+    rounds: dated.filter((item) => item.date === date).sort((a, b) => a.session - b.session),
   }));
 }

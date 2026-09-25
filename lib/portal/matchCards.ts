@@ -72,7 +72,7 @@ export interface LiveMatchCardInput {
   id: string;
   status: "Live" | "Upcoming" | "Past";
   course: string | null;
-  round: number;
+  session: number;
   format: string;
   maroonPlayers: string[];
   whitePlayers: string[];
@@ -87,7 +87,7 @@ export function liveMatchCard(input: LiveMatchCardInput): PortalMatchCard {
     id: input.id,
     status: input.status,
     course: input.course,
-    roundFormatLabel: `Round ${input.round} · ${input.format}`,
+    roundFormatLabel: `Session ${input.session} · ${input.format}`,
     maroonPlayers: input.maroonPlayers,
     whitePlayers: input.whitePlayers,
     maroonOdds: input.maroonOdds,
@@ -101,9 +101,9 @@ export function liveMatchCard(input: LiveMatchCardInput): PortalMatchCard {
       day: "numeric",
       hour: "numeric",
       minute: "2-digit",
-      timeZone: "America/Chicago",
+      timeZone: "America/Los_Angeles",
     });
-    return { ...base, statusLabel: "VS", progressLabel: `${teeTimeLabel} CT`, leader: null };
+    return { ...base, statusLabel: "VS", progressLabel: `${teeTimeLabel} PT`, leader: null };
   }
 
   const official = input.official;

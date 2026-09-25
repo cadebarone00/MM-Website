@@ -11,7 +11,7 @@ export function ScheduleAccordion({ rounds, year, initialDate }: { rounds: Upcom
   const libraryDialog = useRef<HTMLDialogElement>(null);
   const photosByCourse = coursePhotos as Record<string, { name: string; main: string[]; library: string[] }>;
   const panels = Array.from({ length: 8 }, (_, index) => {
-    const round = rounds.find(round => round.round === index + 1);
+    const round = rounds.find(round => round.session === index + 1);
     const date = round?.date ?? `${year}-01-0${6 + Math.floor(index / 2)}`;
     const courseKey = (round?.courseName ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
     const candidates = Object.values(photosByCourse).filter(entry => {
@@ -19,7 +19,7 @@ export function ScheduleAccordion({ rounds, year, initialDate }: { rounds: Upcom
       return key && courseKey.includes(key);
     });
     const photos = photosByCourse[courseKey] ?? (candidates.length === 1 ? candidates[0] : undefined);
-    const appearance = rounds.filter(item => item.round < index + 1 && item.courseName === round?.courseName).length;
+    const appearance = rounds.filter(item => item.session < index + 1 && item.courseName === round?.courseName).length;
     return { round: index + 1, date, course: round?.courseName, format: round?.format, image: photos?.main[appearance % (photos.main.length || 1)] ?? "/schedule/mission-hills.webp", library: photos?.library ?? [] };
   });
   const [active, setActive] = useState(Math.max(0, panels.findIndex(panel => panel.date === initialDate)));

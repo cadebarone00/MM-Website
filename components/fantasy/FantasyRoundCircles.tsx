@@ -38,13 +38,13 @@ export function FantasyRoundCircles({
 
       {days.flatMap((day) =>
         day.rounds.map((round) => {
-          const points = picks ? fantasyPointsForRound(tournament, picks, round.round) : null;
+          const points = picks ? fantasyPointsForRound(tournament, picks, round.session) : null;
           return (
-            <div key={round.round} className="flex flex-col items-center gap-1">
+            <div key={round.session} className="flex flex-col items-center gap-1">
               <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-maroon-700 bg-white font-score text-sm font-bold tabular-nums text-ink-900">
                 {points === null ? "–" : points}
               </div>
-              <span className="font-condensed text-3xs font-bold text-ink-600">Rd {round.round}</span>
+              <span className="font-condensed text-3xs font-bold text-ink-600">Rd {round.session}</span>
               {round.format && <span className="max-w-full truncate font-sans text-[9px] leading-tight text-ink-400">{round.format}</span>}
             </div>
           );

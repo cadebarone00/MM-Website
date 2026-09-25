@@ -40,7 +40,7 @@ export async function buildLiveMatchCards(matches: CurrentSessionResult[]): Prom
       id: matchBox.id ?? `round-${session.session}-box-${matchBox.matchNumber}`,
       status: state === "Final" ? "Past" : state === "Live" ? "Live" : "Upcoming",
       course: session.courseId ? courseNameById.get(session.courseId) ?? null : null,
-      round: session.session,
+      session: session.session,
       format: matchBox.format,
       maroonPlayers: matchBox.maroonPlayers,
       whitePlayers: matchBox.whitePlayers,

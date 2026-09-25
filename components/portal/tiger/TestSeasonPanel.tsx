@@ -49,7 +49,7 @@ export function TestSeasonPanel({ activeYear }: { activeYear: number }) {
       <details className="mt-4 rounded-md bg-white/70 p-3">
         <summary className="cursor-pointer font-sans text-sm font-semibold text-ink-800">How to rehearse Begin Round, the Scorecard colors, and Submit Round</summary>
         <ol className="mt-2 list-decimal space-y-1 pl-5 font-sans text-sm text-ink-700">
-          <li>In Open Test Setup, lock a course and matchups for Round 1 using two players you can log in as, then Start the round from this page.</li>
+          <li>In Open Test Setup, lock a course and matchups for Session 1 using two players you can log in as, then Start the session from this page.</li>
           <li>On two phones (one per player account), open Portal → Scoring. Each sees the full matchup, who they are scoring, and Begin Round.</li>
           <li>Both players enter all 18 holes. Enter one hole differently on purpose: that hole number and the round total on the Scorecard turn red. Fix it and the total turns green.</li>
           <li>Each player opens Scorecard and presses Submit Round (it only turns maroon when green). After both submit, each Scoring tab moves on.</li>

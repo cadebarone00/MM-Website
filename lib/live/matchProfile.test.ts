@@ -23,7 +23,7 @@ test("official completion awards the correct points while upcoming matches remai
   assert.equal(profileMatch(entry).status, "scheduled");
   assert.equal(profileMatch(entry).maroonPts, 0);
   entry.match.tee_time = "2027-01-06T15:30:00Z";
-  assert.equal(profileMatch(entry).teeTimeCst, "9:30 AM");
+  assert.equal(profileMatch(entry).teeTimeCst, "7:30 AM PT");
   entry.officialState = { status: "complete", thru: 16, leader: "white", margin: 3 };
   assert.equal(profileMatch(entry).status, "final");
   assert.equal(profileMatch(entry).whitePts, 1);

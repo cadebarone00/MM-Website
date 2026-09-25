@@ -40,7 +40,7 @@ export function LiveMatchesList() {
             <Link href={`/leaderboard/${nextTournament.slug}/matches/${encodeURIComponent(match.id)}`} className="font-sans text-sm font-semibold text-ink-900 hover:text-maroon-700">
               {names(match.maroon_players)} vs {names(match.white_players)}
             </Link>
-            <p className="mt-1 font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Round {match.round} · {match.format} · {state}</p>
+            <p className="mt-1 font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Session {match.round} · {match.format} · {state}</p>
             {market ? (
               <div className="mt-3 grid grid-cols-3 gap-2">
                 {market.selections.map((selection) => (
