@@ -68,6 +68,7 @@ export interface TournamentSettings {
   completedAt: string | null; // ISO timestamp, null until the tournament is done
   venueName: string | null;
   venueLocked: boolean;
+  timezone: string; // IANA zone id, e.g. "America/Los_Angeles" — see lib/data/timezones.ts
   beginDate: string | null; // ISO date (YYYY-MM-DD)
   endDate: string | null; // ISO date (YYYY-MM-DD)
   datesLocked: boolean;
