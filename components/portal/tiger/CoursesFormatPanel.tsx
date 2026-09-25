@@ -41,7 +41,7 @@ export function CoursesFormatPanel({
     const res = await fetch("/api/portal/tiger/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ year, roundCount: count }),
+      body: JSON.stringify({ year, sessionCount: count }),
     });
     const data = await res.json();
     if (!data.ok) {

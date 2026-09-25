@@ -10,7 +10,7 @@ test("POST /api/portal/tiger/settings rejects when requireHost resolves null", a
   const { POST } = await import("./route.ts");
   const request = new Request("http://localhost/api/portal/tiger/settings", {
     method: "POST",
-    body: JSON.stringify({ roundCount: 8 }),
+    body: JSON.stringify({ sessionCount: 8 }),
   });
   await assert.rejects(() => POST(request));
 });

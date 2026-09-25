@@ -8,7 +8,7 @@
 // assembles the whole tournament's live state in one shot. Broadcast scenes
 // need the whole thing (a leaderboard is every player, every round).
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { scoreKey, type LiveCourse, type LiveHole, type LiveHoleScore, type LiveMatchBox, type LiveTournamentSnapshot, type MatchFormat, type MatchState, type Team } from "@/lib/live/types";
+import { scoreKey, type LiveCourse, type LiveHole, type LiveHoleScore, type LiveMatch, type LiveTournamentSnapshot, type MatchFormat, type MatchState, type Team } from "@/lib/live/types";
 
 interface RosterRow {
   player_slug: string;
@@ -95,11 +95,11 @@ export async function buildLiveTournamentSnapshot(seasonYear: number, options: {
     }
   }
 
-  const matchBoxes: LiveMatchBox[] = ((boxRows as MatchBoxRow[] | null) ?? []).map((row) => ({
+  const matchBoxes: LiveMatch[] = ((boxRows as MatchBoxRow[] | null) ?? []).map((row) => ({
     id: row.id,
     seasonYear,
-    round: row.round,
-    boxNumber: row.box_number,
+    session: row.round,
+    matchNumber: row.box_number,
     format: row.format as MatchFormat,
     teeTime: new Date(row.tee_time),
     maroonPlayers: row.maroon_players,

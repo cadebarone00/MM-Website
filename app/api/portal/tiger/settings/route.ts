@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     .maybeSingle();
 
   const settings: TournamentSettings = {
-    roundCount: data?.round_count ?? null,
+    sessionCount: data?.round_count ?? null,
     completedAt: data?.completed_at ?? null,
     venueName: data?.venue_name ?? null,
     venueLocked: data?.venue_locked ?? false,
@@ -41,31 +41,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
   }
 
-  const { year, roundCount } = await request.json();
+  const { year, sessionCount } = await request.json();
   if (!isValidSeasonYear(year)) {
     return NextResponse.json({ ok: false, error: "Invalid year." }, { status: 400 });
   }
-  if (typeof roundCount !== "number" || roundCount < 6 || roundCount > 10) {
-    return NextResponse.json({ ok: false, error: "Round count must be between 6 and 10." }, { status: 400 });
+  if (typeof sessionCount !== "number" || sessionCount < 6 || sessionCount > 10) {
+    return NextResponse.json({ ok: false, error: "Session count must be between 6 and 10." }, { status: 400 });
   }
 
   const service = createSupabaseServiceRoleClient();
 
-  const { error: settingsError } = await service.from("live_tournament_settings").upsert({ season_year: year, round_count: roundCount });
+  const { error: settingsError } = await service.from("live_tournament_settings").upsert({ season_year: year, round_count: sessionCount });
   if (settingsError) {
-    return NextResponse.json({ ok: false, error: "Could not save the round count." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "Could not save the session count." }, { status: 500 });
   }
 
-  // Create any missing round rows for 1..roundCount — never touch rounds
-  // that already exist (their date/course/format/locks stay as-is).
+  // Create any missing session rows for 1..sessionCount — never touch
+  // sessions that already exist (their date/course/format/locks stay as-is).
   const { data: existing } = await service.from("live_round_state").select("round").eq("season_year", year);
-  const existingRounds = new Set((existing ?? []).map((r) => r.round));
-  const missing = Array.from({ length: roundCount }, (_, i) => i + 1).filter((round) => !existingRounds.has(round));
+  const existingSessions = new Set((existing ?? []).map((r) => r.round));
+  const missing = Array.from({ length: sessionCount }, (_, i) => i + 1).filter((session) => !existingSessions.has(session));
 
   if (missing.length > 0) {
-    const { error: insertError } = await service.from("live_round_state").insert(missing.map((round) => ({ season_year: year, round })));
+    const { error: insertError } = await service.from("live_round_state").insert(missing.map((session) => ({ season_year: year, round: session })));
     if (insertError) {
-      return NextResponse.json({ ok: false, error: "Could not create the new round slots." }, { status: 500 });
+      return NextResponse.json({ ok: false, error: "Could not create the new session slots." }, { status: 500 });
     }
   }
 

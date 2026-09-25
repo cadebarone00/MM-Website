@@ -2,10 +2,10 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { matchBoxResult, roundIsComplete } from '../lib/live/orchestration.ts';
+import { matchBoxResult, sessionIsComplete } from '../lib/live/orchestration.ts';
 import { buildOfficialMatchState } from '../lib/live/officialMatchState.ts';
 import { holeSubmissionStatus, type HoleSubmission } from '../lib/live/holeSubmission.ts';
-import { type LiveMatchBox, type LiveTournamentSnapshot, scoreKey } from '../lib/live/types.ts';
+import { type LiveMatch, type LiveTournamentSnapshot, scoreKey } from '../lib/live/types.ts';
 
 const sources = [
   'supabase/schema.sql', 'supabase/player_slots_email.sql',
@@ -23,8 +23,8 @@ const sources = [
   'components/leaderboard/matchUtils.ts', 'components/leaderboard/LiveLeaderboardContent.tsx',
   'lib/data/live.ts', 'lib/data/players/index.ts',
   'app/api/portal/scoring/hole/route.ts', 'app/api/portal/scoring/stroke/route.ts',
-  'app/api/portal/tiger/matchboxes/route.ts', 'app/api/portal/tiger/matchboxes/closeout/route.ts',
-  'app/api/portal/tiger/rounds/lock/route.ts', 'app/api/portal/tiger/rounds/start/route.ts',
+  'app/api/portal/tiger/matches/route.ts', 'app/api/portal/tiger/matches/closeout/route.ts',
+  'app/api/portal/tiger/sessions/lock/route.ts', 'app/api/portal/tiger/sessions/start/route.ts',
 ];
 const revision = execFileSync('git', ['rev-parse', 'HEAD'], {encoding:'utf8'}).trim();
 fs.writeFileSync('docs/google-sheet-backup-sources.md',
@@ -65,7 +65,7 @@ for (const round of rounds) {
     const white=roster.filter(p=>p.team==='white').slice(b*perSide,b*perSide+perSide).map(p=>p.player_slug);
     const groupIndex=round.format==='Singles'?Math.floor(b/2):b;
     const time=`${round.date}T${round.round===2?'19':'14'}:${String(groupIndex*10).padStart(2,'0')}:00Z`;
-    const box:LiveMatchBox={id:uuid(),seasonYear:year,round:round.round,boxNumber:b+1,format:round.format,teeTime:new Date(time),maroonPlayers:maroon,whitePlayers:white,state:'Live',started:true};
+    const box:LiveMatch={id:uuid(),seasonYear:year,session:round.round,matchNumber:b+1,format:round.format,teeTime:new Date(time),maroonPlayers:maroon,whitePlayers:white,state:'Live',started:true};
     snapshot.matchBoxes.push(box);
     const groupId=`sample-r${round.round}-tee${groupIndex+1}`;
     let group=teeGroups.find(g=>g.sheetTeeGroupId===groupId);
@@ -91,9 +91,9 @@ for (const round of rounds) {
     assert.equal(result.leader,kind===0?'maroon':kind===1?'white':'tie');
     assert.equal(result.holesRemaining,kind===0?2:kind===1?1:0);
     assert.equal(official.status,'complete');
-    matches.push({id:box.id,season_year:year,round:round.round,box_number:box.boxNumber,format:box.format,tee_time:time,maroon_players:maroon,white_players:white,state:'Live',started:true,expectedResult:result,expectedOfficialState:official,expectedLabel:kind===0?'3&2':kind===1?'2&1':'AS',sheetMetadata:{day:round.round===3?2:1,session:round.round===2?'Afternoon':'Morning',teeGroupId:groupId}});
+    matches.push({id:box.id,season_year:year,round:round.round,box_number:box.matchNumber,format:box.format,tee_time:time,maroon_players:maroon,white_players:white,state:'Live',started:true,expectedResult:result,expectedOfficialState:official,expectedLabel:kind===0?'3&2':kind===1?'2&1':'AS',sheetMetadata:{day:round.round===3?2:1,session:round.round===2?'Afternoon':'Morning',teeGroupId:groupId}});
   }
-  assert.equal(roundIsComplete(snapshot,round.round,round.format),true);
+  assert.equal(sessionIsComplete(snapshot,round.round,round.format),true);
 }
 const pair={format:'Singles' as const,maroonPlayers:['sample-maroon-1'],whitePlayers:['sample-white-1']};
 const initial:HoleSubmission={player:pair.maroonPlayers[0],hole:1,submittedAt:'2027-01-06T19:10:00Z',ownScore:4,opponentScore:5,putts:2,fairway:'hit',green:'hit'};

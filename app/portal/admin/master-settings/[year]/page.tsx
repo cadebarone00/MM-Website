@@ -30,7 +30,7 @@ export default async function MasterSettingsPage({ params }: { params: Promise<{
   ]);
 
   const settings: TournamentSettings = {
-    roundCount: settingsRow?.round_count ?? null,
+    sessionCount: settingsRow?.round_count ?? null,
     completedAt: settingsRow?.completed_at ?? null,
     venueName: settingsRow?.venue_name ?? null,
     venueLocked: settingsRow?.venue_locked ?? false,

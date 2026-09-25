@@ -114,7 +114,7 @@ async function loadInputs(service: Service, seasonYear: number): Promise<Inputs>
   const courses = new Map<string, SetupCourse>();
   const rounds: FutureRound[] = setup.rounds.map((round) => {
     courses.set(round.course.key, round.course);
-    const boxes = snapshot.matchBoxes.filter((box) => box.round === round.round && box.id);
+    const boxes = snapshot.matchBoxes.filter((box) => box.session === round.round && box.id);
     return {
       round: round.round,
       format: round.format,

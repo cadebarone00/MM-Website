@@ -23,7 +23,7 @@ function isClosed(result: Pick<MatchBoxResult, "maroonPts" | "whitePts">): boole
  * that function never reads scores and can never detect a round finishing.
  */
 export function isRoundComplete(snapshot: LiveTournamentSnapshot, round: number): boolean {
-  const boxes = snapshot.matchBoxes.filter((box) => box.round === round);
+  const boxes = snapshot.matchBoxes.filter((box) => box.session === round);
   return boxes.length > 0 && boxes.every((box) => isClosed(matchBoxResult(snapshot, box)));
 }
 

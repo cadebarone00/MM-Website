@@ -53,7 +53,7 @@ export async function currentHoleInOneState(seasonYear: number): Promise<HoleInO
   const partners = new Map<string, string[]>();
   for (const box of snapshot.matchBoxes) {
     if (box.format !== "Foursome") continue;
-    for (const side of [box.maroonPlayers, box.whitePlayers]) for (const player of side) partners.set(`${box.round}:${player}`, side);
+    for (const side of [box.maroonPlayers, box.whitePlayers]) for (const player of side) partners.set(`${box.session}:${player}`, side);
   }
   const played: HolePlayed = (player, round, hole) => (partners.get(`${round}:${player}`) ?? [player]).some((member) => hasScore(member, round, hole));
 

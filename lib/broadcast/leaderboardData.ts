@@ -22,9 +22,9 @@ export interface BroadcastLeaderboard {
  */
 function liveStandings(snapshot: Awaited<ReturnType<typeof buildLiveTournamentSnapshot>>): BroadcastStanding[] {
   const totals = leaderboard(snapshot);
-  const liveRound = Math.max(...snapshot.matchBoxes.filter((box) => box.state === "Live").map((box) => box.round), 0);
-  const liveFormat = liveRound ? snapshot.matchBoxes.find((box) => box.round === liveRound)?.format : null;
-  const individualRounds = new Set(snapshot.matchBoxes.filter((box) => box.format !== "Foursome").map((box) => box.round));
+  const liveRound = Math.max(...snapshot.matchBoxes.filter((box) => box.state === "Live").map((box) => box.session), 0);
+  const liveFormat = liveRound ? snapshot.matchBoxes.find((box) => box.session === liveRound)?.format : null;
+  const individualRounds = new Set(snapshot.matchBoxes.filter((box) => box.format !== "Foursome").map((box) => box.session));
   const mostRecentIndividualRound = Math.max(
     ...[...snapshot.scores.values()]
       .filter((score) => score.score != null && score.score > 0 && individualRounds.has(score.round))

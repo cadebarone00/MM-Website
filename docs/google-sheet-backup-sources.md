@@ -1,6 +1,6 @@
 # Verbatim source companion for the Google Sheet backup
 
-Repository reference: 794e9371b6b71ca180d6f8101d5dcd393a41f74f. Exported from the working tree. No database rows or credentials.
+Repository reference: 8d2d84c331fd61d7d26eaad952a049cc4fc2968d. Exported from the working tree. No database rows or credentials.
 
 **Reference only. Do not run this document as SQL.** These are incremental source files, not a flattened production schema. Follow the handoff for effective keys and limitations. Later migrations supersede older definitions; comments can describe older workflows.
 
@@ -2264,11 +2264,11 @@ export interface LiveHoleScore {
   hostEdited: boolean;
 }
 
-export interface LiveMatchBox {
+export interface LiveMatch {
   id: string | null;
   seasonYear: number;
-  round: number;
-  boxNumber: number;
+  session: number;
+  matchNumber: number;
   format: MatchFormat;
   teeTime: Date;
   maroonPlayers: string[]; // player_slug[]
@@ -2278,7 +2278,7 @@ export interface LiveMatchBox {
 }
 
 export interface TournamentSettings {
-  roundCount: number | null;
+  sessionCount: number | null;
   completedAt: string | null; // ISO timestamp, null until the tournament is done
   venueName: string | null;
   venueLocked: boolean;
@@ -2291,16 +2291,20 @@ export interface RosterEntry {
   seasonYear: number;
   playerSlug: string;
   team: Team;
+  displayName?: string;
+  avatarSrc?: string | null;
 }
 
-export interface LiveRoundState {
+export interface LiveSessionState {
   seasonYear: number;
-  round: number;
+  session: number;
   started: boolean;
   courseId: string | null;
   courseSetup?: { teeSetId: string; teeSetName: string; holes: LiveHole[]; rating: number | null; slope: number | null; holeTeeSetIds?: Record<string, string> } | null;
   date: string | null; // ISO date (YYYY-MM-DD)
   format: MatchFormat | null;
+  /** 3 "HH:MM" Pacific wall-clock times, or null where not yet set. Fourball/Foursome: one per match. Singles: shared 1&2 / 3&4 / 5&6. See lib/live/sessionTeeTimes.ts. */
+  matchTeeTimes: (string | null)[];
   courseLocked: boolean;
   matchupsLocked: boolean;
 }
@@ -2314,9 +2318,9 @@ export interface LiveRoundState {
 export interface LiveTournamentSnapshot {
   players: Record<string, { team: Team }>; // keyed by player_slug
   courses: Record<string, LiveCourse>; // keyed by course id
-  roundCourses: Record<number, string>; // round -> course id
+  roundCourses: Record<number, string>; // session -> course id
   scores: Map<string, LiveHoleScore>; // keyed by `${player}:${round}:${hole}`
-  matchBoxes: LiveMatchBox[];
+  matchBoxes: LiveMatch[];
 }
 
 export function scoreKey(player: string, round: number, hole: number): string {
@@ -2350,26 +2354,26 @@ export function courseForRound(snapshot: LiveTournamentSnapshot, round: number):
 ## lib/live/orchestration.ts
 
 ```typescript
-import { readScore, type LiveMatchBox, type LiveTournamentSnapshot, type MatchFormat, type MatchState, type Team } from "./types.ts";
+import { readScore, type LiveMatch, type LiveTournamentSnapshot, type MatchFormat, type MatchState, type Team } from "./types.ts";
 
 const ROSTER_SIZE = 12; // 6 Maroon + 6 White — fixed roster size across formats
 
-export function boxesPerRound(format: MatchFormat): number {
+export function matchesPerSession(format: MatchFormat): number {
   return format === "Singles" ? 6 : 3;
 }
 
-export function playersPerTeamPerBox(format: MatchFormat): number {
+export function playersPerTeamPerMatch(format: MatchFormat): number {
   return format === "Singles" ? 1 : 2;
 }
 
-export function validateMatchBox(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox): string[] {
+export function validateMatchBox(snapshot: LiveTournamentSnapshot, matchBox: LiveMatch): string[] {
   const errors: string[] = [];
-  const maxBoxes = boxesPerRound(matchBox.format);
-  if (matchBox.boxNumber < 1 || matchBox.boxNumber > maxBoxes) {
+  const maxBoxes = matchesPerSession(matchBox.format);
+  if (matchBox.matchNumber < 1 || matchBox.matchNumber > maxBoxes) {
     errors.push(`Match box must be between 1 and ${maxBoxes} for ${matchBox.format}.`);
   }
 
-  const perTeam = playersPerTeamPerBox(matchBox.format);
+  const perTeam = playersPerTeamPerMatch(matchBox.format);
   if (matchBox.maroonPlayers.length !== perTeam) errors.push(`Pick exactly ${perTeam} Maroon player${perTeam === 1 ? "" : "s"}.`);
   if (matchBox.whitePlayers.length !== perTeam) errors.push(`Pick exactly ${perTeam} White player${perTeam === 1 ? "" : "s"}.`);
 
@@ -2380,7 +2384,7 @@ export function validateMatchBox(snapshot: LiveTournamentSnapshot, matchBox: Liv
     if (snapshot.players[player]?.team !== "white") errors.push(`${player} is not on Team White.`);
   }
 
-  const roundBoxes = snapshot.matchBoxes.filter((box) => box.round === matchBox.round && box.boxNumber !== matchBox.boxNumber);
+  const roundBoxes = snapshot.matchBoxes.filter((box) => box.session === matchBox.session && box.matchNumber !== matchBox.matchNumber);
   const used = new Set(roundBoxes.flatMap((box) => [...box.maroonPlayers, ...box.whitePlayers]));
   const duplicates = [...matchBox.maroonPlayers, ...matchBox.whitePlayers].filter((player) => used.has(player));
   if (duplicates.length > 0) errors.push(`Players already assigned in this round: ${[...new Set(duplicates)].sort().join(", ")}.`);
@@ -2398,7 +2402,7 @@ export function validateMatchBox(snapshot: LiveTournamentSnapshot, matchBox: Liv
  * your side may enter it, since it's one shared real-world number).
  */
 export function canScoreStrokesFor(
-  matchBox: Pick<LiveMatchBox, "format" | "maroonPlayers" | "whitePlayers">,
+  matchBox: Pick<LiveMatch, "format" | "maroonPlayers" | "whitePlayers">,
   scorerSlug: string,
   targetSlugs: string[]
 ): boolean {
@@ -2428,14 +2432,14 @@ export function scoresAgree(officialScore: number | null, selfReportedScore: num
   return officialScore !== null && selfReportedScore !== null && officialScore === selfReportedScore;
 }
 
-export function roundIsComplete(snapshot: LiveTournamentSnapshot, round: number, format: MatchFormat): boolean {
-  const boxes = snapshot.matchBoxes.filter((box) => box.round === round);
-  if (boxes.length !== boxesPerRound(format)) return false;
+export function sessionIsComplete(snapshot: LiveTournamentSnapshot, round: number, format: MatchFormat): boolean {
+  const boxes = snapshot.matchBoxes.filter((box) => box.session === round);
+  if (boxes.length !== matchesPerSession(format)) return false;
   const players = boxes.flatMap((box) => [...box.maroonPlayers, ...box.whitePlayers]);
   return players.length === ROSTER_SIZE && new Set(players).size === ROSTER_SIZE;
 }
 
-export function effectiveMatchState(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox, now?: Date): MatchState {
+export function effectiveMatchState(snapshot: LiveTournamentSnapshot, matchBox: LiveMatch, now?: Date): MatchState {
   if (matchBox.state === "Final") return "Final";
   if (matchBoxStartedThru(snapshot, matchBox) === 18) return "Final";
   if (!matchBox.started) return "Scheduled";
@@ -2444,7 +2448,7 @@ export function effectiveMatchState(snapshot: LiveTournamentSnapshot, matchBox: 
   return current >= matchBox.teeTime ? "Live" : "Armed";
 }
 
-export function matchBoxStartedThru(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox): number {
+export function matchBoxStartedThru(snapshot: LiveTournamentSnapshot, matchBox: LiveMatch): number {
   let completed = 0;
   for (let hole = 1; hole <= 18; hole++) {
     if (!holeComplete(snapshot, matchBox, hole)) break;
@@ -2453,17 +2457,17 @@ export function matchBoxStartedThru(snapshot: LiveTournamentSnapshot, matchBox: 
   return completed;
 }
 
-export function thruLabel(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox): string {
+export function thruLabel(snapshot: LiveTournamentSnapshot, matchBox: LiveMatch): string {
   const thru = matchBoxStartedThru(snapshot, matchBox);
   if (thru === 0) return "Thru";
   if (thru >= 18) return "Final";
   return `Thru ${thru}`;
 }
 
-export function holeComplete(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox, hole: number): boolean {
+export function holeComplete(snapshot: LiveTournamentSnapshot, matchBox: LiveMatch, hole: number): boolean {
   const players = [...matchBox.maroonPlayers, ...matchBox.whitePlayers];
   return players.every((player) => {
-    const score = readScore(snapshot, player, matchBox.round, hole);
+    const score = readScore(snapshot, player, matchBox.session, hole);
     return score.score !== null && score.score > 0;
   });
 }
@@ -2480,8 +2484,8 @@ export interface MatchBoxResult {
   holesRemaining: number;
 }
 
-export function matchBoxResult(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox): MatchBoxResult {
-  const round = matchBox.round;
+export function matchBoxResult(snapshot: LiveTournamentSnapshot, matchBox: LiveMatch): MatchBoxResult {
+  const round = matchBox.session;
   let maroonHoles = 0;
   let whiteHoles = 0;
   let completed = 0;
@@ -2518,17 +2522,17 @@ export function matchBoxResult(snapshot: LiveTournamentSnapshot, matchBox: LiveM
 
 /** A round may be armed while this box is waiting for tee time. Tiger can
  * override that wait by setting the persisted box state to Live. */
-export function matchIsScoreable(matchBox: Pick<LiveMatchBox, "state" | "started" | "teeTime">, now = new Date()): boolean {
+export function matchIsScoreable(matchBox: Pick<LiveMatch, "state" | "started" | "teeTime">, now = new Date()): boolean {
   return matchBox.started && matchBox.state !== "Final" && (matchBox.state === "Live" || now >= matchBox.teeTime);
 }
 
-export function matchBoxPayload(snapshot: LiveTournamentSnapshot, matchBox: LiveMatchBox, now?: Date): Record<string, unknown> {
+export function matchBoxPayload(snapshot: LiveTournamentSnapshot, matchBox: LiveMatch, now?: Date): Record<string, unknown> {
   const state = effectiveMatchState(snapshot, matchBox, now);
   const result = matchBoxResult(snapshot, matchBox);
   return {
     id: matchBox.id,
-    round: matchBox.round,
-    boxNumber: matchBox.boxNumber,
+    round: matchBox.session,
+    boxNumber: matchBox.matchNumber,
     format: matchBox.format,
     teeTime: matchBox.teeTime.toISOString(),
     state,
@@ -2544,7 +2548,7 @@ export function matchBoxPayload(snapshot: LiveTournamentSnapshot, matchBox: Live
 
 ```typescript
 import { effectiveMatchState, matchBoxResult, matchBoxStartedThru } from "@/lib/live/orchestration";
-import type { LiveMatchBox, LiveTournamentSnapshot } from "@/lib/live/types";
+import type { LiveMatch, LiveTournamentSnapshot } from "@/lib/live/types";
 
 export type OfficialMatchStatus = "upcoming" | "live" | "complete" | "closed_out";
 
@@ -2564,7 +2568,7 @@ export type OfficialMatchState = {
  * confirmed scores only. It deliberately knows nothing about drafts or
  * scorer devices: callers must filter those before invoking it.
  */
-export function buildOfficialMatchState(snapshot: LiveTournamentSnapshot, box: LiveMatchBox, now = new Date()): OfficialMatchState {
+export function buildOfficialMatchState(snapshot: LiveTournamentSnapshot, box: LiveMatch, now = new Date()): OfficialMatchState {
   const startedState = effectiveMatchState(snapshot, box, now);
   const result = matchBoxResult(snapshot, box);
   const thru = matchBoxStartedThru(snapshot, box);
@@ -2589,6 +2593,7 @@ export function buildOfficialMatchState(snapshot: LiveTournamentSnapshot, box: L
 
 ```typescript
 import type { MatchFormat } from "./types";
+import type { ScorecardHoleRow } from "@/lib/portal/scorecard";
 
 export type ShotChoice = "hit" | "long" | "short" | "left" | "right" | "penalty";
 export type HoleDraft = { ownScore: number; opponentScore: number; putts: number | null; fairway: ShotChoice | null; green: ShotChoice | null };
@@ -2631,6 +2636,31 @@ export function holeSubmissionStatus(box: ScoringPair, player: string, hole: num
 export function sameHoleDraft(a: HoleDraft, b: HoleDraft, par: number, format: MatchFormat) {
   return a.ownScore === b.ownScore && a.opponentScore === b.opponentScore
     && (format === "Foursome" || (a.putts === b.putts && a.green === b.green && (par === 3 || a.fairway === b.fairway)));
+}
+
+/** Maps one player's submitted holes into Scorecard rows. Alternate Shot never collects putts/fairway/green, so those come back null (not applicable) even on an entered hole; fairway is also null on a par 3. */
+export function buildScorecardRows(holes: { number: number; par: number; yards: number }[], player: string, submissions: HoleSubmission[], format: MatchFormat): ScorecardHoleRow[] {
+  return holes.map((hole) => {
+    const entry = submissions.filter((s) => s.hole === hole.number && s.player === player).sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))[0];
+    const isFoursome = format === "Foursome";
+    const par3 = hole.par === 3;
+    const shot = (choice: ShotChoice | null): { hit: boolean | null; direction: ScorecardHoleRow["firDirection"] } =>
+      choice == null ? { hit: null, direction: null } : { hit: choice === "hit", direction: choice === "hit" ? null : choice };
+    const fairway = !entry || isFoursome || par3 ? { hit: null, direction: null } : shot(entry.fairway);
+    const green = !entry || isFoursome ? { hit: null, direction: null } : shot(entry.green);
+    return {
+      hole: hole.number,
+      par: hole.par,
+      yards: hole.yards,
+      score: entry?.ownScore ?? null,
+      opponentScore: entry?.opponentScore ?? null,
+      putts: !entry || isFoursome ? null : entry.putts,
+      fir: fairway.hit,
+      firDirection: fairway.direction,
+      gir: green.hit,
+      girDirection: green.direction,
+    };
+  });
 }
 ```
 
@@ -2697,6 +2727,7 @@ import { buildLiveTournamentSnapshot } from "@/lib/broadcast/liveSnapshot";
 import { buildOfficialMatchState, type OfficialMatchState } from "@/lib/live/officialMatchState";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { publishMatchOdds } from "@/lib/live/publishMatchOdds";
+import { refreshFutures } from "@/lib/wagers/refreshFutures";
 
 /**
  * Rebuild and publish a match using confirmed holes only. This is the shared
@@ -2707,7 +2738,8 @@ import { publishMatchOdds } from "@/lib/live/publishMatchOdds";
 export async function publishOfficialMatchState(
   seasonYear: number,
   matchBoxId: string,
-  auditKind?: "match_locked" | "match_updated"
+  auditKind?: "match_locked" | "match_updated",
+  { futuresPricingBudgetMs = 0 }: { futuresPricingBudgetMs?: number } = {}
 ): Promise<OfficialMatchState | null> {
   const service = createSupabaseServiceRoleClient();
   const { data: job, error: jobError } = await service.from("live_publication_jobs").select("revision").eq("match_box_id", matchBoxId).maybeSingle();
@@ -2726,13 +2758,17 @@ export async function publishOfficialMatchState(
     const { error: auditError } = await service.from("live_score_audit_events").insert({
       season_year: seasonYear,
       match_box_id: matchBoxId,
-      round: box.round,
+      round: box.session,
       kind: auditKind,
       payload: { thru: official.thru, leader: official.leader, margin: official.margin, mathematicallyComplete: official.mathematicallyComplete },
     });
     if (auditError) throw auditError;
   }
 
+  // Tournament futures depend on every match and on every new hole in the
+  // Career Archive; bets on them pause until this lands. A pricing budget
+  // (background callers only) also re-prices affected Team Winner matchups.
+  await refreshFutures(seasonYear, { teamWinnerPricingBudgetMs: futuresPricingBudgetMs });
 
   return official;
 }
@@ -2793,7 +2829,7 @@ function holeByNumber(holes: { number: number; par: number; yards: number }[]): 
  * equals its round's format (the plan's own long-standing invariant).
  */
 function isIndividualStatsExcluded(snapshot: LiveTournamentSnapshot, round: number): boolean {
-  return snapshot.matchBoxes.find((box) => box.round === round)?.format === "Foursome";
+  return snapshot.matchBoxes.find((box) => box.session === round)?.format === "Foursome";
 }
 
 export function normalizeBool(value: boolean | number | string | null | undefined): boolean | null {
@@ -2930,19 +2966,19 @@ import { publishOfficialMatchState } from "@/lib/live/publishOfficialMatchState"
  * It runs at initial lock and after a pre-start matchup edit, so downstream
  * data never remains pointed at an old tee time, course, partner, or opponent.
  */
-export async function syncLockedRoundToCareerArchive(seasonYear: number, round: number): Promise<void> {
+export async function syncLockedSessionToCareerArchive(seasonYear: number, session: number): Promise<void> {
   const service = createSupabaseServiceRoleClient();
   const { data: roundState, error: roundError } = await service
     .from("live_round_state")
     .select("date, course_id, format, course_locked, matchups_locked, started, course_setup")
     .eq("season_year", seasonYear)
-    .eq("round", round)
+    .eq("round", session)
     .single();
   if (roundError || !roundState?.course_locked || !roundState.matchups_locked || roundState.started || !roundState.course_id || !roundState.format) return;
 
   const [{ data: course, error: courseError }, { data: boxes, error: boxesError }] = await Promise.all([
     service.from("live_courses").select("name, holes").eq("id", roundState.course_id).single(),
-    service.from("live_match_boxes").select("id, format, maroon_players, white_players").eq("season_year", seasonYear).eq("round", round),
+    service.from("live_match_boxes").select("id, format, maroon_players, white_players").eq("season_year", seasonYear).eq("round", session),
   ]);
   if (courseError || boxesError || !course) throw new Error("Could not load the locked round for archive publishing.");
 
@@ -2950,7 +2986,7 @@ export async function syncLockedRoundToCareerArchive(seasonYear: number, round: 
     const sides = [[box.maroon_players as string[], box.white_players as string[]], [box.white_players as string[], box.maroon_players as string[]]] as const;
     return sides.flatMap(([side, opponents]) => side.map((playerSlug, index) => ({
       season_year: seasonYear,
-      round,
+      round: session,
       player_slug: playerSlug,
       course: course.name,
       played_on: roundState.date,
@@ -2968,11 +3004,11 @@ export async function syncLockedRoundToCareerArchive(seasonYear: number, round: 
     .from("career_archive_rounds")
     .select("player_slug")
     .eq("season_year", seasonYear)
-    .eq("round", round)
+    .eq("round", session)
     .eq("status", "scheduled");
   const stale = (previous ?? []).map((row) => row.player_slug as string).filter((playerSlug) => !activePlayers.includes(playerSlug));
   if (stale.length > 0) {
-    const { error } = await service.from("career_archive_rounds").delete().eq("season_year", seasonYear).eq("round", round).eq("status", "scheduled").in("player_slug", stale);
+    const { error } = await service.from("career_archive_rounds").delete().eq("season_year", seasonYear).eq("round", session).eq("status", "scheduled").in("player_slug", stale);
     if (error) throw error;
   }
 
@@ -3458,6 +3494,10 @@ import { getActiveSeasonYear } from "@/lib/live/activeSeason";
 import { validHoleDraft } from "@/lib/live/holeSubmission";
 import { publishOfficialMatchState } from "@/lib/live/publishOfficialMatchState";
 
+// The background refresh after a hole (match odds, then every future,
+// including re-pricing Team Winner matchups) runs within this limit.
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   const player = await requirePlayer();
   if (!player) return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
@@ -3487,7 +3527,7 @@ export async function POST(request: Request) {
   // Acknowledge the committed hole immediately; model calculations must not
   // make a successful save look like a connection timeout on the phone.
   after(async () => {
-    try { await publishOfficialMatchState(seasonYear, data.matchBoxId); }
+    try { await publishOfficialMatchState(seasonYear, data.matchBoxId, undefined, { futuresPricingBudgetMs: 30_000 }); }
     catch (err) { console.error("Official match refresh remains queued:", err); }
   });
   return NextResponse.json({ ok: true, submissions: data.submissions });
@@ -3505,7 +3545,7 @@ export async function POST() {
 }
 ```
 
-## app/api/portal/tiger/matchboxes/route.ts
+## app/api/portal/tiger/matches/route.ts
 
 ```typescript
 import { NextResponse } from "next/server";
@@ -3513,10 +3553,11 @@ import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
 import { validateMatchBox } from "@/lib/live/orchestration";
-import { syncLockedRoundToCareerArchive } from "@/lib/live/syncLockedRound";
-import type { LiveMatchBox, LiveTournamentSnapshot, MatchFormat, MatchState, Team } from "@/lib/live/types";
+import { deriveMatchTeeTime, teeTimeSlotForMatch } from "@/lib/live/sessionTeeTimes";
+import { syncLockedSessionToCareerArchive } from "@/lib/live/syncLockedRound";
+import type { LiveMatch, LiveTournamentSnapshot, MatchFormat, MatchState, Team } from "@/lib/live/types";
 
-interface MatchBoxRow {
+interface MatchRow {
   id: string;
   round: number;
   box_number: number;
@@ -3528,12 +3569,12 @@ interface MatchBoxRow {
   started: boolean;
 }
 
-function rowToMatchBox(row: MatchBoxRow, seasonYear: number): LiveMatchBox {
+function rowToMatch(row: MatchRow, seasonYear: number): LiveMatch {
   return {
     id: row.id,
     seasonYear,
-    round: row.round,
-    boxNumber: row.box_number,
+    session: row.round,
+    matchNumber: row.box_number,
     format: row.format as MatchFormat,
     teeTime: new Date(row.tee_time),
     maroonPlayers: row.maroon_players,
@@ -3543,7 +3584,7 @@ function rowToMatchBox(row: MatchBoxRow, seasonYear: number): LiveMatchBox {
   };
 }
 
-const MATCH_BOX_COLUMNS = "id, round, box_number, format, tee_time, maroon_players, white_players, state, started";
+const MATCH_COLUMNS = "id, round, box_number, format, tee_time, maroon_players, white_players, state, started";
 
 export async function GET(request: Request) {
   const host = await requireHost();
@@ -3556,18 +3597,18 @@ export async function GET(request: Request) {
   if (!isValidSeasonYear(year)) {
     return NextResponse.json({ ok: false, error: "Invalid year." }, { status: 400 });
   }
-  const roundParam = url.searchParams.get("round");
+  const sessionParam = url.searchParams.get("session");
 
   const service = createSupabaseServiceRoleClient();
-  let query = service.from("live_match_boxes").select(MATCH_BOX_COLUMNS).eq("season_year", year).order("round").order("box_number");
-  if (roundParam) query = query.eq("round", Number(roundParam));
+  let query = service.from("live_match_boxes").select(MATCH_COLUMNS).eq("season_year", year).order("round").order("box_number");
+  if (sessionParam) query = query.eq("round", Number(sessionParam));
 
   const { data, error } = await query;
   if (error) {
-    return NextResponse.json({ ok: false, error: "Could not load the match boxes." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "Could not load the matches." }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, matchBoxes: (data ?? []).map((row) => rowToMatchBox(row, year)) }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json({ ok: true, matches: (data ?? []).map((row) => rowToMatch(row, year)) }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(request: Request) {
@@ -3576,12 +3617,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
   }
 
-  const { year, round, boxNumber, teeTime, maroonPlayers, whitePlayers } = await request.json();
+  const { year, session, matchNumber, maroonPlayers, whitePlayers } = await request.json();
   if (
     !isValidSeasonYear(year) ||
-    typeof round !== "number" ||
-    typeof boxNumber !== "number" ||
-    typeof teeTime !== "string" ||
+    typeof session !== "number" ||
+    typeof matchNumber !== "number" ||
     !Array.isArray(maroonPlayers) ||
     !Array.isArray(whitePlayers)
   ) {
@@ -3590,68 +3630,75 @@ export async function POST(request: Request) {
 
   const service = createSupabaseServiceRoleClient();
 
-  const { data: roundRow } = await service.from("live_round_state").select("format, course_locked, matchups_locked, started").eq("season_year", year).eq("round", round).single();
-  if (!roundRow?.course_locked || !roundRow.format) {
-    return NextResponse.json({ ok: false, error: "Lock this round's course and format before building matchups." }, { status: 400 });
+  const { data: sessionRow } = await service.from("live_round_state").select("format, course_locked, matchups_locked, started, date, match_tee_times").eq("season_year", year).eq("round", session).single();
+  if (!sessionRow?.course_locked || !sessionRow.format) {
+    return NextResponse.json({ ok: false, error: "Lock this session's course and format before building matchups." }, { status: 400 });
   }
-  if (roundRow.started) {
-    return NextResponse.json({ ok: false, error: "This round is armed; use Tiger's correction flow for a live matchup." }, { status: 400 });
+  if (sessionRow.started) {
+    return NextResponse.json({ ok: false, error: "This session is armed; use Tiger's correction flow for a live matchup." }, { status: 400 });
   }
-  const format = roundRow.format as MatchFormat;
+  const format = sessionRow.format as MatchFormat;
+
+  const teeTimes = (sessionRow.match_tee_times as (string | null)[] | null) ?? [null, null, null];
+  const slot = teeTimeSlotForMatch(format, matchNumber);
+  const teeTime = deriveMatchTeeTime(sessionRow.date, teeTimes[slot] ?? null);
+  if (!teeTime) {
+    return NextResponse.json({ ok: false, error: "This session's tee times aren't set yet — set and lock them in Courses & Format first." }, { status: 400 });
+  }
 
   const { data: rosterRows } = await service.from("live_roster").select("player_slug, team").eq("season_year", year);
   const players: LiveTournamentSnapshot["players"] = Object.fromEntries((rosterRows ?? []).map((r) => [r.player_slug, { team: r.team as Team }]));
 
-  const { data: existingRows } = await service.from("live_match_boxes").select(MATCH_BOX_COLUMNS).eq("season_year", year).eq("round", round);
-  const existingBoxes = (existingRows as MatchBoxRow[] | null ?? []).map((row) => rowToMatchBox(row, year)).filter((box) => box.boxNumber !== boxNumber);
+  const { data: existingRows } = await service.from("live_match_boxes").select(MATCH_COLUMNS).eq("season_year", year).eq("round", session);
+  const existingMatches = (existingRows as MatchRow[] | null ?? []).map((row) => rowToMatch(row, year)).filter((match) => match.matchNumber !== matchNumber);
 
-  const candidate: LiveMatchBox = {
+  const candidate: LiveMatch = {
     id: null,
     seasonYear: year,
-    round,
-    boxNumber,
+    session,
+    matchNumber,
     format,
-    teeTime: new Date(teeTime),
+    teeTime,
     maroonPlayers,
     whitePlayers,
     state: "Scheduled",
     started: false,
   };
 
-  const snapshot: LiveTournamentSnapshot = { players, courses: {}, roundCourses: {}, scores: new Map(), matchBoxes: [...existingBoxes, candidate] };
+  const snapshot: LiveTournamentSnapshot = { players, courses: {}, roundCourses: {}, scores: new Map(), matchBoxes: [...existingMatches, candidate] };
   const errors = validateMatchBox(snapshot, candidate);
   if (errors.length > 0) {
     return NextResponse.json({ ok: false, error: errors.join(" ") }, { status: 400 });
   }
 
-  const { data: currentBox } = await service.from("live_match_boxes").select("id").eq("season_year", year).eq("round", round).eq("box_number", boxNumber).maybeSingle();
-  if (currentBox) {
+  const { data: currentMatch } = await service.from("live_match_boxes").select("id").eq("season_year", year).eq("round", session).eq("box_number", matchNumber).maybeSingle();
+  if (currentMatch) {
     const { error } = await service
       .from("live_match_boxes")
-      .update({ format, tee_time: teeTime, maroon_players: maroonPlayers, white_players: whitePlayers })
-      .eq("id", currentBox.id);
-    if (error) return NextResponse.json({ ok: false, error: "Could not save that match box." }, { status: 500 });
-    if (roundRow.matchups_locked) {
+      .update({ format, tee_time: teeTime.toISOString(), maroon_players: maroonPlayers, white_players: whitePlayers })
+      .eq("id", currentMatch.id);
+    if (error) return NextResponse.json({ ok: false, error: "Could not save that match." }, { status: 500 });
+    if (sessionRow.matchups_locked) {
       try {
-        await syncLockedRoundToCareerArchive(year, round);
+        await syncLockedSessionToCareerArchive(year, session);
       } catch {
         return NextResponse.json({ ok: false, error: "Match saved, but its published archive/odds update failed." }, { status: 500 });
       }
     }
-    return NextResponse.json({ ok: true, id: currentBox.id });
+    return NextResponse.json({ ok: true, id: currentMatch.id });
   }
 
   const { data: inserted, error } = await service
     .from("live_match_boxes")
-    .insert({ season_year: year, round, box_number: boxNumber, format, tee_time: teeTime, maroon_players: maroonPlayers, white_players: whitePlayers })
+    .insert({ season_year: year, round: session, box_number: matchNumber, format, tee_time: teeTime.toISOString(), maroon_players: maroonPlayers, white_players: whitePlayers })
     .select("id")
     .single();
   if (error || !inserted) {
-    return NextResponse.json({ ok: false, error: "Could not save that match box." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "Could not save that match." }, { status: 500 });
   }
-  if (roundRow.matchups_locked) {
+  if (sessionRow.matchups_locked) {
     try {
-      await syncLockedRoundToCareerArchive(year, round);
+      await syncLockedSessionToCareerArchive(year, session);
     } catch {
       return NextResponse.json({ ok: false, error: "Match saved, but its published archive/odds update failed." }, { status: 500 });
     }
@@ -3661,12 +3708,13 @@ export async function POST(request: Request) {
 }
 ```
 
-## app/api/portal/tiger/matchboxes/closeout/route.ts
+## app/api/portal/tiger/matches/closeout/route.ts
 
 ```typescript
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { refreshFutures } from "@/lib/wagers/refreshFutures";
 
 export async function POST(request: Request) {
   if (!await requireHost()) return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
@@ -3675,21 +3723,26 @@ export async function POST(request: Request) {
   const client = await createSupabaseServerClient();
   const { data, error } = await client.rpc("close_live_match_atomic", { p_box: body.id });
   if (error) return NextResponse.json({ ok: false, error: error.code === "P0001" ? error.message : "Closeout was not completed. Retry; the score and settlement will be saved together." }, { status: 400 });
+  // Closeout touches official state, which pauses futures bets until odds refresh.
+  after(async () => {
+    const { data: box } = await createSupabaseServiceRoleClient().from("live_match_boxes").select("season_year").eq("id", body.id).maybeSingle();
+    if (box) await refreshFutures(box.season_year);
+  });
   return NextResponse.json({ ok: true, result: data });
 }
 ```
 
-## app/api/portal/tiger/rounds/lock/route.ts
+## app/api/portal/tiger/sessions/lock/route.ts
 
 ```typescript
 import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
-import { roundIsComplete, validateMatchBox } from "@/lib/live/orchestration";
-import { syncLockedRoundToCareerArchive } from "@/lib/live/syncLockedRound";
+import { sessionIsComplete, validateMatchBox } from "@/lib/live/orchestration";
+import { syncLockedSessionToCareerArchive } from "@/lib/live/syncLockedRound";
 import { availableTeeSets } from "@/lib/live/teeSets";
-import type { LiveMatchBox, LiveTournamentSnapshot, MatchFormat, MatchState, Team } from "@/lib/live/types";
+import type { LiveMatch, LiveTournamentSnapshot, MatchFormat, MatchState, Team } from "@/lib/live/types";
 
 export async function POST(request: Request) {
   const host = await requireHost();
@@ -3697,8 +3750,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
   }
 
-  const { year, round, lock, value } = await request.json();
-  if (!isValidSeasonYear(year) || typeof round !== "number" || (lock !== "course" && lock !== "matchups") || typeof value !== "boolean") {
+  const { year, session, lock, value } = await request.json();
+  if (!isValidSeasonYear(year) || typeof session !== "number" || (lock !== "course" && lock !== "matchups") || typeof value !== "boolean") {
     return NextResponse.json({ ok: false, error: "Missing or invalid fields." }, { status: 400 });
   }
 
@@ -3706,21 +3759,25 @@ export async function POST(request: Request) {
 
   if (lock === "course") {
     if (value) {
-      const { data: current } = await service.from("live_round_state").select("date, course_id, format, course_setup").eq("season_year", year).eq("round", round).single();
+      const { data: current } = await service.from("live_round_state").select("date, course_id, format, course_setup, match_tee_times").eq("season_year", year).eq("round", session).single();
       if (!current?.date || !current?.course_id || !current?.format) {
-        return NextResponse.json({ ok: false, error: "Set a date, course, and format before locking this round." }, { status: 400 });
+        return NextResponse.json({ ok: false, error: "Set a date, course, and format before locking this session." }, { status: 400 });
+      }
+      const teeTimes = (current.match_tee_times as (string | null)[] | null) ?? [null, null, null];
+      if (teeTimes.length !== 3 || teeTimes.some((slot) => !slot)) {
+        return NextResponse.json({ ok: false, error: "Set all 3 match tee times before locking this session." }, { status: 400 });
       }
       const { data: course } = await service.from("live_courses").select("tee_sets").eq("id", current.course_id).single();
       const availableIds = new Set(availableTeeSets(Array.isArray(course?.tee_sets) ? course.tee_sets : []).map((tee) => tee.id));
       if (!availableIds.has(current.course_setup?.teeSetId) || Object.values(current.course_setup?.holeTeeSetIds ?? {}).some((id) => typeof id !== "string" || !availableIds.has(id))) {
-        return NextResponse.json({ ok: false, error: "Choose locked tee sets from the Course Library before locking this round." }, { status: 400 });
+        return NextResponse.json({ ok: false, error: "Choose locked tee sets from the Course Library before locking this session." }, { status: 400 });
       }
     }
     const { error } = await service
       .from("live_round_state")
       .update(value ? { course_locked: value } : { course_locked: value, matchups_locked: false })
       .eq("season_year", year)
-      .eq("round", round);
+      .eq("round", session);
     if (error) {
       return NextResponse.json({ ok: false, error: "Could not update the lock." }, { status: 500 });
     }
@@ -3729,21 +3786,21 @@ export async function POST(request: Request) {
 
   // lock === "matchups"
   if (value) {
-    const { data: current } = await service.from("live_round_state").select("course_locked, format, course_id, date").eq("season_year", year).eq("round", round).single();
+    const { data: current } = await service.from("live_round_state").select("course_locked, format, course_id, date").eq("season_year", year).eq("round", session).single();
     if (!current?.course_locked || !current.format) {
-      return NextResponse.json({ ok: false, error: "Lock this round's course and format before locking matchups." }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "Lock this session's course and format before locking matchups." }, { status: 400 });
     }
 
-    const { data: boxRows } = await service
+    const { data: matchRows } = await service
       .from("live_match_boxes")
       .select("id, round, box_number, format, tee_time, maroon_players, white_players, state, started")
       .eq("season_year", year)
-      .eq("round", round);
-    const matchBoxes: LiveMatchBox[] = (boxRows ?? []).map((row) => ({
+      .eq("round", session);
+    const matches: LiveMatch[] = (matchRows ?? []).map((row) => ({
       id: row.id,
       seasonYear: year,
-      round: row.round,
-      boxNumber: row.box_number,
+      session: row.round,
+      matchNumber: row.box_number,
       format: row.format as MatchFormat,
       teeTime: new Date(row.tee_time),
       maroonPlayers: row.maroon_players,
@@ -3754,25 +3811,24 @@ export async function POST(request: Request) {
     const { data: rosterRows } = await service.from("live_roster").select("player_slug, team").eq("season_year", year);
     const players: LiveTournamentSnapshot["players"] = Object.fromEntries((rosterRows ?? []).map((r) => [r.player_slug, { team: r.team as Team }]));
 
-    const snapshot: LiveTournamentSnapshot = { players, courses: {}, roundCourses: {}, scores: new Map(), matchBoxes };
-    if (!roundIsComplete(snapshot, round, current.format as MatchFormat)) {
-      return NextResponse.json({ ok: false, error: "Every match box for this round needs to be filled before locking matchups." }, { status: 400 });
+    const snapshot: LiveTournamentSnapshot = { players, courses: {}, roundCourses: {}, scores: new Map(), matchBoxes: matches };
+    if (!sessionIsComplete(snapshot, session, current.format as MatchFormat)) {
+      return NextResponse.json({ ok: false, error: "Every match for this session needs to be filled before locking matchups." }, { status: 400 });
     }
 
-    const boxErrors = matchBoxes.flatMap((box) => validateMatchBox(snapshot, box).map((message) => `Match ${box.boxNumber}: ${message}`));
-    if (boxErrors.length > 0) {
-      return NextResponse.json({ ok: false, error: boxErrors.join(" ") }, { status: 400 });
+    const matchErrors = matches.flatMap((match) => validateMatchBox(snapshot, match).map((message) => `Match ${match.matchNumber}: ${message}`));
+    if (matchErrors.length > 0) {
+      return NextResponse.json({ ok: false, error: matchErrors.join(" ") }, { status: 400 });
     }
-
   }
 
-  const { error } = await service.from("live_round_state").update({ matchups_locked: value }).eq("season_year", year).eq("round", round);
+  const { error } = await service.from("live_round_state").update({ matchups_locked: value }).eq("season_year", year).eq("round", session);
   if (error) {
     return NextResponse.json({ ok: false, error: "Could not update the lock." }, { status: 500 });
   }
   if (value) {
     try {
-      await syncLockedRoundToCareerArchive(year, round);
+      await syncLockedSessionToCareerArchive(year, session);
     } catch {
       return NextResponse.json({ ok: false, error: "Matchups locked, but Career Archive publishing failed. Run the Career Live Archive SQL first." }, { status: 500 });
     }
@@ -3782,7 +3838,7 @@ export async function POST(request: Request) {
 }
 ```
 
-## app/api/portal/tiger/rounds/start/route.ts
+## app/api/portal/tiger/sessions/start/route.ts
 
 ```typescript
 import { NextResponse } from "next/server";
@@ -3797,17 +3853,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
   }
 
-  const { year, round } = await request.json();
-  if (!isValidSeasonYear(year) || typeof round !== "number" || !Number.isInteger(round)) {
-    return NextResponse.json({ ok: false, error: "Missing round." }, { status: 400 });
+  const { year, session } = await request.json();
+  if (!isValidSeasonYear(year) || typeof session !== "number" || !Number.isInteger(session)) {
+    return NextResponse.json({ ok: false, error: "Missing session." }, { status: 400 });
   }
 
   const client = await createSupabaseServerClient();
-  const { error } = await client.rpc("start_live_round_atomic", { p_year: year, p_round: round });
-  if (error) return NextResponse.json({ ok: false, error: error.code === "P0001" ? error.message : "Could not start this round. Retry safely." }, { status: 400 });
+  const { error } = await client.rpc("start_live_round_atomic", { p_year: year, p_round: session });
+  if (error) return NextResponse.json({ ok: false, error: error.code === "P0001" ? error.message : "Could not start this session. Retry safely." }, { status: 400 });
 
   try {
-    await publishBroadcastEvent({ kind: "ROUND_STARTED", seasonYear: year, round });
+    await publishBroadcastEvent({ kind: "ROUND_STARTED", seasonYear: year, round: session });
   } catch (err) {
     console.error("broadcast publish failed:", err);
   }

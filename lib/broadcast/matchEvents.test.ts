@@ -2,18 +2,18 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { detectMatchBoxEvent, detectRoundFinal, isRoundComplete } from "./matchEvents.ts";
 import type { MatchBoxResult } from "@/lib/live/orchestration";
-import { scoreKey, type LiveMatchBox, type LiveTournamentSnapshot } from "@/lib/live/types";
+import { scoreKey, type LiveMatch, type LiveTournamentSnapshot } from "@/lib/live/types";
 
 function result(overrides: Partial<MatchBoxResult> = {}): MatchBoxResult {
   return { maroonPts: 0, whitePts: 0, leader: "tie", margin: 0, holesRemaining: 18, ...overrides };
 }
 
-function box(overrides: Partial<LiveMatchBox> = {}): LiveMatchBox {
+function box(overrides: Partial<LiveMatch> = {}): LiveMatch {
   return {
     id: "box-1",
     seasonYear: 2027,
-    round: 1,
-    boxNumber: 1,
+    session: 1,
+    matchNumber: 1,
     format: "Singles",
     teeTime: new Date("2027-06-01T12:00:00Z"),
     maroonPlayers: ["maroon-1"],
@@ -25,7 +25,7 @@ function box(overrides: Partial<LiveMatchBox> = {}): LiveMatchBox {
 }
 
 /** Empty snapshot — matchBoxResult only reads snapshot.scores + the box itself. */
-function emptySnapshot(matchBoxes: LiveMatchBox[] = []): LiveTournamentSnapshot {
+function emptySnapshot(matchBoxes: LiveMatch[] = []): LiveTournamentSnapshot {
   return { players: {}, courses: {}, roundCourses: {}, scores: new Map(), matchBoxes };
 }
 
@@ -102,8 +102,8 @@ test("isRoundComplete returns false for a round with no match boxes", () => {
 });
 
 test("isRoundComplete returns false when at least one box in the round isn't closed", () => {
-  const closedBox = box({ id: "box-1", boxNumber: 1, maroonPlayers: ["m1"], whitePlayers: ["w1"] });
-  const openBox = box({ id: "box-2", boxNumber: 2, maroonPlayers: ["m2"], whitePlayers: ["w2"] });
+  const closedBox = box({ id: "box-1", matchNumber: 1, maroonPlayers: ["m1"], whitePlayers: ["w1"] });
+  const openBox = box({ id: "box-2", matchNumber: 2, maroonPlayers: ["m2"], whitePlayers: ["w2"] });
   const snapshot = emptySnapshot([closedBox, openBox]);
   scoreHolesMaroonWins(snapshot, "m1", "w1", 1, 18); // closedBox: maroon wins all 18 -> closed
   // openBox gets no scores at all -> maroonPts/whitePts stay 0/0, not closed
@@ -111,8 +111,8 @@ test("isRoundComplete returns false when at least one box in the round isn't clo
 });
 
 test("isRoundComplete returns true when every box in the round is closed", () => {
-  const box1 = box({ id: "box-1", boxNumber: 1, maroonPlayers: ["m1"], whitePlayers: ["w1"] });
-  const box2 = box({ id: "box-2", boxNumber: 2, maroonPlayers: ["m2"], whitePlayers: ["w2"] });
+  const box1 = box({ id: "box-1", matchNumber: 1, maroonPlayers: ["m1"], whitePlayers: ["w1"] });
+  const box2 = box({ id: "box-2", matchNumber: 2, maroonPlayers: ["m2"], whitePlayers: ["w2"] });
   const snapshot = emptySnapshot([box1, box2]);
   scoreHolesMaroonWins(snapshot, "m1", "w1", 1, 18);
   scoreHolesMaroonWins(snapshot, "m2", "w2", 1, 18);

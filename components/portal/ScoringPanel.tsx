@@ -5,7 +5,7 @@ import { usePersistentState } from "@/lib/usePersistentState";
 import { useHoleQueue, type QueuedHole } from "@/lib/live/useHoleQueue";
 import { getPlayerLastName } from "@/lib/data/players";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { LiveMatchBox, MatchFormat } from "@/lib/live/types";
+import type { LiveMatch, MatchFormat } from "@/lib/live/types";
 import { buildScorecardRows, holeSubmissionStatus, sameHoleDraft, submittedPair, scoringSides, validHoleDraft, type HoleDraft, type HoleSubmission } from "@/lib/live/holeSubmission";
 import { liveRoundStatus } from "@/lib/live/roundStatus";
 import { previewOfficialState } from "@/lib/live/previewMatchState";
@@ -34,7 +34,7 @@ export interface ScoringState {
 
 export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewState, previewSubmissions, previewSubmittedPlayers, onPreviewSubmit, onPreviewSubmitRound }: {
   playerSlug: string; playerFullName: string; round: number;
-  matchBox: Pick<LiveMatchBox, "id" | "format" | "maroonPlayers" | "whitePlayers">;
+  matchBox: Pick<LiveMatch, "id" | "format" | "maroonPlayers" | "whitePlayers">;
   nameBySlug: Record<string, string>;
   previewState?: ScoringState;
   previewSubmissions?: HoleSubmission[];

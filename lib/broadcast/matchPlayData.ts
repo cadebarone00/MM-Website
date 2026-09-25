@@ -85,9 +85,9 @@ function archivedMatchPlay(tournament: Tournament): BroadcastMatchPlay {
 async function liveMatchPlay(seasonYear: number): Promise<BroadcastMatchPlay> {
   const service = createSupabaseServiceRoleClient();
   const snapshot = await buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true });
-  const liveRounds = snapshot.matchBoxes.filter((box) => effectiveMatchState(snapshot, box) === "Live").map((box) => box.round);
-  const finishedRounds = [...new Set(snapshot.matchBoxes.map((box) => box.round))].filter((round) => {
-    const boxes = snapshot.matchBoxes.filter((box) => box.round === round);
+  const liveRounds = snapshot.matchBoxes.filter((box) => effectiveMatchState(snapshot, box) === "Live").map((box) => box.session);
+  const finishedRounds = [...new Set(snapshot.matchBoxes.map((box) => box.session))].filter((round) => {
+    const boxes = snapshot.matchBoxes.filter((box) => box.session === round);
     return boxes.length > 0 && boxes.every((box) => effectiveMatchState(snapshot, box) === "Final");
   });
   // During play, show the currently live round. Between rounds, retain the
@@ -97,7 +97,7 @@ async function liveMatchPlay(seasonYear: number): Promise<BroadcastMatchPlay> {
 
   // The broadcast consumes the same confirmed-only source that drives
   // leaderboard state and odds. Draft/disputed device entries never appear.
-  const boxes = snapshot.matchBoxes.filter((box) => box.round === round).sort((a, b) => a.boxNumber - b.boxNumber);
+  const boxes = snapshot.matchBoxes.filter((box) => box.session === round).sort((a, b) => a.matchNumber - b.matchNumber);
   const { data: officialRows } = boxes.length
     ? await service.from("live_match_official_state").select("match_box_id, status, thru, leader, margin, mathematically_complete, official_result").in("match_box_id", boxes.map((box) => box.id!))
     : { data: [] };
@@ -113,7 +113,7 @@ async function liveMatchPlay(seasonYear: number): Promise<BroadcastMatchPlay> {
     const thru = official?.thru ?? matchBoxStartedThru(snapshot, box);
     return {
       id: box.id,
-      boxNumber: box.boxNumber,
+      boxNumber: box.matchNumber,
       format: box.format,
       state: final ? "Final" : state,
       thru: state === "Scheduled" && thru === 0 ? "" : thru >= 18 || final ? "Final" : thru > 0 ? `Thru ${thru}` : "",
