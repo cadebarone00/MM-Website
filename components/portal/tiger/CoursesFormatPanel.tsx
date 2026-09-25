@@ -37,24 +37,36 @@ export function CoursesFormatPanel({
   const router = useRouter();
   const fieldClass = (live: boolean) => `border-2 rounded-lg px-2 py-2 text-sm disabled:opacity-100 ${live ? "border-green-600 bg-green-50 text-green-900" : "border-stone-300 bg-white"}`;
   const [sessionCount, setSessionCount] = useState<number | null>(initialSettings.sessionCount);
+  const [sessionCountLocked, setSessionCountLocked] = useState(initialSettings.sessionCountLocked);
+  const [countBusy, setCountBusy] = useState(false);
   const [sessions, setSessions] = useState(initialSessions);
   const courses = initialCourses;
   const [removeTarget, setRemoveTarget] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function saveSessionCount(count: number) {
-    setSessionCount(count);
-    const res = await fetch("/api/portal/tiger/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ year, sessionCount: count }),
-    });
-    const data = await res.json();
-    if (!data.ok) {
-      setError(data.error);
-      return;
+  async function saveCountSettings(patch: { sessionCount: number } | { sessionCountLocked: boolean }) {
+    setError(null);
+    setCountBusy(true);
+    try {
+      const res = await fetch("/api/portal/tiger/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ year, ...patch }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "Could not save session settings.");
+      if ("sessionCountLocked" in patch) {
+        setSessionCountLocked(patch.sessionCountLocked);
+        router.refresh();
+      } else {
+        setSessionCount(patch.sessionCount);
+        window.location.reload();
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Could not save session settings.");
+    } finally {
+      setCountBusy(false);
     }
-    window.location.reload();
   }
 
   async function updateSession(session: number, patch: { date?: string; courseId?: string; format?: MatchFormat; courseSetup?: { teeSetId: string; holeTeeSetIds: Record<string, string> }; matchTeeTimes?: (string | null)[] }) {
@@ -144,12 +156,14 @@ export function CoursesFormatPanel({
   return (
     <div className="mt-6">
       <p className="mb-4 rounded-sm border border-gold-300 bg-cream-100 px-3 py-2 font-sans text-sm text-ink-700">Courses are selected from the shared <Link href="/portal/admin/course-library" className="font-semibold text-maroon-700 underline">Course Library</Link>, so adding or editing a course never belongs to one season.</p>
+      <div className="flex flex-wrap items-center gap-3">
       <label className="font-sans text-sm font-semibold text-ink-700">
         Number of sessions:{" "}
         <select
           value={sessionCount ?? ""}
-          onChange={(e) => saveSessionCount(Number(e.target.value))}
-          className="border-2 border-stone-300 rounded-lg px-2 py-1"
+          disabled={sessionCountLocked || countBusy}
+          onChange={(e) => saveCountSettings({ sessionCount: Number(e.target.value) })}
+          className={fieldClass(sessionCountLocked && sessionCount !== null)}
         >
           <option value="" disabled>
             Choose a number
@@ -161,6 +175,11 @@ export function CoursesFormatPanel({
           ))}
         </select>
       </label>
+      <button type="button" disabled={countBusy} onClick={() => saveCountSettings({ sessionCountLocked: !sessionCountLocked })} className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline disabled:opacity-50" aria-label={sessionCountLocked ? "Unlock number of sessions" : "Lock number of sessions"}>
+        {countBusy ? "Saving..." : sessionCountLocked ? "Unlock" : "Lock"}
+      </button>
+      <span className="text-xs text-ink-500">{sessionCountLocked ? "Locked. Unlock to change the number of sessions." : "Choose a number, or lock it now and choose later."}</span>
+      </div>
 
       {error && <p className="mt-3 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
 

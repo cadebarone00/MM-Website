@@ -65,6 +65,7 @@ export interface LiveMatch {
 
 export interface TournamentSettings {
   sessionCount: number | null;
+  sessionCountLocked: boolean;
   completedAt: string | null; // ISO timestamp, null until the tournament is done
   venueName: string | null;
   venueLocked: boolean;

@@ -21,6 +21,7 @@ flowchart TD
   A --> T[Tiger Center]
   T --> C[Course Library and tee snapshots]
   T --> S[Season roster, rounds and matchups]
+  %% Session count has its own persisted lock; locked selected counts are green and require unlocking before changes.
   C --> S
   %% Sessions may lock partially; chosen locked fields publish to schedule, while destination indicators explain separate matchup, time and broadcast gates.
   S --> R[Lock and start round]
@@ -170,6 +171,8 @@ Tiger can approve or deny a proposal and can set an override directly. Approved 
 **Flow:** player proposal → pending edit → Tiger decision → approved override → profile display. **Code:** `app/api/portal/profile/route.ts`, `app/api/portal/tiger/profile-edits`, `lib/data/players/overrides.ts`.
 
 ## 6. Tiger Center and tournament preparation
+
+Number of sessions has its own Lock/Unlock button in Courses & Format. The saved per-year `round_count_locked` flag disables the selector, and a chosen locked count turns green. A blank count may also be locked and stays neutral. Unlock before changing the count; API checks and a database trigger prevent locked count changes, including concurrent writes. This does not change individual session locks, existing session rows, or publication timing. Apply `supabase/session_count_lock.sql` before deployment; live database execution is not verified.
 
 Courses & Format allows a session to be locked with any fields still blank. Filled locked date, course, format, tee times and tee setup are green; blank fields stay neutral. Unlock to edit. Selected tee snapshots must still reference available locked library tees. Public upcoming schedule and course overlays now read only course-locked sessions; missing values remain pending placeholders. The schedule landing page still uses static venue/dates. The adjacent destination list distinguishes active-season schedule publication, assigned-player match cards, scoring after Start Round and each match's venue-local tee time until final, existing career archive rows, the January 1 upcoming-leaderboard switchover, and the current broadcast match-play session. Market availability remains conditional on separate publication and betting rules. Refresh rechecks external state; the scoring clock updates every 30 seconds. A session lock alone does not start scoring or create matchups. Matchup locking still requires a complete course/date/tee setup and all tee times, preventing incomplete sessions from enabling play.
 
@@ -471,6 +474,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 25, 2026 - Lock the number of sessions (implemented locally; migration and deployment not verified).** Previously the session-count selector was always editable. It now has a separate persisted Lock/Unlock button with green styling for a chosen locked count, disabled editing while locked, and server/database enforcement. Blank counts can also be locked. Updated Section 6 and the Mermaid annotation; overview paths and mappings are unchanged.
 
 **September 25, 2026 - Partial session locking and destination visibility (implemented locally; deployment not verified).** Previously Courses & Format required date, course, format, tee setup and all tee times before locking, with neutral locked fields. Sessions can now lock incomplete, chosen fields turn green, and a neighboring destination list describes current availability and timing conditions. Public upcoming schedule/course overlays now exclude draft sessions; blank details remain pending. Updated Sections 3 and 6 and the flowchart annotation; overview paths and mappings are unchanged.
 

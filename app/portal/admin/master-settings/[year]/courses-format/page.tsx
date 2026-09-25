@@ -27,7 +27,7 @@ export default async function CoursesFormatPage({ params }: { params: Promise<{ 
   const [{ data: settingsRow }, { data: sessionRows }, { data: courseRows }] = await Promise.all([
     service
       .from("live_tournament_settings")
-      .select("round_count, completed_at, venue_name, venue_locked, timezone, begin_date, end_date, dates_locked")
+      .select("round_count, round_count_locked, completed_at, venue_name, venue_locked, timezone, begin_date, end_date, dates_locked")
       .eq("season_year", year)
       .maybeSingle(),
     service
@@ -51,6 +51,7 @@ export default async function CoursesFormatPage({ params }: { params: Promise<{ 
   const settings: TournamentSettings = {
     timezone: settingsRow?.timezone ?? "America/Los_Angeles",
     sessionCount: settingsRow?.round_count ?? null,
+    sessionCountLocked: settingsRow?.round_count_locked ?? false,
     completedAt: settingsRow?.completed_at ?? null,
     venueName: settingsRow?.venue_name ?? null,
     venueLocked: settingsRow?.venue_locked ?? false,
