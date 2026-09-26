@@ -25,8 +25,10 @@ export interface PortalMatchCard {
   whiteOdds: number | null;
   /** Bigger center line — match-play score, e.g. "2 Up", "AS", "3&2", or "VS" before tee-off. */
   statusLabel: string;
-  /** Smaller center line underneath — "Thru 8" while live, "Final" once decided, or the tee time while upcoming. */
+  /** Smaller center line underneath — "Thru 8" while live, "Final" once decided. Empty ("") when status is "Upcoming"; render progressTeeTime instead in that case (see PortalMatches.tsx). */
   progressLabel: string;
+  /** The raw tee-time instant, only set when status is "Upcoming" — null otherwise. Formatted client-side, in the viewer's own local time, by whatever renders this card; never pre-formatted here because this card can be built server-side, where the viewer's timezone isn't known. */
+  progressTeeTime: string | null;
   /** Winning side once decided, for the center box's win fill (see CompactMatchRow's finalLabelColor); null while undecided. */
   leader: Team | "tie" | null;
 }
@@ -57,6 +59,7 @@ export function archivedMatchCard(tournament: Tournament, match: RealMatch, scor
     whiteOdds: match.whiteWinProbability ?? null,
     statusLabel: liveLabel(match),
     progressLabel: "Final",
+    progressTeeTime: null,
     leader: matchLeader(match),
   };
 }
@@ -95,15 +98,7 @@ export function liveMatchCard(input: LiveMatchCardInput): PortalMatchCard {
   };
 
   if (input.status === "Upcoming") {
-    const teeTimeLabel = input.teeTime.toLocaleString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      timeZone: "America/Los_Angeles",
-    });
-    return { ...base, statusLabel: "VS", progressLabel: `${teeTimeLabel} PT`, leader: null };
+    return { ...base, statusLabel: "VS", progressLabel: "", progressTeeTime: input.teeTime.toISOString(), leader: null };
   }
 
   const official = input.official;
@@ -113,6 +108,7 @@ export function liveMatchCard(input: LiveMatchCardInput): PortalMatchCard {
     ...base,
     statusLabel: official ? liveStatusLabel(official.leader, official.margin, holesRemaining, final) : "AS",
     progressLabel: final ? "Final" : official && official.thru > 0 ? `Thru ${official.thru}` : "—",
+    progressTeeTime: null,
     leader: final ? (official?.leader ?? null) : null,
   };
 }

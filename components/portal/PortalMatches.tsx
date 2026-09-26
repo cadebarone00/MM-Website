@@ -3,6 +3,7 @@ import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { getPlayerLastName } from "@/lib/data/players";
+import { formatViewerLocalTeeTime } from "@/lib/live/viewerLocalTime";
 
 import type { PortalMatchCard } from "@/lib/portal/matchCards";
 
@@ -53,10 +54,11 @@ function CenterBox({ card }: { card: PortalMatchCard }) {
   const fillClass =
     card.leader === "maroon" ? "bg-maroon-700 text-white" : card.leader === "white" ? "bg-white text-maroon-700" : "bg-cream-100 text-maroon-700";
   const progressClass = card.leader === "maroon" ? "text-white/80" : card.leader === "white" ? "text-maroon-700/70" : "text-ink-500";
+  const progress = card.progressTeeTime ? formatViewerLocalTeeTime(new Date(card.progressTeeTime)) : card.progressLabel;
   return (
     <div className={["flex flex-col items-center justify-center gap-0.5 border-x border-gold-300 px-1 py-2 text-center", fillClass].join(" ")}>
       <span className="font-sans text-base font-black leading-tight">{card.statusLabel}</span>
-      <span className={["font-sans text-2xs font-bold leading-tight", progressClass].join(" ")}>{card.progressLabel}</span>
+      <span className={["font-sans text-2xs font-bold leading-tight", progressClass].join(" ")}>{progress}</span>
     </div>
   );
 }
