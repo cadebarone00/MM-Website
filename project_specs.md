@@ -863,6 +863,58 @@ All pages are public, no auth.
   sessions`, `/matches`, `/settings`) redirects or 401s correctly for an
   unauthenticated request rather than 500ing.
 
+- **Configurable per-tournament-year venue timezone, and viewer-local tee
+  times everywhere fans and players see them.** Plan
+  `docs/superpowers/plans/2026-09-25-tee-time-timezone.md` (14 tasks). Every
+  tournament year now has its own `timezone` (an IANA zone id) on
+  `live_tournament_settings`, picked from a curated list on Master Settings
+  (`lib/data/timezones.ts`: Pacific / Mountain / Mexican Pacific, e.g.
+  Danzante Bay / Central / Eastern) — replacing the old hardcoded assumption
+  that a match tee time is always Pacific. The new column defaults to
+  `'America/Los_Angeles'`, so the already-in-progress 2027 season (a real
+  California venue) needed zero manual changes. **Two different displays, on
+  purpose:** Tiger's own admin screens — Master Settings, Courses & Format's
+  tee-time inputs, Matchups' tee-time labels, and the Career Stats archive —
+  keep showing the *venue's* configured clock, since that's the time
+  Tiger and the players actually say out loud at the course. Everywhere a fan
+  or player who isn't standing at the venue sees a tee time instead — the
+  public match profile page, the live leaderboard, the live Scoring tab, and
+  the portal's "My Matches" cards — now converts that same underlying instant
+  into *that viewer's own* device clock (new `lib/live/viewerLocalTime.ts`,
+  `formatViewerLocalTeeTime`; client-side only, deliberately never called
+  during server rendering, which would format in the server's zone instead of
+  the visitor's). `lib/live/sessionTeeTimes.ts` (`deriveMatchTeeTime`) is the
+  one shared place that turns a Session's date + "HH:MM" wall-clock entry
+  into a real absolute instant for a given venue zone, correctly handling the
+  two DST-transition days a year. **`supabase/tournament_timezone.sql` has
+  not yet been run against this environment's real dev database** —
+  confirmed directly by an earlier task in this plan, which queried
+  `live_tournament_settings` against the live Supabase project and got back
+  "column live_tournament_settings.timezone does not exist" — same pending-
+  migration situation as `supabase/session_tee_times.sql` above (see Known
+  gaps below); until it runs, every screen reading `.timezone` falls back to
+  its code-level Pacific default rather than actually reading a per-year
+  setting from the database. Task 9 of this plan (a more polished timezone
+  caption on Courses & Format, spelling out "Pacific Time" instead of a raw
+  zone id) was skipped: by the time it came up, a concurrent session actively
+  redesigning that same `CoursesFormatPanel.tsx` had already added its own
+  working caption there (`Tee times use America/Los_Angeles.` — the raw IANA
+  id with underscores replaced, not a friendly label) — forcing a
+  nicer-looking version into a file under active unrelated rewrite wasn't
+  worth the conflict risk for a cosmetic difference, so this plan left it
+  alone. `npm test` (473/473), `npx tsc --noEmit` (0 errors), `npm run lint`
+  (clean on every file this plan touched — one real issue this task found and
+  fixed along the way: an unescaped apostrophe in Master Settings' new
+  timezone caption), and `npm run build` all clean. **Not click-tested in a
+  real browser:** no host login or real Supabase project is available in
+  this environment, and this environment's dev server was already running
+  for a concurrent session's own work (so it wasn't restarted) — verified
+  instead by type-check, lint, build, the tested logic (`sessionTeeTimes.ts`,
+  `viewerLocalTime.ts`), and a smoke test against that already-running dev
+  server confirming this plan's touched pages (Master Settings, Courses &
+  Format, Matchups, Career Stats, the public leaderboard/schedule) load
+  without a 500.
+
 ## Known gaps / not yet built
 
 - **Live scoring lifecycle — spec v3 written, not built.** See
@@ -895,6 +947,14 @@ All pages are public, no auth.
   migration runs once in the Supabase SQL Editor — until then, saving a
   session's tee times (and so locking it, and so Matchups deriving each
   match's tee time from it) will fail.
+- **`supabase/tournament_timezone.sql` has not been run yet.** The
+  configurable venue timezone round above reads/writes
+  `live_tournament_settings.timezone`, which doesn't exist until this
+  migration runs once in the Supabase SQL Editor — confirmed missing by
+  querying the real dev database directly. Until then, every screen that
+  should read a tournament year's real configured venue zone (Master
+  Settings, Courses & Format, Matchups, Career Stats) silently falls back to
+  the code-level Pacific default instead.
 - **2025-danzante's 8 players still need tees assigned** via "Assign tees
   for handicap tracking" (`/portal/admin/scorecards`) before any of their
   rounds count — the round numbering/format problem itself is fixed (see
