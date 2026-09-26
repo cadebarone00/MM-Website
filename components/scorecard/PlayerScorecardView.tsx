@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { ScorecardRow } from "./ScorecardRow";
 import { CourseInfoHeader } from "./CourseInfoHeader";
 import { MobileScorecardGrid } from "./MobileScorecardGrid";
@@ -9,6 +9,7 @@ import { HoleDetailCard } from "./HoleDetailCard";
 import { ShotVideoPanel } from "./ShotVideoPanel";
 import { PlayerBioSection } from "./PlayerBioSection";
 import { StatsSection } from "@/components/stats/StatsSection";
+import { ExpandingPillSelector } from "@/components/ui/ExpandingPillSelector";
 import { holePhotoCandidates } from "@/lib/data/holePhotos";
 import { getPlayerProfile } from "@/lib/data/players";
 import { formatRoundLabel } from "@/lib/data/roundLabel";
@@ -31,49 +32,15 @@ function RoundSelector({
   activeRound: RoundScorecard;
   onSelect: (round: RoundScorecard) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function closeWhenClickedOutside(event: MouseEvent) {
-      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", closeWhenClickedOutside);
-    return () => document.removeEventListener("mousedown", closeWhenClickedOutside);
-  }, [open]);
-
   return (
     <div className="mb-3">
-      <div ref={containerRef} className="inline-flex rounded-pill border border-gold-400 bg-cream-50 p-[3px]">
-        <button
-          type="button"
-          aria-expanded={open}
-          onClick={() => setOpen((current) => !current)}
-          className="rounded-pill bg-maroon-700 px-3 py-1 font-condensed text-2xs font-bold uppercase tracking-wide text-cream-50"
-        >
-          {formatRoundLabel(activeRound.round)}
-        </button>
-        <div className={["flex overflow-hidden transition-[max-width,opacity,margin] duration-200 ease-out", open ? "ml-1 max-w-64 opacity-100" : "max-w-0 opacity-0"].join(" ")}>
-          {rounds.map((round) => (
-            <button
-              key={round.round}
-              type="button"
-              aria-pressed={round.round === activeRound.round}
-              onClick={() => {
-                onSelect(round);
-                setOpen(false);
-              }}
-              className={[
-                "shrink-0 rounded-pill px-3 py-1 font-condensed text-2xs font-bold tabular-nums transition-colors",
-                round.round === activeRound.round ? "bg-maroon-700 text-cream-50" : "text-ink-500 hover:bg-cream-100",
-              ].join(" ")}
-            >
-              {round.round === 0 ? "INDI" : round.round}
-            </button>
-          ))}
-        </div>
-      </div>
+      <ExpandingPillSelector
+        activeLabel={formatRoundLabel(activeRound.round)}
+        items={rounds.map((round) => ({ value: round.round, label: round.round === 0 ? "INDI" : String(round.round) }))}
+        activeValue={activeRound.round}
+        onSelect={(round) => onSelect(rounds.find((candidate) => candidate.round === round) ?? activeRound)}
+        expandedMaxWidth="max-w-64"
+      />
       <p className="mt-1 font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">
         {activeRound.course}
         {activeRound.format ? (

@@ -1,9 +1,10 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Radio } from "lucide-react";
 import { CompactMatchRow } from "./CompactMatchRow";
+import { ExpandingPillSelector } from "@/components/ui/ExpandingPillSelector";
 import { centralDateLabel, currentRoundDay, LIVE_START_LABEL } from "./matchUtils";
 import { fmtPt } from "@/lib/data";
 import type { RealMatch, Tournament } from "@/lib/data/types";
@@ -54,47 +55,9 @@ function PlaceholderPanel() {
 
 /** "Day {n}" label that drops down the other available days on tap — replaces the old day-pill row. */
 function DaySelector({ days, activeDay, onSelect }: { days: number[]; activeDay: number; onSelect: (day: number) => void }) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function closeWhenClickedOutside(event: MouseEvent) {
-      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", closeWhenClickedOutside);
-    return () => document.removeEventListener("mousedown", closeWhenClickedOutside);
-  }, [open]);
-
   return (
-    <div ref={containerRef} className="mb-3 inline-flex rounded-pill border border-gold-400 bg-cream-50 p-[3px]">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
-        className="rounded-pill bg-maroon-700 px-3 py-1 font-condensed text-2xs font-bold uppercase tracking-wide text-cream-50"
-      >
-        Day {activeDay}
-      </button>
-      <div className={["flex overflow-hidden transition-[max-width,opacity,margin] duration-200 ease-out", open ? "ml-1 max-w-40 opacity-100" : "max-w-0 opacity-0"].join(" ")}>
-        {days.map((day) => (
-          <button
-            key={day}
-            type="button"
-            aria-pressed={day === activeDay}
-            onClick={() => {
-              onSelect(day);
-              setOpen(false);
-            }}
-            className={[
-              "shrink-0 rounded-pill px-3 py-1 font-condensed text-2xs font-bold tabular-nums transition-colors",
-              day === activeDay ? "bg-maroon-700 text-cream-50" : "text-ink-500 hover:bg-cream-100",
-            ].join(" ")}
-          >
-            {day}
-          </button>
-        ))}
-      </div>
+    <div className="mb-3">
+      <ExpandingPillSelector activeLabel={`Day ${activeDay}`} items={days.map((day) => ({ value: day, label: String(day) }))} activeValue={activeDay} onSelect={onSelect} />
     </div>
   );
 }
