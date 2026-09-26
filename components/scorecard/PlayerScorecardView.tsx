@@ -158,7 +158,6 @@ export function PlayerScorecardView({
             </option>
           ))}
         </select>
-        <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-400" />
       </div>
 
       {/* Desktop: the full 18-hole table with OUT/IN subtotals. */}
