@@ -898,7 +898,7 @@ All pages are public, no auth.
   caption on Courses & Format, spelling out "Pacific Time" instead of a raw
   zone id) was skipped: by the time it came up, a concurrent session actively
   redesigning that same `CoursesFormatPanel.tsx` had already added its own
-  working caption there (`Tee times use America/Los_Angeles.` — the raw IANA
+  working caption there (`Tee times use America/Los Angeles.` — the raw IANA
   id with underscores replaced, not a friendly label) — forcing a
   nicer-looking version into a file under active unrelated rewrite wasn't
   worth the conflict risk for a cosmetic difference, so this plan left it

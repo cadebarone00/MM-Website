@@ -65,7 +65,7 @@ function RoundSelector({
                 setOpen(false);
               }}
               className={[
-                "shrink-0 rounded-pill px-3 py-1 font-condensed text-2xs font-bold uppercase tabular-nums transition-colors",
+                "shrink-0 rounded-pill px-3 py-1 font-condensed text-2xs font-bold tabular-nums transition-colors",
                 round.round === activeRound.round ? "bg-maroon-700 text-cream-50" : "text-ink-500 hover:bg-cream-100",
               ].join(" ")}
             >
