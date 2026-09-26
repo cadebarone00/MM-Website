@@ -9,7 +9,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 ```mermaid
 flowchart TD
   %% Page and major section titles share the official Spectral Bold Maroon Masters title font.
-  %% Home-screen bookmarks use shorter, broad gold-outline Spectral italic MM on #240001, shifted farther left to reveal more of the second M, with approximately 20% top and 15% bottom margins and intentional horizontal cropping; Apple icon metadata and Android manifest supply PNG assets.
+  %% Home-screen bookmarks use centered gold-outline Spectral italic MM over a diagonal split: dark maroon top-left and white bottom-right; Apple icon metadata and Android manifest supply PNG assets.
   %% Optional password-status migration derives player_slots.password_created from the linked Auth password credential; deployment pending.
   %% Verified password setup displays the account username and authentication email above the password field.
   %% Invite URL fragments are exchanged for session cookies before password entry; recovery codes use the server callback. Invalid links offer a fresh reset.
@@ -130,7 +130,7 @@ For example, in September 2026, My Matches can correctly show 2026 matches as Pa
 
 ## 3. Public website and navigation
 
-Home-screen bookmarks use a custom icon: dark maroon `#240001`, matching the scoring portal header, with thick gold `#C9A86E` outlines around Spectral Semibold Italic MM lettering adapted from the broadcast holding screen. The mark has shorter, broader proportions and remains shifted left. Its outlines sit approximately 20% below the top and 15% above the bottom. The oversized artwork intentionally crops at the left and right edges. The letters have maroon interiors and no decorative border or accent rules. `app/apple-icon.png` supplies Apple's 180px touch icon; `app/manifest.ts` supplies Android/browser 192px and 512px PNG icons from `public/icons`. The manifest retains browser display mode; this change does not add offline support or redesign the installed layout. Device launchers may apply their own masks. Existing saved icons may need to be removed and re-added after deployment.
+Home-screen bookmarks use a custom icon with a diagonal split running from bottom-left to top-right: dark maroon `#240001` in the top-left half and white `#FFFFFF` in the bottom-right half. The full Spectral Semibold Italic MM, adapted from the broadcast holding screen, is centered across the split in thick gold `#C9A86E` outlines, with the background visible inside the letters. Both letters fit inside the square without intentional cropping. `app/apple-icon.png` supplies Apple's 180px touch icon; `app/manifest.ts` supplies Android/browser 192px and 512px PNG icons from `public/icons`. The manifest retains browser display mode; this change does not add offline support or redesign the installed layout. Device launchers may apply their own masks. Existing saved icons may need to be removed and re-added after deployment.
 
 On live and archived leaderboards, Match Play boards are centered in a 40vw column at desktop widths (1024px and above), capped at the available content width. Desktop match rows add 10px vertical padding per player name instead of mobile's 6px. The ticker, individual standings, and mobile layout retain their existing sizing.
 
@@ -488,6 +488,10 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-26 - Diagonal maroon and white home-screen icon (implemented; deployment not verified).** Replaced the solid maroon background and cropped lettering with a diagonal maroon top-left/white bottom-right split and the full gold-outline MM centered across it. Updated section 3 and the Mermaid annotation; workflow paths are unchanged.
+
+**2026-09-26 - Full left M visible (implemented; deployment not verified).** Reduced the icon monogram by 20% on both axes and moved it inside the left edge so the full left M is visible. The right-edge crop, colors and outlined style remain. Updated section 3 and the Mermaid annotation; workflow paths are unchanged.
 
 **September 26, 2026 - Season timing overview and shared handoff calendar (implemented locally; migration and deployment not verified).** Tiger Center previously offered year-specific setup without a consolidated timing view, while public pages used fixed year choices. It now shows 2026-2034 with lockable Active/Pass on dates and expandable day/session/match tee-time grids. Shared boundaries select the active year and keep outgoing native seasons accessible through archive routes without changing scores. Public catalogs and the stored active year follow the locked calendar. 2034 remains a test season; static legacy editorial/Fantasy/Skins content is explicitly separate. Updated Sections 2 and 6, the Mermaid flowchart and rendered workflow mapping.
 

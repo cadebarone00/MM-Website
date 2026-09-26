@@ -23,6 +23,71 @@ function defaultSelectedHole(round: RoundScorecard): number {
   return playedCount > 0 && playedCount < round.holes.length ? playedCount : 1;
 }
 
+function RoundSelector({
+  rounds,
+  activeRound,
+  onSelect,
+}: {
+  rounds: RoundScorecard[];
+  activeRound: RoundScorecard;
+  onSelect: (round: RoundScorecard) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function closeWhenClickedOutside(event: MouseEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", closeWhenClickedOutside);
+    return () => document.removeEventListener("mousedown", closeWhenClickedOutside);
+  }, [open]);
+
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-2">
+      <div ref={containerRef} className="inline-flex rounded-pill border border-gold-400 bg-cream-50 p-[3px]">
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((current) => !current)}
+          className="rounded-pill bg-maroon-700 px-3 py-1 font-condensed text-2xs font-bold uppercase tracking-wide text-cream-50"
+        >
+          {formatRoundLabel(activeRound.round)}
+        </button>
+        <div className={["flex overflow-hidden transition-[max-width,opacity,margin] duration-200 ease-out", open ? "ml-1 max-w-64 opacity-100" : "max-w-0 opacity-0"].join(" ")}>
+          {rounds.map((round) => (
+            <button
+              key={round.round}
+              type="button"
+              aria-pressed={round.round === activeRound.round}
+              onClick={() => {
+                onSelect(round);
+                setOpen(false);
+              }}
+              className={[
+                "shrink-0 rounded-pill px-3 py-1 font-condensed text-2xs font-bold uppercase tabular-nums transition-colors",
+                round.round === activeRound.round ? "bg-maroon-700 text-cream-50" : "text-ink-500 hover:bg-cream-100",
+              ].join(" ")}
+            >
+              {round.round === 0 ? "INDI" : round.round}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p className="m-0 font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">
+        {activeRound.course}
+        {activeRound.format ? (
+          <>
+            <span className="mx-1 text-gold-500">&middot;</span>
+            {activeRound.format}
+          </>
+        ) : null}
+      </p>
+    </div>
+  );
+}
+
 export function PlayerScorecardView({
   scorecard,
   tournament,
@@ -60,13 +125,24 @@ export function PlayerScorecardView({
     setCap(el ? { left: el.offsetLeft, width: el.offsetWidth } : null);
   }, [selectedHole, round]);
 
-  useEffect(() => {
+  const selectHole = useCallback((hole: number) => {
+    setSelectedHole(hole);
     setPhotoIndex(0);
-  }, [active.course, selectedHole, round]);
+  }, []);
 
   return (
     <div>
-      <div className="relative mb-3 inline-block w-full sm:w-auto">
+      <RoundSelector
+        rounds={scorecard.rounds}
+        activeRound={active}
+        onSelect={(nextRound) => {
+          setRound(String(nextRound.round));
+          setSelectedHole(defaultSelectedHole(nextRound));
+          setPhotoIndex(0);
+        }}
+      />
+
+      <div className="hidden">
         <select
           value={round}
           onChange={(e) => {
@@ -91,12 +167,12 @@ export function PlayerScorecardView({
         <div className="relative w-max rounded-2xl border border-ink-300 bg-cream-100">
           <CourseInfoHeader
             round={active}
-            onHoleClick={setSelectedHole}
+            onHoleClick={selectHole}
             selectedHole={selectedHole}
             registerHoleRef={registerHoleRef}
             holesWithVideo={holesWithVideo}
           />
-          <ScorecardRow round={active} onHoleClick={setSelectedHole} selectedHole={selectedHole} registerHoleRef={registerHoleRef} />
+          <ScorecardRow round={active} onHoleClick={selectHole} selectedHole={selectedHole} registerHoleRef={registerHoleRef} />
 
           {cap && (
             <>
@@ -118,7 +194,7 @@ export function PlayerScorecardView({
         <MobileScorecardGrid
           round={active}
           selectedHole={selectedHole}
-          onHoleClick={setSelectedHole}
+          onHoleClick={selectHole}
           initialHole={defaultSelectedHole(active)}
           holesWithVideo={holesWithVideo}
         />
