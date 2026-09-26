@@ -44,7 +44,7 @@ function RoundSelector({
   }, [open]);
 
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-2">
+    <div className="mb-3">
       <div ref={containerRef} className="inline-flex rounded-pill border border-gold-400 bg-cream-50 p-[3px]">
         <button
           type="button"
@@ -74,7 +74,7 @@ function RoundSelector({
           ))}
         </div>
       </div>
-      <p className="m-0 font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">
+      <p className="mt-1 font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">
         {activeRound.course}
         {activeRound.format ? (
           <>
