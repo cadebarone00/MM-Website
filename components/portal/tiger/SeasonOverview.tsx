@@ -15,7 +15,7 @@ function YearOverview({ row, activeYear, available, refresh, now }: { row: Overv
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const today = calendarDate(new Date(now));
-  const archived = Boolean(row.archivedAt) || (row.locked && Boolean(row.passOn && row.passOn <= today)) || (row.historical && activeYear !== row.year);
+  const archived = Boolean(row.archivedAt) || (row.locked && Boolean(row.passOn && row.passOn <= today));
   const activeLocked = row.locked || row.activeLockedByPrevious;
   const passLocked = row.locked || row.passLockedByNext;
   const status = row.test ? "Test season" : archived ? "Archived" : activeYear === row.year ? "Active" : activeLocked ? "Armed" : "Draft";
@@ -51,7 +51,7 @@ function YearOverview({ row, activeYear, available, refresh, now }: { row: Overv
               const slot = teeTimeSlotForMatch(session.format as MatchFormat,number);
               const time = session.teeTimes[slot];
               const label = time ? new Date("2000-01-01T" + time).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}) : match?.teeTime ? new Date(match.teeTime).toLocaleTimeString("en-US",{timeZone:row.timezone,hour:"numeric",minute:"2-digit"}) : "TBD";
-              const state = archived ? "Archived" : match?.state === "Final" ? "Final" : !session.courseLocked || !session.matchupsLocked ? "Not armed" : !match ? "Match pending" : row.year !== activeYear ? "Inactive year" : !session.started || !match.started ? "Awaiting start" : match.teeTime && Date.parse(match.teeTime) <= now ? "Live" : "Armed";
+              const state = archived ? "Archived" : row.historical ? "Final" : match?.state === "Final" ? "Final" : !session.courseLocked || !session.matchupsLocked ? "Not armed" : !match ? "Match pending" : row.year !== activeYear ? "Inactive year" : !session.started || !match.started ? "Awaiting start" : match.teeTime && Date.parse(match.teeTime) <= now ? "Live" : "Armed";
               return <div key={number} className="min-w-0 text-center"><p className="mb-1 text-xs font-semibold">Match {number}</p><div className={"rounded-md border-2 px-1 py-2 " + (session.courseLocked && label !== "TBD" ? green : neutral)}><p className="text-sm font-bold">{label}</p><p className="mt-1 text-[10px]">{state}</p></div></div>;
             })}</div>{!count && <p className="text-xs text-ink-500">Choose a format to see the match slots.</p>}
           </div>;

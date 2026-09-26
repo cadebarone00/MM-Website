@@ -18,6 +18,7 @@ export function resolveSeasonCalendar(windows: SeasonWindow[], fallback: number,
   const successor = ended.at(-1)?.year;
   const firstFuture = locked.find(row=>row.activeOn! > today);
   const activeYear = current?.year ?? (successor !== undefined && successor + 1 < TEST_SEASON_YEAR ? successor + 1 : firstFuture ? firstFuture.year - 1 : fallback);
-  const archivedYears = [...new Set([...([2024, 2025, 2026].filter(year=>year<activeYear)), ...ended.map(row=>row.year), ...windows.filter(row=>row.archivedAt).map(row=>row.year)])].filter(year=>year!==activeYear).sort((a,b)=>a-b);
+  const legacyArchivedYears = [2024, 2025];
+  const archivedYears = [...new Set([...legacyArchivedYears.filter(year=>year<activeYear), ...ended.map(row=>row.year), ...windows.filter(row=>row.archivedAt).map(row=>row.year)])].filter(year=>year!==activeYear).sort((a,b)=>a-b);
   return { windows, activeYear, archivedYears, scheduled: Boolean(locked.length || windows.some(row=>row.archivedAt)) };
 }

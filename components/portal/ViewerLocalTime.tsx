@@ -15,6 +15,7 @@ import { formatViewerLocalTeeTime } from "@/lib/live/viewerLocalTime";
 export function ViewerLocalTime({ date }: { date: Date }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the browser's own timezone IS the external system being synchronized here; a render-time read would run on the server too, which is the whole bug this component exists to prevent.
     setMounted(true);
   }, []);
   if (!mounted) return null;

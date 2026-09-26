@@ -6,6 +6,11 @@ import { pastTournaments } from "@/lib/data";
 import { roundFormatArchive } from "@/lib/data/roundFormatArchive";
 import type { SeasonOverviewData, OverviewSession } from "./seasonOverview";
 
+function dateRangeFromSessions(sessions: OverviewSession[]) {
+  const dates = [...new Set(sessions.flatMap(session => session.date ? [session.date] : []))].sort();
+  return { beginDate: dates[0] ?? null, endDate: dates.at(-1) ?? null };
+}
+
 export async function getSeasonOverview(): Promise<SeasonOverviewData> {
   const service = createSupabaseServiceRoleClient();
   const [calendar, settings, sessions, matches, courses, archiveSetups] = await Promise.all([
@@ -26,6 +31,7 @@ export async function getSeasonOverview(): Promise<SeasonOverviewData> {
       const archived = archiveSetups.data?.find(setup => setup.round === round.round);
       return { number: round.round, date: archived?.played_on ?? historical.dayDates?.[round.day] ?? null, course: archived?.course_name ?? null, format: round.format, courseLocked: true, matchupsLocked: true, started: true, teeTimes: [null,null,null], matches: round.matchups.map((match,index) => ({ number: index+1, teeTime: null, state: "Final", started: true })) };
     });
-    return { ...window, activeLockedByPrevious: calendar.windows.some(row=>row.year===year-1 && row.locked), passLockedByNext: calendar.windows.some(row=>row.year===year+1 && row.locked), timezone: setup?.timezone ?? "America/Los_Angeles", beginDate: setup?.begin_date ?? historical?.startDate ?? null, endDate: setup?.end_date ?? historical?.endDate ?? null, datesLocked: setup?.dates_locked ?? Boolean(historical), count: setup?.round_count ?? (historical ? rounds.length : null), countLocked: setup?.round_count_locked ?? Boolean(historical), sessions: rounds, historical: Boolean(historical), test: year === TEST_SEASON_YEAR };
+    const historicalRange = historical ? dateRangeFromSessions(rounds) : { beginDate: null, endDate: null };
+    return { ...window, activeLockedByPrevious: calendar.windows.some(row=>row.year===year-1 && row.locked), passLockedByNext: calendar.windows.some(row=>row.year===year+1 && row.locked), timezone: setup?.timezone ?? "America/Los_Angeles", beginDate: setup?.begin_date ?? historicalRange.beginDate, endDate: setup?.end_date ?? historicalRange.endDate, datesLocked: setup?.dates_locked ?? Boolean(historical), count: setup?.round_count ?? (historical ? rounds.length : null), countLocked: setup?.round_count_locked ?? Boolean(historical), sessions: rounds, historical: Boolean(historical), test: year === TEST_SEASON_YEAR };
   }) };
 }

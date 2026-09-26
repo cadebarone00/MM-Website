@@ -18,6 +18,23 @@ test("handoff selects the successor at Central midnight and archives only the ou
   assert.equal(validCalendarDate("2027-02-29"),false);assert.equal(validCalendarDate("2028-02-29"),true);
 });
 
+test("2026 remains live data until its own pass-on or archive timestamp", () => {
+  const current=resolveSeasonCalendar([
+    {year:2026,activeOn:"2026-01-01",passOn:"2027-01-01",locked:true},
+    {year:2027,activeOn:"2027-01-01",passOn:"2028-01-01",locked:true},
+  ],2027,"2026-12-31");
+  assert.equal(current.activeYear,2026);
+  assert.deepEqual(current.archivedYears,[2024,2025]);
+  const passed=resolveSeasonCalendar([
+    {year:2026,activeOn:"2026-01-01",passOn:"2027-01-01",locked:true},
+    {year:2027,activeOn:"2027-01-01",passOn:"2028-01-01",locked:true},
+  ],2027,"2027-01-01");
+  assert.equal(passed.activeYear,2027);
+  assert.ok(passed.archivedYears.includes(2026));
+  const manuallyArchived=resolveSeasonCalendar([{year:2026,activeOn:null,passOn:null,locked:false,archivedAt:"2027-01-01T06:00:00Z"}],2027,"2026-12-31");
+  assert.ok(manuallyArchived.archivedYears.includes(2026));
+});
+
 test("overview includes all tournament days and preserves undated sessions",()=>{
   const year={beginDate:"2027-01-06",endDate:"2027-01-09",sessions:[{number:1,date:"2027-01-06"},{number:2,date:null}]} as OverviewYear;
   const days=overviewDays(year); assert.equal(days.length,5);assert.equal(days[4].date,null);
