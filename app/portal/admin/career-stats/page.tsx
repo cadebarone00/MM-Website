@@ -6,7 +6,7 @@ import { CareerStatsPanel } from "@/components/portal/tiger/CareerStatsPanel";
 import { RoundFormatArchive, type RoundFormatTournament } from "@/components/portal/tiger/RoundFormatArchive";
 import { careerArchivePartnerships } from "@/lib/data/careerArchive";
 import { getCombinedCareerArchive } from "@/lib/data/combinedCareerArchive";
-import { nextTournament, isPastLeaderboardSwitchover, pastTournaments } from "@/lib/data";
+import { getSeasonCatalog, nativeSeasonYear } from "@/lib/data/seasonCatalog";
 import { getRoundFormatSetups } from "@/lib/data/roundFormatSetups";
 import { roundFormatArchive } from "@/lib/data/roundFormatArchive";
 import { getOrphanArchivedRounds } from "@/lib/data/archivedScorecards";
@@ -21,9 +21,16 @@ export default async function CareerStatsPage() {
   const { records, teamRecords } = await getCombinedCareerArchive();
   const courses = await getCourseLibraryForHandicap(true);
 
+  const { nextTournament, pastTournaments, leaderboardOpen } = await getSeasonCatalog();
   const setups = await getRoundFormatSetups();
   const roundFormatTournaments: RoundFormatTournament[] = await Promise.all(
     pastTournaments.map(async (tournament) => {
+      if (nativeSeasonYear(tournament.slug)) {
+        const snapshot = await buildLiveTournamentSnapshot(tournament.year, { confirmedOnly: true });
+        const service = createSupabaseServiceRoleClient();
+        const { data: settings } = await service.from("live_tournament_settings").select("timezone").eq("season_year", tournament.year).maybeSingle();
+        return { slug: tournament.slug, year: tournament.year, venue: tournament.venue, orphans: [], ...liveRoundFormatArchive(snapshot, tournament.slug, tournament.year, setups, settings?.timezone ?? "America/Los_Angeles") };
+      }
       const setupFor = (round: number) => setups.find((s) => s.seasonYear === tournament.year && s.round === round) ?? null;
       const entries = roundFormatArchive(tournament).map((entry) => ({ ...entry, setup: setupFor(entry.round) }));
       const orphans = await getOrphanArchivedRounds(tournament.slug, entries.length).catch((err) => {
@@ -34,7 +41,7 @@ export default async function CareerStatsPage() {
     })
   );
 
-  if (isPastLeaderboardSwitchover()) {
+  if (leaderboardOpen && nativeSeasonYear(nextTournament.slug)) {
     const snapshot = await buildLiveTournamentSnapshot(nextTournament.year, { confirmedOnly: true });
     const service = createSupabaseServiceRoleClient();
     const { data: settingsRow } = await service.from("live_tournament_settings").select("timezone").eq("season_year", nextTournament.year).maybeSingle();

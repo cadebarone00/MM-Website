@@ -56,7 +56,7 @@ function timeAgo(iso: string): string {
  * posted yet" reads honestly if the feed hasn't caught up yet.
  */
 export function LiveLeaderboardContent() {
-  const { getNextTournamentStatus, latestCompleted } = useSeasonCatalog();
+  const { getNextTournamentStatus, latestCompleted, scheduled } = useSeasonCatalog();
   const { tournament, payload, error, loading } = useLiveTournament();
   const [officialEntries, setOfficialEntries] = useState<OfficialEntry[] | null>(null);
   const [officialStandings, setOfficialStandings] = useState<OfficialStanding[] | null>(null);
@@ -76,7 +76,7 @@ export function LiveLeaderboardContent() {
   }, []);
   const isLive = getNextTournamentStatus() === "live";
   const hasLiveData = tournament.matches.length > 0;
-  const showFallback = !isLive && !hasLiveData;
+  const showFallback = !scheduled && !isLive && !hasLiveData;
   const source = showFallback ? latestCompleted : tournament;
   const officialMatches = officialEntries ? asOfficialMatches(officialEntries) : [];
   const liveSource: Tournament = officialMatches.length > 0

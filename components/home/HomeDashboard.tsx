@@ -8,26 +8,29 @@ import { SectionHead } from "@/components/home/SectionHead";
 import { QuickScheduleCard } from "@/components/home/QuickScheduleCard";
 import type { UpcomingRoundScheduleItem } from "@/lib/data/activeSeasonOverlay";
 import { HomeTeamsPanel } from "@/components/home/HomeTeamsPanel";
-import { latestCompleted, fmtPt } from "@/lib/data";
+import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
+import { fmtPt } from "@/lib/data";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import type { NextTournamentOverride } from "@/lib/data/types";
 
-const highlights = [
+function useHighlights() {
+const { latestCompleted, nextTournament } = useSeasonCatalog();
+return [
   {
-    title: "2027 board is staged",
+    title: nextTournament.year + " board is staged",
     body: "Live highlights will stack here as scores, streaks, and match swings are entered.",
   },
   {
     title: `Team White ${fmtPt(latestCompleted.whitePts)}, Team Maroon ${fmtPt(latestCompleted.maroonPts)}`,
-    body: `${latestCompleted.editionLabel} is loaded as the current placeholder while the 2027 event waits for play.`,
+    body: `${latestCompleted.editionLabel} is loaded as the current placeholder while the next event waits for play.`,
   },
   {
     title: `${getPlayerDisplayName(latestCompleted.individualChampion ?? "cam")} owns the latest title`,
     body: "Individual leaderboard notes will rotate into this rail once tournament scoring begins.",
   },
   {
-    title: "Session 1 starts at 7:30 AM PST",
-    body: "January 6, 2027 is the live flip point for the tournament experience.",
+    title: "Session timing",
+    body: "See Schedule for the locked session dates and formats.",
   },
   {
     title: "Course walkthrough coming soon",
@@ -42,6 +45,8 @@ const highlights = [
     body: "Team photos and player intros are planned ahead of the opening tee time.",
   },
 ];
+
+}
 
 const news = [
   {
@@ -116,6 +121,7 @@ const ALL_VIDEOS_HREF = "#";
 const HIGHLIGHTS_PREVIEW_COUNT = 6;
 
 function HighlightsRail({ flat = false }: { flat?: boolean }) {
+  const highlights = useHighlights();
   const [showAll, setShowAll] = useState(false);
   const preview = highlights.slice(0, HIGHLIGHTS_PREVIEW_COUNT);
   const hasMore = highlights.length > HIGHLIGHTS_PREVIEW_COUNT;

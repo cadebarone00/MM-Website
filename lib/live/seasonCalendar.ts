@@ -2,7 +2,7 @@ import { SEASON_YEARS } from "./seasonYears.ts";
 import { TEST_SEASON_YEAR } from "./testSeason.ts";
 
 export const OVERVIEW_YEARS = [2026, ...SEASON_YEARS];
-export type SeasonWindow = { year: number; activeOn: string | null; passOn: string | null; locked: boolean };
+export type SeasonWindow = { year: number; activeOn: string | null; passOn: string | null; locked: boolean; archivedAt?: string | null };
 export type SeasonCalendar = { windows: SeasonWindow[]; activeYear: number; archivedYears: number[]; scheduled: boolean };
 export const CALENDAR_TIMEZONE = "America/Chicago";
 export function calendarDate(now = new Date()): string {
@@ -16,6 +16,8 @@ export function resolveSeasonCalendar(windows: SeasonWindow[], fallback: number,
   const current = locked.find(row => row.activeOn! <= today && today < row.passOn!);
   const ended = locked.filter(row => row.passOn! <= today);
   const successor = ended.at(-1)?.year;
-  const activeYear = current?.year ?? (successor !== undefined && successor + 1 < TEST_SEASON_YEAR ? successor + 1 : fallback);
-  return { windows, activeYear, archivedYears: [...new Set([2024, 2025, 2026, ...ended.map(row => row.year)])].filter(year => year !== activeYear), scheduled: Boolean(current || ended.length) };
+  const firstFuture = locked.find(row=>row.activeOn! > today);
+  const activeYear = current?.year ?? (successor !== undefined && successor + 1 < TEST_SEASON_YEAR ? successor + 1 : firstFuture ? firstFuture.year - 1 : fallback);
+  const archivedYears = [...new Set([...([2024, 2025, 2026].filter(year=>year<activeYear)), ...ended.map(row=>row.year), ...windows.filter(row=>row.archivedAt).map(row=>row.year)])].filter(year=>year!==activeYear).sort((a,b)=>a-b);
+  return { windows, activeYear, archivedYears, scheduled: Boolean(locked.length || windows.some(row=>row.archivedAt)) };
 }

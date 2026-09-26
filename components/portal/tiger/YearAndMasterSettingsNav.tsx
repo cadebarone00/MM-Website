@@ -6,7 +6,7 @@ import Link from "next/link";
 import { SEASON_YEARS } from "@/lib/live/seasonYears";
 
 export function YearAndMasterSettingsNav({ initialYear }: { initialYear: number }) {
-  const [year, setYear] = useState(initialYear);
+  const [year, setYear] = useState(SEASON_YEARS.includes(initialYear) ? initialYear : 2027);
 
   return (
     <div>

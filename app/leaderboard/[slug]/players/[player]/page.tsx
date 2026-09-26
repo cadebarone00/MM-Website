@@ -1,4 +1,4 @@
-import { getSeasonCatalog, getCatalogTournament } from "@/lib/data/seasonCatalog";
+import { getSeasonCatalog, getCatalogTournament, nativeSeasonYear } from "@/lib/data/seasonCatalog";
 import { notFound } from "next/navigation";
 import { PlayerScorecardView } from "@/components/scorecard/PlayerScorecardView";
 import { PlayerProfileHeader } from "@/components/scorecard/PlayerProfileHeader";
@@ -28,7 +28,7 @@ export default async function PlayerScorecardPage({
     ? `/leaderboard/${encodeURIComponent(slug)}/matches/${encodeURIComponent(fromMatch)}`
     : `/leaderboard/${slug}`;
 
-  if (slug === catalog.nextTournament.slug) {
+  if (slug === catalog.nextTournament.slug && nativeSeasonYear(slug)) {
     return (
       <div className="max-w-[1200px] mx-auto px-7 pt-8 pb-16">
         <LivePlayerScorecard tournamentSlug={slug} player={player} backHref={backHref} />

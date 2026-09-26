@@ -2,12 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { UpcomingRoundScheduleItem } from "@/lib/data/activeSeasonOverlay";
 import coursePhotos from "@/lib/data/coursePhotos.json";
 import styles from "./ScheduleAccordion.module.css";
 
 export function ScheduleAccordion({ rounds, year, initialDate }: { rounds: UpcomingRoundScheduleItem[]; year: number; initialDate: string }) {
+  const { nextTournament } = useSeasonCatalog();
   const libraryDialog = useRef<HTMLDialogElement>(null);
   const photosByCourse = coursePhotos as Record<string, { name: string; main: string[]; library: string[] }>;
   const panels = Array.from({ length: Math.max(rounds.length, ...rounds.map(round => round.session), 1) }, (_, index) => {
@@ -78,25 +80,25 @@ export function ScheduleAccordion({ rounds, year, initialDate }: { rounds: Upcom
 
   return <main className={styles.page}>
     <header className={styles.header}><Link href="/schedule">Back</Link><button type="button" className={styles.libraryButton} onClick={() => libraryDialog.current?.showModal()}>Photo Library</button><span /></header>
-    <div ref={track} className={styles.track} onScroll={onScroll} aria-label="Round schedule" onKeyDown={event => {
+    <div ref={track} style={{ "--closed-panels": Math.max(1, panels.length - 1) } as CSSProperties} className={styles.track} onScroll={onScroll} aria-label="Round schedule" onKeyDown={event => {
       const delta = ["ArrowRight", "ArrowDown"].includes(event.key) ? 1 : ["ArrowLeft", "ArrowUp"].includes(event.key) ? -1 : 0;
       if (!delta) return;
       event.preventDefault();
-      const next = Math.max(0, Math.min(7, active + delta));
+      const next = Math.max(0, Math.min(panels.length - 1, active + delta));
       setActive(next);
       (track.current?.children[next].querySelector("button") as HTMLButtonElement)?.focus({ preventScroll: true });
     }}>
       {panels.map((panel, index) => {
-        const date = new Date(`${panel.date}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
+        const date = panel.date === "Date pending" ? panel.date : new Date(`${panel.date}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
         return <section key={panel.round} className={`${styles.panel} ${active === index ? styles.active : ""}`}>
           <Image src={panel.image} alt="" fill sizes="(max-width: 1023px) 100vw, 50vw" className={styles.photo} style={{ objectPosition: `${30 + index * 6}% center` }} />
           <div className={styles.shade} />
           <button className={styles.toggle} aria-expanded={active === index} aria-controls={`round-${panel.round}`} onClick={() => setActive(index)}><span className={styles.panelLabel}><span>{date}</span><span>Session {panel.round}</span></span></button>
           <div id={`round-${panel.round}`} className={styles.details} hidden={active !== index}>
-            <p className={styles.eyebrow}>Mission Hills Country Club</p>
+            <p className={styles.eyebrow}>{nextTournament.year === year ? nextTournament.venue : "Maroon Masters " + year}</p>
             <h2>{panel.course ?? "Course to be announced"}</h2>
             <p className={styles.format}>{panel.format ?? "Format to be announced"}</p>
-            <p>Palm Springs, CA</p>
+            <p>{nextTournament.year === year ? nextTournament.location : ""}</p>
             <p className={styles.note}>Session {panel.round} · {date}{!panel.course || !panel.format ? " · More details to come" : ""}</p>
           </div>
         </section>;

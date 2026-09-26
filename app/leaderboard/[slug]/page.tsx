@@ -1,4 +1,4 @@
-import { getSeasonCatalog, getCatalogTournament } from "@/lib/data/seasonCatalog";
+import { getSeasonCatalog, getCatalogTournament, nativeSeasonYear } from "@/lib/data/seasonCatalog";
 import { notFound, redirect } from "next/navigation";
 import { YearLeaderboardContent } from "@/components/leaderboard/YearLeaderboardContent";
 import { LiveLeaderboardContent } from "@/components/leaderboard/LiveLeaderboardContent";
@@ -13,7 +13,7 @@ export default async function LeaderboardYearPage({ params }: { params: Promise<
   const { slug } = await params;
   const catalog = await getSeasonCatalog();
 
-  if (slug === catalog.nextTournament.slug) {
+  if (slug === catalog.nextTournament.slug && nativeSeasonYear(slug)) {
     // Before the season switchover, `nextTournament` isn't live yet and has
     // nothing to show — send visitors to the latest completed tournament
     // instead of a dead-end empty page.

@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { nextTournament, pastTournaments, latestCompleted, isPastLeaderboardSwitchover } from "@/lib/data";
 import type { Tournament, UpcomingTournament } from "@/lib/data/types";
@@ -8,10 +8,10 @@ const Context=createContext<SeasonCatalogData>({nextTournament,pastTournaments,l
 export function SeasonCatalogProvider({ initial, children }: { initial: SeasonCatalogData; children: React.ReactNode }) {
   const [data,setData]=useState(initial);
   const router=useRouter();
-  useEffect(()=>{setData(initial);},[initial]);
+  const currentYear=useRef(initial.nextTournament.year);
   useEffect(()=>{
     let alive=true;
-    const refresh=async()=>{try {const response=await fetch("/api/season-catalog",{cache:"no-store"});if(!response.ok)return;const next:SeasonCatalogData=await response.json();if(alive){setData(previous=>{if(previous.nextTournament.year!==next.nextTournament.year) router.refresh();return next;});}}catch{}};
+    const refresh=async()=>{try {const response=await fetch("/api/season-catalog",{cache:"no-store"});if(!response.ok)return;const next:SeasonCatalogData=await response.json();if(alive){if(currentYear.current!==next.nextTournament.year){currentYear.current=next.nextTournament.year;router.refresh();}setData(next);}}catch{}};
     const timer=setInterval(()=>{void refresh();},60000);
     return()=>{alive=false;clearInterval(timer);};
   },[router]);

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getSeasonCatalog } from "@/lib/data/seasonCatalog";
+import { getSeasonCatalog, nativeSeasonYear } from "@/lib/data/seasonCatalog";
 import { getUpcomingRoundSchedule } from "@/lib/data/activeSeasonOverlay";
 import styles from "./schedule.module.css";
 export const dynamic = "force-dynamic";
@@ -15,6 +15,6 @@ export default async function ScheduleIndex() {
     <div className={styles.shade} /><Link href="/" className={styles.back}>Back</Link>
     <header className={styles.brand}><p>The Maroon Masters</p><p>{nextTournament.year}</p></header>
     <div className={styles.title}><h1>{nextTournament.venue}</h1><p>{nextTournament.location}</p></div>
-    <nav className={styles.days} aria-label="Tournament days">{[...dates].sort().map((date,index)=><Link key={date} href={"/schedule/"+nextTournament.slug+"?date="+date}><span className={styles.dayNumber}>Day {index+1}</span><span>{new Date(date+"T12:00:00Z").toLocaleDateString("en-US",{timeZone:"UTC",month:"long",day:"numeric"})}</span></Link>)}{!dates.size&&<Link href={"/schedule/"+nextTournament.slug}>Dates pending</Link>}</nav>
+    <nav className={styles.days} aria-label="Tournament days">{[...dates].sort().map((date,index)=><Link key={date} href={"/schedule/"+nextTournament.slug+(nativeSeasonYear(nextTournament.slug)?"?date="+date:"")}><span className={styles.dayNumber}>Day {index+1}</span><span>{new Date(date+"T12:00:00Z").toLocaleDateString("en-US",{timeZone:"UTC",month:"long",day:"numeric"})}</span></Link>)}{!dates.size&&<Link href={"/schedule/"+nextTournament.slug}>Dates pending</Link>}</nav>
   </main>;
 }

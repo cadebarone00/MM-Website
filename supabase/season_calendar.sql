@@ -9,6 +9,7 @@ create table if not exists public.season_calendar (
   check (not locked or (active_on is not null and pass_on is not null)),
   check (season_year <> 2034 or not locked)
 );
+alter table public.season_calendar add column if not exists archived_at timestamptz;
 alter table public.season_calendar enable row level security;
 grant all on public.season_calendar to service_role;
 insert into public.season_calendar(season_year) select generate_series(2026, 2034) on conflict do nothing;
@@ -36,13 +37,20 @@ begin
     if neighbor.season_year=p_year-1 and neighbor.active_on is not null and p_active <= neighbor.active_on then raise exception 'This Active date must follow the previous year Active date.' using errcode='23514'; end if;
     if neighbor.season_year=p_year+1 and neighbor.pass_on is not null and p_pass >= neighbor.pass_on then raise exception 'This Pass on date must precede the next year Pass on date.' using errcode='23514'; end if;
   end loop;
-  insert into season_calendar values(p_year,p_active,p_pass,p_locked) on conflict(season_year) do update set active_on=excluded.active_on,pass_on=excluded.pass_on,locked=excluded.locked;
+  if p_locked and exists(select 1 from season_calendar where locked and season_year<>p_year and ((season_year<p_year and pass_on>p_active) or (season_year>p_year and active_on<p_pass))) then
+    raise exception 'These dates overlap another locked season.' using errcode='23514';
+  end if;
+  insert into season_calendar(season_year,active_on,pass_on,locked) values(p_year,p_active,p_pass,p_locked) on conflict(season_year) do update set active_on=excluded.active_on,pass_on=excluded.pass_on,locked=excluded.locked;
   update season_calendar set pass_on=p_active where season_year=p_year-1 and not locked;
   update season_calendar set active_on=p_pass where season_year=p_year+1 and not locked;
 end;
 $$;
 revoke all on function public.save_season_calendar(integer,date,date,boolean) from public;
 grant execute on function public.save_season_calendar(integer,date,date,boolean) to service_role;
+
+-- 2026 remains a historical source, but may be the website's selected year.
+alter table public.live_active_season drop constraint if exists live_active_season_season_year_check;
+alter table public.live_active_season add constraint live_active_season_season_year_check check (season_year between 2024 and 2034);
 
 -- Keep legacy database consumers on the same year as the website.
 create or replace function public.sync_season_calendar()
@@ -56,9 +64,13 @@ begin
   if selected_year is null then
     select season_year+1 into selected_year from season_calendar where locked and pass_on<=today and season_year<2033 order by season_year desc limit 1;
   end if;
+  if selected_year is null then
+    select season_year-1 into selected_year from season_calendar where locked and active_on>today and season_year<2034 order by season_year limit 1;
+  end if;
   if selected_year is not null and selected_year is distinct from previous_year then
     update live_active_season set season_year=selected_year where id=true;
   end if;
+  update season_calendar set archived_at=(pass_on::timestamp at time zone 'America/Chicago') where locked and pass_on<=today and archived_at is null;
   update live_tournament_settings settings set completed_at=(calendar.pass_on::timestamp at time zone 'America/Chicago')
     from season_calendar calendar where settings.season_year=calendar.season_year and calendar.locked and calendar.pass_on<=today and settings.completed_at is null;
   return coalesce(selected_year,previous_year,2027);

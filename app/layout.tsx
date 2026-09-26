@@ -26,6 +26,8 @@ const barlowCondensed = Barlow_Semi_Condensed({
   variable: "--font-barlow-condensed",
 });
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "The Maroon Masters — Live",
   description: "The Maroon Masters — a fictional invitational match-play golf championship. Live leaderboard, pairings, and team rosters.",

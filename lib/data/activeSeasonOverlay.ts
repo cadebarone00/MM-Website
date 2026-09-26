@@ -85,7 +85,12 @@ export async function getNextVenue(): Promise<VenueSchedule> {
 /** Async counterpart of lib/data/index.ts's getVenueBySlug — same slug match, live-overlaid venue. */
 export async function getVenueBySlugAsync(slug: string): Promise<VenueSchedule | undefined> {
   const year = nativeSeasonYear(slug);
-  if (year) { const courses = await getActiveSeasonCourses(year); return { year, courses, sessions: [] }; }
+  if (year) {
+    const courses = await getActiveSeasonCourses(year);
+    const service = createSupabaseServiceRoleClient();
+    const { data: settings } = await service.from("live_tournament_settings").select("venue_name, venue_locked").eq("season_year",year).maybeSingle();
+    return { year, venueName: settings?.venue_locked ? settings.venue_name ?? undefined : undefined, courses, sessions: [] };
+  }
   return pastVenues[slug];
 }
 

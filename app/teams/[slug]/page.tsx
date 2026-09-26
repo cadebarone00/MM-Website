@@ -1,4 +1,4 @@
-import { getSeasonCatalog, getCatalogTournament } from "@/lib/data/seasonCatalog";
+import { getSeasonCatalog, getCatalogTournament, nativeSeasonYear } from "@/lib/data/seasonCatalog";
 import { notFound } from "next/navigation";
 import { YearTabs } from "@/components/YearTabs";
 import { TournamentHeader } from "@/components/TournamentHeader";
@@ -21,7 +21,7 @@ export default async function TeamsYearPage({ params }: { params: Promise<{ slug
   const { slug } = await params;
   const catalog = await getSeasonCatalog();
 
-  if (slug === catalog.nextTournament.slug) {
+  if (slug === catalog.nextTournament.slug && nativeSeasonYear(slug)) {
     const [nextTournamentOverride, confirmedRoster] = await Promise.all([
       getNextTournamentOverride(),
       getConfirmedRoster(),

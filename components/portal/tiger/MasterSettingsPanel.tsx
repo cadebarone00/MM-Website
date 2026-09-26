@@ -61,7 +61,7 @@ export function MasterSettingsPanel({ year, initialSettings, isActiveYear }: { y
           {TIMEZONES.map((zone) => <option key={zone.id} value={zone.id}>{zone.label}</option>)}
         </select>
       </label>
-      <p className="mt-2 font-sans text-xs text-ink-500">Match tee times on Courses & Format are entered in this timezone. Everywhere else on the site shows each visitor's own local time.</p>
+      <p className="mt-2 font-sans text-xs text-ink-500">Match tee times on Courses & Format are entered in this timezone. Everywhere else on the site shows each visitor&apos;s own local time.</p>
     </section>
 
     <button type="button" disabled={saving} onClick={save} className="mt-4 rounded-lg bg-maroon-700 px-5 py-2 font-condensed text-sm font-semibold uppercase tracking-wide text-white disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
