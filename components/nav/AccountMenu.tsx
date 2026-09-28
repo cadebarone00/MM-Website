@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { X } from "lucide-react";
-import { useAccountSession, signOutAccount } from "@/lib/useAccountSession";
+import { useAccountSession } from "@/lib/useAccountSession";
+import { SignOutConfirmDialog } from "@/components/SignOutConfirmDialog";
 import type { AccountSession } from "@/lib/useAccountSession";
 
 const PERSONAL_LINKS = [
@@ -27,6 +29,7 @@ function welcomeLabel(session: AccountSession): string {
 /** Personal-to-the-account-holder menu, opened from the header's account icon. Separate from MorePanel (site-wide pages) — this holds only things tied to the signed-in account. */
 export function AccountMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const session = useAccountSession();
+  const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   if (!open) return null;
 
   return (
@@ -71,10 +74,7 @@ export function AccountMenu({ open, onClose }: { open: boolean; onClose: () => v
         {session ? (
           <button
             type="button"
-            onClick={() => {
-              void signOutAccount();
-              onClose();
-            }}
+            onClick={() => setConfirmingSignOut(true)}
             className="w-full rounded-sm bg-maroon-700 px-5 py-3 text-center font-condensed text-sm font-semibold uppercase tracking-wide text-cream-50"
           >
             Log Out
@@ -98,6 +98,7 @@ export function AccountMenu({ open, onClose }: { open: boolean; onClose: () => v
           </div>
         )}
       </div>
+      {confirmingSignOut && <SignOutConfirmDialog onClose={() => setConfirmingSignOut(false)} />}
     </div>
   );
 }

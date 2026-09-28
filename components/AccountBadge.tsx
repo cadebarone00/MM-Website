@@ -5,12 +5,14 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronRight, LogOut } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { TigerAvatar } from "@/components/ui/TigerAvatar";
-import { useAccountSession, signOutAccount } from "@/lib/useAccountSession";
+import { useAccountSession } from "@/lib/useAccountSession";
+import { SignOutConfirmDialog } from "@/components/SignOutConfirmDialog";
 import { getPlayerAvatar } from "@/lib/data/players";
 
 export function AccountBadge({ position }: { position: "header" | "footer" }) {
   const session = useAccountSession();
   const [open, setOpen] = useState(false);
+  const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -90,8 +92,8 @@ export function AccountBadge({ position }: { position: "header" | "footer" }) {
           <button
             type="button"
             onClick={() => {
-              void signOutAccount();
               setOpen(false);
+              setConfirmingSignOut(true);
             }}
             className="flex w-full items-center justify-between px-4 py-3 font-sans text-sm text-ink-700 hover:bg-cream-50"
           >
@@ -100,6 +102,7 @@ export function AccountBadge({ position }: { position: "header" | "footer" }) {
           </button>
         </div>
       )}
+      {confirmingSignOut && <SignOutConfirmDialog onClose={() => setConfirmingSignOut(false)} />}
     </div>
   );
 }

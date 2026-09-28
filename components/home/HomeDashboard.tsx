@@ -223,8 +223,8 @@ function HomeHighlightsToggle({ rounds, teamsCatalog, scheduleCatalog }: Dashboa
       </div>
       <div id="home-content-panel" role="tabpanel" aria-labelledby={`home-tab-${tab}`} className="pt-8">
         {tab === "highlights" && <HighlightsRail flat />}
-        {tab === "teams" && <div data-website-section="home_teams"><SeasonCatalogProvider initial={teamsCatalog} section="home_teams"><HomeTeamsPanel /></SeasonCatalogProvider></div>}
-        {tab === "schedule" && <div data-website-section="home_schedule"><SeasonCatalogProvider initial={scheduleCatalog} section="home_schedule"><QuickScheduleCard nextTournamentOverride={scheduleCatalog.nextTournament} rounds={rounds} /></SeasonCatalogProvider></div>}
+        {tab === "teams" && <div data-website-section="home_teams"><SeasonCatalogProvider key={teamsCatalog.nextTournament.year} initial={teamsCatalog} section="home_teams"><HomeTeamsPanel /></SeasonCatalogProvider></div>}
+        {tab === "schedule" && <div data-website-section="home_schedule"><SeasonCatalogProvider key={scheduleCatalog.nextTournament.year} initial={scheduleCatalog} section="home_schedule"><QuickScheduleCard nextTournamentOverride={scheduleCatalog.nextTournament} rounds={rounds} /></SeasonCatalogProvider></div>}
       </div>
     </div>
   );

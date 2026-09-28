@@ -33,3 +33,7 @@ export function parseYearChange(value: unknown): { section: WebsiteSection; year
   const { section, year } = value as Record<string, unknown>;
   return isWebsiteSection(section) && (year === null || isDisplayYear(year)) ? { section, year } : null;
 }
+
+export function resolveDisplayYear(selected: number | null, calendar: { scheduled: boolean; activeYear: number }, legacyYear: number): number {
+  return selected ?? (calendar.scheduled ? calendar.activeYear : legacyYear);
+}

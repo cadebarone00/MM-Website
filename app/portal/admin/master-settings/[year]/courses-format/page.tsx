@@ -46,7 +46,7 @@ export default async function CoursesFormatPage({ params }: { params: Promise<{ 
   const [broadcastResult, matchPlayResult] = await Promise.allSettled([getBroadcastPayload(), getBroadcastMatchPlay()]);
   const broadcast = broadcastResult.status === "fulfilled" ? broadcastResult.value : null;
   const matchPlay = matchPlayResult.status === "fulfilled" ? matchPlayResult.value : null;
-  const catalog = await getSeasonCatalog();
+  const catalog = await getSeasonCatalog(null);
   const destinations = { activeYear, timezone: settingsRow?.timezone ?? "America/Los_Angeles", leaderboardOpen: catalog.leaderboardOpen, upcomingYear: catalog.nextTournament.year, broadcastSession: broadcast?.state.seasonYear === year && broadcast.state.tournamentLive && broadcast.state.currentScene === "match_play" && !broadcast.state.videoPhase && matchPlay?.roundLabel?.startsWith("Round ") ? Number(matchPlay.roundLabel.slice(6)) : null, matches: matches.data ?? [], archiveSessions: [...new Set((archives.data ?? []).map(row => row.round as number))], unavailable: Boolean(matches.error || archives.error || !broadcast || !matchPlay) };
 
   const settings: TournamentSettings = {

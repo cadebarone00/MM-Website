@@ -7,7 +7,7 @@ import { playerProfilePayload } from "@/lib/live/playerProfile";
 import type { Tournament, UpcomingTournament } from "./types";
 import { SEASON_YEARS } from "@/lib/live/seasonYears";
 import { getRequestWebsiteSection, getWebsiteSettings } from "@/lib/website/settingsServer";
-import type { WebsiteSection } from "@/lib/website/settings";
+import { resolveDisplayYear, type WebsiteSection } from "@/lib/website/settings";
 
 export function seasonSlug(year: number) { return pastTournaments.find(row => row.year === year)?.slug ?? (year === nextTournament.year ? nextTournament.slug : year + "-maroon-masters"); }
 export function nativeSeasonYear(slug: string): number | null { return SEASON_YEARS.find(year => seasonSlug(year) === slug) ?? null; }
@@ -36,12 +36,12 @@ export const getSeasonTournament = cache(async (year: number): Promise<Tournamen
   return { dayDates: Object.fromEntries(dates.map((date,index)=>[index+1,date])), individualChampion: winner, slug: seasonSlug(year), year, editionLabel: "Maroon Masters " + year, venue: settings.data?.venue_locked ? settings.data.venue_name ?? "Venue pending" : "Venue pending", location: "", dateLabel: startDate && endDate ? startDate + " - " + endDate : "Dates pending", startDate, endDate, roster: payload.roster ?? {maroon:[],white:[]}, matches, scorecards, individualLeaderboard: payload.individualLeaderboard ?? [], maroonPts: matches.reduce((sum,row)=>sum+row.maroonPts,0), whitePts: matches.reduce((sum,row)=>sum+row.whitePts,0), pointsAvailable: matches.length, pointsToWin: Math.floor(matches.length/2)+1 };
 });
 
-export const getSeasonCatalog = cache(async (requestedSection?: WebsiteSection) => {
+export const getSeasonCatalog = cache(async (requestedSection?: WebsiteSection | null) => {
   const section = requestedSection ?? await getRequestWebsiteSection();
   const { settings: websiteSettings } = await getWebsiteSettings();
-  const selectedYear = websiteSettings[section];
+  const selectedYear = requestedSection === null ? null : websiteSettings[section];
   const calendar = await getSeasonCalendar();
-  const year = selectedYear ?? (calendar.scheduled ? calendar.activeYear : nextTournament.year);
+  const year = resolveDisplayYear(selectedYear, calendar, nextTournament.year);
   const service = createSupabaseServiceRoleClient();
   const { data: settings } = await service.from("live_tournament_settings").select("venue_name, venue_locked, begin_date, end_date, dates_locked").eq("season_year",year).maybeSingle();
   const historical = pastTournaments.find(row => row.year === year);

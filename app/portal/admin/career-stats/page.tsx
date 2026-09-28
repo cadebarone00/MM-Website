@@ -21,7 +21,7 @@ export default async function CareerStatsPage() {
   const { records, teamRecords } = await getCombinedCareerArchive();
   const courses = await getCourseLibraryForHandicap(true);
 
-  const { nextTournament, pastTournaments, leaderboardOpen } = await getSeasonCatalog();
+  const { nextTournament, pastTournaments, leaderboardOpen } = await getSeasonCatalog(null);
   const setups = await getRoundFormatSetups();
   const roundFormatTournaments: RoundFormatTournament[] = await Promise.all(
     pastTournaments.map(async (tournament) => {

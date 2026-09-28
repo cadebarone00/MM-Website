@@ -13,8 +13,10 @@ export function useLiveTournament(pollMs = LIVE_POLL_MS, endpoint = "/api/live-f
   const catalog = useSeasonCatalog();
   if (catalog.scheduled && endpoint === "/api/live-feed") endpoint = "/api/season-feed";
   if (catalog.section) endpoint += (endpoint.includes("?") ? "&" : "?") + "section=" + catalog.section;
-  const [payload, setPayload] = useState<LiveFeedPayload | null>(null);
-  const [confirmedRoster, setConfirmedRoster] = useState<RosterEntry[]>([]);
+  const [feed, setFeed] = useState<{ year: number; payload: LiveFeedPayload } | null>(null);
+  const payload = feed?.year === catalog.nextTournament.year ? feed.payload : null;
+  const [rosterFeed, setRosterFeed] = useState<{ year: number; roster: RosterEntry[] } | null>(null);
+  const confirmedRoster = rosterFeed?.year === catalog.nextTournament.year ? rosterFeed.roster : [];
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,7 +29,7 @@ export function useLiveTournament(pollMs = LIVE_POLL_MS, endpoint = "/api/live-f
         if (!res.ok) throw new Error("feed unavailable");
         const data = await res.json();
         if (!cancelled) {
-          setPayload(data);
+          setFeed({ year: catalog.nextTournament.year, payload: data });
           setError(null);
         }
       } catch {
@@ -42,7 +44,7 @@ export function useLiveTournament(pollMs = LIVE_POLL_MS, endpoint = "/api/live-f
         const res = await fetch("/api/confirmed-roster?section=" + (catalog.section ?? "home"), { cache: "no-store" });
         if (!res.ok) return;
         const data = await res.json();
-        if (!cancelled && data.ok && Array.isArray(data.roster)) setConfirmedRoster(data.roster);
+        if (!cancelled && data.ok && Array.isArray(data.roster)) setRosterFeed({ year: catalog.nextTournament.year, roster: data.roster });
       } catch {
         // Pre-tournament roster overlay just won't apply this poll - tournament.roster stays whatever it already was.
       }
@@ -52,6 +54,7 @@ export function useLiveTournament(pollMs = LIVE_POLL_MS, endpoint = "/api/live-f
     loadConfirmedRoster();
     const id = setInterval(() => {
       load();
+      loadConfirmedRoster();
     }, pollMs);
     return () => {
       cancelled = true;
@@ -59,7 +62,7 @@ export function useLiveTournament(pollMs = LIVE_POLL_MS, endpoint = "/api/live-f
     };
   }, [pollMs, endpoint, catalog.nextTournament.year, catalog.section]);
 
-  const merged = mergeLiveTournament(payload);
+  const merged = mergeLiveTournament(catalog.scheduled ? { ...payload, roster: payload?.roster ?? { maroon: [], white: [] } } : payload);
   const tournament = overlayConfirmedRoster({ ...merged, ...catalog.nextTournament, roster: merged.roster }, confirmedRoster);
 
   return { tournament, payload, error, loading };

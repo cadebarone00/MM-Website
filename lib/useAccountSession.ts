@@ -42,5 +42,7 @@ export function useAccountSession(): AccountSession {
 export async function signOutAccount(): Promise<void> {
   const res = await fetch("/api/auth/signout", { method: "POST" });
   if (!res.ok) throw new Error(`Sign out failed (${res.status})`);
+  // Deliberately a full load, not router.push: nothing from the signed-in session survives.
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
   window.location.assign("/");
 }

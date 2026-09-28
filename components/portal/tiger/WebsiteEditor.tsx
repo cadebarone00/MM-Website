@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { WEBSITE_SECTIONS, isWebsiteSection, sectionForPath, type WebsiteSection, type WebsiteYearSettings } from "@/lib/website/settings";
 import { WebsiteSettingsPanel } from "./WebsiteSettingsPanel";
 
@@ -18,8 +18,24 @@ export function WebsiteEditor({ initial, available, effectiveYears, players }: {
   const [revision, setRevision] = useState(0);
   const site = useRef<HTMLIFrameElement>(null);
   const pickRef = useRef(false);
-  pickRef.current = pick;
+  useEffect(() => { pickRef.current = pick; }, [pick]);
   const current = WEBSITE_SECTIONS.find(item => item.key === section)!;
+
+  useEffect(() => {
+    const navigate = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || event.source !== site.current?.contentWindow || event.data?.type !== "mm-website-location" || typeof event.data.path !== "string") return;
+      const next = sectionForPath(event.data.path);
+      if (event.data.path !== path) { setSection(next); setPath(event.data.path); }
+    };
+    window.addEventListener("message", navigate);
+    return () => window.removeEventListener("message", navigate);
+  }, [path]);
+
+  useEffect(() => {
+    let alive = true;
+    void fetch("/api/season-catalog?section=" + section, { cache: "no-store" }).then(response => response.json()).then(data => { if (alive) setYear(data.nextTournament.year); }).catch(() => {});
+    return () => { alive = false; };
+  }, [section, revision]);
 
   function choose(next: WebsiteSection) {
     setSection(next);
@@ -29,6 +45,7 @@ export function WebsiteEditor({ initial, available, effectiveYears, players }: {
     setRevision(value => value + 1);
   }
   function refresh() {
+    setPath(WEBSITE_SECTIONS.find(item => item.key === section)!.path);
     setRevision(value => value + 1);
     void fetch("/api/season-catalog?section=" + section, { cache: "no-store" }).then(response => response.json()).then(data => setYear(data.nextTournament.year)).catch(() => {});
   }
@@ -49,7 +66,7 @@ export function WebsiteEditor({ initial, available, effectiveYears, players }: {
       event.stopPropagation();
       const element = event.target as HTMLElement;
       const key = element.closest<HTMLElement>("[data-website-section]")?.dataset.websiteSection;
-      const selected = isWebsiteSection(key) ? key : sectionForPath(url.pathname);
+      const selected = isWebsiteSection(key) ? key : sectionForPath(frame.contentWindow!.location.pathname);
       setSection(selected);
       setYear(initial[selected] ?? effectiveYears[selected]);
       setEditorPath(null);

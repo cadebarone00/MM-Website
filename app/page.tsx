@@ -16,7 +16,7 @@ export default async function Home() {
     <HomeEntrySplash>
       <div>
         <div data-website-section="home"><VideoHero nextTournamentOverride={nextTournamentOverride} /></div>
-        <div data-website-section="home_results"><SeasonCatalogProvider initial={resultsCatalog} section="home_results"><LiveLeaderboardStripSection /></SeasonCatalogProvider></div>
+        <div data-website-section="home_results"><SeasonCatalogProvider key={resultsCatalog.nextTournament.year} initial={resultsCatalog} section="home_results"><LiveLeaderboardStripSection /></SeasonCatalogProvider></div>
         <HomeDashboard nextTournamentOverride={nextTournamentOverride} rounds={rounds} teamsCatalog={teamsCatalog} scheduleCatalog={scheduleCatalog} />
       </div>
     </HomeEntrySplash>
