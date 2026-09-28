@@ -10,8 +10,26 @@ import type { MatchFormat } from "@/lib/live/types";
 
 const green = "border-green-600 bg-green-50 text-green-900";
 const neutral = "border-stone-300 bg-white text-ink-700";
+const redLive = "border-red-600 bg-red-50 text-red-700";
 function sideLabel(players: string[]) {
   return players.length ? players.map(getPlayerDisplayName).join(" / ") : "Pending";
+}
+function dateLabel(date: string | null) {
+  return date ? new Date(date + "T12:00:00Z").toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric", year: "numeric" }) : "Date pending";
+}
+function timeLabel(value: string | null | undefined, timezone: string) {
+  if (!value) return "TBD";
+  return new Date(value).toLocaleTimeString("en-US", { timeZone: timezone, hour: "numeric", minute: "2-digit" });
+}
+function workflowDetail({ archived, row, sessionDate, teeLabel, match, state }: { archived: boolean; row: OverviewYear; sessionDate: string | null; teeLabel: string; match?: { teeTime: string | null; state: string } | null; state: string }) {
+  const passOn = row.passOn ? `${dateLabel(row.passOn)} at midnight Central` : "Pass-on not armed";
+  const liveAt = match?.teeTime ? `${dateLabel(match.teeTime.slice(0, 10))} ${timeLabel(match.teeTime, row.timezone)} ${row.timezone.replaceAll("_", " ")}` : `${dateLabel(sessionDate)} ${teeLabel} ${row.timezone.replaceAll("_", " ")}`;
+  const archiveLine = archived || state === "Archived" ? `Archived at ${row.archivedAt ? new Date(row.archivedAt).toLocaleString("en-US", { timeZone: row.timezone, month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : passOn}.` : `Will archive at season pass-on: ${passOn}.`;
+  return {
+    armed: `Armed for ${liveAt}.`,
+    live: state === "Live" ? `Currently live since ${liveAt}.` : state === "Archived" ? `Finished from ${liveAt}.` : `Will go live at ${liveAt}.`,
+    archive: archiveLine,
+  };
 }
 function YearOverview({ row, activeYear, available, refresh, now }: { row: OverviewYear; activeYear: number; available: boolean; refresh: () => Promise<void>; now: number }) {
   const [activeOn, setActiveOn] = useState(row.activeOn ?? "");
@@ -20,6 +38,7 @@ function YearOverview({ row, activeYear, available, refresh, now }: { row: Overv
   const [error, setError] = useState<string | null>(null);
   const today = calendarDate(new Date(now));
   const archived = Boolean(row.archivedAt) || (row.locked && Boolean(row.passOn && row.passOn <= today));
+  const [openWorkflow, setOpenWorkflow] = useState<string | null>(null);
   const activeLocked = row.locked || row.activeLockedByPrevious;
   const passLocked = row.locked || row.passLockedByNext;
   const status = row.test ? "Test season" : archived ? "Archived" : activeYear === row.year ? "Active" : activeLocked ? "Armed" : "Draft";
@@ -55,8 +74,10 @@ function YearOverview({ row, activeYear, available, refresh, now }: { row: Overv
               const slot = teeTimeSlotForMatch(session.format as MatchFormat,number);
               const time = session.teeTimes[slot];
               const label = time ? new Date("2000-01-01T" + time).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}) : match?.teeTime ? new Date(match.teeTime).toLocaleTimeString("en-US",{timeZone:row.timezone,hour:"numeric",minute:"2-digit"}) : "TBD";
-              const state = archived ? "Archived" : row.checkedInData || row.historical ? "Final" : match?.state === "Final" ? "Final" : !session.courseLocked || !session.matchupsLocked ? "Not armed" : !match ? "Match pending" : row.year !== activeYear ? "Inactive year" : !session.started || !match.started ? "Awaiting start" : match.teeTime && Date.parse(match.teeTime) <= now ? "Live" : "Armed";
-              return <div key={number} className="min-w-0 text-center"><p className="mb-1 text-xs font-semibold">Match {number}</p><div className={"rounded-md border-2 px-1 py-2 " + (session.courseLocked && label !== "TBD" ? green : neutral)}><p className="text-sm font-bold">{label}</p><p className="mt-1 truncate text-[11px] font-semibold text-maroon-700">{match ? sideLabel(match.maroonPlayers) : "Maroon pending"}</p><p className="truncate text-[11px] font-semibold text-ink-700">{match ? sideLabel(match.whitePlayers) : "White pending"}</p><p className="mt-1 text-[10px]">{state}</p></div></div>;
+              const state = archived || row.historical || row.checkedInData || match?.state === "Final" ? "Archived" : !session.courseLocked || !session.matchupsLocked ? "Not armed" : !match ? "Match pending" : row.year !== activeYear ? "Inactive year" : !session.started || !match.started ? "Awaiting start" : match.teeTime && Date.parse(match.teeTime) <= now ? "Live" : "Armed";
+              const workflow = workflowDetail({ archived, row, sessionDate: session.date, teeLabel: label, match, state });
+              const workflowKey = `${row.year}:${session.number}:${number}`;
+              return <div key={number} className="group relative min-w-0 text-center"><p className="mb-1 text-xs font-semibold">Match {number}</p><button type="button" onClick={() => setOpenWorkflow((current) => current === workflowKey ? null : workflowKey)} className={"w-full rounded-md border-2 px-1 py-2 text-inherit " + (state === "Live" ? redLive : session.courseLocked && label !== "TBD" ? green : neutral)} aria-expanded={openWorkflow === workflowKey}><p className="text-sm font-bold">{label}</p><p className="mt-1 truncate text-[11px] font-semibold text-maroon-700">{match ? sideLabel(match.maroonPlayers) : "Maroon pending"}</p><p className="truncate text-[11px] font-semibold text-ink-700">{match ? sideLabel(match.whitePlayers) : "White pending"}</p><p className="mt-1 flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wide">{state === "Live" && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-600" aria-hidden="true" />}<span className={state === "Live" ? "animate-pulse text-red-700" : ""}>{state}</span></p></button><div className={(openWorkflow === workflowKey ? "block" : "hidden") + " absolute left-1/2 z-20 mt-2 w-64 -translate-x-1/2 rounded-md border border-gold-300 bg-white p-3 text-left text-xs leading-relaxed text-ink-700 shadow-lg group-hover:block group-focus-within:block"}><p className="font-semibold text-ink-900">Workflow timing</p><p className="mt-1">{workflow.armed}</p><p>{workflow.live}</p><p>{workflow.archive}</p></div></div>;
             })}</div>{!count && <p className="text-xs text-ink-500">Choose a format to see the match slots.</p>}
           </div>;
         })}{!day.sessions.length && <p className="text-xs text-ink-500">No sessions assigned to this day.</p>}</div>
