@@ -9,7 +9,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 ```mermaid
 flowchart TD
   %% Page and major section titles share the official Spectral Bold Maroon Masters title font.
-  %% Home-screen bookmarks use centered gold-outline Spectral italic MM over a diagonal split: dark maroon top-left and white bottom-right; Apple icon metadata and Android manifest supply PNG assets.
+  %% Home-screen bookmarks use the supplied metallic gold artwork with a maroon left M and white right M; Apple icon metadata and Android manifest supply resized PNG assets.
   %% Optional password-status migration derives player_slots.password_created from the linked Auth password credential; deployment pending.
   %% Verified password setup displays the account username and authentication email above the password field.
   %% Invite URL fragments are exchanged for session cookies before password entry; recovery codes use the server callback. Invalid links offer a fresh reset.
@@ -137,7 +137,7 @@ For example, in September 2026, My Matches can correctly show 2026 matches as Pa
 
 ## 3. Public website and navigation
 
-Home-screen bookmarks use a custom icon with a diagonal split running from bottom-left to top-right: dark maroon `#240001` in the top-left half and white `#FFFFFF` in the bottom-right half. The full Spectral Semibold Italic MM, adapted from the broadcast holding screen, is centered across the split in thick gold `#C9A86E` outlines, with the background visible inside the letters. Both letters fit inside the square without intentional cropping. `app/apple-icon.png` supplies Apple's 180px touch icon; `app/manifest.ts` supplies Android/browser 192px and 512px PNG icons from `public/icons`. The manifest retains browser display mode; this change does not add offline support or redesign the installed layout. Device launchers may apply their own masks. Existing saved icons may need to be removed and re-added after deployment.
+Home-screen bookmarks use the supplied metallic gold artwork: a maroon left M and white right M with raised gold edges on a brushed gold background. The full square image is resized without cropping or redesign. `app/apple-icon.png` supplies Apple's 180px touch icon; `app/manifest.ts` supplies Android/browser 192px and 512px PNG icons from `public/icons`. The manifest retains browser display mode; this change does not add offline support or redesign the installed layout. Device launchers may apply their own masks. Existing saved icons may need to be removed and re-added after deployment.
 
 On live and archived leaderboards, Match Play boards are centered in a 40vw column at desktop widths (1024px and above), capped at the available content width. Desktop match rows add 10px vertical padding per player name instead of mobile's 6px. The ticker, individual standings, and mobile layout retain their existing sizing.
 
@@ -504,6 +504,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-28 - Supplied gold MM home-screen artwork (implemented; deployment not verified).** Replaced the diagonal maroon/white icon with the supplied brushed-gold image featuring maroon and white Ms with gold edges. Apple and Android assets preserve the full artwork at their required sizes. Updated section 3 and the Mermaid annotation; workflow paths are unchanged.
 
 **2026-09-28 - Tiger website editor and independent section years (implemented locally; migration and deployment not verified).** Previously the website largely shared calendar/legacy year selection and Tiger edited source records through separate setup pages. Tiger now has a host-only view of the real pages with shared settings, separate display years for eight sections, embedded existing source editors, and a host-checked player-dashboard view. Both editing surfaces persist to the same section settings table; saves are immediately effective on subsequent reads. Display overrides preserve operational scoring/betting years and explicit archive URLs. Universal text/image editing and conversion of fixed-year Skins/editorial content remain unimplemented. Updated Sections 2 and 6, Mermaid paths, and rendered overview mapping.
 
