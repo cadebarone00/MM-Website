@@ -6,9 +6,9 @@ export const palmSprings2026: Tournament = {
   year: 2026,
   venue: "Mission Hills CC",
   location: "Palm Springs, CA",
-  dateLabel: "January 2026",
-  startDate: "2026-01-03",
-  endDate: "2026-01-06",
+  dateLabel: "January 7-10, 2026",
+  startDate: "2026-01-07",
+  endDate: "2026-01-10",
   dayDates: { 1: "2026-01-07", 2: "2026-01-08", 3: "2026-01-09", 4: "2026-01-10" },
   roster: {
     maroon: ["cam-latto", "drew-weisser", "hugo-moebel", "luke-sherrell", "nate-wojciechowski", "pete-peabody"],
@@ -70,7 +70,7 @@ export const palmSprings2026: Tournament = {
     { player: "dalton-spriggs", team: "white", toPar: 60 },
     { player: "hugo-moebel", team: "maroon", toPar: 61 },
   ],
-  notes: "Exact calendar dates weren't reliably recorded in the source sheet (the Itinerary tab carried over stale dates from a prior trip) — shown as January 2026.",
+  notes: "Played over four dated tournament days and eight sessions at Mission Hills.",
   individualChampion: "nate-wojciechowski",
   individualChampionPhoto: "/champions/2026.jpg",
 };

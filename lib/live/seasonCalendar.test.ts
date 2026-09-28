@@ -4,6 +4,8 @@ import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 import { calendarDate, resolveSeasonCalendar, validCalendarDate } from "./seasonCalendar.ts";
 import { overviewDays, overviewMatchCount, type OverviewYear } from "./seasonOverview.ts";
+import { palmSprings2026 } from "@/lib/data/2026-palm-springs.ts";
+import { roundFormatArchive } from "@/lib/data/roundFormatArchive.ts";
 
 test("handoff selects the successor at Central midnight and archives only the outgoing year", () => {
   const window={year:2027,activeOn:"2026-09-01",passOn:"2027-09-01",locked:true};
@@ -39,6 +41,20 @@ test("overview includes all tournament days and preserves undated sessions",()=>
   const year={beginDate:"2027-01-06",endDate:"2027-01-09",sessions:[{number:1,date:"2027-01-06"},{number:2,date:null}]} as OverviewYear;
   const days=overviewDays(year); assert.equal(days.length,5);assert.equal(days[4].date,null);
   assert.equal(overviewMatchCount("Singles"),6);assert.equal(overviewMatchCount("Fourball"),3);assert.equal(overviewMatchCount(null),0);
+});
+
+test("2026 checked-in tournament data is four days and eight sessions", () => {
+  assert.equal(palmSprings2026.startDate, "2026-01-07");
+  assert.equal(palmSprings2026.endDate, "2026-01-10");
+  const sessions = roundFormatArchive(palmSprings2026);
+  assert.equal(sessions.length, 8);
+  const days = overviewDays({
+    beginDate: palmSprings2026.startDate,
+    endDate: palmSprings2026.endDate,
+    sessions: sessions.map((session) => ({ number: session.round, date: palmSprings2026.dayDates?.[session.day] ?? null })),
+  } as OverviewYear);
+  assert.equal(days.length, 4);
+  assert.deepEqual(days.map((day) => day.sessions.length), [2, 2, 2, 2]);
 });
 
 test("database calendar shares dates, protects locks, rejects overlaps and retains scores at handoff",async()=>{

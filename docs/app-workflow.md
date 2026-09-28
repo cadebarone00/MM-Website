@@ -489,7 +489,7 @@ These are observations from the documentation review. No application behavior wa
 
 ## What changed
 
-**2026-09-26 - 2026 live until calendar pass-on (implemented locally; deployment not verified).** Tiger Center previously marked checked-in 2026 data as archived whenever another year was active or selected, and its overview could expand imprecise historical start/end dates into extra empty days. The season calendar now keeps 2026 out of archived years until its Pass on date or archive timestamp, the overview labels it as live/final data before pass-on, and the 2026 overview derives its range from the four dated tournament days and eight sessions. Updated Sections 2 and 6 and the Mermaid annotation; workflow paths are unchanged.
+**2026-09-28 - 2026 live until calendar pass-on (implemented locally; deployment not verified).** Tiger Center previously marked checked-in 2026 data as archived whenever another year was active or selected, and its overview could expand imprecise historical start/end dates into extra empty days. The season calendar now keeps 2026 out of archived years until its Pass on date or archive timestamp, the overview labels it as live/final data before pass-on, and the 2026 overview derives its range from the four dated tournament days and eight sessions. Updated Sections 2 and 6 and the Mermaid annotation; workflow paths are unchanged.
 
 **2026-09-26 - Diagonal maroon and white home-screen icon (implemented; deployment not verified).** Replaced the solid maroon background and cropped lettering with a diagonal maroon top-left/white bottom-right split and the full gold-outline MM centered across it. Updated section 3 and the Mermaid annotation; workflow paths are unchanged.
 
