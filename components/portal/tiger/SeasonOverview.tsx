@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { getPlayerDisplayName } from "@/lib/data/players";
 import { calendarDate } from "@/lib/live/seasonCalendar";
 import { overviewDays, overviewMatchCount, type OverviewYear, type SeasonOverviewData } from "@/lib/live/seasonOverview";
 import { teeTimeSlotForMatch } from "@/lib/live/sessionTeeTimes";
@@ -9,6 +10,9 @@ import type { MatchFormat } from "@/lib/live/types";
 
 const green = "border-green-600 bg-green-50 text-green-900";
 const neutral = "border-stone-300 bg-white text-ink-700";
+function sideLabel(players: string[]) {
+  return players.length ? players.map(getPlayerDisplayName).join(" / ") : "Pending";
+}
 function YearOverview({ row, activeYear, available, refresh, now }: { row: OverviewYear; activeYear: number; available: boolean; refresh: () => Promise<void>; now: number }) {
   const [activeOn, setActiveOn] = useState(row.activeOn ?? "");
   const [passOn, setPassOn] = useState(row.passOn ?? "");
@@ -52,7 +56,7 @@ function YearOverview({ row, activeYear, available, refresh, now }: { row: Overv
               const time = session.teeTimes[slot];
               const label = time ? new Date("2000-01-01T" + time).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}) : match?.teeTime ? new Date(match.teeTime).toLocaleTimeString("en-US",{timeZone:row.timezone,hour:"numeric",minute:"2-digit"}) : "TBD";
               const state = archived ? "Archived" : row.checkedInData || row.historical ? "Final" : match?.state === "Final" ? "Final" : !session.courseLocked || !session.matchupsLocked ? "Not armed" : !match ? "Match pending" : row.year !== activeYear ? "Inactive year" : !session.started || !match.started ? "Awaiting start" : match.teeTime && Date.parse(match.teeTime) <= now ? "Live" : "Armed";
-              return <div key={number} className="min-w-0 text-center"><p className="mb-1 text-xs font-semibold">Match {number}</p><div className={"rounded-md border-2 px-1 py-2 " + (session.courseLocked && label !== "TBD" ? green : neutral)}><p className="text-sm font-bold">{label}</p><p className="mt-1 text-[10px]">{state}</p></div></div>;
+              return <div key={number} className="min-w-0 text-center"><p className="mb-1 text-xs font-semibold">Match {number}</p><div className={"rounded-md border-2 px-1 py-2 " + (session.courseLocked && label !== "TBD" ? green : neutral)}><p className="text-sm font-bold">{label}</p><p className="mt-1 truncate text-[11px] font-semibold text-maroon-700">{match ? sideLabel(match.maroonPlayers) : "Maroon pending"}</p><p className="truncate text-[11px] font-semibold text-ink-700">{match ? sideLabel(match.whitePlayers) : "White pending"}</p><p className="mt-1 text-[10px]">{state}</p></div></div>;
             })}</div>{!count && <p className="text-xs text-ink-500">Choose a format to see the match slots.</p>}
           </div>;
         })}{!day.sessions.length && <p className="text-xs text-ink-500">No sessions assigned to this day.</p>}</div>

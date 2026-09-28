@@ -17,6 +17,7 @@ flowchart TD
   %% Accordion date/session labels are explicitly positioned below the top overlay and remain horizontal in every panel.
   %% Schedule landing and accordion are fixed edge-to-edge viewports; Photo Library shows non-main imported images for the active course.
   %% Schedule landing at /schedule uses the supplied Mission Hills photo and four January 6-9 links into an eight-session photo accordion with all eight desktop strips visible and the active panel at 50% width. The 2026 data source stays live until its calendar pass-on.
+  %% Season timing overview match boxes show both sides' player names from live Tiger-created match boxes or checked-in historical matchup data.
   A[Account and player identity] --> P[Player portal]
   A --> T[Tiger Center]
   T --> C[Course Library and tee snapshots]
@@ -184,7 +185,7 @@ Tiger can approve or deny a proposal and can set an override directly. Approved 
 
 ## 6. Tiger Center and tournament preparation
 
-A Season timing overview appears above Year-Specific Setup. Every year has visible Active/Pass on date inputs and Save draft/Lock/Unlock controls. Expand a year to see every tournament day, its sessions, and three pair-match or six Singles match boxes with the correct shared tee slots. Date-less sessions remain in an explicit pending group. Setup locks, matchup locks, selected count locks, start flags and match states are shown separately; green means a saved locked value, not that play has started. Stored venue timezones label tee times. The 2026 overview reads checked-in historical round setups as live calendar data until pass-on, shows its four tournament days and eight sessions, and does not invent missing tee times. The overview reloads saved setup every 15 seconds and on window focus; it does not publish draft session details.
+A Season timing overview appears above Year-Specific Setup. Every year has visible Active/Pass on date inputs and Save draft/Lock/Unlock controls. Expand a year to see every tournament day, its sessions, and three pair-match or six Singles match boxes with the correct shared tee slots. Each match box shows tee time, Maroon-side player names, White-side player names, and the current state; live years read those names from `live_match_boxes`, while checked-in 2026 data reads them from the historical matchup schedule. Date-less sessions remain in an explicit pending group. Setup locks, matchup locks, selected count locks, start flags and match states are shown separately; green means a saved locked value, not that play has started. Stored venue timezones label tee times. The 2026 overview reads checked-in historical round setups as live calendar data until pass-on, shows its four tournament days and eight sessions, and does not invent missing tee times. The overview reloads saved setup every 15 seconds and on window focus; it does not publish draft session details.
 
 Number of sessions has its own Lock/Unlock button in Courses & Format. The saved per-year `round_count_locked` flag disables the selector, and a chosen locked count turns green. A blank count may also be locked and stays neutral. Unlock before changing the count; API checks and a database trigger prevent locked count changes, including concurrent writes. This does not change individual session locks, existing session rows, or publication timing. Apply `supabase/session_count_lock.sql` before deployment; live database execution is not verified.
 
@@ -488,6 +489,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-28 - Match names in Season timing overview (implemented locally; deployment not verified).** Previously the overview showed match slots, tee times and state without the assigned players, so it was not a full matchup audit. It now carries Maroon and White player arrays from live Tiger-created match boxes and from checked-in 2026 historical matchups, and renders both sides in every match tile through scheduled, live, final and archived states. Updated Section 6 and the Mermaid annotation; workflow paths are unchanged.
 
 **2026-09-28 - 2026 live until calendar pass-on (implemented locally; deployment not verified).** Tiger Center previously marked checked-in 2026 data as archived whenever another year was active or selected, and its overview could expand imprecise historical start/end dates into extra empty days. The season calendar now keeps 2026 out of archived years until its Pass on date or archive timestamp, the overview labels it as live/final data before pass-on, and the 2026 overview derives its range from the four dated tournament days and eight sessions. Updated Sections 2 and 6 and the Mermaid annotation; workflow paths are unchanged.
 

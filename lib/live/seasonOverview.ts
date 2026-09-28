@@ -1,6 +1,6 @@
 import type { SeasonWindow } from "./seasonCalendar";
 import type { MatchFormat } from "./types";
-export type OverviewMatch = { number: number; teeTime: string | null; state: string; started: boolean };
+export type OverviewMatch = { number: number; teeTime: string | null; state: string; started: boolean; maroonPlayers: string[]; whitePlayers: string[] };
 export type OverviewSession = { number: number; date: string | null; course: string | null; format: string | null; courseLocked: boolean; matchupsLocked: boolean; started: boolean; teeTimes: (string | null)[]; matches: OverviewMatch[] };
 export type OverviewYear = SeasonWindow & { activeLockedByPrevious: boolean; passLockedByNext: boolean; timezone: string; beginDate: string | null; endDate: string | null; datesLocked: boolean; count: number | null; countLocked: boolean; sessions: OverviewSession[]; checkedInData: boolean; historical: boolean; test: boolean };
 export type SeasonOverviewData = { years: OverviewYear[]; activeYear: number; calendarAvailable: boolean; checkedAt: string };
