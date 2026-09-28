@@ -2,111 +2,76 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useRef, useState } from "react";
 import type { UpcomingRoundScheduleItem } from "@/lib/data/activeSeasonOverlay";
 import coursePhotos from "@/lib/data/coursePhotos.json";
+import { sessionsForDay, tournamentDays } from "./scheduleDays";
 import styles from "./ScheduleAccordion.module.css";
 
+const formatDate = (date: string) => new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
+
+/**
+ * One tournament day: that day's sessions split the screen (first session
+ * left, second right — stacked top/bottom on mobile), the day name sits at
+ * the top center, and the circle arrows step to the previous/next day.
+ */
 export function ScheduleAccordion({ rounds, year, initialDate }: { rounds: UpcomingRoundScheduleItem[]; year: number; initialDate: string }) {
   const { nextTournament } = useSeasonCatalog();
   const libraryDialog = useRef<HTMLDialogElement>(null);
   const photosByCourse = coursePhotos as Record<string, { name: string; main: string[]; library: string[] }>;
-  const panels = Array.from({ length: Math.max(rounds.length, ...rounds.map(round => round.session), 1) }, (_, index) => {
-    const round = rounds.find(round => round.session === index + 1);
-    const date = round?.date ?? "Date pending";
+
+  const listed = tournamentDays(rounds, nextTournament.startDate, nextTournament.endDate);
+  const days = listed.includes(initialDate) ? listed : [...listed, initialDate].sort();
+  const [dayIndex, setDayIndex] = useState(days.indexOf(initialDate));
+  const day = days[dayIndex];
+
+  const panels = sessionsForDay(rounds, day, dayIndex).map((session, index) => {
+    const round = rounds.find(round => round.session === session);
     const courseKey = (round?.courseName ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
     const candidates = Object.values(photosByCourse).filter(entry => {
       const key = entry.name.replace(/\s+photos$/i, "").toLowerCase().replace(/[^a-z0-9]/g, "");
       return key && courseKey.includes(key);
     });
     const photos = photosByCourse[courseKey] ?? (candidates.length === 1 ? candidates[0] : undefined);
-    const appearance = rounds.filter(item => item.session < index + 1 && item.courseName === round?.courseName).length;
-    return { round: index + 1, date, course: round?.courseName, format: round?.format, image: photos?.main[appearance % (photos.main.length || 1)] ?? "/schedule/mission-hills.webp", library: photos?.library ?? [] };
+    const appearance = rounds.filter(item => item.session < session && item.courseName === round?.courseName).length;
+    return { round: session, date: formatDate(round?.date ?? day), course: round?.courseName, format: round?.format, image: photos?.main[appearance % (photos.main.length || 1)] ?? "/schedule/mission-hills.webp", library: photos?.library ?? [], position: `${30 + index * 20}% center` };
   });
-  const [active, setActive] = useState(Math.max(0, panels.findIndex(panel => panel.date === initialDate)));
-  const track = useRef<HTMLDivElement>(null);
-  const lockedUntil = useRef(0);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Each course's library once, even when both sessions play the same course.
+  const libraries = panels.filter((panel, index) => panel.library.length && panels.findIndex(other => other.course === panel.course) === index);
 
-  useEffect(() => {
-    const container = track.current;
-    if (!container) return;
-    lockedUntil.current = Date.now() + 700;
-    const frame = requestAnimationFrame(() => {
-      const panel = container.children[active] as HTMLElement;
-      const mobile = window.matchMedia("(max-width: 1023px)").matches;
-      container.scrollTo({ left: 0, top: mobile ? panel.offsetTop : 0, behavior: "instant" });
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [active]);
-
-  useEffect(() => {
-    const container = track.current;
-    if (!container) return;
-    let accumulated = 0;
-    const wheel = (event: WheelEvent) => {
-      if (window.innerWidth < 1024 || event.ctrlKey) return;
-      event.preventDefault();
-      if (Date.now() < lockedUntil.current) return;
-      accumulated += Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-      if (Math.abs(accumulated) < 40) return;
-      const direction = Math.sign(accumulated);
-      setActive(index => Math.max(0, Math.min(panels.length - 1, index + direction)));
-      accumulated = 0;
-    };
-    container.addEventListener("wheel", wheel, { passive: false });
-    return () => { container.removeEventListener("wheel", wheel); if (timer.current) clearTimeout(timer.current); };
-  }, [panels.length]);
-
-  const onScroll = () => {
-    if (window.innerWidth >= 1024 || Date.now() < lockedUntil.current) return;
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      const container = track.current;
-      if (!container) return;
-      const mobile = window.innerWidth < 1024;
-      const center = mobile ? container.scrollTop : container.scrollLeft + container.clientWidth / 2;
-      let nearest = active;
-      let distance = Infinity;
-      Array.from(container.children).forEach((child, index) => {
-        const item = child as HTMLElement;
-        const midpoint = mobile ? item.offsetTop : item.offsetLeft + item.offsetWidth / 2;
-        if (Math.abs(midpoint - center) < distance) { nearest = index; distance = Math.abs(midpoint - center); }
-      });
-      setActive(nearest);
-    }, 140);
-  };
+  function goTo(index: number) {
+    setDayIndex(index);
+    window.history.replaceState(null, "", `?date=${days[index]}`);
+  }
 
   return <main className={styles.page}>
-    <header className={styles.header}><Link href="/schedule">Back</Link><button type="button" className={styles.libraryButton} onClick={() => libraryDialog.current?.showModal()}>Photo Library</button><span /></header>
-    <div ref={track} style={{ "--closed-panels": Math.max(1, panels.length - 1) } as CSSProperties} className={styles.track} onScroll={onScroll} aria-label="Round schedule" onKeyDown={event => {
-      const delta = ["ArrowRight", "ArrowDown"].includes(event.key) ? 1 : ["ArrowLeft", "ArrowUp"].includes(event.key) ? -1 : 0;
-      if (!delta) return;
-      event.preventDefault();
-      const next = Math.max(0, Math.min(panels.length - 1, active + delta));
-      setActive(next);
-      (track.current?.children[next].querySelector("button") as HTMLButtonElement)?.focus({ preventScroll: true });
-    }}>
-      {panels.map((panel, index) => {
-        const date = panel.date === "Date pending" ? panel.date : new Date(`${panel.date}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
-        return <section key={panel.round} className={`${styles.panel} ${active === index ? styles.active : ""}`}>
-          <Image src={panel.image} alt="" fill sizes="(max-width: 1023px) 100vw, 50vw" className={styles.photo} style={{ objectPosition: `${30 + index * 6}% center` }} />
-          <div className={styles.shade} />
-          <button className={styles.toggle} aria-expanded={active === index} aria-controls={`round-${panel.round}`} onClick={() => setActive(index)}><span className={styles.panelLabel}><span>{date}</span><span>Session {panel.round}</span></span></button>
-          <div id={`round-${panel.round}`} className={styles.details} hidden={active !== index}>
-            <p className={styles.eyebrow}>{nextTournament.year === year ? nextTournament.venue : "Maroon Masters " + year}</p>
-            <h2>{panel.course ?? "Course to be announced"}</h2>
-            <p className={styles.format}>{panel.format ?? "Format to be announced"}</p>
-            <p>{nextTournament.year === year ? nextTournament.location : ""}</p>
-            <p className={styles.note}>Session {panel.round} · {date}{!panel.course || !panel.format ? " · More details to come" : ""}</p>
-          </div>
-        </section>;
-      })}
+    <header className={styles.header}>
+      <Link href="/schedule">Back</Link>
+      <h1 className={styles.dayTitle}>Day {dayIndex + 1}</h1>
+      <button type="button" className={styles.libraryButton} onClick={() => libraryDialog.current?.showModal()}>Photo Library</button>
+    </header>
+    <div className={styles.split} aria-label={`Day ${dayIndex + 1} sessions`}>
+      {panels.map(panel => <section key={panel.round} className={styles.half}>
+        <Image src={panel.image} alt="" fill sizes="(max-width: 1023px) 100vw, 50vw" className={styles.photo} style={{ objectPosition: panel.position }} />
+        <div className={styles.shade} />
+        <div className={styles.details}>
+          <p className={styles.eyebrow}>{nextTournament.year === year ? nextTournament.venue : "Maroon Masters " + year}</p>
+          <h2>{panel.course ?? "Course to be announced"}</h2>
+          <p className={styles.format}>{panel.format ?? "Format to be announced"}</p>
+          <p>{nextTournament.year === year ? nextTournament.location : ""}</p>
+          <p className={styles.note}>Session {panel.round} · {panel.date}{!panel.course || !panel.format ? " · More details to come" : ""}</p>
+        </div>
+      </section>)}
     </div>
+    {dayIndex > 0 && <button type="button" className={`${styles.arrow} ${styles.prev}`} aria-label={`Day ${dayIndex}`} onClick={() => goTo(dayIndex - 1)}><ChevronLeft size={28} /></button>}
+    {dayIndex < days.length - 1 && <button type="button" className={`${styles.arrow} ${styles.next}`} aria-label={`Day ${dayIndex + 2}`} onClick={() => goTo(dayIndex + 1)}><ChevronRight size={28} /></button>}
     <dialog ref={libraryDialog} className={styles.libraryDialog}>
-      <header><h2>{panels[active].course ?? "Course"} Photo Library</h2><button type="button" onClick={() => libraryDialog.current?.close()}>Close</button></header>
-      {panels[active].library.length ? <div className={styles.libraryGrid}>{panels[active].library.map((src, index) => <div key={src}><Image src={src} alt={`${panels[active].course} course photo ${index + 1}`} width={1200} height={800} sizes="(max-width: 700px) 90vw, 45vw" /></div>)}</div> : <p>Course photos will appear here once the library is added.</p>}
+      <header><h2>Day {dayIndex + 1} Photo Library</h2><button type="button" onClick={() => libraryDialog.current?.close()}>Close</button></header>
+      {libraries.length
+        ? libraries.map(panel => <div key={panel.course}><h3 className={styles.libraryCourse}>{panel.course}</h3><div className={styles.libraryGrid}>{panel.library.map((src, index) => <div key={src}><Image src={src} alt={`${panel.course} course photo ${index + 1}`} width={1200} height={800} sizes="(max-width: 700px) 90vw, 45vw" /></div>)}</div></div>)
+        : <p>Course photos will appear here once the library is added.</p>}
     </dialog>
   </main>;
 }

@@ -19,7 +19,8 @@ test("tournamentProbability always sums to 1", () => {
 });
 
 test("historicalOddsSeries starts even-ish and ends 100% for the real winner", () => {
-  const series = historicalOddsSeries([["maroon", "white"], ["maroon", "tie"]]);
+  const m = { maroonPts: 1, whitePts: 0, final: true }; const w = { maroonPts: 0, whitePts: 1, final: true }; const t = { maroonPts: 0.5, whitePts: 0.5, final: true };
+  const series = historicalOddsSeries([[m, w], [m, t]]);
   assert.deepEqual(series.map((point) => point.label), ["Start", "After R1", "Final"]);
   assert.deepEqual(series.map((point) => point.x), [0, 1, 2]);
   close(series[0].maroon, series[0].white);
@@ -27,8 +28,23 @@ test("historicalOddsSeries starts even-ish and ends 100% for the real winner", (
 });
 
 test("historicalOddsSeries ends 100% tie for a tied tournament", () => {
-  const final = historicalOddsSeries([["maroon", "white"]]).at(-1)!;
+  const final = historicalOddsSeries([[{ maroonPts: 1, whitePts: 0, final: true }, { maroonPts: 0, whitePts: 1, final: true }]]).at(-1)!;
   assert.equal(final.tie, 1);
+});
+
+test("historicalOddsSeries weighs multi-point matches by their real points", () => {
+  // Maroon wins two 1-point matches, White wins one 3-point match: White wins 3–2.
+  const final = historicalOddsSeries([[{ maroonPts: 1, whitePts: 0, final: true }, { maroonPts: 1, whitePts: 0, final: true }], [{ maroonPts: 0, whitePts: 3, final: true }]]).at(-1)!;
+  assert.equal(final.white, 1);
+});
+
+test("historicalOddsSeries counts unscored matches as even, never as a result", () => {
+  const final = historicalOddsSeries([[{ maroonPts: 0, whitePts: 0, final: false }]]).at(-1)!;
+  close(final.maroon, 1 / 3);
+});
+
+test("tournamentProbability adds banked points before open matches", () => {
+  assert.equal(tournamentProbability([EVEN], 1.5).maroon, 1); // a 1-point match can't erase a 1½ lead
 });
 
 test("liveOddsSeries uses pre-round odds for past points and latest odds for Now", () => {

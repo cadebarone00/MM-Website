@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { fmtPt } from "@/lib/data";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import type { RealMatch, Tournament } from "@/lib/data/types";
-import { historicalOddsSeries } from "@/lib/data/tournamentProbability";
+import { historicalOddsSeries, type HistoricalMatch } from "@/lib/data/tournamentProbability";
 import { TournamentOddsGraph } from "./TournamentOddsGraph";
 import styles from "@/components/match/MatchTimeline.module.css";
 
@@ -20,16 +20,16 @@ function playerPoints(tournament: Tournament, team: "maroon" | "white"): PointRo
   return roster.map((slug) => ({ name: getPlayerDisplayName(slug), points: points.get(slug) ?? 0 })).sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
 }
 
-/** Rounds in play order (day, then Morning before Afternoon), each holding its match results. */
-function roundResults(tournament: Tournament): ("maroon" | "white" | "tie" | null)[][] {
+/** Rounds in play order (day, then Morning before Afternoon), each holding its matches' points. */
+function roundResults(tournament: Tournament): HistoricalMatch[][] {
   const order = (match: RealMatch) => match.day * 2 + (match.session === "Afternoon" ? 1 : 0);
   const keys = [...new Set(tournament.matches.map(order))].sort((a, b) => a - b);
-  return keys.map((key) => tournament.matches.filter((match) => order(match) === key).map((match) => match.status && match.status !== "final" ? null : match.maroonPts > match.whitePts ? "maroon" : match.maroonPts < match.whitePts ? "white" : "tie"));
+  return keys.map((key) => tournament.matches.filter((match) => order(match) === key).map((match) => ({ maroonPts: match.maroonPts, whitePts: match.whitePts, final: !match.status || match.status === "final" })));
 }
 
 function ProbabilityCard({ tournament }: { tournament: Tournament }) {
   const rounds = roundResults(tournament);
-  const finished = tournament.matches.length > 0 && rounds.every((round) => round.every(Boolean));
+  const finished = tournament.matches.length > 0 && rounds.every((round) => round.every((match) => match.final));
   const winner = tournament.maroonPts > tournament.whitePts ? "maroon" : tournament.maroonPts < tournament.whitePts ? "white" : null;
   return (
     <>

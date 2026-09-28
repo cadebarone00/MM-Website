@@ -10,16 +10,22 @@ export function resultChance(result: "maroon" | "white" | "tie"): MatchChance {
   return result === "maroon" ? { maroon: 1, tie: 0, white: 0 } : result === "white" ? { maroon: 0, tie: 0, white: 1 } : { maroon: 0, tie: 1, white: 0 };
 }
 
+/** A match still to be decided: its chances and how many points it's worth (default 1). */
+export type OpenMatch = MatchChance & { value?: number };
+
 /**
- * Each match is worth one point (a tie splits it). Combines every match's
- * chances into the chance each team finishes with more points overall.
+ * Combines every undecided match's chances (plus the points margin already
+ * banked, Maroon minus White) into the chance each team finishes with more
+ * points overall. A tied match splits its points.
  */
-export function tournamentProbability(matches: MatchChance[]): MatchChance {
-  let distribution = new Map<number, number>([[0, 1]]);
+export function tournamentProbability(matches: OpenMatch[], banked = 0): MatchChance {
+  // Margins are kept in half points so ½-point results stay whole numbers.
+  let distribution = new Map<number, number>([[Math.round(banked * 2), 1]]);
   for (const match of matches) {
+    const swing = Math.round((match.value ?? 1) * 2);
     const next = new Map<number, number>();
     for (const [margin, probability] of distribution) {
-      for (const [change, chance] of [[2, match.maroon], [0, match.tie], [-2, match.white]] as const) {
+      for (const [change, chance] of [[swing, match.maroon], [0, match.tie], [-swing, match.white]] as const) {
         if (chance > 0) next.set(margin + change, (next.get(margin + change) ?? 0) + probability * chance);
       }
     }
@@ -30,16 +36,20 @@ export function tournamentProbability(matches: MatchChance[]): MatchChance {
   return { maroon, tie, white };
 }
 
+/** A past-year match: its points, and whether it was actually scored. */
+export type HistoricalMatch = { maroonPts: number; whitePts: number; final: boolean };
+
 /**
- * Past years never saved odds, so each point counts finished rounds as their
- * real result and every later (or unscored) match as even.
+ * Past years never saved odds, so each point banks finished rounds' real
+ * points and counts every later (or unscored) match as even.
  */
-export function historicalOddsSeries(rounds: ("maroon" | "white" | "tie" | null)[][]): TournamentOddsPoint[] {
-  return Array.from({ length: rounds.length + 1 }, (_, done) => ({
-    x: done,
-    label: done === 0 ? "Start" : done === rounds.length ? "Final" : `After R${done}`,
-    ...tournamentProbability(rounds.flatMap((round, index) => round.map((result) => index < done && result ? resultChance(result) : EVEN))),
-  }));
+export function historicalOddsSeries(rounds: HistoricalMatch[][]): TournamentOddsPoint[] {
+  return Array.from({ length: rounds.length + 1 }, (_, done) => {
+    const matches = rounds.flatMap((round, index) => round.map((match) => ({ match, settled: index < done && match.final })));
+    const banked = matches.reduce((sum, { match, settled }) => settled ? sum + match.maroonPts - match.whitePts : sum, 0);
+    const open = matches.filter(({ settled }) => !settled).map(({ match }) => ({ ...EVEN, value: match.maroonPts + match.whitePts || 1 }));
+    return { x: done, label: done === 0 ? "Start" : done === rounds.length ? "Final" : `After R${done}`, ...tournamentProbability(open, banked) };
+  });
 }
 
 /** A live-season match: its result once finished, plus its pre-round and latest official odds. */
