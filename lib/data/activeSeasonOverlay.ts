@@ -1,5 +1,5 @@
 import { getSeasonCatalog, nativeSeasonYear } from "./seasonCatalog";
-import { getSeasonCalendar } from "@/lib/live/seasonCalendarServer";
+import type { WebsiteSection } from "@/lib/website/settings";
 // lib/data/activeSeasonOverlay.ts
 //
 // Server-only. This file imports @/lib/supabase/server, which pulls in
@@ -108,7 +108,7 @@ export async function getNextTournamentOverride(): Promise<NextTournamentOverrid
  */
 export async function getUpcomingRoundSchedule(seasonYear?: number): Promise<UpcomingRoundScheduleItem[]> {
   const service = createSupabaseServiceRoleClient();
-  const active = { season_year: (await getSeasonCalendar()).activeYear };
+  const active = { season_year: (await getSeasonCatalog()).nextTournament.year };
 
   if (!active) return [];
 
@@ -142,9 +142,9 @@ export async function getUpcomingRoundSchedule(seasonYear?: number): Promise<Upc
  * is what the public Teams page shows for the upcoming year; players not
  * yet locked just don't appear.
  */
-export async function getConfirmedRoster(): Promise<RosterEntry[]> {
+export async function getConfirmedRoster(section?: WebsiteSection): Promise<RosterEntry[]> {
   const service = createSupabaseServiceRoleClient();
-  const active = { season_year: (await getSeasonCalendar()).activeYear };
+  const active = { season_year: (await getSeasonCatalog(section)).nextTournament.year };
 
   if (!active) return [];
 
