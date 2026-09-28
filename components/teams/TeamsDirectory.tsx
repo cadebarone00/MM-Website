@@ -5,11 +5,12 @@ import { Star } from "lucide-react";
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { MaroonCollage } from "@/components/teams/MaroonCollage";
+import { PlayerStatsTable } from "@/components/teams/PlayerStatsTable";
 import { useFavoritePlayers } from "@/components/teams/useFavoritePlayers";
 import { getPlayerAvatar, getPlayerDisplayName, getPlayerProfile, playerProfiles } from "@/lib/data/players";
 import type { Team, Tournament } from "@/lib/data/types";
 
-type View = Team | "unassigned";
+type View = Team | "unassigned" | "stats";
 
 // Unassigned covers the club's players who aren't on either team's roster
 // for this tournament.
@@ -17,6 +18,7 @@ const views: { value: View; label: string }[] = [
   { value: "maroon", label: "Maroon" },
   { value: "white", label: "White" },
   { value: "unassigned", label: "Unassigned" },
+  { value: "stats", label: "Stats" },
 ];
 
 function playerHref(tournamentSlug: string, player: string) {
@@ -119,7 +121,7 @@ export function TeamsDirectory({ tournament }: { tournament: Tournament }) {
   return (
     <section className="mt-8">
       <div className="mb-7 border-b-[6px] border-ink-200">
-        <div role="tablist" aria-label="Team roster views" className="flex gap-8 overflow-x-auto">
+        <div role="tablist" aria-label="Player views" className="flex gap-5 overflow-x-auto sm:gap-8">
           {views.map((item) => {
             const active = view === item.value;
             return (
@@ -142,7 +144,9 @@ export function TeamsDirectory({ tournament }: { tournament: Tournament }) {
         </div>
       </div>
 
-      {view === "unassigned" ? (
+      {view === "stats" ? (
+        <PlayerStatsTable tournament={tournament} />
+      ) : view === "unassigned" ? (
         <div>
           {unassignedPlayers.map((player) => (
             <PlayerRow
