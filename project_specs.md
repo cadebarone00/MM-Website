@@ -985,7 +985,7 @@ and live years, desktop and mobile. Type-check, lint, tests and build pass.
 
 ### Round: Sponsors in the header + social links in More
 
-**What:** show "Presented By:" + a rotating sponsor logo in the header, recenter
+**What:** show a rotating sponsor logo in the header (no "Presented By:" label), recenter
 the desktop nav, and move Instagram (plus new Facebook, TikTok, YouTube) into the
 More menu.
 
@@ -995,16 +995,17 @@ First entry: **DCS Logo** (Dynamic Computing Services), image at
 `public/sponsors/` and add one line to the list.
 - **Rotation:** one logo shows at a time; every 15 seconds it fades out and the
   next fades in, looping. With only one sponsor it just stays put (no flicker).
-- **Desktop header (left side):** `[Maroon Masters wordmark]  Presented By:  [sponsor logo]`.
+- **Desktop header:** sponsor logo all the way on the left; the Maroon Masters
+  wordmark sits in the centered nav, just left of Home.
   The logo sits on a small white rounded tile so its white background doesn't
   clash with the maroon bar.
-- **Mobile header (top-left):** small "Presented By:" label with the sponsor logo,
+- **Mobile header (top-left):** the sponsor logo,
   replacing the Instagram icon. The back arrow still replaces it on sub-pages
   (same as today). The round countdown that sat there moves to the **top-left
   corner of the home page hero** on mobile (desktop keeps it in the header's right side).
 
-**Desktop nav:** Home · Leaderboard · Watch Live · Teams · More moves from beside
-the wordmark to the **center** of the bar. Right side keeps countdown, account and
+**Desktop nav:** wordmark · Home · Leaderboard · Watch Live · Teams · More sit
+together in the **center** of the bar. Right side keeps countdown, account and
 emblem; the Instagram button is removed from there.
 
 **More menu (mobile + desktop):** under the last link (Fantasy / Tiger Center), a

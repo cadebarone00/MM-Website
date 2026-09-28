@@ -112,16 +112,16 @@ export function Header({ nextTournamentOverride }: { nextTournamentOverride: Nex
           </button>
         </div>
 
-        {/* Desktop header row — wordmark + sponsor (left), nav (center), countdown/account/emblem (right). */}
-        <div className="hidden lg:grid grid-cols-[1fr_auto_1fr] items-center gap-6 px-7 h-[64px]">
-          <div className="flex min-w-0 items-center gap-6">
-            <Link href="/" className="shrink-0">
-              <Image src="/assets/wordmark-light.svg" alt="The Maroon Masters" width={520} height={92} className="h-7 w-auto" priority />
-            </Link>
+        {/* Desktop header row — sponsor (left), wordmark + nav (center), countdown/account/emblem (right). */}
+        <div className="hidden lg:grid lg:grid-cols-[auto_1fr_auto] min-[1400px]:grid-cols-[1fr_auto_1fr] items-center gap-6 px-7 h-[64px]">
+          <div className="flex min-w-0 items-center">
             <SponsorRotator variant="desktop" />
           </div>
 
-          <nav className="flex gap-0">
+          <nav className="flex items-center gap-0 justify-self-center">
+            <Link href="/" className="mr-3 shrink-0 xl:mr-5">
+              <Image src="/assets/wordmark-light.svg" alt="The Maroon Masters" width={520} height={92} className="h-7 w-auto" priority />
+            </Link>
             {nav.map((n) => {
               const on = n.href === "/" ? pathname === "/" : pathname.startsWith(n.href);
               return (
@@ -129,7 +129,7 @@ export function Header({ nextTournamentOverride }: { nextTournamentOverride: Nex
                   key={n.href}
                   href={n.href}
                   className={[
-                    "px-4 h-[64px] flex items-center font-sans text-[15px] whitespace-nowrap border-b-2 transition-colors duration-150",
+                    "px-2.5 xl:px-4 h-[64px] flex items-center font-sans text-[15px] whitespace-nowrap border-b-2 transition-colors duration-150",
                     on ? "font-bold text-white border-b-gold-400" : "font-medium text-white/65 border-b-transparent hover:text-white/90",
                   ].join(" ")}
                 >
@@ -141,7 +141,7 @@ export function Header({ nextTournamentOverride }: { nextTournamentOverride: Nex
               type="button"
               onClick={() => setMoreOpen(true)}
               className={[
-                "px-4 h-[64px] flex items-center font-sans text-[15px] whitespace-nowrap border-b-2 transition-colors duration-150",
+                "px-2.5 xl:px-4 h-[64px] flex items-center font-sans text-[15px] whitespace-nowrap border-b-2 transition-colors duration-150",
                 moreOn ? "font-bold text-white border-b-gold-400" : "font-medium text-white/65 border-b-transparent hover:text-white/90",
               ].join(" ")}
             >
