@@ -1000,7 +1000,8 @@ First entry: **DCS Logo** (Dynamic Computing Services), image at
   clash with the maroon bar.
 - **Mobile header (top-left):** small "Presented By:" label with the sponsor logo,
   replacing the Instagram icon. The back arrow still replaces it on sub-pages
-  (same as today). Open question: where the round countdown that sits there today goes.
+  (same as today). The round countdown that sat there moves to the **top-left
+  corner of the home page hero** on mobile (desktop keeps it in the header's right side).
 
 **Desktop nav:** Home · Leaderboard · Watch Live · Teams · More moves from beside
 the wordmark to the **center** of the bar. Right side keeps countdown, account and
