@@ -3,8 +3,8 @@
 import { useEffect } from "react";
 
 /**
- * The schedule screens are full-screen `position: fixed` canvases. On mobile
- * they need to sit between the top chrome (site header + the player/Tiger
+ * The schedule screens are full-screen `position: fixed` canvases. They
+ * need to sit between the top chrome (site header + the player/Tiger
  * area switcher, when shown) and the bottom tab bar instead of underneath
  * them. Those bars change height with the safe area and viewport, so this
  * measures them and publishes the gaps as CSS variables the schedule CSS

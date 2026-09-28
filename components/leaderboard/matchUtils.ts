@@ -20,7 +20,7 @@ export function matchLabel(match: RealMatch): string {
   if (status === "scheduled") return "VS";
   if (leader === "tie") return "AS";
   if (status === "final" && remaining != null && remaining > 0) return `${margin}&${remaining}`;
-  return `${margin} Up`;
+  return `${margin} ▲`;
 }
 
 /**
@@ -40,7 +40,7 @@ export function liveLabel(match: RealMatch): string {
   if (leader === "tie") return "AS";
   if (!hasMatchPlayMargin) return "Won";
   if (status === "final" && remaining != null && remaining > 0) return `${margin}&${remaining}`;
-  return `${margin} Up`;
+  return `${margin} ▲`;
 }
 
 /** Which round (day) the Team view should default to: the day currently in progress, or the last day played if the tournament is complete. */

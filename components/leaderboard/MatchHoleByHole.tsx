@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ArrowDown, ArrowUp } from "lucide-react";
 import { HoleMarkerForDiff } from "@/components/scorecard/HoleMarker";
 import { getPlayerLastName } from "@/lib/data/players";
 import { getMatchHoleByHole, type MatchHoleByHole as MatchHoleByHoleData, type MatchHoleStatus } from "@/lib/data/matchHoleByHole";
@@ -53,7 +52,7 @@ function TeamStatusCell({ status, nextStatus, endedFill, uniformGold = false }: 
     <div className={["flex items-center justify-center border-r bg-cream-100", SQUARE_ROW, divider].join(" ")}>
       <span className={["flex h-full w-full items-center justify-center gap-px font-condensed text-sm font-extrabold", statusCellColor(status.leader)].join(" ")}>
         {status.leader ? Math.abs(status.tally) : "AS"}
-        {status.leader === "maroon" ? <ArrowUp size={14} strokeWidth={3} aria-label="Maroon up" /> : status.leader === "white" ? <ArrowDown size={14} strokeWidth={3} aria-label="White up" /> : null}
+        {status.leader === "maroon" ? <span aria-label="Maroon up">▲</span> : status.leader === "white" ? <span aria-label="White up">▼</span> : null}
       </span>
     </div>
   );

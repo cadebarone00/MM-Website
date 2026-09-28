@@ -34,7 +34,7 @@ export function LiveMatchScorecard({ match, scorecard }: { match: RealMatch; sco
     winner = match.leader;
   }
   const finalResult = match.margin == null && wonAt != null && tally !== 0
-    ? (18 - wonAt > 0 ? Math.abs(tally) + "&" + (18 - wonAt) : Math.abs(tally) + " Up")
+    ? (18 - wonAt > 0 ? Math.abs(tally) + "&" + (18 - wonAt) : Math.abs(tally) + " ▲")
     : liveLabel(match);
   const finalStatus = (key?: number) => <span key={key} aria-label={key == null ? `Final, ${winner} wins ${finalResult}` : `Hole ${holes[key].number}: Final, ${winner} wins`} className={`flex h-12 w-full items-center justify-center font-bold ${winner === "maroon" ? "bg-maroon-700 text-white" : "bg-white text-maroon-700"}`}>{key == null ? finalResult : "Final"}</span>;
   const total = (values: (number | null)[]) => values.some((value) => value != null) ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0) : "—";
@@ -48,7 +48,7 @@ export function LiveMatchScorecard({ match, scorecard }: { match: RealMatch; sco
     row("par", "Par", holes.map((hole) => hole.par), total(holes.map((hole) => hole.par))),
     ...(!shared ? players("maroon") : []),
     (shared || (match.format === "Fourball" || match.format === "Play 4, Take 3")) && scoresRow("maroon-side", shared ? "Maroon" : match.format === "Play 4, Take 3" ? "Best 3" : "Best Ball", maroon, "maroon", match.format === "Play 4, Take 3" ? 3 : 1),
-    row("status", "Status", statuses.map((value, index) => wonAt != null && holes[index].number >= wonAt ? finalStatus(index) : value == null ? "—" : <span key={index} className={`flex h-12 items-center justify-center font-bold ${value > 0 ? "bg-maroon-700 text-white" : value < 0 ? "bg-white text-maroon-700" : ""}`} aria-label={`Hole ${index + 1}: ${value === 0 ? "All square" : `${value > 0 ? "Maroon" : "White"} ${Math.abs(value)} up`}`}>{value === 0 ? "AS" : `${Math.abs(value)} ${value > 0 ? "↑" : "↓"}`}</span>), winner ? finalStatus() : match.status === "scheduled" ? "—" : liveLabel(match)),
+    row("status", "Status", statuses.map((value, index) => wonAt != null && holes[index].number >= wonAt ? finalStatus(index) : value == null ? "—" : <span key={index} className={`flex h-12 items-center justify-center font-bold ${value > 0 ? "bg-maroon-700 text-white" : value < 0 ? "bg-white text-maroon-700" : ""}`} aria-label={`Hole ${index + 1}: ${value === 0 ? "All square" : `${value > 0 ? "Maroon" : "White"} ${Math.abs(value)} up`}`}>{value === 0 ? "AS" : `${Math.abs(value)} ${value > 0 ? "▲" : "▼"}`}</span>), winner ? finalStatus() : match.status === "scheduled" ? "—" : liveLabel(match)),
     (shared || match.format === "Fourball" || match.format === "Play 4, Take 3") && scoresRow("white-side", shared ? "White" : match.format === "Play 4, Take 3" ? "Best 3" : "Best Ball", white, "white", match.format === "Play 4, Take 3" ? 3 : 1),
     ...(!shared ? players("white") : [])
   ].filter((item): item is ReturnType<typeof row> => !!item);

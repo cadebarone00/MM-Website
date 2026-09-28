@@ -233,7 +233,7 @@ export interface MatchCompleteness {
   roundFormatLabel: string;
   maroonNames: string[];
   whiteNames: string[];
-  /** Bigger center line, e.g. "2 Up", "AS", "3&2". */
+  /** Bigger center line, e.g. "2 ▲", "AS", "3&2". */
   statusLabel: string;
   /** Smaller center line, e.g. "Thru 8" or "Final". */
   progressLabel: string;

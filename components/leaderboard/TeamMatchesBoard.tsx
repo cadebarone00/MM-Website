@@ -118,11 +118,6 @@ function DayMatchesBoard({ tournament, live }: { tournament: Tournament; live: b
               <div className="px-1 pb-1 font-condensed text-2xs font-black uppercase tracking-wide text-ink-400">
                 {sessionHeaderLabel(group, dayMatches, live)} &middot; {group.format}
               </div>
-              <div className="grid min-h-5 grid-cols-[30px_minmax(0,1fr)_44px_minmax(0,1fr)_30px] items-center font-condensed text-3xs font-black uppercase tracking-wide text-ink-400">
-                <span className="text-center">Stat</span>
-                <span className="col-span-3" />
-                <span className="text-center">Thru</span>
-              </div>
             </div>
             {group.matches.map((match) => (
               <CompactMatchRow

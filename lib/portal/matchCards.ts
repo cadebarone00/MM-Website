@@ -23,7 +23,7 @@ export interface PortalMatchCard {
   whitePlayers: string[];
   maroonOdds: number | null;
   whiteOdds: number | null;
-  /** Bigger center line — match-play score, e.g. "2 Up", "AS", "3&2", or "VS" before tee-off. */
+  /** Bigger center line — match-play score, e.g. "2 ▲", "AS", "3&2", or "VS" before tee-off. */
   statusLabel: string;
   /** Smaller center line underneath — "Thru 8" while live, "Final" once decided. Empty ("") when status is "Upcoming"; render progressTeeTime instead in that case (see PortalMatches.tsx). */
   progressLabel: string;
@@ -68,7 +68,7 @@ export function archivedMatchCard(tournament: Tournament, match: RealMatch, scor
 function liveStatusLabel(leader: "maroon" | "white" | "tie", margin: number, holesRemaining: number, final: boolean): string {
   if (leader === "tie") return "AS";
   if (final && holesRemaining > 0) return `${margin}&${holesRemaining}`;
-  return `${margin} Up`;
+  return `${margin} ▲`;
 }
 
 export interface LiveMatchCardInput {
