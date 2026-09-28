@@ -64,3 +64,5 @@
 .libraryGrid { grid-template-columns: 1fr; }
 }
 @media (max-height: 650px) { .details h2 { font-size: 25px; margin: 10px 0; } .details { padding-block: 8px; } .note { margin-top: 10px; } .format { font-size: 16px; } }
+/* Mobile: sit between the top chrome and the bottom tab bar instead of underneath them (see ScheduleChromeFit). */
+@media (width < 1024px) { .page { top: var(--schedule-top, 0px); bottom: var(--schedule-bottom, 0px); height: auto; } .header { padding-top: 18px; } }

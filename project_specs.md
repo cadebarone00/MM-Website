@@ -945,6 +945,44 @@ Cancel keeps you signed in where you were; Sign Out lands you on `/` signed out
 (header shows Login / Sign Up), including when started from the Player Portal or
 Tiger Center. Type-check, lint, tests and build pass.
 
+### Projected page: match-style team win-probability graph + leaderboard year (spec 2026-09-28, awaiting approval)
+
+**What:** clicking the points ribbon ("Projected") opens `/leaderboard/[slug]/projected`.
+Two changes:
+
+1. **Same year as the leaderboard.** The projected page picks its year exactly
+   the way `/leaderboard/[slug]` does (the season catalog, so it respects the Website
+   Editor's chosen year), not the static `nextTournament`. The "Back to
+   Leaderboard" link returns to that same year (it's hard-coded to 2027 today).
+   If the live year's leaderboard isn't open yet, redirect the same way the
+   leaderboard does.
+2. **Graph looks exactly like the match odds graph.** A new
+   `TournamentOddsGraph` copies `MatchOddsGraph`'s look: "Win Probability" title,
+   Maroon / Tie / White % header, the 100%–50%–0%–50%–100% side labels, maroon fill
+   above the middle and white below, the thin dark line and the slider. The only
+   difference is the bottom axis: **Start, R1, R2 … one tick per round** instead of
+   holes 1–18. Dragging the slider shows the percentages after that round. It
+   replaces the current line chart (past years) and the plain bar (live year).
+   The team points lists below stay as they are.
+
+**How each point is calculated** (same math the live projected page already uses:
+each match is a Maroon win / tie / White win chance, combined into the team's
+chance to win the whole tournament):
+- Matches already finished by that round count as their real result.
+- **Live year:** matches not finished yet use their official pre-round odds for
+  past points, and their latest live odds for the "now" point. No odds posted
+  yet = even (⅓ each).
+- **Past years:** no odds were ever saved, so unplayed matches count as even (⅓ each).
+  The last point is always 100% for the real winner.
+
+**Tech / data:** no database or Supabase changes. `/api/live/matches` also returns
+each match's pre-round (thru 0) odds snapshot next to the latest one. No new services.
+
+**Done when:** from the leaderboard of any year (including one set in Website
+Editor), Projected opens that same year, and Back returns to it. The graph
+matches the match page's odds graph, with round ticks along the bottom, on past
+and live years, desktop and mobile. Type-check, lint, tests and build pass.
+
 ## Known gaps / not yet built
 
 - **Live scoring lifecycle — spec v3 written, not built.** See
