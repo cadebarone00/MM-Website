@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { X } from "lucide-react";
+import type { ReactNode } from "react";
 import { useAccountSession } from "@/lib/useAccountSession";
 
 export const MORE_LINKS = [
@@ -9,6 +10,49 @@ export const MORE_LINKS = [
   { href: "/history", label: "History" },
   { href: "/wagers", label: "Wagers" },
   { href: "/fantasy", label: "Fantasy" },
+];
+
+// Shown as an icon row under the last More link, in this order. An empty
+// href hides that icon until the account link is filled in.
+const SOCIAL_LINKS: { label: string; href: string; icon: ReactNode }[] = [
+  {
+    label: "Instagram",
+    href: "https://www.instagram.com/themaroonmasters/",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width={20} height={20} aria-hidden="true">
+        <rect x="2" y="2" width="20" height="20" rx="5" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" stroke="none" />
+      </svg>
+    ),
+  },
+  {
+    label: "Facebook",
+    href: "",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" width={20} height={20} aria-hidden="true">
+        <path d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.8c0-.9.3-1.5 1.6-1.5h1.7V4.4c-.3 0-1.3-.1-2.5-.1-2.4 0-4.1 1.5-4.1 4.2v2.3H7.5V14h2.7v8h3.3z" />
+      </svg>
+    ),
+  },
+  {
+    label: "TikTok",
+    href: "",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" width={20} height={20} aria-hidden="true">
+        <path d="M16.6 3c.3 2.2 1.6 3.6 3.9 3.8v2.6c-1.4.1-2.7-.3-3.9-1v5.9c0 3.8-2.9 5.9-5.8 5.7-2.9-.2-5-2.6-4.8-5.5.3-3.2 3.3-5.3 6.5-4.6v2.8c-.4-.1-.8-.2-1.2-.2-1.4 0-2.5 1.1-2.4 2.5.1 1.3 1.1 2.3 2.4 2.3 1.4 0 2.4-1 2.4-2.6V3h2.9z" />
+      </svg>
+    ),
+  },
+  {
+    label: "YouTube",
+    href: "",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" width={20} height={20} aria-hidden="true">
+        <path d="M21.6 7.2c-.2-.9-.9-1.6-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4c-.9.2-1.6.9-1.8 1.8C2 8.8 2 12 2 12s0 3.2.4 4.8c.2.9.9 1.6 1.8 1.8 1.6.4 7.8.4 7.8.4s6.2 0 7.8-.4c.9-.2 1.6-.9 1.8-1.8.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8zM10 15V9l5.2 3L10 15z" />
+      </svg>
+    ),
+  },
 ];
 
 const OPEN_EVENT = "mm:open-more-menu";
@@ -73,6 +117,21 @@ export function MorePanel({ open, onClose }: { open: boolean; onClose: () => voi
             </Link>
           ))}
         </nav>
+        <div className="flex items-center gap-3 px-5 py-5">
+          {SOCIAL_LINKS.filter((social) => social.href).map((social) => (
+            <a
+              key={social.label}
+              href={social.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`The Maroon Masters ${social.label}`}
+              title={`The Maroon Masters ${social.label}`}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20"
+            >
+              {social.icon}
+            </a>
+          ))}
+        </div>
       </div>
     </div>
   );

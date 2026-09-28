@@ -10,6 +10,7 @@ import { RoundCountdown } from "@/components/ui/RoundCountdown";
 import { Avatar } from "@/components/ui/Avatar";
 import { TigerAvatar } from "@/components/ui/TigerAvatar";
 import { AccountBadge } from "@/components/AccountBadge";
+import { SponsorRotator } from "@/components/nav/SponsorRotator";
 import { MobileTabBar } from "@/components/nav/MobileTabBar";
 import { MorePanel, MORE_LINKS, onOpenMoreMenuRequested } from "@/components/nav/MorePanel";
 import { AccountMenu } from "@/components/nav/AccountMenu";
@@ -25,23 +26,13 @@ const nav = [
   { href: "/teams", label: "Teams" },
 ];
 
-function InstagramGlyph({ size = 18 }: { size?: number }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width={size} height={size} aria-hidden="true">
-      <rect x="2" y="2" width="20" height="20" rx="5" />
-      <circle cx="12" cy="12" r="4" />
-      <circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
 function isSet(value: string): boolean {
   return value.trim().length > 0 && value.trim().toLowerCase() !== "tbd";
 }
 
 // The "home" page of each section of the app — Website, Player Portal,
-// Scoring, and the Tiger Center. The mobile header's top-left Instagram
-// icon only shows on these; every other page (anything you had to click
+// Scoring, and the Tiger Center. The mobile header's top-left sponsor
+// logo only shows on these; every other page (anything you had to click
 // into) shows a real back arrow there instead, matching the "the whole
 // site should be uniform about this" requirement. Exact match only — a
 // sub-page under one of these (e.g. /leaderboard/2027) still gets a back
@@ -81,7 +72,7 @@ export function Header({ nextTournamentOverride }: { nextTournamentOverride: Nex
   return (
     <header className="sticky top-0 z-[300] relative shadow-lg">
       <div className="bg-gradient-maroon">
-        {/* Mobile header row — white background to blend with the phone's status bar, 3 zones: Instagram + countdown/live (left), wordmark (center, bottom-aligned), account icon (right, always visible). */}
+        {/* Mobile header row — white background to blend with the phone's status bar, 3 zones: sponsor / back arrow (left), wordmark (center, bottom-aligned), account icon (right, always visible). */}
         <div className="lg:hidden grid grid-cols-3 items-end gap-2 bg-white px-4 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem+2vh)]">
           <div className="flex min-w-0 items-center gap-1.5 justify-self-start">
             {showBack ? (
@@ -95,19 +86,7 @@ export function Header({ nextTournamentOverride }: { nextTournamentOverride: Nex
                 <ArrowLeft size={16} />
               </Link>
             ) : (
-              <a
-                href="https://www.instagram.com/themaroonmasters/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="The Maroon Masters Instagram"
-                title="The Maroon Masters Instagram"
-                className="inline-flex h-6 w-6 shrink-0 items-center justify-center text-maroon-700"
-              >
-                <InstagramGlyph size={16} />
-              </a>
-            )}
-            {showBack ? null : (
-              <RoundCountdown className="text-maroon-700" compact />
+              <SponsorRotator variant="mobile" />
             )}
           </div>
 
@@ -133,53 +112,45 @@ export function Header({ nextTournamentOverride }: { nextTournamentOverride: Nex
           </button>
         </div>
 
-        {/* Desktop header row — unchanged from before this plan. */}
-        <div className="hidden lg:flex items-center justify-between px-7 h-[64px]">
-          <div className="flex items-center gap-9">
+        {/* Desktop header row — wordmark + sponsor (left), nav (center), countdown/account/emblem (right). */}
+        <div className="hidden lg:grid grid-cols-[1fr_auto_1fr] items-center gap-6 px-7 h-[64px]">
+          <div className="flex min-w-0 items-center gap-6">
             <Link href="/" className="shrink-0">
               <Image src="/assets/wordmark-light.svg" alt="The Maroon Masters" width={520} height={92} className="h-7 w-auto" priority />
             </Link>
-            <nav className="flex gap-0">
-              {nav.map((n) => {
-                const on = n.href === "/" ? pathname === "/" : pathname.startsWith(n.href);
-                return (
-                  <Link
-                    key={n.href}
-                    href={n.href}
-                    className={[
-                      "px-4 h-[64px] flex items-center font-sans text-[15px] whitespace-nowrap border-b-2 transition-colors duration-150",
-                      on ? "font-bold text-white border-b-gold-400" : "font-medium text-white/65 border-b-transparent hover:text-white/90",
-                    ].join(" ")}
-                  >
-                    {n.label}
-                  </Link>
-                );
-              })}
-              <button
-                type="button"
-                onClick={() => setMoreOpen(true)}
-                className={[
-                  "px-4 h-[64px] flex items-center font-sans text-[15px] whitespace-nowrap border-b-2 transition-colors duration-150",
-                  moreOn ? "font-bold text-white border-b-gold-400" : "font-medium text-white/65 border-b-transparent hover:text-white/90",
-                ].join(" ")}
-              >
-                More
-              </button>
-            </nav>
+            <SponsorRotator variant="desktop" />
           </div>
 
-          <div className="flex items-center gap-3">
-            <RoundCountdown className="text-white" />
-            <a
-              href="https://www.instagram.com/themaroonmasters/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="The Maroon Masters Instagram"
-              title="The Maroon Masters Instagram"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20"
+          <nav className="flex gap-0">
+            {nav.map((n) => {
+              const on = n.href === "/" ? pathname === "/" : pathname.startsWith(n.href);
+              return (
+                <Link
+                  key={n.href}
+                  href={n.href}
+                  className={[
+                    "px-4 h-[64px] flex items-center font-sans text-[15px] whitespace-nowrap border-b-2 transition-colors duration-150",
+                    on ? "font-bold text-white border-b-gold-400" : "font-medium text-white/65 border-b-transparent hover:text-white/90",
+                  ].join(" ")}
+                >
+                  {n.label}
+                </Link>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => setMoreOpen(true)}
+              className={[
+                "px-4 h-[64px] flex items-center font-sans text-[15px] whitespace-nowrap border-b-2 transition-colors duration-150",
+                moreOn ? "font-bold text-white border-b-gold-400" : "font-medium text-white/65 border-b-transparent hover:text-white/90",
+              ].join(" ")}
             >
-              <InstagramGlyph />
-            </a>
+              More
+            </button>
+          </nav>
+
+          <div className="flex items-center justify-end gap-3">
+            <RoundCountdown className="text-white" />
             <AccountBadge position="header" />
             <Image src="/assets/emblem.svg" alt="" width={240} height={240} className="h-9 w-auto" />
           </div>

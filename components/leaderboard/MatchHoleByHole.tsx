@@ -52,7 +52,7 @@ function TeamStatusCell({ status, nextStatus, endedFill, uniformGold = false }: 
     <div className={["flex items-center justify-center border-r bg-cream-100", SQUARE_ROW, divider].join(" ")}>
       <span className={["flex h-full w-full items-center justify-center gap-px font-condensed text-sm font-extrabold", statusCellColor(status.leader)].join(" ")}>
         {status.leader ? Math.abs(status.tally) : "AS"}
-        {status.leader === "maroon" ? <span aria-label="Maroon up">▲</span> : status.leader === "white" ? <span aria-label="White up">▼</span> : null}
+        {status.leader === "maroon" ? <span aria-label="Maroon up">▲</span> : status.leader === "white" ? <span aria-label="White up">▲</span> : null}
       </span>
     </div>
   );

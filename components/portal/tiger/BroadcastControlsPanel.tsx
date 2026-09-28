@@ -72,7 +72,7 @@ const DEFAULT_PREVIEW_VIDEO: PreviewVideoSettings = {
   ownPlayers: "Barone",
   opposingPlayers: "Sherrell",
   ownStatus: "1 ▲",
-  opposingStatus: "1 DN",
+  opposingStatus: "1 ▼",
 };
 const PREVIEW_SCENE_BUTTONS: { scene: PreviewScene; label: string }[] = [
   ...SCENE_BUTTONS,
@@ -337,7 +337,7 @@ export function BroadcastControlsPanel({
       ownPlayers: clip.ownPlayers.join(", "),
       opposingPlayers: clip.opposingPlayers.join(", "),
       ownStatus: "1 ▲",
-      opposingStatus: "1 DN",
+      opposingStatus: "1 ▼",
     }));
     const durationMs = await new Promise<number>((resolve) => {
       const probe = document.createElement("video");
@@ -958,7 +958,7 @@ export function BroadcastControlsPanel({
                   </label>
                   <label className="flex flex-col gap-1 font-sans text-xs text-ink-700 sm:col-start-2">
                     Opponent&apos;s match status
-                    <input disabled={!previewVideo.showMatch} value={previewVideo.opposingStatus} onChange={(e) => updatePreviewVideo("opposingStatus", e.target.value)} placeholder="1 DN" className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm disabled:cursor-not-allowed" />
+                    <input disabled={!previewVideo.showMatch} value={previewVideo.opposingStatus} onChange={(e) => updatePreviewVideo("opposingStatus", e.target.value)} placeholder="1 ▼" className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm disabled:cursor-not-allowed" />
                   </label>
                 </div>
                 {previewVideo.showMatch && !previewMatchReady && (

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Radio } from "lucide-react";
 import Link from "next/link";
 import { champion, fmtPt } from "@/lib/data";
+import { RoundCountdown } from "@/components/ui/RoundCountdown";
 import type { NextTournamentOverride } from "@/lib/data/types";
 
 function isSet(value: string): boolean {
@@ -33,6 +34,11 @@ export function VideoHero({ nextTournamentOverride }: { nextTournamentOverride: 
         preload="none"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-[rgba(36,0,1,0.92)] via-[rgba(36,0,1,0.45)] to-[rgba(36,0,1,0.25)]" />
+
+      {/* Mobile only: the countdown moved here from the header's top-left, which now shows the sponsor. Desktop keeps it in the header. */}
+      <div className="absolute left-4 top-3 z-20 lg:hidden">
+        <RoundCountdown className="text-cream-50 drop-shadow" />
+      </div>
 
       <div className="relative z-10 h-full max-w-[1200px] mx-auto px-4 flex flex-col items-start justify-end pb-4 sm:px-7 sm:pb-10 lg:pb-16">
         <div className="font-condensed text-[9px] font-semibold tracking-eyebrow uppercase text-gold-300 mb-1 sm:text-[13px] sm:mb-4">

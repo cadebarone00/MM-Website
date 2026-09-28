@@ -110,8 +110,8 @@ export async function getBroadcastPayload(): Promise<BroadcastPayload> {
           team,
           ownPlayers: (team === "maroon" ? box.maroon_players : box.white_players).map((p: string) => lastName(p, nameMap)),
           opposingPlayers: (team === "maroon" ? box.white_players : box.maroon_players).map((p: string) => lastName(p, nameMap)),
-          ownStatus: margin === 0 ? "AS" : ownLeads ? `${margin} ▲` : `${margin} DN`,
-          opposingStatus: margin === 0 ? "AS" : opponentLeads ? `${margin} ▲` : `${margin} DN`,
+          ownStatus: margin === 0 ? "AS" : ownLeads ? `${margin} ▲` : `${margin} ▼`,
+          opposingStatus: margin === 0 ? "AS" : opponentLeads ? `${margin} ▲` : `${margin} ▼`,
         };
       }
       activeVideo = {
