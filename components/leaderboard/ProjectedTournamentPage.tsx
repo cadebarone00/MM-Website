@@ -1,19 +1,20 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { fmtPt } from "@/lib/data";
+import { getPlayerDisplayName } from "@/lib/data/players";
 import type { Tournament } from "@/lib/data/types";
 
 type PointRow = { name: string; points: number };
 
 function playerPoints(tournament: Tournament, team: "maroon" | "white"): PointRow[] {
   const roster = team === "maroon" ? tournament.roster.maroon : tournament.roster.white;
-  const points = new Map(roster.map((name) => [name, 0]));
+  const points = new Map(roster.map((slug) => [slug, 0]));
   for (const match of tournament.matches) {
     const players = team === "maroon" ? match.maroonPlayers : match.whitePlayers;
     const earned = team === "maroon" ? match.maroonPts : match.whitePts;
     for (const player of players) points.set(player, (points.get(player) ?? 0) + earned);
   }
-  return roster.map((name) => ({ name, points: points.get(name) ?? 0 })).sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
+  return roster.map((slug) => ({ name: getPlayerDisplayName(slug), points: points.get(slug) ?? 0 })).sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
 }
 
 /**
