@@ -73,7 +73,7 @@ export function HomeTeamsPanel() {
                 <caption className="sr-only">{team} team, {year}. Statistic values are not yet populated.</caption>
                 <colgroup><col className="w-[140px]" />{statColumns.map((column) => <col key={column.label} className="w-[60px]" />)}<col className="w-10" /></colgroup>
                 <thead><tr>
-                  <th scope="col" className="py-2 font-sans text-xs font-semibold text-ink-500">Name</th>
+                  <th scope="col" className={`py-2 font-sans text-xs font-semibold text-ink-500 ${team === "maroon" ? "text-right" : "text-left"}`}>Name</th>
                   {statColumns.map((column) => <th key={column.label} scope="col" className="text-center">
                     <button type="button" dir="ltr" aria-label={`${column.label}: ${column.description}`} aria-pressed={activeStat === column.label} aria-describedby="team-stat-description"
                       onMouseEnter={() => setHoveredStat(column.label)} onMouseLeave={() => setHoveredStat(null)}
@@ -89,7 +89,7 @@ export function HomeTeamsPanel() {
                 <tbody>{Array.from({ length: archived && (year === 2024 || year === 2025) ? players.length : Math.max(6, players.length) }, (_, index) => {
                 const player = players[index];
                 return <tr key={player?.slug ?? `tbd-${index}`}>
-                  <th scope="row" className={`py-4 font-sans text-sm ${player ? "font-semibold text-ink-900" : "font-normal text-ink-400"}`}>
+                  <th scope="row" className={`py-4 font-sans text-sm ${team === "maroon" ? "text-right" : "text-left"} ${player ? "font-semibold text-ink-900" : "font-normal text-ink-400"}`}>
                     <span dir="ltr" className="block truncate">
                   {player?.name ?? `${team === "maroon" ? "Maroon" : "White"} Player TBD`}
                     </span>
