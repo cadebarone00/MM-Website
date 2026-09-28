@@ -20,7 +20,7 @@ type PreviewScene = (typeof VALID_SCENES)[number];
 const PREVIEW_VIDEO: BroadcastPlayerVideo = {
   id: "preview-player-video", playerSlug: "cade-barone", playerName: "Cade Barone", round: 1, hole: 16, shotNumber: 1,
   par: 4, yards: 611, scoreToPar: -13, individualPlace: "1", courseName: "Maroon Masters Golf Club", format: "Singles",
-  match: { team: "white", ownPlayers: ["Barone"], opposingPlayers: ["Sherrell"], ownStatus: "1 UP", opposingStatus: "1 DN" },
+  match: { team: "white", ownPlayers: ["Barone"], opposingPlayers: ["Sherrell"], ownStatus: "1 ▲", opposingStatus: "1 DN" },
   videoUrl: "/loading/desktop.mp4",
 };
 

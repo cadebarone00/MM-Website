@@ -71,7 +71,7 @@ const DEFAULT_PREVIEW_VIDEO: PreviewVideoSettings = {
   team: "white",
   ownPlayers: "Barone",
   opposingPlayers: "Sherrell",
-  ownStatus: "1 UP",
+  ownStatus: "1 ▲",
   opposingStatus: "1 DN",
 };
 const PREVIEW_SCENE_BUTTONS: { scene: PreviewScene; label: string }[] = [
@@ -336,7 +336,7 @@ export function BroadcastControlsPanel({
       team: clip.team,
       ownPlayers: clip.ownPlayers.join(", "),
       opposingPlayers: clip.opposingPlayers.join(", "),
-      ownStatus: "1 UP",
+      ownStatus: "1 ▲",
       opposingStatus: "1 DN",
     }));
     const durationMs = await new Promise<number>((resolve) => {
@@ -946,7 +946,7 @@ export function BroadcastControlsPanel({
                   </label>
                   <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
                     Player&apos;s match status
-                    <input disabled={!previewVideo.showMatch} value={previewVideo.ownStatus} onChange={(e) => updatePreviewVideo("ownStatus", e.target.value)} placeholder="1 UP" className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm disabled:cursor-not-allowed" />
+                    <input disabled={!previewVideo.showMatch} value={previewVideo.ownStatus} onChange={(e) => updatePreviewVideo("ownStatus", e.target.value)} placeholder="1 ▲" className="rounded-lg border-2 border-stone-300 bg-white px-3 py-2 text-sm disabled:cursor-not-allowed" />
                   </label>
                   <label className="flex flex-col gap-1 font-sans text-xs text-ink-700">
                     {ownTeamLabel} player{matchPlayerCount === 1 ? "" : "s"}

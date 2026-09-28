@@ -51,18 +51,18 @@ test("pickActiveEvent returns null on an empty list", () => {
   assert.equal(pickActiveEvent([], new Set()), null);
 });
 
-test("marginLabel: AS at zero, N UP otherwise", () => {
+test("marginLabel: AS at zero, N ▲ otherwise", () => {
   assert.equal(marginLabel(0), "AS");
-  assert.equal(marginLabel(1), "1 UP");
-  assert.equal(marginLabel(3), "3 UP");
+  assert.equal(marginLabel(1), "1 ▲");
+  assert.equal(marginLabel(3), "3 ▲");
 });
 
 test("closedMarginLabel: N & M when the match closed early (margin > holesRemaining)", () => {
   assert.equal(closedMarginLabel(3, 2), "3 & 2");
 });
 
-test("closedMarginLabel: N UP when the match closed exactly at the last playable hole", () => {
-  assert.equal(closedMarginLabel(1, 0), "1 UP");
+test("closedMarginLabel: N ▲ when the match closed exactly at the last playable hole", () => {
+  assert.equal(closedMarginLabel(1, 0), "1 ▲");
 });
 
 test("teamLabel maps maroon/white/tie", () => {
@@ -77,5 +77,5 @@ test("matchResultLabel: Match Halved for a tie, regardless of margin/holesRemain
 
 test("matchResultLabel: Team Wins + closedMarginLabel for a real winner", () => {
   assert.equal(matchResultLabel("maroon", 3, 2), "Maroon Wins 3 & 2");
-  assert.equal(matchResultLabel("white", 1, 0), "White Wins 1 UP");
+  assert.equal(matchResultLabel("white", 1, 0), "White Wins 1 ▲");
 });

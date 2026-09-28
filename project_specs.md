@@ -983,6 +983,41 @@ Editor), Projected opens that same year, and Back returns to it. The graph
 matches the match page's odds graph, with round ticks along the bottom, on past
 and live years, desktop and mobile. Type-check, lint, tests and build pass.
 
+### Round: Sponsors in the header + social links in More
+
+**What:** show "Presented By:" + a rotating sponsor logo in the header, recenter
+the desktop nav, and move Instagram (plus new Facebook, TikTok, YouTube) into the
+More menu.
+
+**Sponsors** — one list in `lib/data/sponsors.ts` (name, logo path, optional link).
+First entry: **DCS Logo** (Dynamic Computing Services), image at
+`public/sponsors/dcs-logo.png`. Adding a sponsor later = drop a logo in
+`public/sponsors/` and add one line to the list.
+- **Rotation:** one logo shows at a time; every 15 seconds it fades out and the
+  next fades in, looping. With only one sponsor it just stays put (no flicker).
+- **Desktop header (left side):** `[Maroon Masters wordmark]  Presented By:  [sponsor logo]`.
+  The logo sits on a small white rounded tile so its white background doesn't
+  clash with the maroon bar.
+- **Mobile header (top-left):** small "Presented By:" label with the sponsor logo,
+  replacing the Instagram icon. The back arrow still replaces it on sub-pages
+  (same as today). Open question: where the round countdown that sits there today goes.
+
+**Desktop nav:** Home · Leaderboard · Watch Live · Teams · More moves from beside
+the wordmark to the **center** of the bar. Right side keeps countdown, account and
+emblem; the Instagram button is removed from there.
+
+**More menu (mobile + desktop):** under the last link (Fantasy / Tiger Center), a
+row of four icons in this order: **Instagram, Facebook, TikTok, YouTube**, each
+opening the account in a new tab. Instagram = `https://www.instagram.com/themaroonmasters/`;
+the other three links are pending from the user (hidden until provided).
+
+**Tech / data:** no database, no new services, no new packages (icons are small
+inline SVGs, like the existing Instagram one).
+
+**Done when:** sponsor shows and fades correctly on desktop and mobile, the nav is
+centered on desktop, Instagram is gone from both headers and appears with the other
+socials in More, and type-check, lint, tests and build pass.
+
 ## Known gaps / not yet built
 
 - **Live scoring lifecycle — spec v3 written, not built.** See

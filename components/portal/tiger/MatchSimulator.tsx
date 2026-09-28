@@ -50,8 +50,8 @@ export function MatchSimulator({ records, teamRecords, courseHoles }: { records:
     if (format === "Alternate Shot" && holesFinished === 0 && new Set([a1, a2, b1, b2]).size === 4) return calculatePreRoundAlternateShotOdds({ records, teamRecords, courseHoles, teamA: [a1, a2], teamB: [b1, b2], course });
     return null;
   }, [a1, a2, b1, b2, course, courseHoles, format, holesFinished, records, teamAStatus, teamRecords]);
-  const statusA = teamAStatus === 0 ? "AS" : teamAStatus > 0 ? `${teamAStatus} UP` : `${Math.abs(teamAStatus)} DOWN`;
-  const statusB = teamAStatus === 0 ? "AS" : teamAStatus > 0 ? `${teamAStatus} DOWN` : `${Math.abs(teamAStatus)} UP`;
+  const statusA = teamAStatus === 0 ? "AS" : teamAStatus > 0 ? `${teamAStatus} ▲` : `${Math.abs(teamAStatus)} DOWN`;
+  const statusB = teamAStatus === 0 ? "AS" : teamAStatus > 0 ? `${teamAStatus} DOWN` : `${Math.abs(teamAStatus)} ▲`;
   const available = format === "Singles" || format === "Fourball" || (format === "Alternate Shot" && holesFinished === 0);
   return <div className="grid gap-5 xl:grid-cols-[1.15fr_.85fr]">
     <section className="rounded-lg border-2 border-maroon-700 bg-cream-50 p-5"><p className="font-condensed text-2xs font-bold uppercase tracking-wide text-maroon-700">MM Match Simulator · Career Archive only</p><h2 className="mt-1 font-serif text-2xl font-bold text-ink-900">Match Simulator</h2><p className="mt-1 font-sans text-sm text-ink-600">Change any control and the visual updates automatically. Player, format, and course changes reset the match to all square before the first hole.</p>

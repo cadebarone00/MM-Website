@@ -20,7 +20,7 @@ function sideColor(team: Team, won: boolean) {
 function TeamSide({ players, team, probability, score, won }: { players: string[]; team: Team; probability?: number; score: string | null; won: boolean }) {
   const isMaroon = team === "maroon";
   const onMaroon = isMaroon && won;
-  const scoreLabel = score && <span className="shrink-0 whitespace-nowrap font-condensed text-xs font-extrabold uppercase">{score}</span>;
+  const scoreLabel = score && <span className={["relative z-10 shrink-0 whitespace-nowrap px-0.5 font-condensed text-xs font-extrabold uppercase", sideColor(team, won)].join(" ")}>{score}</span>;
 
   return (
     <div className={["relative flex min-w-0 items-center self-stretch", isMaroon ? "justify-end" : "justify-start", sideColor(team, won)].join(" ")}>
@@ -36,8 +36,8 @@ function TeamSide({ players, team, probability, score, won }: { players: string[
       {players.length > 1 && <span aria-hidden className={isMaroon ? "absolute right-0 top-1/2 h-px w-1/2 bg-gold-600" : "absolute left-0 top-1/2 h-px w-1/2 bg-gold-600"} />}
       <span
         className={[
-          "absolute top-1/2 flex h-4 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center bg-transparent font-condensed text-[7px] font-extrabold uppercase tracking-tight",
-          isMaroon ? "left-1/4" : "left-3/4",
+          "absolute top-1/2 flex h-4 w-8 -translate-y-1/2 items-center justify-center bg-transparent font-condensed text-[7px] font-extrabold uppercase tracking-tight",
+          isMaroon ? "left-2" : "right-2",
           onMaroon ? "border border-white text-white" : "border border-maroon-700 text-maroon-700",
         ].join(" ")}
       >

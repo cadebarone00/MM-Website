@@ -23,7 +23,7 @@ interface RoundFinalPayload {
  * up the box in the already-live matchPlay data for its number/names AND
  * its live margin/holesRemaining — matchResultLabel() reproduces exactly
  * what MatchPlayScene.tsx's private statusLabel() already shows for a
- * Final box ("3 & 2" for an early closeout, "1 UP" for one that went the
+ * Final box ("3 & 2" for an early closeout, "1 ▲" for one that went the
  * distance, "Match Halved" for a tie), sourced from matchPlay rather than
  * the event payload itself (Phase 2's MATCH_WON payload doesn't carry
  * holesRemaining — see the spec's correction note). If the box can't be
