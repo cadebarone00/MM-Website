@@ -915,7 +915,7 @@ All pages are public, no auth.
   Format, Matchups, Career Stats, the public leaderboard/schedule) load
   without a 500.
 
-### Sign-out confirmation + return home (proposed, awaiting approval)
+### Sign-out confirmation + return home (shipped 2026-09-28)
 
 **What changes:** Signing out is the same for every account type (player,
 normal fan account, and Tiger/host) and from every place a sign-out button
