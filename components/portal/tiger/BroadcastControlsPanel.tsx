@@ -9,6 +9,7 @@ import { useAutoScene } from "@/lib/broadcast/useAutoScene";
 import { useLiveBroadcastAudio } from "@/lib/broadcast/useLiveBroadcastAudio";
 import { Volume2, VolumeX } from "lucide-react";
 import { BroadcastPreview } from "./BroadcastPreview";
+import { BroadcastCountdownForm } from "./BroadcastCountdownForm";
 import { getMockRunTotalMs, getMockStandings, MOCK_RUN_DEFAULT_VIDEO_MS } from "@/lib/broadcast/mockRun";
 
 const SCENE_BUTTONS: { scene: BroadcastScene; label: string }[] = [
@@ -767,6 +768,8 @@ export function BroadcastControlsPanel({
         </section>
       )}
       {error && <p className="mt-2 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
+
+      <BroadcastCountdownForm />
 
       {!isLive ? (
         <div className="mt-4">

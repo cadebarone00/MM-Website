@@ -106,9 +106,7 @@ export function Header({ nextTournamentOverride }: { nextTournamentOverride: Nex
                 <InstagramGlyph size={16} />
               </a>
             )}
-            {showBack ? null : live ? (
-              <span className="font-condensed text-3xs font-semibold uppercase tracking-wide text-maroon-700">Live Now</span>
-            ) : (
+            {showBack ? null : (
               <RoundCountdown className="text-maroon-700" compact />
             )}
           </div>

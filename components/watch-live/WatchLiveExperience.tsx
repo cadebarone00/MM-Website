@@ -4,6 +4,7 @@ import Image from "next/image";
 import { MessageCircle, Video } from "lucide-react";
 import { useState } from "react";
 import { RoundCountdown } from "@/components/ui/RoundCountdown";
+import { useCountdownTarget } from "@/lib/hooks/useCountdownTarget";
 import { useLiveBroadcastState } from "@/lib/broadcast/useLiveBroadcastState";
 import { usePlaylistTracks } from "@/lib/broadcast/usePlaylistTracks";
 import { BroadcastPlayer } from "./BroadcastPlayer";
@@ -40,6 +41,11 @@ export function WatchLiveExperience({
   // manual refresh needed.
   const state = useLiveBroadcastState(seasonYear, initialState);
   const tracks = usePlaylistTracks(seasonYear, initialTracks);
+  const countdown = useCountdownTarget("watch-live");
+  const countdownDate = countdown?.targetAt ? new Intl.DateTimeFormat("en-US", {
+    timeZone: countdown.timezone, month: "long", day: "numeric", year: "numeric",
+    hour: "numeric", minute: "2-digit", timeZoneName: "short",
+  }).format(new Date(countdown.targetAt)) : "Date and time to be announced";
 
   return (
     <main>
@@ -65,11 +71,11 @@ export function WatchLiveExperience({
             <Image src="/loading/desktop.png" alt="" fill priority sizes="(max-width: 1200px) 100vw, 1200px" className="hidden object-cover lg:block" />
             <div className="absolute inset-0 flex items-center justify-center bg-maroon-900/20 px-4 text-center">
               <div className="flex flex-col items-center">
-                <p className="mb-2 font-condensed text-xs font-bold uppercase tracking-eyebrow text-white sm:text-sm">Maroon Masters On The Range</p>
+                <p className="mb-2 max-w-xl break-words font-condensed text-xs font-bold uppercase tracking-eyebrow text-white sm:text-sm">{countdown?.title ?? "Watch Live"}</p>
                 <div className="inline-flex w-fit items-center justify-center rounded-sm border border-white/30 bg-maroon-900/75 px-3 py-2 text-cream-50 shadow-md">
-                  <RoundCountdown className="text-center" />
+                  <RoundCountdown className="text-center" target={countdown} />
                 </div>
-                <p className="mt-2 font-condensed text-xs font-bold uppercase tracking-eyebrow text-white sm:text-sm">January 5th 2027</p>
+                <p className="mt-2 font-condensed text-xs font-bold uppercase tracking-eyebrow text-white sm:text-sm">{countdownDate}</p>
               </div>
             </div>
           </div>
