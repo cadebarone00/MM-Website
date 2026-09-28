@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getPlayerDisplayName } from "@/lib/data/players";
-import { calendarDate } from "@/lib/live/seasonCalendar";
+import { calendarDate, seasonYearStatus } from "@/lib/live/seasonCalendar";
 import { overviewDays, overviewMatchCount, type OverviewYear, type SeasonOverviewData } from "@/lib/live/seasonOverview";
 import { teeTimeSlotForMatch } from "@/lib/live/sessionTeeTimes";
 import type { MatchFormat } from "@/lib/live/types";
@@ -31,7 +31,7 @@ function workflowDetail({ archived, row, sessionDate, teeLabel, match, state }: 
     archive: archiveLine,
   };
 }
-function YearOverview({ row, activeYear, available, refresh, now }: { row: OverviewYear; activeYear: number; available: boolean; refresh: () => Promise<void>; now: number }) {
+function YearOverview({ row, activeYear, upcomingYear, available, refresh, now }: { row: OverviewYear; activeYear: number; upcomingYear: number | null; available: boolean; refresh: () => Promise<void>; now: number }) {
   const [activeOn, setActiveOn] = useState(row.activeOn ?? "");
   const [passOn, setPassOn] = useState(row.passOn ?? "");
   const [busy, setBusy] = useState(false);
@@ -41,7 +41,7 @@ function YearOverview({ row, activeYear, available, refresh, now }: { row: Overv
   const [openWorkflow, setOpenWorkflow] = useState<string | null>(null);
   const activeLocked = row.locked || row.activeLockedByPrevious;
   const passLocked = row.locked || row.passLockedByNext;
-  const status = row.test ? "Test season" : archived ? "Archived" : activeYear === row.year ? "Active" : activeLocked ? "Armed" : "Draft";
+  const status = seasonYearStatus(row.year, activeYear, upcomingYear, archived || row.historical ? [row.year] : []);
   async function save(locked: boolean) {
     setBusy(true); setError(null);
     try {
@@ -53,7 +53,7 @@ function YearOverview({ row, activeYear, available, refresh, now }: { row: Overv
     finally { setBusy(false); }
   }
   return <article className="rounded-lg border border-gold-300 bg-white">
-    <div className="flex flex-wrap items-center justify-between gap-2 p-4"><span className="font-serif text-xl font-bold">{row.year}</span><span className={"rounded border px-2 py-1 text-xs font-semibold " + (status === "Active" || status === "Armed" ? green : neutral)}>{status}</span><span className="text-xs text-ink-500">{row.count ?? "No"} sessions{row.countLocked ? " - count locked" : ""} - {row.locked ? "Dates locked" : "Dates not armed"}</span></div>
+    <div className="flex flex-wrap items-center justify-between gap-2 p-4"><span className="font-serif text-xl font-bold">{row.year}</span><span className={"rounded border px-2 py-1 text-xs font-semibold " + (status === "Active" || status === "Upcoming" ? green : neutral)}>{status}</span><span className="text-xs text-ink-500">{row.count ?? "No"} sessions{row.countLocked ? " - count locked" : ""} - {row.locked ? "Dates locked" : "Dates not armed"}</span></div>
     <div className="border-t border-gold-200 p-4">
       <div className="grid items-end gap-3 sm:grid-cols-[1fr_1fr_auto]">
         <label className="text-xs font-semibold">Active<input type="date" aria-label={row.year + " Active date"} value={activeOn} onChange={event => setActiveOn(event.target.value)} disabled={activeLocked || busy || row.test || !available} className={"mt-1 block w-full rounded-md border-2 p-2 text-sm disabled:opacity-100 " + (activeLocked && activeOn ? green : neutral)} /></label>
@@ -63,7 +63,7 @@ function YearOverview({ row, activeYear, available, refresh, now }: { row: Overv
       <p className="mt-2 text-xs leading-relaxed text-ink-500">{row.test ? "2034 is reserved for disposable rehearsal and cannot take over the public website automatically." : "Locked dates take effect at midnight Central Time. Pass on is the next year's Active date. Scores are preserved as recorded; handoff does not finish matches."}</p>
       {(row.activeLockedByPrevious || row.passLockedByNext) && <p className="mt-2 text-xs text-ink-500">A shared boundary is locked by an adjacent year. Unlock that year before changing the shared date.</p>}
       {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
-      <details className="mt-4" open={row.year === activeYear}><summary className="cursor-pointer text-sm font-semibold text-maroon-700">Days, sessions and match tee times</summary><div className="mt-4 space-y-4">{overviewDays(row).map((day,index) => <section key={day.date ?? "undated"}>
+      <details className="mt-4" open={row.year === activeYear || row.year === upcomingYear}><summary className="cursor-pointer text-sm font-semibold text-maroon-700">Days, sessions and match tee times</summary><div className="mt-4 space-y-4">{overviewDays(row).map((day,index) => <section key={day.date ?? "undated"}>
         <h3 className="mb-2 font-sans text-sm font-bold">{day.date ? "Day " + (index+1) + " - " + new Date(day.date + "T12:00:00Z").toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric" }) : "Date not chosen"}{row.datesLocked ? "" : " (draft dates)"}</h3>
         <div className="space-y-2">{day.sessions.map(session => {
           const count = Math.max(overviewMatchCount(session.format), ...session.matches.map(match => match.number), 0);
@@ -106,9 +106,9 @@ export function SeasonOverview({ initial }: { initial: SeasonOverviewData }) {
   },[]);
   return <section className="mt-6 rounded-xl border-2 border-gold-300 bg-cream-50 p-4 sm:p-5" aria-label="Season timing overview">
     <h2 className="font-serif text-2xl font-bold">Season timing overview</h2>
-    <p className="mt-2 text-sm text-ink-600">Open a year to see its handoff dates, days, sessions and match tee times. Updates from saved settings every 15 seconds.</p>
+    <p className="mt-2 text-sm text-ink-600">Open a year to see its handoff dates, days, sessions and match tee times. Active follows the configured handoff. The day after its event ends, the next year becomes Upcoming; later years are Future. Updates from saved settings every 15 seconds.</p>
     {!data.calendarAvailable && <p role="alert" className="mt-3 text-sm text-amber-800">Calendar dates are not installed yet. Apply season_calendar.sql to enable them. Session setup below is still available.</p>}
     {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
-    <div className="mt-4 space-y-3">{data.years.map(row => <YearOverview key={row.year + ":" + row.activeOn + ":" + row.passOn + ":" + row.locked} row={row} activeYear={data.activeYear} available={data.calendarAvailable} refresh={refresh} now={now} />)}</div>
+    <div className="mt-4 space-y-3">{data.years.map(row => <YearOverview key={row.year + ":" + row.activeOn + ":" + row.passOn + ":" + row.locked} row={row} activeYear={data.activeYear} upcomingYear={data.upcomingYear} available={data.calendarAvailable} refresh={refresh} now={now} />)}</div>
   </section>;
 }

@@ -22,7 +22,7 @@ export async function getSeasonOverview(): Promise<SeasonOverviewData> {
     service.from("round_format_setups").select("season_year, round, played_on, course_name").eq("season_year", 2026),
   ]);
   if (settings.error || sessions.error || matches.error || courses.error) throw new Error("Could not load year setup. Check the session-count and tee-time migrations.");
-  return { activeYear: calendar.activeYear, calendarAvailable: calendar.available, checkedAt: new Date().toISOString(), years: OVERVIEW_YEARS.map(year => {
+  return { activeYear: calendar.activeYear, upcomingYear: calendar.upcomingYear, calendarAvailable: calendar.available, checkedAt: new Date().toISOString(), years: OVERVIEW_YEARS.map(year => {
     const setup = settings.data?.find(row => row.season_year === year);
     const window = calendar.windows.find(row => row.year === year) ?? { year, activeOn: null, passOn: null, locked: false };
     let rounds: OverviewSession[] = (sessions.data ?? []).filter(row => row.season_year === year).map(row => ({ number: row.round, date: row.date, course: courses.data?.find(course => course.id === row.course_id)?.name ?? null, format: row.format, courseLocked: row.course_locked, matchupsLocked: row.matchups_locked, started: row.started, teeTimes: row.match_tee_times ?? [null,null,null], matches: (matches.data ?? []).filter(match => match.season_year === year && match.round === row.round).map(match => ({ number: match.box_number, teeTime: match.tee_time, state: match.state, started: match.started, maroonPlayers: match.maroon_players ?? [], whitePlayers: match.white_players ?? [] })) }));

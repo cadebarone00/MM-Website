@@ -8,6 +8,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
+  %% Public Players directory: Maroon, White, Unassigned and Stats; Stats merges static profiles, roster identities and public registered names into an alphabetical table with pinned names and twelve scrolling placeholder columns.
   %% Header countdown: configured home season, locked Session 1 date and first tee slot in the season time zone; exact days and HH:MM:SS on desktop/mobile.
   %% Home Teams year pill uses the Match Play expanding selector: inline year choices, collapse on selection or outside click, scrolling for longer year lists.
   %% Home Teams year pill selects archived 2024-2026 rosters or confirmed native assignments; ten-second refresh restores team-specific TBD slots up to six per side except the four-player 2024-2025 archives. Names face the center; blank MM Hcp, Sc. Avg., and TPE columns mirror outward without grid lines.
@@ -142,6 +143,8 @@ For example, in September 2026, My Matches can correctly show 2026 matches as Pa
 **Code:** `app/portal/page.tsx`, `lib/live/activeSeason.ts`, `lib/live/seasonYears.ts`, `lib/broadcast/displayYear.ts`, `lib/data/index.ts`.
 
 ## 3. Public website and navigation
+
+The public Players directory adds Stats beside Maroon, White and Unassigned. Stats lists all checked-in profiles plus selected-roster identities and registered players returned by `/api/players/names`, deduplicated by canonical slug and ordered alphabetically by full name. The existing names hook retains static/roster names if the request fails. It follows the individual leaderboard's compact surname rows, mobile maroon header and desktop gold border, with pinned player names and twelve horizontally scrolling Stat 1-12 columns. All values are placeholder dashes, with no rankings or calculated statistics. This applies to the tournament Players directory; the upcoming season's separate confirmed-roster preview remains separate.
 
 The desktop and mobile header countdowns read the home display year's locked Session 1 date and first match tee-time slot, converted with the season's time zone (the same source used to derive Session 1, Match 1's tee time). Missing or unlocked setup shows Time TBD. Targets refresh every ten seconds; ticks show exact elapsed days and hours:minutes:seconds, stop at zero, and no longer estimate days from months or use the legacy live-feed header text. The mobile countdown no longer disappears at the tournament's date-only live boundary.
 
@@ -520,6 +523,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 28, 2026 - Players Stats selector (implemented locally; deployment not verified).** Previously Players offered Maroon, White and Unassigned only. It now also offers Stats, an alphabetical all-player table matching the individual leaderboard's mobile and desktop styling, with pinned names and twelve scrolling placeholder stat columns. Registered players outside the selected roster are included through the public names endpoint. Columns and values await a later definition. Updated Section 3 and the flowchart annotation; overview boxes and workflow paths are unchanged.
 
 **2026-09-28 - Mirrored Teams columns and historical roster sizes (implemented locally; deployment not verified).** Previously every year displayed at least six players or TBD slots in a divided name list. The 2024-2025 archives now display only their four actual players per side. Names sit nearest the center with MM Hcp, Sc. Avg., and TPE headers extending outward, blank stat cells, room for future columns, increased player spacing, and no grid lines. Header meanings appear on hover, keyboard focus, or click/tap. Updated section 3 and the Mermaid annotation; overview paths and mappings are unchanged.
 

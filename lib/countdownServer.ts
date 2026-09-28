@@ -1,24 +1,23 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { getWebsiteSettings } from "@/lib/website/settingsServer";
-import { resolveDisplayYear } from "@/lib/website/settings";
 import { getSeasonCalendar } from "@/lib/live/seasonCalendarServer";
-import { nextTournament } from "@/lib/data";
 import { deriveMatchTeeTime } from "@/lib/live/sessionTeeTimes";
 import type { CountdownTarget, WatchCountdownSettings } from "./countdown";
 
 export async function getTournamentCountdown(): Promise<CountdownTarget> {
-  const [{ settings }, calendar] = await Promise.all([getWebsiteSettings(), getSeasonCalendar()]);
-  const year = resolveDisplayYear(settings.home, calendar, nextTournament.year);
+  const calendar = await getSeasonCalendar();
+  const year = calendar.upcomingYear ?? calendar.activeYear;
   const service = createSupabaseServiceRoleClient();
-  const [session, tournament] = await Promise.all([
-    service.from("live_round_state").select("date, match_tee_times, course_locked").eq("season_year", year).eq("round", 1).maybeSingle(),
+  const [session, tournament, match] = await Promise.all([
+    service.from("live_round_state").select("date, match_tee_times").eq("season_year", year).eq("round", 1).maybeSingle(),
     service.from("live_tournament_settings").select("timezone").eq("season_year", year).maybeSingle(),
+    service.from("live_match_boxes").select("tee_time").eq("season_year", year).eq("round", 1).eq("box_number", 1).maybeSingle(),
   ]);
-  if (session.error || tournament.error) throw new Error("Could not load the first tee time.");
+  if (session.error || tournament.error || match.error) throw new Error("Could not load the first tee time.");
   const timezone = tournament.data?.timezone ?? "America/Los_Angeles";
-  const start = session.data?.course_locked
-    ? deriveMatchTeeTime(session.data.date, session.data.match_tee_times?.[0] ?? null, timezone)
-    : null;
+  const matchTime = match.data?.tee_time ? new Date(match.data.tee_time) : null;
+  const savedTime = session.data?.match_tee_times?.[0] ?? (matchTime && Number.isFinite(matchTime.getTime())
+    ? new Intl.DateTimeFormat("en-GB", { timeZone: timezone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(matchTime) : null);
+  const start = deriveMatchTeeTime(session.data?.date ?? null, savedTime, timezone);
   return { title: `${year} Session 1, Match 1`, targetAt: start?.toISOString() ?? null, timezone };
 }
 

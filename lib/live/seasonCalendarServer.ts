@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { resolveSeasonCalendar, type SeasonWindow } from "./seasonCalendar";
+import { resolveSeasonCalendar, upcomingSeasonYear, type SeasonWindow } from "./seasonCalendar";
+import { pastTournaments } from "@/lib/data";
 
 export const getSeasonCalendar = cache(async () => {
   const service = createSupabaseServiceRoleClient();
@@ -16,5 +17,13 @@ export const getSeasonCalendar = cache(async () => {
     console.warn("Could not read season calendar.", calendar.error);
   }
   const windows: SeasonWindow[] = (sync.error || calendar.error ? [] : calendar.data ?? []).map(row => ({ year: row.season_year, activeOn: row.active_on, passOn: row.pass_on, locked: row.locked, archivedAt: row.archived_at }));
-  return { ...resolveSeasonCalendar(windows, active.data?.season_year ?? 2027), available: !calendar.error && !sync.error, manualYear: active.data?.season_year ?? 2027 };
+  const resolved = resolveSeasonCalendar(windows, active.data?.season_year ?? 2027);
+  const { data: tournament, error: tournamentError } = await service.from("live_tournament_settings")
+    .select("end_date, timezone").eq("season_year", resolved.activeYear).maybeSingle();
+  if (tournamentError) console.warn("Could not read the active tournament end date.");
+  const endDate = tournament?.end_date ?? pastTournaments.find(row => row.year === resolved.activeYear)?.endDate ?? null;
+  const timezone = tournament?.timezone ?? "America/Los_Angeles";
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const upcomingYear = upcomingSeasonYear(resolved.activeYear, endDate, today);
+  return { ...resolved, upcomingYear, available: !calendar.error && !sync.error, manualYear: active.data?.season_year ?? 2027 };
 });

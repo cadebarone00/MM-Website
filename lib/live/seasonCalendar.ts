@@ -5,6 +5,19 @@ export const OVERVIEW_YEARS = [2026, ...SEASON_YEARS];
 export type SeasonWindow = { year: number; activeOn: string | null; passOn: string | null; locked: boolean; archivedAt?: string | null };
 export type SeasonCalendar = { windows: SeasonWindow[]; activeYear: number; archivedYears: number[]; scheduled: boolean };
 export const CALENDAR_TIMEZONE = "America/Chicago";
+/** Active remains governed by handoff; Upcoming opens the day after its event ends. */
+export function upcomingSeasonYear(activeYear: number, endDate: string | null, today: string): number | null {
+  return endDate && validCalendarDate(endDate) && today > endDate && activeYear + 1 < TEST_SEASON_YEAR
+    ? activeYear + 1 : null;
+}
+
+export function seasonYearStatus(year: number, activeYear: number, upcomingYear: number | null, archivedYears: number[]): "Archived" | "Active" | "Upcoming" | "Future" | "Test season" {
+  if (year === TEST_SEASON_YEAR) return "Test season";
+  if (year === activeYear) return "Active";
+  if (year === upcomingYear) return "Upcoming";
+  if (archivedYears.includes(year) || year < activeYear) return "Archived";
+  return "Future";
+}
 export function calendarDate(now = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: CALENDAR_TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
 }

@@ -2,10 +2,19 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
-import { calendarDate, resolveSeasonCalendar, validCalendarDate } from "./seasonCalendar.ts";
+import { calendarDate, resolveSeasonCalendar, validCalendarDate, upcomingSeasonYear, seasonYearStatus } from "./seasonCalendar.ts";
 import { overviewDays, overviewMatchCount, type OverviewYear } from "./seasonOverview.ts";
 import { palmSprings2026 } from "@/lib/data/2026-palm-springs.ts";
 import { roundFormatArchive } from "@/lib/data/roundFormatArchive.ts";
+
+test("Upcoming opens the day after the active event ends without changing Active", () => {
+  assert.equal(upcomingSeasonYear(2026, "2026-01-10", "2026-01-10"), null);
+  assert.equal(upcomingSeasonYear(2026, "2026-01-10", "2026-01-11"), 2027);
+  assert.equal(upcomingSeasonYear(2026, "2026-01-10", "2026-09-28"), 2027);
+  assert.equal(upcomingSeasonYear(2027, null, "2027-01-11"), null);
+  assert.equal(upcomingSeasonYear(2033, "2033-01-10", "2033-01-11"), null);
+  assert.deepEqual([2024, 2025, 2026, 2027, 2028, 2034].map(year => seasonYearStatus(year, 2026, 2027, [2024, 2025])), ["Archived", "Archived", "Active", "Upcoming", "Future", "Test season"]);
+});
 
 test("handoff selects the successor at Central midnight and archives only the outgoing year", () => {
   const window={year:2027,activeOn:"2026-09-01",passOn:"2027-09-01",locked:true};
