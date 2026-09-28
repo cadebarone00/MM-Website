@@ -8,13 +8,21 @@ import { getPlayerDisplayName } from "@/lib/data/players";
 
 type ConfirmedPlayer = { year: number; slug: string; team: "maroon" | "white"; name: string };
 
-/** Archived rosters and locked native assignments, with six slots per team. */
+const statColumns = [
+  { label: "MM Hcp", description: "Maroon Masters handicap" },
+  { label: "Sc. Avg.", description: "Maroon Masters scoring average" },
+  { label: "TPE", description: "Total points earned" },
+];
+
+/** Archived rosters and locked native assignments with mirrored stat columns. */
 export function HomeTeamsPanel() {
   const { nextTournament } = useSeasonCatalog();
   const [selection, setSelection] = useState<{ configuredYear: number; year: number } | null>(null);
   const [roster, setRoster] = useState<ConfirmedPlayer[]>([]);
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [activeStat, setActiveStat] = useState<string | null>(null);
+  const [hoveredStat, setHoveredStat] = useState<string | null>(null);
   const year = selection?.configuredYear === nextTournament.year ? selection.year : nextTournament.year;
   const archived = pastTournaments.find((tournament) => tournament.year === year);
   const years = [...new Set([nextTournament.year, year, ...pastTournaments.map((tournament) => tournament.year), ...roster.map((player) => player.year)])].sort((a, b) => b - a);
@@ -50,20 +58,47 @@ export function HomeTeamsPanel() {
         <div className="flex-1 bg-maroon-700 py-1.5 text-center font-condensed text-2xs font-bold uppercase tracking-eyebrow text-white">Maroon</div>
         <div className="flex-1 border-y border-ink-100 bg-white py-1.5 text-center font-condensed text-2xs font-bold uppercase tracking-eyebrow text-maroon-700">White</div>
       </div>
+      <p id="team-stat-description" role="status" className="min-h-10 px-2 py-2 text-center text-xs text-ink-500">
+        {statColumns.find((column) => column.label === (hoveredStat ?? activeStat))?.description ?? "\u00a0"}
+      </p>
       {error && <p role="status" className="my-2 text-center text-xs text-ink-500">Roster updates unavailable. Showing the last available roster.</p>}
       {!archived && !loaded ? <p role="status" className="py-4 text-center text-sm text-ink-500">{error ? "Roster unavailable." : "Loading roster..."}</p> : (
-        <div className="grid grid-cols-2">
+        <div className="grid grid-cols-2 gap-4 sm:gap-6">
           {(["maroon", "white"] as const).map((team) => {
             const players = archived
               ? archived.roster[team].map((slug) => ({ slug, name: getPlayerDisplayName(slug) }))
               : roster.filter((player) => player.year === year && player.team === team);
-            return <div key={team} className={team === "maroon" ? "flex flex-col border-r border-ink-100 pr-3 text-right" : "flex flex-col pl-3 text-left"}>
-              {Array.from({ length: Math.max(6, players.length) }, (_, index) => {
+            return <div key={team} dir={team === "maroon" ? "rtl" : "ltr"} className="min-w-0 overflow-x-auto" role="region" aria-label={`${team} roster and statistics; scroll for more columns`} tabIndex={0}>
+              <table className="w-full min-w-[360px] table-fixed border-separate border-spacing-0 text-start">
+                <caption className="sr-only">{team} team, {year}. Statistic values are not yet populated.</caption>
+                <colgroup><col className="w-[140px]" />{statColumns.map((column) => <col key={column.label} className="w-[60px]" />)}<col className="w-10" /></colgroup>
+                <thead><tr>
+                  <th scope="col" className="py-2 font-sans text-xs font-semibold text-ink-500">Name</th>
+                  {statColumns.map((column) => <th key={column.label} scope="col" className="text-center">
+                    <button type="button" dir="ltr" aria-label={`${column.label}: ${column.description}`} aria-pressed={activeStat === column.label} aria-describedby="team-stat-description"
+                      onMouseEnter={() => setHoveredStat(column.label)} onMouseLeave={() => setHoveredStat(null)}
+                      onFocus={() => setHoveredStat(column.label)} onBlur={() => setHoveredStat(null)}
+                      onClick={() => { setHoveredStat(null); setActiveStat((current) => current === column.label ? null : column.label); }}
+                      onKeyDown={(event) => { if (event.key === "Escape") { setActiveStat(null); setHoveredStat(null); } }}
+                      className="min-h-11 w-full rounded-sm font-sans text-[11px] font-semibold text-ink-500 hover:text-maroon-700 focus-visible:outline-2 focus-visible:outline-maroon-700">
+                      {column.label}
+                    </button>
+                  </th>)}
+                  <th scope="col"><span className="sr-only">Reserved for additional statistics</span></th>
+                </tr></thead>
+                <tbody>{Array.from({ length: archived && (year === 2024 || year === 2025) ? players.length : Math.max(6, players.length) }, (_, index) => {
                 const player = players[index];
-                return <span key={player?.slug ?? `tbd-${index}`} className={`w-full truncate py-1.5 font-sans text-sm ${player ? "font-semibold text-ink-900" : "text-ink-400"}`}>
+                return <tr key={player?.slug ?? `tbd-${index}`}>
+                  <th scope="row" className={`py-4 font-sans text-sm ${player ? "font-semibold text-ink-900" : "font-normal text-ink-400"}`}>
+                    <span dir="ltr" className="block truncate">
                   {player?.name ?? `${team === "maroon" ? "Maroon" : "White"} Player TBD`}
-                </span>;
-              })}
+                    </span>
+                  </th>
+                  {statColumns.map((column) => <td key={column.label}><span className="sr-only">Not yet populated</span></td>)}
+                  <td />
+                </tr>;
+              })}</tbody>
+              </table>
             </div>;
           })}
         </div>

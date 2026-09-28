@@ -8,8 +8,9 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
+  %% Header countdown: configured home season, locked Session 1 date and first tee slot in the season time zone; exact days and HH:MM:SS on desktop/mobile.
   %% Home Teams year pill uses the Match Play expanding selector: inline year choices, collapse on selection or outside click, scrolling for longer year lists.
-  %% Home Teams year pill selects archived 2024-2026 rosters or confirmed native assignments; ten-second refresh restores team-specific TBD slots up to six per side.
+  %% Home Teams year pill selects archived 2024-2026 rosters or confirmed native assignments; ten-second refresh restores team-specific TBD slots up to six per side except the four-player 2024-2025 archives. Names face the center; blank MM Hcp, Sc. Avg., and TPE columns mirror outward without grid lines.
   %% Page and major section titles share the official Spectral Bold Maroon Masters title font.
   %% Home-screen bookmarks use the supplied metallic gold artwork with a maroon left M and white right M; Apple icon metadata and Android manifest supply resized PNG assets.
   %% Optional password-status migration derives player_slots.password_created from the linked Auth password credential; deployment pending.
@@ -81,6 +82,8 @@ flowchart TD
   M -- Overall handicap --> PP
   %% Broadcast ticker: taller, content-sized top five; hidden while the individual leaderboard is visible.
   B --> W[Watch Live]
+  T -- Save independent event title, date, time and zone --> BC[Watch Live countdown settings]
+  BC -- Poll every ten seconds --> W
   P --> U[Round video upload]
   %% Home hype video plays directly from the public website-media R2 object; no tracked MP4.
   U --> W
@@ -140,7 +143,9 @@ For example, in September 2026, My Matches can correctly show 2026 matches as Pa
 
 ## 3. Public website and navigation
 
-The home Teams panel starts on the configured home_teams display year. A year pill above the Maroon/White bar offers the checked-in 2024-2026 archived rosters and native years with locked player assignments (excluding test year 2034). The configured year remains available even when empty. The pill uses the shared Match Play selector: clicking expands inline year buttons, selection or an outside click closes them, and longer lists scroll horizontally. Visitor selection stays local to the panel and does not change shared settings. Native rosters read live_roster joined to live_roster_assignment_locks by year and player, refreshing every ten seconds. Each team shows six slots, with Maroon Player TBD or White Player TBD for vacancies; removing or unlocking an assignment restores its placeholder. Loading and failed requests are identified without presenting an unavailable roster as an empty confirmed one.
+The desktop and mobile header countdowns read the home display year's locked Session 1 date and first match tee-time slot, converted with the season's time zone (the same source used to derive Session 1, Match 1's tee time). Missing or unlocked setup shows Time TBD. Targets refresh every ten seconds; ticks show exact elapsed days and hours:minutes:seconds, stop at zero, and no longer estimate days from months or use the legacy live-feed header text. The mobile countdown no longer disappears at the tournament's date-only live boundary.
+
+The home Teams panel starts on the configured home_teams display year. A year pill above the Maroon/White bar offers the checked-in 2024-2026 archived rosters and native years with locked player assignments (excluding test year 2034). The configured year remains available even when empty. The pill uses the shared Match Play selector: clicking expands inline year buttons, selection or an outside click closes them, and longer lists scroll horizontally. Visitor selection stays local to the panel and does not change shared settings. Native rosters read live_roster joined to live_roster_assignment_locks by year and player, refreshing every ten seconds. The 2024 and 2025 archives show their four actual players per team without TBD rows. Other years show at least six slots, with Maroon Player TBD or White Player TBD for vacancies; removing or unlocking an assignment restores its placeholder. Loading and failed requests are identified without presenting an unavailable roster as an empty confirmed one. The borderless roster tables place names nearest the center and mirror MM Hcp (Maroon Masters handicap), Sc. Avg. (Maroon Masters scoring average), and TPE (Total points earned) outward, with extra row spacing and outer space reserved for future columns. Hovering, focusing, or clicking/tapping a header reveals its full label above the tables; clicking again or pressing Escape dismisses the selected label. Each team scrolls horizontally on narrow screens from its name column outward. Stat cells are blank placeholders, not connected to scoring or handicap data.
 
 Home-screen bookmarks use the supplied metallic gold artwork: a maroon left M and white right M with raised gold edges on a brushed gold background. The full square image is resized without cropping or redesign. `app/apple-icon.png` supplies Apple's 180px touch icon; `app/manifest.ts` supplies Android/browser 192px and 512px PNG icons from `public/icons`. The manifest retains browser display mode; this change does not add offline support or redesign the installed layout. Device launchers may apply their own masks. Existing saved icons may need to be removed and re-added after deployment.
 
@@ -420,6 +425,8 @@ The verified functioning currency path is MM Coins. This map does not describe a
 
 ## 18. Broadcast engine and producer controls
 
+Broadcast Controls includes a separate Watch Live countdown form with a typed event name, date, time, and time-zone selector. Save publishes directly to the holding screen even during rehearsal; it does not start the broadcast. Host-only POST `/api/portal/tiger/broadcast/countdown` validates input and saves a global singleton in `broadcast_countdown`, independent of the broadcast data year and tournament tee times. `supabase/broadcast_countdown.sql` creates the service-role-only table; migration application and deployment are not verified. Read/save failures are reported in the form.
+
 The bottom-left leaderboard ticker shows the top five in a content-sized strip capped at the viewport width. It is at least 112px tall (roughly twice its previous height), with larger vertically centered names, placements and scores; text scales down together when space is limited. It hides while the individual leaderboard is visible and returns for holding, match play, player videos, transitions and full-screen event takeovers.
 
 Tiger controls display year, auto/producer mode, scene timing, pause state, announcements, playlist behavior, and tournament-live presentation. `broadcast_state` and `broadcast_config` hold these controls. The normal broadcast follows its configured display year; host previews support separate rehearsal inputs.
@@ -437,6 +444,8 @@ Broadcast consumes tournament data. Changing its year, scene, or live flag does 
 Separately, the home Silver Springs hype tile opens `/videos/hype-1`. Its native video player loads `MM Edit - Silver Springs.mp4` directly from the public `website-media` R2 bucket at `https://pub-6a86d18bc79d43b99b2c02fa816169dc.r2.dev/MM%20Edit%20-%20Silver%20Springs.mp4`. The thumbnail remains bundled with the website; the MP4 is not tracked in Git. This uses the public development endpoint, not a production custom media domain.
 
 Watch Live is the public viewing page. If a YouTube live video ID is configured, it embeds that video. Otherwise, when Tiger marks the broadcast live, it displays the app's custom broadcast. Before that it shows countdown/holding content.
+
+The holding screen polls its independent countdown settings every ten seconds. Its title is the saved event name, and its displayed date/time and days/hours/minutes/seconds countdown use the same saved target and time zone. No configured event shows Watch Live, Time TBD, and a date/time-to-be-announced label. Elapsed targets stop at zero without automatically going live. The existing YouTube/custom-player selection remains unchanged. `/api/countdown` serves either this event or the separate home tournament countdown and retains no shared browser cache.
 
 The viewer follows broadcast-state and playlist changes. The custom output consists primarily of tournament graphics and queued media; it is not itself a complete camera-stream ingestion/production service.
 
@@ -511,6 +520,10 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-28 - Mirrored Teams columns and historical roster sizes (implemented locally; deployment not verified).** Previously every year displayed at least six players or TBD slots in a divided name list. The 2024-2025 archives now display only their four actual players per side. Names sit nearest the center with MM Hcp, Sc. Avg., and TPE headers extending outward, blank stat cells, room for future columns, increased player spacing, and no grid lines. Header meanings appear on hover, keyboard focus, or click/tap. Updated section 3 and the Mermaid annotation; overview paths and mappings are unchanged.
+
+**2026-09-28 - Tournament tee-time and independent Watch Live countdowns (implemented locally; database migration and deployment not verified).** Previously both countdowns used January 6, 2027 at 7:30 AM Pacific, desktop showed months, mobile approximated month lengths, and Watch Live displayed a separate hard-coded name/date. Desktop and mobile now count exact days and HH:MM:SS to the home season's locked Session 1 first tee time. Broadcast Controls can save a separate Watch Live event name, date, time, and zone; the holding-screen label and countdown share that target. Missing targets show TBD, expired targets stop at zero, and saved targets refresh every ten seconds. Updated sections 3, 18, 19, the Mermaid flowchart, and the interactive workflow mapping. Requires `supabase/broadcast_countdown.sql`.
 
 **2026-09-28 - Match Play-style Teams year pill (implemented locally; deployment not verified).** Replaced the home Teams native year dropdown with the shared Match Play expanding pill. Clicking the active year reveals inline year buttons; selecting one or clicking outside collapses the choices. Longer year lists scroll within the expanded pill. Archived rosters, confirmed-player eligibility, and six-slot placeholders remain unchanged. Updated section 3 and the Mermaid annotation; workflow paths and overview mappings are unchanged.
 
