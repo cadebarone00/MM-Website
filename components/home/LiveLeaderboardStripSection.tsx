@@ -12,16 +12,16 @@ import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
  * live tournament window.
  */
 export function LiveLeaderboardStripSection() {
-  const { latestCompleted, getNextTournamentStatus } = useSeasonCatalog();
+  const { latestCompleted, getNextTournamentStatus, selectedYear } = useSeasonCatalog();
   const { tournament } = useLiveTournament();
   const isLive = tournament.matches.length > 0;
-  const mobileSource = isLive ? tournament : latestCompleted;
-  const desktopLive = getNextTournamentStatus() === "live";
+  const mobileSource = isLive || selectedYear != null ? tournament : latestCompleted;
+  const desktopLive = selectedYear != null || getNextTournamentStatus() === "live";
 
   return (
     <>
       <div className="lg:hidden">
-        {!isLive && (
+        {!isLive && selectedYear == null && (
           <div className="px-4 pt-3 sm:px-7">
             <span className="font-condensed text-3xs font-semibold uppercase tracking-wide text-ink-400">{latestCompleted.year} Final</span>
           </div>

@@ -1,11 +1,11 @@
 import { retryPendingPublications } from "@/lib/live/retryPublication";
 import { NextResponse } from "next/server";
-import { getActiveSeasonYear } from "@/lib/live/activeSeason";
+import { getSeasonCatalog } from "@/lib/data/seasonCatalog";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 
 /** Public list of real live-season matches and their latest official price. */
 export async function GET() {
-  const seasonYear = await getActiveSeasonYear();
+  const seasonYear = (await getSeasonCatalog()).nextTournament.year;
   await retryPendingPublications(seasonYear);
   const service = createSupabaseServiceRoleClient();
   const { data: matches, error } = await service

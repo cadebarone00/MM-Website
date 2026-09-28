@@ -38,7 +38,9 @@ export function useAccountSession(): AccountSession {
   return session;
 }
 
+/** Ends the session, then does a full page load of the home page so the person lands there as a signed-out guest (leaving /portal and dropping any in-memory state). */
 export async function signOutAccount(): Promise<void> {
-  await fetch("/api/auth/signout", { method: "POST" });
-  window.dispatchEvent(new CustomEvent("mm:session-changed"));
+  const res = await fetch("/api/auth/signout", { method: "POST" });
+  if (!res.ok) throw new Error(`Sign out failed (${res.status})`);
+  window.location.assign("/");
 }

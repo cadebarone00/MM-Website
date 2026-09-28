@@ -8,7 +8,7 @@ import { SectionHead } from "@/components/home/SectionHead";
 import { QuickScheduleCard } from "@/components/home/QuickScheduleCard";
 import type { UpcomingRoundScheduleItem } from "@/lib/data/activeSeasonOverlay";
 import { HomeTeamsPanel } from "@/components/home/HomeTeamsPanel";
-import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
+import { SeasonCatalogProvider, type SeasonCatalogData, useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 import { fmtPt } from "@/lib/data";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import type { NextTournamentOverride } from "@/lib/data/types";
@@ -211,7 +211,7 @@ const TOGGLE_TABS: { value: ToggleTab; label: string }[] = [
 ];
 
 /** Shared desktop and mobile homepage panels. */
-function HomeHighlightsToggle({ nextTournamentOverride, rounds }: { nextTournamentOverride: NextTournamentOverride; rounds: UpcomingRoundScheduleItem[] }) {
+function HomeHighlightsToggle({ rounds, teamsCatalog, scheduleCatalog }: DashboardProps) {
   const [tab, setTab] = useState<ToggleTab>("highlights");
 
   return (
@@ -223,8 +223,8 @@ function HomeHighlightsToggle({ nextTournamentOverride, rounds }: { nextTourname
       </div>
       <div id="home-content-panel" role="tabpanel" aria-labelledby={`home-tab-${tab}`} className="pt-8">
         {tab === "highlights" && <HighlightsRail flat />}
-        {tab === "teams" && <HomeTeamsPanel />}
-        {tab === "schedule" && <QuickScheduleCard nextTournamentOverride={nextTournamentOverride} rounds={rounds} />}
+        {tab === "teams" && <div data-website-section="home_teams"><SeasonCatalogProvider initial={teamsCatalog} section="home_teams"><HomeTeamsPanel /></SeasonCatalogProvider></div>}
+        {tab === "schedule" && <div data-website-section="home_schedule"><SeasonCatalogProvider initial={scheduleCatalog} section="home_schedule"><QuickScheduleCard nextTournamentOverride={scheduleCatalog.nextTournament} rounds={rounds} /></SeasonCatalogProvider></div>}
       </div>
     </div>
   );
@@ -405,11 +405,13 @@ function SocialsSection() {
   );
 }
 
-export function HomeDashboard({ nextTournamentOverride, rounds }: { nextTournamentOverride: NextTournamentOverride; rounds: UpcomingRoundScheduleItem[] }) {
+type DashboardProps = { nextTournamentOverride: NextTournamentOverride; rounds: UpcomingRoundScheduleItem[]; teamsCatalog: SeasonCatalogData; scheduleCatalog: SeasonCatalogData };
+
+export function HomeDashboard(props: DashboardProps) {
   return (
     <section className="bg-cream-100">
       <div className="mx-auto max-w-[1440px] px-4 py-4 sm:px-7 sm:py-8">
-        <HomeHighlightsToggle nextTournamentOverride={nextTournamentOverride} rounds={rounds} />
+        <HomeHighlightsToggle {...props} />
 
         <div className="mt-6 space-y-6 sm:mt-10 sm:space-y-10">
           <NewsSection />

@@ -1,4 +1,4 @@
-import { getSeasonCatalog } from "@/lib/data/seasonCatalog";
+import { getSeasonCatalog, getSeasonTournament } from "@/lib/data/seasonCatalog";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -18,23 +18,30 @@ import { combinedHandicapIndexes } from "@/lib/handicap/archiveIndex";
 import { formatHandicapIndex } from "@/lib/handicap/format";
 import { Avatar } from "@/components/ui/Avatar";
 import { get2026Skins, SKINS_YEAR } from "@/lib/skins/data";
+import { pastTournaments as historicalTournaments } from "@/lib/data";
+import { getActiveSeasonYear } from "@/lib/live/activeSeason";
 
-export default async function PortalPage() {
+export default async function PortalPage({ searchParams }: { searchParams: Promise<{ previewPlayer?: string }> }) {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase.from("profiles").select("is_host, player_slug, display_name, username").eq("id", user.id).single();
   if (!profile || (!profile.is_host && !profile.player_slug)) redirect("/");
-  if (profile.is_host) redirect("/portal/admin");
+  const { previewPlayer } = await searchParams;
+  const preview = profile.is_host && typeof previewPlayer === "string"
+    ? (await getAllPlayerRows()).find(player => player.playerSlug === previewPlayer) : undefined;
+  if (profile.is_host && !preview) redirect("/portal/admin");
 
-  const playerSlug = profile.player_slug!;
+  const playerSlug = preview?.playerSlug ?? profile.player_slug!;
   const playerProfile = getPlayerProfileBySlug(playerSlug);
   const { nextTournament, pastTournaments } = await getSeasonCatalog();
   const year = nextTournament.year;
-  const archivedTournament = pastTournaments.find((tournament) => tournament.year === year);
+  const scoringYear = await getActiveSeasonYear();
+  const archivedTournament = pastTournaments.find((tournament) => tournament.year === year)
+    ?? (historicalTournaments.some(tournament => tournament.year === year) ? await getSeasonTournament(year) : undefined);
   const [team, allPlayers, upcomingMatches, archivedScorecards, handicapSummary, archivedHandicapRounds, skins] = await Promise.all([
-    getLiveTeamForPlayer(playerSlug),
+    archivedTournament ? Promise.resolve(archivedTournament.roster.maroon.includes(playerSlug) ? "maroon" as const : archivedTournament.roster.white.includes(playerSlug) ? "white" as const : null) : getLiveTeamForPlayer(playerSlug),
     getAllPlayerRows(),
     archivedTournament ? Promise.resolve([]) : findMatchesForPlayer(playerSlug, year),
     archivedTournament
@@ -61,6 +68,7 @@ export default async function PortalPage() {
   // assigned — so the two screens never show two different numbers.
   const heroHandicapIndex = combinedHandicapIndexes(handicapSummary.rounds, archivedHandicapRounds).index;
   const playerName = allPlayers.find((p) => p.playerSlug === playerSlug)?.fullName ?? profile.display_name ?? "Player";
+  const username = preview?.username ?? profile.username;
   const matches: PortalMatchCard[] = await buildLiveMatchCards(upcomingMatches);
   if (archivedTournament) matches.push(...archivedMatchesForPlayer(archivedTournament, playerSlug, archivedScorecards));
   const teamName = team ? `Team ${team === "maroon" ? "Maroon" : "White"}` : "Unassigned";
@@ -71,6 +79,7 @@ export default async function PortalPage() {
 
   return (
     <main className="w-full">
+      {preview && <p className="bg-gold-100 p-3 text-center text-sm">Tiger viewing {preview.fullName}&apos;s portal. Account actions still use your own Tiger login.</p>}
       <section className="relative isolate overflow-hidden bg-maroon-950">
         <div className="relative aspect-[16/7] min-h-52 sm:min-h-64">
           <Image src="/loading/desktop.png" alt="Maroon Masters course view" fill priority sizes="100vw" className="object-cover" />
@@ -79,7 +88,7 @@ export default async function PortalPage() {
         <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-4 sm:p-6">
           <div className={`flex min-w-0 items-start gap-3 ${heroTextClass}`}>
             <Avatar name={playerName} src={playerProfile?.avatarSrc ?? null} size="md" team={team} />
-            <div className="min-w-0 pt-0.5"><h1 className="truncate font-serif text-2xl font-bold sm:text-3xl">{playerName}</h1><p className="mt-0.5 font-sans text-xs sm:text-sm">{teamName} · @{profile.username}</p></div>
+            <div className="min-w-0 pt-0.5"><h1 className="truncate font-serif text-2xl font-bold sm:text-3xl">{playerName}</h1><p className="mt-0.5 font-sans text-xs sm:text-sm">{teamName} · @{username}</p></div>
           </div>
           <div className="shrink-0 text-right text-white">
             <Link href="/portal/handicap?tab=overall" aria-label={`Overall handicap: ${formatHandicapIndex(heroHandicapIndex)}`} className="font-serif text-4xl font-bold leading-none tabular-nums sm:text-5xl">{formatHandicapIndex(heroHandicapIndex)}</Link>
@@ -94,7 +103,7 @@ export default async function PortalPage() {
         </nav>
       </section>
 
-      <PortalMatches matches={matches} team={team} year={year} />
+      <PortalMatches matches={matches} team={team} year={year} allowScoring={!preview && year === scoringYear} />
 
       <div className={`pt-5 pb-10 ${team === "white" ? "bg-maroon-900" : ""}`}>
       <nav aria-label="Player portal" className="mx-auto max-w-4xl px-4 sm:px-6">

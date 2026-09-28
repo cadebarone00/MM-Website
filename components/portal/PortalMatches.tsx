@@ -80,7 +80,7 @@ function MatchCard({ card }: { card: PortalMatchCard }) {
   );
 }
 
-export function PortalMatches({ matches, team, year }: { matches: PortalMatchCard[]; team: "maroon" | "white" | null; year: number }) {
+export function PortalMatches({ matches, team, year, allowScoring = true }: { matches: PortalMatchCard[]; team: "maroon" | "white" | null; year: number; allowScoring?: boolean }) {
   const { nextTournament } = useSeasonCatalog();
   const track = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
@@ -127,7 +127,7 @@ export function PortalMatches({ matches, team, year }: { matches: PortalMatchCar
     <div key={selected} ref={track} onScroll={(event) => { const node = event.currentTarget; setActive(Math.round(node.scrollLeft / node.clientWidth)); }} className="flex w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {visibleMatches.map((match, index) => <article key={match.id} aria-label={`Match ${index + 1} of ${visibleMatches.length}`} className="flex w-full shrink-0 snap-center flex-col items-center justify-start px-4 py-3">
         <MatchCard card={match} />
-        {match.status === "Live" && <Link href="/portal/scoring/play" className="mt-3 rounded-full border border-current px-5 py-2 text-sm font-semibold">Open live scoring</Link>}
+        {allowScoring && match.status === "Live" && <Link href="/portal/scoring/play" className="mt-3 rounded-full border border-current px-5 py-2 text-sm font-semibold">Open live scoring</Link>}
       </article>)}
     </div>
     {visibleMatches.length > 1 && <div className="flex items-center justify-center gap-3" aria-label="Choose a match">{visibleMatches.map((match, index) => <button key={match.id} type="button" aria-label={`Show match ${index + 1}`} aria-current={active === index ? "true" : undefined} onClick={() => track.current?.scrollTo({ left: index * track.current.clientWidth, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" })} className="flex h-8 w-8 items-center justify-center"><span className={`h-2 rounded-full bg-current transition-all ${active === index ? "w-6" : "w-2 opacity-30"}`} /></button>)}</div>}

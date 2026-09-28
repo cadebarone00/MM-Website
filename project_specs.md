@@ -915,6 +915,36 @@ All pages are public, no auth.
   Format, Matchups, Career Stats, the public leaderboard/schedule) load
   without a 500.
 
+### Sign-out confirmation + return home (proposed, awaiting approval)
+
+**What changes:** Signing out is the same for every account type (player,
+normal fan account, and Tiger/host) and from every place a sign-out button
+exists today — the desktop/footer account dropdown (`components/AccountBadge.tsx`,
+also used by the Player Portal / Tiger Center header) and the mobile account
+menu (`components/nav/AccountMenu.tsx`).
+
+1. Clicking Sign Out / Log Out no longer signs out right away. A box pops up in
+   the middle of the screen (dimmed background behind it) that says
+   **"Are you sure?"** and **"Any unsaved data will not be stored."**
+2. Two buttons: **Sign Out** (red) and **Cancel**. Cancel (or clicking the dimmed
+   background / pressing Esc) closes the box and nothing happens.
+3. Sign Out ends the session (existing `/api/auth/signout`) and then does a full
+   page load of the home page `/`, so the person lands on the home screen as a
+   signed-out guest — even if they were inside `/portal` (Player Portal or Tiger
+   Center) or any other page.
+
+**How:** one new shared popup component `components/SignOutConfirmDialog.tsx`
+(same look/pattern as the existing "round in progress" popup), used by both
+sign-out buttons. `signOutAccount()` in `lib/useAccountSession.ts` gets the
+"go to home" step so every caller behaves the same.
+
+**Tech / data:** no new pages, no database or Supabase changes, no new services.
+
+**Done when:** from the dropdown and the mobile menu, Sign Out shows the popup;
+Cancel keeps you signed in where you were; Sign Out lands you on `/` signed out
+(header shows Login / Sign Up), including when started from the Player Portal or
+Tiger Center. Type-check, lint, tests and build pass.
+
 ## Known gaps / not yet built
 
 - **Live scoring lifecycle — spec v3 written, not built.** See

@@ -31,6 +31,10 @@ export default async function TigerCenterPage() {
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-12 sm:px-7">
       <h1 className="font-serif text-3xl font-bold text-ink-900">The Tiger Center</h1>
+      <div className="my-5 flex flex-wrap gap-3">
+        <Link href="/portal/admin/website-editor" className="rounded-lg bg-maroon-700 px-5 py-3 font-semibold text-white">Website editor</Link>
+        <Link href="/portal/admin/website-settings" className="rounded-lg border border-gold-400 px-5 py-3 font-semibold">Website settings</Link>
+      </div>
       <TestSeasonPanel activeYear={activeYear} />
       {startable && <StartSessionBanner session={startable} />}
       <MatchCloseoutCards />

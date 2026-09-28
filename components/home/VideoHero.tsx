@@ -11,7 +11,7 @@ function isSet(value: string): boolean {
 }
 
 export function VideoHero({ nextTournamentOverride }: { nextTournamentOverride: NextTournamentOverride }) {
-  const { latestCompleted, nextTournament, isLiveNow } = useSeasonCatalog();
+  const { latestCompleted, nextTournament, isLiveNow, selectedYear } = useSeasonCatalog();
   const live = isLiveNow();
   const champ = champion(latestCompleted);
   const nextVenueKnown = isSet(nextTournamentOverride.venue);
@@ -36,10 +36,15 @@ export function VideoHero({ nextTournamentOverride }: { nextTournamentOverride: 
 
       <div className="relative z-10 h-full max-w-[1200px] mx-auto px-4 flex flex-col items-start justify-end pb-4 sm:px-7 sm:pb-10 lg:pb-16">
         <div className="font-condensed text-[9px] font-semibold tracking-eyebrow uppercase text-gold-300 mb-1 sm:text-[13px] sm:mb-4">
-          {live ? `${nextTournament.editionLabel} · Underway` : `${latestCompleted.editionLabel} · Final`}
+          {live ? `${nextTournament.editionLabel} · Underway` : selectedYear != null ? nextTournament.editionLabel : `${latestCompleted.editionLabel} · Final`}
         </div>
 
-        {live ? (
+        {selectedYear != null && !live ? (
+          <>
+            <h1 className="mb-3 font-serif text-3xl font-bold text-cream-50 sm:text-5xl">{nextTournament.editionLabel}</h1>
+            <p className="mb-5 text-maroon-100">{nextTournamentOverride.venue} · {nextTournamentOverride.dateLabel}</p>
+          </>
+        ) : live ? (
           <>
             <h1 className="font-serif text-xl font-bold leading-[1.1] tracking-tighter text-cream-50 mb-1 sm:text-4xl sm:mb-3 lg:text-[58px] lg:mb-[18px]">It&rsquo;s Underway.</h1>
             <p className="font-sans text-[11px] leading-snug text-maroon-100 mb-2 max-w-[280px] sm:text-base sm:leading-relaxed sm:mb-5 sm:max-w-[420px] lg:text-lg lg:mb-7 lg:max-w-[480px]">
