@@ -26,5 +26,8 @@ export async function GET() {
   const stateById = new Map((states ?? []).map((state) => [state.match_box_id as string, state]));
   const oddsById = new Map<string, unknown>();
   for (const snapshot of odds ?? []) if (!oddsById.has(snapshot.match_box_id as string)) oddsById.set(snapshot.match_box_id as string, snapshot);
-  return NextResponse.json({ ok: true, matches: (matches ?? []).map((match) => ({ match, officialState: stateById.get(match.id as string) ?? null, odds: oddsById.get(match.id as string) ?? null, submittedPlayers: submittedById.get(match.id as string) ?? [] })) }, { headers: { "Cache-Control": "no-store" } });
+  // Latest price published before a ball was struck (thru 0) — the projected page's history uses it.
+  const openingById = new Map<string, unknown>();
+  for (const snapshot of odds ?? []) if (snapshot.state_thru === 0 && !openingById.has(snapshot.match_box_id as string)) openingById.set(snapshot.match_box_id as string, snapshot);
+  return NextResponse.json({ ok: true, matches: (matches ?? []).map((match) => ({ match, officialState: stateById.get(match.id as string) ?? null, odds: oddsById.get(match.id as string) ?? null, openingOdds: openingById.get(match.id as string) ?? null, submittedPlayers: submittedById.get(match.id as string) ?? [] })) }, { headers: { "Cache-Control": "no-store" } });
 }

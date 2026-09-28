@@ -2,7 +2,10 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { fmtPt } from "@/lib/data";
 import { getPlayerDisplayName } from "@/lib/data/players";
-import type { Tournament } from "@/lib/data/types";
+import type { RealMatch, Tournament } from "@/lib/data/types";
+import { historicalOddsSeries } from "@/lib/data/tournamentProbability";
+import { TournamentOddsGraph } from "./TournamentOddsGraph";
+import styles from "@/components/match/MatchTimeline.module.css";
 
 type PointRow = { name: string; points: number };
 
@@ -17,78 +20,30 @@ function playerPoints(tournament: Tournament, team: "maroon" | "white"): PointRo
   return roster.map((slug) => ({ name: getPlayerDisplayName(slug), points: points.get(slug) ?? 0 })).sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
 }
 
-/**
- * A completed historical tournament has no remaining uncertainty. Earlier
- * points on the line use the score margin and matches remaining to show how
- * the team's eventual chance tightened; the final sample is always 100% for
- * the confirmed winner. Live seasons will replace these historical samples
- * with odds snapshots as official match odds are published.
- */
-function probabilitySeries(tournament: Tournament): number[] {
-  let maroon = 0;
-  let white = 0;
-  const sessions = [...new Map(tournament.matches.map((match) => [`${match.day}:${match.session}`, match])).keys()];
-  const samples: number[] = [];
-  sessions.forEach((session, index) => {
-    tournament.matches.filter((match) => `${match.day}:${match.session}` === session).forEach((match) => { maroon += match.maroonPts; white += match.whitePts; });
-    const remaining = sessions.length - index - 1;
-    samples.push(remaining === 0 ? (maroon > white ? 100 : maroon < white ? 0 : 50) : Math.max(1, Math.min(99, 50 + ((maroon - white) / Math.max(1, Math.sqrt(remaining) * 0.85)) * 15)));
-  });
-  return samples;
+/** Rounds in play order (day, then Morning before Afternoon), each holding its match results. */
+function roundResults(tournament: Tournament): ("maroon" | "white" | "tie" | null)[][] {
+  const order = (match: RealMatch) => match.day * 2 + (match.session === "Afternoon" ? 1 : 0);
+  const keys = [...new Set(tournament.matches.map(order))].sort((a, b) => a - b);
+  return keys.map((key) => tournament.matches.filter((match) => order(match) === key).map((match) => match.status && match.status !== "final" ? null : match.maroonPts > match.whitePts ? "maroon" : match.maroonPts < match.whitePts ? "white" : "tie"));
 }
 
-function ProbabilityGraph({ tournament }: { tournament: Tournament }) {
-  const samples = probabilitySeries(tournament);
-  const width = 1000;
-  const height = 340;
-  const padding = { left: 50, right: 20, top: 25, bottom: 40 };
-  const point = (value: number, index: number) => {
-    const x = padding.left + (index / Math.max(1, samples.length - 1)) * (width - padding.left - padding.right);
-    const y = padding.top + ((100 - value) / 100) * (height - padding.top - padding.bottom);
-    return `${x},${y}`;
-  };
-  const path = samples.map(point).join(" ");
-  const chartHeight = height - padding.top - padding.bottom;
-  const centerY = padding.top + chartHeight / 2;
-  const final = samples.at(-1) ?? 50;
-  const favorite = final >= 50 ? "Maroon" : "White";
-  const favoriteProbability = Math.round(favorite === "Maroon" ? final : 100 - final);
-
+function ProbabilityCard({ tournament }: { tournament: Tournament }) {
+  const rounds = roundResults(tournament);
+  const finished = tournament.matches.length > 0 && rounds.every((round) => round.every(Boolean));
+  const winner = tournament.maroonPts > tournament.whitePts ? "maroon" : tournament.maroonPts < tournament.whitePts ? "white" : null;
   return (
-    <section className="border-y border-ink-200 bg-cream-50 p-4 text-ink-900 shadow-sm sm:rounded-md sm:border sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <>
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="font-condensed text-2xs font-bold uppercase tracking-eyebrow text-ink-500">Tournament Win Probability</p>
           <h1 className="mt-1 font-serif text-xl font-bold sm:text-3xl">{tournament.editionLabel}</h1>
         </div>
-        <div className="flex gap-4 text-right">
-          <div><div className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Projected points</div><div className="mt-1 font-sans text-2xl font-black"><span className="text-maroon-700">{fmtPt(tournament.maroonPts)}</span><span className="mx-2 text-ink-300">–</span>{fmtPt(tournament.whitePts)}</div></div>
-          <div className="border-l border-ink-200 pl-4"><div className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">{favorite} win probability</div><div className={`mt-1 font-sans text-3xl font-black ${favorite === "Maroon" ? "text-maroon-700" : "text-ink-900"}`}>{favoriteProbability}%</div></div>
-        </div>
+        <div className="text-right"><div className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Points</div><div className="mt-1 font-sans text-2xl font-black"><span className="text-maroon-700">{fmtPt(tournament.maroonPts)}</span><span className="mx-2 text-ink-300">–</span>{fmtPt(tournament.whitePts)}</div></div>
       </div>
-      <div className="mt-5 aspect-video h-auto sm:h-[340px] sm:aspect-auto">
-        <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full" role="img" aria-label="Maroon and White win probability across the tournament">
-          {[100, 75, 50, 25, 0].map((value) => {
-            const y = padding.top + ((100 - value) / 100) * (height - padding.top - padding.bottom);
-            const label = value === 100 ? "MAROON 100%" : value === 0 ? "WHITE 100%" : `${value}%`;
-            return <g key={value}><line x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke={value === 50 ? "#91877b" : "#d9d5cd"} strokeDasharray={value === 50 ? undefined : "4 6"} /><text x="8" y={y + 4} fill={value === 100 ? "var(--color-maroon-700)" : "#6e645b"} fontSize={value === 100 || value === 0 ? "17" : "22"} fontWeight={value === 100 || value === 0 ? "700" : undefined}>{label}</text></g>;
-          })}
-          {samples.slice(0, -1).map((value, index) => {
-            const next = samples[index + 1];
-            const x1 = padding.left + (index / Math.max(1, samples.length - 1)) * (width - padding.left - padding.right);
-            const x2 = padding.left + ((index + 1) / Math.max(1, samples.length - 1)) * (width - padding.left - padding.right);
-            const y1 = padding.top + ((100 - value) / 100) * chartHeight;
-            const y2 = padding.top + ((100 - next) / 100) * chartHeight;
-            const maroonLeads = (value + next) / 2 >= 50;
-            return <polygon key={`${value}-${index}`} points={`${x1},${centerY} ${x1},${y1} ${x2},${y2} ${x2},${centerY}`} fill={maroonLeads ? "var(--color-maroon-500)" : "#ffffff"} opacity={maroonLeads ? ".30" : ".78"} />;
-          })}
-          <polyline points={path} fill="none" stroke="#1a1513" strokeWidth="7" strokeLinejoin="round" strokeLinecap="round" />
-          <circle cx={Number(path.split(" ").at(-1)?.split(",")[0])} cy={Number(path.split(" ").at(-1)?.split(",")[1])} r="9" fill={favorite === "Maroon" ? "var(--color-maroon-700)" : "#1a1513"} />
-          {Array.from({ length: 8 }, (_, index) => <text key={index} x={padding.left + (index / 7) * (width - padding.left - padding.right)} y={height - 8} textAnchor="middle" fill="#6e645b" fontSize="20">R{index + 1}</text>)}
-          <text x={width - padding.right} y={padding.top + 18} textAnchor="end" fill="#6e645b" fontSize="20">FINAL</text>
-        </svg>
-      </div>
-    </section>
+      <div className={styles.mobileGraph}><div className={styles.probabilityCard}>
+        <TournamentOddsGraph points={historicalOddsSeries(rounds)} rounds={rounds.length} result={finished && winner ? { winner, label: `${fmtPt(tournament.maroonPts)}–${fmtPt(tournament.whitePts)}` } : undefined} note="No odds were saved this year, so each point counts finished rounds as their real results and every later match as even." emptyNote="No matches are recorded for this tournament yet." />
+      </div></div>
+    </>
   );
 }
 
@@ -130,7 +85,7 @@ export function ProjectedTournamentPage({ tournament }: { tournament: Tournament
   return (
     <main className="mx-auto max-w-[1200px] px-4 py-4 sm:px-7 sm:py-10">
       <Link href={`/leaderboard/${tournament.slug}`} className="inline-flex items-center gap-1 font-condensed text-2xs font-bold uppercase tracking-wide text-maroon-700 hover:text-maroon-900"><ArrowLeft size={15} /> Back to Leaderboard</Link>
-      <div className="mt-3 -mx-4 sm:mx-0 sm:mt-4"><ProbabilityGraph tournament={tournament} /></div>
+      <div className="mt-3 sm:mt-4"><ProbabilityCard tournament={tournament} /></div>
       <div className="mt-5 sm:mt-6"><MobilePointsBoard maroon={maroon} white={white} /><div className="hidden gap-5 lg:grid lg:grid-cols-2"><TeamPoints title="Maroon" rows={maroon} team="maroon" /><TeamPoints title="White" rows={white} team="white" /></div></div>
     </main>
   );

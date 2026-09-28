@@ -291,3 +291,11 @@
 @media (640px <= width < 1024px) {
   .mobileGraph, .mobileCard { margin-inline: -28px; }
 }
+
+/* Tournament (projected) graph: one axis column per round instead of 18 holes. */
+.rounds .holeAxis { grid-template-columns: repeat(var(--rounds), minmax(0, 1fr)); }
+@media (width >= 1024px) {
+  .rounds .timelineGrid { grid-template-columns: var(--match-label-width) minmax(0, 1fr); }
+  .rounds :is(.plot, .holeAxis, .sliderTrack, .resultArea) { grid-column: 2; }
+  .rounds .oddsHeader { margin-right: 0; }
+}
