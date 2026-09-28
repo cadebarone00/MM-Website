@@ -21,6 +21,7 @@ flowchart TD
   %% Session course setup keeps one base rating/slope tee and stores per-hole played tee names/yardages for live scoring display.
   A[Account and player identity] --> P[Player portal]
   A --> T[Tiger Center]
+  %% Tiger Center renders the season timing overview last, after year-specific setup and global tools.
   T <--> WE[Tiger-only website editor]
   WE --> WS[Shared section display settings]
   T --> WS
@@ -190,6 +191,8 @@ Tiger can approve or deny a proposal and can set an override directly. Approved 
 **Flow:** player proposal → pending edit → Tiger decision → approved override → profile display. **Code:** `app/api/portal/profile/route.ts`, `app/api/portal/tiger/profile-edits`, `lib/data/players/overrides.ts`.
 
 ## 6. Tiger Center and tournament preparation
+
+The season timing overview appears last on Tiger Center, after year-specific tournament setup and Global Tools.
 
 **Website editing and shared settings.** Tiger Center now links to /portal/admin/website-editor and /portal/admin/website-settings. Both server pages and the settings API require the existing is_host permission; this is the project's Tiger role, not a separate username check. The editor embeds the actual website at desktop or phone width, lets Tiger select a marked home section or a page, and exposes the same WebsiteSettingsPanel used by the settings page. It also embeds existing Tiger editors for dates/venue, courses/formats/tee times, roster/teams, matchups, players, archive, scoring, odds, wagers and broadcast. Those editors write their original records and preserve existing locks and publication gates. Done and refresh website reloads the public view. SAMEORIGIN framing allows this site to embed itself while rejecting other origins.
 
@@ -504,6 +507,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-28 - Season timing overview moved last (presentation change, implemented locally; deployment not verified).** The overview previously appeared before year-specific setup. It now appears at the bottom of Tiger Center, after Global Tools. Updated Section 6 and the Mermaid annotation; workflow paths are unchanged.
 
 **2026-09-28 - Supplied gold MM home-screen artwork (implemented; deployment not verified).** Replaced the diagonal maroon/white icon with the supplied brushed-gold image featuring maroon and white Ms with gold edges. Apple and Android assets preserve the full artwork at their required sizes. Updated section 3 and the Mermaid annotation; workflow paths are unchanged.
 

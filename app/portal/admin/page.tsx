@@ -38,7 +38,6 @@ export default async function TigerCenterPage() {
       <TestSeasonPanel activeYear={activeYear} />
       {startable && <StartSessionBanner session={startable} />}
       <MatchCloseoutCards />
-      <SeasonOverview initial={overview} />
       <section className="mt-6 rounded-xl border border-gold-300 bg-cream-50 p-5">
         <p className="font-condensed text-2xs font-bold uppercase tracking-[0.16em] text-ink-500">Year-Specific Setup</p>
         <h2 className="mt-1 font-serif text-2xl font-bold text-ink-900">{activeYear} tournament operations</h2>
@@ -60,6 +59,7 @@ export default async function TigerCenterPage() {
           <Link href="/portal/admin/course-library" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-7 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Course Library</Link>
         </div>
       </section>
+      <SeasonOverview initial={overview} />
     </div>
   );
 }
