@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ExpandingPillSelector } from "@/components/ui/ExpandingPillSelector";
 import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 import { pastTournaments } from "@/lib/data";
 import { getPlayerDisplayName } from "@/lib/data/players";
@@ -37,12 +37,14 @@ export function HomeTeamsPanel() {
   return (
     <div>
       <div className="mb-3 flex justify-center">
-        <div className="relative">
-          <select aria-label="Teams year" value={year} onChange={(event) => setSelection({ configuredYear: nextTournament.year, year: Number(event.target.value) })} className="appearance-none rounded-full border border-gold-500 bg-white py-1.5 pl-4 pr-9 font-condensed text-sm font-bold text-maroon-700 focus-visible:outline-2 focus-visible:outline-maroon-700">
-            {years.map((value) => <option key={value} value={value}>{value}</option>)}
-          </select>
-          <ChevronDown aria-hidden size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-maroon-700" />
-        </div>
+        <ExpandingPillSelector
+          activeLabel={String(year)}
+          items={years.map((value) => ({ value, label: String(value) }))}
+          activeValue={year}
+          onSelect={(value) => setSelection({ configuredYear: nextTournament.year, year: value })}
+          expandedMaxWidth="max-w-[min(32rem,60vw)]"
+          scrollable
+        />
       </div>
       <div className="flex overflow-hidden rounded-sm">
         <div className="flex-1 bg-maroon-700 py-1.5 text-center font-condensed text-2xs font-bold uppercase tracking-eyebrow text-white">Maroon</div>

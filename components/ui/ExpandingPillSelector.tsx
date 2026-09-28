@@ -13,12 +13,14 @@ export function ExpandingPillSelector<T extends string | number>({
   activeValue,
   onSelect,
   expandedMaxWidth = "max-w-40",
+  scrollable = false,
 }: {
   activeLabel: string;
   items: ExpandingPillSelectorItem<T>[];
   activeValue: T;
   onSelect: (value: T) => void;
   expandedMaxWidth?: string;
+  scrollable?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -42,7 +44,7 @@ export function ExpandingPillSelector<T extends string | number>({
       >
         {activeLabel}
       </button>
-      <div className={["flex overflow-hidden transition-[max-width,opacity,margin] duration-200 ease-out", open ? `ml-1 ${expandedMaxWidth} opacity-100` : "max-w-0 opacity-0"].join(" ")}>
+      <div className={["flex transition-[max-width,opacity,margin] duration-200 ease-out", open && scrollable ? "overflow-x-auto" : "overflow-hidden", open ? `ml-1 ${expandedMaxWidth} opacity-100` : "max-w-0 opacity-0"].join(" ")}>
         {items.map((item) => (
           <button
             key={item.value}

@@ -8,6 +8,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
+  %% Home Teams year pill uses the Match Play expanding selector: inline year choices, collapse on selection or outside click, scrolling for longer year lists.
   %% Home Teams year pill selects archived 2024-2026 rosters or confirmed native assignments; ten-second refresh restores team-specific TBD slots up to six per side.
   %% Page and major section titles share the official Spectral Bold Maroon Masters title font.
   %% Home-screen bookmarks use the supplied metallic gold artwork with a maroon left M and white right M; Apple icon metadata and Android manifest supply resized PNG assets.
@@ -139,7 +140,7 @@ For example, in September 2026, My Matches can correctly show 2026 matches as Pa
 
 ## 3. Public website and navigation
 
-The home Teams panel starts on the configured home_teams display year. A year pill above the Maroon/White bar offers the checked-in 2024-2026 archived rosters and native years with locked player assignments (excluding test year 2034). The configured year remains available even when empty. Visitor selection stays local to the panel and does not change shared settings. Native rosters read live_roster joined to live_roster_assignment_locks by year and player, refreshing every ten seconds. Each team shows six slots, with Maroon Player TBD or White Player TBD for vacancies; removing or unlocking an assignment restores its placeholder. Loading and failed requests are identified without presenting an unavailable roster as an empty confirmed one.
+The home Teams panel starts on the configured home_teams display year. A year pill above the Maroon/White bar offers the checked-in 2024-2026 archived rosters and native years with locked player assignments (excluding test year 2034). The configured year remains available even when empty. The pill uses the shared Match Play selector: clicking expands inline year buttons, selection or an outside click closes them, and longer lists scroll horizontally. Visitor selection stays local to the panel and does not change shared settings. Native rosters read live_roster joined to live_roster_assignment_locks by year and player, refreshing every ten seconds. Each team shows six slots, with Maroon Player TBD or White Player TBD for vacancies; removing or unlocking an assignment restores its placeholder. Loading and failed requests are identified without presenting an unavailable roster as an empty confirmed one.
 
 Home-screen bookmarks use the supplied metallic gold artwork: a maroon left M and white right M with raised gold edges on a brushed gold background. The full square image is resized without cropping or redesign. `app/apple-icon.png` supplies Apple's 180px touch icon; `app/manifest.ts` supplies Android/browser 192px and 512px PNG icons from `public/icons`. The manifest retains browser display mode; this change does not add offline support or redesign the installed layout. Device launchers may apply their own masks. Existing saved icons may need to be removed and re-added after deployment.
 
@@ -510,6 +511,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-28 - Match Play-style Teams year pill (implemented locally; deployment not verified).** Replaced the home Teams native year dropdown with the shared Match Play expanding pill. Clicking the active year reveals inline year buttons; selecting one or clicking outside collapses the choices. Longer year lists scroll within the expanded pill. Archived rosters, confirmed-player eligibility, and six-slot placeholders remain unchanged. Updated section 3 and the Mermaid annotation; workflow paths and overview mappings are unchanged.
 
 **2026-09-28 - Home Teams year picker and roster placeholders (implemented locally; deployment not verified).** Previously Home Teams showed only the configured roster and hid the team bars when empty. It now starts on the configured home Teams year, with a pill between the Teams selector and team bars offering 2024-2026 archives and native years with confirmed players. Each side fills its six slots with named players or Maroon/White Player TBD; ten-second polling replaces placeholders when assignments are confirmed and restores them when removed or unlocked. Updated section 3 and the Mermaid annotation; overview paths and mappings are unchanged.
 
