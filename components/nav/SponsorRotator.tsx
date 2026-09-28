@@ -42,7 +42,7 @@ export function SponsorRotator({ variant }: { variant: "desktop" | "mobile" }) {
       height={sponsor.logoHeight}
       className={[
         "w-auto transition-opacity ease-in-out",
-        variant === "desktop" ? "h-7" : "h-4",
+        variant === "desktop" ? "h-7" : "h-5",
         visible ? "opacity-100" : "opacity-0",
       ].join(" ")}
       style={{ transitionDuration: `${FADE_MS}ms` }}

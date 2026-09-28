@@ -10,4 +10,5 @@ export type Sponsor = {
 
 export const SPONSORS: Sponsor[] = [
   { name: "DCS Logo", logoSrc: "/sponsors/dcs-logo.png", logoWidth: 380, logoHeight: 105 },
+  { name: "Test Sponsor", logoSrc: "/sponsors/dcs-logo.png", logoWidth: 380, logoHeight: 105 },
 ];
