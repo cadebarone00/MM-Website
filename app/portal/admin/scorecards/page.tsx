@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { pastTournaments, latestCompleted, playersOf } from "@/lib/data";
-import { getPlayerDisplayName, getPlayerProfile } from "@/lib/data/players";
+import { getPlayerDisplayName, getPlayerSlug } from "@/lib/data/players";
+import { getPlayerNameMap } from "@/lib/portal/allPlayers";
 import { YearPicker } from "@/components/portal/tiger/YearPicker";
 import { getArchivedTournamentRounds } from "@/lib/data/archivedScorecards";
 import { getCourseLibraryForHandicap } from "@/lib/handicap/data";
@@ -19,9 +20,10 @@ export default async function ScorecardsYearPickerPage({ searchParams }: { searc
 
   const { tournament: tournamentSlug } = await searchParams;
   const activeTournament = pastTournaments.find((t) => t.slug === tournamentSlug) ?? latestCompleted;
-  const [archiveRounds, courses] = await Promise.all([
+  const [archiveRounds, courses, nameMap] = await Promise.all([
     getArchivedTournamentRounds(activeTournament.slug),
     getCourseLibraryForHandicap(true),
+    getPlayerNameMap(),
   ]);
 
   return (
@@ -34,8 +36,7 @@ export default async function ScorecardsYearPickerPage({ searchParams }: { searc
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
         {playersOf(activeTournament).map(({ name, team }) => {
-          const slug = getPlayerProfile(name)?.slug;
-          if (!slug) return null;
+          const slug = getPlayerSlug(name);
           return (
             <Link
               key={name}
@@ -45,7 +46,7 @@ export default async function ScorecardsYearPickerPage({ searchParams }: { searc
                 team === "maroon" ? "border-maroon-700 bg-maroon-50 text-maroon-700 hover:bg-maroon-100" : "border-ink-300 bg-white text-ink-900 hover:bg-cream-100",
               ].join(" ")}
             >
-              {getPlayerDisplayName(name)}
+              {nameMap[slug] ?? getPlayerDisplayName(name)}
             </Link>
           );
         })}

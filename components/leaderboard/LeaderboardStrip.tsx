@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import { getPlayerAvatar, getPlayerDisplayName, getPlayerLastName } from "@/lib/data/players";
+import { usePlayerNameMap } from "@/lib/data/players/usePlayerNameMap";
 import type { Tournament } from "@/lib/data/types";
 import { placementLabel } from "@/lib/leaderboard/placement";
 
@@ -14,6 +17,9 @@ function scoreLabel(toPar: number): string {
 
 /** Ranked player-strip, winner first, horizontally scrollable (native scroll — touch swipe on mobile, trackpad/shift-scroll on desktop). */
 export function LeaderboardStrip({ tournament }: { tournament: Tournament }) {
+  const nameBySlug = usePlayerNameMap();
+  const displayName = (slug: string) => nameBySlug[slug] ?? getPlayerDisplayName(slug);
+  const lastName = (slug: string) => getPlayerLastName(nameBySlug[slug] ?? slug);
   const ranked = [...tournament.individualLeaderboard].sort((a, b) => a.toPar - b.toPar);
 
   if (ranked.length === 0) return null;
@@ -27,13 +33,13 @@ export function LeaderboardStrip({ tournament }: { tournament: Tournament }) {
           className="flex w-[60px] shrink-0 flex-col items-center gap-1 text-center hover:opacity-80 transition-opacity sm:w-14"
         >
           <span className="relative inline-flex">
-            <Avatar name={getPlayerDisplayName(entry.player)} src={getPlayerAvatar(entry.player)} size="lg" team={entry.team} />
+            <Avatar name={displayName(entry.player)} src={getPlayerAvatar(entry.player)} size="lg" team={entry.team} />
             <span className="absolute -top-1 -right-1 inline-flex items-center justify-center rounded-full bg-maroon-700 px-1.5 py-0.5 font-score text-[10px] font-bold text-white shadow">
               {scoreLabel(entry.toPar)}
             </span>
           </span>
           <span className="font-sans text-[11px] font-semibold text-ink-900 truncate w-full">
-            {posLabel(i, ranked)}. {getPlayerLastName(entry.player)}
+            {posLabel(i, ranked)}. {lastName(entry.player)}
           </span>
         </Link>
       ))}

@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import { ResultChevron } from "@/components/match/ResultChevron";
 import { matchStatus, matchLeader, liveLabel } from "@/components/leaderboard/matchUtils";
 import { getPlayerDisplayName } from "@/lib/data/players";
+import { usePlayerNameMap } from "@/lib/data/players/usePlayerNameMap";
 import { matchPropMarkets } from "@/lib/wagers/mockOdds";
 import { MatchWinnerCard } from "./MatchWinnerCard";
 import { PropBetRow } from "./PropBetRow";
@@ -16,6 +19,7 @@ function TeamNames({
   tournamentSlug: string;
   align: "left" | "right";
 }) {
+  const nameBySlug = usePlayerNameMap();
   return (
     <div className={["flex flex-1 flex-col gap-1", align === "right" ? "items-end text-right" : "items-start text-left"].join(" ")}>
       {players.map((player) => (
@@ -24,7 +28,7 @@ function TeamNames({
           href={`/leaderboard/${tournamentSlug}/players/${player.toLowerCase()}`}
           className="font-sans text-base font-semibold text-ink-900 hover:opacity-70"
         >
-          {getPlayerDisplayName(player)}
+          {nameBySlug[player] ?? getPlayerDisplayName(player)}
         </Link>
       ))}
     </div>

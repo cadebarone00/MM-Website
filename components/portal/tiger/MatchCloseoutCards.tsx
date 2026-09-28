@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { getPlayerDisplayName } from "@/lib/data/players";
+import { usePlayerNameMap } from "@/lib/data/players/usePlayerNameMap";
 
 type Entry = { match: { id: string; round: number; box_number: number; maroon_players: string[]; white_players: string[] }; officialState: { status: string; leader: string; margin: number } | null; submittedPlayers: string[] };
 
 export function MatchCloseoutCards() {
+  const nameBySlug = usePlayerNameMap();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +31,7 @@ export function MatchCloseoutCards() {
     <div key={match.id} className="flex flex-wrap items-center justify-between gap-3 rounded bg-white p-3">
       <div>
         <p className="font-sans text-sm font-semibold text-ink-900">Session {match.round}, Match {match.box_number}: {officialState?.leader === "tie" ? "Tied" : `${officialState?.leader} ${officialState?.margin} up`}</p>
-        {waiting.length > 0 && <p className="font-sans text-xs text-ink-500">Waiting on {waiting.map(getPlayerDisplayName).join(", ")} to submit their round</p>}
+        {waiting.length > 0 && <p className="font-sans text-xs text-ink-500">Waiting on {waiting.map((slug) => nameBySlug[slug] ?? getPlayerDisplayName(slug)).join(", ")} to submit their round</p>}
       </div>
       <button type="button" disabled={busy === match.id || waiting.length > 0} onClick={() => closeMatch(match.id)} className="rounded bg-maroon-700 px-3 py-2 font-condensed text-2xs font-bold uppercase text-white disabled:bg-ink-200 disabled:text-ink-500">{busy === match.id ? "Closing…" : "Close Out Match"}</button>
       {waiting.length > 0 && <button type="button" disabled={busy === match.id} onClick={() => closeMatch(match.id)} className="font-condensed text-2xs font-bold uppercase text-maroon-700 underline">Close out anyway</button>}

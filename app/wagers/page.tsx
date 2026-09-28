@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
-import { getPlayerDisplayName, getPlayerProfile, playerProfiles } from "@/lib/data/players";
+import { getPlayerDisplayName, getPlayerSlug, playerProfiles } from "@/lib/data/players";
+import { usePlayerNameMap } from "@/lib/data/players/usePlayerNameMap";
 import { Tabs, type TabItem } from "@/components/ui/Tabs";
 import { ComingSoonNotice } from "@/components/wagers/ComingSoonNotice";
 import { useWagersMode } from "@/components/wagers/WagersModeContext";
@@ -37,6 +38,7 @@ function LinesComingSoon({ label }: { label: string }) {
 }
 
 function PlayersList({ tournament }: { tournament: Tournament }) {
+  const nameBySlug = usePlayerNameMap();
   const playerIds = [...tournament.roster.maroon, ...tournament.roster.white];
   const players = playerIds.length > 0 ? playerIds : playerProfiles.map((player) => player.id);
 
@@ -45,10 +47,10 @@ function PlayersList({ tournament }: { tournament: Tournament }) {
       {players.map((player) => (
         <Link
           key={player}
-          href={`/wagers/players/${getPlayerProfile(player)?.slug ?? player.toLowerCase()}`}
+          href={`/wagers/players/${getPlayerSlug(player)}`}
           className="rounded-sm border border-gold-300 bg-white px-4 py-3 font-sans text-sm font-semibold text-ink-900 transition-colors hover:bg-cream-50"
         >
-          {getPlayerDisplayName(player)}
+          {nameBySlug[getPlayerSlug(player)] ?? getPlayerDisplayName(player)}
         </Link>
       ))}
     </div>

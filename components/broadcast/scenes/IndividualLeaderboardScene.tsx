@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import { getPlayerDisplayName } from "@/lib/data/players";
+import { usePlayerNameMap } from "@/lib/data/players/usePlayerNameMap";
 import { ScoreBadge } from "@/components/ui/ScoreBadge";
 import type { BroadcastStanding } from "@/lib/broadcast/types";
 import type { LiveScoreEvent } from "@/lib/broadcast/liveScoreEvent";
@@ -30,6 +33,7 @@ function thruLabel(value: number | null | undefined) {
 }
 
 function MockLeaderboardScene({ elapsedMs, videoDurationMs, seed, animation, forcedEventKind }: { elapsedMs: number; videoDurationMs: number | null; seed: number; animation: { birdieEnabled: boolean; birdieDelayMs: number; rowMoveMs: number } | null; forcedEventKind?: "birdie" | "eagle" | "bogey" }) {
+  const nameBySlug = usePlayerNameMap();
   const cycleMs = getMockRunCycleMs(videoDurationMs ?? undefined);
   const cycle = Math.floor(Math.max(0, elapsedMs) / cycleMs) % 2;
   const timeInCycle = Math.max(0, elapsedMs) % cycleMs;
@@ -93,7 +97,7 @@ function MockLeaderboardScene({ elapsedMs, videoDurationMs, seed, animation, for
                 )}
                 <span className="relative z-10 w-[52px] shrink-0 text-right font-score text-2xl font-bold leading-none tabular-nums text-[color:var(--color-cream-50)]">{row.pos}</span>
                 <span aria-hidden className={["relative z-10 h-2.5 w-2.5 shrink-0 rounded-full", row.team === "maroon" ? "bg-[color:var(--color-maroon-500)]" : "bg-[color:var(--color-cream-100)]"].join(" ")} />
-                <span className="relative z-10 flex-1 truncate font-sans text-xl font-bold uppercase tracking-wide text-[color:var(--color-cream-50)]">{getPlayerDisplayName(row.player)}</span>
+                <span className="relative z-10 flex-1 truncate font-sans text-xl font-bold uppercase tracking-wide text-[color:var(--color-cream-50)]">{nameBySlug[row.player] ?? getPlayerDisplayName(row.player)}</span>
                 <span className={[
                   "relative z-10 inline-flex min-w-[64px] justify-center rounded-md bg-[color:var(--color-cream-50)] px-3 py-1",
                   eventRow && totalChanging ? "mm-broadcast-total-change" : "",
@@ -139,6 +143,7 @@ export function IndividualLeaderboardScene({
   liveEvent?: LiveScoreEvent | null;
   liveEventElapsedMs?: number | null;
 }) {
+  const nameBySlug = usePlayerNameMap();
   if (mockElapsedMs != null) return <MockLeaderboardScene elapsedMs={mockElapsedMs} videoDurationMs={mockVideoDurationMs} seed={mockSeed} animation={mockAnimation} forcedEventKind={mockForcedEventKind} />;
   const rows = rankRows(standings);
 
@@ -224,7 +229,7 @@ export function IndividualLeaderboardScene({
                     ].join(" ")}
                   />
                   <span className="relative z-10 flex-1 truncate font-sans text-xl font-bold uppercase tracking-wide text-[color:var(--color-cream-50)]">
-                    {getPlayerDisplayName(r.player)}
+                    {nameBySlug[r.player] ?? getPlayerDisplayName(r.player)}
                   </span>
                   <span
                     className={[

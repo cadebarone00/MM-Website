@@ -74,13 +74,13 @@ export async function GET(request: Request) {
 
   if (holeSubmissionError) return NextResponse.json({ ok: false, error: "Scoring is temporarily unavailable. Please try again shortly." }, { status: 503 });
 
-  let holes: { number: number; par: number; yards: number }[] = [];
+  let holes: { number: number; par: number; yards: number; teeSetName?: string }[] = [];
   let courseName: string | null = null;
   let rating: number | null = null;
   let slope: number | null = null;
   if (roundState?.course_id) {
     const { data: course } = await service.from("live_courses").select("holes, name, rating, slope").eq("id", roundState.course_id).single();
-    holes = Array.isArray(course?.holes) ? (course.holes as { number: number; par: number; yards: number }[]) : [];
+    holes = Array.isArray(course?.holes) ? (course.holes as { number: number; par: number; yards: number; teeSetName?: string }[]) : [];
     courseName = course?.name ?? null;
     rating = course?.rating ?? null;
     slope = course?.slope ?? null;

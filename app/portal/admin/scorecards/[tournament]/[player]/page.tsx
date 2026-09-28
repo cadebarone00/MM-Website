@@ -3,7 +3,8 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTournament } from "@/lib/data";
 import { getArchivedRoundLabels } from "@/lib/data/archivedScorecards";
-import { getPlayerProfileBySlug, getPlayerDisplayName } from "@/lib/data/players";
+import { getPlayerDisplayName } from "@/lib/data/players";
+import { getPlayerNameMap } from "@/lib/portal/allPlayers";
 import { formatRoundLabel } from "@/lib/data/roundLabel";
 
 export default async function ScorecardsRoundPickerPage({ params }: { params: Promise<{ tournament: string; player: string }> }) {
@@ -17,8 +18,8 @@ export default async function ScorecardsRoundPickerPage({ params }: { params: Pr
 
   const { tournament: tournamentSlug, player: playerSlug } = await params;
   const tournament = getTournament(tournamentSlug);
-  const playerProfile = getPlayerProfileBySlug(playerSlug);
-  if (!tournament || !playerProfile) notFound();
+  const nameMap = await getPlayerNameMap();
+  if (!tournament || !(playerSlug in nameMap)) notFound();
 
   const rounds = await getArchivedRoundLabels(tournamentSlug, playerSlug);
 
@@ -27,7 +28,7 @@ export default async function ScorecardsRoundPickerPage({ params }: { params: Pr
       <Link href={`/portal/admin/scorecards?tournament=${tournamentSlug}`} className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline">
         ← {tournament.editionLabel}
       </Link>
-      <h1 className="mt-2 font-serif text-3xl font-bold text-ink-900">{getPlayerDisplayName(playerSlug)}</h1>
+      <h1 className="mt-2 font-serif text-3xl font-bold text-ink-900">{nameMap[playerSlug] ?? getPlayerDisplayName(playerSlug)}</h1>
 
       {rounds.length === 0 ? (
         <p className="mt-6 font-sans text-sm text-ink-500">No rounds recorded yet for this player in {tournament.editionLabel}.</p>

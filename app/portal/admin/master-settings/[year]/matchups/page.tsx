@@ -2,7 +2,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
-import { playerProfiles } from "@/lib/data/players";
+import { getPlayerNameMap } from "@/lib/portal/allPlayers";
 import { MatchupsPanel, type RosterPlayer } from "@/components/portal/tiger/MatchupsPanel";
 import type { LiveMatch, LiveSessionState, MatchFormat, MatchState } from "@/lib/live/types";
 
@@ -21,7 +21,7 @@ export default async function MatchupsPage({ params }: { params: Promise<{ year:
   if (!profile?.is_host) redirect("/");
 
   const service = createSupabaseServiceRoleClient();
-  const [{ data: sessionRows }, { data: matchRows }, { data: rosterRows }, { data: settingsRow }] = await Promise.all([
+  const [{ data: sessionRows }, { data: matchRows }, { data: rosterRows }, { data: settingsRow }, nameBySlug] = await Promise.all([
     service
       .from("live_round_state")
       .select("round, started, course_id, date, format, course_locked, matchups_locked, match_tee_times")
@@ -35,6 +35,7 @@ export default async function MatchupsPage({ params }: { params: Promise<{ year:
       .order("box_number"),
     service.from("live_roster").select("player_slug, team").eq("season_year", year),
     service.from("live_tournament_settings").select("timezone").eq("season_year", year).maybeSingle(),
+    getPlayerNameMap(),
   ]);
 
   const timezone = settingsRow?.timezone ?? "America/Los_Angeles";
@@ -64,10 +65,8 @@ export default async function MatchupsPage({ params }: { params: Promise<{ year:
     started: b.started,
   }));
 
-  const nameBySlug = new Map(playerProfiles.map((p) => [p.slug, p.fullName]));
   const roster: RosterPlayer[] = (rosterRows ?? [])
-    .filter((r) => nameBySlug.has(r.player_slug))
-    .map((r) => ({ playerSlug: r.player_slug, fullName: nameBySlug.get(r.player_slug)!, team: r.team as "maroon" | "white" }));
+    .map((r) => ({ playerSlug: r.player_slug, fullName: nameBySlug[r.player_slug] ?? r.player_slug, team: r.team as "maroon" | "white" }));
 
   return (
     <div className="mx-auto max-w-[960px] px-4 py-12 sm:px-7">

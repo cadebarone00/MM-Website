@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
 import { pastTournaments } from "@/lib/data";
 import { getPlayerDisplayName, getPlayerAvatar, getPlayerProfile, playerProfiles } from "@/lib/data/players";
+import { getPlayerNameMap } from "@/lib/portal/allPlayers";
 import { getPlayerStatsByYear, playerHasAnyStats } from "@/lib/data/stats";
 import type { Team } from "@/lib/data/types";
 
@@ -42,7 +43,8 @@ export default async function PlayerCareerPage({ params, inPortal = false }: { p
   const playerId = getPlayerProfile(player)?.id ?? player;
   if (!playerHasAnyStats(playerId)) notFound();
 
-  const displayName = getPlayerDisplayName(playerId);
+  const nameBySlug = await getPlayerNameMap();
+  const displayName = nameBySlug[playerId] ?? getPlayerDisplayName(playerId);
   const avatar = getPlayerAvatar(playerId);
   const team = mostRecentTeam(playerId);
   const yearStats = getPlayerStatsByYear(playerId);

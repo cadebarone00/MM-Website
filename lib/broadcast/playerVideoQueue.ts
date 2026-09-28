@@ -1,5 +1,5 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { getPlayerProfileBySlug } from "@/lib/data/players";
+import { getPlayerNameMap } from "@/lib/portal/allPlayers";
 import { r2PublicUrl } from "@/lib/r2/client";
 
 function seasonFromTournamentSlug(slug: string): number | null {
@@ -24,7 +24,7 @@ export async function queuePlayerVideo(input: {
   const seasonYear = seasonFromTournamentSlug(input.tournamentSlug);
   if (!seasonYear) return;
   const service = createSupabaseServiceRoleClient();
-  const profile = getPlayerProfileBySlug(input.playerSlug);
+  const nameMap = await getPlayerNameMap();
 
   const { data: roundRows } = await service
     .from("archived_scorecard_rounds")
@@ -42,7 +42,7 @@ export async function queuePlayerVideo(input: {
     .from("broadcast_player_video_queue")
     .upsert({
       season_year: seasonYear, video_id: input.videoId, tournament_slug: input.tournamentSlug, player_slug: input.playerSlug,
-      player_name: profile?.fullName ?? input.playerSlug, round: input.round, hole: input.hole, shot_number: input.shotNumber,
+      player_name: nameMap[input.playerSlug] ?? input.playerSlug, round: input.round, hole: input.hole, shot_number: input.shotNumber,
       par: input.par, yards: input.yards, score_to_par: scoreToPar, video_url: r2PublicUrl(input.storagePath), status: "queued", queued_at: new Date().toISOString(),
     }, { onConflict: "video_id" })
     .select("id")

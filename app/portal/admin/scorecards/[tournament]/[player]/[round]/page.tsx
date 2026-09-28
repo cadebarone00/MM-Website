@@ -2,7 +2,7 @@
 import { redirect, notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getArchivedRoundScorecard, getShotVideoUrls } from "@/lib/data/archivedScorecards";
-import { getPlayerProfileBySlug } from "@/lib/data/players";
+import { getPlayerNameMap } from "@/lib/portal/allPlayers";
 import { ScorecardEditor } from "@/components/portal/tiger/ScorecardEditor";
 
 export default async function ScorecardEditorPage({ params }: { params: Promise<{ tournament: string; player: string; round: string }> }) {
@@ -16,8 +16,8 @@ export default async function ScorecardEditorPage({ params }: { params: Promise<
 
   const { tournament: tournamentSlug, player: playerSlug, round: roundStr } = await params;
   const round = Number(roundStr);
-  const playerProfile = getPlayerProfileBySlug(playerSlug);
-  if (!playerProfile || !Number.isInteger(round)) notFound();
+  const nameMap = await getPlayerNameMap();
+  if (!(playerSlug in nameMap) || !Number.isInteger(round)) notFound();
 
   const scorecard = await getArchivedRoundScorecard(tournamentSlug, playerSlug, round);
   if (!scorecard) notFound();

@@ -6,6 +6,7 @@ import { PlayerScorecardView } from "./PlayerScorecardView";
 import { DETAIL_POLL_MS, useLiveTournament } from "@/lib/hooks/useLiveTournament";
 
 import { getPlayerSlug, getPlayerDisplayName, getPlayerAvatar, getPlayerProfile } from "@/lib/data/players";
+import { usePlayerNameMap } from "@/lib/data/players/usePlayerNameMap";
 import type { Team } from "@/lib/data/types";
 import { placementValueLabel } from "@/lib/leaderboard/placement";
 
@@ -20,13 +21,14 @@ export function LivePlayerScorecard({
 }) {
   const { nextTournament, isLiveNow } = useSeasonCatalog();
   const { tournament, loading, payload, error } = useLiveTournament(DETAIL_POLL_MS, `/api/live/players/${encodeURIComponent(getPlayerSlug(player))}`);
+  const nameBySlug = usePlayerNameMap();
 
   if (loading && !payload) {
     return <p className="font-sans text-sm text-ink-400 py-10 text-center">Loading confirmed scores...</p>;
   }
 
   const team: Team = tournament.roster.maroon.some((n) => getPlayerSlug(n) === getPlayerSlug(player)) ? "maroon" : "white";
-  const displayName = getPlayerDisplayName(player);
+  const displayName = nameBySlug[getPlayerSlug(player)] ?? getPlayerDisplayName(player);
   const scorecard = tournament.scorecards?.find((s) => getPlayerSlug(s.player) === getPlayerSlug(player));
   const profile = getPlayerProfile(player);
 

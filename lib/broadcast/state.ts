@@ -9,12 +9,13 @@ import { getBroadcastLeaderboard } from "@/lib/broadcast/leaderboardData";
 import { placementValueLabel } from "@/lib/leaderboard/placement";
 import { getNextInQueue } from "@/lib/broadcast/queue";
 import { getPlayerDisplayName, getPlayerProfileBySlug } from "@/lib/data/players";
+import { getPlayerNameMap } from "@/lib/portal/allPlayers";
 import { DEFAULT_SCENE_DURATIONS_MS, type BroadcastConfig, type BroadcastPayload, type BroadcastPlayerVideo, type BroadcastScene, type BroadcastState } from "./types";
 
 const VALID_SCENES: BroadcastScene[] = ["holding", "individual_leaderboard", "match_play"];
 
-function lastName(player: string): string {
-  const name = getPlayerDisplayName(player);
+function lastName(player: string, nameMap: Record<string, string>): string {
+  const name = nameMap[player] ?? getPlayerDisplayName(player);
   return name.split(/\s+/).at(-1) ?? name;
 }
 
@@ -35,6 +36,7 @@ function isBroadcastScene(value: unknown): value is BroadcastScene {
 export async function getBroadcastPayload(): Promise<BroadcastPayload> {
   const seasonYear = await getBroadcastDisplayYear();
   const service = createSupabaseServiceRoleClient();
+  const nameMap = await getPlayerNameMap();
 
   const [{ data: stateRow, error: stateError }, { data: configRow, error: configError }, events] = await Promise.all([
     service
@@ -106,8 +108,8 @@ export async function getBroadcastPayload(): Promise<BroadcastPayload> {
         const margin = official?.margin ?? 0;
         match = {
           team,
-          ownPlayers: (team === "maroon" ? box.maroon_players : box.white_players).map(lastName),
-          opposingPlayers: (team === "maroon" ? box.white_players : box.maroon_players).map(lastName),
+          ownPlayers: (team === "maroon" ? box.maroon_players : box.white_players).map((p: string) => lastName(p, nameMap)),
+          opposingPlayers: (team === "maroon" ? box.white_players : box.maroon_players).map((p: string) => lastName(p, nameMap)),
           ownStatus: margin === 0 ? "AS" : ownLeads ? `${margin} UP` : `${margin} DN`,
           opposingStatus: margin === 0 ? "AS" : opponentLeads ? `${margin} UP` : `${margin} DN`,
         };

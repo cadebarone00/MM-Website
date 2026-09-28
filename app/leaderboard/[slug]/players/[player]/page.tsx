@@ -5,6 +5,7 @@ import { PlayerProfileHeader } from "@/components/scorecard/PlayerProfileHeader"
 import { LivePlayerScorecard } from "@/components/scorecard/LivePlayerScorecard";
 import { pastTournaments, nextTournament, getPlayerScorecard, playersOf } from "@/lib/data";
 import { getPlayerSlug, getPlayerAvatar, getPlayerDisplayName, getPlayerProfile } from "@/lib/data/players";
+import { getPlayerNameMap } from "@/lib/portal/allPlayers";
 import { placementValueLabel } from "@/lib/leaderboard/placement";
 import { getScorecardsForTournament, getShotVideoUrls } from "@/lib/data/archivedScorecards";
 
@@ -46,7 +47,8 @@ export default async function PlayerScorecardPage({
   if (!entry) notFound();
 
   const scorecard = getPlayerScorecard(tournamentWithScorecards, entry.name);
-  const displayName = getPlayerDisplayName(entry.name);
+  const nameMap = await getPlayerNameMap();
+  const displayName = nameMap[getPlayerSlug(entry.name)] ?? getPlayerDisplayName(entry.name);
   const avatar = getPlayerAvatar(entry.name);
 
   const ranked = [...tournamentWithScorecards.individualLeaderboard].sort((a, b) => a.toPar - b.toPar);

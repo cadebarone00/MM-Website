@@ -7,6 +7,8 @@ export interface LiveHole {
   number: number;
   par: number;
   yards: number;
+  teeSetId?: string;
+  teeSetName?: string;
 }
 
 export interface LiveTeeSet {

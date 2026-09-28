@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { getPlayerDisplayName } from "@/lib/data/players";
+import { usePlayerNameMap } from "@/lib/data/players/usePlayerNameMap";
 import { ScoreBadge } from "@/components/ui/ScoreBadge";
 import type { BroadcastStanding } from "@/lib/broadcast/types";
 import { placementLabel } from "@/lib/leaderboard/placement";
@@ -37,6 +38,7 @@ function useShrinkToFit(ref: React.RefObject<HTMLDivElement | null>, watch: stri
 
 /** Bottom-left top-five standings, hidden while the individual board is visible. */
 export function BroadcastTicker({ standings }: { standings: BroadcastStanding[] }) {
+  const nameBySlug = usePlayerNameMap();
   const rowsRef = useRef<HTMLDivElement>(null);
   const top5 = standings.slice(0, 5);
   useShrinkToFit(rowsRef, top5.map((s) => `${s.player}:${s.toPar}`).join(","));
@@ -62,7 +64,7 @@ export function BroadcastTicker({ standings }: { standings: BroadcastStanding[] 
                   {placementLabel(standings, index)}
                 </span>
                 <span className="font-condensed text-[1em] font-bold uppercase leading-none text-[color:var(--color-cream-50)]">
-                  {getPlayerDisplayName(standing.player)}
+                  {nameBySlug[standing.player] ?? getPlayerDisplayName(standing.player)}
                 </span>
                 <ScoreBadge value={standing.toPar} size="lg" style={{ fontSize: "1.15em" }} />
               </div>

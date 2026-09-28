@@ -3,18 +3,20 @@
 import { useParams } from "next/navigation";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
 import { getPlayerDisplayName } from "@/lib/data/players";
+import { usePlayerNameMap } from "@/lib/data/players/usePlayerNameMap";
 import { matchPropMarkets } from "@/lib/wagers/mockOdds";
 import { propMarket } from "@/lib/wagers/marketKeys";
 import { MarketSelectionList } from "@/components/wagers/MarketSelectionList";
 import { ComingSoonNotice } from "@/components/wagers/ComingSoonNotice";
 import { useWagersMode } from "@/components/wagers/WagersModeContext";
 
-function sideLabel(players: string[]): string {
-  return players.map((p) => getPlayerDisplayName(p).split(" ").pop()).join(" & ");
+function sideLabel(players: string[], nameBySlug: Record<string, string>): string {
+  return players.map((p) => (nameBySlug[p] ?? getPlayerDisplayName(p)).split(" ").pop()).join(" & ");
 }
 
 export default function MatchPropsPage() {
   const { matchId } = useParams<{ matchId: string }>();
+  const nameBySlug = usePlayerNameMap();
   const { tournament, loading, payload } = useLiveTournament();
   const { mode } = useWagersMode();
 
@@ -44,7 +46,7 @@ export default function MatchPropsPage() {
   return (
     <div className="px-4 pt-5 sm:px-7">
       <h2 className="m-0 font-serif text-xl font-bold text-ink-900">
-        {sideLabel(match.maroonPlayers)} vs {sideLabel(match.whitePlayers)} — Props
+        {sideLabel(match.maroonPlayers, nameBySlug)} vs {sideLabel(match.whitePlayers, nameBySlug)} — Props
       </h2>
       <div className="mt-4">
         <MarketSelectionList searchPlaceholder="Search a player..." selections={selections} />

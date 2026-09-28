@@ -84,7 +84,7 @@ export function CoursesFormatPanel({
     const data = await res.json();
     if (!data.ok) {
       setError(data.error);
-      return;
+      return false;
     }
     setSessions((current) =>
       current.map((s) => {
@@ -94,15 +94,40 @@ export function CoursesFormatPanel({
           date: patch.date !== undefined ? (date ?? null) : s.date,
           courseId: patch.courseId ?? s.courseId,
           format: patch.format ?? s.format,
-          courseSetup: patch.courseSetup ? { teeSetId: patch.courseSetup.teeSetId, teeSetName: "", holes: s.courseSetup?.holes ?? [], rating: s.courseSetup?.rating ?? null, slope: s.courseSetup?.slope ?? null, holeTeeSetIds: patch.courseSetup.holeTeeSetIds } : patch.courseId ? null : s.courseSetup,
+          courseSetup: patch.courseSetup && (patch.courseId ?? s.courseId)
+            ? (() => {
+              const course = courses.find((entry) => entry.id === (patch.courseId ?? s.courseId));
+              return course ? buildCourseSetup(course, patch.courseSetup.teeSetId, patch.courseSetup.holeTeeSetIds) : s.courseSetup;
+            })()
+            : patch.courseId ? null : s.courseSetup,
           matchTeeTimes: patch.matchTeeTimes ?? s.matchTeeTimes,
         };
       })
     );
+    return true;
   }
 
   function teeSetsFor(course: LiveCourse): LiveTeeSet[] {
     return availableTeeSets(course.teeSets);
+  }
+
+  function buildCourseSetup(course: LiveCourse, teeSetId: string, holeTeeSetIds: Record<string, string>) {
+    const teeSets = teeSetsFor(course);
+    const selected = teeSets.find((tee) => tee.id === teeSetId);
+    if (!selected) return null;
+    const byId = new Map(teeSets.map((tee) => [tee.id, tee]));
+    return {
+      teeSetId: selected.id,
+      teeSetName: selected.name,
+      rating: selected.rating,
+      slope: selected.slope,
+      holeTeeSetIds,
+      holes: selected.holes.map((hole) => {
+        const tee = byId.get(holeTeeSetIds[String(hole.number)]) ?? selected;
+        const override = tee.holes.find((entry) => entry.number === hole.number) ?? hole;
+        return { ...override, teeSetId: tee.id, teeSetName: tee.name };
+      }),
+    };
   }
 
   async function saveCourseSetup(session: LiveSessionState, teeSetId: string, changedHole?: number, changedTeeSetId?: string) {
@@ -111,7 +136,10 @@ export function CoursesFormatPanel({
     const current = session.courseSetup?.teeSetId ?? teeSetId;
     const holeTeeSetIds = changedHole ? { ...(session.courseSetup?.holeTeeSetIds ?? Object.fromEntries(course.holes.map((hole) => [String(hole.number), current]))) } : Object.fromEntries(course.holes.map((hole) => [String(hole.number), teeSetId]));
     if (changedHole && changedTeeSetId) holeTeeSetIds[String(changedHole)] = changedTeeSetId;
-    await updateSession(session.session, { courseId: course.id, courseSetup: { teeSetId, holeTeeSetIds } });
+    const saved = await updateSession(session.session, { courseId: course.id, courseSetup: { teeSetId, holeTeeSetIds } });
+    if (!saved) return;
+    const setup = buildCourseSetup(course, teeSetId, holeTeeSetIds);
+    if (setup) setSessions((current) => current.map((entry) => entry.session === session.session ? { ...entry, courseSetup: setup } : entry));
   }
 
   function updateTeeTimeSlot(session: LiveSessionState, slot: number, value: string) {
@@ -151,6 +179,38 @@ export function CoursesFormatPanel({
     }
     setSessions((current) => current.filter((s) => s.session !== session));
     setRemoveTarget(null);
+  }
+
+  function renderCourseSetup(session: LiveSessionState) {
+    const course = courses.find((entry) => entry.id === session.courseId);
+    if (!course) return null;
+    const teeSets = teeSetsFor(course);
+    if (!teeSets.length) return <p className="mt-4 text-sm text-ink-500">Lock a tee set in the Course Library to make it available for this session.</p>;
+    const selectedTeeId = session.courseSetup?.teeSetId ?? "";
+    const selectedTee = teeSets.find((tee) => tee.id === selectedTeeId);
+    return <div className={`mt-4 border-t pt-3 ${session.courseLocked ? "border-green-200" : "border-gold-200"}`}>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <label className="min-w-48 font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Base tee set
+          <select value={selectedTeeId} disabled={session.courseLocked} onChange={(event) => saveCourseSetup(session, event.target.value)} className={`mt-1 block w-full rounded-sm border px-2 py-2 font-sans text-sm normal-case ${session.courseLocked && selectedTeeId ? "border-green-600 bg-green-50 text-green-900" : "border-gold-300 bg-white text-ink-900"}`}>
+            <option value="" disabled>Choose locked tees</option>
+            {teeSets.map((tee) => <option key={tee.id} value={tee.id}>{tee.name}{tee.rating != null ? ` - ${tee.rating}/${tee.slope ?? "-"}` : ""}</option>)}
+          </select>
+        </label>
+        <span className="font-sans text-xs text-ink-500">{selectedTee ? `${selectedTee.name} remains the rating/slope tee${selectedTee.rating != null ? ` (${selectedTee.rating}/${selectedTee.slope ?? "-"})` : ""}. Per-hole changes only alter played tee, yardage and par display.` : "Choose the rating/slope tee for the session, then adjust individual holes."}</span>
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">{course.holes.map((hole) => {
+        const value = session.courseSetup?.holeTeeSetIds?.[String(hole.number)] ?? selectedTeeId;
+        const tee = teeSets.find((entry) => entry.id === value);
+        const played = tee?.holes.find((entry) => entry.number === hole.number);
+        return <label key={hole.number} className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Hole {hole.number}
+          <select value={value} disabled={session.courseLocked || !selectedTeeId} onChange={(event) => saveCourseSetup(session, selectedTeeId, hole.number, event.target.value)} className={`mt-1 block w-full rounded-sm border px-1 py-1.5 font-sans text-xs normal-case ${session.courseLocked && value ? "border-green-600 bg-green-50 text-green-900" : "border-gold-300 bg-white text-ink-900"}`}>
+            <option value="" disabled>Choose locked tees</option>
+            {teeSets.map((tee) => <option key={tee.id} value={tee.id}>{tee.name} - {tee.holes.find((entry) => entry.number === hole.number)?.yards ?? "-"}</option>)}
+          </select>
+          <span className="mt-0.5 block truncate font-sans text-[10px] font-normal normal-case text-ink-500">{tee?.name ?? "Tee pending"} - {played?.yards ?? "-"} yds - Par {played?.par ?? "-"}</span>
+        </label>;
+      })}</div>
+    </div>;
   }
 
   return (
@@ -268,18 +328,7 @@ export function CoursesFormatPanel({
               <p className="mt-2 font-sans text-xs text-ink-500">Tee times use {initialSettings.timezone.replaceAll("_", " ")}.</p>
             </div>
 
-            {session.courseLocked && session.courseSetup && <div className="mt-3 rounded-lg border-2 border-green-600 bg-green-50 p-3 text-sm text-green-900">Tee setup: {session.courseSetup.teeSetName || courses.find(course => course.id === session.courseId)?.teeSets?.find(tee => tee.id === session.courseSetup?.teeSetId)?.name}<p className="mt-1 text-xs">Locked base tee and per-hole selections</p></div>}
-            {!session.courseLocked && session.courseId && (() => {
-              const course = courses.find((entry) => entry.id === session.courseId);
-              if (!course) return null;
-              const teeSets = teeSetsFor(course);
-              if (!teeSets.length) return <p className="mt-4 text-sm text-ink-500">Lock a tee set in the Course Library to make it available for this session.</p>;
-              const selectedTeeId = session.courseSetup?.teeSetId ?? "";
-              return <div className="mt-4 border-t border-gold-200 pt-3">
-                <div className="flex flex-wrap items-end justify-between gap-3"><label className="min-w-48 font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Base tee set<select value={selectedTeeId} onChange={(event) => saveCourseSetup(session, event.target.value)} className="mt-1 block w-full rounded-sm border border-gold-300 bg-white px-2 py-2 font-sans text-sm normal-case text-ink-900"><option value="" disabled>Choose locked tees</option>{teeSets.map((tee) => <option key={tee.id} value={tee.id}>{tee.name}{tee.rating != null ? ` · ${tee.rating}/${tee.slope ?? "—"}` : ""}</option>)}</select></label><span className="font-sans text-xs text-ink-500">Choose a tee for the whole session, then adjust individual holes below.</span></div>
-                <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">{course.holes.map((hole) => <label key={hole.number} className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Hole {hole.number}<select value={session.courseSetup?.holeTeeSetIds?.[String(hole.number)] ?? selectedTeeId} onChange={(event) => saveCourseSetup(session, selectedTeeId, hole.number, event.target.value)} className="mt-1 block w-full rounded-sm border border-gold-300 bg-white px-1 py-1.5 font-sans text-xs normal-case text-ink-900"><option value="" disabled>Choose locked tees</option>{teeSets.map((tee) => <option key={tee.id} value={tee.id}>{tee.name} · {tee.holes.find((entry) => entry.number === hole.number)?.yards ?? "—"}</option>)}</select></label>)}</div>
-              </div>;
-            })()}
+            {session.courseId && renderCourseSetup(session)}
 
             {removeTarget === session.session && (
               <div className="mt-3 rounded-lg bg-red-50 p-3">

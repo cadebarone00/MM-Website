@@ -1,7 +1,7 @@
 // app/portal/scoring/play/page.tsx
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getPlayerProfileBySlug, playerProfiles } from "@/lib/data/players";
+import { getPlayerNameMap } from "@/lib/portal/allPlayers";
 import { findCurrentSessionForPlayer } from "@/lib/live/currentRoundForPlayer";
 import { ScoringPanel } from "@/components/portal/ScoringPanel";
 
@@ -20,13 +20,13 @@ export default async function ScoringPlayPage() {
   const result = await findCurrentSessionForPlayer(playerSlug);
   if (!result || result.state !== "Live") redirect("/portal/scoring");
 
-  const nameBySlug = new Map(playerProfiles.map((p) => [p.slug, p.fullName]));
+  const nameBySlug = await getPlayerNameMap();
 
   return (
     <div className="mx-auto max-w-[720px] px-4 sm:px-7">
       <ScoringPanel
         playerSlug={playerSlug}
-        playerFullName={getPlayerProfileBySlug(playerSlug)?.fullName ?? playerSlug}
+        playerFullName={nameBySlug[playerSlug] ?? playerSlug}
         round={result.session.session}
         matchBox={{
           id: result.matchBox.id!,
@@ -34,7 +34,7 @@ export default async function ScoringPlayPage() {
           maroonPlayers: result.matchBox.maroonPlayers,
           whitePlayers: result.matchBox.whitePlayers,
         }}
-        nameBySlug={Object.fromEntries(nameBySlug)}
+        nameBySlug={nameBySlug}
       />
     </div>
   );

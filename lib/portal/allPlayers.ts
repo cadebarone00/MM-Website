@@ -51,3 +51,11 @@ export async function getAllPlayerRows(): Promise<PlayerRow[]> {
 
   return [...staticRows, ...dynamicRows];
 }
+
+/** Slug -> current display name, static and dynamic players alike. The one
+ * lookup every page should use instead of the static-only helpers in
+ * lib/data/players, so a name (or a DB-only player) is never missing. */
+export async function getPlayerNameMap(): Promise<Record<string, string>> {
+  const rows = await getAllPlayerRows();
+  return Object.fromEntries(rows.map((row) => [row.playerSlug, row.fullName]));
+}

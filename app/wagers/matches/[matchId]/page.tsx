@@ -3,17 +3,19 @@
 import { useParams } from "next/navigation";
 import { useLiveTournament } from "@/lib/hooks/useLiveTournament";
 import { getPlayerDisplayName } from "@/lib/data/players";
+import { usePlayerNameMap } from "@/lib/data/players/usePlayerNameMap";
 import { matchWinnerMarket } from "@/lib/wagers/marketKeys";
 import { MarketSelectionList } from "@/components/wagers/MarketSelectionList";
 import { ComingSoonNotice } from "@/components/wagers/ComingSoonNotice";
 import { useWagersMode } from "@/components/wagers/WagersModeContext";
 
-function sideLabel(players: string[]): string {
-  return players.map((p) => getPlayerDisplayName(p).split(" ").pop()).join(" & ");
+function sideLabel(players: string[], nameBySlug: Record<string, string>): string {
+  return players.map((p) => (nameBySlug[p] ?? getPlayerDisplayName(p)).split(" ").pop()).join(" & ");
 }
 
 export default function MatchWinnerPage() {
   const { matchId } = useParams<{ matchId: string }>();
+  const nameBySlug = usePlayerNameMap();
   const { tournament, loading, payload } = useLiveTournament();
   const { mode } = useWagersMode();
 
@@ -35,8 +37,8 @@ export default function MatchWinnerPage() {
   }
 
   const market = matchWinnerMarket(tournament.slug, match);
-  const maroonLabel = sideLabel(match.maroonPlayers);
-  const whiteLabel = sideLabel(match.whitePlayers);
+  const maroonLabel = sideLabel(match.maroonPlayers, nameBySlug);
+  const whiteLabel = sideLabel(match.whitePlayers, nameBySlug);
 
   return (
     <div className="px-4 pt-5 sm:px-7">

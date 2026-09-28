@@ -7,6 +7,7 @@ import { TrophyBadge } from "@/components/ui/TrophyBadge";
 import { WinnerBadge } from "@/components/ui/WinnerBadge";
 import { defendingIndividualChampion, getPlayerScorecard } from "@/lib/data";
 import { getPlayerLastName } from "@/lib/data/players";
+import { usePlayerNameMap } from "@/lib/data/players/usePlayerNameMap";
 import type { RoundScorecard, Tournament } from "@/lib/data/types";
 import type { LiveIndividualStanding } from "./LeaderboardBoard";
 import { placementLabel, placementNumber } from "@/lib/leaderboard/placement";
@@ -15,8 +16,8 @@ import { compareLeaderboardOrder } from "@/lib/leaderboard/sort";
 const POS_W = 36;
 const PLAYER_W = 96;
 
-function lastName(player: string): string {
-  return getPlayerLastName(player);
+function lastName(player: string, nameBySlug: Record<string, string>): string {
+  return getPlayerLastName(nameBySlug[player] ?? player);
 }
 
 function thruLabel(round: RoundScorecard | undefined): string {
@@ -39,6 +40,7 @@ function priorRoundNumbers(tournament: Tournament): number[] {
  * They do not borrow a static scorecard, so `Thru` and totals stay truthful
  * while a round is in progress. */
 function LiveIndividualLeaderboardTable({ standings }: { standings: LiveIndividualStanding[] }) {
+  const nameBySlug = usePlayerNameMap();
   const sorted = [...standings].sort(compareLeaderboardOrder);
 
   if (sorted.length === 0) {
@@ -71,7 +73,7 @@ function LiveIndividualLeaderboardTable({ standings }: { standings: LiveIndividu
             return (
               <tr key={standing.player} className={`border-b border-ink-100 last:border-b-0 ${rowBg}`}>
                 <td className="px-3 py-2 text-center font-condensed text-xs font-bold tabular-nums text-ink-900">{placementLabel(sorted, index)}</td>
-                <td className="px-3 py-2 font-sans text-2xs font-bold uppercase text-ink-900 sm:text-xs">{lastName(standing.player)}</td>
+                <td className="px-3 py-2 font-sans text-2xs font-bold uppercase text-ink-900 sm:text-xs">{lastName(standing.player, nameBySlug)}</td>
                 <td className="px-3 py-2 text-center"><ScoreBadge value={standing.toPar} size="sm" /></td>
                 <td className="px-3 py-2 text-center font-sans text-2xs font-semibold text-ink-500">{standing.played}</td>
                 <td className="px-3 py-2 text-center font-sans text-2xs font-semibold tabular-nums text-ink-700">{standing.gross}</td>
@@ -86,6 +88,7 @@ function LiveIndividualLeaderboardTable({ standings }: { standings: LiveIndividu
 
 export function IndividualLeaderboardTable({ tournament, liveStandings }: { tournament: Tournament; liveStandings?: LiveIndividualStanding[] }) {
   const router = useRouter();
+  const nameBySlug = usePlayerNameMap();
 
   if (liveStandings) return <LiveIndividualLeaderboardTable standings={liveStandings} />;
 
@@ -162,7 +165,7 @@ export function IndividualLeaderboardTable({ tournament, liveStandings }: { tour
                         isMaroon ? "text-maroon-700" : "text-ink-900",
                       ].join(" ")}
                     >
-                      {lastName(p.player)}
+                      {lastName(p.player, nameBySlug)}
                     </span>
                     {champion === p.player && <TrophyBadge count={1} />}
                     {tournament.individualChampion === p.player && <WinnerBadge />}

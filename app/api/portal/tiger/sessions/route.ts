@@ -92,7 +92,7 @@ export async function POST(request: Request) {
     const holes = selected.holes.map((hole) => {
       const tee = byId.get(courseSetup.holeTeeSetIds[String(hole.number)]) ?? selected;
       const override = tee.holes.find((candidate) => candidate.number === hole.number);
-      return override ?? hole;
+      return { ...(override ?? hole), teeSetId: tee.id, teeSetName: tee.name };
     });
     update.course_setup = { teeSetId: selected.id, teeSetName: selected.name, holes, rating: selected.rating, slope: selected.slope, holeTeeSetIds: courseSetup.holeTeeSetIds };
   }

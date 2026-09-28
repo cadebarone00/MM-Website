@@ -5,6 +5,7 @@ import type { RealMatch, Tournament } from "@/lib/data/types";
 import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
 import { effectiveMatchState, matchBoxResult, matchBoxStartedThru } from "@/lib/live/orchestration";
 import { getPlayerDisplayName } from "@/lib/data/players";
+import { getPlayerNameMap } from "@/lib/portal/allPlayers";
 import type { MatchState } from "@/lib/live/types";
 import type { BroadcastTeam } from "./types";
 import { buildLiveTournamentSnapshot } from "./liveSnapshot";
@@ -54,11 +55,12 @@ function archivedMatchState(status: RealMatch["status"]): MatchState {
 }
 
 /** A finished tournament's real match results, for previewing the look (see the spec addendum on Broadcast Controls' display-year picker) — the most recent day's matches, since a whole event's worth in one scene would be too dense. */
-function archivedMatchPlay(tournament: Tournament): BroadcastMatchPlay {
+function archivedMatchPlay(tournament: Tournament, nameMap: Record<string, string>): BroadcastMatchPlay {
   if (tournament.matches.length === 0) return { seasonYear: tournament.year, roundLabel: null, matchBoxes: [], maroonPts: 0, whitePts: 0, final: true };
 
   const lastDay = Math.max(...tournament.matches.map((m) => m.day));
   const dayMatches = tournament.matches.filter((m) => m.day === lastDay);
+  const displayName = (slug: string) => nameMap[slug] ?? getPlayerDisplayName(slug);
 
   const matchBoxes: BroadcastMatchBox[] = dayMatches.map((m, i) => ({
     id: m.id,
@@ -66,8 +68,8 @@ function archivedMatchPlay(tournament: Tournament): BroadcastMatchPlay {
     format: m.format,
     state: archivedMatchState(m.status),
     thru: m.thru != null ? (m.thru >= 18 ? "Final" : `Thru ${m.thru}`) : "",
-    maroonNames: m.maroonPlayers.map(getPlayerDisplayName),
-    whiteNames: m.whitePlayers.map(getPlayerDisplayName),
+    maroonNames: m.maroonPlayers.map(displayName),
+    whiteNames: m.whitePlayers.map(displayName),
     // `RealMatch.leader` isn't actually populated in the static data files
     // either (checked, same as `status` above) — derived from the real
     // points instead, same as the live path's matchBoxResult() does.
@@ -82,8 +84,9 @@ function archivedMatchPlay(tournament: Tournament): BroadcastMatchPlay {
   return { seasonYear: tournament.year, roundLabel: `Day ${lastDay}`, matchBoxes, maroonPts, whitePts, final: true };
 }
 
-async function liveMatchPlay(seasonYear: number): Promise<BroadcastMatchPlay> {
+async function liveMatchPlay(seasonYear: number, nameMap: Record<string, string>): Promise<BroadcastMatchPlay> {
   const service = createSupabaseServiceRoleClient();
+  const displayName = (slug: string) => nameMap[slug] ?? getPlayerDisplayName(slug);
   const snapshot = await buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true });
   const liveRounds = snapshot.matchBoxes.filter((box) => effectiveMatchState(snapshot, box) === "Live").map((box) => box.session);
   const finishedRounds = [...new Set(snapshot.matchBoxes.map((box) => box.session))].filter((round) => {
@@ -117,8 +120,8 @@ async function liveMatchPlay(seasonYear: number): Promise<BroadcastMatchPlay> {
       format: box.format,
       state: final ? "Final" : state,
       thru: state === "Scheduled" && thru === 0 ? "" : thru >= 18 || final ? "Final" : thru > 0 ? `Thru ${thru}` : "",
-      maroonNames: box.maroonPlayers.map(getPlayerDisplayName),
-      whiteNames: box.whitePlayers.map(getPlayerDisplayName),
+      maroonNames: box.maroonPlayers.map(displayName),
+      whiteNames: box.whitePlayers.map(displayName),
       leader,
       margin,
       holesRemaining: 18 - thru,
@@ -139,9 +142,10 @@ async function liveMatchPlay(seasonYear: number): Promise<BroadcastMatchPlay> {
  */
 export async function getBroadcastMatchPlay(overrideYear?: number): Promise<BroadcastMatchPlay> {
   const seasonYear = overrideYear ?? (await getBroadcastDisplayYear());
+  const nameMap = await getPlayerNameMap();
 
   const archived = pastTournaments.find((t) => t.year === seasonYear);
-  if (archived) return archivedMatchPlay(archived);
+  if (archived) return archivedMatchPlay(archived, nameMap);
 
-  return liveMatchPlay(seasonYear);
+  return liveMatchPlay(seasonYear, nameMap);
 }

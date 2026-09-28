@@ -21,7 +21,7 @@ import styles from "./ScoringPanel.module.css";
 
 export interface ScoringState {
   matchBox: { id: string; boxNumber: number; format: MatchFormat; teeTime: string; maroonPlayers: string[]; whitePlayers: string[]; state: string };
-  holes: { number: number; par: number; yards: number }[];
+  holes: { number: number; par: number; yards: number; teeSetName?: string }[];
   scores: { player: string; hole: number; score: number | null; selfReportedScore: number | null; putts: number | null; fir: boolean | null; gir: boolean | null; firDirection: string | null; girDirection: string | null; didNotFinish: boolean; confirmedBy: string | null }[];
   submittedPlayers: string[];
   holeSubmissions?: HoleSubmission[];
@@ -217,7 +217,7 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
 
   const rowClass = (maroon: boolean) => `-mx-4 px-4 py-2 sm:-mx-7 sm:px-7 ${maroon ? "bg-maroon-800 text-white" : "bg-white text-maroon-800"}`;
   return <div className={styles.panel}>
-    <div data-hole-header className="-mx-4 sm:-mx-7"><ScoringRoundHeader hole={selectedHole} par={info?.par ?? null} yards={info?.yards ?? null} totalScore={total} toPar={toPar} /></div>
+    <div data-hole-header className="-mx-4 sm:-mx-7"><ScoringRoundHeader hole={selectedHole} teeSetName={info?.teeSetName ?? null} par={info?.par ?? null} yards={info?.yards ?? null} totalScore={total} toPar={toPar} /></div>
     <button type="button" onClick={() => setShowScorecard(true)} className="mx-auto block font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700">Scorecard</button>
     <ScoringHoleSelector selectedHole={selectedHole} onSelect={select} disabled={busy || queue.sending} statuses={statuses} />
     <div className={styles.scores}>
