@@ -10,6 +10,13 @@ export const WEBSITE_SECTIONS = [
   { key: "portal", label: "Player portal · tournament and matches", path: "/portal" },
 ] as const;
 export type WebsiteSection = typeof WEBSITE_SECTIONS[number]["key"];
+export type CatalogScope = WebsiteSection | "operations";
+export function isCatalogScope(value: unknown): value is CatalogScope {
+  return value === "operations" || isWebsiteSection(value);
+}
+export function catalogScopeForPath(path: string): CatalogScope {
+  return /^\/(?:wagers|api\/live)(?:\/|$)/.test(path) ? "operations" : sectionForPath(path);
+}
 export const DISPLAY_YEARS = Array.from({ length: 10 }, (_, index) => 2024 + index);
 export type WebsiteYearSettings = Record<WebsiteSection, number | null>;
 export function isWebsiteSection(value: unknown): value is WebsiteSection {

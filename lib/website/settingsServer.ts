@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { headers } from "next/headers";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { emptyWebsiteSettings, isDisplayYear, isWebsiteSection, type WebsiteSection } from "./settings";
+import { emptyWebsiteSettings, isDisplayYear, isWebsiteSection, isCatalogScope, type CatalogScope } from "./settings";
 
 export const getWebsiteSettings = cache(async () => {
   const service = createSupabaseServiceRoleClient();
@@ -16,7 +16,7 @@ export const getWebsiteSettings = cache(async () => {
   return { settings, available: !error };
 });
 
-export async function getRequestWebsiteSection(): Promise<WebsiteSection> {
+export async function getRequestWebsiteSection(): Promise<CatalogScope> {
   const value = (await headers()).get("x-mm-website-section");
-  return isWebsiteSection(value) ? value : "home";
+  return isCatalogScope(value) ? value : "home";
 }

@@ -28,7 +28,7 @@ export function useLiveTournament(pollMs = LIVE_POLL_MS, endpoint = "/api/live-f
         const res = await fetch(endpoint, { cache: "no-store" });
         if (!res.ok) throw new Error("feed unavailable");
         const data = await res.json();
-        if (!cancelled) {
+        if (!cancelled && (typeof data.year !== "number" || data.year === catalog.nextTournament.year)) {
           setFeed({ year: catalog.nextTournament.year, payload: data });
           setError(null);
         }

@@ -1,16 +1,16 @@
 "use client";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { sectionForPath, type WebsiteSection } from "@/lib/website/settings";
+import { catalogScopeForPath, type CatalogScope } from "@/lib/website/settings";
 import { nextTournament, pastTournaments, latestCompleted, isPastLeaderboardSwitchover } from "@/lib/data";
 import type { Tournament, UpcomingTournament } from "@/lib/data/types";
-export type SeasonCatalogData = { section?: WebsiteSection; selectedYear?: number | null; nextTournament: UpcomingTournament; pastTournaments: Tournament[]; latestCompleted: Tournament; scheduled: boolean; leaderboardOpen: boolean };
+export type SeasonCatalogData = { section?: CatalogScope; selectedYear?: number | null; nextTournament: UpcomingTournament; pastTournaments: Tournament[]; latestCompleted: Tournament; scheduled: boolean; leaderboardOpen: boolean };
 const Context=createContext<SeasonCatalogData>({nextTournament,pastTournaments,latestCompleted,scheduled:false,leaderboardOpen:isPastLeaderboardSwitchover()});
-export function SeasonCatalogProvider({ initial, children, section: fixedSection }: { initial: SeasonCatalogData; children: React.ReactNode; section?: WebsiteSection }) {
+export function SeasonCatalogProvider({ initial, children, section: fixedSection }: { initial: SeasonCatalogData; children: React.ReactNode; section?: CatalogScope }) {
   const [data,setData]=useState(initial);
   const router=useRouter();
   const pathname=usePathname();
-  const section=fixedSection ?? sectionForPath(pathname);
+  const section=fixedSection ?? catalogScopeForPath(pathname);
   const currentYear=useRef(initial.nextTournament.year);
   useEffect(()=>{
     let alive=true;

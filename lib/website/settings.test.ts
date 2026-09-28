@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { emptyWebsiteSettings, parseYearChange, resolveDisplayYear, sectionForPath } from "./settings.ts";
+import { catalogScopeForPath, emptyWebsiteSettings, parseYearChange, resolveDisplayYear, sectionForPath } from "./settings.ts";
 
 test("display years override calendar independently, including historical and future years", () => {
   const settings = emptyWebsiteSettings();
@@ -34,4 +34,12 @@ test("section routing keeps player and team paths independent of leaderboard", (
   assert.equal(sectionForPath("/schedule/2029-maroon-masters"), "schedule");
   assert.equal(sectionForPath("/api/live/standings"), "leaderboard");
   assert.equal(sectionForPath("/teamstuff"), "home");
+});
+
+test("betting pages and default match feeds remain in the operational season", () => {
+  assert.equal(catalogScopeForPath("/wagers"), "operations");
+  assert.equal(catalogScopeForPath("/wagers/matches/123"), "operations");
+  assert.equal(catalogScopeForPath("/api/live/matches"), "operations");
+  assert.equal(catalogScopeForPath("/leaderboard/2028-maroon-masters"), "leaderboard");
+  assert.equal(parseYearChange({ section: "operations", year: 2028 }), null);
 });

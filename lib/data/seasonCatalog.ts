@@ -7,7 +7,8 @@ import { playerProfilePayload } from "@/lib/live/playerProfile";
 import type { Tournament, UpcomingTournament } from "./types";
 import { SEASON_YEARS } from "@/lib/live/seasonYears";
 import { getRequestWebsiteSection, getWebsiteSettings } from "@/lib/website/settingsServer";
-import { resolveDisplayYear, type WebsiteSection } from "@/lib/website/settings";
+import { resolveDisplayYear, type CatalogScope } from "@/lib/website/settings";
+import { getActiveSeasonYear } from "@/lib/live/activeSeason";
 
 export function seasonSlug(year: number) { return pastTournaments.find(row => row.year === year)?.slug ?? (year === nextTournament.year ? nextTournament.slug : year + "-maroon-masters"); }
 export function nativeSeasonYear(slug: string): number | null { return SEASON_YEARS.find(year => seasonSlug(year) === slug) ?? null; }
@@ -36,12 +37,12 @@ export const getSeasonTournament = cache(async (year: number): Promise<Tournamen
   return { dayDates: Object.fromEntries(dates.map((date,index)=>[index+1,date])), individualChampion: winner, slug: seasonSlug(year), year, editionLabel: "Maroon Masters " + year, venue: settings.data?.venue_locked ? settings.data.venue_name ?? "Venue pending" : "Venue pending", location: "", dateLabel: startDate && endDate ? startDate + " - " + endDate : "Dates pending", startDate, endDate, roster: payload.roster ?? {maroon:[],white:[]}, matches, scorecards, individualLeaderboard: payload.individualLeaderboard ?? [], maroonPts: matches.reduce((sum,row)=>sum+row.maroonPts,0), whitePts: matches.reduce((sum,row)=>sum+row.whitePts,0), pointsAvailable: matches.length, pointsToWin: Math.floor(matches.length/2)+1 };
 });
 
-export const getSeasonCatalog = cache(async (requestedSection?: WebsiteSection | null) => {
+export const getSeasonCatalog = cache(async (requestedSection?: CatalogScope | null) => {
   const section = requestedSection ?? await getRequestWebsiteSection();
   const { settings: websiteSettings } = await getWebsiteSettings();
-  const selectedYear = requestedSection === null ? null : websiteSettings[section];
+  const selectedYear = requestedSection === null || section === "operations" ? null : websiteSettings[section];
   const calendar = await getSeasonCalendar();
-  const year = resolveDisplayYear(selectedYear, calendar, nextTournament.year);
+  const year = section === "operations" ? await getActiveSeasonYear() : resolveDisplayYear(selectedYear, calendar, nextTournament.year);
   const service = createSupabaseServiceRoleClient();
   const { data: settings } = await service.from("live_tournament_settings").select("venue_name, venue_locked, begin_date, end_date, dates_locked").eq("season_year",year).maybeSingle();
   const historical = pastTournaments.find(row => row.year === year);
@@ -52,7 +53,7 @@ export const getSeasonCatalog = cache(async (requestedSection?: WebsiteSection |
   const archives = await Promise.all(calendar.archivedYears.filter(year => year !== 2034).map(getSeasonTournament));
   const featured = calendar.scheduled || selectedYear !== null ? await getSeasonTournament(year) : null;
   const completed = featured && featured.matches.length > 0 && featured.matches.every(match => match.status === "final" || (historical && !match.status)) ? featured : archives.at(-1) ?? pastTournaments[0];
-  return { section, selectedYear, nextTournament: current, pastTournaments: archives, latestCompleted: completed, scheduled: calendar.scheduled || selectedYear !== null, leaderboardOpen: selectedYear !== null || calendar.scheduled || isPastLeaderboardSwitchover() };
+  return { section, selectedYear, nextTournament: current, pastTournaments: archives, latestCompleted: completed, scheduled: section === "operations" || calendar.scheduled || selectedYear !== null, leaderboardOpen: selectedYear !== null || calendar.scheduled || isPastLeaderboardSwitchover() };
 });
 
 export async function getCatalogTournament(slug: string) {

@@ -62,14 +62,14 @@ export function LiveLeaderboardContent() {
   const [officialStandings, setOfficialStandings] = useState<OfficialStanding[] | null>(null);
   useEffect(() => {
     let active = true;
-    const load = () => fetch("/api/live/matches", { cache: "no-store" }).then((res) => res.json()).then((data) => active && setOfficialEntries(data.ok ? data.matches : [])).catch(() => active && setOfficialEntries([]));
+    const load = () => fetch("/api/live/matches?section=leaderboard", { cache: "no-store" }).then((res) => res.json()).then((data) => active && setOfficialEntries(data.ok ? data.matches : [])).catch(() => active && setOfficialEntries([]));
     load();
     const timer = window.setInterval(load, 10_000);
     return () => { active = false; window.clearInterval(timer); };
   }, []);
   useEffect(() => {
     let active = true;
-    const load = () => fetch("/api/live/standings", { cache: "no-store" }).then((res) => res.json()).then((data) => active && setOfficialStandings(data.ok ? data.standings : [])).catch(() => active && setOfficialStandings([]));
+    const load = () => fetch("/api/live/standings?section=leaderboard", { cache: "no-store" }).then((res) => res.json()).then((data) => active && setOfficialStandings(data.ok ? data.standings : [])).catch(() => active && setOfficialStandings([]));
     load();
     const timer = window.setInterval(load, 10_000);
     return () => { active = false; window.clearInterval(timer); };
