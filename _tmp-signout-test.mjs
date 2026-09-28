@@ -35,7 +35,7 @@ async function run(label, viewport, openMenu, signOutName) {
   await openMenu(page);
   await page.getByRole("button", { name: signOutName, exact: true }).locator("visible=true").first().click();
   await Promise.all([page.waitForURL(`${BASE}/`), page.getByRole("dialog").getByRole("button", { name: "Sign Out" }).click()]);
-  await page.waitForLoadState("load"); await page.getByRole("link", { name: "Login" }).locator("visible=true").first().waitFor();
+  await page.waitForLoadState("load"); if (label === "mobile") await page.locator("button[aria-label=\"Your account\"]:visible").first().click(); await page.getByRole("link", { name: "Login", exact: true }).locator("visible=true").first().waitFor();
   check(signoutCalls === 1, `${label}: sign-out request sent once`);
   check(new URL(page.url()).pathname === "/", `${label}: landed on home page`);
   check(await page.getByRole("link", { name: "Login" }).first().count() > 0, `${label}: shows Login (guest)`);
