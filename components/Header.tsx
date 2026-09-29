@@ -56,7 +56,7 @@ export function Header({ nextTournamentOverride }: { nextTournamentOverride: Nex
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [lastPathname, setLastPathname] = useState(pathname);
   useEffect(() => onOpenMoreMenuRequested(() => setMoreOpen(true)), []);
-  const moreOn = MORE_LINKS.some((l) => pathname.startsWith(l.href));
+  const moreOn = pathname.startsWith("/the-maroon") || MORE_LINKS.some((l) => pathname.startsWith(l.href));
 
   // Close both panels on route change (e.g. Back/Forward navigation).
   // Adjusted during render rather than in a useEffect, since Header never

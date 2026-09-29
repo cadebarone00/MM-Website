@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import { maroonCategories } from "@/lib/data/theMaroon";
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAccountSession } from "@/lib/useAccountSession";
@@ -93,7 +95,7 @@ export function MorePanel({ open, onClose }: { open: boolean; onClose: () => voi
     <div className="fixed inset-0 z-[110]">
       {/* Hidden below lg on purpose: the panel is full-screen there, so there's no visible backdrop to click — closing on mobile is via the X button only. */}
       <div className="hidden lg:block absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="absolute inset-0 flex flex-col bg-maroon-900 shadow-xl lg:inset-y-0 lg:left-auto lg:right-0 lg:w-1/4">
+      <div className="absolute inset-0 flex flex-col overflow-y-auto bg-maroon-900 pb-[env(safe-area-inset-bottom)] shadow-xl lg:inset-y-0 lg:left-auto lg:right-0 lg:w-1/4">
         <div className="flex items-center justify-between border-b border-white/15 px-5 py-4">
           <span className="font-sans text-lg font-bold text-white">More</span>
           <button
@@ -132,6 +134,16 @@ export function MorePanel({ open, onClose }: { open: boolean; onClose: () => voi
             </a>
           ))}
         </div>
+        <section aria-label="The Maroon" className="px-5 pb-6">
+          <Link href="/the-maroon" onClick={onClose} className="relative flex min-h-28 items-end overflow-hidden rounded-lg border border-gold-400 bg-maroon-800 p-4 text-white">
+            <Image src="/schedule/mission-hills.webp" alt="" fill sizes="(max-width: 1024px) 100vw, 25vw" className="object-cover" />
+            <span className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/10" />
+            <span className="relative"><span className="block font-title text-2xl font-bold">The Maroon</span><span className="font-condensed text-[10px] uppercase tracking-widest text-white/80">Home · Our golf journal</span></span>
+          </Link>
+          <nav aria-label="The Maroon categories" className="mt-2 grid grid-cols-2 gap-2">
+            {maroonCategories.map((category) => <Link key={category.slug} href={`/the-maroon/${category.slug}`} onClick={onClose} className="rounded-md border border-white/20 px-3 py-2.5 text-center font-condensed text-xs font-semibold uppercase tracking-wide text-white hover:bg-white/10">{category.label}</Link>)}
+          </nav>
+        </section>
       </div>
     </div>
   );

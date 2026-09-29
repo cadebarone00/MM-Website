@@ -8,6 +8,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
+  %% More places The Maroon photo home link below social links, followed by Courses, Equipment, Teaching and News; public journal pages use existing course/history links and explicit unpublished-section placeholders.
   %% Active follows handoff; the next year becomes Upcoming the day after the active event end date in its time zone; later years are Future. Event countdown follows Upcoming Session 1 / Match 1 saved date and time, independent of home display settings or setup locks.
   %% Public Players directory: Maroon, White, Unassigned and Stats; mobile selectors use compact spacing. Stats merges static profiles, roster identities and public registered names into an alphabetical table with pinned names and twelve scrolling placeholder columns contained within the viewport.
   %% Home Teams year pill uses the Match Play expanding selector: inline year choices, collapse on selection or outside click, scrolling for longer year lists.
@@ -145,6 +146,8 @@ For example, in September 2026, My Matches can correctly show 2026 matches as Pa
 The season timing overview now distinguishes Archived, Active, Upcoming, and Future (with a separate Test season label). Active and archive handoffs retain their configured calendar boundaries. After Active's saved end date has passed in the tournament time zone, the following real year becomes Upcoming; later years are Future. A missing saved end date falls back to the checked-in historical event end date. Thus, while 2026 remains Active, its January 10, 2026 end makes 2027 Upcoming starting January 11; 2028 onward is Future. No test year is promoted to Upcoming.
 
 ## 3. Public website and navigation
+
+**The Maroon journal.** More includes a compact photo card linking to `/the-maroon` beneath the social links, followed by direct Courses, Equipment, Teaching, and News selectors. The journal home uses the website's cream/maroon/gold design with a course-photo hero, category cards, and all four section previews. Its Home/category navigation persists across `/the-maroon/[category]`; each of the four categories has a dedicated page and unknown categories return 404. Courses links to the existing schedule/course photos and News to tournament history. Equipment and Teaching explicitly show coming-soon placeholders. This is a local editorial section scaffold, not a live article feed, publishing CMS, or imported Golf Digest content. The More drawer scrolls on smaller screens, and More remains highlighted throughout the journal.
 
 The public Players directory adds Stats beside Maroon, White and Unassigned. Stats lists all checked-in profiles plus selected-roster identities and registered players returned by `/api/players/names`, deduplicated by canonical slug and ordered alphabetically by full name. The existing names hook retains static/roster names if the request fails. It follows the individual leaderboard's compact surname rows, mobile maroon header and desktop gold border, with pinned player names and twelve horizontally scrolling Stat 1-12 columns. All values are placeholder dashes, with no rankings or calculated statistics. This applies to the tournament Players directory; the upcoming season's separate confirmed-roster preview remains separate.
 
@@ -525,6 +528,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-29 - The Maroon golf journal (implemented locally; deployment not verified).** More previously ended with social links. It now adds a photo home card for The Maroon underneath them and direct Courses, Equipment, Teaching, and News selectors. Added a responsive journal home with a photo hero, four category cards and section previews, plus dedicated category pages and shared navigation. Courses/News point to existing site resources; Equipment/Teaching remain clearly labeled editorial placeholders. Updated section 3 and the flowchart annotation; overview paths and mappings are unchanged.
 
 **September 29, 2026 - Players Stats mobile verification (implemented locally; deployment not verified).** The new Stats selector could be clipped on mobile, and visually hidden table labels could widen the page. Compact selector spacing and a positioned table scroll container now keep the selectors visible and horizontal scrolling inside the table. Mobile and desktop browser checks verified pinned names, placeholder columns and inclusion of a registered player outside the roster. Updated the Section 3 flowchart annotation; overview boxes and workflow paths are unchanged.
 

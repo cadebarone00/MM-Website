@@ -14,7 +14,7 @@ const TABS = [
 
 export function MobileTabBar({ onMoreClick }: { onMoreClick: () => void }) {
   const pathname = usePathname();
-  const moreOn = MORE_LINKS.some((l) => pathname.startsWith(l.href));
+  const moreOn = pathname.startsWith("/the-maroon") || MORE_LINKS.some((l) => pathname.startsWith(l.href));
 
   return (
     <nav data-mobile-tab-bar className="lg:hidden fixed inset-x-0 bottom-0 z-[100] flex h-20 items-stretch bg-maroon-900 shadow-[0_-2px_8px_rgba(0,0,0,0.25)] pb-[calc(env(safe-area-inset-bottom)+2.5vh)]">
