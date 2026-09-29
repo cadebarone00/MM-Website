@@ -5,9 +5,9 @@ function matchStatus(box: BroadcastMatchBox) {
   const final = box.state === "Final";
   if (box.leader === "tie") return { eyebrow: final ? "Final" : box.thru || "Thru", score: null, team: "tie" as const, teamLabel: "AS" };
   const team = box.leader === "maroon" ? "Maroon" : "White";
-  // A match that reaches 18 can legitimately finish 1 ▲ or 2 ▲. A
+  // A match that reaches 18 can legitimately finish 1 UP or 2 UP. A
   // closed-out match instead uses its conventional score, such as 4 & 2.
-  const score = final && box.holesRemaining > 0 ? `${box.margin} & ${box.holesRemaining}` : `${box.margin} ▲`;
+  const score = final && box.holesRemaining > 0 ? `${box.margin} & ${box.holesRemaining}` : final ? `${box.margin} UP` : `${box.margin} ▲`;
   return { eyebrow: final ? "Final" : box.thru || "Thru", score, team: box.leader, teamLabel: team };
 }
 

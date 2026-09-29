@@ -34,7 +34,7 @@ export function LiveMatchScorecard({ match, scorecard }: { match: RealMatch; sco
     winner = match.leader;
   }
   const finalResult = match.margin == null && wonAt != null && tally !== 0
-    ? (18 - wonAt > 0 ? Math.abs(tally) + "&" + (18 - wonAt) : Math.abs(tally) + " ▲")
+    ? (18 - wonAt > 0 ? Math.abs(tally) + "&" + (18 - wonAt) : Math.abs(tally) + " UP")
     : liveLabel(match);
   const finalStatus = (key?: number) => <span key={key} aria-label={key == null ? `Final, ${winner} wins ${finalResult}` : `Hole ${holes[key].number}: Final, ${winner} wins`} className={`flex h-12 w-full items-center justify-center font-bold ${winner === "maroon" ? "bg-maroon-700 text-white" : "bg-white text-maroon-700"}`}>{key == null ? finalResult : "Final"}</span>;
   const total = (values: (number | null)[]) => values.some((value) => value != null) ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0) : "—";

@@ -28,7 +28,7 @@ function liveLabel(match: RealMatch) {
   if (leader === "tie") return "AS";
   if (!hasMatchPlayMargin) return "Won";
   if (status === "final" && remaining != null && remaining > 0) return `${margin}&${remaining}`;
-  return `${margin} ▲`;
+  return status === "final" ? `${margin} UP` : `${margin} ▲`;
 }
 
 function labelColor(match: RealMatch) {

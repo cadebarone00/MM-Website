@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Header } from "@/components/Header";
+import { MaroonHeader } from "@/components/maroon/MaroonHeader";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { PortalHeader } from "@/components/nav/PortalHeader";
 import { PlayerAreaNav } from "@/components/nav/PlayerAreaNav";
@@ -42,6 +43,10 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
         {children}
       </>
     );
+  }
+
+  if (pathname === "/the-maroon" || pathname.startsWith("/the-maroon/")) {
+    return <><MaroonHeader />{children}</>;
   }
 
   return (

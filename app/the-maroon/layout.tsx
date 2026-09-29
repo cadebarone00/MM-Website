@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { MaroonNavigation } from "@/components/maroon/MaroonNavigation";
 
@@ -6,8 +6,12 @@ export const metadata: Metadata = { title: "The Maroon | The Maroon Masters", de
 
 export default function MaroonLayout({ children }: { children: React.ReactNode }) {
   return <main className="bg-cream-50">
-    <header className="px-4 py-6 text-center sm:py-9"><p className="mb-2 font-condensed text-[10px] font-semibold uppercase tracking-[0.25em] text-ink-500">The Maroon Masters Journal</p><Link href="/the-maroon" className="font-title text-4xl font-bold text-maroon-700 sm:text-6xl">The Maroon</Link><p className="mt-2 text-xs text-ink-500 sm:text-sm">For the love of the game.</p></header>
-    <MaroonNavigation />
+    <section aria-label="The Maroon journal" className="relative flex min-h-[240px] flex-col justify-between overflow-hidden bg-ink-900 px-3 pb-4 pt-10 text-center text-white sm:min-h-[320px] sm:px-7 sm:pb-6 sm:pt-14">
+      <Image src="/schedule/mission-hills.webp" alt="Palm trees and fairways at Mission Hills" fill priority sizes="100vw" className="object-cover object-center" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/15 to-black/75" />
+      <div className="relative"><p className="font-condensed text-[10px] uppercase tracking-[0.25em] text-white/80 sm:text-xs">The golf journal</p><p className="mt-3 font-title text-3xl font-bold sm:text-5xl">For the love of the game.</p></div>
+      <MaroonNavigation />
+    </section>
     {children}
   </main>;
 }

@@ -20,7 +20,7 @@ function sideColor(team: Team, won: boolean) {
 function TeamSide({ players, team, probability, score, won }: { players: string[]; team: Team; probability?: number; score: string | null; won: boolean }) {
   const isMaroon = team === "maroon";
   const onMaroon = isMaroon && won;
-  const scoreLabel = score && <span className={["relative z-10 shrink-0 whitespace-nowrap px-0.5 font-condensed text-xs font-extrabold uppercase", sideColor(team, won)].join(" ")}>{score}</span>;
+  const scoreLabel = score && <span className={["relative z-10 shrink-0 whitespace-nowrap px-0.5 font-condensed text-sm font-extrabold uppercase", sideColor(team, won)].join(" ")}>{score}</span>;
 
   return (
     <div className={["relative flex min-w-0 items-center self-stretch", isMaroon ? "justify-end" : "justify-start", sideColor(team, won)].join(" ")}>

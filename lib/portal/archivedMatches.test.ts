@@ -13,7 +13,7 @@ test("Cade's account slug resolves all eight completed 2026 matches", () => {
   const p26m10 = matches.find((match) => match.id === "p26-m10");
   assert.deepEqual(p26m10?.maroonPlayers, ["cam-latto"]);
   assert.deepEqual(p26m10?.whitePlayers, ["cade-barone"]);
-  assert.equal(p26m10?.statusLabel, "1 ▲");
+  assert.equal(p26m10?.statusLabel, "1 UP");
   assert.equal(p26m10?.leader, "maroon");
 });
 

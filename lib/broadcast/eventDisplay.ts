@@ -56,7 +56,7 @@ export function marginLabel(margin: number): string {
 }
 
 /**
- * "N & M" (closed early) or "N ▲" (closed at the last playable hole) — a
+ * "N & M" (closed early) or "N UP" (closed at the last playable hole) — a
  * CLOSED match's final result. Same formula components/broadcast/scenes/MatchPlayScene.tsx's
  * private statusLabel() already uses for the exact same distinction —
  * kept as a separate, exported, unit-tested function here rather than
@@ -64,7 +64,7 @@ export function marginLabel(margin: number): string {
  * module needs it independently testable.
  */
 export function closedMarginLabel(margin: number, holesRemaining: number): string {
-  return margin > holesRemaining && holesRemaining > 0 ? `${margin} & ${holesRemaining}` : `${margin} ▲`;
+  return margin > holesRemaining && holesRemaining > 0 ? `${margin} & ${holesRemaining}` : `${margin} UP`;
 }
 
 export function teamLabel(team: BroadcastTeam | "tie"): string {
@@ -73,10 +73,10 @@ export function teamLabel(team: BroadcastTeam | "tie"): string {
 
 /**
  * The full result sentence for a CLOSED match box: "Match Halved" for a
- * tie, otherwise "{Team} Wins {N & M / N ▲}". Wraps closedMarginLabel()
+ * tie, otherwise "{Team} Wins {N & M / N UP}". Wraps closedMarginLabel()
  * so callers never have to special-case the tie leader themselves — the
  * gap this fixes: teamLabel("tie") + closedMarginLabel(0, X) alone would
- * read as the nonsensical "Tie Wins 0 ▲".
+ * read as the nonsensical "Tie Wins 0 UP".
  */
 export function matchResultLabel(leader: BroadcastTeam | "tie", margin: number, holesRemaining: number): string {
   return leader === "tie" ? "Match Halved" : `${teamLabel(leader)} Wins ${closedMarginLabel(margin, holesRemaining)}`;
