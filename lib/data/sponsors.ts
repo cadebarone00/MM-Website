@@ -10,7 +10,5 @@ export type Sponsor = {
 
 export const SPONSORS: Sponsor[] = [
   { name: "DCS Logo", logoSrc: "/sponsors/dcs-logo.png", logoWidth: 380, logoHeight: 105 },
-  // Crown Homes — turned on once its real logo is saved to public/sponsors/crown-homes-logo.png
-  // (set logoWidth/logoHeight to that image's size).
-  // { name: "Crown Homes Logo", logoSrc: "/sponsors/crown-homes-logo.png", logoWidth: 380, logoHeight: 105 },
+  { name: "Crown Homes Logo", logoSrc: "/sponsors/crown-homes-logo.png", logoWidth: 453, logoHeight: 140 },
 ];

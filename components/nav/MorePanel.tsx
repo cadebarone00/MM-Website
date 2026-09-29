@@ -37,7 +37,7 @@ const SOCIAL_LINKS: { label: string; href: string; icon: ReactNode }[] = [
   },
   {
     label: "TikTok",
-    href: "",
+    href: "https://www.tiktok.com/@maroonmasters",
     icon: (
       <svg viewBox="0 0 24 24" fill="currentColor" width={20} height={20} aria-hidden="true">
         <path d="M16.6 3c.3 2.2 1.6 3.6 3.9 3.8v2.6c-1.4.1-2.7-.3-3.9-1v5.9c0 3.8-2.9 5.9-5.8 5.7-2.9-.2-5-2.6-4.8-5.5.3-3.2 3.3-5.3 6.5-4.6v2.8c-.4-.1-.8-.2-1.2-.2-1.4 0-2.5 1.1-2.4 2.5.1 1.3 1.1 2.3 2.4 2.3 1.4 0 2.4-1 2.4-2.6V3h2.9z" />
@@ -46,7 +46,7 @@ const SOCIAL_LINKS: { label: string; href: string; icon: ReactNode }[] = [
   },
   {
     label: "YouTube",
-    href: "",
+    href: "https://www.youtube.com/channel/UCEtpZLOqQB-vie93NHSqIfw",
     icon: (
       <svg viewBox="0 0 24 24" fill="currentColor" width={20} height={20} aria-hidden="true">
         <path d="M21.6 7.2c-.2-.9-.9-1.6-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4c-.9.2-1.6.9-1.8 1.8C2 8.8 2 12 2 12s0 3.2.4 4.8c.2.9.9 1.6 1.8 1.8 1.6.4 7.8.4 7.8.4s6.2 0 7.8-.4c.9-.2 1.6-.9 1.8-1.8.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8zM10 15V9l5.2 3L10 15z" />
