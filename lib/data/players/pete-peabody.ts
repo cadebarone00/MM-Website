@@ -4,7 +4,7 @@ export const petePeabody: PlayerProfile = {
   id: "pete-peabody",
   slug: "pete-peabody",
   fullName: "Pete Peabody",
-  avatarSrc: null,
+  avatarSrc: "/players/pete-peabody/avatar-headshot.png",
   bio:
     "Pete Peabody is a Texas A&M Class of 2025 graduate and currently works as a Financial Advisor at Ascend Collateral. A highly ranked player in the Maroon Masters field, Pete made a strong impression in his first appearance last year, finishing 4th overall. Known for his consistency and ability to avoid mistakes on the course, Pete is expected to be one of the higher-odds contenders this year as he aims to improve on his already impressive debut. His steady play and low-error approach make him a tough matchup in the match play format. Beyond golf, Pete is also a hell of a basketball player, showcasing his well-rounded athletic talent. As a proud Aggie, he continues to represent Texas A&M with skill and competitiveness in The Maroon Masters.",
   history: ["2025 Maroon Masters debut at Mission Hills Country Club", "4th place finish in 2025"],
