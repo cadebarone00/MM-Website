@@ -121,7 +121,7 @@ export function TeamsDirectory({ tournament }: { tournament: Tournament }) {
   return (
     <section className="mt-8">
       <div className="mb-7 border-b-[6px] border-ink-200">
-        <div role="tablist" aria-label="Player views" className="flex gap-5 overflow-x-auto sm:gap-8">
+        <div role="tablist" aria-label="Player views" className="flex justify-between gap-3 overflow-x-auto sm:justify-start sm:gap-8">
           {views.map((item) => {
             const active = view === item.value;
             return (
@@ -132,7 +132,7 @@ export function TeamsDirectory({ tournament }: { tournament: Tournament }) {
                 aria-selected={active}
                 onClick={() => setView(item.value)}
                 className={[
-                  "relative shrink-0 pb-4 font-sans text-xl font-extrabold transition-colors sm:text-2xl",
+                  "relative shrink-0 pb-4 font-sans text-lg font-extrabold transition-colors sm:text-2xl",
                   active ? "text-ink-900" : "text-ink-400 hover:text-maroon-700",
                 ].join(" ")}
               >

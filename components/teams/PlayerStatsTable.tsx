@@ -18,7 +18,7 @@ export function PlayerStatsTable({ tournament }: { tournament: Tournament }) {
 
   return (
     <div role="region" aria-label="Player stats, scroll horizontally for more columns" tabIndex={0}
-      className="-mx-7 overflow-x-auto lg:mx-0 lg:rounded-lg lg:border lg:border-gold-400 lg:shadow-lg">
+      className="relative -mx-7 overflow-x-auto lg:mx-0 lg:rounded-lg lg:border lg:border-gold-400 lg:shadow-lg">
       <table className="w-full min-w-max border-collapse bg-cream-50">
         <caption className="sr-only">All players. Stat columns are placeholders; values are not available yet.</caption>
         <thead>

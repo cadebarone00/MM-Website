@@ -9,7 +9,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 ```mermaid
 flowchart TD
   %% Active follows handoff; the next year becomes Upcoming the day after the active event end date in its time zone; later years are Future. Event countdown follows Upcoming Session 1 / Match 1 saved date and time, independent of home display settings or setup locks.
-  %% Public Players directory: Maroon, White, Unassigned and Stats; Stats merges static profiles, roster identities and public registered names into an alphabetical table with pinned names and twelve scrolling placeholder columns.
+  %% Public Players directory: Maroon, White, Unassigned and Stats; mobile selectors use compact spacing. Stats merges static profiles, roster identities and public registered names into an alphabetical table with pinned names and twelve scrolling placeholder columns contained within the viewport.
   %% Home Teams year pill uses the Match Play expanding selector: inline year choices, collapse on selection or outside click, scrolling for longer year lists.
   %% Home Teams year pill selects archived 2024-2026 rosters or confirmed native assignments; ten-second refresh restores team-specific TBD slots up to six per side except the four-player 2024-2025 archives. Names face the center; blank MM Hcp, Sc. Avg., and TPE columns mirror outward without grid lines.
   %% Page and major section titles share the official Spectral Bold Maroon Masters title font.
@@ -525,6 +525,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 29, 2026 - Players Stats mobile verification (implemented locally; deployment not verified).** The new Stats selector could be clipped on mobile, and visually hidden table labels could widen the page. Compact selector spacing and a positioned table scroll container now keep the selectors visible and horizontal scrolling inside the table. Mobile and desktop browser checks verified pinned names, placeholder columns and inclusion of a registered player outside the roster. Updated the Section 3 flowchart annotation; overview boxes and workflow paths are unchanged.
 
 **2026-09-28 - Upcoming year and event countdown source (implemented locally; deployment not verified).** Previously the event countdown followed the home display year and required locked session setup, which could leave it on 2026 or show Time TBD despite a 2027 tee time. Active retains its configured handoff, while the day after its event ends makes the next real year Upcoming; later years are Future. The overview labels these states. The countdown now uses Upcoming (otherwise Active), Session 1's date and Match 1's saved time without requiring a full setup lock. For the 2026 event ending January 10, 2027 becomes Upcoming January 11. Updated sections 2 and 3 and the flowchart annotation; overview paths are unchanged. The independent Watch Live countdown remains separately configured.
 
