@@ -8,7 +8,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
-  %% Browser tabs use a single dark-maroon M with a thin gold outline on transparent alpha through favicon.ico (16/32/48px) and icon.png (64px), shared by tournament and journal routes.
+  %% Browser tabs use a single dark-maroon M with a thin muted metallic-gold outline on transparent alpha through favicon.ico (16/32/48px) and icon.png (64px), shared by tournament and journal routes.
   %% The Maroon routes replace tournament chrome with their own black header and tournament-site return link; a shallow shared photo hero holds schedule-style Home/category navigation.
   %% More places The Maroon photo home link below social links, followed by Courses, Equipment, Teaching and News; public journal pages use existing course/history links and explicit unpublished-section placeholders.
   %% Active follows handoff; the next year becomes Upcoming the day after the active event end date in its time zone; later years are Future. Event countdown follows Upcoming Session 1 / Match 1 saved date and time, independent of home display settings or setup locks.
@@ -149,7 +149,7 @@ The season timing overview now distinguishes Archived, Active, Upcoming, and Fut
 
 ## 3. Public website and navigation
 
-Browser tabs use a single dark-maroon M with a thin gold outline on a transparent background, with no gold background or white M; the source asset is public/icons/maroon-m.png. `app/favicon.ico` includes 16px, 32px, and 48px versions, and `app/icon.png` provides a 64px Next.js metadata icon. Both tournament and journal pages inherit these icons. The existing Apple and Android home-screen icons retain their earlier gold MM artwork. Cached browser tabs may require reopening after deployment.
+Browser tabs use a single dark-maroon M with a thin muted metallic-gold outline on a transparent background, with no gold background or white M; the source asset is public/icons/maroon-m.png. `app/favicon.ico` includes 16px, 32px, and 48px versions, and `app/icon.png` provides a 64px Next.js metadata icon. Both tournament and journal pages inherit these icons. The existing Apple and Android home-screen icons retain their earlier gold MM artwork. Cached browser tabs may require reopening after deployment.
 
 **The Maroon journal.** More includes a compact photo card linking to `/the-maroon` beneath the social links, followed by direct Courses, Equipment, Teaching, and News selectors. The journal replaces tournament chrome on all /the-maroon routes with its own black header and a link back to The Maroon Masters. Tournament tabs, countdown, and player-area navigation are absent from this journal shell. Directly beneath its header, a shared shallow course-photo hero contains white uppercase Home/Courses/Equipment/Teaching/News links styled after the schedule page, with an underline on the selected category. The journal home retains category cards and all four section previews below the hero. Its Home/category navigation persists across `/the-maroon/[category]`; each of the four categories has a dedicated page and unknown categories return 404. Courses links to the existing schedule/course photos and News to tournament history. Equipment and Teaching explicitly show coming-soon placeholders. This is a local editorial section scaffold, not a live article feed, publishing CMS, or imported Golf Digest content. The More drawer scrolls on smaller screens, and More remains highlighted throughout the journal.
 
@@ -532,6 +532,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-29 - Muted metallic-gold favicon edge (implemented locally; deployment not verified).** Replaced the yellow-looking M outline with a softer champagne/antique gold while retaining the dark-maroon fill and transparent background. Rebuilt browser icon sizes and updated section 3 and the Mermaid annotation; workflow paths are unchanged.
 
 **2026-09-29 - Dark maroon and thin gold favicon outline (implemented locally; deployment not verified).** Darkened the single-M browser icon to match the supplied swatch and added a thin gold edge while preserving its transparent background. Rebuilt the ICO and PNG browser sizes. Updated section 3 and the flowchart annotation; home-screen artwork and workflow paths are unchanged.
 
