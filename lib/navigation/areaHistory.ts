@@ -1,6 +1,6 @@
 export type Area = "website" | "portal" | "scoring" | "tiger";
 export type AreaHistory = Partial<Record<Area, string[]>>;
-export const areaHomes: Record<Area, string> = { website: "/", portal: "/portal", scoring: "/portal/scoring", tiger: "/portal/admin" };
+export const areaHomes: Record<Area, string> = { website: "/website", portal: "/portal", scoring: "/portal/scoring", tiger: "/portal/admin" };
 export function navigationArea(path: string): Area {
   if (path === "/portal/scoring" || path.startsWith("/portal/scoring/")) return "scoring";
   if (path === "/portal/admin" || path.startsWith("/portal/admin/")) return "tiger";

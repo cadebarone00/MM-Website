@@ -6,13 +6,13 @@ import { usePathname } from "next/navigation";
 import { useAccountSession } from "@/lib/useAccountSession";
 
 const SEGMENTS = [
-  { href: "/", label: "Website" },
+  { href: "/website", label: "Website" },
   { href: "/portal", label: "Portal" },
   { href: "/portal/scoring", label: "Scoring" },
 ] as const;
 
 const TIGER_SEGMENTS = [
-  { href: "/", label: "Website" },
+  { href: "/website", label: "Website" },
   { href: "/portal/admin", label: "Tiger Center" },
 ] as const;
 
@@ -21,11 +21,11 @@ type SegmentHref = (typeof SEGMENTS)[number]["href"];
 function activeSegment(pathname: string): SegmentHref {
   if (pathname.startsWith("/portal/scoring")) return "/portal/scoring";
   if (pathname.startsWith("/portal")) return "/portal";
-  return "/";
+  return "/website";
 }
 
 function tigerActiveSegment(pathname: string): (typeof TIGER_SEGMENTS)[number]["href"] {
-  return pathname.startsWith("/portal/admin") ? "/portal/admin" : "/";
+  return pathname.startsWith("/portal/admin") ? "/portal/admin" : "/website";
 }
 
 function useHeaderOffset(): number {

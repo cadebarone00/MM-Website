@@ -9,7 +9,7 @@ export function WebsiteEditor({ initial, available, effectiveYears, players }: {
   initial: WebsiteYearSettings; available: boolean; effectiveYears: Record<string, number>; players: { slug: string; name: string }[];
 }) {
   const [section, setSection] = useState<WebsiteSection>("home");
-  const [path, setPath] = useState("/");
+  const [path, setPath] = useState("/website");
   const [player, setPlayer] = useState(players[0]?.slug ?? "");
   const [mobile, setMobile] = useState(false);
   const [pick, setPick] = useState(false);

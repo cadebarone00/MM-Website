@@ -135,10 +135,10 @@ export function MorePanel({ open, onClose }: { open: boolean; onClose: () => voi
           ))}
         </div>
         <section aria-label="The Maroon" className="px-5 pb-6">
-          <Link href="/the-maroon" onClick={onClose} className="relative flex min-h-28 items-end overflow-hidden rounded-lg border border-gold-400 bg-maroon-800 p-4 text-white">
+          <Link href="/" onClick={onClose} className="relative flex min-h-28 items-end overflow-hidden rounded-lg border border-gold-400 bg-maroon-800 p-4 text-white">
             <Image src="/schedule/mission-hills.webp" alt="" fill sizes="(max-width: 1024px) 100vw, 25vw" className="object-cover" />
             <span className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/10" />
-            <span className="relative"><span className="block font-title text-2xl font-bold">The Maroon</span><span className="font-condensed text-[10px] uppercase tracking-widest text-white/80">Home · Our golf journal</span></span>
+            <span className="relative"><span className="block font-title text-2xl font-bold">The Maroon Journal</span><span className="font-condensed text-[10px] uppercase tracking-widest text-white/80">Home · Our golf journal</span></span>
           </Link>
           <nav aria-label="The Maroon categories" className="mt-2 grid grid-cols-2 gap-2">
             {maroonCategories.map((category) => <Link key={category.slug} href={`/the-maroon/${category.slug}`} onClick={onClose} className="rounded-md border border-white/20 px-3 py-2.5 text-center font-condensed text-xs font-semibold uppercase tracking-wide text-white hover:bg-white/10">{category.label}</Link>)}

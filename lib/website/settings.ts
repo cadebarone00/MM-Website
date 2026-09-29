@@ -1,9 +1,9 @@
 /** Shared registry: both Tiger editing surfaces and public reads use these keys. */
 export const WEBSITE_SECTIONS = [
-  { key: "home", label: "Home · tournament and hero", path: "/" },
-  { key: "home_results", label: "Home · results strip", path: "/" },
-  { key: "home_schedule", label: "Home · schedule", path: "/" },
-  { key: "home_teams", label: "Home · teams", path: "/" },
+  { key: "home", label: "Home · tournament and hero", path: "/website" },
+  { key: "home_results", label: "Home · results strip", path: "/website" },
+  { key: "home_schedule", label: "Home · schedule", path: "/website" },
+  { key: "home_teams", label: "Home · teams", path: "/website" },
   { key: "leaderboard", label: "Leaderboard", path: "/leaderboard" },
   { key: "teams", label: "Teams and player profiles", path: "/teams" },
   { key: "schedule", label: "Schedule", path: "/schedule" },

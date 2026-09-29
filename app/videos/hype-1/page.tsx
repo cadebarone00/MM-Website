@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 export default function HypeVideoPage() {
   return (
     <div className="mx-auto max-w-[960px] px-4 py-8 sm:px-7 sm:py-12">
-      <Link href="/" className="inline-flex items-center gap-2 font-sans text-sm font-semibold text-maroon-700 hover:text-maroon-600">
+      <Link href="/website" className="inline-flex items-center gap-2 font-sans text-sm font-semibold text-maroon-700 hover:text-maroon-600">
         <ArrowLeft size={18} />
         Back to Home
       </Link>

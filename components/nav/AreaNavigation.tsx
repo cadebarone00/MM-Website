@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { usePathname } from "next/navigation";
 import { areaBack, popArea, visitArea, type AreaHistory } from "@/lib/navigation/areaHistory";
 
-const Context = createContext({ href: "/", onNavigate: () => {} });
+const Context = createContext({ href: "/website", onNavigate: () => {} });
 const KEY = "mm-area-navigation-v1";
 function persist(history: AreaHistory) {
   try { sessionStorage.setItem(KEY, JSON.stringify(history)); } catch { /* Navigation works without storage. */ }

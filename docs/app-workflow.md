@@ -9,7 +9,8 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 ```mermaid
 flowchart TD
   %% Browser tabs use a single dark-maroon M with a thin muted metallic-gold outline on transparent alpha through favicon.ico (16/32/48px) and icon.png (64px), shared by tournament and journal routes.
-  %% The Maroon routes replace tournament chrome with their own black header and tournament-site return link; a shallow shared photo hero holds schedule-style Home/category navigation.
+  %% Public entry: / opens the Journal; Tournament site opens /website; tournament Home stays in /website.
+  %% The Maroon routes replace tournament chrome with their own maroon header and tournament-site link to /website; a shallow shared photo hero holds schedule-style Home/category navigation.
   %% More places The Maroon photo home link below social links, followed by Courses, Equipment, Teaching and News; public journal pages use existing course/history links and explicit unpublished-section placeholders.
   %% Active follows handoff; the next year becomes Upcoming the day after the active event end date in its time zone; later years are Future. Event countdown follows Upcoming Session 1 / Match 1 saved date and time, independent of home display settings or setup locks.
   %% Public Players directory: Maroon, White, Unassigned and Stats; mobile selectors use compact spacing. Stats merges static profiles, roster identities and public registered names into an alphabetical table with pinned names and twelve scrolling placeholder columns contained within the viewport.
@@ -148,6 +149,8 @@ For example, in September 2026, My Matches can correctly show 2026 matches as Pa
 The season timing overview now distinguishes Archived, Active, Upcoming, and Future (with a separate Test season label). Active and archive handoffs retain their configured calendar boundaries. After Active's saved end date has passed in the tournament time zone, the following real year becomes Upcoming; later years are Future. A missing saved end date falls back to the checked-in historical event end date. Thus, while 2026 remains Active, its January 10, 2026 end makes 2027 Upcoming starting January 11; 2028 onward is Future. No test year is promoted to Upcoming.
 
 ## 3. Public website and navigation
+
+The public root `/` now opens The Maroon Journal with the shared Spectral brand font and maroon navigation. The top-right Tournament site button opens `/website`, which retains the tournament homepage, splash, results and schedule. Tournament Home links, area switches and Tiger website-editor previews target `/website`. The existing `/the-maroon` journal home and category URLs remain available; Journal Home and the tournament More menu return to `/`.
 
 Browser tabs use a single dark-maroon M with a thin muted metallic-gold outline on a transparent background, with no gold background or white M; the source asset is public/icons/maroon-m.png. `app/favicon.ico` includes 16px, 32px, and 48px versions, and `app/icon.png` provides a 64px Next.js metadata icon. Both tournament and journal pages inherit these icons. The existing Apple and Android home-screen icons retain their earlier gold MM artwork. Cached browser tabs may require reopening after deployment.
 
@@ -532,6 +535,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-29 - Journal public landing and brand styling (implemented locally; deployment not verified).** Previously `/` opened the tournament homepage and The Maroon used a black header. Now `/` opens the Journal, its top-right Tournament site button opens the preserved tournament homepage at `/website`, and tournament Home/Website controls and editor previews use that destination. The Journal uses the Spectral Maroon Masters font and a maroon top nav. Existing journal category routes remain available. Updated section 3 and the Mermaid annotation; overview boxes and mapped workflow paths are unchanged.
 
 **2026-09-29 - Muted metallic-gold favicon edge (implemented locally; deployment not verified).** Replaced the yellow-looking M outline with a softer champagne/antique gold while retaining the dark-maroon fill and transparent background. Rebuilt browser icon sizes and updated section 3 and the Mermaid annotation; workflow paths are unchanged.
 

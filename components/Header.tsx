@@ -20,7 +20,7 @@ import { champion, fmtPt } from "@/lib/data";
 import type { NextTournamentOverride } from "@/lib/data/types";
 
 const nav = [
-  { href: "/", label: "Home" },
+  { href: "/website", label: "Home" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/watch-live", label: "Watch Live" },
   { href: "/teams", label: "Teams" },
@@ -37,7 +37,7 @@ function isSet(value: string): boolean {
 // site should be uniform about this" requirement. Exact match only — a
 // sub-page under one of these (e.g. /leaderboard/2027) still gets a back
 // arrow, only the bare hub itself is exempt.
-const HOME_PAGES = new Set(["/", "/leaderboard", "/watch-live", "/teams", "/portal", "/portal/scoring", "/portal/admin"]);
+const HOME_PAGES = new Set(["/website", "/leaderboard", "/watch-live", "/teams", "/portal", "/portal/scoring", "/portal/admin"]);
 
 function isHomePage(pathname: string): boolean {
   return HOME_PAGES.has(pathname);
@@ -90,7 +90,7 @@ export function Header({ nextTournamentOverride }: { nextTournamentOverride: Nex
             )}
           </div>
 
-          <Link href="/" className="justify-self-center">
+          <Link href="/website" className="justify-self-center">
             <Image src="/assets/wordmark-header.svg" alt="The Maroon Masters" width={520} height={92} className="h-5 w-auto" priority />
           </Link>
 
@@ -119,11 +119,11 @@ export function Header({ nextTournamentOverride }: { nextTournamentOverride: Nex
           </div>
 
           <nav className="flex items-center gap-0 justify-self-center">
-            <Link href="/" className="mr-3 shrink-0 xl:mr-5">
+            <Link href="/website" className="mr-3 shrink-0 xl:mr-5">
               <Image src="/assets/wordmark-light.svg" alt="The Maroon Masters" width={520} height={92} className="h-7 w-auto" priority />
             </Link>
             {nav.map((n) => {
-              const on = n.href === "/" ? pathname === "/" : pathname.startsWith(n.href);
+              const on = n.href === "/website" ? pathname === "/website" : pathname.startsWith(n.href);
               return (
                 <Link
                   key={n.href}

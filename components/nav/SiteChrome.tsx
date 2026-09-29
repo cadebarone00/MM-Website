@@ -45,7 +45,7 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
     );
   }
 
-  if (pathname === "/the-maroon" || pathname.startsWith("/the-maroon/")) {
+  if (pathname === "/" || pathname === "/the-maroon" || pathname.startsWith("/the-maroon/")) {
     return <><MaroonHeader />{children}</>;
   }
 
