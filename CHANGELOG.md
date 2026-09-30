@@ -3,6 +3,73 @@
 Platform-level changes (multi-tenant productization). Detailed history of
 the founding tournament's features lives in `project_specs.md`.
 
+## 2026-09-30 — Public tournament site /t/[tournament]/[year]
+
+**What changed**
+- `supabase/platform_public_site.sql`: `can_view_tournament`,
+  `get_public_tournament_site` (the one visitor-safe loader; returns public
+  data only) and `get_public_tournament_years` (latest edition). Service
+  role only; no live-scoring tables read.
+- `lib/platform/publicSite.ts` (adapter to the kit: pages, links, robots,
+  schedule/date formatting, disabled sections left out, scoring notice) and
+  `publicSiteServer.ts` (loader; malformed slug/year never reach the
+  database).
+- Routes `app/t/[tournament]/[year]/{page,[section]/page,layout}.tsx` and
+  `app/t/[tournament]/page.tsx` (latest edition), plus
+  `components/platform/PublicTournamentPage.tsx`.
+- `components/nav/SiteChrome.tsx`: no Maroon chrome under `/t`.
+- Public UI kit (other session's), reused with additive extensions:
+  - optional `Team.points`, `Course.par`/`yardage`
+  - partial `SiteLinks`
+  - an `information` page
+  - `ScoringPending` and `MediaLinks`
+  - `scoringNotice`/`mediaLinks` data fields
+
+  All 6 of its original tests pass unchanged.
+- Compliance: new `public-tournament-site` registry entry (review required).
+  `featureRegistry.test.ts`'s hard-coded count went from 14 to 16; it was
+  already stale from the other session's `backup-recovery` entry.
+- Test tooling: `scripts/test-public-site-browser.mjs`
+  (`npm run test:browser:public`). `lib/platform/testDatabase.ts` holds the
+  shared practice-DB helpers, moved out of `dashboard.test.ts`.
+
+**Testing**
+- `npm test` 601/601. The 8 new public-site tests cover:
+  - public visible; unpublished and test season hidden, even from organizers
+  - private: members/admins only, identical to "missing" for others
+  - unlisted: by link, noindex
+  - no emails, handicaps, ids or organizer fields
+  - no cross-tournament leakage; wrong year/slug resolves nothing
+  - The Maroon never served, and the loader never reads live tables
+  - disabled sections hidden from nav, URL and data
+  - each tournament's own branding, neutral when unset
+- `test:db` 9/9, `test:db:platform` 9/9, compliance check OK.
+- Lint: the same 7 older errors.
+- Type check: 0 errors in this work. `lib/platform/databaseBackup.ts` (the
+  other session's in-progress backup work) has 2 `NODE_ENV` type errors
+  that will fail `next build` until fixed.
+- Production build of this work: 239 pages.
+- Browser (`test:browser:public`), against the real build + practice DB:
+  - visibility and resolution of every case above, over HTTP
+  - latest-edition redirect
+  - Blue/Gold branding; no Maroon chrome, text or emails
+  - nav under `/t`, and holding states
+  - disabled sections 404 and are absent from nav
+  - noindex for unlisted/private; member access to private
+  - no sideways scroll at phone width
+- **Maroon regression:** production builds before (`50d97c4`) and after,
+  run side by side against the real database (read-only), gave identical
+  visible content on 13 pages and identical JSON on 5 endpoints. On the
+  real database, which has no platform functions yet, `/t/...` returns a
+  clean 404 with no errors.
+
+**Known limitations:**
+- Organizers can't preview an unpublished site.
+- Handicaps aren't shown publicly (a consent setting is needed).
+- The kit's header and hero copy ("THE CHAMPIONSHIP", "THE CUP",
+  "Tradition in the making") is fixed text.
+- The studio `/tournaments/*` still sits in The Maroon's chrome.
+
 ## 2026-09-30 — Persistent Tournament Dashboard, readiness engine, PUBLISH
 
 **What changed**

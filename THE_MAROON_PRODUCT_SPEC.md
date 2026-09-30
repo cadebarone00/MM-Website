@@ -485,6 +485,48 @@ dates become per-edition activation dates.
 - **Editorial** (`/the-maroon/*`) stays a separate route group and codebase
   area (`components/maroon`), untouched by tenant work.
 
+### 9.1 Built: public tournament site (2026-09-30; not yet in production)
+- **Routes:**
+  - `/t/[tournament]/[year]` (Home)
+  - `/t/[tournament]/[year]/{schedule,teams,players,courses,information,leaderboard,matches,results}`
+  - `/t/[tournament]` redirects to the newest edition this visitor may see
+- **UI:** the public UI kit `components/platform/tournament-site/`, reused
+  with small additive extensions: partial nav links, optional team points
+  and course par/yardage, a scoring-pending state, media links, and an
+  Information page.
+- **Shell:** customer sites get the kit's own header, nav and footer.
+  `SiteChrome` renders no Maroon chrome under `/t`. The founding
+  tournament keeps its own site and legacy URLs, unchanged (verified
+  identical before and after).
+- **One visitor-safe loader:** `get_public_tournament_site`
+  (`supabase/platform_public_site.sql`) → `lib/platform/publicSiteServer.ts`
+  → `lib/platform/publicSite.ts` (adapter to the kit).
+  - **Edition must be published** and not the test season. The legacy
+    tournament is never served.
+  - **Public:** anyone.
+  - **Unlisted:** anyone with the link; noindex; never listed.
+  - **Private:** tournament members and platform admins only.
+  - Everyone else gets a 404, identical to "no such tournament".
+- **Public data only:**
+  - names, description, branding colors (and https/root-relative logo or hero, if ever set)
+  - dates, destination, timezone, status
+  - teams: name and color
+  - players: name, team and captain flag
+  - courses: name, location, tees, par and yards
+  - rounds: format, course, date and start
+  - rules: mode, points, gross/net
+  - Website toggles, and media links (device_external only)
+  - **Never served:** emails, handicaps (no public-consent setting yet),
+    organizer/plan/entitlement data, creator access, or database ids
+    (public labels t1/p1/c1 are used instead).
+- **Website settings:** a disabled section disappears from the nav, 404s
+  by direct URL, and its data is left out of the page. Home and
+  Information are always on.
+- **Scoring pages (before C4):** Leaderboard, Matches, Results and Home's
+  scoring panels show the kit's locked state: "Scores, matches and results
+  will appear here once live scoring opens for this tournament." Nothing
+  reads live-scoring tables, and there's no fallback to The Maroon.
+
 ## 10. App architecture
 The Player Portal (`/portal`) and Admin Center (`/portal/admin`) become
 tournament-scoped: a user with several memberships picks a tournament. An
