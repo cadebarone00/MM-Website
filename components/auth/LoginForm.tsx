@@ -59,8 +59,8 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-5">
-      <h1 className="font-title text-3xl font-bold text-ink-900">Sign In</h1>
+    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
+      <h1 className="font-title text-3xl font-bold text-white">Log In</h1>
       {error && (
         <div role="alert" className="rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">
           {error}
@@ -79,7 +79,7 @@ export function LoginForm() {
         placeholder="Username or email"
         value={usernameOrEmail}
         onChange={(e) => setUsernameOrEmail(e.target.value)}
-        className="min-h-12 rounded-none border border-ink-300 bg-white px-3 py-3 font-sans text-sm focus:outline-2 focus:outline-offset-2 focus:outline-maroon-700"
+        className="min-h-12 rounded-none border border-ink-300 bg-white text-maroon-900 px-3 py-3 font-sans text-sm focus:outline-2 focus:outline-offset-2 focus:outline-maroon-700"
       />
       <label htmlFor="login-password" className="-mb-3 font-title text-sm font-semibold">Password</label>
       <div className="relative">
@@ -91,7 +91,7 @@ export function LoginForm() {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="min-h-12 w-full rounded-none border border-ink-300 bg-white px-3 py-3 pr-10 font-sans text-sm focus:outline-2 focus:outline-offset-2 focus:outline-maroon-700"
+          className="min-h-12 w-full rounded-none border border-ink-300 bg-white text-maroon-900 px-3 py-3 pr-10 font-sans text-sm focus:outline-2 focus:outline-offset-2 focus:outline-maroon-700"
         />
         <button
           type="button"
@@ -105,15 +105,15 @@ export function LoginForm() {
           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
         </button>
       </div>
-      <Link href="/forgot-password" className="self-start font-condensed text-xs font-semibold uppercase tracking-widest text-maroon-700 underline underline-offset-4">Forgot your password?</Link>
+      <Link href="/forgot-password" className="self-start font-condensed text-xs font-semibold uppercase tracking-widest text-white underline underline-offset-4">Forgot your password?</Link>
       <button
         type="submit"
         disabled={submitting}
-        className="min-h-12 bg-maroon-900 px-5 py-3 text-center font-condensed text-sm font-semibold uppercase tracking-widest text-white transition-colors hover:bg-maroon-700 disabled:opacity-50"
+        className="min-h-12 bg-white text-maroon-900 px-5 py-3 text-center font-condensed text-sm font-semibold uppercase tracking-widest transition-colors hover:bg-cream-100 disabled:opacity-50"
       >
-        {submitting ? "Logging in…" : "Sign In"}
+        {submitting ? "Logging in…" : "Log In"}
       </button>
-      <p className="font-title text-sm text-ink-900">Don&rsquo;t have an account? <Link href="/signup" className="ml-1 font-condensed font-semibold uppercase tracking-widest text-maroon-700 underline underline-offset-4">Sign Up</Link></p>
+      <p className="font-title text-sm text-white">Don&rsquo;t have an account? <Link href="/signup" className="ml-1 font-condensed font-semibold uppercase tracking-widest text-white underline underline-offset-4">Sign Up</Link></p>
     </form>
   );
 }

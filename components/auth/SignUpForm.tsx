@@ -40,10 +40,10 @@ export function SignUpForm({ initialCode }: { initialCode?: string }) {
   if (done) {
     return (
       <div className="w-full">
-        <h1 className="font-title text-3xl font-bold text-ink-900">Check your email</h1>
-        <p className="mt-3 font-sans text-sm text-ink-500">
+        <h1 className="font-title text-3xl font-bold text-white">Check your email</h1>
+        <p className="mt-3 font-sans text-sm text-white/75">
           We sent a verification link to {email}. Click it, then{" "}
-          <Link href="/login" className="text-maroon-700 underline underline-offset-2">
+          <Link href="/login" className="text-white underline underline-offset-2">
             log in
           </Link>
           .
@@ -53,8 +53,8 @@ export function SignUpForm({ initialCode }: { initialCode?: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-5">
-      <h1 className="font-title text-3xl font-bold text-ink-900">Sign Up</h1>
+    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
+      <h1 className="font-title text-3xl font-bold text-white">Sign Up</h1>
       {isInvite && (
         <p className="rounded-sm bg-cream-50 px-3 py-2 font-sans text-sm text-ink-700">
           Signing up as <span className="font-semibold">{initialCode}</span>
@@ -67,7 +67,7 @@ export function SignUpForm({ initialCode }: { initialCode?: string }) {
         placeholder="Name"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        className="min-h-12 rounded-none border border-ink-300 bg-white px-3 py-3 font-sans text-sm focus:outline-2 focus:outline-offset-2 focus:outline-maroon-700"
+        className="min-h-12 rounded-none border border-ink-300 bg-white text-maroon-900 px-3 py-3 font-sans text-sm focus:outline-2 focus:outline-offset-2 focus:outline-maroon-700"
       />
 </label>
       <label className="flex flex-col gap-2 font-title text-sm font-semibold">Email
@@ -77,7 +77,7 @@ export function SignUpForm({ initialCode }: { initialCode?: string }) {
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        className="min-h-12 rounded-none border border-ink-300 bg-white px-3 py-3 font-sans text-sm focus:outline-2 focus:outline-offset-2 focus:outline-maroon-700"
+        className="min-h-12 rounded-none border border-ink-300 bg-white text-maroon-900 px-3 py-3 font-sans text-sm focus:outline-2 focus:outline-offset-2 focus:outline-maroon-700"
       />
 </label>
       {!isInvite && (
@@ -87,7 +87,7 @@ export function SignUpForm({ initialCode }: { initialCode?: string }) {
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="min-h-12 rounded-none border border-ink-300 bg-white px-3 py-3 font-sans text-sm focus:outline-2 focus:outline-offset-2 focus:outline-maroon-700"
+          className="min-h-12 rounded-none border border-ink-300 bg-white text-maroon-900 px-3 py-3 font-sans text-sm focus:outline-2 focus:outline-offset-2 focus:outline-maroon-700"
         />
 </label>
       )}
@@ -98,20 +98,20 @@ export function SignUpForm({ initialCode }: { initialCode?: string }) {
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="min-h-12 rounded-none border border-ink-300 bg-white px-3 py-3 font-sans text-sm focus:outline-2 focus:outline-offset-2 focus:outline-maroon-700"
+        className="min-h-12 rounded-none border border-ink-300 bg-white text-maroon-900 px-3 py-3 font-sans text-sm focus:outline-2 focus:outline-offset-2 focus:outline-maroon-700"
       />
 </label>
       <button
         type="submit"
         disabled={submitting}
-        className="min-h-12 bg-maroon-900 px-5 py-3 text-center font-condensed text-sm font-semibold uppercase tracking-widest text-white transition-colors hover:bg-maroon-700 disabled:opacity-50"
+        className="min-h-12 bg-white text-maroon-900 px-5 py-3 text-center font-condensed text-sm font-semibold uppercase tracking-widest transition-colors hover:bg-cream-100 disabled:opacity-50"
       >
         {submitting ? "Creating account…" : "Sign Up"}
       </button>
-      <p className="text-center font-sans text-sm text-ink-500">
+      <p className="text-center font-sans text-sm text-white/75">
         Already have an account?{" "}
-        <Link href="/login" className="text-maroon-700 underline underline-offset-2">
-          Sign In
+        <Link href="/login" className="text-white underline underline-offset-2">
+          Log In
         </Link>
       </p>
     </form>

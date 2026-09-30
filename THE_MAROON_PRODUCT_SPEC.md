@@ -192,28 +192,76 @@ mandatory questionnaire.**
 | **PUBLISH** | The organizer makes the site public. Publishing is blocked until the essentials are complete (the "ready to publish" check) | Readiness check passes |
 | **PLAY** | Sessions start, live scoring, leaderboards | Published or private-but-complete |
 
-**Implementation status (2026-09-29):**
-- **CREATE → EXIST is built.** On `/tournaments/new`, Basics asks for a
-  name, web address (suggested from the name, editable) and year. Dates are
-  optional. **Create now, finish later** saves immediately; the other 7 steps
-  are optional guided setup.
-- **Saving:** `POST /api/platform/tournaments` → `create_tournament_shell`
-  (`supabase/platform_create_tournament.sql`) creates, in one
-  all-or-nothing call: the creator's organization (beta plan), the
-  Tournament (status draft, private by default), its first Edition, owner
-  membership, teams and settings (`edition_settings.plan` holds the planned
-  headcount, rounds and formats). Invite-only access is enforced inside the
-  database.
-- **After saving,** the organizer lands on the saved dashboard at
-  `/tournaments/[tournament]/[year]`. It is organizers-only (404 for
-  everyone else) and read-only for now.
-- **Not signed in, not invited, or not switched on yet?** The wizard keeps a
-  local draft and says why.
-- **Still open:** editing saved sections, a real readiness engine (still the
-  placeholder), a request-access flow, and a neutral platform layout (the
-  studio still sits inside The Maroon's header and footer).
+**Implementation status (2026-09-30):** CREATE, EXIST, COMPLETE and
+PUBLISH are built and tested against the practice database. None of the
+platform migrations has run in production (see
+`docs/production-migration-checklist.md`).
+- **CREATE → EXIST:** `/tournaments/new`. Basics asks for name, web
+  address and year; dates are optional. **Create now, finish later** saves
+  immediately via `create_tournament_shell` (organization, Tournament, first
+  Edition, owner, teams, settings, planned rounds). Invite-only is enforced in
+  the database. Signed out, not invited, or not switched on: the wizard keeps
+  a local draft and says why.
+- **COMPLETE:** `/tournaments/[tournament]/[year]` resolves the same
+  Tournament + Edition the public site will use at `/t/[tournament]/[year]`.
+  It's organizers-only; everyone else gets 404, by page and by API. Each of
+  the 10 setup sections has its own editor and saves on its own:
+  `PATCH /api/platform/tournaments/[t]/[y]/sections/[section]` →
+  `lib/platform/sectionRules.ts` (server) → `save_tournament_section`,
+  which re-checks the organizer and writes only platform tables.
+- **PUBLISH:** its own action (`POST …/publish`). The server refuses unless
+  the readiness engine says the setup is ready. Unpublishing is always
+  allowed. The Maroon Tournament can't be edited or published here (it's run
+  from the Admin Center), and its dashboard is read-only.
+- **Still open:** the public site `/t/[tournament]/[year]`, pairings, a
+  request-access flow, a neutral platform layout, and C4 (live scoring for
+  commercial tournaments).
 
-See `TECHNICAL_DEBT.md` #23–#31 and the changelog. Route plan: create at
+**Where each section is stored** (all platform tables; nothing in `live_*`):
+
+| Section | Stored in |
+|---|---|
+| Basics | `tournaments` (name, short name, description, visibility) + `tournament_editions` (destination, dates, timezone). Address and year are fixed after creation. |
+| Players | `tournament_players` (name, email) + `edition_roster` (team, handicap) + `edition_settings.plan.expectedPlayerCount` |
+| Teams | `edition_teams` (name, color, captain) + `edition_settings.plan.competitionType` |
+| Courses | `edition_courses` (planned; not the live course library) |
+| Rounds | `edition_rounds` (number, day, label, format, course): planned only |
+| Schedule | `edition_rounds` (play date, tee times or shotgun, start time) |
+| Rules | `edition_settings.scoring` |
+| Branding | `tournaments.branding` (colors; no logo uploads) |
+| Website | `edition_settings.site` (which public sections show) |
+| Media | `edition_settings.media` (`none` or `device_external` + links; `maroon_hosted` needs the `hosted_media` entitlement) |
+| Publish | `tournament_editions.published_at` / `status` (+ `tournaments.status`) |
+
+### 5.1a Readiness engine (`lib/platform/readiness.ts`)
+One engine judges saved tournaments *and* local drafts. The dashboard only
+renders its answer, and the publish route enforces it.
+
+- **Publish requires:**
+  - start and end dates
+  - a two-team competition with exactly 2 teams
+  - scoring rules chosen
+  - at least one round, every round with a format
+- **Play also requires:**
+  - at least 2 players, every player on a team, and enough players per team
+    for the formats
+  - at least 1 course, every round with a course
+  - every round with a date and a tee time or shotgun start
+  - the tournament published
+  - finally, the shared rulebook `validateTournamentConfig` passes
+- **Never required:** Branding, Website, Media.
+- **Percent** = met requirements ÷ all publish + play requirements.
+- **Stages:**
+  - *Created*: nothing beyond creation.
+  - *Setup Incomplete*
+  - *Ready to Publish*
+  - *Published*: play requirements still missing.
+  - *Ready to Play*
+  - *Blocked*: setup is complete, but live scoring isn't available. That's
+    every commercial tournament until C4, so commercial tournaments are
+    never playable yet.
+
+Route plan: create at
 `/tournaments/new`; management (dashboard) per tournament under
 `/tournaments/…`; the public site only at `/t/[tournament]/[year]`.
 
@@ -524,7 +572,7 @@ historical score edits, no fabricated data.
 | C4 | Keys switch to `edition_id`; year checks dropped | **High**: run only off-season, after a backup | Restore the backup |
 | C5 | Teams as data (§6.3) | High: touches match/roster code | Git revert; column-compatible |
 | C6 | Roles: `requireTournamentRole` replaces `requireHost` | Medium | Git revert |
-| D | Tournament Creation Wizard (§5.1). UI prototype (other session) ✅; **CREATE → EXIST persisted ✅** (`platform_create_tournament.sql`, not yet in prod); persistent COMPLETE (section editing, readiness) next | Low (new code) | Drop `create_tournament_shell` |
+| D | Tournament Creation Wizard (§5.1). UI prototype (other session) ✅; CREATE → EXIST ✅ (`platform_create_tournament.sql`); persistent COMPLETE + PUBLISH + readiness engine ✅ (`platform_dashboard.sql`, §5.1a). None in prod yet | Low (new code, platform tables only) | Drop the functions (checklist) |
 | E | `/t/[tournament]/...` site; legacy URLs aliased | Medium | — |
 | F | Texas Cup created via UI; isolation + regression tests | — | — |
 

@@ -3,6 +3,78 @@
 Platform-level changes (multi-tenant productization). Detailed history of
 the founding tournament's features lives in `project_specs.md`.
 
+## 2026-09-30 — Persistent Tournament Dashboard, readiness engine, PUBLISH
+
+**What changed**
+- `supabase/platform_dashboard.sql`: `can_manage_edition`,
+  `get_tournament_setup`, `save_tournament_section` (10 sections; every id
+  checked against this tournament/edition; refuses the legacy Maroon
+  tournament) and `set_edition_published`. Service role only. Writes
+  platform tables only.
+- `supabase/platform_foundation.sql` (still not in production):
+  - `edition_courses` and `edition_rounds` (planned setup; a round can only
+    use its own edition's course)
+  - `edition_settings.media` (`none` / `device_external` /
+    `maroon_hosted`)
+  - `tournament_editions.published_at`
+  - `create_tournament_shell` now writes planned rounds to `edition_rounds`
+- `lib/platform/readiness.ts`: the one readiness engine (stages,
+  percent, missing items, publish/play gates). The draft preview's
+  `draftSetup` now uses it too, so the old hard-coded statuses are gone.
+- `lib/platform/sectionRules.ts`: per-section field rules, run on the
+  server. They reuse the shared rulebook (`LIMITS`, `isRealDate`,
+  `isHexColor`, `isEmail`, and `normalizeScoring`, now extracted from
+  `validateTournamentConfig`).
+- `lib/platform/setup.ts` (one saved-setup shape),
+  `dashboardApi.ts` (publish gate and error mapping; "not allowed" reads as
+  404), `dashboardServer.ts`.
+- Routes: `GET /api/platform/tournaments/[t]/[y]`, `PATCH …/sections/[section]`,
+  `POST …/publish`. `/tournaments/[t]/[y]` is now the editable dashboard
+  (`components/tournament-dashboard/`, one editor per section).
+- Retired `lib/platform/savedTournament*.ts`, replaced by
+  `get_tournament_setup`.
+- Test infrastructure: `scripts/fake-supabase.mjs` (a stand-in Supabase
+  API over all real migrations in PGlite, test-only, never used by the app)
+  and `scripts/test-tournament-dashboard-browser.mjs`
+  (`npm run test:browser:dashboard`).
+
+**Why:** organizers can now finish setup at their own pace, save by
+section, and publish when ready, with one engine deciding readiness.
+
+**Migrations:** `platform_dashboard.sql` (plus the amended C1 and CREATE
+files). None run in production.
+
+**Testing**
+- `npm test` 588/588. New tests cover section rules, the readiness engine
+  (stages, rising percent, accurate missing lists, publish lock/unlock,
+  optional sections and media never blocking, commercial "Blocked"
+  before C4), the dashboard database functions, and the publish gate.
+- The database tests cover:
+  - every section saves and reloads identically
+  - organizer, co-organizer and admin can edit; players, strangers and
+    other owners can't read, save or publish
+  - ids from another tournament are rejected
+  - hosted media is refused for beta
+  - The Maroon can't be edited
+  - zero live-scoring or Maroon rows change
+- `test:db` 9/9 and `test:db:platform` 9/9. `tsc` 0 errors. Lint shows the
+  same 7 older errors, none new.
+- Fresh production build (239 pages). **Browser, signed in, end to end:**
+  - quick create
+  - six sections saved one by one, with the percent rising each time
+  - a reload that keeps everything
+  - optional media that doesn't block
+  - publish as its own step
+  - a stranger gets 404 by page and API
+  - no live or Maroon rows touched
+- The other session's wizard browser test (updated to the engine's 18% and
+  46%) and the signed-out create browser test also pass.
+
+**Known limitations:** pairings aren't built (they belong with live
+scoring, C4). The public site `/t/[tournament]/[year]` isn't built yet.
+Players are per-edition entries, with no picking of returning players.
+Courses aren't linked to the course library.
+
 ## 2026-09-29 — CREATE → EXIST: saving a new tournament
 
 **What changed**

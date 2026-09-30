@@ -14,8 +14,9 @@ import { RoundExitProvider } from "./RoundExit";
 import { WebsiteFrameBridge } from "@/components/portal/admin/WebsiteFrameBridge";
 
 /**
- * Picks the site chrome for the current route. `/broadcast` gets nothing at
- * all — no header, no footer, no nav — it's a TV-style broadcast canvas,
+ * Picks the site chrome for the current route. `/broadcast` and customer
+ * tournament sites (`/t/...`, which use the public tournament UI kit) get
+ * nothing at all — no header, no footer, no nav — it's a TV-style broadcast canvas,
  * not a webpage (see the Watch Live Broadcast spec, §6/§10). `/portal/*`
  * (Portal, Scoring) gets `PortalHeader` with no bottom tab bar and no
  * Footer — those are Website-only features. Everywhere else gets its
@@ -32,9 +33,16 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
   const pathname = usePathname();
   const inPortal = pathname.startsWith("/portal");
   const inBroadcast = pathname.startsWith("/broadcast");
+  // Customer tournament sites (/t/...) bring their own header, nav and footer
+  // from the public UI kit — never The Maroon's chrome, countdown or champions ribbon.
+  const inCustomerTournamentSite = pathname === "/t" || pathname.startsWith("/t/");
 
-  if (inBroadcast || pathname === "/portal/admin/scoring-preview/mobile") {
+  if (inBroadcast || inCustomerTournamentSite || pathname === "/portal/admin/scoring-preview/mobile") {
     return <>{children}</>;
+  }
+
+  if (pathname === "/login" || pathname === "/signup") {
+    return <div className="flex h-dvh flex-col overflow-hidden lg:h-auto lg:min-h-dvh lg:overflow-visible"><div className="shrink-0"><MaroonHeader /></div>{children}</div>;
   }
 
   if (inPortal) {

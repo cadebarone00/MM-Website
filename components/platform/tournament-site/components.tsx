@@ -13,8 +13,9 @@ function Mark({ name, src }: { name: string; src?: string }) {
 export function TournamentHeader({ branding, homeHref }: { branding: Branding; homeHref: string }) {
   return <header className="ts-header"><a className="ts-brand" href={homeHref}><Mark name={branding.shortName} src={branding.logo} /><span>{branding.shortName}<small>THE CHAMPIONSHIP</small></span></a><span className="ts-header-note">Tradition in the making</span></header>;
 }
+export const PAGE_LABELS: Record<SitePage, string> = { home: "Home", leaderboard: "Leaderboard", matches: "Matches", schedule: "Schedule", players: "Players", teams: "Teams", courses: "Courses", results: "Results", information: "Info" };
 export function TournamentNav({ links, current }: { links: SiteLinks; current: SitePage }) {
-  return <nav className="ts-nav" aria-label="Tournament pages">{Object.entries(links).map(([page, href]) => <a key={page} href={href} aria-current={current === page ? "page" : undefined}>{page[0].toUpperCase() + page.slice(1)}</a>)}</nav>;
+  return <nav className="ts-nav" aria-label="Tournament pages">{Object.entries(links).filter(([, href]) => href).map(([page, href]) => <a key={page} href={href} aria-current={current === page ? "page" : undefined}>{PAGE_LABELS[page as SitePage] ?? page}</a>)}</nav>;
 }
 export function TournamentStatusBanner({ status }: { status: TournamentStatus }) {
   return <div className="ts-status-banner"><span className="ts-status" data-state={status}>{statusLabel(status)}</span><span>{({ draft: "Tournament details are being prepared.", scheduled: "The stage is set. Play begins soon.", live: "Competition in progress", final: "Play is complete. Final results are available.", archived: "A championship to remember. Archived results." })[status]}</span></div>;
@@ -32,12 +33,23 @@ export function LockedSection({ title, reason }: { title: string; reason: string
 export function ComingSoonSection({ title }: { title: string }) {
   return <EmptyState title={title}>Coming soon. Details have not been announced.</EmptyState>;
 }
+/** A scoring page before the event has live scoring: says so plainly instead of showing empty standings. */
+export function ScoringPending({ title, notice }: { title: string; notice: string }) {
+  return <LockedSection title={title} reason={notice} />;
+}
+/** Outbound links to media hosted elsewhere (device/external media policy). No uploads, embeds or tracking. */
+export function MediaLinks({ links }: { links: { label: string; url: string }[] }) {
+  const safe = links.filter(link => { try { return new URL(link.url).protocol === "https:"; } catch { return false; } });
+  if (!safe.length) return null;
+  return <Section title="Photos & video"><ul className="ts-card ts-media-links">{safe.map(link => <li key={link.url}><a href={link.url} target="_blank" rel="noopener noreferrer nofollow ugc">{link.label}</a></li>)}</ul></Section>;
+}
 function TeamLabel({ team }: { team: Team }) {
   return <span className="ts-team-label" style={{ background: safeColor(team.color), color: readableText(team.color) }}><Mark name={team.name} src={team.logo} />{team.name}</span>;
 }
 export function TeamScoreSummary({ teams }: { teams: Team[] }) {
   if (!teams.length) return <EmptyState title="Team standings to follow" />;
-  return <div className="ts-score-summary" aria-label="Team standings">{teams.map(team => <div key={team.id}><TeamLabel team={team} /><strong>{team.points}</strong><small>POINTS</small></div>)}</div>;
+  if (teams.every(team => team.points === undefined)) return <div className="ts-score-summary" aria-label="Teams">{teams.map(team => <div key={team.id}><TeamLabel team={team} /><small>SCORES WHEN PLAY BEGINS</small></div>)}</div>;
+  return <div className="ts-score-summary" aria-label="Team standings">{teams.map(team => <div key={team.id}><TeamLabel team={team} /><strong>{team.points ?? 0}</strong><small>POINTS</small></div>)}</div>;
 }
 export function LeaderboardPreview({ standings, players, teams = [] }: { standings: Standing[]; players: Player[]; teams?: Team[] }) {
   if (!standings.length) return <EmptyState title="Leaderboard to follow">Standings will appear when scores are available.</EmptyState>;
@@ -66,11 +78,11 @@ export function PlayerGrid({ players, teams }: { players: Player[]; teams: Team[
   })}</div>;
 }
 export function TeamCard({ team, players }: { team: Team; players: Player[] }) {
-  return <article className="ts-card"><TeamLabel team={team} /><h3>{team.name}</h3><p>{players.filter(player => player.teamId === team.id).length} players · {team.points} points</p><ul>{players.filter(player => player.teamId === team.id).map(player => <li key={player.id}>{player.name}{player.captain ? " · Captain" : ""}</li>)}</ul></article>;
+  return <article className="ts-card"><TeamLabel team={team} /><h3>{team.name}</h3><p>{players.filter(player => player.teamId === team.id).length} players{team.points !== undefined ? ` · ${team.points} points` : ""}</p><ul>{players.filter(player => player.teamId === team.id).map(player => <li key={player.id}>{player.name}{player.captain ? " · Captain" : ""}</li>)}</ul></article>;
 }
 export function CourseCard({ course }: { course: Course }) {
   const src = imageSource(course.image);
-  return <article className="ts-card ts-course"><div className="ts-course-image">{src ? <img src={src} alt={course.name} loading="lazy" /> : <span>⛳<small>Course image to follow</small></span>}</div><div className="ts-course-body"><p className="ts-eyebrow">{course.location}</p><h3>{course.name}</h3><p>{course.tee} tees</p><dl><div><dt>Par</dt><dd>{course.par}</dd></div><div><dt>Yards</dt><dd>{course.yardage.toLocaleString("en-US")}</dd></div></dl></div></article>;
+  return <article className="ts-card ts-course"><div className="ts-course-image">{src ? <img src={src} alt={course.name} loading="lazy" /> : <span>⛳<small>Course image to follow</small></span>}</div><div className="ts-course-body"><p className="ts-eyebrow">{course.location}</p><h3>{course.name}</h3><p>{course.tee} tees</p><dl><div><dt>Par</dt><dd>{course.par ?? "—"}</dd></div><div><dt>Yards</dt><dd>{course.yardage !== undefined ? course.yardage.toLocaleString("en-US") : "—"}</dd></div></dl></div></article>;
 }
 export function TournamentInfoCard({ information }: { information: TournamentSiteData["information"] }) {
   return <article className="ts-card"><h3>Tournament information</h3><dl className="ts-info">{information.map(item => <div key={item.label}><dt>{item.label}</dt><dd>{item.value}</dd></div>)}</dl></article>;
