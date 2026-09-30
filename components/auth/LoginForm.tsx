@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AuthMethods } from "./AuthMethods";
 import { Eye, EyeOff } from "lucide-react";
 
 export function LoginForm() {
@@ -61,6 +62,7 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
       <h1 className="font-title text-3xl font-bold text-white">Log In</h1>
+      <AuthMethods />
       {error && (
         <div role="alert" className="rounded-sm bg-red-50 px-3 py-2 font-title text-sm text-red-700">
           {error}
@@ -111,9 +113,9 @@ export function LoginForm() {
         disabled={submitting}
         className="min-h-12 rounded-none border border-gold-400 bg-transparent text-white px-5 py-3 text-center font-title text-sm font-semibold uppercase tracking-widest transition-colors hover:bg-white/10 disabled:opacity-50"
       >
-        {submitting ? "Logging in…" : "Log In"}
+        {submitting ? "Logging in…" : "Next"}
       </button>
-      <Link href="/signup" className="self-start font-title text-sm font-semibold uppercase tracking-widest text-white underline underline-offset-4">Sign Up</Link>
+      <Link href="/signup" className="self-start font-title text-sm font-semibold uppercase tracking-widest text-white underline underline-offset-4">Don?t have an account? Sign Up</Link>
     </form>
   );
 }

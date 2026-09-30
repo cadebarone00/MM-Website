@@ -1,8 +1,6 @@
-import MaroonLayout, { metadata } from "./the-maroon/layout";
-import MaroonHome from "./the-maroon/page";
-
-export { metadata };
+import { PlatformHome } from "@/components/platform/PlatformHome";
+export const metadata = { title: "The Maroon", description: "The digital home for competitive golf trips." };
 
 export default function Home() {
-  return <MaroonLayout><MaroonHome /></MaroonLayout>;
+  return <PlatformHome />;
 }

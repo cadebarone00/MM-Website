@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { MaroonHeader } from "@/components/maroon/MaroonHeader";
+import { PlatformHeader } from "@/components/platform/PlatformHeader";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { PortalHeader } from "@/components/nav/PortalHeader";
 import { PlayerAreaNav } from "@/components/nav/PlayerAreaNav";
@@ -46,8 +47,9 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
   }
 
   if (pathname === "/login" || pathname === "/signup") {
-    return <div className="flex h-dvh flex-col overflow-hidden lg:h-auto lg:min-h-dvh lg:overflow-visible"><div className="shrink-0"><MaroonHeader /></div>{children}</div>;
+    return <div className="min-h-dvh"><PlatformHeader />{children}</div>;
   }
+  if (pathname === "/") return <><PlatformHeader />{children}</>;
 
   if (inPortal) {
     return (

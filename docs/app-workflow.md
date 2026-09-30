@@ -9,11 +9,13 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 ```mermaid
 flowchart TD
   %% Operator recovery tooling only: REST row exports; optional explicit pg_dump to local dump/manifest; isolated restore drill documented. No provider monitoring, PITR activation or application integration.
-  %% Login fields and submit use transparent maroon-backed boxes, gold outlines and white Spectral text; Sign Up is a standalone left-aligned link.
-  %% Log In and Sign Up use Main Page navigation, a narrow gold-bordered maroon form on the left and a desktop-only Mission Hills photo; mobile fills the screen below navigation.
+  %% Platform home uses centered brand/menu/account navigation, Log In, Create/Join actions and editorial feed links. Mobile authentication and tournament activity remain unavailable.
+  PH[Platform home] --> AU[Log In or two-step Create Account]
+  PH --> DW
+  AU --> A
   %% Public tournament site kit is fixture-only; local HTML preview in out/tournament-site-preview, no /t route or live data connection.
   %% Contact page email links and prefilled drafts address themaroonadmin@gmail.com.
-  %% Main Page (formerly Journal home): hero then maroon Your Tournament. Your Way. section; Create Tournament opens /tournaments/new, My Tournaments is a disabled coming-soon placeholder. Header Contact Us opens /contact reference-based email form and Sign In opens /login.
+  %% Join Tournament explains the commissioner-link requirement; it does not enroll a player.
   DW[Local tournament creation wizard] --> DD[Draft configuration and setup dashboard]
   DD --> DJ[Download draft JSON]
   DD -. Future integration only .-> DP[Publish and Play locked]
@@ -22,7 +24,7 @@ flowchart TD
   %% Home Highlights follows the Home display year: curated 2026 archive results with match links; unpopulated years are blank and do not inherit 2026 entries.
   %% Tournament home hero uses a neutral black readability gradient over desktop video and mobile photo.
   %% Browser tabs use a single dark-maroon M with a thin muted metallic-gold outline on transparent alpha through favicon.ico (16/32/48px) and icon.png (64px), shared by tournament and journal routes.
-  %% Public entry: / opens the Journal; Tournament site opens /website; tournament Home stays in /website.
+  %% Public entry: / opens the platform home; editorial stays at /the-maroon; founding tournament Home stays at /website.
   %% The Maroon routes replace tournament chrome with their own maroon header and tournament-site link to /website; a shallow shared photo hero holds schedule-style Home/category navigation.
   %% More places The Maroon photo home link below social links, followed by Courses, Equipment, Teaching and News; public journal pages use existing course/history links and explicit unpublished-section placeholders.
   %% Active follows handoff; the next year becomes Upcoming the day after the active event end date in its time zone; later years are Future. Event countdown follows Upcoming Session 1 / Match 1 saved date and time, independent of home display settings or setup locks.
@@ -113,9 +115,9 @@ The branches are related but not interchangeable. A personal round is not a tour
 
 ## 1. Accounts, identity, and permissions
 
-The Log In form uses the shared Spectral title font throughout, including input text, placeholders, buttons, links, and errors. Username/email, password, and Log In use transparent backgrounds with gold outlines and white lettering. Sign Up is a standalone left-aligned link without the preceding account prompt.
+The Log In form uses a centered cream account panel with Email selected and Mobile disabled. Username-or-email login, password visibility, forgot-password and verification resend retain existing behavior. Next submits to the existing login endpoint.
 
-Log In (`/login`) and Sign Up (`/signup`, including invitation codes) use a shared maroon layout with white lettering and fields inside a sharp-cornered gold border. The duplicate wordmark is removed. The form content is about 20% narrower and aligned toward the right-side Mission Hills photo on desktop. Mobile hides the photo and fills the viewport below the Main Page navigation; only the form area scrolls when needed for small screens, keyboard space, or error messages. These account routes omit the footer and tournament tabs. Username-or-email login, password visibility, forgot-password navigation, verification resend, invitation usernames, and signup email confirmation retain their existing behavior.
+Create Account (`/signup`, including invitation codes) first collects email and password, then the existing required name and username. Next changes steps without sending credentials; Create Account submits the unchanged payload to the existing signup endpoint. Invitation usernames stay fixed, Back preserves entries, and success asks the user to verify their email. These pages use the platform header and no tournament footer. Mobile authentication is explicitly unavailable.
 
 The `supabase/player_slots_password_created.sql` migration adds a read-only-in-practice `password_created` boolean to `player_slots` for inspection in Supabase Table Editor. It backfills existing linked accounts and database triggers maintain the value when passwords or `claimed_by` links change, including unlinking/deletion. True means the linked Auth account has a password credential; false means no linked password credential. No password or hash is copied into player data. It does not prove email verification, successful password login, or a portal visit, and does not change the current Claimed label or access rules. Run the migration in Supabase SQL Editor to enable this feature; live execution has not been verified.
 
@@ -167,7 +169,7 @@ The season timing overview now distinguishes Archived, Active, Upcoming, and Fut
 
 ## 3. Public website and navigation
 
-**Main Page tournament entry.** The former Journal home is now called the Main Page (`/`, with `/the-maroon` retained). Directly below its photo hero, a full-width maroon section reads ?Your Tournament. Your Way.? Create Tournament opens the existing `/tournaments/new` workspace. My Tournaments is a disabled, explicitly coming-soon placeholder, not an account list. The shared header adds Contact Us immediately right of The Maroon and Sign In immediately left of the tournament-link divider. Sign In opens `/login`; the tournament link reads ?Our tournament site? above The Maroon Tournament and still opens `/website`. Contact Us opens `/contact` with the Main Page header and a reference-based split layout: white form panel at left and contact details over a darkened Mission Hills photo at right. The form accepts first/last name, email, optional phone, and message. Open Email validates required fields and opens a prefilled mailto draft to themaroonadmin@gmail.com; visitors must send it from their email app. The website does not send or save messages and never claims successful delivery. Contact Details lists Cade Barone, that email, and 210.665.2779, plus the existing Instagram link; no street address is shown. On narrow screens header groups wrap without horizontal overflow.
+**Main Page tournament entry.** `/` uses the supplied sketch: menu, centered wordmark, account icon, Log In, Create Tournament, Join Tournament, then Feed. Create opens `/tournaments/new`; the menu and footer link to the implemented `/tournaments` list. Join expands an honest holding state asking for a commissioner-provided link; no enrollment is performed. Feed shows existing Courses and Equipment exploration cards, explicitly not tournament activity. `/the-maroon` retains the editorial landing, `/website` retains the founding tournament, and `/contact` retains its email-draft form.
 
 The Website homepage (`/website`) desktop footer uses the supplied maroon-jacket cutout, cropped from the bottom across the white sponsor band and maroon information band. Content and its white separator occupy the area from 35% to 90% of the viewport. The white band reads ?Thank You to? above ?our sponsors? with both configured sponsor logos to its right; it replaces the newsletter signup prompt. The decorative top stripe is removed. Journal top navigation and the footer use `maroon-900`, matching the Admin Center and tournament secondary navigation. Journal home/category pages and other public routes retain only the maroon wordmark, divider, links, copyright and back-to-top section, with no sponsor band or cutout. The footer remains desktop-only and is absent from portal/broadcast routes.
 
@@ -175,7 +177,7 @@ Home Highlights displays thirteen dated 2026 archive summaries: the 17?16 Cup re
 
 The tournament homepage hero uses a neutral black gradient over its desktop video and mobile fallback photo to keep overlaid text readable without a maroon tint.
 
-The public root `/` now opens The Maroon Main Page with the shared Spectral brand font and maroon navigation. The top-right Tournament site button opens `/website`, which retains the tournament homepage, splash, results and schedule. Tournament Home links, area switches and Admin website-editor previews target `/website`. The existing `/the-maroon` journal home and category URLs remain available; Journal Home and the tournament More menu return to `/`.
+The public root `/` opens the platform home. Its menu links to the existing editorial landing at `/the-maroon` and founding tournament at `/website`. Tournament routes and Admin previews continue to target `/website`.
 
 Browser tabs use a single dark-maroon M with a thin muted metallic-gold outline on a transparent background, with no gold background or white M; the source asset is public/icons/maroon-m.png. `app/favicon.ico` includes 16px, 32px, and 48px versions, and `app/icon.png` provides a 64px Next.js metadata icon. Both tournament and journal pages inherit these icons. The existing Apple and Android home-screen icons retain their earlier gold MM artwork. Cached browser tabs may require reopening after deployment.
 
@@ -576,6 +578,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-30 ? Platform home and account flow (implemented locally; deployment not verified).** Replaced the root editorial hero with the supplied home hierarchy and a centered platform header. Log In and Create Account now use matching cream panels; signup collects the same required fields across two steps. Mobile authentication, Join enrollment and tournament activity are explicitly unavailable. Existing auth endpoints, invitation codes, verification and founding tournament behavior are retained. Updated sections 1 and 3, the Mermaid flow and rendered navigation mapping.
 
 **September 30, 2026 - Backup and recovery operations (implemented locally; deployment and production recovery not verified).** Previously the operational guide relied on REST row exports and provider backup checks. Added a separate explicit PostgreSQL dump command with timestamped manifests/checksums, fixture-only backup-health model, coverage audit, planning objectives and isolated restore-drill instructions. Updated section 23, the flowchart annotation and high-risk migration prerequisites. No application workflow paths or overview boxes changed; renderer mapping remains unchanged. Provider scheduling, PITR and production restore are not implemented by this work.
 

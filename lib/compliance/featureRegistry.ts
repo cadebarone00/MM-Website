@@ -94,7 +94,7 @@ const seeds: FeatureSeed[] = [
   },
   {
     id: "player-accounts", name: "Player accounts",
-    scope: "Review authentication, recovery, sessions, age handling, account terms, identity linking and deletion, including non-account participants.",
+    scope: "Review authentication, recovery, sessions, age handling, account terms, identity linking and deletion, including non-account participants. Platform home/account presentation review: docs/platform-entry-review.md; existing credentials and API destinations retained, with two-step signup and no mobile authentication.",
     attentionCategories: ["privacy", "personal-data", "user-accounts", "account-deletion", "security", "retention", "minors", "platform-rules", "legal-review"],
   },
   {

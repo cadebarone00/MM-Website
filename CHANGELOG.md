@@ -3,6 +3,10 @@
 Platform-level changes (multi-tenant productization). Detailed history of
 the founding tournament's features lives in `project_specs.md`.
 
+## 2026-09-30 ? Platform home and account presentation
+
+Root home now follows the supplied wireframe with platform navigation, Log In, Create/Join actions and editorial exploration cards. Login and two-step signup share cream panels and retain existing auth endpoints, required fields and invitation usernames. Mobile login, tournament enrollment and activity are explicit holding states. Founding tournament routes remain unchanged. Local implementation; deployment not verified. Review: `docs/platform-entry-review.md`.
+
 ## 2026-09-30 — Beta creator-access requests
 
 **What changed**

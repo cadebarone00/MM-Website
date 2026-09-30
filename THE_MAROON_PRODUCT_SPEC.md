@@ -27,7 +27,7 @@
 
 ## 1. Product
 
-**Main Page entry (2026-09-29):** The former Journal landing is called the Main Page. Its hero is followed by a maroon ?Your Tournament. Your Way.? section with Create Tournament linking to the existing wizard and My Tournaments explicitly held as a coming-soon placeholder. Header actions are Contact Us, Sign In, and Our tournament site. Contact Us follows the owner?s split-panel visual reference with a white form panel and golf-photo details panel; Cade Barone?s provided email and phone are public, with no address; Open Email prepares a mailto draft for the visitor to send; no contact submission feature or account tournament list is implemented by this presentation change.
+**Main Page entry (2026-09-30):** `/` uses a mobile-first platform home: centered wordmark with menu/account icons, Log In, Create Tournament, Join Tournament holding state, and Feed linking to existing editorial categories. `/the-maroon` retains the editorial landing and `/website` the founding tournament. Login and two-step Create Account share a centered cream panel. Email/username authentication and existing required signup fields remain; Mobile is disabled. Join does not grant membership; tournament activity is not implemented. No auth endpoint, schema or authorization changes; deployment not verified.
 
 ### Vision
 **The Maroon is the digital home for competitive golf trips.** Long term that
