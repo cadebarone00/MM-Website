@@ -16,7 +16,7 @@ export interface StudioTournament {
   previewable: boolean;
 }
 
-type StudioPage = "home" | "create" | "setup" | "preview";
+type StudioPage = "home" | "create" | "setup" | "preview" | "request" | "admin";
 
 /**
  * The neutral organizer studio for commercial tournament management
@@ -29,7 +29,7 @@ export function OrganizerStudioShell({ page, tournament, children }: { page: Stu
   return <div className={styles.studio}>
     <header className={styles.header} data-page={page}>
       <div className={styles.bar}>
-        <p className={styles.brand}><Wordmark className={styles.wordmark} /><span className={styles.label}>Tournament Studio</span></p>
+        <p className={styles.brand}><Wordmark className={styles.wordmark} /><span className={styles.label}>{page === "admin" ? "Platform Admin" : "Tournament Studio"}</span></p>
         <div className={styles.account}>
           <Link className={styles.create} href="/tournaments" aria-label="My Tournaments" aria-current={page === "home" ? "page" : undefined}><LayoutList size={16} aria-hidden="true" /><span>My Tournaments</span></Link>
           {page !== "create" && <Link className={styles.create} href="/tournaments/new" aria-label="Create Tournament"><Plus size={16} aria-hidden="true" /><span>Create Tournament</span></Link>}

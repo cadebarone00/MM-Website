@@ -79,7 +79,7 @@ export function draftInputFromBody(body: unknown): DraftInput {
 
 /** Maps a create_tournament_shell failure to what the organizer sees. */
 export function createFailure(error: { code?: string; message?: string }): { status: number; error: string } {
-  if (error.code === "42501") return { status: 403, error: "Creating tournaments is invite-only right now. Ask The Maroon for access." };
+  if (error.code === "42501") return { status: 403, error: "Creating tournaments is invite-only right now. Request access at /tournaments/request-access." };
   if (error.code === "23505") return { status: 409, error: "That web address is already taken. Pick another." };
   // Function or tables not installed yet (platform migrations not run in this database).
   if (error.code === "PGRST202" || error.code === "42883" || error.code === "42P01" || error.code === "PGRST205") {

@@ -22,7 +22,7 @@ export const MIGRATIONS = [
   "player_slots_full_name.sql", "player_slots_password_created.sql", "refund_unsettleable_mm_coin_bets.sql", "season_calendar.sql",
   "session_count_lock.sql", "session_tee_times.sql", "team_winner_future.sql", "total_birdies_future.sql", "tournament_timezone.sql",
   "website_section_settings.sql", "team_winner_auto_pricing.sql", "platform_foundation.sql", "platform_editions.sql",
-  "platform_create_tournament.sql", "platform_dashboard.sql", "platform_public_site.sql",
+  "platform_create_tournament.sql", "platform_dashboard.sql", "platform_public_site.sql", "platform_access_requests.sql",
 ];
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;
@@ -56,7 +56,7 @@ export async function startFakeSupabase({ port, root = "supabase" }) {
     res.writeHead(status, { "Content-Type": "application/json", ...headers });
     res.end(body === undefined ? "" : JSON.stringify(body));
   };
-  const pgError = (res, error) => send(res, PG_STATUS[error.code] ?? 400, { code: error.code ?? "XX000", message: error.message, details: null, hint: null });
+  const pgError = (res, error) => send(res, PG_STATUS[error.code] ?? 400, { code: error.code ?? "XX000", message: error.message, details: null, hint: error.hint ?? null });
 
   function parseValue(raw) {
     const value = decodeURIComponent(raw);

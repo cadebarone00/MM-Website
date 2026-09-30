@@ -4,6 +4,8 @@ import { Plus } from "lucide-react";
 import { formatDateRange, previewBasePath, publicBasePath } from "@/lib/platform/publicSite";
 import type { EditionSummary, TournamentSummary } from "@/lib/platform/myTournaments";
 import { loadMyTournaments } from "@/lib/platform/myTournamentsServer";
+import { loadMyAccess } from "@/lib/platform/accessRequestsServer";
+import { CreatorAccessNotice } from "./CreatorAccessNotice";
 import { OrganizerStudioShell } from "./OrganizerStudioShell";
 import styles from "./MyTournaments.module.css";
 
@@ -51,8 +53,11 @@ function EditionRow({ tournament, edition }: { tournament: TournamentSummary; ed
  * tournaments this user owns or organizes (see list_managed_editions).
  */
 export async function MyTournamentsPage() {
-  const result = await loadMyTournaments();
+  const [result, accessResult] = await Promise.all([loadMyTournaments(), loadMyAccess()]);
   if (!result.signedIn) redirect("/login");
+  const access = accessResult.signedIn && accessResult.ok ? accessResult.access : null;
+  // Unknown access (lookup failed) falls back to the Create link, which is still gated on save.
+  const canCreate = access?.canCreate ?? true;
 
   return <OrganizerStudioShell page="home">
     <main className={styles.page}>
@@ -68,8 +73,8 @@ export async function MyTournamentsPage() {
         : result.tournaments.length === 0 ? <section className={styles.empty} aria-labelledby="empty-title">
           <h2 id="empty-title">No tournaments yet</h2>
           <p>Start with a name. Players, courses and the rest can come later.</p>
-          <Link className={styles.primary} href="/tournaments/new"><Plus size={16} aria-hidden="true" /> Create Tournament</Link>
-          <p className={styles.note}>Saving tournaments is invite-only during the beta. If your account hasn&apos;t been approved yet, you can still sketch a draft there; a platform admin has to approve your account before it saves.</p>
+          {canCreate ? <Link className={styles.primary} href="/tournaments/new"><Plus size={16} aria-hidden="true" /> Create Tournament</Link>
+            : <CreatorAccessNotice signedIn access={access} />}
         </section>
         : <ul className={styles.list}>{result.tournaments.map((tournament) =>
           <li key={tournament.slug} className={styles.tournament} data-tournament={tournament.slug}>
