@@ -3,6 +3,69 @@
 Platform-level changes (multi-tenant productization). Detailed history of
 the founding tournament's features lives in `project_specs.md`.
 
+## 2026-09-29 — Platform Phase C2: edition tag on live tables, backup tooling, owner decisions
+
+**Pre-flight gates (all passed, owner-requested):** the Tiger → Admin
+rename was committed (`69af7b0`, `33193bd`) with a clean tree and no `tiger`
+code paths left. A fresh `next build` of that commit passed (238 pages,
+run in an isolated worktree so the running dev server was untouched), and
+`tsc` showed 0 errors after it. The earlier `.next/types` errors were stale
+output from before the rename. `npm test` passed 515/515 before any C2 work.
+
+**What changed**
+- `supabase/platform_editions.sql` (C2): nullable `edition_id` + composite
+  FK `(edition_id, season_year)` + index + `set_edition_id` trigger on all
+  **30** year-keyed tables. It backfills The Maroon's edition for every
+  existing row, with the existing triggers switched off only for the
+  backfill. `supabase/platform_editions_rollback.sql` undoes it exactly.
+- `supabase/platform_foundation.sql` (C1, amended; never run in production
+  yet): adds the `beta` plan, `platform_settings` (invite-only vs
+  self-serve creation) and `tournament_creator_access`. New
+  `supabase/platform_foundation_rollback.sql`.
+- `lib/platform/entitlements.ts`: `hasEntitlement` (anything not granted is
+  off), `maxPlayers`, and `canCreateTournament`.
+- `lib/platform/tableBackup.ts` + `scripts/backup-production.ts`
+  (`npm run backup:production`): read-only export of every table to
+  `out/backups/<time>/`, checked against the server's own row counts.
+- `docs/production-migration-checklist.md`: the step-by-step production
+  procedure, including verification queries tested on the practice database.
+- `scripts/test-scoring-reliability.mjs`: opt-in `WITH_PLATFORM`
+  (`npm run test:db:platform`) re-runs every scoring scenario on top of
+  C1 + C2. The default `npm run test:db` is unchanged.
+- The spec records the owner decisions (§17), the wizard principle (§5.1),
+  and C2 as built (§6.2).
+
+**Why:** C2 lets every live row say which tournament edition it belongs to
+without changing any existing behavior. That's the prerequisite for a
+second tournament.
+
+**Migrations:** `platform_foundation.sql`, then `platform_editions.sql`.
+**Neither has been run in production.** Follow the checklist.
+
+**Affected features:** none at runtime. No existing app code reads or
+writes `edition_id` yet.
+
+**Testing:** `npm test` shows 525/525 passing (505 original + 20 platform tests), with 10 added in this round:
+- C2 leaves **every row of every table and every trigger's on/off state
+  byte-identical**. It ran against a production-shaped database with a real
+  started, scored, published and closed-out match, including a settled
+  wager. A mutation test (backfill without switching triggers off) makes
+  this test fail, which proves the guard is needed and effective.
+- Existing scoring functions still work after C2, and every row they
+  create is tagged automatically.
+- Year and edition can't disagree. Changing the year re-tags the row. A
+  second legacy tournament is refused.
+- Both rollbacks restore the pre-migration database exactly. C2 can be
+  re-applied, and the C1 rollback refuses to run while C2 is present.
+- Plans and entitlements, the invite-only/self-serve rule, and backup
+  paging and error handling.
+- `npm run test:db` 9/9 and `npm run test:db:platform` 9/9. `tsc` and
+  `eslint` are clean.
+
+**Known limitations:** until C4, only The Maroon can write to the live
+tables, because keys are still year-based. The backup script copies data,
+not database code (that lives in `supabase/` in git).
+
 ## 2026-09-29 — Platform Phase A–C1: audit, spec, foundation
 
 **What changed**

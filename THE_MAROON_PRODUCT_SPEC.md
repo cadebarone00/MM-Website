@@ -7,13 +7,19 @@
 > Update this file whenever an architectural or product decision changes.
 
 - **Created:** 2026-09-29
-- **Status:** Phase A (Discovery) and B (Spec) done. Phase C, step 1
-  (additive platform tables) built and tested locally, **not yet run in
-  production**. Everything after that is proposed.
+- **Status (2026-09-29):** Spec **approved by the owner**, with the
+  decisions in §17. Phases A and B are done. C1 (platform tables) and C2
+  (edition tag on live tables) are built and tested against the practice
+  database. **Neither has been run in production yet**; follow
+  `docs/production-migration-checklist.md`. Next: C3, then the Tournament
+  Creation Wizard (§5.1).
+- **Reference implementation:** The Maroon Tournament is the production
+  reference. Losing any of its existing functionality counts as a regression.
 - **Naming:** per the 2026-09-29 rebrand, the brand is **The Maroon**, the
   founding event is **The Maroon Tournament** (formerly "The Maroon
   Masters"), and the host area is the **Admin Center** (formerly "Tiger
-  Center"). Code still says `tiger` in many places.
+  Center"). The code rename (`tiger` → `admin`) was finished on
+  2026-09-29.
 
 ---
 
@@ -170,6 +176,24 @@ admin. That promotion is a manual step, never automatic in SQL.
 
 ## 5. Tournament configuration model
 
+### 5.1 Creation principle: CREATE → EXIST → COMPLETE → PUBLISH → PLAY
+Owner decision, 2026-09-29. **Creating a tournament must not be a long
+mandatory questionnaire.**
+
+| Stage | What happens | Required |
+|---|---|---|
+| **CREATE** | A short form makes the tournament shell | Only the minimum: tournament name, web address (slug; suggested from the name), year |
+| **EXIST** | The tournament and its first edition exist right away, with its own Tournament Dashboard and a private site at `/t/[tournament]/[year]` | — |
+| **COMPLETE** | From the dashboard, in any order and over any number of visits: branding, players, teams, courses, schedule/formats, scoring rules, dates, destination. A checklist shows what's still missing | Nothing up front |
+| **PUBLISH** | The organizer makes the site public. Publishing is blocked until the essentials are complete (the "ready to publish" check) | Readiness check passes |
+| **PLAY** | Sessions start, live scoring, leaderboards | Published or private-but-complete |
+
+This means the full `validateTournamentConfig` rules (below) are the
+**publish/play readiness check**, not a gate on creation. Each dashboard
+section saves on its own with the same per-field rules. The creation form
+validates only its few fields.
+
+### 5.2 Configuration fields
 What an organizer configures (validated by `lib/platform/tournamentConfig.ts`):
 
 | Group | Fields |
@@ -219,7 +243,9 @@ reads these tables yet.
 
 | Table | Purpose | Isolation guarantees |
 |---|---|---|
-| `platform_plans` | Plan catalog with an `entitlements` jsonb. **No prices** (pricing lives in the payment provider later). Seeds only `founder` (everything on). | — |
+| `platform_plans` | Plan catalog with an `entitlements` jsonb. **No prices** (pricing lives in the payment provider later). Seeds `founder` (The Maroon: everything on) and `beta` (everything needed to create/run/test a tournament; **no wagers, no fantasy, no broadcast, no custom domain**). | — |
+| `platform_settings` | Single row. `tournament_creation` = `invite_only` (V1) or `self_serve` (later: one switch, no other change) | — |
+| `tournament_creator_access` | Invite-only beta: who asked to create tournaments and whether a platform admin approved (`requested` / `approved` / `revoked`) | PK = profile |
 | `organizations` | Owner/billing entity, `plan_key` → `platform_plans` | — |
 | `tournaments` | Series: slug (globally unique), names, visibility, status, branding jsonb, legacy flag | FK → organization |
 | `tournament_editions` | One playing: `season_year`, label, destination, dates, timezone, status, `is_test`, `legacy_slug` | FK → tournament; unique `(tournament_id, season_year)`; exposes `(id, tournament_id)` for composite FKs |
@@ -242,19 +268,40 @@ All tables have RLS enabled with **no policies**, so only the service role
 can use them. This matches the existing pattern where server routes
 authorize in code.
 
-### 6.2 Next (Phase C step 2): tenant key on live tables
-1. Add nullable `edition_id` to each `live_*`, `broadcast_*`,
-   `career_archive_*`, odds and wager table.
-2. Backfill: `edition_id = (Maroon edition where season_year = row.season_year)`.
-3. `before insert` trigger: if `edition_id` is null, derive it from
-   `season_year` for the legacy tournament. Legacy code keeps working
-   unchanged.
-4. After all code writes `edition_id`, make it `not null`, move unique
-   keys from `season_year` to `edition_id`, and drop the `between 2027 and
-   2034` checks.
-5. SQL functions (`submit_live_hole_reliable`, `start_live_round_atomic`,
-   publication trigger, etc.) gain an edition parameter. Wrappers keep the
-   old `(season_year, …)` signature for Maroon until callers move over.
+### 6.2 Built (Phase C step 2): `supabase/platform_editions.sql`
+Undo: `supabase/platform_editions_rollback.sql`.
+
+1. **All 30 tables keyed by `season_year`** (inventoried by loading the full
+   migration chain into PGlite, not by grep) gain a nullable `edition_id`,
+   an index, and a composite FK `(edition_id, season_year)` →
+   `tournament_editions (id, season_year)`. **The edition and the year can
+   never disagree.**
+2. **Backfill** tags every existing row with The Maroon's edition for that
+   year. The existing triggers on these tables (archive mirror,
+   publication queue, locked-round archive, team-winner wager settlement,
+   archive status guard) would otherwise treat the backfill as real edits.
+   So only the triggers that are currently on are switched off for the
+   backfill and back on afterwards, all in one transaction. A mutation test
+   proves the backfill *does* change data without this.
+3. **`set_edition_id` trigger** (before insert/update) on every one of
+   those tables: a writer that only sets `season_year` (all current code)
+   gets the legacy tournament's edition automatically. Changing the year
+   moves the edition with it. A year with no edition yet gets an empty
+   container edition, so the tag is never null.
+4. `legacy_edition_id(year)` resolves the legacy tournament's edition.
+   Only **one** tournament may be `is_legacy` (unique index).
+5. **Not changed:** no existing function, key, check, or row value. The
+   full 9-scenario scoring regression (`npm run test:db:platform`) passes on
+   top of C2.
+
+**Still to do (C4, high risk, off-season only):** once all code writes
+`edition_id`, make it `not null`, move unique keys from `season_year` to
+`edition_id`, and drop the `between 2027 and 2034` checks. SQL functions
+(`submit_live_hole_reliable`, `start_live_round_atomic`, etc.) gain an
+edition parameter, with wrappers keeping the `(season_year, …)` signature
+for The Maroon until callers move over. **Until C4, only The Maroon can
+use the live tables:** a second tournament's 2027 rounds would collide
+with The Maroon's on the year-based keys.
 
 ### 6.3 Then (Phase C step 3): teams as data
 - `live_roster.team`: drop the `('maroon','white')` check and validate
@@ -305,7 +352,7 @@ dates become per-edition activation dates.
 - **Platform home:** `/` (The Maroon brand: tournaments, editorial, sign-up).
 - **Tournament sites:** `/t/[tournament]` shows the latest edition.
   `/t/[tournament]/[year]/{leaderboard,matches,schedule,players,teams,courses,stats,media,results}`
-  and `/t/[tournament]/history`. *(Proposed; needs owner sign-off, see §17.)*
+  and `/t/[tournament]/history`. *(Decided 2026-09-29.)*
 - **Legacy URLs are kept forever:** `/leaderboard/[slug]`, `/teams/[slug]`,
   `/schedule/[slug]` keep serving The Maroon Tournament, and eventually
   resolve through the same tournament-scoped code.
@@ -361,10 +408,12 @@ already reads its match by player, so it only needs the edition resolved.
 
 ## 14. Monetization-ready architecture
 `platform_plans` (entitlements jsonb, no prices) → `organizations.plan_key`.
-Features check `hasEntitlement(org, key)`. Candidate plans (Free / Maroon
-Tournament / Maroon Championship / White Glove) and their limits are
-**undecided product calls**. Only the `founder` plan (everything
-unlocked) is seeded, for The Maroon. Later: subscriptions table, payment
+Features check `hasEntitlement(plan, key)` (`lib/platform/entitlements.ts`).
+Anything a plan doesn't explicitly grant is off. Seeded plans:
+**founder** (The Maroon; everything on) and **beta** (invited beta
+tournaments; full create/configure/run/test; no wagers/fantasy). Paid plan
+limits and pricing are decided **after** the wizard and real beta testing,
+and undefined pricing never blocks productization. Later: subscriptions table, payment
 provider webhooks, sponsors/ads slots per tournament site, custom domains
 (Vercel domains API).
 
@@ -394,13 +443,13 @@ historical score edits, no fabricated data.
 
 | Step | Change | Risk | Reversible by |
 |---|---|---|---|
-| C1 ✅ built | Platform tables + seed (§6.1) | Low (additive) | Dropping the new tables |
-| C2 | `edition_id` columns + backfill + defaulting trigger | Medium: touches live tables | Drop column and trigger |
+| C1 ✅ built, not yet in prod | Platform tables + seed (§6.1) | Low (additive) | `platform_foundation_rollback.sql` |
+| C2 ✅ built, not yet in prod | `edition_id` columns + backfill + defaulting trigger (§6.2) | Medium: touches live tables (tested: no row or trigger changes) | `platform_editions_rollback.sql` |
 | C3 | Code reads through `resolveEdition()`; Maroon is the default edition | Medium: many files | Git revert |
 | C4 | Keys switch to `edition_id`; year checks dropped | **High**: run only off-season, after a backup | Restore the backup |
 | C5 | Teams as data (§6.3) | High: touches match/roster code | Git revert; column-compatible |
 | C6 | Roles: `requireTournamentRole` replaces `requireHost` | Medium | Git revert |
-| D | Wizard creates tournaments/editions | Low (new code) | — |
+| D | Tournament Creation Wizard (§5.1: CREATE → EXIST → COMPLETE → PUBLISH → PLAY); **the next major customer-facing build after C2/C3** | Low (new code) | — |
 | E | `/t/[tournament]/...` site; legacy URLs aliased | Medium | — |
 | F | Texas Cup created via UI; isolation + regression tests | — | — |
 
@@ -411,21 +460,30 @@ DB tables is tech debt, not a V1 requirement. Known historical oddities
 already documented in `project_specs.md` and must be preserved exactly.
 
 **Production DB safety:** every SQL file is tested in PGlite against the
-full migration chain before the owner runs it. Before C2 and C4, take a
-Supabase backup (Dashboard → Database → Backups). Never migrate during a
-live event.
+full migration chain before the owner runs it. Every production migration
+follows `docs/production-migration-checklist.md`: safe time, a data backup
+(`npm run backup:production`), the Supabase backup check, run, verify
+queries, a site check, and the undo path. Never migrate during a live
+event, and never while the repository is in an inconsistent state.
 
-## 17. Open product decisions (need owner input)
-1. **URL shape** for tournament sites: `/t/[tournament]/[year]` (proposed)
-   vs `/tournaments/[tournament]-[year]`.
-2. **Who can create a tournament** in V1: anyone who signs up (self-serve)
-   vs invite-only beta approved by a platform admin (recommended to start).
-3. **Historical import** of 2024–2026 into the database: now vs later
-   (recommended: later).
-4. **Wagers/fantasy** stay Maroon-only (recommended) or become a
-   platform feature (needs legal review for anything real-money).
-5. **Plan limits and pricing** (player caps, editions per year, premium
-   features).
+## 17. Product decisions (owner, 2026-09-29)
+1. **URL shape:** `/t/[tournament]/[year]`.
+2. **Tournament creation:** invite-only beta; platform admins approve
+   creators (`tournament_creator_access`). Self-service later by switching
+   `platform_settings.tournament_creation` to `self_serve`, with no core rework.
+3. **Historical 2024–2026:** stay on the current static adapter for V1,
+   behaving exactly as today. Database import is later technical debt.
+4. **Wagers / MM Coins / fantasy:** exclusive to The Maroon Tournament
+   behind entitlements. **Real-money wagering is never exposed to
+   commercial tournaments.**
+5. **Plans/pricing:** no hard-coded pricing. Founder (The Maroon, all on)
+   and Beta (full tournament features) now; paid limits decided after the
+   wizard and beta testing.
+6. **Wizard principle:** CREATE → EXIST → COMPLETE → PUBLISH → PLAY (§5.1).
+   Minimal creation; everything else completable later from the Tournament
+   Dashboard.
+7. **The Maroon Tournament is the production reference implementation.**
+   Any loss of its existing functionality is a regression.
 
 ## 18. Technical debt
 See `TECHNICAL_DEBT.md`. Change history: `CHANGELOG.md`.

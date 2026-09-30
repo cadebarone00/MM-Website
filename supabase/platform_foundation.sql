@@ -13,8 +13,9 @@ begin;
 
 -- === Plans (monetization-ready, no prices) =================================
 -- Prices live in the payment provider later; this table only says what a
--- plan unlocks. Only 'founder' is seeded — real plan limits are an open
--- product decision (spec §14/§17).
+-- plan unlocks. 'founder' = The Maroon (everything); 'beta' = invited beta
+-- tournaments (everything needed to create, run and test a tournament, but
+-- never wagers/fantasy). Paid plan limits are decided after beta (spec §14).
 create table if not exists public.platform_plans (
   key text primary key check (key ~ '^[a-z][a-z0-9_]{1,39}$'),
   name text not null,
@@ -26,8 +27,31 @@ create table if not exists public.platform_plans (
 insert into public.platform_plans (key, name, entitlements) values
   ('founder', 'Founder', jsonb_build_object(
     'max_players', null, 'custom_branding', true, 'broadcast', true,
-    'wagers', true, 'fantasy', true, 'custom_domain', true))
+    'wagers', true, 'fantasy', true, 'custom_domain', true)),
+  ('beta', 'Beta Tournament', jsonb_build_object(
+    'max_players', null, 'custom_branding', true, 'broadcast', false,
+    'wagers', false, 'fantasy', false, 'custom_domain', false))
 on conflict (key) do nothing;
+
+-- === Who may create tournaments =============================================
+-- V1 is invite-only: a platform admin approves each creator. Flipping
+-- tournament_creation to 'self_serve' opens it to every signed-in user
+-- without any other change (lib/platform/entitlements.ts canCreateTournament).
+create table if not exists public.platform_settings (
+  id boolean primary key default true check (id),
+  tournament_creation text not null default 'invite_only' check (tournament_creation in ('invite_only', 'self_serve')),
+  updated_at timestamptz not null default now()
+);
+insert into public.platform_settings (id) values (true) on conflict (id) do nothing;
+
+create table if not exists public.tournament_creator_access (
+  profile_id uuid primary key references public.profiles(id) on delete cascade,
+  status text not null default 'requested' check (status in ('requested', 'approved', 'revoked')),
+  note text check (note is null or length(note) <= 500),
+  decided_by uuid references public.profiles(id) on delete set null,
+  decided_at timestamptz,
+  created_at timestamptz not null default now()
+);
 
 -- === Organizations ==========================================================
 create table if not exists public.organizations (
@@ -173,12 +197,14 @@ alter table public.tournament_players enable row level security;
 alter table public.edition_teams enable row level security;
 alter table public.edition_roster enable row level security;
 alter table public.edition_settings enable row level security;
+alter table public.platform_settings enable row level security;
+alter table public.tournament_creator_access enable row level security;
 revoke all on public.platform_plans, public.organizations, public.tournaments, public.tournament_editions,
   public.tournament_members, public.tournament_players, public.edition_teams, public.edition_roster,
-  public.edition_settings from anon, authenticated;
+  public.edition_settings, public.platform_settings, public.tournament_creator_access from anon, authenticated;
 grant all on public.platform_plans, public.organizations, public.tournaments, public.tournament_editions,
   public.tournament_members, public.tournament_players, public.edition_teams, public.edition_roster,
-  public.edition_settings to service_role;
+  public.edition_settings, public.platform_settings, public.tournament_creator_access to service_role;
 
 -- === Seed: The Maroon Tournament as tenant #1 ===============================
 insert into public.organizations (slug, name, plan_key)

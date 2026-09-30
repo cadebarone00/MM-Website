@@ -12,6 +12,8 @@
     "lint": "eslint",
     "test": "tsx --test {lib,app,components}/**/*.test.{ts,mts,tsx}",
     "test:db": "node scripts/test-scoring-reliability.mjs",
+    "test:db:platform": "node -e \"process.env.WITH_PLATFORM=1;import('./scripts/test-scoring-reliability.mjs')\"",
+    "backup:production": "tsx scripts/backup-production.ts",
     "test:browser": "node scripts/test-scoring-browser.mjs"
   },
   "dependencies": {
