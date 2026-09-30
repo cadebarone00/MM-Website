@@ -1245,93 +1245,166 @@ but not yet run in production; nothing in the existing app reads it yet.
 
 ## Tournament Theme & Personalization System
 
-### Round: Theme system foundation (spec 2026-09-30, awaiting approval)
+### Rule: Figma is the visual source of truth (2026-09-30)
 
-**What it is:** One shared place that decides what a tournament's colors are, and how screens use them. It's plumbing. The Maroon should look the same afterwards. Other tournaments get their own colors through the same path.
+- **Who owns what:**
+  - The tournament engine and database own the data and the truth.
+  - Figma owns presentation.
+  - The code implements both.
+- **Order of authority:**
+  1. Product rules / personalization model
+  2. Figma design system
+  3. Figma components and screens
+  4. Production design tokens and components
+  5. Application screens
+- **Production code is legacy implementation, not the design authority.** Its current colors, fonts and hardcoded styling don't define the design system.
+  - Don't keep a color or font just because it's live.
+  - Live appearance may be kept temporarily during a migration for safety. That's all.
+- **When code and Figma disagree:**
+  - Figma wins, unless a technical or product requirement says otherwise.
+  - Report any such conflict before creating a new visual convention.
+- **New UI:**
+  - Uses semantic tokens and shared components. No one-off hex values, radii or spacing.
+  - Adds no tournament-specific hardcoded colors without a written reason.
+
+**Theme roles.** Every tournament has **Primary**, **Secondary** and **Accent**. Team events add one color per team. These are meanings, not fixed colors.
+- **Primary:** the main identity. Branded surfaces, primary actions, selected states.
+- **Secondary:** supporting contrast. Secondary surfaces and alternate treatments.
+- **Accent:** emphasis only. Highlights, live states, key stats, leaderboard emphasis. Never the dominant color.
+- **Team colors:** competition identity only. Match cards, team indicators, score bars, team labels, broadcast team graphics. They never replace the tournament theme.
+
+For The Maroon:
+- Primary = Maroon
+- Secondary = White
+- Accent = Gold
+- Team Maroon (team 1) = Maroon
+- Team White (team 2) = White
+
+The exact hex values come from the Figma variables, not from the live site.
+
+**Default theme vs. The Maroon preset.** These are two separate things.
+- **System default theme:** neutral colors the software uses when a tournament hasn't set any.
+- **The Maroon preset:** one saved tournament theme.
+
+The Maroon is **not** the universal fallback.
+
+**Figma token mapping:**
+
+| Figma | Code (TS) | CSS variable |
+|---|---|---|
+| theme/primary · secondary · accent | `theme.primary` · `.secondary` · `.accent` | `--theme-primary` · `--theme-secondary` · `--theme-accent` |
+| theme/text/on-primary · on-secondary · on-accent | `theme.textOnPrimary` · `.textOnSecondary` · `.textOnAccent` | `--theme-on-primary` · `--theme-on-secondary` · `--theme-on-accent` |
+| competition/team-1 · team-2 | `competition.team1` · `.team2` (from `teams[0]`, `teams[1]`) | `--competition-team-1` · `--competition-team-2` (`-3`… for more teams) |
+| competition/text/on-team-1 · on-team-2 | `competition.textOnTeam1` · `.textOnTeam2` | `--competition-on-team-1` · `--competition-on-team-2` |
+
+Tailwind utilities are built on the variables: `bg-theme-primary`, `text-on-primary`, `bg-team-1`, etc.
+
+If a token's meaning changes, update Figma and code together.
+
+**Typography debt.**
+- Figma uses **DM Sans** (interface) and **Instrument Serif** (editorial/display).
+- Production uses Spectral and Barlow / Barlow Condensed. Those are legacy.
+- This round doesn't migrate fonts. It adds two semantic font variables, `--font-ui` and `--font-display`. They point at today's fonts for now, so switching to the Figma fonts later is a small, separate change.
+
+### Round: Theme system foundation (spec 2026-09-30, revised 2026-09-30 for the Figma rule, awaiting approval)
+
+**What it is:** One shared place that decides what a tournament's colors mean and how screens use them. It's architecture, not a redesign.
 
 **What I found (inspection, 2026-09-30):**
-- **The database already has what's needed. No migration.**
+- **No schema change needed.**
   - `tournaments.branding` (JSON: `primary`, `secondary`, `accent`, `logoUrl`) holds the tournament colors.
-  - `edition_teams.color` holds each team's color, one row per team, with no two-team limit.
-  - The Maroon's row is seeded as primary `#500001`, secondary `#fbf8f1` (cream, not pure white), accent `#b8945a`. Its teams are Maroon `#500001` and White `#fbf8f1`.
-- **Competing theme logic exists today:**
-  - `components/platform/tournament-site/theme.ts` has a contrast helper and `--ts-*` variables. Its fallback is `#193c52`/`#d6b85c`.
-  - `lib/platform/publicSite.ts` falls back to `#1f2937`/`#9ca3af`.
-  - `lib/platform/readiness.ts` falls back to `#1f2937`/`#9ca3af` again.
-  - The `.ts-site` CSS has its own hardcoded defaults.
-  - The same `{primary, secondary, accent, logoUrl}` shape is declared four times: `setup.ts`, `tournamentConfig.ts`, `tournamentCreate.ts`, `tournamentDraft.ts`.
-- **The founding Maroon site** (the `lib/data` pages) never reads the database for colors. It uses Tailwind brand ramps: about 1,250 `maroon-*`/`gold-*`/`cream-*` class uses in 212 files, plus about 450 raw hex values. Its team type is literally `Team = "maroon" | "white"`, compared by name in 114 places.
-- **Fonts:** the code uses Spectral (serif) and Barlow / Barlow Condensed (sans), not DM Sans / Instrument Serif. Typography is not touched.
+  - `edition_teams.color` holds one color per team, with no two-team limit.
+  - Individual events have 0 teams.
+- **The Maroon's database row** is seeded with the legacy values: primary `#500001`, secondary `#fbf8f1` (cream), accent `#b8945a`, teams `#500001` / `#fbf8f1`. The brief lists `#FFFFFF` and `#D6A75C`. Figma decides (see Decisions).
+- **Competing theme logic today:**
+  - `components/platform/tournament-site/theme.ts`: its own contrast helper, `--ts-*` variables, fallback `#193c52`/`#d6b85c`.
+  - `lib/platform/publicSite.ts` and `lib/platform/readiness.ts`: fallback `#1f2937`/`#9ca3af`.
+  - The `.ts-site` CSS has its own defaults.
+  - The branding shape is declared four times: `setup.ts`, `tournamentConfig.ts`, `tournamentCreate.ts`, `tournamentDraft.ts`.
+- **The founding site** doesn't read the database for colors.
+  - About 1,250 `maroon-*`/`gold-*`/`cream-*` classes in 212 files, plus about 450 raw hex values.
+  - Its team type is `Team = "maroon" | "white"`, compared by name in 114 places.
+- **No Figma connection in this session**, and no Figma variable values anywhere in the repo.
 
-**Source of truth:**
-`tournaments.branding` + `edition_teams.color` → one resolver (`lib/theme/tournamentTheme.ts`) → CSS variables + a React provider → components.
+**Source of truth for data:**
+`tournaments.branding` + `edition_teams.color` → one resolver (`lib/theme/tournamentTheme.ts`) → CSS variables + a React provider → shared components → screens (website, player app, host, spectator, broadcast).
 
-The Maroon's values live in exactly one TypeScript constant, `MAROON_THEME`. A test checks that it matches the database seed.
+No part of the app works out tournament colors on its own.
 
 **Theme contract (`lib/theme/tournamentTheme.ts`):**
 ```ts
 type ThemeTeam = { id: string; name: string; color: string }          // any number of teams
 type TournamentTheme = { primary: string; secondary: string; accent: string; teams: ThemeTeam[] }
-type ResolvedTournamentTheme = TournamentTheme & {
-  textOnPrimary: string; textOnSecondary: string; textOnAccent: string
-  teams: (ThemeTeam & { textOn: string })[]                           // team1 = teams[0], team2 = teams[1]
+type ResolvedTournamentTheme = {
+  theme: { primary; secondary; accent; textOnPrimary; textOnSecondary; textOnAccent }
+  competition: { teams: (ThemeTeam & { textOn: string })[]; team1?; team2?; textOnTeam1?; textOnTeam2? }
 }
-MAROON_THEME, DEFAULT_TOURNAMENT_THEME
-resolveTournamentTheme(branding, teams)   // validates hex, fills fallbacks, adds text-on colors
-readableTextOn(background)                // WCAG contrast: picks the dark or light text with the higher ratio
-themeCssVariables(resolved)               // → the CSS variables below
+SYSTEM_DEFAULT_THEME   // neutral fallback, no teams
+MAROON_THEME_PRESET    // The Maroon, values from Figma
+resolveTournamentTheme(branding, teams)   // validates hex; any missing/invalid color falls back to SYSTEM_DEFAULT_THEME
+readableTextOn(background)                // WCAG contrast: picks dark or light text, whichever reads better
+themeCssVariables(resolved)
 ```
-- Individual tournaments have `teams: []`. Team variables are simply not set, and nothing breaks.
-
-**CSS tokens (named to match the Figma tokens):**
-
-| Figma | CSS variable | Tailwind class |
-|---|---|---|
-| theme/primary | `--theme-primary` | `bg-theme-primary` etc. |
-| theme/secondary | `--theme-secondary` | `bg-theme-secondary` |
-| theme/accent | `--theme-accent` | `text-theme-accent` |
-| theme/text/on-primary (etc.) | `--theme-on-primary`, `--theme-on-secondary`, `--theme-on-accent` | `text-on-primary` … |
-| competition/team-1, team-2 | `--competition-team-1`, `--competition-team-2` (then `-3`… if more teams) | `bg-team-1` … |
-| competition/text/on-team-1, on-team-2 | `--competition-on-team-1`, `--competition-on-team-2` | `text-on-team-1` … |
+- Individual tournaments have `teams: []`. Team variables are left unset and nothing breaks.
+- Hex values for the default and the Maroon preset live only in this file.
+- A test checks that the Maroon database row matches `MAROON_THEME_PRESET`.
 
 **Provider:** `components/theme/TournamentThemeProvider.tsx`
 - Sets the variables on a wrapper.
-- Exposes `useTournamentTheme()` for things that need real values (SVG charts).
-- The root layout wraps the founding site in it with `MAROON_THEME`.
-- Platform tournament pages wrap in it with that tournament's resolved theme.
+- `useTournamentTheme()` returns real values for SVG and charts.
+- The founding site's root layout uses `MAROON_THEME_PRESET`.
+- Platform tournament pages use that tournament's resolved theme.
 
-**What gets moved over this round:**
+**Migration order:**
+1. **This round:**
+   - Build the resolver and provider.
+   - Connect the platform kit and platform lib to them.
+   - Move the shared primitives onto tokens: `Button`, `Badge`.
+   - Add the font variables.
+2. **Next rounds (one at a time, each checked against Figma):**
+   - High-value tournament screens: the new `/play` Tournament Home, leaderboard, match cards, scorecards.
+   - Then the team model change (`"maroon" | "white"` → team IDs) so `TeamBadge`, `LeaderboardRow` and `Avatar` can use `competition` tokens.
+   - Then broadcast and the remaining legacy classes.
+   - Then the typography migration.
+3. **Stays legacy for now** (documented, not deleted): the `maroon-*`/`gold-*`/`cream-*` Tailwind ramps and every page still using them.
+
+**What gets changed this round:**
 1. **Platform kit** (`components/platform/tournament-site`):
-   - `theme.ts` uses the shared resolver and contrast helper instead of its own.
+   - `theme.ts` uses the shared resolver and contrast helper.
    - `--ts-primary/secondary/accent/on-*` become `--theme-*`.
-   - Team labels use the shared team text color.
+   - Team labels use the `competition` text colors.
 2. **Platform lib:**
    - One shared `TournamentBranding` type replaces the four copies.
-   - `publicSite.ts` and `readiness.ts` use the shared fallback instead of their own greys.
+   - `publicSite.ts` and `readiness.ts` use `SYSTEM_DEFAULT_THEME` instead of their own greys.
 3. **Shared UI:**
-   - `components/ui/Button` (primary / secondary / ghost / inverse / gold) and `components/ui/Badge` (solid / maroon / gold) use theme tokens.
-   - Hover and tint shades come from `color-mix()` of the theme color. For The Maroon these land within a few shades of today's ramp.
-4. **Documentation:** this section, plus a rule in the kit README. New UI uses semantic tokens only, and no new tournament-specific hex values without a written reason.
+   - `components/ui/Button` and `components/ui/Badge` use theme tokens.
+   - Hover and tint shades come from `color-mix()` of the theme colors, so they follow any tournament's palette.
+4. **`app/globals.css`:**
+   - Tailwind aliases for the semantic tokens.
+   - `--font-ui` / `--font-display`.
+   - The legacy ramps stay, labelled legacy.
+5. **Maroon database row:** only if Figma's values differ from the seed, a small data-only SQL file updates the Maroon row. No schema change, and it needs running in Supabase.
+6. **Docs:** this section, plus the same rule in the platform kit README.
 
-**Not included (legacy, later rounds):**
-- The ~1,250 `maroon-*`/`gold-*`/`cream-*` classes across the founding site: broadcast scenes, match graphs, leaderboards, auth pages, CSS modules.
-- The `Team = "maroon" | "white"` data model and `TeamBadge` / `LeaderboardRow` / `Avatar` team styling. These need the team model changed to team IDs first, which is its own round.
-- Any settings UI changes. The Branding editor already saves primary/secondary/accent, and team colors are already editable.
-- Any database change.
+**Not included:** a visual redesign, the font switch, the team model change, the remaining legacy classes, settings UI changes (the Branding and Teams editors already save these colors), and any schema change.
 
 **Decisions needed before building:**
-1. **Fallback for a new tournament with no colors set.**
-   - Recommended: a neutral preset (dark slate / off-white / grey), so a new tournament doesn't look like The Maroon.
-   - Alternative: The Maroon preset as the fallback for everyone.
-2. **Exact Maroon values.**
-   - Recommended: keep the real ones (`#fbf8f1` cream secondary/White team, `#b8945a` gold), since changing them would change the look.
-   - Alternative: switch to `#FFFFFF` / `#D6A75C` everywhere.
+1. **The Maroon's exact Figma values.** I can't read Figma from here. Please either:
+   - (a) paste the hex values of `theme/primary`, `theme/secondary`, `theme/accent`, `competition/team-1` and `competition/team-2` from Figma's Variables panel, or
+   - (b) confirm the brief's values (`#500001` / `#FFFFFF` / `#D6A75C`, teams `#500001` / `#FFFFFF`) are exactly what Figma has.
+2. **The neutral system default.** Does Figma define a neutral/default theme mode?
+   - If yes, I'll use its values.
+   - If no, recommended: a provisional default of primary `#1f2937` (charcoal), secondary `#FFFFFF`, accent `#9ca3af` (grey), marked "provisional until Figma defines it". These are the greys the platform already falls back to.
+3. **Where the new Maroon values show up during migration.** If Figma's white/gold differ from the live cream/gold:
+   - Recommended: the new values apply only to token-based parts (the `/t/` site kit, Button, Badge, new screens). The legacy pages keep cream `#fbf8f1` / gold `#b8945a` until each is migrated. This is safe with no broad visual change, but migrated and unmigrated parts may sit side by side with slightly different whites and golds for a while.
+   - Alternative: also repoint the legacy `cream-50` and `gold-500` to the new values now. The whole site shifts at once (background turns from cream to white everywhere). That's a broad visual change in this round.
 
 **Done means:**
 - One resolver file, used by the platform kit, platform lib, provider and root layout. No other file defines tournament theme colors.
-- Contrast helper tests cover white, cream, maroon, gold, pale yellow, invalid hex and missing teams.
+- A test catches any hex values for the default or Maroon preset defined outside the resolver.
+- Contrast tests cover white, cream, maroon, gold, pale yellow, invalid hex and missing teams.
 - An individual (no-team) tournament renders with no team variables and no errors.
-- A 3-team theme resolves to three team tokens.
-- The Maroon seed matches `MAROON_THEME` (test).
+- A 3-team theme gives three team tokens.
+- The system default is used when a tournament has no branding. The Maroon preset is never used for other tournaments.
 - Existing tests, typecheck, lint and build pass.
-- Before/after screenshots of home, leaderboard, a `/t/` public site page and Button/Badge show The Maroon looking the same.
+- Before/after screenshots (home, leaderboard, a `/t/` page, Button/Badge) show no change except the intended Figma values from Decision 1.
