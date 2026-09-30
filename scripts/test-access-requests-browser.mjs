@@ -83,7 +83,7 @@ try {
   await page.getByRole("button", { name: "Send request", exact: true }).click();
   await page.getByRole("heading", { name: "Request received", exact: true }).waitFor();
   const received = await page.locator("main").innerText();
-  for (const text of ["stays unavailable until your request is approved", "Hill Country Cup", `${year + 1}`, "16", "Kerrville, TX"]) assert.ok(received.includes(text), `received page shows ${text}`);
+  for (const text of ["stays unavailable until your request is approved", "Hill Country Cup", `${year}`, "16", "Kerrville, TX"]) assert.ok(received.includes(text), `received page shows ${text}`);
   if (process.env.SCREENSHOT_DIR) await page.screenshot({ path: `${process.env.SCREENSHOT_DIR}/access-received.png`, fullPage: true });
 
   // Duplicate: reload shows the same status; a second submit returns it without a new row.

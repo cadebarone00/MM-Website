@@ -61,12 +61,12 @@ export function AccessReviewList({ initialRequests }: { initialRequests: AccessR
   const reviewed = requests.filter((request) => request.status !== "pending");
   return <>
     <p className={styles.status} role="status" aria-live="polite">{message}</p>
-    <section aria-labelledby="pending-title">
+    <section className={styles.group} aria-labelledby="pending-title">
       <h2 id="pending-title">Pending ({pending.length})</h2>
       {pending.length === 0 ? <p className={styles.muted}>No requests waiting.</p>
         : <ul className={styles.list}>{pending.map((request) => <RequestCard key={request.reference} request={request} busy={busy} onReview={(decision, note) => review(request.reference, decision, note)} />)}</ul>}
     </section>
-    {reviewed.length > 0 && <section aria-labelledby="reviewed-title">
+    {reviewed.length > 0 && <section className={styles.group} aria-labelledby="reviewed-title">
       <h2 id="reviewed-title">Reviewed</h2>
       <ul className={styles.list}>{reviewed.map((request) => <RequestCard key={request.reference} request={request} busy onReview={() => {}} />)}</ul>
     </section>}

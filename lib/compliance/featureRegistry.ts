@@ -88,6 +88,11 @@ const seeds: FeatureSeed[] = [
     attentionCategories: ["privacy", "personal-data", "ugc", "media-rights", "security", "retention", "organizer-responsibility", "minors", "legal-review"],
   },
   {
+    id: "creator-access-requests", name: "Creator access requests",
+    scope: "Beta requests to create tournaments (/tournaments/request-access): the signed-in account's email (snapshot), requester name, tournament/group name, year, approximate player count, optional location and optional free-text note; status pending/approved/denied, reviewer, review time and a decision note shown to the requester. Platform-admin review at /admin/tournament-access; approval writes tournament_creator_access. No notifications are sent. Review purpose limitation, free-text content, retention of denied/old requests, deletion with the account (cascade), reviewer access and disclosure in the privacy notice. Not yet in production.",
+    attentionCategories: ["privacy", "personal-data", "user-accounts", "security", "retention", "account-deletion", "audit-logging", "platform-rules", "legal-review"],
+  },
+  {
     id: "player-accounts", name: "Player accounts",
     scope: "Review authentication, recovery, sessions, age handling, account terms, identity linking and deletion, including non-account participants.",
     attentionCategories: ["privacy", "personal-data", "user-accounts", "account-deletion", "security", "retention", "minors", "platform-rules", "legal-review"],

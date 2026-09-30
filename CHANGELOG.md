@@ -3,6 +3,44 @@
 Platform-level changes (multi-tenant productization). Detailed history of
 the founding tournament's features lives in `project_specs.md`.
 
+## 2026-09-30 — Beta creator-access requests
+
+**What changed**
+- New migration `supabase/platform_access_requests.sql` (needs C1; not run
+  in production): table `tournament_access_requests` and service-role-only
+  functions `can_create_tournament`, `get_my_tournament_access`,
+  `submit_tournament_access_request`, `list_tournament_access_requests`,
+  `review_tournament_access_request`. Approval upserts the existing
+  `tournament_creator_access`; a request alone grants nothing.
+- Routes: `/tournaments/request-access` (requester), `/admin/tournament-access`
+  (platform admins; neutral shell labelled "Platform Admin"), APIs
+  `POST /api/platform/access-requests` and `.../access-requests/review`.
+- Entry points: notice on `/tournaments/new`, Request access on the empty My
+  Tournaments page, and the create API's 403 message points to the request page.
+- `lib/platform/accessRequests.ts` (validation, parsing, error mapping) and
+  `accessRequestsServer.ts`. "request-access" added to reserved addresses.
+- Test tooling: `scripts/fake-supabase.mjs` passes Postgres error hints (as
+  real PostgREST does) and loads the new migration; new
+  `npm run test:browser:access`.
+- Privacy: DATA_INVENTORY D-05a, compliance registry entry
+  `creator-access-requests` (17 features), privacy policy draft lists the
+  new data and purpose. No notifications are sent.
+
+**Testing**
+- `lib/platform/accessRequests.test.ts` (5): form rules; submit once, duplicate
+  returns the same pending request, database one-pending index; request
+  grants nothing (even a hand-written "approved" request row); requesters see
+  only their own; only admins list/review (others and anon/authenticated
+  refused); approve → creator access → can create; deny → nothing granted,
+  neutral status, no re-request; already-reviewed refused;
+  `can_create_tournament` matches `create_tournament_shell` and
+  `entitlements.ts` in both creation modes; no live-scoring reads or writes.
+  A deliberate break (deny also granting access) fails the suite.
+- `test:browser:access`: signed out → login; both entry points; read-only
+  email; validation; request received; duplicate; requester can't open or
+  call review; admin approves and denies; approved user creates a tournament;
+  denied user sees Contact us; phone width.
+
 ## 2026-09-30 — My Tournaments (/tournaments)
 
 **What changed**

@@ -2,7 +2,7 @@
 .wide { max-width: 1000px; }
 .page h1 { font-family: var(--font-spectral), Georgia, serif; color: #500001; font-size: clamp(30px, 4vw, 40px); line-height: 1.2; margin: 0 0 8px; }
 .page > p { margin: 0 0 24px; color: #6f655b; }
-.page section > h2 { font-size: 18px; margin: 28px 0 12px; color: #302c28; }
+.group > h2 { font-size: 18px; margin: 28px 0 12px; color: #302c28; }
 .card { display: grid; gap: 14px; padding: 24px; border: 1px solid #dfd4c4; border-radius: 12px; background: #fffdf8; min-width: 0; }
 .card h2 { font-family: var(--font-spectral), Georgia, serif; color: #500001; font-size: 26px; margin: 0; }
 .card p { margin: 0; color: #6f655b; line-height: 1.6; }

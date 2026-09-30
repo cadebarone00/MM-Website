@@ -588,6 +588,30 @@ dates become per-edition activation dates.
   Public Site. Empty state: "No tournaments yet" + Create Tournament, with
   the invite-only beta explained.
 
+### 9.5 Built: beta creator-access requests (2026-09-30; not yet in production)
+- **Who can create** is still decided only by `tournament_creator_access`
+  (+ `platform_settings` and platform admin), exactly as
+  `create_tournament_shell` enforces. A request never grants anything.
+- **Requester** (`/tournaments/request-access`, signed-in only): name
+  (prefilled), account email (read-only, snapshotted server-side), tournament
+  or group name, year, approximate players, optional location, optional note.
+  One pending request per person (database unique index); a second submit
+  shows the existing one. States: form → "Request received" (creation stays
+  unavailable) → "You're approved" (Create Tournament) or "Request not
+  approved" (decision note + Contact us; no re-request loop).
+- **Entry points:** `/tournaments/new` shows a notice (request access / being
+  reviewed / not approved) above the draft workspace; the empty My
+  Tournaments page offers Request access instead of Create; the create API's
+  403 now points to the request page. Local drafts still work.
+- **Platform admin** (`/admin/tournament-access`, neutral shell labelled
+  "Platform Admin", not the Admin Center; 404 for everyone else): pending and
+  reviewed requests, Approve / Deny with an optional note shown to the
+  requester. Approval upserts `tournament_creator_access` = approved; denial
+  changes nothing else; a reviewed request can't be re-decided. Requests are
+  identified by a short reference number, not the row id.
+- **Data:** `tournament_access_requests` (`supabase/platform_access_requests.sql`),
+  service role only. No notifications (status is shown in the site).
+
 ## 10. App architecture
 The Player Portal (`/portal`) and Admin Center (`/portal/admin`) become
 tournament-scoped: a user with several memberships picks a tournament. An

@@ -19,6 +19,7 @@ Depending on features used, The Maroon may process:
 - account identifiers and authentication records;
 - name, email address, and profile information;
 - tournament memberships, roles, invitations, and organizer relationships;
+- requests to create tournaments during the beta (your name, account email, tournament or group name, year, approximate player count, optional location and an optional note), and the review decision;
 - golfer/player records, team assignments, handicaps, bios, and profile photos where enabled;
 - tournament configuration, dates, destinations, courses, rounds, formats, schedules, and settings;
 - scores, statistics, match history, standings, results, audit events, and historical records;
@@ -49,6 +50,7 @@ Information may be used to:
 - create and manage accounts;
 - create and configure tournaments;
 - authorize tournament access;
+- review requests to create tournaments and tell you the decision;
 - invite participants;
 - operate scoring, standings, schedules, teams, courses, and tournament history;
 - provide public tournament pages according to organizer visibility settings;

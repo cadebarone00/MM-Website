@@ -20,7 +20,7 @@ export default async function TournamentAccessAdminPage() {
   return <OrganizerStudioShell page="admin">
     <main className={`${styles.page} ${styles.wide}`}>
       <h1>Tournament access requests</h1>
-      <p>Approving gives the person creator access (tournament_creator_access). Denying changes nothing else. Decision notes are shown to the requester.</p>
+      <p>Approving lets the person create tournaments right away. Denying changes nothing else. Decision notes are shown to the requester.</p>
       <AccessReviewList initialRequests={result.requests} />
     </main>
   </OrganizerStudioShell>;
