@@ -99,12 +99,12 @@ const seeds: FeatureSeed[] = [
   },
   {
     id: "external-device-media", name: "External/device media",
-    scope: "Distinguish device-only playback from embeds and external links. Review file/metadata transmission, third-party tracking, licensing, terms and removal capability.",
+    scope: "Commercial V1 supports none or device_external media. Distinguish device-only playback from embeds and external links; device_external does not authorize copying uploads into Maroon-hosted storage. Review transmission, tracking, licensing, terms and removal capability.",
     attentionCategories: ["privacy", "intellectual-property", "ugc", "media-rights", "security", "retention", "platform-rules", "legal-review"],
   },
   {
     id: "hosted-media", name: "Hosted media",
-    scope: "Review uploads, storage, playback, derivatives, music and participant rights, moderation/takedowns, CDN caches, retention and signed access.",
+    scope: "maroon_hosted is reserved for future commercial use, not commercial V1. The founding Maroon Tournament may retain its existing hosted media behavior. Review uploads, playback, music/participant rights, moderation, caches, retention and access; this record does not enable hosting.",
     attentionCategories: ["privacy", "personal-data", "intellectual-property", "ugc", "media-rights", "security", "retention", "minors", "platform-rules", "legal-review"],
   },
   {
@@ -168,6 +168,17 @@ export const featureRegistry = {
   schemaVersion: 1,
   createdOn: "2026-09-29",
   purpose: "Internal issue tracking; not legal advice, certification, or a runtime/deployment gate.",
+  documentation: [
+    "LEGAL_COMPLIANCE_SPEC.md", "FEATURE_COMPLIANCE_CHECKLIST.md",
+    "OPEN_SOURCE_LICENSES.md", "DATA_INVENTORY.md",
+    "LEGAL_REVIEW_REQUIRED.md", "INITIAL_COMPLIANCE_AUDIT.md",
+  ],
+  // Descriptive compliance metadata only; no runtime entitlement changes.
+  mediaPolicy: {
+    commercialV1: ["none", "device_external"],
+    reservedFuture: ["maroon_hosted"],
+    foundingMaroonExistingHostedMedia: "retained",
+  },
   features: seeds.map(seed => reviewedRecords[seed.id] ?? createUnreviewedRecord(seed)),
 };
 

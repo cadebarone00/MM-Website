@@ -8,6 +8,10 @@ Add a dated entry at the top of the guide's `## What changed` section. Explain t
 
 Run `npm run docs:workflow` to regenerate `docs/app-workflow.html`, then `npm run docs:workflow:check` to verify it matches the Markdown. Include both files with the change. Do not hand-edit the generated HTML. For presentation changes, open the HTML in a browser and check the change panel, navigation, and search.
 
+## Mandatory material-feature compliance review
+
+Before implementing a material feature, read `LEGAL_COMPLIANCE_SPEC.md`, `FEATURE_COMPLIANCE_CHECKLIST.md`, and `lib/compliance/featureRegistry.ts`. Consider privacy, personal data, intellectual property, user-generated content, security, retention, payments, subscriptions, advertising/sponsorship, platform/provider rules, and professional legal review. Record applicable findings and follow-ups in the feature review; unresolved legal issues must remain `review_required`, never assumed compliant. Run `npm run compliance:check` when changing compliance registry metadata; it validates structure only and cannot establish legal compliance or authorize release.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

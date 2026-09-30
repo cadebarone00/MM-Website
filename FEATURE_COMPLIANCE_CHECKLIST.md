@@ -138,11 +138,12 @@ Use `scopeRevision` for material changes. Reset affected statuses to `review_req
 Optional local inspection (PowerShell):
 
 ```powershell
+npm.cmd run compliance:check
 npx.cmd tsx --test lib/compliance/featureRegistry.test.ts
 npx.cmd tsx -e "import { featureRegistry, reviewRecordFindings } from './lib/compliance/featureRegistry.ts'; const today = new Date().toISOString().slice(0, 10); console.log(JSON.stringify(featureRegistry.features.map(feature => ({ id: feature.id, findings: reviewRecordFindings(feature, today) })), null, 2));"
 ```
 
-The registry is JSON-serializable and imports no application services. Initial results intentionally flag all features as requiring review. Neither the helper nor these commands is installed as a CI gate, production hook or access-control system. Runtime enforcement and integration would require a separate authorized change.
+The registry is JSON-serializable and imports no application services. `compliance:check` validates deterministic structure and explicit repository documentation file existence only; unresolved legal reviews, null reviewers and empty evidence remain valid structural data. It does not call `reviewRecordFindings`, whose separate output intentionally flags unresolved reviews. Neither helper nor these commands is installed as a CI gate, production hook or access-control system. Runtime enforcement and integration would require a separate authorized change.
 
 ## What changed
 

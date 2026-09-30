@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "compliance:check": "tsx scripts/check-compliance.ts",
     "docs:workflow": "node scripts/render-workflow.cjs",
     "docs:workflow:check": "node scripts/render-workflow.cjs --check",
     "build:career-archive": "tsx scripts/build-career-archive.ts",

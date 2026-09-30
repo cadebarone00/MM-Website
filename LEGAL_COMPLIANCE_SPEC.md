@@ -107,6 +107,12 @@ The registry helper reports record completeness and unresolved categories only. 
 
 ## Media rights
 
+### Commercial-media policy
+
+Commercial V1 media modes are `none` (no media) and `device_external` (device media or external links/embeds). `device_external` does not authorize uploading or copying files into Maroon-hosted storage. External providers, tracking, content rights and participant privacy still require review.
+
+`maroon_hosted` is reserved for future commercial use. The founding Maroon Tournament may retain its existing hosted-media behavior; this exception does not enable hosting for other tournaments or certify existing media rights. The registry records these boundaries in `mediaPolicy` and the external/device and hosted-media feature scopes. This is descriptive compliance metadata, not a change to entitlements, storage, the wizard or runtime behavior.
+
 - **Engineering:** Distinguish device-only playback, third-party links/embeds and hosted copies. Document whether metadata, credentials, IP addresses or files leave the device. Restrict uploads and signed URLs; plan removal of originals, thumbnails, transcodes and cached copies.
 - **Policy/document:** Record uploader permission, photographer/videographer rights, participant releases where required, music/broadcast licenses, venue permissions and permitted reuse. External hosting does not automatically clear rights or privacy concerns.
 - **Outside attorney/CPA:** Counsel reviews publicity/privacy rights, recording consent, minors, music, broadcast/retransmission, territorial restrictions and infringement complaints.
@@ -205,10 +211,14 @@ Analytics require event/identifier and SDK inventories, purposes, consent/opt-ou
 
 ## Evidence, maintenance and source limits
 
+Run `npm run compliance:check` to validate deterministic registry structure and the existence of its explicit repository documentation references. It checks required fields/types, duplicate IDs, category/status/state vocabulary and media-policy metadata shape. It accepts unresolved reviews and nullable review fields. It does not invoke the date-sensitive `reviewRecordFindings` helper, inspect private evidence, judge legal compliance, verify professional approval or authorize deployment. This local check has no network/database access or application integration.
+
 Sources above were consulted on 2026-09-29 as official starting points for issue identification. They do not establish The Maroon's jurisdictions or compliance and do not exhaust non-US requirements. Recheck the operative law, contracts and platform terms with appropriate reviewers before launch; search summaries or old policy snapshots are not release evidence.
 
 Store a completed checklist and non-sensitive evidence references for each significant feature/release. Keep contracts, legal advice, identity documents and personal/tax information in restricted storage. Record feature owner, scope revision, reviewed commit, assessment and next-review dates; changes invalidate prior sign-off until reassessed.
 
 ## What changed
+
+**2026-09-29 — Lightweight structure check and guidance only.** Added an explicit local registry-structure command, mandatory material-feature review guidance in AGENTS.md, and the commercial-media metadata boundary (`none`/`device_external`; `maroon_hosted` reserved, with founding-Maroon continuity). Unresolved reviews remain unresolved. No tournament, scoring, persistence, entitlement or database behavior changed.
 
 **2026-09-29 — Documentation/configuration only; not deployed or enforced.** Established the first internal framework, feature review registry and reusable checklist. Before this change there was no framework in these files; afterward significant future features have a common way to record unresolved requirements and evidence. No existing feature is newly declared compliant and no runtime behavior or deployment workflow changes.
