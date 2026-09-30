@@ -13,8 +13,9 @@ skip any. Each step says what "good" looks like.
 
 | CREATE | `supabase/platform_create_tournament.sql` | Lets invited organizers save a new tournament from `/tournaments/new` | Run `drop function public.create_tournament_shell(uuid, jsonb);` |
 | DASHBOARD | `supabase/platform_dashboard.sql` | Lets organizers edit, save and publish each setup section on `/tournaments/<address>/<year>` | Run `drop function public.set_edition_published(uuid, uuid, boolean); drop function public.save_tournament_section(uuid, uuid, text, jsonb); drop function public.get_tournament_setup(uuid, uuid); drop function public.can_manage_edition(uuid, uuid);` |
+| PUBLIC SITE | `supabase/platform_public_site.sql` | Serves published customer tournaments at `/t/<address>/<year>` (visitor-safe, read-only; never The Maroon's live tables) | Run `drop function public.get_public_tournament_site(text, integer, uuid); drop function public.get_public_tournament_years(text, uuid); drop function public.can_view_tournament(uuid, uuid);` |
 
-C2, CREATE and DASHBOARD each need C1 (none needs another). Run C1 before CREATE and DASHBOARD, since C1 also adds the planned-courses and planned-rounds tables they use. To undo C1, first
+C2, CREATE, DASHBOARD and PUBLIC SITE each need C1 (none needs another). Run C1 before CREATE and DASHBOARD, since C1 also adds the planned-courses and planned-rounds tables they use. To undo C1, first
 undo C2 and CREATE.
 
 ---
@@ -30,7 +31,7 @@ undo C2 and CREATE.
 
 ## 2. Make a backup (both parts)
 
-**Part A: download a copy of every table (works on every Supabase plan).**
+**Part A: export REST-visible application rows (not a full database backup).**
 1. In VS Code's terminal, in the project folder, run:
    ```
    npm run backup:production
@@ -41,17 +42,34 @@ undo C2 and CREATE.
 4. That folder is your data backup. `out/` is never uploaded to GitHub.
    Keep the folder until the migration has been checked.
 
-This copies data only (every row of every table), not database code such
-as functions and triggers. The database code is already saved in the
-`supabase/` folder in git.
+This copies only resources discovered through the REST API and accessible
+to the configured key, without a shared transaction snapshot. It does not
+capture database schema, functions, triggers, policies, Auth or media bytes.
+SQL in `supabase/` records intended database code, not verified deployed drift.
+See [Backup & Recovery](../BACKUP_RECOVERY_SPEC.md) for the coverage audit.
 
 **Part B: check Supabase's own backup.**
 1. Go to supabase.com → your project → **Database** (left sidebar) →
    **Backups**.
 2. If you see daily backups listed (paid plans), write down the time of
    the newest one. Supabase can restore the whole database to that point.
-3. If the page says backups aren't available on your plan, that's OK.
-   Part A is your backup. Just be aware there's no one-click restore.
+3. If backups are unavailable, record the gap. Do not treat Part A as a
+   full recovery substitute for a high-risk migration.
+
+**Additional recovery gate for future high-risk migrations (including C4):**
+
+- [ ] Fresh successful independent PostgreSQL backup, checksum verified and
+      protected off-site; see `npm run backup:database` prerequisites in the spec.
+- [ ] Provider backup availability and latest recovery point confirmed, or stop
+      and resolve the missing protection before proceeding.
+- [ ] Clean Git state and exact code/SQL revision recorded; coordinate other agents.
+- [ ] Known, rehearsed restore path using [the isolated drill](restore-drill.md).
+- [ ] Practice migration succeeds on an isolated restored database.
+- [ ] Reviewed rollback versus restore strategy, including writes made since backup
+      and impact on every live tournament. An undo script is not a data restore.
+
+These are operational prerequisites only; migration SQL and execution semantics
+are unchanged. Do not run production backup or restore automatically.
 
 ## 3. Run the migration
 1. Supabase → **SQL Editor** → **New query**.

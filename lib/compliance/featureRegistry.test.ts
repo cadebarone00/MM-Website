@@ -32,9 +32,9 @@ function completedMetadata(): FeatureComplianceRecord {
   return record;
 }
 
-test("all 14 initial features are explicit, independent, JSON-serializable and unreviewed", () => {
-  assert.equal(featureRegistry.features.length, 14);
-  assert.equal(new Set(featureRegistry.features.map(feature => feature.id)).size, 14);
+test("all 16 features (14 initial + backup-recovery + public-tournament-site) are explicit, independent, JSON-serializable and unreviewed", () => {
+  assert.equal(featureRegistry.features.length, 16);
+  assert.equal(new Set(featureRegistry.features.map(feature => feature.id)).size, 16);
   assert.deepEqual(JSON.parse(JSON.stringify(featureRegistry)), featureRegistry);
   for (const feature of featureRegistry.features) {
     assert.deepEqual(Object.keys(feature.assessments).sort(), [...COMPLIANCE_CATEGORIES].sort());

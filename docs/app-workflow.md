@@ -8,6 +8,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
+  %% Operator recovery tooling only: REST row exports; optional explicit pg_dump to local dump/manifest; isolated restore drill documented. No provider monitoring, PITR activation or application integration.
   %% Login fields and submit use transparent maroon-backed boxes, gold outlines and white Spectral text; Sign Up is a standalone left-aligned link.
   %% Log In and Sign Up use Main Page navigation, a narrow gold-bordered maroon form on the left and a desktop-only Mission Hills photo; mobile fills the screen below navigation.
   %% Public tournament site kit is fixture-only; local HTML preview in out/tournament-site-preview, no /t route or live data connection.
@@ -526,6 +527,8 @@ Fantasy, Merchandise, Vault, Settings, My Team, and Sponsorship currently render
 
 ## 23. Hosting, storage, and release workflow
 
+Operator recovery is documented in [Backup & Recovery](../BACKUP_RECOVERY_SPEC.md) and [the isolated restore drill](restore-drill.md). Existing `backup:production` exports REST-visible rows without a database-wide snapshot. The optional `backup:database` command requires an explicit production connection environment variable and compatible `pg_dump`, writing a custom-format dump and checksum manifest locally. It has not been run against production. Provider backups/PITR, Auth recovery and independent media copies remain unverified; secrets require separate protected recovery. The backup-health model uses fixtures only, with no admin UI or provider connection. No automated restore or retention deletion exists.
+
 | Component | Responsibility |
 |---|---|
 | Browser | Interface, local drafts, retry queue, some preferences |
@@ -573,6 +576,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**September 30, 2026 - Backup and recovery operations (implemented locally; deployment and production recovery not verified).** Previously the operational guide relied on REST row exports and provider backup checks. Added a separate explicit PostgreSQL dump command with timestamped manifests/checksums, fixture-only backup-health model, coverage audit, planning objectives and isolated restore-drill instructions. Updated section 23, the flowchart annotation and high-risk migration prerequisites. No application workflow paths or overview boxes changed; renderer mapping remains unchanged. Provider scheduling, PITR and production restore are not implemented by this work.
 
 **2026-09-30 - Gold-outline login controls (presentation implemented locally; deployment not verified).** The login fields and button previously had white fills and mixed font families. They now have transparent backgrounds, gold borders, white text, and the shared Spectral font throughout the login form. Removed the account prompt, leaving a left-aligned Sign Up link. Updated section 1 and Mermaid annotation; authentication behavior and overview mappings are unchanged.
 
