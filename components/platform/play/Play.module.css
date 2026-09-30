@@ -128,3 +128,6 @@
 .navItem[aria-current="page"] svg{color:var(--play-accent)}
 
 @media(max-width:380px){.screen{padding:0 12px}.identity h1{font-size:26px}.matchFacts{grid-template-columns:1fr}.navItem{font-size:10px}.areas{grid-template-columns:1fr}}
+
+/* The site-wide h1/h2 rule forces the serif with !important; this app uses the condensed sports face. */
+.app h1,.app h2{font-family:var(--font-barlow-condensed),system-ui,sans-serif!important}

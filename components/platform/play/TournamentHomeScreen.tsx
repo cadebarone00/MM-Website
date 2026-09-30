@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- Optional organizer branding URL, same as the public UI kit; no Next image service dependency. */
 import Link from "next/link";
 import { ChevronRight, ListOrdered, MoreHorizontal, Swords, Users } from "lucide-react";
 import { imageSource, readableText, safeColor } from "@/components/platform/tournament-site/theme";
@@ -74,7 +75,7 @@ function Areas({ slug, year }: { slug: string; year: number }) {
 
 export function TournamentHomeScreen({ home }: { home: TournamentHome }) {
   const { slug, year, site, feed } = home;
-  return <PlayShell slug={slug} year={year} site={site} tab="home">
+  return <PlayShell home={home} tab="home">
     <IdentityHeader site={site} year={year} />
     <div className={styles.stack}>
       <YourMatch site={site} />

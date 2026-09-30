@@ -8,8 +8,9 @@ import { Holding, initials, PlaySection, PlayShell } from "./PlayShell";
 import styles from "./Play.module.css";
 
 /** Matches: the real round schedule; pairings wait for live scoring. */
-export function PlayMatches({ home: { slug, year, site } }: { home: TournamentHome }) {
-  return <PlayShell slug={slug} year={year} site={site} tab="matches">
+export function PlayMatches({ home }: { home: TournamentHome }) {
+  const { site } = home;
+  return <PlayShell home={home} tab="matches">
     <div className={styles.stack}>
       <h1 className={styles.tabTitle}>Matches</h1>
       <Holding title={PAIRINGS_HOLDING}>Matchups appear here once the commissioner posts them.</Holding>
@@ -26,8 +27,9 @@ export function PlayMatches({ home: { slug, year, site } }: { home: TournamentHo
 }
 
 /** Leaderboard: nothing to rank until live scoring exists, so a holding state plus the teams. */
-export function PlayLeaderboard({ home: { slug, year, site } }: { home: TournamentHome }) {
-  return <PlayShell slug={slug} year={year} site={site} tab="leaderboard">
+export function PlayLeaderboard({ home }: { home: TournamentHome }) {
+  const { site } = home;
+  return <PlayShell home={home} tab="leaderboard">
     <div className={styles.stack}>
       <h1 className={styles.tabTitle}>Leaderboard</h1>
       <Holding title={SCORING_HOLDING}>Standings update here once rounds are scored.</Holding>
@@ -43,12 +45,13 @@ export function PlayLeaderboard({ home: { slug, year, site } }: { home: Tourname
 }
 
 /** Players: the real roster, grouped by team when there are teams. */
-export function PlayPlayers({ home: { slug, year, site } }: { home: TournamentHome }) {
+export function PlayPlayers({ home }: { home: TournamentHome }) {
+  const { site } = home;
   const groups = site.competition === "teams" && site.teams.length
     ? [...site.teams.map((team) => ({ key: team.id, title: team.name, color: team.color, players: site.players.filter((p) => p.teamId === team.id) })),
       { key: "none", title: "Not on a team yet", color: null, players: site.players.filter((p) => !p.teamId || !site.teams.some((t) => t.id === p.teamId)) }]
     : [{ key: "all", title: "The field", color: null, players: site.players }];
-  return <PlayShell slug={slug} year={year} site={site} tab="players">
+  return <PlayShell home={home} tab="players">
     <div className={styles.stack}>
       <h1 className={styles.tabTitle}>Players</h1>
       {site.players.length === 0 ? <Holding title="No players listed yet." />
@@ -63,8 +66,9 @@ export function PlayPlayers({ home: { slug, year, site } }: { home: TournamentHo
 }
 
 /** More: courses, tournament info and the public website. */
-export function PlayMore({ home: { slug, year, site } }: { home: TournamentHome }) {
-  return <PlayShell slug={slug} year={year} site={site} tab="more">
+export function PlayMore({ home }: { home: TournamentHome }) {
+  const { slug, year, site } = home;
+  return <PlayShell home={home} tab="more">
     <div className={styles.stack}>
       <h1 className={styles.tabTitle}>More</h1>
       <PlaySection title="Courses">

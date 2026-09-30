@@ -1,8 +1,8 @@
 import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import { ChevronLeft, Home, ListOrdered, MoreHorizontal, Swords, Users } from "lucide-react";
-import { readableText, safeColor } from "@/components/platform/tournament-site/theme";
-import type { TournamentSiteData } from "@/components/platform/tournament-site/types";
+import { readableText } from "@/components/platform/tournament-site/theme";
+import type { TournamentHome } from "@/lib/platform/tournamentHomeServer";
 import { PLAY_TAB_LABELS, PLAY_TABS, playPath, type PlayTab } from "@/lib/platform/tournamentHome";
 import styles from "./Play.module.css";
 
@@ -14,9 +14,10 @@ const ICONS: Record<PlayTab, typeof Home> = { home: Home, matches: Swords, leade
  * tournament's own accent color tints highlights; the environment stays
  * The Maroon's deep maroon.
  */
-export function PlayShell({ slug, year, site, tab, children }: { slug: string; year: number; site: TournamentSiteData; tab: PlayTab; children: ReactNode }) {
-  const accent = safeColor(site.branding.accent, "#d6b85c");
-  const primary = safeColor(site.branding.primary, "#500001");
+export function PlayShell({ home: { slug, year, site, colors }, tab, children }: { home: TournamentHome; tab: PlayTab; children: ReactNode }) {
+  // No organizer colors → The Maroon's own gold on maroon.
+  const accent = colors.accent ?? "#d6b85c";
+  const primary = colors.primary ?? "#500001";
   const theme = { "--play-accent": accent, "--play-on-accent": readableText(accent), "--play-brand": primary } as CSSProperties;
   return <div className={styles.app} style={theme}>
     <header className={styles.topBar}>

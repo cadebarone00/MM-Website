@@ -11,6 +11,8 @@ export interface TournamentHome {
   slug: string;
   year: number;
   site: TournamentSiteData;
+  /** The organizer's own colors (valid hex), or null when not set, so the app can fall back to The Maroon's palette. */
+  colors: { primary: string | null; accent: string | null };
   /** null when the activity feed is unavailable; the home page then hides those sections. */
   feed: TournamentActivityFeed | null;
 }
@@ -27,5 +29,7 @@ export const loadTournamentHome = cache(async (slug: string, year: string): Prom
   const tournament = await loadPublicTournament(slug, year);
   if (!tournament) notFound();
   const feed = await loadTournamentActivity(tournament.tournament.slug, tournament.edition.seasonYear);
-  return { slug: tournament.tournament.slug, year: tournament.edition.seasonYear, site: toSiteData(tournament), feed };
+  const hex = (value: unknown) => (typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value) ? value : null);
+  const colors = { primary: hex(tournament.tournament.branding.primary), accent: hex(tournament.tournament.branding.accent) };
+  return { slug: tournament.tournament.slug, year: tournament.edition.seasonYear, site: toSiteData(tournament), colors, feed };
 });

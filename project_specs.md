@@ -1158,7 +1158,7 @@ but not yet run in production; nothing in the existing app reads it yet.
 - The home button links to the page.
 - Typecheck, lint and existing tests pass, and there's a new test for the link check.
 
-### Round: Activity + announcements on Tournament Home (spec 2026-09-30, ON HOLD — waiting for the fantasy-style Tournament Home from the other session to be committed)
+### Round: Activity + announcements on Tournament Home (spec 2026-09-30, SUPERSEDED — built as part of the Tournament Home round below)
 
 **What it is:** Show the already-built activity backend (`lib/platform/activity.ts`, `activityServer.ts`, `supabase/platform_activity.sql`, the activity GET and announcements POST routes) on a tournament's home page, `/t/<tournament>/<year>`. The backend, schema and permission rules stay exactly as they are.
 
@@ -1195,7 +1195,7 @@ but not yet run in production; nothing in the existing app reads it yet.
 - Only commissioners and admins see Post Announcement, and posting shows the new item straight away.
 - Tests, typecheck, lint and the build pass, including a browser check of each role against the fake database.
 
-### Round: Tournament Home — logged-in app (spec 2026-09-30, awaiting approval; replaces the ON HOLD round above)
+### Round: Tournament Home — logged-in app (spec 2026-09-30, approved and built 2026-09-30; not yet in production — needs `platform_activity.sql` for announcements/activity)
 
 **What it is:** The logged-in "fantasy league" screen for a tournament's players and commissioners. It is a **new** screen. `/t/<tournament>/<year>` stays the public website and is not changed. Visual starting point: Figma "The Maroon — Full App Screens" → Tournament / Home (node 23:629), in the Sleeper-inspired Maroon app system:
 - deep maroon, layered dark surfaces
