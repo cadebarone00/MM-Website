@@ -1,10 +1,15 @@
-import { isTimezone, type ConfigError, type TournamentConfig } from "./tournamentConfig.ts";
+import { isTimezone, tournamentSlugError, type ConfigError, type TournamentConfig } from "./tournamentConfig.ts";
+
+export { suggestTournamentSlug } from "./tournamentConfig.ts";
 import { isFormatKey } from "./formats.ts";
 
 /** Local planning data only. This deliberately cannot be passed as a ready-to-play config. */
 export interface TournamentDraft {
   schemaVersion: 1;
   status: "draft";
+  /** The edition year. Dates are optional at creation; the year is not. */
+  seasonYear: number;
+  /** startDate/endDate are "" until the organizer decides them. */
   basics: TournamentConfig["basics"];
   competitionType: "individual" | "teams";
   expectedPlayerCount: number;
@@ -20,6 +25,10 @@ export interface TournamentDraft {
 
 export interface DraftInput {
   name: string;
+  /** Web address: /t/<slug>/<seasonYear>. */
+  slug: string;
+  seasonYear: number;
+  /** Optional at creation: "" means not decided yet. */
   startDate: string;
   endDate: string;
   timezone: string;
@@ -34,7 +43,7 @@ export interface DraftInput {
 }
 
 export const INITIAL_DRAFT_INPUT: DraftInput = {
-  name: "", startDate: "", endDate: "", timezone: "America/Chicago", visibility: "private",
+  name: "", slug: "", seasonYear: new Date().getFullYear(), startDate: "", endDate: "", timezone: "America/Chicago", visibility: "private",
   competitionType: "individual", expectedPlayerCount: 12, teamNames: ["", ""],
   roundCount: 3, scoringMode: "tbd", formats: [null, null, null], branding: null,
 };
@@ -49,8 +58,14 @@ export function validateDraftInput(input: DraftInput): ConfigError[] {
   const errors: ConfigError[] = [];
   const fail = (field: string, message: string) => errors.push({ field, message });
   if (!input.name.trim() || input.name.trim().length > 80) fail("name", "Enter a tournament name (1–80 characters).");
-  if (!realDate(input.startDate)) fail("startDate", "Choose a valid start date.");
-  if (!realDate(input.endDate)) fail("endDate", "Choose a valid end date.");
+  const slugError = tournamentSlugError(input.slug.trim());
+  if (slugError) fail("slug", slugError);
+  if (!Number.isInteger(input.seasonYear) || input.seasonYear < 2000 || input.seasonYear > 2200) fail("seasonYear", "Choose the tournament year.");
+  // Dates can wait, but if either is given both must be real.
+  const datesGiven = input.startDate !== "" || input.endDate !== "";
+  if (datesGiven && !realDate(input.startDate)) fail("startDate", "Choose a valid start date, or leave both dates blank for now.");
+  if (datesGiven && !realDate(input.endDate)) fail("endDate", "Choose a valid end date, or leave both dates blank for now.");
+  if (realDate(input.startDate) && Number(input.startDate.slice(0, 4)) !== input.seasonYear) fail("seasonYear", "The year must match the start date.");
   if (realDate(input.startDate) && realDate(input.endDate)) {
     const days = (Date.parse(input.endDate) - Date.parse(input.startDate)) / 86400000 + 1;
     if (days < 1 || days > 14) fail("endDate", "End date must be on or after the start, within 14 days.");
@@ -78,11 +93,9 @@ export function createTournamentDraft(input: DraftInput): { ok: true; draft: Tou
   const errors = validateDraftInput(input);
   if (errors.length) return { ok: false, errors };
   const name = input.name.trim();
-  // A suggestion only: no URL is reserved or created by this local shell.
-  const slugBase = name.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 49).replace(/-$/, "");
   return { ok: true, draft: {
-    schemaVersion: 1, status: "draft",
-    basics: { name, shortName: name.slice(0, 24), slug: `${slugBase || "new"}-tournament`, description: null, destination: null, startDate: input.startDate, endDate: input.endDate, timezone: input.timezone.trim(), visibility: input.visibility },
+    schemaVersion: 1, status: "draft", seasonYear: input.seasonYear,
+    basics: { name, shortName: name.slice(0, 24).trim(), slug: input.slug.trim(), description: null, destination: null, startDate: input.startDate, endDate: input.endDate, timezone: input.timezone.trim(), visibility: input.visibility },
     competitionType: input.competitionType, expectedPlayerCount: input.expectedPlayerCount,
     teams: input.competitionType === "teams" ? input.teamNames.map((name, index) => ({ key: `team-${index + 1}`, name: name.trim(), color: null, captainPlayerKey: null })) : [],
     players: [], rounds: input.formats.map(format => ({ day: null, label: null, format, courseId: null })),
@@ -96,7 +109,9 @@ export interface SetupSection { name: string; status: SetupStatus; detail: strin
 
 export function draftSetup(draft: TournamentDraft) {
   const sections: SetupSection[] = [
-    { name: "Basics", status: "Complete", detail: "Name, dates, timezone and privacy are set.", step: 0, required: true },
+    draft.basics.startDate
+      ? { name: "Basics", status: "Complete", detail: "Name, web address, dates, timezone and privacy are set.", step: 0, required: true }
+      : { name: "Basics", status: "Needs Attention", detail: `Set for ${draft.seasonYear}. Add the dates when you know them.`, step: 0, required: true },
     { name: "Players", status: "Not Started", detail: `0 of ${draft.expectedPlayerCount} planned players added. Player names, emails and handicaps come later.`, required: true },
     { name: "Teams", status: draft.teams.length ? "Needs Attention" : "Optional", detail: draft.teams.length ? `${draft.teams.length} teams named. Assign players and captains later.` : "Not needed for an individual tournament.", step: draft.teams.length ? 1 : undefined, required: draft.teams.length > 0 },
     { name: "Courses", status: "Not Started", detail: "Choose courses and tees for each round later.", required: true },

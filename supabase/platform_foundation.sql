@@ -185,6 +185,11 @@ create table if not exists public.edition_settings (
   site jsonb not null default '{}'::jsonb check (jsonb_typeof(site) = 'object'),
   updated_at timestamptz not null default now()
 );
+-- Setup decisions made before players/courses exist: competition type,
+-- planned headcount, planned rounds and their formats (null = TBD).
+alter table public.edition_settings add column if not exists plan jsonb not null default '{}'::jsonb;
+alter table public.edition_settings drop constraint if exists edition_settings_plan_check;
+alter table public.edition_settings add constraint edition_settings_plan_check check (jsonb_typeof(plan) = 'object');
 
 -- === Access: service role only (same pattern as player_slots) ===============
 -- All reads and writes go through server routes that check membership in

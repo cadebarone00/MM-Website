@@ -1,7 +1,7 @@
 ﻿import assert from "node:assert/strict";
 import test from "node:test";
 import { createTournamentDraft, draftSetup, INITIAL_DRAFT_INPUT, validateDraftInput, type DraftInput } from "./tournamentDraft.ts";
-const valid = (overrides: Partial<DraftInput> = {}): DraftInput => ({ ...INITIAL_DRAFT_INPUT, name: " Autumn Cup ", startDate: "2026-10-01", endDate: "2026-10-03", ...overrides });
+const valid = (overrides: Partial<DraftInput> = {}): DraftInput => ({ ...INITIAL_DRAFT_INPUT, name: " Autumn Cup ", slug: "autumn-cup", seasonYear: 2026, startDate: "2026-10-01", endDate: "2026-10-03", ...overrides });
 test("minimal individual draft needs no roster, courses, rules, branding or formats", () => {
   const result = createTournamentDraft(valid());
   assert.ok(result.ok);
@@ -47,4 +47,13 @@ test("optional branding does not affect required completion and is copied", () =
   branding.primary = "#000000";
   assert.equal(result.draft.branding?.primary, "#500001");
   assert.equal(draftSetup(result.draft).percent, 17);
+});
+test("dates can wait: a draft needs only a name, web address and year", () => {
+  const result = createTournamentDraft(valid({ startDate: "", endDate: "" }));
+  assert.ok(result.ok);
+  if (!result.ok) return;
+  assert.equal(result.draft.seasonYear, 2026);
+  assert.equal(result.draft.basics.slug, "autumn-cup");
+  assert.equal(draftSetup(result.draft).sections.find(section => section.name === "Basics")?.status, "Needs Attention");
+  assert.ok(validateDraftInput(valid({ slug: "new" })).some(error => error.field === "slug"));
 });

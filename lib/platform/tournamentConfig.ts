@@ -73,7 +73,19 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 /** Slugs that would collide with platform routes. */
-const RESERVED_SLUGS = new Set(["new", "create", "admin", "api", "portal", "settings", "the-maroon"]);
+const RESERVED_SLUGS = new Set(["new", "create", "admin", "api", "portal", "settings", "t", "tournaments", "the-maroon"]);
+
+/** Why a tournament web address can't be used, or null if it's fine (availability is checked when saving). */
+export function tournamentSlugError(slug: string): string | null {
+  if (!SLUG.test(slug) || slug.length < 3 || slug.length > 60) return "Web address must be 3-60 lowercase letters, numbers, and dashes.";
+  if (RESERVED_SLUGS.has(slug)) return "That web address is reserved. Pick another.";
+  return null;
+}
+
+/** A web address suggested from the tournament name: "The Texas Cup!" → "the-texas-cup". */
+export function suggestTournamentSlug(name: string): string {
+  return name.toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60).replace(/-+$/, "");
+}
 const MAX_TEAMS = 8;
 const MAX_PLAYERS = 64;
 const MAX_ROUNDS = 20;
@@ -135,11 +147,8 @@ export function validateTournamentConfig(input: unknown): ValidationResult {
   const slug = text(b.slug);
   if (name.length < 1 || name.length > 80) fail("basics.name", "Tournament name must be 1-80 characters.");
   if (shortName.length < 1 || shortName.length > 24) fail("basics.shortName", "Short name must be 1-24 characters.");
-  if (!SLUG.test(slug) || slug.length < 3 || slug.length > 60) {
-    fail("basics.slug", "Web address must be 3-60 lowercase letters, numbers, and dashes.");
-  } else if (RESERVED_SLUGS.has(slug)) {
-    fail("basics.slug", "That web address is reserved. Pick another.");
-  }
+  const slugError = tournamentSlugError(slug);
+  if (slugError) fail("basics.slug", slugError);
   const description = optionalText(b.description);
   if (description && description.length > 2000) fail("basics.description", "Description must be 2000 characters or fewer.");
   if (!isRealDate(b.startDate)) fail("basics.startDate", "Pick a start date.");
