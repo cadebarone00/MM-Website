@@ -12,8 +12,9 @@ skip any. Each step says what "good" looks like.
 | C2 | `supabase/platform_editions.sql` | Tags every year-labeled row with its edition | `supabase/platform_editions_rollback.sql` |
 
 | CREATE | `supabase/platform_create_tournament.sql` | Lets invited organizers save a new tournament from `/tournaments/new` | Run `drop function public.create_tournament_shell(uuid, jsonb);` |
+| DASHBOARD | `supabase/platform_dashboard.sql` | Lets organizers edit, save and publish each setup section on `/tournaments/<address>/<year>` | Run `drop function public.set_edition_published(uuid, uuid, boolean); drop function public.save_tournament_section(uuid, uuid, text, jsonb); drop function public.get_tournament_setup(uuid, uuid); drop function public.can_manage_edition(uuid, uuid);` |
 
-C2 and CREATE each need C1 (they don't need each other). To undo C1, first
+C2, CREATE and DASHBOARD each need C1 (none needs another). Run C1 before CREATE and DASHBOARD, since C1 also adds the planned-courses and planned-rounds tables they use. To undo C1, first
 undo C2 and CREATE.
 
 ---
