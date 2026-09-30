@@ -40,7 +40,8 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
   // from the public UI kit — never The Maroon's chrome, countdown or champions ribbon.
   // The organizer studio (/tournaments/..., including its preview) and platform
   // administration (/admin/...) bring their own neutral OrganizerStudioShell instead.
-  const inCustomerTournamentSite = pathname === "/t" || pathname.startsWith("/t/") || pathname === "/tournaments" || pathname.startsWith("/tournaments/") || pathname.startsWith("/admin/");
+  // The logged-in Tournament Home (/play/...) brings its own app shell and bottom navigation.
+  const inCustomerTournamentSite = pathname === "/t" || pathname.startsWith("/t/") || pathname === "/tournaments" || pathname.startsWith("/tournaments/") || pathname.startsWith("/admin/") || pathname.startsWith("/play/");
 
   if (inBroadcast || inCustomerTournamentSite || pathname === "/portal/admin/scoring-preview/mobile") {
     return <>{children}</>;

@@ -1242,3 +1242,96 @@ but not yet run in production; nothing in the existing app reads it yet.
 - Announcements and activity match what the backend allows each role to see, and Post Announcement is only visible when allowed.
 - Tests, typecheck, lint and build pass, plus a browser check of each role against the fake database.
 - Committed on its own.
+
+## Tournament Theme & Personalization System
+
+### Round: Theme system foundation (spec 2026-09-30, awaiting approval)
+
+**What it is:** One shared place that decides what a tournament's colors are, and how screens use them. It's plumbing. The Maroon should look the same afterwards. Other tournaments get their own colors through the same path.
+
+**What I found (inspection, 2026-09-30):**
+- **The database already has what's needed. No migration.**
+  - `tournaments.branding` (JSON: `primary`, `secondary`, `accent`, `logoUrl`) holds the tournament colors.
+  - `edition_teams.color` holds each team's color, one row per team, with no two-team limit.
+  - The Maroon's row is seeded as primary `#500001`, secondary `#fbf8f1` (cream, not pure white), accent `#b8945a`. Its teams are Maroon `#500001` and White `#fbf8f1`.
+- **Competing theme logic exists today:**
+  - `components/platform/tournament-site/theme.ts` has a contrast helper and `--ts-*` variables. Its fallback is `#193c52`/`#d6b85c`.
+  - `lib/platform/publicSite.ts` falls back to `#1f2937`/`#9ca3af`.
+  - `lib/platform/readiness.ts` falls back to `#1f2937`/`#9ca3af` again.
+  - The `.ts-site` CSS has its own hardcoded defaults.
+  - The same `{primary, secondary, accent, logoUrl}` shape is declared four times: `setup.ts`, `tournamentConfig.ts`, `tournamentCreate.ts`, `tournamentDraft.ts`.
+- **The founding Maroon site** (the `lib/data` pages) never reads the database for colors. It uses Tailwind brand ramps: about 1,250 `maroon-*`/`gold-*`/`cream-*` class uses in 212 files, plus about 450 raw hex values. Its team type is literally `Team = "maroon" | "white"`, compared by name in 114 places.
+- **Fonts:** the code uses Spectral (serif) and Barlow / Barlow Condensed (sans), not DM Sans / Instrument Serif. Typography is not touched.
+
+**Source of truth:**
+`tournaments.branding` + `edition_teams.color` → one resolver (`lib/theme/tournamentTheme.ts`) → CSS variables + a React provider → components.
+
+The Maroon's values live in exactly one TypeScript constant, `MAROON_THEME`. A test checks that it matches the database seed.
+
+**Theme contract (`lib/theme/tournamentTheme.ts`):**
+```ts
+type ThemeTeam = { id: string; name: string; color: string }          // any number of teams
+type TournamentTheme = { primary: string; secondary: string; accent: string; teams: ThemeTeam[] }
+type ResolvedTournamentTheme = TournamentTheme & {
+  textOnPrimary: string; textOnSecondary: string; textOnAccent: string
+  teams: (ThemeTeam & { textOn: string })[]                           // team1 = teams[0], team2 = teams[1]
+}
+MAROON_THEME, DEFAULT_TOURNAMENT_THEME
+resolveTournamentTheme(branding, teams)   // validates hex, fills fallbacks, adds text-on colors
+readableTextOn(background)                // WCAG contrast: picks the dark or light text with the higher ratio
+themeCssVariables(resolved)               // → the CSS variables below
+```
+- Individual tournaments have `teams: []`. Team variables are simply not set, and nothing breaks.
+
+**CSS tokens (named to match the Figma tokens):**
+
+| Figma | CSS variable | Tailwind class |
+|---|---|---|
+| theme/primary | `--theme-primary` | `bg-theme-primary` etc. |
+| theme/secondary | `--theme-secondary` | `bg-theme-secondary` |
+| theme/accent | `--theme-accent` | `text-theme-accent` |
+| theme/text/on-primary (etc.) | `--theme-on-primary`, `--theme-on-secondary`, `--theme-on-accent` | `text-on-primary` … |
+| competition/team-1, team-2 | `--competition-team-1`, `--competition-team-2` (then `-3`… if more teams) | `bg-team-1` … |
+| competition/text/on-team-1, on-team-2 | `--competition-on-team-1`, `--competition-on-team-2` | `text-on-team-1` … |
+
+**Provider:** `components/theme/TournamentThemeProvider.tsx`
+- Sets the variables on a wrapper.
+- Exposes `useTournamentTheme()` for things that need real values (SVG charts).
+- The root layout wraps the founding site in it with `MAROON_THEME`.
+- Platform tournament pages wrap in it with that tournament's resolved theme.
+
+**What gets moved over this round:**
+1. **Platform kit** (`components/platform/tournament-site`):
+   - `theme.ts` uses the shared resolver and contrast helper instead of its own.
+   - `--ts-primary/secondary/accent/on-*` become `--theme-*`.
+   - Team labels use the shared team text color.
+2. **Platform lib:**
+   - One shared `TournamentBranding` type replaces the four copies.
+   - `publicSite.ts` and `readiness.ts` use the shared fallback instead of their own greys.
+3. **Shared UI:**
+   - `components/ui/Button` (primary / secondary / ghost / inverse / gold) and `components/ui/Badge` (solid / maroon / gold) use theme tokens.
+   - Hover and tint shades come from `color-mix()` of the theme color. For The Maroon these land within a few shades of today's ramp.
+4. **Documentation:** this section, plus a rule in the kit README. New UI uses semantic tokens only, and no new tournament-specific hex values without a written reason.
+
+**Not included (legacy, later rounds):**
+- The ~1,250 `maroon-*`/`gold-*`/`cream-*` classes across the founding site: broadcast scenes, match graphs, leaderboards, auth pages, CSS modules.
+- The `Team = "maroon" | "white"` data model and `TeamBadge` / `LeaderboardRow` / `Avatar` team styling. These need the team model changed to team IDs first, which is its own round.
+- Any settings UI changes. The Branding editor already saves primary/secondary/accent, and team colors are already editable.
+- Any database change.
+
+**Decisions needed before building:**
+1. **Fallback for a new tournament with no colors set.**
+   - Recommended: a neutral preset (dark slate / off-white / grey), so a new tournament doesn't look like The Maroon.
+   - Alternative: The Maroon preset as the fallback for everyone.
+2. **Exact Maroon values.**
+   - Recommended: keep the real ones (`#fbf8f1` cream secondary/White team, `#b8945a` gold), since changing them would change the look.
+   - Alternative: switch to `#FFFFFF` / `#D6A75C` everywhere.
+
+**Done means:**
+- One resolver file, used by the platform kit, platform lib, provider and root layout. No other file defines tournament theme colors.
+- Contrast helper tests cover white, cream, maroon, gold, pale yellow, invalid hex and missing teams.
+- An individual (no-team) tournament renders with no team variables and no errors.
+- A 3-team theme resolves to three team tokens.
+- The Maroon seed matches `MAROON_THEME` (test).
+- Existing tests, typecheck, lint and build pass.
+- Before/after screenshots of home, leaderboard, a `/t/` public site page and Button/Badge show The Maroon looking the same.
