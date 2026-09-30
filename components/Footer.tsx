@@ -24,9 +24,10 @@ const footerLinks = [
   [{ label: "Community Impact", href: "#" }],
 ];
 
-export function Footer({ nextTournamentOverride }: { nextTournamentOverride: NextTournamentOverride }) {
+export function Footer({ nextTournamentOverride, showSponsors = false }: { nextTournamentOverride: NextTournamentOverride; showSponsors?: boolean }) {
   return (
     <footer className="relative hidden overflow-hidden lg:block">
+      {showSponsors && <>
       <div aria-hidden="true" className="pointer-events-none absolute bottom-0 left-[3%] top-6 z-10 w-[29%]">
         <Image src="/assets/footer-maroon-jacket.webp" alt="" fill sizes="29vw" className="object-cover object-top" />
       </div>
@@ -42,6 +43,8 @@ export function Footer({ nextTournamentOverride }: { nextTournamentOverride: Nex
           </div>
         </div>
       </div>
+
+      </>}
 
       <div className="bg-maroon-900 text-white">
         <div className="ml-[35%] mr-[10%] pb-10">

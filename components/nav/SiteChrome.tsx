@@ -57,7 +57,7 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
       <InstallPrompt />
       <PlayerAreaNav />
       {children}
-      <Footer nextTournamentOverride={nextTournamentOverride} />
+      <Footer nextTournamentOverride={nextTournamentOverride} showSponsors={pathname === "/website"} />
     </div>
   );
 }

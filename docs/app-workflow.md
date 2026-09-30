@@ -9,7 +9,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 ```mermaid
 flowchart TD
   %% Journal header: The Maroon left and Tournament site right with edge padding; hero category buttons hold dropdowns on desktop/mobile.
-  %% Desktop public footer: supplied cutout occupies the left 35%; sponsor thanks/logos and tournament links span 35%-90%; Journal header/footer share Tiger maroon-900.
+  %% Desktop footer: /website alone shows the sponsor band and cutout; Journal and other public pages keep only the maroon information band.
   %% Home Highlights follows the Home display year: curated 2026 archive results with match links; unpopulated years are blank and do not inherit 2026 entries.
   %% Tournament home hero uses a neutral black readability gradient over desktop video and mobile photo.
   %% Browser tabs use a single dark-maroon M with a thin muted metallic-gold outline on transparent alpha through favicon.ico (16/32/48px) and icon.png (64px), shared by tournament and journal routes.
@@ -154,7 +154,7 @@ The season timing overview now distinguishes Archived, Active, Upcoming, and Fut
 
 ## 3. Public website and navigation
 
-The shared desktop public footer uses the supplied maroon-jacket cutout, cropped from the bottom across the white sponsor band and maroon information band. Content and its white separator occupy the area from 35% to 90% of the viewport. The white band reads ?Thank You to? above ?our sponsors? with both configured sponsor logos to its right; it replaces the newsletter signup prompt. The decorative top stripe is removed. Journal top navigation and the footer use `maroon-900`, matching the Tiger Center and tournament secondary navigation. The footer remains desktop-only and is absent from portal/broadcast routes.
+The Website homepage (`/website`) desktop footer uses the supplied maroon-jacket cutout, cropped from the bottom across the white sponsor band and maroon information band. Content and its white separator occupy the area from 35% to 90% of the viewport. The white band reads ?Thank You to? above ?our sponsors? with both configured sponsor logos to its right; it replaces the newsletter signup prompt. The decorative top stripe is removed. Journal top navigation and the footer use `maroon-900`, matching the Tiger Center and tournament secondary navigation. Journal home/category pages and other public routes retain only the maroon wordmark, divider, links, copyright and back-to-top section, with no sponsor band or cutout. The footer remains desktop-only and is absent from portal/broadcast routes.
 
 Home Highlights displays thirteen dated 2026 archive summaries: the 17?16 Cup result, Nate?s individual title, Cam and Drew?s singles records, eight session recaps, and Hugo/Nate?s opening fourball win. Six entries appear initially; More Highlights opens the full season feed. Headlines link to archived matches, the individual winner, or tournament standings. These are curated summaries grounded in checked-in `2026-palm-springs.ts` results, not a live event log or inferred shot chronology. The feed follows the Home tournament/hero display year (explicit selection, then scheduled calendar; before legacy New Year handoff it uses the latest completed season). Switching to 2027 or any unpopulated year renders a blank Highlights panel, resets the expanded feed, and never carries 2026 stories forward. Automatic confirmed-score event generation, shot-video attachments, and Tiger pin/edit controls are not implemented by this change.
 
@@ -545,6 +545,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-29 - Full footer reserved for Website home (implemented locally; deployment not verified).** Previously all public pages displayed the sponsor band and man?s cutout. Those elements now appear only on `/website`. The Journal retains the maroon information section and all its contents without the image or white sponsor band; other public pages also use this information-only footer. Updated section 3 and the Mermaid annotation; overview mappings are unchanged.
 
 **2026-09-29 - Journal header and hero dropdowns (implemented locally; deployment not verified).** The header previously read The Maroon Journal inside a capped-width bar with desktop category dropdowns, while the hero had separate category links. It now reads The Maroon, places the brand and Tournament site link near opposite viewport edges, and moves category dropdowns to the hero on desktop and mobile. All-category links preserve the existing pages; submenu destinations remain placeholders. Updated section 3 and Mermaid annotation; overview paths and mappings are unchanged.
 
