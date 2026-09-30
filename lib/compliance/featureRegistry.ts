@@ -83,6 +83,11 @@ const seeds: FeatureSeed[] = [
     attentionCategories: ["privacy", "personal-data", "ugc", "security", "retention", "organizer-responsibility", "legal-review"],
   },
   {
+    id: "public-tournament-site", name: "Public tournament site",
+    scope: "Public /t/[tournament]/[year] pages for published customer tournaments: player names, team membership/captaincy, courses, schedule, rules and organizer-supplied description/media links. Visibility public/unlisted (noindex)/private (members only); emails, handicaps and internal ids are never served. Review participant consent to being named publicly, organizer authority to publish, removal/unpublish requests, external link handling and retention of past editions. Not yet in production.",
+    attentionCategories: ["privacy", "personal-data", "ugc", "media-rights", "security", "retention", "organizer-responsibility", "minors", "legal-review"],
+  },
+  {
     id: "player-accounts", name: "Player accounts",
     scope: "Review authentication, recovery, sessions, age handling, account terms, identity linking and deletion, including non-account participants.",
     attentionCategories: ["privacy", "personal-data", "user-accounts", "account-deletion", "security", "retention", "minors", "platform-rules", "legal-review"],
