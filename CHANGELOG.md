@@ -3,6 +3,43 @@
 Platform-level changes (multi-tenant productization). Detailed history of
 the founding tournament's features lives in `project_specs.md`.
 
+## 2026-09-29 — Review of the Tournament Creation Wizard prototype (`/tournaments/new`)
+
+The wizard itself was built by another session (commit `bf3be2c`). This
+entry records the review and the small changes it produced.
+
+**Findings:** see spec §5.1 "Implementation status" and
+`TECHNICAL_DEBT.md` #21–#26. In short:
+- **Good:** the reuse of `TournamentConfig` types and the format registry,
+  readiness logic kept in `lib/` rather than UI components, honest TBD
+  handling, and locked publish/play.
+- **Scope:** no C3, live-scoring, SQL or API files were touched.
+- **Gaps:** creation isn't minimal yet, nothing is saved, readiness is a
+  placeholder, and there's a slug collision risk.
+- **Outside the wizard:** `components/maroon/MaroonMenu.tsx` got a small
+  visual change (spacing, 9px text, dropdown arrow hidden on phones).
+
+**Changed in this review**
+- Removed the stale `.next/types` (generated at 19:38, before the rename,
+  with 150 `portal/tiger` references). `tsc` went from 50 errors to 0.
+- New `hosted_media` entitlement: on for `founder` (The Maroon), off for
+  `beta`, in `supabase/platform_foundation.sql` (not yet in production) and
+  `lib/platform/entitlements.ts`, with a test.
+- Dashboard Media card wording no longer promises hosted uploads or
+  broadcast to commercial tournaments.
+- `eslint.config.mjs`: `.vercel/**` (git-ignored deployment copies) and
+  `.superpowers/**` are no longer linted, and `.cjs` scripts may use
+  `require()`. Full lint went from 32 errors to 7. The 7 left are
+  pre-existing React rule issues in broadcast/fantasy/scorecard screens and
+  aren't from today's work.
+
+**Testing**
+- Fresh production build (isolated worktree, 238 pages including
+  `/tournaments/new`).
+- `tsc` 0 errors with freshly generated route types.
+- `npm test` 543/543, `test:db` 9/9, `test:db:platform` 9/9.
+- The wizard's own browser test passes against the fresh build.
+
 ## 2026-09-29 — Platform Phase C3: code reads and writes through an edition scope
 
 **What changed**

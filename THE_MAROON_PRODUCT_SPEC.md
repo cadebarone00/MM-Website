@@ -190,6 +190,21 @@ mandatory questionnaire.**
 | **PUBLISH** | The organizer makes the site public. Publishing is blocked until the essentials are complete (the "ready to publish" check) | Readiness check passes |
 | **PLAY** | Sessions start, live scoring, leaderboards | Published or private-but-complete |
 
+**Implementation status (reviewed 2026-09-29):** `/tournaments/new`
+(`components/tournament-draft/`, `lib/platform/tournamentDraft.ts`) is a
+**local UI prototype** of CREATE + COMPLETE. The draft lives in page state
+only, and PUBLISH/PLAY are locked. It is not yet spec-complete:
+- Creation takes 8 screens and requires dates. The spec says one short form
+  (name, address, year).
+- EXIST isn't real until the draft is saved as a Tournament + Edition.
+- Readiness is a placeholder: it caps at 29%.
+- The suggested slug can collide with `the-maroon-tournament`.
+- The studio renders inside The Maroon Tournament's header and footer.
+
+See `TECHNICAL_DEBT.md` #21–#26 and the changelog. Route plan: create at
+`/tournaments/new`; management (dashboard) per tournament under
+`/tournaments/…`; the public site only at `/t/[tournament]/[year]`.
+
 This means the full `validateTournamentConfig` rules (below) are the
 **publish/play readiness check**, not a gate on creation. Each dashboard
 section saves on its own with the same per-field rules. The creation form
@@ -457,7 +472,9 @@ already reads its match by player, so it only needs the edition resolved.
 Features check `hasEntitlement(plan, key)` (`lib/platform/entitlements.ts`).
 Anything a plan doesn't explicitly grant is off. Seeded plans:
 **founder** (The Maroon; everything on) and **beta** (invited beta
-tournaments; full create/configure/run/test; no wagers/fantasy). Paid plan
+tournaments; full create/configure/run/test; no wagers/fantasy; no
+`hosted_media`: commercial V1 media is none, on-device, or external links,
+and hosted uploads stay The Maroon's). Paid plan
 limits and pricing are decided **after** the wizard and real beta testing,
 and undefined pricing never blocks productization. Later: subscriptions table, payment
 provider webhooks, sponsors/ads slots per tournament site, custom domains

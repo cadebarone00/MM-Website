@@ -15,7 +15,13 @@ const eslintConfig = defineConfig([
     // Claude Code git worktrees (each has its own .next build output that
     // the plain ".next/**" pattern above doesn't reach since it's nested).
     ".claude/**",
+    // Tool output, not app source: Vercel deployment copies (git-ignored)
+    // and the brainstorming/planning workspace.
+    ".vercel/**",
+    ".superpowers/**",
   ]),
+  // CommonJS scripts can only import with require().
+  { files: ["**/*.cjs"], rules: { "@typescript-eslint/no-require-imports": "off" } },
 ]);
 
 export default eslintConfig;
