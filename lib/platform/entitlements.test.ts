@@ -20,11 +20,14 @@ async function seededPlans(): Promise<Record<string, unknown>> {
   }
 }
 
-test("The Maroon's founder plan has everything; beta tournaments never get wagers or fantasy", async () => {
+test("The Maroon's founder plan has everything; beta tournaments never get wagers, fantasy or hosted media", async () => {
   const plans = await seededPlans();
   for (const entitlement of ENTITLEMENTS) assert.equal(hasEntitlement(plans.founder, entitlement), true, entitlement);
   assert.equal(hasEntitlement(plans.beta, "wagers"), false);
   assert.equal(hasEntitlement(plans.beta, "fantasy"), false);
+  // Commercial V1 media: none, on-device or external links; hosted uploads stay The Maroon's.
+  assert.equal(hasEntitlement(plans.beta, "hosted_media"), false);
+  assert.equal(hasEntitlement(plans.founder, "hosted_media"), true);
   assert.equal(hasEntitlement(plans.beta, "custom_branding"), true);
   assert.equal(maxPlayers(plans.beta), null);
 });

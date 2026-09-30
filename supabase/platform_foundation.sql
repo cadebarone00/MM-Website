@@ -15,7 +15,8 @@ begin;
 -- Prices live in the payment provider later; this table only says what a
 -- plan unlocks. 'founder' = The Maroon (everything); 'beta' = invited beta
 -- tournaments (everything needed to create, run and test a tournament, but
--- never wagers/fantasy). Paid plan limits are decided after beta (spec §14).
+-- never wagers/fantasy, and no hosted media uploads: commercial V1 media is
+-- none, on-device, or external links). Paid limits are decided after beta (spec §14).
 create table if not exists public.platform_plans (
   key text primary key check (key ~ '^[a-z][a-z0-9_]{1,39}$'),
   name text not null,
@@ -27,10 +28,10 @@ create table if not exists public.platform_plans (
 insert into public.platform_plans (key, name, entitlements) values
   ('founder', 'Founder', jsonb_build_object(
     'max_players', null, 'custom_branding', true, 'broadcast', true,
-    'wagers', true, 'fantasy', true, 'custom_domain', true)),
+    'wagers', true, 'fantasy', true, 'custom_domain', true, 'hosted_media', true)),
   ('beta', 'Beta Tournament', jsonb_build_object(
     'max_players', null, 'custom_branding', true, 'broadcast', false,
-    'wagers', false, 'fantasy', false, 'custom_domain', false))
+    'wagers', false, 'fantasy', false, 'custom_domain', false, 'hosted_media', false))
 on conflict (key) do nothing;
 
 -- === Who may create tournaments =============================================

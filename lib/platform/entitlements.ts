@@ -3,8 +3,12 @@
  * (THE_MAROON_PRODUCT_SPEC.md §14). No prices here: plans only list
  * features. Anything a plan doesn't explicitly grant is off, so a typo or a
  * brand-new feature can never be switched on by accident.
+ *
+ * hosted_media = uploads The Maroon stores (photos, shot videos, playlists).
+ * Commercial V1 tournaments don't get it: their media is none, on players'
+ * devices, or external links.
  */
-export const ENTITLEMENTS = ["custom_branding", "broadcast", "wagers", "fantasy", "custom_domain"] as const;
+export const ENTITLEMENTS = ["custom_branding", "broadcast", "wagers", "fantasy", "custom_domain", "hosted_media"] as const;
 export type Entitlement = (typeof ENTITLEMENTS)[number];
 
 /** Reads a platform_plans.entitlements value (untrusted jsonb). */

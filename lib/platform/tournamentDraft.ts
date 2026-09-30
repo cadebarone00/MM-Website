@@ -105,7 +105,7 @@ export function draftSetup(draft: TournamentDraft) {
     { name: "Rules", status: "Needs Attention", detail: draft.scoring.mode ? "Match play selected. Detailed rules still need review." : "Scoring style and detailed rules are TBD.", step: 4, required: true },
     { name: "Branding", status: draft.branding ? "Complete" : "Optional", detail: draft.branding ? "Tournament colors chosen. Logos can be added later." : "Add colors and logos whenever you are ready.", step: 6, required: false },
     { name: "Website", status: "Locked", detail: "A tournament website has not been created. Website setup comes in a future release.", required: false },
-    { name: "Media", status: "Optional", detail: "Photos, videos, sponsors and broadcast options can wait.", required: false },
+    { name: "Media", status: "Optional", detail: "Optional. Skip media, keep it on players' phones, or link videos from sites like YouTube. Hosted uploads and broadcast aren't included.", required: false },
     { name: "Publish", status: "Locked", detail: "Publishing and live scoring are unavailable in this draft preview. Privacy is a preference until publishing is connected.", required: false },
   ];
   const required = sections.filter(section => section.required);
