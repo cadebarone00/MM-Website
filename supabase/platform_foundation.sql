@@ -185,11 +185,58 @@ create table if not exists public.edition_settings (
   site jsonb not null default '{}'::jsonb check (jsonb_typeof(site) = 'object'),
   updated_at timestamptz not null default now()
 );
--- Setup decisions made before players/courses exist: competition type,
--- planned headcount, planned rounds and their formats (null = TBD).
+-- Setup decisions made before players exist: competition type and planned
+-- headcount. (Planned rounds live in edition_rounds.)
 alter table public.edition_settings add column if not exists plan jsonb not null default '{}'::jsonb;
 alter table public.edition_settings drop constraint if exists edition_settings_plan_check;
 alter table public.edition_settings add constraint edition_settings_plan_check check (jsonb_typeof(plan) = 'object');
+-- Media mode (spec §12): 'none' | 'device_external' for commercial
+-- tournaments; 'maroon_hosted' needs the hosted_media entitlement.
+alter table public.edition_settings add column if not exists media jsonb not null default '{"mode": "none"}'::jsonb;
+alter table public.edition_settings drop constraint if exists edition_settings_media_check;
+alter table public.edition_settings add constraint edition_settings_media_check
+  check (jsonb_typeof(media) = 'object' and coalesce(media->>'mode', 'none') in ('none', 'device_external', 'maroon_hosted'));
+
+-- When the organizer published this edition (null = not published). Set only
+-- through set_edition_published (supabase/platform_dashboard.sql).
+alter table public.tournament_editions add column if not exists published_at timestamptz;
+
+-- === Planned setup (never the live-scoring tables) ==========================
+-- Courses and rounds an organizer plans on the Tournament Dashboard. The live
+-- engine's live_courses/live_round_state stay The Maroon's until C4.
+create table if not exists public.edition_courses (
+  id uuid primary key default gen_random_uuid(),
+  edition_id uuid not null references public.tournament_editions(id) on delete cascade,
+  name text not null check (length(trim(name)) between 1 and 80),
+  city text check (city is null or length(city) <= 80),
+  state text check (state is null or length(state) <= 40),
+  tee_name text check (tee_name is null or length(tee_name) <= 40),
+  par integer check (par is null or par between 27 and 80),
+  yards integer check (yards is null or yards between 1000 and 9000),
+  rating numeric(4,1) check (rating is null or rating between 50 and 90),
+  slope integer check (slope is null or slope between 55 and 155),
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  unique (id, edition_id)
+);
+
+create table if not exists public.edition_rounds (
+  id uuid primary key default gen_random_uuid(),
+  edition_id uuid not null references public.tournament_editions(id) on delete cascade,
+  round_number integer not null check (round_number between 1 and 20),
+  day integer check (day is null or day between 1 and 14),
+  label text check (label is null or length(label) <= 40),
+  -- Keys of lib/platform/formats.ts; null = TBD.
+  format text check (format is null or format in ('Singles', 'Fourball', 'Foursome')),
+  course_id uuid,
+  play_date date,
+  start_type text check (start_type is null or start_type in ('tee_times', 'shotgun')),
+  start_time time,
+  created_at timestamptz not null default now(),
+  unique (edition_id, round_number),
+  -- A round can only use a course planned for the same edition.
+  foreign key (course_id, edition_id) references public.edition_courses(id, edition_id) on delete set null (course_id)
+);
 
 -- === Access: service role only (same pattern as player_slots) ===============
 -- All reads and writes go through server routes that check membership in
@@ -205,12 +252,16 @@ alter table public.edition_roster enable row level security;
 alter table public.edition_settings enable row level security;
 alter table public.platform_settings enable row level security;
 alter table public.tournament_creator_access enable row level security;
+alter table public.edition_courses enable row level security;
+alter table public.edition_rounds enable row level security;
 revoke all on public.platform_plans, public.organizations, public.tournaments, public.tournament_editions,
   public.tournament_members, public.tournament_players, public.edition_teams, public.edition_roster,
-  public.edition_settings, public.platform_settings, public.tournament_creator_access from anon, authenticated;
+  public.edition_settings, public.platform_settings, public.tournament_creator_access,
+  public.edition_courses, public.edition_rounds from anon, authenticated;
 grant all on public.platform_plans, public.organizations, public.tournaments, public.tournament_editions,
   public.tournament_members, public.tournament_players, public.edition_teams, public.edition_roster,
-  public.edition_settings, public.platform_settings, public.tournament_creator_access to service_role;
+  public.edition_settings, public.platform_settings, public.tournament_creator_access,
+  public.edition_courses, public.edition_rounds to service_role;
 
 -- === Seed: The Maroon Tournament as tenant #1 ===============================
 insert into public.organizations (slug, name, plan_key)

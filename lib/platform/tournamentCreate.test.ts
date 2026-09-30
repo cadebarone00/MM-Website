@@ -48,7 +48,7 @@ const CHAIN = [
   "archived_handicap_tees.sql", "live_match_publication.sql", "live_hole_submissions.sql", "hole_shot_directions.sql",
   "hole_shot_directions_penalty.sql", "round_format_setups.sql", "scoring_reliability.sql", "live_round_submission.sql",
   "player_slots_email.sql", "player_slots_full_name.sql", "tournament_timezone.sql", "platform_foundation.sql",
-  "platform_editions.sql", "platform_create_tournament.sql",
+  "platform_editions.sql", "platform_create_tournament.sql", "platform_dashboard.sql",
 ];
 const sql = (file: string) => readFileSync(`supabase/${file}`, "utf8");
 
@@ -97,7 +97,10 @@ test("an approved creator gets a real Tournament + Edition shell, all at once", 
     assert.deepEqual((await db.query("select key, name, color from edition_teams where edition_id = $1 order by sort_order", [result.editionId])).rows,
       [{ key: "team-1", name: "Blue", color: TEAM_COLORS[0] }, { key: "team-2", name: "Gold", color: TEAM_COLORS[1] }]);
     const s = (await db.query<{ scoring: unknown; plan: unknown }>("select scoring, plan from edition_settings where edition_id = $1", [result.editionId])).rows[0];
-    assert.deepEqual(s, { scoring: { mode: "match_play" }, plan: { competitionType: "teams", expectedPlayerCount: 12, rounds: [{ format: "Fourball" }, { format: null }, { format: "Singles" }] } });
+    assert.deepEqual(s, { scoring: { mode: "match_play" }, plan: { competitionType: "teams", expectedPlayerCount: 12 } });
+    // Planned rounds get their own rows (TBD formats stay null) — never the live-scoring tables.
+    assert.deepEqual((await db.query("select round_number, format from edition_rounds where edition_id = $1 order by round_number", [result.editionId])).rows,
+      [{ round_number: 1, format: "Fourball" }, { round_number: 2, format: null }, { round_number: 3, format: "Singles" }]);
 
     // A second tournament reuses the creator's organization.
     await create(db, who, payload({ ...quick, name: "Spring Scramble", slug: "spring-scramble" }));
@@ -161,9 +164,9 @@ test("only the server's service role can call it, and the migration re-runs safe
   }
 });
 
-test("round trip: what the organizer entered is what the saved dashboard shows", async () => {
-  const { draftFromSaved } = await import("./savedTournament.ts");
-  const { createTournamentDraft } = await import("./tournamentDraft.ts");
+test("round trip: what the organizer entered is what the saved dashboard loads", async () => {
+  const { parseSetup } = await import("./setup.ts");
+  const { createTournamentDraft, setupFromDraft } = await import("./tournamentDraft.ts");
   const { draftInputFromBody } = await import("./tournamentCreate.ts");
   const body = { ...quick, startDate: "2027-04-15", endDate: "2027-04-17", visibility: "unlisted", competitionType: "teams", teamNames: ["Blue", "Gold"],
     scoringMode: "match_play", formats: ["Fourball", null, "Singles"], branding: { primary: "#1f4e9c", secondary: "#ffffff", accent: "#d4a017", logoUrl: null } };
@@ -173,14 +176,16 @@ test("round trip: what the organizer entered is what the saved dashboard shows",
   const db = await database();
   try {
     const who = await profile(db, "rt", { access: "approved" });
-    const { tournamentId, editionId } = await create(db, who, payload(body));
-    // Same columns loadSavedTournament reads.
-    const tournament = (await db.query<never>("select name, short_name, slug, description, visibility, branding from tournaments where id = $1", [tournamentId])).rows[0];
-    const edition = (await db.query<never>("select season_year, destination, start_date::text, end_date::text, timezone from tournament_editions where id = $1", [editionId])).rows[0];
-    const teams = (await db.query<never>("select key, name, color from edition_teams where edition_id = $1 order by sort_order", [editionId])).rows;
-    const settings = (await db.query<never>("select scoring, plan from edition_settings where edition_id = $1", [editionId])).rows[0];
-    const shown = draftFromSaved({ tournament, edition, teams, settings });
-    assert.deepEqual(shown, { ...entered.draft, teams: entered.draft.teams.map((team, index) => ({ ...team, color: TEAM_COLORS[index] })) });
+    const { editionId } = await create(db, who, payload(body));
+    const loaded = parseSetup((await db.query<{ s: unknown }>("select get_tournament_setup($1, $2) as s", [who, editionId])).rows[0].s);
+    const expected = setupFromDraft(entered.draft);
+    // Database ids and statuses are the database's; everything the organizer chose must match.
+    const strip = (setup: typeof loaded) => ({
+      ...setup, tournament: { ...setup.tournament, id: "" }, edition: { ...setup.edition, id: "" }, entitlements: {},
+      teams: setup.teams.map(({ id: _id, key: _key, ...team }) => team), rounds: setup.rounds.map(({ id: _id, ...round }) => round),
+    });
+    assert.deepEqual(strip(loaded), strip(expected));
+    assert.equal(loaded.entitlements.hosted_media, false, "a beta tournament never gets hosted media");
   } finally {
     await db.close();
   }

@@ -78,8 +78,13 @@ begin
     v_index := v_index + 1;
   end loop;
 
+  -- Planned rounds get their own rows (formats may be TBD); the rest of the
+  -- plan (competition type, headcount) stays in edition_settings.plan.
   insert into edition_settings (edition_id, scoring, plan)
-  values (v_edition, coalesce(p_input->'scoring', '{}'::jsonb), coalesce(p_input->'plan', '{}'::jsonb));
+  values (v_edition, coalesce(p_input->'scoring', '{}'::jsonb), coalesce(p_input->'plan', '{}'::jsonb) - 'rounds');
+  insert into edition_rounds (edition_id, round_number, format)
+  select v_edition, round.ordinality, nullif(round.value->>'format', '')
+  from jsonb_array_elements(coalesce(p_input->'plan'->'rounds', '[]'::jsonb)) with ordinality as round(value, ordinality);
 
   return jsonb_build_object('tournamentId', v_tournament, 'editionId', v_edition, 'tournamentSlug', p_input->>'slug', 'seasonYear', (p_input->>'seasonYear')::integer);
 end;

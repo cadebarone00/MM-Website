@@ -86,12 +86,22 @@ export function tournamentSlugError(slug: string): string | null {
 export function suggestTournamentSlug(name: string): string {
   return name.toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60).replace(/-+$/, "");
 }
-const MAX_TEAMS = 8;
-const MAX_PLAYERS = 64;
-const MAX_ROUNDS = 20;
-const MAX_DAYS = 14;
+/** Size limits shared by the wizard, the dashboard sections and the publish check. */
+export const LIMITS = { teams: 8, players: 64, rounds: 20, days: 14, nameLength: 80, teamNameLength: 40, handicapMin: -10, handicapMax: 54 } as const;
+const MAX_TEAMS = LIMITS.teams;
+const MAX_PLAYERS = LIMITS.players;
+const MAX_ROUNDS = LIMITS.rounds;
+const MAX_DAYS = LIMITS.days;
 
-function isRealDate(value: unknown): value is string {
+export function isHexColor(value: unknown): value is string {
+  return typeof value === "string" && HEX.test(value);
+}
+
+export function isEmail(value: unknown): value is string {
+  return typeof value === "string" && EMAIL.test(value);
+}
+
+export function isRealDate(value: unknown): value is string {
   if (typeof value !== "string" || !DATE.test(value)) return false;
   const parsed = new Date(`${value}T00:00:00Z`);
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
@@ -129,6 +139,29 @@ function list(value: unknown): Fields[] {
 
 function daysBetween(start: string, end: string): number {
   return Math.round((Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86_400_000) + 1;
+}
+
+/**
+ * Scoring rules (spec §7), shared by the publish check and the dashboard's
+ * Rules section. Returns the normalized rules plus any problems.
+ */
+export function normalizeScoring(input: unknown): { value: ScoringConfig; errors: ConfigError[] } {
+  const s = fields(input);
+  const errors: ConfigError[] = [];
+  if (s.mode !== "match_play") errors.push({ field: "scoring.mode", message: "Only match play events are supported right now." });
+  const pointsForWin = Number(s.pointsForWin);
+  const pointsForHalve = Number(s.pointsForHalve);
+  if (!(pointsForWin > 0 && pointsForWin <= 10)) errors.push({ field: "scoring.pointsForWin", message: "Points for a win must be more than 0 and at most 10." });
+  if (!(pointsForHalve >= 0 && pointsForHalve <= pointsForWin)) errors.push({ field: "scoring.pointsForHalve", message: "Points for a halve must be between 0 and the points for a win." });
+  const allowancePercent = s.allowancePercent === undefined ? 100 : Number(s.allowancePercent);
+  if (!(allowancePercent >= 0 && allowancePercent <= 100)) errors.push({ field: "scoring.allowancePercent", message: "Handicap allowance must be 0-100%." });
+  return {
+    errors,
+    value: {
+      mode: "match_play", pointsForWin, pointsForHalve, handicap: s.handicap === "net" ? "net" : "gross", allowancePercent,
+      allowEarlyFinish: s.allowEarlyFinish !== false, allowConcessions: s.allowConcessions === true, individualLeaderboard: s.individualLeaderboard !== false,
+    },
+  };
 }
 
 /**
@@ -214,14 +247,9 @@ export function validateTournamentConfig(input: unknown): ValidationResult {
 
   // --- Scoring ---
   const s = fields(raw.scoring);
-  if (s.mode !== "match_play") fail("scoring.mode", "Only match play events are supported right now.");
-  const pointsForWin = Number(s.pointsForWin);
-  const pointsForHalve = Number(s.pointsForHalve);
-  if (!(pointsForWin > 0 && pointsForWin <= 10)) fail("scoring.pointsForWin", "Points for a win must be more than 0 and at most 10.");
-  if (!(pointsForHalve >= 0 && pointsForHalve <= pointsForWin)) fail("scoring.pointsForHalve", "Points for a halve must be between 0 and the points for a win.");
-  const handicap = s.handicap === "net" ? "net" : "gross";
-  const allowancePercent = s.allowancePercent === undefined ? 100 : Number(s.allowancePercent);
-  if (!(allowancePercent >= 0 && allowancePercent <= 100)) fail("scoring.allowancePercent", "Handicap allowance must be 0-100%.");
+  const scoring = normalizeScoring(s);
+  errors.push(...scoring.errors);
+  const { pointsForWin, pointsForHalve, handicap, allowancePercent } = scoring.value;
   if (s.mode === "match_play" && teams.length !== 2) fail("teams", "Match play events need exactly 2 teams.");
 
   // --- Rounds ---

@@ -1,5 +1,7 @@
 import { isFormatKey } from "./formats.ts";
-import { createTournamentDraft, type DraftInput, type TournamentDraft } from "./tournamentDraft.ts";
+import { TEAM_COLORS, createTournamentDraft, type DraftInput, type TournamentDraft } from "./tournamentDraft.ts";
+
+export { TEAM_COLORS };
 import type { ConfigError } from "./tournamentConfig.ts";
 
 /**
@@ -27,8 +29,6 @@ export interface CreateTournamentPayload {
   };
 }
 
-/** Starting team colors, so a new team is never shown as The Maroon's maroon. Organizers change them later. */
-export const TEAM_COLORS = ["#1f4e9c", "#b8860b", "#2e6b4f", "#8b1e3f", "#4b3f72", "#c2571a", "#256d85", "#5b5b5b"];
 
 export function payloadFromDraft(draft: TournamentDraft): CreateTournamentPayload {
   return {

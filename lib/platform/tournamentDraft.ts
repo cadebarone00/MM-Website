@@ -1,4 +1,9 @@
-import { isTimezone, tournamentSlugError, type ConfigError, type TournamentConfig } from "./tournamentConfig.ts";
+import { isTimezone, normalizeScoring, tournamentSlugError, type ConfigError, type TournamentConfig } from "./tournamentConfig.ts";
+import { assessReadiness, type SectionStatus } from "./readiness.ts";
+import { DEFAULT_SITE, type TournamentSetup } from "./setup.ts";
+
+/** Starting team colors, so a new team is never shown as The Maroon's maroon. Organizers change them later. */
+export const TEAM_COLORS = ["#1f4e9c", "#b8860b", "#2e6b4f", "#8b1e3f", "#4b3f72", "#c2571a", "#256d85", "#5b5b5b"];
 
 export { suggestTournamentSlug } from "./tournamentConfig.ts";
 import { isFormatKey } from "./formats.ts";
@@ -104,25 +109,39 @@ export function createTournamentDraft(input: DraftInput): { ok: true; draft: Tou
   } };
 }
 
-export type SetupStatus = "Complete" | "Needs Attention" | "Optional" | "Not Started" | "Locked";
-export interface SetupSection { name: string; status: SetupStatus; detail: string; step?: number; required: boolean }
+export type SetupStatus = SectionStatus;
+export interface SetupSection { name: string; status: SetupStatus; detail: string; step?: number; required: boolean; missing: string[] }
 
+/** Which wizard step edits each section of a local draft. */
+const DRAFT_STEPS: Partial<Record<string, number>> = { Basics: 0, Teams: 1, Players: 2, Rounds: 5, Rules: 4, Branding: 6 };
+
+/** A local draft seen as a saved setup, so the one readiness engine judges both. */
+export function setupFromDraft(draft: TournamentDraft): TournamentSetup {
+  return {
+    tournament: { id: "", slug: draft.basics.slug, name: draft.basics.name, shortName: draft.basics.shortName, description: draft.basics.description,
+      visibility: draft.basics.visibility, status: "draft", branding: draft.branding, isLegacy: false },
+    edition: { id: "", seasonYear: draft.seasonYear, destination: draft.basics.destination, startDate: draft.basics.startDate || null,
+      endDate: draft.basics.endDate || null, timezone: draft.basics.timezone, status: "draft", publishedAt: null },
+    competitionType: draft.competitionType,
+    expectedPlayerCount: draft.expectedPlayerCount,
+    teams: draft.teams.map((team, index) => ({ id: team.key, key: team.key, name: team.name, color: team.color ?? TEAM_COLORS[index % TEAM_COLORS.length], captainPlayerId: null })),
+    players: [],
+    courses: [],
+    rounds: draft.rounds.map((round, index) => ({ id: String(index + 1), number: index + 1, day: round.day, label: round.label, format: round.format, courseId: null, playDate: null, startType: null, startTime: null })),
+    scoring: draft.scoring.mode ? normalizeScoring({ mode: draft.scoring.mode, pointsForWin: 1, pointsForHalve: 0.5 }).value : null,
+    site: { ...DEFAULT_SITE },
+    media: { mode: "none", links: [] },
+    entitlements: {},
+  };
+}
+
+/** The local draft preview's setup view, judged by lib/platform/readiness.ts like a saved tournament. */
 export function draftSetup(draft: TournamentDraft) {
-  const sections: SetupSection[] = [
-    draft.basics.startDate
-      ? { name: "Basics", status: "Complete", detail: "Name, web address, dates, timezone and privacy are set.", step: 0, required: true }
-      : { name: "Basics", status: "Needs Attention", detail: `Set for ${draft.seasonYear}. Add the dates when you know them.`, step: 0, required: true },
-    { name: "Players", status: "Not Started", detail: `0 of ${draft.expectedPlayerCount} planned players added. Player names, emails and handicaps come later.`, required: true },
-    { name: "Teams", status: draft.teams.length ? "Needs Attention" : "Optional", detail: draft.teams.length ? `${draft.teams.length} teams named. Assign players and captains later.` : "Not needed for an individual tournament.", step: draft.teams.length ? 1 : undefined, required: draft.teams.length > 0 },
-    { name: "Courses", status: "Not Started", detail: "Choose courses and tees for each round later.", required: true },
-    { name: "Rounds", status: draft.rounds.every(round => round.format) ? "Complete" : "Needs Attention", detail: `${draft.rounds.length} rounds planned; ${draft.rounds.filter(round => !round.format).length} formats TBD.`, step: 5, required: true },
-    { name: "Schedule", status: "Not Started", detail: "Assign round dates, tee times and pairings later.", required: true },
-    { name: "Rules", status: "Needs Attention", detail: draft.scoring.mode ? "Match play selected. Detailed rules still need review." : "Scoring style and detailed rules are TBD.", step: 4, required: true },
-    { name: "Branding", status: draft.branding ? "Complete" : "Optional", detail: draft.branding ? "Tournament colors chosen. Logos can be added later." : "Add colors and logos whenever you are ready.", step: 6, required: false },
-    { name: "Website", status: "Locked", detail: "A tournament website has not been created. Website setup comes in a future release.", required: false },
-    { name: "Media", status: "Optional", detail: "Optional. Skip media, keep it on players' phones, or link videos from sites like YouTube. Hosted uploads and broadcast aren't included.", required: false },
-    { name: "Publish", status: "Locked", detail: "Publishing and live scoring are unavailable in this draft preview. Privacy is a preference until publishing is connected.", required: false },
-  ];
-  const required = sections.filter(section => section.required);
-  return { sections, percent: Math.round(required.filter(section => section.status === "Complete").length / required.length * 100), completed: required.filter(section => section.status === "Complete").length, total: required.length };
+  const readiness = assessReadiness(setupFromDraft(draft), { liveScoringAvailable: false });
+  const sections: SetupSection[] = readiness.sections.map((section) => section.name === "Publish"
+    ? { name: section.name, status: "Locked", detail: "Save this tournament to your account to publish it.", required: false, missing: section.missing }
+    : { name: section.name, status: section.status, detail: section.detail, step: DRAFT_STEPS[section.name], required: section.requiredFor !== "optional", missing: section.missing });
+  const required = sections.filter((section) => section.required);
+  const completed = required.filter((section) => section.status === "Complete").length;
+  return { sections, percent: readiness.percent, completed, total: required.length, readiness };
 }

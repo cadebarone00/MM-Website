@@ -27,6 +27,8 @@
 
 ## 1. Product
 
+**Main Page entry (2026-09-29):** The former Journal landing is called the Main Page. Its hero is followed by a maroon ?Your Tournament. Your Way.? section with Create Tournament linking to the existing wizard and My Tournaments explicitly held as a coming-soon placeholder. Header actions are Contact Us, Sign In, and Our tournament site. Contact Us follows the owner?s split-panel visual reference with a white form panel and golf-photo details panel; Cade Barone?s provided email and phone are public, with no address; Open Email prepares a mailto draft for the visitor to send; no contact submission feature or account tournament list is implemented by this presentation change.
+
 ### Vision
 **The Maroon is the digital home for competitive golf trips.** Long term that
 covers tournaments, golfer profiles, course reviews/rankings, trip guides,

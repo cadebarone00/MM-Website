@@ -14,6 +14,8 @@ begin
   end if;
 end $$;
 
+drop table if exists public.edition_rounds;
+drop table if exists public.edition_courses;
 drop table if exists public.edition_settings;
 drop table if exists public.edition_roster;
 drop table if exists public.edition_teams;

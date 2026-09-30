@@ -13,9 +13,10 @@ test("minimal individual draft needs no roster, courses, rules, branding or form
   assert.equal(result.draft.branding, null);
   assert.ok(result.draft.rounds.every(round => round.format === null && round.courseId === null && round.day === null));
   const setup = draftSetup(result.draft);
-  assert.equal(setup.percent, 17);
+  assert.equal(setup.percent, 18); // readiness engine: only the dates requirement is met
   assert.equal(setup.sections.find(section => section.name === "Publish")?.status, "Locked");
-  assert.equal(setup.sections.find(section => section.name === "Teams")?.required, false);
+  // V1 plays two-team match play, so an individual draft still owes the Teams section before publishing.
+  assert.deepEqual(setup.sections.find(section => section.name === "Teams")?.missing, ["Choose a two-team competition (V1 plays two-team match play)"]);
 });
 test("teams require distinct names but no colors or assignments", () => {
   for (const teamNames of [[" A ", "a"], ["A", ""]]) assert.ok(validateDraftInput(valid({ competitionType: "teams", teamNames })).some(error => error.field === "teamNames"));
@@ -25,9 +26,10 @@ test("teams require distinct names but no colors or assignments", () => {
   assert.equal(result.draft.teams[0].name, "North");
   assert.equal(result.draft.teams[0].color, null);
   const setup = draftSetup(result.draft);
-  assert.equal(setup.percent, 29);
-  assert.equal(setup.sections.find(section => section.name === "Teams")?.status, "Needs Attention");
-  assert.equal(setup.sections.find(section => section.name === "Rules")?.status, "Needs Attention");
+  assert.equal(setup.percent, 46); // dates, two teams, rules and every round's format are done
+  assert.equal(setup.sections.find(section => section.name === "Teams")?.status, "Complete");
+  assert.equal(setup.sections.find(section => section.name === "Rules")?.status, "Complete");
+  assert.equal(setup.sections.find(section => section.name === "Players")?.status, "Not Started");
 });
 test("invalid essentials are rejected", () => {
   for (const overrides of [{ startDate: "2026-02-30" }, { endDate: "2026-09-30" }, { endDate: "2026-10-15" }, { timezone: "Not/AZone" }, { expectedPlayerCount: 1 }, { expectedPlayerCount: 65 }, { expectedPlayerCount: 2.5 }, { roundCount: 0 }, { roundCount: 21 }]) assert.equal(createTournamentDraft(valid(overrides)).ok, false, JSON.stringify(overrides));
@@ -46,7 +48,7 @@ test("optional branding does not affect required completion and is copied", () =
   if (!result.ok) return;
   branding.primary = "#000000";
   assert.equal(result.draft.branding?.primary, "#500001");
-  assert.equal(draftSetup(result.draft).percent, 17);
+  assert.equal(draftSetup(result.draft).percent, 18);
 });
 test("dates can wait: a draft needs only a name, web address and year", () => {
   const result = createTournamentDraft(valid({ startDate: "", endDate: "" }));
