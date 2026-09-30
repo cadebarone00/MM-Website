@@ -37,8 +37,18 @@ export function isPublicPage(value: string, site: Partial<SiteSections>): value 
   return value !== "home" && (publicPages(site) as string[]).includes(value);
 }
 
-export function publicSiteLinks(slug: string, year: number, pages: SitePage[]): SiteLinks {
-  const base = `/t/${encodeURIComponent(slug)}/${year}`;
+/** The public address visitors use once the edition is published. */
+export function publicBasePath(slug: string, year: number): string {
+  return `/t/${encodeURIComponent(slug)}/${year}`;
+}
+
+/** The organizer-only preview of the same site (Tournament Dashboard → Preview Website). */
+export function previewBasePath(slug: string, year: number): string {
+  return `/tournaments/${encodeURIComponent(slug)}/${year}/preview`;
+}
+
+/** Site navigation. The preview passes its own base so browsing stays inside the preview. */
+export function publicSiteLinks(slug: string, year: number, pages: SitePage[], base = publicBasePath(slug, year)): SiteLinks {
   const links: SiteLinks = { home: base };
   for (const page of pages) if (page !== "home") links[page] = `${base}/${page}`;
   return links;

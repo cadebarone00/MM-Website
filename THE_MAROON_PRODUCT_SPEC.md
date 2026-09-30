@@ -527,6 +527,26 @@ dates become per-edition activation dates.
   will appear here once live scoring opens for this tournament." Nothing
   reads live-scoring tables, and there's no fallback to The Maroon.
 
+### 9.2 Built: organizer preview (2026-09-30; not yet in production)
+- **Flow:** Dashboard → "Preview Website" →
+  `/tournaments/[tournament]/[year]/preview` (and `/preview/[section]`).
+  A banner sits above the site: "Preview — this tournament is not public
+  yet." (or "this is your published site"), the future `/t/...` address,
+  and "Back to setup". Always noindex.
+- **Who:** only people who can manage the edition (owner, organizers,
+  platform admins), checked twice: `resolveManagedEdition` in the server
+  loader, and `can_manage_edition` inside `get_tournament_site_preview`.
+  Everyone else, including players and signed-out visitors, gets a 404.
+  The Maroon is refused (it's managed in the Admin Center).
+- **Same data, same screens:** the public reader and the preview share one
+  projection, `tournament_site_projection` (service role only, no access
+  checks of its own). The preview renders with the same
+  `TournamentSiteView` component as `/t`; only the link base differs.
+  Website toggles, branding and empty states behave identically.
+- **Public reader unchanged:** `get_public_tournament_site`'s access
+  checks are word-for-word the same, and its output is byte-identical.
+  Unpublished editions still 404 at `/t/...`, even for their owner.
+
 ## 10. App architecture
 The Player Portal (`/portal`) and Admin Center (`/portal/admin`) become
 tournament-scoped: a user with several memberships picks a tournament. An

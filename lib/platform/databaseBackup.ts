@@ -36,8 +36,11 @@ export async function checksum(path: string): Promise<string> {
   return hash.digest("hex");
 }
 
+/** Minimal child-process environment. Not NodeJS.ProcessEnv: Next.js types make NODE_ENV required there, and we deliberately pass only allow-listed keys. */
+export type ChildEnv = Record<string, string | undefined>;
+
 /** Never forward arbitrary connection options or credentials in process arguments. */
-export function connectionEnvironment(connection: string | undefined): NodeJS.ProcessEnv {
+export function connectionEnvironment(connection: string | undefined): Record<string, string> {
   if (!connection) throw new Error("Set PRODUCTION_DATABASE_URL explicitly; no .env file is loaded.");
   try {
     const url = new URL(connection);
@@ -49,16 +52,16 @@ export function connectionEnvironment(connection: string | undefined): NodeJS.Pr
   } catch { throw new Error("Invalid PRODUCTION_DATABASE_URL; use a PostgreSQL URI with credentials and TLS. Only sslmode is supported."); }
 }
 
-export type Runner = (command: string, args: string[], env: NodeJS.ProcessEnv) => { status: number | null; stdout?: string };
+export type Runner = (command: string, args: string[], env: ChildEnv) => { status: number | null; stdout?: string };
 const run: Runner = (command, args, env) => {
-  const result = spawnSync(command, args, { env, encoding: "utf8", windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
+  const result = spawnSync(command, args, { env: env as NodeJS.ProcessEnv, encoding: "utf8", windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
   return { status: result.status, stdout: result.stdout ?? "" };
 };
 
 export async function backupDatabase(options: { connection?: string; root?: string; now?: Date; runner?: Runner } = {}): Promise<string> {
   const pg = connectionEnvironment(options.connection);
   const runner = options.runner ?? run;
-  const env: NodeJS.ProcessEnv = {};
+  const env: ChildEnv = {};
   // Exclude inherited PGOPTIONS, service files and application secrets.
   for (const key of ["PATH", "Path", "SystemRoot", "WINDIR", "TEMP", "TMP", "HOME", "USERPROFILE"]) if (process.env[key]) env[key] = process.env[key];
   if (runner("pg_dump", ["--version"], env).status !== 0) throw new Error("pg_dump unavailable. Install PostgreSQL client tools compatible with the server and add them to PATH.");

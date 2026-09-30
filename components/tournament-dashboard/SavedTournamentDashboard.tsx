@@ -74,6 +74,7 @@ export function SavedTournamentDashboard({ initialSetup, initialReadiness, apiBa
       <div className={styles.stageRow}>
         <span className={styles.stage} data-stage={readiness.stage}>{readiness.stage}</span>
         <h2 className={base.muted} style={{ margin: 0, fontSize: 18 }} data-testid="setup-percent">Tournament Setup — {readiness.percent}% Complete</h2>
+        {!readOnlyReason && <a className={base.secondary} style={{ marginLeft: "auto" }} href={`/tournaments/${encodeURIComponent(setup.tournament.slug)}/${setup.edition.seasonYear}/preview`}>Preview Website</a>}
       </div>
       <progress aria-label="Tournament setup completion" value={readiness.percent} max={100} />
       {readiness.blockedReason && <p className={base.callout}>{readiness.blockedReason}</p>}

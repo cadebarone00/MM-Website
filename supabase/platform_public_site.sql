@@ -13,7 +13,10 @@
 -- tournament's existence isn't revealed. The founding (legacy) tournament
 -- keeps its own site and is never served here.
 --
--- Prerequisites: platform_foundation.sql. Safe to run more than once.
+-- The organizer preview (get_tournament_site_preview) shows the same projection
+-- to the tournament's organizers before publishing; it needs platform_dashboard.sql.
+--
+-- Prerequisites: platform_foundation.sql, platform_dashboard.sql. Safe to run more than once.
 
 begin;
 
@@ -37,20 +40,20 @@ returns integer[] language sql stable security definer set search_path = public 
     and coalesce(can_view_tournament(t.id, p_viewer), false);
 $$;
 
-create or replace function public.get_public_tournament_site(p_slug text, p_year integer, p_viewer uuid default null)
+-- What the public site shows for one edition — the ONLY place that decides
+-- which fields are public. No access checks here: every caller (the public
+-- reader below, the organizer preview) checks access first. Service role only.
+create or replace function public.tournament_site_projection(p_edition uuid)
 returns jsonb language plpgsql stable security definer set search_path = public as $$
 declare
   v_t tournaments;
   v_e tournament_editions;
   v_s edition_settings;
 begin
-  select * into v_t from tournaments where slug = p_slug and not is_legacy;
-  if v_t.id is null then return null; end if;
-  select * into v_e from tournament_editions where tournament_id = v_t.id and season_year = p_year;
-  if v_e.id is null or v_e.published_at is null or v_e.is_test then return null; end if;
-  if not coalesce(can_view_tournament(v_t.id, p_viewer), false) then return null; end if;
+  select * into v_e from tournament_editions where id = p_edition;
+  if v_e.id is null then return null; end if;
+  select * into v_t from tournaments where id = v_e.tournament_id;
   select * into v_s from edition_settings where edition_id = v_e.id;
-
   return jsonb_build_object(
     'tournament', jsonb_build_object('slug', v_t.slug, 'name', v_t.name, 'shortName', v_t.short_name,
       'description', v_t.description, 'visibility', v_t.visibility,
@@ -89,11 +92,49 @@ begin
 end;
 $$;
 
+create or replace function public.get_public_tournament_site(p_slug text, p_year integer, p_viewer uuid default null)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare
+  v_t tournaments;
+  v_e tournament_editions;
+begin
+  select * into v_t from tournaments where slug = p_slug and not is_legacy;
+  if v_t.id is null then return null; end if;
+  select * into v_e from tournament_editions where tournament_id = v_t.id and season_year = p_year;
+  if v_e.id is null or v_e.published_at is null or v_e.is_test then return null; end if;
+  if not coalesce(can_view_tournament(v_t.id, p_viewer), false) then return null; end if;
+  return tournament_site_projection(v_e.id);
+end;
+$$;
+
+-- Organizer preview (Tournament Dashboard → Preview Website). Shows the same
+-- projection visitors will get, before publishing and for private
+-- tournaments, but only to the tournament's organizers/owner and platform
+-- admins. It does not change get_public_tournament_site in any way.
+create or replace function public.get_tournament_site_preview(p_profile uuid, p_edition uuid)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+begin
+  if not can_manage_edition(p_profile, p_edition) then
+    raise exception 'Not found.' using errcode = '42501';
+  end if;
+  if exists (select 1 from tournament_editions e join tournaments t on t.id = e.tournament_id where e.id = p_edition and t.is_legacy) then
+    raise exception 'The Maroon Tournament is managed in the Admin Center.' using errcode = '42501';
+  end if;
+  return jsonb_build_object(
+    'site', tournament_site_projection(p_edition),
+    'published', (select published_at is not null from tournament_editions where id = p_edition));
+end;
+$$;
+
 revoke all on function public.can_view_tournament(uuid, uuid) from public, anon, authenticated;
 revoke all on function public.get_public_tournament_years(text, uuid) from public, anon, authenticated;
 revoke all on function public.get_public_tournament_site(text, integer, uuid) from public, anon, authenticated;
 grant execute on function public.can_view_tournament(uuid, uuid) to service_role;
 grant execute on function public.get_public_tournament_years(text, uuid) to service_role;
 grant execute on function public.get_public_tournament_site(text, integer, uuid) to service_role;
+revoke all on function public.tournament_site_projection(uuid) from public, anon, authenticated;
+revoke all on function public.get_tournament_site_preview(uuid, uuid) from public, anon, authenticated;
+grant execute on function public.tournament_site_projection(uuid) to service_role;
+grant execute on function public.get_tournament_site_preview(uuid, uuid) to service_role;
 
 commit;

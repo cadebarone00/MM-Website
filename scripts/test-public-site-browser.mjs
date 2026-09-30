@@ -38,7 +38,8 @@ async function seed({ slug, name, visibility, publish = true, site, colors = ["#
 
 await seed({ slug: "texas-cup", name: "Texas Cup", visibility: "public" });
 const privateCup = await seed({ slug: "private-cup", name: "Private Cup", visibility: "private", colors: ["#2e6b4f", "#c2571a"] });
-await seed({ slug: "hidden-cup", name: "Hidden Cup", visibility: "public", publish: false });
+const hiddenCup = await seed({ slug: "hidden-cup", name: "Hidden Cup", visibility: "public", publish: false, site: { players: false } });
+const previewStranger = await fake.addUser({ name: "preview-stranger" });
 await seed({ slug: "quiet-cup", name: "Quiet Cup", visibility: "unlisted", site: { players: false, courses: false, leaderboard: false } });
 
 const server = spawn(process.platform === "win32" ? `npx.cmd next start -p ${APP_PORT}` : "npx", process.platform === "win32" ? [] : ["next", "start", "-p", String(APP_PORT)], {
@@ -125,7 +126,36 @@ try {
   assert.equal(await memberPage.locator('meta[name="robots"]').getAttribute("content"), "noindex, nofollow");
   assert.equal(await memberPage.locator(".ts-site").evaluate((el) => getComputedStyle(el).getPropertyValue("--ts-primary").trim()), "#2e6b4f", "its own branding");
 
+  // Organizer preview: Dashboard → Preview Website shows the unpublished site, clearly marked.
+  const organizer = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  await organizer.addCookies([{ ...fake.sessionCookie(hiddenCup.owner), url: app }]);
+  const orgPage = await organizer.newPage();
+  orgPage.on("pageerror", (error) => pageErrors.push(error.message));
+  await orgPage.goto(`${app}/tournaments/hidden-cup/2027`);
+  await orgPage.getByRole("link", { name: "Preview Website", exact: true }).click();
+  await orgPage.waitForURL("**/tournaments/hidden-cup/2027/preview");
+  const banner = await orgPage.getByRole("note", { name: "Preview" }).innerText();
+  assert.ok(banner.includes("Preview — this tournament is not public yet.") && banner.includes("/t/hidden-cup/2027"), banner);
+  assert.equal(await orgPage.getByRole("heading", { level: 1 }).innerText(), "Hidden Cup 2027");
+  const previewText = await orgPage.locator("body").innerText();
+  for (const text of ["DEFENDING CHAMPIONS", "p0@secret.example"]) assert.ok(!previewText.includes(text), `preview must not show ${text}`);
+  assert.equal(await orgPage.locator('meta[name="robots"]').getAttribute("content"), "noindex, nofollow");
+  const previewNav = orgPage.getByRole("navigation", { name: "Tournament pages" });
+  assert.ok(!(await previewNav.innerText()).includes("Players"), "disabled section hidden in preview nav");
+  await previewNav.getByRole("link", { name: "Schedule", exact: true }).click();
+  await orgPage.waitForURL("**/tournaments/hidden-cup/2027/preview/schedule");
+  assert.ok((await orgPage.getByRole("note", { name: "Preview" }).count()) === 1, "banner stays while browsing the preview");
+  assert.equal((await orgPage.goto(`${app}/tournaments/hidden-cup/2027/preview/players`)).status(), 404, "disabled section 404s in preview too");
+  assert.equal((await orgPage.goto(`${app}/t/hidden-cup/2027`)).status(), 404, "the real public URL stays hidden for the owner too");
+  const outsider = await browser.newContext();
+  await outsider.addCookies([{ ...fake.sessionCookie(previewStranger), url: app }]);
+  assert.equal((await (await outsider.newPage()).goto(`${app}/tournaments/hidden-cup/2027/preview`)).status(), 404, "stranger can't preview");
+  assert.equal(await status("/tournaments/hidden-cup/2027/preview"), 404, "signed-out can't preview");
+  await page.goto(`${app}/t/texas-cup/2027`);
+  assert.equal(await page.getByRole("note", { name: "Preview" }).count(), 0, "no preview banner on the real public site");
+
   assert.deepEqual(pageErrors, []);
+  console.log("Passed (organizer preview): owner opens Preview Website from the dashboard, banner + same site + nav inside preview, disabled section hidden/404, public URL still 404, stranger and signed-out 404, no banner on the real site.");
   console.log("Passed: public/private/unpublished/unlisted/invalid/legacy resolution, latest-edition redirect, Blue/Gold branding, no Maroon chrome or emails, nav under /t, holding states, disabled sections hidden + 404, noindex for unlisted/private, phone width, member access to private.");
 } catch (error) {
   failed = true;

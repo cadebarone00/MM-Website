@@ -3,6 +3,37 @@
 Platform-level changes (multi-tenant productization). Detailed history of
 the founding tournament's features lives in `project_specs.md`.
 
+## 2026-09-30 — Organizer preview of the public site
+
+**What changed**
+- `supabase/platform_public_site.sql`: the site data is built by one shared
+  `tournament_site_projection`. `get_public_tournament_site` keeps the
+  same access checks and returns byte-identical output. New
+  `get_tournament_site_preview(profile, edition)` returns it only to people
+  who can manage the edition (`can_manage_edition`, so this file now also
+  needs `platform_dashboard.sql`); The Maroon is refused. Service role only.
+- `lib/platform/publicSite.ts`: `publicBasePath` / `previewBasePath`;
+  `publicSiteServer.ts`: `loadTournamentPreview`.
+- `components/platform/PublicTournamentPage.tsx`: the renderer is now
+  `TournamentSiteView`, used by both the public site and the preview.
+- New `components/platform/TournamentPreviewPage.tsx` (+ CSS module) and
+  routes `app/tournaments/[tournament]/[year]/preview/{layout,page,[section]/page}.tsx`.
+- Dashboard: a "Preview Website" link. `SiteChrome`: no Maroon chrome on
+  preview pages.
+
+**Testing**
+- `lib/platform/preview.test.tsx` (4): owner/organizer/admin can preview an
+  unpublished tournament while `/t` stays hidden; stranger, player, another
+  tournament's owner, anon and The Maroon are refused; preview data and
+  markup equal the public site's; no emails/handicaps/ids; no live-scoring
+  tables read or changed; empty states and disabled sections.
+- `npm test` 605/605, `test:db` and `test:db:platform` pass, compliance OK,
+  lint: the same 7 older errors, type check: only `databaseBackup.ts`'s 2
+  older errors.
+- Production build (isolated copy): 239 pages. Browser
+  (`test:browser:public`, `test:browser:dashboard`) pass, including the
+  preview flow end to end.
+
 ## 2026-09-30 — Public tournament site /t/[tournament]/[year]
 
 **What changed**
