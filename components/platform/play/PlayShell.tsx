@@ -2,8 +2,8 @@ import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import { ChevronLeft, Home, ListOrdered, MoreHorizontal, Swords, Users } from "lucide-react";
 import { readableText } from "@/components/platform/tournament-site/theme";
-import type { TournamentHome } from "@/lib/platform/tournamentHomeServer";
-import { PLAY_TAB_LABELS, PLAY_TABS, playPath, type PlayTab } from "@/lib/platform/tournamentHome";
+import type { TournamentHome } from "@/lib/platform/tournamentHome";
+import { PLAY_TAB_LABELS, PLAY_TABS, tabPath, type PlayTab } from "@/lib/platform/tournamentHome";
 import styles from "./Play.module.css";
 
 const ICONS: Record<PlayTab, typeof Home> = { home: Home, matches: Swords, leaderboard: ListOrdered, players: Users, more: MoreHorizontal };
@@ -14,22 +14,23 @@ const ICONS: Record<PlayTab, typeof Home> = { home: Home, matches: Swords, leade
  * tournament's own accent color tints highlights; the environment stays
  * The Maroon's deep maroon.
  */
-export function PlayShell({ home: { slug, year, site, colors }, tab, children }: { home: TournamentHome; tab: PlayTab; children: ReactNode }) {
+export function PlayShell({ home: { year, site, colors, basePath, links, demo }, tab, children }: { home: TournamentHome; tab: PlayTab; children: ReactNode }) {
   // No organizer colors → The Maroon's own gold on maroon.
   const accent = colors.accent ?? "#d6b85c";
   const primary = colors.primary ?? "#500001";
   const theme = { "--play-accent": accent, "--play-on-accent": readableText(accent), "--play-brand": primary } as CSSProperties;
   return <div className={styles.app} style={theme}>
     <header className={styles.topBar}>
-      <Link href="/tournaments/join" className={styles.iconButton} aria-label="All tournaments"><ChevronLeft size={24} aria-hidden="true" /></Link>
+      <Link href={links.allTournaments} className={styles.iconButton} aria-label="All tournaments"><ChevronLeft size={24} aria-hidden="true" /></Link>
       <p className={styles.topTitle}>{site.branding.shortName} <span>{year}</span></p>
       <span className={styles.iconButton} aria-hidden="true" />
     </header>
+    {demo && <p className={styles.demoBanner} role="note">Local demo · fixture data, not a real tournament</p>}
     <main className={styles.screen} id="play-content">{children}</main>
     <nav className={styles.bottomNav} aria-label="Tournament">
       {PLAY_TABS.map((key) => {
         const Icon = ICONS[key];
-        return <Link key={key} href={playPath(slug, year, key)} className={styles.navItem} aria-current={key === tab ? "page" : undefined}>
+        return <Link key={key} href={tabPath(basePath, key)} className={styles.navItem} aria-current={key === tab ? "page" : undefined}>
           <Icon size={22} aria-hidden="true" /><span>{PLAY_TAB_LABELS[key]}</span>
         </Link>;
       })}

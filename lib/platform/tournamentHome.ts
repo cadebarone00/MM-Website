@@ -1,5 +1,70 @@
-import type { ScheduleDay, Session } from "@/components/platform/tournament-site/types";
+import type { Match, ScheduleDay, Session, TournamentSiteData } from "@/components/platform/tournament-site/types";
 import type { TournamentActivityFeed, TournamentActivityItem } from "./activity.ts";
+
+/**
+ * What every /play screen renders. Built for real by loadTournamentHome
+ * (tournamentHomeServer.ts) and, for local design review only, by the dev
+ * demo (playDemo.ts). The screens render whatever is present: empty match
+ * or standings lists show the pre-live-scoring holding states.
+ */
+export interface TournamentHome {
+  slug: string;
+  year: number;
+  site: TournamentSiteData;
+  /** The organizer's own colors (valid hex), or null when not set, so the app can fall back to The Maroon's palette. */
+  colors: { primary: string | null; accent: string | null };
+  /** null when the activity feed is unavailable; the home page then hides those sections. */
+  feed: TournamentActivityFeed | null;
+  /** Where the bottom tabs point (no trailing slash). */
+  basePath: string;
+  /** Where Post Announcement sends; null = posting is switched off (the demo). */
+  announcementsUrl: string | null;
+  links: {
+    /** The public tournament website, if there is one. */
+    website: string | null;
+    /** Tournament Studio, only for viewers the backend lets manage the tournament. */
+    commissioner: string | null;
+    allTournaments: string;
+  };
+  /** The viewer's own match, once live scoring posts pairings; null before that. */
+  yourMatch: { matchId: string; playerId: string } | null;
+  /** Which schedule session (round) each match belongs to, by match id; empty before pairings exist. */
+  matchSessions: Record<string, string>;
+  /** True only for the local dev demo; the shell then labels the data as fixture data. */
+  demo: boolean;
+}
+
+/** Tab link for a screen, under the home's base path. */
+export function tabPath(basePath: string, tab: PlayTab): string {
+  return tab === "home" ? basePath : `${basePath}/${tab}`;
+}
+
+/** The viewer's match and which side they are on, or null when there is none to show. */
+export function findYourMatch(home: Pick<TournamentHome, "site" | "yourMatch" | "matchSessions">): { match: Match; mine: Match["sideA"]; theirs: Match["sideB"]; session: Session | null } | null {
+  if (!home.yourMatch) return null;
+  const match = home.site.matches.find((m) => m.id === home.yourMatch?.matchId);
+  if (!match) return null;
+  const onA = match.sideA.players.includes(home.yourMatch.playerId);
+  if (!onA && !match.sideB.players.includes(home.yourMatch.playerId)) return null;
+  return { match, mine: onA ? match.sideA : match.sideB, theirs: onA ? match.sideB : match.sideA, session: sessionFor(home, match.id) };
+}
+
+/** The schedule session a match belongs to, if known. */
+export function sessionFor(home: Pick<TournamentHome, "site" | "matchSessions">, matchId: string): Session | null {
+  const id = home.matchSessions[matchId];
+  return id ? home.site.days.flatMap((d) => d.sessions).find((s) => s.id === id) ?? null : null;
+}
+
+/** Positions with ties shown golf-style: 1, T2, T2, 4. */
+export function positionLabel(position: number, all: number[]): string {
+  return all.filter((p) => p === position).length > 1 ? `T${position}` : String(position);
+}
+
+/** "-3" under par, "E" even, "+2" over: for styling a leaderboard score. */
+export function parTone(score: string): "under" | "even" | "over" {
+  const s = score.trim();
+  return s.startsWith("-") ? "under" : s === "E" || s === "0" ? "even" : "over";
+}
 
 /**
  * Tournament Home (/play/<tournament>/<year>): the logged-in league

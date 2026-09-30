@@ -2,10 +2,10 @@
 import Link from "next/link";
 import { ChevronRight, ListOrdered, MoreHorizontal, Swords, Users } from "lucide-react";
 import { imageSource, readableText, safeColor } from "@/components/platform/tournament-site/theme";
-import type { TournamentSiteData } from "@/components/platform/tournament-site/types";
-import type { TournamentHome } from "@/lib/platform/tournamentHomeServer";
-import { nextSession, PAIRINGS_HOLDING, playPath, todayIn } from "@/lib/platform/tournamentHome";
+import type { Match, Player, Team, TournamentSiteData } from "@/components/platform/tournament-site/types";
+import { findYourMatch, nextSession, PAIRINGS_HOLDING, tabPath, todayIn, type TournamentHome } from "@/lib/platform/tournamentHome";
 import { initials, PlayShell } from "./PlayShell";
+import { MatchStatus } from "./MatchCard";
 import { TournamentFeed } from "./TournamentFeed";
 import styles from "./Play.module.css";
 
@@ -25,7 +25,7 @@ function IdentityHeader({ site, year }: { site: TournamentSiteData; year: number
       {teams.slice(0, 2).map((team, index) => <div key={team.id} className={styles.raceTeam} data-side={index === 0 ? "a" : "b"}>
         <span className={styles.teamSwatch} style={{ background: safeColor(team.color), color: readableText(safeColor(team.color)) }}>{initials(team.name)}</span>
         <span className={styles.teamName}>{team.name}</span>
-        <strong className={styles.teamScore}>{typeof team.points === "number" ? team.points : "–"}</strong>
+        <strong className={styles.teamScore} data-scored={typeof team.points === "number" || undefined}>{typeof team.points === "number" ? team.points : "–"}</strong>
       </div>)}
       <p className={styles.raceNote}>{teams.some((t) => typeof t.points === "number") ? "Team points" : "Scoring opens with live play"}</p>
     </div>
@@ -33,8 +33,43 @@ function IdentityHeader({ site, year }: { site: TournamentSiteData; year: number
   </header>;
 }
 
-/** The main focus. Real schedule details; pairings and live status are a holding state until live scoring posts them. */
-function YourMatch({ site }: { site: TournamentSiteData }) {
+function SideFaces({ side, players, teams, label }: { side: Match["sideA"]; players: Player[]; teams: Team[]; label: string }) {
+  const color = safeColor(teams.find((t) => t.id === side.teamId)?.color ?? "", "#3a1620");
+  const names = side.players.map((id) => players.find((p) => p.id === id)?.name ?? "TBD");
+  return <div className={styles.side}>
+    {names.map((name) => <span key={name} className={styles.face} style={{ borderColor: color }}>{initials(name)}</span>)}
+    <p>{label}</p>
+    <strong className={styles.sideNames}>{names.join(" & ")}</strong>
+  </div>;
+}
+
+/**
+ * The main focus. With posted pairings: your side, the opponents, status and
+ * the round's details. Before that: the real next round plus a holding state.
+ */
+function YourMatch({ home }: { home: TournamentHome }) {
+  const { site } = home;
+  const yours = findYourMatch(home);
+  if (yours) {
+    const { match, mine, theirs, session } = yours;
+    const course = session ? site.courses.find((c) => c.id === session.courseId) : undefined;
+    const partnerCount = mine.players.length - 1;
+    return <section className={styles.match} aria-labelledby="your-match">
+      <div className={styles.matchHead}><h2 id="your-match">Your Match</h2><MatchStatus match={match} /></div>
+      <p className={styles.matchRound}>{session?.label ?? "Match"} <span>· {match.format}</span></p>
+      <div className={styles.matchup} aria-label="Pairings">
+        <SideFaces side={mine} players={site.players} teams={site.teams} label={partnerCount > 0 ? "You & partner" : "You"} />
+        <span className={styles.versus}>vs</span>
+        <SideFaces side={theirs} players={site.players} teams={site.teams} label="Opponents" />
+      </div>
+      {match.result && <p className={styles.matchResult} data-status={match.status}>{match.result}</p>}
+      <dl className={styles.matchFacts}>
+        <div><dt>Tee time</dt><dd>{match.teeTime}</dd></div>
+        <div><dt>Format</dt><dd>{match.format}</dd></div>
+        <div><dt>Course</dt><dd>{course?.name ?? "Course TBD"}</dd></div>
+      </dl>
+    </section>;
+  }
   const next = nextSession(site.days, todayIn(site.timezone));
   const course = next.state === "upcoming" ? site.courses.find((c) => c.id === next.session.courseId) : undefined;
   return <section className={styles.match} aria-labelledby="your-match">
@@ -59,7 +94,7 @@ function YourMatch({ site }: { site: TournamentSiteData }) {
   </section>;
 }
 
-function Areas({ slug, year }: { slug: string; year: number }) {
+function Areas({ basePath }: { basePath: string }) {
   const areas = [
     { tab: "matches" as const, label: "Matches", note: "Schedule & pairings", Icon: Swords },
     { tab: "leaderboard" as const, label: "Leaderboard", note: "Standings", Icon: ListOrdered },
@@ -67,20 +102,20 @@ function Areas({ slug, year }: { slug: string; year: number }) {
     { tab: "more" as const, label: "More", note: "Courses & info", Icon: MoreHorizontal },
   ];
   return <nav className={styles.areas} aria-label="Tournament areas">
-    {areas.map(({ tab, label, note, Icon }) => <Link key={tab} href={playPath(slug, year, tab)} className={styles.area}>
+    {areas.map(({ tab, label, note, Icon }) => <Link key={tab} href={tabPath(basePath, tab)} className={styles.area}>
       <Icon size={20} aria-hidden="true" /><span><strong>{label}</strong><small>{note}</small></span><ChevronRight size={16} aria-hidden="true" />
     </Link>)}
   </nav>;
 }
 
 export function TournamentHomeScreen({ home }: { home: TournamentHome }) {
-  const { slug, year, site, feed } = home;
+  const { year, site, feed } = home;
   return <PlayShell home={home} tab="home">
     <IdentityHeader site={site} year={year} />
     <div className={styles.stack}>
-      <YourMatch site={site} />
-      <Areas slug={slug} year={year} />
-      {feed && <TournamentFeed slug={slug} year={year} timezone={site.timezone} initialFeed={feed} />}
+      <YourMatch home={home} />
+      <Areas basePath={home.basePath} />
+      {feed && <TournamentFeed timezone={site.timezone} initialFeed={feed} postUrl={home.announcementsUrl} />}
     </div>
   </PlayShell>;
 }

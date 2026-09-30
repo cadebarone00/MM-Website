@@ -14,7 +14,7 @@ const EVENT_ICONS: Partial<Record<ActivityType, typeof Flag>> = { tournament_pub
  * returned them for this viewer. Post Announcement follows the backend's
  * viewer.canPostAnnouncement flag only; the server checks again on post.
  */
-export function TournamentFeed({ slug, year, timezone, initialFeed }: { slug: string; year: number; timezone: string; initialFeed: TournamentActivityFeed }) {
+export function TournamentFeed({ timezone, initialFeed, postUrl }: { timezone: string; initialFeed: TournamentActivityFeed; postUrl: string | null }) {
   const [feed, setFeed] = useState(initialFeed);
   const [composing, setComposing] = useState(false);
   const { announcements, events } = splitFeed(feed);
@@ -23,7 +23,7 @@ export function TournamentFeed({ slug, year, timezone, initialFeed }: { slug: st
   return <>
     <PlaySection title="Commissioner" id="play-announcements"
       action={canPost && !composing ? <button type="button" className={styles.textAction} onClick={() => setComposing(true)}><Megaphone size={16} aria-hidden="true" />Post Announcement</button> : undefined}>
-      {canPost && composing && <AnnouncementForm slug={slug} year={year} onCancel={() => setComposing(false)} onPosted={(next) => { setFeed(next); setComposing(false); }} />}
+      {canPost && composing && <AnnouncementForm postUrl={postUrl} onCancel={() => setComposing(false)} onPosted={(next) => { setFeed(next); setComposing(false); }} />}
       {announcements.length === 0 ? <Holding title="No announcements yet.">{canPost ? "Post one to let everyone know what's coming." : "Updates from the commissioner will show up here."}</Holding>
         : <ul className={styles.announcements}>{announcements.map((item) => <li key={item.ref} className={styles.announcement}>
           <div className={styles.announcementMeta}>
@@ -49,7 +49,7 @@ export function TournamentFeed({ slug, year, timezone, initialFeed }: { slug: st
   </>;
 }
 
-function AnnouncementForm({ slug, year, onCancel, onPosted }: { slug: string; year: number; onCancel: () => void; onPosted: (feed: TournamentActivityFeed) => void }) {
+function AnnouncementForm({ postUrl, onCancel, onPosted }: { postUrl: string | null; onCancel: () => void; onPosted: (feed: TournamentActivityFeed) => void }) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [visibility, setVisibility] = useState<ActivityVisibility>("everyone");
@@ -58,10 +58,14 @@ function AnnouncementForm({ slug, year, onCancel, onPosted }: { slug: string; ye
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (!postUrl) {
+      setError("Posting is switched off here. Nothing was sent.");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
-      const response = await fetch(`/api/platform/tournaments/${encodeURIComponent(slug)}/${year}/announcements`, {
+      const response = await fetch(postUrl, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title, body, visibility }),
       });
       const json: unknown = await response.json().catch(() => null);
