@@ -39,8 +39,8 @@ export function SignUpForm({ initialCode }: { initialCode?: string }) {
 
   if (done) {
     return (
-      <div className="mx-auto max-w-[420px] px-4 py-16 text-center sm:px-7">
-        <h1 className="font-serif text-2xl font-bold text-ink-900">Check your email</h1>
+      <div className="w-full">
+        <h1 className="font-title text-3xl font-bold text-ink-900">Check your email</h1>
         <p className="mt-3 font-sans text-sm text-ink-500">
           We sent a verification link to {email}. Click it, then{" "}
           <Link href="/login" className="text-maroon-700 underline underline-offset-2">
@@ -53,57 +53,65 @@ export function SignUpForm({ initialCode }: { initialCode?: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto flex max-w-[420px] flex-col gap-4 px-4 py-16 sm:px-7">
-      <h1 className="font-serif text-2xl font-bold text-ink-900">Sign Up</h1>
+    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-5">
+      <h1 className="font-title text-3xl font-bold text-ink-900">Sign Up</h1>
       {isInvite && (
         <p className="rounded-sm bg-cream-50 px-3 py-2 font-sans text-sm text-ink-700">
           Signing up as <span className="font-semibold">{initialCode}</span>
         </p>
       )}
-      {error && <p className="rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
-      <input
+      {error && <p role="alert" className="rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
+      <label className="flex flex-col gap-2 font-title text-sm font-semibold">Name
+<input autoComplete="name"
         required
         placeholder="Name"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        className="rounded-sm border border-ink-300 px-3 py-2 font-sans text-sm"
+        className="min-h-12 rounded-none border border-ink-300 bg-white px-3 py-3 font-sans text-sm focus:outline-2 focus:outline-offset-2 focus:outline-maroon-700"
       />
-      <input
+</label>
+      <label className="flex flex-col gap-2 font-title text-sm font-semibold">Email
+<input autoComplete="email"
         required
         type="email"
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        className="rounded-sm border border-ink-300 px-3 py-2 font-sans text-sm"
+        className="min-h-12 rounded-none border border-ink-300 bg-white px-3 py-3 font-sans text-sm focus:outline-2 focus:outline-offset-2 focus:outline-maroon-700"
       />
+</label>
       {!isInvite && (
-        <input
+        <label className="flex flex-col gap-2 font-title text-sm font-semibold">Username
+<input autoComplete="username"
           required
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="rounded-sm border border-ink-300 px-3 py-2 font-sans text-sm"
+          className="min-h-12 rounded-none border border-ink-300 bg-white px-3 py-3 font-sans text-sm focus:outline-2 focus:outline-offset-2 focus:outline-maroon-700"
         />
+</label>
       )}
-      <input
+      <label className="flex flex-col gap-2 font-title text-sm font-semibold">Password
+<input autoComplete="new-password"
         required
         type="password"
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="rounded-sm border border-ink-300 px-3 py-2 font-sans text-sm"
+        className="min-h-12 rounded-none border border-ink-300 bg-white px-3 py-3 font-sans text-sm focus:outline-2 focus:outline-offset-2 focus:outline-maroon-700"
       />
+</label>
       <button
         type="submit"
         disabled={submitting}
-        className="rounded-sm bg-maroon-700 px-5 py-3 text-center font-condensed text-sm font-semibold uppercase tracking-wide text-cream-50 disabled:opacity-50"
+        className="min-h-12 bg-maroon-900 px-5 py-3 text-center font-condensed text-sm font-semibold uppercase tracking-widest text-white transition-colors hover:bg-maroon-700 disabled:opacity-50"
       >
         {submitting ? "Creating account…" : "Sign Up"}
       </button>
       <p className="text-center font-sans text-sm text-ink-500">
         Already have an account?{" "}
         <Link href="/login" className="text-maroon-700 underline underline-offset-2">
-          Log in
+          Sign In
         </Link>
       </p>
     </form>

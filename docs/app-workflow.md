@@ -8,6 +8,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
+  %% Sign In and Sign Up use Main Page chrome and a shared white form-left / Mission Hills photo-right layout; mobile stacks form before photo.
   %% Public tournament site kit is fixture-only; local HTML preview in out/tournament-site-preview, no /t route or live data connection.
   %% Contact page email links and prefilled drafts address themaroonadmin@gmail.com.
   %% Main Page (formerly Journal home): hero then maroon Your Tournament. Your Way. section; Create Tournament opens /tournaments/new, My Tournaments is a disabled coming-soon placeholder. Header Contact Us opens /contact reference-based email form and Sign In opens /login.
@@ -109,6 +110,8 @@ flowchart TD
 The branches are related but not interchangeable. A personal round is not a tournament submission. Turning on the broadcast does not start scoring. A submitted hole is not necessarily confirmed. A mathematically completed match is not necessarily administratively closed out.
 
 ## 1. Accounts, identity, and permissions
+
+Sign In (`/login`) and Sign Up (`/signup`, including invitation codes) use a shared split layout with The Maroon wordmark, labeled inputs and a full-width maroon action button in the white left panel, plus a Mission Hills photo on the right. Mobile stacks the form before the photo. Both routes use the Main Page header/footer rather than tournament tabs. Username-or-email login, password visibility, forgot-password navigation, verification resend, invitation usernames, and signup email confirmation retain their existing behavior.
 
 The `supabase/player_slots_password_created.sql` migration adds a read-only-in-practice `password_created` boolean to `player_slots` for inspection in Supabase Table Editor. It backfills existing linked accounts and database triggers maintain the value when passwords or `claimed_by` links change, including unlinking/deletion. True means the linked Auth account has a password credential; false means no linked password credential. No password or hash is copied into player data. It does not prove email verification, successful password login, or a portal visit, and does not change the current Claimed label or access rules. Run the migration in Supabase SQL Editor to enable this feature; live execution has not been verified.
 
@@ -567,6 +570,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-30 - Split account form layout (presentation implemented locally; deployment not verified).** Sign In and Sign Up previously appeared as narrow centered forms under tournament navigation. They now use Main Page navigation and a white left form panel with The Maroon branding, visible field labels and a full-width maroon button, beside a right-side golf photo. Mobile shows the form first and photo below. Existing authentication requests, invitation codes, verification and redirects are preserved. Updated section 1 and Mermaid annotation; overview paths and mappings are unchanged.
 
 **2026-09-29 ? Public tournament presentation kit (local fixture preview; deployment not verified).** Previously there was no isolated reusable public-site kit for arbitrary tournaments. Now typed presentation components and two fictional events demonstrate eight public-page concepts with responsive branding and display states. The preview is a generated local HTML file, not a production route or tournament. Updated section 22 and Mermaid annotation; existing overview/path mappings are unchanged.
 

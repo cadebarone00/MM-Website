@@ -59,10 +59,10 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto flex max-w-[420px] flex-col gap-4 px-4 py-16 sm:px-7">
-      <h1 className="font-serif text-2xl font-bold text-ink-900">Login</h1>
+    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-5">
+      <h1 className="font-title text-3xl font-bold text-ink-900">Sign In</h1>
       {error && (
-        <div className="rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">
+        <div role="alert" className="rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">
           {error}
           {unverified && (
             <button type="button" onClick={handleResend} className="ml-2 underline underline-offset-2">
@@ -71,21 +71,27 @@ export function LoginForm() {
           )}
         </div>
       )}
+      <label htmlFor="login-identity" className="-mb-3 font-title text-sm font-semibold">Username or email</label>
       <input
+        id="login-identity"
+        autoComplete="username"
         required
         placeholder="Username or email"
         value={usernameOrEmail}
         onChange={(e) => setUsernameOrEmail(e.target.value)}
-        className="rounded-sm border border-ink-300 px-3 py-2 font-sans text-sm"
+        className="min-h-12 rounded-none border border-ink-300 bg-white px-3 py-3 font-sans text-sm focus:outline-2 focus:outline-offset-2 focus:outline-maroon-700"
       />
+      <label htmlFor="login-password" className="-mb-3 font-title text-sm font-semibold">Password</label>
       <div className="relative">
         <input
+          id="login-password"
+          autoComplete="current-password"
           required
           type={showPassword ? "text" : "password"}
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-sm border border-ink-300 px-3 py-2 pr-10 font-sans text-sm"
+          className="min-h-12 w-full rounded-none border border-ink-300 bg-white px-3 py-3 pr-10 font-sans text-sm focus:outline-2 focus:outline-offset-2 focus:outline-maroon-700"
         />
         <button
           type="button"
@@ -99,21 +105,15 @@ export function LoginForm() {
           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
         </button>
       </div>
+      <Link href="/forgot-password" className="self-start font-condensed text-xs font-semibold uppercase tracking-widest text-maroon-700 underline underline-offset-4">Forgot your password?</Link>
       <button
         type="submit"
         disabled={submitting}
-        className="rounded-sm bg-maroon-700 px-5 py-3 text-center font-condensed text-sm font-semibold uppercase tracking-wide text-cream-50 disabled:opacity-50"
+        className="min-h-12 bg-maroon-900 px-5 py-3 text-center font-condensed text-sm font-semibold uppercase tracking-widest text-white transition-colors hover:bg-maroon-700 disabled:opacity-50"
       >
-        {submitting ? "Logging in…" : "Login"}
+        {submitting ? "Logging in…" : "Sign In"}
       </button>
-      <div className="flex justify-between font-sans text-sm text-ink-500">
-        <Link href="/signup" className="text-maroon-700 underline underline-offset-2">
-          Sign up instead
-        </Link>
-        <Link href="/forgot-password" className="text-maroon-700 underline underline-offset-2">
-          Forgot password?
-        </Link>
-      </div>
+      <p className="font-title text-sm text-ink-900">Don&rsquo;t have an account? <Link href="/signup" className="ml-1 font-condensed font-semibold uppercase tracking-widest text-maroon-700 underline underline-offset-4">Sign Up</Link></p>
     </form>
   );
 }
