@@ -190,18 +190,28 @@ mandatory questionnaire.**
 | **PUBLISH** | The organizer makes the site public. Publishing is blocked until the essentials are complete (the "ready to publish" check) | Readiness check passes |
 | **PLAY** | Sessions start, live scoring, leaderboards | Published or private-but-complete |
 
-**Implementation status (reviewed 2026-09-29):** `/tournaments/new`
-(`components/tournament-draft/`, `lib/platform/tournamentDraft.ts`) is a
-**local UI prototype** of CREATE + COMPLETE. The draft lives in page state
-only, and PUBLISH/PLAY are locked. It is not yet spec-complete:
-- Creation takes 8 screens and requires dates. The spec says one short form
-  (name, address, year).
-- EXIST isn't real until the draft is saved as a Tournament + Edition.
-- Readiness is a placeholder: it caps at 29%.
-- The suggested slug can collide with `the-maroon-tournament`.
-- The studio renders inside The Maroon Tournament's header and footer.
+**Implementation status (2026-09-29):**
+- **CREATE → EXIST is built.** On `/tournaments/new`, Basics asks for a
+  name, web address (suggested from the name, editable) and year. Dates are
+  optional. **Create now, finish later** saves immediately; the other 7 steps
+  are optional guided setup.
+- **Saving:** `POST /api/platform/tournaments` → `create_tournament_shell`
+  (`supabase/platform_create_tournament.sql`) creates, in one
+  all-or-nothing call: the creator's organization (beta plan), the
+  Tournament (status draft, private by default), its first Edition, owner
+  membership, teams and settings (`edition_settings.plan` holds the planned
+  headcount, rounds and formats). Invite-only access is enforced inside the
+  database.
+- **After saving,** the organizer lands on the saved dashboard at
+  `/tournaments/[tournament]/[year]`. It is organizers-only (404 for
+  everyone else) and read-only for now.
+- **Not signed in, not invited, or not switched on yet?** The wizard keeps a
+  local draft and says why.
+- **Still open:** editing saved sections, a real readiness engine (still the
+  placeholder), a request-access flow, and a neutral platform layout (the
+  studio still sits inside The Maroon's header and footer).
 
-See `TECHNICAL_DEBT.md` #21–#26 and the changelog. Route plan: create at
+See `TECHNICAL_DEBT.md` #23–#31 and the changelog. Route plan: create at
 `/tournaments/new`; management (dashboard) per tournament under
 `/tournaments/…`; the public site only at `/t/[tournament]/[year]`.
 
@@ -512,7 +522,7 @@ historical score edits, no fabricated data.
 | C4 | Keys switch to `edition_id`; year checks dropped | **High**: run only off-season, after a backup | Restore the backup |
 | C5 | Teams as data (§6.3) | High: touches match/roster code | Git revert; column-compatible |
 | C6 | Roles: `requireTournamentRole` replaces `requireHost` | Medium | Git revert |
-| D | Tournament Creation Wizard (§5.1: CREATE → EXIST → COMPLETE → PUBLISH → PLAY); **the next major customer-facing build after C2/C3** | Low (new code) | — |
+| D | Tournament Creation Wizard (§5.1). UI prototype (other session) ✅; **CREATE → EXIST persisted ✅** (`platform_create_tournament.sql`, not yet in prod); persistent COMPLETE (section editing, readiness) next | Low (new code) | Drop `create_tournament_shell` |
 | E | `/t/[tournament]/...` site; legacy URLs aliased | Medium | — |
 | F | Texas Cup created via UI; isolation + regression tests | — | — |
 

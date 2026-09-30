@@ -108,7 +108,7 @@ export function TournamentDraftWorkspace() {
           <p className={styles.muted}>Dates are optional for now. Add them whenever you know them.</p>
           <Field label="Timezone"><input list="draft-timezones" value={input.timezone} onChange={event => update("timezone", event.target.value)} required /><datalist id="draft-timezones">{["America/Chicago", "America/New_York", "America/Denver", "America/Los_Angeles", "Europe/London", "Asia/Bangkok", "Australia/Sydney", "UTC"].map(zone => <option key={zone} value={zone} />)}</datalist></Field>
           <Field label="Privacy when published"><select value={input.visibility} onChange={event => update("visibility", event.target.value as DraftInput["visibility"])}><option value="private">Private — invited participants</option><option value="unlisted">Unlisted — anyone with the link</option><option value="public">Public — discoverable by everyone</option></select></Field>
-          <p className={styles.muted}>This preference takes effect only after publishing is available. Your draft stays on this page.</p>
+          <p className={styles.muted}>This takes effect when you publish. Nothing is public until then.</p>
         </div>}
         {step === 1 && <div className={styles.fields}>
           <p>Who will compete for the title?</p><Field label="Competition type"><select value={input.competitionType} onChange={event => { const competitionType = event.target.value as DraftInput["competitionType"]; setInput(current => ({ ...current, competitionType, scoringMode: "tbd", formats: current.formats.map(() => null) })); setErrors([]); }}><option value="individual">Individual Tournament</option><option value="teams">Team Tournament</option></select></Field>

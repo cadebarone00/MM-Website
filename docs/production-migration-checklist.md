@@ -11,7 +11,10 @@ skip any. Each step says what "good" looks like.
 | C1 | `supabase/platform_foundation.sql` | Adds the new tournament/edition tables and copies The Maroon into them | `supabase/platform_foundation_rollback.sql` |
 | C2 | `supabase/platform_editions.sql` | Tags every year-labeled row with its edition | `supabase/platform_editions_rollback.sql` |
 
-C2 needs C1. To undo both, run the C2 undo first, then the C1 undo.
+| CREATE | `supabase/platform_create_tournament.sql` | Lets invited organizers save a new tournament from `/tournaments/new` | Run `drop function public.create_tournament_shell(uuid, jsonb);` |
+
+C2 and CREATE each need C1 (they don't need each other). To undo C1, first
+undo C2 and CREATE.
 
 ---
 
@@ -87,6 +90,28 @@ order by 1;
 Good: 30 rows, and **every** `rows_missing_edition` is `0`. Also compare
 each `total_rows` with the same table's number in
 `out/backups/<date-time>/_row-counts.json`. They must match.
+
+**After CREATE: give yourself access.** Creating tournaments is invite-only,
+so nobody can save one until you do this. Replace the email with your
+account's login email.
+```sql
+update profiles set platform_role = 'admin' where lower(email) = lower('you@example.com');
+```
+To let another organizer create tournaments (safe to run again):
+```sql
+insert into tournament_creator_access (profile_id, status, decided_at)
+select id, 'approved', now() from profiles where lower(email) = lower('them@example.com')
+on conflict (profile_id) do update set status = 'approved', decided_at = now();
+```
+To see who can create right now:
+```sql
+select p.email, p.platform_role, a.status from profiles p
+left join tournament_creator_access a on a.profile_id = p.id
+where p.platform_role = 'admin' or a.status = 'approved' order by 1;
+```
+Then open `/tournaments/new` while signed in, enter a name, and click
+**Create now, finish later**. You should land on
+`/tournaments/<address>/<year>` with the tournament's setup page.
 
 ## 5. Check the website still works
 Open the live site and confirm each of these loads the same as before:

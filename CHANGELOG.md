@@ -3,6 +3,62 @@
 Platform-level changes (multi-tenant productization). Detailed history of
 the founding tournament's features lives in `project_specs.md`.
 
+## 2026-09-29 — CREATE → EXIST: saving a new tournament
+
+**What changed**
+- `supabase/platform_create_tournament.sql`: `create_tournament_shell` makes,
+  all-or-nothing, the creator's organization (beta plan, reused after the
+  first), the Tournament (draft, private by default), its first Edition,
+  owner membership, teams and `edition_settings`. It enforces invite-only
+  access itself.
+- `supabase/platform_foundation.sql` (still not in production): adds
+  `edition_settings.plan` for planned headcount, rounds and formats.
+- `lib/platform/tournamentConfig.ts`: shared `tournamentSlugError` and
+  `suggestTournamentSlug` (reserved list now includes `t`, `tournaments`).
+- `lib/platform/tournamentDraft.ts`: web address and year added; dates
+  optional (both or neither); no forced `-tournament` suffix; Basics shows
+  "Needs Attention" until dates are set.
+- `lib/platform/tournamentCreate.ts`: the server runs the same draft rules
+  and builds the database payload. Teams get non-Maroon starting colors, and
+  logo URLs from the browser are ignored (no hosted media).
+- `lib/platform/tournamentAccess.ts`: `requireTournamentRole` (platform
+  admins act as owner). `lib/platform/savedTournament*.ts` loads a saved
+  tournament back into the dashboard's shape.
+- `POST /api/platform/tournaments` and `/tournaments/[tournament]/[year]`
+  (organizers only, 404 otherwise).
+- Wizard: **Create now, finish later** on Basics, web address and year
+  fields, saving with a local-draft fallback. The dashboard markup moved
+  unchanged into `TournamentSetupDashboard`, shared by drafts and saved
+  tournaments.
+- Checklist: the new migration, plus SQL to make yourself admin and approve
+  organizers (tested on the practice database).
+
+**Bug caught by tests before shipping:** the first version of the access
+check let anyone create in invite-only mode. SQL's "unknown" result for a
+missing access row slipped past `if not (...)`. It's fixed, and a
+12-combination test now proves the database matches `canCreateTournament`
+exactly.
+
+**Migrations:** `platform_create_tournament.sql` (needs C1). Not run in
+production.
+
+**Testing**
+- `npm test` 561/561. That includes 11 new create/draft tests: payload
+  rules, the atomic create, a taken address leaving nothing behind, the
+  permission matrix, service-role only, and a round trip from what was
+  entered to what the saved dashboard shows.
+- `test:db` 9/9 and `test:db:platform` 9/9 (the chain now includes the
+  create function).
+- `tsc` 0 errors. Lint shows the same 7 older errors, none new.
+- Fresh isolated production build (239 pages). The new signed-out browser
+  test passes (401 without an account, strangers get 404, quick create with
+  a name only, the address follows the name until edited, local fallback),
+  and so does the other session's original wizard browser test.
+
+**Known limitations:** signed-in end-to-end create hasn't been run against
+a real Supabase (debt #31). Saved sections are read-only (debt #28). There's
+no request-access flow yet (debt #27).
+
 ## 2026-09-29 — Review of the Tournament Creation Wizard prototype (`/tournaments/new`)
 
 The wizard itself was built by another session (commit `bf3be2c`). This
