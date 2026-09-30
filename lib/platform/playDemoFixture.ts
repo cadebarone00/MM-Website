@@ -37,7 +37,7 @@ const days: ScheduleDay[] = [
     { id: "r4", label: "Round 4 · Afternoon", courseId: "mid-pines", format: "Alternate Shot", teeTime: "1:40 PM", status: "scheduled" },
   ] },
   { date: "2027-04-17", label: "Saturday · April 17", sessions: [
-    { id: "r5", label: "Round 5 · Singles", courseId: "pine-needles", format: "Singles", teeTime: "9:00 AM", status: "scheduled" },
+    { id: "r5", label: "Round 5 · Final Day", courseId: "pine-needles", format: "Singles", teeTime: "9:00 AM", status: "scheduled" },
   ] },
 ];
 
