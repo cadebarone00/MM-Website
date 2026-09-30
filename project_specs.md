@@ -1130,3 +1130,30 @@ is specified in `THE_MAROON_PRODUCT_SPEC.md` (source of truth), tracked in
 `CHANGELOG.md` and `TECHNICAL_DEBT.md`. Phase C1 (additive platform tables,
 `supabase/platform_foundation.sql`, and `lib/platform/`) is built and tested
 but not yet run in production; nothing in the existing app reads it yet.
+
+### Round: Join Tournament page (spec 2026-09-30, awaiting approval)
+
+**What it is:** A new page people land on when they tap **Join Tournament** on the home screen. It's laid out like the fantasy-app screenshot, with the Maroon look.
+
+**Top to bottom:**
+1. **"Tournaments" title**, centered.
+2. **Link box.** A text box plus a Go button. Someone pastes a tournament link, for example `https://<our site>/t/the-maroon/2026` or just `/t/the-maroon/2026`, and it takes them to that tournament's public page. The box only accepts links to our own site, in the `/t/<tournament>/<year>` shape. Anything else shows "That doesn't look like a tournament link." Pasting a link does **not** sign the person up as a player. It only opens the page.
+3. **Create Tournament bar.** Goes to `/tournaments/new`, the same page the home screen's Create Tournament button opens.
+4. **Past Tournaments.** A list of tournament years this person actually **played in**: they're on that year's roster (`edition_roster` → `tournament_players.profile_id` = them) **and** the year's end date has passed. Each row shows the tournament name, the year, the place, and the dates. Tapping a row opens that year's public page. Empty state: "No past tournaments yet."
+
+**Who can see it:**
+- The page is at `/tournaments/join`.
+- Signed-out visitors still see the title, the link box and Create Tournament. Past Tournaments shows "Log in to see your past tournaments" with a Log In link.
+- The home screen's Join Tournament dropdown becomes a plain link to this page.
+
+**Data:** No new tables. There's one new read-only database function, `list_my_past_editions()`, which returns only the signed-in person's own rows. It needs one SQL file run in Supabase before this works in production.
+
+**Not included:** win/loss records, "Champion" badges, finishing places, and any real "join as a player" signup. Those can come later.
+
+**Done means:**
+- The page renders with all four sections.
+- A good link goes to the tournament and a bad link shows the error.
+- Create Tournament opens `/tournaments/new`.
+- Past Tournaments shows only finished years the person played in.
+- The home button links to the page.
+- Typecheck, lint and existing tests pass, and there's a new test for the link check.

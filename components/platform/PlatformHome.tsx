@@ -11,10 +11,7 @@ export function PlatformHome() {
     <section className={styles.actions} aria-label="Your tournament">
       <p className={styles.eyebrow}>Your next tradition starts here</p>
       <Link href="/tournaments/new" className={styles.primary}><Plus size={18} aria-hidden="true" />Create Tournament</Link>
-      <details className={styles.join}>
-        <summary><Flag size={18} aria-hidden="true" />Join Tournament</summary>
-        <div><p>Ask your commissioner for your tournament link. Joining a tournament from this page is not available yet.</p><Link href="/tournaments">Manage your tournaments <ArrowUpRight size={15} aria-hidden="true" /></Link></div>
-      </details>
+      <Link href="/tournaments/join" className={styles.joinLink}><Flag size={18} aria-hidden="true" />Join Tournament</Link>
     </section>
     <section aria-labelledby="feed-heading" className={styles.feed}>
       <div className={styles.sectionHeading}><h2 id="feed-heading">Feed</h2><span>From The Maroon</span></div>

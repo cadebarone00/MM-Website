@@ -1,0 +1,28 @@
+.page{max-width:720px;margin:auto;padding:32px 20px 48px;color:#2a2420}
+.title{font:500 40px/1.1 var(--font-spectral),Georgia,serif;text-align:center;margin:0 0 24px;color:#500001;letter-spacing:-.02em}
+.srOnly{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.linkForm{margin-bottom:14px}
+.linkRow{display:flex;align-items:center;gap:10px;min-height:54px;padding:0 6px 0 16px;border:1px solid #b8945a;background:#fffdf9;color:#806331}
+.linkRow:focus-within{outline:3px solid #806331;outline-offset:2px}
+.linkRow input{flex:1;min-width:0;border:0;background:transparent;font-size:16px;color:#2a2420;padding:12px 0;outline:none}
+.linkRow input::placeholder{color:#8a7f74}
+.linkRow button{min-height:42px;min-width:56px;padding:0 16px;background:#500001;color:#fbf8f1;font-weight:600;font-size:15px;border:0;cursor:pointer}
+.linkRow button:hover{background:#380001}
+.error{margin:8px 2px 0;font-size:14px;color:#9b1c1c}
+.create{display:flex;justify-content:center;align-items:center;gap:10px;min-height:54px;padding:12px 16px;font-size:16px;font-weight:600;border:1px solid #500001;background:#500001;color:#fbf8f1}
+.create:hover{background:#380001}
+.past{margin-top:40px}
+.past h2{font:500 28px var(--font-spectral),Georgia,serif;margin:0;padding-bottom:12px;border-bottom:1px solid #dfd3ba}
+.note{font-size:14px;line-height:1.6;color:#6e645b;margin:16px 0}
+.note a{color:#500001;text-decoration:underline;text-underline-offset:4px}
+.list{list-style:none;margin:0;padding:0}
+.list li{border-bottom:1px solid #dfd3ba}
+.row{display:flex;align-items:center;gap:16px;padding:18px 4px;min-height:72px;color:#806331}
+.row:hover{background:#f5efe2}
+.badge{flex:none;display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:#500001;color:#dcc495}
+.rowText{flex:1;min-width:0;display:grid;gap:3px}
+.rowText strong{font:600 20px/1.2 var(--font-spectral),Georgia,serif;color:#2a2420;overflow-wrap:anywhere}
+.rowText span{font-size:14px;color:#6e645b}
+.rowText .dates{font-size:12px;color:#8a7f74}
+.page a:focus-visible,.page button:focus-visible{outline:3px solid #806331;outline-offset:3px}
+@media(max-width:400px){.page{padding:24px 16px 40px}.title{font-size:34px}.row{gap:12px}.badge{width:40px;height:40px}}
