@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
 export function MaroonHeader() {
-  return <header className="sticky top-0 z-[300] border-b border-white/15 bg-maroon-700 text-white">
+  return <header className="sticky top-0 z-[300] border-b border-white/15 bg-maroon-900 text-white">
     <nav aria-label="Journal main navigation" className="mx-auto flex min-h-16 max-w-[1440px] items-center justify-between gap-3 px-4 py-3 sm:min-h-20 sm:px-7">
       <Link href="/" aria-label="Journal home" className="shrink-0 font-title text-xl font-bold tracking-tight sm:text-3xl">The Maroon Journal</Link>
       <span className="hidden font-condensed text-xs uppercase tracking-[0.25em] text-white/60 lg:block">Courses. Equipment. Teaching. News.</span>

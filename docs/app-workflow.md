@@ -8,6 +8,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
+  %% Desktop public footer: supplied cutout occupies the left 35%; sponsor thanks/logos and tournament links span 35%-90%; Journal header/footer share Tiger maroon-900.
   %% Home Highlights follows the Home display year: curated 2026 archive results with match links; unpopulated years are blank and do not inherit 2026 entries.
   %% Tournament home hero uses a neutral black readability gradient over desktop video and mobile photo.
   %% Browser tabs use a single dark-maroon M with a thin muted metallic-gold outline on transparent alpha through favicon.ico (16/32/48px) and icon.png (64px), shared by tournament and journal routes.
@@ -151,6 +152,8 @@ For example, in September 2026, My Matches can correctly show 2026 matches as Pa
 The season timing overview now distinguishes Archived, Active, Upcoming, and Future (with a separate Test season label). Active and archive handoffs retain their configured calendar boundaries. After Active's saved end date has passed in the tournament time zone, the following real year becomes Upcoming; later years are Future. A missing saved end date falls back to the checked-in historical event end date. Thus, while 2026 remains Active, its January 10, 2026 end makes 2027 Upcoming starting January 11; 2028 onward is Future. No test year is promoted to Upcoming.
 
 ## 3. Public website and navigation
+
+The shared desktop public footer uses the supplied maroon-jacket cutout, cropped from the bottom across the white sponsor band and maroon information band. Content and its white separator occupy the area from 35% to 90% of the viewport. The white band reads ?Thank You to? above ?our sponsors? with both configured sponsor logos to its right; it replaces the newsletter signup prompt. The decorative top stripe is removed. Journal top navigation and the footer use `maroon-900`, matching the Tiger Center and tournament secondary navigation. The footer remains desktop-only and is absent from portal/broadcast routes.
 
 Home Highlights displays thirteen dated 2026 archive summaries: the 17?16 Cup result, Nate?s individual title, Cam and Drew?s singles records, eight session recaps, and Hugo/Nate?s opening fourball win. Six entries appear initially; More Highlights opens the full season feed. Headlines link to archived matches, the individual winner, or tournament standings. These are curated summaries grounded in checked-in `2026-palm-springs.ts` results, not a live event log or inferred shot chronology. The feed follows the Home tournament/hero display year (explicit selection, then scheduled calendar; before legacy New Year handoff it uses the latest completed season). Switching to 2027 or any unpopulated year renders a blank Highlights panel, resets the expanded feed, and never carries 2026 stories forward. Automatic confirmed-score event generation, shot-video attachments, and Tiger pin/edit controls are not implemented by this change.
 
@@ -541,6 +544,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-29 - Sponsor and cutout footer (presentation implemented locally; deployment not verified).** Replaced the footer newsletter prompt with two-line sponsor thanks and the two existing sponsor logos. Removed the decorative stripe, shifted the wordmark, divider and information into the 35%-90% viewport region, and placed the supplied cutout across the left of both bands, emerging from the bottom. Journal top navigation and footer now match the Tiger Center maroon token. Updated section 3 and the Mermaid annotation; overview mappings are unchanged.
 
 **2026-09-29 - Year-scoped home highlights (implemented locally; deployment not verified).** Home previously displayed seven placeholder updates mixing upcoming-event copy with old results. It now shows thirteen linked, dated 2026 summaries from the checked-in tournament archive, with six previews and a full-feed view. Home year changes clear the feed for 2027 and other unpopulated years, including an open full-feed view. No automatic live highlight generation or Tiger editorial controls were added. Updated sections 3, 6 coverage, 19 clarification, and the Mermaid annotation; overview paths and mappings are unchanged.
 
