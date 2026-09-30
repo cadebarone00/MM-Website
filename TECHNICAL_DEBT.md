@@ -50,3 +50,6 @@ blocks the platform, P2 = fix during platform work, P3 = later.
 | 43 | Access requests: no email notifications; requesters check the page and admins check /admin/tournament-access | Slow turnaround | Add transactional email once a notification system exists (LR-23) | P3 |
 | 44 | Denied requesters can't re-apply in the app (they're pointed to Contact us); an admin can't reopen a decision | Edge cases need a manual database step | Add "reopen" for admins if it comes up | P3 |
 | 45 | Access requests have no retention rule (denied/old requests kept indefinitely) | Data kept longer than needed | Decide retention with the privacy review (DATA_INVENTORY D-05a) | P2 |
+| 46 | Announcements can't be edited or deleted yet | A mistaken post stays up (a database step can remove it) | Add edit/delete for the author and commissioners | P2 |
+| 47 | Activity has no notifications and no paging beyond the newest 100 | Members must open the page; long seasons truncate | Notifications with LR-23; cursor paging when needed | P3 |
+| 48 | C4 activity types are reserved but not accepted by the database | C4 must replace `tournament_activity_type_check` | Do it in the C4 migration | P1 (with C4) |

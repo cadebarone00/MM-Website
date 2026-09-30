@@ -16,7 +16,7 @@ export const CHAIN = [
   "hole_shot_directions_penalty.sql", "round_format_setups.sql", "scoring_reliability.sql", "live_round_submission.sql",
   "player_slots_email.sql", "player_slots_full_name.sql", "tournament_timezone.sql", "platform_foundation.sql",
   "platform_editions.sql", "platform_create_tournament.sql", "platform_dashboard.sql", "platform_public_site.sql",
-  "platform_access_requests.sql", "platform_past_editions.sql",
+  "platform_access_requests.sql", "platform_past_editions.sql", "platform_activity.sql",
 ];
 
 export const quick = { name: "Texas Cup", slug: "texas-cup", seasonYear: 2027, startDate: "", endDate: "", timezone: "America/Chicago", visibility: "private",

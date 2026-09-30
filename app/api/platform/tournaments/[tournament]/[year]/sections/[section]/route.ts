@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { dashboardFailure, readinessFor } from "@/lib/platform/dashboardApi";
+import { recordSetupActivity } from "@/lib/platform/activityServer";
 import { loadSetup, resolveManagedEdition, saveSection } from "@/lib/platform/dashboardServer";
 import { isSectionKey, validateSection } from "@/lib/platform/sectionRules";
 
@@ -37,5 +38,7 @@ export async function PATCH(request: Request, { params }: Params) {
     if (failure.status === 500) console.error(`save_tournament_section(${section}) failed:`, saved.error.message);
     return NextResponse.json({ ok: false, error: failure.error }, { status: failure.status });
   }
+  // Meaningful player/team/schedule changes of a published tournament go to its activity feed (best effort).
+  await recordSetupActivity(edition, current.value, saved.value);
   return NextResponse.json({ ok: true, setup: saved.value, readiness: readinessFor(saved.value) });
 }

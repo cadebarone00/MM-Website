@@ -612,6 +612,43 @@ dates become per-edition activation dates.
 - **Data:** `tournament_access_requests` (`supabase/platform_access_requests.sql`),
   service role only. No notifications (status is shown in the site).
 
+### 9.6 Built: tournament activity + commissioner announcements (2026-09-30; backend only, not yet in production)
+- **Language:** tournament = league, edition = season, organizer =
+  commissioner, player = league member (user-facing only; database roles
+  owner/organizer/player/viewer are unchanged and still decide permissions).
+- **One model:** `tournament_activity` (`supabase/platform_activity.sql`):
+  edition, type, actor, visibility (`everyone` / `players_only`), title,
+  body, metadata (counts only), created_at. Types now:
+  commissioner_announcement, tournament_published, schedule_updated,
+  players_updated, teams_updated. Reserved for C4 (not accepted yet):
+  pairings_posted, match_started, match_final, team_score_changed,
+  round_started, round_final, leaderboard_changed. C4 replaces the named
+  check constraint; the TS parser already skips unknown types.
+- **Who sees it:** `get_tournament_activity(slug, year, viewer)` first applies
+  the public site's own rule (reusing `get_public_tournament_years`:
+  published, not test, public/unlisted/private), or lets commissioners and
+  platform admins in before publishing. Then players-only items go only to
+  players, organizers, owner and platform admins (not `viewer` members).
+  Items carry short refs (a1...) numbered within what that viewer sees; author
+  names only for members; no ids or emails. `get_public_tournament_site` is
+  unchanged.
+- **Who posts:** owner/organizer (`can_manage_edition`) and platform admins,
+  via `POST /api/platform/tournaments/<t>/<y>/announcements` (plain text,
+  title up to 120, body up to 2,000). Players, viewers, strangers and
+  visitors can't. The Maroon stays in the Admin Center.
+- **Automatic events** (recorded by the save/publish routes, best effort,
+  never failing a save): only for published editions; published once per
+  edition; players added/removed, teams added/removed or players moving
+  teams, rounds added/removed/rescheduled or tournament dates changing.
+  Renames, typo fixes, colors, rules and identical re-saves produce nothing;
+  a repeat of the latest event within 15 minutes is merged into it.
+- **Contract for the Tournament Home UI:** `lib/platform/activity.ts`
+  (types, `parseActivityFeed`, `activitySummary`), server helper
+  `loadTournamentActivity(slug, year)` in `activityServer.ts`, and
+  `GET /api/platform/tournaments/<t>/<y>/activity`. Viewer capabilities:
+  `role`, `isPlatformAdmin`, `canPostAnnouncement`, `canSeePlayersOnly`.
+  No UI was built.
+
 ## 10. App architecture
 The Player Portal (`/portal`) and Admin Center (`/portal/admin`) become
 tournament-scoped: a user with several memberships picks a tournament. An

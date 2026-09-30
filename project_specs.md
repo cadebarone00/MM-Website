@@ -1131,7 +1131,7 @@ is specified in `THE_MAROON_PRODUCT_SPEC.md` (source of truth), tracked in
 `supabase/platform_foundation.sql`, and `lib/platform/`) is built and tested
 but not yet run in production; nothing in the existing app reads it yet.
 
-### Round: Join Tournament page (spec 2026-09-30, awaiting approval)
+### Round: Join Tournament page (spec 2026-09-30, approved 2026-09-30, built — needs `supabase/platform_past_editions.sql` run in production)
 
 **What it is:** A new page people land on when they tap **Join Tournament** on the home screen. It's laid out like the fantasy-app screenshot, with the Maroon look.
 

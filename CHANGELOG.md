@@ -7,6 +7,38 @@ the founding tournament's features lives in `project_specs.md`.
 
 Root home now follows the supplied wireframe with platform navigation, Log In, Create/Join actions and editorial exploration cards. Login and two-step signup share cream panels and retain existing auth endpoints, required fields and invitation usernames. Mobile login, tournament enrollment and activity are explicit holding states. Founding tournament routes remain unchanged. Local implementation; deployment not verified. Review: `docs/platform-entry-review.md`.
 
+## 2026-09-30 — Tournament activity + commissioner announcements (backend)
+
+**What changed**
+- New migration `supabase/platform_activity.sql` (needs C1, DASHBOARD, PUBLIC
+  SITE; not run in production): `tournament_activity` and service-role-only
+  `get_tournament_activity`, `post_commissioner_announcement`,
+  `record_edition_activity`. C4 types reserved, not accepted yet.
+- `lib/platform/activity.ts` (typed contract, parser, summaries, change
+  detector) and `activityServer.ts` (`loadTournamentActivity`, best-effort
+  recording). APIs: `GET .../[tournament]/[year]/activity`,
+  `POST .../[tournament]/[year]/announcements`.
+- The section-save and publish routes now record meaningful events after a
+  successful save (never failing it). No UI, no change to
+  `PublicTournamentPage`, the kit or `get_public_tournament_site`.
+- Test chains load the new migration; `npm run test:api:activity`.
+- Privacy: DATA_INVENTORY D-06a, registry entry `tournament-activity` (18
+  features), privacy draft mentions announcements.
+
+**Testing**
+- `lib/platform/activity.test.ts` (5): change detector; only owner, organizer
+  and platform admin post (player, viewer, stranger, other owner refused;
+  reading never grants posting); public/unlisted/private for visitor,
+  stranger, viewer, player and owner; players-only never reaches outsiders
+  or viewers; refs without gaps; no ids/emails; unpublished = commissioners
+  only; published once; trivial edits silent; merges; junk metadata dropped;
+  C4 types rejected; The Maroon refused; anon/authenticated refused; no
+  live-scoring reads/writes; public reader output unchanged. A deliberate
+  break (viewers seeing players-only) fails 2 tests.
+- `test:api:activity` against a production build: the real routes end to end.
+- `npm test` 622/622, `test:db`/`test:db:platform`, compliance, type check 0
+  errors, lint: the same 7 older errors; build OK; all browser suites pass.
+
 ## 2026-09-30 — Beta creator-access requests
 
 **What changed**

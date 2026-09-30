@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { dashboardFailure, publishDecision, readinessFor } from "@/lib/platform/dashboardApi";
+import { recordPublishedActivity } from "@/lib/platform/activityServer";
 import { loadSetup, resolveManagedEdition, setPublished } from "@/lib/platform/dashboardServer";
 
 type Params = { params: Promise<{ tournament: string; year: string }> };
@@ -35,5 +36,6 @@ export async function POST(request: Request, { params }: Params) {
     const failure = dashboardFailure(result.error);
     return NextResponse.json({ ok: false, error: failure.error }, { status: failure.status });
   }
+  await recordPublishedActivity(edition, current.value, result.value);
   return NextResponse.json({ ok: true, setup: result.value, readiness: readinessFor(result.value) });
 }

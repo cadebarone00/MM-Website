@@ -93,6 +93,11 @@ const seeds: FeatureSeed[] = [
     attentionCategories: ["privacy", "personal-data", "user-accounts", "security", "retention", "account-deletion", "audit-logging", "platform-rules", "legal-review"],
   },
   {
+    id: "tournament-activity", name: "Tournament activity and announcements",
+    scope: "Per-edition activity feed: plain-text commissioner announcements (everyone or players only) and automatic count-only events (published, players/teams/schedule changes). Visibility follows the tournament's public/unlisted/private rules first; players-only posts reach only players, commissioners and platform admins; author names only to members. Review organizer-authored content (UGC), moderation/removal, statements about named people, retention of posts and deletion with accounts (actor set null). No notifications. Not yet in production.",
+    attentionCategories: ["privacy", "personal-data", "ugc", "security", "retention", "organizer-responsibility", "platform-rules", "legal-review"],
+  },
+  {
     id: "player-accounts", name: "Player accounts",
     scope: "Review authentication, recovery, sessions, age handling, account terms, identity linking and deletion, including non-account participants. Platform home/account presentation review: docs/platform-entry-review.md; existing credentials and API destinations retained, with two-step signup and no mobile authentication.",
     attentionCategories: ["privacy", "personal-data", "user-accounts", "account-deletion", "security", "retention", "minors", "platform-rules", "legal-review"],
