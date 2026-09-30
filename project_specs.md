@@ -1157,3 +1157,40 @@ but not yet run in production; nothing in the existing app reads it yet.
 - Past Tournaments shows only finished years the person played in.
 - The home button links to the page.
 - Typecheck, lint and existing tests pass, and there's a new test for the link check.
+
+### Round: Activity + announcements on Tournament Home (spec 2026-09-30, ON HOLD — waiting for the fantasy-style Tournament Home from the other session to be committed)
+
+**What it is:** Show the already-built activity backend (`lib/platform/activity.ts`, `activityServer.ts`, `supabase/platform_activity.sql`, the activity GET and announcements POST routes) on a tournament's home page, `/t/<tournament>/<year>`. The backend, schema and permission rules stay exactly as they are.
+
+**Where it appears (the Home page only, not Leaderboard/Schedule/etc.):**
+1. **Announcements** sit right under the hero and status banner, above everything else. These are the commissioner's posts, newest first, each showing:
+   - title
+   - message
+   - poster's name (only when the backend gives one)
+   - date and time, in the tournament's timezone
+   - a "Players only" tag when that applies
+
+   Empty: "No announcements yet."
+2. **Activity feed**, lower on the page: the automatic events ("The tournament site is live.", "2 players added.", "1 round rescheduled.") with their dates. Announcements aren't repeated here. Empty: "No activity yet."
+3. **Post Announcement** button, in the Announcements header. It's shown **only** when the backend says `viewer.canPostAnnouncement` is true. It opens a small form with:
+   - title (optional, up to 120 characters)
+   - message (up to 2,000 characters)
+   - who can see it: Everyone / Players only
+
+   Submitting sends to the existing POST route. On success the list updates from the feed the server sends back. On error the server's message is shown.
+
+**Who sees what:** Entirely decided by the backend. The page shows exactly what `loadTournamentActivity` returns for the logged-in viewer and never filters, adds or invents items. If the activity lookup fails or isn't switched on yet, both sections are hidden and the rest of the page works as before.
+
+**How it's built:**
+- Display pieces (announcement card, feed list) are added to the shared tournament UI kit (`components/platform/tournament-site`), using the kit's theme colors and styles so they match each tournament's branding.
+- The Post Announcement form is a separate small client component outside the kit, because the kit is display-only and never makes network calls.
+- The organizer preview uses the same rendering, so preview and public never differ.
+
+**Not included:** C4 / live scoring event types (the parser already skips them), editing or deleting announcements, notifications, and any schema or permission change.
+
+**Done means:**
+- A visitor sees only everyone-announcements.
+- A player sees players-only ones too.
+- A `viewer` member does not see players-only ones.
+- Only commissioners and admins see Post Announcement, and posting shows the new item straight away.
+- Tests, typecheck, lint and the build pass, including a browser check of each role against the fake database.
