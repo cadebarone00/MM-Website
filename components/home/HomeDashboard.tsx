@@ -9,44 +9,8 @@ import { QuickScheduleCard } from "@/components/home/QuickScheduleCard";
 import type { UpcomingRoundScheduleItem } from "@/lib/data/activeSeasonOverlay";
 import { HomeTeamsPanel } from "@/components/home/HomeTeamsPanel";
 import { SeasonCatalogProvider, type SeasonCatalogData, useSeasonCatalog } from "@/components/SeasonCatalogProvider";
-import { fmtPt } from "@/lib/data";
-import { getPlayerDisplayName } from "@/lib/data/players";
+import { getHomeHighlights, homeHighlightsYear } from "@/lib/data/homeHighlights";
 import type { NextTournamentOverride } from "@/lib/data/types";
-
-function useHighlights() {
-const { latestCompleted, nextTournament } = useSeasonCatalog();
-return [
-  {
-    title: nextTournament.year + " board is staged",
-    body: "Live highlights will stack here as scores, streaks, and match swings are entered.",
-  },
-  {
-    title: `Team White ${fmtPt(latestCompleted.whitePts)}, Team Maroon ${fmtPt(latestCompleted.maroonPts)}`,
-    body: `${latestCompleted.editionLabel} is loaded as the current placeholder while the next event waits for play.`,
-  },
-  {
-    title: `${getPlayerDisplayName(latestCompleted.individualChampion ?? "cam")} owns the latest title`,
-    body: "Individual leaderboard notes will rotate into this rail once tournament scoring begins.",
-  },
-  {
-    title: "Session timing",
-    body: "See Schedule for the locked session dates and formats.",
-  },
-  {
-    title: "Course walkthrough coming soon",
-    body: "A hole-by-hole preview of Mission Hills CC is queued for this rail once it's ready.",
-  },
-  {
-    title: "Rosters lock soon",
-    body: "The final 6-and-6 rosters for 2027 will post here the moment the sheet is confirmed.",
-  },
-  {
-    title: "Media day on the calendar",
-    body: "Team photos and player intros are planned ahead of the opening tee time.",
-  },
-];
-
-}
 
 const news = [
   {
@@ -121,10 +85,17 @@ const ALL_VIDEOS_HREF = "#";
 const HIGHLIGHTS_PREVIEW_COUNT = 6;
 
 function HighlightsRail({ flat = false }: { flat?: boolean }) {
-  const highlights = useHighlights();
+  const year = homeHighlightsYear(useSeasonCatalog());
+  return <SeasonHighlightsRail key={year} flat={flat} year={year} />;
+}
+
+function SeasonHighlightsRail({ flat, year }: { flat: boolean; year: number }) {
+  const highlights = getHomeHighlights(year);
   const [showAll, setShowAll] = useState(false);
   const preview = highlights.slice(0, HIGHLIGHTS_PREVIEW_COUNT);
   const hasMore = highlights.length > HIGHLIGHTS_PREVIEW_COUNT;
+
+  if (highlights.length === 0) return null;
 
   return (
     <>
@@ -132,8 +103,9 @@ function HighlightsRail({ flat = false }: { flat?: boolean }) {
         <div className="flex h-full min-w-0 flex-col">
           <div className="min-h-0 flex-1 divide-y divide-ink-100 overflow-y-auto">
             {preview.map((item) => (
-              <article key={item.title} className="py-3 first:pt-0">
-                <h3 className="m-0 font-sans text-sm font-bold text-maroon-700">{item.title}</h3>
+              <article key={item.id} className="py-3 first:pt-0">
+                <h3 className="m-0 font-sans text-sm font-bold text-maroon-700"><Link href={item.href} className="hover:underline focus-visible:underline">{item.title}</Link></h3>
+                <p className="mb-1 font-sans text-[11px] text-ink-400">{item.label}</p>
                 <p className="mt-1 font-sans text-xs leading-snug text-ink-500">{item.body}</p>
               </article>
             ))}
@@ -156,8 +128,9 @@ function HighlightsRail({ flat = false }: { flat?: boolean }) {
           </div>
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 sm:space-y-3">
             {preview.map((item) => (
-              <article key={item.title} className="rounded-md border border-white/10 bg-white/[0.08] p-2 sm:p-4">
-                <h3 className="m-0 font-sans text-xs font-extrabold text-white sm:text-base">{item.title}</h3>
+              <article key={item.id} className="rounded-md border border-white/10 bg-white/[0.08] p-2 sm:p-4">
+                <h3 className="m-0 font-sans text-xs font-extrabold text-white sm:text-base"><Link href={item.href} className="hover:underline focus-visible:underline">{item.title}</Link></h3>
+                <p className="mt-1 font-sans text-[11px] text-gold-300">{item.label}</p>
                 <p className="mt-1 font-sans text-[11px] leading-snug text-maroon-100 sm:mt-2 sm:text-sm sm:leading-relaxed">{item.body}</p>
               </article>
             ))}
@@ -186,11 +159,12 @@ function HighlightsRail({ flat = false }: { flat?: boolean }) {
             Back
           </button>
           <div className="mx-auto max-w-[720px] px-5 pb-10 pt-20 sm:px-8">
-            <h2 className="m-0 mb-6 font-sans text-2xl font-extrabold text-white">All Highlights</h2>
+            <h2 className="m-0 mb-6 font-sans text-2xl font-extrabold text-white">{year} Highlights</h2>
             <div className="space-y-3">
               {highlights.map((item) => (
-                <article key={item.title} className="rounded-md border border-white/10 bg-white/[0.08] p-4">
-                  <h3 className="m-0 font-sans text-base font-extrabold text-white">{item.title}</h3>
+                <article key={item.id} className="rounded-md border border-white/10 bg-white/[0.08] p-4">
+                  <h3 className="m-0 font-sans text-base font-extrabold text-white"><Link href={item.href} className="hover:underline focus-visible:underline">{item.title}</Link></h3>
+                  <p className="mt-1 font-sans text-xs text-gold-300">{item.label}</p>
                   <p className="mt-2 font-sans text-sm leading-relaxed text-maroon-100">{item.body}</p>
                 </article>
               ))}

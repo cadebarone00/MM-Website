@@ -8,6 +8,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
+  %% Home Highlights follows the Home display year: curated 2026 archive results with match links; unpopulated years are blank and do not inherit 2026 entries.
   %% Tournament home hero uses a neutral black readability gradient over desktop video and mobile photo.
   %% Browser tabs use a single dark-maroon M with a thin muted metallic-gold outline on transparent alpha through favicon.ico (16/32/48px) and icon.png (64px), shared by tournament and journal routes.
   %% Public entry: / opens the Journal; Tournament site opens /website; tournament Home stays in /website.
@@ -151,6 +152,8 @@ The season timing overview now distinguishes Archived, Active, Upcoming, and Fut
 
 ## 3. Public website and navigation
 
+Home Highlights displays thirteen dated 2026 archive summaries: the 17?16 Cup result, Nate?s individual title, Cam and Drew?s singles records, eight session recaps, and Hugo/Nate?s opening fourball win. Six entries appear initially; More Highlights opens the full season feed. Headlines link to archived matches, the individual winner, or tournament standings. These are curated summaries grounded in checked-in `2026-palm-springs.ts` results, not a live event log or inferred shot chronology. The feed follows the Home tournament/hero display year (explicit selection, then scheduled calendar; before legacy New Year handoff it uses the latest completed season). Switching to 2027 or any unpopulated year renders a blank Highlights panel, resets the expanded feed, and never carries 2026 stories forward. Automatic confirmed-score event generation, shot-video attachments, and Tiger pin/edit controls are not implemented by this change.
+
 The tournament homepage hero uses a neutral black gradient over its desktop video and mobile fallback photo to keep overlaid text readable without a maroon tint.
 
 The public root `/` now opens The Maroon Journal with the shared Spectral brand font and maroon navigation. The top-right Tournament site button opens `/website`, which retains the tournament homepage, splash, results and schedule. Tournament Home links, area switches and Tiger website-editor previews target `/website`. The existing `/the-maroon` journal home and category URLs remain available; Journal Home and the tournament More menu return to `/`.
@@ -227,7 +230,7 @@ The season timing overview appears last on Tiger Center, after year-specific tou
 
 **Player portal viewing.** A host may select a player in the editor, which opens /portal?previewPlayer=slug. The server verifies the host and validates the slug against the player directory. Non-host accounts cannot use this parameter to view another player. This changes only the rendered dashboard, not the authenticated identity; host previews hide Open live scoring, and ordinary portal match cards show that action only for the active scoring year. Other account actions retain the logged-in identity.
 
-**Coverage and remaining work.** Section-year controls apply to the home tournament/hero, home results, home schedule, home teams, leaderboard, teams/profile catalog, schedule, and player tournament/match dashboard. Native seasons use existing locked/confirmed records; historical years use their original data. Selecting an empty future season does not manufacture results. Existing Tiger editors remain the source for tournament and global operational data. This is not yet a universal editor for every piece of text, image or layout: hard-coded home news/highlights, 2026 Skins, legacy Fantasy, and placeholder pages retain their existing sources. Skins is still explicitly labeled 2026 and is not relabeled by the portal display year. The new database migration must be installed before overrides can be saved; missing-table reads preserve existing display behavior and Tiger sees an unavailable message. Deployment is not verified.
+**Coverage and remaining work.** Section-year controls apply to the home tournament/hero, home results, home schedule, home teams, leaderboard, teams/profile catalog, schedule, and player tournament/match dashboard. Native seasons use existing locked/confirmed records; historical years use their original data. Selecting an empty future season does not manufacture results. Existing Tiger editors remain the source for tournament and global operational data. This is not yet a universal editor for every piece of text, image or layout: hard-coded home news and curated year-scoped highlights, 2026 Skins, legacy Fantasy, and placeholder pages retain their existing sources. Skins is still explicitly labeled 2026 and is not relabeled by the portal display year. The new database migration must be installed before overrides can be saved; missing-table reads preserve existing display behavior and Tiger sees an unavailable message. Deployment is not verified.
 
 
 A Season timing overview appears above Year-Specific Setup. Every year has visible Active/Pass on date inputs and Save draft/Lock/Unlock controls. Expand a year to see every tournament day, its sessions, and three pair-match or six Singles match boxes with the correct shared tee slots. Each match box shows tee time, Maroon-side player names, White-side player names, and the current workflow state; live years read those names from `live_match_boxes`, while checked-in 2026 data reads them from the historical matchup schedule. Armed matches show their armed state, live matches use a red pulsing Live badge, and final/handed-off matches show Archived. Hovering or pressing a tile opens a timing popover that lists what the tile is armed for, when it goes live or that it is currently live, and when it will archive at season pass-on. Date-less sessions remain in an explicit pending group. Setup locks, matchup locks, selected count locks, start flags and match states are shown separately; green means a saved locked value, not that play has started. Stored venue timezones label tee times. The 2026 overview reads checked-in historical round setups as live calendar data until pass-on, shows its four tournament days and eight sessions, and does not invent missing tee times. The overview reloads saved setup every 15 seconds and on window focus; it does not publish draft session details.
@@ -467,7 +470,7 @@ The holding screen polls its independent countdown settings every ten seconds. I
 
 The viewer follows broadcast-state and playlist changes. The custom output consists primarily of tournament graphics and queued media; it is not itself a complete camera-stream ingestion/production service.
 
-Comments and Highlights are currently placeholder panels: they display explanatory text, not a functioning realtime chat backend or automatically generated highlight collection. They must be distinguished from the functioning broadcast-state and video presentation paths.
+Watch Live Comments and Highlights are currently placeholder panels: they display explanatory text, not a functioning realtime chat backend or automatically generated highlight collection. They must be distinguished from the functioning broadcast-state and video presentation paths.
 
 **Code:** `app/watch-live/page.tsx`, `components/watch-live/WatchLiveExperience.tsx`, `components/watch-live/BroadcastPlayer.tsx`.
 
@@ -538,6 +541,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-29 - Year-scoped home highlights (implemented locally; deployment not verified).** Home previously displayed seven placeholder updates mixing upcoming-event copy with old results. It now shows thirteen linked, dated 2026 summaries from the checked-in tournament archive, with six previews and a full-feed view. Home year changes clear the feed for 2027 and other unpopulated years, including an open full-feed view. No automatic live highlight generation or Tiger editorial controls were added. Updated sections 3, 6 coverage, 19 clarification, and the Mermaid annotation; overview paths and mappings are unchanged.
 
 **2026-09-29 - Neutral hero video colors (presentation change implemented locally; deployment not verified).** The tournament homepage hero previously applied a maroon gradient over its video and mobile photo. It now uses a neutral black gradient with the same opacity to preserve text readability without tinting the media maroon. Updated section 3 and the flowchart annotation; overview paths and mappings are unchanged.
 
