@@ -1,0 +1,50 @@
+import { chromium } from 'playwright';
+import assert from 'node:assert/strict';
+import { mkdir } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
+import path from 'node:path';
+
+const browser = await chromium.launch({ headless: true });
+try {
+  const page = await browser.newPage();
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await mkdir('out/mobile-home', { recursive: true });
+  for (const width of [320, 390, 430, 768, 1440]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto(process.env.APP_URL || 'http://localhost:3001');
+    await page.getByRole('heading', { level: 1 }).waitFor();
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `overflow at ${width}`);
+    assert.equal(await page.locator('main').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(29, 11, 17)');
+    const nav = page.getByRole('navigation', { name: 'App navigation' });
+    assert.equal(await nav.getByRole('link').count(), 3);
+    assert.equal(await nav.getByRole('link', { name: 'Tournaments' }).getAttribute('href'), '/tournaments/join');
+    const create = page.getByRole('link', { name: 'Create Tournament', exact: true }).last();
+    assert.equal(await create.getAttribute('href'), '/tournaments/new');
+    const row = page.getByLabel('Tournament actions');
+    if (width <= 600) {
+      assert.ok(await row.evaluate(el => el.scrollWidth > el.clientWidth));
+      await create.focus();
+      assert.ok(await row.evaluate(el => el.scrollLeft > 0), 'keyboard reaches next card');
+      await row.evaluate(el => { el.scrollLeft = 0; });
+    }
+    await page.getByRole('button', { name: 'News', exact: true }).click();
+    assert.equal(await page.getByRole('button', { name: 'News', exact: true }).getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.getByRole('link', { name: 'Explore News' }).getAttribute('href'), '/the-maroon/news');
+    await page.getByRole('button', { name: 'Courses', exact: true }).click();
+    assert.equal(await page.getByRole('link', { name: 'Explore Courses' }).getAttribute('href'), '/the-maroon/courses');
+    await page.getByRole('button', { name: 'Discover', exact: true }).click();
+    await page.keyboard.press('Tab');
+    assert.equal(await page.evaluate(() => getComputedStyle(document.activeElement).outlineStyle), 'solid');
+    await page.evaluate(() => { window.scrollTo(0, 0); document.activeElement?.blur(); });
+    await page.screenshot({ path: `out/mobile-home/home-${width}.png`, fullPage: true });
+  }
+  await page.goto(pathToFileURL(path.resolve('docs/app-workflow.html')).href);
+  assert.ok(await page.getByRole('region', { name: 'Recent workflow changes' }).isVisible());
+  await page.locator('#search').fill('1D0B11');
+  assert.ok(await page.locator('details:not(.hidden)').count() > 0);
+  await page.locator('[data-open]').first().click();
+  assert.equal(await page.locator('#search').inputValue(), '');
+  assert.deepEqual(errors, []);
+  console.log('Mobile home passed: five widths, exact maroon, carousel keyboard access, category selection, routes, focus, workflow panel/navigation/search.');
+} finally { await browser.close(); }

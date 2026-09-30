@@ -2,8 +2,8 @@ import Link from "next/link";
 import { Menu, UserRound } from "lucide-react";
 import styles from "./PlatformEntry.module.css";
 
-export function PlatformHeader() {
-  return <header className={styles.header}>
+export function PlatformHeader({ home = false }: { home?: boolean }) {
+  return <header className={`${styles.header} ${home ? styles.homeHeader : ""}`}>
     <div className={styles.headerInner}>
       <details className={styles.menu}>
         <summary aria-label="Open navigation"><Menu size={22} aria-hidden="true" /></summary>

@@ -1,28 +1,53 @@
+"use client";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowUpRight, Flag, Plus } from "lucide-react";
+import { ArrowRight, Flag, House, Plus, UserRound } from "lucide-react";
 import { maroonCategories } from "@/lib/data/theMaroon";
-import styles from "./PlatformEntry.module.css";
-
+import styles from "./MobileHome.module.css";
+const sections = ["Discover", "Courses", "News"] as const;
 export function PlatformHome() {
+  const [section, setSection] = useState<(typeof sections)[number]>("Discover");
+  const category = maroonCategories.find(item => item.slug === (section === "News" ? "news" : "courses"))!;
   return <main className={styles.home}>
-    <h1 className={styles.intro}>The digital home for competitive golf trips.</h1>
-    <Link href="/login" className={styles.login}>Log In <ArrowUpRight size={20} aria-hidden="true" /></Link>
-    <section className={styles.actions} aria-label="Your tournament">
-      <p className={styles.eyebrow}>Your next tradition starts here</p>
-      <Link href="/tournaments/new" className={styles.primary}><Plus size={18} aria-hidden="true" />Create Tournament</Link>
-      <Link href="/tournaments/join" className={styles.joinLink}><Flag size={18} aria-hidden="true" />Join Tournament</Link>
+    <section className={styles.upper} aria-label="Your next golf trip">
+      <h1 className={styles.tagline}>The digital home for competitive golf.</h1>
+      <div className={styles.cards} aria-label="Tournament actions">
+        <article className={styles.tripCard}>
+          <div className={styles.tripPhoto}>
+            <Image src="/schedule/mission-hills.webp" alt="" fill priority sizes="(max-width: 600px) 90vw, 550px" />
+            <div className={styles.tripOverlay}><span className={styles.kicker}><Flag size={13} aria-hidden="true" /> Your next tradition</span><p>Great golf.<br />Even better company.</p></div>
+          </div>
+          <Link href="/tournaments/join" className={styles.cardAction}>Join Tournament <span><ArrowRight size={16} aria-hidden="true" /></span></Link>
+        </article>
+        <article className={styles.tripCard}>
+          <div className={styles.tripPhoto}>
+            <Image src="/teams/maroon/collage/01-hero-team.jpg" alt="" fill sizes="(max-width: 600px) 90vw, 550px" />
+            <div className={styles.tripOverlay}><span className={styles.kicker}><Plus size={14} aria-hidden="true" /> Make it yours</span><p>Your people.<br />Your tournament.</p></div>
+          </div>
+          <Link href="/tournaments/new" className={styles.cardAction}>Create Tournament <span><ArrowRight size={16} aria-hidden="true" /></span></Link>
+        </article>
+      </div>
+      <div className={styles.accountRow}><p>Already part of the club?</p><Link href="/login">Log In <ArrowRight size={14} aria-hidden="true" /></Link></div>
     </section>
-    <section aria-labelledby="feed-heading" className={styles.feed}>
-      <div className={styles.sectionHeading}><h2 id="feed-heading">Feed</h2><span>From The Maroon</span></div>
-      <p className={styles.feedNote}>Tournament activity is coming later. In the meantime, explore The Maroon.</p>
-      {maroonCategories.slice(0, 2).map(category => <article key={category.slug} className={styles.story}>
-        <Link href={`/the-maroon/${category.slug}`}>
-          <div className={styles.storyImage}><Image src={category.image} alt="" fill sizes="(max-width: 640px) 100vw, 680px" className="object-cover" /></div>
-          <div className={styles.storyCopy}><p className={styles.eyebrow}>Explore · {category.label}</p><h3>{category.headline}<ArrowUpRight size={20} aria-hidden="true" /></h3><p>{category.description}</p></div>
-        </Link>
-      </article>)}
+    <section className={styles.discover} aria-label="Explore The Maroon">
+      <div className={styles.filters} role="group" aria-label="Explore categories">
+        {sections.map(item => <button key={item} type="button" aria-pressed={section === item} onClick={() => setSection(item)}>{item}</button>)}
+      </div>
+      <div className={styles.feature}>
+        <Image src={category.image} alt="" fill sizes="(max-width: 600px) 100vw, 1120px" />
+        <div className={styles.featureCopy}>
+          <p className={styles.kicker}>The Maroon ? {section === "Discover" ? "Beyond the scorecard" : section}</p>
+          <h2>{section === "Discover" ? <>There?s more<br />to the game.</> : category.headline}</h2>
+          <p className={styles.description}>{section === "Discover" ? "The places, the people, and the moments between rounds." : category.description}</p>
+          <Link href={section === "Discover" ? "/the-maroon" : "/the-maroon/" + category.slug}>Explore {section === "Discover" ? "The Maroon" : section}<ArrowRight size={16} aria-hidden="true" /></Link>
+        </div>
+      </div>
     </section>
-    <footer className={styles.footer}><Link href="/tournaments">My Tournaments</Link><Link href="/contact">Contact Us</Link><Link href="/website">The Maroon Tournament</Link></footer>
+    <nav className={styles.bottomNav} aria-label="App navigation">
+      <Link href="/" aria-current="page"><House size={20} aria-hidden="true" /><span>Home</span></Link>
+      <Link href="/tournaments/join"><Flag size={20} aria-hidden="true" /><span>Tournaments</span></Link>
+      <Link href="/account/choose"><UserRound size={20} aria-hidden="true" /><span>Account</span></Link>
+    </nav>
   </main>;
 }

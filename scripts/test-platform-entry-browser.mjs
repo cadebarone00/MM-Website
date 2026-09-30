@@ -36,8 +36,7 @@ try {
   await page.getByLabel('Open navigation').click();
   await page.getByRole('navigation', { name: 'Platform navigation' }).getByRole('link', { name: 'My Tournaments', exact: true }).waitFor({ state: 'visible' });
   await page.getByLabel('Open navigation').click();
-  await page.getByText('Join Tournament', { exact: true }).click();
-  assert.ok(await page.getByText('Ask your commissioner', { exact: false }).isVisible());
+  assert.equal(await page.getByRole('link', { name: 'Join Tournament', exact: true }).getAttribute('href'), '/tournaments/join');
   await page.keyboard.press('Tab');
   await page.getByRole('link', { name: 'Log In', exact: true }).focus();
   assert.equal(await page.evaluate(() => getComputedStyle(document.activeElement).outlineStyle), 'solid');

@@ -9,7 +9,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 ```mermaid
 flowchart TD
   %% Operator recovery tooling only: REST row exports; optional explicit pg_dump to local dump/manifest; isolated restore drill documented. No provider monitoring, PITR activation or application integration.
-  %% Platform home uses centered brand/menu/account navigation, Log In, Create/Join actions and editorial feed links. Mobile authentication and tournament activity remain unavailable.
+  %% Mobile platform home: sampled #1D0B11 upper region, horizontally snapping Join/Create photo cards, Discover/Courses/News selectors and floating Home/Tournaments/Account links.
   PH[Platform home] --> AU[Log In or two-step Create Account]
   PH --> DW
   AU --> A
@@ -169,7 +169,7 @@ The season timing overview now distinguishes Archived, Active, Upcoming, and Fut
 
 ## 3. Public website and navigation
 
-**Main Page tournament entry.** `/` uses the supplied sketch: menu, centered wordmark, account icon, Log In, Create Tournament, Join Tournament, then Feed. Create opens `/tournaments/new`; the menu and footer link to the implemented `/tournaments` list. Join expands an honest holding state asking for a commissioner-provided link; no enrollment is performed. Feed shows existing Courses and Equipment exploration cards, explicitly not tournament activity. `/the-maroon` retains the editorial landing, `/website` retains the founding tournament, and `/contact` retains its email-draft form.
+**Main Page tournament entry.** `/` has a mobile-first home with a #1D0B11 maroon header and upper region, horizontally snapping photo cards linking to Join Tournament (`/tournaments/join`) and Create Tournament (`/tournaments/new`), and Log In. Desktop shows the cards side by side. The rounded lower panel switches between Discover, Courses and News; its links open existing editorial destinations. A floating bottom navigation links Home, Tournaments (Join page) and Account (`/account/choose`). Images are existing local assets. No tournament scores, personalized trips, countdowns or live activity are invented. Authentication and tournament access are unchanged; `/the-maroon` and `/website` retain their existing experiences.
 
 The Website homepage (`/website`) desktop footer uses the supplied maroon-jacket cutout, cropped from the bottom across the white sponsor band and maroon information band. Content and its white separator occupy the area from 35% to 90% of the viewport. The white band reads ?Thank You to? above ?our sponsors? with both configured sponsor logos to its right; it replaces the newsletter signup prompt. The decorative top stripe is removed. Journal top navigation and the footer use `maroon-900`, matching the Admin Center and tournament secondary navigation. Journal home/category pages and other public routes retain only the maroon wordmark, divider, links, copyright and back-to-top section, with no sponsor band or cutout. The footer remains desktop-only and is absent from portal/broadcast routes.
 
@@ -578,6 +578,9 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-30 ? Mobile home reference layout (presentation implemented locally; deployment not verified).** Replaced stacked cream action/feed cards with the supplied reference structure: deep maroon upper region (#1D0B11 sampled from the color reference), swipable photo/action cards, rounded editorial panel with category selectors and floating three-item navigation. Existing Join/Create/account destinations are reused. Updated section 3 and Mermaid annotation; existing overview mapping remains applicable.
+
 
 **2026-09-30 ? Platform home and account flow (implemented locally; deployment not verified).** Replaced the root editorial hero with the supplied home hierarchy and a centered platform header. Log In and Create Account now use matching cream panels; signup collects the same required fields across two steps. Mobile authentication, Join enrollment and tournament activity are explicitly unavailable. Existing auth endpoints, invitation codes, verification and founding tournament behavior are retained. Updated sections 1 and 3, the Mermaid flow and rendered navigation mapping.
 

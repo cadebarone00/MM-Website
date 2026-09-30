@@ -50,7 +50,7 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
   if (pathname === "/login" || pathname === "/signup") {
     return <div className="min-h-dvh"><PlatformHeader />{children}</div>;
   }
-  if (pathname === "/") return <><PlatformHeader />{children}</>;
+  if (pathname === "/") return <><PlatformHeader home />{children}</>;
 
   if (inPortal) {
     return (

@@ -16,3 +16,8 @@ Date: 2026-09-30. Scope: root home, shared platform header, login and two-step s
 Account credentials: user → existing `/api/auth/login` or `/api/auth/signup` → existing Supabase Auth/profile path. Contact details are not added to the home feed. Retention and deletion follow-ups remain with the account review. Mobile is disabled and collects nothing. Join expands explanatory text and grants no membership. Editorial images are existing local assets; rights review remains outstanding.
 
 Engineering evidence: `scripts/test-platform-entry-browser.mjs` covers responsive layouts, navigation, signup steps/invitation payload, auth error/verification states and generated workflow navigation/search. Intercepted auth responses are UI checks, not proof of real provider delivery or production operation.
+
+
+## 2026-09-30 mobile home presentation addendum
+
+Scope: restyle the platform root using user-provided layout and color references. Original golf copy, existing local photos/fonts/icons, no copied travel branding/assets or new dependencies. Carousel actions retain current Join/Create routes; lower selectors change only local presentation state and link to existing editorial routes. Bottom navigation uses existing routes. No new personal data, UGC, storage, auth, retention, payments, subscriptions, sponsorship, advertising or provider integration. Existing IP/media rights, security/privacy, entity/audience and professional legal review remain review_required. This addendum supersedes the earlier Join holding-state description: the already-existing Join page is linked, with no enrollment changes in this work. Release owner and legal reviewer remain unassigned; deployment not verified.
