@@ -1,6 +1,5 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
 import { assessReadiness } from "./readiness.ts";
 import { validateSection } from "./sectionRules.ts";
 import { parseSetup } from "./setup.ts";

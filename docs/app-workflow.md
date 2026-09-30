@@ -8,6 +8,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
+  %% Login fields and submit use transparent maroon-backed boxes, gold outlines and white Spectral text; Sign Up is a standalone left-aligned link.
   %% Log In and Sign Up use Main Page navigation, a narrow gold-bordered maroon form on the left and a desktop-only Mission Hills photo; mobile fills the screen below navigation.
   %% Public tournament site kit is fixture-only; local HTML preview in out/tournament-site-preview, no /t route or live data connection.
   %% Contact page email links and prefilled drafts address themaroonadmin@gmail.com.
@@ -110,6 +111,8 @@ flowchart TD
 The branches are related but not interchangeable. A personal round is not a tournament submission. Turning on the broadcast does not start scoring. A submitted hole is not necessarily confirmed. A mathematically completed match is not necessarily administratively closed out.
 
 ## 1. Accounts, identity, and permissions
+
+The Log In form uses the shared Spectral title font throughout, including input text, placeholders, buttons, links, and errors. Username/email, password, and Log In use transparent backgrounds with gold outlines and white lettering. Sign Up is a standalone left-aligned link without the preceding account prompt.
 
 Log In (`/login`) and Sign Up (`/signup`, including invitation codes) use a shared maroon layout with white lettering and fields inside a sharp-cornered gold border. The duplicate wordmark is removed. The form content is about 20% narrower and aligned toward the right-side Mission Hills photo on desktop. Mobile hides the photo and fills the viewport below the Main Page navigation; only the form area scrolls when needed for small screens, keyboard space, or error messages. These account routes omit the footer and tournament tabs. Username-or-email login, password visibility, forgot-password navigation, verification resend, invitation usernames, and signup email confirmation retain their existing behavior.
 
@@ -570,6 +573,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-30 - Gold-outline login controls (presentation implemented locally; deployment not verified).** The login fields and button previously had white fills and mixed font families. They now have transparent backgrounds, gold borders, white text, and the shared Spectral font throughout the login form. Removed the account prompt, leaving a left-aligned Sign Up link. Updated section 1 and Mermaid annotation; authentication behavior and overview mappings are unchanged.
 
 **2026-09-30 - Maroon account panel and fixed mobile layout (presentation implemented locally; deployment not verified).** Removed the extra wordmark, renamed Sign In to Log In, and replaced the white panel with maroon, white text/fields, and a square gold border. Narrowed the form content by about 20% and shifted it toward the desktop photo. Mobile now hides the photo and fills the available viewport beneath navigation, with internal scrolling when necessary. Updated section 1 and Mermaid annotation; authentication behavior and overview mappings are unchanged.
 

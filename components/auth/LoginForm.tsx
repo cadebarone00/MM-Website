@@ -62,7 +62,7 @@ export function LoginForm() {
     <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
       <h1 className="font-title text-3xl font-bold text-white">Log In</h1>
       {error && (
-        <div role="alert" className="rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">
+        <div role="alert" className="rounded-sm bg-red-50 px-3 py-2 font-title text-sm text-red-700">
           {error}
           {unverified && (
             <button type="button" onClick={handleResend} className="ml-2 underline underline-offset-2">
@@ -79,7 +79,7 @@ export function LoginForm() {
         placeholder="Username or email"
         value={usernameOrEmail}
         onChange={(e) => setUsernameOrEmail(e.target.value)}
-        className="min-h-12 rounded-none border border-ink-300 bg-white text-maroon-900 px-3 py-3 font-sans text-sm focus:outline-2 focus:outline-offset-2 focus:outline-maroon-700"
+        className="min-h-12 rounded-none border border-gold-400 bg-transparent text-white placeholder:text-white/65 px-3 py-3 font-title text-sm focus:outline-2 focus:outline-offset-2 focus:outline-gold-400"
       />
       <label htmlFor="login-password" className="-mb-3 font-title text-sm font-semibold">Password</label>
       <div className="relative">
@@ -91,7 +91,7 @@ export function LoginForm() {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="min-h-12 w-full rounded-none border border-ink-300 bg-white text-maroon-900 px-3 py-3 pr-10 font-sans text-sm focus:outline-2 focus:outline-offset-2 focus:outline-maroon-700"
+          className="min-h-12 w-full rounded-none border border-gold-400 bg-transparent text-white placeholder:text-white/65 px-3 py-3 pr-10 font-title text-sm focus:outline-2 focus:outline-offset-2 focus:outline-gold-400"
         />
         <button
           type="button"
@@ -100,20 +100,20 @@ export function LoginForm() {
           onMouseLeave={() => setPasswordHovered(false)}
           aria-label={showPassword ? "Hide password" : "Show password"}
           aria-pressed={passwordRevealed}
-          className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-ink-500"
+          className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-white"
         >
           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
         </button>
       </div>
-      <Link href="/forgot-password" className="self-start font-condensed text-xs font-semibold uppercase tracking-widest text-white underline underline-offset-4">Forgot your password?</Link>
+      <Link href="/forgot-password" className="self-start font-title text-xs font-semibold uppercase tracking-widest text-white underline underline-offset-4">Forgot your password?</Link>
       <button
         type="submit"
         disabled={submitting}
-        className="min-h-12 bg-white text-maroon-900 px-5 py-3 text-center font-condensed text-sm font-semibold uppercase tracking-widest transition-colors hover:bg-cream-100 disabled:opacity-50"
+        className="min-h-12 rounded-none border border-gold-400 bg-transparent text-white px-5 py-3 text-center font-title text-sm font-semibold uppercase tracking-widest transition-colors hover:bg-white/10 disabled:opacity-50"
       >
         {submitting ? "Logging in…" : "Log In"}
       </button>
-      <p className="font-title text-sm text-white">Don&rsquo;t have an account? <Link href="/signup" className="ml-1 font-condensed font-semibold uppercase tracking-widest text-white underline underline-offset-4">Sign Up</Link></p>
+      <Link href="/signup" className="self-start font-title text-sm font-semibold uppercase tracking-widest text-white underline underline-offset-4">Sign Up</Link>
     </form>
   );
 }

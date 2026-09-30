@@ -73,6 +73,11 @@ interface FeatureSeed {
 
 const seeds: FeatureSeed[] = [
   {
+    id: "backup-recovery", name: "Backup and recovery operations",
+    scope: "Explicit operator-only PostgreSQL export and isolated health model; no production execution, retention deletion, provider integration or restore automation. Findings and follow-ups: docs/backup-recovery-review.md.",
+    attentionCategories: ["privacy", "personal-data", "user-accounts", "security", "retention", "account-deletion", "ugc", "media-rights", "platform-rules", "audit-logging", "legal-review"],
+  },
+  {
     id: "tournament-creation", name: "Tournament creation",
     scope: "Review draft names, dates, privacy choices and organizer-entered data. Reassess before any persistence, public site or invitation launch; this record does not connect creation to storage.",
     attentionCategories: ["privacy", "personal-data", "ugc", "security", "retention", "organizer-responsibility", "legal-review"],
