@@ -16,6 +16,7 @@ import {
   type PlayerStat,
 } from "./playerBirdiesFuture";
 import { outcomesSoFar } from "./totalBirdiesFuture";
+import { editionColumns, editionFilter, editionYearParam, type EditionScope } from "@/lib/platform/editionScope";
 
 /** Where each per-player stat market keeps its snapshots and how it settles. */
 const STORAGE: Record<PlayerStat, { table: string; settle: string }> = {
@@ -24,7 +25,7 @@ const STORAGE: Record<PlayerStat, { table: string; settle: string }> = {
 };
 
 export async function publishPlayerStatOdds(service: Service, inputs: IndividualInputs, stat: PlayerStat) {
-  const { seasonYear, players, rounds, played, history, blockers } = inputs;
+  const { edition, players, rounds, played, history, blockers } = inputs;
   const { outcome } = PLAYER_STATS[stat];
   let holesRemaining = 0;
   for (const player of players) for (const round of rounds) for (const hole of round.holes) if (played(player, round.round, hole.hole) === null) holesRemaining += 1;
@@ -38,7 +39,7 @@ export async function publishPlayerStatOdds(service: Service, inputs: Individual
       });
 
   const row = {
-    season_year: seasonYear,
+    ...editionColumns(edition),
     model_version: `${PLAYER_BIRDIES_MODEL_VERSION}:${stat}`,
     players: entries,
     birdies_so_far: Object.fromEntries(players.map((player) => [player, outcomesSoFar([player], rounds, played, outcome)])),
@@ -52,7 +53,7 @@ export async function publishPlayerStatOdds(service: Service, inputs: Individual
 
   if (!blockers.length && holesRemaining === 0) {
     // Settles only once every match is also closed out; a no-op otherwise.
-    const { error: settleError } = await service.rpc(STORAGE[stat].settle, { p_year: seasonYear });
+    const { error: settleError } = await service.rpc(STORAGE[stat].settle, { p_year: editionYearParam(edition) });
     if (settleError) console.error(`${PLAYER_STATS[stat].title} settlement check failed:`, settleError.message);
   }
   return row;
@@ -79,19 +80,20 @@ export type PlayerBirdiesState = {
 };
 
 /** The public read model and the bet route's check; `selfHeal` works as for Low Individual. */
-export async function currentPlayerStatState(seasonYear: number, stat: PlayerStat, { selfHeal = false }: { selfHeal?: boolean } = {}): Promise<PlayerBirdiesState> {
+export async function currentPlayerStatState(edition: EditionScope, stat: PlayerStat, { selfHeal = false }: { selfHeal?: boolean } = {}): Promise<PlayerBirdiesState> {
+  const { seasonYear } = edition;
   const service = createSupabaseServiceRoleClient();
   const marketKey = playerStatMarketKey(stat, seasonYear);
   const read = () =>
     Promise.all([
-      service.from(STORAGE[stat].table).select("*").eq("season_year", seasonYear).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      service.from(STORAGE[stat].table).select("*").match(editionFilter(edition)).order("created_at", { ascending: false }).limit(1).maybeSingle(),
       service.from("wagers_market_settlements").select("winning_selection_key").eq("market_key", marketKey).maybeSingle(),
-      latestMatchInput(service, seasonYear),
+      latestMatchInput(service, edition),
     ]);
   let [{ data: snapshot, error }, { data: settlement }, latestInput] = await read();
   if (error) throw new Error(error.message);
   if (selfHeal && !settlement && needsRepublish(snapshot, latestInput)) {
-    await publishPlayerStatOdds(service, await loadIndividualInputs(service, seasonYear), stat);
+    await publishPlayerStatOdds(service, await loadIndividualInputs(service, edition), stat);
     [{ data: snapshot, error }, { data: settlement }, latestInput] = await read();
     if (error) throw new Error(error.message);
   }
@@ -127,4 +129,4 @@ export async function currentPlayerStatState(seasonYear: number, stat: PlayerSta
   };
 }
 
-export const currentPlayerBirdiesState = (seasonYear: number, options?: { selfHeal?: boolean }) => currentPlayerStatState(seasonYear, "birdies", options);
+export const currentPlayerBirdiesState = (edition: EditionScope, options?: { selfHeal?: boolean }) => currentPlayerStatState(edition, "birdies", options);

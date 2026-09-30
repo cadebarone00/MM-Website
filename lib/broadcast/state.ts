@@ -11,6 +11,7 @@ import { getNextInQueue } from "@/lib/broadcast/queue";
 import { getPlayerDisplayName, getPlayerProfileBySlug } from "@/lib/data/players";
 import { getPlayerNameMap } from "@/lib/portal/allPlayers";
 import { DEFAULT_SCENE_DURATIONS_MS, type BroadcastConfig, type BroadcastPayload, type BroadcastPlayerVideo, type BroadcastScene, type BroadcastState } from "./types";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 const VALID_SCENES: BroadcastScene[] = ["holding", "individual_leaderboard", "match_play"];
 
@@ -35,6 +36,7 @@ function isBroadcastScene(value: unknown): value is BroadcastScene {
  */
 export async function getBroadcastPayload(): Promise<BroadcastPayload> {
   const seasonYear = await getBroadcastDisplayYear();
+  const edition = maroonEdition(seasonYear);
   const service = createSupabaseServiceRoleClient();
   const nameMap = await getPlayerNameMap();
 
@@ -42,10 +44,10 @@ export async function getBroadcastPayload(): Promise<BroadcastPayload> {
     service
       .from("broadcast_state")
       .select("current_scene, scene_started_at, automation_mode, paused, tournament_live, overlay_text, overlay_expires_at, audio_track_id, audio_started_at, audio_loop_mode, audio_shuffle, video_phase, active_video_queue_id, video_phase_started_at")
-      .eq("season_year", seasonYear)
+      .match(editionFilter(edition))
       .maybeSingle(),
-    service.from("broadcast_config").select("scene_durations_ms, overlay_duration_ms, takeover_duration_ms").eq("season_year", seasonYear).maybeSingle(),
-    getNextInQueue(seasonYear),
+    service.from("broadcast_config").select("scene_durations_ms, overlay_duration_ms, takeover_duration_ms").match(editionFilter(edition)).maybeSingle(),
+    getNextInQueue(edition),
   ]);
 
   // A missing row for this season is expected (falls back to defaults
@@ -91,12 +93,12 @@ export async function getBroadcastPayload(): Promise<BroadcastPayload> {
         return standing.player.toLowerCase() === data.player_slug.toLowerCase() || standingProfile?.id === profile?.id || standing.player.toLowerCase() === profile?.id.toLowerCase();
       });
       const { data: maroonBox } = await service
-        .from("live_match_boxes").select("id, maroon_players, white_players, format").eq("season_year", seasonYear).eq("round", data.round).contains("maroon_players", [data.player_slug]).maybeSingle();
+        .from("live_match_boxes").select("id, maroon_players, white_players, format").match(editionFilter(edition)).eq("round", data.round).contains("maroon_players", [data.player_slug]).maybeSingle();
       const { data: whiteBox } = maroonBox ? { data: null } : await service
-        .from("live_match_boxes").select("id, maroon_players, white_players, format").eq("season_year", seasonYear).eq("round", data.round).contains("white_players", [data.player_slug]).maybeSingle();
+        .from("live_match_boxes").select("id, maroon_players, white_players, format").match(editionFilter(edition)).eq("round", data.round).contains("white_players", [data.player_slug]).maybeSingle();
       const box = maroonBox ?? whiteBox;
       const team = maroonBox ? "maroon" : whiteBox ? "white" : null;
-      const { data: roundState } = await service.from("live_round_state").select("course_id").eq("season_year", seasonYear).eq("round", data.round).maybeSingle();
+      const { data: roundState } = await service.from("live_round_state").select("course_id").match(editionFilter(edition)).eq("round", data.round).maybeSingle();
       const { data: course } = roundState?.course_id
         ? await service.from("live_courses").select("name").eq("id", roundState.course_id).maybeSingle()
         : { data: null };

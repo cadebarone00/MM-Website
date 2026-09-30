@@ -9,6 +9,7 @@
 // need the whole thing (a leaderboard is every player, every round).
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { scoreKey, type LiveCourse, type LiveHole, type LiveHoleScore, type LiveMatch, type LiveTournamentSnapshot, type MatchFormat, type MatchState, type Team } from "@/lib/live/types";
+import { editionFilter, type EditionScope } from "@/lib/platform/editionScope";
 
 interface RosterRow {
   player_slug: string;
@@ -48,7 +49,8 @@ interface HoleScoreRow {
   host_edited: boolean;
 }
 
-export async function buildLiveTournamentSnapshot(seasonYear: number, options: { confirmedOnly?: boolean } = {}): Promise<LiveTournamentSnapshot> {
+export async function buildLiveTournamentSnapshot(edition: EditionScope, options: { confirmedOnly?: boolean } = {}): Promise<LiveTournamentSnapshot> {
+  const { seasonYear } = edition;
   const service = createSupabaseServiceRoleClient();
 
   async function pages<T>(label: string, query: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>): Promise<T[]> {
@@ -61,12 +63,12 @@ export async function buildLiveTournamentSnapshot(seasonYear: number, options: {
     }
   }
   const [rosterRows, courseRows, roundRows, boxRows, scoreRows] = await Promise.all([
-    pages<RosterRow>("Roster", (from, to) => service.from("live_roster").select("player_slug, team").eq("season_year", seasonYear).order("player_slug").range(from, to)),
+    pages<RosterRow>("Roster", (from, to) => service.from("live_roster").select("player_slug, team").match(editionFilter(edition)).order("player_slug").range(from, to)),
     pages<CourseRow>("Courses", (from, to) => service.from("live_courses").select("id, name, holes, rating, slope").order("id").range(from, to)),
-    pages<RoundStateRow>("Rounds", (from, to) => service.from("live_round_state").select("round, course_id, course_setup").eq("season_year", seasonYear).order("round").range(from, to)),
-    pages<MatchBoxRow>("Matches", (from, to) => service.from("live_match_boxes").select("id, round, box_number, format, tee_time, maroon_players, white_players, state, started").eq("season_year", seasonYear).order("id").range(from, to)),
+    pages<RoundStateRow>("Rounds", (from, to) => service.from("live_round_state").select("round, course_id, course_setup").match(editionFilter(edition)).order("round").range(from, to)),
+    pages<MatchBoxRow>("Matches", (from, to) => service.from("live_match_boxes").select("id, round, box_number, format, tee_time, maroon_players, white_players, state, started").match(editionFilter(edition)).order("id").range(from, to)),
     pages<HoleScoreRow>("Scores", (from, to) => {
-      let query = service.from("live_hole_scores").select("player_slug, round, hole, score, putts, fir, gir, host_edited").eq("season_year", seasonYear);
+      let query = service.from("live_hole_scores").select("player_slug, round, hole, score, putts, fir, gir, host_edited").match(editionFilter(edition));
       if (options.confirmedOnly) query = query.not("confirmed_by", "is", null);
       return query.order("player_slug").order("round").order("hole").range(from, to);
     }),

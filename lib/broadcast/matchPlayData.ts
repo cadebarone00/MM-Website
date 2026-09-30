@@ -9,6 +9,7 @@ import { getPlayerNameMap } from "@/lib/portal/allPlayers";
 import type { MatchState } from "@/lib/live/types";
 import type { BroadcastTeam } from "./types";
 import { buildLiveTournamentSnapshot } from "./liveSnapshot";
+import { maroonEdition, type EditionScope } from "@/lib/platform/editionScope";
 
 export interface BroadcastMatchBox {
   id: string | null;
@@ -84,10 +85,11 @@ function archivedMatchPlay(tournament: Tournament, nameMap: Record<string, strin
   return { seasonYear: tournament.year, roundLabel: `Day ${lastDay}`, matchBoxes, maroonPts, whitePts, final: true };
 }
 
-async function liveMatchPlay(seasonYear: number, nameMap: Record<string, string>): Promise<BroadcastMatchPlay> {
+async function liveMatchPlay(edition: EditionScope, nameMap: Record<string, string>): Promise<BroadcastMatchPlay> {
+  const { seasonYear } = edition;
   const service = createSupabaseServiceRoleClient();
   const displayName = (slug: string) => nameMap[slug] ?? getPlayerDisplayName(slug);
-  const snapshot = await buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true });
+  const snapshot = await buildLiveTournamentSnapshot(edition, { confirmedOnly: true });
   const liveRounds = snapshot.matchBoxes.filter((box) => effectiveMatchState(snapshot, box) === "Live").map((box) => box.session);
   const finishedRounds = [...new Set(snapshot.matchBoxes.map((box) => box.session))].filter((round) => {
     const boxes = snapshot.matchBoxes.filter((box) => box.session === round);
@@ -142,10 +144,11 @@ async function liveMatchPlay(seasonYear: number, nameMap: Record<string, string>
  */
 export async function getBroadcastMatchPlay(overrideYear?: number): Promise<BroadcastMatchPlay> {
   const seasonYear = overrideYear ?? (await getBroadcastDisplayYear());
+  const edition = maroonEdition(seasonYear);
   const nameMap = await getPlayerNameMap();
 
   const archived = pastTournaments.find((t) => t.year === seasonYear);
   if (archived) return archivedMatchPlay(archived, nameMap);
 
-  return liveMatchPlay(seasonYear, nameMap);
+  return liveMatchPlay(edition, nameMap);
 }

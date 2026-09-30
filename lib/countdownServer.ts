@@ -2,15 +2,17 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getSeasonCalendar } from "@/lib/live/seasonCalendarServer";
 import { deriveMatchTeeTime } from "@/lib/live/sessionTeeTimes";
 import type { CountdownTarget, WatchCountdownSettings } from "./countdown";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 export async function getTournamentCountdown(): Promise<CountdownTarget> {
   const calendar = await getSeasonCalendar();
   const year = calendar.upcomingYear ?? calendar.activeYear;
+  const edition = maroonEdition(year);
   const service = createSupabaseServiceRoleClient();
   const [session, tournament, match] = await Promise.all([
-    service.from("live_round_state").select("date, match_tee_times").eq("season_year", year).eq("round", 1).maybeSingle(),
-    service.from("live_tournament_settings").select("timezone").eq("season_year", year).maybeSingle(),
-    service.from("live_match_boxes").select("tee_time").eq("season_year", year).eq("round", 1).eq("box_number", 1).maybeSingle(),
+    service.from("live_round_state").select("date, match_tee_times").match(editionFilter(edition)).eq("round", 1).maybeSingle(),
+    service.from("live_tournament_settings").select("timezone").match(editionFilter(edition)).maybeSingle(),
+    service.from("live_match_boxes").select("tee_time").match(editionFilter(edition)).eq("round", 1).eq("box_number", 1).maybeSingle(),
   ]);
   if (session.error || tournament.error || match.error) throw new Error("Could not load the first tee time.");
   const timezone = tournament.data?.timezone ?? "America/Los_Angeles";

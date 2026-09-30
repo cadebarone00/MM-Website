@@ -6,6 +6,7 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
 import { r2PublicUrl } from "@/lib/r2/client";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 export interface PlaylistTrack {
   id: string;
@@ -25,12 +26,13 @@ export interface PlaylistTrack {
  */
 export async function getBroadcastPlaylist(overrideYear?: number): Promise<{ seasonYear: number; tracks: PlaylistTrack[] }> {
   const seasonYear = overrideYear ?? (await getBroadcastDisplayYear());
+  const edition = maroonEdition(seasonYear);
   const service = createSupabaseServiceRoleClient();
 
   const { data, error } = await service
     .from("broadcast_playlist_tracks")
     .select("id, title, storage_path, duration_seconds, uploaded_at")
-    .eq("season_year", seasonYear)
+    .match(editionFilter(edition))
     .order("uploaded_at", { ascending: true });
 
   if (error) {

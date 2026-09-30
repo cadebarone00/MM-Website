@@ -2,6 +2,7 @@ import { after, NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { refreshFutures } from "@/lib/wagers/refreshFutures";
+import { maroonEdition } from "@/lib/platform/editionScope";
 
 export async function POST(request: Request) {
   if (!await requireHost()) return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
@@ -13,7 +14,7 @@ export async function POST(request: Request) {
   // Closeout touches official state, which pauses futures bets until odds refresh.
   after(async () => {
     const { data: box } = await createSupabaseServiceRoleClient().from("live_match_boxes").select("season_year").eq("id", body.id).maybeSingle();
-    if (box) await refreshFutures(box.season_year);
+    if (box) await refreshFutures(maroonEdition(box.season_year));
   });
   return NextResponse.json({ ok: true, result: data });
 }

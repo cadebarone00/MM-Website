@@ -8,6 +8,7 @@ import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/l
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
 import { CoursesFormatPanel } from "@/components/portal/admin/CoursesFormatPanel";
 import type { LiveCourse, LiveSessionState, MatchFormat, TournamentSettings } from "@/lib/live/types";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 export default async function CoursesFormatPage({ params }: { params: Promise<{ year: string }> }) {
   const { year: yearParam } = await params;
@@ -28,20 +29,20 @@ export default async function CoursesFormatPage({ params }: { params: Promise<{ 
     service
       .from("live_tournament_settings")
       .select("round_count, round_count_locked, completed_at, venue_name, venue_locked, timezone, begin_date, end_date, dates_locked")
-      .eq("season_year", year)
+      .match(editionFilter(maroonEdition(year)))
       .maybeSingle(),
     service
       .from("live_round_state")
       .select("round, started, course_id, date, format, course_locked, matchups_locked, course_setup, match_tee_times")
-      .eq("season_year", year)
+      .match(editionFilter(maroonEdition(year)))
       .order("round"),
     service.from("live_courses").select("id, name, holes, rating, slope, tee_sets").order("name"),
   ]);
 
   const [activeYear, matches, archives] = await Promise.all([
     getActiveSeasonYear(),
-    service.from("live_match_boxes").select("round, tee_time, started, state").eq("season_year", year),
-    service.from("career_archive_rounds").select("round").eq("season_year", year),
+    service.from("live_match_boxes").select("round, tee_time, started, state").match(editionFilter(maroonEdition(year))),
+    service.from("career_archive_rounds").select("round").match(editionFilter(maroonEdition(year))),
   ]);
   const [broadcastResult, matchPlayResult] = await Promise.allSettled([getBroadcastPayload(), getBroadcastMatchPlay()]);
   const broadcast = broadcastResult.status === "fulfilled" ? broadcastResult.value : null;

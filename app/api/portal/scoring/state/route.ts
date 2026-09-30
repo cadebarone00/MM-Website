@@ -4,6 +4,7 @@ import { requirePlayer } from "@/lib/portal/requirePlayer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getActiveSeasonYear } from "@/lib/live/activeSeason";
 import type { MatchFormat, MatchState } from "@/lib/live/types";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 interface MatchBoxRow {
   id: string;
@@ -48,7 +49,7 @@ export async function GET(request: Request) {
   const { data: boxRows } = await service
     .from("live_match_boxes")
     .select("id, box_number, format, tee_time, maroon_players, white_players, state, started")
-    .eq("season_year", seasonYear)
+    .match(editionFilter(maroonEdition(seasonYear)))
     .eq("round", round);
   const box = (boxRows as MatchBoxRow[] | null ?? []).find(
     (b) => b.maroon_players.includes(player.playerSlug) || b.white_players.includes(player.playerSlug)
@@ -57,17 +58,17 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: "You don't have a match box in this round." }, { status: 404 });
   }
 
-  await retryPendingPublications(seasonYear, box.id);
+  await retryPendingPublications(maroonEdition(seasonYear), box.id);
   const allPlayers = [...box.maroon_players, ...box.white_players];
   const [{ data: scoreRows }, { data: submissionRows }, { data: roundState }, { data: holeSubmissions, error: holeSubmissionError }, { data: officialState }] = await Promise.all([
     service
       .from("live_hole_scores")
       .select("player_slug, hole, score, putts, fir, gir, fir_direction, gir_direction, did_not_finish, self_reported_score, confirmed_by")
-      .eq("season_year", seasonYear)
+      .match(editionFilter(maroonEdition(seasonYear)))
       .eq("round", round)
       .in("player_slug", allPlayers),
     service.from("live_match_box_submissions").select("player_slug").eq("match_box_id", box.id),
-    service.from("live_round_state").select("course_id, course_setup").eq("season_year", seasonYear).eq("round", round).single(),
+    service.from("live_round_state").select("course_id, course_setup").match(editionFilter(maroonEdition(seasonYear))).eq("round", round).single(),
     service.from("live_hole_submissions").select("player_slug, hole, payload, submitted_at").eq("match_box_id", box.id),
     service.from("live_match_official_state").select("thru, maroon_holes, white_holes, leader, margin, mathematically_complete").eq("match_box_id", box.id).maybeSingle(),
   ]);

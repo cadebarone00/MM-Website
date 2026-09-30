@@ -13,6 +13,7 @@ import { currentTotalBirdiesState } from "@/lib/wagers/totalBirdiesPricing";
 import { totalBirdiesMarketKey } from "@/lib/wagers/totalBirdiesFuture";
 import { currentPlayerStatState } from "@/lib/wagers/playerBirdiesPricing";
 import { PLAYER_STATS, playerStatMarketKey, type PlayerStat } from "@/lib/wagers/playerBirdiesFuture";
+import { maroonEdition } from "@/lib/platform/editionScope";
 
 const LIVE_MATCH_PREFIX = "live-match:";
 const CLOSED = "That market isn't open for betting right now.";
@@ -43,23 +44,23 @@ async function openMarket(supabase: Supabase, marketKey: string): Promise<{ mark
 
   const seasonYear = await getActiveSeasonYear();
   if (marketKey === teamWinnerMarketKey(seasonYear)) {
-    const state = await currentTeamWinnerState(seasonYear);
+    const state = await currentTeamWinnerState(maroonEdition(seasonYear));
     if (state.status === "updating") return { market: null, error: "Team Winner odds are updating after the latest score — try again in a moment." };
     return { market: state.status === "open" ? state.market : null, error: CLOSED };
   }
   if (marketKey === lowIndividualMarketKey(seasonYear)) {
-    const state = await currentLowIndividualState(seasonYear);
+    const state = await currentLowIndividualState(maroonEdition(seasonYear));
     if (state.status === "updating") return { market: null, error: "Low Individual odds are updating after the latest score — try again in a moment." };
     return { market: state.status === "open" ? state.market : null, error: CLOSED };
   }
   if (marketKey === holeInOneMarketKey(seasonYear)) {
-    const state = await currentHoleInOneState(seasonYear);
+    const state = await currentHoleInOneState(maroonEdition(seasonYear));
     return { market: state.status === "open" ? state.market : null, error: CLOSED };
   }
   if (marketKey === totalBirdiesMarketKey(seasonYear)) {
     // Selection keys carry the line ("over:41.5"), so a bet at a line that has
     // since moved finds no matching selection and is refused.
-    const state = await currentTotalBirdiesState(seasonYear);
+    const state = await currentTotalBirdiesState(maroonEdition(seasonYear));
     if (state.status === "updating") return { market: null, error: "Total Birdies odds are updating after the latest score — try again in a moment." };
     return { market: state.status === "open" ? state.market : null, error: "The Total Birdies line has moved or closed — reopen the Futures tab for the current line." };
   }
@@ -67,7 +68,7 @@ async function openMarket(supabase: Supabase, marketKey: string): Promise<{ mark
   if (playerStat) {
     // Every alternate line is its own selection ("cam-latto:over:12.5"); a line
     // that has dropped off the slider since the page loaded is refused.
-    const state = await currentPlayerStatState(seasonYear, playerStat);
+    const state = await currentPlayerStatState(maroonEdition(seasonYear), playerStat);
     if (state.status === "updating") return { market: null, error: `${PLAYER_STATS[playerStat].title} odds are updating after the latest score — try again in a moment.` };
     return { market: state.status === "open" ? state.market : null, error: "That line isn't available any more — reopen the Futures tab for the current lines." };
   }

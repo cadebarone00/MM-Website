@@ -3,6 +3,7 @@ import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
 import type { RosterEntry, Team } from "@/lib/live/types";
+import { editionColumns, editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 export async function GET(request: Request) {
   const host = await requireHost();
@@ -18,8 +19,8 @@ export async function GET(request: Request) {
 
   const service = createSupabaseServiceRoleClient();
   const [{ data, error }, { data: locks, error: locksError }] = await Promise.all([
-    service.from("live_roster").select("player_slug, team").eq("season_year", year),
-    service.from("live_roster_assignment_locks").select("player_slug").eq("season_year", year),
+    service.from("live_roster").select("player_slug, team").match(editionFilter(maroonEdition(year))),
+    service.from("live_roster_assignment_locks").select("player_slug").match(editionFilter(maroonEdition(year))),
   ]);
   if (error || locksError) {
     return NextResponse.json({ ok: false, error: "Could not load the roster." }, { status: 500 });
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
   const { data: lock } = await service
     .from("live_roster_assignment_locks")
     .select("player_slug")
-    .eq("season_year", year)
+    .match(editionFilter(maroonEdition(year)))
     .eq("player_slug", playerSlug)
     .maybeSingle();
   if (lock) {
@@ -58,8 +59,8 @@ export async function POST(request: Request) {
   }
 
   const { error } = team === null
-    ? await service.from("live_roster").delete().eq("season_year", year).eq("player_slug", playerSlug)
-    : await service.from("live_roster").upsert({ season_year: year, player_slug: playerSlug, team });
+    ? await service.from("live_roster").delete().match(editionFilter(maroonEdition(year))).eq("player_slug", playerSlug)
+    : await service.from("live_roster").upsert({ ...editionColumns(maroonEdition(year)), player_slug: playerSlug, team });
   if (error) {
     return NextResponse.json({ ok: false, error: "Could not save that team assignment." }, { status: 500 });
   }

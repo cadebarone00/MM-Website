@@ -1,8 +1,9 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getActiveSeasonYear } from "./activeSeason.ts";
+import { getActiveEdition } from "./activeSeason.ts";
 import { effectiveMatchState } from "./orchestration.ts";
 import { roundFinishedForPlayer } from "./roundStatus.ts";
 import type { LiveMatch, LiveSessionState, LiveTournamentSnapshot, MatchFormat, MatchState } from "./types.ts";
+import { editionFilter, type EditionScope } from "@/lib/platform/editionScope";
 
 export interface CurrentSessionResult {
   session: LiveSessionState;
@@ -97,19 +98,20 @@ function matchFromRow(row: MatchRow, seasonYear: number): LiveMatch {
 // lifecycle, same documented limitation as lib/portal/requireHost.test.mts
 // and app/api/portal/profile/route.test.mts. pickCurrentSession() above (the
 // actual selection rule) is where the real logic lives and is fully tested.
-export async function findMatchesForPlayer(playerSlug: string, seasonYear: number): Promise<CurrentSessionResult[]> {
+export async function findMatchesForPlayer(playerSlug: string, edition: EditionScope): Promise<CurrentSessionResult[]> {
+  const { seasonYear } = edition;
   const supabase = await createSupabaseServerClient();
 
   const [{ data: sessionRows, error: sessionError }, { data: matchRows, error: matchError }] = await Promise.all([
     supabase
       .from("live_round_state")
       .select("round, started, course_id, date, format, course_locked, matchups_locked")
-      .eq("season_year", seasonYear)
+      .match(editionFilter(edition))
       .order("round"),
     supabase
       .from("live_match_boxes")
       .select("id, round, box_number, format, tee_time, maroon_players, white_players, state, started")
-      .eq("season_year", seasonYear)
+      .match(editionFilter(edition))
       .order("round"),
   ]);
 
@@ -138,7 +140,7 @@ export function withoutFinishedMatches(matches: CurrentSessionResult[], playerSl
 }
 
 export async function findUpcomingMatchesForPlayer(playerSlug: string): Promise<CurrentSessionResult[]> {
-  const matches = (await findMatchesForPlayer(playerSlug, await getActiveSeasonYear())).filter((match) => match.state !== "Final");
+  const matches = (await findMatchesForPlayer(playerSlug, await getActiveEdition())).filter((match) => match.state !== "Final");
   const ids = matches.map((match) => match.matchBox.id).filter((id): id is string => !!id);
   if (ids.length === 0) return matches;
   const supabase = await createSupabaseServerClient();

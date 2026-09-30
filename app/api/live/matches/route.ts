@@ -2,16 +2,17 @@ import { retryPendingPublications } from "@/lib/live/retryPublication";
 import { NextResponse } from "next/server";
 import { getSeasonCatalog } from "@/lib/data/seasonCatalog";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 /** Public list of real live-season matches and their latest official price. */
 export async function GET() {
   const seasonYear = (await getSeasonCatalog()).nextTournament.year;
-  await retryPendingPublications(seasonYear);
+  await retryPendingPublications(maroonEdition(seasonYear));
   const service = createSupabaseServiceRoleClient();
   const { data: matches, error } = await service
     .from("live_match_boxes")
     .select("id, season_year, round, box_number, format, tee_time, maroon_players, white_players, state")
-    .eq("season_year", seasonYear)
+    .match(editionFilter(maroonEdition(seasonYear)))
     .order("round")
     .order("box_number");
   if (error) return NextResponse.json({ ok: false, error: "Could not load live matches." }, { status: 500 });

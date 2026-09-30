@@ -5,6 +5,7 @@ import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
 import { createR2Client, R2_BUCKET } from "@/lib/r2/client";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 export async function POST(request: Request) {
   const host = await requireHost();
@@ -18,13 +19,14 @@ export async function POST(request: Request) {
   }
 
   const seasonYear = await getBroadcastDisplayYear();
+  const edition = maroonEdition(seasonYear);
   const service = createSupabaseServiceRoleClient();
 
   const { data: track, error: trackError } = await service
     .from("broadcast_playlist_tracks")
     .select("id, storage_path")
     .eq("id", trackId)
-    .eq("season_year", seasonYear)
+    .match(editionFilter(edition))
     .maybeSingle();
   if (trackError) console.error("playlist/delete: failed to look up track", trackError);
   if (!track) {
@@ -50,7 +52,7 @@ export async function POST(request: Request) {
   const { error: stateError } = await service
     .from("broadcast_state")
     .update({ audio_track_id: null, audio_started_at: null, updated_at: new Date().toISOString() })
-    .eq("season_year", seasonYear)
+    .match(editionFilter(edition))
     .eq("audio_track_id", trackId);
   if (stateError) console.error("playlist/delete: failed to clear now-playing track", stateError);
 

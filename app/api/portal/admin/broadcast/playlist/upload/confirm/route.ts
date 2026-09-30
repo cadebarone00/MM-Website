@@ -4,6 +4,7 @@ import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
 import { r2PublicUrl } from "@/lib/r2/client";
+import { editionColumns, maroonEdition } from "@/lib/platform/editionScope";
 
 /**
  * Second half of the direct-to-storage upload flow — called once the
@@ -33,11 +34,12 @@ export async function POST(request: Request) {
   }
 
   const seasonYear = await getBroadcastDisplayYear();
+  const edition = maroonEdition(seasonYear);
   const service = createSupabaseServiceRoleClient();
 
   const { data, error } = await service
     .from("broadcast_playlist_tracks")
-    .insert({ season_year: seasonYear, title: title.trim(), storage_path: storagePath, duration_seconds: durationSeconds })
+    .insert({ ...editionColumns(edition), title: title.trim(), storage_path: storagePath, duration_seconds: durationSeconds })
     .select("id, title, storage_path, duration_seconds, uploaded_at")
     .single();
 

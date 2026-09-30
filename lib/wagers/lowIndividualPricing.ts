@@ -2,6 +2,7 @@ import { getPlayerDisplayName } from "@/lib/data/players";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isStaleSnapshot, latestMatchInput, needsRepublish, type Service } from "./futureInputs";
 import { loadIndividualInputs, type IndividualInputs } from "./individualInputs";
+import { editionColumns, editionFilter, editionYearParam, type EditionScope } from "@/lib/platform/editionScope";
 import {
   LOW_INDIVIDUAL_MODEL_VERSION,
   LOW_INDIVIDUAL_SIMULATIONS,
@@ -14,7 +15,7 @@ import {
 } from "./lowIndividualFuture";
 
 export async function publishLowIndividualOdds(service: Service, inputs: IndividualInputs) {
-  const { seasonYear, players, rounds, played, history, blockers } = inputs;
+  const { edition, players, rounds, played, history, blockers } = inputs;
   const standings = currentStandings(players, rounds, played);
   const holesRemaining = standings.reduce((sum, standing) => sum + standing.holesTotal - standing.holesPlayed, 0);
   let probabilities: Record<string, number> | null = null;
@@ -30,7 +31,7 @@ export async function publishLowIndividualOdds(service: Service, inputs: Individ
   }
 
   const row = {
-    season_year: seasonYear,
+    ...editionColumns(edition),
     model_version: LOW_INDIVIDUAL_MODEL_VERSION,
     probabilities,
     american_odds: probabilities ? lowIndividualOdds(probabilities) : null,
@@ -45,7 +46,7 @@ export async function publishLowIndividualOdds(service: Service, inputs: Individ
 
   if (probabilities && holesRemaining === 0) {
     // Settles only once every match is also closed out; a no-op otherwise.
-    const { error: settleError } = await service.rpc("settle_low_individual_if_final", { p_year: seasonYear });
+    const { error: settleError } = await service.rpc("settle_low_individual_if_final", { p_year: editionYearParam(edition) });
     if (settleError) console.error("Low Individual settlement check failed:", settleError.message);
   }
   return row;
@@ -74,20 +75,21 @@ export type LowIndividualState = {
  * missing, old, or stale snapshot is recomputed first — needed because
  * before the tournament no score publication ever triggers a refresh.
  */
-export async function currentLowIndividualState(seasonYear: number, { selfHeal = false }: { selfHeal?: boolean } = {}): Promise<LowIndividualState> {
+export async function currentLowIndividualState(edition: EditionScope, { selfHeal = false }: { selfHeal?: boolean } = {}): Promise<LowIndividualState> {
+  const { seasonYear } = edition;
   const service = createSupabaseServiceRoleClient();
   const marketKey = lowIndividualMarketKey(seasonYear);
   const read = () =>
     Promise.all([
-      service.from("low_individual_odds_snapshots").select("*").eq("season_year", seasonYear).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      service.from("low_individual_odds_snapshots").select("*").match(editionFilter(edition)).order("created_at", { ascending: false }).limit(1).maybeSingle(),
       service.from("wagers_market_settlements").select("winning_selection_key").eq("market_key", marketKey).maybeSingle(),
-      latestMatchInput(service, seasonYear),
+      latestMatchInput(service, edition),
     ]);
   let [{ data: snapshot, error }, { data: settlement }, latestInput] = await read();
   if (error) throw new Error(error.message);
 
   if (selfHeal && !settlement && needsRepublish(snapshot, latestInput)) {
-    await publishLowIndividualOdds(service, await loadIndividualInputs(service, seasonYear));
+    await publishLowIndividualOdds(service, await loadIndividualInputs(service, edition));
     [{ data: snapshot, error }, { data: settlement }, latestInput] = await read();
     if (error) throw new Error(error.message);
   }

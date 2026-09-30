@@ -4,6 +4,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
 import type { LiveSessionState, LiveTeeSet, MatchFormat } from "@/lib/live/types";
 import { availableTeeSets } from "@/lib/live/teeSets";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 const VALID_FORMATS: MatchFormat[] = ["Fourball", "Foursome", "Singles"];
 
@@ -23,7 +24,7 @@ export async function GET(request: Request) {
   const { data, error } = await service
     .from("live_round_state")
     .select("round, started, course_id, date, format, course_locked, matchups_locked, course_setup, match_tee_times")
-    .eq("season_year", year)
+    .match(editionFilter(maroonEdition(year)))
     .order("round");
   if (error) {
     return NextResponse.json({ ok: false, error: "Could not load the sessions." }, { status: 500 });
@@ -98,16 +99,16 @@ export async function POST(request: Request) {
   }
 
   if (format !== undefined) {
-    const { data: current } = await service.from("live_round_state").select("format").eq("season_year", year).eq("round", session).single();
+    const { data: current } = await service.from("live_round_state").select("format").match(editionFilter(maroonEdition(year))).eq("round", session).single();
     if (current && current.format !== format) {
-      const { error: matchesError } = await service.from("live_match_boxes").delete().eq("season_year", year).eq("round", session);
+      const { error: matchesError } = await service.from("live_match_boxes").delete().match(editionFilter(maroonEdition(year))).eq("round", session);
       if (matchesError) {
         return NextResponse.json({ ok: false, error: "Could not clear this session's matches for the new format." }, { status: 500 });
       }
     }
   }
 
-  const { error } = await service.from("live_round_state").update(update).eq("season_year", year).eq("round", session);
+  const { error } = await service.from("live_round_state").update(update).match(editionFilter(maroonEdition(year))).eq("round", session);
   if (error) {
     return NextResponse.json({ ok: false, error: "Could not save that session." }, { status: 500 });
   }

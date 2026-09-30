@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
+import { editionColumns, maroonEdition } from "@/lib/platform/editionScope";
 
 const VALID_SCENES = ["holding", "individual_leaderboard", "match_play"];
 
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
   }
 
   const seasonYear = await getBroadcastDisplayYear();
+  const edition = maroonEdition(seasonYear);
   const service = createSupabaseServiceRoleClient();
 
   const update =
@@ -44,7 +46,7 @@ export async function POST(request: Request) {
           updated_at: new Date().toISOString(),
         };
 
-  const { error } = await service.from("broadcast_state").upsert({ season_year: seasonYear, ...update });
+  const { error } = await service.from("broadcast_state").upsert({ ...editionColumns(edition), ...update });
   if (error) {
     return NextResponse.json({ ok: false, error: "Could not update the broadcast." }, { status: 500 });
   }

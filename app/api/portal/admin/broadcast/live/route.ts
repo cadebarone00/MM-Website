@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getBroadcastDisplayYear, isValidDisplayYear } from "@/lib/broadcast/displayYear";
+import { editionColumns, editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 /**
  * Host-only "Go Live" / "End Broadcast" — the one action that publishes
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
     const seasonYear = await getBroadcastDisplayYear();
     const { error } = await service
       .from("broadcast_state")
-      .upsert({ season_year: seasonYear, tournament_live: false, audio_track_id: null, audio_started_at: null, updated_at: new Date().toISOString() });
+      .upsert({ ...editionColumns(maroonEdition(seasonYear)), tournament_live: false, audio_track_id: null, audio_started_at: null, updated_at: new Date().toISOString() });
     if (error) return NextResponse.json({ ok: false, error: "Could not end the broadcast." }, { status: 500 });
     return NextResponse.json({ ok: true });
   }
@@ -53,13 +54,13 @@ export async function POST(request: Request) {
   // Whatever the host already pressed Play on during rehearsal keeps
   // playing (just restarted from 0:00 below); otherwise default to the
   // oldest-uploaded track so the show has music from the first scene.
-  const { data: currentState } = await service.from("broadcast_state").select("audio_track_id, video_phase").eq("season_year", year).maybeSingle();
+  const { data: currentState } = await service.from("broadcast_state").select("audio_track_id, video_phase").match(editionFilter(maroonEdition(year))).maybeSingle();
   let startTrackId: string | null = currentState?.audio_track_id ?? null;
   if (!startTrackId) {
     const { data: firstTrack } = await service
       .from("broadcast_playlist_tracks")
       .select("id")
-      .eq("season_year", year)
+      .match(editionFilter(maroonEdition(year)))
       .order("uploaded_at", { ascending: true })
       .limit(1)
       .maybeSingle();
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
   }
 
   const { error: stateError } = await service.from("broadcast_state").upsert({
-    season_year: year,
+    ...editionColumns(maroonEdition(year)),
     tournament_live: true,
     automation_mode: "auto",
     scene_started_at: new Date().toISOString(),

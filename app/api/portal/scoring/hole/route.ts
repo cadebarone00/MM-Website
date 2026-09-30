@@ -4,6 +4,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getActiveSeasonYear } from "@/lib/live/activeSeason";
 import { validHoleDraft } from "@/lib/live/holeSubmission";
 import { publishOfficialMatchState } from "@/lib/live/publishOfficialMatchState";
+import { editionYearParam, maroonEdition } from "@/lib/platform/editionScope";
 
 // The background refresh after a hole (match odds, then every future,
 // including re-pricing Team Winner matchups) runs within this limit.
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
   // and saves both perspectives and archive changes in one transaction.
   const { data, error } = await service.rpc("submit_live_hole_reliable", {
     p_request: requestId, p_box: boxId, p_expected: expectedSubmission ?? null,
-    p_year: seasonYear, p_round: round, p_hole: hole, p_player: player.playerSlug, p_actor: player.userId,
+    p_year: editionYearParam(maroonEdition(seasonYear)), p_round: round, p_hole: hole, p_player: player.playerSlug, p_actor: player.userId,
     p_payload: { ownScore: body.ownScore, opponentScore: body.opponentScore, putts: body.putts ?? null, fairway: body.fairway ?? null, green: body.green ?? null },
   });
   if (error) {
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
   // Acknowledge the committed hole immediately; model calculations must not
   // make a successful save look like a connection timeout on the phone.
   after(async () => {
-    try { await publishOfficialMatchState(seasonYear, data.matchBoxId, undefined, { futuresPricingBudgetMs: 30_000 }); }
+    try { await publishOfficialMatchState(maroonEdition(seasonYear), data.matchBoxId, undefined, { futuresPricingBudgetMs: 30_000 }); }
     catch (err) { console.error("Official match refresh remains queued:", err); }
   });
   return NextResponse.json({ ok: true, submissions: data.submissions });

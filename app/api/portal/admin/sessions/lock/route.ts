@@ -7,6 +7,7 @@ import { deriveMatchTeeTime, teeTimeSlotForMatch } from "@/lib/live/sessionTeeTi
 import { syncLockedSessionToCareerArchive } from "@/lib/live/syncLockedRound";
 import { availableTeeSets } from "@/lib/live/teeSets";
 import type { LiveMatch, LiveTournamentSnapshot, MatchFormat, MatchState, Team } from "@/lib/live/types";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 export async function POST(request: Request) {
   const host = await requireHost();
@@ -23,7 +24,7 @@ export async function POST(request: Request) {
 
   if (lock === "course") {
     if (value) {
-      const { data: current } = await service.from("live_round_state").select("date, course_id, format, course_setup, match_tee_times").eq("season_year", year).eq("round", session).single();
+      const { data: current } = await service.from("live_round_state").select("date, course_id, format, course_setup, match_tee_times").match(editionFilter(maroonEdition(year))).eq("round", session).single();
       if (!current) return NextResponse.json({ ok: false, error: "Session not found." }, { status: 404 });
       const teeTimes = (current.match_tee_times as (string | null)[] | null) ?? [null, null, null];
       if (current.course_setup) {
@@ -43,12 +44,12 @@ export async function POST(request: Request) {
       const { data: existingMatches, error: existingError } = await service
         .from("live_match_boxes")
         .select("id, box_number, format, tee_time")
-        .eq("season_year", year)
+        .match(editionFilter(maroonEdition(year)))
         .eq("round", session);
       if (existingError) {
         return NextResponse.json({ ok: false, error: "Could not re-check this session's match tee times." }, { status: 500 });
       }
-      const { data: seasonSettings } = await service.from("live_tournament_settings").select("timezone").eq("season_year", year).maybeSingle();
+      const { data: seasonSettings } = await service.from("live_tournament_settings").select("timezone").match(editionFilter(maroonEdition(year))).maybeSingle();
       for (const match of existingMatches ?? []) {
         const slot = teeTimeSlotForMatch(match.format as MatchFormat, match.box_number);
         const derived = deriveMatchTeeTime(current.date, teeTimes[slot] ?? null, seasonSettings?.timezone ?? "America/Los_Angeles");
@@ -66,7 +67,7 @@ export async function POST(request: Request) {
     const { error } = await service
       .from("live_round_state")
       .update(value ? { course_locked: value } : { course_locked: value, matchups_locked: false })
-      .eq("season_year", year)
+      .match(editionFilter(maroonEdition(year)))
       .eq("round", session);
     if (error) {
       return NextResponse.json({ ok: false, error: "Could not update the lock." }, { status: 500 });
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
 
   // lock === "matchups"
   if (value) {
-    const { data: current } = await service.from("live_round_state").select("course_locked, format, course_id, date, course_setup, match_tee_times").eq("season_year", year).eq("round", session).single();
+    const { data: current } = await service.from("live_round_state").select("course_locked, format, course_id, date, course_setup, match_tee_times").match(editionFilter(maroonEdition(year))).eq("round", session).single();
     if (!current?.course_locked || !current.format) {
       return NextResponse.json({ ok: false, error: "Lock this session's course and format before locking matchups." }, { status: 400 });
     }
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
     const { data: matchRows } = await service
       .from("live_match_boxes")
       .select("id, round, box_number, format, tee_time, maroon_players, white_players, state, started")
-      .eq("season_year", year)
+      .match(editionFilter(maroonEdition(year)))
       .eq("round", session);
     const matches: LiveMatch[] = (matchRows ?? []).map((row) => ({
       id: row.id,
@@ -102,7 +103,7 @@ export async function POST(request: Request) {
       state: row.state as MatchState,
       started: row.started,
     }));
-    const { data: rosterRows } = await service.from("live_roster").select("player_slug, team").eq("season_year", year);
+    const { data: rosterRows } = await service.from("live_roster").select("player_slug, team").match(editionFilter(maroonEdition(year)));
     const players: LiveTournamentSnapshot["players"] = Object.fromEntries((rosterRows ?? []).map((r) => [r.player_slug, { team: r.team as Team }]));
 
     const snapshot: LiveTournamentSnapshot = { players, courses: {}, roundCourses: {}, scores: new Map(), matchBoxes: matches };
@@ -116,13 +117,13 @@ export async function POST(request: Request) {
     }
   }
 
-  const { error } = await service.from("live_round_state").update({ matchups_locked: value }).eq("season_year", year).eq("round", session);
+  const { error } = await service.from("live_round_state").update({ matchups_locked: value }).match(editionFilter(maroonEdition(year))).eq("round", session);
   if (error) {
     return NextResponse.json({ ok: false, error: "Could not update the lock." }, { status: 500 });
   }
   if (value) {
     try {
-      await syncLockedSessionToCareerArchive(year, session);
+      await syncLockedSessionToCareerArchive(maroonEdition(year), session);
     } catch {
       return NextResponse.json({ ok: false, error: "Matchups locked, but Career Archive publishing failed. Run the Career Live Archive SQL first." }, { status: 500 });
     }

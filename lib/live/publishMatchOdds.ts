@@ -8,6 +8,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import type { LiveMatch } from "@/lib/live/types";
 import type { OfficialMatchState } from "@/lib/live/officialMatchState";
 import { isTestSeason } from "@/lib/live/testSeason";
+import { editionColumns, type EditionScope } from "@/lib/platform/editionScope";
 
 export const LIVE_MATCH_ODDS_MODEL_VERSION = "match-monte-carlo-v1";
 
@@ -21,8 +22,9 @@ function modelPlayer(slug: string): string {
 }
 
 /** Builds and persists the single odds output consumed by all live surfaces. */
-export async function publishMatchOdds(seasonYear: number, box: LiveMatch, state: OfficialMatchState, prepareOnly = false) {
-  const snapshot = await buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true });
+export async function publishMatchOdds(edition: EditionScope, box: LiveMatch, state: OfficialMatchState, prepareOnly = false) {
+  const { seasonYear } = edition;
+  const snapshot = await buildLiveTournamentSnapshot(edition, { confirmedOnly: true });
   const course = snapshot.courses[snapshot.roundCourses[box.session]];
   if (!course) return null;
   const courseHoles: CareerCourseHole[] = course.holes.map((hole) => ({ year: seasonYear, course: course.name, tee: null, hole: hole.number, par: hole.par, yards: hole.yards, holeType: `Par ${hole.par}`, holeLengthBucket: null }));
@@ -55,7 +57,7 @@ export async function publishMatchOdds(seasonYear: number, box: LiveMatch, state
   const service = createSupabaseServiceRoleClient();
   const oddsRow = {
     match_box_id: box.id,
-    season_year: seasonYear,
+    ...editionColumns(edition),
     model_version: LIVE_MATCH_ODDS_MODEL_VERSION,
     state_thru: state.thru,
     maroon_lead: state.leader === "maroon" ? state.margin : state.leader === "white" ? -state.margin : 0,
@@ -70,6 +72,6 @@ export async function publishMatchOdds(seasonYear: number, box: LiveMatch, state
   if (prepareOnly) return oddsRow;
   const { error } = await service.from("live_match_odds_snapshots").insert(oddsRow);
   if (error) throw error;
-  await service.from("live_score_audit_events").insert({ season_year: seasonYear, match_box_id: box.id, round: box.session, kind: "odds_snapshot_created", payload: { modelVersion: LIVE_MATCH_ODDS_MODEL_VERSION, thru: state.thru } });
+  await service.from("live_score_audit_events").insert({ ...editionColumns(edition), match_box_id: box.id, round: box.session, kind: "odds_snapshot_created", payload: { modelVersion: LIVE_MATCH_ODDS_MODEL_VERSION, thru: state.thru } });
   return result;
 }

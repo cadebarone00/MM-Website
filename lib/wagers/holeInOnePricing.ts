@@ -3,6 +3,7 @@ import { getPlayerDisplayName } from "@/lib/data/players";
 import { scoreKey } from "@/lib/live/types";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { loadTournamentSetup } from "./loadTournamentSetup";
+import type { EditionScope } from "@/lib/platform/editionScope";
 import {
   ACE_PROBABILITY_PER_TEE_SHOT,
   holeInOneMarket,
@@ -35,14 +36,15 @@ export type HoleInOneState = {
  * snapshot to go stale. The bet route uses this same read, so a bet always
  * gets the current price.
  */
-export async function currentHoleInOneState(seasonYear: number): Promise<HoleInOneState> {
+export async function currentHoleInOneState(edition: EditionScope): Promise<HoleInOneState> {
+  const { seasonYear } = edition;
   const service = createSupabaseServiceRoleClient();
   const marketKey = holeInOneMarketKey(seasonYear);
   const [{ data: settlement }, snapshot] = await Promise.all([
     service.from("wagers_market_settlements").select("winning_selection_key").eq("market_key", marketKey).maybeSingle(),
-    buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true }),
+    buildLiveTournamentSnapshot(edition, { confirmedOnly: true }),
   ]);
-  const setup = await loadTournamentSetup(service, seasonYear, snapshot);
+  const setup = await loadTournamentSetup(service, edition, snapshot);
   const players = [...setup.roster.maroon, ...setup.roster.white].sort();
   const blockers = setup.blockers;
   const rounds: AceRound[] = setup.rounds.map((round) => ({ round: round.round, format: round.format, par3Holes: round.course.holes.filter((hole) => hole.par === 3).map((hole) => hole.number) }));

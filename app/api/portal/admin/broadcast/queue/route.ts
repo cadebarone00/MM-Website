@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 export async function GET(request: Request) {
   if (!(await requireHost())) return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
@@ -8,8 +9,8 @@ export async function GET(request: Request) {
   if (!Number.isInteger(year)) return NextResponse.json({ ok: false, error: "A season year is required." }, { status: 400 });
   const service = createSupabaseServiceRoleClient();
   const [{ data: events }, { data: videos }] = await Promise.all([
-    service.from("broadcast_events").select("id, kind, status, player_slug, round, hole, created_at").eq("season_year", year).in("status", ["pending", "queued", "ready", "playing"]).order("created_at"),
-    service.from("broadcast_player_video_queue").select("id, status, player_name, round, hole, shot_number, queued_at").eq("season_year", year).in("status", ["queued", "transition", "playing"]).order("queued_at"),
+    service.from("broadcast_events").select("id, kind, status, player_slug, round, hole, created_at").match(editionFilter(maroonEdition(year))).in("status", ["pending", "queued", "ready", "playing"]).order("created_at"),
+    service.from("broadcast_player_video_queue").select("id, status, player_name, round, hole, shot_number, queued_at").match(editionFilter(maroonEdition(year))).in("status", ["queued", "transition", "playing"]).order("queued_at"),
   ]);
   const items = [
     ...(events ?? []).map((event) => ({

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
+import { editionColumns, editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 /**
  * Sets which track anchors playback and restarts it from the beginning
@@ -23,13 +24,14 @@ export async function POST(request: Request) {
   }
 
   const seasonYear = await getBroadcastDisplayYear();
+  const edition = maroonEdition(seasonYear);
   const service = createSupabaseServiceRoleClient();
 
   const { data: track, error: trackError } = await service
     .from("broadcast_playlist_tracks")
     .select("id")
     .eq("id", trackId)
-    .eq("season_year", seasonYear)
+    .match(editionFilter(edition))
     .maybeSingle();
   if (trackError) console.error("playlist/play: failed to look up track", trackError);
   if (!track) {
@@ -38,7 +40,7 @@ export async function POST(request: Request) {
 
   const { error } = await service
     .from("broadcast_state")
-    .upsert({ season_year: seasonYear, audio_track_id: trackId, audio_started_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+    .upsert({ ...editionColumns(edition), audio_track_id: trackId, audio_started_at: new Date().toISOString(), updated_at: new Date().toISOString() });
   if (error) {
     console.error("playlist/play: failed to update broadcast_state", error);
     return NextResponse.json({ ok: false, error: "Could not start that track." }, { status: 500 });

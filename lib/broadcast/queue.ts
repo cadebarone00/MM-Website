@@ -10,6 +10,7 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { effectivePriority } from "./priority";
 import type { BroadcastEventKind, BroadcastEventStatus } from "./types";
+import { editionFilter, type EditionScope } from "@/lib/platform/editionScope";
 
 export interface BroadcastEventRow {
   id: string;
@@ -31,12 +32,12 @@ export function sortQueueRows(rows: BroadcastEventRow[], now: Date): BroadcastEv
     });
 }
 
-export async function getNextInQueue(seasonYear: number): Promise<BroadcastEventRow[]> {
+export async function getNextInQueue(edition: EditionScope): Promise<BroadcastEventRow[]> {
   const service = createSupabaseServiceRoleClient();
   const { data, error } = await service
     .from("broadcast_events")
     .select("id, kind, priority, status, payload, expires_at, created_at")
-    .eq("season_year", seasonYear)
+    .match(editionFilter(edition))
     .in("status", ["queued", "ready"]);
 
   if (error) {

@@ -1,6 +1,7 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getPlayerNameMap } from "@/lib/portal/allPlayers";
 import { r2PublicUrl } from "@/lib/r2/client";
+import { editionColumns, editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 function seasonFromTournamentSlug(slug: string): number | null {
   const year = Number(slug.slice(0, 4));
@@ -23,6 +24,7 @@ export async function queuePlayerVideo(input: {
 }) {
   const seasonYear = seasonFromTournamentSlug(input.tournamentSlug);
   if (!seasonYear) return;
+  const edition = maroonEdition(seasonYear);
   const service = createSupabaseServiceRoleClient();
   const nameMap = await getPlayerNameMap();
 
@@ -41,7 +43,7 @@ export async function queuePlayerVideo(input: {
   const { data: queued, error } = await service
     .from("broadcast_player_video_queue")
     .upsert({
-      season_year: seasonYear, video_id: input.videoId, tournament_slug: input.tournamentSlug, player_slug: input.playerSlug,
+      ...editionColumns(edition), video_id: input.videoId, tournament_slug: input.tournamentSlug, player_slug: input.playerSlug,
       player_name: nameMap[input.playerSlug] ?? input.playerSlug, round: input.round, hole: input.hole, shot_number: input.shotNumber,
       par: input.par, yards: input.yards, score_to_par: scoreToPar, video_url: r2PublicUrl(input.storagePath), status: "queued", queued_at: new Date().toISOString(),
     }, { onConflict: "video_id" })
@@ -52,13 +54,13 @@ export async function queuePlayerVideo(input: {
     return;
   }
 
-  const { data: state } = await service.from("broadcast_state").select("video_phase, active_video_queue_id").eq("season_year", seasonYear).maybeSingle();
+  const { data: state } = await service.from("broadcast_state").select("video_phase, active_video_queue_id").match(editionFilter(edition)).maybeSingle();
   if (state?.video_phase || state?.active_video_queue_id) return;
 
   // First submitted clip gets the transition. Later clips wait for complete.
   await service.from("broadcast_player_video_queue").update({ status: "transition" }).eq("id", queued.id);
   const { error: activateError } = await service.from("broadcast_state").upsert({
-    season_year: seasonYear, video_phase: "transition", active_video_queue_id: queued.id, video_phase_started_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+    ...editionColumns(edition), video_phase: "transition", active_video_queue_id: queued.id, video_phase_started_at: new Date().toISOString(), updated_at: new Date().toISOString(),
   });
   if (activateError) console.error("player video queue activation failed:", activateError.message);
 }

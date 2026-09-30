@@ -9,6 +9,7 @@ import { YearAndMasterSettingsNav } from "@/components/portal/admin/YearAndMaste
 import { StartSessionBanner, type StartableSession } from "@/components/portal/admin/StartSessionBanner";
 import { MatchCloseoutCards } from "@/components/portal/admin/MatchCloseoutCards";
 import { TestSeasonPanel } from "@/components/portal/admin/TestSeasonPanel";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 export default async function AdminCenterPage() {
   const supabase = await createSupabaseServerClient();
@@ -21,7 +22,7 @@ export default async function AdminCenterPage() {
   const overview = await getSeasonOverview();
   const service = createSupabaseServiceRoleClient();
   const [{ data: sessionRows }, { data: courseRows }] = await Promise.all([
-    service.from("live_round_state").select("round, date, format, course_id, course_locked, matchups_locked, started").eq("season_year", activeYear).order("round"),
+    service.from("live_round_state").select("round, date, format, course_id, course_locked, matchups_locked, started").match(editionFilter(maroonEdition(activeYear))).order("round"),
     service.from("live_courses").select("id, name"),
   ]);
   const courseNameById = new Map((courseRows ?? []).map((course) => [course.id, course.name as string]));

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
+import { editionColumns, editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 export async function POST(request: Request) {
   const host = await requireHost();
@@ -17,8 +18,8 @@ export async function POST(request: Request) {
   if (!slot) return NextResponse.json({ ok: false, error: "Unknown player." }, { status: 400 });
 
   const { error } = locked
-    ? await service.from("live_roster_assignment_locks").upsert({ season_year: year, player_slug: playerSlug, locked_at: new Date().toISOString() })
-    : await service.from("live_roster_assignment_locks").delete().eq("season_year", year).eq("player_slug", playerSlug);
+    ? await service.from("live_roster_assignment_locks").upsert({ ...editionColumns(maroonEdition(year)), player_slug: playerSlug, locked_at: new Date().toISOString() })
+    : await service.from("live_roster_assignment_locks").delete().match(editionFilter(maroonEdition(year))).eq("player_slug", playerSlug);
   if (error) return NextResponse.json({ ok: false, error: "Could not update that team lock." }, { status: 500 });
 
   return NextResponse.json({ ok: true });

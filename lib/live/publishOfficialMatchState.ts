@@ -3,6 +3,7 @@ import { buildOfficialMatchState, type OfficialMatchState } from "@/lib/live/off
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { publishMatchOdds } from "@/lib/live/publishMatchOdds";
 import { refreshFutures } from "@/lib/wagers/refreshFutures";
+import { editionColumns, type EditionScope } from "@/lib/platform/editionScope";
 
 /**
  * Rebuild and publish a match using confirmed holes only. This is the shared
@@ -11,7 +12,7 @@ import { refreshFutures } from "@/lib/wagers/refreshFutures";
  * replaces current state rather than incrementing points or settling wagers.
  */
 export async function publishOfficialMatchState(
-  seasonYear: number,
+  edition: EditionScope,
   matchBoxId: string,
   auditKind?: "match_locked" | "match_updated",
   { futuresPricingBudgetMs = 0 }: { futuresPricingBudgetMs?: number } = {}
@@ -19,19 +20,19 @@ export async function publishOfficialMatchState(
   const service = createSupabaseServiceRoleClient();
   const { data: job, error: jobError } = await service.from("live_publication_jobs").select("revision").eq("match_box_id", matchBoxId).maybeSingle();
   if (jobError) throw jobError;
-  const snapshot = await buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true });
+  const snapshot = await buildLiveTournamentSnapshot(edition, { confirmedOnly: true });
   const box = snapshot.matchBoxes.find((candidate) => candidate.id === matchBoxId);
   if (!box) return null;
 
   const official = buildOfficialMatchState(snapshot, box);
-  const odds = await publishMatchOdds(seasonYear, box, official, true);
+  const odds = await publishMatchOdds(edition, box, official, true);
   const { data: published, error } = await service.rpc("publish_match_revision", { p_box: matchBoxId, p_revision: job?.revision ?? 0, p_state: official, p_odds: odds });
   if (error) throw error;
   if (!published) throw new Error("Scores changed while publishing; queued for retry.");
 
   if (auditKind) {
     const { error: auditError } = await service.from("live_score_audit_events").insert({
-      season_year: seasonYear,
+      ...editionColumns(edition),
       match_box_id: matchBoxId,
       round: box.session,
       kind: auditKind,
@@ -43,7 +44,7 @@ export async function publishOfficialMatchState(
   // Tournament futures depend on every match and on every new hole in the
   // Career Archive; bets on them pause until this lands. A pricing budget
   // (background callers only) also re-prices affected Team Winner matchups.
-  await refreshFutures(seasonYear, { teamWinnerPricingBudgetMs: futuresPricingBudgetMs });
+  await refreshFutures(edition, { teamWinnerPricingBudgetMs: futuresPricingBudgetMs });
 
   return official;
 }

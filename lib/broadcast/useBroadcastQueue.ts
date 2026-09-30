@@ -5,6 +5,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { pickActiveEvent, type ActiveBroadcastEvent } from "./eventDisplay";
 import type { BroadcastEventRow } from "./queue";
 import type { BroadcastConfig } from "./types";
+import { editionRealtimeFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 /**
  * Which broadcast_events row (if any) should be showing right now, and
@@ -48,7 +49,7 @@ export function useBroadcastQueue(seasonYear: number, initialEvents: BroadcastEv
     const supabase = createSupabaseBrowserClient();
     const channel = supabase
       .channel(`broadcast-events-${seasonYear}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "broadcast_events", filter: `season_year=eq.${seasonYear}` }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "broadcast_events", filter: editionRealtimeFilter(maroonEdition(seasonYear)) }, reload)
       .subscribe();
 
     function onVisible() {

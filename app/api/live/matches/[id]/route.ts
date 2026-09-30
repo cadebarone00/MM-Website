@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { buildLiveTournamentSnapshot } from "@/lib/broadcast/liveSnapshot";
 import { matchProfileScorecard } from "@/lib/live/matchProfile";
+import { maroonEdition } from "@/lib/platform/editionScope";
 
 /** Public read model for a live match. Leaderboard, Wagers, Broadcast, and
  * Player Portal can all consume this same official-state + latest-odds pair
@@ -12,7 +13,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const service = createSupabaseServiceRoleClient();
   const { data: match } = await service.from("live_match_boxes").select("id, season_year, round, box_number, format, tee_time, maroon_players, white_players, state").eq("id", id).maybeSingle();
   if (!match) return NextResponse.json({ ok: false, error: "Match not found." }, { status: 404 });
-  await retryPendingPublications(match.season_year, id);
+  await retryPendingPublications(maroonEdition(match.season_year), id);
   const [{ data: state }, { data: odds }] = await Promise.all([
     service.from("live_match_official_state").select("*").eq("match_box_id", id).maybeSingle(),
     service.from("live_match_odds_snapshots").select("*").eq("match_box_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
@@ -21,7 +22,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   // The profile opts into the larger history and confirmed scorecard payload.
   if (new URL(request.url).searchParams.get("profile") === "1") {
     const [snapshot, history] = await Promise.all([
-      buildLiveTournamentSnapshot(match.season_year, { confirmedOnly: true }),
+      buildLiveTournamentSnapshot(maroonEdition(match.season_year), { confirmedOnly: true }),
       service.from("live_match_odds_snapshots")
         .select("state_thru, created_at, maroon_win_probability, tie_probability, white_win_probability, maroon_american_odds, tie_american_odds, white_american_odds")
         .eq("match_box_id", id).order("created_at", { ascending: false }).limit(1000),

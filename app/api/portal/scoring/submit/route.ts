@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requirePlayer } from "@/lib/portal/requirePlayer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getActiveSeasonYear } from "@/lib/live/activeSeason";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 /** Submit Round: all the rules live in the submit_live_round RPC so the check and the save are one transaction. */
 export async function POST(request: Request) {
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
   const { data: boxRows } = await service
     .from("live_match_boxes")
     .select("id, maroon_players, white_players")
-    .eq("season_year", seasonYear)
+    .match(editionFilter(maroonEdition(seasonYear)))
     .eq("round", round);
   const box = (boxRows ?? []).find((b) => (b.maroon_players as string[]).includes(player.playerSlug) || (b.white_players as string[]).includes(player.playerSlug));
   if (!box) return NextResponse.json({ ok: false, error: "You don't have a match box in this round." }, { status: 404 });

@@ -10,6 +10,7 @@ import { isStaleSnapshot, latestMatchInput, later, needsRepublish, pages, type S
 import { loadTournamentSetup } from "./loadTournamentSetup";
 import type { SetupCourse } from "./tournamentSetup";
 import { fieldProxyAssumption, thinPlayers, withFieldProxies } from "./fieldProxy";
+import { editionColumns, editionFilter, editionYearParam, type EditionScope } from "@/lib/platform/editionScope";
 import {
   TEAM_WINNER_MODEL_VERSION,
   TEAM_WINNER_SIMULATIONS,
@@ -93,14 +94,14 @@ const LEASE_SECONDS = 55;
 const WORK_POLL_MS = 15_000;
 
 /** Every round (Admin's setup, else last year's), the roster, finished results, and each paired match's latest odds. */
-async function loadInputs(service: Service, seasonYear: number): Promise<Inputs> {
+async function loadInputs(service: Service, edition: EditionScope): Promise<Inputs> {
   const [stateRows, oddsRows, snapshot] = await Promise.all([
-    pages<{ match_box_id: string; status: string; official_result: Result | null; updated_at: string }>((from, to) => service.from("live_match_official_state").select("match_box_id, status, official_result, updated_at").eq("season_year", seasonYear).order("match_box_id").range(from, to)),
+    pages<{ match_box_id: string; status: string; official_result: Result | null; updated_at: string }>((from, to) => service.from("live_match_official_state").select("match_box_id, status, official_result, updated_at").match(editionFilter(edition)).order("match_box_id").range(from, to)),
     pages<{ match_box_id: string; maroon_win_probability: number; tie_probability: number; white_win_probability: number; created_at: string }>((from, to) =>
-      service.from("live_match_odds_snapshots").select("match_box_id, maroon_win_probability, tie_probability, white_win_probability, created_at").eq("season_year", seasonYear).order("created_at", { ascending: false }).range(from, to)),
-    buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true }),
+      service.from("live_match_odds_snapshots").select("match_box_id, maroon_win_probability, tie_probability, white_win_probability, created_at").match(editionFilter(edition)).order("created_at", { ascending: false }).range(from, to)),
+    buildLiveTournamentSnapshot(edition, { confirmedOnly: true }),
   ]);
-  const setup = await loadTournamentSetup(service, seasonYear, snapshot);
+  const setup = await loadTournamentSetup(service, edition, snapshot);
 
   let inputsAsOf: string | null = null;
   const states = new Map(stateRows.map((row) => [row.match_box_id, row]));
@@ -131,9 +132,9 @@ async function loadInputs(service: Service, seasonYear: number): Promise<Inputs>
   return { rounds, roster: setup.roster, courses, blockers: setup.blockers, assumptions: setup.assumptions, inputsAsOf };
 }
 
-async function loadPairTable(service: Service, seasonYear: number): Promise<PairTable> {
+async function loadPairTable(service: Service, edition: EditionScope): Promise<PairTable> {
   const rows = await pages<{ pair_key: string; maroon_win_probability: number | null; tie_probability: number | null; white_win_probability: number | null; unpriceable: boolean; input_signature: string | null }>((from, to) =>
-    service.from("team_winner_pair_odds").select("pair_key, maroon_win_probability, tie_probability, white_win_probability, unpriceable, input_signature").eq("season_year", seasonYear).order("pair_key").range(from, to));
+    service.from("team_winner_pair_odds").select("pair_key, maroon_win_probability, tie_probability, white_win_probability, unpriceable, input_signature").match(editionFilter(edition)).order("pair_key").range(from, to));
   const table: PairTable = { priced: new Map(), unpriceable: new Set(), signatures: new Map() };
   for (const row of rows) {
     table.signatures.set(row.pair_key, row.input_signature);
@@ -178,7 +179,8 @@ function toPrice(inputs: Inputs, table: PairTable, signatures: Map<string, strin
  * Prices missing matchups until the budget runs out, saving every few so a
  * worker cut off by a server timeout loses little. Updates `table` in place.
  */
-async function priceMissing(service: Service, seasonYear: number, inputs: Inputs, table: PairTable, archive: Archive, signatures: Map<string, string>, budgetMs: number) {
+async function priceMissing(service: Service, edition: EditionScope, inputs: Inputs, table: PairTable, archive: Archive, signatures: Map<string, string>, budgetMs: number) {
+  const { seasonYear } = edition;
   const started = Date.now();
   const pending = toPrice(inputs, table, signatures);
   if (!pending.length) return;
@@ -202,7 +204,7 @@ async function priceMissing(service: Service, seasonYear: number, inputs: Inputs
     table.priced.set(matchup.key, outcome);
     table.unpriceable.delete(matchup.key);
     batch.push({
-      season_year: seasonYear,
+      ...editionColumns(edition),
       pair_key: matchup.key,
       maroon_win_probability: outcome.maroon,
       tie_probability: outcome.tie,
@@ -222,7 +224,7 @@ async function priceMissing(service: Service, seasonYear: number, inputs: Inputs
  * publishes a snapshot. While matchups are still being priced, the snapshot
  * carries progress instead of odds.
  */
-async function publish(service: Service, seasonYear: number, inputs: Inputs, table: PairTable, signatures: Map<string, string>) {
+async function publish(service: Service, edition: EditionScope, inputs: Inputs, table: PairTable, signatures: Map<string, string>) {
   const points = teamPoints(inputs.rounds, inputs.roster);
   const blockers = [...inputs.blockers];
   const needed = inputs.blockers.length ? [] : missingOdds(inputs.rounds, inputs.roster, table.priced);
@@ -244,7 +246,7 @@ async function publish(service: Service, seasonYear: number, inputs: Inputs, tab
       : simulateTeamWinner({ rounds: inputs.rounds, roster: inputs.roster, pairTable: table.priced });
 
   const row = {
-    season_year: seasonYear,
+    ...editionColumns(edition),
     model_version: TEAM_WINNER_MODEL_VERSION,
     maroon_win_probability: outcome?.maroon ?? null,
     tie_probability: outcome?.tie ?? null,
@@ -279,12 +281,13 @@ async function publish(service: Service, seasonYear: number, inputs: Inputs, tab
  * publication, or page view that triggered it. Pass `archive` to reuse one
  * already loaded for this refresh.
  */
-export async function refreshTeamWinnerOdds(seasonYear: number, { pricingBudgetMs = 0, archive }: { pricingBudgetMs?: number; archive?: Archive } = {}) {
+export async function refreshTeamWinnerOdds(edition: EditionScope, { pricingBudgetMs = 0, archive }: { pricingBudgetMs?: number; archive?: Archive } = {}) {
+  const { seasonYear } = edition;
   try {
     const service = createSupabaseServiceRoleClient();
     const [inputs, table, loadedArchive] = await Promise.all([
-      loadInputs(service, seasonYear),
-      loadPairTable(service, seasonYear),
+      loadInputs(service, edition),
+      loadPairTable(service, edition),
       archive ?? getCombinedCareerArchive({ includeTestSeason: isTestSeason(seasonYear) }),
     ]);
     const signatures = playerSignatures(loadedArchive);
@@ -292,18 +295,18 @@ export async function refreshTeamWinnerOdds(seasonYear: number, { pricingBudgetM
     const thinNote = fieldProxyAssumption([...inputs.roster.maroon, ...inputs.roster.white].filter((player) => thin.includes(getPlayerSlug(player))));
     if (thinNote) inputs.assumptions.push(thinNote);
     if (pricingBudgetMs && toPrice(inputs, table, signatures).length) {
-      const { data: claimed, error } = await service.rpc("claim_team_winner_pricing", { p_year: seasonYear, p_seconds: LEASE_SECONDS });
+      const { data: claimed, error } = await service.rpc("claim_team_winner_pricing", { p_year: editionYearParam(edition), p_seconds: LEASE_SECONDS });
       if (error) throw new Error(error.message);
       if (claimed) {
         try {
-          await priceMissing(service, seasonYear, inputs, table, loadedArchive, signatures, pricingBudgetMs);
+          await priceMissing(service, edition, inputs, table, loadedArchive, signatures, pricingBudgetMs);
         } finally {
           // Release early so the next trigger can start the next chunk right away.
-          await service.from("team_winner_pricing_lease").update({ locked_until: new Date().toISOString() }).eq("season_year", seasonYear);
+          await service.from("team_winner_pricing_lease").update({ locked_until: new Date().toISOString() }).match(editionFilter(edition));
         }
       }
     }
-    await publish(service, seasonYear, inputs, table, signatures);
+    await publish(service, edition, inputs, table, signatures);
   } catch (error) {
     console.error("Team Winner odds refresh failed:", error);
   }
@@ -330,13 +333,14 @@ export type TeamWinnerState = {
 };
 
 /** The public read model — also the bet route's check that the market is open at these exact odds. */
-export async function currentTeamWinnerState(seasonYear: number): Promise<TeamWinnerState> {
+export async function currentTeamWinnerState(edition: EditionScope): Promise<TeamWinnerState> {
+  const { seasonYear } = edition;
   const service = createSupabaseServiceRoleClient();
   const [{ data: snapshot, error }, { data: settlement }, latestInput, { data: lease }] = await Promise.all([
-    service.from("team_winner_odds_snapshots").select("*").eq("season_year", seasonYear).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    service.from("team_winner_odds_snapshots").select("*").match(editionFilter(edition)).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     service.from("wagers_market_settlements").select("winning_selection_key").eq("market_key", `team-winner:${seasonYear}`).maybeSingle(),
-    latestMatchInput(service, seasonYear),
-    service.from("team_winner_pricing_lease").select("locked_until").eq("season_year", seasonYear).maybeSingle(),
+    latestMatchInput(service, edition),
+    service.from("team_winner_pricing_lease").select("locked_until").match(editionFilter(edition)).maybeSingle(),
   ]);
   // Pricing work in flight, or finished moments ago: don't pile on another refresh.
   const workerBusy = Boolean(lease && new Date(lease.locked_until).getTime() > Date.now());

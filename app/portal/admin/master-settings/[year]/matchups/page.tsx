@@ -5,6 +5,7 @@ import { isValidSeasonYear } from "@/lib/live/activeSeason";
 import { getPlayerNameMap } from "@/lib/portal/allPlayers";
 import { MatchupsPanel, type RosterPlayer } from "@/components/portal/admin/MatchupsPanel";
 import type { LiveMatch, LiveSessionState, MatchFormat, MatchState } from "@/lib/live/types";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 export default async function MatchupsPage({ params }: { params: Promise<{ year: string }> }) {
   const { year: yearParam } = await params;
@@ -25,16 +26,16 @@ export default async function MatchupsPage({ params }: { params: Promise<{ year:
     service
       .from("live_round_state")
       .select("round, started, course_id, date, format, course_locked, matchups_locked, match_tee_times")
-      .eq("season_year", year)
+      .match(editionFilter(maroonEdition(year)))
       .order("round"),
     service
       .from("live_match_boxes")
       .select("id, round, box_number, format, tee_time, maroon_players, white_players, state, started")
-      .eq("season_year", year)
+      .match(editionFilter(maroonEdition(year)))
       .order("round")
       .order("box_number"),
-    service.from("live_roster").select("player_slug, team").eq("season_year", year),
-    service.from("live_tournament_settings").select("timezone").eq("season_year", year).maybeSingle(),
+    service.from("live_roster").select("player_slug, team").match(editionFilter(maroonEdition(year))),
+    service.from("live_tournament_settings").select("timezone").match(editionFilter(maroonEdition(year))).maybeSingle(),
     getPlayerNameMap(),
   ]);
 

@@ -4,6 +4,7 @@ import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/l
 import { isValidSeasonYear, getActiveSeasonYear } from "@/lib/live/activeSeason";
 import { MasterSettingsPanel } from "@/components/portal/admin/MasterSettingsPanel";
 import type { TournamentSettings } from "@/lib/live/types";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 export default async function MasterSettingsPage({ params }: { params: Promise<{ year: string }> }) {
   const { year: yearParam } = await params;
@@ -24,7 +25,7 @@ export default async function MasterSettingsPage({ params }: { params: Promise<{
     service
       .from("live_tournament_settings")
       .select("round_count, round_count_locked, completed_at, venue_name, venue_locked, timezone, begin_date, end_date, dates_locked")
-      .eq("season_year", year)
+      .match(editionFilter(maroonEdition(year)))
       .maybeSingle(),
     getActiveSeasonYear(),
   ]);

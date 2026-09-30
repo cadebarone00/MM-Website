@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
+import { editionColumns, maroonEdition } from "@/lib/platform/editionScope";
 
 export async function POST(request: Request) {
   const host = await requireHost();
@@ -16,8 +17,9 @@ export async function POST(request: Request) {
   }
 
   const seasonYear = await getBroadcastDisplayYear();
+  const edition = maroonEdition(seasonYear);
   const service = createSupabaseServiceRoleClient();
-  const { error } = await service.from("broadcast_state").upsert({ season_year: seasonYear, audio_loop_mode: mode, updated_at: new Date().toISOString() });
+  const { error } = await service.from("broadcast_state").upsert({ ...editionColumns(edition), audio_loop_mode: mode, updated_at: new Date().toISOString() });
   if (error) {
     console.error("playlist/loop-mode: failed to update broadcast_state", error);
     return NextResponse.json({ ok: false, error: "Could not change loop mode." }, { status: 500 });

@@ -5,6 +5,7 @@ import { TEST_SEASON_YEAR } from "./testSeason";
 import { pastTournaments } from "@/lib/data";
 import { roundFormatArchive } from "@/lib/data/roundFormatArchive";
 import type { SeasonOverviewData, OverviewSession } from "./seasonOverview";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 function dateRangeFromSessions(sessions: OverviewSession[]) {
   const dates = [...new Set(sessions.flatMap(session => session.date ? [session.date] : []))].sort();
@@ -19,7 +20,7 @@ export async function getSeasonOverview(): Promise<SeasonOverviewData> {
     service.from("live_round_state").select("season_year, round, date, course_id, format, course_locked, matchups_locked, started, match_tee_times").in("season_year", OVERVIEW_YEARS).order("round"),
     service.from("live_match_boxes").select("season_year, round, box_number, tee_time, state, started, maroon_players, white_players").in("season_year", OVERVIEW_YEARS).order("box_number"),
     service.from("live_courses").select("id, name"),
-    service.from("round_format_setups").select("season_year, round, played_on, course_name").eq("season_year", 2026),
+    service.from("round_format_setups").select("season_year, round, played_on, course_name").match(editionFilter(maroonEdition(2026))),
   ]);
   if (settings.error || sessions.error || matches.error || courses.error) throw new Error("Could not load year setup. Check the session-count and tee-time migrations.");
   return { activeYear: calendar.activeYear, upcomingYear: calendar.upcomingYear, calendarAvailable: calendar.available, checkedAt: new Date().toISOString(), years: OVERVIEW_YEARS.map(year => {

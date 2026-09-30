@@ -3,13 +3,14 @@ import { NextResponse } from "next/server";
 import { buildLiveTournamentSnapshot } from "@/lib/broadcast/liveSnapshot";
 import { getSeasonCatalog } from "@/lib/data/seasonCatalog";
 import { leaderboard } from "@/lib/live/scoring";
+import { maroonEdition } from "@/lib/platform/editionScope";
 
 /** Confirmed-only individual standings. Foursome is excluded by the shared
  * scoring rule, while confirmed Singles/Fourball strokes count immediately. */
 export async function GET() {
   const seasonYear = (await getSeasonCatalog()).nextTournament.year;
-  await retryPendingPublications(seasonYear);
-  const snapshot = await buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true });
+  await retryPendingPublications(maroonEdition(seasonYear));
+  const snapshot = await buildLiveTournamentSnapshot(maroonEdition(seasonYear), { confirmedOnly: true });
   const standings = leaderboard(snapshot).filter((entry) => entry.played > 0).map((entry) => ({
     player: entry.player,
     team: entry.team,

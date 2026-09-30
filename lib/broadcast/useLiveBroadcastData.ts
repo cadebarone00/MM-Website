@@ -5,6 +5,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { BroadcastStanding } from "@/lib/broadcast/types";
 import type { BroadcastMatchPlay } from "@/lib/broadcast/matchPlayData";
 import { detectLiveScoreEvent, type LiveScoreEvent } from "@/lib/broadcast/liveScoreEvent";
+import { editionRealtimeFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 /**
  * How long a real birdie/eagle/bogey stays "active" before the
@@ -78,8 +79,8 @@ export function useLiveBroadcastData(
     const supabase = createSupabaseBrowserClient();
     const channel = supabase
       .channel(`broadcast-${seasonYear}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "live_hole_scores", filter: `season_year=eq.${seasonYear}` }, reload)
-      .on("postgres_changes", { event: "*", schema: "public", table: "live_match_boxes", filter: `season_year=eq.${seasonYear}` }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "live_hole_scores", filter: editionRealtimeFilter(maroonEdition(seasonYear)) }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "live_match_boxes", filter: editionRealtimeFilter(maroonEdition(seasonYear)) }, reload)
       .subscribe();
 
     // Reconnect insurance, same as ScoringPanel.tsx: a tab that was

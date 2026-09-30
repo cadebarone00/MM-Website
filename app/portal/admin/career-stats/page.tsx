@@ -11,6 +11,7 @@ import { getRoundFormatSetups } from "@/lib/data/roundFormatSetups";
 import { roundFormatArchive } from "@/lib/data/roundFormatArchive";
 import { getOrphanArchivedRounds } from "@/lib/data/archivedScorecards";
 import { getCourseLibraryForHandicap } from "@/lib/handicap/data";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 export default async function CareerStatsPage() {
   const supabase = await createSupabaseServerClient();
@@ -26,9 +27,9 @@ export default async function CareerStatsPage() {
   const roundFormatTournaments: RoundFormatTournament[] = await Promise.all(
     pastTournaments.map(async (tournament) => {
       if (nativeSeasonYear(tournament.slug)) {
-        const snapshot = await buildLiveTournamentSnapshot(tournament.year, { confirmedOnly: true });
+        const snapshot = await buildLiveTournamentSnapshot(maroonEdition(tournament.year), { confirmedOnly: true });
         const service = createSupabaseServiceRoleClient();
-        const { data: settings } = await service.from("live_tournament_settings").select("timezone").eq("season_year", tournament.year).maybeSingle();
+        const { data: settings } = await service.from("live_tournament_settings").select("timezone").match(editionFilter(maroonEdition(tournament.year))).maybeSingle();
         return { slug: tournament.slug, year: tournament.year, venue: tournament.venue, orphans: [], ...liveRoundFormatArchive(snapshot, tournament.slug, tournament.year, setups, settings?.timezone ?? "America/Los_Angeles") };
       }
       const setupFor = (round: number) => setups.find((s) => s.seasonYear === tournament.year && s.round === round) ?? null;
@@ -42,9 +43,9 @@ export default async function CareerStatsPage() {
   );
 
   if (leaderboardOpen && nativeSeasonYear(nextTournament.slug)) {
-    const snapshot = await buildLiveTournamentSnapshot(nextTournament.year, { confirmedOnly: true });
+    const snapshot = await buildLiveTournamentSnapshot(maroonEdition(nextTournament.year), { confirmedOnly: true });
     const service = createSupabaseServiceRoleClient();
-    const { data: settingsRow } = await service.from("live_tournament_settings").select("timezone").eq("season_year", nextTournament.year).maybeSingle();
+    const { data: settingsRow } = await service.from("live_tournament_settings").select("timezone").match(editionFilter(maroonEdition(nextTournament.year))).maybeSingle();
     const timezone = settingsRow?.timezone ?? "America/Los_Angeles";
     roundFormatTournaments.unshift({ slug: nextTournament.slug, year: nextTournament.year, venue: nextTournament.venue, orphans: [], ...liveRoundFormatArchive(snapshot, nextTournament.slug, nextTournament.year, setups, timezone) });
   }

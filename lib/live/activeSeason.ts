@@ -1,6 +1,7 @@
 import { getSeasonCalendar } from "./seasonCalendarServer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { SEASON_YEARS } from "@/lib/live/seasonYears";
+import { maroonEdition, type EditionScope } from "@/lib/platform/editionScope";
 
 export { SEASON_YEARS, isValidSeasonYear } from "@/lib/live/seasonYears";
 
@@ -19,4 +20,9 @@ export async function getActiveSeasonYear(): Promise<number> {
   }
   if (data.season_year === 2034) return 2034;
   return (await getSeasonCalendar()).activeYear;
+}
+
+/** The Maroon Tournament's live edition (its active season year). */
+export async function getActiveEdition(): Promise<EditionScope> {
+  return maroonEdition(await getActiveSeasonYear());
 }

@@ -6,6 +6,7 @@ import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
 import { createR2Client, R2_BUCKET, r2PublicUrl } from "@/lib/r2/client";
+import { editionColumns, maroonEdition } from "@/lib/platform/editionScope";
 
 const MAX_BYTES = 50 * 1024 * 1024; // 50MB — plenty for a song, small enough to not tie up this route for long.
 
@@ -117,6 +118,7 @@ export async function POST(request: Request) {
   const fileBytes = Buffer.concat(chunks);
 
   const seasonYear = await getBroadcastDisplayYear();
+  const edition = maroonEdition(seasonYear);
   const storagePath = `playlist/${seasonYear}/${randomUUID()}${extension}`;
 
   try {
@@ -130,7 +132,7 @@ export async function POST(request: Request) {
   const service = createSupabaseServiceRoleClient();
   const { data, error } = await service
     .from("broadcast_playlist_tracks")
-    .insert({ season_year: seasonYear, title: title.trim(), storage_path: storagePath, duration_seconds: durationSeconds })
+    .insert({ ...editionColumns(edition), title: title.trim(), storage_path: storagePath, duration_seconds: durationSeconds })
     .select("id, title, storage_path, duration_seconds, uploaded_at")
     .single();
 

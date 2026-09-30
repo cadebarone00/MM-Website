@@ -7,6 +7,7 @@ import { getPlayerDisplayName } from "@/lib/data/players";
 import { mapFutureHandicapRounds } from "@/lib/handicap/futureRoundMapping";
 import { archivedDifferential } from "@/lib/handicap/archiveIndex";
 import { summarizeTestSeason } from "@/lib/live/testSeasonStatus";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 /** Admin's rehearsal view: what the 2034 test matches have done behind the scenes (holes matched, who submitted, whether the round is official, and what it would do to a handicap). Host only; empty unless the test season is active. */
 export async function GET() {
@@ -18,17 +19,17 @@ export async function GET() {
   const { data: boxes, error: boxesError } = await service
     .from("live_match_boxes")
     .select("id, round, box_number, format, maroon_players, white_players")
-    .eq("season_year", TEST_SEASON_YEAR)
+    .match(editionFilter(maroonEdition(TEST_SEASON_YEAR)))
     .order("round")
     .order("box_number");
   if (boxesError) return NextResponse.json({ ok: false, error: "Could not load the test matches." }, { status: 500 });
   const ids = (boxes ?? []).map((box) => box.id as string);
 
   const [confirmed, submissions, archive, archiveHoles, states] = await Promise.all([
-    service.from("live_hole_scores").select("round, player_slug, hole").eq("season_year", TEST_SEASON_YEAR).not("confirmed_by", "is", null),
+    service.from("live_hole_scores").select("round, player_slug, hole").match(editionFilter(maroonEdition(TEST_SEASON_YEAR))).not("confirmed_by", "is", null),
     ids.length ? service.from("live_match_box_submissions").select("match_box_id, player_slug").in("match_box_id", ids) : Promise.resolve({ data: [], error: null }),
-    service.from("career_archive_rounds").select("season_year, round, player_slug, course, played_on, format, handicap_setup, status").eq("season_year", TEST_SEASON_YEAR),
-    service.from("career_archive_live_holes").select("season_year, round, player_slug, hole, score, did_not_finish").eq("season_year", TEST_SEASON_YEAR),
+    service.from("career_archive_rounds").select("season_year, round, player_slug, course, played_on, format, handicap_setup, status").match(editionFilter(maroonEdition(TEST_SEASON_YEAR))),
+    service.from("career_archive_live_holes").select("season_year, round, player_slug, hole, score, did_not_finish").match(editionFilter(maroonEdition(TEST_SEASON_YEAR))),
     ids.length ? service.from("live_match_official_state").select("match_box_id, status, leader, margin, thru").in("match_box_id", ids) : Promise.resolve({ data: [], error: null }),
   ]);
   const failed = [confirmed, submissions, archive, archiveHoles, states].find((result) => result.error);

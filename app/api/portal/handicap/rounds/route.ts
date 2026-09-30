@@ -2,7 +2,7 @@ import { after, NextResponse } from "next/server";
 import { requirePlayer } from "@/lib/portal/requirePlayer";
 import { getHandicapSummaryForPlayer, submitHandicapRound } from "@/lib/handicap/data";
 import type { SubmitHandicapRoundInput } from "@/lib/handicap/types";
-import { getActiveSeasonYear } from "@/lib/live/activeSeason";
+import { getActiveEdition } from "@/lib/live/activeSeason";
 import { refreshFutures } from "@/lib/wagers/refreshFutures";
 
 // A new round changes the player's Career Archive history, so every future
@@ -37,6 +37,6 @@ export async function POST(request: Request) {
   }
 
   const result = await submitHandicapRound(player.playerSlug, body);
-  if (result.ok) after(async () => refreshFutures(await getActiveSeasonYear(), { teamWinnerPricingBudgetMs: 30_000 }));
+  if (result.ok) after(async () => refreshFutures(await getActiveEdition(), { teamWinnerPricingBudgetMs: 30_000 }));
   return NextResponse.json(result, { status: result.ok ? 200 : 400 });
 }

@@ -2,6 +2,7 @@ import { cache } from "react";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { resolveSeasonCalendar, upcomingSeasonYear, type SeasonWindow } from "./seasonCalendar";
 import { pastTournaments } from "@/lib/data";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 export const getSeasonCalendar = cache(async () => {
   const service = createSupabaseServiceRoleClient();
@@ -19,7 +20,7 @@ export const getSeasonCalendar = cache(async () => {
   const windows: SeasonWindow[] = (sync.error || calendar.error ? [] : calendar.data ?? []).map(row => ({ year: row.season_year, activeOn: row.active_on, passOn: row.pass_on, locked: row.locked, archivedAt: row.archived_at }));
   const resolved = resolveSeasonCalendar(windows, active.data?.season_year ?? 2027);
   const { data: tournament, error: tournamentError } = await service.from("live_tournament_settings")
-    .select("end_date, timezone").eq("season_year", resolved.activeYear).maybeSingle();
+    .select("end_date, timezone").match(editionFilter(maroonEdition(resolved.activeYear))).maybeSingle();
   if (tournamentError) console.warn("Could not read the active tournament end date.");
   const endDate = tournament?.end_date ?? pastTournaments.find(row => row.year === resolved.activeYear)?.endDate ?? null;
   const timezone = tournament?.timezone ?? "America/Los_Angeles";

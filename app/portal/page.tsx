@@ -20,6 +20,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { get2026Skins, SKINS_YEAR } from "@/lib/skins/data";
 import { pastTournaments as historicalTournaments } from "@/lib/data";
 import { getActiveSeasonYear } from "@/lib/live/activeSeason";
+import { maroonEdition } from "@/lib/platform/editionScope";
 
 export default async function PortalPage({ searchParams }: { searchParams: Promise<{ previewPlayer?: string }> }) {
   const supabase = await createSupabaseServerClient();
@@ -43,7 +44,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
   const [team, allPlayers, upcomingMatches, archivedScorecards, handicapSummary, archivedHandicapRounds, skins] = await Promise.all([
     archivedTournament ? Promise.resolve(archivedTournament.roster.maroon.includes(playerSlug) ? "maroon" as const : archivedTournament.roster.white.includes(playerSlug) ? "white" as const : null) : getLiveTeamForPlayer(playerSlug),
     getAllPlayerRows(),
-    archivedTournament ? Promise.resolve([]) : findMatchesForPlayer(playerSlug, year),
+    archivedTournament ? Promise.resolve([]) : findMatchesForPlayer(playerSlug, maroonEdition(year)),
     archivedTournament
       ? getScorecardsForTournament(archivedTournament).catch((err) => {
           console.error("Failed to load archived scorecards for portal matches:", err);

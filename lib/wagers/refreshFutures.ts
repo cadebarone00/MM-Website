@@ -6,6 +6,7 @@ import { publishLowIndividualOdds } from "./lowIndividualPricing";
 import { publishPlayerStatOdds } from "./playerBirdiesPricing";
 import { refreshTeamWinnerOdds } from "./teamWinnerPricing";
 import { publishTotalBirdiesOdds } from "./totalBirdiesPricing";
+import type { EditionScope } from "@/lib/platform/editionScope";
 
 async function logged(label: string, work: () => Promise<unknown>) {
   try {
@@ -26,7 +27,8 @@ async function logged(label: string, work: () => Promise<unknown>) {
  * players' data changed. Pass it only from background work (after()), never
  * from a request someone is waiting on.
  */
-export async function refreshFutures(seasonYear: number, { teamWinnerPricingBudgetMs = 0 }: { teamWinnerPricingBudgetMs?: number } = {}) {
+export async function refreshFutures(edition: EditionScope, { teamWinnerPricingBudgetMs = 0 }: { teamWinnerPricingBudgetMs?: number } = {}) {
+  const { seasonYear } = edition;
   let archive: Awaited<ReturnType<typeof getCombinedCareerArchive>>;
   try {
     archive = await getCombinedCareerArchive({ includeTestSeason: isTestSeason(seasonYear) });
@@ -36,9 +38,9 @@ export async function refreshFutures(seasonYear: number, { teamWinnerPricingBudg
   }
   const service = createSupabaseServiceRoleClient();
   await Promise.all([
-    refreshTeamWinnerOdds(seasonYear, { pricingBudgetMs: teamWinnerPricingBudgetMs, archive }),
+    refreshTeamWinnerOdds(edition, { pricingBudgetMs: teamWinnerPricingBudgetMs, archive }),
     logged("Individual futures", async () => {
-      const inputs = await loadIndividualInputs(service, seasonYear, archive);
+      const inputs = await loadIndividualInputs(service, edition, archive);
       await Promise.all([
         logged("Low Individual", () => publishLowIndividualOdds(service, inputs)),
         logged("Total Birdies", () => publishTotalBirdiesOdds(service, inputs)),

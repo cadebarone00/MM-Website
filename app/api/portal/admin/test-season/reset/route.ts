@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { DEFAULT_REAL_SEASON_YEAR, TEST_SEASON_YEAR } from "@/lib/live/testSeason";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 type TestBet = {
   profile_id: string;
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
   const { data: boxes, error: boxesError } = await service
     .from("live_match_boxes")
     .select("id")
-    .eq("season_year", TEST_SEASON_YEAR);
+    .match(editionFilter(maroonEdition(TEST_SEASON_YEAR)));
   if (boxesError) return NextResponse.json({ ok: false, error: boxesError.message }, { status: 500 });
 
   const marketKeys = [...(boxes ?? []).map((box) => `live-match:${box.id}`), `team-winner:${TEST_SEASON_YEAR}`, `low-individual:${TEST_SEASON_YEAR}`, `hole-in-one:${TEST_SEASON_YEAR}`, `total-birdies:${TEST_SEASON_YEAR}`, `player-birdies:${TEST_SEASON_YEAR}`, `player-doubles:${TEST_SEASON_YEAR}`];
@@ -71,21 +72,21 @@ export async function POST(request: Request) {
   // Child rows and archive data first. Foreign-key cascades handle match
   // official state, odds snapshots, audit events, and submissions.
   const deletions = [
-    service.from("career_archive_team_holes").delete().eq("season_year", TEST_SEASON_YEAR),
-    service.from("career_archive_rounds").delete().eq("season_year", TEST_SEASON_YEAR),
-    service.from("live_hole_scores").delete().eq("season_year", TEST_SEASON_YEAR),
-    service.from("team_winner_odds_snapshots").delete().eq("season_year", TEST_SEASON_YEAR),
-    service.from("team_winner_pair_odds").delete().eq("season_year", TEST_SEASON_YEAR),
-    service.from("low_individual_odds_snapshots").delete().eq("season_year", TEST_SEASON_YEAR),
-    service.from("total_birdies_odds_snapshots").delete().eq("season_year", TEST_SEASON_YEAR),
-    service.from("player_birdies_odds_snapshots").delete().eq("season_year", TEST_SEASON_YEAR),
-    service.from("player_doubles_odds_snapshots").delete().eq("season_year", TEST_SEASON_YEAR),
-    service.from("live_match_boxes").delete().eq("season_year", TEST_SEASON_YEAR),
-    service.from("live_round_state").delete().eq("season_year", TEST_SEASON_YEAR),
-    service.from("live_roster").delete().eq("season_year", TEST_SEASON_YEAR),
-    service.from("live_tournament_settings").delete().eq("season_year", TEST_SEASON_YEAR),
-    service.from("broadcast_config").delete().eq("season_year", TEST_SEASON_YEAR),
-    service.from("broadcast_state").delete().eq("season_year", TEST_SEASON_YEAR),
+    service.from("career_archive_team_holes").delete().match(editionFilter(maroonEdition(TEST_SEASON_YEAR))),
+    service.from("career_archive_rounds").delete().match(editionFilter(maroonEdition(TEST_SEASON_YEAR))),
+    service.from("live_hole_scores").delete().match(editionFilter(maroonEdition(TEST_SEASON_YEAR))),
+    service.from("team_winner_odds_snapshots").delete().match(editionFilter(maroonEdition(TEST_SEASON_YEAR))),
+    service.from("team_winner_pair_odds").delete().match(editionFilter(maroonEdition(TEST_SEASON_YEAR))),
+    service.from("low_individual_odds_snapshots").delete().match(editionFilter(maroonEdition(TEST_SEASON_YEAR))),
+    service.from("total_birdies_odds_snapshots").delete().match(editionFilter(maroonEdition(TEST_SEASON_YEAR))),
+    service.from("player_birdies_odds_snapshots").delete().match(editionFilter(maroonEdition(TEST_SEASON_YEAR))),
+    service.from("player_doubles_odds_snapshots").delete().match(editionFilter(maroonEdition(TEST_SEASON_YEAR))),
+    service.from("live_match_boxes").delete().match(editionFilter(maroonEdition(TEST_SEASON_YEAR))),
+    service.from("live_round_state").delete().match(editionFilter(maroonEdition(TEST_SEASON_YEAR))),
+    service.from("live_roster").delete().match(editionFilter(maroonEdition(TEST_SEASON_YEAR))),
+    service.from("live_tournament_settings").delete().match(editionFilter(maroonEdition(TEST_SEASON_YEAR))),
+    service.from("broadcast_config").delete().match(editionFilter(maroonEdition(TEST_SEASON_YEAR))),
+    service.from("broadcast_state").delete().match(editionFilter(maroonEdition(TEST_SEASON_YEAR))),
   ];
   const results = await Promise.all(deletions);
   const failed = results.find((result) => result.error);

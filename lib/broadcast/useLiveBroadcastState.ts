@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { BroadcastState } from "@/lib/broadcast/types";
+import { editionRealtimeFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 /**
  * Keeps automation_mode/current_scene/scene_started_at live, so a host's
@@ -36,7 +37,7 @@ export function useLiveBroadcastState(seasonYear: number, initial: BroadcastStat
     const supabase = createSupabaseBrowserClient();
     const channel = supabase
       .channel(`broadcast-state-${seasonYear}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "broadcast_state", filter: `season_year=eq.${seasonYear}` }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "broadcast_state", filter: editionRealtimeFilter(maroonEdition(seasonYear)) }, reload)
       .subscribe();
 
     function onVisible() {

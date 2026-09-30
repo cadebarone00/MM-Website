@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
+import { editionColumns, maroonEdition } from "@/lib/platform/editionScope";
 
 const MAX_TEXT_LENGTH = 120;
 const MIN_DURATION_SECONDS = 3;
@@ -22,12 +23,13 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const seasonYear = await getBroadcastDisplayYear();
+  const edition = maroonEdition(seasonYear);
   const service = createSupabaseServiceRoleClient();
 
   if (body.clear === true) {
     const { error } = await service
       .from("broadcast_state")
-      .upsert({ season_year: seasonYear, overlay_text: null, overlay_expires_at: null, updated_at: new Date().toISOString() });
+      .upsert({ ...editionColumns(edition), overlay_text: null, overlay_expires_at: null, updated_at: new Date().toISOString() });
     if (error) return NextResponse.json({ ok: false, error: "Could not clear the announcement." }, { status: 500 });
     return NextResponse.json({ ok: true });
   }
@@ -44,7 +46,7 @@ export async function POST(request: Request) {
   const expiresAt = new Date(Date.now() + durationSeconds * 1000).toISOString();
   const { error } = await service
     .from("broadcast_state")
-    .upsert({ season_year: seasonYear, overlay_text: text, overlay_expires_at: expiresAt, updated_at: new Date().toISOString() });
+    .upsert({ ...editionColumns(edition), overlay_text: text, overlay_expires_at: expiresAt, updated_at: new Date().toISOString() });
   if (error) {
     return NextResponse.json({ ok: false, error: "Could not post the announcement." }, { status: 500 });
   }

@@ -1,5 +1,6 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import type { ArchivedTeeSetup } from "@/lib/handicap/types";
+import { editionColumns, maroonEdition } from "@/lib/platform/editionScope";
 
 export interface RoundFormatSetup {
   seasonYear: number;
@@ -26,7 +27,7 @@ export async function getRoundFormatSetups(): Promise<RoundFormatSetup[]> {
 export async function saveRoundFormatSetup(setup: RoundFormatSetup) {
   const service = createSupabaseServiceRoleClient();
   const { error } = await service.from("round_format_setups").upsert({
-    season_year: setup.seasonYear, round: setup.round, course_name: setup.courseName,
+    ...editionColumns(maroonEdition(setup.seasonYear)), round: setup.round, course_name: setup.courseName,
     played_on: setup.datePlayed, tee_setup: setup.teeSetup, source: "archive", updated_at: new Date().toISOString(),
   }, { onConflict: "season_year,round" });
   if (error) throw new Error("Could not save round setup. Apply round_format_setups.sql before using the archive editor.");

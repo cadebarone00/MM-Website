@@ -1,6 +1,7 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isStaleSnapshot, latestMatchInput, needsRepublish, type Service } from "./futureInputs";
 import { loadIndividualInputs, type IndividualInputs } from "./individualInputs";
+import { editionColumns, editionFilter, editionYearParam, type EditionScope } from "@/lib/platform/editionScope";
 import {
   TOTAL_BIRDIES_MODEL_VERSION,
   TOTAL_BIRDIES_SIMULATIONS,
@@ -12,14 +13,14 @@ import {
 } from "./totalBirdiesFuture";
 
 export async function publishTotalBirdiesOdds(service: Service, inputs: IndividualInputs) {
-  const { seasonYear, players, rounds, played, history, blockers } = inputs;
+  const { edition, players, rounds, played, history, blockers } = inputs;
   const soFar = birdiesSoFar(players, rounds, played);
   let holesRemaining = 0;
   for (const player of players) for (const round of rounds) for (const hole of round.holes) if (played(player, round.round, hole.hole) === null) holesRemaining += 1;
 
   const line = blockers.length || holesRemaining === 0 ? null : featuredLine(simulateTotalBirdies({ players, rounds, history, played }));
   const row = {
-    season_year: seasonYear,
+    ...editionColumns(edition),
     model_version: TOTAL_BIRDIES_MODEL_VERSION,
     line: line?.line ?? null,
     over_probability: line?.over ?? null,
@@ -36,7 +37,7 @@ export async function publishTotalBirdiesOdds(service: Service, inputs: Individu
 
   if (!blockers.length && holesRemaining === 0) {
     // Settles only once every match is also closed out; a no-op otherwise.
-    const { error: settleError } = await service.rpc("settle_total_birdies_if_final", { p_year: seasonYear });
+    const { error: settleError } = await service.rpc("settle_total_birdies_if_final", { p_year: editionYearParam(edition) });
     if (settleError) console.error("Total Birdies settlement check failed:", settleError.message);
   }
   return row;
@@ -63,19 +64,20 @@ export type TotalBirdiesState = {
 };
 
 /** The public read model and the bet route's check; `selfHeal` works as for Low Individual. */
-export async function currentTotalBirdiesState(seasonYear: number, { selfHeal = false }: { selfHeal?: boolean } = {}): Promise<TotalBirdiesState> {
+export async function currentTotalBirdiesState(edition: EditionScope, { selfHeal = false }: { selfHeal?: boolean } = {}): Promise<TotalBirdiesState> {
+  const { seasonYear } = edition;
   const service = createSupabaseServiceRoleClient();
   const marketKey = totalBirdiesMarketKey(seasonYear);
   const read = () =>
     Promise.all([
-      service.from("total_birdies_odds_snapshots").select("*").eq("season_year", seasonYear).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      service.from("total_birdies_odds_snapshots").select("*").match(editionFilter(edition)).order("created_at", { ascending: false }).limit(1).maybeSingle(),
       service.from("wagers_market_settlements").select("winning_selection_key").eq("market_key", marketKey).maybeSingle(),
-      latestMatchInput(service, seasonYear),
+      latestMatchInput(service, edition),
     ]);
   let [{ data: snapshot, error }, { data: settlement }, latestInput] = await read();
   if (error) throw new Error(error.message);
   if (selfHeal && !settlement && needsRepublish(snapshot, latestInput)) {
-    await publishTotalBirdiesOdds(service, await loadIndividualInputs(service, seasonYear));
+    await publishTotalBirdiesOdds(service, await loadIndividualInputs(service, edition));
     [{ data: snapshot, error }, { data: settlement }, latestInput] = await read();
     if (error) throw new Error(error.message);
   }

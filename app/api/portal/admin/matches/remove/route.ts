@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 export async function POST(request: Request) {
   const host = await requireHost();
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Match not found." }, { status: 404 });
   }
 
-  const { data: sessionRow } = await service.from("live_round_state").select("matchups_locked").eq("season_year", match.season_year).eq("round", match.round).single();
+  const { data: sessionRow } = await service.from("live_round_state").select("matchups_locked").match(editionFilter(maroonEdition(match.season_year))).eq("round", match.round).single();
   if (sessionRow?.matchups_locked) {
     return NextResponse.json({ ok: false, error: "Unlock this session's matchups before removing a match." }, { status: 400 });
   }

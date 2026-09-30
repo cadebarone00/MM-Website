@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getActiveSeasonYear } from "@/lib/live/activeSeason";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 type Hole = { number?: number; par?: number; yards?: number };
 
@@ -14,10 +15,10 @@ export async function GET(_: Request, { params }: { params: Promise<{ playerSlug
   const seasonYear = await getActiveSeasonYear();
   const service = createSupabaseServiceRoleClient();
   const [{ data: settings, error: settingsError }, { data: roster, error: rosterError }, { data: rounds, error: roundsError }, { data: boxes, error: boxesError }, { data: courses, error: coursesError }] = await Promise.all([
-    service.from("live_tournament_settings").select("round_count").eq("season_year", seasonYear).maybeSingle(),
-    service.from("live_roster").select("player_slug").eq("season_year", seasonYear).eq("player_slug", playerSlug).maybeSingle(),
-    service.from("live_round_state").select("round, course_id, format, course_locked, matchups_locked").eq("season_year", seasonYear).order("round"),
-    service.from("live_match_boxes").select("round, format, maroon_players, white_players").eq("season_year", seasonYear),
+    service.from("live_tournament_settings").select("round_count").match(editionFilter(maroonEdition(seasonYear))).maybeSingle(),
+    service.from("live_roster").select("player_slug").match(editionFilter(maroonEdition(seasonYear))).eq("player_slug", playerSlug).maybeSingle(),
+    service.from("live_round_state").select("round, course_id, format, course_locked, matchups_locked").match(editionFilter(maroonEdition(seasonYear))).order("round"),
+    service.from("live_match_boxes").select("round, format, maroon_players, white_players").match(editionFilter(maroonEdition(seasonYear))),
     service.from("live_courses").select("id, name, holes"),
   ]);
   const error = settingsError ?? rosterError ?? roundsError ?? boxesError ?? coursesError;

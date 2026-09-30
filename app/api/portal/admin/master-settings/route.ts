@@ -5,6 +5,7 @@ import { isValidSeasonYear } from "@/lib/live/activeSeason";
 import { TIMEZONE_IDS } from "@/lib/data/timezones";
 import { deriveMatchTeeTime, teeTimeSlotForMatch } from "@/lib/live/sessionTeeTimes";
 import type { MatchFormat } from "@/lib/live/types";
+import { editionColumns, editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 // The timezone itself saved fine; only the follow-up re-derivation of
 // already-built matches failed. Same shape as the lock route's "matchups
@@ -52,12 +53,12 @@ export async function POST(request: Request) {
   const { data: priorSettings } = await service
     .from("live_tournament_settings")
     .select("timezone")
-    .eq("season_year", year)
+    .match(editionFilter(maroonEdition(year)))
     .maybeSingle();
   const priorTimezone = priorSettings?.timezone ?? "America/Los_Angeles";
 
   const { error } = await service.from("live_tournament_settings").upsert({
-    season_year: year,
+    ...editionColumns(maroonEdition(year)),
     begin_date: beginDate,
     end_date: endDate,
     dates_locked: datesLocked,
@@ -89,7 +90,7 @@ export async function POST(request: Request) {
     const { data: sessionRows, error: sessionsError } = await service
       .from("live_round_state")
       .select("round, date, match_tee_times")
-      .eq("season_year", year);
+      .match(editionFilter(maroonEdition(year)));
     if (sessionsError) {
       console.error("Timezone change: could not load this year's sessions to re-derive tee times:", sessionsError);
       return NextResponse.json({ ok: false, error: REDERIVE_FAILED }, { status: 500 });
@@ -100,7 +101,7 @@ export async function POST(request: Request) {
       const { data: matchRows, error: matchesError } = await service
         .from("live_match_boxes")
         .select("id, box_number, format, tee_time")
-        .eq("season_year", year)
+        .match(editionFilter(maroonEdition(year)))
         .eq("round", sessionRow.round);
       if (matchesError) {
         console.error("Timezone change: could not load a session's matches to re-derive tee times:", matchesError);

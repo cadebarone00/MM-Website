@@ -8,6 +8,7 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { matchStateChangedRule, matchWonRule, roundFinalRule, roundStartedRule, scorePostedRule } from "./rules";
 import type { BroadcastEventDraft, RawBroadcastEvent } from "./types";
+import { editionColumns, editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 function draftFor(event: RawBroadcastEvent, now: Date): BroadcastEventDraft {
   switch (event.kind) {
@@ -64,6 +65,7 @@ function dedupFilters(event: RawBroadcastEvent): [string, string | number][] {
 }
 
 export async function publishBroadcastEvent(event: RawBroadcastEvent): Promise<void> {
+const edition = maroonEdition(event.seasonYear);
   const now = new Date();
   const draft = draftFor(event, now);
   const columns = columnsFor(event);
@@ -73,7 +75,7 @@ export async function publishBroadcastEvent(event: RawBroadcastEvent): Promise<v
   let query = service
     .from("broadcast_events")
     .select("id")
-    .eq("season_year", event.seasonYear)
+    .match(editionFilter(edition))
     .eq("kind", event.kind)
     .in("status", ["pending", "queued"]);
   for (const [column, value] of dedupFilters(event)) {
@@ -84,7 +86,7 @@ export async function publishBroadcastEvent(event: RawBroadcastEvent): Promise<v
   existingId = existing?.id ?? null;
 
   const row = {
-    season_year: event.seasonYear,
+    ...editionColumns(edition),
     kind: event.kind,
     priority: draft.priority,
     status: draft.status,

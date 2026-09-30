@@ -9,18 +9,20 @@ import { SEASON_YEARS } from "@/lib/live/seasonYears";
 import { getRequestWebsiteSection, getWebsiteSettings } from "@/lib/website/settingsServer";
 import { resolveDisplayYear, type CatalogScope } from "@/lib/website/settings";
 import { getActiveSeasonYear } from "@/lib/live/activeSeason";
+import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 export function seasonSlug(year: number) { return pastTournaments.find(row => row.year === year)?.slug ?? (year === nextTournament.year ? nextTournament.slug : year + "-maroon-masters"); }
 export function nativeSeasonYear(slug: string): number | null { return SEASON_YEARS.find(year => seasonSlug(year) === slug) ?? null; }
 
 export const getSeasonTournament = cache(async (year: number): Promise<Tournament> => {
+const edition = maroonEdition(year);
   const historical = pastTournaments.find(row => row.year === year);
   if (historical) return historical;
   const service = createSupabaseServiceRoleClient();
   const [settings, snapshot, roundRows] = await Promise.all([
-    service.from("live_tournament_settings").select("venue_name, venue_locked, begin_date, end_date, dates_locked").eq("season_year",year).maybeSingle(),
-    buildLiveTournamentSnapshot(year,{confirmedOnly:true}),
-    service.from("live_round_state").select("round, date").eq("season_year",year).order("round"),
+    service.from("live_tournament_settings").select("venue_name, venue_locked, begin_date, end_date, dates_locked").match(editionFilter(edition)).maybeSingle(),
+    buildLiveTournamentSnapshot(edition,{confirmedOnly:true}),
+    service.from("live_round_state").select("round, date").match(editionFilter(edition)).order("round"),
   ]);
   const payload = playerProfilePayload(snapshot, Object.keys(snapshot.players)[0] ?? "");
   const dates = [...new Set((roundRows.data ?? []).flatMap(row => row.date ? [row.date as string] : []))].sort();
@@ -43,8 +45,9 @@ export const getSeasonCatalog = cache(async (requestedSection?: CatalogScope | n
   const selectedYear = requestedSection === null || section === "operations" ? null : websiteSettings[section];
   const calendar = await getSeasonCalendar();
   const year = section === "operations" ? await getActiveSeasonYear() : resolveDisplayYear(selectedYear, calendar, nextTournament.year);
+  const edition = maroonEdition(year);
   const service = createSupabaseServiceRoleClient();
-  const { data: settings } = await service.from("live_tournament_settings").select("venue_name, venue_locked, begin_date, end_date, dates_locked").eq("season_year",year).maybeSingle();
+  const { data: settings } = await service.from("live_tournament_settings").select("venue_name, venue_locked, begin_date, end_date, dates_locked").match(editionFilter(edition)).maybeSingle();
   const historical = pastTournaments.find(row => row.year === year);
   const base = historical ? { ...historical, liveAt: historical.startDate + "T00:00:00" } : year === nextTournament.year ? nextTournament : { ...nextTournament, year, slug: seasonSlug(year), editionLabel: "Maroon Tournament " + year, venue: "Venue pending", location: "", dateLabel: "Dates pending", startDate: "", endDate: "", liveAt: "" };
   const current: UpcomingTournament = { ...base, venue: settings?.venue_locked && settings.venue_name ? settings.venue_name : base.venue, startDate: settings?.dates_locked && settings.begin_date ? settings.begin_date : base.startDate, endDate: settings?.dates_locked && settings.end_date ? settings.end_date : base.endDate };

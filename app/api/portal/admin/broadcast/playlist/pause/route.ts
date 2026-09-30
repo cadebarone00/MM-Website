@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getBroadcastDisplayYear } from "@/lib/broadcast/displayYear";
+import { editionColumns, maroonEdition } from "@/lib/platform/editionScope";
 
 /** Clears the shared anchor so audio stops for Admin and all live listeners. */
 export async function POST() {
@@ -9,10 +10,11 @@ export async function POST() {
   if (!host) return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
 
   const seasonYear = await getBroadcastDisplayYear();
+  const edition = maroonEdition(seasonYear);
   const service = createSupabaseServiceRoleClient();
   const { error } = await service
     .from("broadcast_state")
-    .upsert({ season_year: seasonYear, audio_track_id: null, audio_started_at: null, updated_at: new Date().toISOString() });
+    .upsert({ ...editionColumns(edition), audio_track_id: null, audio_started_at: null, updated_at: new Date().toISOString() });
   if (error) {
     console.error("playlist/pause: failed to clear broadcast audio", error);
     return NextResponse.json({ ok: false, error: "Could not pause the playlist." }, { status: 500 });

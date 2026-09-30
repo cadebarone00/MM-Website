@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { editionColumns, editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 /** Admin's per-match tee-time override. The session must already be armed. */
 export async function POST(request: Request) {
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
   const { data: session } = await service
     .from("live_round_state")
     .select("course_locked, matchups_locked, started")
-    .eq("season_year", match.season_year)
+    .match(editionFilter(maroonEdition(match.season_year)))
     .eq("round", match.round)
     .single();
   if (!session?.course_locked || !session.matchups_locked || !session.started) {
@@ -27,6 +28,6 @@ export async function POST(request: Request) {
 
   const { error } = await service.from("live_match_boxes").update({ state: "Live", started: true, started_at: new Date().toISOString() }).eq("id", id);
   if (error) return NextResponse.json({ ok: false, error: "Could not start this match." }, { status: 500 });
-  await service.from("live_score_audit_events").insert({ season_year: match.season_year, match_box_id: match.id, round: match.round, actor_profile_id: host.userId, kind: "match_started" });
+  await service.from("live_score_audit_events").insert({ ...editionColumns(maroonEdition(match.season_year)), match_box_id: match.id, round: match.round, actor_profile_id: host.userId, kind: "match_started" });
   return NextResponse.json({ ok: true });
 }

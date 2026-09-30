@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getActiveSeasonYear } from "@/lib/live/activeSeason";
+import { getActiveEdition } from "@/lib/live/activeSeason";
 import { currentTotalBirdiesState } from "@/lib/wagers/totalBirdiesPricing";
 
 export const maxDuration = 60;
@@ -8,7 +8,7 @@ export const maxDuration = 60;
  * when they're missing or out of date (see currentTotalBirdiesState). */
 export async function GET() {
   try {
-    const state = await currentTotalBirdiesState(await getActiveSeasonYear(), { selfHeal: true });
+    const state = await currentTotalBirdiesState(await getActiveEdition(), { selfHeal: true });
     return NextResponse.json({ ok: true, ...state }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Total Birdies read failed:", error);

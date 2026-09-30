@@ -18,6 +18,7 @@ import type { RosterEntry } from "@/lib/live/types";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { getAllPlayerRows } from "@/lib/portal/allPlayers";
 import type { Team } from "./types";
+import { editionFilter, maroonEdition, type EditionScope } from "@/lib/platform/editionScope";
 
 export interface UpcomingRoundScheduleItem {
   session: number;
@@ -60,9 +61,9 @@ export async function getNextTournament(): Promise<UpcomingTournament> {
  * to the public VenueCourse shape. Empty until a host assigns at least one
  * course to a round.
  */
-async function getActiveSeasonCourses(seasonYear: number): Promise<VenueCourse[]> {
+async function getActiveSeasonCourses(edition: EditionScope): Promise<VenueCourse[]> {
   const service = createSupabaseServiceRoleClient();
-  const { data: rounds } = await service.from("live_round_state").select("course_id").eq("season_year", seasonYear).eq("course_locked", true);
+  const { data: rounds } = await service.from("live_round_state").select("course_id").match(editionFilter(edition)).eq("course_locked", true);
   const courseIds = [...new Set((rounds ?? []).map((round) => round.course_id).filter((id): id is string => Boolean(id)))];
   if (!courseIds.length) return [];
 
@@ -78,7 +79,7 @@ async function getActiveSeasonCourses(seasonYear: number): Promise<VenueCourse[]
  */
 export async function getNextVenue(): Promise<VenueSchedule> {
   const current = await getNextTournament();
-  const courses = await getActiveSeasonCourses(current.year);
+  const courses = await getActiveSeasonCourses(maroonEdition(current.year));
   return { year: current.year, venueName: current.venue, courses, sessions: [] };
 }
 
@@ -86,9 +87,10 @@ export async function getNextVenue(): Promise<VenueSchedule> {
 export async function getVenueBySlugAsync(slug: string): Promise<VenueSchedule | undefined> {
   const year = nativeSeasonYear(slug);
   if (year) {
-    const courses = await getActiveSeasonCourses(year);
+    const edition = maroonEdition(year);
+    const courses = await getActiveSeasonCourses(edition);
     const service = createSupabaseServiceRoleClient();
-    const { data: settings } = await service.from("live_tournament_settings").select("venue_name, venue_locked").eq("season_year",year).maybeSingle();
+    const { data: settings } = await service.from("live_tournament_settings").select("venue_name, venue_locked").match(editionFilter(edition)).maybeSingle();
     return { year, venueName: settings?.venue_locked ? settings.venue_name ?? undefined : undefined, courses, sessions: [] };
   }
   return pastVenues[slug];
@@ -111,11 +113,12 @@ export async function getUpcomingRoundSchedule(seasonYear?: number): Promise<Upc
   const active = { season_year: (await getSeasonCatalog()).nextTournament.year };
 
   if (!active) return [];
+  const edition = maroonEdition(seasonYear ?? active.season_year);
 
   const { data: rounds, error } = await service
     .from("live_round_state")
     .select("round, date, format, course_id")
-    .eq("season_year", seasonYear ?? active.season_year)
+    .match(editionFilter(edition))
     .eq("course_locked", true)
     .order("round");
 
@@ -145,12 +148,13 @@ export async function getUpcomingRoundSchedule(seasonYear?: number): Promise<Upc
 export async function getConfirmedRoster(section?: WebsiteSection): Promise<RosterEntry[]> {
   const service = createSupabaseServiceRoleClient();
   const active = { season_year: (await getSeasonCatalog(section)).nextTournament.year };
+  const edition = maroonEdition(active.season_year);
 
   if (!active) return [];
 
   const [{ data: roster, error }, { data: locks, error: locksError }] = await Promise.all([
-    service.from("live_roster").select("player_slug, team").eq("season_year", active.season_year),
-    service.from("live_roster_assignment_locks").select("player_slug").eq("season_year", active.season_year),
+    service.from("live_roster").select("player_slug, team").match(editionFilter(edition)),
+    service.from("live_roster_assignment_locks").select("player_slug").match(editionFilter(edition)),
   ]);
   if (error || locksError || !roster?.length) return [];
 

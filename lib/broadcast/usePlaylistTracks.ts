@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { PlaylistTrack } from "@/lib/broadcast/playlist";
+import { editionRealtimeFilter, maroonEdition } from "@/lib/platform/editionScope";
 
 /**
  * Keeps the playlist track list fresh with no page refresh — same
@@ -28,7 +29,7 @@ export function usePlaylistTracks(seasonYear: number, initial: PlaylistTrack[]):
     const supabase = createSupabaseBrowserClient();
     const channel = supabase
       .channel(`broadcast-playlist-${seasonYear}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "broadcast_playlist_tracks", filter: `season_year=eq.${seasonYear}` }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "broadcast_playlist_tracks", filter: editionRealtimeFilter(maroonEdition(seasonYear)) }, reload)
       .subscribe();
 
     return () => {

@@ -8,6 +8,7 @@ import { latestMatchInput, type Service } from "./futureInputs";
 import { loadTournamentSetup } from "./loadTournamentSetup";
 import { MIN_HISTORY_HOLES, fieldProxyAssumption } from "./fieldProxy";
 import { missingHistory, type HistoryRow, type IndividualRound, type PlayedScore } from "./lowIndividualFuture";
+import type { EditionScope } from "@/lib/platform/editionScope";
 
 /**
  * Shared inputs for the individual-ball futures (Low Individual, Total
@@ -16,6 +17,7 @@ import { missingHistory, type HistoryRow, type IndividualRound, type PlayedScore
  * Loaded once per refresh and handed to each market's publisher.
  */
 export type IndividualInputs = {
+  edition: EditionScope;
   seasonYear: number;
   players: string[];
   rounds: IndividualRound[];
@@ -32,9 +34,10 @@ export type IndividualInputs = {
 type Archive = Awaited<ReturnType<typeof getCombinedCareerArchive>>;
 
 /** Pass `archive` to reuse one already loaded for this refresh. */
-export async function loadIndividualInputs(service: Service, seasonYear: number, archive?: Archive): Promise<IndividualInputs> {
-  const [inputsAsOf, snapshot] = await Promise.all([latestMatchInput(service, seasonYear), buildLiveTournamentSnapshot(seasonYear, { confirmedOnly: true })]);
-  const setup = await loadTournamentSetup(service, seasonYear, snapshot);
+export async function loadIndividualInputs(service: Service, edition: EditionScope, archive?: Archive): Promise<IndividualInputs> {
+  const { seasonYear } = edition;
+  const [inputsAsOf, snapshot] = await Promise.all([latestMatchInput(service, edition), buildLiveTournamentSnapshot(edition, { confirmedOnly: true })]);
+  const setup = await loadTournamentSetup(service, edition, snapshot);
   const players = [...setup.roster.maroon, ...setup.roster.white].sort();
   const blockers = [...setup.blockers];
   // Foursome rounds produce no individual scores.
@@ -78,5 +81,5 @@ export async function loadIndividualInputs(service: Service, seasonYear: number,
     blockers.push(...missingPlayers.map((player) => `${getPlayerDisplayName(player)} doesn't have enough Career Archive history to price.`));
   }
 
-  return { seasonYear, players, rounds, played, history, blockers, assumptions, inputsAsOf };
+  return { edition, seasonYear, players, rounds, played, history, blockers, assumptions, inputsAsOf };
 }
