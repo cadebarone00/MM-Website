@@ -29,7 +29,7 @@ export type FutureRound = {
   round: number;
   format: FutureFormat;
   courseKey: string;
-  /** null until Tiger locks this round's pairings. */
+  /** null until Admin locks this round's pairings. */
   matches: FutureMatch[] | null;
 };
 
@@ -51,7 +51,7 @@ export function pairKey(format: FutureFormat, courseKey: string, maroon: string[
   return `${format}|${courseKey}|${[...maroon].sort().join("+")}|${[...white].sort().join("+")}`;
 }
 
-/** Every side Tiger could post from one team: each player (Singles) or each two-player partnership. */
+/** Every side Admin could post from one team: each player (Singles) or each two-player partnership. */
 export function possibleSides(players: string[], size: 1 | 2): string[][] {
   if (size === 1) return players.map((player) => [player]);
   const sides: string[][] = [];
@@ -202,9 +202,9 @@ export type TeamWinnerOdds = { maroon: number | null; tie: number | null; white:
 
 export function teamWinnerMarket(seasonYear: number, odds: TeamWinnerOdds): Market {
   const selections = [
-    { key: "maroon", label: `Maroon wins the ${seasonYear} Maroon Masters`, odds: odds.maroon },
-    { key: "tie", label: `The ${seasonYear} Maroon Masters ends tied`, odds: odds.tie },
-    { key: "white", label: `White wins the ${seasonYear} Maroon Masters`, odds: odds.white },
+    { key: "maroon", label: `Maroon wins the ${seasonYear} Maroon Tournament`, odds: odds.maroon },
+    { key: "tie", label: `The ${seasonYear} Maroon Tournament ends tied`, odds: odds.tie },
+    { key: "white", label: `White wins the ${seasonYear} Maroon Tournament`, odds: odds.white },
   ];
   return {
     marketKey: teamWinnerMarketKey(seasonYear),

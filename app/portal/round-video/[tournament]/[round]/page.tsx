@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTournament } from "@/lib/data";
 import { getArchivedRoundScorecard, getShotVideoUrls } from "@/lib/data/archivedScorecards";
-import { ScorecardEditor } from "@/components/portal/tiger/ScorecardEditor";
+import { ScorecardEditor } from "@/components/portal/admin/ScorecardEditor";
 
 export default async function PlayerRoundVideoEditorPage({ params }: { params: Promise<{ tournament: string; round: string }> }) {
   const supabase = await createSupabaseServerClient();

@@ -4,13 +4,13 @@
 
 Make one confirmed live-score event the authoritative source for every
 live-facing feature: match-play status, individual leaderboard, player
-portal, Career Archive, odds, Wagers, and broadcast. Tiger retains the
+portal, Career Archive, odds, Wagers, and broadcast. Admin retains the
 ability to edit scheduled/locked matchups and to perform the final match
 closeout before a wager can settle.
 
-This supersedes the earlier scoring spec's statement that a Tiger review is
+This supersedes the earlier scoring spec's statement that a Admin review is
 the first time a score becomes official. A score becomes **official live**
-when its assigned scorer and its player agree. Tiger's closeout remains the
+when its assigned scorer and its player agree. Admin's closeout remains the
 final accounting/audit action, not the routine publishing mechanism.
 
 ## Terms
@@ -20,23 +20,23 @@ final accounting/audit action, not the routine publishing mechanism.
 | Active roster | The twelve players assigned to Maroon/White for one season: six per team. |
 | Non-playing player | A registered player not on that season's active roster. They show `Did Not Play` and have no live schedule/scoring assignment. |
 | Match lock | A publishable but editable setup state. It creates/updates downstream records; it does not freeze them. |
-| Armed | A round has been started by Tiger; its match boxes wait for their own tee time. |
-| Upcoming match | Locked/armed match before its tee time and before a Tiger override. |
-| Live match | Tee time reached or Tiger used Start Match. |
+| Armed | A round has been started by Admin; its match boxes wait for their own tee time. |
+| Upcoming match | Locked/armed match before its tee time and before a Admin override. |
+| Live match | Tee time reached or Admin used Start Match. |
 | Draft/disputed score | A player's own entry and assigned opponent's entry are missing or disagree. It is not official. |
 | Confirmed score | The player's self-reported stroke count equals the official score entered by their assigned scorer. |
 | Published hole | A confirmed score is included in authoritative match state and all downstream views. |
-| Closeout | Tiger's final review of a completed match. It freezes the result and permits wager settlement. |
+| Closeout | Admin's final review of a completed match. It freezes the result and permits wager settlement. |
 
 ## 1. Season roster and setup
 
-1. Tiger may maintain more than twelve site players.
-2. For each season, Tiger selects exactly six Maroon and six White active
+1. Admin may maintain more than twelve site players.
+2. For each season, Admin selects exactly six Maroon and six White active
    roster players before matchups can be locked.
 3. Only active-roster players can receive a match box, Player Portal
    upcoming match, scoring access, archive round shell, or live-odds input
    for that season.
-4. Tiger configures round count, dates, course, format, tee times, and match
+4. Admin configures round count, dates, course, format, tee times, and match
    boxes. A box is a match and contains its ordered player positions.
 5. The ordered positions define scoring assignments:
    - Singles: each player scores the other.
@@ -57,17 +57,17 @@ When a round has a course/format and matchups are locked:
 3. Calculate and save a **pre-round odds snapshot** for that match. Every
    odds display reads that one snapshot/output contract.
 4. Editing a locked course, tee time, player position, or matchup remains
-   permitted to Tiger. The system must update the affected archive shells,
+   permitted to Admin. The system must update the affected archive shells,
    public/portal match record, and pre-round odds snapshot. It must reject
-   destructive edits once an official live score exists unless Tiger follows
+   destructive edits once an official live score exists unless Admin follows
    an explicit correction flow.
 
 ## 3. Starting a round and a match
 
-1. Tiger's **Start Round** changes a fully configured round to `armed`.
+1. Admin's **Start Round** changes a fully configured round to `armed`.
    It does not automatically make every match live.
 2. Each match becomes live at its own tee time while its round is armed.
-3. Tiger's **Start Match** button overrides the tee time for that one box.
+3. Admin's **Start Match** button overrides the tee time for that one box.
 4. Before a match is live, public surfaces show its tee time. Once live,
    they show the live indicator and blank `THRU` until the first published
    hole. Thereafter they show `THRU <latest consecutively completed hole>`.
@@ -153,10 +153,10 @@ The Match Simulator model is the one odds engine and model-version contract.
    from the confirmed clinch; no score is invented for an unfinished hole.
 2. Players may submit only after all required 18-hole score entries have
    been confirmed. Singles/Fourball submissions also require their personal
-   putt/FIR/GIR entries. Their submissions surface a Tiger review card
+   putt/FIR/GIR entries. Their submissions surface a Admin review card
    containing player totals, match status, disputes, and any unconfirmed
    holes.
-3. Tiger may correct an official score before closeout. The normal publisher
+3. Admin may correct an official score before closeout. The normal publisher
    recalculates archive, standings, odds, and public views.
 4. **Close Out Match** is available only when the required match result and
    submitted/confirmed data satisfy the format's completion rules. It is the
@@ -185,7 +185,7 @@ The Match Simulator model is the one odds engine and model-version contract.
 
 Persist who/what/when for: roster assignment, match lock/update, arm/start,
 each player and opponent score entry, confirmation/dispute, `X` conversion,
-Tiger correction, odds snapshot, player submission, and closeout/wager
+Admin correction, odds snapshot, player submission, and closeout/wager
 settlement. This is required both for corrections and future probability
 visualizations such as tournament-win chances.
 
@@ -199,7 +199,7 @@ markets. It is not a real season.
   odds, exactly as a real live tournament would.
 - 2034 archive rows are excluded from normal Career Stats and every real
   season's odds model inputs.
-- Tiger can use **Reset Test Season** to reverse test-only wager balance
+- Admin can use **Reset Test Season** to reverse test-only wager balance
   effects, delete only 2034 roster/setup/match/score/archive/odds/audit and
   broadcast rows, and return the active season to 2027.
 - The reset action is host-only, requires an explicit confirmation, and never
@@ -266,7 +266,7 @@ state timestamp used to price it.
   individual scorecard.
 - A live market is closed when its outcome becomes mathematically certain or
   when the round is closed out, whichever comes first. Settlement remains
-  gated by Tiger's final closeout/audit step.
+  gated by Admin's final closeout/audit step.
 - Fourball `X` / double-par entries are a valid match outcome but are not a
   completed individual performance sample; they cannot create a birdie and
   remain excluded from future player-prop model inputs.
@@ -279,7 +279,7 @@ instead of placeholder odds, a bet button, or a fabricated line.
 
 To post odds, all of the following must be true for the active season:
 
-1. Tiger has configured the tournament round count.
+1. Admin has configured the tournament round count.
 2. The player is on that season's active roster.
 3. Every tournament round has a selected and locked course with a complete
    18-hole par/yards layout.
@@ -292,9 +292,9 @@ The readiness card reports the exact failed item by round. When the final
 requirement becomes true, the market may create its first saved model
 snapshot and show the featured line plus alternate-line slider.
 
-### Tiger publication rule
+### Admin publication rule
 
-Tiger Center's **Wager Types** is the publishing control room for public
+Admin Center's **Wager Types** is the publishing control room for public
 Wagers. It maintains a catalogue card for each supported public market,
 showing its plain-language description, who it applies to, and its exact
 public placement. For example:
@@ -303,7 +303,7 @@ public placement. For example:
 - Applies to: every active player
 - Public slot: `Players → Selected Player → Futures`
 
-Tiger presses **Submit Wager** to explicitly publish that market type. Public
+Admin presses **Submit Wager** to explicitly publish that market type. Public
 Wagers then displays the corresponding market card, but the card remains
 non-bettable and reports its readiness requirements until the model can
 produce a legitimate saved price. Publication never authorizes placeholder
@@ -320,7 +320,7 @@ or manually invented odds.
    arm/tee-time/start-match state, public upcoming/live `THRU` surfaces.
 4. **Odds:** invoke the canonical model on lock and confirmed-hole publish;
    store/publish snapshots.
-5. **Closeout:** Tiger review card, correction flow, standings/points,
+5. **Closeout:** Admin review card, correction flow, standings/points,
    settlement gate.
 6. **Verification:** unit tests for assignment/confirmation and match state;
    integration/manual walkthrough for Supabase realtime, tee-time transitions,
@@ -330,5 +330,5 @@ or manually invented odds.
 
 - Tournament-win probability visualizations.
 - Automated settlement reversal after a completed payout; corrections after
-  closeout require an explicit Tiger/admin policy.
+  closeout require an explicit Admin/admin policy.
 - Offline score-entry queueing.

@@ -2,7 +2,7 @@ import Image from "next/image";
 import type { Metadata } from "next";
 import { MaroonNavigation } from "@/components/maroon/MaroonNavigation";
 
-export const metadata: Metadata = { title: "The Maroon Journal | The Maroon Masters", description: "Courses, equipment, teaching, and news from The Maroon Masters." };
+export const metadata: Metadata = { title: "The Maroon Journal | The Maroon", description: "Courses, equipment, teaching, and news from The Maroon." };
 
 export default function MaroonLayout({ children }: { children: React.ReactNode }) {
   return <main className="bg-cream-50 font-title">

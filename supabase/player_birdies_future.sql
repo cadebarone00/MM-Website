@@ -141,7 +141,7 @@ revoke all on function settle_player_birdies_if_final(integer) from public, anon
 grant execute on function settle_player_birdies_if_final(integer) to service_role;
 
 -- Replaces the shared closeout trigger function: every match closeout
--- (inside Tiger's Close Out Match transaction) now checks all five futures.
+-- (inside Admin's Close Out Match transaction) now checks all five futures.
 create or replace function live_official_state_settle_team_winner() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin

@@ -11,7 +11,7 @@ import { PlayerAreaNav } from "@/components/nav/PlayerAreaNav";
 import type { NextTournamentOverride } from "@/lib/data/types";
 import { AreaNavigation } from "./AreaNavigation";
 import { RoundExitProvider } from "./RoundExit";
-import { WebsiteFrameBridge } from "@/components/portal/tiger/WebsiteFrameBridge";
+import { WebsiteFrameBridge } from "@/components/portal/admin/WebsiteFrameBridge";
 
 /**
  * Picks the site chrome for the current route. `/broadcast` gets nothing at

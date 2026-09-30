@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
         headers: [
           // Tells browsers to only ever reach this site over HTTPS, never HTTP.
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-          // Tiger embeds real website pages on this origin; other origins cannot frame them.
+          // Admin embeds real website pages on this origin; other origins cannot frame them.
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           // Stops the browser from guessing a file's type in a way that can be tricked into running as script.
           { key: "X-Content-Type-Options", value: "nosniff" },
@@ -18,13 +18,13 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // Tiger's Live Scoring Page Editor puts this one page inside its own iframes to show two phones side by side.
+        // Admin's Live Scoring Page Editor puts this one page inside its own iframes to show two phones side by side.
         // Same-origin only, so the site-wide SAMEORIGIN above still blocks every other site from framing it.
         source: "/portal/admin/scoring-preview/mobile",
         headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }],
       },
       {
-        // The Tiger portal's Broadcast Controls preview (and Mock Run) puts
+        // The Admin portal's Broadcast Controls preview (and Mock Run) puts
         // /broadcast inside its own iframe (BroadcastPreview.tsx). Same-origin
         // only, so the site-wide SAMEORIGIN above still blocks every other site
         // from framing it.

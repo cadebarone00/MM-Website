@@ -3,7 +3,7 @@ import { careerArchiveRecords, careerArchiveTeamRecords } from "./careerArchive"
 import { getHistoricalCareerRecords, getHandicapCareerRecords, getLiveCareerArchiveRecords, getLiveCareerArchiveTeamRecords } from "./careerStatsDatabase";
 import { getPlayerSlug } from "./players";
 
-/** Shared input for Tiger's Career Stats, the model lab, and published match odds. */
+/** Shared input for Admin's Career Stats, the model lab, and published match odds. */
 export async function getCombinedCareerArchive(options: { includeTestSeason?: boolean } = {}) {
   const [live, team, other, edited] = await Promise.all([
     getLiveCareerArchiveRecords(options), getLiveCareerArchiveTeamRecords(options), getHandicapCareerRecords(), getHistoricalCareerRecords(),

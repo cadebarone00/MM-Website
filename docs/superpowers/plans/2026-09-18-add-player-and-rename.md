@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Let Tiger add a brand-new player (name + email, nothing else) and
+**Goal:** Let Admin add a brand-new player (name + email, nothing else) and
 correct any player's visible name, from a new Global Tools "Players" page —
 while the existing per-year Players & Teams page shrinks to just name +
 team assignment.
@@ -34,10 +34,10 @@ React 19 Client Components, Supabase (service-role reads/writes), `node:test`.
 - No photo upload, no player-removal/undo tool, no team pre-assignment from
   the Add Player form — all explicitly out of scope.
 - Every new route follows the exact `requireHost()` + service-role-client
-  shape every existing `tiger/**` route already uses, and gets a
+  shape every existing `admin/**` route already uses, and gets a
   `route.test.ts` covering only "an unauthenticated request never touches
   Supabase" (the one piece `node:test` can exercise without a real Supabase
-  project — the same documented limitation every existing `tiger/**` route
+  project — the same documented limitation every existing `admin/**` route
   test already has).
 - `npm test`, `npx tsc --noEmit`, `npm run lint`, and `npm run build` must
   all stay clean after every task.
@@ -256,11 +256,11 @@ git commit -m "feat: add getAllPlayerRows shared player list helper"
 
 ---
 
-## Task 4: `POST /api/portal/tiger/player-name`
+## Task 4: `POST /api/portal/admin/player-name`
 
 **Files:**
-- Create: `app/api/portal/tiger/player-name/route.ts`
-- Test: `app/api/portal/tiger/player-name/route.test.ts`
+- Create: `app/api/portal/admin/player-name/route.ts`
+- Test: `app/api/portal/admin/player-name/route.test.ts`
 
 **Interfaces:**
 - Consumes: `requireHost` from `@/lib/portal/requireHost` (existing),
@@ -276,10 +276,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 // requireHost() calls createSupabaseServerClient(), which needs a real
-// request lifecycle — same limitation every other tiger/** route test
+// request lifecycle — same limitation every other admin/** route test
 // documents. This test covers the one pure piece: an unauthenticated
 // request never touches Supabase.
-test("POST /api/portal/tiger/player-name rejects when requireHost resolves null", async () => {
+test("POST /api/portal/admin/player-name rejects when requireHost resolves null", async () => {
   const { POST } = await import("./route.ts");
   let fetchCalled = false;
   const originalFetch = globalThis.fetch;
@@ -288,7 +288,7 @@ test("POST /api/portal/tiger/player-name rejects when requireHost resolves null"
     return new Response("{}", { status: 200 });
   }) as typeof fetch;
 
-  const request = new Request("http://localhost/api/portal/tiger/player-name", {
+  const request = new Request("http://localhost/api/portal/admin/player-name", {
     method: "POST",
     body: JSON.stringify({ playerSlug: "cade-barone", fullName: "Cade Barone" }),
   });
@@ -301,7 +301,7 @@ test("POST /api/portal/tiger/player-name rejects when requireHost resolves null"
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `npx tsx --test app/api/portal/tiger/player-name/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/player-name/route.test.ts`
 Expected: FAIL with a module-not-found error.
 
 - [ ] **Step 3: Write the implementation**
@@ -311,7 +311,7 @@ import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 
-// The Tiger-only override for a player's *visible* name — never touches
+// The Admin-only override for a player's *visible* name — never touches
 // player_slots.player_slug, which stays the permanent identifier every
 // join/URL uses. Mirrors player-email's shape exactly.
 export async function POST(request: Request) {
@@ -344,23 +344,23 @@ export async function POST(request: Request) {
 
 - [ ] **Step 4: Run the test to verify it passes**
 
-Run: `npx tsx --test app/api/portal/tiger/player-name/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/player-name/route.test.ts`
 Expected: PASS, 1 test.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/api/portal/tiger/player-name/
-git commit -m "feat: add POST /api/portal/tiger/player-name"
+git add app/api/portal/admin/player-name/
+git commit -m "feat: add POST /api/portal/admin/player-name"
 ```
 
 ---
 
-## Task 5: `POST /api/portal/tiger/player-add`
+## Task 5: `POST /api/portal/admin/player-add`
 
 **Files:**
-- Create: `app/api/portal/tiger/player-add/route.ts`
-- Test: `app/api/portal/tiger/player-add/route.test.ts`
+- Create: `app/api/portal/admin/player-add/route.ts`
+- Test: `app/api/portal/admin/player-add/route.test.ts`
 
 **Interfaces:**
 - Consumes: `requireHost`, `createSupabaseServiceRoleClient` (existing);
@@ -379,10 +379,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 // requireHost() calls createSupabaseServerClient(), which needs a real
-// request lifecycle — same limitation every other tiger/** route test
+// request lifecycle — same limitation every other admin/** route test
 // documents. This test covers the one pure piece: an unauthenticated
 // request never creates a player or touches Supabase.
-test("POST /api/portal/tiger/player-add rejects when requireHost resolves null", async () => {
+test("POST /api/portal/admin/player-add rejects when requireHost resolves null", async () => {
   const { POST } = await import("./route.ts");
   let fetchCalled = false;
   const originalFetch = globalThis.fetch;
@@ -391,7 +391,7 @@ test("POST /api/portal/tiger/player-add rejects when requireHost resolves null",
     return new Response("{}", { status: 200 });
   }) as typeof fetch;
 
-  const request = new Request("http://localhost/api/portal/tiger/player-add", {
+  const request = new Request("http://localhost/api/portal/admin/player-add", {
     method: "POST",
     body: JSON.stringify({ fullName: "Test Player", email: "test@example.com" }),
   });
@@ -404,7 +404,7 @@ test("POST /api/portal/tiger/player-add rejects when requireHost resolves null",
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `npx tsx --test app/api/portal/tiger/player-add/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/player-add/route.test.ts`
 Expected: FAIL with a module-not-found error.
 
 - [ ] **Step 3: Write the implementation**
@@ -469,14 +469,14 @@ export async function POST(request: Request) {
 
 - [ ] **Step 4: Run the test to verify it passes**
 
-Run: `npx tsx --test app/api/portal/tiger/player-add/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/player-add/route.test.ts`
 Expected: PASS, 1 test.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/api/portal/tiger/player-add/
-git commit -m "feat: add POST /api/portal/tiger/player-add"
+git add app/api/portal/admin/player-add/
+git commit -m "feat: add POST /api/portal/admin/player-add"
 ```
 
 ---
@@ -491,15 +491,15 @@ the new component only; Task 7 wires it into a page, and Task 8 deletes
 the old `PlayerSlotsAdmin.tsx` once nothing references it.
 
 **Files:**
-- Create: `components/portal/tiger/GlobalPlayersAdmin.tsx`
+- Create: `components/portal/admin/GlobalPlayersAdmin.tsx`
 
 **Interfaces:**
-- Consumes: `POST /api/portal/tiger/player-add` (Task 5),
-  `POST /api/portal/tiger/player-name` (Task 4), and the existing
-  `POST /api/portal/tiger/player-email`, `POST /api/portal/tiger/invite`,
-  `POST /api/portal/admin/unlink`, `POST /api/portal/tiger/profile-edits/approve`,
-  `POST /api/portal/tiger/profile-edits/deny`,
-  `POST /api/portal/tiger/profile-edits/set` routes (all unchanged).
+- Consumes: `POST /api/portal/admin/player-add` (Task 5),
+  `POST /api/portal/admin/player-name` (Task 4), and the existing
+  `POST /api/portal/admin/player-email`, `POST /api/portal/admin/invite`,
+  `POST /api/portal/admin/unlink`, `POST /api/portal/admin/profile-edits/approve`,
+  `POST /api/portal/admin/profile-edits/deny`,
+  `POST /api/portal/admin/profile-edits/set` routes (all unchanged).
 - Produces: `export interface GlobalPlayerRow { playerSlug: string;
   fullName: string; username: string | null; claimedBy: string | null;
   email: string | null; pendingEdits: { field: string; proposedValue:
@@ -583,7 +583,7 @@ export function GlobalPlayersAdmin({ rows: initialRows }: { rows: GlobalPlayerRo
     setAddPlayerBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/portal/tiger/player-add", {
+      const res = await fetch("/api/portal/admin/player-add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fullName: newPlayerName, email: newPlayerEmail }),
@@ -605,7 +605,7 @@ export function GlobalPlayersAdmin({ rows: initialRows }: { rows: GlobalPlayerRo
     setBusy(playerSlug);
     setError(null);
     try {
-      const res = await fetch("/api/portal/tiger/profile-edits/approve", {
+      const res = await fetch("/api/portal/admin/profile-edits/approve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ playerSlug, field, submittedAt }),
@@ -629,7 +629,7 @@ export function GlobalPlayersAdmin({ rows: initialRows }: { rows: GlobalPlayerRo
     setBusy(playerSlug);
     setError(null);
     try {
-      const res = await fetch("/api/portal/tiger/profile-edits/deny", {
+      const res = await fetch("/api/portal/admin/profile-edits/deny", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ playerSlug, field, submittedAt }),
@@ -659,7 +659,7 @@ export function GlobalPlayersAdmin({ rows: initialRows }: { rows: GlobalPlayerRo
     setError(null);
     setDirectEditSaved(false);
     try {
-      const res = await fetch("/api/portal/tiger/profile-edits/set", {
+      const res = await fetch("/api/portal/admin/profile-edits/set", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -692,12 +692,12 @@ export function GlobalPlayersAdmin({ rows: initialRows }: { rows: GlobalPlayerRo
     setError(null);
     try {
       const [nameRes, emailRes] = await Promise.all([
-        fetch("/api/portal/tiger/player-name", {
+        fetch("/api/portal/admin/player-name", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ playerSlug, fullName: editName }),
         }),
-        fetch("/api/portal/tiger/player-email", {
+        fetch("/api/portal/admin/player-email", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ playerSlug, email: editEmail }),
@@ -731,7 +731,7 @@ export function GlobalPlayersAdmin({ rows: initialRows }: { rows: GlobalPlayerRo
     setBusy(playerSlug);
     setError(null);
     try {
-      const res = await fetch("/api/portal/tiger/invite", {
+      const res = await fetch("/api/portal/admin/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ playerSlug }),
@@ -1015,13 +1015,13 @@ Expected: clean (this component isn't imported anywhere yet, but must compile st
 
 - [ ] **Step 3: Lint**
 
-Run: `npx eslint components/portal/tiger/GlobalPlayersAdmin.tsx`
+Run: `npx eslint components/portal/admin/GlobalPlayersAdmin.tsx`
 Expected: clean.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add components/portal/tiger/GlobalPlayersAdmin.tsx
+git add components/portal/admin/GlobalPlayersAdmin.tsx
 git commit -m "feat: add GlobalPlayersAdmin component"
 ```
 
@@ -1042,7 +1042,7 @@ git commit -m "feat: add GlobalPlayersAdmin component"
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getAllPlayerRows } from "@/lib/portal/allPlayers";
-import { GlobalPlayersAdmin, type GlobalPlayerRow } from "@/components/portal/tiger/GlobalPlayersAdmin";
+import { GlobalPlayersAdmin, type GlobalPlayerRow } from "@/components/portal/admin/GlobalPlayersAdmin";
 
 export default async function GlobalPlayersPage() {
   const supabase = await createSupabaseServerClient();
@@ -1059,7 +1059,7 @@ export default async function GlobalPlayersPage() {
 
   // Players claimed the old way (self-signed-up via a copied invite link,
   // before player_slots.email existed) have no email on file there —
-  // fall back to their real account email so Tiger sees something instead
+  // fall back to their real account email so Admin sees something instead
   // of "No email on file" for players who obviously do have one.
   const claimedByIds = allPlayers.map((p) => p.claimedBy).filter((id): id is string => Boolean(id));
   const { data: claimedProfiles } = claimedByIds.length
@@ -1160,7 +1160,7 @@ export function PlayerTeamAssignment({ year, rows: initialRows }: { year: number
     setBusy(playerSlug);
     setError(null);
     try {
-      const res = await fetch("/api/portal/tiger/roster", {
+      const res = await fetch("/api/portal/admin/roster", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ year, playerSlug, team }),
@@ -1182,7 +1182,7 @@ export function PlayerTeamAssignment({ year, rows: initialRows }: { year: number
     setBusy(playerSlug);
     setError(null);
     try {
-      const res = await fetch("/api/portal/tiger/roster/lock", {
+      const res = await fetch("/api/portal/admin/roster/lock", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ year, playerSlug, locked }),
@@ -1477,7 +1477,7 @@ export default async function PortalProfilePage() {
         ← Back to Portal
       </Link>
       <h1 className="mt-4 font-serif text-2xl font-bold text-ink-900">Edit My Bio</h1>
-      <p className="mt-2 font-sans text-sm text-ink-500">Changes you save here need Tiger&rsquo;s approval before they show up on your public bio.</p>
+      <p className="mt-2 font-sans text-sm text-ink-500">Changes you save here need Admin&rsquo;s approval before they show up on your public bio.</p>
       <div className="mt-6">
         <ProfileEditGrid profile={profile} pendingEdits={pendingEdits} />
       </div>

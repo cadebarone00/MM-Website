@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ChevronRight, LogOut } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
-import { TigerAvatar } from "@/components/ui/TigerAvatar";
+import { AdminAvatar } from "@/components/ui/AdminAvatar";
 import { useAccountSession } from "@/lib/useAccountSession";
 import { SignOutConfirmDialog } from "@/components/SignOutConfirmDialog";
 import { getPlayerAvatar } from "@/lib/data/players";
@@ -52,7 +52,7 @@ export function AccountBadge({ position }: { position: "header" | "footer" }) {
   }
 
   const label = session.kind === "host" ? session.username : session.displayName;
-  const portalLabel = session.kind === "host" ? "Tiger Center" : session.kind === "player" ? "Player Portal" : null;
+  const portalLabel = session.kind === "host" ? "Admin Center" : session.kind === "player" ? "Player Portal" : null;
 
   return (
     <div ref={containerRef} className="relative">
@@ -63,7 +63,7 @@ export function AccountBadge({ position }: { position: "header" | "footer" }) {
         className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full sm:h-9 sm:w-9"
       >
         {session.kind === "host" ? (
-          <TigerAvatar size="xs" />
+          <AdminAvatar size="xs" />
         ) : session.kind === "player" ? (
           <Avatar name={label} src={getPlayerAvatar(session.playerSlug)} size="xs" team={session.team} />
         ) : (

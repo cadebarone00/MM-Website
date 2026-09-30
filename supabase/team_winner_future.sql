@@ -6,7 +6,7 @@
 
 -- Per-matchup fair odds from the canonical match model, for matchups that
 -- could be posted in rounds whose pairings aren't locked yet. Expensive to
--- produce, so Tiger's "Price Team Winner" action fills this table once and
+-- produce, so Admin's "Price Team Winner" action fills this table once and
 -- every later odds refresh reuses it.
 create table if not exists team_winner_pair_odds (
   season_year integer not null check (season_year between 2027 and 2034),
@@ -93,7 +93,7 @@ begin
 end $$;
 revoke all on function settle_team_winner_if_final(integer) from public, anon, authenticated;
 
--- Runs inside Tiger's Close Out Match transaction (close_live_match_atomic),
+-- Runs inside Admin's Close Out Match transaction (close_live_match_atomic),
 -- so the last closeout and the Team Winner payout commit together.
 create or replace function live_official_state_settle_team_winner() returns trigger
 language plpgsql security definer set search_path = public as $$

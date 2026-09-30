@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace the flat Fantasy picker with a mobile-first welcome → 3-tab draft → profile-drill-in → Submit Lineup → locked "Your Team" flow, and fix the underlying bug where the eligible-player list (and `LivePlayerScorecard`'s team badge) reads an always-empty roster instead of the real confirmed roster Tiger locks in via Master Settings.
+**Goal:** Replace the flat Fantasy picker with a mobile-first welcome → 3-tab draft → profile-drill-in → Submit Lineup → locked "Your Team" flow, and fix the underlying bug where the eligible-player list (and `LivePlayerScorecard`'s team badge) reads an always-empty roster instead of the real confirmed roster Admin locks in via Master Settings.
 
 **Architecture:** One new pure overlay function (`overlayConfirmedRoster`) is applied at the two existing chokepoints that already compute "the live tournament" — the server-side `fetchLiveTournament()` (Fantasy's save/validate route) and the client-side `useLiveTournament()` hook (everything else, including Fantasy's own read path and `LivePlayerScorecard`) — so every consumer gets the correct roster with no per-component changes. The draft flow itself is a small state machine in `app/fantasy/page.tsx` backed by a sessionStorage-persisted in-progress draft (survives navigating out to a player's profile page and back), with locking enforced both in the UI and, for real, in the save endpoint.
 
@@ -43,7 +43,7 @@ import type { RosterEntry } from "@/lib/live/types";
 function tournamentWithRoster(maroon: string[], white: string[]): Tournament {
   return {
     slug: "2027",
-    editionLabel: "The Maroon Masters 2027",
+    editionLabel: "The Maroon Tournament 2027",
     year: 2027,
     venue: "Mission Hills CC",
     location: "Palm Springs, CA",
@@ -99,7 +99,7 @@ Expected: FAIL — `confirmedRosterOverlay.ts` doesn't exist yet.
 ```ts
 // lib/data/confirmedRosterOverlay.ts
 //
-// The pre-tournament roster (who Tiger has locked into Maroon/White in
+// The pre-tournament roster (who Admin has locked into Maroon/White in
 // Master Settings -> Players & Teams, aka getConfirmedRoster()) and the
 // live-tournament roster (tournament.roster, only populated once the
 // Google Sheet feed is actually running) are two separate sources that
@@ -169,7 +169,7 @@ import type { Tournament } from "./types";
  * Always returns a valid Tournament, never null — mirrors
  * mergeLiveTournament()'s own contract and the client's useLiveTournament()
  * hook: no live feed configured/reachable degrades to a roster confirmed
- * via Tiger's Master Settings (getConfirmedRoster()), or an empty roster if
+ * via Admin's Master Settings (getConfirmedRoster()), or an empty roster if
  * that isn't set either — never a fatal error. This matters because
  * futures markets (Team Winner, Tournament Winner) only need
  * tournament.slug/individualLeaderboard, both valid on that fallback, so
@@ -938,7 +938,7 @@ import { Button } from "@/components/ui/Button";
 export function FantasyWelcome({ editionLabel, onStart }: { editionLabel: string; onStart: () => void }) {
   return (
     <div className="mt-6 text-center">
-      <h1 className="m-0 font-serif text-2xl font-bold text-ink-900">Welcome to Maroon Masters Fantasy</h1>
+      <h1 className="m-0 font-serif text-2xl font-bold text-ink-900">Welcome to Maroon Tournament Fantasy</h1>
       <p className="mt-2 font-sans text-sm text-ink-600">
         Pick 3 players for {editionLabel}: one from Team Maroon, one from Team White, and a Wildcard from either team. Each pick
         scores points for you on every hole they finish, in every round played:

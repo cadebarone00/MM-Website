@@ -5,7 +5,7 @@
 Wire up the currently-inert Sign Up / Login buttons (added as placeholders
 in the mobile nav redesign, `docs/superpowers/specs/2026-08-04-mobile-home-nav-redesign-design.md`)
 to a real accounts system. Anyone — fans, family, players — can create a
-website account. Players and Tiger (the host/organizer) additionally get a
+website account. Players and Admin (the host/organizer) additionally get a
 "Portal" they can access after logging in, via a fork screen. This spec
 covers accounts, sessions, and the fork/portal *shell* only — no scoring,
 pairings, or round-control logic. It replaces the old separate
@@ -17,7 +17,7 @@ rebuild:
 
 1. **Accounts foundation** (this spec)
 2. Player Portal — scoring (My Score / Partner's Score entry)
-3. Host Tools ("Tiger") — pairings, round start/reset, live score editing
+3. Host Tools ("Admin") — pairings, round start/reset, live score editing
 4. Decision: does portal scoring keep writing to the Google Sheet (so
    `appscript/live-feed.gs` keeps powering the public leaderboard
    unchanged), or does it move fully to the new database? Deferred until
@@ -34,7 +34,7 @@ that plumbing by hand.
 New env vars (added to `.env`, documented in a new `.env.example`):
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY` — server-only, used exclusively by Tiger's
+- `SUPABASE_SERVICE_ROLE_KEY` — server-only, used exclusively by Admin's
   admin actions (assigning player usernames). Never sent to the browser.
 
 Session handling uses `@supabase/ssr` with httpOnly cookies (server-set),
@@ -56,11 +56,11 @@ localStorage/token approach entirely.
 **`player_slots`** — one row per existing player, seeded once from
 `lib/data/players` (13 rows today):
 - `player_slug` (text, PK)
-- `username` (text, nullable, unique — set by Tiger)
+- `username` (text, nullable, unique — set by Admin)
 - `claimed_by` (uuid, nullable, FK → `profiles.id`)
 - `claimed_at` (timestamptz, nullable)
 
-Tiger's own account is a normal `profiles` row with `is_host = true`, set
+Admin's own account is a normal `profiles` row with `is_host = true`, set
 manually (one-time, via the Supabase dashboard or a seed script) for
 `cadebarone00@gmail.com`'s account after they sign up — not through the
 public sign-up form.
@@ -80,9 +80,9 @@ No separate "I am a player" toggle. On submit:
    - **No match:** it's an ordinary fan account — `player_slug` stays
      null.
 
-Tiger assigns each player's username ahead of time on the admin page
+Admin assigns each player's username ahead of time on the admin page
 (below) and tells that player what it is (text/email, outside this
-system). Because only Tiger controls what value counts as a "player
+system). Because only Admin controls what value counts as a "player
 username," it functions as the recognizable key the player proves
 ownership of by signing up with it and choosing their own password.
 
@@ -92,7 +92,7 @@ ownership of by signing up with it and choosing their own password.
   Supabase verification email; account exists immediately but login is
   blocked until the email is confirmed (see Error handling).
 - **`/login`** — username-or-email + password. Identical for fans,
-  players, and Tiger.
+  players, and Admin.
 - **`/forgot-password`** — Supabase's built-in reset-by-email flow, one
   request page + one set-new-password page.
 - **`/account/choose`** — the fork screen. Shown immediately after a
@@ -107,13 +107,13 @@ ownership of by signing up with it and choosing their own password.
 - **`/portal`** — real, minimal landing page:
   - Player account: their own name, team, avatar, username (pulled from
     `lib/data/players` + `profiles`).
-  - Tiger: a bare host landing (name + "Host" label). No pairings/round
+  - Admin: a bare host landing (name + "Host" label). No pairings/round
     tools yet — those are sub-project #3.
   - No scoring UI yet — sub-project #2.
-- **`/portal/admin`** — Tiger-only (redirects away if `!is_host`). A table
+- **`/portal/admin`** — Admin-only (redirects away if `!is_host`). A table
   of all 13 `lib/data/players` entries, each with an editable username
   field and its current claim status (unclaimed / claimed by whom). This
-  is where Tiger sets player usernames. Uses the service-role key
+  is where Admin sets player usernames. Uses the service-role key
   server-side to write `player_slots`.
 
 `next.config.ts`'s rewrite of `/portal` → the old scorekeeper Vercel app
@@ -152,9 +152,9 @@ is deleted; `/portal` becomes a normal route in this Next.js app.
 - Two people submitting the same still-open player username at once → the
   `player_slots.username` unique constraint (or a transaction with a
   `claimed_by IS NULL` guard) lets exactly one succeed; the other sees
-  "That username was just claimed — check with Tiger."
+  "That username was just claimed — check with Admin."
 - Once a `player_slots` row is claimed, its username is locked in the
-  admin UI (read-only) — Tiger can't silently change it out from under a
+  admin UI (read-only) — Admin can't silently change it out from under a
   live account. An explicit "Unlink" action (clears `claimed_by`/
   `claimed_at`, does **not** delete the linked `profiles` row or log that
   account out) exists for correcting mistakes, separate from editing the
@@ -167,7 +167,7 @@ is deleted; `/portal` becomes a normal route in this Next.js app.
 ## Testing
 
 - Sign-up creates both the auth user and the matching `profiles` row.
-- Signing up with a Tiger-assigned, unclaimed player username correctly
+- Signing up with a Admin-assigned, unclaimed player username correctly
   sets `player_slug`/`claimed_by`/`claimed_at` and pulls the right name/
   team/avatar from `lib/data/players`.
 - Signing up with any other available username creates a plain fan
@@ -177,7 +177,7 @@ is deleted; `/portal` becomes a normal route in this Next.js app.
 - `/account/choose` appears only for host/player accounts, never for fan
   accounts.
 - `/portal/admin` redirects non-host accounts away.
-- Manual walkthrough on `npm run dev`: fan sign-up end to end; Tiger
+- Manual walkthrough on `npm run dev`: fan sign-up end to end; Admin
   setting a player username on `/portal/admin`; that player signing up
   with it and landing on the fork screen; choosing Portal and seeing
   correct identity info; choosing Website and landing normally; desktop

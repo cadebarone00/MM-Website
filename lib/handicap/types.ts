@@ -46,7 +46,7 @@ export interface HandicapRoundSummary {
 }
 
 export interface HandicapSummary {
-  maroonMastersIndex?: number | null;
+  maroonTournamentIndex?: number | null;
   index: number | null;
   lowIndex: number | null;
   rounds: HandicapRoundSummary[];
@@ -87,7 +87,7 @@ export interface SubmitHandicapRoundInput {
   holes: HandicapHoleInput[]; // exactly 18, each hole 1-18 exactly once
 }
 
-/** Body of the Tiger-only "assign tees to an archived round" bulk action — applies to every player's archived row for one tournament + round at once. */
+/** Body of the Admin-only "assign tees to an archived round" bulk action — applies to every player's archived row for one tournament + round at once. */
 export interface AssignArchiveTeesInput {
   tournamentSlug: string;
   round: number;

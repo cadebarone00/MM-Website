@@ -55,7 +55,7 @@ export async function getNextTournament(): Promise<UpcomingTournament> {
 }
 
 /**
- * The courses assigned to any of this season's rounds in Tiger Center's
+ * The courses assigned to any of this season's rounds in Admin Center's
  * round setup (`live_round_state.course_id` -> `live_courses`), converted
  * to the public VenueCourse shape. Empty until a host assigns at least one
  * course to a round.
@@ -71,7 +71,7 @@ async function getActiveSeasonCourses(seasonYear: number): Promise<VenueCourse[]
 }
 
 /**
- * `nextVenue`, with venue name and courses overlaid from Tiger Center for
+ * `nextVenue`, with venue name and courses overlaid from Admin Center for
  * whichever year is currently marked active. Courses come straight from
  * the round setup (Task 10's live schedule), not the static venue file's
  * `courses` array, which has never been filled in for any year.
@@ -102,9 +102,9 @@ export async function getNextTournamentOverride(): Promise<NextTournamentOverrid
 }
 
 /**
- * The home-page schedule is a direct public read of Tiger Center's round
+ * The home-page schedule is a direct public read of Admin Center's round
  * setup. Courses and formats are never duplicated in static website data:
- * changing either field in Tiger Center changes this list automatically.
+ * changing either field in Admin Center changes this list automatically.
  */
 export async function getUpcomingRoundSchedule(seasonYear?: number): Promise<UpcomingRoundScheduleItem[]> {
   const service = createSupabaseServiceRoleClient();
@@ -170,7 +170,7 @@ export async function getConfirmedRoster(section?: WebsiteSection): Promise<Rost
 /**
  * A player's own team for the active season — same "locked, not just
  * drafted" rule as getConfirmedRoster, so a player never sees their team
- * before Tiger's ready to reveal it. This is what portal pages should use
+ * before Admin's ready to reveal it. This is what portal pages should use
  * for "my team"; the old findPlayerTeam read a hand-edited static file
  * instead of the live roster and is retired by this function.
  */

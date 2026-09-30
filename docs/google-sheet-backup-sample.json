@@ -1,7 +1,7 @@
 {
   "fixtureOnly": true,
   "schemaVersion": 1,
-  "notes": "Synthetic full Day 1 plus a Day 2 Foursome round. This is an integration fixture, not a direct database import. Submission rows combine table fields and request/audit metadata. No Tiger closeout has occurred. Day/session and tee groups are sheet metadata.",
+  "notes": "Synthetic full Day 1 plus a Day 2 Foursome round. This is an integration fixture, not a direct database import. Submission rows combine table fields and request/audit metadata. No Admin closeout has occurred. Day/session and tee groups are sheet metadata.",
   "seasonYear": 2027,
   "displayTimezone": "America/Chicago",
   "roster": [

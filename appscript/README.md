@@ -29,8 +29,8 @@ You're going to paste two small scripts into your Google Sheet, as two separate 
 The website's own server talks to this script using a shared secret — a password only the two of them know, not something anyone types into a screen.
 
 1. Pick any long random-ish value (e.g. generate one at a site like 1password.com/password-generator, or just mash the keyboard for 30+ characters).
-2. Close the Apps Script tab and go back to the actual Google Sheet. Reload the page. A new menu called **Maroon Masters** should appear in the menu bar next to Help.
-3. Click **Maroon Masters → Set Scoring Server Secret**, paste in the value you picked.
+2. Close the Apps Script tab and go back to the actual Google Sheet. Reload the page. A new menu called **Maroon Tournament** should appear in the menu bar next to Help.
+3. Click **Maroon Tournament → Set Scoring Server Secret**, paste in the value you picked.
 4. Send me that same value — it goes into the website's `SCOREKEEPER_SERVER_SECRET` setting. Both sides have to match exactly.
 
 ## How the trip actually runs

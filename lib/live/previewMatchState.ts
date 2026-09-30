@@ -1,6 +1,6 @@
 // lib/live/previewMatchState.ts
 //
-// The Tiger Center's Live Scoring Page Editor has no database, so it can't
+// The Admin Center's Live Scoring Page Editor has no database, so it can't
 // read the real live_match_official_state row the way the real scoring
 // screen does. This derives the same {leader, margin, thru,
 // mathematicallyComplete} shape from the preview room's submissions, using

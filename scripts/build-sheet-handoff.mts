@@ -23,8 +23,8 @@ const sources = [
   'components/leaderboard/matchUtils.ts', 'components/leaderboard/LiveLeaderboardContent.tsx',
   'lib/data/live.ts', 'lib/data/players/index.ts',
   'app/api/portal/scoring/hole/route.ts', 'app/api/portal/scoring/stroke/route.ts',
-  'app/api/portal/tiger/matches/route.ts', 'app/api/portal/tiger/matches/closeout/route.ts',
-  'app/api/portal/tiger/sessions/lock/route.ts', 'app/api/portal/tiger/sessions/start/route.ts',
+  'app/api/portal/admin/matches/route.ts', 'app/api/portal/admin/matches/closeout/route.ts',
+  'app/api/portal/admin/sessions/lock/route.ts', 'app/api/portal/admin/sessions/start/route.ts',
 ];
 const revision = execFileSync('git', ['rev-parse', 'HEAD'], {encoding:'utf8'}).trim();
 fs.writeFileSync('docs/google-sheet-backup-sources.md',
@@ -111,7 +111,7 @@ assert.equal(matches.length,12);
 assert.equal(currentHoles.length,648);
 assert.equal(submissions.length,540);
 fs.writeFileSync('docs/google-sheet-backup-sample.json',JSON.stringify({
-  fixtureOnly:true,schemaVersion:1,notes:'Synthetic full Day 1 plus a Day 2 Foursome round. This is an integration fixture, not a direct database import. Submission rows combine table fields and request/audit metadata. No Tiger closeout has occurred. Day/session and tee groups are sheet metadata.',
+  fixtureOnly:true,schemaVersion:1,notes:'Synthetic full Day 1 plus a Day 2 Foursome round. This is an integration fixture, not a direct database import. Submission rows combine table fields and request/audit metadata. No Admin closeout has occurred. Day/session and tee groups are sheet metadata.',
   seasonYear:year,displayTimezone:'America/Chicago',roster,courses:[{...course,tee_sets:[tee]}],rounds,matches,teeGroups,submissions,currentHoles,reconciliationScenario:{pair,steps:scenarios},
 },null,2)+'\n');
 console.log(`Exported ${sources.length} source files; validated 12 matches, 648 confirmed player-hole rows, 540 submissions and four reconciliation stages.`);

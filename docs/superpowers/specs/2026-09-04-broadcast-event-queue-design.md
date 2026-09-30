@@ -18,8 +18,8 @@ document first; this one assumes it.
 ## What changed since the master spec was written
 
 The master spec assumed `MATCH_STATE_CHANGED`/`MATCH_WON`/`ROUND_FINAL`
-would fire from dedicated write paths (`app/api/portal/tiger/matchboxes/*`,
-`app/api/portal/tiger/rounds/*`). **That's not how this codebase actually
+would fire from dedicated write paths (`app/api/portal/admin/matchboxes/*`,
+`app/api/portal/admin/rounds/*`). **That's not how this codebase actually
 works.** Inspected 2026-09-04:
 
 - `live_match_boxes.state` (AS / N-UP / dormie / N&M / Final) is **computed
@@ -108,7 +108,7 @@ already succeeded and already returned their own errors — a broadcast
 failure is logged (`console.error`, §32 of the master spec) and never turns
 a successful score submission into a 500.
 
-### `POST /api/portal/tiger/rounds/start`
+### `POST /api/portal/admin/rounds/start`
 
 After `live_round_state`/`live_match_boxes` are marked `started` (the
 existing writes at `rounds/start/route.ts:29-37`):
@@ -279,7 +279,7 @@ becomes a thin I/O wrapper around this function plus `publishBroadcastEvent`.
 - `lib/broadcast/queue.test.ts`: ordering (priority desc, then created_at
   asc), expired rows excluded.
 - `app/api/portal/scoring/stroke/route.test.ts` /
-  `app/api/portal/tiger/rounds/start/route.test.ts`: unchanged from what
+  `app/api/portal/admin/rounds/start/route.test.ts`: unchanged from what
   exists today — the auth-rejection test still passes as-is (these routes
   gain a broadcast side effect, not a new auth path); no new route tests
   added, matching this repo's actual convention rather than the repo's
@@ -290,7 +290,7 @@ becomes a thin I/O wrapper around this function plus `publishBroadcastEvent`.
 
 Same hand-maintained `supabase/schema.sql` + manual paste into the Supabase
 SQL Editor pattern as every prior phase (see the master spec §26's
-resolution and [[tiger-center-build-phasing]]). One new table, one index,
+resolution and [[admin-center-build-phasing]]). One new table, one index,
 one RLS policy, one Realtime-publication addition — no `alter` on any
 existing table.
 

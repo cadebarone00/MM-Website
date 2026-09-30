@@ -4,7 +4,7 @@
 
 **Goal:** After a hole score is submitted or a round is started, `broadcast_events` fills up with correctly classified, prioritized rows (`SCORE_POSTED`, `MATCH_STATE_CHANGED`, `MATCH_WON`, `ROUND_STARTED`, `ROUND_FINAL`) — with zero visible change to `/broadcast` or Broadcast Controls (nothing reads the queue yet; that's Phase 4).
 
-**Architecture:** A new `broadcast_events` table, filled by `publishBroadcastEvent()` calls added to the two existing routes that already change the underlying facts (`scoring/stroke`, `tiger/rounds/start`), always placed after those routes' real writes already succeeded. Because match status and round-completion are computed on read (`lib/live/orchestration.ts`), not stored, detection is a before/after diff around the score-write route — implemented as a pure, no-I/O function (`lib/broadcast/matchEvents.ts`) so it's unit-testable the same way `lib/live/orchestration.test.ts` already covers the functions it calls.
+**Architecture:** A new `broadcast_events` table, filled by `publishBroadcastEvent()` calls added to the two existing routes that already change the underlying facts (`scoring/stroke`, `admin/rounds/start`), always placed after those routes' real writes already succeeded. Because match status and round-completion are computed on read (`lib/live/orchestration.ts`), not stored, detection is a before/after diff around the score-write route — implemented as a pure, no-I/O function (`lib/broadcast/matchEvents.ts`) so it's unit-testable the same way `lib/live/orchestration.test.ts` already covers the functions it calls.
 
 **Tech Stack:** Next.js 16 Route Handlers, Supabase Postgres (hand-maintained `schema.sql`) + Realtime, TypeScript, `tsx --test`.
 
@@ -81,7 +81,7 @@ end $$;
 Run: `grep -c "create table if not exists broadcast_events" supabase/schema.sql`
 Expected: `1`
 
-There's no local Postgres in this repo to apply this against automatically — this table gets created by pasting this block into the Supabase SQL Editor in production once this task is merged (same manual step every prior Tiger Center phase has used — see Task 10's checklist item).
+There's no local Postgres in this repo to apply this against automatically — this table gets created by pasting this block into the Supabase SQL Editor in production once this task is merged (same manual step every prior Admin Center phase has used — see Task 10's checklist item).
 
 - [ ] **Step 3: Commit**
 
@@ -995,7 +995,7 @@ git commit -m "feat(broadcast): publish SCORE_POSTED/MATCH_STATE_CHANGED/MATCH_W
 ## Task 9: Wire into the round-start route
 
 **Files:**
-- Modify: `app/api/portal/tiger/rounds/start/route.ts`
+- Modify: `app/api/portal/admin/rounds/start/route.ts`
 
 **Interfaces:**
 - Consumes: `publishBroadcastEvent` (Task 7).
@@ -1003,7 +1003,7 @@ git commit -m "feat(broadcast): publish SCORE_POSTED/MATCH_STATE_CHANGED/MATCH_W
 
 - [ ] **Step 1: Add the import**
 
-In `app/api/portal/tiger/rounds/start/route.ts`, add after the existing `isValidSeasonYear` import:
+In `app/api/portal/admin/rounds/start/route.ts`, add after the existing `isValidSeasonYear` import:
 
 ```ts
 import { publishBroadcastEvent } from "@/lib/broadcast/publish";
@@ -1043,7 +1043,7 @@ Change it to:
 
 - [ ] **Step 3: Verify the existing test still passes and the route typechecks**
 
-Run: `npx tsx --test app/api/portal/tiger/rounds/start/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/rounds/start/route.test.ts`
 Expected: PASS (unchanged).
 
 Run: `npx tsc --noEmit`
@@ -1052,7 +1052,7 @@ Expected: no errors.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add app/api/portal/tiger/rounds/start/route.ts
+git add app/api/portal/admin/rounds/start/route.ts
 git commit -m "feat(broadcast): publish ROUND_STARTED from rounds/start route"
 ```
 
@@ -1076,7 +1076,7 @@ Expected: all three exit 0.
 
 - [ ] **Step 3: Manual production migration (only after this is merged)**
 
-Paste Task 1's SQL block into the Supabase SQL Editor in production — same manual step every prior Tiger Center phase has used (see [[tiger-center-build-phasing]]). Confirm `broadcast_events` exists by querying it (`select * from broadcast_events limit 1;` — empty result is fine, it just needs to exist without erroring).
+Paste Task 1's SQL block into the Supabase SQL Editor in production — same manual step every prior Admin Center phase has used (see [[admin-center-build-phasing]]). Confirm `broadcast_events` exists by querying it (`select * from broadcast_events limit 1;` — empty result is fine, it just needs to exist without erroring).
 
 - [ ] **Step 4: Manual walkthrough (acceptance criteria from the spec)**
 

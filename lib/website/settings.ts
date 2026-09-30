@@ -1,4 +1,4 @@
-/** Shared registry: both Tiger editing surfaces and public reads use these keys. */
+/** Shared registry: both Admin editing surfaces and public reads use these keys. */
 export const WEBSITE_SECTIONS = [
   { key: "home", label: "Home · tournament and hero", path: "/website" },
   { key: "home_results", label: "Home · results strip", path: "/website" },

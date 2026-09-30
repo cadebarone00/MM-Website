@@ -2,7 +2,7 @@ import type { Tournament } from "./types";
 
 export const palmSprings2026: Tournament = {
   slug: "2026-palm-springs",
-  editionLabel: "The Maroon Masters 2026",
+  editionLabel: "The Maroon Tournament 2026",
   year: 2026,
   venue: "Mission Hills CC",
   location: "Palm Springs, CA",

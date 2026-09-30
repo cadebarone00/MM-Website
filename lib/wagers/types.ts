@@ -21,7 +21,7 @@ export interface TeamFutureOdds {
   white: number;
 }
 
-/** Set by the settlement flow (Tiger marks a market's winning selection) — see settle_mm_coin_market in supabase/schema.sql. */
+/** Set by the settlement flow (Admin marks a market's winning selection) — see settle_mm_coin_market in supabase/schema.sql. */
 export type WagerStatus = "pending" | "won" | "lost";
 
 /** A single wager a signed-in account has placed, stored server-side in the mm_coin_bets table. */

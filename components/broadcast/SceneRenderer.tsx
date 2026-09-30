@@ -61,7 +61,7 @@ export function SceneRenderer({
   // necessarily the one that was showing when the takeover began — see
   // the spec's Rendering section for why that's accepted, not a bug).
   const autoScene = useAutoScene(state.sceneStartedAt, config, isAuto && activeEvent?.displayMode !== "takeover");
-  // Before Tiger hits "Go Live" (Broadcast Controls), the show holds on
+  // Before Admin hits "Go Live" (Broadcast Controls), the show holds on
   // this scene regardless of rotation/producer mode — same as a real
   // broadcast's pre-show hold (spec §7/§17's Holding scene).
   const scene = !state.tournamentLive ? "holding" : isAuto ? autoScene : state.currentScene;

@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
 import { getPlayerNameMap } from "@/lib/portal/allPlayers";
-import { MatchupsPanel, type RosterPlayer } from "@/components/portal/tiger/MatchupsPanel";
+import { MatchupsPanel, type RosterPlayer } from "@/components/portal/admin/MatchupsPanel";
 import type { LiveMatch, LiveSessionState, MatchFormat, MatchState } from "@/lib/live/types";
 
 export default async function MatchupsPage({ params }: { params: Promise<{ year: string }> }) {

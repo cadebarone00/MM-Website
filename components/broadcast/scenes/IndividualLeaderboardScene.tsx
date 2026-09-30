@@ -58,7 +58,7 @@ function MockLeaderboardScene({ elapsedMs, videoDurationMs, seed, animation, for
       <Image src="/broadcast/oak-motif.png" alt="" width={980} height={980} aria-hidden className="pointer-events-none absolute -bottom-60 -right-44 opacity-[0.27]" />
       <div className="relative z-[1] w-full max-w-[900px]">
         <div className="mb-2 flex items-baseline justify-between border-b border-[color:var(--color-gold-400)]/35 pb-3">
-          <span className="font-serif text-lg italic text-[color:var(--color-cream-100)]">The Maroon Masters</span>
+          <span className="font-serif text-lg italic text-[color:var(--color-cream-100)]">The Maroon Tournament</span>
           <span className="font-condensed text-sm font-bold uppercase tracking-[0.2em] text-[color:var(--color-cream-50)]">Individual Leaderboard</span>
           <span className="font-condensed text-sm font-bold uppercase tracking-[0.2em] text-[color:var(--color-gold-300)]">Mock Live</span>
         </div>
@@ -114,7 +114,7 @@ function MockLeaderboardScene({ elapsedMs, videoDurationMs, seed, animation, for
 }
 
 /**
- * A TV leaderboard graphic in The Maroon Masters' own colors — a full-bleed
+ * A TV leaderboard graphic in The Maroon Tournament' own colors — a full-bleed
  * dark stage-lit canvas (not a card), modeled on modern golf broadcast
  * packages (Golf Channel / PGA Tour Live) rather than a plain website
  * table. Score colors are the site's real red/green/near-black convention
@@ -175,7 +175,7 @@ export function IndividualLeaderboardScene({
 
       <div className="relative z-[1] w-full max-w-[900px]">
         <div className="mb-2 flex items-baseline justify-between border-b border-[color:var(--color-gold-400)]/35 pb-3">
-          <span className="font-serif text-lg italic text-[color:var(--color-cream-100)]">The Maroon Masters</span>
+          <span className="font-serif text-lg italic text-[color:var(--color-cream-100)]">The Maroon Tournament</span>
           <span className="font-condensed text-sm font-bold uppercase tracking-[0.2em] text-[color:var(--color-cream-50)]">Individual Leaderboard</span>
           <span className="font-condensed text-sm font-bold uppercase tracking-[0.2em] text-[color:var(--color-gold-300)]">{final ? "Final" : "Live"}</span>
         </div>

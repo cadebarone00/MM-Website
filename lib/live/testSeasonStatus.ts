@@ -1,5 +1,5 @@
 /**
- * Plain-English status of every match in the 2034 Test Season, for Tiger's
+ * Plain-English status of every match in the 2034 Test Season, for Admin's
  * rehearsal: who has matched how many holes, who has pressed Submit Round,
  * whether the round is now an official record, and what would happen to each
  * player's handicap. Pure — the API route gathers the facts, this explains them.
@@ -50,7 +50,7 @@ export function summarizeTestSeason(input: TestSeasonStatusInput, nameOf: (slug:
     const mostProgress = Math.min(...players.map((player) => player.holesConfirmed));
     let hint: string;
     if (matchStatus === "Closed out") hint = "Closed out \u2014 the match is final and wagers are settled.";
-    else if (waiting.length === 0) hint = "Everyone has submitted \u2014 ready for you to Close Out Match in the Tiger Center.";
+    else if (waiting.length === 0) hint = "Everyone has submitted \u2014 ready for you to Close Out Match in the Admin Center.";
     else if (allMatched) hint = `All holes match \u2014 waiting on ${waiting.join(" & ")} to press Submit Round.`;
     else if (players.some((player) => player.holesConfirmed > 0)) hint = `Scoring in progress \u2014 ${mostProgress} of 18 holes matched so far.`;
     else hint = "No holes scored yet.";

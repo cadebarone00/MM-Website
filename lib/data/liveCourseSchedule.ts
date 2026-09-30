@@ -7,9 +7,9 @@ export interface LiveCourseSummary {
 }
 
 /**
- * Converts Tiger Center's live course-library rows (Course Library panel /
+ * Converts Admin Center's live course-library rows (Course Library panel /
  * `live_courses` table) into the public VenueCourse shape /schedule
- * renders. Used to source the upcoming year's course boxes from real Tiger
+ * renders. Used to source the upcoming year's course boxes from real Admin
  * Center data instead of the hand-written venue files, which have never
  * had course data filled in for any year.
  */

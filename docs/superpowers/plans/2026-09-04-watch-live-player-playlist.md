@@ -4,7 +4,7 @@
 
 **Goal:** Make `/watch-live`'s embedded broadcast render at the real 16:9 broadcast's exact proportions, add player chrome (fullscreen + volume), and add a host-controlled "Broadcast Playlist" (upload songs, play, loop one/all) whose audio that player controls.
 
-**Architecture:** Reuses this codebase's existing anchor-timestamp sync pattern (the same one `lib/broadcast/rotation.ts` uses for scene rotation) so playback stays in sync across every open tab with no persistent server process — clients derive "which track, how far into it" from a stored start time. Uploads reuse the existing presigned-R2-URL sign/confirm flow already built for shot video. New API routes are host-only (`requireHost()`), same as every other Tiger Center route.
+**Architecture:** Reuses this codebase's existing anchor-timestamp sync pattern (the same one `lib/broadcast/rotation.ts` uses for scene rotation) so playback stays in sync across every open tab with no persistent server process — clients derive "which track, how far into it" from a stored start time. Uploads reuse the existing presigned-R2-URL sign/confirm flow already built for shot video. New API routes are host-only (`requireHost()`), same as every other Admin Center route.
 
 **Tech Stack:** Next.js 16 App Router, Supabase (Postgres + Realtime, service-role writes / anon-key public reads), Cloudflare R2 (`lib/r2/client.ts`), `node:test` for unit tests (`tsx --test`).
 
@@ -12,8 +12,8 @@
 
 ## Global Constraints
 
-- Every new host route uses `requireHost()` and returns `{ ok: false, error }` with a matching status code on failure, `{ ok: true, ... }` on success — the exact shape every existing Tiger Center route already uses.
-- `broadcast_playlist_tracks.season_year` allows `2024–2034` (matches `broadcast_display_year`'s range, not `broadcast_state`'s — a Tiger previewing an old year can test music too).
+- Every new host route uses `requireHost()` and returns `{ ok: false, error }` with a matching status code on failure, `{ ok: true, ... }` on success — the exact shape every existing Admin Center route already uses.
+- `broadcast_playlist_tracks.season_year` allows `2024–2034` (matches `broadcast_display_year`'s range, not `broadcast_state`'s — a Admin previewing an old year can test music too).
 - No new environment variables — reuse `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET_NAME` / `R2_PUBLIC_URL` already configured for shot video.
 - Music starts/stops with Go Live/End Broadcast — no independent on/off switch.
 - `npx tsc --noEmit` and `npm run build` must both pass before any task is considered done.
@@ -407,23 +407,23 @@ git commit -m "feat(broadcast): server-side playlist read + broadcast_state audi
 ## Task 4: Host route — upload/sign
 
 **Files:**
-- Create: `app/api/portal/tiger/broadcast/playlist/upload/sign/route.ts`
-- Test: `app/api/portal/tiger/broadcast/playlist/upload/sign/route.test.ts`
+- Create: `app/api/portal/admin/broadcast/playlist/upload/sign/route.ts`
+- Test: `app/api/portal/admin/broadcast/playlist/upload/sign/route.test.ts`
 
 **Interfaces:**
 - Produces: `POST` accepting `{ extension: string }`, returns `{ ok: true, url: string, storagePath: string }` or `{ ok: false, error: string }`.
 
 - [ ] **Step 1: Write the failing test**
 
-Create `app/api/portal/tiger/broadcast/playlist/upload/sign/route.test.ts`:
+Create `app/api/portal/admin/broadcast/playlist/upload/sign/route.test.ts`:
 
 ```ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-test("POST /api/portal/tiger/broadcast/playlist/upload/sign rejects when requireHost resolves null", async () => {
+test("POST /api/portal/admin/broadcast/playlist/upload/sign rejects when requireHost resolves null", async () => {
   const { POST } = await import("./route.ts");
-  const request = new Request("http://localhost/api/portal/tiger/broadcast/playlist/upload/sign", {
+  const request = new Request("http://localhost/api/portal/admin/broadcast/playlist/upload/sign", {
     method: "POST",
     body: JSON.stringify({ extension: ".mp3" }),
   });
@@ -433,15 +433,15 @@ test("POST /api/portal/tiger/broadcast/playlist/upload/sign rejects when require
 
 - [ ] **Step 2: Run it to verify it fails**
 
-Run: `npx tsx --test app/api/portal/tiger/broadcast/playlist/upload/sign/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/broadcast/playlist/upload/sign/route.test.ts`
 Expected: FAIL — `route.ts` doesn't exist yet.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `app/api/portal/tiger/broadcast/playlist/upload/sign/route.ts`:
+Create `app/api/portal/admin/broadcast/playlist/upload/sign/route.ts`:
 
 ```ts
-// app/api/portal/tiger/broadcast/playlist/upload/sign/route.ts
+// app/api/portal/admin/broadcast/playlist/upload/sign/route.ts
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
@@ -486,13 +486,13 @@ export async function POST(request: Request) {
 
 - [ ] **Step 4: Run it to verify it passes**
 
-Run: `npx tsx --test app/api/portal/tiger/broadcast/playlist/upload/sign/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/broadcast/playlist/upload/sign/route.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/api/portal/tiger/broadcast/playlist/upload/sign/route.ts app/api/portal/tiger/broadcast/playlist/upload/sign/route.test.ts
+git add app/api/portal/admin/broadcast/playlist/upload/sign/route.ts app/api/portal/admin/broadcast/playlist/upload/sign/route.test.ts
 git commit -m "feat(broadcast): playlist upload/sign route"
 ```
 
@@ -501,8 +501,8 @@ git commit -m "feat(broadcast): playlist upload/sign route"
 ## Task 5: Host route — upload/confirm
 
 **Files:**
-- Create: `app/api/portal/tiger/broadcast/playlist/upload/confirm/route.ts`
-- Test: `app/api/portal/tiger/broadcast/playlist/upload/confirm/route.test.ts`
+- Create: `app/api/portal/admin/broadcast/playlist/upload/confirm/route.ts`
+- Test: `app/api/portal/admin/broadcast/playlist/upload/confirm/route.test.ts`
 
 **Interfaces:**
 - Consumes: nothing from prior tasks at the type level (writes directly to `broadcast_playlist_tracks`).
@@ -510,15 +510,15 @@ git commit -m "feat(broadcast): playlist upload/sign route"
 
 - [ ] **Step 1: Write the failing test**
 
-Create `app/api/portal/tiger/broadcast/playlist/upload/confirm/route.test.ts`:
+Create `app/api/portal/admin/broadcast/playlist/upload/confirm/route.test.ts`:
 
 ```ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-test("POST /api/portal/tiger/broadcast/playlist/upload/confirm rejects when requireHost resolves null", async () => {
+test("POST /api/portal/admin/broadcast/playlist/upload/confirm rejects when requireHost resolves null", async () => {
   const { POST } = await import("./route.ts");
-  const request = new Request("http://localhost/api/portal/tiger/broadcast/playlist/upload/confirm", {
+  const request = new Request("http://localhost/api/portal/admin/broadcast/playlist/upload/confirm", {
     method: "POST",
     body: JSON.stringify({ title: "Song", storagePath: "playlist/2027/abc.mp3", durationSeconds: 180 }),
   });
@@ -528,15 +528,15 @@ test("POST /api/portal/tiger/broadcast/playlist/upload/confirm rejects when requ
 
 - [ ] **Step 2: Run it to verify it fails**
 
-Run: `npx tsx --test app/api/portal/tiger/broadcast/playlist/upload/confirm/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/broadcast/playlist/upload/confirm/route.test.ts`
 Expected: FAIL — `route.ts` doesn't exist yet.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `app/api/portal/tiger/broadcast/playlist/upload/confirm/route.ts`:
+Create `app/api/portal/admin/broadcast/playlist/upload/confirm/route.ts`:
 
 ```ts
-// app/api/portal/tiger/broadcast/playlist/upload/confirm/route.ts
+// app/api/portal/admin/broadcast/playlist/upload/confirm/route.ts
 import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
@@ -593,13 +593,13 @@ export async function POST(request: Request) {
 
 - [ ] **Step 4: Run it to verify it passes**
 
-Run: `npx tsx --test app/api/portal/tiger/broadcast/playlist/upload/confirm/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/broadcast/playlist/upload/confirm/route.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/api/portal/tiger/broadcast/playlist/upload/confirm/route.ts app/api/portal/tiger/broadcast/playlist/upload/confirm/route.test.ts
+git add app/api/portal/admin/broadcast/playlist/upload/confirm/route.ts app/api/portal/admin/broadcast/playlist/upload/confirm/route.test.ts
 git commit -m "feat(broadcast): playlist upload/confirm route"
 ```
 
@@ -608,23 +608,23 @@ git commit -m "feat(broadcast): playlist upload/confirm route"
 ## Task 6: Host route — play
 
 **Files:**
-- Create: `app/api/portal/tiger/broadcast/playlist/play/route.ts`
-- Test: `app/api/portal/tiger/broadcast/playlist/play/route.test.ts`
+- Create: `app/api/portal/admin/broadcast/playlist/play/route.ts`
+- Test: `app/api/portal/admin/broadcast/playlist/play/route.test.ts`
 
 **Interfaces:**
 - Produces: `POST` accepting `{ trackId: string }`, returns `{ ok: true }` or `{ ok: false, error }`. Sets `broadcast_state.audio_track_id`/`audio_started_at`.
 
 - [ ] **Step 1: Write the failing test**
 
-Create `app/api/portal/tiger/broadcast/playlist/play/route.test.ts`:
+Create `app/api/portal/admin/broadcast/playlist/play/route.test.ts`:
 
 ```ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-test("POST /api/portal/tiger/broadcast/playlist/play rejects when requireHost resolves null", async () => {
+test("POST /api/portal/admin/broadcast/playlist/play rejects when requireHost resolves null", async () => {
   const { POST } = await import("./route.ts");
-  const request = new Request("http://localhost/api/portal/tiger/broadcast/playlist/play", {
+  const request = new Request("http://localhost/api/portal/admin/broadcast/playlist/play", {
     method: "POST",
     body: JSON.stringify({ trackId: "11111111-1111-1111-1111-111111111111" }),
   });
@@ -634,15 +634,15 @@ test("POST /api/portal/tiger/broadcast/playlist/play rejects when requireHost re
 
 - [ ] **Step 2: Run it to verify it fails**
 
-Run: `npx tsx --test app/api/portal/tiger/broadcast/playlist/play/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/broadcast/playlist/play/route.test.ts`
 Expected: FAIL — `route.ts` doesn't exist yet.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `app/api/portal/tiger/broadcast/playlist/play/route.ts`:
+Create `app/api/portal/admin/broadcast/playlist/play/route.ts`:
 
 ```ts
-// app/api/portal/tiger/broadcast/playlist/play/route.ts
+// app/api/portal/admin/broadcast/playlist/play/route.ts
 import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
@@ -694,13 +694,13 @@ export async function POST(request: Request) {
 
 - [ ] **Step 4: Run it to verify it passes**
 
-Run: `npx tsx --test app/api/portal/tiger/broadcast/playlist/play/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/broadcast/playlist/play/route.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/api/portal/tiger/broadcast/playlist/play/route.ts app/api/portal/tiger/broadcast/playlist/play/route.test.ts
+git add app/api/portal/admin/broadcast/playlist/play/route.ts app/api/portal/admin/broadcast/playlist/play/route.test.ts
 git commit -m "feat(broadcast): playlist play route"
 ```
 
@@ -709,23 +709,23 @@ git commit -m "feat(broadcast): playlist play route"
 ## Task 7: Host route — loop-mode
 
 **Files:**
-- Create: `app/api/portal/tiger/broadcast/playlist/loop-mode/route.ts`
-- Test: `app/api/portal/tiger/broadcast/playlist/loop-mode/route.test.ts`
+- Create: `app/api/portal/admin/broadcast/playlist/loop-mode/route.ts`
+- Test: `app/api/portal/admin/broadcast/playlist/loop-mode/route.test.ts`
 
 **Interfaces:**
 - Produces: `POST` accepting `{ mode: "one" | "all" }`, returns `{ ok: true }` or `{ ok: false, error }`.
 
 - [ ] **Step 1: Write the failing test**
 
-Create `app/api/portal/tiger/broadcast/playlist/loop-mode/route.test.ts`:
+Create `app/api/portal/admin/broadcast/playlist/loop-mode/route.test.ts`:
 
 ```ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-test("POST /api/portal/tiger/broadcast/playlist/loop-mode rejects when requireHost resolves null", async () => {
+test("POST /api/portal/admin/broadcast/playlist/loop-mode rejects when requireHost resolves null", async () => {
   const { POST } = await import("./route.ts");
-  const request = new Request("http://localhost/api/portal/tiger/broadcast/playlist/loop-mode", {
+  const request = new Request("http://localhost/api/portal/admin/broadcast/playlist/loop-mode", {
     method: "POST",
     body: JSON.stringify({ mode: "one" }),
   });
@@ -735,15 +735,15 @@ test("POST /api/portal/tiger/broadcast/playlist/loop-mode rejects when requireHo
 
 - [ ] **Step 2: Run it to verify it fails**
 
-Run: `npx tsx --test app/api/portal/tiger/broadcast/playlist/loop-mode/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/broadcast/playlist/loop-mode/route.test.ts`
 Expected: FAIL — `route.ts` doesn't exist yet.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `app/api/portal/tiger/broadcast/playlist/loop-mode/route.ts`:
+Create `app/api/portal/admin/broadcast/playlist/loop-mode/route.ts`:
 
 ```ts
-// app/api/portal/tiger/broadcast/playlist/loop-mode/route.ts
+// app/api/portal/admin/broadcast/playlist/loop-mode/route.ts
 import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
@@ -774,13 +774,13 @@ export async function POST(request: Request) {
 
 - [ ] **Step 4: Run it to verify it passes**
 
-Run: `npx tsx --test app/api/portal/tiger/broadcast/playlist/loop-mode/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/broadcast/playlist/loop-mode/route.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/api/portal/tiger/broadcast/playlist/loop-mode/route.ts app/api/portal/tiger/broadcast/playlist/loop-mode/route.test.ts
+git add app/api/portal/admin/broadcast/playlist/loop-mode/route.ts app/api/portal/admin/broadcast/playlist/loop-mode/route.test.ts
 git commit -m "feat(broadcast): playlist loop-mode route"
 ```
 
@@ -789,23 +789,23 @@ git commit -m "feat(broadcast): playlist loop-mode route"
 ## Task 8: Host route — delete
 
 **Files:**
-- Create: `app/api/portal/tiger/broadcast/playlist/delete/route.ts`
-- Test: `app/api/portal/tiger/broadcast/playlist/delete/route.test.ts`
+- Create: `app/api/portal/admin/broadcast/playlist/delete/route.ts`
+- Test: `app/api/portal/admin/broadcast/playlist/delete/route.test.ts`
 
 **Interfaces:**
 - Produces: `POST` accepting `{ trackId: string }`, returns `{ ok: true }` or `{ ok: false, error }`. Deletes the R2 object, the DB row, and clears `broadcast_state.audio_track_id` if that track was playing.
 
 - [ ] **Step 1: Write the failing test**
 
-Create `app/api/portal/tiger/broadcast/playlist/delete/route.test.ts`:
+Create `app/api/portal/admin/broadcast/playlist/delete/route.test.ts`:
 
 ```ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-test("POST /api/portal/tiger/broadcast/playlist/delete rejects when requireHost resolves null", async () => {
+test("POST /api/portal/admin/broadcast/playlist/delete rejects when requireHost resolves null", async () => {
   const { POST } = await import("./route.ts");
-  const request = new Request("http://localhost/api/portal/tiger/broadcast/playlist/delete", {
+  const request = new Request("http://localhost/api/portal/admin/broadcast/playlist/delete", {
     method: "POST",
     body: JSON.stringify({ trackId: "11111111-1111-1111-1111-111111111111" }),
   });
@@ -815,15 +815,15 @@ test("POST /api/portal/tiger/broadcast/playlist/delete rejects when requireHost 
 
 - [ ] **Step 2: Run it to verify it fails**
 
-Run: `npx tsx --test app/api/portal/tiger/broadcast/playlist/delete/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/broadcast/playlist/delete/route.test.ts`
 Expected: FAIL — `route.ts` doesn't exist yet.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `app/api/portal/tiger/broadcast/playlist/delete/route.ts`:
+Create `app/api/portal/admin/broadcast/playlist/delete/route.ts`:
 
 ```ts
-// app/api/portal/tiger/broadcast/playlist/delete/route.ts
+// app/api/portal/admin/broadcast/playlist/delete/route.ts
 import { NextResponse } from "next/server";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { requireHost } from "@/lib/portal/requireHost";
@@ -885,13 +885,13 @@ export async function POST(request: Request) {
 
 - [ ] **Step 4: Run it to verify it passes**
 
-Run: `npx tsx --test app/api/portal/tiger/broadcast/playlist/delete/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/broadcast/playlist/delete/route.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/api/portal/tiger/broadcast/playlist/delete/route.ts app/api/portal/tiger/broadcast/playlist/delete/route.test.ts
+git add app/api/portal/admin/broadcast/playlist/delete/route.ts app/api/portal/admin/broadcast/playlist/delete/route.test.ts
 git commit -m "feat(broadcast): playlist delete route"
 ```
 
@@ -900,23 +900,23 @@ git commit -m "feat(broadcast): playlist delete route"
 ## Task 9: Stop music when the broadcast ends
 
 **Files:**
-- Modify: `app/api/portal/tiger/broadcast/live/route.ts`
-- Test: `app/api/portal/tiger/broadcast/live/route.test.ts` (new — none exists today)
+- Modify: `app/api/portal/admin/broadcast/live/route.ts`
+- Test: `app/api/portal/admin/broadcast/live/route.test.ts` (new — none exists today)
 
 **Interfaces:**
 - No new exports; behavior-only change to an existing route.
 
 - [ ] **Step 1: Write the failing test**
 
-Create `app/api/portal/tiger/broadcast/live/route.test.ts`:
+Create `app/api/portal/admin/broadcast/live/route.test.ts`:
 
 ```ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-test("POST /api/portal/tiger/broadcast/live rejects when requireHost resolves null", async () => {
+test("POST /api/portal/admin/broadcast/live rejects when requireHost resolves null", async () => {
   const { POST } = await import("./route.ts");
-  const request = new Request("http://localhost/api/portal/tiger/broadcast/live", {
+  const request = new Request("http://localhost/api/portal/admin/broadcast/live", {
     method: "POST",
     body: JSON.stringify({ live: false }),
   });
@@ -926,12 +926,12 @@ test("POST /api/portal/tiger/broadcast/live rejects when requireHost resolves nu
 
 - [ ] **Step 2: Run it to confirm the existing auth gate already passes**
 
-Run: `npx tsx --test app/api/portal/tiger/broadcast/live/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/broadcast/live/route.test.ts`
 Expected: PASS — this route already calls `requireHost()` first, same as every other host route; this test is new only because no test file existed for this route before. This isn't red-green TDD (the behavior it checks already exists) — Step 3 is the actual change this task makes, verified by the manual walkthrough in Task 13 rather than a new automated assertion (matches this codebase's existing testing convention — see the spec's Testing section).
 
 - [ ] **Step 3: Add the "stop music" behavior**
 
-In `app/api/portal/tiger/broadcast/live/route.ts`, change the `!live` branch's upsert from:
+In `app/api/portal/admin/broadcast/live/route.ts`, change the `!live` branch's upsert from:
 ```ts
     const { error } = await service.from("broadcast_state").upsert({ season_year: seasonYear, tournament_live: false, updated_at: new Date().toISOString() });
 ```
@@ -946,7 +946,7 @@ Also update the file's top doc comment to mention this — after the existing se
 
 - [ ] **Step 4: Run the test to verify it passes**
 
-Run: `npx tsx --test app/api/portal/tiger/broadcast/live/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/broadcast/live/route.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Full type-check**
@@ -957,7 +957,7 @@ Expected: no errors.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add app/api/portal/tiger/broadcast/live/route.ts app/api/portal/tiger/broadcast/live/route.test.ts
+git add app/api/portal/admin/broadcast/live/route.ts app/api/portal/admin/broadcast/live/route.test.ts
 git commit -m "feat(broadcast): stop playlist music when broadcast ends"
 ```
 
@@ -1184,7 +1184,7 @@ export function BroadcastPlayer({ state, tracks }: { state: BroadcastState; trac
   return (
     <div ref={containerRef} className="group relative aspect-video w-full overflow-hidden bg-ink-900">
       <div className="absolute left-0 top-0" style={{ width: NATIVE_WIDTH, height: NATIVE_HEIGHT, transform: `scale(${scale})`, transformOrigin: "top left" }}>
-        <iframe className="h-full w-full border-0" src="/broadcast" title="Maroon Masters live broadcast" />
+        <iframe className="h-full w-full border-0" src="/broadcast" title="Maroon Tournament live broadcast" />
       </div>
 
       <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-gradient-to-t from-black/80 to-transparent px-4 py-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
@@ -1270,12 +1270,12 @@ export function WatchLiveExperience({
           <iframe
             className="aspect-video w-full"
             src={`https://www.youtube-nocookie.com/embed/${YOUTUBE_LIVE_VIDEO_ID}?rel=0`}
-            title="Maroon Masters live broadcast"
+            title="Maroon Tournament live broadcast"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen
           />
         ) : state.tournamentLive ? (
-          // Tiger has gone live (Broadcast Controls) — embed the real,
+          // Admin has gone live (Broadcast Controls) — embed the real,
           // shared broadcast (auto-rotating leaderboard/match-play scenes;
           // see app/broadcast/page.tsx) instead of the pre-show placeholder,
           // scaled to the real 16:9 proportions with fullscreen/volume
@@ -1287,7 +1287,7 @@ export function WatchLiveExperience({
             <Image src="/loading/desktop.png" alt="" fill priority sizes="(max-width: 1200px) 100vw, 1200px" className="hidden object-cover lg:block" />
             <div className="absolute inset-0 flex items-center justify-center bg-maroon-900/20 px-4 text-center">
               <div className="flex flex-col items-center">
-                <p className="mb-2 font-condensed text-xs font-bold uppercase tracking-eyebrow text-white sm:text-sm">Maroon Masters On The Range</p>
+                <p className="mb-2 font-condensed text-xs font-bold uppercase tracking-eyebrow text-white sm:text-sm">Maroon Tournament On The Range</p>
                 <div className="inline-flex w-fit items-center justify-center rounded-sm border border-white/30 bg-maroon-900/75 px-3 py-2 text-cream-50 shadow-md">
                   <RoundCountdown className="text-center" />
                 </div>
@@ -1385,7 +1385,7 @@ git commit -m "feat(watch-live): scaled broadcast player with fullscreen + volum
 ## Task 12: Broadcast Controls — Playlist section
 
 **Files:**
-- Modify: `components/portal/tiger/BroadcastControlsPanel.tsx`
+- Modify: `components/portal/admin/BroadcastControlsPanel.tsx`
 
 **Interfaces:**
 - Consumes: the five host routes from Tasks 4–7 (`upload/sign`, `upload/confirm`, `play`, `loop-mode`, `delete`), `PlaylistTrack` type, `BroadcastState`'s `audioTrackId`/`audioLoopMode` fields.
@@ -1395,7 +1395,7 @@ git commit -m "feat(watch-live): scaled broadcast player with fullscreen + volum
 
 `BroadcastControlsPanel` currently takes `{ initialDisplayYear, initialState, config }`. Add a fourth prop `initialTracks: PlaylistTrack[]` (its caller, `app/portal/admin/broadcast-controls/page.tsx`, is updated in Step 5).
 
-At the top of `components/portal/tiger/BroadcastControlsPanel.tsx`, add imports:
+At the top of `components/portal/admin/BroadcastControlsPanel.tsx`, add imports:
 
 ```ts
 import type { PlaylistTrack } from "@/lib/broadcast/playlist";
@@ -1435,7 +1435,7 @@ Add these functions inside the component, alongside `postAnnouncement`/`clearAnn
     setError(null);
     try {
       const extension = "." + (file.name.split(".").pop() ?? "mp3").toLowerCase();
-      const signRes = await fetch("/api/portal/tiger/broadcast/playlist/upload/sign", {
+      const signRes = await fetch("/api/portal/admin/broadcast/playlist/upload/sign", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ extension }),
@@ -1463,7 +1463,7 @@ Add these functions inside the component, alongside `postAnnouncement`/`clearAnn
         probe.src = URL.createObjectURL(file);
       });
 
-      const confirmRes = await fetch("/api/portal/tiger/broadcast/playlist/upload/confirm", {
+      const confirmRes = await fetch("/api/portal/admin/broadcast/playlist/upload/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: file.name.replace(/\.[^.]+$/, ""), storagePath: signData.storagePath, durationSeconds }),
@@ -1485,7 +1485,7 @@ Add these functions inside the component, alongside `postAnnouncement`/`clearAnn
     setPlaylistBusy(trackId);
     setError(null);
     try {
-      const res = await fetch("/api/portal/tiger/broadcast/playlist/play", {
+      const res = await fetch("/api/portal/admin/broadcast/playlist/play", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ trackId }),
@@ -1505,7 +1505,7 @@ Add these functions inside the component, alongside `postAnnouncement`/`clearAnn
     setPlaylistBusy(`loop-${mode}`);
     setError(null);
     try {
-      const res = await fetch("/api/portal/tiger/broadcast/playlist/loop-mode", {
+      const res = await fetch("/api/portal/admin/broadcast/playlist/loop-mode", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mode }),
@@ -1525,7 +1525,7 @@ Add these functions inside the component, alongside `postAnnouncement`/`clearAnn
     setPlaylistBusy(`delete-${trackId}`);
     setError(null);
     try {
-      const res = await fetch("/api/portal/tiger/broadcast/playlist/delete", {
+      const res = await fetch("/api/portal/admin/broadcast/playlist/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ trackId }),
@@ -1636,13 +1636,13 @@ In `app/portal/admin/broadcast-controls/page.tsx`, change:
 
 ```ts
 import { getBroadcastPayload } from "@/lib/broadcast/state";
-import { BroadcastControlsPanel } from "@/components/portal/tiger/BroadcastControlsPanel";
+import { BroadcastControlsPanel } from "@/components/portal/admin/BroadcastControlsPanel";
 ```
 to:
 ```ts
 import { getBroadcastPayload } from "@/lib/broadcast/state";
 import { getBroadcastPlaylist } from "@/lib/broadcast/playlist";
-import { BroadcastControlsPanel } from "@/components/portal/tiger/BroadcastControlsPanel";
+import { BroadcastControlsPanel } from "@/components/portal/admin/BroadcastControlsPanel";
 ```
 
 and change:
@@ -1683,7 +1683,7 @@ Expected: exits 0.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add components/portal/tiger/BroadcastControlsPanel.tsx app/portal/admin/broadcast-controls/page.tsx
+git add components/portal/admin/BroadcastControlsPanel.tsx app/portal/admin/broadcast-controls/page.tsx
 git commit -m "feat(broadcast): Playlist tab in Broadcast Controls"
 ```
 

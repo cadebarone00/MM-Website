@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { CourseLibraryPanel } from "@/components/portal/tiger/CourseLibraryPanel";
+import { CourseLibraryPanel } from "@/components/portal/admin/CourseLibraryPanel";
 import type { LiveCourse, LiveHole } from "@/lib/live/types";
 
 export default async function CourseLibraryPage() {

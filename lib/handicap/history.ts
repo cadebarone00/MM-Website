@@ -21,7 +21,7 @@ export function selectHandicapScores(rounds: HandicapHistoryRound[], view: Score
 export function handicapHistory(
   archived: ArchivedHandicapRound[],
   submitted: HandicapRoundSummary[],
-  section: "maroon-masters" | "overall",
+  section: "maroon-tournament" | "overall",
 ): HandicapHistoryRound[] {
   // A non-18-hole round (e.g. 2024's 9-hole Cradle "Play 4, Take 3" round)
   // is never a real personal round — already excluded from the index math

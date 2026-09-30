@@ -18,7 +18,7 @@ const news = [
     kicker: "Press Room",
     image: "/champions/2026.jpg",
     body: [
-      "The Maroon Masters home base is being staged for the 2027 tournament with live scoring, rosters, matches, highlights, and media all moving into one cleaner view.",
+      "The Maroon Tournament home base is being staged for the 2027 tournament with live scoring, rosters, matches, highlights, and media all moving into one cleaner view.",
       "Once the tournament begins, this space can carry presser notes, daily recaps, player quotes, and official updates without sending fans away from the home screen.",
       "The goal is simple: make the site feel alive before, during, and after every session.",
     ],
@@ -306,7 +306,7 @@ function SocialsSection() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => {
-                  if (!confirmLeave("You're leaving The Maroon Masters to open Instagram. Continue?")) e.preventDefault();
+                  if (!confirmLeave("You're leaving The Maroon to open Instagram. Continue?")) e.preventDefault();
                 }}
                 className="group relative flex aspect-[9/16] min-h-[140px] flex-col justify-between overflow-hidden rounded-md border border-gold-400 bg-gradient-to-b from-maroon-800 to-ink-900 p-2 text-white shadow-sm sm:min-h-[300px] sm:rounded-lg sm:p-4 sm:shadow-lg"
               >
@@ -322,7 +322,7 @@ function SocialsSection() {
                   <Play size={16} fill="currentColor" className="hidden sm:block" />
                 </div>
                 <div className="relative">
-                  <h3 className="m-0 line-clamp-2 font-sans text-[10px] font-extrabold sm:text-base">{reel.caption || "Maroon Masters Reel"}</h3>
+                  <h3 className="m-0 line-clamp-2 font-sans text-[10px] font-extrabold sm:text-base">{reel.caption || "Maroon Tournament Reel"}</h3>
                 </div>
               </a>
             ))}
@@ -364,7 +364,7 @@ function SocialsSection() {
                   key={video.id}
                   href={ALL_VIDEOS_HREF}
                   onClick={(e) => {
-                    if (!confirmLeave("You're leaving The Maroon Masters to view all videos. Continue?")) e.preventDefault();
+                    if (!confirmLeave("You're leaving The Maroon to view all videos. Continue?")) e.preventDefault();
                   }}
                   className={cardClassName}
                 >

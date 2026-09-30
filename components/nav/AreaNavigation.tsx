@@ -16,7 +16,7 @@ export function AreaNavigation({ children }: { children: ReactNode }) {
     let stored: AreaHistory = {};
     try {
       const raw = JSON.parse(sessionStorage.getItem(KEY) ?? "{}");
-      for (const area of ["website", "portal", "scoring", "tiger"] as const) {
+      for (const area of ["website", "portal", "scoring", "admin"] as const) {
         if (Array.isArray(raw?.[area])) stored[area] = raw[area].filter((path: unknown) => typeof path === "string" && path.startsWith("/") && !path.startsWith("//")).slice(-100);
       }
     } catch { stored = {}; }

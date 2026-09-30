@@ -21,7 +21,7 @@ test("getNextTournament rejects with no Supabase configuration in the test envir
   await assert.rejects(() => getNextTournament());
 });
 
-// Same limitation as above: getNextVenue's course overlay (Tiger Center's
+// Same limitation as above: getNextVenue's course overlay (Admin Center's
 // live_round_state/live_courses) needs real Supabase configuration, which
 // this test environment doesn't have. Confirms it propagates rather than
 // silently returning the static nextVenue.

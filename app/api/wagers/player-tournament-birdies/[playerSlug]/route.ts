@@ -30,7 +30,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ playerSlug
 
   const blockers: string[] = [];
   const roundCount = settings?.round_count ?? null;
-  if (!roundCount) blockers.push("Tiger has not set the tournament round count yet.");
+  if (!roundCount) blockers.push("Admin has not set the tournament round count yet.");
   if (!roster) blockers.push("This player is not on the active tournament roster.");
 
   const courseById = new Map((courses ?? []).map((course) => [course.id as string, course]));

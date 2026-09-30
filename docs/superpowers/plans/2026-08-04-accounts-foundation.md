@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Turn the currently-inert Sign Up / Login buttons into working accounts backed by Supabase, add a post-login Website/Portal fork screen for players and Tiger (host), and let Tiger pre-assign player usernames that players claim by signing up with them.
+**Goal:** Turn the currently-inert Sign Up / Login buttons into working accounts backed by Supabase, add a post-login Website/Portal fork screen for players and Admin (host), and let Admin pre-assign player usernames that players claim by signing up with them.
 
-**Architecture:** Supabase (Postgres + Auth) is the new backend, reached only from the server (Next.js Route Handlers and Server Components) — the browser never talks to Supabase directly. Two server-side Supabase clients: a cookie-bound client (via `@supabase/ssr`) that acts as the signed-in user for auth + reading their own `profiles` row, and a service-role client used only for `player_slots` (Tiger's admin actions and the signup-time username match) and for the one unauthenticated email lookup login needs. `middleware.ts` keeps auth cookies refreshed. `lib/useAccountSession.ts` is rewritten to fetch session state from a new `GET /api/account/me` route instead of localStorage.
+**Architecture:** Supabase (Postgres + Auth) is the new backend, reached only from the server (Next.js Route Handlers and Server Components) — the browser never talks to Supabase directly. Two server-side Supabase clients: a cookie-bound client (via `@supabase/ssr`) that acts as the signed-in user for auth + reading their own `profiles` row, and a service-role client used only for `player_slots` (Admin's admin actions and the signup-time username match) and for the one unauthenticated email lookup login needs. `middleware.ts` keeps auth cookies refreshed. `lib/useAccountSession.ts` is rewritten to fetch session state from a new `GET /api/account/me` route instead of localStorage.
 
 **Tech Stack:** Next.js 16 App Router (Route Handlers + Server Components), `@supabase/supabase-js` `^2.112.0`, `@supabase/ssr` `^0.12.4`, Supabase Postgres + Auth (hosted, free tier). Dev-only: `tsx` `^4.23.6` to run the two new pure-logic tests via Node's built-in test runner (no test framework existed in this repo before this plan).
 
@@ -118,14 +118,14 @@ This is what makes Sign Up / Login actually work. You only have to do this once.
 ## What you're doing, in plain terms
 
 You're creating a free account on Supabase (a hosted database + login
-service), creating one project for the Maroon Masters site, pasting in one
+service), creating one project for the Maroon Tournament site, pasting in one
 SQL script that creates two tables, then copying three keys into `.env` so
 the website can talk to it.
 
 ## Steps
 
 1. Go to https://supabase.com and sign up (free tier is enough).
-2. Click **New Project**. Name it `maroon-masters`, pick any region close to
+2. Click **New Project**. Name it `maroon-tournament`, pick any region close to
    you, set a database password (save it somewhere — you likely won't need
    it again, Supabase manages the connection for you).
 3. Once the project finishes provisioning, open the **SQL Editor** (left
@@ -1260,7 +1260,7 @@ exists.)
 
 ```bash
 git add app/account/choose/page.tsx
-git commit -m "feat: add Website/Portal fork screen for players and Tiger"
+git commit -m "feat: add Website/Portal fork screen for players and Admin"
 ```
 
 ---
@@ -1298,7 +1298,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { findPlayerTeam } from "@/lib/portal/findPlayerTeam";
 import { Avatar } from "@/components/ui/Avatar";
-import { TigerAvatar } from "@/components/ui/TigerAvatar";
+import { AdminAvatar } from "@/components/ui/AdminAvatar";
 
 export default async function PortalPage() {
   const supabase = await createSupabaseServerClient();
@@ -1319,8 +1319,8 @@ export default async function PortalPage() {
   if (profile.is_host) {
     return (
       <div className="mx-auto flex max-w-[480px] flex-col items-center gap-4 px-4 py-16 text-center sm:px-7">
-        <TigerAvatar size="lg" />
-        <h1 className="font-serif text-2xl font-bold text-ink-900">Welcome, Tiger</h1>
+        <AdminAvatar size="lg" />
+        <h1 className="font-serif text-2xl font-bold text-ink-900">Welcome, Admin</h1>
         <p className="font-sans text-sm text-ink-500">Host tools are coming in a later round.</p>
       </div>
     );
@@ -1346,7 +1346,7 @@ export default async function PortalPage() {
 
 Run: `npx tsc --noEmit` — same three pre-existing errors only.
 
-Manual, using a player account (sign up on `/signup` with a username Tiger
+Manual, using a player account (sign up on `/signup` with a username Admin
 has set on `/portal/admin` — that page is Task 10, so for now set one
 directly in Supabase Table Editor by editing a `player_slots` row's
 `username` column): log in, land on `/account/choose`, click **Portal**,
@@ -1364,7 +1364,7 @@ git commit -m "feat: add minimal /portal landing page, retire scorekeeper rewrit
 
 ---
 
-## Task 10: Tiger's player-username admin page
+## Task 10: Admin's player-username admin page
 
 **Files:**
 - Create: `app/portal/admin/page.tsx`
@@ -1606,7 +1606,7 @@ Run: `npx tsc --noEmit` — same three pre-existing errors only.
 
 Manual: in Supabase Table Editor, set one `profiles` row's `is_host` to
 `true` for your own test account (this is the one-time manual step from
-the design spec — Tiger isn't self-service-promotable through the UI).
+the design spec — Admin isn't self-service-promotable through the UI).
 Log in as that account, visit `/portal/admin`, confirm all 13 players
 list with "Open" status, set a username for one, confirm it now shows
 "Claimed" once a matching sign-up happens (Task 5's flow), and confirm
@@ -1617,7 +1617,7 @@ non-host account redirects to `/`.
 
 ```bash
 git add app/portal/admin/page.tsx app/api/portal/admin/set-username/route.ts app/api/portal/admin/unlink/route.ts components/portal/PlayerSlotsAdmin.tsx
-git commit -m "feat: add Tiger-only player-username admin page"
+git commit -m "feat: add Admin-only player-username admin page"
 ```
 
 ---
@@ -1717,10 +1717,10 @@ Replace the signed-out branch and the `label`/`kind` handling:
   }
 
   const label = session.kind === "host" ? session.username : session.displayName;
-  const portalLabel = session.kind === "host" ? "Tiger Center" : session.kind === "player" ? "Player Portal" : null;
+  const portalLabel = session.kind === "host" ? "Admin Center" : session.kind === "player" ? "Player Portal" : null;
 ```
 
-And guard the `Portal`/`Tiger Center` link in the open menu (fans don't
+And guard the `Portal`/`Admin Center` link in the open menu (fans don't
 get one):
 
 ```typescript
@@ -1751,7 +1751,7 @@ And the avatar rendering (fans get a plain `Avatar`, no team ring):
 
 ```typescript
         {session.kind === "host" ? (
-          <TigerAvatar size="xs" />
+          <AdminAvatar size="xs" />
         ) : session.kind === "player" ? (
           <Avatar name={label} src={getPlayerAvatar(session.playerSlug)} size="xs" team={session.team} />
         ) : (
@@ -1767,7 +1767,7 @@ added):
 
 ```typescript
             {session?.kind === "host" ? (
-              <TigerAvatar size="xs" />
+              <AdminAvatar size="xs" />
             ) : session?.kind === "player" ? (
               <Avatar name={getPlayerDisplayName(session.playerSlug)} src={getPlayerAvatar(session.playerSlug)} size="xs" team={session.team} />
             ) : session?.kind === "fan" ? (
@@ -1793,14 +1793,14 @@ Expected: succeeds.
 Manual, `npm run dev`:
 - Signed out: desktop header shows Login/Sign Up; mobile Account menu
   shows both buttons, both working.
-- Signed in as the Task 5 fan account: no Portal/Tiger Center link
+- Signed in as the Task 5 fan account: no Portal/Admin Center link
   anywhere in the account menu or `AccountBadge` dropdown; `MorePanel`
   shows no Portal item; Sign Out works and immediately reverts the header
   to signed-out.
 - Signed in as a player account (Task 9/10's test player): `AccountBadge`
   shows "Player Portal" linking to `/portal`; `MorePanel` shows the same;
   avatar shows the correct team ring.
-- Signed in as Tiger: `AccountBadge` shows "Tiger Center"; `TigerAvatar`
+- Signed in as Admin: `AccountBadge` shows "Admin Center"; `AdminAvatar`
   renders.
 
 - [ ] **Step 5: Commit**
@@ -1844,11 +1844,11 @@ cold. Then, in order:
 3. Verify the email (via the real link, or manually in Supabase
    Authentication -> Users), log in, confirm landing goes straight to `/`
    (no fork screen).
-4. Promote your own test account to Tiger by setting `is_host = true` on
+4. Promote your own test account to Admin by setting `is_host = true` on
    its `profiles` row directly in Supabase (documented in
-   `docs/supabase-setup.md` as the one manual step). Log in as Tiger,
+   `docs/supabase-setup.md` as the one manual step). Log in as Admin,
    confirm `/account/choose` appears, "Website" and "Portal" both work,
-   `/portal` shows the Tiger landing, `/portal/admin` lists all 13
+   `/portal` shows the Admin landing, `/portal/admin` lists all 13
    players as "Open".
 5. On `/portal/admin`, set a username for one player. Sign up a third test
    account using that exact username. Confirm it auto-links (no separate

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getBroadcastPayload } from "@/lib/broadcast/state";
 import { getBroadcastPlaylist } from "@/lib/broadcast/playlist";
-import { BroadcastControlsPanel } from "@/components/portal/tiger/BroadcastControlsPanel";
+import { BroadcastControlsPanel } from "@/components/portal/admin/BroadcastControlsPanel";
 
 export default async function BroadcastControlsPage() {
   const supabase = await createSupabaseServerClient();

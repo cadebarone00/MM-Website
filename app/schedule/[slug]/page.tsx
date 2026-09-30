@@ -7,7 +7,7 @@ import { getVenueBySlugAsync, getUpcomingRoundSchedule } from "@/lib/data/active
 
 // Without this, generateStaticParams below makes Next.js prerender this
 // page once and cache it (same as any other statically-generated route) —
-// the upcoming year's schedule would then only ever reflect Tiger
+// the upcoming year's schedule would then only ever reflect Admin
 // Center's live round/course setup as of the last deploy, not in real
 // time. Same reasoning as app/broadcast/page.tsx and app/watch-live/page.tsx.
 export const dynamic = "force-dynamic";
@@ -21,7 +21,7 @@ export default async function ScheduleYearPage({ params, searchParams }: { param
   const venue = await getVenueBySlugAsync(slug);
   if (!venue) notFound();
 
-  // Only the upcoming year has a Tiger Center round setup to read — past
+  // Only the upcoming year has a Admin Center round setup to read — past
   // years stay on the static venue.sessions/venue.courses data below.
   const year = nativeSeasonYear(slug);
   const rounds = year ? await getUpcomingRoundSchedule(year) : [];

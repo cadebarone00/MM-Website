@@ -1,4 +1,4 @@
-import { ScoringPreviewPhone } from "@/components/portal/tiger/ScoringPreviewPhone";
+import { ScoringPreviewPhone } from "@/components/portal/admin/ScoringPreviewPhone";
 import { redirect } from "next/navigation";
 import { requireHost } from "@/lib/portal/requireHost";
 import { type ScoringState } from "@/components/portal/ScoringPanel";

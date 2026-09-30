@@ -9,5 +9,5 @@ create table if not exists public.website_section_settings (
 alter table public.website_section_settings enable row level security;
 revoke all on public.website_section_settings from anon, authenticated;
 grant all on public.website_section_settings to service_role;
--- All reads and writes are server-side; mutations require the existing Tiger host guard.
+-- All reads and writes are server-side; mutations require the existing Admin host guard.
 commit;

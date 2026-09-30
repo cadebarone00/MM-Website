@@ -82,7 +82,7 @@ export function ProfileEditGrid({ profile, pendingEdits }: { profile: PlayerProf
         <section key={section.key} className="border-t border-ink-100 pt-6 first:border-t-0 first:pt-0">
           <h2 className="font-serif text-xl font-bold text-maroon-700">{section.title}</h2>
           {error && <p className="mt-3 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
-          {savedSection === section.key && <p className="mt-3 rounded-sm bg-cream-100 px-3 py-2 font-sans text-sm text-ink-700">Saved — waiting on Tiger&rsquo;s approval.</p>}
+          {savedSection === section.key && <p className="mt-3 rounded-sm bg-cream-100 px-3 py-2 font-sans text-sm text-ink-700">Saved — waiting on Admin&rsquo;s approval.</p>}
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             {section.fields.map((field) => {
               const pending = pendingByField.get(field.key as string);

@@ -2,7 +2,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear, getActiveSeasonYear } from "@/lib/live/activeSeason";
-import { MasterSettingsPanel } from "@/components/portal/tiger/MasterSettingsPanel";
+import { MasterSettingsPanel } from "@/components/portal/admin/MasterSettingsPanel";
 import type { TournamentSettings } from "@/lib/live/types";
 
 export default async function MasterSettingsPage({ params }: { params: Promise<{ year: string }> }) {

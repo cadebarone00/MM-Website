@@ -72,7 +72,7 @@ Reuses almost everything from Phase 1+2 unchanged:
   standing is comparable across devices/accounts — required for the
   end-of-tournament leaderboard to mean anything.
 - Bets actually **settle** now. Phase 1+2 had no settlement — everything
-  stayed "Pending" forever. Phase 3 adds a Tiger-only admin flow (extending
+  stayed "Pending" forever. Phase 3 adds a Admin-only admin flow (extending
   the existing `/portal/admin` pattern from accounts-foundation) to enter
   real outcomes (a match's final result, a player's actual stroke count for
   a round, etc.). Entering an outcome resolves every pending MM Coins bet
@@ -81,7 +81,7 @@ Reuses almost everything from Phase 1+2 unchanged:
 - A **MM Coins leaderboard** ranks every participant by balance. Once the
   tournament's last market has closed (no more bets possible for that
   year), the top balance is the **MM Coins Champion** — the prize itself
-  (amount, funding) is arranged by Tiger outside the app; the app's job is
+  (amount, funding) is arranged by Admin outside the app; the app's job is
   just to determine and display the winner unambiguously.
 
 ## Real Wagers
@@ -119,7 +119,7 @@ $20 says so. Disagree? Take the other side."*
 right there), and settled (resolved, showing who owes whom and whether it's
 been marked paid).
 
-**Settlement:** the same Tiger-entered real outcomes that settle MM Coins
+**Settlement:** the same Admin-entered real outcomes that settle MM Coins
 bets also settle matched Real Wagers challenges tied to that market/line.
 Resolving one computes the winner and the exact amount owed (using the
 odds fixed at posting time and the final matched stake — ordinary
@@ -133,8 +133,8 @@ outside the app. The app shows the obligation clearly ("You owe
 @handle $23" / "@handle owes you $41") and lets either side mark it paid.
 The 24-hour clock starts at settlement.
 
-**Enforcement:** Tiger's admin view (same extension as the MM Coins
-settlement tool) surfaces overdue payments and lets Tiger ban a participant
+**Enforcement:** Admin's admin view (same extension as the MM Coins
+settlement tool) surfaces overdue payments and lets Admin ban a participant
 from Real Wagers (an incorrect/fake Venmo handle, or missing the 24-hour
 window, are the two stated grounds). A ban blocks posting/taking new
 challenges; it does not need to unwind anything already matched.
@@ -149,7 +149,7 @@ challenges; it does not need to unwind anything already matched.
   line/odds the mock odds module currently shows for that market; that's
   the whole point of "the odds are fixed at posting" — this phase doesn't
   change how those numbers are generated.
-- Automated dispute resolution beyond "mark as paid" plus Tiger's manual
+- Automated dispute resolution beyond "mark as paid" plus Admin's manual
   oversight — no in-app arbitration, evidence upload, etc.
 - MM Coins balance top-ups/replenishment — none, by design ("if you're out,
   you're out").
@@ -164,7 +164,7 @@ MM Coins and Real Wagers are described together here because they're one
 coherent vision (same markets, one toggle), but each is its own
 implementation plan — together they're comparable in size to all of
 Phase 1+2. MM Coins goes first: it's smaller, mostly extends code that
-already exists, and gives Tiger a working settlement tool sooner. Real
+already exists, and gives Admin a working settlement tool sooner. Real
 Wagers — the challenge/counter/portfolio/Venmo system — is entirely new
 and follows as its own plan.
 
@@ -175,7 +175,7 @@ and follows as its own plan.
   balances key off `profiles.id`.
 - Requires a host/admin role to enter real outcomes — `profiles.is_host`
   already exists and `/portal/admin` already establishes the pattern for
-  Tiger-only tooling.
+  Admin-only tooling.
 - Builds directly on Phase 1+2's markets, mock odds, and UI components
   (`components/wagers/`, `lib/wagers/mockOdds.ts`) — those are extended,
   not replaced, for MM Coins; Real Wagers is new UI reusing the same
@@ -192,4 +192,4 @@ needed beyond that.
 ## Open questions (not blocking, flagged for later)
 
 - Exact prize funding/amount for the MM Coins Champion — a real-world
-  arrangement Tiger makes, not something the app needs to model.
+  arrangement Admin makes, not something the app needs to model.

@@ -261,7 +261,7 @@ export function Header() {
         <div className="flex items-center justify-between px-4 h-14 sm:px-7 sm:h-[64px]">
           <div className="flex items-center gap-3 sm:gap-9">
             <Link href="/" className="shrink-0">
-              <Image src="/assets/wordmark-light.svg" alt="The Maroon Masters" width={520} height={92} className="h-5 w-auto sm:h-7" priority />
+              <Image src="/assets/wordmark-light.svg" alt="The Maroon Tournament" width={520} height={92} className="h-5 w-auto sm:h-7" priority />
             </Link>
             {/* Desktop nav — hidden below lg (covers phones in both orientations) */}
             <nav className="hidden lg:flex gap-0">
@@ -296,8 +296,8 @@ export function Header() {
               href="https://www.instagram.com/themaroonmasters/"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="The Maroon Masters Instagram"
-              title="The Maroon Masters Instagram"
+              aria-label="The Maroon Tournament Instagram"
+              title="The Maroon Tournament Instagram"
               className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20 sm:h-9 sm:w-9"
             >
               <InstagramGlyph />

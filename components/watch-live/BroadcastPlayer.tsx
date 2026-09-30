@@ -80,7 +80,7 @@ export function BroadcastPlayer({ state, tracks }: { state: BroadcastState; trac
   return (
     <div ref={containerRef} onMouseMove={revealControls} className="relative aspect-video w-full overflow-hidden bg-ink-900">
       <div className="absolute left-0 top-0" style={{ width: NATIVE_WIDTH, height: NATIVE_HEIGHT, transform: `scale(${scale})`, transformOrigin: "top left" }}>
-        <iframe className="h-full w-full border-0" src="/broadcast" title="Maroon Masters live broadcast" />
+        <iframe className="h-full w-full border-0" src="/broadcast" title="Maroon Tournament live broadcast" />
       </div>
 
       {/* /broadcast has nothing inside it a viewer needs to click — this

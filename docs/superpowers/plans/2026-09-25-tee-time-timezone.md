@@ -4,7 +4,7 @@
 
 **Goal:** Replace the hardcoded "tee times are always Pacific" assumption with a per-tournament-year configurable venue timezone, while making every non-admin tee-time display on the site render in whoever is actually looking at it's own local time.
 
-**Architecture:** One new `timezone` setting on `live_tournament_settings`, read wherever a tee time is derived or shown venue-locally (Courses & Format, Matchups, the Career Stats archive — all admin tools where Tiger benefits from seeing what he actually typed). Every other display — the public match profile, live leaderboard cards, the Scoring tab, and the portal's "My Matches" cards — switches from a server-computed, zone-fixed string to a browser-formatted one with no explicit zone (which is what "the viewer's own local time" means in JavaScript), following the same server-fetch/client-render split those flows either already have or gain in this plan.
+**Architecture:** One new `timezone` setting on `live_tournament_settings`, read wherever a tee time is derived or shown venue-locally (Courses & Format, Matchups, the Career Stats archive — all admin tools where Admin benefits from seeing what he actually typed). Every other display — the public match profile, live leaderboard cards, the Scoring tab, and the portal's "My Matches" cards — switches from a server-computed, zone-fixed string to a browser-formatted one with no explicit zone (which is what "the viewer's own local time" means in JavaScript), following the same server-fetch/client-render split those flows either already have or gain in this plan.
 
 **Tech Stack:** Next.js 16 (App Router), React 19, TypeScript, Supabase (Postgres), `node:test`.
 
@@ -36,7 +36,7 @@
 - `lib/data/timezones.ts` — curated IANA zone list, same pattern as `lib/data/usStates.ts`.
 - `lib/live/viewerLocalTime.ts` + `lib/live/viewerLocalTime.test.ts` — the viewer-local formatter.
 
-**Modified:** `lib/live/sessionTeeTimes.ts` (+ test), `lib/live/types.ts`, `components/portal/tiger/MasterSettingsPanel.tsx`, `app/portal/admin/master-settings/[year]/page.tsx`, `app/api/portal/tiger/master-settings/route.ts`, `app/api/portal/tiger/matches/route.ts`, `app/api/portal/tiger/sessions/lock/route.ts`, `components/portal/tiger/MatchupsPanel.tsx`, `app/portal/admin/master-settings/[year]/matchups/page.tsx`, `components/portal/tiger/CoursesFormatPanel.tsx`, `app/portal/admin/master-settings/[year]/courses-format/page.tsx`, `lib/data/liveRoundFormatArchive.ts`, `app/portal/admin/career-stats/page.tsx`, `lib/live/matchProfile.ts`, `components/leaderboard/LiveLeaderboardContent.tsx`, `components/portal/ScoringStatusScreen.tsx`, `lib/portal/matchCards.ts`, `lib/portal/liveMatchCards.ts`, `components/portal/PortalMatches.tsx`, `project_specs.md`.
+**Modified:** `lib/live/sessionTeeTimes.ts` (+ test), `lib/live/types.ts`, `components/portal/admin/MasterSettingsPanel.tsx`, `app/portal/admin/master-settings/[year]/page.tsx`, `app/api/portal/admin/master-settings/route.ts`, `app/api/portal/admin/matches/route.ts`, `app/api/portal/admin/sessions/lock/route.ts`, `components/portal/admin/MatchupsPanel.tsx`, `app/portal/admin/master-settings/[year]/matchups/page.tsx`, `components/portal/admin/CoursesFormatPanel.tsx`, `app/portal/admin/master-settings/[year]/courses-format/page.tsx`, `lib/data/liveRoundFormatArchive.ts`, `app/portal/admin/career-stats/page.tsx`, `lib/live/matchProfile.ts`, `components/leaderboard/LiveLeaderboardContent.tsx`, `components/portal/ScoringStatusScreen.tsx`, `lib/portal/matchCards.ts`, `lib/portal/liveMatchCards.ts`, `components/portal/PortalMatches.tsx`, `project_specs.md`.
 
 ---
 
@@ -51,7 +51,7 @@
 -- supabase/tournament_timezone.sql
 -- Adds the tournament year's venue timezone (an IANA zone id, e.g.
 -- "America/Los_Angeles") to live_tournament_settings. Tee times for that
--- year are entered and shown venue-local in Tiger's admin tools using this
+-- year are entered and shown venue-local in Admin's admin tools using this
 -- zone; every other display on the site shows the viewer's own local time
 -- instead. Defaults to Pacific so the already-in-progress 2027 season (a
 -- real California venue) needs no action. Run once in the Supabase SQL
@@ -330,11 +330,11 @@ git commit -m "Add TournamentSettings.timezone"
 ### Task 5: Master Settings — timezone selector (UI + API)
 
 **Files:**
-- Modify: `components/portal/tiger/MasterSettingsPanel.tsx`, `app/portal/admin/master-settings/[year]/page.tsx`, `app/api/portal/tiger/master-settings/route.ts`
+- Modify: `components/portal/admin/MasterSettingsPanel.tsx`, `app/portal/admin/master-settings/[year]/page.tsx`, `app/api/portal/admin/master-settings/route.ts`
 
 **Interfaces:**
 - Consumes: `TournamentSettings.timezone` (Task 4), `TIMEZONES`/`TIMEZONE_IDS` (Task 2).
-- Produces: `POST /api/portal/tiger/master-settings` now accepts/writes `timezone`. `MasterSettingsPanel` shows a zone `<select>` sharing the Venue Name section's existing lock.
+- Produces: `POST /api/portal/admin/master-settings` now accepts/writes `timezone`. `MasterSettingsPanel` shows a zone `<select>` sharing the Venue Name section's existing lock.
 
 - [ ] **Step 1: `app/portal/admin/master-settings/[year]/page.tsx`**
 
@@ -364,7 +364,7 @@ Add `timezone` to the `.select()` string and the mapped object:
 
 (The `?? "America/Los_Angeles"` fallback only matters for a row that somehow doesn't exist yet — `maybeSingle()` can return `null` — once a row exists the column's own `not null default` guarantees a real value.)
 
-- [ ] **Step 2: `components/portal/tiger/MasterSettingsPanel.tsx`**
+- [ ] **Step 2: `components/portal/admin/MasterSettingsPanel.tsx`**
 
 Add local state, a `<select>` inside the existing "Venue Name" section (sharing its `venueLocked` toggle — no new lock button), and include `timezone` in the save payload:
 
@@ -396,7 +396,7 @@ export function MasterSettingsPanel({ year, initialSettings, isActiveYear }: { y
   async function save() {
     setSaving(true); setError(null);
     try {
-      const response = await fetch("/api/portal/tiger/master-settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ year, beginDate: beginDate || null, endDate: endDate || null, datesLocked, venueName: venueName.trim() || null, venueLocked, timezone }) });
+      const response = await fetch("/api/portal/admin/master-settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ year, beginDate: beginDate || null, endDate: endDate || null, datesLocked, venueName: venueName.trim() || null, venueLocked, timezone }) });
       const data = await response.json();
       if (!data.ok) { setError(data.error); return; }
       window.location.reload();
@@ -407,7 +407,7 @@ export function MasterSettingsPanel({ year, initialSettings, isActiveYear }: { y
     if (!window.confirm(`Make ${year} the active year? This is what the public site and player scoring will follow.`)) return;
     setSettingActive(true); setError(null);
     try {
-      const response = await fetch("/api/portal/tiger/active-season", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ year }) });
+      const response = await fetch("/api/portal/admin/active-season", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ year }) });
       const data = await response.json();
       if (!data.ok) { setError(data.error); return; }
       window.location.reload();
@@ -441,7 +441,7 @@ export function MasterSettingsPanel({ year, initialSettings, isActiveYear }: { y
 }
 ```
 
-- [ ] **Step 3: `app/api/portal/tiger/master-settings/route.ts`**
+- [ ] **Step 3: `app/api/portal/admin/master-settings/route.ts`**
 
 Add `timezone` to the destructure, validate it against `TIMEZONE_IDS`, and write it:
 
@@ -516,7 +516,7 @@ Run: `npm run dev`, confirm the Venue Name section now shows a timezone dropdown
 - [ ] **Step 5: Commit**
 
 ```bash
-git add components/portal/tiger/MasterSettingsPanel.tsx "app/portal/admin/master-settings/[year]/page.tsx" app/api/portal/tiger/master-settings/route.ts
+git add components/portal/admin/MasterSettingsPanel.tsx "app/portal/admin/master-settings/[year]/page.tsx" app/api/portal/admin/master-settings/route.ts
 git commit -m "Add a venue timezone selector to Master Settings"
 ```
 
@@ -525,12 +525,12 @@ git commit -m "Add a venue timezone selector to Master Settings"
 ### Task 6: Thread the tournament's timezone into tee-time derivation
 
 **Files:**
-- Modify: `app/api/portal/tiger/matches/route.ts`, `app/api/portal/tiger/sessions/lock/route.ts`
+- Modify: `app/api/portal/admin/matches/route.ts`, `app/api/portal/admin/sessions/lock/route.ts`
 
 **Interfaces:**
 - Consumes: `deriveMatchTeeTime(date, timeOfDay, timezone)` (Task 3, new 3rd param).
 
-- [ ] **Step 1: `app/api/portal/tiger/matches/route.ts`**
+- [ ] **Step 1: `app/api/portal/admin/matches/route.ts`**
 
 The POST handler's session-row fetch (currently `select("format, course_locked, matchups_locked, started, date, match_tee_times")`) needs the tournament's timezone too. Since `timezone` lives on `live_tournament_settings` (keyed by `season_year`), not `live_round_state`, add one more query:
 
@@ -540,7 +540,7 @@ The POST handler's session-row fetch (currently `select("format, course_locked, 
     return NextResponse.json({ ok: false, error: "Lock this session's course and format before building matchups." }, { status: 400 });
   }
   if (sessionRow.started) {
-    return NextResponse.json({ ok: false, error: "This session is armed; use Tiger's correction flow for a live matchup." }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "This session is armed; use Admin's correction flow for a live matchup." }, { status: 400 });
   }
   const format = sessionRow.format as MatchFormat;
 
@@ -554,7 +554,7 @@ The POST handler's session-row fetch (currently `select("format, course_locked, 
 
 (The `?? "America/Los_Angeles"` fallback is defensive only — every real row has a value via the column's `not null default` from Task 1 — but a brand-new season whose settings row hasn't been created at all yet could return `null` from `maybeSingle()`.)
 
-- [ ] **Step 2: `app/api/portal/tiger/sessions/lock/route.ts`**
+- [ ] **Step 2: `app/api/portal/admin/sessions/lock/route.ts`**
 
 Same addition, in the `lock === "course"` / `value === true` branch, right after the existing `current` fetch (which already reads `date, course_id, format, course_setup, match_tee_times`) and before the tee-times-set check:
 
@@ -579,12 +579,12 @@ And update the two `deriveMatchTeeTime(...)` calls further down in this same bra
 
 - [ ] **Step 3: Run the routes' tests**
 
-Run: `npx tsx --test app/api/portal/tiger/matches/route.test.ts app/api/portal/tiger/sessions/lock/route.test.ts` (these only exercise the unauthenticated-rejection branch per the prior plan's own notes, so they should be unaffected — confirm they still pass).
+Run: `npx tsx --test app/api/portal/admin/matches/route.test.ts app/api/portal/admin/sessions/lock/route.test.ts` (these only exercise the unauthenticated-rejection branch per the prior plan's own notes, so they should be unaffected — confirm they still pass).
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add app/api/portal/tiger/matches/route.ts app/api/portal/tiger/sessions/lock/route.ts
+git add app/api/portal/admin/matches/route.ts app/api/portal/admin/sessions/lock/route.ts
 git commit -m "Thread the tournament's configured timezone into tee-time derivation"
 ```
 
@@ -593,7 +593,7 @@ git commit -m "Thread the tournament's configured timezone into tee-time derivat
 ### Task 7: Admin venue-local displays — Matchups
 
 **Files:**
-- Modify: `components/portal/tiger/MatchupsPanel.tsx`, `app/portal/admin/master-settings/[year]/matchups/page.tsx`
+- Modify: `components/portal/admin/MatchupsPanel.tsx`, `app/portal/admin/master-settings/[year]/matchups/page.tsx`
 
 **Interfaces:**
 - Consumes: `formatTeeTimeInZone` (Task 3), `TournamentSettings.timezone` (Task 4).
@@ -626,7 +626,7 @@ Add a `live_tournament_settings` fetch alongside the existing 3, and pass `timez
 
 ...and in the JSX: `<MatchupsPanel year={year} sessions={sessions} initialMatches={matches} roster={roster} timezone={timezone} />`.
 
-- [ ] **Step 2: `components/portal/tiger/MatchupsPanel.tsx`**
+- [ ] **Step 2: `components/portal/admin/MatchupsPanel.tsx`**
 
 Add `timezone` to the props type and destructure, and use it in `teeTimeLabelFor` (replacing `formatPacificTeeTime` with `formatTeeTimeInZone(date, timezone)` in both places it's called, and passing `timezone` as `deriveMatchTeeTime`'s 3rd argument):
 
@@ -674,7 +674,7 @@ Run: `npm run dev`, confirm the Matchups page still shows tee times correctly fo
 - [ ] **Step 4: Commit**
 
 ```bash
-git add components/portal/tiger/MatchupsPanel.tsx "app/portal/admin/master-settings/[year]/matchups/page.tsx"
+git add components/portal/admin/MatchupsPanel.tsx "app/portal/admin/master-settings/[year]/matchups/page.tsx"
 git commit -m "Matchups shows tee times in the tournament's configured venue timezone"
 ```
 
@@ -751,12 +751,12 @@ git commit -m "Career Stats archive shows tee times in the tournament's configur
 ### Task 9: `CoursesFormatPanel.tsx` caption
 
 **Files:**
-- Modify: `components/portal/tiger/CoursesFormatPanel.tsx`, `app/portal/admin/master-settings/[year]/courses-format/page.tsx`
+- Modify: `components/portal/admin/CoursesFormatPanel.tsx`, `app/portal/admin/master-settings/[year]/courses-format/page.tsx`
 
 **Interfaces:**
 - Consumes: `TIMEZONES` (Task 2, to look up the configured zone's human label), `TournamentSettings.timezone` (Task 4).
 
-This task does **not** change how tee times are entered or derived here — the `<input type="time">` fields already just hold/echo the raw "HH:MM" string, which has no ambiguity to fix. It only fixes the caption, which currently hardcodes "Tee times are Pacific Time." regardless of what's actually configured. `CoursesFormatPanel` already receives the whole `TournamentSettings` object as its existing `initialSettings` prop (confirmed: `components/portal/tiger/CoursesFormatPanel.tsx`'s signature already has `initialSettings: TournamentSettings` — no new prop needed, just read `initialSettings.timezone`).
+This task does **not** change how tee times are entered or derived here — the `<input type="time">` fields already just hold/echo the raw "HH:MM" string, which has no ambiguity to fix. It only fixes the caption, which currently hardcodes "Tee times are Pacific Time." regardless of what's actually configured. `CoursesFormatPanel` already receives the whole `TournamentSettings` object as its existing `initialSettings` prop (confirmed: `components/portal/admin/CoursesFormatPanel.tsx`'s signature already has `initialSettings: TournamentSettings` — no new prop needed, just read `initialSettings.timezone`).
 
 - [ ] **Step 1: `app/portal/admin/master-settings/[year]/courses-format/page.tsx`**
 
@@ -785,7 +785,7 @@ This page has its own separate `live_tournament_settings` query (a different fil
 
 No JSX change needed — `<CoursesFormatPanel year={year} initialSettings={settings} initialSessions={sessions} initialCourses={courses} />` already passes the whole (now timezone-bearing) `settings` object.
 
-- [ ] **Step 2: `components/portal/tiger/CoursesFormatPanel.tsx`**
+- [ ] **Step 2: `components/portal/admin/CoursesFormatPanel.tsx`**
 
 No props change. Add the import and change the caption to look up the configured zone's label from `initialSettings.timezone`:
 
@@ -804,7 +804,7 @@ Run: `npm run dev`, confirm the Courses & Format page's caption now reads "Tee t
 - [ ] **Step 4: Commit**
 
 ```bash
-git add components/portal/tiger/CoursesFormatPanel.tsx "app/portal/admin/master-settings/[year]/courses-format/page.tsx"
+git add components/portal/admin/CoursesFormatPanel.tsx "app/portal/admin/master-settings/[year]/courses-format/page.tsx"
 git commit -m "Courses & Format caption names the tournament's actual configured timezone"
 ```
 

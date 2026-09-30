@@ -58,7 +58,7 @@ function rankRows(standings: BroadcastStanding[]): Row[] {
 }
 
 /**
- * A TV leaderboard graphic in The Maroon Masters' own colors — a full-bleed
+ * A TV leaderboard graphic in The Maroon Tournament' own colors — a full-bleed
  * dark stage-lit canvas (not a card), modeled on modern golf broadcast
  * packages (Golf Channel / PGA Tour Live) rather than a plain website
  * table. Score colors are the site's real red/green/near-black convention
@@ -79,7 +79,7 @@ export function IndividualLeaderboardScene({ standings, final = false }: { stand
 
       <div className="relative z-[1] w-full max-w-[900px]">
         <div className="mb-2 flex items-baseline justify-between border-b border-[color:var(--color-gold-400)]/35 pb-3">
-          <span className="font-serif text-lg italic text-[color:var(--color-cream-100)]">The Maroon Masters</span>
+          <span className="font-serif text-lg italic text-[color:var(--color-cream-100)]">The Maroon Tournament</span>
           <span className="font-condensed text-sm font-bold uppercase tracking-[0.2em] text-[color:var(--color-cream-50)]">Individual Leaderboard</span>
           <span className="font-condensed text-sm font-bold uppercase tracking-[0.2em] text-[color:var(--color-gold-300)]">{final ? "Final" : "Live"}</span>
         </div>
@@ -173,7 +173,7 @@ function PairingNames({ names }: { names: string[] }) {
 }
 
 /**
- * A TV match-play graphic in The Maroon Masters' own colors — full-bleed
+ * A TV match-play graphic in The Maroon Tournament' own colors — full-bleed
  * dark stage-lit canvas, same system as IndividualLeaderboardScene.tsx.
  * See the Round 1 redesign spec, §17/§19 of the master broadcast spec.
  */
@@ -191,7 +191,7 @@ export function MatchPlayScene({ matchPlay }: { matchPlay: BroadcastMatchPlay })
 
       <div className="relative z-[1] w-full max-w-[900px]">
         <div className="mb-2 flex items-baseline justify-between border-b border-[color:var(--color-gold-400)]/35 pb-3">
-          <span className="font-serif text-lg italic text-[color:var(--color-cream-100)]">The Maroon Masters</span>
+          <span className="font-serif text-lg italic text-[color:var(--color-cream-100)]">The Maroon Tournament</span>
           <span className="font-condensed text-sm font-bold uppercase tracking-[0.2em] text-[color:var(--color-cream-50)]">
             Match Play{matchPlay.roundLabel ? ` — ${matchPlay.roundLabel}` : ""}
           </span>
@@ -307,7 +307,7 @@ export function HoldingScene({ venue, dateLabel }: { venue: string; dateLabel: s
       >
         MM
       </span>
-      <p className="relative z-[1] font-condensed text-sm uppercase tracking-[0.3em] text-[color:var(--color-gold-300)]">The Maroon Masters</p>
+      <p className="relative z-[1] font-condensed text-sm uppercase tracking-[0.3em] text-[color:var(--color-gold-300)]">The Maroon Tournament</p>
       <h1 className="relative z-[1] mt-4 font-serif text-5xl font-semibold sm:text-6xl">{venue}</h1>
       <p className="relative z-[1] mt-4 font-sans text-xl text-[color:var(--color-maroon-200)]">{dateLabel}</p>
     </div>
@@ -409,7 +409,7 @@ The current `ROUND_FINAL` branch (lines 41-48) reads:
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-gradient-maroon px-10 py-10">
         <div className="w-full max-w-[900px] rounded-2xl bg-[color:var(--color-cream-50)] px-10 py-16 text-center shadow-2xl ring-1 ring-[color:var(--color-gold-400)]/40">
-          <p className="font-serif text-2xl italic text-[color:var(--color-maroon-700)]">The Maroon Masters</p>
+          <p className="font-serif text-2xl italic text-[color:var(--color-maroon-700)]">The Maroon Tournament</p>
           <p className="mt-6 font-condensed text-5xl font-bold uppercase tracking-wide text-[color:var(--color-maroon-900)]">Round {payload.round} Complete</p>
         </div>
       </div>
@@ -428,7 +428,7 @@ Replace it with:
           MM
         </span>
         <div className="relative z-[1] text-center">
-          <p className="font-serif text-2xl italic text-[color:var(--color-cream-100)]">The Maroon Masters</p>
+          <p className="font-serif text-2xl italic text-[color:var(--color-cream-100)]">The Maroon Tournament</p>
           <p className="mt-6 font-condensed text-6xl font-bold uppercase tracking-wide text-[color:var(--color-cream-50)]">Round {payload.round} Complete</p>
         </div>
       </div>
@@ -441,7 +441,7 @@ The current "box not found" fallback branch (lines 54-63) reads:
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-gradient-maroon px-10 py-10">
         <div className="w-full max-w-[900px] rounded-2xl bg-[color:var(--color-cream-50)] px-10 py-16 text-center shadow-2xl ring-1 ring-[color:var(--color-gold-400)]/40">
-          <p className="font-serif text-2xl italic text-[color:var(--color-maroon-700)]">The Maroon Masters</p>
+          <p className="font-serif text-2xl italic text-[color:var(--color-maroon-700)]">The Maroon Tournament</p>
           <p className="mt-6 font-condensed text-5xl font-bold uppercase tracking-wide text-[color:var(--color-maroon-900)]">
             {payload.leader === "tie" ? "Match Halved" : `${teamLabel(payload.leader)} Wins`}
           </p>
@@ -462,7 +462,7 @@ Replace it with:
           MM
         </span>
         <div className="relative z-[1] text-center">
-          <p className="font-serif text-2xl italic text-[color:var(--color-cream-100)]">The Maroon Masters</p>
+          <p className="font-serif text-2xl italic text-[color:var(--color-cream-100)]">The Maroon Tournament</p>
           <p className="mt-6 font-condensed text-6xl font-bold uppercase tracking-wide text-[color:var(--color-cream-50)]">
             {payload.leader === "tie" ? "Match Halved" : `${teamLabel(payload.leader)} Wins`}
           </p>
@@ -478,7 +478,7 @@ The current box-found full branch (lines 66-84) reads:
     <div className="flex min-h-screen w-full items-center justify-center bg-gradient-maroon px-10 py-10">
       <div className="w-full max-w-[900px] overflow-hidden rounded-2xl shadow-2xl ring-1 ring-[color:var(--color-gold-400)]/40">
         <div className="bg-[color:var(--color-cream-50)] px-8 pb-5 pt-7 text-center">
-          <p className="font-serif text-2xl italic text-[color:var(--color-maroon-700)]">The Maroon Masters</p>
+          <p className="font-serif text-2xl italic text-[color:var(--color-maroon-700)]">The Maroon Tournament</p>
           <div className="mx-auto mt-3 h-px w-24 bg-[color:var(--color-gold-400)]" />
         </div>
         <div className="bg-gradient-trophy px-8 py-10 text-center">

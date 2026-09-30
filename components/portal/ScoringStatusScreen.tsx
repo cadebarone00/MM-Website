@@ -35,7 +35,7 @@ export function ScoringStatusScreen({
 
   if (!result || stage === "none") {
     return (
-      <LoadingScreen heading={`Maroon Masters ${nextTournament.year}`} topSlot={topSlot}>
+      <LoadingScreen heading={`Maroon Tournament ${nextTournament.year}`} topSlot={topSlot}>
         <p className="font-sans text-lg text-cream-50/90">Waiting For Matchup</p>
       </LoadingScreen>
     );

@@ -52,7 +52,7 @@ const NEUTRAL_MATCHUP: Outcome = { maroon: 0.45, tie: 0.1, white: 0.45 };
 /**
  * A fingerprint of the Career Archive data behind each player: eligible
  * individual-ball holes and Alternate Shot team holes (count and stroke
- * total). Any new hole (live scoring, a Tiger correction, or a submitted
+ * total). Any new hole (live scoring, a Admin correction, or a submitted
  * handicap round) changes it, which marks that player's matchups for a
  * re-price.
  */
@@ -92,7 +92,7 @@ const LEASE_SECONDS = 55;
 /** While matchups are pricing or re-pricing, page views start another chunk at most this often. */
 const WORK_POLL_MS = 15_000;
 
-/** Every round (Tiger's setup, else last year's), the roster, finished results, and each paired match's latest odds. */
+/** Every round (Admin's setup, else last year's), the roster, finished results, and each paired match's latest odds. */
 async function loadInputs(service: Service, seasonYear: number): Promise<Inputs> {
   const [stateRows, oddsRows, snapshot] = await Promise.all([
     pages<{ match_box_id: string; status: string; official_result: Result | null; updated_at: string }>((from, to) => service.from("live_match_official_state").select("match_box_id, status, official_result, updated_at").eq("season_year", seasonYear).order("match_box_id").range(from, to)),

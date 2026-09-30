@@ -39,7 +39,7 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
   previewState?: ScoringState;
   previewSubmissions?: HoleSubmission[];
   onPreviewSubmit?: (submission: HoleSubmission) => Promise<void>;
-  /** Tiger's preview: who has pressed Submit Round, and how to submit this phone's round, in place of the real server. */
+  /** Admin's preview: who has pressed Submit Round, and how to submit this phone's round, in place of the real server. */
   previewSubmittedPlayers?: string[];
   onPreviewSubmitRound?: () => Promise<void>;
 }) {
@@ -242,7 +242,7 @@ export function ScoringPanel({ playerSlug, round, matchBox, nameBySlug, previewS
     </>}
     </div>
     <div className={styles.notice} aria-live="polite">
-      {error || queue.message || draftStorage.storageError ? <p role="alert">{error ?? queue.message ?? "Browser storage unavailable; keep this page open."}</p> : mySubmitted ? <p>Your round is submitted. Tiger can change it.</p> : status === "disputed" ? <p role="alert">Scores disagree. Correct both entries and resubmit to confirm this hole.</p> : status === "submitted" ? <p>Submitted. Waiting for the other scorer.</p> : null}
+      {error || queue.message || draftStorage.storageError ? <p role="alert">{error ?? queue.message ?? "Browser storage unavailable; keep this page open."}</p> : mySubmitted ? <p>Your round is submitted. Admin can change it.</p> : status === "disputed" ? <p role="alert">Scores disagree. Correct both entries and resubmit to confirm this hole.</p> : status === "submitted" ? <p>Submitted. Waiting for the other scorer.</p> : null}
     </div>
     <div className={styles.actions}><HoleActionBar nextLabel="Next Hole" disabled={busy || queue.sending || selectedHole === 18} onNext={() => select(Math.min(selectedHole + 1, 18))}
       submitLabel={unchanged ? "Submitted" : "Submit Score"} submitDisabled={locked || unchanged} onSubmit={() => void submitHole()} /></div>

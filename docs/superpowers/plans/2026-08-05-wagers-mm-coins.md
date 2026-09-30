@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace the throwaway `localStorage` MM Coins wallet from Phase 1+2 with a real, Supabase-backed balance and wager ledger shared across every signed-in account, add a Tiger-only settlement flow so bets actually resolve (win/lose, not "Pending" forever), and add a shared standings/leaderboard so a MM Coins Champion can be crowned at the end of the tournament.
+**Goal:** Replace the throwaway `localStorage` MM Coins wallet from Phase 1+2 with a real, Supabase-backed balance and wager ledger shared across every signed-in account, add a Admin-only settlement flow so bets actually resolve (win/lose, not "Pending" forever), and add a shared standings/leaderboard so a MM Coins Champion can be crowned at the end of the tournament.
 
-**Architecture:** A new set of Supabase tables (`wagers_accounts`, `mm_coin_bets`, `wagers_market_settlements`) plus two `SECURITY DEFINER` Postgres functions (`place_mm_coin_bet`, `settle_mm_coin_market`) that keep balance updates atomic and authorization checks server-side, not trusted to the client. A new `lib/wagers/marketKeys.ts` module gives every bettable line a stable, deterministic ID (`marketKey`/`selectionKey`) — the piece Phase 1+2 explicitly deferred — reused by both the betting UI and the new Tiger settlement admin page so they can never drift out of sync. Existing Phase 1+2 components (`OddsButton`, `BetSlipSheet`, `BalancePill`, `MyWagersList`, `MatchWinnerCard`, `PropBetRow`, `FuturesLadder`, `TeamFuturesCard`) are updated in place, not rewritten — the visual design and interaction shape stay the same; only the data layer moves from synchronous `localStorage` to an async, server-backed API.
+**Architecture:** A new set of Supabase tables (`wagers_accounts`, `mm_coin_bets`, `wagers_market_settlements`) plus two `SECURITY DEFINER` Postgres functions (`place_mm_coin_bet`, `settle_mm_coin_market`) that keep balance updates atomic and authorization checks server-side, not trusted to the client. A new `lib/wagers/marketKeys.ts` module gives every bettable line a stable, deterministic ID (`marketKey`/`selectionKey`) — the piece Phase 1+2 explicitly deferred — reused by both the betting UI and the new Admin settlement admin page so they can never drift out of sync. Existing Phase 1+2 components (`OddsButton`, `BetSlipSheet`, `BalancePill`, `MyWagersList`, `MatchWinnerCard`, `PropBetRow`, `FuturesLadder`, `TeamFuturesCard`) are updated in place, not rewritten — the visual design and interaction shape stay the same; only the data layer moves from synchronous `localStorage` to an async, server-backed API.
 
 **Tech Stack:** Next.js (App Router) Route Handlers, Supabase (Postgres + `@supabase/ssr`), React, TypeScript, Tailwind CSS 4.
 
@@ -293,7 +293,7 @@ export interface Wager {
 with:
 
 ```ts
-/** Set by the settlement flow (Tiger marks a market's winning selection) — see settle_mm_coin_market in supabase/schema.sql. */
+/** Set by the settlement flow (Admin marks a market's winning selection) — see settle_mm_coin_market in supabase/schema.sql. */
 export type WagerStatus = "pending" | "won" | "lost";
 
 /** A single wager a signed-in account has placed, stored server-side in the mm_coin_bets table. */
@@ -428,7 +428,7 @@ export function futureTeamMarket(tournament: Tournament): Market {
   };
 }
 
-/** Every currently-defined market for a tournament — used by the Tiger settlement admin page to list what can be resolved. */
+/** Every currently-defined market for a tournament — used by the Admin settlement admin page to list what can be resolved. */
 export function listAllMarkets(tournament: Tournament): Market[] {
   const matchMarkets = tournament.matches.flatMap((match) => [
     matchWinnerMarket(tournament.slug, match),
@@ -1467,7 +1467,7 @@ git commit -m "feat: add host-only MM Coins settlement POST route"
 
 ---
 
-### Task 16: Tiger settlement admin page
+### Task 16: Admin settlement admin page
 
 **Files:**
 - Create: `app/api/wagers/mm-coins/settled-markets/route.ts`
@@ -1625,7 +1625,7 @@ Expected: no errors.
 
 ```bash
 git add app/api/wagers/mm-coins/settled-markets app/portal/admin/wagers components/portal/MMCoinsSettlementAdmin.tsx
-git commit -m "feat: add Tiger-only MM Coins settlement admin page"
+git commit -m "feat: add Admin-only MM Coins settlement admin page"
 ```
 
 ---

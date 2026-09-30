@@ -276,7 +276,7 @@ const SEED_HOLES = [
 function seedSnapshot(): LiveTournamentSnapshot {
   return {
     players: { cade: { team: "maroon" }, cam: { team: "white" } },
-    courses: { c1: { id: "c1", name: "2027 Maroon Masters", holes: SEED_HOLES } },
+    courses: { c1: { id: "c1", name: "2027 Maroon Tournament", holes: SEED_HOLES } },
     roundCourses: { 1: "c1" },
     scores: new Map(),
     matchBoxes: [],
@@ -495,7 +495,7 @@ function seedSnapshot(): LiveTournamentSnapshot {
         { team: i % 2 === 0 ? "maroon" : "white" },
       ])
     ),
-    courses: { c1: { id: "c1", name: "2027 Maroon Masters", holes: SEED_HOLES } },
+    courses: { c1: { id: "c1", name: "2027 Maroon Tournament", holes: SEED_HOLES } },
     roundCourses: { 1: "c1" },
     scores: new Map(),
     matchBoxes: [],
@@ -743,5 +743,5 @@ git commit -m "feat(live): port orchestration.py to TypeScript"
   MM-Scorekeeper's Python originals used.
 - `npm test && npx tsc --noEmit && npm run lint && npm run build` all clean.
 - Nothing user-facing changed — no routes, no pages, no Realtime — this is
-  the foundation the next phase (Tiger Center: Pairings & Rounds, per the
+  the foundation the next phase (Admin Center: Pairings & Rounds, per the
   site plan's suggested build order) builds the first real screen on top of.

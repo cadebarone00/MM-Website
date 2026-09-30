@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import type { WagerType } from "@/lib/wagers/wagerTypes";
-import { WagerTypesPanel } from "@/components/portal/tiger/WagerTypesPanel";
+import { WagerTypesPanel } from "@/components/portal/admin/WagerTypesPanel";
 
 export default async function WagerTypesPage() {
   const supabase = await createSupabaseServerClient();

@@ -48,7 +48,7 @@ end $$;
 revoke all on function settle_hole_in_one_if_final(integer) from public, anon, authenticated;
 
 -- Replaces the shared closeout trigger function: every match closeout
--- (inside Tiger's Close Out Match transaction) now checks all three futures.
+-- (inside Admin's Close Out Match transaction) now checks all three futures.
 create or replace function live_official_state_settle_team_winner() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin

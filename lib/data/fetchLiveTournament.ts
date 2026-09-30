@@ -14,7 +14,7 @@ import type { Tournament } from "./types";
  * Always returns a valid Tournament, never null — mirrors
  * mergeLiveTournament()'s own contract and the client's useLiveTournament()
  * hook: no live feed configured/reachable degrades to a roster confirmed
- * via Tiger's Master Settings (getConfirmedRoster()), or an empty roster if
+ * via Admin's Master Settings (getConfirmedRoster()), or an empty roster if
  * that isn't set either — never a fatal error. This matters because
  * futures markets (Team Winner, Tournament Winner) only need
  * tournament.slug/individualLeaderboard, both valid on that fallback, so

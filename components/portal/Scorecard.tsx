@@ -326,7 +326,7 @@ function LiveScorecardView({ rows, totalScore, toPar, onEditHole, onBack, live, 
       )}
       {onSubmit && confirming && !live.submitted && (
         <ConfirmSubmitDialog
-          message="After you submit your round you will not be able to edit it. Tiger can correct it later if something is wrong."
+          message="After you submit your round you will not be able to edit it. Admin can correct it later if something is wrong."
           label="Submit Round"
           submitting={submitting}
           error={submitError}

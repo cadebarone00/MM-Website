@@ -1,5 +1,5 @@
 -- === Team Winner: automatic pricing =======================================
--- Replaces Tiger's "Price Team Winner" button. Matchup odds are now priced in
+-- Replaces Admin's "Price Team Winner" button. Matchup odds are now priced in
 -- the background, in chunks, and re-priced whenever a player's Career
 -- Archive data changes: after every confirmed hole, every submitted handicap
 -- round, and on Wagers Futures tab views. See refreshTeamWinnerOdds in
@@ -17,7 +17,7 @@ alter table team_winner_pair_odds alter column white_win_probability drop not nu
 alter table team_winner_pair_odds add column if not exists unpriceable boolean not null default false;
 
 -- Fingerprint of the Career Archive data each matchup was priced from. When a
--- player gets a new hole (live scoring, a Tiger correction, or a submitted
+-- player gets a new hole (live scoring, a Admin correction, or a submitted
 -- handicap round) their matchups no longer match and are re-priced in the
 -- background, keeping the previous price until the new one lands.
 alter table team_winner_pair_odds add column if not exists input_signature text;

@@ -13,8 +13,8 @@ mkdirSync(output, { recursive: true });
 await build({
   stdin: { contents: `import React from "react";
     import { createRoot } from "react-dom/client";
-    import { WebsiteEditor } from "./components/portal/tiger/WebsiteEditor";
-    import { WebsiteSettingsPanel } from "./components/portal/tiger/WebsiteSettingsPanel";
+    import { WebsiteEditor } from "./components/portal/admin/WebsiteEditor";
+    import { WebsiteSettingsPanel } from "./components/portal/admin/WebsiteSettingsPanel";
     import { emptyWebsiteSettings } from "./lib/website/settings";
     const settings = emptyWebsiteSettings();
     createRoot(document.getElementById("root")).render(location.pathname === "/settings-test"
@@ -32,7 +32,7 @@ let failSave = false;
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, "http://localhost");
   res.setHeader("Cache-Control", "no-store");
-  if (url.pathname === "/api/portal/tiger/website-settings") {
+  if (url.pathname === "/api/portal/admin/website-settings") {
     res.setHeader("Content-Type", "application/json");
     if (req.method === "POST") {
       let body = "";
@@ -97,8 +97,8 @@ try {
   await editor.getByRole("status").filter({ hasText: "Saved." }).waitFor();
   assert.equal(values.home_results, null);
   await editor.getByRole("button", { name: "Courses, formats and tee times", exact: true }).click();
-  await editor.locator('iframe[title="Shared Tiger settings"]').waitFor();
-  assert.match(await editor.locator('iframe[title="Shared Tiger settings"]').getAttribute("src"), /master-settings\/2027\/courses-format$/);
+  await editor.locator('iframe[title="Shared Admin settings"]').waitFor();
+  assert.match(await editor.locator('iframe[title="Shared Admin settings"]').getAttribute("src"), /master-settings\/2027\/courses-format$/);
   await editor.getByRole("button", { name: "Done and refresh website" }).click();
   await editor.getByRole("button", { name: "Phone view" }).click();
   assert.match(await editor.locator('iframe[title="Live website editing view"]').getAttribute("class"), /390px/);
@@ -106,7 +106,7 @@ try {
   // Required workflow presentation check: change panel, mapped navigation, search.
   const docs = await context.newPage();
   await docs.goto(pathToFileURL(resolve("docs/app-workflow.html")).href);
-  assert.match(await docs.getByRole("region", { name: "Recent workflow changes" }).textContent(), /Tiger website editor/);
+  assert.match(await docs.getByRole("region", { name: "Recent workflow changes" }).textContent(), /Admin website editor/);
   await docs.locator("svg a").filter({ hasText: "Website editor" }).click();
   await docs.waitForFunction(() => [...document.querySelectorAll("details[open]")].some(item => item.textContent.includes("Website editing and shared settings")));
   await docs.locator("#search").fill("website_section_settings");

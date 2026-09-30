@@ -12,8 +12,8 @@ import { formatRoundLabel } from "@/lib/data/roundLabel";
 import { RoundInProgressCard } from "./RoundInProgressCard";
 import { SubmitScoreButton } from "./SubmitScoreButton";
 
-export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, team, initialTab = "maroon-masters", readOnly = false }: { playerName: string; playerSlug: string; readOnly?: boolean; initialTab?: "maroon-masters" | "overall"; summary: HandicapSummary; archivedRounds: ArchivedHandicapRound[]; team: Team | null }) {
-  const [activeTab, setActiveTab] = useState<"maroon-masters" | "overall">(initialTab);
+export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, team, initialTab = "maroon-tournament", readOnly = false }: { playerName: string; playerSlug: string; readOnly?: boolean; initialTab?: "maroon-tournament" | "overall"; summary: HandicapSummary; archivedRounds: ArchivedHandicapRound[]; team: Team | null }) {
+  const [activeTab, setActiveTab] = useState<"maroon-tournament" | "overall">(initialTab);
   const [scoreView, setScoreView] = useState<ScoreView>("recent");
   const rounds = selectHandicapScores(handicapHistory(archivedRounds, summary.rounds, activeTab), scoreView);
   const contributing = contributingRoundIds(summary.rounds, archivedRounds, activeTab);
@@ -23,7 +23,7 @@ export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, 
       {!readOnly && <>
       <section className="relative isolate overflow-hidden bg-maroon-950">
         <div className="relative aspect-[16/7] min-h-52 sm:min-h-64">
-          <Image src="/loading/desktop.png" alt="Maroon Masters course view" fill priority sizes="100vw" className="object-cover" />
+          <Image src="/loading/desktop.png" alt="Maroon Tournament course view" fill priority sizes="100vw" className="object-cover" />
           <div className={`absolute inset-0 bg-gradient-to-t ${team === "white" ? "from-maroon-950/95 via-maroon-900/65 to-maroon-950/50" : "from-maroon-950/90 via-maroon-950/40 to-maroon-950/35"}`} />
         </div>
         <div className="absolute right-4 top-4 flex flex-col items-end gap-3 text-white sm:right-6 sm:top-6">
@@ -38,9 +38,9 @@ export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, 
                 <p className="font-serif text-4xl font-bold leading-none">{formatHandicapIndex(index)}</p>
                 <p className="mt-1 font-condensed text-2xs font-semibold uppercase tracking-wide text-white/75">Overall Handicap</p>
               </div>
-              <div className={summary.maroonMastersIndex == null ? "text-stone-300" : undefined} title={summary.maroonMastersIndex == null ? "Maroon Masters handicap will be available once archived rounds have the required tee data." : undefined}>
-                <p className="font-serif text-2xl font-bold leading-none">{formatHandicapIndex(summary.maroonMastersIndex)}</p>
-                <p className="mt-1 font-condensed text-[10px] font-semibold uppercase tracking-wide">Maroon Masters</p>
+              <div className={summary.maroonTournamentIndex == null ? "text-stone-300" : undefined} title={summary.maroonTournamentIndex == null ? "Maroon Tournament handicap will be available once archived rounds have the required tee data." : undefined}>
+                <p className="font-serif text-2xl font-bold leading-none">{formatHandicapIndex(summary.maroonTournamentIndex)}</p>
+                <p className="mt-1 font-condensed text-[10px] font-semibold uppercase tracking-wide">Maroon Tournament</p>
               </div>
             </div>
           </div>
@@ -49,7 +49,7 @@ export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, 
 
       <section className="mx-auto max-w-[720px] px-4 pt-6 sm:px-7 sm:pt-8">
         <div className="flex justify-center border-b border-ink-200" role="tablist" aria-label="Handicap scores">
-          {([{ id: "maroon-masters", label: "Maroon Masters" }, { id: "overall", label: "Overall" }] as const).map((tab) => (
+          {([{ id: "maroon-tournament", label: "Maroon Tournament" }, { id: "overall", label: "Overall" }] as const).map((tab) => (
             <button key={tab.id} id={`handicap-tab-${tab.id}`} type="button" role="tab" aria-selected={activeTab === tab.id} aria-controls="handicap-scores" onClick={() => setActiveTab(tab.id)} className={`relative px-5 pb-3 font-condensed text-sm font-bold uppercase tracking-wide transition-colors ${activeTab === tab.id ? "text-maroon-700" : "text-ink-400 hover:text-ink-700"}`}>
               {tab.label}
               {activeTab === tab.id && <span className="absolute inset-x-0 bottom-0 h-0.5 bg-maroon-700" />}
@@ -71,7 +71,7 @@ export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, 
           </select>
         </div>
         {rounds.length === 0 ? (
-          <p className="mt-3 font-sans text-sm text-ink-500">{activeTab === "maroon-masters" ? "No archived Maroon Masters rounds yet." : "No rounds yet — submit your first score above."}</p>
+          <p className="mt-3 font-sans text-sm text-ink-500">{activeTab === "maroon-tournament" ? "No archived Maroon Tournament rounds yet." : "No rounds yet — submit your first score above."}</p>
         ) : (
           <div className="mt-3 divide-y divide-stone-200 border-y border-stone-200 bg-white">
             {rounds.map((entry) => {

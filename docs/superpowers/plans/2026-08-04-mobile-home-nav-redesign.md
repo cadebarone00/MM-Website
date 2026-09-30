@@ -431,7 +431,7 @@ git commit -m "feat: add AccountMenu (full-screen personal menu, mobile only)"
 - Modify: `components/Header.tsx` (full file)
 
 **Interfaces:**
-- Consumes: `AccountMenu` (Task 4), `useAccountSession` from `@/lib/useAccountSession`, `Avatar` from `@/components/ui/Avatar`, `TigerAvatar` from `@/components/ui/TigerAvatar`, `getPlayerAvatar`/`getPlayerDisplayName` from `@/lib/data/players`, `UserRound` from `lucide-react` (all existing except `AccountMenu`).
+- Consumes: `AccountMenu` (Task 4), `useAccountSession` from `@/lib/useAccountSession`, `Avatar` from `@/components/ui/Avatar`, `AdminAvatar` from `@/components/ui/AdminAvatar`, `getPlayerAvatar`/`getPlayerDisplayName` from `@/lib/data/players`, `UserRound` from `lucide-react` (all existing except `AccountMenu`).
 - Produces: unchanged — `Header()` still takes no props.
 
 Splits the single shared top row into two: a new mobile-only 3-zone row (Instagram+countdown/live left, wordmark center, account icon right), and the existing desktop row unchanged but now `hidden lg:flex`. The "Defending Champions"/live ticker bar becomes `hidden lg:flex` (desktop only). `MobileTabBar`, `MorePanel`, and the new `AccountMenu` are all rendered at the bottom of the header, same as today's pattern.
@@ -449,7 +449,7 @@ import { usePathname } from "next/navigation";
 import { UserRound } from "lucide-react";
 import { RoundCountdown } from "@/components/ui/RoundCountdown";
 import { Avatar } from "@/components/ui/Avatar";
-import { TigerAvatar } from "@/components/ui/TigerAvatar";
+import { AdminAvatar } from "@/components/ui/AdminAvatar";
 import { AccountBadge } from "@/components/AccountBadge";
 import { MobileTabBar } from "@/components/nav/MobileTabBar";
 import { MorePanel, MORE_LINKS } from "@/components/nav/MorePanel";
@@ -512,8 +512,8 @@ export function Header() {
               href="https://www.instagram.com/themaroonmasters/"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="The Maroon Masters Instagram"
-              title="The Maroon Masters Instagram"
+              aria-label="The Maroon Tournament Instagram"
+              title="The Maroon Tournament Instagram"
               className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white"
             >
               <InstagramGlyph />
@@ -526,7 +526,7 @@ export function Header() {
           </div>
 
           <Link href="/" className="justify-self-center">
-            <Image src="/assets/wordmark-light.svg" alt="The Maroon Masters" width={520} height={92} className="h-5 w-auto" priority />
+            <Image src="/assets/wordmark-light.svg" alt="The Maroon Tournament" width={520} height={92} className="h-5 w-auto" priority />
           </Link>
 
           <button
@@ -536,7 +536,7 @@ export function Header() {
             className="inline-flex h-8 w-8 shrink-0 items-center justify-center justify-self-end rounded-full"
           >
             {session?.kind === "host" ? (
-              <TigerAvatar size="xs" />
+              <AdminAvatar size="xs" />
             ) : session?.kind === "player" ? (
               <Avatar name={getPlayerDisplayName(session.playerFirst)} src={getPlayerAvatar(session.playerFirst)} size="xs" team={session.team} />
             ) : (
@@ -549,7 +549,7 @@ export function Header() {
         <div className="hidden lg:flex items-center justify-between px-7 h-[64px]">
           <div className="flex items-center gap-9">
             <Link href="/" className="shrink-0">
-              <Image src="/assets/wordmark-light.svg" alt="The Maroon Masters" width={520} height={92} className="h-7 w-auto" priority />
+              <Image src="/assets/wordmark-light.svg" alt="The Maroon Tournament" width={520} height={92} className="h-7 w-auto" priority />
             </Link>
             <nav className="flex gap-0">
               {nav.map((n) => {
@@ -586,8 +586,8 @@ export function Header() {
               href="https://www.instagram.com/themaroonmasters/"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="The Maroon Masters Instagram"
-              title="The Maroon Masters Instagram"
+              aria-label="The Maroon Tournament Instagram"
+              title="The Maroon Tournament Instagram"
               className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20"
             >
               <InstagramGlyph />
@@ -942,7 +942,7 @@ const news = [
     kicker: "Press Room",
     image: "/champions/2026.jpg",
     body: [
-      "The Maroon Masters home base is being staged for the 2027 tournament with live scoring, rosters, matches, highlights, and media all moving into one cleaner view.",
+      "The Maroon Tournament home base is being staged for the 2027 tournament with live scoring, rosters, matches, highlights, and media all moving into one cleaner view.",
       "Once the tournament begins, this space can carry presser notes, daily recaps, player quotes, and official updates without sending fans away from the home screen.",
       "The goal is simple: make the site feel alive before, during, and after every session.",
     ],
@@ -1192,7 +1192,7 @@ function SocialsSection() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => {
-                  if (!confirmLeave("You're leaving The Maroon Masters to open Instagram. Continue?")) e.preventDefault();
+                  if (!confirmLeave("You're leaving The Maroon Tournament to open Instagram. Continue?")) e.preventDefault();
                 }}
                 className="group relative flex aspect-[9/16] min-h-[140px] flex-col justify-between overflow-hidden rounded-md border border-gold-400 bg-gradient-to-b from-maroon-800 to-ink-900 p-2 text-white shadow-sm sm:min-h-[300px] sm:rounded-lg sm:p-4 sm:shadow-lg"
               >
@@ -1208,7 +1208,7 @@ function SocialsSection() {
                   <Play size={16} fill="currentColor" className="hidden sm:block" />
                 </div>
                 <div className="relative">
-                  <h3 className="m-0 line-clamp-2 font-sans text-[10px] font-extrabold sm:text-base">{reel.caption || "Maroon Masters Reel"}</h3>
+                  <h3 className="m-0 line-clamp-2 font-sans text-[10px] font-extrabold sm:text-base">{reel.caption || "Maroon Tournament Reel"}</h3>
                 </div>
               </a>
             ))}
@@ -1223,7 +1223,7 @@ function SocialsSection() {
                 key={video.id}
                 href={ALL_VIDEOS_HREF}
                 onClick={(e) => {
-                  if (!confirmLeave("You're leaving The Maroon Masters to view all videos. Continue?")) e.preventDefault();
+                  if (!confirmLeave("You're leaving The Maroon Tournament to view all videos. Continue?")) e.preventDefault();
                 }}
                 className="group relative flex aspect-[16/9] w-full flex-col justify-between overflow-hidden rounded-md border border-gold-400 bg-gradient-to-b from-maroon-800 to-ink-900 p-2 text-white shadow-sm sm:rounded-lg sm:p-4 sm:shadow-lg"
               >

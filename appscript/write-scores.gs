@@ -1,5 +1,5 @@
 /**
- * Maroon Masters — score write-back for /portal's scoring tools, plus host admin.
+ * Maroon Tournament — score write-back for /portal's scoring tools, plus host admin.
  *
  * Paste this in as a SECOND file in the SAME Apps Script project as live-feed.gs
  * (Apps Script shares one global scope across files in a project, so this reuses
@@ -17,7 +17,7 @@
 
 function onOpen() {
   SpreadsheetApp.getUi()
-    .createMenu("Maroon Masters")
+    .createMenu("Maroon Tournament")
     .addItem("Set Scoring Server Secret", "promptSetScorekeeperSecret")
     .addItem("Rebuild Sheet (2027 setup)", "rebuildSheetForSeason")
     .addToUi();

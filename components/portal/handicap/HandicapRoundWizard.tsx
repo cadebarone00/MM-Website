@@ -38,7 +38,7 @@ export function HandicapRoundWizard({ courses, recentCourseIds, playerName, play
   if (!storage.ready) return <p>Restoring your round...</p>;
 
   if (courses.length === 0) {
-    return <p className="font-sans text-sm text-ink-500">No tee sets are available yet — ask Tiger to save and lock a tee set in the Course Library first.</p>;
+    return <p className="font-sans text-sm text-ink-500">No tee sets are available yet — ask Admin to save and lock a tee set in the Course Library first.</p>;
   }
 
   if (state.step === "course") {

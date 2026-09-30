@@ -1,4 +1,4 @@
-// Groups the season's live round schedule (Tiger Center's round setup, see
+// Groups the season's live round schedule (Admin Center's round setup, see
 // getUpcomingRoundSchedule in lib/data/activeSeasonOverlay.ts — imported
 // here as a type only, so this file stays safe to import from a Client
 // Component) into calendar days for the Fantasy "My Roster" round strip:
@@ -12,7 +12,7 @@ export interface ScheduleDay {
   rounds: UpcomingRoundScheduleItem[];
 }
 
-/** A round with no date assigned yet can't be placed on a day — it's left out until Tiger Center gives it one. */
+/** A round with no date assigned yet can't be placed on a day — it's left out until Admin Center gives it one. */
 export function groupScheduleByDay(schedule: UpcomingRoundScheduleItem[]): ScheduleDay[] {
   const dated = schedule.filter((item): item is UpcomingRoundScheduleItem & { date: string } => item.date !== null);
   const dates = [...new Set(dated.map((item) => item.date))].sort();

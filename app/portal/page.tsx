@@ -64,7 +64,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
     }),
   ]);
   // Same combined math as the dedicated My Handicap page — self-submitted
-  // scores plus Maroon Masters archive rounds that have a verified tee
+  // scores plus Maroon Tournament archive rounds that have a verified tee
   // assigned — so the two screens never show two different numbers.
   const heroHandicapIndex = combinedHandicapIndexes(handicapSummary.rounds, archivedHandicapRounds).index;
   const playerName = allPlayers.find((p) => p.playerSlug === playerSlug)?.fullName ?? profile.display_name ?? "Player";
@@ -79,10 +79,10 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
 
   return (
     <main className="w-full">
-      {preview && <p className="bg-gold-100 p-3 text-center text-sm">Tiger viewing {preview.fullName}&apos;s portal. Account actions still use your own Tiger login.</p>}
+      {preview && <p className="bg-gold-100 p-3 text-center text-sm">Admin viewing {preview.fullName}&apos;s portal. Account actions still use your own Admin login.</p>}
       <section className="relative isolate overflow-hidden bg-maroon-950">
         <div className="relative aspect-[16/7] min-h-52 sm:min-h-64">
-          <Image src="/loading/desktop.png" alt="Maroon Masters course view" fill priority sizes="100vw" className="object-cover" />
+          <Image src="/loading/desktop.png" alt="Maroon Tournament course view" fill priority sizes="100vw" className="object-cover" />
           <div className={`absolute inset-0 ${heroOverlayClass}`} />
         </div>
         <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-4 sm:p-6">

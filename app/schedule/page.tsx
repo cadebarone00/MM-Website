@@ -12,7 +12,7 @@ export default async function ScheduleIndex() {
   return <main className={styles.landing}>
     <Image src="/schedule/mission-hills.webp" alt="Golf course at sunset" fill priority sizes="100vw" className={styles.photo} />
     <div className={styles.shade} /><Link href="/website" className={styles.back}>Back</Link>
-    <header className={styles.brand}><p>The Maroon Masters</p><p>{nextTournament.year}</p></header>
+    <header className={styles.brand}><p>The Maroon Tournament</p><p>{nextTournament.year}</p></header>
     <div className={styles.title}><h1>{nextTournament.venue}</h1><p>{nextTournament.location}</p></div>
     <nav className={styles.days} aria-label="Tournament days">{dates.map((date,index)=><Link key={date} href={"/schedule/"+nextTournament.slug+(nativeSeasonYear(nextTournament.slug)?"?date="+date:"")}><span className={styles.dayNumber}>Day {index+1}</span><span>{new Date(date+"T12:00:00Z").toLocaleDateString("en-US",{timeZone:"UTC",month:"long",day:"numeric"})}</span></Link>)}{!dates.length&&<Link href={"/schedule/"+nextTournament.slug}>Dates pending</Link>}</nav>
   </main>;

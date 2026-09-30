@@ -70,7 +70,7 @@ export function InstallPrompt() {
     <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/60 p-4">
       <div role="dialog" aria-modal="true" aria-labelledby="install-prompt-title" className="w-full max-w-sm rounded-2xl bg-cream-50 p-6 text-ink-900 shadow-xl">
         <h2 id="install-prompt-title" className="font-title text-xl font-bold text-maroon-700">
-          Add The Maroon Masters to your Home Screen
+          Add The Maroon to your Home Screen
         </h2>
         <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm text-ink-700">
           {STEPS[platform].map((step) => (

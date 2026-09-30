@@ -28,7 +28,7 @@ test("once every hole matches it names who still has to press Submit Round", () 
   assert.equal(summarizeTestSeason(oneIn, nameOf)[0].hint, "All holes match \u2014 waiting on DREW to press Submit Round.");
 });
 
-test("when everyone has submitted, the match is ready for Tiger's closeout, and official rounds show their archive and handicap effect", () => {
+test("when everyone has submitted, the match is ready for Admin's closeout, and official rounds show their archive and handicap effect", () => {
   const input: TestSeasonStatusInput = {
     ...base,
     confirmedHoles: [...holes("cam", 18), ...holes("drew", 18)],
@@ -39,7 +39,7 @@ test("when everyone has submitted, the match is ready for Tiger's closeout, and 
   };
   const [match] = summarizeTestSeason(input, nameOf);
   assert.equal(match.matchStatus, "Decided");
-  assert.equal(match.hint, "Everyone has submitted \u2014 ready for you to Close Out Match in the Tiger Center.");
+  assert.equal(match.hint, "Everyone has submitted \u2014 ready for you to Close Out Match in the Admin Center.");
   assert.deepEqual(match.players.map((p) => [p.archiveStatus, p.countsForHandicap]), [["submitted", true], ["submitted", false]]);
 });
 

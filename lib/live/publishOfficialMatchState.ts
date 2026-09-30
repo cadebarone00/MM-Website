@@ -6,7 +6,7 @@ import { refreshFutures } from "@/lib/wagers/refreshFutures";
 
 /**
  * Rebuild and publish a match using confirmed holes only. This is the shared
- * server-side handoff point for score routes, Tiger corrections, and later
+ * server-side handoff point for score routes, Admin corrections, and later
  * tee-time/start-match automation. It is intentionally idempotent: a retry
  * replaces current state rather than incrementing points or settling wagers.
  */

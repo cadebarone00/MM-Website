@@ -1,5 +1,5 @@
 /**
- * Maroon Masters — live feed for the website.
+ * Maroon Tournament — live feed for the website.
  *
  * Deploy this as a Web App (Extensions > Apps Script in the Sheet, paste this in,
  * then Deploy > New deployment > Web app). See README.md in this folder for the

@@ -29,8 +29,8 @@ const barlowCondensed = Barlow_Semi_Condensed({
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "The Maroon Masters — Live",
-  description: "The Maroon Masters — a fictional invitational match-play golf championship. Live leaderboard, pairings, and team rosters.",
+  title: "The Maroon — Live",
+  description: "The Maroon Tournament — a fictional invitational match-play golf championship. Live leaderboard, pairings, and team rosters.",
 };
 
 // Lock the page to the device's own width and disable pinch-zoom — without

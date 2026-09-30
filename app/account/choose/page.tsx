@@ -22,7 +22,7 @@ export default async function ChooseAccountPage() {
   }
 
   return (
-    <LoadingScreen heading="The Maroon Masters" belowAreaNav headingClassName="normal-case tracking-normal">
+    <LoadingScreen heading="The Maroon" belowAreaNav headingClassName="normal-case tracking-normal">
       <p className="-mt-4 font-condensed text-2xl font-semibold tracking-[0.18em] text-cream-50 sm:text-3xl">2027</p>
     </LoadingScreen>
   );

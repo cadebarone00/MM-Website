@@ -17,7 +17,7 @@ export function HoldingScene({ venue, dateLabel }: { venue: string; dateLabel: s
       >
         MM
       </span>
-      <p className="relative z-[1] font-condensed text-sm uppercase tracking-[0.3em] text-[color:var(--color-gold-300)]">The Maroon Masters</p>
+      <p className="relative z-[1] font-condensed text-sm uppercase tracking-[0.3em] text-[color:var(--color-gold-300)]">The Maroon Tournament</p>
       <h1 className="relative z-[1] mt-4 font-serif text-5xl font-semibold sm:text-6xl">{venue}</h1>
       <p className="relative z-[1] mt-4 font-sans text-xl text-[color:var(--color-maroon-200)]">{dateLabel}</p>
     </div>

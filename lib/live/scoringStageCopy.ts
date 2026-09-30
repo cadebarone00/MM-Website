@@ -8,7 +8,7 @@ const BUTTON_LABELS: Record<Exclude<ScoringStage, "none">, string> = {
   submitted: "View Scorecard",
 };
 
-/** The wording for the Scoring tab, shared by the real Scoring tab and Tiger's live scoring preview so they can't drift apart. */
+/** The wording for the Scoring tab, shared by the real Scoring tab and Admin's live scoring preview so they can't drift apart. */
 export function stageButtonLabel(stage: Exclude<ScoringStage, "none">): string {
   return BUTTON_LABELS[stage];
 }

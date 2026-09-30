@@ -2,7 +2,7 @@ import type { Tournament } from "./types";
 
 export const danzante2025: Tournament = {
   slug: "2025-danzante",
-  editionLabel: "The Maroon Masters 2025",
+  editionLabel: "The Maroon Tournament 2025",
   year: 2025,
   venue: "Danzante Bay",
   location: "Loreto, Mexico",

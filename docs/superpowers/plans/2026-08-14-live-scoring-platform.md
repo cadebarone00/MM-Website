@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the live, in-tournament scoring system — players enter hole-by-hole scores for themselves and their round partner, Tiger runs pairings/round start-reset/direct score edits — replacing the "coming in a later round" placeholders in `/portal`.
+**Goal:** Build the live, in-tournament scoring system — players enter hole-by-hole scores for themselves and their round partner, Admin runs pairings/round start-reset/direct score edits — replacing the "coming in a later round" placeholders in `/portal`.
 
 **Architecture:** `/portal` (Supabase-authenticated) gains a player scoring panel and a new `/portal/host` area. Both talk to the existing Google-Sheet-backed `appscript/write-scores.gs` through Next.js Server-side Route Handlers, authenticated by one shared server secret instead of the old player-code/host-password systems (which are removed). No new database — scores still land in the same Sheet that already powers the public `/leaderboard` via `live-feed.gs`.
 
@@ -46,7 +46,7 @@ Replace the entire file with the content below. This removes `validateCode`/`sub
 
 ```javascript
 /**
- * Maroon Masters — score write-back for /portal's scoring tools, plus host admin.
+ * Maroon Tournament — score write-back for /portal's scoring tools, plus host admin.
  *
  * Paste this in as a SECOND file in the SAME Apps Script project as live-feed.gs
  * (Apps Script shares one global scope across files in a project, so this reuses
@@ -64,7 +64,7 @@ Replace the entire file with the content below. This removes `validateCode`/`sub
 
 function onOpen() {
   SpreadsheetApp.getUi()
-    .createMenu("Maroon Masters")
+    .createMenu("Maroon Tournament")
     .addItem("Set Scoring Server Secret", "promptSetScorekeeperSecret")
     .addItem("Rebuild Sheet (2027 setup)", "rebuildSheetForSeason")
     .addToUi();
@@ -735,8 +735,8 @@ You're going to paste two small scripts into your Google Sheet, as two separate 
 The website's own server talks to this script using a shared secret — a password only the two of them know, not something anyone types into a screen.
 
 1. Pick any long random-ish value (e.g. generate one at a site like 1password.com/password-generator, or just mash the keyboard for 30+ characters).
-2. Close the Apps Script tab and go back to the actual Google Sheet. Reload the page. A new menu called **Maroon Masters** should appear in the menu bar next to Help.
-3. Click **Maroon Masters → Set Scoring Server Secret**, paste in the value you picked.
+2. Close the Apps Script tab and go back to the actual Google Sheet. Reload the page. A new menu called **Maroon Tournament** should appear in the menu bar next to Help.
+3. Click **Maroon Tournament → Set Scoring Server Secret**, paste in the value you picked.
 4. Send me that same value — it goes into the website's `SCOREKEEPER_SERVER_SECRET` setting. Both sides have to match exactly.
 
 ## How the trip actually runs
@@ -760,7 +760,7 @@ If you ever build a new player's row by copying an existing player's whole block
 
 - [ ] **Step 3: Manual verification checklist (no automated test harness exists for Apps Script)**
 
-Paste the updated `write-scores.gs`/`live-feed.gs` into a **sandbox copy** of the Sheet (File → Make a copy on the real Sheet first — never test against the live trip sheet), deploy as a Web App, run `Maroon Masters → Set Scoring Server Secret`, then verify with `curl` or Postman against the deployed `/exec` URL:
+Paste the updated `write-scores.gs`/`live-feed.gs` into a **sandbox copy** of the Sheet (File → Make a copy on the real Sheet first — never test against the live trip sheet), deploy as a Web App, run `Maroon Tournament → Set Scoring Server Secret`, then verify with `curl` or Postman against the deployed `/exec` URL:
   1. `POST { "type": "hostGetData", "serverSecret": "wrong" }` → `{ ok: false, error: "Could not reach the scoring system." }` (same generic message whether the secret is wrong or was never set — confirms nothing leaks about which)
   2. `POST { "type": "hostGetData", "serverSecret": "<real>" }` → `{ ok: true, roster, individualLeaderboard, scorecards, pairings, roundState, warnings }` (no `playerCodes` key)
   3. `POST { "type": "hostSetPairings", "serverSecret": "<real>", "round": 1, "session": "Morning", "format": "Fourball", "maroonPlayers": ["<p1>","<p2>"], "whitePlayers": ["<p3>","<p4>"] }` → `{ ok: true }`
@@ -770,7 +770,7 @@ Paste the updated `write-scores.gs`/`live-feed.gs` into a **sandbox copy** of th
   7. `POST { "type": "playerSubmitHole", ..., "target": "partner", ... }` → writes to `<p3>`'s block
   8. `POST { "type": "hostResetRound", "serverSecret": "<real>", "round": 1 }` → clears round 1's entries, confirm via `hostGetPlayerRound`
   9. Confirm the old actions are gone: `POST { "type": "validateCode", "code": "ANY" }` and `POST { "type": "hostLogin", "username": "x", "password": "y" }` both return `{ error: "Unknown request type." }`
-  10. Run `Maroon Masters → Rebuild Sheet (2027 setup)` on the sandbox copy, confirm `Player Data Pull` is rebuilt from the Roster tab's player list (not a `Player Codes` tab, which no longer exists)
+  10. Run `Maroon Tournament → Rebuild Sheet (2027 setup)` on the sandbox copy, confirm `Player Data Pull` is rebuilt from the Roster tab's player list (not a `Player Codes` tab, which no longer exists)
 
 Record the checklist result before marking this task done — this is the task's test cycle in place of `npm test`.
 
@@ -2077,13 +2077,13 @@ In the `if (profile.is_host)` block, add a second link next to "Manage Player Us
 - [ ] **Step 6: Full manual walkthrough (this is the end-to-end test for Tasks 3–6 together)**
 
 Run `npm run dev` against a Sheet with the Task 1 changes deployed (sandbox, not the live trip sheet) and `SCOREKEEPER_SERVER_SECRET`/`LIVE_FEED_URL` set locally:
-1. Sign in as Tiger → `/portal` → "Game Controls" → `/portal/host`.
+1. Sign in as Admin → `/portal` → "Game Controls" → `/portal/host`.
 2. Rounds tab: Start Round 1 (button disables once started).
 3. Pairings tab: add a pairing for Round 1 with two real players from each team; confirm it appears in the list; delete it and re-add to confirm delete works.
 4. Scores tab: pick a player + Round 1, enter a score/putts/FIR/GIR for hole 1, Save; confirm no error and the value persists on reload.
 5. Sign out, sign in as one of the two players in that pairing → `/portal` → confirm "My Score" shows the hole 1 entry made by the host, and "[Partner]'s Score" tab shows the partner's (likely empty) card.
 6. As the player, submit hole 2 for "My Score" and hole 1 for "[Partner]'s Score"; confirm both save.
-7. Back as Tiger, confirm the Scores tab reflects the player's own entries too (same Sheet, same read path).
+7. Back as Admin, confirm the Scores tab reflects the player's own entries too (same Sheet, same read path).
 8. Confirm `/leaderboard` (public site) picks up the entries once a live feed is configured against the same sandbox Sheet.
 9. `npx tsc --noEmit`, `npm run lint`, `npm run build` all clean.
 
@@ -2123,7 +2123,7 @@ Move the current "This round's work" content into "Previously shipped rounds" (f
   Visual/routing only — no changes to odds math, wallet, or wager placement
   logic. See `docs/superpowers/specs/2026-08-05-wagers-layout-redesign-design.md`.
 - Live scoring platform: hole-by-hole player score entry (self + round
-  partner) and Tiger's `/portal/host` game controls (pairings, round
+  partner) and Admin's `/portal/host` game controls (pairings, round
   start/reset, direct score editing) — see
   `docs/superpowers/specs/2026-08-14-live-scoring-platform-design.md`. The
   old scorekeeper app's player-code and separate host-password auth are

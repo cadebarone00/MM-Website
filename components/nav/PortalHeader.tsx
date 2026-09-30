@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { Wordmark } from "@/components/Wordmark";
 import { usePathname } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useAreaBack } from "./AreaNavigation";
@@ -9,7 +9,7 @@ import { useRoundExitActive } from "./RoundExit";
 import { AccountBadge } from "@/components/AccountBadge";
 
 // The "home" page of each Portal-chrome area — Player Portal, Scoring, and
-// the Tiger Center. Mirrors HOME_PAGES in components/Header.tsx: exact
+// the Admin Center. Mirrors HOME_PAGES in components/Header.tsx: exact
 // match only, so a sub-page like /portal/admin/matchups still gets a back
 // arrow and only the bare hub itself is exempt.
 const HOME_PAGES = new Set(["/portal", "/portal/scoring", "/portal/admin"]);
@@ -34,9 +34,9 @@ export function PortalHeader() {
   const pathname = usePathname();
   const back = useAreaBack();
   const inPlayerLookup = pathname === "/portal/player-lookup";
-  const inTigerCenter = pathname.startsWith("/portal/admin");
-  const tigerChildPage = inTigerCenter && pathname !== "/portal/admin";
-  const title = inTigerCenter ? "The Tiger Center" : pathname.startsWith("/portal/scoring") ? "Official Scoring" : "The Player Portal";
+  const inAdminCenter = pathname.startsWith("/portal/admin");
+  const adminChildPage = inAdminCenter && pathname !== "/portal/admin";
+  const title = inAdminCenter ? "The Admin Center" : pathname.startsWith("/portal/scoring") ? "Official Scoring" : "The Player Portal";
   const showBack = !isHomePage(pathname);
   // Mid-round on My Handicap the arrow becomes "Exit": the draft is already
   // saved on every tap, so leaving just goes back to the round-in-progress box.
@@ -52,13 +52,13 @@ export function PortalHeader() {
               <span>Exit</span>
             </Link>
           ) : showBack && (
-            <Link href={inPlayerLookup ? "/portal" : back.href} onNavigate={inPlayerLookup ? undefined : back.onNavigate} aria-label="Back within this area" title="Back" className={tigerChildPage || inPlayerLookup ? "inline-flex items-center gap-1 font-condensed text-2xs font-bold uppercase text-cream-50" : "inline-flex h-6 w-6 items-center justify-center text-cream-50 lg:hidden"}>
+            <Link href={inPlayerLookup ? "/portal" : back.href} onNavigate={inPlayerLookup ? undefined : back.onNavigate} aria-label="Back within this area" title="Back" className={adminChildPage || inPlayerLookup ? "inline-flex items-center gap-1 font-condensed text-2xs font-bold uppercase text-cream-50" : "inline-flex h-6 w-6 items-center justify-center text-cream-50 lg:hidden"}>
               <ArrowLeft size={18} />
-              {tigerChildPage && <span>Back</span>}
+              {adminChildPage && <span>Back</span>}
             </Link>
           )}
-          <Link href={pathname.startsWith("/portal/scoring") ? "/portal/scoring" : inTigerCenter ? "/portal/admin" : "/portal"} className={tigerChildPage || inPlayerLookup || showExit ? "hidden" : showBack ? "hidden lg:block" : "block"}>
-            <Image src="/assets/wordmark-light.svg" alt="The Maroon Masters" width={520} height={92} className="h-5 w-auto lg:h-7" priority />
+          <Link href={pathname.startsWith("/portal/scoring") ? "/portal/scoring" : inAdminCenter ? "/portal/admin" : "/portal"} className={adminChildPage || inPlayerLookup || showExit ? "hidden" : showBack ? "hidden lg:block" : "block"}>
+            <Wordmark className="text-2xl text-white lg:text-3xl" />
           </Link>
         </div>
         <span className="justify-self-center text-center font-serif text-base font-bold uppercase tracking-wide text-cream-50 sm:text-lg lg:text-2xl">

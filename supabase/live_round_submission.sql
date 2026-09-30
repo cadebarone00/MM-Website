@@ -2,7 +2,7 @@
 -- scoring_reliability.sql. Live scoring Phase 1 ("Submit Round"):
 --   1. A player's round is no longer submitted automatically at 18 matching
 --      holes; the player must press Submit Round.
---   2. After Submit Round the player's own entries are locked (only Tiger can
+--   2. After Submit Round the player's own entries are locked (only Admin can
 --      change them); a scorer's later disagreement never un-submits anyone.
 --   3. When a player AND their scorer have both submitted, the archive round
 --      becomes 'submitted' (an official record: handicap and the archive
@@ -21,7 +21,7 @@ end $$;
 alter table career_archive_rounds add constraint career_archive_rounds_status_check
   check (status in ('scheduled', 'live', 'submitted', 'final'));
 
--- Later score writes (a live mirror, a Tiger edit) must never move an
+-- Later score writes (a live mirror, a Admin edit) must never move an
 -- official round back to 'live'.
 create or replace function public.keep_archive_round_status() returns trigger
 language plpgsql as $$
@@ -59,7 +59,7 @@ begin
     and p_player = any(maroon_players || white_players) for update;
   if not found then raise exception 'No assigned match.'; end if;
   if exists (select 1 from live_match_box_submissions where match_box_id = b.id and player_slug = p_player) then
-    raise exception 'Your round is submitted. Tiger can change it.';
+    raise exception 'Your round is submitted. Admin can change it.';
   end if;
   if not b.started or b.state = 'Final' or (b.state <> 'Live' and b.tee_time > now()) then
     raise exception 'This match is not open for scoring.';

@@ -12,7 +12,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
  * Master Settings' own save/set-active-year actions already use. This is a
  * deliberate, infrequent admin action, not something viewers do themselves.
  * Pass `enabled: false` for a preview render (see app/broadcast/page.tsx's
- * `?preview=1`) — that render's "year" is a query param a Tiger is
+ * `?preview=1`) — that render's "year" is a query param a Admin is
  * rehearsing with locally, not the published one, so it must never reload
  * itself over a real production display-year change either.
  */

@@ -9,14 +9,14 @@
 **Tech Stack:** Next.js 16 (App Router), React 19, TypeScript, Supabase (Postgres), `node:test` for unit tests.
 
 **Spec:** [docs/superpowers/specs/2026-09-24-sessions-matchups-tee-times-design.md](../specs/2026-09-24-sessions-matchups-tee-times-design.md) — read it alongside this plan; the design decisions there (especially the rename boundary in §1) are assumed knowledge for every task below. Additional decisions made after that spec was written, folded in here:
-- **Start Round stays a manual gate.** Locking a Session's tee times sets what each match's tee time *will be* once armed; it does **not** skip the existing "Start Round" button on `/portal/admin` (`StartRoundBanner`, soon `StartSessionBanner`). Tiger still presses it on the day to arm the round; from then on each match auto-flips Live at its own tee time, exactly as today.
+- **Start Round stays a manual gate.** Locking a Session's tee times sets what each match's tee time *will be* once armed; it does **not** skip the existing "Start Round" button on `/portal/admin` (`StartRoundBanner`, soon `StartSessionBanner`). Admin still presses it on the day to arm the round; from then on each match auto-flips Live at its own tee time, exactly as today.
 - **Convert every existing Central-Time tee-time display to Pacific**, not just the new Session screens — see Task 12.
 
 ## Global Constraints
 
 - **Rename scope (spec §1):** rename UI text and code identifiers for the live/upcoming tournament's numbered-round concept only. Do **not** touch: the Supabase table/column names (`live_round_state`, `round`, `box_number` stay exactly as they are — no migration for this); the historical/archived "Round" concept (`CareerRoundArchive.tsx`, `RoundFormatArchive.tsx`'s "Round INDI", `ArchiveTeeAssigner.tsx`, `roundLabel.ts`, `lib/data/archivedScorecards.ts`); the handicap system's own "round" (`RoundInProgressCard.tsx`, `RoundExit.tsx`); the shared historical `RealMatch` type and its `teeTimeCst`/`day`/`session` fields (used by hand-typed per-year files like `lib/data/2024-pinehurst.ts` — never touch those files' contents); `components/match/MatchProfile.tsx` (shared between live and legacy archived match display, falls back to `match.day`/`match.session`); `PlayerScoringPanel.tsx` (dead code — not imported anywhere in the app, confirmed by repo-wide search; leave it alone).
 - **Generic "round of golf" vocabulary is not renamed.** "Submit Round," "Round complete," "Waiting For Round To Begin," "Upcoming Round"/"Round Live"/"Round Submitted" status headings, `RoundCardState`, `roundFinishedForPlayer`, and similar already-shipped Live Scoring Lifecycle copy/identifiers stay exactly as they are — they mean "a round of golf you're playing," not "which numbered session of the trip," and changing them would deviate from that separately-approved, already-shipped spec's exact wording.
-- **The rename DOES apply** to every place a number is attached to the word "Round" for the live tournament (`Round {n}`, `LiveRoundState`, `LiveRoundState.round`, `TournamentSettings.roundCount`, `LiveMatchBox`, `LiveMatchBox.boxNumber`, `boxesPerRound()`, `playersPerTeamPerBox()`, `roundIsComplete()`, `findCurrentRoundForPlayer()` and its neighbors in `currentRoundForPlayer.ts`, `RoundBox` in `VenueSchedulePage.tsx`, `StartRoundBanner`, the `/api/portal/tiger/rounds*` and `/api/portal/tiger/matchboxes*` routes).
+- **The rename DOES apply** to every place a number is attached to the word "Round" for the live tournament (`Round {n}`, `LiveRoundState`, `LiveRoundState.round`, `TournamentSettings.roundCount`, `LiveMatchBox`, `LiveMatchBox.boxNumber`, `boxesPerRound()`, `playersPerTeamPerBox()`, `roundIsComplete()`, `findCurrentRoundForPlayer()` and its neighbors in `currentRoundForPlayer.ts`, `RoundBox` in `VenueSchedulePage.tsx`, `StartRoundBanner`, the `/api/portal/admin/rounds*` and `/api/portal/admin/matchboxes*` routes).
 - **Read/write translation boundary.** Because the DB columns keep their old names, every place that reads a Supabase row assigns `session: row.round` (not `round: row.round`), and every place that writes one uses `{ round: value.session }` (the object key sent to Supabase is always the DB column name `round`/`box_number`, never `session`/`matchNumber`).
 - **Tee times are Pacific Time everywhere**, both new and pre-existing displays (Task 6, 9, 12). Use `America/Los_Angeles` (tracks PST/PDT automatically) via `Intl.DateTimeFormat`, not a hardcoded UTC offset.
 - Every task ends green on: the specific test file(s) it touches. Task 13 runs the full `npm test`, `npx tsc --noEmit`, `npm run lint`, `npm run build` sweep.
@@ -36,11 +36,11 @@
 **New:**
 - `supabase/session_tee_times.sql` — migration adding `match_tee_times` to `live_round_state`.
 - `lib/live/sessionTeeTimes.ts` + `lib/live/sessionTeeTimes.test.ts` — pure Pacific-time conversion and slot-grouping helpers.
-- `app/api/portal/tiger/sessions/**` — renamed from `app/api/portal/tiger/rounds/**` (route.ts, lock/route.ts, remove/route.ts, start/route.ts, and their `.test.ts` files).
-- `app/api/portal/tiger/matches/**` — renamed from `app/api/portal/tiger/matchboxes/**` (route.ts, remove/route.ts, start/route.ts, closeout/route.ts, and their `.test.ts` files).
-- `components/portal/tiger/StartSessionBanner.tsx` — renamed from `StartRoundBanner.tsx`.
+- `app/api/portal/admin/sessions/**` — renamed from `app/api/portal/admin/rounds/**` (route.ts, lock/route.ts, remove/route.ts, start/route.ts, and their `.test.ts` files).
+- `app/api/portal/admin/matches/**` — renamed from `app/api/portal/admin/matchboxes/**` (route.ts, remove/route.ts, start/route.ts, closeout/route.ts, and their `.test.ts` files).
+- `components/portal/admin/StartSessionBanner.tsx` — renamed from `StartRoundBanner.tsx`.
 
-**Modified:** `lib/live/types.ts`, `lib/live/orchestration.ts` (+ test), `lib/live/currentRoundForPlayer.ts` (+ test), `lib/live/officialMatchState.ts`, `lib/live/syncLockedRound.ts`, `lib/live/matchProfile.ts` (+ test), `lib/live/playerProfile.ts` (+ test if present), `lib/live/publishOfficialMatchState.ts`, `lib/live/publishMatchOdds.ts`, `lib/live/previewMatchState.ts` (+ test), `lib/live/scoringPreviewRoom.ts`, `lib/portal/matchCards.ts`, `lib/data/liveRoundFormatArchive.ts`, `app/portal/admin/master-settings/[year]/courses-format/page.tsx`, `app/portal/admin/master-settings/[year]/matchups/page.tsx`, `components/portal/tiger/CoursesFormatPanel.tsx`, `components/portal/tiger/MatchupsPanel.tsx`, `components/portal/tiger/MatchCloseoutCards.tsx`, `components/portal/tiger/BroadcastControlsPanel.tsx`, `components/portal/tiger/TestSeasonPanel.tsx`, `components/portal/ScoringStatusScreen.tsx`, `components/schedule/VenueSchedulePage.tsx`, `components/wagers/LiveMatchesList.tsx`, `components/ui/RoundCountdown.tsx`, `app/portal/admin/page.tsx`, `project_specs.md`.
+**Modified:** `lib/live/types.ts`, `lib/live/orchestration.ts` (+ test), `lib/live/currentRoundForPlayer.ts` (+ test), `lib/live/officialMatchState.ts`, `lib/live/syncLockedRound.ts`, `lib/live/matchProfile.ts` (+ test), `lib/live/playerProfile.ts` (+ test if present), `lib/live/publishOfficialMatchState.ts`, `lib/live/publishMatchOdds.ts`, `lib/live/previewMatchState.ts` (+ test), `lib/live/scoringPreviewRoom.ts`, `lib/portal/matchCards.ts`, `lib/data/liveRoundFormatArchive.ts`, `app/portal/admin/master-settings/[year]/courses-format/page.tsx`, `app/portal/admin/master-settings/[year]/matchups/page.tsx`, `components/portal/admin/CoursesFormatPanel.tsx`, `components/portal/admin/MatchupsPanel.tsx`, `components/portal/admin/MatchCloseoutCards.tsx`, `components/portal/admin/BroadcastControlsPanel.tsx`, `components/portal/admin/TestSeasonPanel.tsx`, `components/portal/ScoringStatusScreen.tsx`, `components/schedule/VenueSchedulePage.tsx`, `components/wagers/LiveMatchesList.tsx`, `components/ui/RoundCountdown.tsx`, `app/portal/admin/page.tsx`, `project_specs.md`.
 
 ---
 
@@ -655,7 +655,7 @@ Rename its `round: number` parameter to `session: number`, and the object litera
 
 - [ ] **Step 8: `lib/live/scoringPreviewRoom.ts`**
 
-Check this file for `.round`/`.boxNumber` field access on `LiveMatch`-shaped values (it builds the Tiger Center Live Scoring Page Editor's in-memory preview) and rename per the same table. If it constructs `LiveMatch` object literals directly, update their keys.
+Check this file for `.round`/`.boxNumber` field access on `LiveMatch`-shaped values (it builds the Admin Center Live Scoring Page Editor's in-memory preview) and rename per the same table. If it constructs `LiveMatch` object literals directly, update their keys.
 
 - [ ] **Step 9: Update every remaining consumer of the renamed `currentRoundForPlayer.ts` exports**
 
@@ -742,25 +742,25 @@ git commit -m "Rename remaining lib/live consumers to Session/Match"
 ### Task 6: Rename and extend the Session API routes (`rounds` → `sessions`)
 
 **Files:**
-- Create (via `git mv`): `app/api/portal/tiger/sessions/route.ts`, `sessions/lock/route.ts`, `sessions/remove/route.ts`, `sessions/start/route.ts`, and their `.test.ts` files.
+- Create (via `git mv`): `app/api/portal/admin/sessions/route.ts`, `sessions/lock/route.ts`, `sessions/remove/route.ts`, `sessions/start/route.ts`, and their `.test.ts` files.
 - Modify: content of each moved file.
 - Test: existing `.test.ts` files, moved and updated.
 
 **Interfaces:**
 - Consumes: `LiveSessionState`, `deriveMatchTeeTime` is **not** used here (tee times are stored as raw "HH:MM" strings on the session; derivation into a `LiveMatch.teeTime` happens in Task 7's matches route).
-- Produces: `GET/POST /api/portal/tiger/sessions` (was `rounds`), `POST /api/portal/tiger/sessions/lock`, `/remove`, `/start` — all now read/write `matchTeeTimes`, and `lock` now requires all 3 slots to be set before locking.
+- Produces: `GET/POST /api/portal/admin/sessions` (was `rounds`), `POST /api/portal/admin/sessions/lock`, `/remove`, `/start` — all now read/write `matchTeeTimes`, and `lock` now requires all 3 slots to be set before locking.
 
 - [ ] **Step 1: Move the files**
 
 ```bash
-git mv app/api/portal/tiger/rounds/route.ts app/api/portal/tiger/sessions/route.ts
-git mv app/api/portal/tiger/rounds/route.test.ts app/api/portal/tiger/sessions/route.test.ts
-git mv app/api/portal/tiger/rounds/lock/route.ts app/api/portal/tiger/sessions/lock/route.ts
-git mv app/api/portal/tiger/rounds/lock/route.test.ts app/api/portal/tiger/sessions/lock/route.test.ts
-git mv app/api/portal/tiger/rounds/remove/route.ts app/api/portal/tiger/sessions/remove/route.ts
-git mv app/api/portal/tiger/rounds/remove/route.test.ts app/api/portal/tiger/sessions/remove/route.test.ts
-git mv app/api/portal/tiger/rounds/start/route.ts app/api/portal/tiger/sessions/start/route.ts
-git mv app/api/portal/tiger/rounds/start/route.test.ts app/api/portal/tiger/sessions/start/route.test.ts
+git mv app/api/portal/admin/rounds/route.ts app/api/portal/admin/sessions/route.ts
+git mv app/api/portal/admin/rounds/route.test.ts app/api/portal/admin/sessions/route.test.ts
+git mv app/api/portal/admin/rounds/lock/route.ts app/api/portal/admin/sessions/lock/route.ts
+git mv app/api/portal/admin/rounds/lock/route.test.ts app/api/portal/admin/sessions/lock/route.test.ts
+git mv app/api/portal/admin/rounds/remove/route.ts app/api/portal/admin/sessions/remove/route.ts
+git mv app/api/portal/admin/rounds/remove/route.test.ts app/api/portal/admin/sessions/remove/route.test.ts
+git mv app/api/portal/admin/rounds/start/route.ts app/api/portal/admin/sessions/start/route.ts
+git mv app/api/portal/admin/rounds/start/route.test.ts app/api/portal/admin/sessions/start/route.test.ts
 ```
 
 - [ ] **Step 2: Rewrite `sessions/route.ts`**
@@ -1074,7 +1074,7 @@ export async function POST(request: Request) {
 Each currently does something like:
 
 ```typescript
-const request = new Request("http://localhost/api/portal/tiger/rounds", {
+const request = new Request("http://localhost/api/portal/admin/rounds", {
   method: "POST",
   body: JSON.stringify({ round: 1, format: "Fourball" }),
 });
@@ -1084,14 +1084,14 @@ Update the URL to `.../sessions` and the body's `round` key to `session`, and th
 
 - [ ] **Step 6: Run the route tests**
 
-Run: `node --experimental-strip-types --test app/api/portal/tiger/sessions/route.test.ts app/api/portal/tiger/sessions/lock/route.test.ts app/api/portal/tiger/sessions/remove/route.test.ts app/api/portal/tiger/sessions/start/route.test.ts` (adjust to this repo's actual test invocation from `package.json` if different).
+Run: `node --experimental-strip-types --test app/api/portal/admin/sessions/route.test.ts app/api/portal/admin/sessions/lock/route.test.ts app/api/portal/admin/sessions/remove/route.test.ts app/api/portal/admin/sessions/start/route.test.ts` (adjust to this repo's actual test invocation from `package.json` if different).
 Expected: PASS.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add app/api/portal/tiger/sessions app/api/portal/tiger/rounds
-git commit -m "Rename tiger/rounds API to tiger/sessions; add match tee times"
+git add app/api/portal/admin/sessions app/api/portal/admin/rounds
+git commit -m "Rename admin/rounds API to admin/sessions; add match tee times"
 ```
 
 ---
@@ -1099,22 +1099,22 @@ git commit -m "Rename tiger/rounds API to tiger/sessions; add match tee times"
 ### Task 7: Rename and extend the Matches API routes (`matchboxes` → `matches`)
 
 **Files:**
-- Create (via `git mv`): `app/api/portal/tiger/matches/route.ts`, `matches/remove/route.ts`, `matches/start/route.ts`, `matches/closeout/route.ts`, and their `.test.ts` files.
+- Create (via `git mv`): `app/api/portal/admin/matches/route.ts`, `matches/remove/route.ts`, `matches/start/route.ts`, `matches/closeout/route.ts`, and their `.test.ts` files.
 - Modify: content of each moved file.
 
 **Interfaces:**
 - Consumes: `LiveMatch`, `LiveSessionState`, `teeTimeSlotForMatch`, `deriveMatchTeeTime` from Task 2.
-- Produces: `GET/POST /api/portal/tiger/matches` (was `matchboxes`) — **POST no longer accepts `teeTime` from the client**; the server derives it from the session's `matchTeeTimes` and the match's number/format. `POST /api/portal/tiger/matches/remove`, `/start`, `/closeout` — renamed, same behavior.
+- Produces: `GET/POST /api/portal/admin/matches` (was `matchboxes`) — **POST no longer accepts `teeTime` from the client**; the server derives it from the session's `matchTeeTimes` and the match's number/format. `POST /api/portal/admin/matches/remove`, `/start`, `/closeout` — renamed, same behavior.
 
 - [ ] **Step 1: Move the files**
 
 ```bash
-git mv app/api/portal/tiger/matchboxes/route.ts app/api/portal/tiger/matches/route.ts
-git mv app/api/portal/tiger/matchboxes/route.test.ts app/api/portal/tiger/matches/route.test.ts
-git mv app/api/portal/tiger/matchboxes/remove/route.ts app/api/portal/tiger/matches/remove/route.ts
-git mv app/api/portal/tiger/matchboxes/remove/route.test.ts app/api/portal/tiger/matches/remove/route.test.ts
-git mv app/api/portal/tiger/matchboxes/start/route.ts app/api/portal/tiger/matches/start/route.ts
-git mv app/api/portal/tiger/matchboxes/closeout/route.ts app/api/portal/tiger/matches/closeout/route.ts
+git mv app/api/portal/admin/matchboxes/route.ts app/api/portal/admin/matches/route.ts
+git mv app/api/portal/admin/matchboxes/route.test.ts app/api/portal/admin/matches/route.test.ts
+git mv app/api/portal/admin/matchboxes/remove/route.ts app/api/portal/admin/matches/remove/route.ts
+git mv app/api/portal/admin/matchboxes/remove/route.test.ts app/api/portal/admin/matches/remove/route.test.ts
+git mv app/api/portal/admin/matchboxes/start/route.ts app/api/portal/admin/matches/start/route.ts
+git mv app/api/portal/admin/matchboxes/closeout/route.ts app/api/portal/admin/matches/closeout/route.ts
 ```
 
 - [ ] **Step 2: Rewrite `matches/route.ts`**
@@ -1207,7 +1207,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Lock this session's course and format before building matchups." }, { status: 400 });
   }
   if (sessionRow.started) {
-    return NextResponse.json({ ok: false, error: "This session is armed; use Tiger's correction flow for a live matchup." }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "This session is armed; use Admin's correction flow for a live matchup." }, { status: 400 });
   }
   const format = sessionRow.format as MatchFormat;
 
@@ -1332,7 +1332,7 @@ import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 
-/** Tiger's per-match tee-time override. The session must already be armed. */
+/** Admin's per-match tee-time override. The session must already be armed. */
 export async function POST(request: Request) {
   const host = await requireHost();
   if (!host) return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
@@ -1370,14 +1370,14 @@ Same pattern as Task 6 Step 5 — update the request URL path and any renamed bo
 
 - [ ] **Step 5: Run the tests**
 
-Run: the 3-4 renamed `.test.ts` files under `app/api/portal/tiger/matches/`.
+Run: the 3-4 renamed `.test.ts` files under `app/api/portal/admin/matches/`.
 Expected: PASS.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add app/api/portal/tiger/matches app/api/portal/tiger/matchboxes
-git commit -m "Rename tiger/matchboxes API to tiger/matches; derive tee time server-side"
+git add app/api/portal/admin/matches app/api/portal/admin/matchboxes
+git commit -m "Rename admin/matchboxes API to admin/matches; derive tee time server-side"
 ```
 
 ---
@@ -1397,7 +1397,7 @@ git commit -m "Rename tiger/matchboxes API to tiger/matches; derive tee time ser
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
-import { CoursesFormatPanel } from "@/components/portal/tiger/CoursesFormatPanel";
+import { CoursesFormatPanel } from "@/components/portal/admin/CoursesFormatPanel";
 import type { LiveCourse, LiveSessionState, MatchFormat, TournamentSettings } from "@/lib/live/types";
 
 export default async function CoursesFormatPage({ params }: { params: Promise<{ year: string }> }) {
@@ -1469,7 +1469,7 @@ import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
 import { playerProfiles } from "@/lib/data/players";
-import { MatchupsPanel, type RosterPlayer } from "@/components/portal/tiger/MatchupsPanel";
+import { MatchupsPanel, type RosterPlayer } from "@/components/portal/admin/MatchupsPanel";
 import type { LiveMatch, LiveSessionState, MatchFormat, MatchState } from "@/lib/live/types";
 
 export default async function MatchupsPage({ params }: { params: Promise<{ year: string }> }) {
@@ -1561,7 +1561,7 @@ git commit -m "Update Courses & Format / Matchups pages for renamed Session data
 ### Task 9: `CoursesFormatPanel.tsx` — rename + 3 tee-time inputs
 
 **Files:**
-- Modify: `components/portal/tiger/CoursesFormatPanel.tsx`
+- Modify: `components/portal/admin/CoursesFormatPanel.tsx`
 
 **Interfaces:**
 - Consumes: `LiveSessionState`, `LiveCourse`, `LiveTeeSet`, `MatchFormat`, `TournamentSettings` (Task 3); no helper from Task 2 needed here (this panel only stores raw "HH:MM" strings, doesn't need to derive an absolute instant).
@@ -1570,7 +1570,7 @@ git commit -m "Update Courses & Format / Matchups pages for renamed Session data
 - [ ] **Step 1: Rewrite the file**
 
 ```typescript
-// components/portal/tiger/CoursesFormatPanel.tsx
+// components/portal/admin/CoursesFormatPanel.tsx
 "use client";
 import { availableTeeSets } from "@/lib/live/teeSets";
 
@@ -1610,7 +1610,7 @@ export function CoursesFormatPanel({
 
   async function saveSessionCount(count: number) {
     setSessionCount(count);
-    const res = await fetch("/api/portal/tiger/settings", {
+    const res = await fetch("/api/portal/admin/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ year, roundCount: count }),
@@ -1630,7 +1630,7 @@ export function CoursesFormatPanel({
     // represented elsewhere in LiveSessionState, instead of sending "" to a
     // Postgres `date` column (which would 500).
     const date = patch.date === "" ? null : patch.date;
-    const res = await fetch("/api/portal/tiger/sessions", {
+    const res = await fetch("/api/portal/admin/sessions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ year, session, ...patch, date }),
@@ -1676,7 +1676,7 @@ export function CoursesFormatPanel({
 
   async function toggleLock(session: number, value: boolean) {
     setError(null);
-    const res = await fetch("/api/portal/tiger/sessions/lock", {
+    const res = await fetch("/api/portal/admin/sessions/lock", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ year, session, lock: "course", value }),
@@ -1691,7 +1691,7 @@ export function CoursesFormatPanel({
 
   async function removeSession(session: number) {
     setError(null);
-    const res = await fetch("/api/portal/tiger/sessions/remove", {
+    const res = await fetch("/api/portal/admin/sessions/remove", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ year, session }),
@@ -1853,7 +1853,7 @@ export function CoursesFormatPanel({
 }
 ```
 
-Note: the `/api/portal/tiger/settings` request body key stays `roundCount` (that route wasn't in this plan's scope — it's `TournamentSettings.sessionCount`'s backing endpoint, a different route from the ones renamed in Task 6; leave it as-is unless `npx tsc --noEmit` in Task 13 flags a real mismatch, in which case open `app/api/portal/tiger/settings/route.ts` and apply the same field-rename pattern used everywhere else in this plan).
+Note: the `/api/portal/admin/settings` request body key stays `roundCount` (that route wasn't in this plan's scope — it's `TournamentSettings.sessionCount`'s backing endpoint, a different route from the ones renamed in Task 6; leave it as-is unless `npx tsc --noEmit` in Task 13 flags a real mismatch, in which case open `app/api/portal/admin/settings/route.ts` and apply the same field-rename pattern used everywhere else in this plan).
 
 - [ ] **Step 2: Manual check**
 
@@ -1862,7 +1862,7 @@ Run: `npm run dev`, log in as a host, open Courses & Format for the active seaso
 - [ ] **Step 3: Commit**
 
 ```bash
-git add components/portal/tiger/CoursesFormatPanel.tsx
+git add components/portal/admin/CoursesFormatPanel.tsx
 git commit -m "Rename CoursesFormatPanel to Sessions; add 3 match tee-time inputs"
 ```
 
@@ -1871,7 +1871,7 @@ git commit -m "Rename CoursesFormatPanel to Sessions; add 3 match tee-time input
 ### Task 10: `MatchupsPanel.tsx` — rename + read-only tee times + per-format layout
 
 **Files:**
-- Modify: `components/portal/tiger/MatchupsPanel.tsx`
+- Modify: `components/portal/admin/MatchupsPanel.tsx`
 
 **Interfaces:**
 - Consumes: `LiveSessionState`, `LiveMatch`, `MatchFormat` (Task 3); `teeTimeSlotForMatch`, `deriveMatchTeeTime`, `formatPacificTeeTime` (Task 2); `matchesPerSession`, `playersPerTeamPerMatch` (Task 4).
@@ -1880,7 +1880,7 @@ git commit -m "Rename CoursesFormatPanel to Sessions; add 3 match tee-time input
 - [ ] **Step 1: Rewrite the file**
 
 ```typescript
-// components/portal/tiger/MatchupsPanel.tsx
+// components/portal/admin/MatchupsPanel.tsx
 "use client";
 
 import { useState } from "react";
@@ -2027,7 +2027,7 @@ export function MatchupsPanel({
     setBusyKey(key);
     setError(null);
     try {
-      const res = await fetch("/api/portal/tiger/matches", {
+      const res = await fetch("/api/portal/admin/matches", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2051,7 +2051,7 @@ export function MatchupsPanel({
 
   async function removeMatch(id: string) {
     setError(null);
-    const res = await fetch("/api/portal/tiger/matches/remove", {
+    const res = await fetch("/api/portal/admin/matches/remove", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
@@ -2066,7 +2066,7 @@ export function MatchupsPanel({
 
   async function toggleMatchupsLock(session: number, value: boolean) {
     setError(null);
-    const res = await fetch("/api/portal/tiger/sessions/lock", {
+    const res = await fetch("/api/portal/admin/sessions/lock", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ year, session, lock: "matchups", value }),
@@ -2083,7 +2083,7 @@ export function MatchupsPanel({
     setBusyKey(`start:${id}`);
     setError(null);
     try {
-      const res = await fetch("/api/portal/tiger/matches/start", {
+      const res = await fetch("/api/portal/admin/matches/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
@@ -2238,7 +2238,7 @@ Run: `npm run dev`, open Matchups for a session locked with each of the 3 format
 - [ ] **Step 3: Commit**
 
 ```bash
-git add components/portal/tiger/MatchupsPanel.tsx
+git add components/portal/admin/MatchupsPanel.tsx
 git commit -m "Rename MatchupsPanel to Sessions/Matches; add per-format Scoring For layout"
 ```
 
@@ -2247,7 +2247,7 @@ git commit -m "Rename MatchupsPanel to Sessions/Matches; add per-format Scoring 
 ### Task 11: Rename `StartRoundBanner` → `StartSessionBanner`
 
 **Files:**
-- Create (via `git mv`): `components/portal/tiger/StartSessionBanner.tsx`
+- Create (via `git mv`): `components/portal/admin/StartSessionBanner.tsx`
 - Modify: `app/portal/admin/page.tsx` (its one consumer)
 
 **Interfaces:**
@@ -2256,11 +2256,11 @@ git commit -m "Rename MatchupsPanel to Sessions/Matches; add per-format Scoring 
 - [ ] **Step 1: Move and rewrite the file**
 
 ```bash
-git mv components/portal/tiger/StartRoundBanner.tsx components/portal/tiger/StartSessionBanner.tsx
+git mv components/portal/admin/StartRoundBanner.tsx components/portal/admin/StartSessionBanner.tsx
 ```
 
 ```typescript
-// components/portal/tiger/StartSessionBanner.tsx
+// components/portal/admin/StartSessionBanner.tsx
 "use client";
 
 import { useState } from "react";
@@ -2281,7 +2281,7 @@ export function StartSessionBanner({ session }: { session: StartableSession }) {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/portal/tiger/sessions/start", {
+      const res = await fetch("/api/portal/admin/sessions/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ year: session.year, session: session.session }),
@@ -2323,7 +2323,7 @@ export function StartSessionBanner({ session }: { session: StartableSession }) {
 Line 7's import and lines 20-26/32 build the banner's data. Apply this exact diff:
 
 ```typescript
-import { StartSessionBanner, type StartableSession } from "@/components/portal/tiger/StartSessionBanner";
+import { StartSessionBanner, type StartableSession } from "@/components/portal/admin/StartSessionBanner";
 ```
 
 ```typescript
@@ -2351,7 +2351,7 @@ Run: `npm run dev`, confirm `/portal/admin` still shows the "Ready to start" ban
 - [ ] **Step 4: Commit**
 
 ```bash
-git add components/portal/tiger/StartSessionBanner.tsx components/portal/tiger/StartRoundBanner.tsx app/portal/admin/page.tsx
+git add components/portal/admin/StartSessionBanner.tsx components/portal/admin/StartRoundBanner.tsx app/portal/admin/page.tsx
 git commit -m "Rename StartRoundBanner to StartSessionBanner"
 ```
 
@@ -2360,7 +2360,7 @@ git commit -m "Rename StartRoundBanner to StartSessionBanner"
 ### Task 12: Sweep remaining Round/Box text and Central→Pacific tee-time displays
 
 **Files:**
-- Modify: `components/schedule/VenueSchedulePage.tsx`, `components/portal/tiger/MatchCloseoutCards.tsx`, `components/portal/tiger/BroadcastControlsPanel.tsx`, `components/portal/tiger/TestSeasonPanel.tsx`, `components/portal/ScoringStatusScreen.tsx`, `components/wagers/LiveMatchesList.tsx`, `lib/portal/matchCards.ts`, `lib/data/liveRoundFormatArchive.ts`, `lib/live/matchProfile.ts`, `lib/live/matchProfile.test.ts`, `components/ui/RoundCountdown.tsx`
+- Modify: `components/schedule/VenueSchedulePage.tsx`, `components/portal/admin/MatchCloseoutCards.tsx`, `components/portal/admin/BroadcastControlsPanel.tsx`, `components/portal/admin/TestSeasonPanel.tsx`, `components/portal/ScoringStatusScreen.tsx`, `components/wagers/LiveMatchesList.tsx`, `lib/portal/matchCards.ts`, `lib/data/liveRoundFormatArchive.ts`, `lib/live/matchProfile.ts`, `lib/live/matchProfile.test.ts`, `components/ui/RoundCountdown.tsx`
 
 This task is a precise, itemized list — every change below was confirmed by reading the actual file during planning; there is nothing else to hunt for beyond what's listed.
 
@@ -2399,7 +2399,7 @@ function UpcomingSessionBox({ session }: { session: UpcomingRoundScheduleItem })
 
 (The `rounds`/`venue.sessions` prop names on `VenueSchedulePage` itself and the legacy `SessionBox`/`venue.sessions` branch for past years are untouched — out of scope.)
 
-- [ ] **Step 2: `components/portal/tiger/MatchCloseoutCards.tsx`**
+- [ ] **Step 2: `components/portal/admin/MatchCloseoutCards.tsx`**
 
 Line 6's `Entry` type and line 31's display text both use `match.round`/`match.box_number` read directly off the `/api/live/matches` response (not through `LiveMatch` — that endpoint wasn't touched by this plan, confirm by checking `app/api/live/matches/route.ts`; if it already returns camelCase `session`/`matchNumber` after some other change, adjust accordingly, but as read during design it returns raw snake_case). Rename the display text only (data field names stay matching whatever `/api/live/matches` actually returns):
 
@@ -2409,7 +2409,7 @@ Line 6's `Entry` type and line 31's display text both use `match.round`/`match.b
 
 (Only the literal word "Round" → "Session" changes; `match.round`/`match.box_number` field access is unchanged since it mirrors the API's raw response shape, which is outside this plan's route-rename scope — `/api/live/matches` was never one of the renamed routes.)
 
-- [ ] **Step 3: `components/portal/tiger/BroadcastControlsPanel.tsx`**
+- [ ] **Step 3: `components/portal/admin/BroadcastControlsPanel.tsx`**
 
 Line 1020, the placeholder text only:
 
@@ -2417,7 +2417,7 @@ Line 1020, the placeholder text only:
 placeholder="e.g. Session 1 tee times pushed back 15 minutes"
 ```
 
-- [ ] **Step 4: `components/portal/tiger/TestSeasonPanel.tsx`**
+- [ ] **Step 4: `components/portal/admin/TestSeasonPanel.tsx`**
 
 Line 52 only (the ordinal reference; "Start the round" stays — that's the generic "Start Round"/now "Start Session" action, already covered by Task 11's rename of the button itself, so update this line to match the new button label too):
 
@@ -2583,7 +2583,7 @@ Expected: PASS with the updated Pacific-time assertions.
 - [ ] **Step 12: Commit**
 
 ```bash
-git add components/schedule/VenueSchedulePage.tsx components/portal/tiger/MatchCloseoutCards.tsx components/portal/tiger/BroadcastControlsPanel.tsx components/portal/tiger/TestSeasonPanel.tsx components/portal/ScoringStatusScreen.tsx components/wagers/LiveMatchesList.tsx lib/portal/matchCards.ts lib/data/liveRoundFormatArchive.ts lib/live/matchProfile.ts lib/live/matchProfile.test.ts components/ui/RoundCountdown.tsx lib/data/activeSeasonOverlay.ts
+git add components/schedule/VenueSchedulePage.tsx components/portal/admin/MatchCloseoutCards.tsx components/portal/admin/BroadcastControlsPanel.tsx components/portal/admin/TestSeasonPanel.tsx components/portal/ScoringStatusScreen.tsx components/wagers/LiveMatchesList.tsx lib/portal/matchCards.ts lib/data/liveRoundFormatArchive.ts lib/live/matchProfile.ts lib/live/matchProfile.test.ts components/ui/RoundCountdown.tsx lib/data/activeSeasonOverlay.ts
 git commit -m "Sweep remaining Round->Session text; convert live tee-time displays to Pacific"
 ```
 
@@ -2612,7 +2612,7 @@ Expected: clean on every file this plan touched (pre-existing unrelated lint err
 - [ ] **Step 4: Build**
 
 Run: `npm run build`
-Expected: clean build; confirm the route list in the build output shows `/api/portal/tiger/sessions*` and `/api/portal/tiger/matches*` and no longer shows `/rounds*`/`/matchboxes*`.
+Expected: clean build; confirm the route list in the build output shows `/api/portal/admin/sessions*` and `/api/portal/admin/matches*` and no longer shows `/rounds*`/`/matchboxes*`.
 
 - [ ] **Step 5: Manual walkthrough**
 

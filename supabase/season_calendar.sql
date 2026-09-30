@@ -1,4 +1,4 @@
--- Apply before deploying the Tiger Center season overview.
+-- Apply before deploying the Admin Center season overview.
 -- Handoffs occur at midnight America/Chicago. Existing score rows stay year-keyed.
 create table if not exists public.season_calendar (
   season_year integer primary key check (season_year between 2026 and 2034),

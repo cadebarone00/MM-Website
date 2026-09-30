@@ -2,7 +2,7 @@ import type { Tournament } from "./types";
 
 export const pinehurst2024: Tournament = {
   slug: "2024-pinehurst",
-  editionLabel: "The Maroon Masters 2024",
+  editionLabel: "The Maroon Tournament 2024",
   year: 2024,
   venue: "Pinehurst",
   location: "Pinehurst, NC",

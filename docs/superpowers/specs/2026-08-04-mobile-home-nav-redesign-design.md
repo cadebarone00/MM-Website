@@ -21,7 +21,7 @@ matching the bottom nav's flush-to-bottom treatment). Three zones:
   countdown text (idle) or "Live Now" (swapped in during a live
   tournament) — same swap condition `Header.tsx` already uses
   (`isLiveNow()`), just relocated into this single row.
-- **Center:** the Maroon Masters wordmark, horizontally centered,
+- **Center:** the Maroon Tournament wordmark, horizontally centered,
   bottom-aligned within the row.
 - **Right:** the account/person icon — now always rendered (logged in or
   not), always tappable, opens the new Account menu (below).
@@ -103,7 +103,7 @@ filling the section edge-to-edge (no columns):
 ## Media section
 
 No layout change to `SocialsSection`. Clicking a reel or a video now shows
-a plain `window.confirm()` ("You're leaving The Maroon Masters — continue
+a plain `window.confirm()` ("You're leaving The Maroon Tournament — continue
 to Instagram?" / "...to view all videos?") before navigating out. Cancel
 keeps the user on the page.
 
@@ -125,8 +125,8 @@ work.
 ## Explicitly out of scope
 
 - **The accounts system.** Sign-up/login pages, Supabase setup, session
-  creation, the player-invite/approval flow (Tiger approving "I am a
-  Player" requests), and email notifications to Tiger. This spec only
+  creation, the player-invite/approval flow (Admin approving "I am a
+  Player" requests), and email notifications to Admin. This spec only
   builds the inert UI shells (Sign Up/Login/Log Out buttons, the Account
   menu itself) that a future accounts spec will wire up.
 - **`/portal`.** Does not exist yet and is not built in this round. The

@@ -1,8 +1,8 @@
-# Maroon Masters Website — Project Spec
+# The Maroon Website — Project Spec
 
 ## What the app does
 
-A public website for "The Maroon Masters" — an annual golf trip/tournament between two
+A public website for "The Maroon Tournament" — an annual golf trip/tournament between two
 friend groups, Team Maroon and Team White. It shows the history of every edition, team
 rosters, live and historical leaderboards, hole-by-hole scorecards, and (this round) a
 player/course statistics section. Visitors are the players themselves, their families,
@@ -60,7 +60,7 @@ All pages are public, no auth.
   Sign Up/Login buttons it added were inert placeholders, wired up in the round below.
 - Accounts foundation: Supabase-backed Sign Up / Login / password reset, a post-login
   fork screen (`/account/choose`), a minimal player/host `/portal` (retiring the old
-  separate scorekeeper app), and a Tiger-only `/portal/admin` for assigning player
+  separate scorekeeper app), and a Admin-only `/portal/admin` for assigning player
   usernames — see `docs/superpowers/specs/2026-08-04-accounts-foundation-design.md`.
   Shipped in code and reviewed (`npm test`, `npx tsc --noEmit`, `npm run lint`,
   `npm run build` all clean); live verification against a real Supabase project,
@@ -89,7 +89,7 @@ All pages are public, no auth.
   `docs/superpowers/plans/2026-08-14-live-scoring-platform.md`.
 - Two full-bleed loading screens, both using real photo backgrounds
   (`public/loading/desktop.png` / `mobile.png`, swapped at the `lg`
-  breakpoint) with "The Maroon Masters" in the site's serif wordmark style:
+  breakpoint) with "The Maroon Tournament" in the site's serif wordmark style:
   `components/LoadingScreen.tsx` is the shared presentational piece (a
   `raised` prop moves the title up to make room for content below it).
   `components/home/HomeEntrySplash.tsx` wraps the homepage and shows it,
@@ -172,7 +172,7 @@ All pages are public, no auth.
   compass centered in its half. `HoleActionBar`'s GPS and Next Hole buttons
   are now equal width. Live scoring is unchanged by this pass. `npm test`,
   `npx tsc --noEmit`, `npm run lint`, and `npm run build` all clean.
-- Wired archived Maroon Masters tournament rounds into the real handicap
+- Wired archived Maroon Tournament tournament rounds into the real handicap
   index, closing a gap where the types/math for it already existed
   (`ArchivedHandicapRound.teeSetup`, `archiveIndex.ts`'s
   `combinedHandicapIndexes`) but nothing populated or read the data.
@@ -180,12 +180,12 @@ All pages are public, no auth.
   the `handicap_setup`/`played_on` columns `supabase/archived_handicap_tees.sql`
   added (also folded into `schema.sql`); `/portal/handicap`'s page now calls
   `combinedHandicapIndexes` so "Overall Handicap"/"Low Index" include
-  archived rounds and "Maroon Masters" shows a real number instead of a
+  archived rounds and "Maroon Tournament" shows a real number instead of a
   hardcoded "—"; `HandicapHome.tsx`'s archive rows show the assigned tee
-  name/rating/slope instead of always "— / —". New Tiger-only bulk action
+  name/rating/slope instead of always "— / —". New Admin-only bulk action
   ("Assign tees for handicap tracking" on `/portal/admin/scorecards`,
-  `components/portal/tiger/ArchiveTeeAssigner.tsx` →
-  `POST /api/portal/tiger/scorecards/archive-tees`) sets the course/tee
+  `components/portal/admin/ArchiveTeeAssigner.tsx` →
+  `POST /api/portal/admin/scorecards/archive-tees`) sets the course/tee
   set/date-played for every player's archived row of one tournament round
   at once — the write path that table never had. `npm test`,
   `npx tsc --noEmit`, `npm run lint`, and `npm run build` all clean.
@@ -194,7 +194,7 @@ All pages are public, no auth.
   `supabase/course_library_location.sql`, run in production 2026-09-11.
   Course Library home page and the Review/edit tees page both show "City, ST"
   in small grey text under the course name (blank if not set), with an "Edit
-  location" control (new `components/portal/tiger/CourseLocationEditor.tsx`)
+  location" control (new `components/portal/admin/CourseLocationEditor.tsx`)
   that opens a City text box / State dropdown / optional Zip box, next to the
   existing "Edit course name" control (the name column was widened to fit
   both). My Handicap → Submit a score shows the same "City, ST" line
@@ -205,12 +205,12 @@ All pages are public, no auth.
   (`formatCourseLocation`, pure, tested). `npm test`, `npx tsc --noEmit`,
   `npm run lint`, and `npm run build` all clean.
 - **Real handicap calculation, live end-to-end.** Two bugs kept
-  `/portal/handicap`'s "Maroon Masters"/"Overall Handicap" (and the smaller
+  `/portal/handicap`'s "Maroon Tournament"/"Overall Handicap" (and the smaller
   copy of the same number on the `/portal` home screen) stuck on "—" for
   every player, even though the WHS math itself was already correct and
-  Tiger had already assigned tees for several rounds:
+  Admin had already assigned tees for several rounds:
   1. `/portal`'s home-screen number only ever looked at self-submitted
-     "Submit a score" rounds (none exist yet), ignoring the Maroon Masters
+     "Submit a score" rounds (none exist yet), ignoring the Maroon Tournament
      archive the dedicated page already combines in — now it calls the same
      `combinedHandicapIndexes` the dedicated page uses, so the two screens
      never disagree.
@@ -276,11 +276,11 @@ All pages are public, no auth.
 - **Real "Send Invite" button on Players & Teams**, replacing "Copy
   Invite Link" (`/portal/admin/master-settings/[year]/players-teams`,
   `components/portal/PlayerSlotsAdmin.tsx`). Copy Invite Link only ever
-  copied a `/signup?code=<username>` URL for Tiger to send by hand —
+  copied a `/signup?code=<username>` URL for Admin to send by hand —
   nothing in this repo had ever emailed a player. Clicking "Send Invite"
   now expands an email box (pre-filled from any address already on file,
   same expand-a-row pattern as "Edit directly") and, on submit, calls new
-  `POST /api/portal/tiger/invite` (host-gated, mirrors
+  `POST /api/portal/admin/invite` (host-gated, mirrors
   `/api/auth/signup`'s create-then-rollback shape): Supabase's
   `auth.admin.inviteUserByEmail()` creates the player's login and sends
   Supabase's own built-in invite email (no new third-party service or
@@ -319,10 +319,10 @@ All pages are public, no auth.
   Players & Teams now shows each unclaimed player's email (or "No email
   on file") right under their name, with an "Edit email" toggle
   (identical expand-a-row pattern) that saves through a new, tiny `POST
-  /api/portal/tiger/player-email` straight to `player_slots.email` — no
+  /api/portal/admin/player-email` straight to `player_slots.email` — no
   more typing an address inside the invite flow itself. "Send Invite" is
   now a plain one-click button (disabled with no email on file); `POST
-  /api/portal/tiger/invite` dropped `email` from its request body
+  /api/portal/admin/invite` dropped `email` from its request body
   entirely and always reads `player_slots.email` server-side, so there is
   exactly one place an address is entered per player and every consumer
   (today, just the invite) reads from it. `npm test` (283/283, including
@@ -347,8 +347,8 @@ All pages are public, no auth.
   and `npm run build` all clean.
 - **Global Players page — Add Player, Edit name & email, and a
   name-vs-slug split.** Player management moved out of the per-year
-  Players & Teams page into a new Tiger Center → Global Tools → **Players**
-  page (`/portal/admin/players`, `components/portal/tiger/GlobalPlayersAdmin.tsx`).
+  Players & Teams page into a new Admin Center → Global Tools → **Players**
+  page (`/portal/admin/players`, `components/portal/admin/GlobalPlayersAdmin.tsx`).
   It has **+ Add Player** (name and email only), **Edit name & email**
   (replaces the old email-only panel), username, claimed/unclaimed status,
   pending bio approvals, "Edit directly", Unlink, and Send Invite — the
@@ -366,7 +366,7 @@ All pages are public, no auth.
   their name (`lib/portal/computePlayerSlug.ts`, `-2`/`-3` suffix if it
   clashes with a hand-written or existing slug) and gets a username the
   same way the seeded players did. Routes: `POST
-  /api/portal/tiger/player-add` and `/player-name` (host-only). **A new
+  /api/portal/admin/player-add` and `/player-name` (host-only). **A new
   player is a full working player** with no stats for 2024–2026: portal
   home shows their name, Edit My Bio works (a profile is synthesized when
   there's no hand-written file), Send Invite uses their visible name as
@@ -379,14 +379,14 @@ All pages are public, no auth.
   handicap, and live scoring for anyone added through the page). For the 13
   hand-written players it returns the identical session as before. Safe
   because `profiles.player_slug` is only ever set server-side (sign-up
-  claim, Tiger invite) and is a foreign key into `player_slots`. The two
+  claim, Admin invite) and is a foreign key into `player_slots`. The two
   legacy Google-Sheet scoring routes (`score/round`, `score/submit-hole`)
   return 403 for a DB-only player (that sheet only knows the hand-written
   roster), and `/portal/career` now passes the slug instead of the first
   name so a new player can't alias to a hand-written one. **Not reached by
   a rename (and shows the raw slug for a DB-only player):** the historical
   leaderboard, scorecard, wagers, and broadcast pages, the in-progress
-  `LivePlayerScorecard.tsx`, live-scoring partner names, and Tiger's
+  `LivePlayerScorecard.tsx`, live-scoring partner names, and Admin's
   matchups lists — those still read the static hand-written name helpers.
   `/portal/career` also 404s for a new player until they have stats.
   **Before this works in production, run `supabase/player_slots_full_name.sql`
@@ -399,7 +399,7 @@ All pages are public, no auth.
   every file this round touched (the repo's existing lint errors are all in
   broadcast/scorecard files and `scripts/render-workflow.cjs`, untouched
   here). **Not click-tested in a real browser:** the Global Players page
-  and the per-year page sit behind Tiger login — verified by type-check,
+  and the per-year page sit behind Admin login — verified by type-check,
   build, and unit tests of the pure logic, not by using them.
 - **Scorecard** (first built as "Round Recap", then reworked into a real
   scorecard grid after feedback) — the hole-by-hole review screen shared
@@ -526,7 +526,7 @@ All pages are public, no auth.
   time, "You & X vs. Y", and "You are scoring: <name>") with **Begin Round**
   (**Continue Round** once a hole is in, **View Scorecard** after you have
   submitted); it moves on to the next round as soon as you **and your scorer**
-  have both submitted, without waiting for Tiger (`withoutFinishedMatches`,
+  have both submitted, without waiting for Admin (`withoutFinishedMatches`,
   `scoringStage`, `loadScoringProgress`). The live **Scorecard** no longer
   shows the competitor's grid — only your own entries, a second score row
   with what *you* entered for your opponent, hole numbers that turn red where
@@ -534,7 +534,7 @@ All pages are public, no auth.
   (your scorer hasn't finished), **red** (a hole disagrees) or **green**
   (everything matches); the **Submit Round** pill is grey until green, then
   maroon, and asks "After you submit your round you will not be able to edit
-  it. Tiger can correct it later…" before locking your card (pure logic:
+  it. Admin can correct it later…" before locking your card (pure logic:
   `lib/live/roundStatus.ts`, tested). New migration
   **`supabase/live_round_submission.sql`** — *must be run once in the
   Supabase SQL Editor* (after `live_hole_submissions.sql` and
@@ -547,10 +547,10 @@ All pages are public, no auth.
   guard trigger stops later score writes moving an official round back to
   `live`. **Handicap now counts a live round only when its archive status is
   `submitted` or `final`** (`mapFutureHandicapRounds`); player statistics and
-  the odds model still read matched holes as they arrive, unchanged. Tiger's
+  the odds model still read matched holes as they arrive, unchanged. Admin's
   Match Closeout card lists who has not submitted, disables Close Out Match
   until everyone has, and offers "Close out anyway". Not built yet (Phases 2
-  and 3 of the spec): Tiger's Edit Scores for live rounds, wager reversal,
+  and 3 of the spec): Admin's Edit Scores for live rounds, wager reversal,
   and the public leaderboard/team points coming from live scoring with the
   Google Sheet as a backup. `npm test` (328/328), `npm run test:db` (all
   scenarios, incl. no auto-submit, lock, scorer-edit-never-unsubmits,
@@ -559,11 +559,11 @@ All pages are public, no auth.
   and `npm run test:browser` (white/red/green states, other scorer's numbers
   never shown, Submit Round asks first then locks) all clean. **Not
   click-tested against the real app:** the Scoring tab screen, its loader,
-  and Tiger's card sit behind login and a real database — covered by
+  and Admin's card sit behind login and a real database — covered by
   type-check, lint, build and the tested logic they call — so a two-phone
   check after running the migration is the remaining step.
 
-- **Tiger Center testing for the live scoring lifecycle** (follow-up to
+- **Admin Center testing for the live scoring lifecycle** (follow-up to
   Phase 1, since the tournament isn't live). Two tools, both extended.
   **Live Scoring Page Editor** (two phones on one screen, in memory only, no
   SQL needed): the phones now offer **Submit Round**, lock after it, and turn
@@ -578,7 +578,7 @@ All pages are public, no auth.
   the real screen and the preview. **2034 Test Season** (the real system with
   disposable test data; needs `supabase/live_round_submission.sql` run once):
   the panel gained a **How to rehearse** guide and a live **Rehearsal
-  status** (`TestSeasonStatus`, `GET /api/portal/tiger/test-season/status`,
+  status** (`TestSeasonStatus`, `GET /api/portal/admin/test-season/status`,
   pure `summarizeTestSeason`) showing per match: holes matched per player,
   who has pressed Submit Round, whether the round is an official record, and
   whether it *would* count toward a handicap. **Safety fix:** the 2034 test
@@ -593,7 +593,7 @@ All pages are public, no auth.
   one older warning in `TestSeasonPanel.tsx`), `npm run build`, and
   `npm run test:browser` (new: the preview path) all clean. **Not
   click-tested in the real app:** the Page Editor, the Test Season panel and
-  its status route sit behind Tiger login; they are covered by type-check,
+  its status route sit behind Admin login; they are covered by type-check,
   lint, build and the tested logic they call.
 
 - **Live Scorecard: opens itself at 18 holes, and shows whose score
@@ -645,7 +645,7 @@ All pages are public, no auth.
   above). The match score comes from the same confirmed-hole rule as
   everywhere else in live scoring (both scorers agree): the real screen
   reads the database's own `live_match_official_state` row (trigger-
-  maintained, the same one the public match list uses); the Tiger Center's
+  maintained, the same one the public match list uses); the Admin Center's
   Live Scoring Page Editor has no database, so it derives the identical
   result from the preview room's submissions with a new pure function,
   `previewOfficialState` (`lib/live/previewMatchState.ts`, unit-tested),
@@ -715,7 +715,7 @@ All pages are public, no auth.
   doesn't lose your picks, and the lock is now enforced for real:
   `fantasyPicksLocked` (`lib/fantasy/lock.ts`, unit-tested) checks the
   tournament's actual live/completed status instead of trusting the client.
-  Along the way, fixed a real bug: the pre-tournament roster (who Tiger has
+  Along the way, fixed a real bug: the pre-tournament roster (who Admin has
   locked into Maroon/White in Master Settings → Players & Teams) and the
   live-tournament roster (only populated once the Google Sheet feed is
   running) were two disconnected sources, so `tournament.roster` — and
@@ -784,7 +784,7 @@ All pages are public, no auth.
   "Session," and the code identifiers match it: `LiveRoundState` →
   `LiveSessionState` (`.round` → `.session`), `LiveMatchBox` → `LiveMatch`
   (`.boxNumber` → `.matchNumber`), `TournamentSettings.roundCount` →
-  `.sessionCount`, `/api/portal/tiger/rounds*` → `/sessions*`,
+  `.sessionCount`, `/api/portal/admin/rounds*` → `/sessions*`,
   `/matchboxes*` → `/matches*`. **Exact boundary, deliberately not
   touched:** the historical/archived "Round" concept (2024-2026 static
   `lib/data/*.ts`, the Career Stats archive, "Round INDI",
@@ -810,7 +810,7 @@ All pages are public, no auth.
   already-tested `effectiveMatchState()` auto Scheduled→Armed→Live
   transition, unchanged. **Locking still requires a manual Start Session /
   Start Match exactly as before — no new auto-start behavior was added:**
-  Tiger still has to press "Start Session" (`/portal/admin` shows a "Ready
+  Admin still has to press "Start Session" (`/portal/admin` shows a "Ready
   to start" `StartSessionBanner` once a session is locked but not yet
   started) and, separately, "Start Match" remains a manual per-match
   override for when a real tee time slips. Matchups' per-match
@@ -840,8 +840,8 @@ All pages are public, no auth.
   ScoringPanel.tsx` still imported `LiveMatchBox`; `scripts/
   build-sheet-handoff.mts` (a dev-only documentation/fixture script) still
   imported `roundIsComplete`/`LiveMatchBox` and listed stale
-  `tiger/matchboxes`/`tiger/rounds` source paths; and
-  `/api/portal/tiger/settings` (`route.ts` + its caller
+  `admin/matchboxes`/`admin/rounds` source paths; and
+  `/api/portal/admin/settings` (`route.ts` + its caller
   `CoursesFormatPanel.tsx` + `route.test.ts`) still spoke `roundCount` in
   its request/response body, per Task 9's explicit deferral note — both
   sides now say `sessionCount`, the `round_count` DB column unchanged.
@@ -849,8 +849,8 @@ All pages are public, no auth.
   above), `npx tsc --noEmit` (0 errors, was 30), `npm run lint` (clean — 0
   errors — on every file this whole 13-task plan touched; one pre-existing
   warning in `TestSeasonPanel.tsx`, already noted in an earlier round), and
-  `npm run build` (clean; route list confirms `/api/portal/tiger/
-  sessions*` and `/api/portal/tiger/matches*`, and no `/rounds*`/
+  `npm run build` (clean; route list confirms `/api/portal/admin/
+  sessions*` and `/api/portal/admin/matches*`, and no `/rounds*`/
   `/matchboxes*` — the unrelated `/api/portal/handicap/rounds` is the
   untouched handicap feature) all clean. **Not click-tested in a real
   browser:** no host login or real Supabase project is available in this
@@ -859,7 +859,7 @@ All pages are public, no auth.
   by type-check, lint, build, the tested logic (`sessionTeeTimes.ts`,
   `orchestration.ts`), and a smoke test against a running dev server
   confirming every touched route (`/portal/admin/master-settings/[year]/
-  courses-format`, `/matchups`, `/portal/admin`, `/api/portal/tiger/
+  courses-format`, `/matchups`, `/portal/admin`, `/api/portal/admin/
   sessions`, `/matches`, `/settings`) redirects or 401s correctly for an
   unauthenticated request rather than 500ing.
 
@@ -873,10 +873,10 @@ All pages are public, no auth.
   that a match tee time is always Pacific. The new column defaults to
   `'America/Los_Angeles'`, so the already-in-progress 2027 season (a real
   California venue) needed zero manual changes. **Two different displays, on
-  purpose:** Tiger's own admin screens — Master Settings, Courses & Format's
+  purpose:** Admin's own admin screens — Master Settings, Courses & Format's
   tee-time inputs, Matchups' tee-time labels, and the Career Stats archive —
   keep showing the *venue's* configured clock, since that's the time
-  Tiger and the players actually say out loud at the course. Everywhere a fan
+  Admin and the players actually say out loud at the course. Everywhere a fan
   or player who isn't standing at the venue sees a tee time instead — the
   public match profile page, the live leaderboard, the live Scoring tab, and
   the portal's "My Matches" cards — now converts that same underlying instant
@@ -918,9 +918,9 @@ All pages are public, no auth.
 ### Sign-out confirmation + return home (shipped 2026-09-28)
 
 **What changes:** Signing out is the same for every account type (player,
-normal fan account, and Tiger/host) and from every place a sign-out button
+normal fan account, and Admin/host) and from every place a sign-out button
 exists today — the desktop/footer account dropdown (`components/AccountBadge.tsx`,
-also used by the Player Portal / Tiger Center header) and the mobile account
+also used by the Player Portal / Admin Center header) and the mobile account
 menu (`components/nav/AccountMenu.tsx`).
 
 1. Clicking Sign Out / Log Out no longer signs out right away. A box pops up in
@@ -930,7 +930,7 @@ menu (`components/nav/AccountMenu.tsx`).
    background / pressing Esc) closes the box and nothing happens.
 3. Sign Out ends the session (existing `/api/auth/signout`) and then does a full
    page load of the home page `/`, so the person lands on the home screen as a
-   signed-out guest — even if they were inside `/portal` (Player Portal or Tiger
+   signed-out guest — even if they were inside `/portal` (Player Portal or Admin
    Center) or any other page.
 
 **How:** one new shared popup component `components/SignOutConfirmDialog.tsx`
@@ -943,7 +943,7 @@ sign-out buttons. `signOutAccount()` in `lib/useAccountSession.ts` gets the
 **Done when:** from the dropdown and the mobile menu, Sign Out shows the popup;
 Cancel keeps you signed in where you were; Sign Out lands you on `/` signed out
 (header shows Login / Sign Up), including when started from the Player Portal or
-Tiger Center. Type-check, lint, tests and build pass.
+Admin Center. Type-check, lint, tests and build pass.
 
 ### Projected page: match-style team win-probability graph + leaderboard year (spec 2026-09-28, awaiting approval)
 
@@ -995,7 +995,7 @@ First entry: **DCS Logo** (Dynamic Computing Services), image at
 `public/sponsors/` and add one line to the list.
 - **Rotation:** one logo shows at a time; every 15 seconds it fades out and the
   next fades in, looping. With only one sponsor it just stays put (no flicker).
-- **Desktop header:** sponsor logo all the way on the left; the Maroon Masters
+- **Desktop header:** sponsor logo all the way on the left; the Maroon Tournament
   wordmark sits in the centered nav, just left of Home.
   The logo sits on a small white rounded tile so its white background doesn't
   clash with the maroon bar.
@@ -1008,7 +1008,7 @@ First entry: **DCS Logo** (Dynamic Computing Services), image at
 together in the **center** of the bar. Right side keeps countdown, account and
 emblem; the Instagram button is removed from there.
 
-**More menu (mobile + desktop):** under the last link (Fantasy / Tiger Center), a
+**More menu (mobile + desktop):** under the last link (Fantasy / Admin Center), a
 row of four icons in this order: **Instagram, Facebook, TikTok, YouTube**, each
 opening the account in a new tab. Instagram = `https://www.instagram.com/themaroonmasters/`;
 the other three links are pending from the user (hidden until provided).
@@ -1026,22 +1026,22 @@ socials in More, and type-check, lint, tests and build pass.
   `docs/superpowers/specs/2026-09-20-live-scoring-round-lifecycle-design.md`.
   Model (user, 2026-09-20): everything live — leaderboards, team points,
   match results, **player statistics**, odds, broadcast — updates **per
-  matched hole**; **handicap (Maroon Masters + Overall) and the rounds
+  matched hole**; **handicap (Maroon Tournament + Overall) and the rounds
   archive** are written when a player **and their scorer have both
-  submitted**; wagers settle at Tiger's closeout, which is a review stamp
-  (Tiger can edit any score any time). Matches finish early (3&2) and
+  submitted**; wagers settle at Admin's closeout, which is a review stamp
+  (Admin can edit any score any time). Matches finish early (3&2) and
   update immediately, but players still play out 18 and the tab moves on
   once both have submitted. The other scorer's numbers are **never shown**:
   the live Scorecard shows only your entries, with the round total white
   (waiting on the other scorer), red (a hole disagrees — that hole number
   turns red) or green (all match → Submit Round turns maroon); the
   competitor grid built earlier is to be removed. After Submit Round only
-  Tiger can change the card. The public `/leaderboard` + team points should
+  Admin can change the card. The public `/leaderboard` + team points should
   come straight from live scoring, with the Google Sheet demoted to a
   one-way backup copy. Audit findings: `submit_live_hole` auto-inserts the
   submission row at 18 confirmed holes (blocks the reusable
   `/api/portal/scoring/submit`); handicap currently counts at 18 confirmed
-  holes (before anyone submits); no Tiger edit tool for live rounds; the
+  holes (before anyone submits); no Admin edit tool for live rounds; the
   Scoring tab only moves on at `Final`. Wager reversal (if a post-closeout edit flips a winner) is
   decided: build it (subtract payouts, reset bets, settle again, logged).
   No open design questions remain.
@@ -1079,7 +1079,7 @@ socials in More, and type-check, lint, tests and build pass.
   pending a decision from the user.
 - **Host scoring tools (Tasks 5-7 of the live scoring plan, not started):**
   `/portal/host` — pairings, round start/reset, direct score edits for
-  Tiger — does not exist yet. `/portal`'s host view still shows "Host tools
+  Admin — does not exist yet. `/portal`'s host view still shows "Host tools
   are coming in a later round." Until this ships, pairings/round management
   still needs to happen outside the site.
 - **`SCOREKEEPER_SERVER_SECRET` is not yet configured** in `.env` or in the
@@ -1122,3 +1122,11 @@ Any functional Real Wagers mode, real fourball market data, the final
 entry-splash image asset (placeholder background until provided), the host
 scoring tools listed above, player profile editing, or making "Nearby" actually
 work (needs course location data — see Known gaps above).
+
+## Platform productization (2026-09-29)
+
+The Maroon is being turned into a multi-tenant tournament platform. That work
+is specified in `THE_MAROON_PRODUCT_SPEC.md` (source of truth), tracked in
+`CHANGELOG.md` and `TECHNICAL_DEBT.md`. Phase C1 (additive platform tables,
+`supabase/platform_foundation.sql`, and `lib/platform/`) is built and tested
+but not yet run in production; nothing in the existing app reads it yet.

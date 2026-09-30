@@ -7,7 +7,7 @@ import type { BroadcastConfig, BroadcastScene } from "./types";
 /**
  * Which scene the auto rotation is showing right now, ticking forward on
  * its own — the same computation /broadcast itself uses (see
- * components/broadcast/SceneRenderer.tsx), shared so Tiger Center's
+ * components/broadcast/SceneRenderer.tsx), shared so Admin Center's
  * Broadcast Controls can display and act on the real live scene instead of
  * a stale `current_scene` value (which auto rotation never writes back to
  * the database — see the spec's §8/§15).

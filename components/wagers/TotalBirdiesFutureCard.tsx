@@ -83,7 +83,7 @@ export function TotalBirdiesFutureCard({ mode }: { mode: WagersMode }) {
             {state.status === "settled"
               ? "Every bet was graded against the line it was placed at. Wagers have been paid out."
               : state.status === "complete"
-                ? "Every hole is in — betting is closed. Pays out once Tiger closes out the last match."
+                ? "Every hole is in — betting is closed. Pays out once Admin closes out the last match."
                 : state.status === "updating"
                   ? "Updating the line after the latest score…"
                   : mode === "real"

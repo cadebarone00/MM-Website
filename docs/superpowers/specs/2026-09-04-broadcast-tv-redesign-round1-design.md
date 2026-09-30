@@ -71,7 +71,7 @@ broadcasts (PGA Tour, Golf Channel) use, not a stylization.
 **Type** — no new fonts; every family already loads in this app
 (`--font-serif` / Spectral, `--font-sans` + `--font-condensed` / Barlow +
 Barlow Condensed):
-- `font-serif` italic stays the wordmark treatment ("The Maroon Masters"),
+- `font-serif` italic stays the wordmark treatment ("The Maroon Tournament"),
   now rendered small and restrained (an eyebrow, not the dominant element —
   the watermark carries the brand mark at scale instead, see Signature).
 - `font-condensed` uppercase, wide tracking stays every label/eyebrow

@@ -19,7 +19,7 @@ export function PlayerTeamAssignment({ year, rows: initialRows }: { year: number
     setBusy(playerSlug);
     setError(null);
     try {
-      const res = await fetch("/api/portal/tiger/roster", {
+      const res = await fetch("/api/portal/admin/roster", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ year, playerSlug, team }),
@@ -41,7 +41,7 @@ export function PlayerTeamAssignment({ year, rows: initialRows }: { year: number
     setBusy(playerSlug);
     setError(null);
     try {
-      const res = await fetch("/api/portal/tiger/roster/lock", {
+      const res = await fetch("/api/portal/admin/roster/lock", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ year, playerSlug, locked }),

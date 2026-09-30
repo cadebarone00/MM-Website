@@ -4,7 +4,7 @@ These files are preserved with the import tooling as immutable, human-auditable
 maps of the original workbooks. They are not application data entered by
 clients.
 
-## 2026 Maroon Masters Player Round Map
+## 2026 Maroon Tournament Player Round Map
 
 `2026_Maroon_Masters_Player_Round_Map.csv` is the authoritative lookup for
 each player's eight 2026 rounds: source sheet, format, partner, opponents,

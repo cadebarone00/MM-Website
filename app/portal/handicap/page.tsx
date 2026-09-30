@@ -34,9 +34,9 @@ export default async function HandicapPage({ searchParams }: { searchParams: Pro
     getLiveTeamForPlayer(playerSlug),
   ]);
   // getHandicapSummaryForPlayer's index/lowIndex only account for rounds the
-  // player submitted themselves; combine in Maroon Masters archive rounds
+  // player submitted themselves; combine in Maroon Tournament archive rounds
   // that now carry a verified tee/rating/slope (see archiveIndex.ts).
   const fullSummary = { ...summary, ...combinedHandicapIndexes(summary.rounds, archivedRounds) };
 
-  return <HandicapHome playerName={playerName} playerSlug={playerSlug} summary={fullSummary} archivedRounds={archivedRounds} team={team} initialTab={tab === "overall" ? "overall" : "maroon-masters"} />;
+  return <HandicapHome playerName={playerName} playerSlug={playerSlug} summary={fullSummary} archivedRounds={archivedRounds} team={team} initialTab={tab === "overall" ? "overall" : "maroon-tournament"} />;
 }

@@ -14,13 +14,13 @@ import { SceneRenderer } from "./SceneRenderer";
 /**
  * A host can force a scene (or return to auto), pause/resume, post an
  * announcement, switch which year is displayed, or go live/end the
- * broadcast from Tiger Center's Broadcast Controls page, and every open
+ * broadcast from Admin Center's Broadcast Controls page, and every open
  * /broadcast tab picks it up live. See
  * docs/superpowers/specs/2026-09-02-watch-live-broadcast-design.md.
  *
  * `preview: true` (the Broadcast Controls preview iframe, `/broadcast?preview=1&...`)
  * renders `broadcast.state` exactly as given, statically — no subscription
- * to the real, shared broadcast_state/broadcast_display_year, so a Tiger
+ * to the real, shared broadcast_state/broadcast_display_year, so a Admin
  * rehearsing privately never touches or is disrupted by the real broadcast.
  */
 export function BroadcastStage({

@@ -3,10 +3,10 @@
 ## Goal
 
 Bring everything MM-Scorekeeper (`cadebarone00/MM-Scorekeeper`, a separate, private
-repo) built — full player self-service profiles, and Tiger's complete host toolset
+repo) built — full player self-service profiles, and Admin's complete host toolset
 (players, pairings, rounds, in-play, score edits, course admin, email templates,
 video) — into this repo's `/portal`, so there is exactly **one** login (this site's
-existing Supabase account), **one** app, and **one** place players and Tiger ever go.
+existing Supabase account), **one** app, and **one** place players and Admin ever go.
 
 ## Background
 
@@ -52,7 +52,7 @@ same Neon Postgres database, same business logic (`scoring.py`, `orchestration.p
 - This repo's Next.js server becomes the **only** client of the Python API.
   Browser → `/portal` (Supabase-authenticated) → this repo's Route Handlers
   (resolve identity server-side, exactly like `requirePlayer.ts` today; a parallel
-  `requireHost.ts` covers Tiger) → Python API (`PYTHON_API_SECRET` + resolved
+  `requireHost.ts` covers Admin) → Python API (`PYTHON_API_SECRET` + resolved
   identity) → Postgres.
 
 ### The Sheet becomes the backup
@@ -93,7 +93,7 @@ it's a second, independently-readable copy of the same data, not a dependency.
 - Score entry / Submit a Score, including non-tournament rounds (`SubmitScoreForm`/
   `SubmitScoreView`, `account-submit-non-tournament-round`)
 
-**Host-facing (Tiger)** (ported from `components/host/*`):
+**Host-facing (Admin)** (ported from `components/host/*`):
 - Players — invite, remove, review/approve profile-edit requests (`PlayersPanel`)
 - Pairings (`PairingsPanel`)
 - Rounds — start/reset (`RoundsPanel`)
@@ -169,7 +169,7 @@ in it, stays exactly where it is; only who's allowed to write to it changes.
 ## What "done" looks like
 
 A player can log into this site once, land in `/portal`, and do everything
-MM-Scorekeeper's player app did. Tiger can log in once and do everything
+MM-Scorekeeper's player app did. Admin can log in once and do everything
 MM-Scorekeeper's host app did, under `/portal/host`. All of it is backed by the
 real Python/Postgres engine with real data intact, mirrored live to the Google
 Sheet as a backup, with no second login anywhere in the flow.

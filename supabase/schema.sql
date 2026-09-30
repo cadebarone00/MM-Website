@@ -289,7 +289,7 @@ alter table career_stat_matches enable row level security;
 alter table career_match_participants enable row level security;
 alter table career_stat_imports enable row level security;
 
--- === Tiger Center Odds Model =============================================
+-- === Admin Center Odds Model =============================================
 -- The model reads normalized Career Stats rows; workbook sheets are never
 -- queried by calculations. Each preview is reproducible/auditable through
 -- this persisted settings record and the run history below.
@@ -560,8 +560,8 @@ create policy live_hole_scores_select_all on live_hole_scores for select using (
 drop policy if exists live_round_state_select_all on live_round_state;
 create policy live_round_state_select_all on live_round_state for select using (true);
 
--- === Tiger Center: Setup (roster, round scheduling) =====================
--- Extends the Native Live Platform section above. Adds the pieces Tiger
+-- === Admin Center: Setup (roster, round scheduling) =====================
+-- Extends the Native Live Platform section above. Adds the pieces Admin
 -- needs to set up a tournament: how many rounds, who's on which team, and
 -- each round's date/course/format with independent lock states.
 
@@ -584,7 +584,7 @@ alter table live_round_state
   add column if not exists matchups_locked boolean not null default false;
 
 -- Formats are three going forward (Foursome replaces the Scramble/Alternate
--- Shot split — see the Tiger Center Operations spec). Postgres names an
+-- Shot split — see the Admin Center Operations spec). Postgres names an
 -- inline column check "<table>_<column>_check" by default, so this is the
 -- real name of the constraint the Native Live Platform section created.
 alter table live_match_boxes drop constraint if exists live_match_boxes_format_check;
@@ -602,14 +602,14 @@ create policy live_tournament_settings_select_all on live_tournament_settings fo
 drop policy if exists live_roster_select_all on live_roster;
 create policy live_roster_select_all on live_roster for select using (true);
 
--- === Tiger Center: Matchups ==============================================
+-- === Admin Center: Matchups ==============================================
 -- Flattens live_match_boxes off the original 4-day/2-session/3-box grid
 -- (ported from MM-Scorekeeper's Python model in the Native Live Platform
--- section above) onto the flexible round model Tiger Center Setup already
+-- section above) onto the flexible round model Admin Center Setup already
 -- shipped (round_count 6-10, one flat live_round_state row per round) — the
 -- old grid can only reach round 8 (4 days x 2 sessions) and caps at 3
 -- boxes, which doesn't fit Singles' 6 boxes (12 players / 2 per box). See
--- the Tiger Center Operations spec's Matchups section.
+-- the Admin Center Operations spec's Matchups section.
 
 alter table live_match_boxes add column if not exists round integer references live_round_state(round);
 
@@ -637,7 +637,7 @@ alter table live_match_boxes add constraint live_match_boxes_round_box_number_ke
 alter table live_match_boxes drop constraint if exists live_match_boxes_box_number_check;
 alter table live_match_boxes add constraint live_match_boxes_box_number_check check (box_number between 1 and 6);
 
--- === Tiger Center: Player Live Scoring ====================================
+-- === Admin Center: Player Live Scoring ====================================
 -- Tracks each player's own final submission for a match box (the ops
 -- spec's "Submit Scores" action — one row per player once they've entered
 -- everything they're responsible for and hit Submit). `on delete cascade`
@@ -678,7 +678,7 @@ begin
   end if;
 end $$;
 
--- === Tiger Center: Player Live Scoring — agreement indicator ==============
+-- === Admin Center: Player Live Scoring — agreement indicator ==============
 -- The `confirmed_by` column on live_hole_scores was reserved back in the
 -- native-live-platform build for exactly this: "the confirmation flow
 -- itself is a later phase, this column just makes room for it now." This
@@ -690,10 +690,10 @@ end $$;
 alter table live_hole_scores add column if not exists self_reported_score integer;
 
 -- === Player Bio Portal ===================================================
--- Lets a player edit their own public bio; every change needs Tiger's
+-- Lets a player edit their own public bio; every change needs Admin's
 -- approval before it's live (email isn't part of this — that's a Supabase
 -- Auth setting). player_profile_edits is the pending queue a player writes
--- to and Tiger clears; player_profile_overrides is what the public bio page
+-- to and Admin clears; player_profile_overrides is what the public bio page
 -- reads on top of the static lib/data/players/*.ts baseline once approved.
 
 create table if not exists player_profile_edits (
@@ -722,7 +722,7 @@ drop policy if exists player_profile_edits_select_all on player_profile_edits;
 -- player_profile_edits intentionally has NO policies — only the
 -- service-role key (which bypasses RLS entirely) may read it. Pending
 -- edits are unmoderated content; they shouldn't be publicly queryable
--- before Tiger has reviewed them. Same pattern as player_slots above.
+-- before Admin has reviewed them. Same pattern as player_slots above.
 
 drop policy if exists player_profile_overrides_select_all on player_profile_overrides;
 create policy player_profile_overrides_select_all on player_profile_overrides for select using (true);
@@ -730,9 +730,9 @@ create policy player_profile_overrides_select_all on player_profile_overrides fo
 -- Approving is one atomic statement (move the value to overrides, remove
 -- the pending row) — a SECURITY DEFINER function, same atomicity reasoning
 -- as settle_mm_coin_market above. It takes p_submitted_at and matches it
--- against the stored row so it only ever approves the exact proposal Tiger
--- saw: if the player resubmitted after Tiger loaded the page but before
--- Tiger clicked Approve, the delete's WHERE won't match, GET DIAGNOSTICS
+-- against the stored row so it only ever approves the exact proposal Admin
+-- saw: if the player resubmitted after Admin loaded the page but before
+-- Admin clicked Approve, the delete's WHERE won't match, GET DIAGNOSTICS
 -- sees 0 rows, and this raises instead of silently promoting or discarding
 -- content nobody reviewed. The DELETE...RETURNING feeding the INSERT (one
 -- statement, not a SELECT then a separate DELETE) closes the earlier
@@ -779,7 +779,7 @@ $$;
 
 revoke execute on function approve_profile_edit(text, text, timestamptz) from public;
 
--- === Tiger Center: Course rating & slope (for handicap calculations) ======
+-- === Admin Center: Course rating & slope (for handicap calculations) ======
 -- One rating/slope per course (not per tee box — this app has no tee-box
 -- concept yet). Course Rating is a decimal (e.g. 72.4); Slope Rating is a
 -- whole number, USGA range 55-155. Both nullable — existing courses saved
@@ -788,9 +788,9 @@ revoke execute on function approve_profile_edit(text, text, timestamptz) from pu
 alter table live_courses add column if not exists rating numeric;
 alter table live_courses add column if not exists slope integer check (slope between 55 and 155);
 
--- === Tiger Center: Archived Scorecards & Shot Video ========================
+-- === Admin Center: Archived Scorecards & Shot Video ========================
 -- Historical (already-played) tournaments' hole-by-hole scorecards, editable
--- by Tiger from the "Scorecards & Video" screen. Deliberately separate from
+-- by Admin from the "Scorecards & Video" screen. Deliberately separate from
 -- the live_* tables above — those track the *current/future* tournament's
 -- live round cycle and have no year dimension; these are keyed by
 -- tournament_slug because multiple past years coexist. player_slug here is
@@ -814,7 +814,7 @@ create index if not exists archived_scorecard_rounds_tournament_idx on archived_
 -- so schema.sql stops drifting from what's actually needed in production —
 -- this repo has hit the "migration file exists but wasn't captured in
 -- schema.sql" gap before (the Courses & Format phase). Verified historical
--- course/tee snapshot for a round, set via the Tiger Center's "Assign tees
+-- course/tee snapshot for a round, set via the Admin Center's "Assign tees
 -- for handicap tracking" panel — independent of later course-library edits.
 alter table archived_scorecard_rounds add column if not exists handicap_setup jsonb;
 alter table archived_scorecard_rounds add column if not exists played_on date;
@@ -833,7 +833,7 @@ create table if not exists archived_scorecard_holes (
   -- unchanged rather than needing a translation layer on every read.
   fir text not null check (fir in ('0', '1', 'X')),
   gir boolean not null,
-  -- Set whenever Tiger changes a value here from its migrated original —
+  -- Set whenever Admin changes a value here from its migrated original —
   -- same convention live_hole_scores.host_edited already established.
   host_edited boolean not null default false,
   updated_at timestamptz not null default now(),
@@ -921,12 +921,12 @@ create policy broadcast_state_select_all on broadcast_state for select using (tr
 insert into broadcast_config (id) values (true) on conflict (id) do nothing;
 insert into broadcast_state (id) values (true) on conflict (id) do nothing;
 
--- === Tiger Center: Master Settings (multi-year) ==========================
+-- === Admin Center: Master Settings (multi-year) ==========================
 -- Every table below moves from "one live tournament, implicitly 2027" to
 -- "one row per season_year, 2027-2034." Existing real rows (the 2027
 -- tournament actually being set up) are backfilled to season_year = 2027
 -- before any not-null/key constraint is added, so nothing is lost. See
--- docs/superpowers/specs/2026-09-01-tiger-center-master-settings-design.md.
+-- docs/superpowers/specs/2026-09-01-admin-center-master-settings-design.md.
 
 -- live_tournament_settings: singleton -> one row per year, gains venue/dates
 alter table live_tournament_settings drop constraint if exists live_tournament_settings_singleton;
@@ -1005,7 +1005,7 @@ drop index if exists live_hole_scores_round_idx;
 create index if not exists live_hole_scores_season_round_idx on live_hole_scores (season_year, round);
 
 -- New: which year is actually live for the public site / player scoring —
--- independent of whichever year Tiger happens to be viewing in Master
+-- independent of whichever year Admin happens to be viewing in Master
 -- Settings.
 create table if not exists live_active_season (
   id boolean primary key default true,
@@ -1025,7 +1025,7 @@ create policy live_active_season_select_all on live_active_season for select usi
 -- exact same singleton -> one-row-per-year migration every live_* table
 -- just went through, backfilled to season_year = 2027 the same way.
 
--- broadcast_state needs to be in the Realtime publication for Tiger's scene
+-- broadcast_state needs to be in the Realtime publication for Admin's scene
 -- overrides (Broadcast Controls) to reach an open /broadcast tab instantly.
 -- live_match_boxes was never added despite components/portal/ScoringPanel.tsx-
 -- style code elsewhere subscribing to it — fixed here too, since Watch Live
@@ -1072,7 +1072,7 @@ alter table broadcast_state add column if not exists overlay_text text;
 alter table broadcast_state add column if not exists overlay_expires_at timestamptz;
 
 -- === Watch Live Broadcast: display year + Go Live ========================
--- Broadcast Controls now lives on the main Tiger Center page (not nested
+-- Broadcast Controls now lives on the main Admin Center page (not nested
 -- inside a per-year Master Settings screen), so /broadcast needs its own
 -- notion of "which year's data is showing" — deliberately independent of
 -- live_active_season (that flag still governs the real scoring system;
@@ -1093,7 +1093,7 @@ create policy broadcast_display_year_select_all on broadcast_display_year for se
 -- "Go Live" — before this, /broadcast always shows the Holding scene
 -- regardless of rotation/producer mode, same as a real broadcast's
 -- pre-show hold. Per season_year, same as every other broadcast_state
--- column (Tiger could go live on 2026 just to demo the look, independent
+-- column (Admin could go live on 2026 just to demo the look, independent
 -- of 2027's real state).
 alter table broadcast_state add column if not exists tournament_live boolean not null default false;
 
@@ -1112,7 +1112,7 @@ end $$;
 -- because this table's season_year check only allowed 2027-2034, while
 -- broadcast_display_year (the year picker's source of truth) allows
 -- 2024-2034. Widen this one to match so any previewable year can go live,
--- per the comment above ("Tiger could go live on 2026 just to demo the look").
+-- per the comment above ("Admin could go live on 2026 just to demo the look").
 alter table broadcast_state drop constraint if exists broadcast_state_season_year_check;
 alter table broadcast_state add constraint broadcast_state_season_year_check check (season_year between 2024 and 2034);
 
@@ -1213,9 +1213,9 @@ alter table broadcast_state add column if not exists audio_shuffle boolean not n
 -- === Player Handicap Tracker ================================================
 -- Personal (non-tournament) rounds a player logs from /portal to build a real
 -- WHS handicap index. Deliberately separate from live_hole_scores (tournament
--- rounds) and archived_scorecard_rounds (Tiger-entered historical tournament
+-- rounds) and archived_scorecard_rounds (Admin-entered historical tournament
 -- scorecards) — this is player-entered, not tournament-tied, and private to
--- the player (plus Tiger) rather than publicly readable.
+-- the player (plus Admin) rather than publicly readable.
 --
 -- Depends on live_courses.tee_sets (jsonb), added by
 -- supabase/course_library_tee_setups.sql. Repeated here (idempotently) so
@@ -1292,7 +1292,7 @@ create trigger guard_locked_session_count
   for each row execute function public.guard_locked_session_count();
 
 -- Season calendar and handoff
--- Apply before deploying the Tiger Center season overview.
+-- Apply before deploying the Admin Center season overview.
 -- Handoffs occur at midnight America/Chicago. Existing score rows stay year-keyed.
 create table if not exists public.season_calendar (
   season_year integer primary key check (season_year between 2026 and 2034),

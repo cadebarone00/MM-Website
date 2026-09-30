@@ -9,7 +9,7 @@ import { isValidDisplayYear } from "@/lib/broadcast/displayYears";
 import { getMockRunPosition } from "@/lib/broadcast/mockRun";
 
 export const metadata: Metadata = {
-  title: "Watch Live — The Maroon Masters",
+  title: "Watch Live — The Maroon Tournament",
 };
 
 export const dynamic = "force-dynamic";
@@ -19,7 +19,7 @@ type PreviewScene = (typeof VALID_SCENES)[number];
 
 const PREVIEW_VIDEO: BroadcastPlayerVideo = {
   id: "preview-player-video", playerSlug: "cade-barone", playerName: "Cade Barone", round: 1, hole: 16, shotNumber: 1,
-  par: 4, yards: 611, scoreToPar: -13, individualPlace: "1", courseName: "Maroon Masters Golf Club", format: "Singles",
+  par: 4, yards: 611, scoreToPar: -13, individualPlace: "1", courseName: "Maroon Tournament Golf Club", format: "Singles",
   match: { team: "white", ownPlayers: ["Barone"], opposingPlayers: ["Sherrell"], ownStatus: "1 ▲", opposingStatus: "1 ▼" },
   videoUrl: "/loading/desktop.mp4",
 };
@@ -55,8 +55,8 @@ function previewVideoFromParams(params: { [key: string]: string | undefined }): 
 }
 
 /**
- * `?preview=1&year=2026&scene=match_play` — Tiger Center's Broadcast
- * Controls rehearsal iframe (components/portal/tiger/BroadcastControlsPanel.tsx).
+ * `?preview=1&year=2026&scene=match_play` — Admin Center's Broadcast
+ * Controls rehearsal iframe (components/portal/admin/BroadcastControlsPanel.tsx).
  * Renders that exact year/scene, statically, from URL params alone — never
  * reads or subscribes to the real broadcast_state/broadcast_display_year,
  * so it can never affect (or be affected by) the real, published broadcast.

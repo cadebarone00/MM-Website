@@ -4,7 +4,7 @@
 
 **Goal:** Let a player log a personal (non-tournament) round from `/portal`, compute a real WHS handicap index from their archived rounds, and store hole-by-hole detail for future predictions work.
 
-**Architecture:** Fully native to this repo's Supabase/Next.js stack (no Python/Neon dependency). New `handicap_rounds`/`handicap_round_holes` tables, a pure `lib/handicap/whs.ts` calculation module (no I/O, fully unit-testable), a thin `lib/handicap/data.ts` data-access layer reused by both Server Components and Route Handlers, and a 3-step client-side wizard (setup → 18 holes → review) reusing the Tiger Center course library's tee-set data.
+**Architecture:** Fully native to this repo's Supabase/Next.js stack (no Python/Neon dependency). New `handicap_rounds`/`handicap_round_holes` tables, a pure `lib/handicap/whs.ts` calculation module (no I/O, fully unit-testable), a thin `lib/handicap/data.ts` data-access layer reused by both Server Components and Route Handlers, and a 3-step client-side wizard (setup → 18 holes → review) reusing the Admin Center course library's tee-set data.
 
 **Tech Stack:** Next.js 16 App Router (Route Handlers + Server Components), TypeScript, Supabase (service-role client for all reads/writes), `node:test` via `tsx` for unit tests.
 
@@ -14,7 +14,7 @@
 
 - Nothing client-supplied is ever trusted as identity — player identity always comes from `requirePlayer()` (resolves the Supabase session server-side), never a request body field.
 - Course rating/slope/par are always looked up server-side from `live_courses` at submit time — never trusted from the client, even though the client displayed them during setup.
-- Writes go through `createSupabaseServiceRoleClient()` only, from Route Handlers/Server Components — this matches every existing Tiger Center write path (`app/api/portal/scoring/stroke/route.ts`, `app/api/portal/tiger/courses/route.ts`).
+- Writes go through `createSupabaseServiceRoleClient()` only, from Route Handlers/Server Components — this matches every existing Admin Center write path (`app/api/portal/scoring/stroke/route.ts`, `app/api/portal/admin/courses/route.ts`).
 - No changes to tournament live scoring (`/portal/scoring/play`, `ScoringPanel.tsx`, `app/api/portal/scoring/**`) or any public `/leaderboard`, `/teams`, `/schedule`, `/history` page.
 - `schema.sql` has known drift from production in this repo (see Task 1) — never assume a column exists in production just because it's (or isn't) in `schema.sql`; the Task 1 migration is the one place this plan touches that risk, and every later task's code review should note if it discovers more drift, not silently work around it.
 - Run `npm test`, `npx tsc --noEmit`, `npm run lint`, `npm run build` before considering any task done, per this repo's standing rule.
@@ -40,9 +40,9 @@ Add this section to the end of `supabase/schema.sql`:
 -- === Player Handicap Tracker ================================================
 -- Personal (non-tournament) rounds a player logs from /portal to build a real
 -- WHS handicap index. Deliberately separate from live_hole_scores (tournament
--- rounds) and archived_scorecard_rounds (Tiger-entered historical tournament
+-- rounds) and archived_scorecard_rounds (Admin-entered historical tournament
 -- scorecards) — this is player-entered, not tournament-tied, and private to
--- the player (plus Tiger) rather than publicly readable.
+-- the player (plus Admin) rather than publicly readable.
 --
 -- Depends on live_courses.tee_sets (jsonb), added by
 -- supabase/course_library_tee_setups.sql. Repeated here (idempotently) so
@@ -879,7 +879,7 @@ export function HandicapHome({ playerName, summary }: { playerName: string; summ
     <main className="w-full pb-10">
       <section className="relative isolate overflow-hidden bg-maroon-950">
         <div className="relative aspect-[16/7] min-h-52 sm:min-h-64">
-          <Image src="/loading/desktop.png" alt="Maroon Masters course view" fill priority sizes="100vw" className="object-cover" />
+          <Image src="/loading/desktop.png" alt="Maroon Tournament course view" fill priority sizes="100vw" className="object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-maroon-950/90 via-maroon-950/40 to-transparent" />
         </div>
         <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 text-white sm:p-6">
@@ -1073,7 +1073,7 @@ export function HandicapRoundWizard({ courses }: { courses: HandicapCourseOption
   const selectedTeeSet = selectedCourse?.teeSets.find((t) => t.id === teeSetId) ?? null;
 
   if (courses.length === 0) {
-    return <p className="font-sans text-sm text-ink-500">No courses are set up yet — ask Tiger to add one from the Course Library first.</p>;
+    return <p className="font-sans text-sm text-ink-500">No courses are set up yet — ask Admin to add one from the Course Library first.</p>;
   }
 
   if (state.step === "holes") {

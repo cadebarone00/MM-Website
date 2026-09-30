@@ -9,8 +9,8 @@ import { getPlayerDisplayName } from "@/lib/data/players";
 type ConfirmedPlayer = { year: number; slug: string; team: "maroon" | "white"; name: string };
 
 const statColumns = [
-  { label: "MM Hcp", description: "Maroon Masters handicap" },
-  { label: "Sc. Avg.", description: "Maroon Masters scoring average" },
+  { label: "MM Hcp", description: "Maroon Tournament handicap" },
+  { label: "Sc. Avg.", description: "Maroon Tournament scoring average" },
   { label: "TPE", description: "Total points earned" },
 ];
 

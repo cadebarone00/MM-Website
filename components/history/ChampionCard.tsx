@@ -12,7 +12,7 @@ export function ChampionCard({ year, playerId, photo }: { year: number; playerId
       </div>
       <div className="relative h-[320px] w-full bg-gradient-to-br from-ink-700 to-ink-900">
         {photo ? (
-          <Image src={photo} alt={`${displayName}, ${year} Maroon Masters champion`} fill className="object-cover" />
+          <Image src={photo} alt={`${displayName}, ${year} Maroon Tournament champion`} fill className="object-cover" />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-ink-400">
             <ImageOff size={28} />

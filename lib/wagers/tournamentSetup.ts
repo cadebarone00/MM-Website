@@ -4,7 +4,7 @@ import type { LiveTournamentSnapshot } from "@/lib/live/types";
 import type { FutureFormat, Roster } from "./teamWinnerFuture";
 
 /**
- * The tournament setup every future prices against. Anything Tiger hasn't
+ * The tournament setup every future prices against. Anything Admin hasn't
  * set for the season yet — the number of rounds, a round's format or
  * course, the rosters — defaults to the most recent past tournament in the
  * Career Archive, so odds exist before the season is configured. Every
@@ -65,7 +65,7 @@ export function referenceSetup(
 }
 
 /**
- * Whether a course Tiger picked can actually be priced: a real name (not a
+ * Whether a course Admin picked can actually be priced: a real name (not a
  * "To Be Determined" placeholder) and 18 holes with a real par and yardage.
  * Anything else counts as not set yet, so the round keeps last year's course.
  */
@@ -87,7 +87,7 @@ export function roundList(rounds: number[]): string {
 }
 
 /**
- * Merges what Tiger has set for the season with the reference defaults.
+ * Merges what Admin has set for the season with the reference defaults.
  * Pure: the caller loads the season rows and the live snapshot.
  */
 export function buildTournamentSetup({
@@ -119,7 +119,7 @@ export function buildTournamentSetup({
   }
 
   const count = roundCount ?? reference?.rounds.size ?? null;
-  if (!count) blockers.push("Tiger hasn't set the number of rounds yet.");
+  if (!count) blockers.push("Admin hasn't set the number of rounds yet.");
   if (!roundCount && count) assumptions.push(`Using ${reference!.year}'s ${count}-round schedule until the number of rounds is set.`);
 
   const rounds: SetupRound[] = [];
@@ -145,7 +145,7 @@ export function buildTournamentSetup({
   }
   if (reference) {
     const sentence = (list: number[], what: string) =>
-      `Round${list.length > 1 ? "s" : ""} ${roundList(list)} use${list.length > 1 ? "" : "s"} ${reference.year}'s ${what} until Tiger sets ${list.length > 1 || what.includes(" and ") ? "them" : "it"}.`;
+      `Round${list.length > 1 ? "s" : ""} ${roundList(list)} use${list.length > 1 ? "" : "s"} ${reference.year}'s ${what} until Admin sets ${list.length > 1 || what.includes(" and ") ? "them" : "it"}.`;
     if (formatRounds.length && formatRounds.join() === courseRounds.join()) {
       assumptions.push(sentence(formatRounds, "format and course"));
     } else {

@@ -659,7 +659,7 @@ export function EventTakeover({ event, matchPlay }: { event: ActiveBroadcastEven
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-gradient-maroon px-10 py-10">
         <div className="w-full max-w-[900px] rounded-2xl bg-[color:var(--color-cream-50)] px-10 py-16 text-center shadow-2xl ring-1 ring-[color:var(--color-gold-400)]/40">
-          <p className="font-serif text-2xl italic text-[color:var(--color-maroon-700)]">The Maroon Masters</p>
+          <p className="font-serif text-2xl italic text-[color:var(--color-maroon-700)]">The Maroon Tournament</p>
           <p className="mt-6 font-condensed text-5xl font-bold uppercase tracking-wide text-[color:var(--color-maroon-900)]">Round {payload.round} Complete</p>
         </div>
       </div>
@@ -674,7 +674,7 @@ export function EventTakeover({ event, matchPlay }: { event: ActiveBroadcastEven
     <div className="flex min-h-screen w-full items-center justify-center bg-gradient-maroon px-10 py-10">
       <div className="w-full max-w-[900px] overflow-hidden rounded-2xl shadow-2xl ring-1 ring-[color:var(--color-gold-400)]/40">
         <div className="bg-[color:var(--color-cream-50)] px-8 pb-5 pt-7 text-center">
-          <p className="font-serif text-2xl italic text-[color:var(--color-maroon-700)]">The Maroon Masters</p>
+          <p className="font-serif text-2xl italic text-[color:var(--color-maroon-700)]">The Maroon Tournament</p>
           <div className="mx-auto mt-3 h-px w-24 bg-[color:var(--color-gold-400)]" />
         </div>
         <div className="bg-gradient-trophy px-8 py-10 text-center">

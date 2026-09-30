@@ -45,7 +45,7 @@ export async function GET() {
       .slice(0, 4)
       .map((item) => ({
         id: item.id ?? item.permalink ?? "",
-        caption: item.caption ?? "Maroon Masters Reel",
+        caption: item.caption ?? "Maroon Tournament Reel",
         thumbnailUrl: item.thumbnail_url ?? item.media_url ?? "",
         permalink: item.permalink ?? "https://www.instagram.com/themaroonmasters/",
         timestamp: item.timestamp ?? "",

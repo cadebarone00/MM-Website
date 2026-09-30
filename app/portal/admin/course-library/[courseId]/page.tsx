@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { CourseNameEditor } from "@/components/portal/tiger/CourseNameEditor";
-import { CourseLocationEditor } from "@/components/portal/tiger/CourseLocationEditor";
+import { CourseNameEditor } from "@/components/portal/admin/CourseNameEditor";
+import { CourseLocationEditor } from "@/components/portal/admin/CourseLocationEditor";
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { CourseTeeSetEditor } from "@/components/portal/tiger/CourseTeeSetEditor";
+import { CourseTeeSetEditor } from "@/components/portal/admin/CourseTeeSetEditor";
 import type { LiveCourse, LiveHole } from "@/lib/live/types";
 import { formatCourseLocation } from "@/lib/data/courseLocation";
 

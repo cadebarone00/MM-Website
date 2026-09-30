@@ -5,7 +5,7 @@ import type { ArchivedHandicapRound, HandicapRoundSummary } from "./types";
 
 const archived: ArchivedHandicapRound[] = [1, 2].map((round) => ({
   id: `archive-${round}`, tournamentSlug: "2026-palm-springs",
-  tournamentLabel: "The Maroon Masters 2026", tournamentDate: "2026-01-03",
+  tournamentLabel: "The Maroon Tournament 2026", tournamentDate: "2026-01-03",
   round, courseName: "Palmer", format: "Fourball", totalScore: 75, holesPlayed: 18,
 }));
 const submitted: HandicapRoundSummary[] = [{
@@ -29,7 +29,7 @@ test("missing scores stay last in both score orders", () => {
 });
 
 test("every archived round appears in both sections, personal scores only in Overall", () => {
-  const masters = handicapHistory(archived, submitted, "maroon-masters");
+  const masters = handicapHistory(archived, submitted, "maroon-tournament");
   const overall = handicapHistory(archived, submitted, "overall");
   assert.deepEqual(masters.map((entry) => entry.round.id), ["archive-2", "archive-1"]);
   assert.deepEqual(overall.map((entry) => entry.round.id), ["personal", "archive-2", "archive-1"]);
@@ -40,13 +40,13 @@ test("every archived round appears in both sections, personal scores only in Ove
 
 test("a non-18-hole archived round (e.g. the 9-hole Cradle round) never appears in the scores list", () => {
   const withNineHoleRound = [...archived, { ...archived[0], id: "archive-cradle", holesPlayed: 9 }];
-  const masters = handicapHistory(withNineHoleRound, submitted, "maroon-masters");
+  const masters = handicapHistory(withNineHoleRound, submitted, "maroon-tournament");
   assert.ok(!masters.some((entry) => entry.round.id === "archive-cradle"));
   assert.equal(masters.length, 2);
 });
 
 test("players without archived rounds still see personal scores only in Overall", () => {
-  assert.deepEqual(handicapHistory([], submitted, "maroon-masters"), []);
+  assert.deepEqual(handicapHistory([], submitted, "maroon-tournament"), []);
   assert.equal(handicapHistory([], submitted, "overall").length, 1);
   assert.deepEqual(handicapHistory([], [], "overall"), []);
 });

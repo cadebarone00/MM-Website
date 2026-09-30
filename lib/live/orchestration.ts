@@ -40,7 +40,7 @@ export function validateMatchBox(snapshot: LiveTournamentSnapshot, matchBox: Liv
  * Whether `scorerSlug` is allowed to enter `targetSlugs`' shared stroke
  * count for a hole in this match box. Fourball/Singles: `scorerSlug` and
  * the sole entry in `targetSlugs` must be the direct opposing pair at the
- * same box position (maroonPlayers[i] <-> whitePlayers[i] — Tiger already
+ * same box position (maroonPlayers[i] <-> whitePlayers[i] — Admin already
  * sets this just by the order players are picked in Matchups). Foursome:
  * `targetSlugs` must be exactly the whole opposing side (either player on
  * your side may enter it, since it's one shared real-world number).
@@ -164,7 +164,7 @@ export function matchBoxResult(snapshot: LiveTournamentSnapshot, matchBox: LiveM
   return { maroonHoles, whiteHoles, maroonPts, whitePts, leader, margin, holesRemaining };
 }
 
-/** A round may be armed while this box is waiting for tee time. Tiger can
+/** A round may be armed while this box is waiting for tee time. Admin can
  * override that wait by setting the persisted box state to Live. */
 export function matchIsScoreable(matchBox: Pick<LiveMatch, "state" | "started" | "teeTime">, now = new Date()): boolean {
   return matchBox.started && matchBox.state !== "Final" && (matchBox.state === "Live" || now >= matchBox.teeTime);

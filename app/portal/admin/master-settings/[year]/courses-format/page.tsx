@@ -6,7 +6,7 @@ import { getActiveSeasonYear } from "@/lib/live/activeSeason";
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { isValidSeasonYear } from "@/lib/live/activeSeason";
-import { CoursesFormatPanel } from "@/components/portal/tiger/CoursesFormatPanel";
+import { CoursesFormatPanel } from "@/components/portal/admin/CoursesFormatPanel";
 import type { LiveCourse, LiveSessionState, MatchFormat, TournamentSettings } from "@/lib/live/types";
 
 export default async function CoursesFormatPage({ params }: { params: Promise<{ year: string }> }) {

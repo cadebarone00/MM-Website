@@ -11,7 +11,7 @@ does not add a sportsbook margin.
 
 ## Match Simulator as the odds source of truth
 
-The Tiger Center Match Simulator is the single authoritative calculation
+The Admin Center Match Simulator is the single authoritative calculation
 surface for match odds. It must support a matchup at any valid course, format,
 number of completed holes, and current match status. Its result is the source
 of truth for:
@@ -20,7 +20,7 @@ of truth for:
 - Live winning probabilities and fair American odds.
 - Wager market prices and displayed win/tie/loss selections.
 - Leaderboard win-probability displays.
-- Any other public or Tiger Center odds presentation.
+- Any other public or Admin Center odds presentation.
 
 Those consumers must read a common model result or a stored snapshot created
 by the same model. They must not independently rebuild probabilities from
@@ -264,7 +264,7 @@ probabilities come from this match model:
   in chunks under a single-worker lease. Each stored matchup records a
   fingerprint of its players' Career Archive data (eligible individual-ball
   and Alternate Shot holes: count and stroke total). A new hole from live
-  scoring, a Tiger correction, or a submitted handicap round changes the
+  scoring, a Admin correction, or a submitted handicap round changes the
   fingerprint and queues that player's matchups for a re-price. This runs
   after every confirmed hole and handicap round and on public reads. The
   previous price stays in use until the new one lands. Never-priced
@@ -297,11 +297,11 @@ Guardrails:
 
 ## Default tournament setup (all futures)
 
-Futures price before the season is configured. Anything Tiger hasn't set for
+Futures price before the season is configured. Anything Admin hasn't set for
 the season uses the most recent past tournament in the Career Archive
 (`lib/wagers/tournamentSetup.ts`). That covers the number of rounds, each
 round's format and course (with its hole-by-hole par and yardage), and, when
-either roster is empty, both rosters. What Tiger sets always wins. Each
+either roster is empty, both rosters. What Admin sets always wins. Each
 public card lists the defaults in use. Settlement always uses the season's
 real rounds and results, never the defaults.
 

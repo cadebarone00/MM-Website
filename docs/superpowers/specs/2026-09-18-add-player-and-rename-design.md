@@ -8,9 +8,9 @@ first two live:
 1. **Add Player** — a "+ Add Player" control that creates a brand-new
    player from just a name and an email. Today every player on this site
    is a hand-written file in `lib/data/players/*.ts`; this is the first
-   time a player can exist purely as a database row, created by Tiger at
+   time a player can exist purely as a database row, created by Admin at
    runtime with no code change or deploy.
-2. **Edit name** — Tiger can correct a player's *visible* name, for any
+2. **Edit name** — Admin can correct a player's *visible* name, for any
    player, existing or new — without ever touching their `slug` (the
    permanent identifier every join, URL, and historical record uses).
 3. **Split player identity out of the per-year page.** Today
@@ -22,8 +22,8 @@ first two live:
    Add Player and Edit Name land there, not on the per-year page.
 
 Add Player and Edit Name build directly on the invite work already
-shipped this week (`player_slots.email`, `POST /api/portal/tiger/invite`,
-`POST /api/portal/tiger/player-email`) — a newly added player is simply a
+shipped this week (`player_slots.email`, `POST /api/portal/admin/invite`,
+`POST /api/portal/admin/player-email`) — a newly added player is simply a
 `player_slots` row that starts unclaimed with no team, exactly like any
 of the 13 existing players before they're invited.
 
@@ -92,7 +92,7 @@ an email was given) "Send Invite" already enabled — reusing 100% of the
 invite flow shipped this week. No team assignment (that's the per-year
 page's job now), no bio, no photo — exactly the two fields asked for.
 
-**Backend**: new `POST /api/portal/tiger/player-add`, host-gated
+**Backend**: new `POST /api/portal/admin/player-add`, host-gated
 (`requireHost`), same create-then-validate shape as the rest of this
 page's routes:
 
@@ -121,7 +121,7 @@ alongside Add Player; applies to every row, static or dynamic alike;
 pre-filled with whatever's currently displayed (the override if set,
 otherwise the hand-written name).
 
-**Backend**: new `POST /api/portal/tiger/player-name`, mirroring
+**Backend**: new `POST /api/portal/admin/player-name`, mirroring
 `player-email` exactly:
 
 - Validates `playerSlug` (string) and `fullName` (non-empty string —
@@ -135,7 +135,7 @@ this page already surfaces errors.
 
 ## Global Players page vs. per-year Players & Teams
 
-**New Global Tools page**: `/portal/admin/players`, a new box on Tiger
+**New Global Tools page**: `/portal/admin/players`, a new box on Admin
 Center's Global Tools grid
 ([app/portal/admin/page.tsx](../../../app/portal/admin/page.tsx)),
 alongside Career Stats, Course Library, Wager Types, etc. — the existing
@@ -224,7 +224,7 @@ already has. No photo upload is part of this spec.
 
 ## Testing
 
-Same pattern already established for every `tiger/**` route in this
+Same pattern already established for every `admin/**` route in this
 codebase: `requireHost()` needs a real request lifecycle
 (`next/headers`'s `cookies()`), so a plain `node:test` run can't
 exercise an authenticated call. Each new route

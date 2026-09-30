@@ -17,7 +17,7 @@ type PublicWagerDefinition = {
 const playerFutureSlot = "Players → Selected Player → Futures";
 
 /** Every public-facing type is deliberately defined in code. `in_design`
- * items are visible to Tiger for discussion but cannot be submitted until
+ * items are visible to Admin for discussion but cannot be submitted until
  * their model and readiness validation have been implemented. */
 export const PUBLIC_WAGER_CATALOG: Record<string, PublicWagerDefinition> = {
   "total-tournament-birdies": {
@@ -30,7 +30,7 @@ export const PUBLIC_WAGER_CATALOG: Record<string, PublicWagerDefinition> = {
     marketKind: "over_under",
     statKey: "career.scoring.tournament_birdies",
     calculationRule: "Simulate each locked Singles/Fourball round on its scheduled 18-hole course 10,000 times; total the player’s birdies; feature the half-birdie line nearest 50/50 and expose reasonable alternate lines.",
-    settlementRule: "Settle from final confirmed 18-hole individual scorecards for all scheduled tournament rounds after Tiger closeout.",
+    settlementRule: "Settle from final confirmed 18-hole individual scorecards for all scheduled tournament rounds after Admin closeout.",
     modelStatus: "ready",
   },
   "round-score-over-under": {

@@ -1,4 +1,4 @@
-# Maroon Masters — Site Plan
+# Maroon Tournament — Site Plan
 
 ## Purpose
 
@@ -7,7 +7,7 @@ This is the product/UX plan for the whole platform under the new architecture
 exists under each of the three access tiers, how they connect, and how a
 single score entry turns into a dozen things updating at once, live. It's the
 shared reference every later phase's spec gets written against, so The
-Website, The Player Portal, and The Tiger Center feel like one product, not
+Website, The Player Portal, and The Admin Center feel like one product, not
 three different apps stitched together — which is exactly the seam that made
 the old MM-Scorekeeper feel separate from the site in the first place.
 
@@ -17,7 +17,7 @@ the old MM-Scorekeeper feel separate from the site in the first place.
 |---|---|---|
 | **Fan** | Anyone who signs up | The Website only |
 | **Player** | Signed up + claimed a roster slot | The Website **and** The Player Portal (fork screen switches between them) |
-| **Tiger** | The host account | The Tiger Center only — no fork screen, no Website access, straight there on login |
+| **Admin** | The host account | The Admin Center only — no fork screen, no Website access, straight there on login |
 
 ---
 
@@ -64,7 +64,7 @@ fork screen (fork screen also offers "The Website"). Four areas:
    `PlayerProfile` (bio, hometown, handicap, socials, photo, all of it) —
    this is the piece that's been completely missing since the old app was
    disconnected, and the thing you originally asked to get back. Edits a
-   player submits here go to Tiger for a quick approve/reject (matches the
+   player submits here go to Admin for a quick approve/reject (matches the
    old profile-edit-review flow) before they go live on their public page.
 3. **My Scorecard / Live Scoring** — during a live round: enter your own
    hole scores, see your partner's, confirm each other's before a hole locks
@@ -72,7 +72,7 @@ fork screen (fork screen also offers "The Website"). Four areas:
 4. **My Stats** — personal career numbers, same data that feeds the public
    Stats tab, just framed around "you" instead of the whole field.
 
-## The Tiger Center
+## The Admin Center
 
 Reached only by the host account, immediately on login — "the game
 controller." Five areas, matching what MM-Scorekeeper's Admin already did,
@@ -106,7 +106,7 @@ spelling out end to end as the example you gave:
    no delay (this is what Realtime buys, spelled out in the architecture spec).
 4. Everything watching that data updates on its own: the public leaderboard's
    position for Drew, his live scorecard page, the match's Thru-N and
-   win/loss margin, Tiger Center's live view, and — once his round ends —
+   win/loss margin, Admin Center's live view, and — once his round ends —
    his career stats.
 
 One input. Everything downstream reacts. Nothing has a "publish" button
@@ -115,7 +115,7 @@ anywhere in this chain.
 ## Visual direction
 
 The old MM-Scorekeeper had its own visual language, separate from the site's.
-Under this plan there's one design system: Player Portal and Tiger Center
+Under this plan there's one design system: Player Portal and Admin Center
 use the site's existing maroon/white palette, typography, and component
 patterns (`components/portal/`, `components/ui/`) — not ported wholesale from
 MM-Scorekeeper's look. MM-Scorekeeper's screens are a *functional* reference
@@ -132,7 +132,7 @@ begins:
 1. **Data foundation** — the Supabase schema + TypeScript scoring/orchestration
    port, with nothing user-facing yet (this is what makes everything else
    possible).
-2. **Tiger Center: Pairings & Rounds** — Tiger needs to be able to set up a
+2. **Admin Center: Pairings & Rounds** — Admin needs to be able to set up a
    round before anyone can score one.
 3. **Player Portal: My Scorecard / Live Scoring** — the actual live-input
    loop, the highest-value piece.
@@ -140,7 +140,7 @@ begins:
    reading the new source instead of the Sheet.
 5. **Player Portal: My Profile** — profile self-editing, independent of the
    scoring loop, can land whenever.
-6. **Tiger Center: Players, Courses, Live Score Override** — the remaining
+6. **Admin Center: Players, Courses, Live Score Override** — the remaining
    admin tools.
 
 Each of these becomes its own spec → plan → build cycle when its turn comes,

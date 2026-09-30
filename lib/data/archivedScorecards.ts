@@ -237,7 +237,7 @@ export async function getScorecardsForTournament(tournament: Pick<Tournament, "s
   });
 }
 
-/** Distinct rounds recorded for a tournament (any player), for the Tiger Center's "assign tees to a round" picker — one entry per round number, not per player. `assigned` is true once any player row for that round already carries a tee setup. */
+/** Distinct rounds recorded for a tournament (any player), for the Admin Center's "assign tees to a round" picker — one entry per round number, not per player. `assigned` is true once any player row for that round already carries a tee setup. */
 export async function getArchivedTournamentRounds(tournamentSlug: string): Promise<{ round: number; course: string; format: string | null; assigned: boolean }[]> {
   const service = createSupabaseServiceRoleClient();
   const { data, error } = await service
@@ -257,7 +257,7 @@ export async function getArchivedTournamentRounds(tournamentSlug: string): Promi
     const assigned = mapHandicapSetup(shared ? shared.teeSetup : row.handicap_setup) != null;
     // canonicalCourseName matches how the round archive on Career Stats
     // (CareerRoundArchive.tsx, via getCareerStatsDatabase) displays course
-    // names, so Tiger sees the same label in both places for the same round.
+    // names, so Admin sees the same label in both places for the same round.
     const course = shared?.courseName ?? canonicalCourseName(row.course);
     if (!existing) byRound.set(row.round, { round: row.round, course, format: row.format, assigned });
     else if (assigned) existing.assigned = true;
@@ -285,7 +285,7 @@ export async function assignArchiveTeeSetup(
 
 }
 
-/** Round labels for the Tiger Center's player → rounds list ("Round 1 — Palmer"). */
+/** Round labels for the Admin Center's player → rounds list ("Round 1 — Palmer"). */
 export async function getArchivedRoundLabels(
   tournamentSlug: string,
   playerSlug: string
@@ -303,7 +303,7 @@ export async function getArchivedRoundLabels(
   return data ?? [];
 }
 
-/** One round's full hole-by-hole scorecard — used by both the public page and the Tiger Center editor. */
+/** One round's full hole-by-hole scorecard — used by both the public page and the Admin Center editor. */
 export async function getArchivedRoundScorecard(tournamentSlug: string, playerSlug: string, round: number): Promise<RoundScorecard | null> {
   const service = createSupabaseServiceRoleClient();
   const { data: roundRow, error: roundError } = await service

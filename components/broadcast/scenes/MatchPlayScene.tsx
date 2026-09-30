@@ -48,7 +48,7 @@ export function MatchPlayScene({ matchPlay }: { matchPlay: BroadcastMatchPlay })
       <Image src="/broadcast/oak-motif.png" alt="" width={980} height={980} aria-hidden className="pointer-events-none absolute -bottom-60 -right-44 opacity-[0.27]" />
       <div className="relative z-[1] w-full max-w-[980px]">
         <div className="mb-2 flex items-baseline justify-between border-b border-[color:var(--color-gold-400)]/35 pb-3">
-          <span className="font-serif text-lg italic text-[color:var(--color-cream-100)]">The Maroon Masters</span>
+          <span className="font-serif text-lg italic text-[color:var(--color-cream-100)]">The Maroon Tournament</span>
           <span className="font-condensed text-sm font-bold uppercase tracking-[0.2em] text-[color:var(--color-cream-50)]">Match Play{matchPlay.roundLabel ? ` · ${matchPlay.roundLabel}` : ""}</span>
           <span className="font-condensed text-sm font-bold uppercase tracking-[0.2em] text-[color:var(--color-gold-300)]">{matchPlay.final ? "Final" : "Live"}</span>
         </div>

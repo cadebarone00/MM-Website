@@ -2,9 +2,9 @@
 
 ## Vision
 
-Build the actual scoring platform players and Tiger use *during* the
+Build the actual scoring platform players and Admin use *during* the
 tournament: players enter hole-by-hole scores for themselves and their
-round partner, and Tiger runs pairings and round start/reset and can edit
+round partner, and Admin runs pairings and round start/reset and can edit
 any score directly. This is sub-projects #2 ("Player Portal — scoring")
 and #3 ("Host Tools") from
 `docs/superpowers/specs/2026-08-04-accounts-foundation-design.md`,
@@ -114,7 +114,7 @@ the player branch of `app/portal/page.tsx`.
 
 ## Host tools UI (new `/portal/host`)
 
-Linked from the Tiger landing branch of `/portal` (next to the existing
+Linked from the Admin landing branch of `/portal` (next to the existing
 link to `/portal/admin`). Gated the same way `/portal/admin` is today —
 `redirect("/")` if `!profile.is_host` — no additional login layer.
 
@@ -193,4 +193,4 @@ No new database tables. No changes to `lib/data/live.ts`,
   the *public* leaderboard while someone is mid-round is unchanged
   (already polls `/api/live-feed`).
 - A second, Apps-Script-only host password — explicitly decided against;
-  Tiger's single Supabase login is the only gate on `/portal/host`.
+  Admin's single Supabase login is the only gate on `/portal/host`.

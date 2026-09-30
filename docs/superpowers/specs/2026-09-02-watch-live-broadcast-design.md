@@ -20,7 +20,7 @@ corrects that section to describe what's actually live rather than
 reopening the decision. Lesson for future sessions: **check `git log --
 app/broadcast app/api/broadcast lib/broadcast components/broadcast` before
 treating any part of this spec as unbuilt** — see
-[[watch-live-broadcast-spec]] and [[tiger-center-build-phasing]] for why
+[[watch-live-broadcast-spec]] and [[admin-center-build-phasing]] for why
 that check matters here specifically.
 
 Next real work on this feature is Phase 2 (the event queue) — see the
@@ -44,7 +44,7 @@ eventually shot video) into a continuously playing program at
 `/broadcast`, with no camera operator and no manual step required to
 keep it running. It rotates through leaderboard/match-play "scenes"
 automatically, updates instantly when a score lands (no refresh), and — from
-Phase 5 onward — can be taken over by a host from a dedicated Tiger Center
+Phase 5 onward — can be taken over by a host from a dedicated Admin Center
 control screen. It is built entirely as an extension of the stack already
 running this site: Next.js Route Handlers, Supabase Postgres + Realtime +
 Storage/RLS, no new servers, no new languages, no new hosting.
@@ -90,7 +90,7 @@ it only shows what the existing scoring/match system already knows.
 |---|---|---|
 | **Viewer** | `/broadcast`, no login | Anyone: website embed, clubhouse TV, projector. Read-only, no controls, no navigation chrome. |
 | **Player** | Unaffected by this system | Their score entry in the Player Portal is what *feeds* the broadcast; they have no broadcast-specific UI. |
-| **Tiger (host)** | New "Broadcast" area inside Tiger Center (Phase 5), gated by `requireHost()` exactly like every other Tiger Center screen | Can force scenes, manage the queue, trigger graphics, switch Auto/Producer mode. |
+| **Admin (host)** | New "Broadcast" area inside Admin Center (Phase 5), gated by `requireHost()` exactly like every other Admin Center screen | Can force scenes, manage the queue, trigger graphics, switch Auto/Producer mode. |
 
 ## 6. User Experience
 
@@ -99,7 +99,7 @@ header/footer/nav, no scrollbars, smooth transitions, readable from across a
 room. Nothing to click. If their connection blips, it recovers on its own
 (§32–33) without them noticing more than a brief freeze.
 
-**Host (Phase 5+):** opens Tiger Center → Broadcast, sees what's live, what's
+**Host (Phase 5+):** opens Admin Center → Broadcast, sees what's live, what's
 next, the queue, and can either leave it alone (default: Auto Mode) or take
 over a specific decision without breaking the automation for everything else
 (Producer Mode / hybrid, §24–25).
@@ -127,7 +127,7 @@ Controller** → Broadcast Client) assumes a long-running "controller" process
 that owns runtime state (current scene, timers, etc.). This repo deploys to
 **Vercel** as serverless Next.js Route Handlers
 (`maroon-masters-python-api`/`maroon-masters-scorekeeper` Vercel projects are
-visible in the paused-service history — see [[tiger-center-build-phasing]]
+visible in the paused-service history — see [[admin-center-build-phasing]]
 context — confirming Vercel as the deploy target;
 **UNKNOWN — REQUIRES CONFIRMATION**: exact plan tier/limits). There is no
 place for a stateful "always-on" controller to live short of adding
@@ -139,7 +139,7 @@ Controller" into two things that already fit this codebase's proven pattern:
 
 1. **A shared TypeScript module (`lib/broadcast/*`)**, called synchronously
    from inside the *existing* write paths (`app/api/portal/scoring/*`,
-   `app/api/portal/tiger/matchboxes/*`, `app/api/portal/tiger/rounds/*`)
+   `app/api/portal/admin/matchboxes/*`, `app/api/portal/admin/rounds/*`)
    right after a Supabase write succeeds. This module classifies the event,
    applies priority rules, and writes one row to `broadcast_events` (and
    updates `broadcast_state` if the event is a takeover). This *is* the
@@ -192,8 +192,8 @@ Host or Player uploads shot video
 ### Data flow — manual producer override (Phase 5+)
 
 ```
-Host clicks "Play Now" in Tiger Center → Broadcast
-  → POST /api/portal/tiger/broadcast/queue { action: "play_now", eventId, year }
+Host clicks "Play Now" in Admin Center → Broadcast
+  → POST /api/portal/admin/broadcast/queue { action: "play_now", eventId, year }
   → requireHost() check
   → broadcast_state updated directly (priority 100, bypasses queue ordering)
   → Realtime fan-out → all clients cut immediately
@@ -215,7 +215,7 @@ Confirmed by reading the repo directly:
 - **Frontend:** Next.js 16.2.9 (App Router), React 19.2.4, TypeScript 5,
   Tailwind CSS 4. `lucide-react` for icons.
 - **Backend:** No separate backend — Next.js Route Handlers under `app/api/**`
-  are the entire backend. Host-only routes live under `app/api/portal/tiger/**`
+  are the entire backend. Host-only routes live under `app/api/portal/admin/**`
   and are gated with `requireHost()` (`lib/portal/requireHost.ts`); the same
   pattern (service-role key for writes) is used everywhere.
 - **Database:** Supabase Postgres. Schema lives in `supabase/schema.sql`,
@@ -243,7 +243,7 @@ Confirmed by reading the repo directly:
   its outputs.
 - **Tournament model:** `live_*` tables are keyed by `season_year` (2027–2034,
   `check` constraint) as of the Master Settings phase
-  (`docs/superpowers/specs/2026-09-01-tiger-center-master-settings-design.md`).
+  (`docs/superpowers/specs/2026-09-01-admin-center-master-settings-design.md`).
   `live_active_season` (singleton) says which year is currently live. **This
   spec's tables key off `season_year` the same way** — a broadcast is always
   scoped to one year, and "the live one" is whatever `live_active_season`
@@ -254,7 +254,7 @@ Confirmed by reading the repo directly:
 - **Video:** No *live* video pipeline exists yet. What exists is
   **past-year, host-uploaded-after-the-fact** video via
   `archived_shot_videos` + Cloudflare R2 (`lib/r2/client.ts`), built for
-  `docs/superpowers/specs/2026-08-30-tiger-center-scorecards-video-design.md`.
+  `docs/superpowers/specs/2026-08-30-admin-center-scorecards-video-design.md`.
   There is no in-round/live shot-video upload today — `ShotVideoPanel` in
   the live scoring flow is described in memory as still a placeholder. The
   Video/Highlight phases of this spec (Phase 3+) are genuinely new
@@ -312,7 +312,7 @@ grow every time a new nuance (dormie, 2-UP, all-square) is wanted.
 | `VIDEO_FEATURED` | Raw (host action) | 3 | host control |
 | `HIGHLIGHT_ADDED` | Raw (host action) | 3 | host control |
 | `TOURNAMENT_WINNER` | Raw (host-triggered; automatic detection is a Phase-7+ refinement) | 4 | host control / `completedAt` |
-| `MANUAL_BROADCAST_EVENT` | Raw (host action, arbitrary graphic/announcement) | 5 | Tiger Center → Broadcast |
+| `MANUAL_BROADCAST_EVENT` | Raw (host action, arbitrary graphic/announcement) | 5 | Admin Center → Broadcast |
 | `SHOT_TRACER_READY` | Reserved, unused | 8 | future |
 
 Dropped as separate raw types (folded into the above): `MATCH_ALL_SQUARE`,
@@ -492,13 +492,13 @@ video removed mid-queue → row marked `dismissed`, broadcast silently skips
 to next; playback error client-side → skip to next queued item within 2s,
 log the failure (§32), never blocks rotation. Portrait video: letterboxed on
 the 16:9 canvas, not cropped or rejected. No hard duration cap in V1 scope;
-**UNKNOWN — REQUIRES CONFIRMATION**: whether Tiger wants a max-length
+**UNKNOWN — REQUIRES CONFIRMATION**: whether Admin wants a max-length
 enforcement once real uploads start.
 
 ## 20. Highlight Architecture (Phase 3+)
 
 A `highlight`-tagged `live_shot_videos` row can be replayed by the host at
-any time (`POST /api/portal/tiger/broadcast/queue { action: "replay",
+any time (`POST /api/portal/admin/broadcast/queue { action: "replay",
 videoId }`) independent of whether it's still in the original event queue.
 No separate "highlights" table — the tag on the existing video row is
 sufficient (again, avoiding duplication per §28's own instruction).
@@ -527,8 +527,8 @@ rather than trusting it can resume mid-stream.
 
 ## 23. Host Broadcast Control (Phase 5)
 
-New Tiger Center screen, `app/portal/admin/master-settings/[year]/broadcast/page.tsx`
-— same route shape and `requireHost()` gate as every existing Tiger Center
+New Admin Center screen, `app/portal/admin/master-settings/[year]/broadcast/page.tsx`
+— same route shape and `requireHost()` gate as every existing Admin Center
 page. Shows: Currently Live, Up Next, Event Queue, Recently Played, Available
 Videos (once Phase 3 exists), Connection Status. Controls: Play Next, Play
 Now, Skip, Replay, Return to Auto, Clear Queue, Pause/Resume Automation,
@@ -639,7 +639,7 @@ built yet").
 
 ## 27. API Specification
 
-All host-only endpoints follow the existing `app/api/portal/tiger/*`
+All host-only endpoints follow the existing `app/api/portal/admin/*`
 convention exactly: `requireHost()` guard, `year` (season_year) required in
 every request body (matching the precedent set by Master Settings' own
 routes), service-role Supabase client for writes.
@@ -647,10 +647,10 @@ routes), service-role Supabase client for writes.
 | Endpoint | Auth | Purpose | Request | Side effects | Realtime events |
 |---|---|---|---|---|---|
 | `GET /api/broadcast` | Public | Full hydration on load/reconnect (§33) | — | none | — |
-| `POST /api/portal/tiger/broadcast/scene` | Host | Force a scene / return to auto | `{ year, scene? }` (omit `scene` = return to auto) | writes `broadcast_state` | `broadcast_state` update |
-| `POST /api/portal/tiger/broadcast/queue` | Host | `play_next`\|`play_now`\|`skip`\|`replay`\|`clear`\|`pause`\|`resume` | `{ year, action, eventId? }` | writes `broadcast_events`/`broadcast_state` | both tables |
-| `POST /api/portal/tiger/broadcast/graphic` | Host | Manual graphic/announcement | `{ year, kind: "MANUAL_BROADCAST_EVENT", payload }` | inserts `broadcast_events` at priority 100 | `broadcast_events` insert |
-| `POST /api/portal/tiger/broadcast/config` | Host | Edit durations/priorities/audio config | `{ year, ...partial config }` | upserts `broadcast_config` | `broadcast_config` update |
+| `POST /api/portal/admin/broadcast/scene` | Host | Force a scene / return to auto | `{ year, scene? }` (omit `scene` = return to auto) | writes `broadcast_state` | `broadcast_state` update |
+| `POST /api/portal/admin/broadcast/queue` | Host | `play_next`\|`play_now`\|`skip`\|`replay`\|`clear`\|`pause`\|`resume` | `{ year, action, eventId? }` | writes `broadcast_events`/`broadcast_state` | both tables |
+| `POST /api/portal/admin/broadcast/graphic` | Host | Manual graphic/announcement | `{ year, kind: "MANUAL_BROADCAST_EVENT", payload }` | inserts `broadcast_events` at priority 100 | `broadcast_events` insert |
+| `POST /api/portal/admin/broadcast/config` | Host | Edit durations/priorities/audio config | `{ year, ...partial config }` | upserts `broadcast_config` | `broadcast_config` update |
 
 Internal only (not an HTTP endpoint — a shared function called from existing
 routes): `publishBroadcastEvent(rawEvent)` in `lib/broadcast/publish.ts`.
@@ -699,9 +699,9 @@ components/broadcast/
   AudioManager.tsx                     — Phase 6
 ```
 
-Host control (Phase 5): `components/portal/tiger/BroadcastControlPanel.tsx`,
+Host control (Phase 5): `components/portal/admin/BroadcastControlPanel.tsx`,
 following the exact structural pattern of the existing
-`components/portal/tiger/CoursesFormatPanel.tsx` / `MatchupsPanel.tsx`.
+`components/portal/admin/CoursesFormatPanel.tsx` / `MatchupsPanel.tsx`.
 
 ## 30. Backend Architecture
 
@@ -726,7 +726,7 @@ codebase (serverless Route Handlers, no persistent process) actually works.
 - Viewers: no auth, read-only, can only hit `GET /api/broadcast`
   and Realtime-subscribe (both public per RLS `select using (true)`).
 - Host actions: `requireHost()` on every mutating route, identical to every
-  other Tiger Center route today. No new permission concept introduced.
+  other Admin Center route today. No new permission concept introduced.
 - No endpoint in this system can write to `live_hole_scores`, `live_match_boxes`,
   or any scoring table — enforced simply by scope (the broadcast Route
   Handlers' Supabase client never touches those tables), not by a runtime
@@ -803,10 +803,10 @@ Matches this repo's existing testing convention exactly:
 - `lib/broadcast/rules.ts` and `lib/broadcast/priority.ts`: unit tests via
   `tsx --test` (colocated `*.test.ts`), same style as `lib/live/scoring.test.ts`.
 - API routes: colocated `route.test.ts` files, same style as the existing
-  `app/api/portal/tiger/**/route.test.ts` files.
+  `app/api/portal/admin/**/route.test.ts` files.
 - `npx tsc --noEmit`, `npm run lint`, `npm run build` — the standard gate
   this repo already runs before calling any phase done (per
-  `2026-09-01-tiger-center-master-settings-design.md`'s own Testing
+  `2026-09-01-admin-center-master-settings-design.md`'s own Testing
   section).
 - Manual walkthrough per phase (see §44 for Phase 1's).
 
@@ -877,10 +877,10 @@ the rotation continues uninterrupted afterward.
 ## 44. Phased Implementation Plan
 
 Each phase becomes its own spec → plan → build cycle in
-`docs/superpowers/plans/`, same process as every other Tiger Center phase
+`docs/superpowers/plans/`, same process as every other Admin Center phase
 (own worktree/branch, subagent-driven development, `npm test` + `tsc
 --noEmit` + `lint` + `build` gate before merge) — see
-[[tiger-center-build-phasing]].
+[[admin-center-build-phasing]].
 
 **Phase 1 — Broadcast Foundation** (this is V1, §45) — **SHIPPED**, see the
 checklist above.
@@ -989,7 +989,7 @@ checklist and §44 above):** `/broadcast` page (no year in the URL —
 §45); `broadcast_state`/`broadcast_config`/`broadcast_display_year` tables;
 automatic rotation between Individual Leaderboard, Match Play, and a Holding
 Screen; live leaderboard/match-play updates via the existing Realtime
-subscription pattern; a host-triggered announcement overlay; a Tiger Center
+subscription pattern; a host-triggered announcement overlay; a Admin Center
 Broadcast Controls screen with Pause/Resume Automation and force-scene.
 
 **Still not built:** `broadcast_events`/the real priority queue and rules
@@ -1029,10 +1029,10 @@ Shot Tracer, OBS output. Phase 2 is the real next dependency for Phases
 
 - **Migration approach for `broadcast_config`/`broadcast_state` (§26):**
   confirmed — **same hand-maintained `supabase/schema.sql` + manual paste
-  into the Supabase SQL Editor pattern** used for every prior Tiger Center
+  into the Supabase SQL Editor pattern** used for every prior Admin Center
   phase (Matchups, Courses & Format). No migration tool is being adopted.
   Phase 1's implementation plan and checklist call out this manual
-  production step explicitly, the same way [[tiger-center-build-phasing]]
+  production step explicitly, the same way [[admin-center-build-phasing]]
   records it for past phases — so a future session doesn't have to guess
   whether it was run.
 - **Exact Vercel plan/limits (function timeouts, cron availability):** not
@@ -1047,7 +1047,7 @@ Shot Tracer, OBS output. Phase 2 is the real next dependency for Phases
   (not scoped to this feature).
 - **Playwright e2e in CI:** not sampled, not blocking — Phase 1's testing
   section (§37/§44) already only commits to unit tests + manual walkthrough,
-  matching what every other Tiger Center phase has actually done. If e2e
+  matching what every other Admin Center phase has actually done. If e2e
   coverage becomes a project-wide initiative later, this feature picks it up
   then, not as a special case now.
 
@@ -1094,7 +1094,7 @@ plan.)*
       `app/portal/admin/broadcast-controls/page.tsx` +
       `BroadcastControlsPanel.tsx`/`BroadcastPreview.tsx` (Phase 5 territory)
       — Pause/Resume Automation, force-scene, and a host-triggered
-      announcement overlay via `app/api/portal/tiger/broadcast/announcement/route.ts`
+      announcement overlay via `app/api/portal/admin/broadcast/announcement/route.ts`
       (Phase 4 territory, `MANUAL_BROADCAST_EVENT`-equivalent, though without
       the priority-queue system §11/§13 describe — it's a direct
       `broadcast_state.overlay_text` write, not a queued event, since

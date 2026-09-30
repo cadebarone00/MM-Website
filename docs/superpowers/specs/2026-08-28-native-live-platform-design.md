@@ -6,7 +6,7 @@ Replace the bridge to MM-Scorekeeper's Python/Neon backend (built in Phase 1,
 `docs/superpowers/specs/2026-08-27-scorekeeper-portal-merge-design.md`) with a
 single, native system: Supabase is the only database, TypeScript is the only
 language, and live score entry pushes instant updates everywhere — the public
-site, players' own portals, and Tiger's control screen — with no polling and no
+site, players' own portals, and Admin's control screen — with no polling and no
 second service to run or deploy.
 
 ## Background — this supersedes Phase 1's architecture choice
@@ -41,7 +41,7 @@ tiers need and stay as-is.
 - **The Player Portal** — the private area only players (accounts with a
   `player_slug`) get, in addition to The Website: their own bio/profile
   editing, stats, scorecard, and live hole-by-hole score entry during a round.
-- **The Tiger Center** — the private area only the host (`is_host`) gets,
+- **The Admin Center** — the private area only the host (`is_host`) gets,
   *instead of* The Website — no fork screen, straight there on login.
   Tournament control: matchups/pairings, courses, tees, tee times, format,
   round start/reset, direct score edits, timing.
@@ -49,7 +49,7 @@ tiers need and stay as-is.
 `/portal` (player-or-host landing + fork screen), `/portal/admin` (host area)
 already exist as the routes for these — this spec doesn't rename URLs, only
 the words used to talk about them. A later, smaller task can rename
-`/portal/admin` to `/portal/tiger` if wanted; not decided here.
+`/portal/admin` to `/portal/admin` if wanted; not decided here.
 
 ## Architecture
 
@@ -63,7 +63,7 @@ secret, no separate deploy.
 **Instant updates via Supabase Realtime.** When a hole score is written (after
 both players confirm it — see below), Supabase can push that change instantly
 to every open subscription: the public leaderboard, other players' portals,
-Tiger Center's live view. No polling loop anywhere in this design.
+Admin Center's live view. No polling loop anywhere in this design.
 
 **Historical years (2024-2026) are untouched.** They stay exactly as they are
 today — static `lib/data/*.ts` files, rendered through the existing
@@ -85,12 +85,12 @@ a new data source function alongside the existing static-file one.
 tab (`/teams/stats`) already aggregates across the static 2024-2026 files.
 That aggregation function gains a second input — the live/Supabase years —
 and merges them into one result. No manual step after a tournament ends: the
-moment it's marked complete in Tiger Center, its numbers are already part of
+moment it's marked complete in Admin Center, its numbers are already part of
 everyone's career stats.
 
 **The course library remembers itself.** `VenueCourse`/`CourseHole` (already
 in `lib/data/types.ts`) become a real Supabase table instead of a per-year
-static list. When Tiger sets up a course for a round in Tiger Center, it's
+static list. When Admin sets up a course for a round in Admin Center, it's
 saved into this shared library — the next time that same course is used
 (same year or a future one), it's already there to pick, not re-entered.
 
@@ -155,7 +155,7 @@ at an actual event.
 ## Out of scope for this spec
 
 - The exact confirmation-flow UI/UX (see above — Phase 2 detail).
-- Screen-by-screen layout of The Website, The Player Portal, or The Tiger
+- Screen-by-screen layout of The Website, The Player Portal, or The Admin
   Center — that's the separate "site plan" document, next.
 - Wagers/MM Fantasy's own logic — unaffected by this spec; they already read
   from the live tournament data however it's currently sourced, and will keep
@@ -166,8 +166,8 @@ at an actual event.
 
 ## What "done" looks like
 
-A live tournament runs entirely on Supabase: Tiger sets pairings/courses/tee
-times in Tiger Center, players enter and confirm scores in the Player Portal,
+A live tournament runs entirely on Supabase: Admin sets pairings/courses/tee
+times in Admin Center, players enter and confirm scores in the Player Portal,
 and the public Website, the leaderboard, and every player's career stats
 update instantly and automatically — with no Python service, no Google Sheet,
 and no manual step anywhere in the loop.

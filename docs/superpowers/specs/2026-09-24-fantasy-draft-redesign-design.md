@@ -15,7 +15,7 @@ work, not worked around:
 1. **The eligible-player list is currently always empty.** Fantasy
    reads `tournament.roster`, which only gets filled in once the live
    Google Sheet feed is running during the tournament itself. The
-   actual pre-tournament source of truth — who Tiger has locked into
+   actual pre-tournament source of truth — who Admin has locked into
    Maroon/White in Master Settings → Players & Teams — lives
    separately (`getConfirmedRoster()`), and nothing today connects the
    two. This is also why `LivePlayerScorecard.tsx` (the live
@@ -102,7 +102,7 @@ in-progress local draft, see below), and tournament status.
 1. **Roster not set** — confirmed roster is empty. Same placeholder
    message as today ("Rosters haven't been set yet").
 2. **Welcome** — confirmed roster exists, no saved picks, no draft in
-   progress. Hero: "Welcome to Maroon Masters Fantasy," the existing
+   progress. Hero: "Welcome to Maroon Tournament Fantasy," the existing
    scoring-rules recap, a "Make Your Selections" button that starts an
    empty draft.
 3. **Draft mode** — a draft is in progress (started from Welcome, or

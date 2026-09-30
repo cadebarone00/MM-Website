@@ -1,16 +1,16 @@
-import { SeasonOverview } from "@/components/portal/tiger/SeasonOverview";
+import { SeasonOverview } from "@/components/portal/admin/SeasonOverview";
 import { getSeasonOverview } from "@/lib/live/seasonOverviewServer";
 // app/portal/admin/page.tsx
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getActiveSeasonYear } from "@/lib/live/activeSeason";
-import { YearAndMasterSettingsNav } from "@/components/portal/tiger/YearAndMasterSettingsNav";
-import { StartSessionBanner, type StartableSession } from "@/components/portal/tiger/StartSessionBanner";
-import { MatchCloseoutCards } from "@/components/portal/tiger/MatchCloseoutCards";
-import { TestSeasonPanel } from "@/components/portal/tiger/TestSeasonPanel";
+import { YearAndMasterSettingsNav } from "@/components/portal/admin/YearAndMasterSettingsNav";
+import { StartSessionBanner, type StartableSession } from "@/components/portal/admin/StartSessionBanner";
+import { MatchCloseoutCards } from "@/components/portal/admin/MatchCloseoutCards";
+import { TestSeasonPanel } from "@/components/portal/admin/TestSeasonPanel";
 
-export default async function TigerCenterPage() {
+export default async function AdminCenterPage() {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -30,7 +30,7 @@ export default async function TigerCenterPage() {
 
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-12 sm:px-7">
-      <h1 className="font-serif text-3xl font-bold text-ink-900">The Tiger Center</h1>
+      <h1 className="font-serif text-3xl font-bold text-ink-900">The Admin Center</h1>
       <div className="my-5 flex flex-wrap gap-3">
         <Link href="/portal/admin/website-editor" className="rounded-lg bg-maroon-700 px-5 py-3 font-semibold text-white">Website editor</Link>
         <Link href="/portal/admin/website-settings" className="rounded-lg border border-gold-400 px-5 py-3 font-semibold">Website settings</Link>

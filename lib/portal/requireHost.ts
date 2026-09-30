@@ -5,7 +5,7 @@ export interface HostSession {
 }
 
 /**
- * Server-side guard for host-only (Tiger) actions. Returns null if there's no
+ * Server-side guard for host-only (Admin) actions. Returns null if there's no
  * session or the account isn't flagged is_host — callers should treat null as
  * "respond 401", never trust a client-supplied "I'm the host" claim.
  */

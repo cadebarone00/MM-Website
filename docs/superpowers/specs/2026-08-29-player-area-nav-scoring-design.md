@@ -13,15 +13,15 @@ round is scheduled for them yet, and if so, its tee time/matchup/live state.
 Builds on three things already in this repo:
 
 - `docs/superpowers/specs/2026-08-28-site-plan-design.md` — names "The
-  Website" / "The Player Portal" / "The Tiger Center" as the three tiers, and
+  Website" / "The Player Portal" / "The Admin Center" as the three tiers, and
   lists "My Scorecard / Live Scoring" as a Player Portal area.
-- `docs/superpowers/specs/2026-08-29-tiger-center-operations-design.md` —
+- `docs/superpowers/specs/2026-08-29-admin-center-operations-design.md` —
   the round lifecycle this screen reads: a round needs both
-  `courseLocked` and `matchupsLocked` before Tiger can Start it; once
+  `courseLocked` and `matchupsLocked` before Admin can Start it; once
   started, `effectiveMatchState()` (already shipped, `lib/live/
   orchestration.ts`) computes each match box's live state from its
   `started` flag and `teeTime`.
-- The uncommitted `worktree-tiger-center-matchups` branch, which migrates
+- The uncommitted `worktree-admin-center-matchups` branch, which migrates
   `live_match_boxes` from the old `(tournamentYear, day, session,
   boxNumber)` shape onto a flat `round` column. **This spec's data-reading
   code targets that new shape** — it does not run against current `main`
@@ -38,11 +38,11 @@ a third copy of the same background+overlay markup.
   into 18 holes) — that's the site plan's own later "My Scorecard / Live
   Scoring" phase. Tapping the Scorecard box while a round is Live does
   nothing yet (no route exists to send them to).
-- Tiger Center's own screens (Pairings & Rounds / Matchups) — being built
-  in `worktree-tiger-center-matchups`, untouched by this spec.
+- Admin Center's own screens (Pairings & Rounds / Matchups) — being built
+  in `worktree-admin-center-matchups`, untouched by this spec.
 - The old `/portal` Google-Sheet-based `PlayerScoringPanel` — left exactly
   as-is; unrelated system, not being merged or removed here.
-- Push notifications for round-start (already deferred in the Tiger Center
+- Push notifications for round-start (already deferred in the Admin Center
   Operations spec).
 - Any visual design pass beyond matching existing site patterns (segmented
   nav look, `LoadingScreen` styling) — this is a functional spec.
@@ -78,7 +78,7 @@ player move between all three areas afterward without returning to it.
 
 ## Component 2 — generalizing `LoadingScreen`
 
-Today `LoadingScreen` hardcodes an `<h1>The Maroon Masters</h1>` above
+Today `LoadingScreen` hardcodes an `<h1>The Maroon Tournament</h1>` above
 `children`. The Scoring screen needs two *independent* things this doesn't
 support yet: a small greeting pinned near the top of the screen ("Welcome,
 {name}"), separate from its own custom title/status block centered (or
@@ -93,7 +93,7 @@ raised) below — not one replacing the other. Change:
   centered/raised block. Unused (omitted) by the universal and fork
   screens.
 - `HomeEntrySplash` and `/account/choose` both pass `heading={<h1
-  className="...">The Maroon Masters</h1>}` and no `topSlot` — a one-line
+  className="...">The Maroon Tournament</h1>}` and no `topSlot` — a one-line
   change at each call site, no visual difference from today.
 - The Scoring screen passes `topSlot={<>Welcome, {playerName}</>}` (small,
   lighter text — a greeting, not a title) and its own `heading` (see
@@ -105,7 +105,7 @@ raised) below — not one replacing the other. Change:
 
 New `app/portal/scoring/page.tsx`, server component. Same auth guard as
 `app/portal/page.tsx` today: redirect to `/login` if signed out, to `/` if
-the account is fan-only, to `/portal/admin` if it's Tiger.
+the account is fan-only, to `/portal/admin` if it's Admin.
 
 ### Finding "the" round for this player
 
@@ -141,7 +141,7 @@ already uses). `heading` and `children` differ per state:
 **1. No round found** (`findCurrentRoundForPlayer` returns `null`) — not
 `raised`, so the block sits centered vertically (same treatment as the
 universal homepage splash, including its iPhone-centering nudge):
-- `heading`: "Maroon Masters {nextTournament.year}"
+- `heading`: "Maroon Tournament {nextTournament.year}"
 - `children`: "Waiting For Matchup"
 
 **2. Round found, state `Scheduled` or `Armed`** — `raised` (title block
@@ -167,10 +167,10 @@ starts higher, like the fork screen):
 `currentRoundForPlayer.ts` and the screen import `LiveMatchBox.round` and
 `LiveRoundState.courseLocked`/`matchupsLocked` — the latter two already
 exist on `main`, but `LiveMatchBox.round` only exists in
-`worktree-tiger-center-matchups`. This work is built as its own branch
-**based on top of `worktree-tiger-center-matchups`**, not `main`, so it
+`worktree-admin-center-matchups`. This work is built as its own branch
+**based on top of `worktree-admin-center-matchups`**, not `main`, so it
 type-checks and runs against real data today. Merge order:
-`worktree-tiger-center-matchups` → `main` first, then this branch → `main`
+`worktree-admin-center-matchups` → `main` first, then this branch → `main`
 (or rebase onto `main` after that merge, if this branch finishes first).
 
 ## Testing
@@ -193,6 +193,6 @@ type-checks and runs against real data today. Merge order:
 A signed-in player can jump between Website, Portal, and Scoring from any
 page via the new nav, with the current area always visually indicated.
 `/portal/scoring` shows the correct one of three states based on real
-Tiger Center round/matchup data (once `worktree-tiger-center-matchups` is
+Admin Center round/matchup data (once `worktree-admin-center-matchups` is
 merged), reusing the existing loading-screen visual language and the
 already-shipped match-state logic — no duplicated status-computation code.

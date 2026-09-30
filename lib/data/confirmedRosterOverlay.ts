@@ -1,4 +1,4 @@
-// The pre-tournament roster (who Tiger has locked into Maroon/White in
+// The pre-tournament roster (who Admin has locked into Maroon/White in
 // Master Settings -> Players & Teams, aka getConfirmedRoster()) and the
 // live-tournament roster (tournament.roster, only populated once the
 // Google Sheet feed is actually running) are two separate sources that

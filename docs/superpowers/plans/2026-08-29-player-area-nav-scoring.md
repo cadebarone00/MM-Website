@@ -12,9 +12,9 @@
 
 ## Global Constraints
 
-- **Worktree/branch base is `worktree-tiger-center-matchups`, NOT `main`.** This plan's data code uses `LiveMatchBox.round`, which only exists on that branch (main still has the old `tournamentYear/day/session` shape). When setting up the isolated worktree for this plan, branch it from `worktree-tiger-center-matchups`, not from `main`.
+- **Worktree/branch base is `worktree-admin-center-matchups`, NOT `main`.** This plan's data code uses `LiveMatchBox.round`, which only exists on that branch (main still has the old `tournamentYear/day/session` shape). When setting up the isolated worktree for this plan, branch it from `worktree-admin-center-matchups`, not from `main`.
 - No React component test framework exists in this repo (`npm test` only runs `.test.ts`/`.test.mts` under `lib/` and `app/`, per `package.json`'s `test` script) — UI tasks are verified via `npx tsc --noEmit`, `npm run lint`, `npm run build`, and a manual dev-server check, matching how every prior UI round in this project was verified. Only pure logic (no Supabase I/O) gets `node:test` unit tests, matching `lib/live/orchestration.test.ts`'s own documented limitation that Supabase-touching code needs a real request lifecycle to test.
-- Follow the existing per-file convention for mapping Supabase rows to `Live*` types (a local `interface FooRow` + a local mapping function in the file that queries it) rather than introducing a shared abstraction — every existing route (`app/api/portal/tiger/rounds/route.ts`, `app/api/portal/tiger/matchboxes/route.ts`) already does it this way.
+- Follow the existing per-file convention for mapping Supabase rows to `Live*` types (a local `interface FooRow` + a local mapping function in the file that queries it) rather than introducing a shared abstraction — every existing route (`app/api/portal/admin/rounds/route.ts`, `app/api/portal/admin/matchboxes/route.ts`) already does it this way.
 - Exact copy, verbatim: "Waiting For Matchup", "Upcoming Round", "Waiting For Round To Begin", "Round Live", "Scorecard".
 
 ---
@@ -42,7 +42,7 @@ import type { ReactNode } from "react";
  * "site is loading" splash (fans / signed-out visitors), the post-login
  * fork screen (`/account/choose`), and the Scoring status screen
  * (`/portal/scoring`). `heading` is the big title line (was hardcoded
- * "The Maroon Masters" — now each caller supplies its own so this shell can
+ * "The Maroon Tournament" — now each caller supplies its own so this shell can
  * be reused for different titles). `topSlot` is a separate, optional small
  * line pinned near the top of the screen (e.g. a "Welcome, {name}"
  * greeting), independent of the centered/raised heading block below it.
@@ -118,7 +118,7 @@ to:
 
 ```tsx
   if (showSplash) {
-    return <LoadingScreen heading="The Maroon Masters" />;
+    return <LoadingScreen heading="The Maroon Tournament" />;
   }
 ```
 
@@ -135,7 +135,7 @@ to:
 
 ```tsx
   return (
-    <LoadingScreen heading="The Maroon Masters" raised>
+    <LoadingScreen heading="The Maroon Tournament" raised>
 ```
 
 - [ ] **Step 4: Verify no regressions**
@@ -149,7 +149,7 @@ Expected: no errors.
 Run: `npm run build`
 Expected: build succeeds (exit code 0), no new warnings.
 
-Start the dev server and open `/` in a browser: confirm the homepage splash still shows "The Maroon Masters" exactly as before (title text, positioning, timing unchanged). Log in as a player (or reuse the temporary-debug-route technique from earlier in this project if no test login is handy) and open `/account/choose`: confirm it's unchanged — "The Maroon Masters" raised, Portal/Website links below.
+Start the dev server and open `/` in a browser: confirm the homepage splash still shows "The Maroon Tournament" exactly as before (title text, positioning, timing unchanged). Log in as a player (or reuse the temporary-debug-route technique from earlier in this project if no test login is handy) and open `/account/choose`: confirm it's unchanged — "The Maroon Tournament" raised, Portal/Website links below.
 
 - [ ] **Step 5: Commit**
 
@@ -199,7 +199,7 @@ function activeSegment(pathname: string): SegmentHref {
  * access to — Website, Portal, Scoring — so they never have to go back to
  * the post-login fork screen (`/account/choose`) to move between them.
  * Rendered in the root layout for every page; renders nothing for fans,
- * Tiger, or signed-out visitors.
+ * Admin, or signed-out visitors.
  */
 export function PlayerAreaNav() {
   const session = useAccountSession();
@@ -590,7 +590,7 @@ export function ScoringStatusScreen({
 
   if (!result) {
     return (
-      <LoadingScreen heading={`Maroon Masters ${nextTournament.year}`} topSlot={topSlot}>
+      <LoadingScreen heading={`Maroon Tournament ${nextTournament.year}`} topSlot={topSlot}>
         <p className="font-sans text-lg text-cream-50/90">Waiting For Matchup</p>
       </LoadingScreen>
     );
@@ -665,7 +665,7 @@ Run: `npm run build`
 Expected: build succeeds.
 
 Manual check in the dev server, signed in as a player account:
-1. With no rows in `live_round_state`/`live_match_boxes` (or none matching this player): `/portal/scoring` shows "Welcome, {name}" at top, centered "Maroon Masters {year}" / "Waiting For Matchup", no box.
+1. With no rows in `live_round_state`/`live_match_boxes` (or none matching this player): `/portal/scoring` shows "Welcome, {name}" at top, centered "Maroon Tournament {year}" / "Waiting For Matchup", no box.
 2. Insert a locked round (`course_locked = true`, `matchups_locked = true`) and a match box containing this player, `started = false`: screen shows the raised layout, "Upcoming Round", tee time, matchup line, and a faint Scorecard box with "Waiting For Round To Begin" underneath.
 3. Set that match box's `started = true` with a `tee_time` in the past: heading changes to "Round Live", box goes full opacity, caption disappears.
 4. Confirm `PlayerAreaNav`'s Scoring segment highlights correctly on this page (built in Task 2).

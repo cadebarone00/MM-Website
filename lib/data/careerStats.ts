@@ -3,7 +3,7 @@ import type { RealMatch, PlayerScorecard } from "./types";
 export type CareerScorecardSet = { year: number; scorecards: PlayerScorecard[] };
 
 export type CareerHoleRecord = {
-  source?: "maroon-masters" | "other";
+  source?: "maroon-tournament" | "other";
   roundId?: string;
   datePlayed?: string;
   year: number;
@@ -115,7 +115,7 @@ type MutableStat = Omit<CareerPlayerStat, "averageRound" | "averageHole" | "best
   byYearMap: Map<number, { rounds: number; holes: number; strokes: number }>;
 };
 
-/** Rebuilds the career snapshot from the same archived hole records Tiger edits. */
+/** Rebuilds the career snapshot from the same archived hole records Admin edits. */
 export function buildCareerStats(sets: CareerScorecardSet[]): CareerPlayerStat[] {
   const players = new Map<string, MutableStat>();
 

@@ -1,4 +1,4 @@
-# Tiger Center: Round → Session Rename, Session Tee Times, Matchups Redesign — Design
+# Admin Center: Round → Session Rename, Session Tee Times, Matchups Redesign — Design
 
 **Status:** v1 (2026-09-24) — all design questions answered by the user; ready for implementation planning. Nothing in this document is built yet.
 **Scope:** (1) Rename the live/upcoming tournament's "Round" concept to "Session" across UI and code. (2) Add 3 tee-time slots to each Session on the Courses & Format page, in Pacific Time. (3) Locking a Session's tee times derives each Matchups match's own tee time from them, which already drives that match's automatic Scheduled → Armed → Live transition. (4) Redesign the Matchups page's per-match layout, format by format, to show who scores for whom.
@@ -19,8 +19,8 @@
 | `LiveMatchBox.boxNumber` | `LiveMatch.matchNumber` |
 | `boxesPerRound()` | `matchesPerSession()` |
 | `playersPerTeamPerBox()` | `playersPerTeamPerMatch()` |
-| `/api/portal/tiger/rounds*` | `/api/portal/tiger/sessions*` |
-| `/api/portal/tiger/matchboxes*` | `/api/portal/tiger/matches*` |
+| `/api/portal/admin/rounds*` | `/api/portal/admin/sessions*` |
+| `/api/portal/admin/matchboxes*` | `/api/portal/admin/matches*` |
 | "Box 1" / "Box N" (UI text) | "Match 1" / "Match N" |
 | "Round 1" / "Round N" (UI text) | "Session 1" / "Session N" |
 
@@ -47,7 +47,7 @@ Each is a plain `<input type="time">`, disabled once the Session is locked (same
 
 ## 3. What "locked" actually does to match timing
 
-This needs less new work than it sounds like, because the automatic start mechanism already exists: `effectiveMatchState()` (`lib/live/orchestration.ts`) already compares "now" to a match's own `teeTime` and returns `"Live"` once it has passed — no manual button required, already unit-tested. Tiger's "Start Match" button (`matchboxes/start`) is a separate manual override for when a real-world tee time slips, and stays exactly as it is.
+This needs less new work than it sounds like, because the automatic start mechanism already exists: `effectiveMatchState()` (`lib/live/orchestration.ts`) already compares "now" to a match's own `teeTime` and returns `"Live"` once it has passed — no manual button required, already unit-tested. Admin's "Start Match" button (`matchboxes/start`) is a separate manual override for when a real-world tee time slips, and stays exactly as it is.
 
 What changes is *where a match's `teeTime` comes from*. Today it's typed independently per match on the Matchups page. After this change, each match's `teeTime` is **derived** from its Session's 3 locked `matchTeeTimes`, combined with the Session's `date`:
 
@@ -85,7 +85,7 @@ No changes to match validation, scoring-authorization logic, or `canScoreStrokes
 - Unit tests for deriving each match's `teeTime` from its Session's `matchTeeTimes` (Fourball/Foursome 1:1, Singles 2:1 grouping).
 - Existing `orchestration.test.ts` coverage (`effectiveMatchState`, `canScoreStrokesFor`) is unaffected and stays green — this task doesn't change that logic, only what feeds `teeTime` into it and how matches are laid out on screen.
 - `npm test`, `npx tsc --noEmit`, `npm run lint`, `npm run build` all clean, per this repo's existing standard.
-- Manual/browser check of the Courses & Format tee-time inputs and the Matchups per-format layouts, since these are new UI surfaces behind Tiger login.
+- Manual/browser check of the Courses & Format tee-time inputs and the Matchups per-format layouts, since these are new UI surfaces behind Admin login.
 
 ## 6. Open questions
 

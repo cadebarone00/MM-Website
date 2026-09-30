@@ -87,7 +87,7 @@ export function MorePanel({ open, onClose }: { open: boolean; onClose: () => voi
 
   const links =
     session?.kind === "host"
-      ? [...MORE_LINKS, { href: "/portal", label: "Tiger Center" }]
+      ? [...MORE_LINKS, { href: "/portal", label: "Admin Center" }]
       : MORE_LINKS;
 
   return (
@@ -126,8 +126,8 @@ export function MorePanel({ open, onClose }: { open: boolean; onClose: () => voi
               href={social.href}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={`The Maroon Masters ${social.label}`}
-              title={`The Maroon Masters ${social.label}`}
+              aria-label={`The Maroon ${social.label}`}
+              title={`The Maroon ${social.label}`}
               className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20"
             >
               {social.icon}

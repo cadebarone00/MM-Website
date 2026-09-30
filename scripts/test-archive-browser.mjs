@@ -12,7 +12,7 @@ const entry=`import React from 'react';import {createRoot} from 'react-dom/clien
 import {LiveMatchScorecard} from '@/components/match/LiveMatchScorecard';
 import styles from '@/components/match/MatchTimeline.module.css';
 import {MatchOddsGraph} from '@/components/match/MatchOddsGraph';
-import {RoundFormatArchive} from '@/components/portal/tiger/RoundFormatArchive';
+import {RoundFormatArchive} from '@/components/portal/admin/RoundFormatArchive';
 import {ArchivedScores} from '@/components/scorecard/ArchivedScores';
 import {pastTournaments} from '@/lib/data';
 import {roundFormatArchive} from '@/lib/data/roundFormatArchive';

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { OddsModelLab } from "@/components/portal/tiger/OddsModelLab";
+import { OddsModelLab } from "@/components/portal/admin/OddsModelLab";
 import { careerArchiveCourseHoles } from "@/lib/data/careerArchive";
 import { getCombinedCareerArchive } from "@/lib/data/combinedCareerArchive";
 import { createSupabaseServerClient } from "@/lib/supabase/server";

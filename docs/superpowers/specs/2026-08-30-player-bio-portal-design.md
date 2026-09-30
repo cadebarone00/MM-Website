@@ -4,10 +4,10 @@
 
 A player can edit their own public bio (everything shown in
 `PlayerBioSection` on their scorecard page) from the Player Portal. Every
-change needs Tiger's approval before it goes live, except their account
+change needs Admin's approval before it goes live, except their account
 email (not part of this system at all — that's a Supabase Auth setting,
-changed elsewhere). Tiger reviews and approves/denies from the existing
-Players & Teams tab in the Tiger Center, and can also edit any player's
+changed elsewhere). Admin reviews and approves/denies from the existing
+Players & Teams tab in the Admin Center, and can also edit any player's
 bio directly himself with no approval step, since he's the approver.
 
 ## Background
@@ -40,10 +40,10 @@ a separate migration file per feature).
 
 ```sql
 -- === Player Bio Portal ===================================================
--- Lets a player edit their own public bio; every change needs Tiger's
+-- Lets a player edit their own public bio; every change needs Admin's
 -- approval before it's live (email isn't part of this — that's a Supabase
 -- Auth setting). player_profile_edits is the pending queue a player writes
--- to and Tiger clears; player_profile_overrides is what the public bio page
+-- to and Admin clears; player_profile_overrides is what the public bio page
 -- reads on top of the static lib/data/players/*.ts baseline once approved.
 
 create table if not exists player_profile_edits (
@@ -138,9 +138,9 @@ file — the Python call is deleted, not kept as a fallback).
   earlier decision, this **replaces** any edit already pending for that
   field (upsert, not insert-only).
 
-## Tiger-side: approve, deny, or edit directly
+## Admin-side: approve, deny, or edit directly
 
-Three small routes under `app/api/portal/tiger/profile-edits/`, each
+Three small routes under `app/api/portal/admin/profile-edits/`, each
 guarded by `requireHost()`, mirroring the one-clear-verb-per-route pattern
 `unlink`/`courses` already use:
 
@@ -150,10 +150,10 @@ guarded by `requireHost()`, mirroring the one-clear-verb-per-route pattern
   `player_profile_edits` row. Nothing to keep — a denial isn't logged
   anywhere, matching "easy workflow" over an audit trail this project
   doesn't otherwise have for equivalent admin actions.
-- **`set/route.ts`** — body `{ playerSlug, field, value }`. Tiger's own
+- **`set/route.ts`** — body `{ playerSlug, field, value }`. Admin's own
   direct edit: upserts straight into `player_profile_overrides` (same
   shape the approve RPC writes), and also deletes any pending edit for
-  that same field if one exists (Tiger's direct edit supersedes whatever
+  that same field if one exists (Admin's direct edit supersedes whatever
   the player had proposed).
 
 ## Screens
@@ -190,7 +190,7 @@ labeled side by side, per the earlier decision — so submitting again is
 visibly "replacing my own draft," not "did that even work?" Save posts
 the section's changed fields in one request to `POST /api/portal/profile`.
 
-**Tiger Center — Players & Teams tab** (`/portal/admin/players-teams`,
+**Admin Center — Players & Teams tab** (`/portal/admin/players-teams`,
 extending the existing `PlayerSlotsAdmin` component): clicking a player's
 name expands a dropdown beneath their row listing every pending edit for
 them — field name, current value, proposed value, and Approve/Deny
@@ -198,7 +198,7 @@ buttons per field. Approve calls the `approve` route and removes that row
 from the list; Deny calls `deny` and does the same. A player with no
 pending edits shows no dropdown affordance (nothing to expand). This same
 expanded view also gets a "Edit directly" action per field (or a small
-"add an override" form) that calls `set` — this is Tiger's own
+"add an override" form) that calls `set` — this is Admin's own
 always-available direct-edit path, independent of anything a player
 proposed.
 
@@ -206,11 +206,11 @@ proposed.
 
 A player opens `/portal/profile`, taps a box, changes a field, saves. It
 shows up on their own bio page immediately as "pending" and on their
-public bio page unchanged until approved. Tiger opens Players & Teams,
+public bio page unchanged until approved. Admin opens Players & Teams,
 clicks their name, sees the proposed change next to the current value,
 clicks Approve. The public bio page now shows the new value — same as if
-Tiger had typed it into the static file himself, except it came from the
-player and went through review. Tiger can also just set any field on any
+Admin had typed it into the static file himself, except it came from the
+player and went through review. Admin can also just set any field on any
 player directly, any time, no approval loop for himself.
 
 ## Out of scope for this spec
@@ -226,5 +226,5 @@ player directly, any time, no approval loop for himself.
   separate piece of scope if wanted later.
 - Any connection to the live-scoring → public-stats pipeline (that's the
   separate, already-tracked 3-phase live scoring rollout — see
-  `docs/superpowers/specs/2026-08-30-tiger-center-player-live-scoring-design.md`).
+  `docs/superpowers/specs/2026-08-30-admin-center-player-live-scoring-design.md`).
   This spec is bio fields only.

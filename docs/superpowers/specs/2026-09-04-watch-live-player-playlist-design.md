@@ -17,7 +17,7 @@ the fix is one component:
    always looks like a shrunk photo of the real 16:9 broadcast.
 2. Turn that video area into an actual player: a control bar with
    **Fullscreen** and **mute/volume**, plus (net new) a **Broadcast
-   Playlist** so Tiger has actual audio to control from Broadcast Controls
+   Playlist** so Admin has actual audio to control from Broadcast Controls
    — uploaded songs, played while live, looping one song or the whole list.
 
 ## Background
@@ -44,7 +44,7 @@ every existing `broadcast_*` table (see `supabase/schema.sql`).
 
 - **`broadcast_playlist_tracks`** — `id uuid pk`, `season_year int` (fk
   shape matches `broadcast_state`'s check, `between 2024 and 2034` — same
-  range as `broadcast_display_year`, since a Tiger previewing 2026 should
+  range as `broadcast_display_year`, since a Admin previewing 2026 should
   be able to test music too), `title text not null` (filename minus
   extension, editable later if ever needed — not now, YAGNI), `storage_path
   text not null`, `duration_seconds numeric not null`, `uploaded_at
@@ -88,7 +88,7 @@ servers."
 
 ## API routes (host-only, `requireHost()`, mirrors existing host routes)
 
-All under `app/api/portal/tiger/broadcast/playlist/`:
+All under `app/api/portal/admin/broadcast/playlist/`:
 
 | Route | Body | Effect |
 |---|---|---|
@@ -98,7 +98,7 @@ All under `app/api/portal/tiger/broadcast/playlist/`:
 | `loop-mode` | `{ seasonYear, mode: "one" \| "all" }` | Sets `audio_loop_mode` |
 | `delete` | `{ seasonYear, trackId }` | Deletes the R2 object + DB row; if it was the anchor track, also stops playback (`audio_track_id: null`) |
 
-Every route 401s via `requireHost()` exactly like every existing Tiger
+Every route 401s via `requireHost()` exactly like every existing Admin
 Center route — no new permission concept.
 
 ## Client architecture
@@ -155,7 +155,7 @@ a small follow-up, not a rewrite.
 
 ### 4. Broadcast Controls: Playlist tab
 
-New tab in `components/portal/tiger/BroadcastControlsPanel.tsx` (or a new
+New tab in `components/portal/admin/BroadcastControlsPanel.tsx` (or a new
 sibling panel component if that file is already large — check at
 implementation time):
 - Upload button (file picker → sign → PUT to R2 → confirm, same 3-step
@@ -194,7 +194,7 @@ implementation time):
 - `/watch-live`'s video area visually matches `/broadcast`'s real
   proportions at any screen size.
 - Fullscreen and mute/volume both work on `/watch-live`.
-- Tiger can upload a song in Broadcast Controls' new Playlist tab, press
+- Admin can upload a song in Broadcast Controls' new Playlist tab, press
   Play, and hear it (once unmuted) on `/watch-live` — synced to the right
   position for anyone who joins partway through.
 - Loop-one and loop-all both behave as described.

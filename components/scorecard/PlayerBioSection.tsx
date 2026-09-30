@@ -129,7 +129,7 @@ export function PlayerBioSection({ profile: baseProfile, featuredYear }: { profi
 
         {profile.history && profile.history.length > 0 && (
           <div className="mt-5 border-t border-ink-100 pt-5">
-            <div className="mb-2 font-condensed text-3xs font-semibold uppercase tracking-eyebrow text-ink-400">Maroon Masters History</div>
+            <div className="mb-2 font-condensed text-3xs font-semibold uppercase tracking-eyebrow text-ink-400">Maroon Tournament History</div>
             <ul className="m-0 space-y-1 pl-5">
               {profile.history.map((h, i) => (
                 <li key={i} className="font-sans text-sm text-ink-700">

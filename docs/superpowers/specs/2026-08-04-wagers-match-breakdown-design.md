@@ -2,10 +2,10 @@
 
 ## Vision
 
-Add a "Wagers" feature: fake-money betting on Maroon Masters matches,
+Add a "Wagers" feature: fake-money betting on Maroon Tournament matches,
 player props, and tournament futures. Winners are paid a real prize at
 the end of the tournament; buying extra fake credits is framed as a
-donation to the Maroon Masters, not a purchase of chances to win (legal
+donation to the Maroon Tournament, not a purchase of chances to win (legal
 framing still being finalized by the user — noted under Open Questions,
 not blocking this phase).
 
@@ -25,12 +25,12 @@ the first two, combined at the user's request:
 5. Historical stats data pipeline — admin-side upload of player
    performance data that feeds Phase 4's odds engine.
 
-Target: fully live (all five phases) before the 2027 Maroon Masters.
+Target: fully live (all five phases) before the 2027 Maroon Tournament.
 
 ## Dependency: accounts-foundation
 
 Wagers must be open to **any signed-in account** — fans, players, and
-Tiger alike, not just Scorekeeper player/host logins. That general
+Admin alike, not just Scorekeeper player/host logins. That general
 "anyone can sign up" system is the previously-spec'd
 [`accounts-foundation`](2026-08-04-accounts-foundation-design.md)
 project, which has an approved design + implementation plan but has

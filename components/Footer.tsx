@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Wordmark } from "@/components/Wordmark";
 import { SPONSORS } from "@/lib/data/sponsors";
 import { ChevronUp } from "lucide-react";
 import type { NextTournamentOverride } from "@/lib/data/types";
@@ -49,7 +50,7 @@ export function Footer({ nextTournamentOverride, showSponsors = false }: { nextT
       <div className="bg-maroon-900 text-white">
         <div className="ml-[35%] mr-[10%] pb-10">
           <div className="border-b border-white/50 py-10">
-            <Image src="/assets/wordmark-light.svg" alt="The Maroon Masters" width={520} height={92} className="h-auto w-[min(100%,360px)]" />
+            <Wordmark className="text-5xl text-cream-50" />
           </div>
 
           <nav aria-label="Footer" className="grid grid-cols-2 gap-x-6 gap-y-6 pt-9 xl:grid-cols-4">
@@ -68,7 +69,7 @@ export function Footer({ nextTournamentOverride, showSponsors = false }: { nextT
 
           <div className="mt-10 flex items-center justify-between gap-6">
             <span className="font-sans text-sm text-maroon-100">
-              © {new Date().getFullYear()} The Maroon Masters · Next up {nextTournamentOverride.dateLabel}
+              © {new Date().getFullYear()} The Maroon · Next up {nextTournamentOverride.dateLabel}
             </span>
             <a
               href="#"

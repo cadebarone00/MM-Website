@@ -14,7 +14,7 @@ function seedSnapshot(): LiveTournamentSnapshot {
         { team: i % 2 === 0 ? "maroon" : "white" },
       ])
     ),
-    courses: { c1: { id: "c1", name: "2027 Maroon Masters", holes: SEED_HOLES, rating: null, slope: null } },
+    courses: { c1: { id: "c1", name: "2027 Maroon Tournament", holes: SEED_HOLES, rating: null, slope: null } },
     roundCourses: { 1: "c1" },
     scores: new Map(),
     matchBoxes: [],
@@ -85,7 +85,7 @@ test("validateMatchBox catches a player whose roster team no longer matches thei
   snapshot.matchBoxes = [built];
   assert.deepEqual(validateMatchBox(snapshot, built), []);
 
-  // Tiger moves hugo to White and drops drew from the roster entirely.
+  // Admin moves hugo to White and drops drew from the roster entirely.
   snapshot.players.hugo = { team: "white" };
   delete snapshot.players.drew;
   assert.deepEqual(validateMatchBox(snapshot, built), ["hugo is not on Team Maroon.", "drew is not on Team White."]);

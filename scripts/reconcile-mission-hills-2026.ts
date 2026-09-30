@@ -5,7 +5,7 @@ import * as XLSX from "xlsx";
 import type { CareerHoleRecord, CareerTeamHoleRecord } from "../lib/data/careerStats";
 
 const source = process.argv[2];
-if (!source) throw new Error("Pass the 2026 Maroon Masters workbook path.");
+if (!source) throw new Error("Pass the 2026 Maroon Tournament workbook path.");
 const archivePath = path.join(process.cwd(), "lib/data/careerArchive.generated.ts");
 const mapPath = path.join(process.cwd(), "docs/source-data/2026_Maroon_Masters_Player_Round_Map.csv");
 // Verified Mission Hills sequence: Palmer, Pete Dye, Classic, Cove, Pete

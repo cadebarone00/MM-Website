@@ -28,7 +28,7 @@ export function identityFromSlot(
  *
  * A hand-written player (lib/data/players/*.ts) gets exactly the identity it
  * always did. A dynamically-added player has no such file: profiles.player_slug
- * is only ever set server-side (sign-up claim, or Tiger's invite) and is a
+ * is only ever set server-side (sign-up claim, or Admin's invite) and is a
  * foreign key into player_slots, so a non-null slug is always a real
  * player_slots row — their name comes from that row instead.
  */

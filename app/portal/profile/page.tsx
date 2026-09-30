@@ -54,7 +54,7 @@ export default async function PortalProfilePage() {
         ← Back to Portal
       </Link>
       <h1 className="mt-4 font-serif text-2xl font-bold text-ink-900">Edit My Bio</h1>
-      <p className="mt-2 font-sans text-sm text-ink-500">Changes you save here need Tiger&rsquo;s approval before they show up on your public bio.</p>
+      <p className="mt-2 font-sans text-sm text-ink-500">Changes you save here need Admin&rsquo;s approval before they show up on your public bio.</p>
       <div className="mt-6">
         <ProfileEditGrid profile={profile} pendingEdits={pendingEdits} />
       </div>

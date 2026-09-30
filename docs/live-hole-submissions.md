@@ -6,6 +6,6 @@ The new `/api/portal/scoring/hole` endpoint saves both score entries and the sco
 
 Next Hole only changes the selected hole. Unsaved edits remain in memory while navigating holes and are lost on reload. Submit Score validates required information, saves, and advances. The old stroke and stats autosave endpoints reject requests so an outdated browser cannot bypass submission.
 
-Tiger Center's Live Scoring Page Editor connects two sample phones through a local preview session. Use both phones to submit matching or mismatching scores, return to a submitted hole, change an entry, and resubmit. Reset preview clears the sample session. Preview submissions never call the live scoring API or write to the database.
+Admin Center's Live Scoring Page Editor connects two sample phones through a local preview session. Use both phones to submit matching or mismatching scores, return to a submitted hole, change an entry, and resubmit. Reset preview clears the sample session. Preview submissions never call the live scoring API or write to the database.
 
 Verification: TypeScript, targeted ESLint, 29 scoring tests, a desktop/mobile two-phone browser test, and a local PostgreSQL test using the actual archive trigger passed. The database test covered validation, dispute retraction, correction, round completion, par-3 stats, and Foursome team archiving. These checks do not apply the migration to the hosted database.

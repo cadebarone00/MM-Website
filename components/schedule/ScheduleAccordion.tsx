@@ -57,7 +57,7 @@ export function ScheduleAccordion({ rounds, year, initialDate }: { rounds: Upcom
         <Image src={panel.image} alt="" fill sizes="(max-width: 1023px) 100vw, 50vw" className={styles.photo} style={{ objectPosition: panel.position }} />
         <div className={styles.shade} />
         <div className={styles.details}>
-          <p className={styles.eyebrow}>{nextTournament.year === year ? nextTournament.venue : "Maroon Masters " + year}</p>
+          <p className={styles.eyebrow}>{nextTournament.year === year ? nextTournament.venue : "Maroon Tournament " + year}</p>
           <h2>{panel.course ?? "Course to be announced"}</h2>
           <p className={styles.format}>{panel.format ?? "Format to be announced"}</p>
           <p>{nextTournament.year === year ? nextTournament.location : ""}</p>

@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Let a player edit their own public bio from the Player Portal, with every change (except account email, which isn't part of this) held for Tiger's approval in the existing Players & Teams tab before it goes live.
+**Goal:** Let a player edit their own public bio from the Player Portal, with every change (except account email, which isn't part of this) held for Admin's approval in the existing Players & Teams tab before it goes live.
 
-**Architecture:** Two new Supabase tables (`player_profile_edits` for pending proposals, `player_profile_overrides` for approved values) sit alongside the existing static `lib/data/players/*.ts` files, which stay the baseline. A new merge helper overlays overrides on top of the static baseline; the public bio page fetches overrides client-side and merges them in, so no existing server/client page needs to change how it loads data. New Route Handlers (player submit, Tiger approve/deny/set) all follow this codebase's established pattern: `requirePlayer()`/`requireHost()` gate, then a service-role Supabase write.
+**Architecture:** Two new Supabase tables (`player_profile_edits` for pending proposals, `player_profile_overrides` for approved values) sit alongside the existing static `lib/data/players/*.ts` files, which stay the baseline. A new merge helper overlays overrides on top of the static baseline; the public bio page fetches overrides client-side and merges them in, so no existing server/client page needs to change how it loads data. New Route Handlers (player submit, Admin approve/deny/set) all follow this codebase's established pattern: `requirePlayer()`/`requireHost()` gate, then a service-role Supabase write.
 
 **Tech Stack:** Next.js 16 App Router, Supabase (Postgres + RLS), TypeScript, `node:test` for unit tests (`npm test` runs `tsx --test {lib,app}/**/*.test.{ts,mts}`).
 
@@ -12,11 +12,11 @@
 
 ## Global Constraints
 
-- Every DB write happens server-side via `createSupabaseServiceRoleClient()` inside a Route Handler gated by `requirePlayer()` or `requireHost()` — never a direct client-side write, matching every existing Tiger Center phase.
+- Every DB write happens server-side via `createSupabaseServiceRoleClient()` inside a Route Handler gated by `requirePlayer()` or `requireHost()` — never a direct client-side write, matching every existing Admin Center phase.
 - `player_profile_edits` and `player_profile_overrides` are public-read (RLS `for select using (true)`), no insert/update policy — same "public read, service-role writes" pattern as `live_courses`/`live_roster`/etc.
 - Editable fields are exactly the 29 in `EDITABLE_PLAYER_FIELDS` (Task 2) — `id`, `slug`, and `fullName` are never editable through this system.
 - `history` is the one array-typed field; every other editable field is a plain string (`avatarSrc` is `string | null`).
-- `getPlayerDisplayName`/`getPlayerAvatar`/`getPlayerProfile`'s other ~30 call sites across the site are explicitly out of scope — only `PlayerBioSection` and the new Portal/Tiger Center screens read live overrides.
+- `getPlayerDisplayName`/`getPlayerAvatar`/`getPlayerProfile`'s other ~30 call sites across the site are explicitly out of scope — only `PlayerBioSection` and the new Portal/Admin Center screens read live overrides.
 
 ---
 
@@ -34,10 +34,10 @@ Add this to the end of `supabase/schema.sql`:
 
 ```sql
 -- === Player Bio Portal ===================================================
--- Lets a player edit their own public bio; every change needs Tiger's
+-- Lets a player edit their own public bio; every change needs Admin's
 -- approval before it's live (email isn't part of this — that's a Supabase
 -- Auth setting). player_profile_edits is the pending queue a player writes
--- to and Tiger clears; player_profile_overrides is what the public bio page
+-- to and Admin clears; player_profile_overrides is what the public bio page
 -- reads on top of the static lib/data/players/*.ts baseline once approved.
 
 create table if not exists player_profile_edits (
@@ -461,26 +461,26 @@ git commit -m "feat: replace dead Python-backed profile stub with native submit/
 
 ---
 
-## Task 5: Tiger approve endpoint
+## Task 5: Admin approve endpoint
 
 **Files:**
-- Create: `app/api/portal/tiger/profile-edits/approve/route.ts`
-- Test: `app/api/portal/tiger/profile-edits/approve/route.test.ts`
+- Create: `app/api/portal/admin/profile-edits/approve/route.ts`
+- Test: `app/api/portal/admin/profile-edits/approve/route.test.ts`
 
 **Interfaces:**
 - Consumes: `requireHost` from `@/lib/portal/requireHost`, `createSupabaseServiceRoleClient`, and the `approve_profile_edit` RPC from Task 1.
-- Produces: `POST /api/portal/tiger/profile-edits/approve` with body `{ playerSlug: string; field: string }` → `{ ok: true }`. Consumed by Task 12.
+- Produces: `POST /api/portal/admin/profile-edits/approve` with body `{ playerSlug: string; field: string }` → `{ ok: true }`. Consumed by Task 12.
 
 - [ ] **Step 1: Write the failing test**
 
 ```ts
-// app/api/portal/tiger/profile-edits/approve/route.test.ts
+// app/api/portal/admin/profile-edits/approve/route.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-test("POST /api/portal/tiger/profile-edits/approve rejects when requireHost resolves null", async () => {
+test("POST /api/portal/admin/profile-edits/approve rejects when requireHost resolves null", async () => {
   const { POST } = await import("./route.ts");
-  const request = new Request("http://localhost/api/portal/tiger/profile-edits/approve", {
+  const request = new Request("http://localhost/api/portal/admin/profile-edits/approve", {
     method: "POST",
     body: JSON.stringify({ playerSlug: "test-player", field: "bio" }),
   });
@@ -490,13 +490,13 @@ test("POST /api/portal/tiger/profile-edits/approve rejects when requireHost reso
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npx tsx --test app/api/portal/tiger/profile-edits/approve/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/profile-edits/approve/route.test.ts`
 Expected: FAIL — file doesn't exist yet.
 
 - [ ] **Step 3: Write the implementation**
 
 ```ts
-// app/api/portal/tiger/profile-edits/approve/route.ts
+// app/api/portal/admin/profile-edits/approve/route.ts
 import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
@@ -524,38 +524,38 @@ export async function POST(request: Request) {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npx tsx --test app/api/portal/tiger/profile-edits/approve/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/profile-edits/approve/route.test.ts`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/api/portal/tiger/profile-edits/approve/route.ts app/api/portal/tiger/profile-edits/approve/route.test.ts
-git commit -m "feat: add Tiger approve-profile-edit endpoint"
+git add app/api/portal/admin/profile-edits/approve/route.ts app/api/portal/admin/profile-edits/approve/route.test.ts
+git commit -m "feat: add Admin approve-profile-edit endpoint"
 ```
 
 ---
 
-## Task 6: Tiger deny endpoint
+## Task 6: Admin deny endpoint
 
 **Files:**
-- Create: `app/api/portal/tiger/profile-edits/deny/route.ts`
-- Test: `app/api/portal/tiger/profile-edits/deny/route.test.ts`
+- Create: `app/api/portal/admin/profile-edits/deny/route.ts`
+- Test: `app/api/portal/admin/profile-edits/deny/route.test.ts`
 
 **Interfaces:**
 - Consumes: `requireHost`, `createSupabaseServiceRoleClient`.
-- Produces: `POST /api/portal/tiger/profile-edits/deny` with body `{ playerSlug: string; field: string }` → `{ ok: true }`. Consumed by Task 12.
+- Produces: `POST /api/portal/admin/profile-edits/deny` with body `{ playerSlug: string; field: string }` → `{ ok: true }`. Consumed by Task 12.
 
 - [ ] **Step 1: Write the failing test**
 
 ```ts
-// app/api/portal/tiger/profile-edits/deny/route.test.ts
+// app/api/portal/admin/profile-edits/deny/route.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-test("POST /api/portal/tiger/profile-edits/deny rejects when requireHost resolves null", async () => {
+test("POST /api/portal/admin/profile-edits/deny rejects when requireHost resolves null", async () => {
   const { POST } = await import("./route.ts");
-  const request = new Request("http://localhost/api/portal/tiger/profile-edits/deny", {
+  const request = new Request("http://localhost/api/portal/admin/profile-edits/deny", {
     method: "POST",
     body: JSON.stringify({ playerSlug: "test-player", field: "bio" }),
   });
@@ -565,13 +565,13 @@ test("POST /api/portal/tiger/profile-edits/deny rejects when requireHost resolve
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npx tsx --test app/api/portal/tiger/profile-edits/deny/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/profile-edits/deny/route.test.ts`
 Expected: FAIL — file doesn't exist yet.
 
 - [ ] **Step 3: Write the implementation**
 
 ```ts
-// app/api/portal/tiger/profile-edits/deny/route.ts
+// app/api/portal/admin/profile-edits/deny/route.ts
 import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
@@ -599,38 +599,38 @@ export async function POST(request: Request) {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npx tsx --test app/api/portal/tiger/profile-edits/deny/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/profile-edits/deny/route.test.ts`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/api/portal/tiger/profile-edits/deny/route.ts app/api/portal/tiger/profile-edits/deny/route.test.ts
-git commit -m "feat: add Tiger deny-profile-edit endpoint"
+git add app/api/portal/admin/profile-edits/deny/route.ts app/api/portal/admin/profile-edits/deny/route.test.ts
+git commit -m "feat: add Admin deny-profile-edit endpoint"
 ```
 
 ---
 
-## Task 7: Tiger direct-set endpoint
+## Task 7: Admin direct-set endpoint
 
 **Files:**
-- Create: `app/api/portal/tiger/profile-edits/set/route.ts`
-- Test: `app/api/portal/tiger/profile-edits/set/route.test.ts`
+- Create: `app/api/portal/admin/profile-edits/set/route.ts`
+- Test: `app/api/portal/admin/profile-edits/set/route.test.ts`
 
 **Interfaces:**
 - Consumes: `requireHost`, `createSupabaseServiceRoleClient`, `isEditableField` from Task 2.
-- Produces: `POST /api/portal/tiger/profile-edits/set` with body `{ playerSlug: string; field: string; value: string | string[] }` → `{ ok: true }`. Consumed by Task 12. Tiger's own direct edit — writes straight to `player_profile_overrides`, no approval step, and clears any pending edit for that field.
+- Produces: `POST /api/portal/admin/profile-edits/set` with body `{ playerSlug: string; field: string; value: string | string[] }` → `{ ok: true }`. Consumed by Task 12. Admin's own direct edit — writes straight to `player_profile_overrides`, no approval step, and clears any pending edit for that field.
 
 - [ ] **Step 1: Write the failing tests**
 
 ```ts
-// app/api/portal/tiger/profile-edits/set/route.test.ts
+// app/api/portal/admin/profile-edits/set/route.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-test("POST /api/portal/tiger/profile-edits/set rejects when requireHost resolves null", async () => {
+test("POST /api/portal/admin/profile-edits/set rejects when requireHost resolves null", async () => {
   const { POST } = await import("./route.ts");
-  const request = new Request("http://localhost/api/portal/tiger/profile-edits/set", {
+  const request = new Request("http://localhost/api/portal/admin/profile-edits/set", {
     method: "POST",
     body: JSON.stringify({ playerSlug: "test-player", field: "bio", value: "New bio." }),
   });
@@ -640,13 +640,13 @@ test("POST /api/portal/tiger/profile-edits/set rejects when requireHost resolves
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npx tsx --test app/api/portal/tiger/profile-edits/set/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/profile-edits/set/route.test.ts`
 Expected: FAIL — file doesn't exist yet.
 
 - [ ] **Step 3: Write the implementation**
 
 ```ts
-// app/api/portal/tiger/profile-edits/set/route.ts
+// app/api/portal/admin/profile-edits/set/route.ts
 import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
@@ -682,14 +682,14 @@ export async function POST(request: Request) {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npx tsx --test app/api/portal/tiger/profile-edits/set/route.test.ts`
+Run: `npx tsx --test app/api/portal/admin/profile-edits/set/route.test.ts`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/api/portal/tiger/profile-edits/set/route.ts app/api/portal/tiger/profile-edits/set/route.test.ts
-git commit -m "feat: add Tiger direct-set-profile-field endpoint"
+git add app/api/portal/admin/profile-edits/set/route.ts app/api/portal/admin/profile-edits/set/route.test.ts
+git commit -m "feat: add Admin direct-set-profile-field endpoint"
 ```
 
 ---
@@ -800,7 +800,7 @@ export function PlayerBioSection({ profile: baseProfile }: { profile: PlayerProf
 
         {profile.history && profile.history.length > 0 && (
           <div className="mt-5 border-t border-ink-100 pt-5">
-            <div className="mb-2 font-condensed text-3xs font-semibold uppercase tracking-eyebrow text-ink-400">Maroon Masters History</div>
+            <div className="mb-2 font-condensed text-3xs font-semibold uppercase tracking-eyebrow text-ink-400">Maroon Tournament History</div>
             <ul className="m-0 space-y-1 pl-5">
               {profile.history.map((h, i) => (
                 <li key={i} className="font-sans text-sm text-ink-700">
@@ -1017,7 +1017,7 @@ export function ProfileEditGrid({ profile, pendingEdits }: { profile: PlayerProf
           <h2 className="m-0 font-serif text-xl font-bold text-maroon-700">{activeSection.title}</h2>
           {error && <p className="mt-3 rounded-sm bg-red-50 px-3 py-2 font-sans text-sm text-red-700">{error}</p>}
           {savedSection === activeSection.key && (
-            <p className="mt-3 rounded-sm bg-cream-100 px-3 py-2 font-sans text-sm text-ink-700">Saved — waiting on Tiger&rsquo;s approval.</p>
+            <p className="mt-3 rounded-sm bg-cream-100 px-3 py-2 font-sans text-sm text-ink-700">Saved — waiting on Admin&rsquo;s approval.</p>
           )}
           <div className="mt-4 flex flex-col gap-4">
             {activeSection.fields.map((field) => {
@@ -1135,7 +1135,7 @@ export default async function PortalProfilePage() {
         ← Back to Portal
       </Link>
       <h1 className="mt-4 font-serif text-2xl font-bold text-ink-900">Edit My Bio</h1>
-      <p className="mt-2 font-sans text-sm text-ink-500">Changes you save here need Tiger&rsquo;s approval before they show up on your public bio.</p>
+      <p className="mt-2 font-sans text-sm text-ink-500">Changes you save here need Admin&rsquo;s approval before they show up on your public bio.</p>
       <div className="mt-6">
         <ProfileEditGrid profile={profile} pendingEdits={pendingEdits} />
       </div>
@@ -1182,7 +1182,7 @@ Expected: no errors
 Log in as a player account (or use an existing test account), visit
 `/portal`, click "Edit My Bio →", confirm `/portal/profile` loads with the
 box grid, click a box, confirm the form pre-fills with current values,
-change one field, Save, confirm the "Saved — waiting on Tiger's approval"
+change one field, Save, confirm the "Saved — waiting on Admin's approval"
 message appears and the field now shows a "Pending approval" line.
 
 - [ ] **Step 5: Commit**
@@ -1194,14 +1194,14 @@ git commit -m "feat: add /portal/profile page and link it from the Portal home s
 
 ---
 
-## Task 11: Tiger's approval queue in Players & Teams
+## Task 11: Admin's approval queue in Players & Teams
 
 **Files:**
 - Modify: `components/portal/PlayerSlotsAdmin.tsx`
 - Modify: `app/portal/admin/players-teams/page.tsx`
 
 **Interfaces:**
-- Consumes: `POST /api/portal/tiger/profile-edits/{approve,deny,set}` from Tasks 5–7 — `set` is Tiger's own always-available direct edit, independent of any pending queue, so every row gets an "Edit directly" affordance, not just rows with pending edits.
+- Consumes: `POST /api/portal/admin/profile-edits/{approve,deny,set}` from Tasks 5–7 — `set` is Admin's own always-available direct edit, independent of any pending queue, so every row gets an "Edit directly" affordance, not just rows with pending edits.
 - Produces: no new exports — extends the existing `PlayerSlotAdminRow` shape with pending-edit data.
 
 - [ ] **Step 1: Extend the page to fetch pending edits**
@@ -1267,7 +1267,7 @@ existing `busy`/`copiedSlug`/`error` state:
     setBusy(playerSlug);
     setError(null);
     try {
-      const res = await fetch("/api/portal/tiger/profile-edits/approve", {
+      const res = await fetch("/api/portal/admin/profile-edits/approve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ playerSlug, field }),
@@ -1289,7 +1289,7 @@ existing `busy`/`copiedSlug`/`error` state:
     setBusy(playerSlug);
     setError(null);
     try {
-      const res = await fetch("/api/portal/tiger/profile-edits/deny", {
+      const res = await fetch("/api/portal/admin/profile-edits/deny", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ playerSlug, field }),
@@ -1317,7 +1317,7 @@ existing `busy`/`copiedSlug`/`error` state:
     setError(null);
     setDirectEditSaved(false);
     try {
-      const res = await fetch("/api/portal/tiger/profile-edits/set", {
+      const res = await fetch("/api/portal/admin/profile-edits/set", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1552,11 +1552,11 @@ Expected: clean typecheck, successful build, no route errors.
 
 1. As a player: `/portal` → "Edit My Bio →" → open "Bio Facts" → change
    Hometown → Save → confirm "Pending approval" shows.
-2. As Tiger: `/portal/admin/players-teams` → click that player's "1
+2. As Admin: `/portal/admin/players-teams` → click that player's "1
    pending" → see current vs. proposed → Approve.
 3. Back on the public site: visit that player's scorecard page, confirm
    the new Hometown value shows in the Bio section.
-4. As Tiger again: click "Edit directly" on a different player with no
+4. As Admin again: click "Edit directly" on a different player with no
    pending edits, pick a field, enter a value, Save — confirm it shows up
    on their public bio page without ever appearing in the pending queue.
 5. Confirm a denied edit disappears from the queue and the public bio page

@@ -1,7 +1,7 @@
 # Tee Time Timezone: Configurable Venue Zone + Viewer-Local Display — Design
 
 **Status:** v1 (2026-09-25) — all design questions answered by the user; ready for implementation planning. Nothing in this document is built yet.
-**Scope:** (1) Add a per-tournament-year timezone setting so a session's tee times can be entered in whatever zone that year's venue actually sits in, instead of hardcoded Pacific. (2) Admin screens (Matchups, the Career Stats archive) keep showing that venue-local time — what Tiger actually typed. (3) Every other tee-time display on the site (public match profile, live leaderboard cards, the player portal's Scoring tab and "My Matches" cards) instead renders in whoever is *looking at it's* own local time, since the trip travels and players/family follow from wherever they are.
+**Scope:** (1) Add a per-tournament-year timezone setting so a session's tee times can be entered in whatever zone that year's venue actually sits in, instead of hardcoded Pacific. (2) Admin screens (Matchups, the Career Stats archive) keep showing that venue-local time — what Admin actually typed. (3) Every other tee-time display on the site (public match profile, live leaderboard cards, the player portal's Scoring tab and "My Matches" cards) instead renders in whoever is *looking at it's* own local time, since the trip travels and players/family follow from wherever they are.
 **Not in scope:** re-deriving anything for past/historical tournaments (2024–2026, out of scope per the prior Sessions/Matchups spec and unaffected here); changing which formats/matches exist; any change to the underlying `deriveMatchTeeTime` slot-grouping math (Fourball/Foursome 1:1, Singles 1&2/3&4/5&6) — only *which* timezone that math treats the typed "HH:MM" as changes.
 
 ---
@@ -14,19 +14,19 @@ A new `lib/data/timezones.ts`, following the existing `lib/data/usStates.ts` pat
 
 ## 2. Input UI: `MasterSettingsPanel.tsx`
 
-The existing "Venue Name" section gains a timezone `<select>` right next to it, sharing that section's existing lock toggle (`venueLocked`) rather than introducing a third lock — venue and timezone are the same real-world fact (where the trip is happening) and should lock/unlock together. `POST /api/portal/tiger/master-settings` gains `timezone` alongside its existing `venueName`/`venueLocked`/etc. fields, written straight through (no special validation beyond "is one of the curated list's ids").
+The existing "Venue Name" section gains a timezone `<select>` right next to it, sharing that section's existing lock toggle (`venueLocked`) rather than introducing a third lock — venue and timezone are the same real-world fact (where the trip is happening) and should lock/unlock together. `POST /api/portal/admin/master-settings` gains `timezone` alongside its existing `venueName`/`venueLocked`/etc. fields, written straight through (no special validation beyond "is one of the curated list's ids").
 
 ## 3. Derivation: `lib/live/sessionTeeTimes.ts`
 
 `deriveMatchTeeTime(date, timeOfDay)` and its internal `pacificOffsetMinutes` helper become `deriveMatchTeeTime(date, timeOfDay, timezone)` / `offsetMinutes(instant, timezone)` — the hardcoded `PACIFIC_TZ` constant is deleted, its value becomes a caller-supplied parameter. `formatPacificTeeTime` becomes `formatTeeTimeInZone(date, timezone)`, still producing a short-zone-abbreviation label (e.g. "7:30 AM PST") but for whatever zone is passed in, not just Pacific — this is the function admin screens use with the tournament's configured zone. The two DST-transition-day tests already covering Pacific keep passing unchanged (default-argument-equivalent behavior for that one zone); one or two new tests confirm a *different* zone (e.g. `America/Chicago`) also converts correctly, proving the parameterization actually works and isn't just a renamed constant.
 
 Every caller that currently derives or formats a tee time in "the" timezone needs the tournament's `timezone` value threaded in:
-- `app/api/portal/tiger/matches/route.ts` (match creation) — already fetches the session row; add `timezone` to its `live_tournament_settings` read (joined by `season_year`).
-- `app/api/portal/tiger/sessions/lock/route.ts` (re-derivation on lock, added in the prior plan's final-review fix) — same addition.
+- `app/api/portal/admin/matches/route.ts` (match creation) — already fetches the session row; add `timezone` to its `live_tournament_settings` read (joined by `season_year`).
+- `app/api/portal/admin/sessions/lock/route.ts` (re-derivation on lock, added in the prior plan's final-review fix) — same addition.
 
 ## 4. Admin displays stay venue-local
 
-`components/portal/tiger/MatchupsPanel.tsx` and the Career Stats "Round Format Archive" page (`lib/data/liveRoundFormatArchive.ts`, rendered via `components/portal/tiger/RoundFormatArchive.tsx`) both currently call the Pacific-hardcoded formatter directly. Both already run in a context that has (or can easily fetch) the tournament's settings for the relevant year — `MatchupsPanel`'s server page (`app/portal/admin/master-settings/[year]/matchups/page.tsx`) gains a `live_tournament_settings` fetch and passes `timezone` down as a new prop; `career-stats/page.tsx` does the same for `liveRoundFormatArchive`'s caller. Both switch from the old fixed-Pacific formatter to `formatTeeTimeInZone(date, timezone)`.
+`components/portal/admin/MatchupsPanel.tsx` and the Career Stats "Round Format Archive" page (`lib/data/liveRoundFormatArchive.ts`, rendered via `components/portal/admin/RoundFormatArchive.tsx`) both currently call the Pacific-hardcoded formatter directly. Both already run in a context that has (or can easily fetch) the tournament's settings for the relevant year — `MatchupsPanel`'s server page (`app/portal/admin/master-settings/[year]/matchups/page.tsx`) gains a `live_tournament_settings` fetch and passes `timezone` down as a new prop; `career-stats/page.tsx` does the same for `liveRoundFormatArchive`'s caller. Both switch from the old fixed-Pacific formatter to `formatTeeTimeInZone(date, timezone)`.
 
 This deliberately does **not** touch `CoursesFormatPanel.tsx`'s tee-time `<input type="time">` fields themselves — those already just hold and echo back the raw typed "HH:MM" string, which has no timezone ambiguity to fix (it *is* whatever zone the tournament is configured for; the input just needs a small caption next to it naming that zone, e.g. "Tee times are venue-local (Pacific Time)." instead of the current hardcoded "Tee times are Pacific Time.").
 

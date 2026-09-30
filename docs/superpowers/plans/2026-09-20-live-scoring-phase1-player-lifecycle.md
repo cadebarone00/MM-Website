@@ -18,8 +18,8 @@
 - Alternate Shot (Foursome) is team-only: no putts/fairways/greens, never an individual sample, never a handicap round.
 - Submit Round never changes how live data updates. Player statistics and the odds model keep reading matched holes as they arrive.
 - Handicap and the rounds archive count a live round only when its archive status is `submitted` or `final`.
-- After Submit Round the player's entries are locked; only Tiger can change them (there is no player "unsubmit").
-- Once the player and their scorer have both submitted, the Scoring tab moves on to the next round without waiting for Tiger.
+- After Submit Round the player's entries are locked; only Admin can change them (there is no player "unsubmit").
+- Once the player and their scorer have both submitted, the Scoring tab moves on to the next round without waiting for Admin.
 - A live round can never be deleted.
 - Existing tests must keep passing: `npm test`, `npm run test:db`, `npm run test:browser`, `npx tsc --noEmit`, `npm run build`.
 - The SQL migration is run by the user in the Supabase SQL Editor (explain it in plain English at the end).
@@ -40,7 +40,7 @@
 | `components/portal/Scorecard.tsx` | Live mode: colors, totals status, Submit Round; competitor grid removed |
 | `components/portal/ScoringPanel.tsx` | Wire the live Scorecard; lock after submit; realtime on submissions |
 | `components/portal/ScoringStatusScreen.tsx`, `app/portal/scoring/page.tsx` | Begin/Continue and the other stages |
-| `app/api/live/matches/route.ts`, `components/portal/tiger/MatchCloseoutCards.tsx` | Tiger sees who has not submitted |
+| `app/api/live/matches/route.ts`, `components/portal/admin/MatchCloseoutCards.tsx` | Admin sees who has not submitted |
 | `scripts/test-scoring-browser.mjs` | Browser tests for the live Scorecard |
 | `project_specs.md` | Changelog entry |
 
@@ -353,7 +353,7 @@ Run: `npx tsx --test lib/live/currentRoundForPlayer.test.ts` and `npx tsc --noEm
 
 **Interfaces:**
 - Consumes: existing tables/functions `live_match_box_submissions`, `live_hole_scores`, `career_archive_rounds`, `live_score_audit_events`, `submit_live_hole` (in `supabase/live_hole_submissions.sql` lines 23–118).
-- Produces: RPC `submit_live_round(p_box uuid, p_player text, p_actor uuid) returns jsonb` → `{ submitted: true, official: boolean, waitingOn: text[] }`; archive status `submitted`; error message for locked players: `Your round is submitted. Tiger can change it.`
+- Produces: RPC `submit_live_round(p_box uuid, p_player text, p_actor uuid) returns jsonb` → `{ submitted: true, official: boolean, waitingOn: text[] }`; archive status `submitted`; error message for locked players: `Your round is submitted. Admin can change it.`
 
 - [ ] **Step 1: Confirm the DB tests pass before changing anything**
 
@@ -418,7 +418,7 @@ Expected: FAIL — the migration file `live_round_submission.sql` does not exist
 -- scoring_reliability.sql. Live scoring Phase 1 ("Submit Round"):
 --   1. A player's round is no longer submitted automatically at 18 matching
 --      holes; the player must press Submit Round.
---   2. After Submit Round the player's own entries are locked (only Tiger can
+--   2. After Submit Round the player's own entries are locked (only Admin can
 --      change them); a scorer's later disagreement never un-submits anyone.
 --   3. When a player AND their scorer have both submitted, the archive round
 --      becomes 'submitted' (an official record: handicap and the archive
@@ -437,7 +437,7 @@ end $$;
 alter table career_archive_rounds add constraint career_archive_rounds_status_check
   check (status in ('scheduled', 'live', 'submitted', 'final'));
 
--- Later score writes (a live mirror, a Tiger edit) must never move an
+-- Later score writes (a live mirror, a Admin edit) must never move an
 -- official round back to 'live'.
 create or replace function public.keep_archive_round_status() returns trigger
 language plpgsql as $$
@@ -528,7 +528,7 @@ fn = src[start:end]
 
 anchor = "  if not found then raise exception 'No assigned match.'; end if;\n"
 assert fn.count(anchor) == 1
-fn = fn.replace(anchor, anchor + "  if exists (select 1 from live_match_box_submissions where match_box_id = b.id and player_slug = p_player) then\n    raise exception 'Your round is submitted. Tiger can change it.';\n  end if;\n")
+fn = fn.replace(anchor, anchor + "  if exists (select 1 from live_match_box_submissions where match_box_id = b.id and player_slug = p_player) then\n    raise exception 'Your round is submitted. Admin can change it.';\n  end if;\n")
 
 old_start = fn.index("    -- The existing mirror trigger publishes confirmed rows and retracts disputed ones.")
 old_end = fn.index("    end if;\n", fn.index("delete from live_match_box_submissions", old_start)) + len("    end if;\n")
@@ -925,7 +925,7 @@ export function Scorecard({
       )}
       {onSubmit && confirming && (
         <ConfirmSubmitDialog
-          message={live ? "After you submit your round you will not be able to edit it. Tiger can correct it later if something is wrong." : "After you submit scores you will not be able to edit them."}
+          message={live ? "After you submit your round you will not be able to edit it. Admin can correct it later if something is wrong." : "After you submit scores you will not be able to edit them."}
           label={live ? "Submit Round" : "Submit Scores"}
           submitting={submitting}
           error={submitError}
@@ -976,7 +976,7 @@ rep('table: "live_hole_submissions", filter: `match_box_id=eq.${matchBox.id}` },
 rep('  const locked = busy || queue.sending || state.matchBox.state === "Final";',
     '  const mySubmitted = state.submittedPlayers.includes(playerSlug);\n  const locked = busy || queue.sending || state.matchBox.state === "Final" || mySubmitted;')
 rep(': status === "disputed" ? <p role="alert">Scores disagree.',
-    ': mySubmitted ? <p>Your round is submitted. Tiger can change it.</p> : status === "disputed" ? <p role="alert">Scores disagree.')
+    ': mySubmitted ? <p>Your round is submitted. Admin can change it.</p> : status === "disputed" ? <p role="alert">Scores disagree.')
 
 start = s.index("  if (showScorecard) {")
 end = s.index("  const rowClass =")
@@ -1139,7 +1139,7 @@ export function ScoringStatusScreen({
 
   if (!result || stage === "none") {
     return (
-      <LoadingScreen heading={`Maroon Masters ${nextTournament.year}`} topSlot={topSlot}>
+      <LoadingScreen heading={`Maroon Tournament ${nextTournament.year}`} topSlot={topSlot}>
         <p className="font-sans text-lg text-cream-50/90">Waiting For Matchup</p>
       </LoadingScreen>
     );
@@ -1207,10 +1207,10 @@ Run: `npx tsc --noEmit` and `npx eslint app/portal/scoring components/portal/Sco
 
 ---
 
-### Task 11: Tiger sees who has not submitted
+### Task 11: Admin sees who has not submitted
 
 **Files:**
-- Modify: `app/api/live/matches/route.ts`, `components/portal/tiger/MatchCloseoutCards.tsx`
+- Modify: `app/api/live/matches/route.ts`, `components/portal/admin/MatchCloseoutCards.tsx`
 
 **Interfaces:**
 - Produces: each entry from `GET /api/live/matches` gains `submittedPlayers: string[]`; the closeout card shows "Waiting on …" and gates Close Out Match, with a "Close out anyway" override.
@@ -1237,7 +1237,7 @@ print("ok")
 EOF
 ```
 
-- [ ] **Step 2: Patch the card** — in `components/portal/tiger/MatchCloseoutCards.tsx`: add `import { getPlayerDisplayName } from "@/lib/data/players";`; extend `Entry` with `submittedPlayers: string[]`; and replace the `ready.map(...)` block with:
+- [ ] **Step 2: Patch the card** — in `components/portal/admin/MatchCloseoutCards.tsx`: add `import { getPlayerDisplayName } from "@/lib/data/players";`; extend `Entry` with `submittedPlayers: string[]`; and replace the `ready.map(...)` block with:
 
 ```tsx
 {ready.map(({ match, officialState, submittedPlayers }) => {
@@ -1257,7 +1257,7 @@ EOF
 
 - [ ] **Step 3: Verify**
 
-Run: `npx tsc --noEmit` and `npx eslint app/api/live components/portal/tiger/MatchCloseoutCards.tsx` — Expected: clean.
+Run: `npx tsc --noEmit` and `npx eslint app/api/live components/portal/admin/MatchCloseoutCards.tsx` — Expected: clean.
 
 ---
 
@@ -1267,7 +1267,7 @@ Run: `npx tsc --noEmit` and `npx eslint app/api/live components/portal/tiger/Mat
 - Modify: `scripts/test-scoring-browser.mjs`
 
 **Interfaces:**
-- Consumes: `Scorecard` live mode (`data-round-state`, `Edit hole N` buttons with `bg-red-600` when disputed, pill labels `Submit Round` / `Submitted`, the dialog's `Tiger can correct it later` copy), `POST /api/portal/scoring/submit` (mocked).
+- Consumes: `Scorecard` live mode (`data-round-state`, `Edit hole N` buttons with `bg-red-600` when disputed, pill labels `Submit Round` / `Submitted`, the dialog's `Admin can correct it later` copy), `POST /api/portal/scoring/submit` (mocked).
 
 - [ ] **Step 1: Patch the harness and replace the old competitor assertions** — run:
 
@@ -1316,7 +1316,7 @@ new_block = """ await page.setViewportSize({width:390,height:844});
  assert.equal(await page.getByRole('button',{name:'Submit Round',exact:true}).isDisabled(),false);
  await page.getByRole('button',{name:'Submit Round',exact:true}).click();
  const roundDialog=page.getByRole('dialog');
- await roundDialog.getByText('Tiger can correct it later',{exact:false}).waitFor();
+ await roundDialog.getByText('Admin can correct it later',{exact:false}).waitFor();
  await page.keyboard.press('Escape');
  await roundDialog.waitFor({state:'detached'});
  assert.equal(submitRequests.length,0,'opening the confirmation submits nothing');
@@ -1357,7 +1357,7 @@ npm run build
 ```
 Expected: all clean/passing. Any pre-existing unrelated lint failures elsewhere in the repo must be named, not hidden.
 
-- [ ] **Step 2: Add the changelog entry** — a paragraph titled "**Live scoring Phase 1 — player lifecycle**" covering: Begin/Continue Round and the other Scoring-tab stages; the live Scorecard (own entries + a second score row of what you entered for your opponent, red/muted hole numbers, white/red/green round status, Submit Round pill, confirm dialog, competitor grid removed); explicit Submit Round (`submit_live_round`), no auto-submit, lock after submit; the `submitted` archive status and the handicap filter; the Scoring tab moving on once both submit; Tiger's closeout card showing who has not submitted; the new migration `supabase/live_round_submission.sql` that **must be run once in the Supabase SQL Editor** (after `live_hole_submissions.sql` and `scoring_reliability.sql`); and honest verification notes (what was tested, and that the Scoring tab screen, the loader, Tiger's card and the deployed round trip are covered only by type-check/lint/build and need a two-phone check).
+- [ ] **Step 2: Add the changelog entry** — a paragraph titled "**Live scoring Phase 1 — player lifecycle**" covering: Begin/Continue Round and the other Scoring-tab stages; the live Scorecard (own entries + a second score row of what you entered for your opponent, red/muted hole numbers, white/red/green round status, Submit Round pill, confirm dialog, competitor grid removed); explicit Submit Round (`submit_live_round`), no auto-submit, lock after submit; the `submitted` archive status and the handicap filter; the Scoring tab moving on once both submit; Admin's closeout card showing who has not submitted; the new migration `supabase/live_round_submission.sql` that **must be run once in the Supabase SQL Editor** (after `live_hole_submissions.sql` and `scoring_reliability.sql`); and honest verification notes (what was tested, and that the Scoring tab screen, the loader, Admin's card and the deployed round trip are covered only by type-check/lint/build and need a two-phone check).
 
 - [ ] **Step 3: Plain-English SQL note for the user** — in the final report explain, one sentence each: (a) it stops the app from marking a round "submitted" by itself, (b) it locks a player's entries once they press Submit Round, (c) it adds the Submit Round check, (d) it marks the archive round official only when both scorers have submitted, (e) where to run it (Supabase → SQL Editor → paste the file → Run), and that the new buttons will not work live until it has been run.
 
@@ -1369,9 +1369,9 @@ Expected: all clean/passing. Any pre-existing unrelated lint failures elsewhere 
 - **§7.1 Scoring tab stages, Begin/Continue, full matchup, "You are scoring", tab moves on when both submit:** Tasks 2, 3, 10.
 - **§7.4 no auto-submit, explicit submit, lock, scorer edit never un-submits, official when the pair agrees, Foursome all four:** Task 4 (with DB tests for each).
 - **§9.1/9.2 handicap and archive require `submitted`/`final`; stats and odds unchanged:** Task 5 (stats/odds code untouched).
-- **§7.5 closeout card waits on submitters, Tiger override:** Task 11.
+- **§7.5 closeout card waits on submitters, Admin override:** Task 11.
 - **§13 Definition of done:** Task 13 verification.
-- **Deferred to later phases (by design):** Tiger Edit Scores, wager reversal, public leaderboard/Sheet backup, the shared "3&2" wording (Phases 2–3).
+- **Deferred to later phases (by design):** Admin Edit Scores, wager reversal, public leaderboard/Sheet backup, the shared "3&2" wording (Phases 2–3).
 - **Type consistency:** `RoundCardState`/`LiveScorecard.state` are the same three strings; `ScoringStage` labels match `BUTTON_LABELS`; `submit_live_round` returns `{submitted, official, waitingOn}` and the route spreads it; `ScorecardHoleRow.opponentScore` is optional so handicap rows are unchanged.
 
 ## Execution

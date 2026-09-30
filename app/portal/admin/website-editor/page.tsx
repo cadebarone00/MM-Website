@@ -4,7 +4,7 @@ import { getWebsiteSettings } from "@/lib/website/settingsServer";
 import { getSeasonCatalog } from "@/lib/data/seasonCatalog";
 import { getAllPlayerRows } from "@/lib/portal/allPlayers";
 import { WEBSITE_SECTIONS } from "@/lib/website/settings";
-import { WebsiteEditor } from "@/components/portal/tiger/WebsiteEditor";
+import { WebsiteEditor } from "@/components/portal/admin/WebsiteEditor";
 
 export default async function WebsiteEditorPage() {
   if (!await requireHost()) redirect("/login");

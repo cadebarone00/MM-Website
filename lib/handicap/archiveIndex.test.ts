@@ -73,7 +73,7 @@ test("archivedDifferential accepts a uniform-tee round where holeTeeSetIds all m
   assert.notEqual(archivedDifferential(validRound({ teeSetup })), null);
 });
 
-test("combinedHandicapIndexes computes maroonMastersIndex from eligible archived rounds only", () => {
+test("combinedHandicapIndexes computes maroonTournamentIndex from eligible archived rounds only", () => {
   const archived = [
     validRound({ id: "r1", totalScore: 90, datePlayed: "2025-06-14" }),
     validRound({ id: "r2", totalScore: 92, datePlayed: "2025-06-13" }),
@@ -84,7 +84,7 @@ test("combinedHandicapIndexes computes maroonMastersIndex from eligible archived
   // r1-r3 eligible (3 rounds -> lowest 1, -2.0 adjustment); r4 excluded.
   const diffs = [90, 92, 94].map((score) => calculateDifferential(score, 72.4, 130));
   const expected = Math.round((Math.min(...diffs) - 2.0) * 10) / 10;
-  assert.equal(result.maroonMastersIndex, expected);
+  assert.equal(result.maroonTournamentIndex, expected);
 });
 
 test("combinedHandicapIndexes blends submitted and archived rounds into the overall index", () => {
@@ -97,12 +97,12 @@ test("combinedHandicapIndexes blends submitted and archived rounds into the over
     validRound({ id: "r2", totalScore: 95, datePlayed: "2025-06-13" }),
   ];
   const result = combinedHandicapIndexes(submitted, archived);
-  // Overall pools all 4 rounds; Maroon Masters pools only the 2 archived ones (below the 3-round minimum -> null).
+  // Overall pools all 4 rounds; Maroon Tournament pools only the 2 archived ones (below the 3-round minimum -> null).
   assert.notEqual(result.index, null);
-  assert.equal(result.maroonMastersIndex, null);
+  assert.equal(result.maroonTournamentIndex, null);
 });
 
 test("combinedHandicapIndexes returns null indexes when there are no eligible rounds at all", () => {
   const result = combinedHandicapIndexes([], []);
-  assert.deepEqual(result, { index: null, maroonMastersIndex: null, lowIndex: null });
+  assert.deepEqual(result, { index: null, maroonTournamentIndex: null, lowIndex: null });
 });

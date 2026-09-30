@@ -37,7 +37,7 @@ Full SQL is attached in the source companion. These are the relevant effective k
 | `live_submission_receipts` | `(player_slug, request_id)`; request UUID | Idempotency record: payload and result JSON; no separate timestamp column |
 | `live_match_box_submissions` | `(match_box_id, player_slug)` | Marker once a player's 18 holes are confirmed; may be deleted again after a dispute |
 | `live_publication_jobs` | `match_box_id` UUID | Coalesced pending publication with bigint revision, completed flag and updated_at |
-| `live_match_official_state` | `match_box_id` UUID | Published derived match state plus Tiger closeout fields |
+| `live_match_official_state` | `match_box_id` UUID | Published derived match state plus Admin closeout fields |
 | `live_score_audit_events` | `id` UUID | Event kind, actor, player, match, round/hole, payload and created_at |
 | `career_archive_rounds` | `(season_year, round, player_slug)` | Player-round shell, match relation, course/format/tee context |
 | `career_archive_live_holes` | `(season_year, round, player_slug, hole)` | Confirmed individual hole observations |
@@ -79,11 +79,11 @@ Example: a lead of 3 after hole 16 is `3&2`. A lead of 2 after 16 is dormie, **n
 
 Keep all three status namespaces distinct:
 
-- Box state: `Scheduled`, `Armed`, `Live`, `Final`. Effective state also considers started, tee time and 18 contiguous holes. Scoring authorization additionally respects Tiger's persisted `Live` override before tee time.
-- Published official state: `upcoming`, `live`, `complete`, `closed_out`. Mathematical completion is not the same as Tiger closeout.
+- Box state: `Scheduled`, `Armed`, `Live`, `Final`. Effective state also considers started, tee time and 18 contiguous holes. Scoring authorization additionally respects Admin's persisted `Live` override before tee time.
+- Published official state: `upcoming`, `live`, `complete`, `closed_out`. Mathematical completion is not the same as Admin closeout.
 - Hole perspective: `empty`, `submitted`, `confirmed`, `disputed`, derived from submissions. These are not a status column on the submission table.
 
-Tiger closeout is `POST /api/portal/tiger/matchboxes/closeout` → `close_live_match_atomic` in `supabase/scoring_reliability.sql`. It locks the match, recalculates from confirmed holes, refuses a non-final result, writes `closed_out_at`/`closed_out_by` and official result, sets box state `Final`, marks archive rounds final, appends a closeout audit event, and settles the linked coin market atomically. Retrying does not settle it twice. The sheet must mirror closeout, not invent it because its formula says the match is over.
+Admin closeout is `POST /api/portal/admin/matchboxes/closeout` → `close_live_match_atomic` in `supabase/scoring_reliability.sql`. It locks the match, recalculates from confirmed holes, refuses a non-final result, writes `closed_out_at`/`closed_out_by` and official result, sets box state `Final`, marks archive rounds final, appends a closeout audit event, and settles the linked coin market atomically. Retrying does not settle it twice. The sheet must mirror closeout, not invent it because its formula says the match is over.
 
 **Overall points are a configuration gap to expose.** `lib/data/live.ts` currently displays 33 available / 17 to win; this is hardcoded, not calculated from the flexible schedule. Each native match is still worth one point. Show the planned match count, configured displayed threshold, and a mismatch warning if inconsistent. A proposed majority threshold is `plannedMatches / 2 + 0.5`, but do not silently replace the app's displayed value or impose a tournament rule. No generalized overall tie/playoff/defending-team-retention rule was found in the native result engine. Require an explicit organizer rule rather than assume one. Individual leaderboard order is to-par ascending, holes played descending, gross ascending, then player text; that display ordering is not a championship playoff rule.
 
@@ -126,9 +126,9 @@ History is partial but useful: current submissions/scores overwrite; successful 
 
 ## 6. Lineups and locking
 
-Tiger/host users set season roster and matchups. `live_match_boxes.maroon_players` and `white_players` are ordered text arrays. JS index 0 corresponds to slot 1; SQL array index 1 corresponds to slot 1. Preserve array order: it determines who scores whom in Fourball. Singles has one element per side. Foursome has two, with shared-side scoring.
+Admin/host users set season roster and matchups. `live_match_boxes.maroon_players` and `white_players` are ordered text arrays. JS index 0 corresponds to slot 1; SQL array index 1 corresponds to slot 1. Preserve array order: it determines who scores whom in Fourball. Singles has one element per side. Foursome has two, with shared-side scoring.
 
-Tiger locks course/date/format/tee setup, fills all matchups, then locks matchups and starts the round. Starting arms the boxes; tee time or Tiger's Start Match override opens scoring. The save route blocks ordinary matchup edits once the round is started; pre-start locked matchups can still be saved and republished by the current route. Thus `matchups_locked` is not an immutable version number. Mirror lineup updates and snapshots with timestamps, and flag changes affecting already received events.
+Admin locks course/date/format/tee setup, fills all matchups, then locks matchups and starts the round. Starting arms the boxes; tee time or Admin's Start Match override opens scoring. The save route blocks ordinary matchup edits once the round is started; pre-start locked matchups can still be saved and republished by the current route. Thus `matchups_locked` is not an immutable version number. Mirror lineup updates and snapshots with timestamps, and flag changes affecting already received events.
 
 ## 7. Courses and roster
 

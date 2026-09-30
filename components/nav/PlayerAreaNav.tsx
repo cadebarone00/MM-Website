@@ -11,9 +11,9 @@ const SEGMENTS = [
   { href: "/portal/scoring", label: "Scoring" },
 ] as const;
 
-const TIGER_SEGMENTS = [
+const ADMIN_SEGMENTS = [
   { href: "/website", label: "Website" },
-  { href: "/portal/admin", label: "Tiger Center" },
+  { href: "/portal/admin", label: "Admin Center" },
 ] as const;
 
 type SegmentHref = (typeof SEGMENTS)[number]["href"];
@@ -24,7 +24,7 @@ function activeSegment(pathname: string): SegmentHref {
   return "/website";
 }
 
-function tigerActiveSegment(pathname: string): (typeof TIGER_SEGMENTS)[number]["href"] {
+function adminActiveSegment(pathname: string): (typeof ADMIN_SEGMENTS)[number]["href"] {
   return pathname.startsWith("/portal/admin") ? "/portal/admin" : "/website";
 }
 
@@ -49,7 +49,7 @@ function useHeaderOffset(): number {
  * access to — Website, Portal, Scoring — so they never have to go back to
  * the post-login fork screen (`/account/choose`) to move between them.
  * Rendered in the root layout for every page; renders nothing for fans,
- * Tiger, or signed-out visitors.
+ * Admin, or signed-out visitors.
  */
 export function PlayerAreaNav() {
   const session = useAccountSession();
@@ -58,9 +58,9 @@ export function PlayerAreaNav() {
 
   if (session?.kind !== "player" && session?.kind !== "host") return null;
 
-  const isTiger = session.kind === "host";
-  const segments = isTiger ? TIGER_SEGMENTS : SEGMENTS;
-  const active = isTiger ? tigerActiveSegment(pathname) : activeSegment(pathname);
+  const isAdmin = session.kind === "host";
+  const segments = isAdmin ? ADMIN_SEGMENTS : SEGMENTS;
+  const active = isAdmin ? adminActiveSegment(pathname) : activeSegment(pathname);
 
   return (
     <nav data-player-area-nav className="sticky z-[210] flex h-12 items-stretch bg-maroon-900" style={{ top: headerOffset }}>
@@ -72,7 +72,7 @@ export function PlayerAreaNav() {
             href={segment.href}
             className={[
               "flex flex-1 items-center justify-center border-b-2 font-condensed text-xs font-bold uppercase tracking-wide transition-colors",
-              isTiger
+              isAdmin
                 ? on ? "border-gold-400 text-white" : "border-transparent text-white/75 hover:text-white"
                 : on ? "border-transparent bg-cream-50 text-maroon-700" : "border-transparent text-white",
             ].join(" ")}

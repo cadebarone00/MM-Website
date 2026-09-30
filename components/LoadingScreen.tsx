@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
  * "site is loading" splash (fans / signed-out visitors), the post-login
  * fork screen (`/account/choose`), and the Scoring status screen
  * (`/portal/scoring`). `heading` is the big title line (was hardcoded
- * "The Maroon Masters" — now each caller supplies its own so this shell can
+ * "The Maroon Tournament" — now each caller supplies its own so this shell can
  * be reused for different titles). `topSlot` is a separate, optional small
  * line pinned near the top of the screen (e.g. a "Welcome, {name}"
  * greeting), independent of the centered/raised heading block below it.

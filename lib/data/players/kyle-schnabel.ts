@@ -7,8 +7,8 @@ export const kyleSchnabel: PlayerProfile = {
   avatarSrc: null,
   instagram: "https://www.instagram.com/kyle_schnabel/",
   bio:
-    "Kyle \"Lil Jit\" Schnabel is a Texas A&M Class of 2027 student and the young dawg of the Maroon Masters group. A local product from College Station, Texas, the 20-year-old 5'7\" competitor has been competing in Aggie club golf since 2022. Kyle holds an impressive +2.6 handicap and currently ranks 2nd in the field. He will make his Maroon Masters debut this year at Mission Hills Country Club, bringing youthful energy and serious talent to the match play event. As the youngest competitor in the group, \"Lil Jit\" is known for his competitive fire and bright future in the game. He's a player many will be keeping an eye on as he looks to make an immediate statement in his first Maroon Masters appearance.",
-  history: ["2026 Maroon Masters debut at Mission Hills Country Club"],
+    "Kyle \"Lil Jit\" Schnabel is a Texas A&M Class of 2027 student and the young dawg of the Maroon Tournament group. A local product from College Station, Texas, the 20-year-old 5'7\" competitor has been competing in Aggie club golf since 2022. Kyle holds an impressive +2.6 handicap and currently ranks 2nd in the field. He will make his Maroon Tournament debut this year at Mission Hills Country Club, bringing youthful energy and serious talent to the match play event. As the youngest competitor in the group, \"Lil Jit\" is known for his competitive fire and bright future in the game. He's a player many will be keeping an eye on as he looks to make an immediate statement in his first Maroon Tournament appearance.",
+  history: ["2026 Maroon Tournament debut at Mission Hills Country Club"],
   nickname: "Lil Jit",
   classYear: "2027",
   major: "-",

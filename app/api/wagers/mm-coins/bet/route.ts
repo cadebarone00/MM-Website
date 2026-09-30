@@ -20,7 +20,7 @@ const CLOSED = "That market isn't open for betting right now.";
 type Supabase = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
 /** Only markets with an automatic settlement path are accepted: the live
- * match winner (settled by Tiger's Close Out Match), and the Team Winner, Low
+ * match winner (settled by Admin's Close Out Match), and the Team Winner, Low
  * Individual, Hole in One, Total Birdies, Player Birdies and Player Doubles futures (settled when the last match closes
  * out — see supabase/*_future.sql).
  * Add a market type here only once its settlement is wired up. Odds always
@@ -33,7 +33,7 @@ async function openMarket(supabase: Supabase, marketKey: string): Promise<{ mark
       supabase.from("live_match_official_state").select("status").eq("match_box_id", matchBoxId).maybeSingle(),
       supabase.from("live_match_odds_snapshots").select("maroon_win_probability, tie_probability, white_win_probability, maroon_american_odds, tie_american_odds, white_american_odds").eq("match_box_id", matchBoxId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     ]);
-    // A match that is mathematically over is no longer a market. Tiger's
+    // A match that is mathematically over is no longer a market. Admin's
     // later Close Out action only audits the score and releases settlement;
     // it must never leave a window for a wager after the result is known.
     const closed = state?.status === "complete" || state?.status === "closed_out";

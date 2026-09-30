@@ -49,7 +49,7 @@ export function useLiveBroadcastAudio(state: BroadcastState, tracks: PlaylistTra
     // Deliberately no `tournamentLive` check here — whether real fans on
     // /watch-live ever hear this is decided by the CALLER (it only mounts
     // this hook once tournamentLive is true; see WatchLiveExperience.tsx),
-    // not by this hook itself. Tiger Center mounts this same hook
+    // not by this hook itself. Admin Center mounts this same hook
     // regardless of live status, so a host can test songs during rehearsal
     // without that reaching real viewers.
     if (!state.audioTrackId || !state.audioStartedAt) {

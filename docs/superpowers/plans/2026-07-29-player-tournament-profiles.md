@@ -1132,7 +1132,7 @@ git commit -m "feat: show the leaderboard strip below the home page hero during 
 ```ts
 /** The public marketing site — source of truth for player photos, linked to (not duplicated) from the portal. */
 export const WEBSITE_ORIGIN =
-  process.env.NODE_ENV === "development" ? "http://localhost:3001" : "https://maroon-masters-website.vercel.app";
+  process.env.NODE_ENV === "development" ? "http://localhost:3001" : "https://maroon-tournament-website.vercel.app";
 ```
 
 - [ ] **Step 2: Create the avatar-slug mirror**

@@ -81,7 +81,7 @@ export function LowIndividualFutureCard({ mode }: { mode: WagersMode }) {
             {state.status === "settled"
               ? `Final: ${winnerNames.join(" & ") || "settled"}${winnerNames.length > 1 ? " tied (dead heat)" : " won"}. Wagers have been paid out.`
               : state.status === "complete"
-                ? "Every hole is in — betting is closed. Pays out once Tiger closes out the last match."
+                ? "Every hole is in — betting is closed. Pays out once Admin closes out the last match."
                 : state.status === "updating"
                   ? "Updating odds after the latest score…"
                   : mode === "real"

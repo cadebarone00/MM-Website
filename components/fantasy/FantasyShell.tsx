@@ -35,7 +35,7 @@ function useTopChromeOffset(): number {
 }
 
 /**
- * The permanent "Maroon Masters Fantasy" chrome for every state of the
+ * The permanent "Maroon Tournament Fantasy" chrome for every state of the
  * /fantasy page: a full-bleed maroon hero on mobile (flush against the site
  * header/PlayerAreaNav above and the site's bottom tab bar below, edge to
  * edge left/right), centered to a fixed-width column on desktop. My Roster
@@ -51,7 +51,7 @@ export function FantasyShell({ activeTab, onTabChange, children }: { activeTab: 
       style={{ top }}
     >
       <div className="mx-2 mt-1 flex min-h-24 shrink-0 items-center justify-center rounded-md border-2 border-gold-500 bg-maroon-700 px-4 text-center">
-        <h1 className="m-0 font-serif text-lg font-bold uppercase tracking-wide text-white">Maroon Masters Fantasy</h1>
+        <h1 className="m-0 font-serif text-lg font-bold uppercase tracking-wide text-white">Maroon Tournament Fantasy</h1>
       </div>
 
       <div role="tablist" aria-label="Fantasy" className="flex shrink-0 justify-center border-b border-ink-200 bg-white">

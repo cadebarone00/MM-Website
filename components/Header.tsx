@@ -1,6 +1,7 @@
 "use client";
 import { useSeasonCatalog } from "@/components/SeasonCatalogProvider";
 import Link from "next/link";
+import { Wordmark } from "@/components/Wordmark";
 import { useAreaBack } from "@/components/nav/AreaNavigation";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -8,7 +9,7 @@ import { usePathname } from "next/navigation";
 import { UserRound, ArrowLeft } from "lucide-react";
 import { RoundCountdown } from "@/components/ui/RoundCountdown";
 import { Avatar } from "@/components/ui/Avatar";
-import { TigerAvatar } from "@/components/ui/TigerAvatar";
+import { AdminAvatar } from "@/components/ui/AdminAvatar";
 import { AccountBadge } from "@/components/AccountBadge";
 import { SponsorRotator } from "@/components/nav/SponsorRotator";
 import { MobileTabBar } from "@/components/nav/MobileTabBar";
@@ -31,7 +32,7 @@ function isSet(value: string): boolean {
 }
 
 // The "home" page of each section of the app — Website, Player Portal,
-// Scoring, and the Tiger Center. The mobile header's top-left sponsor
+// Scoring, and the Admin Center. The mobile header's top-left sponsor
 // logo only shows on these; every other page (anything you had to click
 // into) shows a real back arrow there instead, matching the "the whole
 // site should be uniform about this" requirement. Exact match only — a
@@ -91,7 +92,7 @@ export function Header({ nextTournamentOverride }: { nextTournamentOverride: Nex
           </div>
 
           <Link href="/website" className="justify-self-center">
-            <Image src="/assets/wordmark-header.svg" alt="The Maroon Masters" width={520} height={92} className="h-5 w-auto" priority />
+            <Wordmark className="text-2xl text-maroon-700" />
           </Link>
 
           <button
@@ -101,7 +102,7 @@ export function Header({ nextTournamentOverride }: { nextTournamentOverride: Nex
             className="inline-flex h-6 w-6 shrink-0 items-center justify-center justify-self-end rounded-full"
           >
             {session?.kind === "host" ? (
-              <TigerAvatar size="xs" />
+              <AdminAvatar size="xs" />
             ) : session?.kind === "player" ? (
               <Avatar name={getPlayerDisplayName(session.playerSlug)} src={getPlayerAvatar(session.playerSlug)} size="xs" team={session.team} />
             ) : session?.kind === "fan" ? (
@@ -120,7 +121,7 @@ export function Header({ nextTournamentOverride }: { nextTournamentOverride: Nex
 
           <nav className="flex items-center gap-0 justify-self-center">
             <Link href="/website" className="mr-3 shrink-0 xl:mr-5">
-              <Image src="/assets/wordmark-light.svg" alt="The Maroon Masters" width={520} height={92} className="h-7 w-auto" priority />
+              <Wordmark className="text-3xl text-white" />
             </Link>
             {nav.map((n) => {
               const on = n.href === "/website" ? pathname === "/website" : pathname.startsWith(n.href);

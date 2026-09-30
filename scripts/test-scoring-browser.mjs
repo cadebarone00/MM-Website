@@ -108,7 +108,7 @@ try{
  assert.equal(await page.getByRole('button',{name:'Submit Round',exact:true}).isDisabled(),false);
  await page.getByRole('button',{name:'Submit Round',exact:true}).click();
  const roundDialog=page.getByRole('dialog');
- await roundDialog.getByText('Tiger can correct it later',{exact:false}).waitFor();
+ await roundDialog.getByText('Admin can correct it later',{exact:false}).waitFor();
  await page.keyboard.press('Escape');
  await roundDialog.waitFor({state:'detached'});
  assert.equal(submitRequests.length,0,'opening the confirmation submits nothing');
@@ -118,7 +118,7 @@ try{
  await page.getByRole('dialog').waitFor({state:'detached'});
  assert.deepEqual(submitRequests,[{round:1}]);
  console.log('PASS: live Scorecard shows white / red / green round status, never the other scorer\'s numbers, and Submit Round asks first then locks');
- // Tiger's Live Scoring Page Editor path: same screens with an in-memory room instead of a server.
+ // Admin's Live Scoring Page Editor path: same screens with an in-memory room instead of a server.
  await page.goto(origin+'/preview');
  await page.getByRole('button',{name:'Edit hole 1',exact:true}).waitFor();
  assert.equal(await page.locator('[data-round-state]').getAttribute('data-round-state'),'match');
@@ -134,9 +134,9 @@ try{
  await page.getByRole('button',{name:'Submitted',exact:true}).waitFor();
  await page.locator('#latto-submits').click();
  await page.getByRole('button',{name:'Back',exact:true}).click();
- await page.getByText('Your round is submitted. Tiger can change it.',{exact:false}).waitFor();
+ await page.getByText('Your round is submitted. Admin can change it.',{exact:false}).waitFor();
  assert.equal(await page.getByRole('button',{name:/Submitted|Submit Score/,exact:true}).isDisabled(),true,'a submitted card is locked');
- console.log('PASS: Tiger\'s preview shows Submit Round, locks the phone after it, and turns official when the scorer submits too, and its match-completeness card matches the real match-play rules');
+ console.log('PASS: Admin\'s preview shows Submit Round, locks the phone after it, and turns official when the scorer submits too, and its match-completeness card matches the real match-play rules');
  await page.goto(origin+'/personal');await page.getByRole('button',{name:'Next Hole',exact:true}).waitFor();await page.getByRole('group',{name:'Hole 1 score',exact:true}).getByRole('button',{name:'9',exact:true}).click();await page.reload();await page.getByRole('group',{name:'Hole 1 score',exact:true}).waitFor();assert.equal(await page.getByRole('group',{name:'Hole 1 score',exact:true}).getByRole('button',{name:'9',exact:true}).getAttribute('aria-pressed'),'true');
  // A score alone (it always defaults to par) doesn't count as "entered" -- putts/GIR/fairway are still required, and the Scorecard (reachable any time) shows a dash for those cells until they are.
  await page.getByRole('button',{name:'Scorecard',exact:true}).click();

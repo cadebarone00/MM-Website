@@ -27,7 +27,7 @@ test("an unconfigured season uses every default and says so", () => {
   assert.equal(setup.assumptions.length, 3);
 });
 
-test("what Tiger has set wins over the defaults", () => {
+test("what Admin has set wins over the defaults", () => {
   const holes = Array.from({ length: 18 }, (_, index) => ({ number: index + 1, par: 4, yards: 400 }));
   const setup = buildTournamentSetup({
     roundCount: 2,
@@ -42,7 +42,7 @@ test("what Tiger has set wins over the defaults", () => {
   assert.equal(setup.rounds[0].formatAssumed || setup.rounds[0].courseAssumed, false);
   assert.equal(setup.rounds[1].format, "Foursome"); // 2026 round 2
   assert.ok(setup.rounds[1].courseAssumed);
-  assert.deepEqual(setup.assumptions, ["Round 2 uses 2026's format and course until Tiger sets them."]);
+  assert.deepEqual(setup.assumptions, ["Round 2 uses 2026's format and course until Admin sets them."]);
 });
 
 test("a placeholder or incomplete course keeps last year's course", () => {
@@ -64,7 +64,7 @@ test("a placeholder or incomplete course keeps last year's course", () => {
   });
   assert.deepEqual(setup.rounds.map((round) => round.courseAssumed), [true, true, false]);
   assert.equal(setup.rounds[0].course.key, reference!.rounds.get(1)!.course.key);
-  assert.deepEqual(setup.assumptions, ["Rounds 1–2 use 2026's course until Tiger sets them."]);
+  assert.deepEqual(setup.assumptions, ["Rounds 1–2 use 2026's course until Admin sets them."]);
 });
 
 test("round lists collapse consecutive rounds", () => {

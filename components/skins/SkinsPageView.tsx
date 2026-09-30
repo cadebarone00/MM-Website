@@ -17,7 +17,7 @@ export function SkinsPageView({ tab, year, totalSkins, players, sessions, eligib
     <main className="mx-auto w-full max-w-3xl bg-white pb-8 sm:my-6 sm:rounded-md sm:border sm:border-ink-100">
       <div className="mx-2 mt-1 flex min-h-24 flex-col items-center justify-center rounded-md border-2 border-gold-500 bg-maroon-700 px-4 text-center text-white">
         <p className="font-condensed text-xs font-bold tracking-widest">{year}</p>
-        <h1 className="m-0 font-serif text-lg font-bold uppercase tracking-wide">Maroon Masters Skins</h1>
+        <h1 className="m-0 font-serif text-lg font-bold uppercase tracking-wide">Maroon Tournament Skins</h1>
       </div>
       <nav aria-label="Skins navigation" className="flex justify-center border-b border-ink-200">
         {(["skins", "payout"] as const).map((item) => <Link key={item} href={item === "skins" ? "/portal/skins" : "/portal/skins?tab=payout"} aria-current={tab === item ? "page" : undefined} className={`relative px-8 py-3 font-condensed text-sm font-bold uppercase tracking-wide ${tab === item ? "text-maroon-700" : "text-ink-400 hover:text-ink-700"}`}>

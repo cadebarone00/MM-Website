@@ -67,7 +67,7 @@ const pastYearsDescending = [...pastTournaments].sort((a, b) => b.year - a.year)
         <div className="flex flex-col">
           <div className="mb-5 border-b-2 border-ink-900 pb-4">
             <div className="font-condensed text-[11px] font-bold uppercase tracking-eyebrow text-gold-700">Hall of Fame</div>
-            <h2 className="m-0 font-sans text-3xl font-black text-ink-900">Maroon Masters Champions</h2>
+            <h2 className="m-0 font-sans text-3xl font-black text-ink-900">Maroon Tournament Champions</h2>
           </div>
           {champions.map((c) => (
             <ChampionCard key={c.year} year={c.year} playerId={c.playerId} photo={c.photo} />

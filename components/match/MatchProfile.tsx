@@ -47,7 +47,7 @@ export function MatchProfile({ match, tournamentSlug, year, courseName, scorecar
     <main className="mx-auto max-w-[1200px] px-4 pb-16 pt-5 sm:px-7 sm:pt-10">
       <Link href={`/leaderboard/${tournamentSlug}?day=${match.day}`} className="inline-flex items-center gap-1 font-condensed text-xs font-bold uppercase tracking-wide text-maroon-700"><ArrowLeft size={16} /> Back</Link>
       <header className="mt-4 text-center text-maroon-700">
-        <h1 className="m-0 font-serif text-3xl font-bold sm:text-5xl">The Maroon Masters {year}</h1>
+        <h1 className="m-0 font-serif text-3xl font-bold sm:text-5xl">The Maroon Tournament {year}</h1>
         <p className="mt-2 font-condensed text-sm font-bold uppercase tracking-wide sm:text-base">{details}</p>
       </header>
       <p className="sr-only">{match.maroonPlayers.map(getPlayerDisplayName).join(" & ")} versus {match.whitePlayers.map(getPlayerDisplayName).join(" & ")}</p>

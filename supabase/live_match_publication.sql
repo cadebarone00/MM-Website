@@ -36,7 +36,7 @@ alter table live_roster drop constraint if exists live_roster_pkey;
 alter table live_roster add primary key (season_year, player_slug);
 
 -- Team choices may be locked one player at a time. A separate table lets
--- Tiger lock an explicit "Unassigned" choice without creating an invalid
+-- Admin lock an explicit "Unassigned" choice without creating an invalid
 -- roster entry (live_roster itself contains active team assignments only).
 create table if not exists live_roster_assignment_locks (
   season_year integer not null check (season_year between 2027 and 2034),
@@ -94,7 +94,7 @@ alter table broadcast_state drop constraint if exists broadcast_state_pkey;
 alter table broadcast_state drop column if exists id;
 alter table broadcast_state add primary key (season_year);
 
--- Tiger's public Wager board records which of the code-defined models have
+-- Admin's public Wager board records which of the code-defined models have
 -- been submitted. The model definitions remain in code; this table stores
 -- publication state and the immutable rulebook shown to the public.
 create table if not exists wager_types (
@@ -166,7 +166,7 @@ where archive.season_year = box.season_year
   and box.format = 'Foursome';
 
 -- A round can be armed while individual boxes remain upcoming until tee time.
--- `state = 'Live'` plus this timestamp is Tiger's per-match Start Match
+-- `state = 'Live'` plus this timestamp is Admin's per-match Start Match
 -- override; tee-time activation does not need to mutate the database.
 alter table live_match_boxes add column if not exists started_at timestamptz;
 
@@ -322,7 +322,7 @@ create table if not exists live_match_official_state (
 create index if not exists live_match_official_state_season_round_idx
   on live_match_official_state (season_year, round);
 
--- Append-only audit trail for entries, disagreements, confirmations, Tiger
+-- Append-only audit trail for entries, disagreements, confirmations, Admin
 -- corrections, lifecycle transitions, closeout, and settlement activity.
 create table if not exists live_score_audit_events (
   id uuid primary key default gen_random_uuid(),
@@ -374,7 +374,7 @@ alter table live_match_odds_snapshots enable row level security;
 drop policy if exists live_match_official_state_select_all on live_match_official_state;
 create policy live_match_official_state_select_all on live_match_official_state for select using (true);
 -- Audit payloads can contain correction context and actor details. There is
--- intentionally no select policy here: Tiger/service-role tooling reads it,
+-- intentionally no select policy here: Admin/service-role tooling reads it,
 -- while public clients receive only official state and odds snapshots.
 drop policy if exists live_score_audit_events_select_all on live_score_audit_events;
 drop policy if exists live_match_odds_snapshots_select_all on live_match_odds_snapshots;

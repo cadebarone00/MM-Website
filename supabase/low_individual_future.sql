@@ -34,7 +34,7 @@ create policy low_individual_odds_snapshots_select_all on low_individual_odds_sn
 -- Settles low-individual:<year> once every round is locked, every match is
 -- closed out, and every rostered player has a confirmed score on all 18
 -- holes of every Singles/Fourball round. A missing hole holds settlement
--- until Tiger enters it. Dead heat: with k players tied for the low total,
+-- until Admin enters it. Dead heat: with k players tied for the low total,
 -- each winning bet is paid potential_payout / k (its stake split k ways at
 -- full odds), and the bet's potential_payout is rewritten to what was paid
 -- so the portfolio and test-season reversal stay exact. Safe to call
@@ -135,7 +135,7 @@ revoke all on function settle_low_individual_if_final(integer) from public, anon
 grant execute on function settle_low_individual_if_final(integer) to service_role;
 
 -- Replaces team_winner_future.sql's trigger function: every match closeout
--- (inside Tiger's Close Out Match transaction) now checks both futures.
+-- (inside Admin's Close Out Match transaction) now checks both futures.
 create or replace function live_official_state_settle_team_winner() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin

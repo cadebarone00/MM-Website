@@ -5,14 +5,14 @@ This is what makes Sign Up / Login actually work. You only have to do this once.
 ## What you're doing, in plain terms
 
 You're creating a free account on Supabase (a hosted database + login
-service), creating one project for the Maroon Masters site, pasting in one
+service), creating one project for the Maroon Tournament site, pasting in one
 SQL script that creates two tables, then copying three keys into `.env` so
 the website can talk to it.
 
 ## Steps
 
 1. Go to https://supabase.com and sign up (free tier is enough).
-2. Click **New Project**. Name it `maroon-masters`, pick any region close to
+2. Click **New Project**. Name it `maroon-tournament`, pick any region close to
    you, set a database password (save it somewhere — you likely won't need
    it again, Supabase manages the connection for you).
 3. Once the project finishes provisioning, open the **SQL Editor** (left
@@ -56,13 +56,13 @@ The three keys from step 4 also need to be added to your live site, not just you
 
 Without these, the whole site — not just sign-up/login — will error on every page, since a background check runs on every request.
 
-## Becoming Tiger (the host)
+## Becoming Admin (the host)
 
 There's no self-service way to become the host — it's a one-time manual step you do for your own account:
 
 1. Sign up normally on `/signup` with your own account, and verify your email.
 2. In the Supabase Dashboard → **Table Editor** → `profiles`, find your row (by your email) and edit its `is_host` column from `false` to `true`.
-3. Log out and back in. You'll now see the Website/Portal fork screen, and `/portal` will show a "Tiger" landing with a link to the player-username admin page.
+3. Log out and back in. You'll now see the Website/Portal fork screen, and `/portal` will show a "Admin" landing with a link to the player-username admin page.
 
 ## If you ever need to see who's signed up
 

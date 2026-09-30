@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getAllPlayerRows } from "@/lib/portal/allPlayers";
-import { GlobalPlayersAdmin, type GlobalPlayerRow } from "@/components/portal/tiger/GlobalPlayersAdmin";
+import { GlobalPlayersAdmin, type GlobalPlayerRow } from "@/components/portal/admin/GlobalPlayersAdmin";
 
 export default async function GlobalPlayersPage() {
   const supabase = await createSupabaseServerClient();
@@ -18,7 +18,7 @@ export default async function GlobalPlayersPage() {
 
   // Players claimed the old way (self-signed-up via a copied invite link,
   // before player_slots.email existed) have no email on file there —
-  // fall back to their real account email so Tiger sees something instead
+  // fall back to their real account email so Admin sees something instead
   // of "No email on file" for players who obviously do have one.
   const claimedByIds = allPlayers.map((p) => p.claimedBy).filter((id): id is string => Boolean(id));
   const { data: claimedProfiles } = claimedByIds.length

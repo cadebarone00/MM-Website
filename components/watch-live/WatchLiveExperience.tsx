@@ -54,12 +54,12 @@ export function WatchLiveExperience({
           <iframe
             className="aspect-video w-full"
             src={`https://www.youtube-nocookie.com/embed/${YOUTUBE_LIVE_VIDEO_ID}?rel=0`}
-            title="Maroon Masters live broadcast"
+            title="Maroon Tournament live broadcast"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen
           />
         ) : state.tournamentLive ? (
-          // Tiger has gone live (Broadcast Controls) — embed the real,
+          // Admin has gone live (Broadcast Controls) — embed the real,
           // shared broadcast (auto-rotating leaderboard/match-play scenes;
           // see app/broadcast/page.tsx) instead of the pre-show placeholder,
           // scaled to the real 16:9 proportions with fullscreen/volume

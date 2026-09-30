@@ -4,10 +4,10 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { pastTournaments, latestCompleted, playersOf } from "@/lib/data";
 import { getPlayerDisplayName, getPlayerSlug } from "@/lib/data/players";
 import { getPlayerNameMap } from "@/lib/portal/allPlayers";
-import { YearPicker } from "@/components/portal/tiger/YearPicker";
+import { YearPicker } from "@/components/portal/admin/YearPicker";
 import { getArchivedTournamentRounds } from "@/lib/data/archivedScorecards";
 import { getCourseLibraryForHandicap } from "@/lib/handicap/data";
-import { ArchiveTeeAssigner } from "@/components/portal/tiger/ArchiveTeeAssigner";
+import { ArchiveTeeAssigner } from "@/components/portal/admin/ArchiveTeeAssigner";
 
 export default async function ScorecardsYearPickerPage({ searchParams }: { searchParams: Promise<{ tournament?: string }> }) {
   const supabase = await createSupabaseServerClient();

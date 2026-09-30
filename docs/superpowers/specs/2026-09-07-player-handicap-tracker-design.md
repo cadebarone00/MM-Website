@@ -23,7 +23,7 @@ rounds players play on their own.
   totals — no handicap math anywhere, and nothing in this repo calls that backend
   yet (only Phase 1/auth-foundation of that merge has shipped). This feature does
   **not** use that path — see "Architecture" below.
-- This repo's Tiger Center already has a real course library with named tee sets:
+- This repo's Admin Center already has a real course library with named tee sets:
   `live_courses` (`id, name, holes, rating, slope, tee_sets`), typed as
   `LiveCourse`/`LiveTeeSet` in `lib/live/types.ts` (`LiveTeeSet`: `id, name, holes
   (18× {number, par, yards}), rating, slope`). This was built one day before this
@@ -31,7 +31,7 @@ rounds players play on their own.
   file**, `supabase/course_library_tee_setups.sql`, that adds the `tee_sets` jsonb
   column — it is **not yet folded into `supabase/schema.sql`**. This repo has hit
   this exact gap before (the Courses & Format phase's migration was only partially
-  run in production — see the `tiger-center-build-phasing` memory) so **the first
+  run in production — see the `admin-center-build-phasing` memory) so **the first
   implementation task must confirm `tee_sets` actually exists in production**
   before anything here is built on top of it, exactly like that prior incident.
 - `app/portal/page.tsx:44` currently hardcodes the portal hero's "Handicap" display
@@ -47,12 +47,12 @@ separate Python/Neon backend:
   the existing `requirePlayer()` guard (`lib/portal/requirePlayer.ts`) — the same
   pattern `app/api/portal/score/submit-hole/route.ts` already uses. Writes use the
   service-role client (`createSupabaseServiceRoleClient`), matching every other
-  Tiger Center write path.
+  Admin Center write path.
 - Course/tee-set selection reads the *existing* `live_courses` table — this
-  feature adds no new course data model, it only reads what the Tiger Center
+  feature adds no new course data model, it only reads what the Admin Center
   course library already maintains. A new read-only, player-gated endpoint
   (`GET /api/portal/handicap/courses`) is added rather than reusing
-  `/api/portal/tiger/courses` (that route is host-gated via `requireHost()`,
+  `/api/portal/admin/courses` (that route is host-gated via `requireHost()`,
   wrong namespace/audience for a player-facing read).
 - The WHS math lives in a pure, dependency-free TypeScript module,
   `lib/handicap/whs.ts` — no I/O, fully unit-testable, computed fresh on every
@@ -96,7 +96,7 @@ create table if not exists handicap_round_holes (
 RLS: both tables follow the `live_hole_scores` pattern — readable/writable only
 through server-side Route Handlers using the service-role key; a player can only
 ever act as their own `player_slug` (resolved server-side by `requirePlayer()`,
-never client-supplied), and Tiger (`requireHost()`) can read across all players
+never client-supplied), and Admin (`requireHost()`) can read across all players
 for future predictions/admin use. No public read access — this is private
 player data, unlike the public tournament leaderboard tables.
 
@@ -153,7 +153,7 @@ same reasoning `live_round_state.course_setup` already uses for tournament round
    - A list of past rounds beneath: course name, tee set, rating/slope, total
      score, differential, date — newest first, reading straight from
      `handicap_rounds`.
-3. **Round setup** (new screen/step) — pick a course from the Tiger Center
+3. **Round setup** (new screen/step) — pick a course from the Admin Center
    library (`GET /api/portal/handicap/courses`), then a tee set within it (which
    supplies rating/slope/18-hole par+yardage), then date played and tee time.
 4. **Hole-by-hole entry, holes 1–18** — one hole at a time or a scroll list (reuse
@@ -219,12 +219,12 @@ same reasoning `live_round_state.course_setup` already uses for tournament round
   (`handicap_rounds`/`handicap_round_holes`) that a future predictions effort
   would read from.
 - Adding new courses/tee sets from this flow — a player can only pick from what
-  Tiger has already added via `/portal/admin/course-library`. If their course
-  isn't there yet, they ask Tiger to add it first.
+  Admin has already added via `/portal/admin/course-library`. If their course
+  isn't there yet, they ask Admin to add it first.
 - HCP Calculator / HCP Lookup tools shown in the GHIN reference screenshots —
   only "Post Score" (submit + view own history) is being built.
 - Editing or deleting a previously submitted round.
-- Counting a player's past Maroon Masters tournament rounds toward this index
+- Counting a player's past Maroon Tournament tournament rounds toward this index
   (not just rounds logged through this feature) — considered and explicitly
   deferred to a future spec/plan.
 
@@ -232,7 +232,7 @@ same reasoning `live_round_state.course_setup` already uses for tournament round
 
 A player taps "Submit a score" on `/portal`, lands on "My Handicap" showing their
 current index (or "No index yet"), submits a full 18-hole round against a real
-Tiger Center course/tee set, reviews it, and submits. The round and its 18 holes
+Admin Center course/tee set, reviews it, and submits. The round and its 18 holes
 are archived in Supabase, their Handicap Index recomputes correctly per the WHS
 table above, and the portal hero's Handicap display reflects the same number.
 `npm test` / `tsc` / `lint` / `build` all pass.

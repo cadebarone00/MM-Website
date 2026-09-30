@@ -129,7 +129,7 @@ export function playerFutureMarket(tournamentSlug: string, player: string, futur
   };
 }
 
-/** Every currently-defined market for a tournament — used by the Tiger settlement admin page to list what can be resolved. */
+/** Every currently-defined market for a tournament — used by the Admin settlement admin page to list what can be resolved. */
 export function listAllMarkets(tournament: Tournament): Market[] {
   const field = [...tournament.roster.maroon, ...tournament.roster.white];
   const playerFutures = (field.length > 0 ? field : playerProfiles.map((player) => player.id)).flatMap((player) => PLAYER_FUTURES.map((future) => playerFutureMarket(tournament.slug, player, future)));

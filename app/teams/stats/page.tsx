@@ -14,7 +14,7 @@ export default function StatsHubPage() {
       <p className="mt-4 font-sans text-base leading-relaxed text-ink-500">
         This page will house career stats, player-vs-player comparisons, course-by-course breakdowns, and automated
         graphs once the full dataset is in place. Some player and course stats are still missing from the source
-        sheets — once those are filled in, this becomes the home for everything tracked across every Maroon Masters.
+        sheets — once those are filled in, this becomes the home for everything tracked across every Maroon Tournament.
       </p>
     </div>
   );

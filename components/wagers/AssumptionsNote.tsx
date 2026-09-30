@@ -1,4 +1,4 @@
-/** Lists the last-year defaults a future is priced on, until Tiger sets this year's. */
+/** Lists the last-year defaults a future is priced on, until Admin sets this year's. */
 export function AssumptionsNote({ assumptions }: { assumptions: string[] }) {
   if (!assumptions.length) return null;
   return (

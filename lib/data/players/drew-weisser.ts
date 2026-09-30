@@ -6,8 +6,8 @@ export const drewWeisser: PlayerProfile = {
   fullName: "Drew Weisser",
   avatarSrc: "/players/drew-weisser/avatar.png",
   bio:
-    "Drew Weisser is a Texas A&M student pursuing a Business Finance degree (Class of 2025) along with a Master of Real Estate (Class of 2026). Originally from New Jersey, he now calls College Station home and has been a mainstay in Aggie club golf from 2022-2026. A smart, reliable competitor, Drew is the lefty everyone counts on in the Maroon Masters field. He holds a +0.01 handicap and currently ranks 7th among the participants. He made his tournament debut in 2024 at Pinehurst and returns this year looking to improve on that performance at Mission Hills Country Club. Known for his sharp mind and steady presence both on and off the course, Drew brings consistency and dependability to the team. As a dedicated student-athlete, he balances academics with a strong competitive drive.",
-  history: ["2024 Maroon Masters debut at Pinehurst"],
+    "Drew Weisser is a Texas A&M student pursuing a Business Finance degree (Class of 2025) along with a Master of Real Estate (Class of 2026). Originally from New Jersey, he now calls College Station home and has been a mainstay in Aggie club golf from 2022-2026. A smart, reliable competitor, Drew is the lefty everyone counts on in the Maroon Tournament field. He holds a +0.01 handicap and currently ranks 7th among the participants. He made his tournament debut in 2024 at Pinehurst and returns this year looking to improve on that performance at Mission Hills Country Club. Known for his sharp mind and steady presence both on and off the course, Drew brings consistency and dependability to the team. As a dedicated student-athlete, he balances academics with a strong competitive drive.",
+  history: ["2024 Maroon Tournament debut at Pinehurst"],
   nickname: "-",
   classYear: "2025 & 2026",
   major: "Business Finance & Master of Real Estate",

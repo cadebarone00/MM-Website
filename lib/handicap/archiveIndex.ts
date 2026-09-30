@@ -31,7 +31,7 @@ function handicapInputs(submitted: HandicapRoundSummary[], archived: ArchivedHan
   return { all, eligible };
 }
 
-export function contributingRoundIds(submitted: HandicapRoundSummary[], archived: ArchivedHandicapRound[], section: "overall" | "maroon-masters") {
+export function contributingRoundIds(submitted: HandicapRoundSummary[], archived: ArchivedHandicapRound[], section: "overall" | "maroon-tournament") {
   const { all, eligible } = handicapInputs(submitted, archived);
   const inputs = section === "overall" ? all : eligible;
   return new Set(contributingDifferentialIndexes(inputs.map((r) => r.differential)).map((index) => inputs[index].id));
@@ -41,7 +41,7 @@ export function combinedHandicapIndexes(submitted: HandicapRoundSummary[], archi
   const { all, eligible } = handicapInputs(submitted, archived);
   return {
     index: calculateHandicapIndex(all.map((r) => r.differential)),
-    maroonMastersIndex: calculateHandicapIndex(eligible.map((r) => r.differential)),
+    maroonTournamentIndex: calculateHandicapIndex(eligible.map((r) => r.differential)),
     lowIndex: calculateLowIndex([...all].reverse().map((r) => r.differential)),
   };
 }

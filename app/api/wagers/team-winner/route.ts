@@ -6,7 +6,7 @@ export const maxDuration = 60;
 
 /** Public read model for the Maroon vs White future. When odds are missing,
  * old, stale, or still being priced, it answers with what it has and prices
- * the next chunk in the background — there's no Tiger button. */
+ * the next chunk in the background — there's no Admin button. */
 export async function GET() {
   try {
     const seasonYear = await getActiveSeasonYear();

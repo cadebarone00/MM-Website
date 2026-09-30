@@ -50,7 +50,7 @@ export function EventTakeover({ event, matchPlay }: { event: ActiveBroadcastEven
           MM
         </span>
         <div className="relative z-[1] text-center">
-          <p className="font-serif text-2xl italic text-[color:var(--color-cream-100)]">The Maroon Masters</p>
+          <p className="font-serif text-2xl italic text-[color:var(--color-cream-100)]">The Maroon Tournament</p>
           <p className="mt-6 font-condensed text-6xl font-bold uppercase tracking-wide text-[color:var(--color-cream-50)]">Round {payload.round} Complete</p>
         </div>
       </div>
@@ -71,7 +71,7 @@ export function EventTakeover({ event, matchPlay }: { event: ActiveBroadcastEven
           MM
         </span>
         <div className="relative z-[1] text-center">
-          <p className="font-serif text-2xl italic text-[color:var(--color-cream-100)]">The Maroon Masters</p>
+          <p className="font-serif text-2xl italic text-[color:var(--color-cream-100)]">The Maroon Tournament</p>
           <p className="mt-6 font-condensed text-6xl font-bold uppercase tracking-wide text-[color:var(--color-cream-50)]">
             {payload.leader === "tie" ? "Match Halved" : `${teamLabel(payload.leader)} Wins`}
           </p>

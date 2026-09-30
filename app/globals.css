@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ============================================================
-   THE MAROON MASTERS — DESIGN TOKENS
+   THE MAROON TOURNAMENT — DESIGN TOKENS
    Ported from the Claude Design project. Maroon `#500001` anchors
    everything; cream paper is the default surface; champagne gold
    signals prestige. Low corner radii, hairline rules, warm shadows.
@@ -283,7 +283,7 @@ body {
 }
 
 
-/* Official Maroon Masters title face, shared with the Fantasy heading.
+/* Official Maroon Tournament title face, shared with the Fantasy heading.
    Enforce the brand on page/section headings even where older utilities or
    CSS modules still specify a different family or weight. */
 h1, h2 {

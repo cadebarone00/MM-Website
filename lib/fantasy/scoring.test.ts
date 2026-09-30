@@ -14,7 +14,7 @@ function round(roundNumber: number, holes: HoleStat[]): RoundScorecard {
 function tournamentWith(scorecards: Tournament["scorecards"]): Tournament {
   return {
     slug: "2027",
-    editionLabel: "The Maroon Masters 2027",
+    editionLabel: "The Maroon Tournament 2027",
     year: 2027,
     venue: "Mission Hills CC",
     location: "Palm Springs, CA",

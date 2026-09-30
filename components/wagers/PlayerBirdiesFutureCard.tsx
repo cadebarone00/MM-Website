@@ -129,7 +129,7 @@ function PlayerStatFutureCard({ mode, stat }: { mode: WagersMode; stat: PlayerBi
         ) : (
           <div className="mt-4 rounded-sm bg-cream-50 p-3">
             <p className="m-0 font-sans text-sm font-semibold text-ink-500">
-              {state.status === "complete" ? "Every hole is in — betting is closed. Pays out once Tiger closes out the last match." : "Odds post once the tournament is set up."}
+              {state.status === "complete" ? "Every hole is in — betting is closed. Pays out once Admin closes out the last match." : "Odds post once the tournament is set up."}
             </p>
             {state.status === "not_ready" && state.blockers.length > 0 && (
               <ul className="m-0 mt-2 list-disc pl-5 font-sans text-2xs text-ink-400">
