@@ -8,6 +8,8 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
+  %% Public tournament site kit is fixture-only; local HTML preview in out/tournament-site-preview, no /t route or live data connection.
+  %% Contact page email links and prefilled drafts address themaroonadmin@gmail.com.
   %% Main Page (formerly Journal home): hero then maroon Your Tournament. Your Way. section; Create Tournament opens /tournaments/new, My Tournaments is a disabled coming-soon placeholder. Header Contact Us opens /contact reference-based email form and Sign In opens /login.
   DW[Local tournament creation wizard] --> DD[Draft configuration and setup dashboard]
   DD --> DJ[Download draft JSON]
@@ -158,7 +160,7 @@ The season timing overview now distinguishes Archived, Active, Upcoming, and Fut
 
 ## 3. Public website and navigation
 
-**Main Page tournament entry.** The former Journal home is now called the Main Page (`/`, with `/the-maroon` retained). Directly below its photo hero, a full-width maroon section reads ?Your Tournament. Your Way.? Create Tournament opens the existing `/tournaments/new` workspace. My Tournaments is a disabled, explicitly coming-soon placeholder, not an account list. The shared header adds Contact Us immediately right of The Maroon and Sign In immediately left of the tournament-link divider. Sign In opens `/login`; the tournament link reads ?Our tournament site? above The Maroon Tournament and still opens `/website`. Contact Us opens `/contact` with the Main Page header and a reference-based split layout: white form panel at left and contact details over a darkened Mission Hills photo at right. The form accepts first/last name, email, optional phone, and message. Open Email validates required fields and opens a prefilled mailto draft to cadebarone00@gmail.com; visitors must send it from their email app. The website does not send or save messages and never claims successful delivery. Contact Details lists Cade Barone, that email, and 210.665.2779, plus the existing Instagram link; no street address is shown. On narrow screens header groups wrap without horizontal overflow.
+**Main Page tournament entry.** The former Journal home is now called the Main Page (`/`, with `/the-maroon` retained). Directly below its photo hero, a full-width maroon section reads ?Your Tournament. Your Way.? Create Tournament opens the existing `/tournaments/new` workspace. My Tournaments is a disabled, explicitly coming-soon placeholder, not an account list. The shared header adds Contact Us immediately right of The Maroon and Sign In immediately left of the tournament-link divider. Sign In opens `/login`; the tournament link reads ?Our tournament site? above The Maroon Tournament and still opens `/website`. Contact Us opens `/contact` with the Main Page header and a reference-based split layout: white form panel at left and contact details over a darkened Mission Hills photo at right. The form accepts first/last name, email, optional phone, and message. Open Email validates required fields and opens a prefilled mailto draft to themaroonadmin@gmail.com; visitors must send it from their email app. The website does not send or save messages and never claims successful delivery. Contact Details lists Cade Barone, that email, and 210.665.2779, plus the existing Instagram link; no street address is shown. On narrow screens header groups wrap without horizontal overflow.
 
 The Website homepage (`/website`) desktop footer uses the supplied maroon-jacket cutout, cropped from the bottom across the white sponsor band and maroon information band. Content and its white separator occupy the area from 35% to 90% of the viewport. The white band reads ?Thank You to? above ?our sponsors? with both configured sponsor logos to its right; it replaces the newsletter signup prompt. The decorative top stripe is removed. Journal top navigation and the footer use `maroon-900`, matching the Admin Center and tournament secondary navigation. Journal home/category pages and other public routes retain only the maroon wordmark, divider, links, copyright and back-to-top section, with no sponsor band or cutout. The footer remains desktop-only and is absent from portal/broadcast routes.
 
@@ -506,6 +508,8 @@ The separate test-season controls operate on a designated database season. This 
 
 ## 22. Legacy integrations and unfinished pages
 
+**Public Tournament Site UI kit (local presentation only):** `components/platform/tournament-site/` provides branded Home, Leaderboard, Matches, Schedule, Players, Teams, Courses and Results concepts from typed fixtures. Run `npx tsx scripts/preview-tournament-site.tsx` to generate the explicitly fictional `out/tournament-site-preview/index.html`; no application route is added and `/t/[tournament]/[year]` is not wired. Texas Cup and Coastal Open are demonstration data only. Dynamic theme colors, arbitrary teams, individual events, public-handicap display, final labels, empty/locked/coming-soon states and optional image placeholders are supported. No dashboard, persistence, readiness, authorization, scoring or database integration is added. Existing overview boxes and workflow paths remain unchanged.
+
 Current native scoring uses the Supabase transaction path. The repository still contains the older `PlayerScoringPanel`, `/api/portal/score` routes, `LIVE_FEED_URL` integration, and Python API client. The old panel is not mounted by the current app routes found in this review, but some external-feed consumers and endpoints remain.
 
 The obsolete native stroke/stat autosave endpoints reject requests, preventing them from bypassing complete-hole submission. That does not mean all older external integrations have been removed.
@@ -563,6 +567,10 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-29 ? Public tournament presentation kit (local fixture preview; deployment not verified).** Previously there was no isolated reusable public-site kit for arbitrary tournaments. Now typed presentation components and two fictional events demonstrate eight public-page concepts with responsive branding and display states. The preview is a generated local HTML file, not a production route or tournament. Updated section 22 and Mermaid annotation; existing overview/path mappings are unchanged.
+
+**2026-09-29 - Contact email update (implemented locally; deployment not verified).** Contact Details, the Open Email draft destination, and the fallback email link previously used Cade?s personal email. They now use themaroonadmin@gmail.com. Updated section 3 and the Mermaid annotation; overview paths and mappings are unchanged.
 
 **2026-09-29 - Main Page tournament entry and header links (implemented locally; deployment not verified).** Renamed the Journal landing to Main Page and added a maroon Your Tournament. Your Way. section immediately below its hero, linking Create Tournament to the existing workspace and showing My Tournaments as a coming-soon placeholder. Added Contact Us beside the brand, Sign In before the right-side divider, and changed Tournament site to Our tournament site. The contact page follows the supplied split-panel reference using The Maroon branding and a golf photo; the provided Cade Barone email/phone details are displayed and Open Email prepares a draft in the visitor?s email app without sending or saving it. Updated section 3 and Mermaid annotation; overview paths and mappings are unchanged.
 

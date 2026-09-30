@@ -10,7 +10,7 @@ export function ContactForm() {
     const data = new FormData(event.currentTarget);
     const name = `${data.get("firstName")} ${data.get("lastName")}`.trim();
     const body = `Name: ${name}\nEmail: ${data.get("email")}\nPhone: ${data.get("phone") || "Not provided"}\n\n${data.get("message")}`;
-    window.location.href = `mailto:cadebarone00@gmail.com?subject=${encodeURIComponent(`The Maroon inquiry from ${name}`)}&body=${encodeURIComponent(body)}`;
+    window.location.href = `mailto:themaroonadmin@gmail.com?subject=${encodeURIComponent(`The Maroon inquiry from ${name}`)}&body=${encodeURIComponent(body)}`;
     setOpened(true);
   }
   return <form onSubmit={openEmail} className="mt-10 sm:mt-14" aria-describedby="contact-status">
@@ -23,6 +23,6 @@ export function ContactForm() {
     </div>
     <p id="contact-status" className="mt-6 font-sans text-xs leading-relaxed text-ink-500">Opens your email app with your message addressed to Cade. Review it there and send when ready.</p>
     <div className="mt-8 text-center"><button type="submit" className="min-h-14 bg-maroon-900 px-12 py-4 font-condensed text-xs font-bold uppercase tracking-widest text-white hover:bg-maroon-700">Open Email</button></div>
-    {opened && <p role="status" className="mt-4 font-sans text-xs leading-relaxed text-ink-500">Your message has not been sent by this website. If your email app didn’t open, email <a href="mailto:cadebarone00@gmail.com" className="underline">cadebarone00@gmail.com</a> directly.</p>}
+    {opened && <p role="status" className="mt-4 font-sans text-xs leading-relaxed text-ink-500">Your message has not been sent by this website. If your email app didn’t open, email <a href="mailto:themaroonadmin@gmail.com" className="underline">themaroonadmin@gmail.com</a> directly.</p>}
   </form>;
 }

@@ -1,0 +1,30 @@
+.summary { display: grid; gap: 10px; padding: 22px; margin: 22px 0 8px; border: 1px solid #dfd4c4; border-radius: 12px; background: #fffdf8; }
+.stageRow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.stage { display: inline-flex; align-items: center; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: .04em; background: #eee9e0; color: #4f463d; }
+.stage[data-stage="Ready to Publish"], .stage[data-stage="Ready to Play"] { background: #e2edde; color: #315132; }
+.stage[data-stage="Published"] { background: #dfe8f5; color: #1f3f6b; }
+.stage[data-stage="Blocked"] { background: #fbebc9; color: #785216; }
+.missing { margin: 0; padding-left: 20px; font-size: 14px; color: #6f655b; line-height: 1.7; }
+.missingTitle { font-size: 13px; font-weight: 700; color: #4f463d; margin: 6px 0 0; }
+.readyBadge { background: #e2edde !important; color: #315132 !important; }
+.editor { border: 2px solid #500001; border-radius: 12px; background: #fffdf8; padding: 26px; margin: 8px 0 26px; }
+.editor h3 { font-family: var(--font-spectral), Georgia, serif; color: #500001; font-size: 24px; margin: 0 0 18px; }
+.rows { display: grid; gap: 12px; }
+.row { display: grid; gap: 10px; align-items: end; padding: 14px; border: 1px solid #e3d9ca; border-radius: 9px; background: white; }
+.row4 { grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.4fr) auto; }
+.row3 { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.4fr) auto; }
+.row5 { display: grid; gap: 10px; align-items: end; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.removeButton { min-height: 46px; padding: 0 12px; border: 1px solid #d7a39a; border-radius: 7px; background: #fff7f5; color: #8a2020; font-size: 13px; }
+.toggles { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.saved { font-size: 13px; color: #315132; }
+.textarea { width: 100%; min-height: 90px; padding: 12px; border: 1px solid #cbbfac; border-radius: 7px; font: inherit; font-weight: 400; }
+.radio { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border: 1px solid #e3d9ca; border-radius: 9px; background: white; font-size: 14px; }
+.radio input { margin-top: 3px; accent-color: #500001; }
+.radio[data-disabled="true"] { opacity: .55; }
+@media (max-width: 800px) {
+  .row4, .row3, .row5 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .editor { padding: 18px; }
+}
+@media (max-width: 500px) {
+  .row4, .row3, .row5 { grid-template-columns: minmax(0, 1fr); }
+}

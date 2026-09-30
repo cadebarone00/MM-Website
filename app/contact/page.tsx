@@ -19,7 +19,7 @@ export default function ContactPage() {
         <h2 id="contact-details" className="font-title text-2xl font-normal uppercase tracking-wide sm:text-3xl">Contact details</h2>
         <div className="mt-12 space-y-5 font-condensed text-sm uppercase leading-relaxed">
           <p className="text-lg font-semibold">The Maroon</p>
-          <div className="space-y-1"><p>Cade Barone</p><a href="mailto:cadebarone00@gmail.com" className="block break-all hover:underline">cadebarone00@gmail.com</a><a href="tel:+12106652779" className="block hover:underline">210.665.2779</a></div>
+          <div className="space-y-1"><p>Cade Barone</p><a href="mailto:themaroonadmin@gmail.com" className="block break-all hover:underline">themaroonadmin@gmail.com</a><a href="tel:+12106652779" className="block hover:underline">210.665.2779</a></div>
           <p className="max-w-xs normal-case text-white/80">Questions about The Maroon, planning your tournament, or working with us? We look forward to hearing from you.</p>
         </div>
         <a href="https://www.instagram.com/themaroonmasters/" target="_blank" rel="noopener noreferrer" aria-label="The Maroon on Instagram" className="mt-10 inline-flex h-12 w-12 items-center justify-center rounded-full bg-white text-maroon-900 transition-colors hover:bg-cream-100"><span className="font-sans text-sm font-bold">IG</span></a>

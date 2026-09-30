@@ -182,7 +182,8 @@ test("round trip: what the organizer entered is what the saved dashboard loads",
     // Database ids and statuses are the database's; everything the organizer chose must match.
     const strip = (setup: typeof loaded) => ({
       ...setup, tournament: { ...setup.tournament, id: "" }, edition: { ...setup.edition, id: "" }, entitlements: {},
-      teams: setup.teams.map(({ id: _id, key: _key, ...team }) => team), rounds: setup.rounds.map(({ id: _id, ...round }) => round),
+      teams: setup.teams.map((team) => ({ name: team.name, color: team.color, captainPlayerId: team.captainPlayerId })),
+      rounds: setup.rounds.map((round) => ({ ...round, id: "" })),
     });
     assert.deepEqual(strip(loaded), strip(expected));
     assert.equal(loaded.entitlements.hosted_media, false, "a beta tournament never gets hosted media");

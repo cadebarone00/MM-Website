@@ -1,4 +1,4 @@
-﻿const { chromium } = require('playwright');
+const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 const { pathToFileURL } = require('node:url');
 const path = require('node:path');
@@ -23,7 +23,7 @@ const path = require('node:path');
         }
       }
     }
-    await page.getByLabel('Event', { exact: true }).selectOption('texas');
+    await page.getByRole('combobox', { name: 'Event', exact: true }).selectOption('texas');
     await page.locator('#texas-home:not([hidden])').waitFor();
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.screenshot({ path: 'out/tournament-site-preview/desktop.png', fullPage: true });
@@ -39,7 +39,7 @@ const path = require('node:path');
     await page.screenshot({ path: 'out/tournament-site-preview/matches-mobile.png', fullPage: true });
     await page.getByRole('link', { name: 'Component states', exact: true }).click();
     await page.locator('#states:not([hidden])').waitFor();
-    assert.equal(await page.getByText('Ivory Oaks', { exact: true }).evaluate(el => getComputedStyle(el).color), 'rgb(0, 0, 0)');
+    assert.equal(await page.locator('#states .ts-team-label').filter({ hasText: 'Ivory Oaks' }).evaluate(el => getComputedStyle(el).color), 'rgb(0, 0, 0)');
     await page.evaluate(() => { location.hash = 'texas-home'; });
     await page.locator('#texas-home:not([hidden])').waitFor();
     const skip = page.locator('#texas-home .ts-skip');
