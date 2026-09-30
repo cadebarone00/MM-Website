@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 const db = new PGlite();
 const migrations = ['schema.sql','career_live_archive.sql','course_library_location.sql','course_library_tee_setups.sql','archived_handicap_tees.sql','live_match_publication.sql','live_hole_submissions.sql','hole_shot_directions.sql','hole_shot_directions_penalty.sql','round_format_setups.sql','scoring_reliability.sql','live_round_submission.sql',
   // WITH_PLATFORM=1 re-runs every scenario on top of the multi-tenant migrations (npm run test:db:platform).
-  ...(process.env.WITH_PLATFORM ? ['player_slots_email.sql','player_slots_full_name.sql','tournament_timezone.sql','platform_foundation.sql','platform_editions.sql','platform_create_tournament.sql'] : [])];
+  ...(process.env.WITH_PLATFORM ? ['player_slots_email.sql','player_slots_full_name.sql','tournament_timezone.sql','platform_foundation.sql','platform_editions.sql','platform_create_tournament.sql','platform_dashboard.sql'] : [])];
 const scalar = async (sql, params=[]) => Object.values((await db.query(sql,params)).rows[0])[0];
 try {
   await db.exec(`create role anon; create role authenticated; create role service_role;

@@ -15,7 +15,8 @@
     "test:db": "node scripts/test-scoring-reliability.mjs",
     "test:db:platform": "node -e \"process.env.WITH_PLATFORM=1;import('./scripts/test-scoring-reliability.mjs')\"",
     "backup:production": "tsx scripts/backup-production.ts",
-    "test:browser": "node scripts/test-scoring-browser.mjs"
+    "test:browser": "node scripts/test-scoring-browser.mjs",
+    "test:browser:dashboard": "node scripts/test-tournament-dashboard-browser.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1124.0",

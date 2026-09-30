@@ -196,7 +196,7 @@ test("the rollback restores the pre-C2 database exactly, and C2 can be applied a
     await db.exec(sql("platform_editions_rollback.sql"));
     await db.exec(sql("platform_foundation_rollback.sql"));
     const after = await snapshot(db);
-    const platformTables = ["platform_plans", "organizations", "tournaments", "tournament_editions", "tournament_members", "tournament_players", "edition_teams", "edition_roster", "edition_settings", "platform_settings", "tournament_creator_access"];
+    const platformTables = ["platform_plans", "organizations", "tournaments", "tournament_editions", "tournament_members", "tournament_players", "edition_teams", "edition_roster", "edition_settings", "platform_settings", "tournament_creator_access", "edition_courses", "edition_rounds"];
     for (const table of platformTables) assert.equal(table in after, false, `${table} should be gone`);
     const withoutPlatform = Object.fromEntries(Object.entries(before).filter(([table]) => !platformTables.includes(table)));
     const stripRole = (rows: unknown) =>
