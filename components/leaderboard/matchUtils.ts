@@ -43,6 +43,25 @@ export function liveLabel(match: RealMatch): string {
   return status === "final" ? `${margin} UP` : `${margin} ▲`;
 }
 
+/** The winning team of a finished match, or null while it's still open or ended halved. */
+export function matchWinner(match: RealMatch): Team | null {
+  const leader = matchLeader(match);
+  return matchStatus(match) === "final" && leader !== "tie" ? leader : null;
+}
+
+/** Tan for every side except a team that won the match, which gets its own color. */
+export function teamSideColor(team: Team, won: boolean): string {
+  if (!won) return "bg-cream-100 text-maroon-700";
+  return team === "maroon" ? "bg-maroon-700 text-white" : "bg-white text-maroon-700";
+}
+
+/** Score shown beside a side's names: only on the side that's up (both sides when AS), never before tee-off. */
+export function sideScore(match: RealMatch, team: Team): string | null {
+  const leader = matchLeader(match);
+  if (matchStatus(match) === "scheduled") return null;
+  return leader === team || leader === "tie" ? liveLabel(match) : null;
+}
+
 /** Which round (day) the Team view should default to: the day currently in progress, or the last day played if the tournament is complete. */
 export function currentRoundDay(tournament: Tournament): number {
   const days = [...new Set(tournament.matches.map((m) => m.day))].sort((a, b) => a - b);

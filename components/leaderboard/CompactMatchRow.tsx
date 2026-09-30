@@ -1,6 +1,6 @@
 "use client";
 
-import { matchStatus, matchLeader, liveLabel } from "@/components/leaderboard/matchUtils";
+import { matchStatus, liveLabel, matchWinner, sideScore, teamSideColor } from "@/components/leaderboard/matchUtils";
 import Link from "next/link";
 import { getPlayerLastName } from "@/lib/data/players";
 import type { RealMatch, Team } from "@/lib/data/types";
@@ -11,19 +11,13 @@ function lastName(player: string) {
   return name.toUpperCase();
 }
 
-/** Tan for every side except a team that won the match, which gets its own color. */
-function sideColor(team: Team, won: boolean) {
-  if (!won) return "bg-cream-100 text-maroon-700";
-  return team === "maroon" ? "bg-maroon-700 text-white" : "bg-white text-maroon-700";
-}
-
 function TeamSide({ players, team, probability, score, won }: { players: string[]; team: Team; probability?: number; score: string | null; won: boolean }) {
   const isMaroon = team === "maroon";
   const onMaroon = isMaroon && won;
-  const scoreLabel = score && <span className={["relative z-10 shrink-0 whitespace-nowrap px-0.5 font-condensed text-sm font-extrabold uppercase", sideColor(team, won)].join(" ")}>{score}</span>;
+  const scoreLabel = score && <span className={["relative z-10 shrink-0 whitespace-nowrap px-0.5 font-condensed text-sm font-extrabold uppercase", teamSideColor(team, won)].join(" ")}>{score}</span>;
 
   return (
-    <div className={["relative flex min-w-0 items-center self-stretch", isMaroon ? "justify-end" : "justify-start", sideColor(team, won)].join(" ")}>
+    <div className={["relative flex min-w-0 items-center self-stretch", isMaroon ? "justify-end" : "justify-start", teamSideColor(team, won)].join(" ")}>
       {isMaroon && scoreLabel}
       <div className={["flex min-w-0 flex-col", isMaroon ? "items-end text-right" : "items-start text-left"].join(" ")}>
         {players.map((player) => (
@@ -77,11 +71,8 @@ export function CompactMatchRow({
   tournamentSlug: string;
 }) {
   const status = matchStatus(match);
-  const leader = matchLeader(match);
   const scoreLabel = liveLabel(match);
-  const started = status !== "scheduled";
-  const winner = status === "final" && leader !== "tie" ? leader : null;
-  const scoreFor = (team: Team) => (started && (leader === team || leader === "tie") ? scoreLabel : null);
+  const winner = matchWinner(match);
   const maroonSideLabel = match.maroonPlayers.map(lastName).join(" & ");
   const whiteSideLabel = match.whitePlayers.map(lastName).join(" & ");
 
@@ -93,9 +84,9 @@ export function CompactMatchRow({
         className="block py-0 hover:bg-cream-50 focus-visible:outline-2 focus-visible:outline-maroon-700"
       >
         <div className="grid grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-stretch">
-          <TeamSide players={match.maroonPlayers} team="maroon" probability={match.maroonWinProbability} score={scoreFor("maroon")} won={winner === "maroon"} />
+          <TeamSide players={match.maroonPlayers} team="maroon" probability={match.maroonWinProbability} score={sideScore(match, "maroon")} won={winner === "maroon"} />
           <MatchStat match={match} status={status} />
-          <TeamSide players={match.whitePlayers} team="white" probability={match.whiteWinProbability} score={scoreFor("white")} won={winner === "white"} />
+          <TeamSide players={match.whitePlayers} team="white" probability={match.whiteWinProbability} score={sideScore(match, "white")} won={winner === "white"} />
         </div>
       </Link>
     </div>
