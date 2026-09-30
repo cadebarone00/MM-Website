@@ -3,6 +3,54 @@
 Platform-level changes (multi-tenant productization). Detailed history of
 the founding tournament's features lives in `project_specs.md`.
 
+## 2026-09-29 — Platform Phase C3: code reads and writes through an edition scope
+
+**What changed**
+- New `lib/platform/editionScope.ts`: `EditionScope`, `maroonEdition`,
+  `editionFilter`, `editionColumns`, `editionRealtimeFilter`,
+  `editionYearParam`, and a guard (`EditionNotLiveError`) that refuses any
+  tournament but The Maroon until C4. `getActiveEdition()` was added to
+  `lib/live/activeSeason.ts`.
+- About 60 files in `lib/live`, `lib/broadcast`, `lib/wagers`, `lib/data`,
+  `lib/countdownServer.ts`, API routes and Admin pages now filter and write
+  live tables through those helpers. Library functions take
+  `edition: EditionScope` instead of `seasonYear: number` (compiler-checked).
+- Deliberately left as-is, with the reasons in spec §6.5: pointer tables,
+  multi-year readers, `onConflict` strings, wager market keys, and golfer
+  handicap history.
+
+**Why:** C4 must filter every live query by edition, not just year. Now
+that switch happens in one file, and a second tournament can't touch The
+Maroon's rows in the meantime.
+
+**Migrations:** none.
+
+**Affected features:** all live scoring, Admin Center, broadcast and
+wagers code paths, with **no behavior change**.
+
+**Testing**
+- `npm test`: 537/537. That includes 7 new C3 tests (the scope guard, plus
+  real Supabase-client proof that `.match(editionFilter())`/`editionColumns()`
+  send byte-identical reads, updates, deletes, inserts and upserts) and 5
+  tests another session added for its tournament-draft work.
+- `npm run test:db` 9/9 and `npm run test:db:platform` 9/9. `tsc` shows 0
+  errors and `eslint` is clean.
+- **Before/after comparison against the real database:** production builds
+  of the pre-C3 commit (`83cbd2b`) and the C3 commit (`6042114`) both built
+  (238 pages). Run side by side on isolated ports, they returned
+  byte-identical JSON on 13 read-only endpoints (countdown, season catalog,
+  rosters, player profiles, broadcast state/leaderboard/match play/
+  playlist) and identical visible content on 10 public pages. There were no
+  server errors. Only non-writing endpoints were called.
+- Route unit tests only cover "rejects when not signed in", so the
+  comparison above, not those tests, is the evidence for the converted
+  query paths.
+
+**Known limitations:** multi-year readers and pointer tables are still
+Maroon-wide (C4). Signed-in Admin pages weren't in the side-by-side
+comparison (it had no login); they're covered by the type checker and the
+request-equivalence tests.
+
 ## 2026-09-29 — Platform Phase C2: edition tag on live tables, backup tooling, owner decisions
 
 **Pre-flight gates (all passed, owner-requested):** the Tiger → Admin

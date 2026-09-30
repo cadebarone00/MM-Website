@@ -8,6 +8,9 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
+  DW[Local tournament creation wizard] --> DD[Draft configuration and setup dashboard]
+  DD --> DJ[Download draft JSON]
+  DD -. Future integration only .-> DP[Publish and Play locked]
   %% Journal header: The Maroon left and Tournament site right with edge padding; hero category buttons hold dropdowns on desktop/mobile.
   %% Desktop footer: /website alone shows the sponsor band and cutout; Journal and other public pages keep only the maroon information band.
   %% Home Highlights follows the Home display year: curated 2026 archive results with match links; unpopulated years are blank and do not inherit 2026 entries.
@@ -537,6 +540,18 @@ Vercel Preview and Production have separate environment-variable scopes. The ear
 7. Admin closeout atomically finalizes the match and settles its MM Coins market.
 8. If the individual round has all 18 eligible holes and verified tee/date data, it can contribute a handicap differential. A partial or shared-ball round cannot become a complete individual handicap round.
 
+## 25. Tournament draft wizard and setup dashboard
+
+The standalone `/tournaments/new` page implements CREATE → EXIST → COMPLETE as a local UI preview. Eight steps cover Basics, Competition Type, Player Count, Structure, Scoring Style, Round Formats, Optional Branding, and Review & Create. Creation requires the name, dates (up to 14 days), timezone, privacy preference, competition type, expected player count (2–64), number of rounds (1–20), scoring style or TBD, and distinct team names for team events (2–8 teams). Individual events never require teams. Short name and a provisional slug are derived from the tournament name; no URL is reserved.
+
+`lib/platform/tournamentDraft.ts` reuses types from `tournamentConfig.ts` and the existing format registry without changing the full readiness validator. Drafts explicitly allow null formats, scoring choices, detailed rules, round days and branding. Player count is planning metadata, not fabricated roster entries. The current registry only offers match formats and the current scoring model only supports two-team match play, so individual events retain TBD formats and scoring; events with more than two teams retain TBD scoring. Full configuration validation remains a later publish/play gate.
+
+After creation the same page shows Tournament Setup — X% Complete, with Basics, Players, Teams, Courses, Rounds, Schedule, Rules, Branding, Website, Media, and Publish cards. Statuses are Complete, Needs Attention, Optional, Not Started, and Locked. The percentage counts completed required setup sections; optional branding/media, individual-event teams, and locked Website/Publish are excluded. Rounds means planned count and formats; course and schedule completion are tracked separately. Named teams still need roster assignments; selecting match play does not complete detailed rules.
+
+Basics, teams, formats, scoring and branding can be reopened in the wizard. Review confirms edits; cancel restores the last created draft. The remaining setup tools are explicit future placeholders. Publish, website creation and live play are unavailable. Privacy is a future publishing preference, not an access-control operation in this preview. Destination, description, logos, team colors, player details, courses, tee times, pairings, detailed rules, media, sponsors and broadcast options are optional at creation.
+
+Drafts stay only in React component state and disappear on leaving or refreshing. View configuration and Download draft JSON expose the clean versioned draft object; there is no import, API mutation, database persistence, auth/role change, edition resolution, schema migration or live-scoring connection. The surrounding existing app layout is unchanged. Implemented locally; deployment has not been verified.
+
 ## Review findings
 
 This map identifies remaining distinctions worth reviewing: static versus corrected career summaries; independent year controls; model exclusion at exactly nine holes; incomplete event emission wiring; legacy market/feed consumers; future live-video/archive-edition transitions; and unfinished GPS, placeholders, pickups, and official full-handicap features.
@@ -545,6 +560,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-29 — Tournament draft wizard and dashboard (implemented, deployment not verified).** Previously the platform had a full configuration model but no customer-facing minimal draft creation flow. Now `/tournaments/new` provides eight conditional steps, an in-memory draft, a setup checklist with completion percentage, editable creation settings and JSON export. TBD choices do not require players, courses or detailed rules. Publish/play and remaining setup tools are explicitly unavailable. Affected: section 25, whole-app diagram and interactive overview/path mapping; production data and C3 migration paths are unchanged.
 
 **2026-09-29 - Rebrand to The Maroon, The Maroon Tournament, and Admin Center (implemented locally; deployment not verified).** Previously the site was branded The Maroon Masters and the host area was the Tiger Center. The overall brand is now The Maroon (site title, app/install name, Journal title, footer copyright, loading screens); tournament-specific text reads The Maroon Tournament (edition labels, broadcast graphics, handicap tabs, wagers, player histories, Apps Script menu). The image wordmark is replaced by a live-text "The Maroon" wordmark in the Spectral title font, and the emblem ring reads THE MAROON TOURNAMENT. Tiger/Tiger Center is now Admin/Admin Center everywhere, including code: host API routes moved from `/api/portal/tiger/*` to `/api/portal/admin/*` and components from `components/portal/tiger` to `components/portal/admin`. Unchanged on purpose: external names (Instagram/TikTok handles, `maroon-masters-python-api`, spreadsheet file names), the stored `YYYY-maroon-masters` fallback season slug, and the stored `tiger_correction` audit value. Database comments and the submitted-round error message in the SQL files were reworded but only take effect in production if those SQL files are re-run. Updated wording throughout this guide; overview paths and mappings are unchanged apart from the renamed API prefix.
 

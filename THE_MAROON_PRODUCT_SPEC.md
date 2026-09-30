@@ -11,8 +11,10 @@
   decisions in §17. Phases A and B are done. C1 (platform tables) and C2
   (edition tag on live tables) are built and tested against the practice
   database. **Neither has been run in production yet**; follow
-  `docs/production-migration-checklist.md`. Next: C3, then the Tournament
-  Creation Wizard (§5.1).
+  `docs/production-migration-checklist.md`. C3 (code reads and writes
+  through an edition scope, §6.5) is built and committed (`6042114`), and
+  was verified to change no behavior. Next: the Tournament Creation Wizard
+  (§5.1), then C4.
 - **Reference implementation:** The Maroon Tournament is the production
   reference. Losing any of its existing functionality counts as a regression.
 - **Naming:** per the 2026-09-29 rebrand, the brand is **The Maroon**, the
@@ -303,7 +305,7 @@ for The Maroon until callers move over. **Until C4, only The Maroon can
 use the live tables:** a second tournament's 2027 rounds would collide
 with The Maroon's on the year-based keys.
 
-### 6.3 Then (Phase C step 3): teams as data
+### 6.3 Then (Phase C step 5): teams as data
 - `live_roster.team`: drop the `('maroon','white')` check and validate
   against `edition_teams.key` (composite FK `(edition_id, team)`).
   Maroon's keys *are* `maroon`/`white`, so existing rows stay valid.
@@ -319,6 +321,50 @@ Stable UUIDs; slugs only for URLs and the legacy bridge; foreign keys and
 checks for every relationship; `created_at`/`updated_at` everywhere;
 append-only audit (already exists for scores); results frozen at
 finalization; no deletion of historical rows without a documented reason.
+
+### 6.5 Built (Phase C step 3): the edition scope in code
+`lib/platform/editionScope.ts`. No database change, and it works the same
+before or after C1/C2 are run.
+
+- **`EditionScope` = `{ tournamentSlug, seasonYear }`**: which tournament,
+  which year. The Maroon's is built in memory by `maroonEdition(year)` (no
+  database read, no added latency). `getActiveEdition()` returns its live
+  edition.
+- **Every live-table query and write goes through one helper:**
+  `.match(editionFilter(scope))`, `...editionColumns(scope)`,
+  `editionRealtimeFilter(scope)` (browser live updates), and
+  `editionYearParam(scope)` (`p_year` for existing SQL functions). Today
+  they produce exactly the old `season_year` values; **C4 switches them to
+  `edition_id` in this one file.**
+- **Guard:** until C4, these helpers **refuse any tournament but The
+  Maroon** (`EditionNotLiveError`), so a future tournament can never read or
+  write The Maroon's year-keyed rows by accident.
+- **Where the scope comes from (boundaries):** routes build it right after
+  validating the requested year. Broadcast code builds it from the display
+  year. Player and wager code uses `getActiveEdition()`. Library functions
+  take `edition: EditionScope` instead of `seasonYear: number`, so the type
+  checker proves every caller passes one.
+- **Deliberately unchanged (C4 list):**
+  - *Pointer tables* store a choice of year, not an edition's data:
+    `live_active_season`, `broadcast_display_year`,
+    `website_section_settings`, the test-season reset's switch back to the
+    real season. These become per-tournament settings in C4.
+  - *Multi-year readers* read all of The Maroon's years and need a
+    tournament filter in C4: `seasonCalendarServer` (calendar list),
+    `seasonOverviewServer` (overview years), `careerStatsDatabase`,
+    `roundFormatSetups` (read-all), `app/api/home-team-rosters`.
+  - `onConflict: "season_year,…"` strings follow the unique keys, which
+    change in C4.
+  - Wager market keys (`team-winner:2027`) stay year-based on purpose:
+    wagers are Maroon-only (§17.4).
+  - **Handicap/golfer history** (`lib/handicap/futureRounds.ts`) stays
+    global on purpose: it is the golfer's own record across tournaments (§13).
+- **Verified no behavior change:**
+  - Real-client tests show the new helpers send byte-identical requests.
+  - The pre-C3 (`83cbd2b`) and C3 (`6042114`) production builds, run side
+    by side against the real database, returned identical responses on 13
+    read-only endpoints and identical visible content on 10 public pages.
+  - All scoring regressions pass.
 
 ---
 
@@ -445,7 +491,7 @@ historical score edits, no fabricated data.
 |---|---|---|---|
 | C1 ✅ built, not yet in prod | Platform tables + seed (§6.1) | Low (additive) | `platform_foundation_rollback.sql` |
 | C2 ✅ built, not yet in prod | `edition_id` columns + backfill + defaulting trigger (§6.2) | Medium: touches live tables (tested: no row or trigger changes) | `platform_editions_rollback.sql` |
-| C3 | Code reads through `resolveEdition()`; Maroon is the default edition | Medium: many files | Git revert |
+| C3 ✅ built, committed `6042114` | Code reads and writes through the edition scope (§6.5); Maroon's scope is built in memory | Medium: ~60 files (verified identical behavior) | Git revert |
 | C4 | Keys switch to `edition_id`; year checks dropped | **High**: run only off-season, after a backup | Restore the backup |
 | C5 | Teams as data (§6.3) | High: touches match/roster code | Git revert; column-compatible |
 | C6 | Roles: `requireTournamentRole` replaces `requireHost` | Medium | Git revert |

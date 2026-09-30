@@ -36,7 +36,7 @@ export function MaroonMenu() {
 
   return (
     <ul ref={menuRef} className="flex w-full items-center justify-between gap-1 sm:justify-center sm:gap-[clamp(24px,5vw,80px)]">
-      <li><Link href="/" aria-current={pathname === "/" || pathname === "/the-maroon" ? "page" : undefined} className="flex min-h-[52px] items-center border-b border-transparent px-1 py-2 font-title text-[10px] font-semibold uppercase tracking-[0.05em] text-white hover:border-white aria-[current=page]:border-white sm:px-2 sm:text-sm sm:tracking-[0.14em]">Home</Link></li>
+      <li><Link href="/" aria-current={pathname === "/" || pathname === "/the-maroon" ? "page" : undefined} className="flex min-h-[52px] items-center border-b border-transparent px-0 py-2 font-title text-[9px] font-semibold uppercase tracking-normal text-white hover:border-white aria-[current=page]:border-white sm:px-2 sm:text-sm sm:tracking-[0.14em]">Home</Link></li>
       {menus.map((menu) => {
         const isOpen = open === menu.label;
         const href = `/the-maroon/${menu.label.toLowerCase()}`;
@@ -48,10 +48,10 @@ export function MaroonMenu() {
               aria-expanded={isOpen}
               aria-controls={`maroon-menu-${menu.label.toLowerCase()}`}
               onClick={() => setOpen(isOpen ? null : menu.label)}
-              className={`flex min-h-[52px] items-center gap-1 border-b px-1 py-2 font-title text-[10px] font-semibold uppercase tracking-[0.05em] text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white sm:px-2 sm:text-sm sm:tracking-[0.14em] ${active || isOpen ? "border-white" : "border-transparent hover:border-white"}`}
+              className={`flex min-h-[52px] items-center gap-1 border-b px-0 py-2 font-title text-[9px] font-semibold uppercase tracking-normal text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white sm:px-2 sm:text-sm sm:tracking-[0.14em] ${active || isOpen ? "border-white" : "border-transparent hover:border-white"}`}
             >
               {menu.label}
-              <ChevronDown size={12} aria-hidden className={`shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+              <ChevronDown size={12} aria-hidden className={`hidden shrink-0 transition-transform sm:block ${isOpen ? "rotate-180" : ""}`} />
             </button>
             {isOpen && (
               <div className="absolute inset-x-0 top-full z-30 pt-2 sm:left-1/2 sm:right-auto sm:-translate-x-1/2">
