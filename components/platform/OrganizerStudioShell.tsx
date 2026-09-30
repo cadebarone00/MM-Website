@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { LayoutList, Plus } from "lucide-react";
 import { AccountBadge } from "@/components/AccountBadge";
 import { Wordmark } from "@/components/Wordmark";
 import { publicBasePath } from "@/lib/platform/publicSite";
@@ -16,7 +16,7 @@ export interface StudioTournament {
   previewable: boolean;
 }
 
-type StudioPage = "create" | "setup" | "preview";
+type StudioPage = "home" | "create" | "setup" | "preview";
 
 /**
  * The neutral organizer studio for commercial tournament management
@@ -31,6 +31,7 @@ export function OrganizerStudioShell({ page, tournament, children }: { page: Stu
       <div className={styles.bar}>
         <p className={styles.brand}><Wordmark className={styles.wordmark} /><span className={styles.label}>Tournament Studio</span></p>
         <div className={styles.account}>
+          <Link className={styles.create} href="/tournaments" aria-label="My Tournaments" aria-current={page === "home" ? "page" : undefined}><LayoutList size={16} aria-hidden="true" /><span>My Tournaments</span></Link>
           {page !== "create" && <Link className={styles.create} href="/tournaments/new" aria-label="Create Tournament"><Plus size={16} aria-hidden="true" /><span>Create Tournament</span></Link>}
           <AccountBadge position="header" />
         </div>

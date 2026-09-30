@@ -65,6 +65,15 @@ try {
   const pageErrors = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
 
+  // My Tournaments before creating anything: the empty state, leading to Create.
+  await page.goto(`${app}/tournaments`);
+  await assertStudioChrome(page, "/tournaments");
+  assert.equal(await page.getByRole("heading", { level: 1 }).innerText(), "My Tournaments");
+  await page.getByRole("heading", { name: "No tournaments yet", exact: true }).waitFor();
+  assert.equal(await page.getByRole("banner").getByRole("link", { name: "My Tournaments", exact: true }).getAttribute("aria-current"), "page");
+  await page.getByRole("main").getByRole("link", { name: "Create Tournament", exact: true }).click();
+  await page.waitForURL("**/tournaments/new");
+
   // CREATE → EXIST: quick create with only a name.
   await page.goto(`${app}/tournaments/new`, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => { const f = document.querySelector("main form"); return f && Object.keys(f).some((k) => k.startsWith("__reactProps")); });
@@ -144,6 +153,22 @@ try {
   await studioNav.getByRole("link", { name: "Public Site", exact: true }).waitFor({ timeout: 15000 });
   assert.equal(await studioNav.getByRole("link", { name: "Public Site", exact: true }).getAttribute("href"), `/t/texas-cup/${year}`);
 
+  // My Tournaments now lists it (private, but its owner sees it) with its actions.
+  const dashboardPercent = await percent();
+  await page.getByRole("banner").getByRole("link", { name: "My Tournaments", exact: true }).click();
+  await page.waitForURL(`${app}/tournaments`);
+  const card = page.locator(`[data-edition="texas-cup/${year}"]`);
+  const cardText = await card.innerText();
+  for (const text of ["Published", `${dashboardPercent}% complete`, "Horseshoe Bay, TX", `October 15–17, ${year}`, "Last updated"]) assert.ok(cardText.includes(text), `card shows ${text}: ${cardText}`);
+  assert.ok((await page.locator('[data-tournament="texas-cup"]').innerText()).includes("Owner · Private · 1 edition"));
+  assert.equal(await card.getByRole("link", { name: /^Preview Website/ }).getAttribute("href"), `/tournaments/texas-cup/${year}/preview`);
+  assert.equal(await card.getByRole("link", { name: /^Public Site/ }).getAttribute("href"), `/t/texas-cup/${year}`);
+  assert.ok(!cardText.includes("@"), "no emails on My Tournaments");
+  if (process.env.SCREENSHOT_DIR) await page.screenshot({ path: `${process.env.SCREENSHOT_DIR}/my-tournaments.png`, fullPage: true });
+  await card.getByRole("link", { name: /^Continue Setup/ }).click();
+  await page.waitForURL(`**/tournaments/texas-cup/${year}`);
+  assert.equal(await stage(), "Published");
+
   // Setup → Preview Website → Setup, inside the studio.
   await studioNav.getByRole("link", { name: "Preview Website", exact: true }).click();
   await page.waitForURL(`**/tournaments/texas-cup/${year}/preview`);
@@ -166,10 +191,11 @@ try {
   await phone.addCookies([{ ...fake.sessionCookie(organizer), url: app }]);
   const phonePage = await phone.newPage();
   phonePage.on("pageerror", (error) => pageErrors.push(error.message));
-  for (const path of ["/tournaments/new", `/tournaments/texas-cup/${year}`, `/tournaments/texas-cup/${year}/preview`]) {
+  for (const path of ["/tournaments", "/tournaments/new", `/tournaments/texas-cup/${year}`, `/tournaments/texas-cup/${year}/preview`]) {
     await phonePage.goto(`${app}${path}`);
     await phonePage.waitForLoadState("networkidle");
     assert.ok(await overflow(phonePage) <= 1, `no horizontal scroll on phone at ${path} (${await overflow(phonePage)}px)`);
+    if (process.env.SCREENSHOT_DIR && path === "/tournaments") await phonePage.screenshot({ path: `${process.env.SCREENSHOT_DIR}/my-tournaments-phone.png`, fullPage: true });
   }
   await phonePage.goto(`${app}/tournaments/texas-cup/${year}`);
   const phoneNav = phonePage.getByRole("navigation", { name: "Tournament studio" });
@@ -207,6 +233,12 @@ try {
   assert.equal(await otherPage.getByRole("navigation", { name: "Tournament studio" }).count(), 0, "a stranger's 404 shows no tournament details");
   assert.equal((await otherPage.goto(`${app}/tournaments/texas-cup/${year}/preview`)).status(), 404);
   assert.equal((await fetch(`${app}/tournaments/texas-cup/${year}`)).status, 404, "signed out: 404");
+  // My Tournaments: a stranger sees none of it; signed out goes to login.
+  await otherPage.goto(`${app}/tournaments`);
+  await otherPage.getByRole("heading", { name: "No tournaments yet", exact: true }).waitFor();
+  assert.ok(!(await otherPage.locator("body").innerText()).includes("Texas Cup"), "no leak into another user's list");
+  const signedOut = await fetch(`${app}/tournaments`, { redirect: "manual" });
+  assert.ok([303, 307, 308].includes(signedOut.status) && new URL(signedOut.headers.get("location"), app).pathname === "/login", `signed out → login (${signedOut.status})`);
   const patch = await otherPage.request.patch(`${app}/api/platform/tournaments/texas-cup/${year}/sections/branding`, { data: { primary: "#000000", secondary: "#ffffff", accent: "#cccccc" } });
   assert.equal(patch.status(), 404);
   const read = await otherPage.request.get(`${app}/api/platform/tournaments/texas-cup/${year}`);
@@ -218,6 +250,7 @@ try {
   assert.deepEqual(saved, [{ slug: "texas-cup", season_year: year, published: true, rounds: 3, players: 4 }]);
   assert.deepEqual(await protectedSnapshot(), before, "live-scoring and Maroon rows must be unchanged");
 
+  console.log("Passed (My Tournaments): empty state → Create, lists the owner's private tournament with status/percent/destination/dates/last updated, Continue Setup / Preview Website / Public Site, My Tournaments nav, stranger sees none, signed out → login, phone width.");
   console.log("Passed (organizer studio): neutral studio shell on create, setup and preview (no Maroon header, footer, champions, countdown or nav), studio nav Setup/Preview/Public Site, bar updates after publish, public site and Admin Center and Maroon pages unchanged, phone: no sideways scroll, nav + name + save status in view, stranger/signed-out 404.");
   console.log("Passed: signed-in quick create, 6 sections saved independently, percent rose each save, reload kept everything, optional media didn't block, publish is separate, stranger 404 by page and API, no live/Maroon rows touched.");
 } catch (error) {

@@ -243,6 +243,32 @@ begin
 end;
 $$;
 
+-- My Tournaments (/tournaments): every edition of every tournament the
+-- profile OWNS or ORGANIZES, as the same setup the dashboard reads (so the one
+-- readiness engine can judge it) minus player emails, handicaps, player ids
+-- and plan entitlements. Membership only: players/viewers get nothing, and a
+-- platform admin sees just the tournaments they are a member of (admins still
+-- reach any dashboard by its URL). The Maroon Tournament (managed in the
+-- Admin Center) and test editions are left out. Never reads live_* tables.
+create or replace function public.list_managed_editions(p_profile uuid)
+returns jsonb language sql stable security definer set search_path = public as $fn$
+  select coalesce(jsonb_agg(jsonb_build_object(
+      'role', m.role,
+      'updatedAt', greatest(t.updated_at, e.updated_at, s.updated_at,
+        (select max(r.created_at) from edition_rounds r where r.edition_id = e.id),
+        (select max(c.created_at) from edition_courses c where c.edition_id = e.id),
+        (select max(r.created_at) from edition_roster r where r.edition_id = e.id)),
+      'setup', (select jsonb_set(x - 'entitlements', '{players}',
+          coalesce((select jsonb_agg(p - 'email' - 'handicap' - 'id') from jsonb_array_elements(x -> 'players') p), '[]'::jsonb))
+        from (select get_tournament_setup(p_profile, e.id) as x) q)
+    ) order by t.name, e.season_year desc), '[]'::jsonb)
+  from tournament_members m
+  join tournaments t on t.id = m.tournament_id
+  join tournament_editions e on e.tournament_id = t.id
+  left join edition_settings s on s.edition_id = e.id
+  where m.profile_id = p_profile and m.role in ('owner', 'organizer') and not t.is_legacy and not e.is_test;
+$fn$;
+
 revoke all on function public.can_manage_edition(uuid, uuid) from public, anon, authenticated;
 revoke all on function public.get_tournament_setup(uuid, uuid) from public, anon, authenticated;
 revoke all on function public.save_tournament_section(uuid, uuid, text, jsonb) from public, anon, authenticated;
@@ -251,5 +277,7 @@ grant execute on function public.can_manage_edition(uuid, uuid) to service_role;
 grant execute on function public.get_tournament_setup(uuid, uuid) to service_role;
 grant execute on function public.save_tournament_section(uuid, uuid, text, jsonb) to service_role;
 grant execute on function public.set_edition_published(uuid, uuid, boolean) to service_role;
+revoke all on function public.list_managed_editions(uuid) from public, anon, authenticated;
+grant execute on function public.list_managed_editions(uuid) to service_role;
 
 commit;

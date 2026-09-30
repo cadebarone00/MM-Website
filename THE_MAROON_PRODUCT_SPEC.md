@@ -564,7 +564,29 @@ dates become per-edition activation dates.
   check, 404 otherwise); the shell renders only after that.
 - **Phone:** compact bar, scrollable tab row, the save status pinned to the
   bottom of the screen, no sideways scroll.
-- **Not yet:** a "My Tournaments" list (no listing route exists yet).
+- **My Tournaments** (`/tournaments`, added the same day) is the studio's
+  home; the header links to it next to Create Tournament.
+
+### 9.4 Built: My Tournaments (2026-09-30; not yet in production)
+- **Route:** `/tournaments`, signed-in only (signed out → `/login`).
+- **Who sees what:** only tournaments where the user is **owner** or
+  **organizer** (`tournament_members`). Players, viewers and strangers see
+  none. **Platform admins** are treated like everyone else here: they see
+  only their own memberships (they can still open any dashboard by URL).
+  The Maroon Tournament (Admin Center) and test editions never appear.
+  Private tournaments do appear to their organizers.
+- **Data:** `list_managed_editions(profile)` in
+  `supabase/platform_dashboard.sql` returns each managed edition's setup
+  (same as the dashboard, minus player emails, handicaps, player ids and
+  entitlements), the role and a last-updated time.
+  `lib/platform/myTournaments.ts` runs the one readiness engine and keeps only
+  what the page shows (name, slug, visibility, role; per edition: year,
+  destination, dates, published, stage, percent, last updated). No live
+  tables are read.
+- **Page:** one card per tournament with its editions beneath (newest year
+  first), each with Continue Setup, Preview Website and (once published)
+  Public Site. Empty state: "No tournaments yet" + Create Tournament, with
+  the invite-only beta explained.
 
 ## 10. App architecture
 The Player Portal (`/portal`) and Admin Center (`/portal/admin`) become

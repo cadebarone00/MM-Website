@@ -3,6 +3,34 @@
 Platform-level changes (multi-tenant productization). Detailed history of
 the founding tournament's features lives in `project_specs.md`.
 
+## 2026-09-30 — My Tournaments (/tournaments)
+
+**What changed**
+- `supabase/platform_dashboard.sql`: new `list_managed_editions(profile)`
+  (service role only). Owner/organizer memberships only; no Maroon, no test
+  years, no emails/handicaps/player ids/entitlements, no live tables. It's
+  in the DASHBOARD migration, so rerun that file (safe to run again).
+- `lib/platform/myTournaments.ts` (summary + the readiness engine) and
+  `myTournamentsServer.ts` (session user only).
+- `app/tournaments/page.tsx` + `components/platform/MyTournamentsPage.tsx`
+  (+ CSS): cards per tournament, editions beneath, Continue Setup / Preview
+  Website / Public Site, empty state. Signed out → `/login`.
+- Studio header: "My Tournaments" link (icon-only on phones) beside Create
+  Tournament; the "Tournament Studio" label hides on very narrow screens.
+
+**Testing**
+- `lib/platform/myTournaments.test.ts` (4, practice DB): owner/organizer see
+  theirs (including private); player/viewer/stranger see none; no leak
+  between owners; admin = own memberships only; Maroon never listed;
+  anon/authenticated can't call it; same stage/percent as the dashboard;
+  editions grouped newest first; no live-scoring reads or writes. A
+  deliberate break (letting players in) fails 2 of them.
+- `test:browser:dashboard`: empty state → Create, the listed card and its
+  links, the nav link, stranger sees none, signed out → login, phone width.
+- `npm test` 609/609, `test:db`/`test:db:platform` pass, compliance OK,
+  type check 0 errors, lint: the same 7 older errors; build OK; both
+  browser suites pass.
+
 ## 2026-09-30 — Neutral organizer studio
 
 **What changed**

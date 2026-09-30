@@ -45,3 +45,5 @@ blocks the platform, P2 = fix during platform work, P3 = later.
 | 38 | Handicaps are never shown on public sites | Golf sites usually show them | A per-tournament (or per-player) "show handicaps publicly" consent setting, served only when on | P3 |
 | 39 | The public kit's header and hero have fixed copy ("THE CHAMPIONSHIP", "THE CUP", "Tradition in the making") | Wrong for events that aren't a "cup" | Make the tagline and seal text part of branding/settings | P3 |
 | 40 | Team logos and hero images: the kit supports https URLs, but there's no way to set them (no hosted media in commercial V1) | Sites use monograms and plain heroes | Allow organizer-entered https image URLs (external media policy) after rights review | P3 |
+| 41 | My Tournaments' "last updated" comes from row timestamps; removing players/courses/rounds (deletes) doesn't move it | The date can be slightly stale | Bump the edition's `updated_at` in `save_tournament_section` for every section | P3 |
+| 42 | Platform admins have no "all tournaments" overview (My Tournaments is membership-only by design) | Support needs a direct URL | A separate admin-only list in the Admin Center when needed | P3 |

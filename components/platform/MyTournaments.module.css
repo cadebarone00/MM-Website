@@ -1,0 +1,43 @@
+.page { max-width: 1180px; margin: 0 auto; padding: 40px 24px 90px; color: #302c28; }
+.intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 28px; }
+.intro h1 { font-family: var(--font-spectral), Georgia, serif; color: #500001; font-size: clamp(30px, 4vw, 42px); line-height: 1.2; margin: 0 0 8px; }
+.intro p { margin: 0; color: #6f655b; font-size: 16px; }
+.primary, .secondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 7px; font-size: 14px; font-weight: 600; white-space: nowrap; }
+.primary { background: #500001; color: #ffffff; border: 1px solid #500001; }
+.primary:hover { background: #6b1114; }
+.secondary { border: 1px solid #cbbfac; color: #500001; background: #ffffff; }
+.primary:focus-visible, .secondary:focus-visible { outline: 3px solid #ad8434; outline-offset: 3px; }
+.list, .editions { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; }
+.tournament { padding: 22px; border: 1px solid #dfd4c4; border-radius: 12px; background: #fffdf8; min-width: 0; }
+.tournamentTop { margin-bottom: 14px; }
+.tournamentTop h2 { font-family: var(--font-spectral), Georgia, serif; color: #500001; font-size: 24px; margin: 0 0 4px; overflow-wrap: anywhere; }
+.tournamentTop p { margin: 0; font-size: 13px; color: #776c5f; }
+.editions { gap: 12px; }
+.edition { padding: 16px; border: 1px solid #e8dfd3; border-radius: 9px; background: #ffffff; display: grid; gap: 10px; min-width: 0; }
+.editionTop { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.editionTop h3 { margin: 0; font-size: 18px; color: #302c28; }
+.published, .stage { padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; background: #eee9e0; color: #4f463d; white-space: nowrap; }
+.published[data-published="true"] { background: #e2edde; color: #315132; }
+.stage { background: #f4efe6; color: #6f655b; }
+.progress { display: flex; align-items: center; gap: 12px; font-size: 13px; color: #6f655b; }
+.progress progress { appearance: none; flex: 1; min-width: 0; height: 8px; border: 0; border-radius: 10px; overflow: hidden; background: #e5dccd; }
+.progress progress::-webkit-progress-bar { background: #e5dccd; }
+.progress progress::-webkit-progress-value { background: #500001; }
+.progress progress::-moz-progress-bar { background: #500001; }
+.progress span { white-space: nowrap; }
+.meta { margin: 0; font-size: 14px; color: #6f655b; line-height: 1.6; overflow-wrap: anywhere; }
+.meta span { font-size: 12px; color: #8a7f72; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.empty { padding: 40px 28px; border: 1px dashed #cbbfac; border-radius: 12px; background: #fffdf8; text-align: center; display: grid; justify-items: center; gap: 14px; }
+.empty h2 { font-family: var(--font-spectral), Georgia, serif; color: #500001; font-size: 26px; margin: 0; }
+.empty p { margin: 0; color: #6f655b; max-width: 520px; line-height: 1.6; }
+.empty .note { font-size: 13px; color: #776c5f; }
+.error { padding: 16px; border: 1px solid #d7a39a; border-radius: 7px; background: #fff1ed; color: #8a2020; }
+@media (max-width: 640px) {
+  .page { padding: 26px 16px 70px; }
+  .intro { align-items: stretch; }
+  .intro > .primary { width: 100%; }
+  .tournament { padding: 16px; }
+  .edition { padding: 14px; }
+  .actions > * { flex: 1 1 auto; }
+}
