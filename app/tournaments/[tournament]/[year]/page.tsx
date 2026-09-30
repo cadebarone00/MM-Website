@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Flag } from "lucide-react";
 import { readinessFor } from "@/lib/platform/dashboardApi";
 import { loadSetup, resolveManagedEdition } from "@/lib/platform/dashboardServer";
+import { OrganizerStudioShell } from "@/components/platform/OrganizerStudioShell";
 import { SavedTournamentDashboard } from "@/components/tournament-dashboard/SavedTournamentDashboard";
 import styles from "@/components/tournament-draft/TournamentDraftWorkspace.module.css";
 
@@ -23,7 +24,9 @@ export default async function TournamentDashboardPage({ params }: { params: Prom
   if (!result.ok) notFound();
   const setup = result.value;
 
-  return <main className={styles.workspace}>
+  const studioTournament = { name: setup.tournament.name, slug: setup.tournament.slug, year: setup.edition.seasonYear, published: Boolean(setup.edition.publishedAt), previewable: !setup.tournament.isLegacy };
+
+  return <OrganizerStudioShell page="setup" tournament={studioTournament}><main className={styles.workspace}>
     <header className={styles.header}>
       <div className={styles.eyebrow}><Flag size={16} aria-hidden="true" /> THE MAROON / TOURNAMENT STUDIO</div>
       <p className={styles.lifecycle}>CREATE <span>&rarr;</span> EXIST <span>&rarr;</span> COMPLETE <span>&rarr;</span> PUBLISH <span>&rarr;</span> PLAY</p>
@@ -36,5 +39,5 @@ export default async function TournamentDashboardPage({ params }: { params: Prom
       apiBase={`/api/platform/tournaments/${encodeURIComponent(setup.tournament.slug)}/${setup.edition.seasonYear}`}
       readOnlyReason={setup.tournament.isLegacy ? "The Maroon Tournament is managed in the Admin Center, so this page is read-only for it." : undefined}
     />
-  </main>;
+  </main></OrganizerStudioShell>;
 }

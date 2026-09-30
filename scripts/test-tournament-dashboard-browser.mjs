@@ -17,6 +17,17 @@ const year = new Date().getFullYear();
 const fake = await startFakeSupabase({ port: FAKE_PORT });
 const organizer = await fake.addUser({ name: "organizer", approved: true });
 const stranger = await fake.addUser({ name: "stranger" });
+const host = await fake.addUser({ name: "host", isHost: true });
+
+// The organizer studio is neutral: the platform's name, never The Maroon Tournament's chrome.
+async function assertStudioChrome(p, where) {
+  assert.match(await p.locator("header").first().innerText(), /tournament studio/i, `${where}: studio header`);
+  const body = await p.locator("body").innerText();
+  for (const text of ["Defending Champions", "Next up", "Team Maroon", "Team White", "Watch Live"]) assert.ok(!body.includes(text), `${where}: no "${text}"`);
+  assert.equal(await p.locator("footer:not(.ts-site footer)").count(), 0, `${where}: no Maroon footer`);
+  assert.equal(await p.locator('a[href="/leaderboard"], a[href="/website"]').count(), 0, `${where}: no Maroon Tournament navigation`);
+}
+const overflow = (p) => p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 
 async function protectedSnapshot() {
   const tables = (await fake.db.query(`select table_name t from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE'
@@ -57,12 +68,18 @@ try {
   // CREATE → EXIST: quick create with only a name.
   await page.goto(`${app}/tournaments/new`, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => { const f = document.querySelector("main form"); return f && Object.keys(f).some((k) => k.startsWith("__reactProps")); });
+  await assertStudioChrome(page, "/tournaments/new");
   await page.getByLabel("Tournament name", { exact: true }).fill("Texas Cup");
   await page.getByRole("button", { name: "Create now, finish later", exact: true }).click();
   await page.waitForURL(`**/tournaments/texas-cup/${year}`, { timeout: 30000 });
   const stage = () => page.locator("[data-stage]").innerText();
   const percent = async () => Number((await page.getByTestId("setup-percent").innerText()).match(/(\d+)%/)[1]);
   assert.equal(await stage(), "Created");
+  await assertStudioChrome(page, "dashboard");
+  const studioNav = page.getByRole("navigation", { name: "Tournament studio" });
+  assert.equal(await studioNav.getByRole("link", { name: "Setup", exact: true }).getAttribute("aria-current"), "page");
+  assert.ok((await page.locator("header").first().innerText()).includes(`Texas Cup ${year}`), "current tournament name in the studio bar");
+  assert.equal(await studioNav.getByRole("link", { name: "Public Site" }).count(), 0, "no Public Site link before publishing");
   let last = await percent();
 
   const openAndSave = async (editLabel, fill, savedText) => {
@@ -124,6 +141,57 @@ try {
   await page.getByRole("button", { name: "Publish tournament", exact: true }).click();
   await page.getByRole("status").filter({ hasText: "Published." }).waitFor();
   assert.equal(await stage(), "Published");
+  await studioNav.getByRole("link", { name: "Public Site", exact: true }).waitFor({ timeout: 15000 });
+  assert.equal(await studioNav.getByRole("link", { name: "Public Site", exact: true }).getAttribute("href"), `/t/texas-cup/${year}`);
+
+  // Setup → Preview Website → Setup, inside the studio.
+  await studioNav.getByRole("link", { name: "Preview Website", exact: true }).click();
+  await page.waitForURL(`**/tournaments/texas-cup/${year}/preview`);
+  assert.equal(await page.getByRole("navigation", { name: "Tournament studio" }).getByRole("link", { name: "Preview Website", exact: true }).getAttribute("aria-current"), "page");
+  assert.equal(await page.getByRole("heading", { level: 1 }).innerText(), `Texas Cup ${year}`);
+  await assertStudioChrome(page, "preview");
+  await page.getByRole("navigation", { name: "Tournament studio" }).getByRole("link", { name: "Setup", exact: true }).click();
+  await page.waitForURL(`**/tournaments/texas-cup/${year}`);
+  assert.equal(await stage(), "Published");
+
+  // The public site itself (private by default: members only) keeps the kit's own shell — no studio bar.
+  assert.equal((await page.goto(`${app}/t/texas-cup/${year}`)).status(), 200);
+  assert.equal(await page.getByRole("navigation", { name: "Tournament studio" }).count(), 0);
+  const visitor = await (await browser.newContext()).newPage();
+  assert.equal((await visitor.goto(`${app}/t/texas-cup/${year}`)).status(), 404, "private site stays members-only");
+  await page.goto(`${app}/tournaments/texas-cup/${year}`);
+
+  // Phone: no sideways scroll; name, setup navigation, preview and save status in view.
+  const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  await phone.addCookies([{ ...fake.sessionCookie(organizer), url: app }]);
+  const phonePage = await phone.newPage();
+  phonePage.on("pageerror", (error) => pageErrors.push(error.message));
+  for (const path of ["/tournaments/new", `/tournaments/texas-cup/${year}`, `/tournaments/texas-cup/${year}/preview`]) {
+    await phonePage.goto(`${app}${path}`);
+    await phonePage.waitForLoadState("networkidle");
+    assert.ok(await overflow(phonePage) <= 1, `no horizontal scroll on phone at ${path} (${await overflow(phonePage)}px)`);
+  }
+  await phonePage.goto(`${app}/tournaments/texas-cup/${year}`);
+  const phoneNav = phonePage.getByRole("navigation", { name: "Tournament studio" });
+  for (const name of ["Setup", "Preview Website"]) assert.ok(await phoneNav.getByRole("link", { name, exact: true }).isVisible(), `${name} visible on phone`);
+  assert.ok(await phonePage.getByText(`Texas Cup ${year}`, { exact: true }).first().isVisible(), "tournament name visible on phone");
+  await phonePage.getByRole("button", { name: "Edit rules", exact: true }).click();
+  await phonePage.getByRole("button", { name: "Save", exact: true }).click();
+  const phoneStatus = phonePage.getByRole("status").filter({ hasText: "Rules saved." });
+  await phoneStatus.waitFor();
+  const box = await phoneStatus.boundingBox();
+  assert.ok(box && box.y >= 0 && box.y + box.height <= 844, "save status in view on phone");
+  if (process.env.SCREENSHOT_DIR) await phonePage.screenshot({ path: `${process.env.SCREENSHOT_DIR}/studio-phone.png` });
+
+  // The founding tournament's Admin Center keeps its own Maroon chrome, and Maroon pages keep theirs.
+  const hostPage = await (await browser.newContext()).newPage();
+  await hostPage.context().addCookies([{ ...fake.sessionCookie(host), url: app }]);
+  await hostPage.goto(`${app}/portal/admin`);
+  assert.match(await hostPage.locator("header").first().innerText(), /the admin center/i, "Admin Center keeps its Portal header");
+  assert.equal(await hostPage.getByRole("navigation", { name: "Tournament studio" }).count(), 0);
+  await visitor.goto(`${app}/website`);
+  assert.equal(await visitor.getByText(/tournament studio/i).count(), 0);
+  assert.ok(await visitor.locator("footer").count() > 0, "Maroon pages keep their footer");
   assert.deepEqual(pageErrors, []);
   if (process.env.SCREENSHOT_DIR) {
     await page.getByRole("button", { name: "Edit players", exact: true }).click();
@@ -136,6 +204,9 @@ try {
   await other.addCookies([{ ...fake.sessionCookie(stranger), url: app }]);
   const otherPage = await other.newPage();
   assert.equal((await otherPage.goto(`${app}/tournaments/texas-cup/${year}`)).status(), 404);
+  assert.equal(await otherPage.getByRole("navigation", { name: "Tournament studio" }).count(), 0, "a stranger's 404 shows no tournament details");
+  assert.equal((await otherPage.goto(`${app}/tournaments/texas-cup/${year}/preview`)).status(), 404);
+  assert.equal((await fetch(`${app}/tournaments/texas-cup/${year}`)).status, 404, "signed out: 404");
   const patch = await otherPage.request.patch(`${app}/api/platform/tournaments/texas-cup/${year}/sections/branding`, { data: { primary: "#000000", secondary: "#ffffff", accent: "#cccccc" } });
   assert.equal(patch.status(), 404);
   const read = await otherPage.request.get(`${app}/api/platform/tournaments/texas-cup/${year}`);
@@ -147,6 +218,7 @@ try {
   assert.deepEqual(saved, [{ slug: "texas-cup", season_year: year, published: true, rounds: 3, players: 4 }]);
   assert.deepEqual(await protectedSnapshot(), before, "live-scoring and Maroon rows must be unchanged");
 
+  console.log("Passed (organizer studio): neutral studio shell on create, setup and preview (no Maroon header, footer, champions, countdown or nav), studio nav Setup/Preview/Public Site, bar updates after publish, public site and Admin Center and Maroon pages unchanged, phone: no sideways scroll, nav + name + save status in view, stranger/signed-out 404.");
   console.log("Passed: signed-in quick create, 6 sections saved independently, percent rose each save, reload kept everything, optional media didn't block, publish is separate, stranger 404 by page and API, no live/Maroon rows touched.");
 } catch (error) {
   failed = true;

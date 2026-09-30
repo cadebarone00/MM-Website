@@ -3,6 +3,33 @@
 Platform-level changes (multi-tenant productization). Detailed history of
 the founding tournament's features lives in `project_specs.md`.
 
+## 2026-09-30 — Neutral organizer studio
+
+**What changed**
+- New `components/platform/OrganizerStudioShell.tsx` (+ CSS module): the
+  platform's studio header (The Maroon · Tournament Studio, Create
+  Tournament, account) and a tournament bar (name, published tag, Setup /
+  Preview Website / Public Site).
+- Used by `/tournaments/new`, `/tournaments/[tournament]/[year]` and its
+  preview. `SiteChrome` now skips all `/tournaments/...` routes, so no
+  Maroon header, footer, champions ribbon, countdown or nav appears there.
+- Dashboard: "Preview Website" moved into the studio bar. The dashboard
+  refreshes the server parts after each save, so the bar's name and
+  published state stay current. On phones the save status is pinned to the
+  bottom of the screen.
+- No database, access, persistence or live-scoring changes. The Admin
+  Center and Maroon pages are unchanged.
+
+**Testing**
+- `test:browser:dashboard` now also checks: no Maroon chrome on create,
+  setup or preview; studio nav Setup → Preview → Setup; Public Site appears
+  after publish; the public site shows no studio bar; the Admin Center and
+  Maroon pages keep their chrome; on a phone, no sideways scroll and the
+  name, nav and save status are in view; stranger and signed-out get 404.
+- `npm test` 605/605, `test:db` and `test:db:platform` pass, compliance
+  OK, type check 0 errors, lint: the same 7 older errors. Production build
+  239 pages. Both browser suites pass.
+
 ## 2026-09-30 — Organizer preview of the public site
 
 **What changed**

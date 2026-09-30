@@ -17,7 +17,9 @@ import { WebsiteFrameBridge } from "@/components/portal/admin/WebsiteFrameBridge
  * Picks the site chrome for the current route. `/broadcast` and customer
  * tournament sites (`/t/...`, which use the public tournament UI kit) get
  * nothing at all — no header, no footer, no nav — it's a TV-style broadcast canvas,
- * not a webpage (see the Watch Live Broadcast spec, §6/§10). `/portal/*`
+ * not a webpage (see the Watch Live Broadcast spec, §6/§10). The organizer
+ * studio (`/tournaments/...`) is also left bare: it renders its own neutral
+ * `OrganizerStudioShell`. `/portal/*`
  * (Portal, Scoring) gets `PortalHeader` with no bottom tab bar and no
  * Footer — those are Website-only features. Everywhere else gets its
  * header (`MaroonHeader` on home/The Maroon, `Header` elsewhere) plus the
@@ -35,7 +37,9 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
   const inBroadcast = pathname.startsWith("/broadcast");
   // Customer tournament sites (/t/...) bring their own header, nav and footer
   // from the public UI kit — never The Maroon's chrome, countdown or champions ribbon.
-  const inCustomerTournamentSite = pathname === "/t" || pathname.startsWith("/t/") || /^\/tournaments\/[^/]+\/\d{4}\/preview(\/|$)/.test(pathname);
+  // The organizer studio (/tournaments/..., including its preview) brings its
+  // own neutral OrganizerStudioShell instead.
+  const inCustomerTournamentSite = pathname === "/t" || pathname.startsWith("/t/") || pathname === "/tournaments" || pathname.startsWith("/tournaments/");
 
   if (inBroadcast || inCustomerTournamentSite || pathname === "/portal/admin/scoring-preview/mobile") {
     return <>{children}</>;

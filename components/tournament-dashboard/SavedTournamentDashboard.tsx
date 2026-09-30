@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ComponentType } from "react";
+import { useRouter } from "next/navigation";
 import { LockKeyhole } from "lucide-react";
 import type { Readiness, SectionName } from "@/lib/platform/readiness";
 import type { SectionKey } from "@/lib/platform/sectionRules";
@@ -45,6 +46,7 @@ export function SavedTournamentDashboard({ initialSetup, initialReadiness, apiBa
   const [errors, setErrors] = useState<string[]>([]);
   const [status, setStatus] = useState("");
   const editorHeading = useRef<HTMLHeadingElement>(null);
+  const router = useRouter();
   useEffect(() => { if (open) editorHeading.current?.focus(); }, [open]);
 
   async function send(url: string, method: string, body: unknown, done: string) {
@@ -58,6 +60,8 @@ export function SavedTournamentDashboard({ initialSetup, initialReadiness, apiBa
         return;
       }
       setSetup(result.setup); setReadiness(result.readiness); setOpen(null); setStatus(done);
+      // Re-render the server parts (the studio bar's name and published state); this component keeps its state.
+      router.refresh();
     } catch {
       setErrors(["Could not reach the server. Your changes weren't saved."]);
     } finally {
@@ -74,7 +78,6 @@ export function SavedTournamentDashboard({ initialSetup, initialReadiness, apiBa
       <div className={styles.stageRow}>
         <span className={styles.stage} data-stage={readiness.stage}>{readiness.stage}</span>
         <h2 className={base.muted} style={{ margin: 0, fontSize: 18 }} data-testid="setup-percent">Tournament Setup — {readiness.percent}% Complete</h2>
-        {!readOnlyReason && <a className={base.secondary} style={{ marginLeft: "auto" }} href={`/tournaments/${encodeURIComponent(setup.tournament.slug)}/${setup.edition.seasonYear}/preview`}>Preview Website</a>}
       </div>
       <progress aria-label="Tournament setup completion" value={readiness.percent} max={100} />
       {readiness.blockedReason && <p className={base.callout}>{readiness.blockedReason}</p>}

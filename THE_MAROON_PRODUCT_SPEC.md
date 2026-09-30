@@ -547,6 +547,25 @@ dates become per-edition activation dates.
   checks are word-for-word the same, and its output is byte-identical.
   Unpublished editions still 404 at `/t/...`, even for their owner.
 
+### 9.3 Built: neutral organizer studio (2026-09-30)
+- **Where:** every `/tournaments/...` route (`/new`, `/<slug>/<year>`,
+  `/<slug>/<year>/preview`) renders `components/platform/OrganizerStudioShell.tsx`.
+  `SiteChrome` gives these routes no Maroon Tournament chrome.
+- **Shows:** "The Maroon · Tournament Studio" (the platform, not a
+  tournament), Create Tournament, the account menu, and, for a saved
+  tournament, its name, a Published / Not published tag, and Setup ·
+  Preview Website · Public Site (the last only once published). The bar
+  refreshes after each dashboard save.
+- **Never shows:** defending champions, Maroon vs White, the countdown, the
+  Maroon Tournament's nav/tab bar/More menu, sponsor rotator, install
+  prompt, or the Maroon footer.
+- **Unchanged:** the Admin Center (`/portal/admin`) and every Maroon page
+  keep their own chrome. Access is still decided by each page (organizer
+  check, 404 otherwise); the shell renders only after that.
+- **Phone:** compact bar, scrollable tab row, the save status pinned to the
+  bottom of the screen, no sideways scroll.
+- **Not yet:** a "My Tournaments" list (no listing route exists yet).
+
 ## 10. App architecture
 The Player Portal (`/portal`) and Admin Center (`/portal/admin`) become
 tournament-scoped: a user with several memberships picks a tournament. An
