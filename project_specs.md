@@ -1194,3 +1194,51 @@ but not yet run in production; nothing in the existing app reads it yet.
 - A `viewer` member does not see players-only ones.
 - Only commissioners and admins see Post Announcement, and posting shows the new item straight away.
 - Tests, typecheck, lint and the build pass, including a browser check of each role against the fake database.
+
+### Round: Tournament Home — logged-in app (spec 2026-09-30, awaiting approval; replaces the ON HOLD round above)
+
+**What it is:** The logged-in "fantasy league" screen for a tournament's players and commissioners. It is a **new** screen. `/t/<tournament>/<year>` stays the public website and is not changed. Visual starting point: Figma "The Maroon — Full App Screens" → Tournament / Home (node 23:629), in the Sleeper-inspired Maroon app system:
+- deep maroon, layered dark surfaces
+- the tournament's colors as accents
+- compact sports-app density
+- no SaaS cards, pill clutter or neon
+
+**Address:** `/play/<tournament>/<year>`, with tabs at `/play/<tournament>/<year>/matches`, `/leaderboard`, `/players` and `/more`. Logged-out visitors go to `/login`. Who may open it comes from the existing public-site access rule (`loadPublicTournament`: the tournament is published, and private tournaments are members only). The UI adds no role checks of its own. The Maroon (founding tournament) is untouched, since the public-site rule already excludes it.
+
+**Home screen, top to bottom:**
+1. **Identity header:**
+   - tournament name, year and team colors
+   - the team score row appears only when real scores exist
+   - before C4 there are no real scores, so it shows the teams with "Scoring opens with live play" and no numbers
+2. **Your Match** (the main focus):
+   - real: the next round from the saved schedule (round/session name, format, course, date, start time in the tournament's timezone)
+   - holding state: "Pairings have not been posted yet." instead of partner, opponents, tee group or live status
+   - no fake pairings or scores
+3. **Tournament areas:** Matches · Leaderboard · Players · More (quick links).
+4. **Commissioner announcements:**
+   - real, from `loadTournamentActivity`, newest first
+   - "Players only" tag where it applies
+   - **Post Announcement** appears only when `viewer.canPostAnnouncement` is true
+   - it opens a compact form that posts to the existing POST route, then shows the returned feed
+5. **Tournament activity:** real automatic events (published, players/teams/schedule changes), newest first. Visibility is exactly what the backend returns.
+6. **Bottom navigation:** Home · Matches · Leaderboard · Players · More.
+
+**Tabs:**
+- **Matches:** real round schedule, with pairings in the holding state.
+- **Leaderboard:** holding state ("Scores appear once live scoring opens.").
+- **Players:** real roster by team.
+- **More:** the public website link, schedule and courses.
+
+**Real vs holding:**
+- Real: name, year, branding, teams, roster, courses, rounds/schedule, announcements, activity, posting rights.
+- Holding until C4: team scores, pairings, partner/opponents, live status, leaderboard.
+
+**Changes outside the new files:** `components/nav/SiteChrome.tsx` gets one line so `/play/...` shows no Maroon website header (the same treatment `/t/` already gets).
+
+**Not included:** C4, live scoring, and any schema, authorization or public-site change.
+
+**Done means:**
+- Every screen renders for a logged-in player, and logged-out visitors are redirected to log in.
+- Announcements and activity match what the backend allows each role to see, and Post Announcement is only visible when allowed.
+- Tests, typecheck, lint and build pass, plus a browser check of each role against the fake database.
+- Committed on its own.
