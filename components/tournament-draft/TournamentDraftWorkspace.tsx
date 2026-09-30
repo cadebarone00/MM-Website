@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, Check, Flag, LockKeyhole } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Flag } from "lucide-react";
 import { FORMATS, FORMAT_KEYS } from "@/lib/platform/formats";
-import { createTournamentDraft, draftSetup, INITIAL_DRAFT_INPUT, validateDraftInput, type DraftInput, type TournamentDraft } from "@/lib/platform/tournamentDraft";
+import { createTournamentDraft, INITIAL_DRAFT_INPUT, suggestTournamentSlug, validateDraftInput, type DraftInput, type TournamentDraft } from "@/lib/platform/tournamentDraft";
+import { TournamentSetupDashboard } from "./TournamentSetupDashboard";
 import styles from "./TournamentDraftWorkspace.module.css";
 
 const STEPS = ["Basics", "Competition Type", "Player Count", "Structure", "Scoring Style", "Round Formats", "Optional Branding", "Review & Create"];
-const STEP_FIELDS = [["name", "startDate", "endDate", "timezone", "visibility"], ["competitionType", "teamNames"], ["expectedPlayerCount"], ["roundCount"], ["scoringMode"], ["formats"], ["branding"]];
+const STEP_FIELDS = [["name", "slug", "seasonYear", "startDate", "endDate", "timezone", "visibility"], ["competitionType", "teamNames"], ["expectedPlayerCount"], ["roundCount"], ["scoringMode"], ["formats"], ["branding"]];
 const DEFAULT_COLORS = { primary: "#500001", secondary: "#fffaf0", accent: "#c7a55e", logoUrl: null };
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -21,12 +22,22 @@ export function TournamentDraftWorkspace() {
   const [draft, setDraft] = useState<TournamentDraft | null>(null);
   const [savedInput, setSavedInput] = useState<DraftInput | null>(null);
   const [editing, setEditing] = useState(false);
+  const [slugEdited, setSlugEdited] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveNote, setSaveNote] = useState<string | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const errorBox = useRef<HTMLDivElement>(null);
   useEffect(() => { heading.current?.focus(); }, [step, draft, editing]);
   useEffect(() => { if (errors.length) errorBox.current?.focus(); }, [errors]);
   function update<K extends keyof DraftInput>(key: K, value: DraftInput[K]) {
-    setInput(current => ({ ...current, [key]: value }));
+    setInput(current => {
+      const next = { ...current, [key]: value };
+      // The web address follows the name until the organizer types their own.
+      if (key === "name" && !slugEdited) next.slug = suggestTournamentSlug(String(value));
+      // The year follows the start date once one is chosen.
+      if (key === "startDate" && /^\d{4}-\d{2}-\d{2}$/.test(String(value))) next.seasonYear = Number(String(value).slice(0, 4));
+      return next;
+    });
     setErrors([]);
   }
   function go(next: number) { setErrors([]); setStep(next); }
@@ -36,8 +47,31 @@ export function TournamentDraftWorkspace() {
     const relevant = step === 7 ? allErrors : allErrors.filter(error => STEP_FIELDS[step].includes(error.field));
     if (relevant.length) { setErrors(relevant.map(error => error.message)); return; }
     if (step < 7) { go(step + 1); return; }
+    void finish();
+  }
+  /** "Create now, finish later": only Basics is needed; everything else keeps its TBD defaults. */
+  function quickCreate() {
+    const basicsErrors = validateDraftInput(input).filter(error => STEP_FIELDS[0].includes(error.field));
+    if (basicsErrors.length) { setErrors(basicsErrors.map(error => error.message)); return; }
+    void finish();
+  }
+  async function finish() {
     const result = createTournamentDraft(input);
-    if (result.ok) { setDraft(result.draft); setSavedInput(input); setEditing(false); }
+    if (!result.ok) { setErrors(result.errors.map(error => error.message)); return; }
+    setSaving(true);
+    try {
+      const response = await fetch("/api/platform/tournaments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
+      const body = await response.json().catch(() => ({}));
+      if (response.ok && body.url) { window.location.assign(body.url); return; }
+      if (response.status === 409 || response.status === 400) { setErrors([body.error ?? "Check these details."]); return; }
+      // Not signed in, not invited yet, or saving not switched on: keep working on a local draft.
+      setSaveNote(`${body.error ?? "Could not save right now."} Until then this stays a local draft on this page.`);
+    } catch {
+      setSaveNote("Could not reach the server. This stays a local draft on this page.");
+    } finally {
+      setSaving(false);
+    }
+    setDraft(result.draft); setSavedInput(input); setEditing(false);
   }
   function download() {
     if (!draft) return;
