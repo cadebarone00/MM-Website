@@ -33,7 +33,7 @@ export function VideoHero({ nextTournamentOverride }: { nextTournamentOverride: 
         playsInline
         preload="none"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-[rgba(36,0,1,0.92)] via-[rgba(36,0,1,0.45)] to-[rgba(36,0,1,0.25)]" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/92 via-black/45 to-black/25" />
 
       {/* Mobile only: the countdown moved here from the header's top-left, which now shows the sponsor. Desktop keeps it in the header. */}
       <div className="absolute left-4 top-3 z-20 lg:hidden">

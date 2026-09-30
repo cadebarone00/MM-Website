@@ -8,6 +8,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
+  %% Tournament home hero uses a neutral black readability gradient over desktop video and mobile photo.
   %% Browser tabs use a single dark-maroon M with a thin muted metallic-gold outline on transparent alpha through favicon.ico (16/32/48px) and icon.png (64px), shared by tournament and journal routes.
   %% Public entry: / opens the Journal; Tournament site opens /website; tournament Home stays in /website.
   %% The Maroon routes replace tournament chrome with their own maroon header and tournament-site link to /website; a shallow shared photo hero holds schedule-style Home/category navigation.
@@ -150,11 +151,13 @@ The season timing overview now distinguishes Archived, Active, Upcoming, and Fut
 
 ## 3. Public website and navigation
 
+The tournament homepage hero uses a neutral black gradient over its desktop video and mobile fallback photo to keep overlaid text readable without a maroon tint.
+
 The public root `/` now opens The Maroon Journal with the shared Spectral brand font and maroon navigation. The top-right Tournament site button opens `/website`, which retains the tournament homepage, splash, results and schedule. Tournament Home links, area switches and Tiger website-editor previews target `/website`. The existing `/the-maroon` journal home and category URLs remain available; Journal Home and the tournament More menu return to `/`.
 
 Browser tabs use a single dark-maroon M with a thin muted metallic-gold outline on a transparent background, with no gold background or white M; the source asset is public/icons/maroon-m.png. `app/favicon.ico` includes 16px, 32px, and 48px versions, and `app/icon.png` provides a 64px Next.js metadata icon. Both tournament and journal pages inherit these icons. The existing Apple and Android home-screen icons retain their earlier gold MM artwork. Cached browser tabs may require reopening after deployment.
 
-**The Maroon journal.** More includes a compact photo card linking to `/the-maroon` beneath the social links, followed by direct Courses, Equipment, Teaching, and News selectors. The journal replaces tournament chrome on all /the-maroon routes with its own black header and a link back to The Maroon Masters. Tournament tabs, countdown, and player-area navigation are absent from this journal shell. Directly beneath its header, a shared shallow course-photo hero contains white uppercase Home/Courses/Equipment/Teaching/News links styled after the schedule page, with an underline on the selected category. The journal home retains category cards and all four section previews below the hero. Its Home/category navigation persists across `/the-maroon/[category]`; each of the four categories has a dedicated page and unknown categories return 404. Courses links to the existing schedule/course photos and News to tournament history. Equipment and Teaching explicitly show coming-soon placeholders. This is a local editorial section scaffold, not a live article feed, publishing CMS, or imported Golf Digest content. The More drawer scrolls on smaller screens, and More remains highlighted throughout the journal.
+**The Maroon journal.** More includes a compact photo card linking to `/` beneath the social links, followed by direct Courses, Equipment, Teaching, and News selectors. The journal replaces tournament chrome on `/` and all `/the-maroon` routes with its own maroon header and a Tournament site link to `/website`. Tournament tabs, countdown, and player-area navigation are absent from this journal shell. Directly beneath its header, a shared shallow course-photo hero contains white uppercase Home/Courses/Equipment/Teaching/News links styled after the schedule page, with an underline on the selected category. The journal home retains category cards and all four section previews below the hero. Its Home/category navigation persists across `/the-maroon/[category]`; each of the four categories has a dedicated page and unknown categories return 404. Courses links to the existing schedule/course photos and News to tournament history. Equipment and Teaching explicitly show coming-soon placeholders. This is a local editorial section scaffold, not a live article feed, publishing CMS, or imported Golf Digest content. The tournament More drawer scrolls on smaller screens.
 
 The public Players directory adds Stats beside Maroon, White and Unassigned. Stats lists all checked-in profiles plus selected-roster identities and registered players returned by `/api/players/names`, deduplicated by canonical slug and ordered alphabetically by full name. The existing names hook retains static/roster names if the request fails. It follows the individual leaderboard's compact surname rows, mobile maroon header and desktop gold border, with pinned player names and twelve horizontally scrolling Stat 1-12 columns. All values are placeholder dashes, with no rankings or calculated statistics. This applies to the tournament Players directory; the upcoming season's separate confirmed-roster preview remains separate.
 
@@ -535,6 +538,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-09-29 - Neutral hero video colors (presentation change implemented locally; deployment not verified).** The tournament homepage hero previously applied a maroon gradient over its video and mobile photo. It now uses a neutral black gradient with the same opacity to preserve text readability without tinting the media maroon. Updated section 3 and the flowchart annotation; overview paths and mappings are unchanged.
 
 **2026-09-29 - Journal public landing and brand styling (implemented locally; deployment not verified).** Previously `/` opened the tournament homepage and The Maroon used a black header. Now `/` opens the Journal, its top-right Tournament site button opens the preserved tournament homepage at `/website`, and tournament Home/Website controls and editor previews use that destination. The Journal uses the Spectral Maroon Masters font and a maroon top nav. Existing journal category routes remain available. Updated section 3 and the Mermaid annotation; overview boxes and mapped workflow paths are unchanged.
 

@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { MaroonHeader } from "@/components/maroon/MaroonHeader";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { PortalHeader } from "@/components/nav/PortalHeader";
@@ -17,8 +18,9 @@ import { WebsiteFrameBridge } from "@/components/portal/tiger/WebsiteFrameBridge
  * all — no header, no footer, no nav — it's a TV-style broadcast canvas,
  * not a webpage (see the Watch Live Broadcast spec, §6/§10). `/portal/*`
  * (Portal, Scoring) gets `PortalHeader` with no bottom tab bar and no
- * Footer — those are Website-only features. Everywhere else keeps the
- * normal `Header` + `Footer`, unchanged. `PlayerAreaNav` shows in the
+ * Footer — those are Website-only features. Everywhere else gets its
+ * header (`MaroonHeader` on home/The Maroon, `Header` elsewhere) plus the
+ * desktop-only `Footer`. `PlayerAreaNav` shows in the
  * portal/website cases (it already renders nothing for non-player
  * sessions).
  */
@@ -46,7 +48,7 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
   }
 
   if (pathname === "/" || pathname === "/the-maroon" || pathname.startsWith("/the-maroon/")) {
-    return <><MaroonHeader />{children}</>;
+    return <><MaroonHeader />{children}<Footer nextTournamentOverride={nextTournamentOverride} /></>;
   }
 
   return (
@@ -55,6 +57,7 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
       <InstallPrompt />
       <PlayerAreaNav />
       {children}
+      <Footer nextTournamentOverride={nextTournamentOverride} />
     </div>
   );
 }
