@@ -9,7 +9,9 @@ import { PlatformHeader } from "@/components/platform/PlatformHeader";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { PortalHeader } from "@/components/nav/PortalHeader";
 import { PlayerAreaNav } from "@/components/nav/PlayerAreaNav";
+import { SiteBottomNav } from "@/components/nav/SiteBottomNav";
 import type { NextTournamentOverride } from "@/lib/data/types";
+import { isSiteBottomNavHidden, SITE_BOTTOM_NAV_CONTENT_CLASS } from "@/lib/navigation/siteBottomNav";
 import { AreaNavigation } from "./AreaNavigation";
 import { RoundExitProvider } from "./RoundExit";
 import { WebsiteFrameBridge } from "@/components/portal/admin/WebsiteFrameBridge";
@@ -29,7 +31,27 @@ import { WebsiteFrameBridge } from "@/components/portal/admin/WebsiteFrameBridge
  * sessions).
  */
 export function SiteChrome({ children, nextTournamentOverride }: { children: ReactNode; nextTournamentOverride: NextTournamentOverride }) {
-  return <AreaNavigation><RoundExitProvider><WebsiteFrameBridge /><AreaChrome nextTournamentOverride={nextTournamentOverride}>{children}</AreaChrome></RoundExitProvider></AreaNavigation>;
+  return (
+    <AreaNavigation>
+      <RoundExitProvider>
+        <WebsiteFrameBridge />
+        <SiteChromeBody nextTournamentOverride={nextTournamentOverride}>{children}</SiteChromeBody>
+      </RoundExitProvider>
+    </AreaNavigation>
+  );
+}
+
+function SiteChromeBody({ children, nextTournamentOverride }: { children: ReactNode; nextTournamentOverride: NextTournamentOverride }) {
+  const pathname = usePathname();
+  const hideBottomNav = isSiteBottomNavHidden(pathname);
+  return (
+    <>
+      <div className={hideBottomNav ? undefined : SITE_BOTTOM_NAV_CONTENT_CLASS}>
+        <AreaChrome nextTournamentOverride={nextTournamentOverride}>{children}</AreaChrome>
+      </div>
+      {!hideBottomNav && <SiteBottomNav />}
+    </>
+  );
 }
 
 function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode; nextTournamentOverride: NextTournamentOverride }) {
@@ -67,12 +89,12 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
   }
 
   return (
-    <div className="pb-[calc(5rem+env(safe-area-inset-bottom)+2.5vh)] lg:pb-0">
+    <>
       <Header nextTournamentOverride={nextTournamentOverride} />
       <InstallPrompt />
       <PlayerAreaNav />
       {children}
       <Footer nextTournamentOverride={nextTournamentOverride} showSponsors={pathname === "/website"} />
-    </div>
+    </>
   );
 }

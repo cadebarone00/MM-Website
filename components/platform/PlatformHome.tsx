@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Flag, House, Plus, UserRound } from "lucide-react";
+import { ArrowRight, Flag, Plus } from "lucide-react";
 import { maroonCategories } from "@/lib/data/theMaroon";
 import styles from "./MobileHome.module.css";
 const sections = ["Discover", "Courses", "News"] as const;
@@ -44,10 +44,5 @@ export function PlatformHome() {
         </div>
       </div>
     </section>
-    <nav className={styles.bottomNav} aria-label="App navigation">
-      <Link href="/" aria-current="page"><House size={20} aria-hidden="true" /><span>Home</span></Link>
-      <Link href="/tournaments/join"><Flag size={20} aria-hidden="true" /><span>Tournaments</span></Link>
-      <Link href="/account/choose"><UserRound size={20} aria-hidden="true" /><span>Account</span></Link>
-    </nav>
   </main>;
 }

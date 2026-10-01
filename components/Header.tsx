@@ -12,7 +12,6 @@ import { Avatar } from "@/components/ui/Avatar";
 import { AdminAvatar } from "@/components/ui/AdminAvatar";
 import { AccountBadge } from "@/components/AccountBadge";
 import { SponsorRotator } from "@/components/nav/SponsorRotator";
-import { MobileTabBar } from "@/components/nav/MobileTabBar";
 import { MorePanel, MORE_LINKS, onOpenMoreMenuRequested } from "@/components/nav/MorePanel";
 import { AccountMenu } from "@/components/nav/AccountMenu";
 import { useAccountSession } from "@/lib/useAccountSession";
@@ -179,7 +178,6 @@ export function Header({ nextTournamentOverride }: { nextTournamentOverride: Nex
 
       <div className="h-[2px] bg-gold-500" />
 
-      <MobileTabBar onMoreClick={() => setMoreOpen(true)} />
       <MorePanel open={moreOpen} onClose={() => setMoreOpen(false)} />
       <AccountMenu open={accountMenuOpen} onClose={() => setAccountMenuOpen(false)} />
     </header>

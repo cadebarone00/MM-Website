@@ -153,7 +153,7 @@ export function FantasyDraftTabs({
 
       {error && <p className="mt-4 font-sans text-2xs text-score-under">{error}</p>}
 
-      <div className="fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom)+2.5vh)] z-30 border-t border-ink-100 bg-white px-4 py-4 lg:bottom-0">
+      <div className="fixed inset-x-0 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-30 border-t border-ink-100 bg-white px-4 py-4 lg:bottom-0">
         <Button fullWidth disabled={!complete || saving} onClick={onSubmit}>
           {saving ? "Submitting..." : "Submit Lineup"}
         </Button>

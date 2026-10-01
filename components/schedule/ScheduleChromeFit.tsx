@@ -17,7 +17,7 @@ export function ScheduleChromeFit() {
     function measure() {
       const header = document.querySelector("header");
       const areaNav = document.querySelector("[data-player-area-nav]");
-      const tabBar = document.querySelector("[data-mobile-tab-bar]");
+      const tabBar = document.querySelector("[data-site-bottom-nav]");
       const top = Math.max(header?.getBoundingClientRect().bottom ?? 0, areaNav?.getBoundingClientRect().bottom ?? 0);
       const tabRect = tabBar?.getBoundingClientRect();
       const bottom = tabRect && tabRect.height > 0 ? window.innerHeight - tabRect.top : 0;
@@ -29,7 +29,7 @@ export function ScheduleChromeFit() {
     // The area switcher mounts after the account session loads, so watch the body for it appearing.
     const observer = new ResizeObserver(measure);
     observer.observe(document.body);
-    document.querySelectorAll("header, [data-player-area-nav], [data-mobile-tab-bar]").forEach((el) => observer.observe(el));
+    document.querySelectorAll("header, [data-player-area-nav], [data-site-bottom-nav]").forEach((el) => observer.observe(el));
     const mutations = new MutationObserver(() => {
       document.querySelectorAll("[data-player-area-nav]").forEach((el) => observer.observe(el));
       measure();

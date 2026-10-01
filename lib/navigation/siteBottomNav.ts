@@ -1,0 +1,33 @@
+/** Mobile-only floating bottom nav shown across the public site. */
+
+export const SITE_BOTTOM_NAV_CONTENT_CLASS =
+  "pb-[calc(5.75rem+env(safe-area-inset-bottom))] lg:pb-0";
+
+const ORGANIZER_TOURNAMENT =
+  /^\/tournaments\/[^/]+\/\d+/;
+
+/** Routes that use their own full-screen chrome (broadcast, play app, organizer studio, etc.). */
+export function isSiteBottomNavHidden(pathname: string): boolean {
+  if (pathname === "/login" || pathname === "/signup") return true;
+  if (pathname.startsWith("/broadcast")) return true;
+  if (pathname === "/portal/admin/scoring-preview/mobile") return true;
+  if (pathname === "/t" || pathname.startsWith("/t/")) return true;
+  if (pathname.startsWith("/admin/")) return true;
+  if (pathname.startsWith("/play/") || pathname === "/dev/play" || pathname.startsWith("/dev/play/")) return true;
+  if (pathname === "/tournaments" || pathname === "/tournaments/new" || pathname === "/tournaments/request-access") return true;
+  if (ORGANIZER_TOURNAMENT.test(pathname)) return true;
+  return false;
+}
+
+export function siteBottomNavTabActive(pathname: string, href: string): boolean {
+  if (href === "/tournaments/join") {
+    return pathname === "/tournaments/join" || pathname.startsWith("/tournaments/join/");
+  }
+  if (href === "/account/choose") {
+    return pathname.startsWith("/account");
+  }
+  if (href === "/the-maroon") {
+    return pathname === "/the-maroon" || pathname.startsWith("/the-maroon/");
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
