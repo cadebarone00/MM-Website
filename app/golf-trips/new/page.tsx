@@ -7,10 +7,7 @@ export const metadata: Metadata = { title: "Create a Golf Trip | The Maroon" };
 
 /** Golf Trip questionnaire, step 1 (Trip Basics). Fields only for now: nothing is saved yet. */
 export default function NewGolfTripPage() {
-  return <SetupSheet label="Trip Basics" top={<>
-    <p className={styles.creamNote}>Step 1 of 5</p>
-    <h2 className={styles.creamTitle}>Trip Basics</h2>
-  </>}>
+  return <SetupSheet label="Trip Basics">
     <SetupStepForm nextHref="/golf-trips/new/players" backHref="/tournaments/create/golf-trip">
       <div className={styles.fields}>
         <label className={styles.field}>

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { Minus, Plus } from "lucide-react";
-import { readGolfTripDraft, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
+import { golfTripDraftSnapshot, parseGolfTripDraft, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import { SetupStepForm } from "./SetupStepForm";
 import styles from "./CreateTournament.module.css";
 
@@ -13,20 +13,15 @@ interface GolfDay { date: string; rounds: 1 | 2 }
 
 /** The draft only changes when a step's Next is tapped, so there is nothing to listen for here. */
 const subscribeNever = () => () => {};
-function draftDateRange(): string {
-  const draft = readGolfTripDraft();
-  return `${draft.startDate ?? ""}|${draft.endDate ?? ""}`;
-}
 
 /**
  * Golf Trip questionnaire, step 3 (Golf). How many golf days (− / +); each day opens a row to pick its date
- * (from Trip Basics) and 1 or 2 rounds. Then one row per round: date, round number and course. Course is typed
- * for now (a course search API comes later) and is optional. Next needs at least one golf day.
+ * (from Trip Basics) and 1 or 2 rounds. Next needs at least one golf day, then Courses picks where each round is.
  */
 export function GolfTripGolfStep() {
   // Trip Basics' dates from the draft (empty while rendering on the server).
-  const range = useSyncExternalStore(subscribeNever, draftDateRange, () => "|");
-  const dates = useMemo(() => { const [start, end] = range.split("|"); return tripDates(start, end); }, [range]);
+  const draft = useSyncExternalStore(subscribeNever, golfTripDraftSnapshot, () => "");
+  const dates = useMemo(() => { const { startDate, endDate } = parseGolfTripDraft(draft); return tripDates(startDate, endDate); }, [draft]);
   const [days, setDays] = useState<GolfDay[]>([]);
 
   const maxDays = dates.length || FALLBACK_MAX_DAYS;
@@ -36,10 +31,7 @@ export function GolfTripGolfStep() {
   const updateDay = (index: number, change: Partial<GolfDay>) =>
     setDays((current) => current.map((day, i) => i === index ? { ...day, ...change } : day));
 
-  const rounds = days.flatMap((day, dayIndex) => Array.from({ length: day.rounds }, () => ({ day, dayIndex })))
-    .map((round, index) => ({ ...round, number: index + 1 }));
-
-  return <SetupStepForm nextHref="/golf-trips/new/travel" backHref="/golf-trips/new/players" complete={days.length > 0}>
+  return <SetupStepForm nextHref="/golf-trips/new/courses" backHref="/golf-trips/new/players" complete={days.length > 0}>
     <div className={styles.fields}>
       <div className={styles.counter}>
         <span className={styles.fieldLabel} id="golf-days-label">How many golf days?</span>
@@ -74,24 +66,6 @@ export function GolfTripGolfStep() {
           </div>
         </div>)}
       </div>}
-
-      {days.length > 0 && <section className={styles.courses} aria-labelledby="courses-heading">
-        <div>
-          <h3 id="courses-heading" className={styles.sectionTitle}>Do you know where you&apos;re playing?</h3>
-          <p className={styles.sectionNote}>Don&apos;t worry, this can be added later.</p>
-        </div>
-        <div className={styles.roundTable}>
-          <div className={`${styles.roundRow} ${styles.roundHead}`} aria-hidden="true">
-            <span>Date</span><span>Round</span><span>Course</span>
-          </div>
-          {rounds.map(({ day, dayIndex, number }) => <div key={number} className={styles.roundRow}>
-            <span className={styles.roundDate}>{day.date ? shortTripDate(day.date) : `Day ${dayIndex + 1}`}</span>
-            <span className={styles.roundNumber}>{number}</span>
-            <input className={`${styles.input} ${styles.compact}`} type="text" name={`round${number}Course`}
-              placeholder="Search courses" autoComplete="off" aria-label={`Round ${number} course`} />
-          </div>)}
-        </div>
-      </section>}
     </div>
   </SetupStepForm>;
 }

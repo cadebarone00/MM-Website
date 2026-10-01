@@ -9,8 +9,21 @@ const KEY = "golfTripDraft";
 const MAX_TRIP_DAYS = 31;
 
 export function readGolfTripDraft(): GolfTripDraft {
+  return parseGolfTripDraft(golfTripDraftSnapshot());
+}
+
+/** The draft as stored (a stable string, for useSyncExternalStore). Empty if there is none or storage is blocked. */
+export function golfTripDraftSnapshot(): string {
   try {
-    const parsed: unknown = JSON.parse(sessionStorage.getItem(KEY) ?? "{}");
+    return sessionStorage.getItem(KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export function parseGolfTripDraft(raw: string): GolfTripDraft {
+  try {
+    const parsed: unknown = JSON.parse(raw || "{}");
     return parsed && typeof parsed === "object" ? parsed as GolfTripDraft : {};
   } catch {
     return {};
@@ -35,6 +48,25 @@ export function tripDates(start: string | undefined, end: string | undefined): s
     dates.push(new Date(day).toISOString().slice(0, 10));
   }
   return dates;
+}
+
+export interface PlannedRound {
+  /** 1, 2, 3… across the whole trip. */
+  number: number;
+  dayNumber: number;
+  /** "YYYY-MM-DD", or "" when the trip has no dates. */
+  date: string;
+}
+
+/** The rounds the Golf step planned: each golf day gives 1 or 2, in order. */
+export function plannedRounds(draft: GolfTripDraft): PlannedRound[] {
+  const golfDays = Math.min(Math.max(Math.trunc(Number(draft.golfDays)) || 0, 0), MAX_TRIP_DAYS);
+  const rounds: PlannedRound[] = [];
+  for (let dayNumber = 1; dayNumber <= golfDays; dayNumber++) {
+    const count = draft[`day${dayNumber}Rounds`] === "2" ? 2 : 1;
+    for (let i = 0; i < count; i++) rounds.push({ number: rounds.length + 1, dayNumber, date: draft[`day${dayNumber}Date`] ?? "" });
+  }
+  return rounds;
 }
 
 /** "2027-04-22" → "Thu, Apr 22". */

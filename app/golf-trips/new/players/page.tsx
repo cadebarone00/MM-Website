@@ -9,10 +9,7 @@ export const metadata: Metadata = { title: "Create a Golf Trip | The Maroon" };
 
 /** Golf Trip questionnaire, step 2 (Players). Fields only for now: nothing is saved and Invite does nothing yet. */
 export default function GolfTripPlayersPage() {
-  return <SetupSheet label="Players" top={<>
-    <p className={styles.creamNote}>Step 2 of 5</p>
-    <h2 className={styles.creamTitle}>Players</h2>
-  </>}>
+  return <SetupSheet label="Players">
     <SetupStepForm nextHref="/golf-trips/new/golf" backHref="/golf-trips/new">
       <div className={styles.fields}>
         <PlayerCountSlider />

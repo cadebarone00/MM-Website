@@ -1673,3 +1673,38 @@ The Maroon app is the front door. The main navigation is Explore · Tourneys · 
 - **Tests:**
   - `scripts/test-main-nav-browser.mjs` (`npm run test:browser:nav`)
   - `scripts/test-mobile-home-browser.mjs`, updated for this navigation
+
+### Round: Golf Trip Home — layout only (spec 2026-10-01, awaiting approval)
+
+**What it is:** the page a trip organizer lands on right after finishing the Golf Trip questionnaire. This round builds the look and structure only — no saving, no database, no changes to the questionnaire logic.
+
+**Who uses it:** the organizer who just created the trip (later: everyone on the trip).
+
+**Route:** `/golf-trips/trip` (one page for now; there is no saved trip id yet). It reads the questionnaire answers already kept in this browser tab (`readGolfTripDraft`) so the real trip name, destination, dates and rounds show. Empty answers show a friendly placeholder ("Not set yet").
+
+**Look:** all dark maroon (maroon-900, no lighter reds) with cream text. **No top nav bar.**
+- **Header:** the trip name, big, at the top. Destination + dates in small text under it.
+- **Tab selector** under the name — 5 tabs: **Home · Players · Team · Venue · Info**. Home is selected by default. Switching tabs happens on the page (no page reload).
+
+**Home tab** — a stack of section cards, each with a title, a short summary from the questionnaire where we have it, and an empty state where we don't:
+1. Travel — dates + destination
+2. Stay — empty state ("Add where you're staying")
+3. Golf — the planned rounds (day, date, course)
+4. Transportation — empty state
+5. Tournament — "Yes / No / Not sure yet" from the Format step
+6. Travelers — the organizer's name; empty state for the rest
+7. Itinerary — one row per trip day
+8. Expenses — empty state
+9. Photos — empty state
+
+**Players / Team / Venue / Info tabs:** a simple "Coming soon" card each for now.
+
+**Files:**
+- `app/golf-trips/trip/page.tsx` (new page)
+- `components/platform/GolfTripHome.tsx` (header, tabs, section cards)
+- `components/platform/GolfTripHome.module.css` (styles)
+- The questionnaire's Travel step is a placeholder with no Next button, so it is **not** linked to the new page this round (that changes when the Travel step is built).
+
+**Not in this round:** saving the trip, editing sections, real Players/Team/Venue/Info content, photo upload, expense math.
+
+**Done means:** `/golf-trips/trip` loads on phone and desktop with no errors, shows the trip name and the 5 tabs, all 9 Home sections render with real answers or empty states, tabs switch, and type-check + lint pass.

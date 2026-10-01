@@ -1,12 +1,13 @@
 /* Create Tournament and the Golf Trip questionnaire: no header. The top is cream with depth (a soft highlight up top, deepening toward the
    middle); the maroon is a sheet rising from the bottom of the screen with curved top corners, holding the
-   picker. The negative bottom margin runs the maroon under the bottom menu on phones. */
-.split{display:flex;flex-direction:column;min-height:100svh;margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));
+   picker. The sheet is a fixed height and never grows up into the cream: anything taller scrolls inside it.
+   The negative bottom margin runs the maroon under the bottom menu on phones. */
+.split{display:flex;flex-direction:column;height:100svh;margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));
   background:radial-gradient(ellipse 130% 65% at 50% 22%,var(--color-cream-50) 0%,transparent 72%),
   linear-gradient(180deg in oklab,var(--color-cream-100) 0%,var(--color-cream-200) 55%,color-mix(in oklab,var(--color-cream-300) 75%,var(--color-gold-400)) 100%)}
-/* The cream area takes whatever the sheet leaves: 40/60 on most phones, less on very short ones. */
+/* Cream 40 / maroon 60 on every screen. */
 .cream{flex:1 1 0}
-.picker{flex:0 0 auto;min-height:60svh;display:flex;flex-direction:column;justify-content:flex-end;gap:16px;
+.picker{flex:0 0 auto;height:60svh;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;justify-content:safe flex-end;gap:16px;
   padding:24px max(16px,calc((100% - 528px)/2)) calc(8px + 5.75rem + env(safe-area-inset-bottom));
   border-radius:32px 32px 0 0;background:var(--color-maroon-900);box-shadow:0 -12px 32px rgba(36,0,1,.16);color:#fbf8f1}
 .list{display:flex;flex-direction:column;gap:8px}
@@ -27,12 +28,12 @@
 /* SetupSheet: the title and step sit centered on the cream, in maroon. */
 .creamIntro{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;padding:48px 20px 32px;text-align:center}
 .creamTitle{margin:0;font:500 40px/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.02em;color:var(--color-maroon-900);text-wrap:balance}
-.creamNote{margin:0;font:600 15px/1.4 var(--font-barlow),sans-serif;letter-spacing:.02em;color:color-mix(in oklab,var(--color-maroon-900) 70%,transparent)}
 .sheetNote{margin:0 0 auto;font:500 16px/1.4 var(--font-barlow),sans-serif;letter-spacing:.02em;color:#dcc495;text-align:center}
-/* SetupStepForm fills the sheet so Next sits at its bottom, just over the bottom menu. */
-.stepForm{flex:1 1 auto;display:flex;flex-direction:column;gap:16px}
+/* SetupStepForm fills the sheet: the fields scroll inside it, and Back / Next stay at its bottom, just over the bottom menu. */
+.stepForm{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:16px}
 /* Questionnaire fields: gold labels over bars styled like the page-1 choices. */
-.fields{display:flex;flex-direction:column;gap:14px;margin-bottom:auto}
+.fields{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:14px;
+  margin:-4px;padding:4px}
 .fieldRow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .field{display:flex;flex-direction:column;gap:6px;min-width:0}
 .fieldLabel{padding:0 4px;font:600 14px/1.2 var(--font-barlow),sans-serif;letter-spacing:.02em;color:#dcc495}
@@ -70,7 +71,7 @@
 .circle:has(.circleInput:checked){background:#fbf8f1;border-color:#dcc495;color:var(--color-maroon-900)}
 .circle:has(.circleInput:focus-visible){outline:2px solid #dcc495;outline-offset:3px}
 .circleInput,.srOnly{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;opacity:0}
-.courses{display:flex;flex-direction:column;gap:12px;margin-top:8px}
+
 .sectionTitle{margin:0;font:500 24px/1.2 var(--font-spectral),Georgia,serif;letter-spacing:-.01em;color:#fff}
 .sectionNote{margin:4px 0 0;font:500 14px/1.4 var(--font-barlow),sans-serif;color:#dcc495}
 .roundTable{display:flex;flex-direction:column;gap:8px}
@@ -80,6 +81,10 @@
 .roundDate{font:600 14px/1.2 var(--font-barlow),sans-serif;color:#fff}
 .roundNumber{display:grid;place-items:center;width:32px;height:32px;margin:0 auto;border-radius:50%;
   background:rgba(255,255,255,.1);font:700 14px/1 var(--font-barlow),sans-serif;color:#fff}
+/* Format: the answer's message under the Yes / No / Not sure yet choices. */
+.formatMessage{margin:2px 0 0;text-align:center;font:500 italic 19px/1.3 var(--font-spectral),Georgia,serif;color:var(--color-gold-300)}
+.option:has(.circleInput){position:relative;cursor:pointer}
+.option:has(.circleInput:focus-visible){outline:2px solid #dcc495;outline-offset:3px}
 /* The cream "Let's go golfing" button (a link styled like Continue). */
 .start{display:flex;align-items:center;justify-content:center;min-height:56px;font-size:18px}
 .start:hover{background:#f3ecdd}
