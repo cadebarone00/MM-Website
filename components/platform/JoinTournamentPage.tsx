@@ -4,6 +4,7 @@ import { formatDateRange } from "@/lib/platform/publicSite";
 import { loadMyPastTournaments } from "@/lib/platform/pastTournamentsServer";
 import type { PastTournament } from "@/lib/platform/pastTournaments";
 import { JoinLinkForm } from "./JoinLinkForm";
+import { JoinMethodSelector } from "./JoinMethodSelector";
 import { PlatformHeader } from "./PlatformHeader";
 import styles from "./JoinTournament.module.css";
 
@@ -21,8 +22,7 @@ export async function JoinTournamentPage() {
       <h2 className={styles.descriptor}>Get started</h2>
       <div className={styles.actions}>
         <Link href="/tournaments/create" className={styles.actionBox}><span>Creat a Tournament</span></Link>
-        {/* Not tappable yet — joining is a later round. */}
-        <div className={styles.actionBox}><span>Join a Tournament</span></div>
+        <JoinMethodSelector />
       </div>
       </div>
       <div className={styles.lowerContent}>
