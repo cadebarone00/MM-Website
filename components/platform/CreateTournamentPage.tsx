@@ -16,10 +16,10 @@ const ICONS: Record<CreateTier["key"], LucideIcon> = {
  */
 export function CreateTournamentPage() {
   return <>
-    <PlatformHeader wordmark={false} />
+    <PlatformHeader title="Create Tournament" />
     <main className={styles.page}>
       <section className={styles.intro}>
-        <h1 className={styles.title}>Your Next Tournament Starts Here</h1>
+        <h2 className={styles.title}>Your Next Tournament Starts Here</h2>
         <p className={styles.subtitle}>Pick the format that&apos;s right for your group</p>
       </section>
       <section className={styles.tiers} aria-label="Tournament formats">

@@ -16,9 +16,8 @@ export async function JoinTournamentPage() {
   const past = await loadMyPastTournaments();
 
   return <>
-    <PlatformHeader wordmark={false} />
+    <PlatformHeader title="Tourneys" />
     <main className={styles.page}>
-      <h1 className={styles.title}>Tourneys</h1>
       <div className={styles.actions}>
         <Link href="/tournaments/create" className={styles.actionBox}><LandPlot size={30} strokeWidth={1.6} aria-hidden="true" />Create a Tournament</Link>
         {/* Not tappable yet — joining is a later round. */}

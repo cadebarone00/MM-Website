@@ -8,6 +8,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
+  %% Platform page headings sit beside the hamburger menu in smaller bold Spectral type.
   %% Operator recovery tooling only: REST row exports; optional explicit pg_dump to local dump/manifest; isolated restore drill documented. No provider monitoring, PITR activation or application integration.
   %% Mobile platform home: sampled #1D0B11 upper region, horizontally snapping Join/Create photo cards, Discover/Courses/News selectors and floating Home/Tournaments/Account links.
   PH[Platform home] --> AU[Log In or two-step Create Account]
@@ -168,6 +169,8 @@ For example, in September 2026, My Matches can correctly show 2026 matches as Pa
 The season timing overview now distinguishes Archived, Active, Upcoming, and Future (with a separate Test season label). Active and archive handoffs retain their configured calendar boundaries. After Active's saved end date has passed in the tournament time zone, the following real year becomes Upcoming; later years are Future. A missing saved end date falls back to the checked-in historical event end date. Thus, while 2026 remains Active, its January 10, 2026 end makes 2027 Upcoming starting January 11; 2028 onward is Future. No test year is promoted to Upcoming.
 
 ## 3. Public website and navigation
+
+Platform headings for The Maroon home, Tourneys, Pick'ems, Profile, My Tournaments, and Create Tournament sit immediately beside the hamburger menu in the shared top bar. They use bold Spectral at 24?30px rather than large centered titles below the bar. Create Tournament retains its introductory headline below.
 
 **Main Page tournament entry.** `/` has a mobile-first home with a #1D0B11 maroon header and upper region, horizontally snapping photo cards linking to Join Tournament (`/tournaments/join`) and Create Tournament (`/tournaments/new`), and Log In. Desktop shows the cards side by side. The rounded lower panel switches between Discover, Courses and News; its links open existing editorial destinations. A floating bottom navigation links Home, Tournaments (Join page) and Account (`/account/choose`). Images are existing local assets. No tournament scores, personalized trips, countdowns or live activity are invented. Authentication and tournament access are unchanged; `/the-maroon` and `/website` retain their existing experiences.
 
@@ -578,6 +581,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-10-01 - Compact platform page headings (presentation implemented locally; deployment not verified).** Previously the main page titles were large and centered below an icons-only header. They now sit beside the hamburger menu in smaller, thicker Spectral type, shared across the main pages and tournament entry pages. Updated section 3 and the Mermaid annotation; workflow paths and overview mappings are unchanged.
 
 **2026-09-30 ? Mobile home reference layout (presentation implemented locally; deployment not verified).** Replaced stacked cream action/feed cards with the supplied reference structure: deep maroon upper region (#1D0B11 sampled from the color reference), swipable photo/action cards, rounded editorial panel with category selectors and floating three-item navigation. Existing Join/Create/account destinations are reused. Updated section 3 and Mermaid annotation; existing overview mapping remains applicable.
 
