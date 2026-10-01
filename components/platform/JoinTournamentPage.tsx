@@ -38,10 +38,13 @@ export async function JoinTournamentPage() {
   </>;
 }
 
-/** One tappable row per tournament year; shared with My Tournaments. */
-export function TournamentRows({ tournaments }: { tournaments: PastTournament[] }) {
+/**
+ * One tappable row per tournament year; shared with My Tournaments, which
+ * passes `enter` to add an explicit Enter Tournament button to each card.
+ */
+export function TournamentRows({ tournaments, enter = false }: { tournaments: PastTournament[]; enter?: boolean }) {
   return <ul className={styles.list}>{tournaments.map((t) =>
-    <li key={`${t.href}-${t.year}`}>
+    <li key={`${t.href}-${t.year}`} className={enter ? styles.card : undefined}>
       <Link href={t.href} className={styles.row}>
         <span className={styles.badge} aria-hidden="true"><Flag size={20} /></span>
         <span className={styles.rowText}>
@@ -51,6 +54,9 @@ export function TournamentRows({ tournaments }: { tournaments: PastTournament[] 
         </span>
         <ChevronRight size={18} aria-hidden="true" />
       </Link>
+      {enter && <Link href={t.href} className={styles.enter}>
+        Enter Tournament<span className={styles.srOnly}> {t.name} {t.year}</span>
+      </Link>}
     </li>)}
   </ul>;
 }

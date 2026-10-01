@@ -48,14 +48,10 @@ export function summarizePastEditions(raw: unknown): PastTournament[] {
 
 /**
  * My Tournaments (/tournaments/mine), from list_my_active_editions: each row
- * enters that year's Tournament Home. The founding tournament's rows are left
- * out here: its roster in the platform tables is a one-time copy, so
- * pastTournamentsServer adds them from the live roster instead
- * (maroonPlayingEditions).
+ * enters that year's Tournament Home.
  */
 export function summarizeMyTournaments(raw: unknown): PastTournament[] {
-  const rows = (Array.isArray(raw) ? raw : []).filter((row) => (row as Record<string, unknown> | null)?.isLegacy !== true);
-  return summarizeEditions(rows, (slug, year) => playPath(slug, year));
+  return summarizeEditions(raw, (slug, year) => playPath(slug, year));
 }
 
 function summarizeEditions(raw: unknown, hrefFor: (slug: string, year: number, isLegacy: boolean) => string): PastTournament[] {

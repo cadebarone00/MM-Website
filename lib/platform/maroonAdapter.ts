@@ -306,3 +306,29 @@ export function maroonPlayingEditions(input: MaroonMembershipInput): PastTournam
   }
   return rows.sort((a, b) => a.year - b.year);
 }
+
+/** What decides whether a viewer may open The Maroon Tournament's /play home for one year. */
+export interface MaroonAccessInput {
+  /** profiles.is_host: an Admin Center host. */
+  isHost: boolean;
+  /** profiles.platform_role. */
+  platformRole: string | null;
+  /** tournament_members.role for this viewer on The Maroon Tournament, if any. */
+  memberRole: string | null;
+  /** Player slugs this viewer's account claimed (player_slots.claimed_by). */
+  viewerSlugs: string[];
+  /** That year's roster: the history file for 2024–2026, Admin Center's live_roster after. */
+  rosterSlugs: string[];
+}
+
+/**
+ * /play is the members' app, so it's limited to that year's roster players,
+ * Admin Center hosts, the tournament's owners/organizers and platform admins.
+ * Everyone else gets not found (the old public pages stay open to all).
+ */
+export function maroonCanEnter(input: MaroonAccessInput): boolean {
+  if (input.isHost || input.platformRole === "admin") return true;
+  if (input.memberRole === "owner" || input.memberRole === "organizer") return true;
+  const roster = new Set(input.rosterSlugs);
+  return input.viewerSlugs.some((slug) => roster.has(slug));
+}

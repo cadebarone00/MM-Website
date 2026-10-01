@@ -28,13 +28,13 @@ test("summary keeps only well-formed rows and sends the founding tournament to i
   ]);
 });
 
-test("My Tournaments rows enter Tournament Home; the founding tournament is added from its live roster instead", () => {
+test("My Tournaments rows enter Tournament Home", () => {
   assert.deepEqual(summarizeMyTournaments(undefined), []);
   assert.deepEqual(summarizeMyTournaments([
     { slug: "maroon-masters", name: "Maroon Masters", isLegacy: false, year: 2027, destination: "Scottsdale", startDate: "2027-04-01", endDate: "2027-04-04" },
     { slug: "the-maroon", name: "The Maroon", isLegacy: true, year: 2027, destination: null, startDate: null, endDate: null },
     { slug: "x", name: "", year: 2027 },
-  ]).map((t) => t.href), ["/play/maroon-masters/2027"], "the founding tournament's rows come from its live roster instead");
+  ]).map((t) => t.href), ["/play/maroon-masters/2027", "/play/the-maroon/2027"], "every row enters its Tournament Home (legacy rows are swapped in pastTournamentsServer)");
 });
 
 async function rosterPlayer(db: PGlite, edition: string, who: string | null) {

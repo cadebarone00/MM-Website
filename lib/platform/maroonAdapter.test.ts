@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { pastTournaments } from "@/lib/data";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import type { RealMatch, Tournament } from "@/lib/data/types";
-import { liveMatchRound, maroonPlayingEditions, maroonSiteData, matchResult, toParLabel, type MaroonAdapterInput, type MaroonEditionRow } from "./maroonAdapter.ts";
+import { liveMatchRound, maroonCanEnter, maroonPlayingEditions, maroonSiteData, matchResult, toParLabel, type MaroonAdapterInput, type MaroonEditionRow } from "./maroonAdapter.ts";
 
 const edition = (year: number): MaroonEditionRow => ({
   name: "The Maroon Tournament", shortName: "The Maroon", branding: { primary: "#500001", secondary: "#fbf8f1", accent: "#b8945a" },
@@ -146,4 +146,17 @@ test("My Tournaments: The Maroon rows follow the live roster, skip finished and 
   const unlocked = [{ ...settings[0], venueLocked: false, datesLocked: false }];
   assert.deepEqual(maroonPlayingEditions({ ...base, rosterYears: [2027], settings: unlocked }).map((r) => [r.destination, r.startDate]), [[null, null]], "only locked venue/dates are shown");
   assert.deepEqual(maroonPlayingEditions({ ...base, rosterYears: [2027], settings, now: new Date("2027-01-10T18:00:00Z") }), [], "finished once the last day has passed");
+});
+
+test("/play access: that year's roster players, hosts, owners/organizers and platform admins only", () => {
+  const nobody = { isHost: false, platformRole: null, memberRole: null, viewerSlugs: [], rosterSlugs: ["cade-barone", "cam-latto"] };
+  assert.equal(maroonCanEnter(nobody), false, "signed in but no claimed player");
+  assert.equal(maroonCanEnter({ ...nobody, viewerSlugs: ["cade-barone"] }), true, "on the roster");
+  assert.equal(maroonCanEnter({ ...nobody, viewerSlugs: ["quez-currier"] }), false, "a player, but not on this year's roster");
+  assert.equal(maroonCanEnter({ ...nobody, isHost: true }), true, "Admin Center host");
+  assert.equal(maroonCanEnter({ ...nobody, platformRole: "admin" }), true, "platform admin");
+  assert.equal(maroonCanEnter({ ...nobody, memberRole: "owner" }), true);
+  assert.equal(maroonCanEnter({ ...nobody, memberRole: "organizer" }), true);
+  assert.equal(maroonCanEnter({ ...nobody, memberRole: "player" }), false, "a membership row alone is not the roster");
+  assert.equal(maroonCanEnter({ ...nobody, memberRole: "viewer" }), false);
 });

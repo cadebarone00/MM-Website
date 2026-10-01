@@ -1,11 +1,14 @@
 import { pastTournaments } from "@/lib/data";
+import { getPlayerSlug } from "@/lib/data/players";
 import { getVenueBySlugAsync } from "@/lib/data/activeSeasonOverlay";
 import { getSeasonTournament } from "@/lib/data/seasonCatalog";
 import { getPlayerNameMap } from "@/lib/portal/allPlayers";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { editionFilter, maroonEdition, MAROON_TOURNAMENT_SLUG } from "./editionScope.ts";
-import { maroonPlayingEditions, maroonSiteData, type MaroonRoundRow, type MaroonSite } from "./maroonAdapter.ts";
+import type { LegacyTournamentAdapter } from "./legacyTournaments.ts";
+import { maroonCanEnter, maroonPlayingEditions, maroonSiteData, type MaroonRoundRow, type MaroonSite } from "./maroonAdapter.ts";
 import type { PastTournament } from "./pastTournaments.ts";
+import { playPath, type TournamentHome } from "./tournamentHome.ts";
 
 /**
  * Server-only. Gathers The Maroon Tournament's data for one year, read-only,
@@ -113,3 +116,68 @@ export async function loadMyMaroonEditions(profileId: string): Promise<PastTourn
     })),
   });
 }
+
+/**
+ * May this account open The Maroon Tournament's /play home for this year?
+ * Roster players for that year, Admin Center hosts, the tournament's
+ * owners/organizers and platform admins (maroonCanEnter). Read live; throws
+ * on a database error.
+ */
+async function canEnterMaroonYear(viewerId: string, tournamentId: string, year: number): Promise<boolean> {
+  const service = createSupabaseServiceRoleClient();
+  const history = pastTournaments.find((t) => t.year === year);
+  const [profile, member, slots, roster] = await Promise.all([
+    service.from("profiles").select("is_host, platform_role").eq("id", viewerId).maybeSingle(),
+    service.from("tournament_members").select("role").eq("tournament_id", tournamentId).eq("profile_id", viewerId).maybeSingle(),
+    service.from("player_slots").select("player_slug").eq("claimed_by", viewerId),
+    history ? Promise.resolve(null) : service.from("live_roster").select("player_slug").match(editionFilter(maroonEdition(year))),
+  ]);
+  for (const result of [profile, member, slots, roster]) {
+    if (result?.error) throw new Error(`Could not check access: ${result.error.message}`);
+  }
+  return maroonCanEnter({
+    isHost: profile.data?.is_host === true,
+    platformRole: (profile.data?.platform_role as string | null) ?? null,
+    memberRole: (member.data?.role as string | null) ?? null,
+    viewerSlugs: (slots.data ?? []).map((row) => row.player_slug as string),
+    rosterSlugs: history
+      ? [...history.roster.maroon, ...history.roster.white].map(getPlayerSlug)
+      : (roster?.data ?? []).map((row) => row.player_slug as string),
+  });
+}
+
+/**
+ * The Maroon Tournament's /play home for one year, or null when the year
+ * doesn't exist, is the test season, or this viewer may not enter it. Data
+ * comes read-only from loadMaroonSite. Activity, "your match" and the
+ * commissioner link are Phase 4, so they stay off here.
+ */
+export async function loadMaroonHome(year: string, viewerId: string): Promise<TournamentHome | null> {
+  if (!/^\d{4}$/.test(year)) return null;
+  const seasonYear = Number(year);
+  const { data: tournament, error } = await createSupabaseServiceRoleClient().from("tournaments")
+    .select("id").eq("slug", MAROON_TOURNAMENT_SLUG).eq("is_legacy", true).maybeSingle();
+  if (error) throw new Error(`Could not read The Maroon Tournament: ${error.message}`);
+  if (!tournament || !(await canEnterMaroonYear(viewerId, tournament.id, seasonYear))) return null;
+  const maroon = await loadMaroonSite(seasonYear);
+  if (!maroon) return null;
+  const { site, matchSessions } = maroon;
+  return {
+    slug: MAROON_TOURNAMENT_SLUG, year: seasonYear, site,
+    colors: { primary: site.branding.primary, accent: site.branding.accent },
+    feed: null,
+    basePath: playPath(MAROON_TOURNAMENT_SLUG, seasonYear),
+    announcementsUrl: null,
+    links: { website: "/website", commissioner: null, allTournaments: "/tournaments/join" },
+    yourMatch: null,
+    matchSessions,
+    demo: false,
+  };
+}
+
+/** The Maroon Tournament's entry in the legacy compatibility boundary (legacyTournaments.ts). */
+export const maroonLegacyAdapter: LegacyTournamentAdapter = {
+  slug: MAROON_TOURNAMENT_SLUG,
+  loadHome: loadMaroonHome,
+  loadPlayingRows: loadMyMaroonEditions,
+};

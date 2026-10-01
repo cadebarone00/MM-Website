@@ -31,6 +31,9 @@ a.actionBox:hover{background:var(--color-maroon-600)}
 .rowText strong{font:600 20px/1.2 var(--font-spectral),Georgia,serif;color:var(--tj-text);overflow-wrap:anywhere}
 .rowText span{font-size:14px;color:var(--tj-muted)}
 .rowText .dates{font-size:12px}
+.card{padding-bottom:16px}
+.enter{display:flex;align-items:center;justify-content:center;min-height:48px;margin:0 4px;border-radius:12px;background:var(--tj-gold);color:var(--color-maroon-900);font:600 16px var(--font-barlow),sans-serif}
+.enter:hover{background:#e8d6b0}
 .back{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:8px;font-size:14px;color:var(--tj-muted)}
 .page a:focus-visible,.page button:focus-visible{outline:3px solid var(--tj-gold);outline-offset:3px}
 @media(max-width:400px){.page{padding-left:16px;padding-right:16px;padding-top:24px}.title{font-size:34px}.row{gap:12px}.badge{width:40px;height:40px}}
