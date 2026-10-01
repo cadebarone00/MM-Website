@@ -1686,3 +1686,18 @@ Open The Maroon → Main app (bottom menu: Explore | Tourneys | Pick'ems | Profi
 - Logging in always goes to `/profile`. That includes a signed-out person tapping Profile, who is sent to Log In and then comes back to their profile.
 - Login no longer opens the `/account/choose` screen or The Maroon Tournament's pages. The Maroon Tournament is reached from Tourneys.
 - `/account/choose` still works if someone opens it directly.
+
+### Round: Maroon migration Phase 4 — read-only Maroon features in /play (spec 2026-09-30, approved and built 2026-09-30)
+
+**What it is:** More of The Maroon Tournament inside `/play/the-maroon-tournament/<year>`, all read-only from the old system. Every action stays on the old pages. No SQL, no C4, no redirects, no writes. Maroon logic stays in `lib/platform/legacyTournaments.ts` and the adapter files.
+
+- **Your Match (Home):** the signed-in player's own match from Admin Center's posted matchups: partner, opponents, format, round, course, tee time, live or final. Shown only when certain: their one live match, else their one earliest scheduled match. Anything ambiguous shows nothing.
+- **Tee times:** live-year tee times are shown in the tournament's timezone (the adapter reads the raw time). Old pages are unchanged.
+- **More → Admin Center:** only for Admin Center hosts, using Admin Center's own host check (`requireHost`). Players and platform admins who aren't hosts don't see it.
+- **More → Tournament features:** links to the old pages.
+  - **Active season:** Live scoring, Round videos and Skins (players the portal accepts, via `requirePlayer`), plus Fantasy, Wagers, Watch Live and Broadcast.
+  - **Past years:** only that year's own pages: Results & scorecards, My scorecards, Teams.
+  - **Any year:** Career stats, for players.
+- **More → History:** the earlier Maroon seasons the viewer may enter.
+- **Tourneys → Past Tournaments and Profile (Active/Completed):** Maroon years the viewer played open `/play/the-maroon-tournament/<year>` instead of `/website`, read live (history files for 2024–2026, Admin Center roster after).
+- **Activity/announcements:** stay hidden for The Maroon. The platform activity functions refuse legacy tournaments and aren't in production. Enabling them needs a separate approved SQL round.
