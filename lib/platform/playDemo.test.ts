@@ -91,16 +91,26 @@ test("the real /play loader still requires a signed-in user before loading anyth
 });
 
 test("only the /dev/play routes use the demo, and every one of them goes through the gate", () => {
-  const demoPages = files("app/dev/play");
-  assert.deepEqual(demoPages.map((p) => p.replace("app/dev/play", "")).sort(), ["/leaderboard/page.tsx", "/matches/page.tsx", "/more/page.tsx", "/page.tsx", "/players/page.tsx"]);
+  const demoFiles = files("app/dev/play");
+  assert.deepEqual(demoFiles.map((p) => p.replace("app/dev/play", "")).sort(), ["/layout.tsx", "/leaderboard/page.tsx", "/matches/page.tsx", "/more/page.tsx", "/page.tsx", "/players/page.tsx"]);
+  const layout = read("app/dev/play/layout.tsx");
+  assert.ok(layout.indexOf("if (!isPlayDemoEnabled()) notFound();") > 0 && layout.indexOf("if (!isPlayDemoEnabled()) notFound();") < layout.indexOf("<DevicePreview"), "the phone frame is gated too");
+  const demoPages = demoFiles.filter((p) => p.endsWith("/page.tsx"));
   for (const page of demoPages) {
     const text = read(page);
     assert.match(text, /await loadPlayDemo\(\)/, `${page} is gated`);
     assert.ok(!/playDemoFixture|tournamentHomeServer|supabase/i.test(text), `${page} must not reach the fixture directly, the real loader or Supabase`);
   }
-  const allowed = new Set(["lib/platform/playDemo.ts", "lib/platform/playDemoFixture.ts", "lib/platform/playDemo.test.ts", ...demoPages]);
+  const allowed = new Set(["lib/platform/playDemo.ts", "lib/platform/playDemoFixture.ts", "lib/platform/playDemo.test.ts", ...demoFiles]);
   for (const file of [...files("app"), ...files("components"), ...files("lib")]) {
     if (allowed.has(file)) continue;
     assert.ok(!/from ["'][^"']*playDemo(Fixture)?(\.ts)?["']/.test(read(file)), `${file} must not import the demo`);
+  }
+});
+
+test("the phone preview is used only by the /dev/play layout", () => {
+  for (const file of [...files("app"), ...files("components"), ...files("lib")]) {
+    if (file === "app/dev/play/layout.tsx" || file.startsWith("components/platform/play/dev/") || file.startsWith("lib/platform/devicePreview")) continue;
+    assert.ok(!/DevicePreview|devicePreview/.test(read(file)) || file === "lib/platform/playDemo.test.ts", `${file} must not use the dev device preview`);
   }
 });
