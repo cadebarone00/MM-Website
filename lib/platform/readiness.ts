@@ -1,6 +1,7 @@
 import { FORMATS, matchesPerRound } from "./formats.ts";
 import type { TournamentSetup } from "./setup.ts";
 import { validateTournamentConfig } from "./tournamentConfig.ts";
+import { SYSTEM_DEFAULT_THEME } from "../theme/tournamentTheme.ts";
 
 /**
  * The one readiness engine (THE_MAROON_PRODUCT_SPEC.md §5.1). Given a saved
@@ -169,8 +170,8 @@ export function setupToConfig(setup: TournamentSetup) {
       destination: setup.edition.destination, startDate: setup.edition.startDate, endDate: setup.edition.endDate, timezone: setup.edition.timezone,
       visibility: setup.tournament.visibility,
     },
-    // Branding is optional on the dashboard; the rulebook needs colors, so use neutral ones.
-    branding: setup.tournament.branding ?? { primary: "#1f2937", secondary: "#ffffff", accent: "#9ca3af", logoUrl: null },
+    // Branding is optional on the dashboard; the rulebook needs colors, so use the system default.
+    branding: setup.tournament.branding ?? { primary: SYSTEM_DEFAULT_THEME.primary, secondary: SYSTEM_DEFAULT_THEME.secondary, accent: SYSTEM_DEFAULT_THEME.accent, logoUrl: null },
     teams: setup.teams.map((team) => ({ key: team.key, name: team.name, color: team.color, captainPlayerKey: team.captainPlayerId })),
     players: setup.players.map((player) => ({ key: player.id, name: player.name, email: player.email, handicap: player.handicap, teamKey: player.teamKey })),
     rounds: setup.rounds.map((round) => ({ day: round.day ?? days(round.playDate) ?? 1, label: round.label, format: round.format, courseId: round.courseId })),

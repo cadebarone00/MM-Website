@@ -1,5 +1,6 @@
 import { FORMATS, isFormatKey } from "./formats.ts";
 import { SITE_SECTIONS, type SiteSections } from "./setup.ts";
+import { resolveTournamentTheme } from "../theme/tournamentTheme.ts";
 import type { Branding, Course, Player, ScheduleDay, SiteLinks, SitePage, Team, TournamentSiteData, TournamentStatus } from "@/components/platform/tournament-site/types";
 
 /**
@@ -89,13 +90,13 @@ const STATUS: Record<string, TournamentStatus> = { scheduled: "scheduled", live:
 /** Kit data for one edition. Sections the organizer turned off are left empty, not just unlinked. */
 export function toSiteData(p: PublicTournament): TournamentSiteData {
   const on = (key: (typeof SITE_SECTIONS)[number]) => p.site[key] !== false;
-  const hex = (value: unknown, fallback: string) => (typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback);
+  const { theme } = resolveTournamentTheme(p.tournament.branding);
   const branding: Branding = {
     name: `${p.tournament.name} ${p.edition.seasonYear}`,
     shortName: p.tournament.shortName,
-    primary: hex(p.tournament.branding.primary, "#1f2937"),
-    secondary: hex(p.tournament.branding.secondary, "#f7f7f4"),
-    accent: hex(p.tournament.branding.accent, "#9ca3af"),
+    primary: theme.primary,
+    secondary: theme.secondary,
+    accent: theme.accent,
     // The kit only renders root-relative or https images; nothing is uploaded or hosted for commercial tournaments.
     logo: typeof p.tournament.branding.logoUrl === "string" ? p.tournament.branding.logoUrl : undefined,
     heroImage: typeof p.tournament.branding.heroImageUrl === "string" ? p.tournament.branding.heroImageUrl : undefined,

@@ -13,6 +13,25 @@
   --font-condensed: var(--font-barlow-condensed), var(--font-barlow), sans-serif;
 }
 
+/* ---- Tournament theme tokens ----
+   Semantic roles, not fixed colors. Values come from lib/theme/tournamentTheme.ts
+   (themeCssVariables) per tournament — never write tournament hex values here.
+   Utilities: bg-theme-primary, text-theme-on-primary, bg-team-1, text-team-on-1, … */
+@theme inline {
+  --color-theme-primary: var(--theme-primary);
+  --color-theme-secondary: var(--theme-secondary);
+  --color-theme-accent: var(--theme-accent);
+  --color-theme-on-primary: var(--theme-on-primary);
+  --color-theme-on-secondary: var(--theme-on-secondary);
+  --color-theme-on-accent: var(--theme-on-accent);
+  --color-team-1: var(--competition-team-1);
+  --color-team-2: var(--competition-team-2);
+  --color-team-on-1: var(--competition-on-team-1);
+  --color-team-on-2: var(--competition-on-team-2);
+}
+
+/* LEGACY: the maroon/cream/gold ramps below are the founding Maroon site's
+   hardcoded palette. New UI uses the tournament theme tokens above instead. */
 @theme {
   /* ---- Maroon ramp (brand) ---- */
   --color-maroon-900: #240001;

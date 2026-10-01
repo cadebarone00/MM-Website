@@ -5,7 +5,7 @@ Presentation components for a future public tournament website. No application r
 ## Files and exports
 
 - `types.ts`: public presentation data, branding, team/player/course/session/match types and page links.
-- `theme.ts`: scoped branding variables, color validation, readable black/white team text, image URL filtering and state labels.
+- `theme.ts`: scoped branding variables, color validation, readable black/white team text, image URL filtering and state labels. Color validation, contrast and fallbacks come from the shared `lib/theme/tournamentTheme.ts` (the one place tournament theme colors are defined).
 - `components.tsx`: TournamentTheme, TournamentHeader, TournamentHero, TournamentNav, TournamentStatusBanner, TeamScoreSummary, LeaderboardPreview, MatchPreview, SchedulePreview, PlayerGrid, TeamCard, CourseCard, TournamentInfoCard, SponsorSlot, Footer, EmptyState, LockedSection, ComingSoonSection, Section.
 - `pages.tsx`: TournamentHome, TournamentLeaderboard, TournamentMatches, TournamentSchedule, TournamentPlayers, TournamentTeams, TournamentCourses, TournamentResults, and TournamentSite composition.
 - `tournament-site.css`: scoped `.ts-*` presentation styles. Import this once in the eventual consuming layout. No framework theme classes or global body resets.
