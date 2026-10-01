@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, Flag, LandPlot } from "lucide-react";
-import { LeaderboardIcon } from "@/components/nav/LeaderboardIcon";
+import { ChevronRight, Flag } from "lucide-react";
 import { formatDateRange } from "@/lib/platform/publicSite";
 import { loadMyPastTournaments } from "@/lib/platform/pastTournamentsServer";
 import type { PastTournament } from "@/lib/platform/pastTournaments";
@@ -20,9 +19,9 @@ export async function JoinTournamentPage() {
     <main className={`${styles.page} ${styles.tourneys}`}>
       <h2 className={styles.descriptor}>Get started</h2>
       <div className={styles.actions}>
-        <Link href="/tournaments/create" className={styles.actionBox}><LandPlot size={30} strokeWidth={1.6} aria-hidden="true" /><span>Creat a Tournament</span></Link>
+        <Link href="/tournaments/create" className={styles.actionBox}><span>Creat a Tournament</span></Link>
         {/* Not tappable yet — joining is a later round. */}
-        <div className={styles.actionBox}><LeaderboardIcon size={30} aria-hidden="true" /><span>Join a Tournament</span></div>
+        <div className={styles.actionBox}><span>Join a Tournament</span></div>
       </div>
       <JoinLinkForm />
 
