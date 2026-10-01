@@ -17,12 +17,15 @@ export async function JoinTournamentPage() {
   return <>
     <PlatformHeader title="Tourneys" />
     <main className={`${styles.page} ${styles.tourneys}`}>
+      <div className={styles.photoPanel}>
       <h2 className={styles.descriptor}>Get started</h2>
       <div className={styles.actions}>
         <Link href="/tournaments/create" className={styles.actionBox}><span>Creat a Tournament</span></Link>
         {/* Not tappable yet — joining is a later round. */}
         <div className={styles.actionBox}><span>Join a Tournament</span></div>
       </div>
+      </div>
+      <div className={styles.lowerContent}>
       <JoinLinkForm />
 
       <section aria-labelledby="my-tournaments-heading" className={styles.tournamentSection}>
@@ -35,6 +38,7 @@ export async function JoinTournamentPage() {
           : <TournamentRows tournaments={past.tournaments} />}
         </div>
       </section>
+      </div>
     </main>
   </>;
 }

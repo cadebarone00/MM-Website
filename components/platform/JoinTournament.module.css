@@ -41,12 +41,31 @@ a.actionBox:hover{background:var(--color-maroon-600)}
 
 /* Selector-only presentation; the shared My Tournaments screen keeps its styles. */
 .tourneys {
-  --tj-bg: #fbf8f1;
+  --tj-bg: #1d0b11;
   --tj-gold: #806331;
-  padding-top: 28px;
-  background: var(--tj-bg);
-  color: #380001;
+  padding: 0 0 calc(48px + 5.75rem + env(safe-area-inset-bottom));
+  background: transparent;
+  color: #fbf8f1;
 }
+.photoPanel {
+  width: calc(100% - 64px);
+  max-width: 520px;
+  height: calc(45svh - max(100px, 14svh));
+  margin: 0 auto;
+  padding: 22px 16px;
+  border-radius: 30px 30px 0 0;
+  background: #fbf8f1;
+  box-shadow: 0 -8px 32px #1d0b1120;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.lowerContent {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.lowerContent > .tournamentSection > .descriptor { color: #ead8b8; }
 .descriptor {
   margin: 0 0 12px;
   color: #380001;
@@ -59,7 +78,7 @@ a.actionBox:hover{background:var(--color-maroon-600)}
   align-items: flex-start;
   justify-content: flex-end;
   text-align: left;
-  min-height: 148px;
+  min-height: clamp(80px, 16svh, 140px);
   gap: 18px;
   padding: 20px 16px;
   border: 1px solid #c9a86e45;
@@ -85,7 +104,7 @@ a.actionBox:hover{background:var(--color-maroon-600)}
 .tourneys .past {
   margin-top: 0;
   overflow: hidden;
-  border-radius: 0;
+  border-radius: 20px;
   background: #fbf8f1;
   color: #380001;
 }
@@ -98,21 +117,21 @@ a.actionBox:hover{background:var(--color-maroon-600)}
 }
 .tourneys .pastLabel {
   margin: 0;
-  padding: 0 0 12px;
+  padding: 18px 20px 12px;
   color: #380001;
   font: 600 13px/1.5 var(--font-barlow), sans-serif;
   letter-spacing: .02em;
 }
 .tourneys .note {
   margin: 0;
-  padding: 8px 0 24px;
+  padding: 8px 20px 24px;
   color: #380001aa;
   font-size: 14px;
 }
 .tourneys .note a { color: #68000b; }
 .tourneys .list li { border: 0; }
 .tourneys .list li + li { border-top: 1px solid #38000118; }
-.tourneys .row { min-height: 96px; padding: 20px 0; gap: 16px; color: #38000166; }
+.tourneys .row { min-height: 96px; padding: 20px; gap: 16px; color: #38000166; }
 .tourneys .row:hover { background: #38000106; }
 .tourneys .badge { display: none; }
 .tourneys .rowText { gap: 5px; }
@@ -122,7 +141,8 @@ a.actionBox:hover{background:var(--color-maroon-600)}
 .tourneys .row > svg { flex-shrink: 0; }
 .tourneys .past a:focus-visible { outline-color: #806331; outline-offset: -3px; }
 @media (max-width: 400px) {
-  .tourneys { padding-top: 28px; }
+  .tourneys { padding-top: 0; }
+  .lowerContent { padding: 0 16px; }
   .tourneys .actions { gap: 12px; }
-  .tourneys .actionBox { min-height: 140px; padding: 18px 14px; font-size: 15px; }
+  .tourneys .actionBox { min-height: clamp(80px, 16svh, 140px); padding: 16px 12px; font-size: 15px; }
 }
