@@ -1,22 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, Shield, Trophy, Users, type LucideIcon } from "lucide-react";
 import { SETUP_TYPES, setupNextStepHref, type SetupType } from "@/lib/platform/setupTypes";
 import styles from "./CreateTournament.module.css";
 
-const ICONS: Record<SetupType["key"], LucideIcon> = {
-  event: CalendarDays,
-  team: Shield,
-  league: Trophy,
-  group: Users,
-};
-
 /**
- * Create Tournament (/tournaments/create): setup page 1. No header: the top
- * half is plain cream (empty for now), the bottom half is maroon with the
- * picker. Continue opens the picked type's next step.
+ * Create Tournament (/tournaments/create): setup page 1. No header: cream up
+ * top (empty for now), a maroon sheet below with the stacked choices: Golf
+ * Trip first, a gold "Or", then the rest. Continue opens the picked type's
+ * next step.
  */
 export function CreateTournamentPage() {
   const router = useRouter();
@@ -24,18 +17,17 @@ export function CreateTournamentPage() {
 
   return <main className={styles.split}>
       <section className={styles.cream} aria-hidden="true" />
-      <section className={styles.picker} aria-labelledby="create-title">
-        <h1 id="create-title" className={styles.question}>What are you creating?</h1>
-        <div className={styles.grid} role="radiogroup" aria-label="What are you creating?">
-          {SETUP_TYPES.map((type) => {
-            const Icon = ICONS[type.key];
+      <section className={styles.picker} aria-label="Create a tournament">
+        <div className={styles.list} role="radiogroup" aria-label="What are you creating?">
+          {SETUP_TYPES.map((type, index) => {
             const isSelected = selected?.key === type.key;
-            return <button key={type.key} type="button" role="radio" aria-checked={isSelected}
-              className={`${styles.card} ${isSelected ? styles.selected : ""}`} onClick={() => setSelected(type)}>
-              <span className={styles.icon} aria-hidden="true"><Icon size={20} strokeWidth={2} /></span>
-              <strong className={styles.name}>{type.name}</strong>
-              <span className={styles.description}>{type.description}</span>
-            </button>;
+            return <Fragment key={type.key}>
+              <button type="button" role="radio" aria-checked={isSelected}
+                className={`${styles.option} ${isSelected ? styles.selected : ""}`} onClick={() => setSelected(type)}>
+                {type.name}
+              </button>
+              {index === 0 && <span className={styles.or} aria-hidden="true">Or</span>}
+            </Fragment>;
           })}
         </div>
         <button type="button" className={styles.continue} disabled={!selected}

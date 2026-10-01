@@ -19,6 +19,7 @@ test("isSiteBottomNavHidden shows main site routes", () => {
   assert.equal(isSiteBottomNavHidden("/portal/scoring"), false);
   assert.equal(isSiteBottomNavHidden("/the-maroon/courses"), false);
   assert.equal(isSiteBottomNavHidden("/profile"), false);
+  assert.equal(isSiteBottomNavHidden("/golf-trips"), false);
 });
 
 test("siteBottomNavTabActive", () => {
@@ -34,4 +35,6 @@ test("siteBottomNavTabActive", () => {
   assert.equal(siteBottomNavTabActive("/the-maroon/news", "/"), true);
   assert.equal(siteBottomNavTabActive("/website", "/"), false);
   assert.equal(siteBottomNavTabActive("/tournaments/join", "/"), false);
+  assert.equal(siteBottomNavTabActive("/golf-trips", "/golf-trips"), true);
+  assert.equal(siteBottomNavTabActive("/golf-trips", "/"), false);
 });

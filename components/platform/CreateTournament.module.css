@@ -6,29 +6,28 @@
 .intro{flex:1 1 40%;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;padding:32px 20px 24px;text-align:center}
 .title{margin:0;font:500 40px/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.02em;color:#fff;text-wrap:balance}
 .subtitle{margin:0;font:500 16px/1.4 var(--font-barlow),sans-serif;letter-spacing:.02em;color:#dcc495}
-/* Setup page 1: no header, top half cream to the top of the screen (empty for now), bottom half maroon
-   with the picker. Same negative bottom margin as .page so the maroon runs under the bottom menu. */
-.split{display:flex;flex-direction:column;min-height:100svh;margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));background:var(--color-maroon-900)}
-/* Cream takes whatever the picker leaves: an even 50/50 on most phones, less on very short ones. */
-/* Soft blend: solid cream at the top, easing through the light maroon tints into the maroon below. */
-.cream{flex:1 1 0;background:linear-gradient(180deg in oklab,var(--color-cream-50) 0%,var(--color-cream-50) 22%,var(--color-maroon-50) 42%,
-  var(--color-maroon-200) 60%,color-mix(in oklab,var(--color-maroon-400) 45%,var(--color-maroon-800)) 80%,var(--color-maroon-900) 100%)}
-.picker{flex:0 0 auto;min-height:50svh;display:flex;flex-direction:column;justify-content:center;gap:12px;width:100%;max-width:560px;margin:0 auto;
-  padding:16px 16px calc(16px + 5.75rem + env(safe-area-inset-bottom));color:#fbf8f1}
-.question{margin:0 0 4px;font:500 24px/1.15 var(--font-spectral),Georgia,serif;letter-spacing:-.01em;color:#fff;text-align:center}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.card{display:grid;grid-template-columns:auto 1fr;align-items:center;column-gap:10px;row-gap:6px;min-height:96px;padding:14px;border-radius:18px;text-align:left;cursor:pointer;
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);color:#fff;font:inherit;transition:background .15s ease,border-color .15s ease,transform .15s ease}
-.card:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.3)}
-.card:active{transform:scale(.98)}
-.card:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
-.icon{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.12);color:#fbf8f1;transition:background .15s ease,color .15s ease}
-.name{font:700 19px/1.15 var(--font-barlow),sans-serif;letter-spacing:-.01em}
-.description{grid-column:1/-1;align-self:start;font:500 12.5px/1.35 var(--font-barlow),sans-serif;color:#e8dcdf}
-/* Selected: the card turns cream with maroon text. */
+/* Setup page 1: no header. The top is cream with depth (a soft highlight up top, deepening toward the
+   middle); the maroon is a sheet rising from the bottom of the screen with curved top corners, holding the
+   picker. Same negative bottom margin as .page so the maroon runs under the bottom menu. */
+.split{display:flex;flex-direction:column;min-height:100svh;margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));
+  background:radial-gradient(ellipse 130% 65% at 50% 22%,var(--color-cream-50) 0%,transparent 72%),
+  linear-gradient(180deg in oklab,var(--color-cream-100) 0%,var(--color-cream-200) 55%,color-mix(in oklab,var(--color-cream-300) 75%,var(--color-gold-400)) 100%)}
+/* The cream area takes whatever the sheet leaves: 40/60 on most phones, less on very short ones. */
+.cream{flex:1 1 0}
+.picker{flex:0 0 auto;min-height:60svh;display:flex;flex-direction:column;justify-content:flex-end;gap:16px;
+  padding:24px max(16px,calc((100% - 528px)/2)) calc(8px + 5.75rem + env(safe-area-inset-bottom));
+  border-radius:32px 32px 0 0;background:var(--color-maroon-900);box-shadow:0 -12px 32px rgba(36,0,1,.16);color:#fbf8f1}
+.list{display:flex;flex-direction:column;gap:8px}
+/* The gold "Or" between Golf Trip and the other choices, on the left. */
+.or{padding:2px 4px;font:600 15px/1 var(--font-spectral),Georgia,serif;font-style:italic;color:var(--color-gold-300)}
+.option{display:flex;align-items:center;width:100%;min-height:50px;padding:0 20px;border-radius:16px;text-align:left;cursor:pointer;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);color:#fff;font:700 19px/1 var(--font-barlow),sans-serif;letter-spacing:-.01em;
+  transition:background .15s ease,border-color .15s ease,transform .15s ease}
+.option:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.3)}
+.option:active{transform:scale(.99)}
+.option:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
+/* Selected: the bar turns cream with maroon text. */
 .selected,.selected:hover{background:#fbf8f1;border-color:#dcc495;color:var(--color-maroon-900)}
-.selected .icon{background:var(--color-maroon-700);color:#fbf8f1}
-.selected .description{color:var(--color-maroon-700)}
 .continue{width:100%;min-height:48px;border:0;border-radius:14px;background:#fbf8f1;color:var(--color-maroon-900);
   font:700 16px/1 var(--font-barlow),sans-serif;letter-spacing:.02em;cursor:pointer;transition:opacity .15s ease}
 .continue:disabled{opacity:.35;cursor:not-allowed}
@@ -36,4 +35,4 @@
 /* Placeholder next step. */
 .back{align-self:center;font:600 14px/1.3 var(--font-barlow),sans-serif;color:#dcc495;text-decoration:underline;text-underline-offset:3px}
 @media(max-width:400px){.title{font-size:34px}}
-@media(min-width:1024px){.page,.split{margin-bottom:0;padding-bottom:48px}.picker{padding-bottom:24px}}
+@media(min-width:1024px){.page{margin-bottom:0;padding-bottom:48px}.split{margin-bottom:0}.picker{padding-bottom:48px}}

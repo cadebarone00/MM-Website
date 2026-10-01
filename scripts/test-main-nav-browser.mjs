@@ -1,4 +1,4 @@
-// End-to-end browser check for the main app navigation: Explore / Tourneys / Pick'ems / Profile are
+// End-to-end browser check for the main app navigation: Explore / Golf Trips / Profile / Tourneys / Pick'ems are
 // the front door, tournaments are entered from Tourneys → My Tournaments, and login lands on Profile.
 // Runs against a production build pointed at scripts/fake-supabase.mjs (real migrations in an
 // in-memory Postgres). Run after `next build`:  node scripts/test-main-nav-browser.mjs
@@ -10,7 +10,7 @@ import { startFakeSupabase } from "./fake-supabase.mjs";
 const APP_PORT = Number(process.env.APP_PORT ?? 3112);
 const FAKE_PORT = Number(process.env.FAKE_PORT ?? 54412);
 const app = `http://localhost:${APP_PORT}`;
-const MAIN_TABS = ["/", "/tournaments/join", "/pickems", "/profile"];
+const MAIN_TABS = ["/", "/golf-trips", "/profile", "/tournaments/join", "/pickems"];
 
 const fake = await startFakeSupabase({ port: FAKE_PORT });
 const fan = await fake.addUser({ name: "fan" });
@@ -46,7 +46,7 @@ try {
   }
 
   const p = await phone(player);
-  // The five main pages share the app chrome: icon-only top bar, the 4-tab bottom menu, the right tab lit.
+  // The five main pages share the app chrome: icon-only top bar, the 5-tab bottom menu, the right tab lit.
   for (const [url, tab] of [["/", "explore"], ["/tournaments/join", "tourneys"], ["/tournaments/mine", "tourneys"], ["/pickems", "pick'ems"], ["/profile", "profile"]]) {
     await p.goto(app + url);
     await p.getByRole("heading", { level: 1 }).first().waitFor();

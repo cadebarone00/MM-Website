@@ -75,6 +75,7 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
   // Main platform pages share a compact title beside the menu icon.
   if (pathname === "/") return <><PlatformHeader home title="The Maroon" />{children}</>;
   if (pathname === "/pickems" || pathname === "/profile") return <><PlatformHeader title={pathname === "/pickems" ? "Pick'ems" : "Profile"} />{children}</>;
+  if (pathname === "/golf-trips") return <><PlatformHeader title="Golf Trips" />{children}</>;
 
   if (inPortal) {
     return (

@@ -4,16 +4,16 @@
  * placeholder next step at /tournaments/create/<key>.
  */
 export interface SetupType {
-  key: "event" | "team" | "league" | "group";
+  key: "golf-trip" | "event" | "team" | "league" | "group";
   name: string;
-  description: string;
 }
 
 export const SETUP_TYPES: readonly SetupType[] = [
-  { key: "event", name: "Event", description: "A one-time tournament or outing" },
-  { key: "team", name: "Team", description: "A roster that competes together" },
-  { key: "league", name: "League", description: "A season with standings" },
-  { key: "group", name: "Group", description: "Friends who play together" },
+  { key: "golf-trip", name: "Golf Trip" },
+  { key: "event", name: "Event" },
+  { key: "team", name: "Team" },
+  { key: "league", name: "League" },
+  { key: "group", name: "Group" },
 ];
 
 export function setupNextStepHref(type: SetupType): string {

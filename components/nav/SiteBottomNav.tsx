@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserRound } from "lucide-react";
+import { Plane, UserRound } from "lucide-react";
 import { siteBottomNavTabActive } from "@/lib/navigation/siteBottomNav";
 import { ExploreIcon, PickemsIcon } from "./ImageIcons";
 import { LeaderboardIcon } from "./LeaderboardIcon";
@@ -12,9 +12,10 @@ const ICON_SIZE = 26;
 
 const TABS = [
   { href: "/", label: "Explore", icon: ExploreIcon, size: 30 },
+  { href: "/golf-trips", label: "Golf Trips", icon: Plane },
+  { href: "/profile", label: "Profile", icon: UserRound },
   { href: "/tournaments/join", label: "Tourneys", icon: LeaderboardIcon },
   { href: "/pickems", label: "Pick'ems", icon: PickemsIcon, size: 32 },
-  { href: "/profile", label: "Profile", icon: UserRound },
 ] as const;
 
 export function SiteBottomNav() {
