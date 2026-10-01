@@ -23,8 +23,9 @@ export function siteBottomNavTabActive(pathname: string, href: string): boolean 
   if (href === "/tournaments/join") {
     return pathname === "/tournaments/join" || pathname.startsWith("/tournaments/join/");
   }
-  if (href === "/account/choose") {
-    return pathname.startsWith("/account");
+  // Profile stays lit on the account screens (e.g. the post-login /account/choose).
+  if (href === "/profile") {
+    return pathname === "/profile" || pathname.startsWith("/profile/") || pathname.startsWith("/account");
   }
   // Explore is the home page; it stays lit on The Maroon's category sub-pages too.
   if (href === "/") {

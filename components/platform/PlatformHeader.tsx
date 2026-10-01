@@ -17,7 +17,7 @@ export function PlatformHeader({ home = false }: { home?: boolean }) {
         </nav>
       </details>
       <Link href="/" className={styles.wordmark}>The Maroon</Link>
-      <Link href="/account/choose" className={styles.account} aria-label="Your account"><UserRound size={22} aria-hidden="true" /></Link>
+      <Link href="/profile" className={styles.account} aria-label="Your account"><UserRound size={22} aria-hidden="true" /></Link>
     </div>
   </header>;
 }

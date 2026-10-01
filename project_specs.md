@@ -1409,7 +1409,7 @@ themeCssVariables(resolved)
 - Existing tests, typecheck, lint and build pass.
 - Before/after screenshots (home, leaderboard, a `/t/` page, Button/Badge) show no change except the intended Figma values from Decision 1.
 
-### Round: Explore = the home page; merge the old Explore page into it (spec 2026-09-30, awaiting approval)
+### Round: Explore = the home page; merge the old Explore page into it (spec 2026-09-30, approved and built 2026-09-30)
 
 **What it is:** The **Explore** button in the bottom menu now opens the main home page (`/`). Everything on the old Explore page (`/the-maroon`) moves onto the home page. Then the old page is deleted.
 
@@ -1493,3 +1493,27 @@ The Explore button lights up on `/` and on any `/the-maroon/...` sub-page.
   - `list_my_active_editions`, which only returns your own rows, skips finished, test and unpublished years, and is denied to anon and authenticated callers
   - the bottom-menu link
 - Typecheck, lint and existing tests pass.
+
+### Round: Tournaments page — maroon background + two action boxes (spec 2026-09-30, awaiting approval)
+
+**What it is:** A restyle of the Tournaments page (`/tournaments/join`), the page the **Tourneys** button opens.
+
+**Changes, top to bottom:**
+1. **Whole page background turns maroon.** The words and lines on it turn white or cream so they stay readable.
+2. **Two boxes, side by side, at the top** (under the "Tournaments" title):
+   - **Left box: "Create a Tournament".** It shows a white flag-on-a-green outline icon. Tapping it opens `/tournaments/new`, the same place the old Create bar went.
+   - **Right box: "Join a Tournament".** It shows the white scoreboard outline icon (the one on the Tourneys button). It's **not tappable yet**. It's just a label for now.
+   - Style: short rounded boxes like the match cards in the screenshot. Each box is maroon with white letters and a white line-drawn ("outline") golf icon.
+3. **The old long "Create Tournament" bar is removed**, because the new box replaces it.
+4. **No other changes.** The paste-a-link box and the Past Tournaments list stay where they are and work the same. They're only recolored to suit the maroon background.
+
+**Not included:** making Join a Tournament do anything, or changing any other page.
+
+**Done means:**
+- The page is maroon top to bottom.
+- Both boxes sit side by side at phone width.
+- Create opens `/tournaments/new`.
+- The old bar is gone.
+- The link box and Past Tournaments still work and are readable.
+- Typecheck, lint and tests pass.
+- I've checked it in the browser at phone width.

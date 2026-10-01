@@ -2,19 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
 import { siteBottomNavTabActive } from "@/lib/navigation/siteBottomNav";
+import { ExploreIcon, PickemsIcon } from "./ImageIcons";
 import { LeaderboardIcon } from "./LeaderboardIcon";
-import { PickemsIcon } from "./PickemsIcon";
 import styles from "./SiteBottomNav.module.css";
 
 const ICON_SIZE = 26;
 
 const TABS = [
-  { href: "/", label: "Explore", icon: Compass },
+  { href: "/", label: "Explore", icon: ExploreIcon, size: 30 },
   { href: "/tournaments/join", label: "Tourneys", icon: LeaderboardIcon },
   { href: "/pickems", label: "Pick'ems", icon: PickemsIcon, size: 32 },
-  { href: "/account/choose", label: "Profile", icon: UserRound },
+  { href: "/profile", label: "Profile", icon: UserRound },
 ] as const;
 
 export function SiteBottomNav() {
