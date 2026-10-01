@@ -37,8 +37,8 @@ export function PlatformHome() {
       <div className={styles.feature}>
         <Image src={category.image} alt="" fill sizes="(max-width: 600px) 100vw, 1120px" />
         <div className={styles.featureCopy}>
-          <p className={styles.kicker}>The Maroon ? {section === "Discover" ? "Beyond the scorecard" : section}</p>
-          <h2>{section === "Discover" ? <>There?s more<br />to the game.</> : category.headline}</h2>
+          <p className={styles.kicker}>The Maroon &middot; {section === "Discover" ? "Beyond the scorecard" : section}</p>
+          <h2>{section === "Discover" ? <>There&apos;s more<br />to the game.</> : category.headline}</h2>
           <p className={styles.description}>{section === "Discover" ? "The places, the people, and the moments between rounds." : category.description}</p>
           <Link href={section === "Discover" ? "/the-maroon" : "/the-maroon/" + category.slug}>Explore {section === "Discover" ? "The Maroon" : section}<ArrowRight size={16} aria-hidden="true" /></Link>
         </div>

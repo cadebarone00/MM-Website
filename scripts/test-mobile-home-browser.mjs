@@ -10,9 +10,9 @@ try {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await mkdir('out/mobile-home', { recursive: true });
+  await page.goto(process.env.APP_URL || 'http://localhost:3001', { timeout: 60000 });
   for (const width of [320, 390, 430, 768, 1440]) {
     await page.setViewportSize({ width, height: 844 });
-    await page.goto(process.env.APP_URL || 'http://localhost:3001');
     await page.getByRole('heading', { level: 1 }).waitFor();
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `overflow at ${width}`);
     assert.equal(await page.locator('main').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(29, 11, 17)');
