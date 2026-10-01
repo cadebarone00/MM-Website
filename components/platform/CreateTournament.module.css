@@ -1,14 +1,6 @@
-/* Create Tournament: maroon top to bottom (like Tourneys). The negative bottom margin runs the
-   maroon through the site's bottom-menu padding (SITE_BOTTOM_NAV_CONTENT_CLASS) on phones. */
-.page{display:flex;flex-direction:column;min-height:calc(100svh - 64px);margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));
-  padding:0 0 calc(24px + 5.75rem + env(safe-area-inset-bottom));background:var(--color-maroon-900);color:#fbf8f1}
-/* Top: the question, centered. */
-.intro{flex:1 1 40%;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;padding:32px 20px 24px;text-align:center}
-.title{margin:0;font:500 40px/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.02em;color:#fff;text-wrap:balance}
-.subtitle{margin:0;font:500 16px/1.4 var(--font-barlow),sans-serif;letter-spacing:.02em;color:#dcc495}
-/* Setup page 1: no header. The top is cream with depth (a soft highlight up top, deepening toward the
+/* Create Tournament and the Golf Trip questionnaire: no header. The top is cream with depth (a soft highlight up top, deepening toward the
    middle); the maroon is a sheet rising from the bottom of the screen with curved top corners, holding the
-   picker. Same negative bottom margin as .page so the maroon runs under the bottom menu. */
+   picker. The negative bottom margin runs the maroon under the bottom menu on phones. */
 .split{display:flex;flex-direction:column;min-height:100svh;margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));
   background:radial-gradient(ellipse 130% 65% at 50% 22%,var(--color-cream-50) 0%,transparent 72%),
   linear-gradient(180deg in oklab,var(--color-cream-100) 0%,var(--color-cream-200) 55%,color-mix(in oklab,var(--color-cream-300) 75%,var(--color-gold-400)) 100%)}
@@ -32,7 +24,37 @@
   font:700 16px/1 var(--font-barlow),sans-serif;letter-spacing:.02em;cursor:pointer;transition:opacity .15s ease}
 .continue:disabled{opacity:.35;cursor:not-allowed}
 .continue:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
+/* SetupSheet: the title and step sit centered on the cream, in maroon. */
+.creamIntro{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;padding:48px 20px 32px;text-align:center}
+.creamTitle{margin:0;font:500 40px/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.02em;color:var(--color-maroon-900);text-wrap:balance}
+.creamNote{margin:0;font:600 15px/1.4 var(--font-barlow),sans-serif;letter-spacing:.02em;color:color-mix(in oklab,var(--color-maroon-900) 70%,transparent)}
+.sheetNote{margin:0 0 auto;font:500 16px/1.4 var(--font-barlow),sans-serif;letter-spacing:.02em;color:#dcc495;text-align:center}
+/* SetupStepForm fills the sheet so Next sits at its bottom, just over the bottom menu. */
+.stepForm{flex:1 1 auto;display:flex;flex-direction:column;gap:16px}
+/* Questionnaire fields: gold labels over bars styled like the page-1 choices. */
+.fields{display:flex;flex-direction:column;gap:14px;margin-bottom:auto}
+.fieldRow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.fieldLabel{padding:0 4px;font:600 14px/1.2 var(--font-barlow),sans-serif;letter-spacing:.02em;color:#dcc495}
+.input{width:100%;min-width:0;min-height:52px;padding:0 16px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);
+  color:#fff;font:600 17px/1.2 var(--font-barlow),sans-serif;color-scheme:dark;transition:border-color .15s ease,background .15s ease}
+.input::placeholder{color:rgba(255,255,255,.4)}
+.input:focus{outline:none;border-color:#dcc495;background:rgba(255,255,255,.1)}
+/* Players: the count slider (cream thumb and fill) and the outlined Invite button. */
+.slider{display:flex;flex-direction:column;gap:10px}
+.sliderHead{display:flex;align-items:baseline;justify-content:space-between}
+.sliderValue{font:500 34px/1 var(--font-spectral),Georgia,serif;color:#fff}
+.range{width:100%;height:32px;accent-color:#fbf8f1;cursor:pointer}
+.range:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
+.invite{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border-radius:16px;cursor:pointer;
+  background:transparent;border:1px dashed rgba(220,196,149,.6);color:#dcc495;font:700 17px/1 var(--font-barlow),sans-serif;letter-spacing:.02em;
+  transition:background .15s ease,border-color .15s ease}
+.invite:hover{background:rgba(255,255,255,.06);border-color:#dcc495}
+.invite:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
+/* The cream "Let's go golfing" button (a link styled like Continue). */
+.start{display:flex;align-items:center;justify-content:center;min-height:56px;font-size:18px}
+.start:hover{background:#f3ecdd}
 /* Placeholder next step. */
 .back{align-self:center;font:600 14px/1.3 var(--font-barlow),sans-serif;color:#dcc495;text-decoration:underline;text-underline-offset:3px}
-@media(max-width:400px){.title{font-size:34px}}
-@media(min-width:1024px){.page{margin-bottom:0;padding-bottom:48px}.split{margin-bottom:0}.picker{padding-bottom:48px}}
+@media(max-width:400px){.creamTitle{font-size:34px}}
+@media(min-width:1024px){.split{margin-bottom:0}.picker{padding-bottom:48px}}

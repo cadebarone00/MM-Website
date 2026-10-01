@@ -76,6 +76,8 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
   if (pathname === "/") return <><PlatformHeader home title="The Maroon" />{children}</>;
   if (pathname === "/pickems" || pathname === "/profile") return <><PlatformHeader title={pathname === "/pickems" ? "Pick'ems" : "Profile"} />{children}</>;
   if (pathname === "/golf-trips") return <><PlatformHeader title="Golf Trip Home" />{children}</>;
+  // The Golf Trip questionnaire has no header, like Create Tournament.
+  if (pathname === "/golf-trips/new" || pathname.startsWith("/golf-trips/new/")) return <>{children}</>;
 
   if (inPortal) {
     return (
