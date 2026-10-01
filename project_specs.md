@@ -1724,3 +1724,19 @@ The Maroon app is the front door. The main navigation is Explore · Tourneys · 
 - **Categories:** flight, lodging, transportation, golf, place, maps, weather, email, calendar. **Manual entry** exists for every category users fill in; Google/Apple Maps and Waze work now as plain links.
 - **Security:** integration keys are server-only env vars read in one file, never `NEXT_PUBLIC_`. OAuth tokens (Gmail/Calendar) need encrypted server-side storage in a table with no client read policy — not built; no tokens are stored anywhere yet.
 - **Not implemented:** any real provider call, OAuth, Golf Trip record types/tables (Flight, Lodging, Transportation, Tee Time, Place) and itinerary mapping — deferred until the Golf Trip persistence schema (other tab) lands, then connected to it with "trip members only" RLS; the itinerary UI; email/calendar import.
+
+### Golf Trip Persistence: Create Golf Trip (owner request 2026-10-01, built; SQL not yet run in production)
+
+**What it is:** Review → **Create Golf Trip** saves the questionnaire to Supabase and opens that trip's real Golf Trip Home at `/golf-trips/<trip id>`.
+
+- **Tables (`supabase/golf_trips.sql`):**
+  - `golf_trips`: name, destination, start/end dates, expected traveler count, golf days, planned rounds, the four planning answers (`includes_tournament`, `lodging_plan`, `flight_plan`, `transportation_plan`, each `yes`/`no`/`undecided`), `status` (`planning`), `created_by`, and an empty `tournament_id` for attaching a real tournament later.
+  - `golf_trip_members`: travelers. The creator is the `organizer` (accepted). `profile_id` is optional so travelers without accounts fit later.
+  - `golf_trip_rounds`: one row per round (day, date, typed course name).
+  - Future modules (flights, lodging, itinerary, …) reference `golf_trips(id)`. None are built.
+- **Writes:** only `create_golf_trip(profile, input)`, called by `POST /api/golf-trips` (service role) after `lib/platform/golfTripCreate.ts` validates the answers. It is all or nothing: a failure saves nothing. The browser sends a request id kept in the draft, so a double tap, a retry or going Back and tapping Create again returns the same trip. Changing any answer (a step's Next) starts a new request id.
+- **Reads:** `get_golf_trip(profile, trip)` returns the trip only to its members. Anyone else (or a missing trip) gets 404, and signed-out visitors go to Log In.
+- **RLS:** members can read their trip's rows. Nobody can insert/update/delete directly. Both functions are callable only by the server.
+- **Review page:** "Creating your trip…" while saving, with the button locked. Errors show in plain words (signed out → Log in link) and the answers stay in place.
+- **Tests:** `lib/platform/golfTripCreate.test.ts` (validation, all-or-nothing, double tap, members-only, RLS) and `scripts/test-golf-trip-create-browser.mjs` (`npm run test:browser:golf-trip`, after `next build`).
+- **Not built:** inviting travelers, editing a trip, trip lists on `/golf-trips`, destination map fields, cover photo, course search, and any flight/lodging/transportation records.

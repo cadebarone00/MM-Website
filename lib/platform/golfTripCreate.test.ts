@@ -85,8 +85,7 @@ test("create_golf_trip saves the trip, its organizer and its rounds, and reads b
   assert.deepEqual(saved.rounds.map((r) => r.courseName), ["Pinehurst No. 2", null, "Pinehurst No. 4"]);
 
   // Golf Trip Home shows exactly what Review showed.
-  const { requestId: _ignored, ...answers } = DRAFT;
-  assert.deepEqual(reviewRows(savedTripAsDraft(saved)), reviewRows({ ...answers, round3Course: "Pinehurst No. 4" }));
+  assert.deepEqual(reviewRows(savedTripAsDraft(saved)), reviewRows({ ...DRAFT, round3Course: "Pinehurst No. 4" }));
   await db.close();
 });
 

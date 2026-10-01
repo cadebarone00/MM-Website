@@ -4,7 +4,7 @@ import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import styles from "./GolfTripHome.module.css";
 
-const TABS = ["Home", "Players", "Team", "Venue", "Info"] as const;
+const TABS = ["Home", "Golf", "Venue", "Info"] as const;
 type Tab = (typeof TABS)[number];
 
 const TOURNAMENT_ANSWERS: Record<string, string> = { yes: "Yes, there's a tournament", no: "No tournament, just golf", undecided: "Not sure yet" };
@@ -13,7 +13,7 @@ const TOURNAMENT_ANSWERS: Record<string, string> = { yes: "Yes, there's a tourna
 const subscribeNever = () => () => {};
 
 /**
- * Golf Trip Home: trip name, a 5-tab selector, and (on Home) one card per part of the trip. Layout only:
+ * Golf Trip Home: trip name, a 4-tab selector, and (on Home) one card per part of the trip. Layout only:
  * cards show the questionnaire answers kept in this tab, or an empty state. Nothing is saved yet.
  * `preview` replaces those answers with fixed ones (the /dev/tournament design preview).
  */
@@ -25,12 +25,10 @@ export function GolfTripHome({ preview }: { preview?: GolfTripDraft } = {}) {
 
   const dates = tripDates(draft.startDate, draft.endDate);
   const dateRange = dates.length > 0 ? `${shortTripDate(dates[0])} – ${shortTripDate(dates[dates.length - 1])}` : "";
-  const subtitle = [draft.destination, dateRange].filter(Boolean).join(" · ");
 
   return <main className={styles.page}>
     <header className={styles.header}>
       <h1 className={styles.title}>{draft.tripName || "Your Golf Trip"}</h1>
-      {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
       <div className={styles.tabs} role="tablist" aria-label="Trip sections">
         {TABS.map((name) => <button key={name} type="button" role="tab" aria-selected={tab === name}
           className={`${styles.tab} ${tab === name ? styles.tabActive : ""}`} onClick={() => setTab(name)}>{name}</button>)}
