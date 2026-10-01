@@ -1546,7 +1546,7 @@ Open The Maroon → Main app (bottom menu: Explore | Tourneys | Pick'ems | Profi
 - Typecheck, lint and tests pass, including a test for the Tourneys-tab highlight on the new page.
 - I've checked it in the browser at phone width.
 
-### Round: Profile Stats tab — one table + the career stats page folded in (spec 2026-09-30, approved 2026-09-30)
+### Round: Profile Stats tab — one table + the career stats page folded in (spec 2026-09-30, approved 2026-09-30, built)
 
 **What it is:** A rework of the **Stats** tab on My Profile (`/profile`). It now holds everything from the website's player stats page (`/teams/stats/players/<player>`), so the profile doesn't link out.
 
@@ -1583,3 +1583,10 @@ Open The Maroon → Main app (bottom menu: Explore | Tourneys | Pick'ems | Profi
 - The website stats page is unchanged.
 - Typecheck, lint and tests pass, including updated tests for the table data.
 - I've checked it in the browser at phone width.
+
+### Round: Bottom-menu page titles (owner request 2026-09-30, built)
+
+- The four bottom-menu pages (Explore `/`, Tourneys `/tournaments/join`, Pick'ems `/pickems`, Profile `/profile`) use the platform top bar with only the ☰ menu and the account icon. There's no "The Maroon" wordmark (`PlatformHeader wordmark={false}`).
+- Each page shows its own big title, in the Tourneys title style: **The Maroon** (replaces "The digital home for competitive golf."), **Tourneys** (was "Tournaments"), **Pick'ems** and **Profile**. On Profile, the person's name is now a smaller heading under the title.
+- `/pickems` exists as an all-maroon page with only its title, for now.
+- Every other page keeps its current header.

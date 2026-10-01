@@ -32,6 +32,8 @@ export function ProfileView({ profile }: { profile: MyProfile }) {
         <Link href="/settings" aria-label="Settings" className="absolute right-4 top-6 rounded-full p-1 text-cream-50 hover:text-gold-300">
           <Settings size={28} aria-hidden="true" />
         </Link>
+        {/* Big page title, matching the Tourneys title. */}
+        <h1 className="mb-5 text-center font-serif text-[34px] font-medium leading-[1.1] tracking-[-0.02em] min-[401px]:text-[40px]">Profile</h1>
         <div className="mx-auto flex max-w-[640px] items-center gap-4 pr-10">
           <div className="relative shrink-0">
             <span className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-maroon-600 font-condensed text-3xl font-bold text-cream-50 shadow-[0_0_0_3px_#c9a86e]">
@@ -47,7 +49,7 @@ export function ProfileView({ profile }: { profile: MyProfile }) {
             )}
           </div>
           <div className="min-w-0">
-            <h1 className="break-words font-serif text-2xl font-bold leading-tight">{profile.name}</h1>
+            <h2 className="break-words font-serif text-2xl font-bold leading-tight">{profile.name}</h2>
             {profile.memberSince && <p className="mt-1 text-sm text-cream-50/70">Member since {profile.memberSince}</p>}
             {profile.teams.length > 0 && (
               <ul className="mt-2 flex flex-wrap gap-2" aria-label="Teams">

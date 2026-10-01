@@ -13,7 +13,7 @@ export function PlatformHome() {
   const category = maroonCategories.find(item => item.slug === (section === "Discover" ? "courses" : section.toLowerCase()))!;
   return <main className={styles.home}>
     <section className={styles.upper} aria-label="Your next golf trip">
-      <h1 className={styles.tagline}>The digital home for competitive golf.</h1>
+      <h1 className={styles.pageTitle}>The Maroon</h1>
       <div className={styles.cards} aria-label="Tournament actions">
         <article className={styles.tripCard}>
           <div className={styles.tripPhoto}>

@@ -48,8 +48,9 @@ try {
   // Player.
   const p = await phone(player);
   await p.goto(`${app}/profile`);
-  await p.getByRole("heading", { level: 1 }).waitFor();
-  assert.match(await p.getByRole("heading", { level: 1 }).innerText(), /Cade Barone/);
+  await p.getByRole("heading", { level: 2 }).waitFor();
+  assert.equal(await p.getByRole("heading", { level: 1 }).innerText(), "Profile");
+  assert.match(await p.getByRole("heading", { level: 2 }).innerText(), /Cade Barone/);
   assert.match(await p.locator("body").innerText(), /Member since/i);
   assert.equal(await p.getByRole("link", { name: "Edit my bio" }).getAttribute("href"), "/portal/profile");
   assert.equal(await p.getByRole("link", { name: "Settings" }).getAttribute("href"), "/settings");
@@ -68,8 +69,8 @@ try {
   await fake.db.query("drop function public.list_my_active_editions(uuid)");
   const f = await phone(fan, 360);
   await f.goto(`${app}/profile`);
-  await f.getByRole("heading", { level: 1 }).waitFor();
-  assert.equal((await f.getByRole("heading", { level: 1 }).innerText()).trim(), LONG_NAME);
+  await f.getByRole("heading", { level: 2 }).waitFor();
+  assert.equal((await f.getByRole("heading", { level: 2 }).innerText()).trim(), LONG_NAME);
   assert.equal(await f.getByRole("link", { name: "Edit my bio" }).count(), 0, "fans get no pencil");
   assert.match(await f.locator("main").innerText(), /No active tournaments/i);
   assert.equal(await f.getByRole("link", { name: /Join a Tournament/i }).getAttribute("href"), "/tournaments/join");

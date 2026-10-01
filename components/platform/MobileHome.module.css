@@ -14,3 +14,6 @@
 .home a:focus-visible,.home button:focus-visible{outline:3px solid #b99c6b;outline-offset:3px}.cardAction:focus-visible{outline-offset:-4px}
 @media(max-width:600px){.filters{gap:2px;padding:9px 8px}.filters button{font-size:12px}.tripCard{flex-basis:calc(100% - 12px)}.tripPhoto{height:190px}.tagline{padding-bottom:19px}.feature{min-height:440px}}
 @media(min-width:601px){.tripCard{flex:1}.tagline{padding-top:12px}.accountRow{padding-top:10px;padding-bottom:18px}.featureCopy{padding:40px 40px 125px}.feature>img{object-position:center 60%}}
+/* Big page title, matching the Tourneys title (JoinTournament.module.css .title). */
+.pageTitle{margin:0;padding:8px 24px 22px;font:500 40px/1.1 var(--font-spectral),Georgia,serif;text-align:center;color:#fbf8f1;letter-spacing:-.02em}
+@media(max-width:400px){.pageTitle{font-size:34px}}
