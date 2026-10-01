@@ -4,7 +4,7 @@ import { getProfileOverrides, mergeProfile } from "@/lib/data/players/overrides"
 import { getPlayerStatsByYear } from "@/lib/data/stats";
 import { summarizePastEditions, type PastTournament } from "@/lib/platform/pastTournaments";
 import {
-  careerStats, initialsFor, maroonYearsPlayed, memberSinceLabel, mergeCompleted, profileDisplayName, teamsPlayed, type MyProfile,
+  careerStats, initialsFor, maroonYearsPlayed, memberSinceLabel, mergeCompleted, playerFullName, profileDisplayName, teamsPlayed, type MyProfile,
 } from "./myProfile";
 
 /** A platform list, or empty if its SQL isn't installed yet or fails. */
@@ -35,7 +35,7 @@ export async function loadMyProfile(): Promise<MyProfile | null> {
   if (playerSlug) {
     const { data: slot } = await createSupabaseServiceRoleClient().from("player_slots").select("full_name").eq("player_slug", playerSlug).single();
     const staticProfile = getPlayerProfileBySlug(playerSlug);
-    fullName = slot?.full_name ?? staticProfile?.fullName ?? null;
+    fullName = playerFullName(slot?.full_name, staticProfile?.fullName);
     avatarSrc = staticProfile?.avatarSrc ?? null;
     const base = staticProfile ?? { id: playerSlug, slug: playerSlug, fullName: fullName ?? playerSlug, avatarSrc: null, bio: "", history: [] };
     bio = mergeProfile(base, await getProfileOverrides(playerSlug)).bio?.trim() || null;

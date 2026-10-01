@@ -1,7 +1,7 @@
 // End-to-end browser check for /profile against a production build pointed at
 // scripts/fake-supabase.mjs (real migrations in an in-memory Postgres).
 // Run after `next build`:  node scripts/test-profile-browser.mjs
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { startFakeSupabase } from "./fake-supabase.mjs";
@@ -12,6 +12,9 @@ const app = `http://localhost:${APP_PORT}`;
 
 const fake = await startFakeSupabase({ port: FAKE_PORT });
 const fan = await fake.addUser({ name: "fan" });
+// A long name with no spaces is the worst case for sideways scrolling at 360px.
+const LONG_NAME = "fan" + "x".repeat(45);
+await fake.db.query("update profiles set display_name = $2 where id = $1", [fan.id, LONG_NAME]);
 const player = await fake.addUser({ name: "cadeuser" });
 await fake.db.query("update profiles set player_slug = 'cade-barone' where id = $1", [player.id]);
 
@@ -66,7 +69,7 @@ try {
   const f = await phone(fan, 360);
   await f.goto(`${app}/profile`);
   await f.getByRole("heading", { level: 1 }).waitFor();
-  assert.match(await f.getByRole("heading", { level: 1 }).innerText(), /fan/);
+  assert.equal((await f.getByRole("heading", { level: 1 }).innerText()).trim(), LONG_NAME);
   assert.equal(await f.getByRole("link", { name: "Edit my bio" }).count(), 0, "fans get no pencil");
   assert.match(await f.locator("main").innerText(), /No active tournaments/i);
   assert.equal(await f.getByRole("link", { name: /Join a Tournament/i }).getAttribute("href"), "/tournaments/join");
@@ -85,7 +88,9 @@ try {
   console.error(serverLog.slice(-4000));
 } finally {
   await browser.close();
-  server.kill();
+  // On Windows the server runs under a shell; kill the whole tree or `next start` keeps the port.
+  if (process.platform === "win32") spawnSync("taskkill", ["/pid", String(server.pid), "/T", "/F"], { stdio: "ignore" });
+  else server.kill();
   await fake.close();
   process.exit(failed ? 1 : 0);
 }

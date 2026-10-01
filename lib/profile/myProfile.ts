@@ -38,6 +38,11 @@ export function profileDisplayName(n: { fullName?: string | null; displayName?: 
   return filled(n.fullName) ?? filled(n.displayName) ?? filled(n.username) ?? filled(n.email?.split("@")[0]) ?? "Golfer";
 }
 
+/** A player's name: the saved player_slots name unless it's blank, else their hand-written profile's. */
+export function playerFullName(slotName: string | null | undefined, staticName: string | null | undefined): string | null {
+  return filled(slotName) ?? filled(staticName);
+}
+
 export function initialsFor(name: string): string {
   const letters = name.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0].toUpperCase());
   return letters.length ? letters.join("") : "?";

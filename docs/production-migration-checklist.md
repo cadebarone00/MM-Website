@@ -19,7 +19,7 @@ skip any. Each step says what "good" looks like.
 | ACTIVE TOURNAMENTS | `supabase/platform_active_editions.sql` | Lists the unfinished tournaments a signed-in person is on the roster of, on `/profile` (read-only) | Run `drop function public.list_my_active_editions(uuid);` |
 | ACTIVITY | `supabase/platform_activity.sql` | Tournament activity feed: commissioner announcements (everyone / players only) and quiet automatic events (published, players, teams, schedule) for `/t/<address>/<year>` | Needs DASHBOARD and PUBLIC SITE. Run `drop function public.record_edition_activity(uuid, uuid, text, jsonb); drop function public.post_commissioner_announcement(uuid, uuid, text, text, text); drop function public.get_tournament_activity(text, integer, uuid, integer); drop table public.tournament_activity;` (the table holds commissioners' posts: back it up first) |
 
-C2, CREATE, DASHBOARD, PUBLIC SITE, ACCESS REQUESTS and PAST TOURNAMENTS each need C1; PUBLIC SITE also needs DASHBOARD. Undo ACCESS REQUESTS before undoing C1. Run C1 before CREATE and DASHBOARD, since C1 also adds the planned-courses and planned-rounds tables they use. To undo C1, first
+C2, CREATE, DASHBOARD, PUBLIC SITE, ACCESS REQUESTS, PAST TOURNAMENTS and ACTIVE TOURNAMENTS each need C1; PUBLIC SITE also needs DASHBOARD. Undo ACCESS REQUESTS before undoing C1. Run C1 before CREATE and DASHBOARD, since C1 also adds the planned-courses and planned-rounds tables they use. To undo C1, first
 undo C2 and CREATE.
 
 ---

@@ -1446,7 +1446,7 @@ The Explore button lights up on `/` and on any `/the-maroon/...` sub-page.
 - Typecheck, lint and the bottom-menu tests pass, with tests updated for the new Explore link.
 - I've checked it in the browser at phone width.
 
-### Round: My Profile page (spec 2026-09-30, design approved 2026-09-30, written spec awaiting approval)
+### Round: My Profile page (spec 2026-09-30, approved 2026-09-30, built — needs `supabase/platform_active_editions.sql` run in production)
 
 **What it is:** The signed-in person's own profile page, laid out like the fantasy-app Account screenshot, in Maroon colors (dark maroon gradient instead of teal). It looks a lot like the player profile, but it's about *you*.
 
@@ -1494,26 +1494,92 @@ The Explore button lights up on `/` and on any `/the-maroon/...` sub-page.
   - the bottom-menu link
 - Typecheck, lint and existing tests pass.
 
-### Round: Tournaments page — maroon background + two action boxes (spec 2026-09-30, awaiting approval)
+### Round: Tourneys flow — Tourneys page → My Tournaments → Tournament Home (spec 2026-09-30, awaiting approval)
 
-**What it is:** A restyle of the Tournaments page (`/tournaments/join`), the page the **Tourneys** button opens.
+**The flow this round builds:**
 
-**Changes, top to bottom:**
-1. **Whole page background turns maroon.** The words and lines on it turn white or cream so they stay readable.
-2. **Two boxes, side by side, at the top** (under the "Tournaments" title):
-   - **Left box: "Create a Tournament".** It shows a white flag-on-a-green outline icon. Tapping it opens `/tournaments/new`, the same place the old Create bar went.
-   - **Right box: "Join a Tournament".** It shows the white scoreboard outline icon (the one on the Tourneys button). It's **not tappable yet**. It's just a label for now.
-   - Style: short rounded boxes like the match cards in the screenshot. Each box is maroon with white letters and a white line-drawn ("outline") golf icon.
-3. **The old long "Create Tournament" bar is removed**, because the new box replaces it.
-4. **No other changes.** The paste-a-link box and the Past Tournaments list stay where they are and work the same. They're only recolored to suit the maroon background.
+```
+Open The Maroon → Main app (bottom menu: Explore | Tourneys | Pick'ems | Profile)
+  → Tap Tourneys → Tourneys page
+       [Create a Tournament] [Join a Tournament]
+       [My Tournaments]
+       Past Tournaments list
+  → Tap My Tournaments → list of my tournaments
+  → Tap "Maroon Masters 2027" → enter that tournament
+  → Tournament Home (Home | Matches | Leaderboard | Players | More)
+```
 
-**Not included:** making Join a Tournament do anything, or changing any other page.
+**1. Tourneys page restyle (`/tournaments/join`, opened by the Tourneys button):**
+- **Whole page is maroon.** Its text and lines turn white or cream so they stay readable.
+- **Two boxes side by side at the top**, under the "Tournaments" title. Both are short rounded maroon boxes with white letters and a white line-drawn golf icon.
+  - **Create a Tournament** has a flag-on-a-green icon and opens `/tournaments/new`.
+  - **Join a Tournament** has the scoreboard icon and is **not tappable yet**.
+- **My Tournaments button** sits below the two boxes and spans their full width. It opens the new My Tournaments list (part 2).
+- **The old long "Create Tournament" bar is removed.**
+- **The paste-a-link box and the Past Tournaments list stay** and work the same; they're only recolored. Past Tournaments still opens each year's public site for now.
+
+**2. New My Tournaments list (`/tournaments/mine`):**
+- **Uses the same maroon look as the Tourneys page.** The Tourneys button stays lit on this page.
+- **What it lists:** every tournament year the signed-in person is **playing in** that **hasn't finished yet** (current and upcoming).
+  - "Playing in" means they're on that year's roster.
+  - Commissioners are also players, so their tournaments show up the same way.
+  - Finished years stay in Past Tournaments.
+- **Each row** shows the tournament name, year, place and dates, for example "Maroon Masters 2027".
+- **Tapping a row opens that year's Tournament Home**, `/play/<tournament>/<year>`. That's the already-built Home | Matches | Leaderboard | Players | More app.
+- **Signed out:** "Log in to see your tournaments", with a Log In link.
+- **Empty:** "You're not in any upcoming tournaments yet."
+- **Error:** "We couldn't load your tournaments right now."
+- **Name clash:** the organizer studio's own "My Tournaments" page at `/tournaments` (Continue Setup / Preview) is a different page and isn't changed.
+
+**3. Data:** No new SQL. The list reuses `list_my_active_editions()`, which the My Profile round already added (`supabase/platform_active_editions.sql`, the same "unfinished roster years" rule). It works in production once that file is run.
+
+**Not included (later rounds):**
+- the past-tournament stats archive
+- making Join a Tournament do anything
+- any change to Tournament Home itself
+- the organizer studio
 
 **Done means:**
-- The page is maroon top to bottom.
-- Both boxes sit side by side at phone width.
-- Create opens `/tournaments/new`.
-- The old bar is gone.
-- The link box and Past Tournaments still work and are readable.
-- Typecheck, lint and tests pass.
+- Tourneys → My Tournaments → tap a tournament → Tournament Home works end to end.
+- The Tourneys page is maroon, with the two boxes, the My Tournaments button and no old bar.
+- The new list shows only current/upcoming roster years, and handles signed-out, empty and error states.
+- Typecheck, lint and tests pass, including a test for the Tourneys-tab highlight on the new page.
+- I've checked it in the browser at phone width.
+
+### Round: Profile Stats tab — one table + the career stats page folded in (spec 2026-09-30, awaiting approval)
+
+**What it is:** A rework of the **Stats** tab on My Profile (`/profile`). It now holds everything from the website's player stats page (`/teams/stats/players/<player>`), so the profile doesn't link out.
+
+**Top to bottom on the Stats tab:**
+1. **The table starts right under the Tournaments | Stats | About tabs.** The extra gap above it goes away.
+2. **The table is flipped.**
+   - **Columns:** **Year**, **Event**, then one column for every stat we track. That's the full list from the website stats page:
+     - Scoring Avg, Team Points, Earned, Skins
+     - Putting Avg, Putts/Hole
+     - Par 3, Par 4 and Par 5 Avg
+     - GIR %, FIR %
+     - 1-Putts, 3+ Putts, Up & Down %
+     - Birdie-or-Better, Double-or-Worse
+     - Bounce Back %, Fall Off %
+     - Strokes Gained: Total, Off Tee, Approach, Around Green and Putting
+   - **Rows:** one per tournament played, newest at the bottom. A new tournament simply adds a row.
+   - **Total row** at the bottom, in gold:
+     - **Counts are added up:** points, earnings, skins, 1-putts, 3+ putts, birdies and doubles.
+     - **Averages and percentages show "—" in the total row.** Adding them up would give a wrong number, and this matches the website page today.
+   - **Scrolling:** on a phone the table scrolls sideways. **Year and Event stay pinned** on the left so you always know which row you're on.
+   - **Missing stats** show "—".
+   - **Event** says "The Maroon Tournament" for each year, since that's the only tournament with stats so far.
+3. **Under the table: "Performance at a glance."** This is the gold 5-point chart (Score, Fairways, Greens, Up & Down, Putting) plus the 4 tiles (Scoring avg, Career points, Fairways, Greens), moved over from the website stats page. They're restyled dark to match the profile.
+4. **The "Full career stats" link is removed**, because it's all here now.
+
+**Not changed:** the website's own player stats page keeps working for public visitors. Its numbers come from the same shared code, so both pages always agree.
+
+**Not included:** stats for platform (non-Maroon) tournaments, which don't record stats yet.
+
+**Done means:**
+- The table is flipped as above, with a total row and pinned Year/Event.
+- The chart and tiles sit under it.
+- The link is gone.
+- The website stats page is unchanged.
+- Typecheck, lint and tests pass, including updated tests for the table data.
 - I've checked it in the browser at phone width.

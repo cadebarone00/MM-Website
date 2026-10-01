@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { Tournament } from "../data/types";
 import {
-  careerStats, initialsFor, maroonYearsPlayed, memberSinceLabel, mergeCompleted, profileDisplayName, teamsPlayed,
+  careerStats, initialsFor, maroonYearsPlayed, memberSinceLabel, mergeCompleted, playerFullName, profileDisplayName, teamsPlayed,
 } from "./myProfile";
 
 const year = (y: number, slug: string, maroon: string[], white: string[]) =>
@@ -78,4 +78,11 @@ test("career stats: four headline rows with totals; null when there are none", (
   });
   assert.equal(careerStats([{ year: 2024, stats: null }]), null);
   assert.equal(careerStats([]), null);
+});
+
+test("player name: a blank saved name falls back to the hand-written one", () => {
+  assert.equal(playerFullName("Cade B.", "Cade Barone"), "Cade B.");
+  assert.equal(playerFullName("   ", "Cade Barone"), "Cade Barone");
+  assert.equal(playerFullName(null, "Cade Barone"), "Cade Barone");
+  assert.equal(playerFullName("", undefined), null);
 });
