@@ -1,3 +1,8 @@
 .pageHeader > header {
+  background: #1d0b11;
   border-bottom: 0;
+}
+
+.pageHeader > main {
+  --tj-bg: #1d0b11;
 }

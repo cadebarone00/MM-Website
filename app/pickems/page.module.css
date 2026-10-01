@@ -1,4 +1,9 @@
 /* Scoped by the mounted page so this does not affect other platform headers. */
 :global(header):has(+ .page) {
+  background: #1d0b11;
   border-bottom: 0;
+}
+
+main.page {
+  --tj-bg: #1d0b11;
 }
