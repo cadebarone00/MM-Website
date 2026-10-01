@@ -21,6 +21,8 @@ test("isSiteBottomNavHidden shows main site routes", () => {
 test("siteBottomNavTabActive", () => {
   assert.equal(siteBottomNavTabActive("/tournaments/join", "/tournaments/join"), true);
   assert.equal(siteBottomNavTabActive("/account/settings", "/account/choose"), true);
-  assert.equal(siteBottomNavTabActive("/the-maroon/news", "/the-maroon"), true);
-  assert.equal(siteBottomNavTabActive("/website", "/the-maroon"), false);
+  assert.equal(siteBottomNavTabActive("/", "/"), true);
+  assert.equal(siteBottomNavTabActive("/the-maroon/news", "/"), true);
+  assert.equal(siteBottomNavTabActive("/website", "/"), false);
+  assert.equal(siteBottomNavTabActive("/tournaments/join", "/"), false);
 });

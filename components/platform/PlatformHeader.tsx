@@ -11,7 +11,7 @@ export function PlatformHeader({ home = false }: { home?: boolean }) {
           <Link href="/">Home</Link>
           <Link href="/tournaments">My Tournaments</Link>
           <Link href="/tournaments/new">Create Tournament</Link>
-          <Link href="/the-maroon">Explore The Maroon</Link>
+          <Link href="/">Explore The Maroon</Link>
           <Link href="/website">The Maroon Tournament</Link>
           <Link href="/contact">Contact Us</Link>
         </nav>

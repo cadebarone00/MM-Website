@@ -2,13 +2,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Flag, Plus } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Flag, Plus } from "lucide-react";
 import { maroonCategories } from "@/lib/data/theMaroon";
+import { MaroonSection } from "@/components/maroon/MaroonSection";
 import styles from "./MobileHome.module.css";
-const sections = ["Discover", "Courses", "News"] as const;
+const sections = ["Discover", "Courses", "Equipment", "Teaching", "News"] as const;
 export function PlatformHome() {
   const [section, setSection] = useState<(typeof sections)[number]>("Discover");
-  const category = maroonCategories.find(item => item.slug === (section === "News" ? "news" : "courses"))!;
+  // Discover has no category of its own, so it borrows the Courses photo.
+  const category = maroonCategories.find(item => item.slug === (section === "Discover" ? "courses" : section.toLowerCase()))!;
   return <main className={styles.home}>
     <section className={styles.upper} aria-label="Your next golf trip">
       <h1 className={styles.tagline}>The digital home for competitive golf.</h1>
@@ -28,6 +30,7 @@ export function PlatformHome() {
           <Link href="/tournaments/new" className={styles.cardAction}>Create Tournament <span><ArrowRight size={16} aria-hidden="true" /></span></Link>
         </article>
       </div>
+      <div className={styles.myTournaments}><button type="button" disabled aria-describedby="my-tournaments-status">My Tournaments</button><p id="my-tournaments-status">Coming soon</p></div>
       <div className={styles.accountRow}><p>Already part of the club?</p><Link href="/login">Log In <ArrowRight size={14} aria-hidden="true" /></Link></div>
     </section>
     <section className={styles.discover} aria-label="Explore The Maroon">
@@ -40,9 +43,16 @@ export function PlatformHome() {
           <p className={styles.kicker}>The Maroon &middot; {section === "Discover" ? "Beyond the scorecard" : section}</p>
           <h2>{section === "Discover" ? <>There&apos;s more<br />to the game.</> : category.headline}</h2>
           <p className={styles.description}>{section === "Discover" ? "The places, the people, and the moments between rounds." : category.description}</p>
-          <Link href={section === "Discover" ? "/the-maroon" : "/the-maroon/" + category.slug}>Explore {section === "Discover" ? "The Maroon" : section}<ArrowRight size={16} aria-hidden="true" /></Link>
+          <Link href={section === "Discover" ? "#beyond-the-scorecard" : "/the-maroon/" + category.slug}>Explore {section === "Discover" ? "The Maroon" : section}<ArrowRight size={16} aria-hidden="true" /></Link>
         </div>
       </div>
     </section>
+    <div className="mx-auto max-w-[1120px] bg-cream-50 px-4 py-5 font-title text-ink-900 sm:px-7 sm:py-8">
+      <header id="beyond-the-scorecard" className="scroll-mt-4 pt-2"><p className="font-condensed text-xs uppercase tracking-widest text-maroon-700">The Maroon</p><h2 className="mt-2 text-3xl font-bold sm:text-4xl">Beyond the scorecard.</h2><p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-500">The courses, the gear, the lessons, and the stories that bring us back to golf.</p></header>
+      <section aria-label="Explore The Maroon categories" className="my-6 grid grid-cols-2 gap-3 sm:my-10 lg:grid-cols-4">
+        {maroonCategories.map((item, index) => <Link key={item.slug} href={`/the-maroon/${item.slug}`} className="group rounded-lg border border-gold-300 bg-white p-4 transition-colors hover:bg-cream-100 sm:p-5"><div className="flex justify-between text-maroon-700"><span className="font-condensed text-xs text-ink-400">0{index + 1}</span><ArrowUpRight size={17} /></div><h3 className="mt-4 text-xl font-bold sm:text-2xl">{item.label}</h3><p className="mt-2 text-xs leading-relaxed text-ink-500 sm:text-sm">{item.headline}</p></Link>)}
+      </section>
+      <div className="space-y-8 pb-8 sm:space-y-12">{maroonCategories.map((item) => <MaroonSection key={item.slug} category={item} />)}</div>
+    </div>
   </main>;
 }

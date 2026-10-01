@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, Flag, UserRound } from "lucide-react";
+import { Compass, ListChecks, UserRound } from "lucide-react";
 import { siteBottomNavTabActive } from "@/lib/navigation/siteBottomNav";
+import { LeaderboardIcon } from "./LeaderboardIcon";
 import styles from "./SiteBottomNav.module.css";
 
 const TABS = [
-  { href: "/tournaments/join", label: "Tourneys", icon: Flag },
+  { href: "/", label: "Explore", icon: Compass },
+  { href: "/tournaments/join", label: "Tourneys", icon: LeaderboardIcon },
+  { href: "/pickems", label: "Pick'ems", icon: ListChecks },
   { href: "/account/choose", label: "Profile", icon: UserRound },
-  { href: "/the-maroon", label: "Explore", icon: Compass },
 ] as const;
 
 export function SiteBottomNav() {

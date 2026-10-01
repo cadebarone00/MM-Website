@@ -8,7 +8,7 @@ import type { NextTournamentOverride } from "@/lib/data/types";
 // Pages that don't exist yet point at "#" until they're built.
 const footerLinks = [
   [
-    { label: "About The Maroon", href: "/the-maroon" },
+    { label: "About The Maroon", href: "/" },
     { label: "About the Course", href: "/the-maroon/courses" },
     { label: "Attendance Info", href: "/schedule" },
   ],

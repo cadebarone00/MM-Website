@@ -1408,3 +1408,40 @@ themeCssVariables(resolved)
 - The system default is used when a tournament has no branding. The Maroon preset is never used for other tournaments.
 - Existing tests, typecheck, lint and build pass.
 - Before/after screenshots (home, leaderboard, a `/t/` page, Button/Badge) show no change except the intended Figma values from Decision 1.
+
+### Round: Explore = the home page; merge the old Explore page into it (spec 2026-09-30, awaiting approval)
+
+**What it is:** The **Explore** button in the bottom menu now opens the main home page (`/`). Everything on the old Explore page (`/the-maroon`) moves onto the home page. Then the old page is deleted.
+
+**Bottom menu (already built, not yet committed):** Explore → Tourneys → Pick'ems → Profile.
+- Tourneys uses the new scoreboard icon.
+- Pick'ems links to `/pickems`. That page doesn't exist yet, so it shows "page not found" for now.
+
+**What moves onto the home page (`/`)**, added below what's already there:
+1. **Explore filter row.** It currently has Discover · Courses · News. It becomes Discover · Courses · Equipment · Teaching · News, so all 4 categories have a button.
+2. **My Tournaments button.** It sits next to the existing Create Tournament card area. It stays greyed out with "Coming soon", same as on the old page.
+3. **"Beyond the scorecard" header**, followed by the **4 category cards** (Courses, Equipment, Teaching, News). Each card opens its sub-page, for example `/the-maroon/courses`.
+4. **The 4 category sections** (the longer Courses / Equipment / Teaching / News blocks with their "Explore" links, the course guide and the archive link).
+5. "Create Tournament" from the old page is **not** duplicated, because the home page already has it.
+
+**Deleted:**
+- The old Explore page, `app/the-maroon/page.tsx`. Going to `/the-maroon` will show "page not found".
+- The sub-pages `/the-maroon/courses`, `/equipment`, `/teaching` and `/news` **stay**, along with their photo header and dropdown menu. Their "Home" menu link already goes to `/`.
+
+**Links that pointed at `/the-maroon` now point at `/`:**
+- the bottom-menu Explore button
+- the footer's "About The Maroon"
+- the platform header's "Explore The Maroon"
+- the home page's "Explore The Maroon" button
+
+The Explore button lights up on `/` and on any `/the-maroon/...` sub-page.
+
+**Not included:** building the Pick'ems page or a real My Tournaments button, and any visual redesign. Moved pieces keep their current look.
+
+**Done means:**
+- Explore opens `/`.
+- Every button and section from the old page appears on `/`.
+- `/the-maroon` is gone, and its sub-pages still work.
+- No links lead to the deleted page.
+- Typecheck, lint and the bottom-menu tests pass, with tests updated for the new Explore link.
+- I've checked it in the browser at phone width.

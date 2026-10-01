@@ -36,7 +36,7 @@ export function MaroonMenu() {
 
   return (
     <ul ref={menuRef} className="flex w-full items-center justify-between gap-1 sm:justify-center sm:gap-[clamp(24px,5vw,80px)]">
-      <li><Link href="/" aria-current={pathname === "/" || pathname === "/the-maroon" ? "page" : undefined} className="flex min-h-[52px] items-center border-b border-transparent px-0 py-2 font-title text-[9px] font-semibold uppercase tracking-normal text-white hover:border-white aria-[current=page]:border-white sm:px-2 sm:text-sm sm:tracking-[0.14em]">Home</Link></li>
+      <li><Link href="/" aria-current={pathname === "/" ? "page" : undefined} className="flex min-h-[52px] items-center border-b border-transparent px-0 py-2 font-title text-[9px] font-semibold uppercase tracking-normal text-white hover:border-white aria-[current=page]:border-white sm:px-2 sm:text-sm sm:tracking-[0.14em]">Home</Link></li>
       {menus.map((menu) => {
         const isOpen = open === menu.label;
         const href = `/the-maroon/${menu.label.toLowerCase()}`;

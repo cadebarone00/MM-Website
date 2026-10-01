@@ -26,8 +26,9 @@ export function siteBottomNavTabActive(pathname: string, href: string): boolean 
   if (href === "/account/choose") {
     return pathname.startsWith("/account");
   }
-  if (href === "/the-maroon") {
-    return pathname === "/the-maroon" || pathname.startsWith("/the-maroon/");
+  // Explore is the home page; it stays lit on The Maroon's category sub-pages too.
+  if (href === "/") {
+    return pathname === "/" || pathname.startsWith("/the-maroon/");
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
