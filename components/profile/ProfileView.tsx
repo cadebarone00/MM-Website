@@ -27,11 +27,11 @@ export function ProfileView({ profile }: { profile: MyProfile }) {
   return (
     // Extend the profile background through the bottom-menu padding.
     <div className="flex min-h-screen min-w-0 flex-col bg-cream-50 text-maroon-900 mb-[calc(-5.75rem-env(safe-area-inset-bottom))] lg:mb-0">
-      <header className="relative flex min-h-[228px] items-center text-cream-50 bg-[radial-gradient(120%_90%_at_50%_0%,#6b161a_0%,#380001_55%,#240001_100%)] px-5 pb-10 pt-20">
+      <header className="relative z-10 flex min-h-[228px] flex-col rounded-b-3xl text-cream-50 bg-[radial-gradient(120%_90%_at_50%_0%,#6b161a_0%,#380001_55%,#240001_100%)] px-5 pb-3 pt-16">
         <Link href="/settings" aria-label="Settings" className="absolute right-4 top-6 flex h-11 w-11 items-center justify-center rounded-full text-cream-50 hover:text-gold-300">
           <Settings size={28} aria-hidden="true" />
         </Link>
-        <div className="mx-auto flex w-full max-w-[640px] items-center gap-5">
+        <div className="mx-auto flex w-full max-w-[640px] items-center gap-5 pl-[10%]">
           <div className="relative shrink-0">
             <span className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-maroon-600 font-condensed text-3xl font-bold text-cream-50 shadow-[0_0_0_3px_#c9a86e]">
               {profile.avatarSrc
@@ -48,31 +48,19 @@ export function ProfileView({ profile }: { profile: MyProfile }) {
           <div className="min-w-0">
             <h2 className="break-words font-serif text-2xl font-bold leading-tight">{profile.name}</h2>
             {profile.memberSince && <p className="mt-1 text-sm text-cream-50/70">Member since {profile.memberSince}</p>}
-            {profile.teams.length > 0 && (
-              <ul className="mt-2 flex flex-wrap gap-2" aria-label="Teams">
-                {profile.teams.map((team) => (
-                  <li key={team}
-                    className={team === "maroon"
-                      ? "rounded-full border border-gold-400 bg-maroon-700 px-3 py-0.5 font-condensed text-xs font-semibold uppercase tracking-wide text-cream-50"
-                      : "rounded-full border border-gold-400 bg-cream-50 px-3 py-0.5 font-condensed text-xs font-semibold uppercase tracking-wide text-maroon-700"}>
-                    Team {team === "maroon" ? "Maroon" : "White"}
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
         </div>
-      </header>
-
-      <main className="relative mx-auto -mt-6 w-full max-w-[640px] flex-1 rounded-t-3xl bg-cream-50 px-4 pb-32">
-        <nav className="mb-5 flex min-h-14 justify-around border-b border-maroon-900/10" aria-label="Profile sections">
+        <nav className="mx-auto mt-4 flex min-h-14 w-full max-w-[640px] justify-around" aria-label="Profile sections">
           {TABS.map((t) => (
             <button key={t.key} type="button" onClick={() => setTab(t.key)} aria-pressed={tab === t.key}
-              className={`relative flex min-h-14 flex-1 items-center justify-center px-2 font-condensed text-lg tracking-wide ${tab === t.key ? "font-bold text-maroon-900 after:absolute after:bottom-0 after:h-[3px] after:w-8 after:rounded-full after:bg-gold-500" : "font-medium text-maroon-900/50"}`}>
+              className={`relative flex min-h-14 flex-1 items-center justify-center px-2 font-condensed text-lg tracking-wide ${tab === t.key ? "font-bold text-cream-50 after:absolute after:bottom-1 after:h-[3px] after:w-8 after:rounded-full after:bg-gold-500" : "font-medium text-cream-50/55"}`}>
               {t.label}
             </button>
           ))}
         </nav>
+      </header>
+
+      <main className="relative mx-auto -mt-6 w-full max-w-[640px] flex-1 bg-cream-50 px-4 pb-32 pt-12">
         {tab === "tournaments" && (
           <section aria-label="Tournaments">
             <div className="grid h-11 grid-cols-2 rounded-full bg-maroon-900/5 p-1" role="group" aria-label="Show">
