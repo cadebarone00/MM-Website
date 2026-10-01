@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { pastTournaments } from "@/lib/data";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import type { RealMatch, Tournament } from "@/lib/data/types";
-import { liveMatchRound, maroonSiteData, matchResult, toParLabel, type MaroonAdapterInput, type MaroonEditionRow } from "./maroonAdapter.ts";
+import { liveMatchRound, maroonPlayingEditions, maroonSiteData, matchResult, toParLabel, type MaroonAdapterInput, type MaroonEditionRow } from "./maroonAdapter.ts";
 
 const edition = (year: number): MaroonEditionRow => ({
   name: "The Maroon Tournament", shortName: "The Maroon", branding: { primary: "#500001", secondary: "#fbf8f1", accent: "#b8945a" },
@@ -129,4 +129,21 @@ test("live round lookup refuses to guess", () => {
   assert.equal(liveMatchRound({ day: 1, session: "Morning" }, rows, { 1: "2027-01-06" }), 1);
   assert.equal(liveMatchRound({ day: 1, session: "Afternoon" }, rows, { 1: "2027-01-06" }), null, "three rounds on one date");
   assert.equal(liveMatchRound({ day: 9, session: "Morning" }, rows, {}), null);
+});
+
+test("My Tournaments: The Maroon rows follow the live roster, skip finished and test years, and open /play", () => {
+  const editions = [2026, 2027, 2028, 2034].map((seasonYear) => ({
+    seasonYear, destination: seasonYear === 2026 ? "Mission Hills CC" : null, startDate: seasonYear === 2026 ? "2026-01-07" : null,
+    endDate: seasonYear === 2026 ? "2026-01-10" : null, timezone: "America/Chicago", isTest: seasonYear === 2034,
+  }));
+  const base = { slug: "the-maroon-tournament", name: "The Maroon Tournament", editions, now: new Date("2026-10-01T12:00:00Z") };
+  const settings = [{ seasonYear: 2027, venueName: "Silverleaf", venueLocked: true, beginDate: "2027-01-06", endDate: "2027-01-09", datesLocked: true }];
+
+  const rows = maroonPlayingEditions({ ...base, rosterYears: [2026, 2027, 2034], settings });
+  assert.deepEqual(rows, [{ name: "The Maroon Tournament", year: 2027, destination: "Silverleaf", startDate: "2027-01-06", endDate: "2027-01-09", href: "/play/the-maroon-tournament/2027" }]);
+  assert.deepEqual(maroonPlayingEditions({ ...base, rosterYears: [], settings }), [], "not on a roster → nothing");
+  assert.deepEqual(maroonPlayingEditions({ ...base, rosterYears: [2028], settings: [] }).map((r) => [r.year, r.startDate]), [[2028, null]], "undated years count as upcoming");
+  const unlocked = [{ ...settings[0], venueLocked: false, datesLocked: false }];
+  assert.deepEqual(maroonPlayingEditions({ ...base, rosterYears: [2027], settings: unlocked }).map((r) => [r.destination, r.startDate]), [[null, null]], "only locked venue/dates are shown");
+  assert.deepEqual(maroonPlayingEditions({ ...base, rosterYears: [2027], settings, now: new Date("2027-01-10T18:00:00Z") }), [], "finished once the last day has passed");
 });

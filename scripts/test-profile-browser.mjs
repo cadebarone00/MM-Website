@@ -45,6 +45,16 @@ try {
   await out.goto(`${app}/profile`);
   assert.match(new URL(out.url()).pathname, /^\/login/);
 
+  // Logging in lands on your profile, never The Maroon Tournament's pages. The fake has no password
+  // login, so the login API reply is stubbed; the session cookie stands in for the one it would set.
+  const login = await phone(player);
+  await login.route("**/api/auth/login", (route) => route.fulfill({ json: { ok: true } }));
+  await login.goto(`${app}/login`);
+  await login.locator("#login-identity").fill("cadeuser@example.test");
+  await login.locator("#login-password").fill("not-checked");
+  await login.locator('button[type="submit"]').click();
+  await login.waitForURL(`${app}/profile`, { timeout: 15000 });
+
   // Player.
   const p = await phone(player);
   await p.goto(`${app}/profile`);

@@ -1650,3 +1650,39 @@ Open The Maroon → Main app (bottom menu: Explore | Tourneys | Pick'ems | Profi
 - There are tests for the tier list and links.
 - Typecheck, lint and existing tests pass.
 - I've checked it in the browser with screenshots.
+
+### Round: Maroon migration Phase 3 — The Maroon Tournament in My Tournaments and /play (spec 2026-09-30, approved 2026-09-30)
+
+**What it is:** The Maroon Tournament shows up in Tourneys → My Tournaments, and tapping it opens `/play/the-maroon-tournament/<year>` with its real data, using the Phase 2 translator. The old site stays exactly as it is, and no old routes are redirected.
+
+**1. My Tournaments (`/tournaments/mine`):**
+- **Who sees The Maroon Tournament:** a signed-in person whose account owns a player (the player slot they claimed) **and** that player is on that year's roster in Admin Center (`live_roster`). Both are read live, so later roster changes and new sign-ups show up right away. The one-time copy C1 made (`edition_roster`) is not used for The Maroon.
+- **Which years:** years that haven't finished yet. The end date is the locked dates in Admin Center if set, otherwise the edition's own. A year with no dates yet counts as upcoming. The test season (2034) never shows.
+- **The row:** "The Maroon Tournament 2027", with the locked venue and dates when Admin Center has them.
+- **Tapping it opens `/play/the-maroon-tournament/2027`** (it used to go to the old `/website`).
+- Other tournaments' rows work exactly as before.
+
+**2. Tournament Home (`/play/the-maroon-tournament/<year>`):**
+- **Signed in only**, the same as every tournament's home. Anyone signed in can open it, because the same information is already public on the old site.
+- **Home, Matches, Leaderboard and Players** show the translator's real data: teams, roster, rounds, courses, matches, points, leaderboard and the final result for finished years.
+- **Not wired yet (Phase 4):** the announcements/activity feed (hidden), "your match", the commissioner link, and links from More to the old scorecards, fantasy, wagers and broadcast. The website link goes to the old site's home (`/website`).
+- A year with no edition, or the test season, shows "not found".
+
+**Not included:**
+- any change to the old Maroon pages, tables, scoring or Admin Center
+- any change to the Tournament Home screens' look (only the data loader changes)
+- My Profile's "Active" list (it still links The Maroon to `/website`)
+
+**Production step:** My Tournaments needs `supabase/platform_active_editions.sql` run in Supabase. It's one read-only function; without it, the page shows its error message.
+
+**Done means:**
+- Signed in as a player on the 2027 roster: Tourneys → My Tournaments shows The Maroon Tournament 2027, and tapping it opens its Tournament Home with the real roster, rounds and courses.
+- `/play/the-maroon-tournament/2026` shows the real 2026 matches, 17–16 points and leaderboard.
+- Unit tests for who sees the row, finished/test years and the link. The Phase 2 check script still matches.
+- No old Maroon file is changed. Typecheck, lint and tests pass.
+
+### Round: Login lands on Profile (owner request 2026-09-30, built)
+
+- Logging in always goes to `/profile`. That includes a signed-out person tapping Profile, who is sent to Log In and then comes back to their profile.
+- Login no longer opens the `/account/choose` screen or The Maroon Tournament's pages. The Maroon Tournament is reached from Tourneys.
+- `/account/choose` still works if someone opens it directly.

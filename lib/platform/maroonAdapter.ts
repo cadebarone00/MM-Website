@@ -7,7 +7,9 @@ import type { RealMatch, Tournament, VenueCourse } from "@/lib/data/types";
 import { placementNumber } from "@/lib/leaderboard/placement";
 import { matchLabel, matchLeader, matchStatus } from "@/components/leaderboard/matchUtils";
 import type { Branding, Course, Match, Player, PlayStatus, ScheduleDay, Session, Standing, Team, TournamentSiteData, TournamentStatus } from "@/components/platform/tournament-site/types";
+import type { PastTournament } from "./pastTournaments.ts";
 import { formatDateRange } from "./publicSite.ts";
+import { playPath, todayIn } from "./tournamentHome.ts";
 
 /**
  * Read-only bridge from The Maroon Tournament's existing (legacy) data to the
@@ -266,4 +268,41 @@ export function maroonSiteData(input: MaroonAdapterInput): MaroonSite {
       mediaLinks: [],
     },
   };
+}
+
+/** Inputs for the My Tournaments rows of The Maroon Tournament, all read live (Phase 3). */
+export interface MaroonMembershipInput {
+  slug: string;
+  name: string;
+  /** Years the viewer's claimed player is on the Admin Center roster (live_roster). */
+  rosterYears: number[];
+  /** The tournament's editions (tournament_editions). */
+  editions: { seasonYear: number; destination: string | null; startDate: string | null; endDate: string | null; timezone: string; isTest: boolean }[];
+  /** Admin Center's venue/dates per year (live_tournament_settings); only locked values count. */
+  settings: { seasonYear: number; venueName: string | null; venueLocked: boolean; beginDate: string | null; endDate: string | null; datesLocked: boolean }[];
+  now?: Date;
+}
+
+/**
+ * The Maroon Tournament's My Tournaments rows: every unfinished, non-test year
+ * the viewer plays in, each opening that year's /play home. A year with no
+ * dates yet counts as upcoming (same rule as list_my_active_editions).
+ */
+export function maroonPlayingEditions(input: MaroonMembershipInput): PastTournament[] {
+  const years = new Set(input.rosterYears);
+  const rows: PastTournament[] = [];
+  for (const edition of input.editions) {
+    if (edition.isTest || !years.has(edition.seasonYear)) continue;
+    const s = input.settings.find((row) => row.seasonYear === edition.seasonYear);
+    const startDate = s?.datesLocked && s.beginDate ? s.beginDate : edition.startDate;
+    const endDate = s?.datesLocked && s.endDate ? s.endDate : edition.endDate;
+    const last = endDate ?? startDate;
+    if (last && last < todayIn(edition.timezone, input.now)) continue;
+    rows.push({
+      name: input.name, year: edition.seasonYear,
+      destination: s?.venueLocked && s.venueName ? s.venueName : edition.destination,
+      startDate, endDate, href: playPath(input.slug, edition.seasonYear),
+    });
+  }
+  return rows.sort((a, b) => a.year - b.year);
 }

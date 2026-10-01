@@ -41,7 +41,8 @@ export function LoginForm() {
         return;
       }
       window.dispatchEvent(new CustomEvent("mm:session-changed"));
-      router.push("/account/choose");
+      // Every login lands on your profile; The Maroon Tournament is reached from Tourneys.
+      router.push("/profile");
     } catch {
       setError("Something went wrong. Try again.");
     } finally {
