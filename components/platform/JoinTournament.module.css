@@ -41,13 +41,15 @@ a.actionBox:hover{background:var(--color-maroon-600)}
 
 /* Selector-only presentation; the shared My Tournaments screen keeps its styles. */
 .tourneys {
-  --tj-bg: #1d0b11;
-  padding-top: 12px;
+  --tj-bg: #fbf8f1;
+  --tj-gold: #806331;
+  padding-top: 28px;
   background: var(--tj-bg);
+  color: #380001;
 }
 .descriptor {
   margin: 0 0 12px;
-  color: #ead8b8;
+  color: #380001;
   font: 600 14px/1.4 var(--font-barlow), sans-serif;
   letter-spacing: .04em;
 }
@@ -78,11 +80,12 @@ a.actionBox:hover{background:var(--color-maroon-600)}
   box-shadow: 0 4px 16px #10000120;
 }
 .tourneys .linkRow button { background: #500001; }
+.tourneys .error { color: #68000b; }
 .tournamentSection { margin-top: 28px; }
 .tourneys .past {
   margin-top: 0;
   overflow: hidden;
-  border-radius: 20px;
+  border-radius: 0;
   background: #fbf8f1;
   color: #380001;
 }
@@ -95,21 +98,21 @@ a.actionBox:hover{background:var(--color-maroon-600)}
 }
 .tourneys .pastLabel {
   margin: 0;
-  padding: 18px 20px 12px;
+  padding: 0 0 12px;
   color: #380001;
   font: 600 13px/1.5 var(--font-barlow), sans-serif;
   letter-spacing: .02em;
 }
 .tourneys .note {
   margin: 0;
-  padding: 8px 20px 24px;
+  padding: 8px 0 24px;
   color: #380001aa;
   font-size: 14px;
 }
 .tourneys .note a { color: #68000b; }
 .tourneys .list li { border: 0; }
 .tourneys .list li + li { border-top: 1px solid #38000118; }
-.tourneys .row { min-height: 96px; padding: 20px; gap: 16px; color: #38000166; }
+.tourneys .row { min-height: 96px; padding: 20px 0; gap: 16px; color: #38000166; }
 .tourneys .row:hover { background: #38000106; }
 .tourneys .badge { display: none; }
 .tourneys .rowText { gap: 5px; }
@@ -119,7 +122,7 @@ a.actionBox:hover{background:var(--color-maroon-600)}
 .tourneys .row > svg { flex-shrink: 0; }
 .tourneys .past a:focus-visible { outline-color: #806331; outline-offset: -3px; }
 @media (max-width: 400px) {
-  .tourneys { padding-top: 12px; }
+  .tourneys { padding-top: 28px; }
   .tourneys .actions { gap: 12px; }
   .tourneys .actionBox { min-height: 140px; padding: 18px 14px; font-size: 15px; }
 }
