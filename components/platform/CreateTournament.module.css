@@ -92,10 +92,19 @@
   transition:background .15s ease,border-color .15s ease}
 .connectButton:hover{background:rgba(255,255,255,.06);border-color:#dcc495}
 .connectButton:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
+/* Review: fully maroon (no cream), every answer as a row. Same negative bottom margin as .split so the maroon
+   runs under the bottom menu on phones. */
+.review{display:flex;flex-direction:column;gap:20px;min-height:100svh;margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));
+  padding:32px max(16px,calc((100% - 528px)/2)) calc(24px + 5.75rem + env(safe-area-inset-bottom));background:var(--color-maroon-900);color:#fbf8f1}
+.reviewList{margin:0;border-top:1px solid rgba(255,255,255,.12)}
+.reviewRow{display:grid;grid-template-columns:minmax(96px,38%) 1fr;align-items:baseline;gap:12px;padding:14px 4px;border-bottom:1px solid rgba(255,255,255,.12)}
+.reviewLabel{font:600 14px/1.3 var(--font-barlow),sans-serif;letter-spacing:.02em;color:#dcc495}
+.reviewValue{margin:0;min-width:0;overflow-wrap:anywhere;text-align:right;font:600 16px/1.35 var(--font-barlow),sans-serif;color:#fff}
+.reviewEmpty{color:rgba(255,255,255,.4);font-weight:500}
 /* The cream "Let's go golfing" button (a link styled like Continue). */
 .start{display:flex;align-items:center;justify-content:center;min-height:56px;font-size:18px}
 .start:hover{background:#f3ecdd}
 /* Placeholder next step. */
 .back{align-self:center;font:600 14px/1.3 var(--font-barlow),sans-serif;color:#dcc495;text-decoration:underline;text-underline-offset:3px}
 @media(max-width:400px){.creamTitle{font-size:34px}}
-@media(min-width:1024px){.split{margin-bottom:0}.picker{padding-bottom:48px}}
+@media(min-width:1024px){.split,.review{margin-bottom:0}.picker,.review{padding-bottom:48px}}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
-import { golfTripDraftSnapshot, parseGolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
+import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import styles from "./GolfTripHome.module.css";
 
 const TABS = ["Home", "Players", "Team", "Venue", "Info"] as const;
@@ -15,10 +15,12 @@ const subscribeNever = () => () => {};
 /**
  * Golf Trip Home: trip name, a 5-tab selector, and (on Home) one card per part of the trip. Layout only:
  * cards show the questionnaire answers kept in this tab, or an empty state. Nothing is saved yet.
+ * `preview` replaces those answers with fixed ones (the /dev/tournament design preview).
  */
-export function GolfTripHome() {
+export function GolfTripHome({ preview }: { preview?: GolfTripDraft } = {}) {
   const raw = useSyncExternalStore(subscribeNever, golfTripDraftSnapshot, () => "");
-  const draft = useMemo(() => parseGolfTripDraft(raw), [raw]);
+  const stored = useMemo(() => parseGolfTripDraft(raw), [raw]);
+  const draft = preview ?? stored;
   const [tab, setTab] = useState<Tab>("Home");
 
   const dates = tripDates(draft.startDate, draft.endDate);

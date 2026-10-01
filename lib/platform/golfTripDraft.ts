@@ -1,6 +1,6 @@
 /**
  * Golf Trip questionnaire draft: each step's answers, kept in this browser tab (sessionStorage) so a later
- * step can use an earlier one (Golf reads Trip Basics' dates). Nothing is saved to the database yet.
+ * step can use an earlier one (Golf reads Trip Basics' dates; Review reads everything). Nothing is saved to the database yet.
  */
 export type GolfTripDraft = Record<string, string>;
 
@@ -67,6 +67,39 @@ export function plannedRounds(draft: GolfTripDraft): PlannedRound[] {
     for (let i = 0; i < count; i++) rounds.push({ number: rounds.length + 1, dayNumber, date: draft[`day${dayNumber}Date`] ?? "" });
   }
   return rounds;
+}
+
+export interface ReviewRow { label: string; value: string }
+
+const NOT_SET = "Not set";
+const ANSWERS: Record<string, string> = { yes: "Yes", no: "No", undecided: "Not sure yet" };
+
+/** Everything the questionnaire covered, top to bottom, one label / value row each, for the Review page. */
+export function reviewRows(draft: GolfTripDraft): ReviewRow[] {
+  const text = (value: string | undefined) => value?.trim() || NOT_SET;
+  const day = (date: string | undefined) => parseDay(date) === null ? "" : shortTripDate(date as string);
+  const start = day(draft.startDate);
+  const end = day(draft.endDate);
+  const rounds = plannedRounds(draft);
+
+  return [
+    { label: "Trip Name", value: text(draft.tripName) },
+    { label: "Destination", value: text(draft.destination) },
+    { label: "Dates", value: start && end ? (start === end ? start : `${start} – ${end}`) : NOT_SET },
+    { label: "Players", value: text(draft.playerCount) },
+    { label: "Your Name", value: text(draft.yourName) },
+    { label: "Your Email", value: text(draft.yourEmail) },
+    { label: "Golf Days", value: rounds.length ? String(rounds[rounds.length - 1].dayNumber) : NOT_SET },
+    { label: "Rounds", value: rounds.length ? String(rounds.length) : NOT_SET },
+    ...rounds.map((round) => ({
+      label: `Round ${round.number}`,
+      value: `${day(round.date) || `Day ${round.dayNumber}`} · ${draft[`round${round.number}Course`]?.trim() || "Course not set"}`,
+    })),
+    { label: "Tournament", value: ANSWERS[draft.includesTournament] ?? NOT_SET },
+    { label: "Lodging", value: ANSWERS[draft.knowsLodging] ?? NOT_SET },
+    { label: "Flights", value: ANSWERS[draft.knowsFlights] ?? NOT_SET },
+    { label: "Transportation", value: ANSWERS[draft.knowsTransportation] ?? NOT_SET },
+  ];
 }
 
 /** "2027-04-22" → "Thu, Apr 22". */

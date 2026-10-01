@@ -1708,3 +1708,9 @@ The Maroon app is the front door. The main navigation is Explore · Tourneys · 
 **Not in this round:** saving the trip, editing sections, real Players/Team/Venue/Info content, photo upload, expense math.
 
 **Done means:** `/golf-trips/trip` loads on phone and desktop with no errors, shows the trip name and the 5 tabs, all 9 Home sections render with real answers or empty states, tabs switch, and type-check + lint pass.
+
+### Round: Golf Trip Home dev preview (owner request 2026-10-01, built)
+
+- `/dev/tournament` shows Golf Trip Home (the page after the questionnaire) filled with made-up answers (`lib/platform/golfTripPreviewFixture.ts`), so it can be reviewed without signing up or filling the questionnaire.
+- Development only: 404 unless running `npm run dev`. No login, no database reads or writes, no auth changes.
+- It renders the real `GolfTripHome` component (given the fixture through a `preview` prop), so style changes carry over to `/golf-trips/trip`.

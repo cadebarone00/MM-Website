@@ -1,14 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { SetupSheet } from "@/components/platform/SetupSheet";
-import styles from "@/components/platform/CreateTournament.module.css";
+import { GolfTripReview } from "@/components/platform/GolfTripReview";
 
 export const metadata: Metadata = { title: "Create a Golf Trip | The Maroon" };
 
-/** Golf Trip questionnaire, last step (Review & Create). Placeholder until it is built. */
+/** Golf Trip questionnaire, last step (Review). Read from the draft: nothing is saved to the database yet. */
 export default function GolfTripReviewPage() {
-  return <SetupSheet label="Review">
-    <p className={styles.sheetNote}>Review &amp; Create is coming next</p>
-    <Link href="/golf-trips/new/transportation" className={styles.back}>Back</Link>
-  </SetupSheet>;
+  return <GolfTripReview />;
 }
