@@ -26,13 +26,15 @@ export async function JoinTournamentPage() {
       </div>
       <JoinLinkForm />
 
-      <section aria-labelledby="past-heading" className={styles.past}>
-        <h2 id="past-heading">My Tournaments</h2>
-        <p className={styles.pastLabel}>Past Tournaments</p>
+      <section aria-labelledby="my-tournaments-heading" className={styles.tournamentSection}>
+        <h2 id="my-tournaments-heading" className={styles.descriptor}>My Tournaments</h2>
+        <div className={styles.past}>
+        <h3 className={styles.pastLabel}>Past Tournaments</h3>
         {!past.signedIn ? <p className={styles.note}><Link href="/login">Log in</Link> to see your past tournaments.</p>
           : !past.ok ? <p className={styles.note} role="alert">We couldn&apos;t load your past tournaments right now. Refresh the page to try again.</p>
           : past.tournaments.length === 0 ? <p className={styles.note}>No past tournaments yet.</p>
           : <TournamentRows tournaments={past.tournaments} />}
+        </div>
       </section>
     </main>
   </>;

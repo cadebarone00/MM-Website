@@ -76,6 +76,7 @@ a.actionBox:hover{background:var(--color-maroon-600)}
   box-shadow: 0 4px 16px #10000120;
 }
 .tourneys .linkRow button { background: #500001; }
+.tournamentSection { margin-top: 28px; }
 .tourneys .past {
   margin-top: 0;
   overflow: hidden;
@@ -91,9 +92,11 @@ a.actionBox:hover{background:var(--color-maroon-600)}
   letter-spacing: .01em;
 }
 .tourneys .pastLabel {
-  margin: 5px 20px 12px;
-  color: #38000199;
-  font: 500 12px/1.5 var(--font-barlow), sans-serif;
+  margin: 0;
+  padding: 18px 20px 12px;
+  color: #380001;
+  font: 600 13px/1.5 var(--font-barlow), sans-serif;
+  letter-spacing: .02em;
 }
 .tourneys .note {
   margin: 0;
@@ -112,6 +115,7 @@ a.actionBox:hover{background:var(--color-maroon-600)}
 .tourneys .rowText span { color: #380001aa; overflow-wrap: anywhere; }
 .tourneys .rowText .dates { color: #38000180; font-size: 12px; }
 .tourneys .row > svg { flex-shrink: 0; }
+.tourneys .past a:focus-visible { outline-color: #806331; outline-offset: -3px; }
 @media (max-width: 400px) {
   .tourneys { padding-top: 12px; }
   .tourneys .actions { gap: 12px; }
