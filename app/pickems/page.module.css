@@ -1,0 +1,4 @@
+/* Scoped by the mounted page so this does not affect other platform headers. */
+:global(header):has(+ .page) {
+  border-bottom: 0;
+}

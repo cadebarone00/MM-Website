@@ -1,8 +1,9 @@
 import styles from "@/components/platform/JoinTournament.module.css";
+import pageStyles from "./page.module.css";
 
 /** Pick'ems: maroon placeholder until the real page is built. */
 export default function PickemsPage() {
   return (
-    <main className={styles.page} aria-label="Pick'ems" />
+    <main className={`${styles.page} ${pageStyles.page}`} aria-label="Pick'ems" />
   );
 }

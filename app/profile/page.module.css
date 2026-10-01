@@ -1,0 +1,4 @@
+/* Hide only the site header immediately before this profile page. */
+:global(header):has(+ .page) {
+  display: none;
+}
