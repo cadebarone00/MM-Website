@@ -21,7 +21,8 @@
     "test:browser:public": "node scripts/test-public-site-browser.mjs",
     "test:browser:access": "node scripts/test-access-requests-browser.mjs",
     "test:api:activity": "node scripts/test-activity-api.mjs",
-    "test:browser:profile": "node scripts/test-profile-browser.mjs"
+    "test:browser:profile": "node scripts/test-profile-browser.mjs",
+    "test:browser:maroon-play": "node scripts/test-maroon-play-browser.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1124.0",

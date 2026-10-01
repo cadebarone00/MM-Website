@@ -1651,7 +1651,7 @@ Open The Maroon → Main app (bottom menu: Explore | Tourneys | Pick'ems | Profi
 - Typecheck, lint and existing tests pass.
 - I've checked it in the browser with screenshots.
 
-### Round: Maroon migration Phase 3 — The Maroon Tournament in My Tournaments and /play (spec 2026-09-30, approved 2026-09-30)
+### Round: Maroon migration Phase 3 — The Maroon Tournament in My Tournaments and /play (spec 2026-09-30, approved and built 2026-09-30; needs `platform_active_editions.sql` in production)
 
 **What it is:** The Maroon Tournament shows up in Tourneys → My Tournaments, and tapping it opens `/play/the-maroon-tournament/<year>` with its real data, using the Phase 2 translator. The old site stays exactly as it is, and no old routes are redirected.
 
