@@ -35,9 +35,13 @@ export const loadTournamentHome = cache(async (slug: string, year: string): Prom
     links: {
       website: publicBasePath(realSlug, realYear),
       // The backend's own capability; the Tournament Studio checks access again.
-      commissioner: feed?.viewer.canPostAnnouncement ? `/tournaments/${encodeURIComponent(realSlug)}/${realYear}` : null,
+      commissioner: feed?.viewer.canPostAnnouncement
+        ? { href: `/tournaments/${encodeURIComponent(realSlug)}/${realYear}`, label: "Commissioner tools", note: "Tournament Studio: setup, players, schedule" }
+        : null,
       allTournaments: "/tournaments/join",
     },
+    moreLinks: [],
+    pastSeasons: [],
     // Pairings come with live scoring (C4); until then there is no match to point at.
     yourMatch: null,
     matchSessions: {},

@@ -61,6 +61,24 @@ export interface MaroonAdapterInput {
   courses: VenueCourse[];
   /** live_round_state rows for a live year; null for a static history year. */
   liveRounds: MaroonRoundRow[] | null;
+  /**
+   * Raw tee times (ISO) by match id, from live_match_boxes, for a live year.
+   * The legacy reader formats tee times on the server's own clock; these are
+   * formatted in the tournament's timezone instead. Omitted for history years.
+   */
+  teeTimes?: Record<string, string>;
+}
+
+/** "1:10 PM CST" in the tournament's timezone, or null for a missing/bad time. */
+export function formatTeeTime(iso: string | null | undefined, timezone: string): string | null {
+  const date = iso ? new Date(iso) : null;
+  if (!date || Number.isNaN(date.getTime())) return null;
+  const format = (timeZone: string) => date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone, timeZoneName: "short" });
+  try {
+    return format(timezone);
+  } catch {
+    return format("UTC");
+  }
 }
 
 export interface MaroonSite {
@@ -166,7 +184,9 @@ export function maroonSiteData(input: MaroonAdapterInput): MaroonSite {
     if (!day) { day = { date, label, sessions: [] }; days.push(day); }
     day.sessions.push(session);
   };
-  const teeTime = (matches: RealMatch[]) => matches.find((m) => m.teeTimeCst)?.teeTimeCst ?? "Time TBD";
+  // Live years: the raw tee time in the tournament's timezone; history years: the hand-entered text.
+  const matchTee = (m: RealMatch) => (input.teeTimes ? formatTeeTime(input.teeTimes[m.id], edition.timezone) : m.teeTimeCst ?? null);
+  const teeTime = (matches: RealMatch[]) => matches.map(matchTee).find(Boolean) ?? "Time TBD";
 
   if (liveRounds === null) {
     for (const rep of tournamentRoundSequence(tournament)) {
@@ -202,7 +222,7 @@ export function maroonSiteData(input: MaroonAdapterInput): MaroonSite {
       sideA: { teamId: "maroon", players: m.maroonPlayers.map(getPlayerSlug) },
       sideB: { teamId: "white", players: m.whitePlayers.map(getPlayerSlug) },
       format: m.format,
-      teeTime: m.teeTimeCst ?? "Time TBD",
+      teeTime: matchTee(m) ?? "Time TBD",
       status,
       ...(status === "live" && m.thru != null ? { progress: `Thru ${m.thru}` } : {}),
       ...(() => { const result = matchResult(m, teamName); return result ? { result } : {}; })(),
@@ -283,12 +303,8 @@ export interface MaroonMembershipInput {
   now?: Date;
 }
 
-/**
- * The Maroon Tournament's My Tournaments rows: every unfinished, non-test year
- * the viewer plays in, each opening that year's /play home. A year with no
- * dates yet counts as upcoming (same rule as list_my_active_editions).
- */
-export function maroonPlayingEditions(input: MaroonMembershipInput): PastTournament[] {
+/** One edition list for the viewer: unfinished years ("playing", soonest first) or finished ones ("past", newest first). */
+function maroonEditionRows(input: MaroonMembershipInput, which: "playing" | "past"): PastTournament[] {
   const years = new Set(input.rosterYears);
   const rows: PastTournament[] = [];
   for (const edition of input.editions) {
@@ -297,14 +313,30 @@ export function maroonPlayingEditions(input: MaroonMembershipInput): PastTournam
     const startDate = s?.datesLocked && s.beginDate ? s.beginDate : edition.startDate;
     const endDate = s?.datesLocked && s.endDate ? s.endDate : edition.endDate;
     const last = endDate ?? startDate;
-    if (last && last < todayIn(edition.timezone, input.now)) continue;
+    // A year with no dates yet counts as upcoming, never finished.
+    const finished = Boolean(last && last < todayIn(edition.timezone, input.now));
+    if (finished !== (which === "past")) continue;
     rows.push({
       name: input.name, year: edition.seasonYear,
       destination: s?.venueLocked && s.venueName ? s.venueName : edition.destination,
       startDate, endDate, href: playPath(input.slug, edition.seasonYear),
     });
   }
-  return rows.sort((a, b) => a.year - b.year);
+  return rows.sort((a, b) => (which === "past" ? b.year - a.year : a.year - b.year));
+}
+
+/**
+ * The Maroon Tournament's My Tournaments rows: every unfinished, non-test year
+ * the viewer plays in, each opening that year's /play home. A year with no
+ * dates yet counts as upcoming (same rule as list_my_active_editions).
+ */
+export function maroonPlayingEditions(input: MaroonMembershipInput): PastTournament[] {
+  return maroonEditionRows(input, "playing");
+}
+
+/** The finished, non-test years the viewer played in (Past Tournaments, Profile), newest first, each opening /play. */
+export function maroonPastEditions(input: MaroonMembershipInput): PastTournament[] {
+  return maroonEditionRows(input, "past");
 }
 
 /** What decides whether a viewer may open The Maroon Tournament's /play home for one year. */
@@ -331,4 +363,76 @@ export function maroonCanEnter(input: MaroonAccessInput): boolean {
   if (input.memberRole === "owner" || input.memberRole === "organizer") return true;
   const roster = new Set(input.rosterSlugs);
   return input.viewerSlugs.some((slug) => roster.has(slug));
+}
+
+/**
+ * The viewer's own current or next match, only when the legacy data makes it
+ * certain: their one live match, else their one earliest scheduled match by
+ * round. Two live matches, a scheduled match with no known round competing
+ * with another, or a tie for the earliest round all give null — never a
+ * guess. Null once all their matches are final.
+ */
+export function yourMaroonMatch(site: Pick<TournamentSiteData, "matches">, matchSessions: Record<string, string>, viewerSlugs: string[]): { matchId: string; playerId: string } | null {
+  const mine = site.matches.flatMap((match) => {
+    const slugs = viewerSlugs.filter((slug) => match.sideA.players.includes(slug) || match.sideB.players.includes(slug));
+    return slugs.length ? [{ match, slugs }] : [];
+  });
+  // More than one of the viewer's players in play: which one is "you" is ambiguous.
+  if (new Set(mine.flatMap((m) => m.slugs)).size > 1) return null;
+  const pick = (entry: (typeof mine)[number]) => ({ matchId: entry.match.id, playerId: entry.slugs[0] });
+
+  const live = mine.filter((m) => m.match.status === "live");
+  if (live.length) return live.length === 1 ? pick(live[0]) : null;
+
+  const upcoming = mine.filter((m) => m.match.status === "scheduled" || m.match.status === "waiting");
+  if (upcoming.length <= 1) return upcoming.length ? pick(upcoming[0]) : null;
+  const round = (id: string) => /^r(\d+)$/.exec(matchSessions[id] ?? "")?.[1];
+  if (upcoming.some((m) => round(m.match.id) === undefined)) return null;
+  const ordered = [...upcoming].sort((a, b) => Number(round(a.match.id)) - Number(round(b.match.id)));
+  return round(ordered[0].match.id) === round(ordered[1].match.id) ? null : pick(ordered[0]);
+}
+
+export interface MaroonLinksInput {
+  year: number;
+  /** The year the old live pages (portal, fantasy, wagers, Watch Live…) show: the active season. */
+  activeYear: number;
+  /** The history file's slug for 2024–2026 (e.g. '2026-palm-springs'); null for a live year. */
+  historySlug: string | null;
+  /** The viewer's player, when the old portal's own check (requirePlayer) accepts them; else null. */
+  playerSlug: string | null;
+  /** Whether that player is on this year's roster. */
+  onRoster: boolean;
+}
+
+/**
+ * Links from /play's More tab to the old Maroon pages, which keep every
+ * action. A year only links to pages that show that year: history years get
+ * their own results/scorecards/teams pages; the live-only pages (they always
+ * show the active season) appear only on the active season's /play. Portal
+ * pages appear only for viewers the portal itself accepts. Each page still
+ * checks access itself; these links are a convenience, not protection.
+ */
+export function maroonMoreLinks(input: MaroonLinksInput): { label: string; note: string; href: string }[] {
+  const links: { label: string; note: string; href: string }[] = [];
+  const player = input.playerSlug;
+  if (input.historySlug) {
+    links.push({ label: "Results & scorecards", note: `The ${input.year} leaderboard and every scorecard`, href: `/leaderboard/${input.historySlug}` });
+    if (player && input.onRoster) links.push({ label: "My scorecards", note: `Your ${input.year} rounds`, href: `/leaderboard/${input.historySlug}/players/${player}` });
+    links.push({ label: "Teams", note: `The ${input.year} teams and players`, href: `/teams/${input.historySlug}` });
+  }
+  if (input.year === input.activeYear) {
+    if (player) links.push({ label: "Live scoring", note: "Enter your scores", href: "/portal/scoring" });
+    links.push(
+      { label: "Fantasy", note: "Draft and standings", href: "/fantasy" },
+      { label: "Wagers", note: "MM Coins markets", href: "/wagers" },
+      { label: "Watch Live", note: "Live coverage", href: "/watch-live" },
+      { label: "Broadcast", note: "The TV broadcast screen", href: "/broadcast" },
+    );
+    if (player) links.push(
+      { label: "Round videos", note: "Your shot videos", href: "/portal/round-video" },
+      { label: "Skins", note: "Skins results", href: "/portal/skins" },
+    );
+  }
+  if (player) links.push({ label: "Career stats", note: "Your stats across every year", href: "/portal/career" });
+  return links;
 }

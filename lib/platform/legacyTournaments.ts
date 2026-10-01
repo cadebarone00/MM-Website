@@ -14,8 +14,10 @@ export interface LegacyTournamentAdapter {
   slug: string;
   /** The /play home for this viewer, or null for not found / not allowed (callers treat both as not found). */
   loadHome(year: string, viewerId: string): Promise<TournamentHome | null>;
-  /** My Tournaments rows for this viewer, read live from the legacy source. Throws on a read error. */
+  /** My Tournaments rows for this viewer (unfinished years), read live from the legacy source. Throws on a read error. */
   loadPlayingRows(viewerId: string): Promise<PastTournament[]>;
+  /** Past Tournaments / Profile rows for this viewer (finished years), read live. Throws on a read error. */
+  loadPastRows(viewerId: string): Promise<PastTournament[]>;
 }
 
 const ADAPTERS: readonly LegacyTournamentAdapter[] = [maroonLegacyAdapter];
@@ -28,6 +30,11 @@ export function legacyAdapterFor(slug: string): LegacyTournamentAdapter | null {
 /** Every legacy tournament's My Tournaments rows for this viewer. */
 export async function loadLegacyPlayingRows(viewerId: string): Promise<PastTournament[]> {
   return (await Promise.all(ADAPTERS.map((adapter) => adapter.loadPlayingRows(viewerId)))).flat();
+}
+
+/** Every legacy tournament's finished-year rows for this viewer. */
+export async function loadLegacyPastRows(viewerId: string): Promise<PastTournament[]> {
+  return (await Promise.all(ADAPTERS.map((adapter) => adapter.loadPastRows(viewerId)))).flat();
 }
 
 /**

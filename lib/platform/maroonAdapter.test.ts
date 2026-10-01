@@ -3,7 +3,11 @@ import assert from "node:assert/strict";
 import { pastTournaments } from "@/lib/data";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import type { RealMatch, Tournament } from "@/lib/data/types";
-import { liveMatchRound, maroonCanEnter, maroonPlayingEditions, maroonSiteData, matchResult, toParLabel, type MaroonAdapterInput, type MaroonEditionRow } from "./maroonAdapter.ts";
+import {
+  formatTeeTime, liveMatchRound, maroonCanEnter, maroonMoreLinks, maroonPastEditions, maroonPlayingEditions, maroonSiteData, matchResult, toParLabel,
+  yourMaroonMatch, type MaroonAdapterInput, type MaroonEditionRow,
+} from "./maroonAdapter.ts";
+import type { Match } from "@/components/platform/tournament-site/types";
 
 const edition = (year: number): MaroonEditionRow => ({
   name: "The Maroon Tournament", shortName: "The Maroon", branding: { primary: "#500001", secondary: "#fbf8f1", accent: "#b8945a" },
@@ -159,4 +163,71 @@ test("/play access: that year's roster players, hosts, owners/organizers and pla
   assert.equal(maroonCanEnter({ ...nobody, memberRole: "organizer" }), true);
   assert.equal(maroonCanEnter({ ...nobody, memberRole: "player" }), false, "a membership row alone is not the roster");
   assert.equal(maroonCanEnter({ ...nobody, memberRole: "viewer" }), false);
+});
+
+test("tee times: live years use the raw time in the tournament's timezone; history keeps its text", () => {
+  assert.equal(formatTeeTime("2027-01-06T15:10:00Z", "America/Chicago"), "9:10 AM CST");
+  assert.equal(formatTeeTime("2027-01-06T15:10:00Z", "America/Los_Angeles"), "7:10 AM PST");
+  assert.equal(formatTeeTime(null, "America/Chicago"), null);
+  assert.equal(formatTeeTime("not a time", "America/Chicago"), null);
+  assert.equal(formatTeeTime("2027-01-06T15:10:00Z", "Not/AZone"), "3:10 PM UTC", "a bad timezone falls back to UTC, labeled");
+
+  const rounds = [{ round: 1, date: "2027-01-06", format: "Singles", courseId: null, courseLocked: true }];
+  const legacy: Tournament = { ...emptyLive, dayDates: { 1: "2027-01-06" },
+    matches: [match({ id: "t1", status: "scheduled", teeTimeCst: "3:10 PM UTC" }), match({ id: "t2", status: "scheduled", teeTimeCst: "3:20 PM UTC" })] };
+  const { site } = maroonSiteData({ edition: { ...edition(2027), timezone: "America/Chicago" }, tournament: legacy, names: {}, courses: [], liveRounds: rounds,
+    teeTimes: { t1: "2027-01-06T15:10:00Z" } });
+  assert.equal(site.matches[0].teeTime, "9:10 AM CST", "never the server-clock text");
+  assert.equal(site.matches[1].teeTime, "Time TBD", "no raw time → no guessed time");
+  assert.equal(site.days[0].sessions[0].teeTime, "9:10 AM CST");
+  assert.equal(maroonSiteData(history(2026)).site.matches[0].teeTime, "Time TBD", "history keeps its own (blank) text");
+});
+
+const m = (id: string, status: Match["status"], a: string[], b: string[]): Match => ({
+  id, status, format: "Singles", teeTime: "Time TBD", sideA: { teamId: "maroon", players: a }, sideB: { teamId: "white", players: b },
+});
+
+test("your match: only when the legacy data makes it certain", () => {
+  const sessions = { a: "r1", b: "r2", c: "r3", d: "r2" };
+  const me = ["cade-barone"];
+  const site = (matches: Match[]) => ({ matches });
+  assert.equal(yourMaroonMatch(site([m("a", "scheduled", ["x"], ["y"])]), sessions, me), null, "not in any match");
+  assert.equal(yourMaroonMatch(site([m("a", "final", ["cade-barone"], ["y"])]), sessions, me), null, "all final → nothing");
+  assert.deepEqual(yourMaroonMatch(site([m("a", "final", ["cade-barone"], ["y"]), m("b", "live", ["z"], ["cade-barone"])]), sessions, me), { matchId: "b", playerId: "cade-barone" }, "the live one");
+  assert.equal(yourMaroonMatch(site([m("a", "live", ["cade-barone"], ["y"]), m("b", "live", ["cade-barone"], ["z"])]), sessions, me), null, "two live → ambiguous");
+  assert.deepEqual(yourMaroonMatch(site([m("c", "scheduled", ["cade-barone"], ["y"]), m("b", "scheduled", ["cade-barone"], ["z"])]), sessions, me), { matchId: "b", playerId: "cade-barone" }, "earliest round");
+  assert.equal(yourMaroonMatch(site([m("b", "scheduled", ["cade-barone"], ["y"]), m("d", "scheduled", ["cade-barone"], ["z"])]), sessions, me), null, "same round twice → ambiguous");
+  assert.equal(yourMaroonMatch(site([m("b", "scheduled", ["cade-barone"], ["y"]), m("q", "scheduled", ["cade-barone"], ["z"])]), sessions, me), null, "unknown round competing → no guess");
+  assert.deepEqual(yourMaroonMatch(site([m("q", "scheduled", ["cade-barone"], ["z"])]), sessions, me), { matchId: "q", playerId: "cade-barone" }, "a single upcoming match needs no round");
+  assert.equal(yourMaroonMatch(site([m("a", "scheduled", ["cade-barone"], ["y"]), m("b", "scheduled", ["cam-latto"], ["z"])]), sessions, ["cade-barone", "cam-latto"]), null, "two of the viewer's players → ambiguous");
+  assert.equal(yourMaroonMatch(site([m("a", "scheduled", ["cade-barone"], ["y"])]), sessions, []), null, "no player");
+});
+
+test("More links: hosts aside, players get portal links; past years never link to live-only pages", () => {
+  const hrefs = (input: Parameters<typeof maroonMoreLinks>[0]) => maroonMoreLinks(input).map((l) => l.href);
+  const live = { year: 2027, activeYear: 2027, historySlug: null, playerSlug: "cade-barone", onRoster: true };
+  assert.deepEqual(hrefs(live), ["/portal/scoring", "/fantasy", "/wagers", "/watch-live", "/broadcast", "/portal/round-video", "/portal/skins", "/portal/career"]);
+  assert.deepEqual(hrefs({ ...live, playerSlug: null }), ["/fantasy", "/wagers", "/watch-live", "/broadcast"], "no portal links without a player");
+
+  const past = { year: 2026, activeYear: 2027, historySlug: "2026-palm-springs", playerSlug: "cade-barone", onRoster: true };
+  assert.deepEqual(hrefs(past), ["/leaderboard/2026-palm-springs", "/leaderboard/2026-palm-springs/players/cade-barone", "/teams/2026-palm-springs", "/portal/career"]);
+  const liveOnly = ["/portal/scoring", "/fantasy", "/wagers", "/watch-live", "/broadcast", "/portal/round-video", "/portal/skins"];
+  for (const input of [past, { ...past, playerSlug: null }, { ...live, year: 2028 }, { ...past, year: 2025, historySlug: "2025-danzante" }]) {
+    assert.equal(hrefs(input).some((h) => liveOnly.includes(h)), false, `year ${input.year} links to a live-only page`);
+  }
+  assert.deepEqual(hrefs({ ...past, onRoster: false }), ["/leaderboard/2026-palm-springs", "/teams/2026-palm-springs", "/portal/career"], "no 'my scorecards' off the roster");
+  assert.deepEqual(hrefs({ ...past, playerSlug: null }), ["/leaderboard/2026-palm-springs", "/teams/2026-palm-springs"]);
+  assert.equal(maroonMoreLinks(live).some((l) => l.href.startsWith("/portal/admin")), false, "Admin Center is the commissioner row, never a feature link");
+});
+
+test("Past Tournaments / Profile: finished roster years only, newest first, each opening /play", () => {
+  const editions = [2024, 2025, 2026, 2027, 2034].map((seasonYear) => ({
+    seasonYear, destination: null, startDate: seasonYear < 2027 ? `${seasonYear}-01-07` : null, endDate: seasonYear < 2027 ? `${seasonYear}-01-10` : null,
+    timezone: "America/Chicago", isTest: seasonYear === 2034,
+  }));
+  const base = { slug: "the-maroon-tournament", name: "The Maroon Tournament", editions, settings: [], now: new Date("2026-10-01T12:00:00Z") };
+  assert.deepEqual(maroonPastEditions({ ...base, rosterYears: [2024, 2026, 2027, 2034] }).map((r) => [r.year, r.href]),
+    [[2026, "/play/the-maroon-tournament/2026"], [2024, "/play/the-maroon-tournament/2024"]], "undated 2027 and test 2034 are never past");
+  assert.deepEqual(maroonPastEditions({ ...base, rosterYears: [] }), []);
+  assert.deepEqual(maroonPlayingEditions({ ...base, rosterYears: [2024, 2026, 2027] }).map((r) => r.year), [2027], "the two lists never overlap");
 });

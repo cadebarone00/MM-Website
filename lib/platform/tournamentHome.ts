@@ -22,10 +22,14 @@ export interface TournamentHome {
   links: {
     /** The public tournament website, if there is one. */
     website: string | null;
-    /** Tournament Studio, only for viewers the backend lets manage the tournament. */
-    commissioner: string | null;
+    /** Commissioner tools, only for viewers the backend lets manage the tournament; null hides the row. */
+    commissioner: { href: string; label: string; note: string } | null;
     allTournaments: string;
   };
+  /** Other places this tournament offers the viewer (each page still checks access itself). Empty = none. */
+  moreLinks: { label: string; note: string; href: string }[];
+  /** Earlier seasons of this tournament the viewer can open, newest first. Empty = none yet. */
+  pastSeasons: { year: number; href: string }[];
   /** The viewer's own match, once live scoring posts pairings; null before that. */
   yourMatch: { matchId: string; playerId: string } | null;
   /** Which schedule session (round) each match belongs to, by match id; empty before pairings exist. */

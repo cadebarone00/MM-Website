@@ -117,7 +117,7 @@ export function PlayPlayers({ home }: { home: TournamentHome }) {
 
 /** More: tournament navigation, courses, info and outbound links. */
 export function PlayMore({ home }: { home: TournamentHome }) {
-  const { site, basePath, links, demo } = home;
+  const { site, basePath, links, moreLinks, pastSeasons, demo } = home;
   const nav = [
     { label: "Schedule", note: "Rounds, formats and tee times", href: tabPath(basePath, "matches"), Icon: CalendarDays },
     { label: "Teams", note: site.competition === "teams" ? `${site.teams.length} teams` : "Individual event", href: tabPath(basePath, "players"), Icon: Users },
@@ -130,15 +130,24 @@ export function PlayMore({ home }: { home: TournamentHome }) {
         {nav.map(({ label, note, href, Icon }) => <Link key={label} href={href} className={styles.navRow}>
           <Icon size={18} aria-hidden="true" /><span className={styles.rowMain}><strong>{label}</strong><small>{note}</small></span><ChevronRight size={16} aria-hidden="true" />
         </Link>)}
-        <div className={styles.navRow} aria-disabled="true">
+        {pastSeasons.length === 0 ? <div className={styles.navRow} aria-disabled="true">
           <History size={18} aria-hidden="true" /><span className={styles.rowMain}><strong>History</strong><small>Past seasons appear here once this tournament has one.</small></span>
-        </div>
-        {links.commissioner ? <Link href={links.commissioner} className={styles.navRow}>
-          <Settings2 size={18} aria-hidden="true" /><span className={styles.rowMain}><strong>Commissioner tools</strong><small>Tournament Studio: setup, players, schedule</small></span><ChevronRight size={16} aria-hidden="true" />
+        </div> : pastSeasons.map((season) => <Link key={season.year} href={season.href} className={styles.navRow}>
+          <History size={18} aria-hidden="true" /><span className={styles.rowMain}><strong>{season.year} season</strong><small>History</small></span><ChevronRight size={16} aria-hidden="true" />
+        </Link>)}
+        {links.commissioner ? <Link href={links.commissioner.href} className={styles.navRow}>
+          <Settings2 size={18} aria-hidden="true" /><span className={styles.rowMain}><strong>{links.commissioner.label}</strong><small>{links.commissioner.note}</small></span><ChevronRight size={16} aria-hidden="true" />
         </Link> : demo && <div className={styles.navRow} aria-disabled="true">
           <Settings2 size={18} aria-hidden="true" /><span className={styles.rowMain}><strong>Commissioner tools</strong><small>Opens Tournament Studio in the live app (not linked in the demo).</small></span>
         </div>}
       </nav>
+      {moreLinks.length > 0 && <PlaySection title="Tournament features">
+        <nav className={styles.rows} aria-label="Tournament features">
+          {moreLinks.map((link) => <Link key={link.href} href={link.href} className={styles.navRow}>
+            <ArrowUpRight size={18} aria-hidden="true" /><span className={styles.rowMain}><strong>{link.label}</strong><small>{link.note}</small></span><ChevronRight size={16} aria-hidden="true" />
+          </Link>)}
+        </nav>
+      </PlaySection>}
       <PlaySection title="Courses">
         {site.courses.length === 0 ? <Holding title="Courses to be announced." />
           : <ul className={styles.rows}>{site.courses.map((course) => <li key={course.id} className={styles.row}>

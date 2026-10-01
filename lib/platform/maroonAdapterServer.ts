@@ -2,11 +2,16 @@ import { pastTournaments } from "@/lib/data";
 import { getPlayerSlug } from "@/lib/data/players";
 import { getVenueBySlugAsync } from "@/lib/data/activeSeasonOverlay";
 import { getSeasonTournament } from "@/lib/data/seasonCatalog";
+import { getActiveSeasonYear } from "@/lib/live/activeSeason";
 import { getPlayerNameMap } from "@/lib/portal/allPlayers";
+import { requireHost } from "@/lib/portal/requireHost";
+import { requirePlayer } from "@/lib/portal/requirePlayer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { editionFilter, maroonEdition, MAROON_TOURNAMENT_SLUG } from "./editionScope.ts";
 import type { LegacyTournamentAdapter } from "./legacyTournaments.ts";
-import { maroonCanEnter, maroonPlayingEditions, maroonSiteData, type MaroonRoundRow, type MaroonSite } from "./maroonAdapter.ts";
+import {
+  maroonCanEnter, maroonMoreLinks, maroonPastEditions, maroonPlayingEditions, maroonSiteData, yourMaroonMatch, type MaroonRoundRow, type MaroonSite,
+} from "./maroonAdapter.ts";
 import type { PastTournament } from "./pastTournaments.ts";
 import { playPath, type TournamentHome } from "./tournamentHome.ts";
 
@@ -36,17 +41,20 @@ export async function loadMaroonSite(year: number): Promise<MaroonSite | null> {
   if (!edition || edition.is_test) return null;
 
   const isHistory = pastTournaments.some((t) => t.year === year);
-  const [teams, settings, legacy, names, rounds] = await Promise.all([
+  const [teams, settings, legacy, names, rounds, boxes] = await Promise.all([
     service.from("edition_teams").select("key, name, color").eq("edition_id", edition.id).order("sort_order"),
     service.from("edition_settings").select("scoring").eq("edition_id", edition.id).maybeSingle(),
     getSeasonTournament(year),
     getPlayerNameMap(),
     isHistory ? Promise.resolve(null) : service.from("live_round_state")
       .select("round, date, format, course_id, course_locked").match(editionFilter(maroonEdition(year))).order("round"),
+    // Raw tee times, so the adapter can show them in the tournament's timezone (live years only).
+    isHistory ? Promise.resolve(null) : service.from("live_match_boxes").select("id, tee_time").match(editionFilter(maroonEdition(year))),
   ]);
   if (teams.error) throw new Error(`Could not read the ${year} teams: ${teams.error.message}`);
   if (settings.error) throw new Error(`Could not read the ${year} settings: ${settings.error.message}`);
   if (rounds?.error) throw new Error(`Could not read the ${year} rounds: ${rounds.error.message}`);
+  if (boxes?.error) throw new Error(`Could not read the ${year} tee times: ${boxes.error.message}`);
 
   const venue = await getVenueBySlugAsync(legacy.slug);
   const scoring = settings.data?.scoring as { pointsForWin?: unknown; pointsForHalve?: unknown } | undefined;
@@ -68,45 +76,64 @@ export async function loadMaroonSite(year: number): Promise<MaroonSite | null> {
     names,
     courses: venue?.courses ?? [],
     liveRounds,
+    ...(boxes ? { teeTimes: Object.fromEntries((boxes.data ?? []).flatMap((box) => (box.tee_time ? [[String(box.id), String(box.tee_time)]] : []))) } : {}),
   });
 }
 
 /**
- * The Maroon Tournament's My Tournaments rows for one account, read live:
- * the player slot this account claimed (player_slots.claimed_by), the years
- * that player is on the Admin Center roster (live_roster), and Admin Center's
- * locked venue/dates. Not the one-time copy in edition_roster. Throws on a
- * database error.
+ * The account's player(s) and every year one of them is on a roster (history
+ * files + Admin Center). A player is linked by the claim (player_slots.claimed_by)
+ * or by profiles.player_slug, the field the old portal's requirePlayer reads;
+ * sign-up and invites set both, and only the server ever writes either.
  */
-export async function loadMyMaroonEditions(profileId: string): Promise<PastTournament[]> {
+async function loadViewerRoster(viewerId: string): Promise<{ slugs: string[]; rosterYears: Set<number> }> {
   const service = createSupabaseServiceRoleClient();
-  const { data: slots, error: slotError } = await service.from("player_slots").select("player_slug").eq("claimed_by", profileId);
-  if (slotError) throw new Error(`Could not read your player: ${slotError.message}`);
-  const slugs = (slots ?? []).map((row) => row.player_slug as string);
-  if (!slugs.length) return [];
-
+  const [slots, profile] = await Promise.all([
+    service.from("player_slots").select("player_slug").eq("claimed_by", viewerId),
+    service.from("profiles").select("player_slug").eq("id", viewerId).maybeSingle(),
+  ]);
+  if (slots.error) throw new Error(`Could not read your player: ${slots.error.message}`);
+  if (profile.error) throw new Error(`Could not read your profile: ${profile.error.message}`);
+  const slugs = [...new Set([...(slots.data ?? []).map((row) => row.player_slug as string), ...(profile.data?.player_slug ? [profile.data.player_slug as string] : [])])];
+  if (!slugs.length) return { slugs, rosterYears: new Set() };
   // A multi-year read of The Maroon's own roster (C4 list: becomes edition-keyed later).
   const { data: roster, error: rosterError } = await service.from("live_roster").select("season_year").in("player_slug", slugs);
   if (rosterError) throw new Error(`Could not read the roster: ${rosterError.message}`);
-  const rosterYears = [...new Set((roster ?? []).map((row) => row.season_year as number))];
-  if (!rosterYears.length) return [];
+  const rosterYears = new Set((roster ?? []).map((row) => row.season_year as number));
+  for (const t of pastTournaments) {
+    if ([...t.roster.maroon, ...t.roster.white].some((raw) => slugs.includes(getPlayerSlug(raw)))) rosterYears.add(t.year);
+  }
+  return { slugs, rosterYears };
+}
 
+/**
+ * The Maroon Tournament's rows for one account's lists, read live: unfinished
+ * years for My Tournaments ("playing") or finished ones for Past Tournaments
+ * and Profile ("past"). Roster = the history files for 2024–2026 and Admin
+ * Center's live_roster after (not the one-time copy in edition_roster); venue
+ * and dates = Admin Center's locked values. Throws on a database error.
+ */
+async function loadMaroonEditionRows(viewerId: string, which: "playing" | "past"): Promise<PastTournament[]> {
+  const { rosterYears } = await loadViewerRoster(viewerId);
+  if (!rosterYears.size) return [];
+  const service = createSupabaseServiceRoleClient();
   const { data: tournament, error: tournamentError } = await service.from("tournaments")
     .select("id, slug, name").eq("slug", MAROON_TOURNAMENT_SLUG).eq("is_legacy", true).maybeSingle();
   if (tournamentError) throw new Error(`Could not read The Maroon Tournament: ${tournamentError.message}`);
   if (!tournament) return [];
 
+  const years = [...rosterYears];
   const [editions, settings] = await Promise.all([
     service.from("tournament_editions").select("season_year, destination, start_date, end_date, timezone, is_test")
-      .eq("tournament_id", tournament.id).in("season_year", rosterYears),
+      .eq("tournament_id", tournament.id).in("season_year", years),
     service.from("live_tournament_settings").select("season_year, venue_name, venue_locked, begin_date, end_date, dates_locked")
-      .in("season_year", rosterYears),
+      .in("season_year", years),
   ]);
   if (editions.error) throw new Error(`Could not read the editions: ${editions.error.message}`);
   if (settings.error) throw new Error(`Could not read the tournament settings: ${settings.error.message}`);
 
-  return maroonPlayingEditions({
-    slug: tournament.slug, name: tournament.name, rosterYears,
+  const input = {
+    slug: tournament.slug, name: tournament.name, rosterYears: years,
     editions: (editions.data ?? []).map((e) => ({
       seasonYear: e.season_year, destination: e.destination, startDate: e.start_date, endDate: e.end_date, timezone: e.timezone, isTest: e.is_test,
     })),
@@ -114,62 +141,82 @@ export async function loadMyMaroonEditions(profileId: string): Promise<PastTourn
       seasonYear: row.season_year, venueName: row.venue_name, venueLocked: row.venue_locked === true,
       beginDate: row.begin_date, endDate: row.end_date, datesLocked: row.dates_locked === true,
     })),
-  });
+  };
+  return which === "playing" ? maroonPlayingEditions(input) : maroonPastEditions(input);
 }
 
-/**
- * May this account open The Maroon Tournament's /play home for this year?
- * Roster players for that year, Admin Center hosts, the tournament's
- * owners/organizers and platform admins (maroonCanEnter). Read live; throws
- * on a database error.
- */
-async function canEnterMaroonYear(viewerId: string, tournamentId: string, year: number): Promise<boolean> {
-  const service = createSupabaseServiceRoleClient();
-  const history = pastTournaments.find((t) => t.year === year);
-  const [profile, member, slots, roster] = await Promise.all([
-    service.from("profiles").select("is_host, platform_role").eq("id", viewerId).maybeSingle(),
-    service.from("tournament_members").select("role").eq("tournament_id", tournamentId).eq("profile_id", viewerId).maybeSingle(),
-    service.from("player_slots").select("player_slug").eq("claimed_by", viewerId),
-    history ? Promise.resolve(null) : service.from("live_roster").select("player_slug").match(editionFilter(maroonEdition(year))),
-  ]);
-  for (const result of [profile, member, slots, roster]) {
-    if (result?.error) throw new Error(`Could not check access: ${result.error.message}`);
-  }
-  return maroonCanEnter({
-    isHost: profile.data?.is_host === true,
-    platformRole: (profile.data?.platform_role as string | null) ?? null,
-    memberRole: (member.data?.role as string | null) ?? null,
-    viewerSlugs: (slots.data ?? []).map((row) => row.player_slug as string),
-    rosterSlugs: history
-      ? [...history.roster.maroon, ...history.roster.white].map(getPlayerSlug)
-      : (roster?.data ?? []).map((row) => row.player_slug as string),
-  });
+/** My Tournaments rows (unfinished years the viewer plays in). */
+export function loadMyMaroonEditions(viewerId: string): Promise<PastTournament[]> {
+  return loadMaroonEditionRows(viewerId, "playing");
+}
+
+/** Past Tournaments / Profile rows (finished years the viewer played in). */
+export function loadMyPastMaroonEditions(viewerId: string): Promise<PastTournament[]> {
+  return loadMaroonEditionRows(viewerId, "past");
 }
 
 /**
  * The Maroon Tournament's /play home for one year, or null when the year
- * doesn't exist, is the test season, or this viewer may not enter it. Data
- * comes read-only from loadMaroonSite. Activity, "your match" and the
- * commissioner link are Phase 4, so they stay off here.
+ * doesn't exist, is the test season, or this viewer may not enter it
+ * (maroonCanEnter: that year's roster players, Admin Center hosts, owners/
+ * organizers, platform admins). Everything is read-only from the old system:
+ * the Admin Center link uses Admin Center's own host check (requireHost) and
+ * portal links the portal's own player check (requirePlayer). The activity
+ * feed stays off for The Maroon this round.
  */
 export async function loadMaroonHome(year: string, viewerId: string): Promise<TournamentHome | null> {
   if (!/^\d{4}$/.test(year)) return null;
   const seasonYear = Number(year);
-  const { data: tournament, error } = await createSupabaseServiceRoleClient().from("tournaments")
+  const service = createSupabaseServiceRoleClient();
+  const { data: tournament, error } = await service.from("tournaments")
     .select("id").eq("slug", MAROON_TOURNAMENT_SLUG).eq("is_legacy", true).maybeSingle();
   if (error) throw new Error(`Could not read The Maroon Tournament: ${error.message}`);
-  if (!tournament || !(await canEnterMaroonYear(viewerId, tournament.id, seasonYear))) return null;
-  const maroon = await loadMaroonSite(seasonYear);
+  if (!tournament) return null;
+
+  const [host, player, profile, member, viewer, editions] = await Promise.all([
+    requireHost(),
+    requirePlayer(),
+    service.from("profiles").select("platform_role").eq("id", viewerId).maybeSingle(),
+    service.from("tournament_members").select("role").eq("tournament_id", tournament.id).eq("profile_id", viewerId).maybeSingle(),
+    loadViewerRoster(viewerId),
+    service.from("tournament_editions").select("season_year, is_test").eq("tournament_id", tournament.id),
+  ]);
+  for (const result of [profile, member, editions]) {
+    if (result.error) throw new Error(`Could not check access: ${result.error.message}`);
+  }
+  const canEnter = (y: number) => maroonCanEnter({
+    isHost: host !== null,
+    platformRole: (profile.data?.platform_role as string | null) ?? null,
+    memberRole: (member.data?.role as string | null) ?? null,
+    viewerSlugs: viewer.slugs,
+    rosterSlugs: viewer.rosterYears.has(y) ? viewer.slugs : [],
+  });
+  if (!canEnter(seasonYear)) return null;
+
+  const [maroon, activeYear] = await Promise.all([loadMaroonSite(seasonYear), getActiveSeasonYear()]);
   if (!maroon) return null;
   const { site, matchSessions } = maroon;
+  const history = pastTournaments.find((t) => t.year === seasonYear);
   return {
     slug: MAROON_TOURNAMENT_SLUG, year: seasonYear, site,
     colors: { primary: site.branding.primary, accent: site.branding.accent },
     feed: null,
     basePath: playPath(MAROON_TOURNAMENT_SLUG, seasonYear),
     announcementsUrl: null,
-    links: { website: "/website", commissioner: null, allTournaments: "/tournaments/join" },
-    yourMatch: null,
+    links: {
+      website: "/website",
+      commissioner: host ? { href: "/portal/admin", label: "Admin Center", note: "Rosters, matchups, scoring and settings" } : null,
+      allTournaments: "/tournaments/join",
+    },
+    moreLinks: maroonMoreLinks({
+      year: seasonYear, activeYear, historySlug: history?.slug ?? null,
+      playerSlug: player?.playerSlug ?? null, onRoster: viewer.rosterYears.has(seasonYear),
+    }),
+    pastSeasons: (editions.data ?? [])
+      .filter((e) => !e.is_test && e.season_year < seasonYear && canEnter(e.season_year))
+      .map((e) => e.season_year as number).sort((a, b) => b - a)
+      .map((y) => ({ year: y, href: playPath(MAROON_TOURNAMENT_SLUG, y) })),
+    yourMatch: yourMaroonMatch(site, matchSessions, viewer.slugs),
     matchSessions,
     demo: false,
   };
@@ -180,4 +227,5 @@ export const maroonLegacyAdapter: LegacyTournamentAdapter = {
   slug: MAROON_TOURNAMENT_SLUG,
   loadHome: loadMaroonHome,
   loadPlayingRows: loadMyMaroonEditions,
+  loadPastRows: loadMyPastMaroonEditions,
 };

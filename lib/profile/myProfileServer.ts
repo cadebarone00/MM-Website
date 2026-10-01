@@ -2,19 +2,33 @@ import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/l
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { getProfileOverrides, mergeProfile } from "@/lib/data/players/overrides";
 import { getPlayerStatsByYear } from "@/lib/data/stats";
+import { loadLegacyPastRows, loadLegacyPlayingRows, withoutLegacyRows } from "@/lib/platform/legacyTournaments";
 import { summarizePastEditions, type PastTournament } from "@/lib/platform/pastTournaments";
 import {
-  careerStats, initialsFor, maroonYearsPlayed, memberSinceLabel, mergeCompleted, playerFullName, profileDisplayName, teamsPlayed, type MyProfile,
+  careerStats, initialsFor, memberSinceLabel, mergeCompleted, playerFullName, profileDisplayName, teamsPlayed, type MyProfile,
 } from "./myProfile";
 
-/** A platform list, or empty if its SQL isn't installed yet or fails. */
+/**
+ * A platform list, or empty if its SQL isn't installed yet or fails. Legacy
+ * tournaments' rows are dropped here: their adapters supply them live.
+ */
 async function platformList(fn: "list_my_active_editions" | "list_my_past_editions", profileId: string): Promise<PastTournament[]> {
   const { data, error } = await createSupabaseServiceRoleClient().rpc(fn, { p_profile: profileId });
   if (error) {
     console.error(`${fn} failed:`, error.message);
     return [];
   }
-  return summarizePastEditions(data);
+  return summarizePastEditions(withoutLegacyRows(data));
+}
+
+/** Legacy tournaments' rows (they open /play), or empty if they can't be read. */
+async function legacyList(load: (profileId: string) => Promise<PastTournament[]>, profileId: string): Promise<PastTournament[]> {
+  try {
+    return await load(profileId);
+  } catch (error) {
+    console.error("legacy tournament list failed:", error instanceof Error ? error.message : error);
+    return [];
+  }
 }
 
 /**
@@ -41,10 +55,15 @@ export async function loadMyProfile(): Promise<MyProfile | null> {
     bio = mergeProfile(base, await getProfileOverrides(playerSlug)).bio?.trim() || null;
   }
 
-  const [active, platformPast] = await Promise.all([
+  const [platformActive, platformPast, legacyActive, legacyPast] = await Promise.all([
     platformList("list_my_active_editions", user.id),
     platformList("list_my_past_editions", user.id),
+    legacyList(loadLegacyPlayingRows, user.id),
+    legacyList(loadLegacyPastRows, user.id),
   ]);
+  // Soonest first, undated last (same order as the database list).
+  const active = [...legacyActive, ...platformActive].sort((a, b) =>
+    (a.startDate ?? "9999").localeCompare(b.startDate ?? "9999") || a.name.localeCompare(b.name) || a.year - b.year);
   const name = profileDisplayName({ fullName, displayName: row?.display_name, username: row?.username, email: row?.email ?? user.email });
   const stats = playerSlug ? careerStats(getPlayerStatsByYear(playerSlug)) : null;
 
@@ -56,7 +75,7 @@ export async function loadMyProfile(): Promise<MyProfile | null> {
     canEditBio: Boolean(playerSlug),
     teams: teamsPlayed(playerSlug),
     active,
-    completed: mergeCompleted(maroonYearsPlayed(playerSlug), platformPast),
+    completed: mergeCompleted(legacyPast, platformPast),
     stats,
     bio,
   };

@@ -16,7 +16,7 @@ test("tournament links from this site open the tournament; anything else is refu
   }
 });
 
-test("summary keeps only well-formed rows and sends the founding tournament to its own site", () => {
+test("summary keeps only well-formed rows; every row opens its public site (legacy rows come from adapters instead)", () => {
   assert.deepEqual(summarizePastEditions(null), []);
   assert.deepEqual(summarizePastEditions([
     { slug: "texas-cup", name: "Texas Cup", isLegacy: false, year: 2025, destination: "Austin", startDate: "2025-05-01", endDate: "2025-05-03" },
@@ -24,7 +24,7 @@ test("summary keeps only well-formed rows and sends the founding tournament to i
     { slug: "", name: "No slug", year: 2024 }, { slug: "x", name: "Bad year", year: "2024" }, null,
   ]), [
     { name: "Texas Cup", year: 2025, destination: "Austin", startDate: "2025-05-01", endDate: "2025-05-03", href: "/t/texas-cup/2025" },
-    { name: "The Maroon", year: 2024, destination: null, startDate: null, endDate: null, href: "/website" },
+    { name: "The Maroon", year: 2024, destination: null, startDate: null, endDate: null, href: "/t/the-maroon/2024" },
   ]);
 });
 

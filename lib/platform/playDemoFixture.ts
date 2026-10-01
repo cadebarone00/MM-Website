@@ -125,6 +125,8 @@ export function buildPlayDemo(): TournamentHome {
     basePath: PLAY_DEMO_BASE,
     announcementsUrl: null,
     links: { website: null, commissioner: null, allTournaments: PLAY_DEMO_BASE },
+    moreLinks: [],
+    pastSeasons: [],
     yourMatch: { matchId: "m7", playerId: "cade" },
     matchSessions: Object.fromEntries(matchList.map(([m, session]) => [m.id, session])),
     demo: true,

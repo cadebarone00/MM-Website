@@ -42,8 +42,8 @@ export function tournamentPathFromLink(input: string, siteOrigin: string): strin
 
 /** The rows the page shows, newest first (the database already sorts them). */
 export function summarizePastEditions(raw: unknown): PastTournament[] {
-  // The founding tournament still lives on its own site, not /t/...
-  return summarizeEditions(raw, (slug, year, isLegacy) => (isLegacy ? "/website" : publicBasePath(slug, year)));
+  // Legacy tournaments' rows are supplied by their adapters (legacyTournaments.ts), never from here.
+  return summarizeEditions(raw, (slug, year) => publicBasePath(slug, year));
 }
 
 /**

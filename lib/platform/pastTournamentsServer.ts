@@ -1,5 +1,5 @@
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { loadLegacyPlayingRows, withoutLegacyRows } from "./legacyTournaments.ts";
+import { loadLegacyPastRows, loadLegacyPlayingRows, withoutLegacyRows } from "./legacyTournaments.ts";
 import { summarizeMyTournaments, summarizePastEditions, type PastTournament } from "./pastTournaments.ts";
 
 export type MyPastTournaments =
@@ -9,10 +9,28 @@ export type MyPastTournaments =
 
 /**
  * The signed-in user's finished tournaments. The user id comes from the
- * session only (never the request).
+ * session only (never the request). Legacy tournaments' rows come live from
+ * their adapters (legacyTournaments.ts) and open their /play home.
  */
-export function loadMyPastTournaments(): Promise<MyPastTournaments> {
-  return loadRosterList("list_my_past_editions", summarizePastEditions);
+export async function loadMyPastTournaments(): Promise<MyPastTournaments> {
+  const { data: { user } } = await (await createSupabaseServerClient()).auth.getUser();
+  if (!user) return { signedIn: false };
+  const [platform, legacy] = await Promise.all([
+    createSupabaseServiceRoleClient().rpc("list_my_past_editions", { p_profile: user.id }),
+    loadLegacyPastRows(user.id).catch((error: unknown) => error instanceof Error ? error : new Error(String(error))),
+  ]);
+  if (platform.error) {
+    console.error("list_my_past_editions failed:", platform.error.message);
+    return { signedIn: true, ok: false };
+  }
+  if (legacy instanceof Error) {
+    console.error("loadLegacyPastRows failed:", legacy.message);
+    return { signedIn: true, ok: false };
+  }
+  // Newest first, like the database list.
+  const tournaments = [...legacy, ...summarizePastEditions(withoutLegacyRows(platform.data))].sort((a, b) =>
+    (b.endDate ?? b.startDate ?? String(b.year)).localeCompare(a.endDate ?? a.startDate ?? String(a.year)) || a.name.localeCompare(b.name));
+  return { signedIn: true, ok: true, tournaments };
 }
 
 /**
@@ -42,16 +60,3 @@ export async function loadMyPlayingTournaments(): Promise<MyPastTournaments> {
   return { signedIn: true, ok: true, tournaments };
 }
 
-async function loadRosterList(
-  fn: "list_my_past_editions",
-  summarize: (raw: unknown) => PastTournament[],
-): Promise<MyPastTournaments> {
-  const { data: { user } } = await (await createSupabaseServerClient()).auth.getUser();
-  if (!user) return { signedIn: false };
-  const { data, error } = await createSupabaseServiceRoleClient().rpc(fn, { p_profile: user.id });
-  if (error) {
-    console.error(`${fn} failed:`, error.message);
-    return { signedIn: true, ok: false };
-  }
-  return { signedIn: true, ok: true, tournaments: summarize(data) };
-}
