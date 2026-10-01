@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarDays, Shield, Trophy, Users, type LucideIcon } from "lucide-react";
 import { SETUP_TYPES, setupNextStepHref, type SetupType } from "@/lib/platform/setupTypes";
-import { PlatformHeader } from "./PlatformHeader";
 import styles from "./CreateTournament.module.css";
 
 const ICONS: Record<SetupType["key"], LucideIcon> = {
@@ -15,21 +14,18 @@ const ICONS: Record<SetupType["key"], LucideIcon> = {
 };
 
 /**
- * Create Tournament (/tournaments/create): setup page 1. Pick what you're
- * creating, then Continue opens that type's next step.
+ * Create Tournament (/tournaments/create): setup page 1. No header: the top
+ * half is plain cream (empty for now), the bottom half is maroon with the
+ * picker. Continue opens the picked type's next step.
  */
 export function CreateTournamentPage() {
   const router = useRouter();
   const [selected, setSelected] = useState<SetupType | null>(null);
 
-  return <>
-    <PlatformHeader title="Create Tournament" />
-    <main className={styles.page}>
-      <section className={styles.intro}>
-        <h2 className={styles.title}>What are you creating?</h2>
-        <p className={styles.subtitle}>Choose one to get started</p>
-      </section>
-      <section className={styles.picker}>
+  return <main className={styles.split}>
+      <section className={styles.cream} aria-hidden="true" />
+      <section className={styles.picker} aria-labelledby="create-title">
+        <h1 id="create-title" className={styles.question}>What are you creating?</h1>
         <div className={styles.grid} role="radiogroup" aria-label="What are you creating?">
           {SETUP_TYPES.map((type) => {
             const Icon = ICONS[type.key];
@@ -47,6 +43,5 @@ export function CreateTournamentPage() {
           Continue
         </button>
       </section>
-    </main>
-  </>;
+    </main>;
 }
