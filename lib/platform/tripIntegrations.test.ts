@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { PROVIDERS, MANUAL_PROVIDER_KEY, navigateAction, callAction, placeItinerary, type ProviderCategory } from "./tripIntegrations.ts";
+import { PROVIDERS, MANUAL_PROVIDER_KEY, navigateAction, callAction, type ProviderCategory } from "./tripIntegrations.ts";
 import { providerStatuses, runIntegration } from "./tripIntegrationsServer.ts";
 
 test("every user-entered category has a manual provider", () => {
@@ -26,8 +26,7 @@ test("unimplemented providers answer NOT_CONFIGURED, unknown ones UNKNOWN_PROVID
   assert.equal(u.ok === false && u.code, "UNKNOWN_PROVIDER");
 });
 
-test("actions and itinerary helpers", () => {
+test("external actions", () => {
   assert.equal(navigateAction({ name: "Pinehurst No. 2", latitude: 35.19, longitude: -79.47 }).url, "https://www.google.com/maps/search/?api=1&query=35.19,-79.47");
   assert.equal(callAction("(910) 235-8507").url, "tel:9102358507");
-  assert.equal(placeItinerary({ id: "p", tripId: "t", externalRef: null, name: "Bar", category: "bar", location: { name: "Bar" } }), null);
 });

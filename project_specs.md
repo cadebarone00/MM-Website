@@ -1714,3 +1714,13 @@ The Maroon app is the front door. The main navigation is Explore · Tourneys · 
 - `/dev/tournament` shows Golf Trip Home (the page after the questionnaire) filled with made-up answers (`lib/platform/golfTripPreviewFixture.ts`), so it can be reviewed without signing up or filling the questionnaire.
 - Development only: 404 unless running `npm run dev`. No login, no database reads or writes, no auth changes.
 - It renders the real `GolfTripHome` component (given the fixture through a `preview` prop), so style changes carry over to `/golf-trips/trip`.
+
+### Golf Trip Integration Foundation (owner request 2026-10-01, built)
+
+- **Provider architecture:** one registry (`PROVIDERS` in `lib/platform/tripIntegrations.ts`) — each provider has key, name, category, status (planned/configured/enabled/disabled), capabilities (search/import/sync/externalLink/navigation/oauth). The browser never calls a third party: page → our API route → `runIntegration()` in `lib/platform/tripIntegrationsServer.ts` → provider. Unimplemented providers return `NOT_CONFIGURED` (no fake data). Adding one later = write a handler, register it in `HANDLERS`, set its env keys.
+- **External references:** every trip record carries `externalRef` (provider, externalId, externalUrl, sourceType manual/api/email/link, lastSyncedAt), or null when typed by hand.
+- **Normalized locations:** one `TripLocation` (name, address, city, region, country, lat/lng, optional externalPlaceId). Map IDs are hints, never the identity.
+- **Actions:** `ExternalAction` (type, label, url) drives buttons like Navigate / Call without provider-specific UI logic.
+- **Categories:** flight, lodging, transportation, golf, place, maps, weather, email, calendar. **Manual entry** exists for every category users fill in; Google/Apple Maps and Waze work now as plain links.
+- **Security:** integration keys are server-only env vars read in one file, never `NEXT_PUBLIC_`. OAuth tokens (Gmail/Calendar) need encrypted server-side storage in a table with no client read policy — not built; no tokens are stored anywhere yet.
+- **Not implemented:** any real provider call, OAuth, Golf Trip record types/tables (Flight, Lodging, Transportation, Tee Time, Place) and itinerary mapping — deferred until the Golf Trip persistence schema (other tab) lands, then connected to it with "trip members only" RLS; the itinerary UI; email/calendar import.

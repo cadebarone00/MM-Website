@@ -28,7 +28,8 @@ export function SetupStepForm({ nextHref, backHref, complete = true, children }:
     if (!form?.checkValidity() || !complete) return;
     const values: Record<string, string> = {};
     new FormData(form).forEach((value, key) => { if (typeof value === "string") values[key] = value; });
-    saveGolfTripDraft(values);
+    // Changed answers make a new trip: forget Review's request id so Create can't return an older one.
+    saveGolfTripDraft({ ...values, requestId: "" });
     router.push(nextHref);
   }
 

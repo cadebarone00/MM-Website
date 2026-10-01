@@ -96,73 +96,6 @@ export interface TripLocation {
   externalPlaceId?: string;
 }
 
-interface TripRecordBase {
-  id: string;
-  tripId: string;
-  externalRef: ExternalReference | null;
-}
-
-/** Times are ISO strings. Traveler/player lists are trip member ids. */
-export interface TripFlight extends TripRecordBase {
-  travelerIds: string[];
-  airline: string;
-  flightNumber: string;
-  departure: TripLocation;
-  arrival: TripLocation;
-  departsAt: string;
-  arrivesAt: string;
-  confirmationNumber?: string;
-}
-
-export interface TripLodging extends TripRecordBase {
-  type: "house" | "hotel" | "resort" | "other";
-  name: string;
-  location: TripLocation;
-  checkIn: string;
-  checkOut: string;
-  confirmationNumber?: string;
-}
-
-export interface TripTransportation extends TripRecordBase {
-  type: "rental-car" | "rideshare" | "shuttle" | "other";
-  provider?: string;
-  pickup: TripLocation;
-  dropoff?: TripLocation;
-  pickupAt: string;
-  dropoffAt?: string;
-  vehicle?: string;
-  travelerIds: string[];
-  confirmationNumber?: string;
-}
-
-/** A course is not trip-owned (the same course can appear on many trips). */
-export interface GolfCourse {
-  id: string;
-  name: string;
-  location: TripLocation;
-  website?: string;
-  phone?: string;
-  externalRef: ExternalReference | null;
-}
-
-export interface TripTeeTime extends TripRecordBase {
-  courseId: string;
-  startsAt: string;
-  playerIds: string[];
-  confirmationNumber?: string;
-  reservationNotes?: string;
-}
-
-export interface TripPlace extends TripRecordBase {
-  name: string;
-  category: "restaurant" | "bar" | "activity" | "other";
-  location: TripLocation;
-  website?: string;
-  phone?: string;
-  /** Optional booking time (a dinner reservation); a place with none stays off the timeline. */
-  startsAt?: string;
-}
-
 /** A button the UI can show without knowing anything provider-specific. */
 export interface ExternalAction {
   type: "openReservation" | "checkIn" | "navigate" | "call" | "openProvider" | "viewWebsite";
@@ -182,29 +115,4 @@ export function navigateAction(location: TripLocation, maps: "google-maps" | "ap
 
 export function callAction(phone: string): ExternalAction {
   return { type: "call", label: "Call", url: `tel:${phone.replace(/[^\d+]/g, "")}` };
-}
-
-/** A minimal common shape so every record type can sit on one trip timeline later. */
-export interface ItineraryItem {
-  title: string;
-  startsAt: string;
-  endsAt?: string;
-  location?: TripLocation;
-  source: { kind: "flight" | "lodging" | "transportation" | "teeTime" | "place"; id: string };
-}
-
-export function flightItinerary(f: TripFlight): ItineraryItem {
-  return { title: `${f.airline} ${f.flightNumber}`, startsAt: f.departsAt, endsAt: f.arrivesAt, location: f.departure, source: { kind: "flight", id: f.id } };
-}
-export function lodgingItinerary(l: TripLodging): ItineraryItem {
-  return { title: l.name, startsAt: l.checkIn, endsAt: l.checkOut, location: l.location, source: { kind: "lodging", id: l.id } };
-}
-export function transportationItinerary(t: TripTransportation): ItineraryItem {
-  return { title: t.provider ?? t.vehicle ?? "Transportation", startsAt: t.pickupAt, endsAt: t.dropoffAt, location: t.pickup, source: { kind: "transportation", id: t.id } };
-}
-export function teeTimeItinerary(t: TripTeeTime, course: GolfCourse): ItineraryItem {
-  return { title: course.name, startsAt: t.startsAt, location: course.location, source: { kind: "teeTime", id: t.id } };
-}
-export function placeItinerary(p: TripPlace): ItineraryItem | null {
-  return p.startsAt ? { title: p.name, startsAt: p.startsAt, location: p.location, source: { kind: "place", id: p.id } } : null;
 }
