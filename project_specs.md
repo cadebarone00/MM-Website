@@ -1445,3 +1445,51 @@ The Explore button lights up on `/` and on any `/the-maroon/...` sub-page.
 - No links lead to the deleted page.
 - Typecheck, lint and the bottom-menu tests pass, with tests updated for the new Explore link.
 - I've checked it in the browser at phone width.
+
+### Round: My Profile page (spec 2026-09-30, design approved 2026-09-30, written spec awaiting approval)
+
+**What it is:** The signed-in person's own profile page, laid out like the fantasy-app Account screenshot, in Maroon colors (dark maroon gradient instead of teal). It looks a lot like the player profile, but it's about *you*.
+
+**Where it lives:**
+- New page at `/profile`. Signed-in only. Signed-out visitors are sent to `/login`.
+- The bottom-menu **Profile** button and the platform header's account icon now point to `/profile`. The Profile button lights up on `/profile`.
+- `/account/choose` is unchanged. It's still the screen you land on right after logging in.
+
+**Header:**
+- Big round avatar: the player's photo if there is one, otherwise their initials.
+- A **pencil** on the avatar. For players it opens the existing Edit My Bio page (`/portal/profile`), and admin still approves changes. Fans get no pencil.
+- **Name**: the first one that exists out of `player_slots.full_name` (players), `profiles.display_name`, `profiles.username`, and the part of their email before the @.
+- **"Member since Mon D, YYYY"**, from when the account was created.
+- **Team badges**: Maroon and/or White, one for each team they've played on, from the 2024–26 rosters. Display only. There's no "Edit Flair" picker.
+- **Gear** in the corner that opens `/settings`, which is still "Coming soon".
+
+**Three tabs: Tournaments · Stats · About**
+1. **Tournaments.**
+   - An Active / Completed switch and two big counters: **# Active** and **# Played**.
+   - **Active**: platform tournament years they're on the roster for whose last day (end date, else start date) hasn't passed yet. It uses the same filters as Past Tournaments: no test seasons, and customer tournaments only once they're published.
+   - **Completed**: finished years. It combines the Maroon 2024–26 years they played (from the existing static rosters) with the platform's existing `list_my_past_editions()`. A year that shows up in both lists is shown only once.
+   - Each row shows the tournament name, year, place and dates, and tapping it opens that year's public page.
+   - Empty states: "No active tournaments" with a **Join a Tournament** link to `/tournaments/join`, and "No completed tournaments yet".
+2. **Stats.** The same career numbers the player profile shows (scoring average, team points, total earned, skins), year by year, from `getPlayerStatsByYear`. Fans, or players with no stats, see "No stats yet."
+3. **About.** Their approved bio: the static profile merged with approved edits. Empty: "No bio yet."
+
+**Data:**
+- No new tables.
+- One new read-only database function, `list_my_active_editions(p_profile)`, in `supabase/platform_active_editions.sql`. It's built like `list_my_past_editions`:
+  - It's called only by the server, with the session's own user id.
+  - It returns display fields only.
+  - It needs `platform_foundation.sql` run first, and it's safe to run more than once.
+  - It must be run in Supabase before Active shows platform tournaments.
+- If either platform function is missing or fails, its list is simply empty and the page still loads. Maroon years, stats and bio work without any SQL.
+
+**Not included:** photo upload (its own round next), MM Coins balance, Edit Flair, and a real Settings page.
+
+**Done means:**
+- `/profile` renders all three tabs for a player and for a fan, checked in the browser at phone width.
+- Signed-out visitors are sent to `/login`.
+- The Profile button and the header icon go to `/profile`, and the Profile button lights up there.
+- New tests cover:
+  - the Active/Completed merge, including duplicates and empty lists
+  - `list_my_active_editions`, which only returns your own rows, skips finished, test and unpublished years, and is denied to anon and authenticated callers
+  - the bottom-menu link
+- Typecheck, lint and existing tests pass.

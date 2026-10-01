@@ -38,18 +38,17 @@
 
 .item svg {
   opacity: 0.75;
-  transition: opacity 0.2s ease, color 0.2s ease;
+  transition: opacity 0.2s ease, color 0.2s ease, filter 0.2s ease;
 }
 
 .item[aria-current="page"] {
   color: #f6eee8;
-  background: color-mix(in srgb, #c9a86e 14%, rgba(255, 255, 255, 0.04));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, #c9a86e 35%, transparent);
 }
 
 .item[aria-current="page"] svg {
-  color: #c9a86e;
+  color: #e3c27f;
   opacity: 1;
+  filter: drop-shadow(0 0 6px rgba(227, 194, 127, 0.7));
 }
 
 .item:not([aria-current="page"]):hover {
