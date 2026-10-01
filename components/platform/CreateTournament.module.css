@@ -51,6 +51,35 @@
   transition:background .15s ease,border-color .15s ease}
 .invite:hover{background:rgba(255,255,255,.06);border-color:#dcc495}
 .invite:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
+/* Golf: the − / + day counter, the day rows (date + 1/2 round circles) and the date / round / course rows. */
+.counter{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.counterControls{display:flex;align-items:center;gap:14px}
+.counterButton{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;cursor:pointer;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);color:#fff;transition:background .15s ease,opacity .15s ease}
+.counterButton:hover{background:rgba(255,255,255,.12)}
+.counterButton:disabled{opacity:.3;cursor:not-allowed}
+.counterButton:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
+.counterValue{min-width:2ch;text-align:center;font:500 34px/1 var(--font-spectral),Georgia,serif;color:#fff}
+.dayList{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1)}
+.dayRow{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px}
+.dayName{font:700 15px/1 var(--font-barlow),sans-serif;color:#fff}
+.compact{min-height:44px;padding:0 12px;border-radius:12px;font-size:15px}
+.circles{display:flex;gap:8px}
+.circle{position:relative;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;cursor:pointer;
+  border:1px solid rgba(255,255,255,.3);color:#fff;font:700 16px/1 var(--font-barlow),sans-serif;transition:background .15s ease,border-color .15s ease}
+.circle:has(.circleInput:checked){background:#fbf8f1;border-color:#dcc495;color:var(--color-maroon-900)}
+.circle:has(.circleInput:focus-visible){outline:2px solid #dcc495;outline-offset:3px}
+.circleInput,.srOnly{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;opacity:0}
+.courses{display:flex;flex-direction:column;gap:12px;margin-top:8px}
+.sectionTitle{margin:0;font:500 24px/1.2 var(--font-spectral),Georgia,serif;letter-spacing:-.01em;color:#fff}
+.sectionNote{margin:4px 0 0;font:500 14px/1.4 var(--font-barlow),sans-serif;color:#dcc495}
+.roundTable{display:flex;flex-direction:column;gap:8px}
+.roundRow{display:grid;grid-template-columns:96px 48px 1fr;align-items:center;gap:8px}
+.roundHead{font:600 12px/1 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#dcc495}
+.roundHead span:nth-child(2){text-align:center}
+.roundDate{font:600 14px/1.2 var(--font-barlow),sans-serif;color:#fff}
+.roundNumber{display:grid;place-items:center;width:32px;height:32px;margin:0 auto;border-radius:50%;
+  background:rgba(255,255,255,.1);font:700 14px/1 var(--font-barlow),sans-serif;color:#fff}
 /* The cream "Let's go golfing" button (a link styled like Continue). */
 .start{display:flex;align-items:center;justify-content:center;min-height:56px;font-size:18px}
 .start:hover{background:#f3ecdd}

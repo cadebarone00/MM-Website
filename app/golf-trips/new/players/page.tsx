@@ -18,11 +18,11 @@ export default function GolfTripPlayersPage() {
         <PlayerCountSlider />
         <label className={styles.field}>
           <span className={styles.fieldLabel}>Your Name</span>
-          <input className={styles.input} type="text" name="name" autoComplete="name" required />
+          <input className={styles.input} type="text" name="yourName" autoComplete="name" required />
         </label>
         <label className={styles.field}>
           <span className={styles.fieldLabel}>Your Email</span>
-          <input className={styles.input} type="email" name="email" autoComplete="email" required />
+          <input className={styles.input} type="email" name="yourEmail" autoComplete="email" required />
         </label>
         <button type="button" className={styles.invite}>
           <Plus size={20} strokeWidth={2.25} aria-hidden="true" />

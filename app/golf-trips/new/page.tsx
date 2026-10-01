@@ -15,7 +15,7 @@ export default function NewGolfTripPage() {
       <div className={styles.fields}>
         <label className={styles.field}>
           <span className={styles.fieldLabel}>Trip Name</span>
-          <input className={styles.input} type="text" name="name" placeholder="Maroon Masters 2027" autoComplete="off" required />
+          <input className={styles.input} type="text" name="tripName" placeholder="Maroon Masters 2027" autoComplete="off" required />
         </label>
         <label className={styles.field}>
           <span className={styles.fieldLabel}>Destination</span>
