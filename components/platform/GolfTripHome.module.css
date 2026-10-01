@@ -1,0 +1,25 @@
+/* Golf Trip Home: all dark maroon, no top nav. Trip name up top, the 5-tab selector under it, then the cards.
+   The negative bottom margin runs the maroon under the bottom menu on phones (same as the questionnaire). */
+.page{min-height:100svh;margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));background:var(--color-maroon-900);color:#fbf8f1;
+  padding:48px max(16px,calc((100% - 560px)/2)) calc(24px + 5.75rem + env(safe-area-inset-bottom))}
+.header{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.title{margin:0;font:500 38px/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.02em;color:#fff;text-wrap:balance;overflow-wrap:anywhere}
+.subtitle{margin:0;font:500 15px/1.4 var(--font-barlow),sans-serif;letter-spacing:.02em;color:#dcc495}
+/* The selector: a pill track, the active tab turns cream with maroon text (like the questionnaire choices). */
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;width:100%;margin-top:16px;padding:4px;border-radius:16px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14)}
+.tab{min-height:40px;padding:0 4px;border:0;border-radius:12px;background:transparent;color:rgba(255,255,255,.75);cursor:pointer;
+  font:700 14px/1 var(--font-barlow),sans-serif;letter-spacing:.02em;transition:background .15s ease,color .15s ease}
+.tab:hover{color:#fff;background:rgba(255,255,255,.06)}
+.tab:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.tabActive,.tabActive:hover{background:#fbf8f1;color:var(--color-maroon-900)}
+.body{display:flex;flex-direction:column;gap:12px;margin-top:24px}
+.card{display:flex;flex-direction:column;gap:10px;padding:18px 18px 16px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12)}
+.cardTitle{margin:0;font:500 22px/1.2 var(--font-spectral),Georgia,serif;letter-spacing:-.01em;color:#fff}
+.text{margin:0;font:600 16px/1.4 var(--font-barlow),sans-serif;color:#fff}
+.empty{margin:0;font:500 15px/1.4 var(--font-barlow),sans-serif;color:rgba(220,196,149,.8)}
+.rows{display:flex;flex-direction:column;margin:0}
+.row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid rgba(255,255,255,.08);font:600 15px/1.3 var(--font-barlow),sans-serif}
+.row:first-child{border-top:0;padding-top:0}
+.row dt{color:#dcc495}
+.row dd{margin:0;color:#fff;text-align:right;overflow-wrap:anywhere}
