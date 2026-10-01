@@ -51,9 +51,9 @@ a.actionBox:hover{background:var(--color-maroon-600)}
   width: calc(100% - 64px);
   max-width: 520px;
   height: calc(45svh - max(100px, 14svh));
-  margin: 0 auto;
+  margin: 0 auto 24px;
   padding: 22px 16px;
-  border-radius: 30px 30px 0 0;
+  border-radius: 30px;
   background: #fbf8f1;
   box-shadow: 0 -8px 32px #1d0b1120;
   display: flex;
@@ -62,9 +62,10 @@ a.actionBox:hover{background:var(--color-maroon-600)}
 }
 .photoPanel > .descriptor { flex-shrink: 0; margin-bottom: 12px; }
 .lowerContent {
-  max-width: 720px;
+  width: 100%;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 1px max(20px, calc((100% - 680px)/2)) 32px;
+  background: #1d0b11;
 }
 .lowerContent > .tournamentSection > .descriptor { color: #ead8b8; }
 .descriptor {
@@ -153,7 +154,7 @@ a.actionBox:hover{background:var(--color-maroon-600)}
 .tourneys .past a:focus-visible { outline-color: #806331; outline-offset: -3px; }
 @media (max-width: 400px) {
   .tourneys { padding-top: 0; }
-  .lowerContent { padding: 0 16px; }
+  .lowerContent { padding: 1px 16px 32px; }
   .tourneys .actions { gap: 10px; }
   .tourneys .actionBox { min-height: 44px; padding: 10px 12px; font-size: 15px; }
 }
