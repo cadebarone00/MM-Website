@@ -20,8 +20,9 @@ export function isSiteBottomNavHidden(pathname: string): boolean {
 }
 
 export function siteBottomNavTabActive(pathname: string, href: string): boolean {
+  // Tourneys stays lit on its My Tournaments list too.
   if (href === "/tournaments/join") {
-    return pathname === "/tournaments/join" || pathname.startsWith("/tournaments/join/");
+    return pathname === "/tournaments/join" || pathname.startsWith("/tournaments/join/") || pathname === "/tournaments/mine";
   }
   // Profile stays lit on the account screens (e.g. the post-login /account/choose).
   if (href === "/profile") {

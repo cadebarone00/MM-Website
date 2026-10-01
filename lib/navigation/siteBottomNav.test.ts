@@ -14,6 +14,7 @@ test("isSiteBottomNavHidden shows main site routes", () => {
   assert.equal(isSiteBottomNavHidden("/"), false);
   assert.equal(isSiteBottomNavHidden("/website"), false);
   assert.equal(isSiteBottomNavHidden("/tournaments/join"), false);
+  assert.equal(isSiteBottomNavHidden("/tournaments/mine"), false);
   assert.equal(isSiteBottomNavHidden("/portal/scoring"), false);
   assert.equal(isSiteBottomNavHidden("/the-maroon/courses"), false);
   assert.equal(isSiteBottomNavHidden("/profile"), false);
@@ -21,6 +22,8 @@ test("isSiteBottomNavHidden shows main site routes", () => {
 
 test("siteBottomNavTabActive", () => {
   assert.equal(siteBottomNavTabActive("/tournaments/join", "/tournaments/join"), true);
+  assert.equal(siteBottomNavTabActive("/tournaments/mine", "/tournaments/join"), true);
+  assert.equal(siteBottomNavTabActive("/tournaments", "/tournaments/join"), false);
   assert.equal(siteBottomNavTabActive("/profile", "/profile"), true);
   assert.equal(siteBottomNavTabActive("/account/choose", "/profile"), true);
   assert.equal(siteBottomNavTabActive("/profiles", "/profile"), false);

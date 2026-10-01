@@ -58,7 +58,6 @@ export async function loadMyProfile(): Promise<MyProfile | null> {
     active,
     completed: mergeCompleted(maroonYearsPlayed(playerSlug), platformPast),
     stats,
-    statsHref: stats && playerSlug ? `/teams/stats/players/${(getPlayerProfileBySlug(playerSlug)?.id ?? playerSlug).toLowerCase()}` : null,
     bio,
   };
 }

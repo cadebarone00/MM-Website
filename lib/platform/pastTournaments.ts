@@ -1,4 +1,5 @@
 import { publicBasePath } from "./publicSite.ts";
+import { playPath } from "./tournamentHome.ts";
 
 /**
  * Join Tournament page (/tournaments/join): the "paste a link" check and the
@@ -41,6 +42,20 @@ export function tournamentPathFromLink(input: string, siteOrigin: string): strin
 
 /** The rows the page shows, newest first (the database already sorts them). */
 export function summarizePastEditions(raw: unknown): PastTournament[] {
+  // The founding tournament still lives on its own site, not /t/...
+  return summarizeEditions(raw, (slug, year, isLegacy) => (isLegacy ? "/website" : publicBasePath(slug, year)));
+}
+
+/**
+ * My Tournaments (/tournaments/mine), from list_my_active_editions: each row
+ * enters that year's Tournament Home. The founding tournament has no /play
+ * home (its own site is /website), so it keeps going there.
+ */
+export function summarizeMyTournaments(raw: unknown): PastTournament[] {
+  return summarizeEditions(raw, (slug, year, isLegacy) => (isLegacy ? "/website" : playPath(slug, year)));
+}
+
+function summarizeEditions(raw: unknown, hrefFor: (slug: string, year: number, isLegacy: boolean) => string): PastTournament[] {
   const rows = Array.isArray(raw) ? raw : [];
   const text = (value: unknown) => (typeof value === "string" && value.trim() ? value : null);
   const out: PastTournament[] = [];
@@ -52,8 +67,7 @@ export function summarizePastEditions(raw: unknown): PastTournament[] {
     if (!slug || !name || typeof year !== "number" || !Number.isInteger(year)) continue;
     out.push({
       name, year, destination: text(record.destination), startDate: text(record.startDate), endDate: text(record.endDate),
-      // The founding tournament still lives on its own site, not /t/...
-      href: record.isLegacy === true ? "/website" : publicBasePath(slug, year),
+      href: hrefFor(slug, year, record.isLegacy === true),
     });
   }
   return out;

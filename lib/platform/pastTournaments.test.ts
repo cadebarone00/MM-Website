@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { PGlite } from "@electric-sql/pglite";
-import { summarizePastEditions, tournamentPathFromLink } from "./pastTournaments.ts";
+import { summarizeMyTournaments, summarizePastEditions, tournamentPathFromLink } from "./pastTournaments.ts";
 import { createTournament, database, profile, quick } from "./testDatabase.ts";
 
 const SITE = "https://themaroon.example";
@@ -26,6 +26,15 @@ test("summary keeps only well-formed rows and sends the founding tournament to i
     { name: "Texas Cup", year: 2025, destination: "Austin", startDate: "2025-05-01", endDate: "2025-05-03", href: "/t/texas-cup/2025" },
     { name: "The Maroon", year: 2024, destination: null, startDate: null, endDate: null, href: "/website" },
   ]);
+});
+
+test("My Tournaments rows enter Tournament Home; the founding tournament keeps its own site", () => {
+  assert.deepEqual(summarizeMyTournaments(undefined), []);
+  assert.deepEqual(summarizeMyTournaments([
+    { slug: "maroon-masters", name: "Maroon Masters", isLegacy: false, year: 2027, destination: "Scottsdale", startDate: "2027-04-01", endDate: "2027-04-04" },
+    { slug: "the-maroon", name: "The Maroon", isLegacy: true, year: 2027, destination: null, startDate: null, endDate: null },
+    { slug: "x", name: "", year: 2027 },
+  ]).map((t) => t.href), ["/play/maroon-masters/2027", "/website"]);
 });
 
 async function rosterPlayer(db: PGlite, edition: string, who: string | null) {

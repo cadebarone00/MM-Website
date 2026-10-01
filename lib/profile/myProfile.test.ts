@@ -61,21 +61,30 @@ test("completed: Maroon years win over the platform's legacy copy of the same ye
   assert.deepEqual(mergeCompleted([], []), []);
 });
 
-test("career stats: four headline rows with totals; null when there are none", () => {
+test("career stats: a row per year played (oldest first), every stat column, then totals; null when there are none", () => {
+  const y2024 = { scoringAverage: 82.5, teamPointsWon: 3, totalEarned: 120, totalSkins: 2, girPct: 40, oneJacks: { total: 5, pct: 10 } };
+  const y2026 = { scoringAverage: 80, teamPointsWon: 1.5, totalEarned: 40.5, oneJacks: { total: 4 } };
   const stats = careerStats([
-    { year: 2024, stats: { scoringAverage: 82.5, teamPointsWon: 3, totalEarned: 120, totalSkins: 2 } },
+    { year: 2026, stats: y2026 },
     { year: 2025, stats: null },
-    { year: 2026, stats: { scoringAverage: 80, teamPointsWon: 1.5, totalEarned: 40.5 } },
-  ]);
-  assert.deepEqual(stats, {
-    years: [2024, 2025, 2026],
-    rows: [
-      { label: "Scoring Average", values: ["82.5", null, "80"], careerTotal: null },
-      { label: "Team Points Won", values: ["3", null, "1.5"], careerTotal: "4.5" },
-      { label: "Total Earned", values: ["$120.00", null, "$40.50"], careerTotal: "$160.50" },
-      { label: "Total Skins", values: ["2", null, null], careerTotal: "2" },
-    ],
-  });
+    { year: 2024, stats: y2024 },
+  ])!;
+  assert.equal(stats.columns.length, 23);
+  assert.deepEqual(stats.columns.slice(0, 4), ["Scoring Average", "Team Points Won", "Total Earned", "Total Skins"]);
+  const col = (label: string) => stats.columns.indexOf(label);
+  assert.deepEqual(stats.rows.map((r) => [r.year, r.event]), [[2024, "The Maroon Tournament"], [2026, "The Maroon Tournament"]]);
+  assert.deepEqual(stats.rows.map((r) => r.values[col("Scoring Average")]), ["82.5", "80"]);
+  assert.deepEqual(stats.rows.map((r) => r.values[col("Total Skins")]), ["2", null]);
+  assert.deepEqual(stats.rows.map((r) => r.values[col("GIR %")]), ["40%", null]);
+  assert.deepEqual(stats.rows.map((r) => r.values[col("Total 1-Putts")]), ["5 (10%)", "4"]);
+  // Counts add up; averages and percentages have no total.
+  assert.equal(stats.totals[col("Team Points Won")], "4.5");
+  assert.equal(stats.totals[col("Total Earned")], "$160.50");
+  assert.equal(stats.totals[col("Total Skins")], "2");
+  assert.equal(stats.totals[col("Total 1-Putts")], "9");
+  assert.equal(stats.totals[col("Scoring Average")], null);
+  assert.equal(stats.totals[col("GIR %")], null);
+  assert.deepEqual(stats.played.map((y) => y.year), [2024, 2026]);
   assert.equal(careerStats([{ year: 2024, stats: null }]), null);
   assert.equal(careerStats([]), null);
 });

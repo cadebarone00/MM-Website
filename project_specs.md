@@ -1494,7 +1494,7 @@ The Explore button lights up on `/` and on any `/the-maroon/...` sub-page.
   - the bottom-menu link
 - Typecheck, lint and existing tests pass.
 
-### Round: Tourneys flow — Tourneys page → My Tournaments → Tournament Home (spec 2026-09-30, awaiting approval)
+### Round: Tourneys flow — Tourneys page → My Tournaments → Tournament Home (spec 2026-09-30, approved and built 2026-09-30)
 
 **The flow this round builds:**
 
@@ -1546,7 +1546,7 @@ Open The Maroon → Main app (bottom menu: Explore | Tourneys | Pick'ems | Profi
 - Typecheck, lint and tests pass, including a test for the Tourneys-tab highlight on the new page.
 - I've checked it in the browser at phone width.
 
-### Round: Profile Stats tab — one table + the career stats page folded in (spec 2026-09-30, awaiting approval)
+### Round: Profile Stats tab — one table + the career stats page folded in (spec 2026-09-30, approved 2026-09-30)
 
 **What it is:** A rework of the **Stats** tab on My Profile (`/profile`). It now holds everything from the website's player stats page (`/teams/stats/players/<player>`), so the profile doesn't link out.
 

@@ -1,6 +1,7 @@
 import type { PastTournament } from "../platform/pastTournaments";
 import type { Team, Tournament } from "../data/types";
 import type { PlayerYearStats } from "../data/stats";
+import { CAREER_STAT_COLUMNS } from "../data/stats/careerColumns";
 import { pastTournaments } from "../data";
 import { getPlayerSlug } from "../data/players";
 
@@ -9,8 +10,13 @@ import { getPlayerSlug } from "../data/players";
  * of Supabase so it can be unit-tested. myProfileServer.ts gathers the data.
  */
 export interface CareerStats {
-  years: number[];
-  rows: { label: string; values: (string | null)[]; careerTotal: string | null }[];
+  /** Stat labels, after the Year and Event columns. */
+  columns: string[];
+  rows: { year: number; event: string; values: (string | null)[] }[];
+  /** Career totals per stat; null for averages and percentages. */
+  totals: (string | null)[];
+  /** The raw years played, for the "Performance at a glance" chart. */
+  played: { year: number; stats: PlayerYearStats }[];
 }
 
 export interface MyProfile {
@@ -24,8 +30,6 @@ export interface MyProfile {
   active: PastTournament[];
   completed: PastTournament[];
   stats: CareerStats | null;
-  /** The full career stats page, for players who have one. */
-  statsHref: string | null;
   bio: string | null;
 }
 
@@ -88,28 +92,23 @@ export function mergeCompleted(maroonYears: PastTournament[], platformPast: Past
   return [...maroonYears, ...rest].sort((a, b) => b.year - a.year || (b.endDate ?? "").localeCompare(a.endDate ?? "") || a.name.localeCompare(b.name));
 }
 
-const num = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: 2 });
-const money = (v: number) => `$${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/** Every stat-tracked event so far is The Maroon Tournament. */
+export const STATS_EVENT = "The Maroon Tournament";
 
-/** The headline career numbers the player profile shows, year by year. */
+/**
+ * The Stats tab table: one row per year played (oldest first, so a new
+ * tournament adds a row at the bottom), a column per stat, then a total row.
+ * Years the player sat out are left out.
+ */
 export function careerStats(yearStats: { year: number; stats: PlayerYearStats | null }[]): CareerStats | null {
-  if (!yearStats.some((y) => y.stats)) return null;
-  const row = (label: string, pick: (s: PlayerYearStats) => number | undefined, format: (v: number) => string, total: boolean) => {
-    const raw = yearStats.map((y) => (y.stats ? pick(y.stats) : undefined));
-    const present = raw.filter((v): v is number => v != null);
-    return {
-      label,
-      values: raw.map((v) => (v != null ? format(v) : null)),
-      careerTotal: total && present.length ? format(present.reduce((a, b) => a + b, 0)) : null,
-    };
-  };
+  const played = yearStats
+    .filter((y): y is { year: number; stats: PlayerYearStats } => y.stats != null)
+    .sort((a, b) => a.year - b.year);
+  if (!played.length) return null;
   return {
-    years: yearStats.map((y) => y.year),
-    rows: [
-      row("Scoring Average", (s) => s.scoringAverage, num, false),
-      row("Team Points Won", (s) => s.teamPointsWon, num, true),
-      row("Total Earned", (s) => s.totalEarned, money, true),
-      row("Total Skins", (s) => s.totalSkins, String, true),
-    ],
+    columns: CAREER_STAT_COLUMNS.map((c) => c.label),
+    rows: played.map((y) => ({ year: y.year, event: STATS_EVENT, values: CAREER_STAT_COLUMNS.map((c) => c.value(y.stats)) })),
+    totals: CAREER_STAT_COLUMNS.map((c) => c.total?.(played.map((y) => y.stats)) ?? null),
+    played,
   };
 }

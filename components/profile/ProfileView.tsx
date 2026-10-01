@@ -5,10 +5,14 @@ import Link from "next/link";
 import { useState } from "react";
 import { ChevronRight, Flag, Pencil, Settings } from "lucide-react";
 import { formatDateRange } from "@/lib/platform/publicSite";
+import { CareerGlance } from "@/components/stats/CareerGlance";
 import type { MyProfile } from "@/lib/profile/myProfile";
 import type { PastTournament } from "@/lib/platform/pastTournaments";
 
 type Tab = "tournaments" | "stats" | "about";
+// Pinned Year/Event columns on the Stats table; the solid background hides the columns scrolling under them.
+const STICKY_YEAR = "sticky left-0 z-10 w-14 min-w-14 bg-[#1a0001] pl-4 pr-2";
+const STICKY_EVENT = "sticky left-14 z-10 w-28 min-w-28 whitespace-normal bg-[#1a0001] pr-3 shadow-[1px_0_0_rgba(251,248,241,0.15)]";
 const TABS: { key: Tab; label: string }[] = [
   { key: "tournaments", label: "Tournaments" },
   { key: "stats", label: "Stats" },
@@ -69,7 +73,7 @@ export function ProfileView({ profile }: { profile: MyProfile }) {
         </nav>
       </header>
 
-      <main className="mx-auto w-full max-w-[640px] flex-1 rounded-t-3xl bg-[#1a0001] px-4 pb-32 pt-6">
+      <main className={`mx-auto w-full max-w-[640px] flex-1 rounded-t-3xl bg-[#1a0001] px-4 pb-32 ${tab === "stats" ? "pt-1" : "pt-6"}`}>
         {tab === "tournaments" && (
           <section aria-label="Tournaments">
             <div className="grid grid-cols-2 rounded-full border border-cream-50/40 p-0.5" role="group" aria-label="Show">
@@ -97,25 +101,33 @@ export function ProfileView({ profile }: { profile: MyProfile }) {
 
         {tab === "stats" && (
           <section aria-label="Stats">
-            {!profile.stats ? <p className="text-center text-cream-50/70">No stats yet.</p> : (
+            {!profile.stats ? <p className="pt-4 text-center text-cream-50/70">No stats yet.</p> : (
               <>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead><tr className="text-left font-condensed uppercase tracking-wide text-cream-50/60">
-                      <th className="py-2 pr-2 font-semibold">Stat</th>
-                      {profile.stats.years.map((y) => <th key={y} className="px-2 py-2 text-right font-semibold">{y}</th>)}
-                      <th className="py-2 pl-2 text-right font-semibold">Career</th>
+                {/* Year + Event stay pinned while the stat columns scroll sideways. */}
+                <div className="-mx-4 overflow-x-auto">
+                  <table className="min-w-full whitespace-nowrap text-sm">
+                    <thead><tr className="font-condensed uppercase tracking-wide text-cream-50/60">
+                      <th className={`${STICKY_YEAR} py-2 text-left font-semibold`}>Year</th>
+                      <th className={`${STICKY_EVENT} py-2 text-left font-semibold`}>Event</th>
+                      {profile.stats.columns.map((c) => <th key={c} className="px-3 py-2 text-right font-semibold">{c}</th>)}
                     </tr></thead>
-                    <tbody>{profile.stats.rows.map((r) => (
-                      <tr key={r.label} className="border-t border-cream-50/10">
-                        <th scope="row" className="py-2 pr-2 text-left font-normal">{r.label}</th>
-                        {r.values.map((v, i) => <td key={i} className="px-2 py-2 text-right tabular-nums">{v ?? "—"}</td>)}
-                        <td className="py-2 pl-2 text-right font-semibold tabular-nums text-gold-300">{r.careerTotal ?? "—"}</td>
+                    <tbody>
+                      {profile.stats.rows.map((r) => (
+                        <tr key={r.year} className="border-t border-cream-50/10">
+                          <th scope="row" className={`${STICKY_YEAR} py-2 text-left font-semibold tabular-nums`}>{r.year}</th>
+                          <td className={`${STICKY_EVENT} py-2 text-left`}>{r.event}</td>
+                          {r.values.map((v, i) => <td key={i} className="px-3 py-2 text-right tabular-nums">{v ?? "—"}</td>)}
+                        </tr>
+                      ))}
+                      <tr className="border-t-2 border-gold-400/60 font-semibold text-gold-300">
+                        <th scope="row" className={`${STICKY_YEAR} py-2 text-left font-condensed uppercase tracking-wide`}>Total</th>
+                        <td className={`${STICKY_EVENT} py-2`} />
+                        {profile.stats.totals.map((v, i) => <td key={i} className="px-3 py-2 text-right tabular-nums">{v ?? "—"}</td>)}
                       </tr>
-                    ))}</tbody>
+                    </tbody>
                   </table>
                 </div>
-                {profile.statsHref && <Link href={profile.statsHref} className="mt-4 inline-block font-condensed font-semibold uppercase tracking-[0.12em] text-gold-300">Full career stats</Link>}
+                <div className="mt-6"><CareerGlance yearStats={profile.stats.played} tone="dark" /></div>
               </>
             )}
           </section>

@@ -1,28 +1,37 @@
-.page{max-width:720px;margin:auto;padding:32px 20px 48px;color:#2a2420}
-.title{font:500 40px/1.1 var(--font-spectral),Georgia,serif;text-align:center;margin:0 0 24px;color:#500001;letter-spacing:-.02em}
+/* Tourneys + My Tournaments: maroon top to bottom. The negative bottom margin runs the
+   maroon through the site's bottom-menu padding (SITE_BOTTOM_NAV_CONTENT_CLASS) on phones. */
+.page{--tj-bg:var(--color-maroon-900);--tj-box:var(--color-maroon-700);--tj-text:#fbf8f1;--tj-muted:#d6c5ca;--tj-gold:#dcc495;--tj-line:#c9a86e40;
+  min-height:calc(100svh - 64px);margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));padding:32px max(20px,calc((100% - 680px)/2)) calc(48px + 5.75rem + env(safe-area-inset-bottom));
+  background:var(--tj-bg);color:var(--tj-text)}
+.title{font:500 40px/1.1 var(--font-spectral),Georgia,serif;text-align:center;margin:0 0 24px;color:var(--tj-text);letter-spacing:-.02em}
 .srOnly{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.actionBox{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:112px;padding:16px 10px;border-radius:14px;background:var(--tj-box);color:var(--tj-text);text-align:center;font:600 15px/1.25 var(--font-barlow),sans-serif}
+a.actionBox:hover{background:var(--color-maroon-600)}
+.myTournaments{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:54px;margin:12px 0 20px;padding:0 18px;border-radius:14px;background:var(--tj-box);color:var(--tj-text);font:600 16px var(--font-barlow),sans-serif}
+.myTournaments:hover{background:var(--color-maroon-600)}
 .linkForm{margin-bottom:14px}
-.linkRow{display:flex;align-items:center;gap:10px;min-height:54px;padding:0 6px 0 16px;border:1px solid #b8945a;background:#fffdf9;color:#806331}
-.linkRow:focus-within{outline:3px solid #806331;outline-offset:2px}
+.linkRow{display:flex;align-items:center;gap:10px;min-height:54px;padding:0 6px 0 16px;border:1px solid #b8945a;border-radius:14px;background:#fbf8f1;color:#806331}
+.linkRow:focus-within{outline:3px solid var(--tj-gold);outline-offset:2px}
 .linkRow input{flex:1;min-width:0;border:0;background:transparent;font-size:16px;color:#2a2420;padding:12px 0;outline:none}
 .linkRow input::placeholder{color:#8a7f74}
-.linkRow button{min-height:42px;min-width:56px;padding:0 16px;background:#500001;color:#fbf8f1;font-weight:600;font-size:15px;border:0;cursor:pointer}
-.linkRow button:hover{background:#380001}
-.error{margin:8px 2px 0;font-size:14px;color:#9b1c1c}
-.create{display:flex;justify-content:center;align-items:center;gap:10px;min-height:54px;padding:12px 16px;font-size:16px;font-weight:600;border:1px solid #500001;background:#500001;color:#fbf8f1}
-.create:hover{background:#380001}
+.linkRow button{min-height:42px;min-width:56px;padding:0 16px;border-radius:10px;background:var(--tj-box);color:var(--tj-text);font-weight:600;font-size:15px;border:0;cursor:pointer}
+.linkRow button:hover{background:var(--color-maroon-800)}
+.error{margin:8px 2px 0;font-size:14px;color:#f3b4b4}
 .past{margin-top:40px}
-.past h2{font:500 28px var(--font-spectral),Georgia,serif;margin:0;padding-bottom:12px;border-bottom:1px solid #dfd3ba}
-.note{font-size:14px;line-height:1.6;color:#6e645b;margin:16px 0}
-.note a{color:#500001;text-decoration:underline;text-underline-offset:4px}
+.past h2,.heading{font:500 28px var(--font-spectral),Georgia,serif;margin:0;padding-bottom:12px;border-bottom:1px solid var(--tj-line)}
+.note{font-size:14px;line-height:1.6;color:var(--tj-muted);margin:16px 0}
+.note a{color:var(--tj-gold);text-decoration:underline;text-underline-offset:4px}
 .list{list-style:none;margin:0;padding:0}
-.list li{border-bottom:1px solid #dfd3ba}
-.row{display:flex;align-items:center;gap:16px;padding:18px 4px;min-height:72px;color:#806331}
-.row:hover{background:#f5efe2}
-.badge{flex:none;display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:#500001;color:#dcc495}
+.list li{border-bottom:1px solid var(--tj-line)}
+.row{display:flex;align-items:center;gap:16px;padding:18px 4px;min-height:72px;color:var(--tj-gold)}
+.row:hover{background:#ffffff0a}
+.badge{flex:none;display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:var(--tj-box);color:var(--tj-gold)}
 .rowText{flex:1;min-width:0;display:grid;gap:3px}
-.rowText strong{font:600 20px/1.2 var(--font-spectral),Georgia,serif;color:#2a2420;overflow-wrap:anywhere}
-.rowText span{font-size:14px;color:#6e645b}
-.rowText .dates{font-size:12px;color:#8a7f74}
-.page a:focus-visible,.page button:focus-visible{outline:3px solid #806331;outline-offset:3px}
-@media(max-width:400px){.page{padding:24px 16px 40px}.title{font-size:34px}.row{gap:12px}.badge{width:40px;height:40px}}
+.rowText strong{font:600 20px/1.2 var(--font-spectral),Georgia,serif;color:var(--tj-text);overflow-wrap:anywhere}
+.rowText span{font-size:14px;color:var(--tj-muted)}
+.rowText .dates{font-size:12px}
+.back{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:8px;font-size:14px;color:var(--tj-muted)}
+.page a:focus-visible,.page button:focus-visible{outline:3px solid var(--tj-gold);outline-offset:3px}
+@media(max-width:400px){.page{padding-left:16px;padding-right:16px;padding-top:24px}.title{font-size:34px}.row{gap:12px}.badge{width:40px;height:40px}}
+@media(min-width:1024px){.page{margin-bottom:0;padding-bottom:48px}}
