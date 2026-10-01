@@ -17,17 +17,18 @@ export async function JoinTournamentPage() {
 
   return <>
     <PlatformHeader title="Tourneys" />
-    <main className={styles.page}>
+    <main className={`${styles.page} ${styles.tourneys}`}>
+      <h2 className={styles.descriptor}>Get started</h2>
       <div className={styles.actions}>
-        <Link href="/tournaments/create" className={styles.actionBox}><LandPlot size={30} strokeWidth={1.6} aria-hidden="true" />Create a Tournament</Link>
+        <Link href="/tournaments/create" className={styles.actionBox}><LandPlot size={30} strokeWidth={1.6} aria-hidden="true" /><span>Creat a Tournament</span></Link>
         {/* Not tappable yet — joining is a later round. */}
-        <div className={styles.actionBox}><LeaderboardIcon size={30} aria-hidden="true" />Join a Tournament</div>
+        <div className={styles.actionBox}><LeaderboardIcon size={30} aria-hidden="true" /><span>Join a Tournament</span></div>
       </div>
-      <Link href="/tournaments/mine" className={styles.myTournaments}>My Tournaments<ChevronRight size={18} aria-hidden="true" /></Link>
       <JoinLinkForm />
 
       <section aria-labelledby="past-heading" className={styles.past}>
-        <h2 id="past-heading">Past Tournaments</h2>
+        <h2 id="past-heading">My Tournaments</h2>
+        <p className={styles.pastLabel}>Past Tournaments</p>
         {!past.signedIn ? <p className={styles.note}><Link href="/login">Log in</Link> to see your past tournaments.</p>
           : !past.ok ? <p className={styles.note} role="alert">We couldn&apos;t load your past tournaments right now. Refresh the page to try again.</p>
           : past.tournaments.length === 0 ? <p className={styles.note}>No past tournaments yet.</p>

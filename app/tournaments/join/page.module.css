@@ -1,8 +1,14 @@
 .pageHeader > header {
-  background: #1d0b11;
+  background: #35060c;
   border-bottom: 0;
 }
 
+.pageHeader > header > div {
+  max-width: 720px;
+  min-height: 68px;
+  padding: 0 16px;
+}
+
 .pageHeader > main {
-  --tj-bg: #1d0b11;
+  --tj-bg: #240001;
 }
