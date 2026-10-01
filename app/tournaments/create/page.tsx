@@ -3,7 +3,7 @@ import { CreateTournamentPage } from "@/components/platform/CreateTournamentPage
 
 export const metadata: Metadata = { title: "Create a Tournament | The Maroon" };
 
-/** Create Tournament: pick a format tier, then the survey (/tournaments/new) opens. */
+/** Create Tournament: setup page 1, pick what you're creating (event, team, league, group). */
 export default function CreatePage() {
   return <CreateTournamentPage />;
 }
