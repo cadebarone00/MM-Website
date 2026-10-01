@@ -16,9 +16,16 @@ try {
     await page.getByRole('heading', { level: 1 }).waitFor();
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `overflow at ${width}`);
     assert.equal(await page.locator('main').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(29, 11, 17)');
-    const nav = page.getByRole('navigation', { name: 'App navigation' });
-    assert.equal(await nav.getByRole('link').count(), 3);
-    assert.equal(await nav.getByRole('link', { name: 'Tournaments' }).getAttribute('href'), '/tournaments/join');
+    assert.equal(await page.getByRole('heading', { level: 1 }).innerText(), 'The Maroon');
+    // Main app navigation: the 4-tab bottom menu (Explore lit) and an icon-only top bar.
+    const tabs = await page.locator('[data-site-bottom-nav] a').evaluateAll(links => links.map(a => a.getAttribute('href')));
+    assert.deepEqual(tabs, ['/', '/tournaments/join', '/pickems', '/profile']);
+    assert.equal(await page.locator('[data-site-bottom-nav] a[aria-current="page"]').getAttribute('href'), '/');
+    const menu = await page.locator('header nav[aria-label="Platform navigation"] a').evaluateAll(links => links.map(a => [a.textContent.trim(), a.getAttribute('href')]));
+    assert.ok(!menu.some(([, href]) => href === '/website'), 'menu has no /website tournament shortcut');
+    assert.deepEqual(menu.find(([label]) => label === 'My Tournaments'), ['My Tournaments', '/tournaments/mine']);
+    // Tournaments are entered from Tourneys, so Explore has no My Tournaments button.
+    assert.equal(await page.locator('main').getByText('My Tournaments', { exact: true }).count(), 0);
     const create = page.getByRole('link', { name: 'Create Tournament', exact: true }).last();
     assert.equal(await create.getAttribute('href'), '/tournaments/create');
     const row = page.getByLabel('Tournament actions');

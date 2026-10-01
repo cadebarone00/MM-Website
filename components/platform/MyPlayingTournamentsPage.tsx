@@ -14,9 +14,9 @@ export async function MyPlayingTournamentsPage() {
   const mine = await loadMyPlayingTournaments();
 
   return <>
-    <PlatformHeader />
+    <PlatformHeader wordmark={false} />
     <main className={styles.page}>
-      <Link href="/tournaments/join" className={styles.back}><ChevronLeft size={16} aria-hidden="true" />Tournaments</Link>
+      <Link href="/tournaments/join" className={styles.back}><ChevronLeft size={16} aria-hidden="true" />Tourneys</Link>
       <h1 className={styles.heading}>My Tournaments</h1>
       {!mine.signedIn ? <p className={styles.note}><Link href="/login">Log in</Link> to see your tournaments.</p>
         : !mine.ok ? <p className={styles.note} role="alert">We couldn&apos;t load your tournaments right now. Refresh the page to try again.</p>

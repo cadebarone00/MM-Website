@@ -1659,3 +1659,17 @@ Open The Maroon → Main app (bottom menu: Explore | Tourneys | Pick'ems | Profi
 - **More → History:** the earlier Maroon seasons the viewer may enter.
 - **Tourneys → Past Tournaments and Profile (Active/Completed):** Maroon years the viewer played open `/play/the-maroon-tournament/<year>` instead of `/website`, read live (history files for 2024–2026, Admin Center roster after).
 - **Activity/announcements:** stay hidden for The Maroon. The platform activity functions refuse legacy tournaments and aren't in production. Enabling them needs a separate approved SQL round.
+
+### Round: Main-app navigation cleanup (owner request 2026-10-01, built)
+
+The Maroon app is the front door. The main navigation is Explore · Tourneys · Pick'ems · Profile. Tournaments are entered from Tourneys → My Tournaments.
+- **☰ menu:** the "The Maroon Tournament" link to `/website` is removed (`/website` itself stays), and "My Tournaments" now opens the player list `/tournaments/mine` (the organizer studio `/tournaments` stays).
+- **Explore:**
+  - The disabled "My Tournaments · Coming soon" button is removed.
+  - "Already part of the club? Log In" shows only to signed-out visitors.
+- **My Tournaments (`/tournaments/mine`):** uses the icon-only top bar like the four tabs. Its back link says "Tourneys".
+- **`/account/choose` is retired:** signed-in visitors are sent to `/profile`, and signed-out visitors to Log In. The Portal, Scoring and Website pages are unchanged.
+- **Left as is:** Edit Bio (`/portal/profile`), and Explore's article links to `/schedule` and `/history`.
+- **Tests:**
+  - `scripts/test-main-nav-browser.mjs` (`npm run test:browser:nav`)
+  - `scripts/test-mobile-home-browser.mjs`, updated for this navigation

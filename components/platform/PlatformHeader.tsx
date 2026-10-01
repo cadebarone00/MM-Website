@@ -10,10 +10,9 @@ export function PlatformHeader({ home = false, wordmark = true }: { home?: boole
         <summary aria-label="Open navigation"><Menu size={22} aria-hidden="true" /></summary>
         <nav aria-label="Platform navigation">
           <Link href="/">Home</Link>
-          <Link href="/tournaments">My Tournaments</Link>
+          <Link href="/tournaments/mine">My Tournaments</Link>
           <Link href="/tournaments/create">Create Tournament</Link>
           <Link href="/">Explore The Maroon</Link>
-          <Link href="/website">The Maroon Tournament</Link>
           <Link href="/contact">Contact Us</Link>
         </nav>
       </details>

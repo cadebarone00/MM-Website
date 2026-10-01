@@ -22,6 +22,7 @@
     "test:browser:access": "node scripts/test-access-requests-browser.mjs",
     "test:api:activity": "node scripts/test-activity-api.mjs",
     "test:browser:profile": "node scripts/test-profile-browser.mjs",
+    "test:browser:nav": "node scripts/test-main-nav-browser.mjs",
     "test:browser:maroon-play": "node scripts/test-maroon-play-browser.mjs"
   },
   "dependencies": {

@@ -7,7 +7,8 @@ import { maroonCategories } from "@/lib/data/theMaroon";
 import { MaroonSection } from "@/components/maroon/MaroonSection";
 import styles from "./MobileHome.module.css";
 const sections = ["Discover", "Courses", "Equipment", "Teaching", "News"] as const;
-export function PlatformHome() {
+/** `signedIn` hides the "Already part of the club? Log In" prompt. */
+export function PlatformHome({ signedIn = false }: { signedIn?: boolean }) {
   const [section, setSection] = useState<(typeof sections)[number]>("Discover");
   // Discover has no category of its own, so it borrows the Courses photo.
   const category = maroonCategories.find(item => item.slug === (section === "Discover" ? "courses" : section.toLowerCase()))!;
@@ -30,8 +31,7 @@ export function PlatformHome() {
           <Link href="/tournaments/create" className={styles.cardAction}>Create Tournament <span><ArrowRight size={16} aria-hidden="true" /></span></Link>
         </article>
       </div>
-      <div className={styles.myTournaments}><button type="button" disabled aria-describedby="my-tournaments-status">My Tournaments</button><p id="my-tournaments-status">Coming soon</p></div>
-      <div className={styles.accountRow}><p>Already part of the club?</p><Link href="/login">Log In <ArrowRight size={14} aria-hidden="true" /></Link></div>
+      {!signedIn && <div className={styles.accountRow}><p>Already part of the club?</p><Link href="/login">Log In <ArrowRight size={14} aria-hidden="true" /></Link></div>}
     </section>
     <section className={styles.discover} aria-label="Explore The Maroon">
       <div className={styles.filters} role="group" aria-label="Explore categories">
