@@ -152,6 +152,7 @@ Status key: **NM** = not migrated · **P** = partly · **Adapter-ready** = data 
 11. **`fantasy_teams` has no schema in the repo** — must inspect prod before migrating fantasy.
 12. **Concurrent sessions**: the other terminal is editing `project_specs.md` (Tourneys flow) and owns Tournament Home UI; theme work is paused. Coordinate before touching those files.
 13. **No migration runner** — every SQL step is manual (TD #6).
+14. **C1's roster copy is a one-time snapshot.** C1 (run in production 2026-09-30) copied `live_roster` → `edition_roster` and `player_slots.claimed_by` → `tournament_players.profile_id` once. Later Admin roster changes or new account claims don't sync, and My Tournaments (`list_my_active_editions`) reads the snapshot. Phase 3 must make Maroon membership read the live tables, or keep the copy in sync.
 
 ## 8. Can migrate read-only immediately (no C4)
 

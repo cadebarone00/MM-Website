@@ -27,7 +27,7 @@ export function PlatformHome() {
             <Image src="/teams/maroon/collage/01-hero-team.jpg" alt="" fill sizes="(max-width: 600px) 90vw, 550px" />
             <div className={styles.tripOverlay}><span className={styles.kicker}><Plus size={14} aria-hidden="true" /> Make it yours</span><p>Your people.<br />Your tournament.</p></div>
           </div>
-          <Link href="/tournaments/new" className={styles.cardAction}>Create Tournament <span><ArrowRight size={16} aria-hidden="true" /></span></Link>
+          <Link href="/tournaments/create" className={styles.cardAction}>Create Tournament <span><ArrowRight size={16} aria-hidden="true" /></span></Link>
         </article>
       </div>
       <div className={styles.myTournaments}><button type="button" disabled aria-describedby="my-tournaments-status">My Tournaments</button><p id="my-tournaments-status">Coming soon</p></div>

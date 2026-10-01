@@ -20,7 +20,7 @@ export async function JoinTournamentPage() {
     <main className={styles.page}>
       <h1 className={styles.title}>Tourneys</h1>
       <div className={styles.actions}>
-        <Link href="/tournaments/new" className={styles.actionBox}><LandPlot size={30} strokeWidth={1.6} aria-hidden="true" />Create a Tournament</Link>
+        <Link href="/tournaments/create" className={styles.actionBox}><LandPlot size={30} strokeWidth={1.6} aria-hidden="true" />Create a Tournament</Link>
         {/* Not tappable yet — joining is a later round. */}
         <div className={styles.actionBox}><LeaderboardIcon size={30} aria-hidden="true" />Join a Tournament</div>
       </div>

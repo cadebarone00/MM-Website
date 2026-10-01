@@ -20,7 +20,7 @@ try {
     assert.equal(await nav.getByRole('link').count(), 3);
     assert.equal(await nav.getByRole('link', { name: 'Tournaments' }).getAttribute('href'), '/tournaments/join');
     const create = page.getByRole('link', { name: 'Create Tournament', exact: true }).last();
-    assert.equal(await create.getAttribute('href'), '/tournaments/new');
+    assert.equal(await create.getAttribute('href'), '/tournaments/create');
     const row = page.getByLabel('Tournament actions');
     if (width <= 600) {
       assert.ok(await row.evaluate(el => el.scrollWidth > el.clientWidth));

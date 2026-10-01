@@ -1590,3 +1590,63 @@ Open The Maroon → Main app (bottom menu: Explore | Tourneys | Pick'ems | Profi
 - Each page shows its own big title, in the Tourneys title style: **The Maroon** (replaces "The digital home for competitive golf."), **Tourneys** (was "Tournaments"), **Pick'ems** and **Profile**. On Profile, the person's name is now a smaller heading under the title.
 - `/pickems` exists as an all-maroon page with only its title, for now.
 - Every other page keeps its current header.
+
+### Round: Maroon migration Phase 2 — read-only Maroon adapter (spec 2026-09-30, approved and built 2026-09-30; check: `npx tsx scripts/compare-maroon-adapter.ts`)
+
+**Background:** The Maroon Tournament is moving into the new tournament app (`/play/the-maroon-tournament/<year>`) in layers, without touching the old code. The full inventory, migration matrix and owner decisions are in `docs/maroon-legacy-migration-inventory.md`. C1 (`platform_foundation.sql`) is now run in production.
+
+**What it is:** One new "translator" file. It reads The Maroon's real data through the functions the old site already uses, and reshapes it into the same format the new tournament app reads for every tournament (`TournamentSiteData`). Nothing on screen changes in this round. Showing it in `/play` is Phase 3/4.
+
+**Where the data comes from (read-only, Supabase + the existing history files, never the Google Sheet):**
+- **Name, short name, colors, dates, place, timezone:** the tournament and edition rows C1 created (`the-maroon-tournament`).
+- **Matches, team points, individual leaderboard, roster:** `getSeasonTournament(year)`, the same function the old site uses. It reads the 2024–2026 history files and Supabase for 2027 on.
+- **Courses and rounds:** the same venue/schedule readers the old schedule page uses.
+- **Player names:** the old site's name lookup, so every name matches the old pages exactly.
+
+**How it maps:**
+- **Teams:** Team Maroon and Team White. Points are shown only once at least one match has a result, so 2027 never shows a fake 0–0.
+- **Matches:** Maroon players on one side, White on the other, with format, tee time, status and result. The result is built only from data that exists ("3&2", "1 UP", "Halved"). If an old match has no margin saved, it says only who won and never invents one.
+- **Rounds:** same round labels as the old schedule (`formatRoundLabel`), so 2025's Round INDI and 2026's renumbering stay exactly as they are today.
+- **Archive-only matches** (like 2024's Round 7 slot) stay hidden, same as the old public pages.
+- **Leaderboard:** same order and ties as the old leaderboard; scores shown as "-3", "E", "+2".
+- **Missing data** (for example 2027 before pairings) is left empty, so the app shows its normal "not posted yet" messages.
+
+**Not included:**
+- any change to `/play`, My Tournaments, the old pages, the old database tables or any SQL
+- scorecards, fantasy, wagers, broadcast, handicaps (later phases)
+- anything that saves data
+
+**Done means:**
+- New `lib/platform/maroonAdapter.ts` (the pure translation) and `maroonAdapterServer.ts` (the data reads), with unit tests for teams, matches, results, ties, round labels, hidden archive matches and empty years.
+- A read-only check script compares the translator's output with the old site for 2024, 2025, 2026 and 2027: same team points, same match count and results, same leaderboard order, same roster. It must match 100%.
+- No file in the old Maroon code is changed (checked with `git diff`).
+- Typecheck, lint and tests pass.
+
+### Round: Create Tournament page with format tiers (spec 2026-09-30, approved 2026-09-30)
+
+**What it is:** A new page at `/tournaments/create` that sits in front of the tournament survey (`/tournaments/new`). The home page's Create Tournament card, the Tourneys "Create a Tournament" box, and the ☰ menu's Create Tournament link all go here now.
+
+**Look:** the same as Tourneys: dark maroon, the icon-only top bar, and the bottom menu (the Tourneys tab stays lit).
+- **Top half:** "Your Next Tournament Starts Here" in big white serif, and under it "Pick the format that's right for your group" in Barlow, in gold.
+- **Bottom half:** three swipeable frosted-glass price boxes. Each has an icon in a circle, a small label, a big name and a gold price line:
+
+| Icon | Label | Name | Price line |
+|---|---|---|---|
+| person | Tier 1 | Individual | Free during beta |
+| swords | Tier 2 | Match Play | Free during beta |
+| trophy | Tier 3 | Individual + Match Play | Free during beta |
+
+**Tapping a box** opens `/tournaments/new?tier=<individual|match-play|individual-match-play>`. The survey then shows a small header with the pick, e.g. "MATCH PLAY · Free during beta". An unknown tier, or none, shows no header and the survey works as before.
+
+**Not included:**
+- charging money (the spec's "no hard-coded pricing" rule stands: the "Free during beta" line is a placeholder)
+- saving the tier with the tournament
+- changing the survey's questions (match play still needs two teams in the survey)
+
+**Done means:**
+- The page renders as above at phone width.
+- Each box opens the survey with the right small header.
+- The three Create links point to the new page.
+- There are tests for the tier list and links.
+- Typecheck, lint and existing tests pass.
+- I've checked it in the browser with screenshots.

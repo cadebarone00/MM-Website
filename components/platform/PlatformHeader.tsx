@@ -11,7 +11,7 @@ export function PlatformHeader({ home = false, wordmark = true }: { home?: boole
         <nav aria-label="Platform navigation">
           <Link href="/">Home</Link>
           <Link href="/tournaments">My Tournaments</Link>
-          <Link href="/tournaments/new">Create Tournament</Link>
+          <Link href="/tournaments/create">Create Tournament</Link>
           <Link href="/">Explore The Maroon</Link>
           <Link href="/website">The Maroon Tournament</Link>
           <Link href="/contact">Contact Us</Link>
