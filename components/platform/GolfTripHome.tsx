@@ -4,7 +4,8 @@ import { Suspense, use, useMemo, useRef, useState, useSyncExternalStore, type Re
 import Link from "next/link";
 import { ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronRight, ChevronsUpDown, Clock, CloudRain, Flag, MapPin, MessageCircle, Moon, Plane, Plus, Receipt, Settings, Sun, Thermometer, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
-import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
+import { normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
+import { resolveGolfFormat } from "@/lib/platform/formats";
 import type { TripWeather } from "@/lib/platform/weather/types";
 import { flightCounts, flightTime, type FlightSummary } from "@/lib/platform/golfTripFlights";
 
@@ -45,7 +46,8 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   const dateRange = dates.length > 0 ? `${shortTripDate(dates[0])} – ${shortTripDate(dates[dates.length - 1])}` : "";
 
   // Scoring starts from the preview's featured golfer (the organizer) so the sheet has a round in progress to show.
-  const you = previewMatch?.matches[0]?.left.name;
+  const firstCompetitor = previewMatch?.matches[0]?.left ? normalizeCompetitor(previewMatch.matches[0].left) : undefined;
+  const you = firstCompetitor?.golfers[0]?.name;
   const yourHoles = previewMatch?.leaderboard.find((row) => row.golfer.name === you)?.holes;
 
   return <main className={`${styles.page} ${styles.pageWithScoring}`}>
@@ -167,13 +169,25 @@ function WeatherRow({ place, weather }: { place?: string; weather: Promise<TripW
 
 /**
  * Golf tab, Sleeper-style: round dots + team card (preview only; on Overview the course weather takes its place,
- * in the same spot so the tabs never move), then Leaderboard / Match / Overview tabs in the
- * same words-and-underline style as Home–Info, then side-by-side slides. The slides sit in a scroll-snap strip, so
- * a phone swipe moves between them natively; tapping a tab scrolls to its slide, and scrolling lights up its tab.
+ * in the same spot so the tabs never move), then format-driven tabs (Leaderboard / Match / Overview), then side-by-side slides.
+ * The slides sit in a scroll-snap strip, so a phone swipe moves between them natively; tapping a tab scrolls to its slide,
+ * and scrolling lights up its tab.
  */
 function GolfSlides({ previewMatch }: { previewMatch?: GolfMatchPreview }) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(0);
+  const formatDef = previewMatch ? resolveGolfFormat(previewMatch.formatDef?.key ?? previewMatch.format) : undefined;
+  const availableSlides = useMemo(() => {
+    if (!formatDef) return GOLF_SLIDES;
+    return GOLF_SLIDES.filter((s) => formatDef.supportedSlides.includes(s));
+  }, [formatDef]);
+
+  const defaultIndex = useMemo(() => {
+    if (!formatDef) return 0;
+    const idx = availableSlides.indexOf(formatDef.defaultSlide as (typeof GOLF_SLIDES)[number]);
+    return idx >= 0 ? idx : 0;
+  }, [formatDef, availableSlides]);
+
+  const [active, setActive] = useState(defaultIndex);
 
   const goTo = (index: number) => {
     const track = trackRef.current;
@@ -184,21 +198,22 @@ function GolfSlides({ previewMatch }: { previewMatch?: GolfMatchPreview }) {
     const track = trackRef.current;
     if (track && track.clientWidth > 0) setActive(Math.round(track.scrollLeft / track.clientWidth));
   };
-  const overview = GOLF_SLIDES[active] === "Overview";
+  const currentSlide = availableSlides[active] ?? availableSlides[0];
+  const overview = currentSlide === "Overview";
 
   return <>
     {previewMatch && <div className={styles.golfTop}>
       <div className={overview ? styles.golfTopHidden : ""} inert={overview}>
-        <GolfMatchup match={previewMatch} showDots={GOLF_SLIDES[active] !== "Leaderboard"} />
+        <GolfMatchup match={previewMatch} showDots={currentSlide !== "Leaderboard"} />
       </div>
       <div className={overview ? "" : styles.golfTopHidden} inert={!overview}><GolfCourseWeather match={previewMatch} /></div>
     </div>}
     <div className={styles.tabs} role="tablist" aria-label="Golf sections">
-      {GOLF_SLIDES.map((name, i) => <button key={name} type="button" role="tab" aria-selected={active === i}
+      {availableSlides.map((name, i) => <button key={name} type="button" role="tab" aria-selected={active === i}
         className={`${styles.tab} ${active === i ? styles.tabActive : ""}`} onClick={() => goTo(i)}>{name}</button>)}
     </div>
     <div ref={trackRef} className={styles.slides} onScroll={onScroll}>
-      {GOLF_SLIDES.map((name, i) => <div key={name} className={styles.slide} role="tabpanel" aria-label={name} inert={active !== i}>
+      {availableSlides.map((name, i) => <div key={name} className={styles.slide} role="tabpanel" aria-label={name} inert={active !== i}>
         {name === "Match" && previewMatch ? <GolfTripMatch match={previewMatch} />
           : name === "Leaderboard" && previewMatch ? <GolfTripLeaderboard match={previewMatch} />
           : name === "Overview" ? <GolfOverview />
