@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, use, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { Suspense, use, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronRight, ChevronsUpDown, Clock, CloudRain, Flag, MapPin, MessageCircle, Moon, Plane, Plus, Receipt, Settings, Sun, Thermometer, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
@@ -12,9 +12,8 @@ import { flightCounts, flightTime, type FlightSummary } from "@/lib/platform/gol
 export interface TripFlights { summary: FlightSummary; href: string | null }
 import { GolfCourseWeather, GolfTripLeaderboard } from "./GolfTripMatch";
 import { GolfTripScoring } from "./GolfTripScoring";
-import { GolfTripCompetition } from "./GolfTripCompetition";
-import type { CompetitionRound } from "@/lib/platform/golfTripCompetitionPreview";
-import { useGolfTripCompetitionPreview } from "./GolfTripCompetitionPreviewProvider";
+import { GolfTripCompetitionMatchPreview } from "./GolfTripCompetitionMatchPreview";
+import { GolfTripGames } from "./GolfTripGames";
 import styles from "./GolfTripHome.module.css";
 
 const TABS = ["Home", "Golf", "Venue", "Info"] as const;
@@ -47,8 +46,6 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   const [previewCompetition, setPreviewCompetition] = useState<boolean | null>(null);
   const competitive = (preview ? previewCompetition : null) ?? (draft.includesTournament === "yes");
 
-  const competitionPreview = useGolfTripCompetitionPreview();
-  const competitionRounds = preview && previewMatch ? competitionPreview?.rounds ?? [] : [];
 
   const dates = tripDates(draft.startDate, draft.endDate);
   const dateRange = dates.length > 0 ? `${shortTripDate(dates[0])} – ${shortTripDate(dates[dates.length - 1])}` : "";
@@ -71,7 +68,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
       </div>
     </header>
     <div className={styles.body} role="tabpanel" aria-label={tab}>
-      {tab === "Home" ? <HomeSections draft={draft} dates={dates} dateRange={dateRange} weather={weather} />
+      {tab === "Home" ? <InfoAccount destination={draft.destination} flights={flights} />
         : tab === "Golf" ? <>
           {preview && previewMatch && <div className={styles.tabs} role="group" aria-label="Preview trip scenario">
             {[true, false].map((value) => <button key={String(value)} type="button" aria-pressed={competitive === value}
@@ -79,10 +76,10 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
               {value ? "Competitive preview" : "Non-competitive preview"}
             </button>)}
           </div>}
-          <GolfSlides key={String(competitive)} previewMatch={previewMatch} competitive={competitive} competitionRounds={competitionRounds} />
+          <GolfSlides key={String(competitive)} previewMatch={previewMatch} competitive={competitive} />
         </>
         : tab === "Venue" ? <VenueEvents />
-        : tab === "Info" ? <InfoAccount destination={draft.destination} flights={flights} />
+        : tab === "Info" ? <HomeSections draft={draft} dates={dates} dateRange={dateRange} weather={weather} />
         : <Card title={tab}><Empty>Coming soon</Empty></Card>}
     </div>
     <GolfTripScoring par={previewMatch?.par} initialHoles={yourHoles} />
@@ -184,19 +181,34 @@ function WeatherRow({ place, weather }: { place?: string; weather: Promise<TripW
 }
 
 /** Golf sections share the existing responsive scroll-snap strip and tab styling. */
-function GolfSlides({ previewMatch, competitive, competitionRounds }: { previewMatch?: GolfMatchPreview; competitive: boolean; competitionRounds: CompetitionRound[] }) {
+function GolfSlides({ previewMatch, competitive }: { previewMatch?: GolfMatchPreview; competitive: boolean }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const availableSlides = GOLF_SLIDES.filter((name) => name !== "Competition" || competitive);
   const [active, setActive] = useState(0);
+  const gamesActive = availableSlides[active] === "Games";
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track || gamesActive) return;
+    // Keep the chosen panel aligned when the mobile/desktop viewport changes.
+    const observer = new ResizeObserver(() => {
+      track.scrollTo({ left: active * track.clientWidth, behavior: "instant" });
+    });
+    observer.observe(track);
+    return () => observer.disconnect();
+  }, [active, gamesActive]);
 
   const goTo = (index: number) => {
-    const track = trackRef.current;
-    if (track) track.scrollTo({ left: index * track.clientWidth, behavior: "smooth" });
     setActive(index);
+    // Keep the interactive Games panel outside the swipe strip.
+    if (availableSlides[index] !== "Games") requestAnimationFrame(() => {
+      const track = trackRef.current;
+      if (track) track.scrollTo({ left: index * track.clientWidth, behavior: "instant" });
+    });
   };
   const onScroll = () => {
     const track = trackRef.current;
-    if (track && track.clientWidth > 0) setActive(Math.round(track.scrollLeft / track.clientWidth));
+    if (!gamesActive && track && track.clientWidth > 0) setActive(Math.round(track.scrollLeft / track.clientWidth));
   };
 
   return <>
@@ -205,13 +217,15 @@ function GolfSlides({ previewMatch, competitive, competitionRounds }: { previewM
       {availableSlides.map((name, i) => <button key={name} type="button" role="tab" aria-selected={active === i}
         className={`${styles.tab} ${active === i ? styles.tabActive : ""}`} onClick={() => goTo(i)}>{name}</button>)}
     </div>
-    <div ref={trackRef} className={styles.slides} onScroll={onScroll}>
-      {availableSlides.map((name, i) => <div key={name} className={styles.slide} role="tabpanel" aria-label={name} inert={active !== i}>
+    <div ref={trackRef} className={styles.slides} style={gamesActive ? { display: "none" } : undefined} onScroll={onScroll}>
+      {availableSlides.filter(name => name !== "Games").map((name, i) => <div key={name} className={styles.slide} role="tabpanel" aria-label={name} inert={active !== i}>
         {name === "Overview"
           ? previewMatch ? <GolfTripLeaderboard match={previewMatch} /> : <Card title="Score Overview"><Empty>Your leaderboard and round scores will show here</Empty></Card>
-          : name === "Competition" ? <GolfTripCompetition rounds={competitionRounds} />
-          : <Card title={name}><Empty>Golf games are coming soon</Empty></Card>}
+          : previewMatch ? <GolfTripCompetitionMatchPreview initialMatch={previewMatch} /> : <Card title="Competition"><Empty>Your matchups will show here</Empty></Card>}
       </div>)}
+    </div>
+    <div role="tabpanel" aria-label="Games" hidden={!gamesActive}>
+      {previewMatch ? <GolfTripGames /> : <Card title="Games"><Empty>Golf games are coming soon</Empty></Card>}
     </div>
   </>;
 }

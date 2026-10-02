@@ -73,6 +73,11 @@ interface FeatureSeed {
 
 const seeds: FeatureSeed[] = [
   {
+    id: "golf-trip-games-preview", name: "Player-created side games preview",
+    scope: "Development preview only: fictional players and rounds, scope/group compatibility, player selection and per-game setup in component memory. No score calculation, persistence, invitations, money or official Competition changes. Findings and follow-ups: docs/golf-trip-games-review.md.",
+    attentionCategories: ["privacy", "personal-data", "ugc", "security", "retention", "intellectual-property", "organizer-responsibility", "legal-review"],
+  },
+  {
     id: "golf-trip-competition-preview", name: "Golf Trip competition settings preview",
     scope: "Local fictional round configuration shared by organizer settings and player preview; UI locking only, no persistence, auth or scoring. Findings and follow-ups: docs/golf-trip-competition-review.md.",
     attentionCategories: ["privacy", "personal-data", "security", "retention", "intellectual-property", "organizer-responsibility", "legal-review"],

@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 /**
  * LOCAL DEV PREVIEW of Golf Trip Home (/golf-trips/trip) as if the questionnaire were finished, using
  * fixture answers. No login, no database. 404 unless NODE_ENV=development (`npm run dev`).
- * Accepts ?format=singles | fourball | foursome | scramble | stableford to preview format templates.
+ * Accepts ?format=singles | fourball | foursome | bestball | scramble | shamble | chapman | stableford | singlesstroke | custom to preview format templates.
  */
 export default async function GolfTripPreviewPage({ searchParams }: { searchParams?: Promise<{ format?: string }> }) {
   if (process.env.NODE_ENV !== "development") notFound();

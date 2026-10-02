@@ -25,3 +25,15 @@ All follow-ups are open, owners and due dates unassigned. Engineering must suppl
 ## 2026-10-02 navigation scope review
 
 Organizer controls moved from Golf to the Competition card in the development settings wheel. Existing format, flags and started-round guards are reused. No new personal data, UGC, vendors, assets, payments, subscriptions, advertising or sponsorship are introduced. Retention remains memory-only until reload or leaving the preview layout; no storage or server writes. The preview selector is not permission enforcement. Existing IP, provider/platform, security and professional legal-review follow-ups above remain review_required; this move does not establish release readiness. Evidence: app/dev/tournament/layout.tsx and components/platform/GolfTripCompetitionPreviewProvider.tsx. Registry metadata is unchanged.
+
+## 2026-10-02 presentation and summary scope review
+
+The Organizer Competition box now displays fictional days, round numbers and courses and opens the existing settings screen. The screen reuses the site maroon/gold palette and Spectral font. No additional data collection, storage, permissions, vendors, UGC, money flows, advertising, sponsorship or provider integration is introduced. Existing privacy, retention, security, IP, platform and professional-review follow-ups remain review_required. Deployment is not verified. Evidence: components/platform/GolfTripSettingsPreview.tsx and the settings/competition CSS modules.
+
+## 2026-10-02 intermediate round-selection scope review
+
+Supersedes the summary placement above: Competition is title-only; a separate sheet lists one fictional day/round/course box per round and opens settings for the selected round. Individual edits are explicitly scoped to that round ID; bulk controls are omitted there. Data sources, memory retention, started-round guards and permission boundaries are unchanged. No new collection, UGC, assets, vendors, payments, subscriptions, advertising or sponsorship. Existing privacy, security, IP, retention, platform and professional-review findings remain review_required. No deployment verified. Evidence: components/platform/GolfTripSettingsPreview.tsx and GolfTripCompetition.tsx.
+
+## 2026-10-02 head-to-head format preview scope review
+
+Golf Competition restores fictional match-play versus cards/pairings and adds local format selection across the loaded format catalog plus Chapman. Stroke/points formats reuse leaderboard presentation; Custom has sample stroke presentation only. Preview selection is component memory, resets on remount/reload and never changes organizer round configuration, scores, permissions or storage. No new personal data, vendors, assets, UGC, payments, subscriptions, advertising, sponsorship or provider integrations. Existing IP, security, privacy, retention, platform and professional-review follow-ups remain review_required. No deployment verified. Evidence: GolfTripCompetitionMatchPreview.tsx and golfTripPreviewFixture.ts.

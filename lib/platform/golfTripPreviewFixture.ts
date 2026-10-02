@@ -359,6 +359,11 @@ export const GOLF_MATCH_PREVIEWS: Record<string, GolfMatchPreview> = {
   foursome: GOLF_MATCH_PREVIEW_FOURSOME,
   scramble: GOLF_MATCH_PREVIEW_SCRAMBLE,
   stableford: GOLF_MATCH_PREVIEW_STABLEFORD,
+  bestball: { ...GOLF_MATCH_PREVIEW_FOURBALL, format: "Best Ball", formatDef: FORMATS.BestBall },
+  shamble: { ...GOLF_MATCH_PREVIEW_SCRAMBLE, format: "Shamble", formatDef: FORMATS.Shamble },
+  chapman: { ...GOLF_MATCH_PREVIEW_FOURSOME, format: "Chapman", formatDef: { ...FORMATS.Foursome, label: "Chapman", description: "Pairs play both tee shots, switch balls for the second shot, then choose one ball and alternate shots." } },
+  singlesstroke: { ...GOLF_MATCH_PREVIEW_SINGLES, format: "Singles Stroke Play", formatDef: FORMATS.SinglesStroke },
+  custom: { ...GOLF_MATCH_PREVIEW_SINGLES, format: "Custom Format", formatDef: FORMATS.Custom },
 };
 
 /** Default preview matching previous export for complete backward compatibility. */

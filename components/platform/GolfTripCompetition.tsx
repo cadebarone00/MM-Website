@@ -15,15 +15,15 @@ function Toggle({ label, checked, mixed, disabled, onChange }: {
 }
 
 /** Controlled views: the caller owns the single shared round configuration. */
-export function GolfTripCompetition({ rounds, onChange }: {
-  rounds: CompetitionRound[]; onChange?: (change: CompetitionRoundChange, id?: string) => void;
+export function GolfTripCompetition({ rounds, onChange, showBulk = true }: {
+  showBulk?: boolean; rounds: CompetitionRound[]; onChange?: (change: CompetitionRoundChange, id?: string) => void;
 }) {
   const headingId = useId();
   const editable = rounds.filter(round => round.status !== "started");
   const organizer = onChange !== undefined;
   return <section className={`${styles.card} ${organizer ? styles.settings : ""}`} aria-labelledby={headingId}>
     <h2 id={headingId} className={styles.title}>{organizer ? "Organizer Competition Settings" : "Competition"}</h2>
-    {onChange && <>
+    {onChange && showBulk && <>
       <div className={styles.bulk}>
         {(["handicap", "nassau"] as const).map(field => {
           const all = editable.length > 0 && editable.every(round => round[field]);

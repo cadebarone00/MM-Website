@@ -98,6 +98,20 @@ export function GolfTripScoring({ par, initialHoles }: { par?: number[]; initial
         </button>
       </div>
 
+      <div ref={chipsRef} className={styles.holes} role="group" aria-label="Holes">
+        {holes.map((h, i) => <button key={i} type="button" aria-pressed={i === current} aria-label={`Hole ${i + 1}${h !== null ? `, ${h} strokes` : ""}`}
+          className={`${styles.holeChip} ${i === current ? styles.holeChipActive : ""}`} onClick={() => setCurrent(i)}>
+          <span>{i + 1}</span><b>{h ?? "·"}</b>
+        </button>)}
+      </div>
+
+      <div className={styles.puttsWrap} aria-label="Putts">
+        <span className={styles.puttsLabel}>Putts</span>
+        <div className={styles.putts} role="group" aria-label="Putts selector">
+          {[0, 1, 2, 3, "4+"].map((value) => <button key={String(value)} type="button" className={styles.puttOption} aria-pressed={value === 2}>{value}</button>)}
+        </div>
+      </div>
+
       <div className={styles.stepper}>
         <button type="button" className={styles.stepButton} aria-label="One less stroke" onClick={() => step(-1)}><Minus size={26} strokeWidth={2.5} aria-hidden /></button>
         <div className={styles.strokes} aria-live="polite">
@@ -107,11 +121,9 @@ export function GolfTripScoring({ par, initialHoles }: { par?: number[]; initial
         <button type="button" className={styles.stepButton} aria-label="One more stroke" onClick={() => step(1)}><Plus size={26} strokeWidth={2.5} aria-hidden /></button>
       </div>
 
-      <div ref={chipsRef} className={styles.holes} role="group" aria-label="Holes">
-        {holes.map((h, i) => <button key={i} type="button" aria-pressed={i === current} aria-label={`Hole ${i + 1}${h !== null ? `, ${h} strokes` : ""}`}
-          className={`${styles.holeChip} ${i === current ? styles.holeChipActive : ""}`} onClick={() => setCurrent(i)}>
-          <span>{i + 1}</span><b>{h ?? "·"}</b>
-        </button>)}
+      <div className={styles.compassRow} aria-label="Shot direction">
+        <Compass label="Fairway" />
+        <Compass label="GIR" />
       </div>
 
       <dl className={styles.summary}>
@@ -123,6 +135,29 @@ export function GolfTripScoring({ par, initialHoles }: { par?: number[]; initial
       <span ref={spacerRef} className={styles.navSpacer} aria-hidden />
     </div>
   </section></div>;
+}
+
+function Compass({ label }: { label: string }) {
+  return <div className={styles.compass} aria-label={label}>
+    <span className={styles.compassLabel}>{label}</span>
+    <div className={styles.compassDial} aria-hidden="true">
+      <button type="button" className={`${styles.compassButton} ${styles.directionUp}`} aria-label={`${label} up`}>
+        <span>↑</span>
+      </button>
+      <button type="button" className={`${styles.compassButton} ${styles.directionLeft}`} aria-label={`${label} left`}>
+        <span>←</span>
+      </button>
+      <button type="button" className={styles.compassCenter} aria-label={`${label} center`}>
+        <span>✓</span>
+      </button>
+      <button type="button" className={`${styles.compassButton} ${styles.directionRight}`} aria-label={`${label} right`}>
+        <span>→</span>
+      </button>
+      <button type="button" className={`${styles.compassButton} ${styles.directionDown}`} aria-label={`${label} down`}>
+        <span>↓</span>
+      </button>
+    </div>
+  </div>;
 }
 
 function formatToPar(value: number): string {
