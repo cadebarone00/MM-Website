@@ -21,7 +21,7 @@ export function GolfTripCompetition({ rounds, onChange }: {
   const headingId = useId();
   const editable = rounds.filter(round => round.status !== "started");
   const organizer = onChange !== undefined;
-  return <section className={styles.card} aria-labelledby={headingId}>
+  return <section className={`${styles.card} ${organizer ? styles.settings : ""}`} aria-labelledby={headingId}>
     <h2 id={headingId} className={styles.title}>{organizer ? "Organizer Competition Settings" : "Competition"}</h2>
     {onChange && <>
       <div className={styles.bulk}>
@@ -46,9 +46,9 @@ export function GolfTripCompetition({ rounds, onChange }: {
           <div className={styles.cell}><span className={styles.label}>Round</span><span>{round.number}</span></div>
           <div className={styles.cell}><span className={styles.label}>Course</span><span>{round.course}</span></div>
           <div className={styles.cell}><span className={styles.label}>Format</span>{onChange
-            ? <select aria-label={`${prefix} format`} value={round.format} disabled={locked} onChange={event => onChange({ format: event.target.value as CompetitionFormat }, round.id)}>
-              {COMPETITION_FORMATS.map(format => <option key={format}>{format}</option>)}
-            </select> : <span>{round.format}</span>}</div>
+            ? <div className={styles.choices} role="group" aria-label={`${prefix} format`}>
+              {COMPETITION_FORMATS.map(format => <button key={format} type="button" className={styles.choice} aria-pressed={round.format === format} disabled={locked} onClick={() => onChange({ format: format as CompetitionFormat }, round.id)}>{format}</button>)}
+            </div> : <span>{round.format}</span>}</div>
           {(["nassau", "handicap"] as const).map(field => <div key={field} className={styles.cell}>
             <span className={styles.label}>{field === "nassau" ? "Nassau" : "Handicap"}</span>
             {onChange ? <Toggle label={`${prefix} ${field}`} checked={round[field]} disabled={locked} onChange={value => onChange({ [field]: value }, round.id)} />

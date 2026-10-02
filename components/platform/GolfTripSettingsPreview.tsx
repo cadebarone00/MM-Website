@@ -17,22 +17,26 @@ export function GolfTripSettingsPreview({ tripName }: { tripName: string }) {
   const [competitionOpen, setCompetitionOpen] = useState(false);
   const competition = useGolfTripCompetitionPreview();
   const cards = section === "Organizer" ? ORGANIZER_CARDS : GENERAL_CARDS;
-  return <main className={styles.page}>
+  return <main className={`${styles.page} ${competitionOpen ? styles.competitionPage : ""}`}>
     <div className={styles.content}>
-      <header className={styles.header}>
+      {competitionOpen ? <header className={styles.competitionHeader}>
+        <button type="button" className={styles.close} aria-label="Back to organizer settings" onClick={() => setCompetitionOpen(false)}><ChevronLeft size={28} aria-hidden /></button>
+        <h1>Competition Settings</h1>
+        <button type="button" className={styles.save} onClick={() => setCompetitionOpen(false)}>SAVE</button>
+      </header> : <header className={styles.header}>
       <Link href="/dev/tournament" className={styles.close} aria-label="Back to trip"><ChevronLeft size={26} strokeWidth={1.75} aria-hidden /></Link>
       <div className={styles.heading}>
         <h1>{tripName}</h1>
         <p>Trip Settings</p>
       </div>
-      </header>
-      <div className={`${tripStyles.tabs} ${styles.tabs}`} aria-label="Settings sections preview">
+      </header>}
+      {!competitionOpen && <div className={`${tripStyles.tabs} ${styles.tabs}`} aria-label="Settings sections preview">
         {["General", "Organizer"].map((name) => <button key={name} type="button" aria-pressed={section === name}
           className={`${tripStyles.tab} ${section === name ? tripStyles.tabActive : ""} ${styles.tab}`}
           onClick={() => { setSection(name); setCompetitionOpen(false); }}>{name}</button>)}
-      </div>
+      </div>}
       {competitionOpen && competition ? <div className={styles.competition}>
-        <button type="button" className={styles.sectionBack} onClick={() => setCompetitionOpen(false)}><ChevronLeft size={18} aria-hidden />Organizer settings</button>
+        <p className={styles.previewNote}>Preview only. Changes stay during navigation and reset on reload.</p>
         <GolfTripCompetition rounds={competition.rounds} onChange={competition.change} />
       </div> : <div className={styles.grid}>
         {cards.map((title, index) => title === "Competition" ? <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`} onClick={() => setCompetitionOpen(true)}>

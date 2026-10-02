@@ -15,3 +15,9 @@
 .page h1,.page h2{font-family:var(--font-spectral),Georgia,serif !important}
 @media(min-width:600px){.page{padding-top:48px}.heading h1{font-size:32px}.heading p{font-size:23px}.card{min-height:146px;padding:18px 20px}.card h2{font-size:23px}.card p{font-size:17px}.grid{gap:14px}}
 .cardButton{width:100%;text-align:left;font:inherit;cursor:pointer}.cardButton:hover{filter:brightness(1.03)}.cardButton:focus-visible{outline:2px solid #dcc495;outline-offset:5px}.competition{display:flex;flex-direction:column;gap:16px}.sectionBack{display:flex;align-items:center;gap:4px;align-self:flex-start;min-height:44px;padding:0;border:0;background:transparent;color:#dcc495;font:600 15px/1 var(--font-barlow),sans-serif;cursor:pointer}.sectionBack:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
+
+.competitionPage{background:#060a1c}.competitionPage .sectionBack{color:#00ebca}.competitionPage .heading h1{font-family:var(--font-barlow),sans-serif !important}.competitionPage .heading p{color:#9bb4d5}.competitionPage .tab{color:#9bb4d5}
+
+
+.competitionHeader{display:grid;grid-template-columns:36px minmax(0,1fr) 48px;align-items:center;gap:8px;margin-bottom:32px}.competitionHeader h1{margin:0;text-align:center;font:700 clamp(20px,5vw,30px)/1.2 var(--font-barlow),sans-serif !important}.competitionHeader .close{padding:0;border:0;background:transparent;cursor:pointer}.save{padding:0;min-height:44px;border:0;background:transparent;color:#00ebca;font:750 15px/1 var(--font-barlow),sans-serif;cursor:pointer}.save:focus-visible{outline:2px solid #00ebca;outline-offset:4px}.previewNote{margin:0;color:#9bb4d5;font-size:12px}.competitionPage .competition>section>h2{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
