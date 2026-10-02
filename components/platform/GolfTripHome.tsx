@@ -2,7 +2,7 @@
 
 import { Suspense, use, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronRight, ChevronsUpDown, Clock, CloudRain, Flag, MapPin, MessageCircle, Moon, Plane, Plus, Receipt, Settings, Sun, Thermometer, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronRight, Clock, CloudRain, Flag, MapPin, MessageCircle, Moon, Plane, Plus, Receipt, Settings, Sun, Thermometer, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import { normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import type { TripWeather } from "@/lib/platform/weather/types";
@@ -96,73 +96,132 @@ type HomeSection = (typeof HOME_SECTIONS)[number];
  * Tapping a bar opens it and closes the one that was open.
  */
 function HomeSections({ draft, dates, dateRange, weather }: { draft: Record<string, string>; dates: string[]; dateRange: string; weather?: Promise<TripWeather> }) {
-  const [open, setOpen] = useState<HomeSection>("Golf");
+  const [openIndex, setOpenIndex] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [dragStartX, setDragStartX] = useState<number | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
   const rounds = plannedRounds(draft);
   const tournament = draft.includesTournament ? TOURNAMENT_ANSWERS[draft.includesTournament] ?? "Not sure yet" : "";
   const nights = dates.length > 1 ? `${dates.length - 1} nights` : "";
 
+  useEffect(() => {
+    if (!isAutoPlaying) return;
+    const timer = window.setInterval(() => {
+      setOpenIndex((index) => (index + 1) % HOME_SECTIONS.length);
+    }, 3600);
+    return () => window.clearInterval(timer);
+  }, [isAutoPlaying]);
+
+  const goToSection = (nextIndex: number) => {
+    setOpenIndex((nextIndex + HOME_SECTIONS.length) % HOME_SECTIONS.length);
+  };
+
+  const beginDrag = (startX: number) => {
+    setIsAutoPlaying(false);
+    setDragStartX(startX);
+    setDragOffset(0);
+  };
+
+  const moveDrag = (currentX: number) => {
+    if (dragStartX === null) return;
+    setDragOffset(currentX - dragStartX);
+  };
+
+  const endDrag = () => {
+    if (dragStartX === null) return;
+    if (dragOffset < -60) {
+      goToSection(openIndex + 1);
+    } else if (dragOffset > 60) {
+      goToSection(openIndex - 1);
+    }
+    setDragStartX(null);
+    setDragOffset(0);
+    window.setTimeout(() => setIsAutoPlaying(true), 1500);
+  };
+
   const heading = (text: string) => <h4 className={styles.eventsHeading}>{text}<ChevronRight size={20} strokeWidth={2.25} aria-hidden /></h4>;
+
+  const nextImportantEvent = rounds[0] ? {
+    host: `Round ${rounds[0].number}`,
+    title: `${draft[`round${rounds[0].number}Course`] || "Golf day"} · ${rounds[0].date ? shortTripDate(rounds[0].date) : `Day ${rounds[0].dayNumber}`}`,
+    art: ART.golf,
+    icon: Flag,
+    badge: "Set",
+  } : null;
 
   const sections: Record<HomeSection, { summary: string; rows: ReactNode }> = {
     Golf: {
-      summary: rounds.length > 0 ? `${rounds.length} round${rounds.length === 1 ? "" : "s"}` : "Add rounds",
+      summary: nextImportantEvent ? "Next round coming up" : "Plan the next tee time",
       rows: <>
-        {heading("Rounds")}
-        {rounds.length > 0
-          ? rounds.map((round) => <EventRow key={round.number} event={{ host: `Round ${round.number}`, title: draft[`round${round.number}Course`] || "Course not set",
-            art: ART.golf, icon: Flag, badge: draft[`round${round.number}Course`] ? "Set" : "To do",
-            lines: [{ icon: CalendarDays, text: round.date ? shortTripDate(round.date) : `Day ${round.dayNumber}` }] }} />)
-          : <EventRow event={{ host: "Golf", title: "Add your golf days and courses", art: ART.golf, icon: Flag, badge: "To do" }} />}
+        {heading("Next up")}
+        {nextImportantEvent ? <EventRow event={{ ...nextImportantEvent, lines: [{ icon: CalendarDays, text: "Keep your clubs ready and check the weather before you go" }] }} /> : <EventRow event={{ host: "Golf", title: "Book a tee time or a casual local round", art: ART.golf, icon: Flag, badge: "To do", lines: [{ icon: CalendarDays, text: "Local public courses and a quick lunch nearby work well here" }] }} />}
         {heading("Tournament")}
-        <EventRow event={{ host: "Tournament", title: tournament || "Decide if there's a tournament", art: ART.tournament, icon: Trophy, badge: tournament ? "Set" : "To do" }} />
+        <EventRow event={{ host: "Tournament", title: tournament || "Look for a weekend match or friendly side game", art: ART.tournament, icon: Trophy, badge: tournament ? "Set" : "To do", lines: tournament ? [{ icon: CalendarDays, text: tournament }] : [{ icon: Trophy, text: "If there is no formal tournament, suggest a low-key competition" }] }} />
       </>,
     },
     "The Trip": {
-      summary: draft.destination || "Add destination",
+      summary: draft.destination ? "Pay attention to travel" : "Good spots nearby",
       rows: <>
-        {heading("Your Trip")}
-        <EventRow event={{ host: "Travel", title: draft.destination || "Add your destination and dates", art: ART.travel, icon: Plane,
-          badge: draft.destination && dates.length > 0 ? "Set" : "To do",
-          lines: [dateRange && { icon: CalendarDays, text: dateRange }, nights && { icon: Moon, text: nights }] }} />
+        {heading("Travel")}
+        {draft.destination
+          ? <EventRow event={{ host: "Travel", title: dateRange ? `Check in for ${draft.destination} travel` : `Your trip to ${draft.destination}`, art: ART.travel, icon: Plane,
+            badge: "Set",
+            lines: [dateRange && { icon: CalendarDays, text: dateRange }, nights && { icon: Moon, text: nights }, { icon: Plane, text: "The day before, remind everyone to check in to flights" }] }} />
+          : <EventRow event={{ host: "Nearby", title: "Find a fun lunch spot or a quick local activity", art: ART.travel, icon: Plane, badge: "Idea", lines: [{ icon: MapPin, text: "Use this space for nearby restaurants, sightseeing, or the best casual stop" }] }} />}
         {weather && <Suspense fallback={<EventRow event={{ host: "Weather", title: "Loading forecast…", art: ART.weather, icon: Sun }} />}>
           <WeatherRow place={draft.destination} weather={weather} />
         </Suspense>}
-        <EventRow event={{ host: "Photos", title: "Share photos from the trip", art: ART.photos, icon: Camera, badge: "To do" }} />
-        {heading("Itinerary")}
-        {dates.length > 0
-          ? dates.map((date, i) => <p key={date} className={styles.eventsDay}>Day {i + 1} <span>/ {shortTripDate(date)}</span></p>)
-          : <EventRow event={{ host: "Itinerary", title: "Your day-by-day plan shows here once dates are set", art: ART.itinerary, icon: CalendarDays, badge: "To do" }} />}
+        <EventRow event={{ host: "Plan", title: "Dinner or lunch reservation for the evening", art: ART.photos, icon: Camera, badge: "Idea", lines: [{ icon: Clock, text: "If nothing is booked, suggest a good local spot for the group" }] }} />
       </>,
     },
     Travelers: {
-      summary: draft.yourName ? "1 traveler" : "Add travelers",
+      summary: draft.yourName ? "Who is headed out" : "Group plan",
       rows: <>
-        {heading("Your Group")}
-        {draft.yourName && <EventRow event={{ host: "Organizer", title: draft.yourName, art: ART.travelers, icon: User, badge: "Set" }} />}
-        <EventRow event={{ host: "Travelers", title: "Invite the rest of your group", art: ART.travelers, icon: Users, badge: "To do" }} />
+        {heading("Group")}
+        {draft.yourName
+          ? <EventRow event={{ host: "Organizer", title: draft.yourName, art: ART.travelers, icon: User, badge: "Set", lines: [{ icon: Users, text: "Make sure the group knows the schedule and who is arriving when" }] }} />
+          : <EventRow event={{ host: "Travelers", title: "Add the people joining the trip", art: ART.travelers, icon: Users, badge: "To do" }} />}
+        <EventRow event={{ host: "Plan", title: "Who is driving, riding together, or meeting up", art: ART.travelers, icon: Users, badge: "Idea" }} />
       </>,
     },
     Logistics: {
-      summary: "Add stay & rides",
+      summary: draft.destination ? "Stay and ride" : "Helpful defaults",
       rows: <>
-        {heading("Stay & Rides")}
-        <EventRow event={{ host: "Stay", title: "Add where you're staying", art: ART.stay, icon: BedDouble, badge: "To do" }} />
-        <EventRow event={{ host: "Transportation", title: "Add flights, rental cars or shuttles", art: ART.transport, icon: Car, badge: "To do" }} />
-        {heading("Expenses")}
-        <EventRow event={{ host: "Expenses", title: "Track who paid for what", art: ART.expenses, icon: Receipt, badge: "To do" }} />
+        {heading("Stay & rides")}
+        <EventRow event={{ host: "Lodging", title: "Check in and confirm the room setup", art: ART.stay, icon: BedDouble, badge: "Idea", lines: [{ icon: CalendarDays, text: "This is where hotel check-in, room notes, and arrival timing go" }] }} />
+        <EventRow event={{ host: "Transportation", title: draft.destination ? "Airport or shuttle timing" : "Set ride and parking plans", art: ART.transport, icon: Car, badge: "Need", lines: [{ icon: Clock, text: draft.destination ? "The day before, remind the group to check flight and car details" : "If nothing is booked, suggest shuttles, rides, or a simple airport plan" }] }} />
+        {heading("More ideas")}
+        <EventRow event={{ host: "Local picks", title: "Good places to eat, walk, or grab a drink nearby", art: ART.expenses, icon: Receipt, badge: "Idea" }} />
       </>,
     },
   };
 
+  const translateX = `translateX(calc(${-openIndex * 100}% + ${dragOffset}px))`;
+
   return <div className={styles.sheets}>
-    {HOME_SECTIONS.map((name) => open === name
-      ? <section key={name} className={styles.sheetOpen} aria-label={name}>
+    <div
+      className={styles.sheetTrack}
+      style={{ transform: translateX }}
+      onPointerDown={(event) => beginDrag(event.clientX)}
+      onPointerMove={(event) => moveDrag(event.clientX)}
+      onPointerUp={endDrag}
+      onPointerLeave={endDrag}
+      onPointerCancel={endDrag}
+      aria-live="polite"
+    >
+      {HOME_SECTIONS.map((name) => <section key={name} className={styles.sheetOpen} aria-label={name}>
         <h3 className={styles.sheetTitle}>{name}</h3>
         <div className={`${styles.events} ${styles.sheetRows}`}>{sections[name].rows}</div>
-      </section>
-      : <button key={name} type="button" className={styles.sheetClosed} aria-expanded={false} onClick={() => setOpen(name)}>
-        <span className={styles.sheetName}>{name}</span><span className={styles.sheetSummary}>{sections[name].summary}</span>
-      </button>)}
+      </section>)}
+    </div>
+    <div className={styles.sheetDots} aria-label="Home cards">
+      {HOME_SECTIONS.map((name, index) => <button key={name} type="button" aria-label={`Show ${name}`} aria-pressed={openIndex === index}
+        className={`${styles.sheetDot} ${openIndex === index ? styles.sheetDotActive : ""}`} onClick={() => {
+          setIsAutoPlaying(false);
+          setOpenIndex(index);
+          window.setTimeout(() => setIsAutoPlaying(true), 1500);
+        }} />)}
+    </div>
   </div>;
 }
 
@@ -243,25 +302,26 @@ const ART = {
   photos: "linear-gradient(135deg,#e07a5f,#a8432c)",
 };
 
-/** Venue tab placeholder rows (layout only, nothing behind them yet). `art` stands in for the event's picture. */
-const YOUR_EVENTS: InfoEvent[] = [
-  { host: "Andrew's Yeung's Tech Events", title: "Extraordinary Founders Dinner (hosted by Andrew Yeung)", lines: [{ icon: Clock, text: "Today, 6:00PM GMT-7" }, { icon: MapPin, text: "Showplace Square" }], art: "linear-gradient(135deg,#d9d9d9,#7a7a7a)", badge: "Waitlisted" },
-  { host: "Dogs Only Social Club and Big Dog...", title: "Paws, People & Purpose", lines: [{ icon: Clock, text: "18 Jul, 2:00PM GMT-7" }, { icon: MapPin, text: "GoodPeople" }], art: "linear-gradient(135deg,#f3f1ea,#b9d3c0)", badge: "Going" },
-  { host: "Alex Smith", title: "Solar Eclipse Viewing Party", lines: [{ icon: Clock, text: "21 Jul, 1:30PM GMT-7" }, { icon: MapPin, text: "1226 University Dr" }], art: "linear-gradient(135deg,#f5a623,#c0392b)", badge: "Invited" },
+/** Info tab trip logistics sections: a single entry under each category. */
+const FLIGHT_EVENTS: InfoEvent[] = [
+  { host: "Flights", title: "United 452 · Denver to San Diego", lines: [{ icon: Clock, text: "Today, 6:20AM" }, { icon: MapPin, text: "DEN → SAN" }], art: "linear-gradient(135deg,#6a1f2b,#a22d3d)", badge: "Set" },
 ];
-const PICKED_EVENTS: InfoEvent[] = [
-  { host: "Creative Coffee Club", title: "after hours: a happy hour for la's creatives and founders", lines: [{ icon: Clock, text: "5:30PM GMT-7" }, { icon: MapPin, text: "TA Kitchen - West Hollywood" }], art: "linear-gradient(135deg,#3a3a3a,#111)", price: "US$10" },
+const TRANSPORTATION_EVENTS: InfoEvent[] = [
+  { host: "Transportation", title: "Airport shuttle to the resort", lines: [{ icon: Clock, text: "Pickup at 10:15AM" }, { icon: MapPin, text: "Terminal B · 4 seats" }], art: "linear-gradient(135deg,#5a5d6b,#2e3240)", badge: "Set" },
+];
+const LODGING_EVENTS: InfoEvent[] = [
+  { host: "Lodging", title: "The Shorebreak Villas · 3 nights", lines: [{ icon: Clock, text: "Check-in 3:00PM" }, { icon: MapPin, text: "Oceanfront, 2 bedrooms" }], art: "linear-gradient(135deg,#c9b38b,#7d603a)", badge: "Set" },
 ];
 
-/** Venue tab, event-list style: "Your Events" (with RSVP badges), then "Picked for You" under a Nearby picker and a day line. */
+/** Info tab: keep a single section per travel category so the page reads as trip logistics. */
 function VenueEvents() {
   return <div className={styles.events}>
-    <h2 className={styles.eventsHeading}>Your Events<ChevronRight size={20} strokeWidth={2.25} aria-hidden /></h2>
-    {YOUR_EVENTS.map((event) => <EventRow key={event.title} event={event} />)}
-    <h2 className={styles.eventsHeading}>Picked for You<ChevronRight size={20} strokeWidth={2.25} aria-hidden /></h2>
-    <button type="button" className={styles.eventsPicker}>Nearby<ChevronsUpDown size={14} strokeWidth={2} aria-hidden /></button>
-    <p className={styles.eventsDay}>Tomorrow <span>/ Wednesday</span></p>
-    {PICKED_EVENTS.map((event) => <EventRow key={event.title} event={event} />)}
+    <h2 className={styles.eventsHeading}>Flights<ChevronRight size={20} strokeWidth={2.25} aria-hidden /></h2>
+    {FLIGHT_EVENTS.map((event) => <EventRow key={event.title} event={event} />)}
+    <h2 className={styles.eventsHeading}>Transportation<ChevronRight size={20} strokeWidth={2.25} aria-hidden /></h2>
+    {TRANSPORTATION_EVENTS.map((event) => <EventRow key={event.title} event={event} />)}
+    <h2 className={styles.eventsHeading}>Lodging<ChevronRight size={20} strokeWidth={2.25} aria-hidden /></h2>
+    {LODGING_EVENTS.map((event) => <EventRow key={event.title} event={event} />)}
   </div>;
 }
 
