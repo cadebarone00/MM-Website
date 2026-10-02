@@ -23,6 +23,11 @@ const TABS: { key: Tab; label: string }[] = [
 export function ProfileView({ profile }: { profile: MyProfile }) {
   const [tab, setTab] = useState<Tab>("tournaments");
   const [showCompleted, setShowCompleted] = useState(false);
+  const [eventMode, setEventMode] = useState<"tournament" | "golf-trip">("tournament");
+
+  const eventRows = eventMode === "tournament"
+    ? [...profile.active, ...profile.completed]
+    : [{ name: "Maroon Tournament", year: 2027, destination: "Palm Springs, CA", startDate: null, endDate: null, href: "/dev/tournament" }, ...profile.active.slice(0, 2).map((row) => ({ ...row, href: "/golf-trips/trip" }))];
 
   return (
     // Extend the profile background through the bottom-menu padding.
@@ -63,6 +68,14 @@ export function ProfileView({ profile }: { profile: MyProfile }) {
       <main className="relative mx-auto -mt-6 w-full max-w-[640px] flex-1 bg-cream-50 px-4 pb-32 pt-12">
         {tab === "tournaments" && (
           <section aria-label="Tournaments">
+            <div className="mb-3 grid grid-cols-2 rounded-full bg-maroon-900/5 p-1" role="group" aria-label="Event view">
+              {(["tournament", "golf-trip"] as const).map((mode) => (
+                <button key={mode} type="button" aria-pressed={eventMode === mode} onClick={() => setEventMode(mode)}
+                  className={`rounded-full font-condensed text-sm font-semibold tracking-wide ${eventMode === mode ? "bg-white text-maroon-900 shadow-sm" : "text-maroon-900/55"}`}>
+                  {mode === "tournament" ? "Tournament" : "Golf Trip"}
+                </button>
+              ))}
+            </div>
             <div className="grid h-11 grid-cols-2 rounded-full bg-maroon-900/5 p-1" role="group" aria-label="Show">
               {[{ label: "Active", on: !showCompleted }, { label: "Completed", on: showCompleted }].map((o) => (
                 <button key={o.label} type="button" aria-pressed={o.on} onClick={() => setShowCompleted(o.label === "Completed")}
@@ -72,12 +85,14 @@ export function ProfileView({ profile }: { profile: MyProfile }) {
               ))}
             </div>
             <div className="-mx-4 mt-3">
-              {showCompleted
+              {eventMode === "tournament" ? (showCompleted
                 ? <TournamentList rows={profile.completed} empty={<p className="px-4 py-5 text-center text-maroon-900/60">No completed tournaments yet</p>} />
                 : <TournamentList rows={profile.active} empty={
                     <p className="px-4 py-5 text-center text-maroon-900/60">No active tournaments<br />
                       <Link href="/tournaments/join" className="mt-2 inline-block font-condensed font-semibold uppercase tracking-[0.12em] text-maroon-700">Join a Tournament</Link>
-                    </p>} />}
+                    </p>} />)
+                : <TournamentList rows={eventRows.filter((row) => showCompleted ? row.year < new Date().getFullYear() || row.name.includes("Maroon Tournament") : true)} empty={
+                    <p className="px-4 py-5 text-center text-maroon-900/60">No Golf Trip items yet.</p>} />}
             </div>
           </section>
         )}
