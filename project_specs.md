@@ -47,6 +47,23 @@ All pages are public, no auth.
 - `PlayerProfile` (`lib/data/players/*.ts`): id, slug, fullName, avatarSrc, bio, history —
   one file per player, looked up via `getPlayerProfile`/`getPlayerDisplayName`/`getPlayerAvatar`.
 
+
+## Architecture rules (global)
+
+### Finalized Player History Rule
+
+Golf Trips, Tournaments, Leagues and other events are containers for live and organizational data.
+
+When a player's scored round becomes Final, its permanent historical performance data must eventually be stored independently against the player/user.
+
+Deleting a Golf Trip, Tournament, League or other event must never cascade-delete finalized player round history or finalized player statistics.
+
+Permanent historical records may keep a nullable reference to their source event, but deleting the source event must not delete the historical record.
+
+Important context (event name, course name, date and format) should eventually be snapshotted into permanent player history, so the record stays meaningful even if the original event is later deleted or changed.
+
+Architecture rule only: the player-history tables are not built yet.
+
 ## Previously shipped rounds
 
 - Fixed 2026 venue label to "Mission Hills CC".
@@ -1740,7 +1757,7 @@ The Maroon app is the front door. The main navigation is Explore · Tourneys · 
   - `golf_trip_rounds`: one row per round (day, date, typed course name).
   - Members and rounds are removed with their trip (`on delete cascade`).
 - **Writes:** only `create_golf_trip(profile, input)`, called by the server after `lib/platform/golfTripCreate.ts` validates the answers. It is all or nothing. The browser sends a request ID kept in the draft, so a double tap, a retry or Back → Create again returns the same trip. Changing any answer (a step's Next) starts a new request ID.
-- **Reads (`lib/platform/golfTripsServer.ts`, server only, user ID from the session):**
+- **Reads (`lib/platform/golfTripsServer.ts`, server only, user ID from the session).** These two functions are the shared server-side access layer for saved Golf Trips. Other tabs and features (My Trips, Trip Settings, Delete Trip, future trip modules) should use them rather than calling the database functions directly:
   - `getGolfTrip(tripId)` returns the trip, its members and rounds, plus `viewer` (`role`, `isOrganizer`, `memberId`) for the signed-in person. It returns `signed-out` or `not-found` otherwise; a stranger gets the same `not-found` as a missing trip.
   - `getUserGolfTrips()` lists every trip the signed-in person is on, soonest first: ID, name, destination, start/end dates, status, expected traveler count, member count, and their role. It's the data for My Trips. The selector UI is built elsewhere.
 - **RLS:** members can read their trip's rows. Nobody can insert/update/delete directly. `create_golf_trip`, `get_golf_trip` and `list_my_golf_trips` are callable only by the server.
@@ -1755,3 +1772,15 @@ The Maroon app is the front door. The main navigation is Explore · Tourneys · 
   - `lib/platform/golfTripCreate.test.ts`: validation, all-or-nothing, double tap, members-only, RLS, trip list, organizer/member.
   - `scripts/test-golf-trip-create-browser.mjs` (`npm run test:browser:golf-trip`, after `next build`): create, double tap, refresh, reopen, members-only, signed-out.
 - **Not built:** Delete/Edit Trip, invitations, role management, trip lists UI, destination map fields, cover photo, course search, and any flight/lodging/transportation/team/tournament records.
+
+### Round: Trip Settings + Delete Trip (owner request 2026-10-01, built)
+
+- The settings wheel on Golf Trip Home opens Trip Settings (`/golf-trips/<id>/settings`; preview `/dev/tournament/settings`, `?as=traveler` for the non-organizer view). Title "Trip Settings" on the left; the organizer gets a General / Organizer selector in the trip selector's style; everyone else sees General only.
+- **Organizer → Delete Trip:** simple confirm (Cancel / Delete). Deletes the trip, its members and rounds; players' accounts are never touched. Then goes to `/golf-trips`.
+- **Backend:** `delete_golf_trip(p_profile, p_trip)` in `supabase/golf_trips.sql` (organizer only, server-only grant) and `DELETE /api/golf-trips/<id>`. Until the SQL is run, Delete shows "Deleting golf trips isn't switched on yet." The preview never deletes anything.
+- **Architecture rule — what deleting a trip may touch:** Deleting a Golf Trip may delete trip-owned organizational data, memberships, scheduled rounds and live event data. It must never delete finalized player historical rounds or finalized player statistics.
+  - Today it deletes exactly: the `golf_trips` row, its `golf_trip_members` rows and its `golf_trip_rounds` rows (planned rounds: day, date, typed course name; no scores). Nothing else in the database references golf trips.
+  - It never deletes: `profiles` (player accounts), an attached tournament (`golf_trips.tournament_id` points from the trip to the tournament, so the tournament and anything under it stays), or any Maroon/tournament scores, results or history.
+  - For future tables: trip-owned planning/live tables may use `golf_trip_id … on delete cascade`. Permanent player-history tables (finalized rounds, stats) must **not** cascade from `golf_trips`, `golf_trip_members` or `golf_trip_rounds`: no foreign key to them, or `on delete set null`, and they keep their own copy of what they need (player profile id, date, course, scores).
+  - Separate path, not Delete Trip: `golf_trips.created_by → profiles on delete cascade` means deleting an organizer's **account** deletes the trips they created (and those trips' members and rounds). Still no player history today; revisit before history tables exist.
+- **Role rename migration:** the first version of `golf_trips.sql` (commit `a43dc14`) used role `traveler`. The file now renames any `traveler` rows to `member` and swaps the rule/default every time it runs, so the whole file is safe to run on a fresh database, on one that ran an older version, and again later.

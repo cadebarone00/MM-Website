@@ -5,6 +5,12 @@
 --
 -- golf_trips.id is the parent id for everything trip-owned. Canonical page: /golf-trips/<id>.
 --
+-- Deletion rule: deleting a Golf Trip may delete trip-owned organizational data, memberships,
+-- scheduled rounds and live event data. It must never delete finalized player historical rounds
+-- or finalized player statistics. So trip-owned tables may use "on delete cascade" from
+-- golf_trips, but future permanent player-history tables must not (no foreign key to the trip
+-- tables, or "on delete set null", keeping their own copy of player, date, course and scores).
+--
 -- Writes only go through create_golf_trip (one all-or-nothing call) and
 -- delete_golf_trip (organizer only), and reads through get_golf_trip /
 -- list_my_golf_trips, all called by the server with the signed-in user's id
@@ -57,6 +63,14 @@ create table if not exists public.golf_trip_members (
   invitation_status text not null default 'pending' check (invitation_status in ('pending', 'accepted', 'declined')),
   created_at timestamptz not null default now()
 );
+-- One-time fix for databases that ran the first version of this file, where the non-organizer role was
+-- 'traveler' ("create table if not exists" above leaves an existing table's rule alone). Renames those rows to
+-- 'member' and swaps the rule and default. Does nothing harmful on a new database or on a second run.
+alter table public.golf_trip_members drop constraint if exists golf_trip_members_role_check;
+update public.golf_trip_members set role = 'member' where role = 'traveler';
+alter table public.golf_trip_members alter column role set default 'member';
+alter table public.golf_trip_members add constraint golf_trip_members_role_check check (role in ('organizer', 'member'));
+
 create unique index if not exists golf_trip_members_trip_profile_idx on public.golf_trip_members (golf_trip_id, profile_id) where profile_id is not null;
 create index if not exists golf_trip_members_profile_idx on public.golf_trip_members (profile_id);
 

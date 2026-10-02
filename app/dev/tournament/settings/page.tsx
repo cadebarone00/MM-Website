@@ -12,5 +12,5 @@ export const dynamic = "force-dynamic";
 export default async function GolfTripSettingsPreviewPage({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
   if (process.env.NODE_ENV !== "development") notFound();
   const { as } = await searchParams;
-  return <GolfTripSettings backHref="/dev/tournament" isOrganizer={as !== "traveler"} />;
+  return <GolfTripSettings backHref="/dev/tournament" isOrganizer={as !== "traveler"} tripId={null} />;
 }

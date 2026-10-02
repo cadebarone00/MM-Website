@@ -35,3 +35,18 @@
 .settingsHeader{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
 .backButton{position:static;margin:-8px 0 0 -10px}
 .settingsTitle{margin:0;font:500 28px/1.15 var(--font-spectral),Georgia,serif;letter-spacing:-.01em;color:#fff}
+/* Delete Trip (Organizer settings): a red outline button, then a simple Cancel / Delete confirm. */
+.settingsNote{margin:0;font:500 15px/1.4 var(--font-barlow),sans-serif;color:rgba(255,255,255,.7)}
+.dangerButton,.cancelButton,.deleteButton{min-height:44px;padding:0 18px;border-radius:12px;cursor:pointer;
+  font:700 15px/1 var(--font-barlow),sans-serif;letter-spacing:.02em;transition:background .15s ease,opacity .15s ease}
+.dangerButton{align-self:flex-start;background:transparent;border:1px solid rgba(255,138,128,.6);color:#ffb4ab}
+.dangerButton:hover{background:rgba(255,138,128,.1)}
+.confirm{display:flex;flex-direction:column;gap:12px}
+.confirmActions{display:flex;gap:10px}
+.cancelButton{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fbf8f1}
+.cancelButton:hover{background:rgba(255,255,255,.08)}
+.deleteButton{background:#c62828;border:1px solid #c62828;color:#fff}
+.deleteButton:hover{background:#b71c1c}
+.cancelButton:disabled,.deleteButton:disabled{opacity:.6;cursor:default}
+.dangerButton:focus-visible,.cancelButton:focus-visible,.deleteButton:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.settingsMessage{margin:0;font:600 14px/1.4 var(--font-barlow),sans-serif;color:#dcc495}
