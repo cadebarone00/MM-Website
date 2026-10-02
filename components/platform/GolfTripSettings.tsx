@@ -4,8 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { Card, Empty } from "./GolfTripHome";
+import { Card } from "./GolfTripHome";
 import styles from "./GolfTripHome.module.css";
+import settingsStyles from "./GolfTripSettingsPreview.module.css";
 
 const TABS = ["General", "Organizer"] as const;
 type Tab = (typeof TABS)[number];
@@ -31,7 +32,12 @@ export function GolfTripSettings({ backHref, isOrganizer, tripId }: { backHref: 
     <div className={styles.body} role={isOrganizer ? "tabpanel" : undefined} aria-label={`${shown} settings`}>
       {shown === "Organizer"
         ? <DeleteTrip tripId={tripId} />
-        : <Card title="General settings"><Empty>Coming soon</Empty></Card>}
+        : <div className={settingsStyles.grid}>
+          {["My Team", "General", "Draft", "Playoffs", "Roster", "Scoring"].map(title =>
+            <section key={title} className={settingsStyles.card} aria-label={title}>
+              <h2>{title}</h2>
+            </section>)}
+        </div>}
     </div>
   </main>;
 }
