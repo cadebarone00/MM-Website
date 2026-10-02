@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Flag, Trophy } from "lucide-react";
+import { GolfTripActionSheet } from "./GolfTripActionSheet";
 import { GAME_PREVIEW_PLAYERS as players, GAME_PREVIEW_ROUNDS as rounds, recommendedGames, type GameScope, type GroupSize, type SideGameDefinition } from "@/lib/platform/golfTripGames";
 import { GolfGameScoringPreview } from "./GolfGameScoringPreview";
 import styles from "./GolfTripGames.module.css";
@@ -39,17 +41,18 @@ export function GolfTripGames() {
         <button type="button" className={styles.newGameButton} aria-expanded={showScopeMenu} onClick={() => setShowScopeMenu(value => !value)}>
           New game
         </button>
-        {showScopeMenu && <div className={styles.scopeMenu} role="menu" aria-label="Game scope selector">
-          {(["tournament", "round"] as const).map((value) => <button type="button" key={value} className={styles.scopeMenuItem}
-            aria-pressed={scope === value} onClick={() => { setScope(value); setShowScopeMenu(false); resetGame(); }}>
-            {value === "tournament" ? "Whole Tournament" : "Per Round"}
-          </button>)}
+        {showScopeMenu && <GolfTripActionSheet label="Game scope selector" onClose={() => setShowScopeMenu(false)}
+          actions={(["tournament", "round"] as const).map(value => ({
+            label: value === "tournament" ? "Whole Tournament" : "Per Round",
+            icon: value === "tournament" ? Trophy : Flag,
+            pressed: scope === value,
+          }))} onAction={label => { setScope(label === "Whole Tournament" ? "tournament" : "round"); setShowScopeMenu(false); resetGame(); }}>
           {scope === "round" && <label className={styles.label}>
-            <select value={roundId} onChange={event => { setRoundId(event.target.value); setConfirmed(false); }}>
+            <select aria-label="Game round" value={roundId} onChange={event => { setRoundId(event.target.value); setConfirmed(false); }}>
               {rounds.map(item => <option key={item.id} value={item.id}>Round {item.number} · {item.course} · {item.date}</option>)}
             </select>
           </label>}
-        </div>}
+        </GolfTripActionSheet>}
       </div>
     </header>
     {scope && <fieldset className={styles.section}><legend>2. How big is your group?</legend><div className={`${styles.choices} ${styles.sizes}`}>

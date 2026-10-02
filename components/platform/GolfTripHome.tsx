@@ -13,6 +13,7 @@ export interface TripFlights { summary: FlightSummary; href: string | null }
 import { GolfCourseWeather, GolfTripLeaderboard } from "./GolfTripMatch";
 import { GolfTripScoring } from "./GolfTripScoring";
 import { GolfTripCompetitionMatchPreview } from "./GolfTripCompetitionMatchPreview";
+import { GolfTripActionSheet } from "./GolfTripActionSheet";
 import { GolfTripGames } from "./GolfTripGames";
 import styles from "./GolfTripHome.module.css";
 
@@ -371,17 +372,8 @@ function VenueEvents() {
     {renderSection("lodging", "Lodging", lodging, () => openAddSheet("lodging"))}
     {renderSection("transportation", "Transportation", transportation, () => openAddSheet("transportation"))}
 
-    {sheetSection && <div className={styles.addSheetOverlay} role="dialog" aria-modal="true" aria-label="Add trip item">
-      <div className={styles.addSheet}>
-        <button type="button" className={styles.sheetClose} aria-label="Close add sheet" onClick={() => setSheetSection(null)}><X size={18} strokeWidth={2.25} aria-hidden /></button>
-        <div className={styles.sheetActionList}>
-          {quickActionRows.map(({ label, icon: Icon }) => <button key={label} type="button" className={styles.sheetActionRow} onClick={() => addQuickEntry(label)}>
-            <span className={styles.sheetActionIcon}><Icon size={18} strokeWidth={2} aria-hidden /></span>
-            <span className={styles.sheetActionText}>{label}</span>
-          </button>)}
-        </div>
-      </div>
-    </div>}
+    {sheetSection && <GolfTripActionSheet label="Add trip item" onClose={() => setSheetSection(null)}
+      actions={[...quickActionRows]} onAction={addQuickEntry} />}
 
     {confirmDelete && <div className={styles.deleteOverlay} role="dialog" aria-modal="true" aria-label="Delete item confirmation">
       <div className={styles.deleteDialog}>
