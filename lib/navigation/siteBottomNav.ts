@@ -8,6 +8,7 @@ const ORGANIZER_TOURNAMENT =
 
 /** Routes that use their own full-screen chrome (broadcast, play app, organizer studio, etc.). */
 export function isSiteBottomNavHidden(pathname: string): boolean {
+  if (pathname === "/dev/tournament/settings") return true;
   if (pathname === "/login" || pathname === "/signup") return true;
   if (pathname.startsWith("/broadcast")) return true;
   if (pathname === "/portal/admin/scoring-preview/mobile") return true;

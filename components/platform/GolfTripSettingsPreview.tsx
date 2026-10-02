@@ -1,27 +1,36 @@
 import Link from "next/link";
+import { X, ShieldUser, ShieldCheck, Monitor, GitBranch, UsersRound, BadgePercent } from "lucide-react";
 import styles from "./GolfTripSettingsPreview.module.css";
 
-/** Static screenshot-inspired surface for the dev preview's settings wheel. */
+const SETTINGS = [
+  { title: "My Team", description: "Update your team avatar, name & player's nicknames", icon: ShieldUser },
+  { title: "General", description: "Update league general settings", icon: ShieldCheck },
+  { title: "Draft", description: "Update draft settings", icon: Monitor },
+  { title: "Playoffs", description: "Update playoff settings", icon: GitBranch },
+  { title: "Roster", description: "Update roster settings and position limits", icon: UsersRound },
+  { title: "Scoring", description: "Update scoring settings", icon: BadgePercent },
+];
+
+/** Reference layout in the site's maroon palette; settings remain presentation only. */
 export function GolfTripSettingsPreview() {
-  return <main className={styles.page} aria-label="Settings preview">
-    <div className={styles.tabs}><span className={styles.current}>Current</span><span>Sessions</span><span>Issues</span><span>Pull requests</span><span>Gists</span></div>
-    <section className={styles.intro}>
-      <div className={styles.identity}>
-        <div className={styles.robot} aria-hidden><div><i /><i /></div><b>▮▮▮</b></div>
-        <p>Copilot v1.0.91 uses AI.<br />Check for mistakes.</p>
+  return <main className={styles.page}>
+    <div className={styles.content}>
+      <Link href="/dev/tournament" className={styles.close} aria-label="Close settings"><X size={28} strokeWidth={3} aria-hidden /></Link>
+      <header className={styles.heading}>
+        <h1>The Maroon</h1>
+        <p>League Settings</p>
+      </header>
+      <div className={styles.tabs} aria-label="Settings sections preview">
+        <span className={styles.active}>GENERAL</span>
+        <span>COMMISH</span>
       </div>
-      <div className={styles.gettingStarted}><strong>Getting started</strong><br />Use the tabs above to explore your sessions and pull requests<br />
-        <b>/init</b> – Initialize Copilot instructions for this repository<br /><b>/model</b> – Switch models across providers, or use Auto</div>
-    </section>
-    <div className={styles.messages}>
-      <p><span className={styles.bullet}>●</span> Tip: /app<br /><span className={styles.indent}>└ Prefer a visual workspace? Try out the GitHub Copilot desktop app<br />
-        <span className={styles.url}>https://github.com/features/ai/github-app</span></span></p>
-      <p><span className={styles.bullet}>●</span> MCP Servers reloaded: 1 server connected</p>
-    </div>
-    <div className={styles.bottom}>
-      <div className={styles.session}><span>~\Documents\GitHub\MM-Website [⎇main*]</span><span>Session: 0 AIC used</span></div>
-      <div className={styles.prompt} aria-hidden><span /></div>
-      <footer><div><Link href="/dev/tournament">← open sidebar</Link> · <b>Interactive</b> · <b>Manual Approval</b> · / commands · ? help · tab next tab</div><span>Auto</span></footer>
+      <div className={styles.grid}>
+        {SETTINGS.map(({ title, description, icon: Icon }) => <section key={title} className={styles.card} aria-label={title}>
+          <Icon className={styles.icon} size={18} strokeWidth={2.8} aria-hidden />
+          <h2>{title}</h2>
+          <p>{description}</p>
+        </section>)}
+      </div>
     </div>
   </main>;
 }

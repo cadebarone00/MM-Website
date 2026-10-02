@@ -8,7 +8,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
-  %% Dev Settings wheel opens a static screenshot-inspired terminal layout on maroon; live trip settings remain separate.
+  %% Dev Settings wheel opens a maroon League Settings layout with bordered category boxes and no phone status icons; settings controls are presentation only and site bottom navigation is hidden.
   %% Golf Trip dev preview: shared local competition round state drives organizer settings and player Competition tab; started rounds lock edits. No persistence or scoring integration.
   %% Platform page headings sit beside the hamburger menu in smaller bold Spectral type.
   %% Operator recovery tooling only: REST row exports; optional explicit pg_dump to local dump/manifest; isolated restore drill documented. No provider monitoring, PITR activation or application integration.
@@ -522,7 +522,7 @@ The separate test-season controls operate on a designated database season. This 
 
 ## 22. Legacy integrations and unfinished pages
 
-**Golf Trip Settings presentation (local dev preview):** The wheel at `/dev/tournament` opens `/dev/tournament/settings`, a static recreation of the supplied terminal screenshot with a maroon background, compact top labels, introduction panel, message lines and bottom prompt/footer. Terminal labels are decorative; the footer return link opens the trip preview. Live trip settings are unchanged.
+**Golf Trip Settings presentation (local dev preview):** The wheel at `/dev/tournament` opens `/dev/tournament/settings`, recreating the supplied League Settings layout with the site's maroon background, distinct lighter maroon card boxes with rose borders and spacing, a maroon selector, cream headings and muted rose descriptions. The close link returns to the trip preview. The phone time, notification, Wi-Fi, cellular and battery indicators are omitted. The General/Commish selector and two-column My Team, General, Draft, Playoffs, Roster and Scoring cards are presentation only. Cropped, unlabeled cards are omitted. Site bottom navigation remains hidden on this preview. Live trip settings remain unchanged.
 
 **Golf Trip Competition UI (local dev preview):** At `/dev/tournament`, Spring Golf Weekend uses Overview | Competition | Games, with Competition omitted for the non-competitive scenario. Overview keeps the sample leaderboard/scorecards; Games remains a placeholder. Preview view controls switch between Organizer Competition Settings and Player preview. One lifted local round array supplies both views; settings remain while switching views or trip tabs and reset on reload. Rows retain Date ? Round ? Course ? Format ? Nassau ? Handicap order. Format options are Singles, Best Ball, Alternate Shot, Scramble, Shamble, Chapman and Stableford. Handicap All and Nassau All update only scheduled rounds, show Mixed when those rounds differ, and allow individual overrides. Started rounds have disabled controls and a Started ? Locked label; player rows contain no organizer controls. Fixture status is explicit rather than driven by a clock. These flags do not calculate scores, handicaps or Nassau. No database, permission enforcement, API, persistence or deployment is added. Outside the dev preview, no fake competition rounds are supplied. Feature review: `docs/golf-trip-competition-review.md`.
 
@@ -588,6 +588,15 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-10-02 - Settings category boxes (implemented locally; deployment not verified).** Previously the dark maroon card backgrounds offered little separation from the page. Each of the six settings categories now has a lighter maroon box, visible rose border, rounded corners and increased spacing. Updated section 22 and the flowchart annotation; mapped workflow paths are unchanged.
+
+**2026-10-02 ? Maroon Settings style without phone status bar (implemented locally; deployment not verified).** Previously the preview displayed the supplied PNG with navy colors and phone status indicators. It now renders the same heading, selector and six labeled cards in the site's maroon palette, omitting time, notification, Wi-Fi, cellular and battery icons. Close still returns to the trip preview; settings remain presentation only. Updated section 22 and the flowchart annotation; mapped paths are unchanged.
+
+**2026-10-02 ? Exact Settings screenshot (implemented locally; deployment not verified).** Previously the dev settings page approximated the reference with maroon CSS cards and interactive tab styling. It now displays the supplied PNG unchanged, including the phone status bar and cropped bottom row, with a working close-link overlay. Pictured controls are static and site bottom navigation is hidden on this page. Updated section 22 and the flowchart annotation; mapped overview paths are unchanged.
+
+**2026-10-02 ? Corrected Settings reference (implemented locally; deployment not verified).** Replaced the incorrect terminal reference with the supplied League Settings layout: close link, heading, General/Commish pills and two-column settings cards on maroon. Updated section 22 and flowchart annotation; no mapped workflow paths or live settings behavior changed.
+
 
 **2026-10-02 ? Dev Settings presentation (implemented locally; deployment not verified).** The preview wheel previously opened General/Organizer settings placeholders. It now opens the supplied screenshot layout on maroon as a static UI. Updated section 22 and the flowchart annotation; overview paths remain unchanged.
 
