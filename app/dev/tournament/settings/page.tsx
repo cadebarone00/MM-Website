@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { GolfTripSettingsPreview } from "@/components/platform/GolfTripSettingsPreview";
 
+import { GOLF_TRIP_PREVIEW_DRAFT } from "@/lib/platform/golfTripPreviewFixture";
+
 export const metadata: Metadata = { title: "Trip Settings preview | The Maroon", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
@@ -11,5 +13,5 @@ export const dynamic = "force-dynamic";
  */
 export default function GolfTripSettingsPreviewPage() {
   if (process.env.NODE_ENV !== "development") notFound();
-  return <GolfTripSettingsPreview />;
+  return <GolfTripSettingsPreview tripName={GOLF_TRIP_PREVIEW_DRAFT.tripName} />;
 }

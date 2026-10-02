@@ -13,7 +13,8 @@ export interface TripFlights { summary: FlightSummary; href: string | null }
 import { GolfCourseWeather, GolfTripLeaderboard } from "./GolfTripMatch";
 import { GolfTripScoring } from "./GolfTripScoring";
 import { GolfTripCompetition } from "./GolfTripCompetition";
-import { GOLF_TRIP_COMPETITION_PREVIEW, updateCompetitionRounds, type CompetitionRound, type CompetitionRoundChange } from "@/lib/platform/golfTripCompetitionPreview";
+import type { CompetitionRound } from "@/lib/platform/golfTripCompetitionPreview";
+import { useGolfTripCompetitionPreview } from "./GolfTripCompetitionPreviewProvider";
 import styles from "./GolfTripHome.module.css";
 
 const TABS = ["Home", "Golf", "Venue", "Info"] as const;
@@ -46,9 +47,8 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   const [previewCompetition, setPreviewCompetition] = useState<boolean | null>(null);
   const competitive = (preview ? previewCompetition : null) ?? (draft.includesTournament === "yes");
 
-  const [competitionRounds, setCompetitionRounds] = useState<CompetitionRound[]>(() => preview && previewMatch ? GOLF_TRIP_COMPETITION_PREVIEW.map(round => ({ ...round })) : []);
-  const [organizerPreview, setOrganizerPreview] = useState(false);
-  const changeCompetition = (change: CompetitionRoundChange, id?: string) => setCompetitionRounds(rounds => updateCompetitionRounds(rounds, change, id));
+  const competitionPreview = useGolfTripCompetitionPreview();
+  const competitionRounds = preview && previewMatch ? competitionPreview?.rounds ?? [] : [];
 
   const dates = tripDates(draft.startDate, draft.endDate);
   const dateRange = dates.length > 0 ? `${shortTripDate(dates[0])} – ${shortTripDate(dates[dates.length - 1])}` : "";
@@ -79,15 +79,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
               {value ? "Competitive preview" : "Non-competitive preview"}
             </button>)}
           </div>}
-          {preview && previewMatch && competitive && <div className={styles.tabs} role="group" aria-label="Competition preview view">
-            {[false, true].map(value => <button key={String(value)} type="button" aria-pressed={organizerPreview === value}
-              className={`${styles.tab} ${organizerPreview === value ? styles.tabActive : ""}`} onClick={() => setOrganizerPreview(value)}>
-              {value ? "Organizer settings" : "Player preview"}
-            </button>)}
-          </div>}
-          {organizerPreview && competitive && preview && previewMatch
-            ? <GolfTripCompetition rounds={competitionRounds} onChange={changeCompetition} />
-            : <GolfSlides key={String(competitive)} previewMatch={previewMatch} competitive={competitive} competitionRounds={competitionRounds} />}
+          <GolfSlides key={String(competitive)} previewMatch={previewMatch} competitive={competitive} competitionRounds={competitionRounds} />
         </>
         : tab === "Venue" ? <VenueEvents />
         : tab === "Info" ? <InfoAccount destination={draft.destination} flights={flights} />

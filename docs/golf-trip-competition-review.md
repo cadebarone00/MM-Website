@@ -1,15 +1,15 @@
 # Golf Trip competition preview review
 
-2026-10-02; scope revision 1; feature ID `golf-trip-competition-preview`.
+2026-10-02; scope revision 2; feature ID `golf-trip-competition-preview`.
 Decision: pending; all registry categories remain `review_required`. No production-readiness or deployment approval is asserted. Accountable owner, jurisdictions, audience, reviewers and next review date remain unassigned.
 
 ## Scope and evidence
 
-Before: Competition was a styled placeholder. After: local organizer settings and a read-only player view share round configuration in React state. Evidence: `lib/platform/golfTripCompetitionPreview.ts`, `components/platform/GolfTripCompetition.tsx`, and `components/platform/GolfTripHome.tsx`. The development-only `/dev/tournament` route supplies fictional data; no additional vendors, packages or assets are introduced.
+Before: Competition was a styled placeholder. After: local organizer settings under settings wheel > Organizer > Competition and a read-only Golf player view share round configuration in development-layout React state across client navigation. Evidence: `lib/platform/golfTripCompetitionPreview.ts`, `components/platform/GolfTripCompetition.tsx`, and `components/platform/GolfTripHome.tsx`. The development-only `/dev/tournament` route supplies fictional data; no additional vendors, packages or assets are introduced.
 
 | Data | Source/purpose | Visibility/storage/lifecycle |
 | --- | --- | --- |
-| Fictional round dates, courses, format, flags and explicit status | Checked-in preview fixture; demonstrate UI | Local browser React state; both visual views; reset on reload; no writes, exports or backups |
+| Fictional round dates, courses, format, flags and explicit status | Checked-in preview fixture; demonstrate UI | Local browser React state; both visual views; retained across client navigation, reset on reload; no writes, exports or backups |
 | Format and boolean edits | Preview controls; configure demonstration | Same local state; no personal data fields or free-text input |
 
 ## Findings and follow-ups
@@ -21,3 +21,7 @@ Before: Competition was a styled placeholder. After: local organizer settings an
 - Business ownership, minors, platform rules and legal review: operating entity, markets, audience and distribution readiness are not established by this prototype. Assign policy/release owners and qualified review before a real release. Status: `review_required`.
 
 All follow-ups are open, owners and due dates unassigned. Engineering must supply real-data authorization/locking tests before integration; policy owners must complete the category checklist and data map; counsel/CPA must resolve triggered questions. This record describes the narrow prototype and does not waive existing unresolved requirements.
+
+## 2026-10-02 navigation scope review
+
+Organizer controls moved from Golf to the Competition card in the development settings wheel. Existing format, flags and started-round guards are reused. No new personal data, UGC, vendors, assets, payments, subscriptions, advertising or sponsorship are introduced. Retention remains memory-only until reload or leaving the preview layout; no storage or server writes. The preview selector is not permission enforcement. Existing IP, provider/platform, security and professional legal-review follow-ups above remain review_required; this move does not establish release readiness. Evidence: app/dev/tournament/layout.tsx and components/platform/GolfTripCompetitionPreviewProvider.tsx. Registry metadata is unchanged.

@@ -1,36 +1,46 @@
-import Link from "next/link";
-import { X, ShieldUser, ShieldCheck, Monitor, GitBranch, UsersRound, BadgePercent } from "lucide-react";
-import styles from "./GolfTripSettingsPreview.module.css";
+"use client";
 
-const SETTINGS = [
-  { title: "My Team", description: "Update your team avatar, name & player's nicknames", icon: ShieldUser },
-  { title: "General", description: "Update league general settings", icon: ShieldCheck },
-  { title: "Draft", description: "Update draft settings", icon: Monitor },
-  { title: "Playoffs", description: "Update playoff settings", icon: GitBranch },
-  { title: "Roster", description: "Update roster settings and position limits", icon: UsersRound },
-  { title: "Scoring", description: "Update scoring settings", icon: BadgePercent },
-];
+import { useState } from "react";
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
+import styles from "./GolfTripSettingsPreview.module.css";
+import tripStyles from "./GolfTripHome.module.css";
+import { GolfTripCompetition } from "./GolfTripCompetition";
+import { useGolfTripCompetitionPreview } from "./GolfTripCompetitionPreviewProvider";
+
+const GENERAL_CARDS = Array.from({ length: 6 }, () => "Place holder");
+const ORGANIZER_CARDS = ["Players", "Competition", "Place holder", "Place holder", "Place holder", "Place holder"];
 
 /** Reference layout in the site's maroon palette; settings remain presentation only. */
-export function GolfTripSettingsPreview() {
+export function GolfTripSettingsPreview({ tripName }: { tripName: string }) {
+  const [section, setSection] = useState("General");
+  const [competitionOpen, setCompetitionOpen] = useState(false);
+  const competition = useGolfTripCompetitionPreview();
+  const cards = section === "Organizer" ? ORGANIZER_CARDS : GENERAL_CARDS;
   return <main className={styles.page}>
     <div className={styles.content}>
-      <Link href="/dev/tournament" className={styles.close} aria-label="Close settings"><X size={28} strokeWidth={3} aria-hidden /></Link>
-      <header className={styles.heading}>
-        <h1>The Maroon</h1>
-        <p>League Settings</p>
+      <header className={styles.header}>
+      <Link href="/dev/tournament" className={styles.close} aria-label="Back to trip"><ChevronLeft size={26} strokeWidth={1.75} aria-hidden /></Link>
+      <div className={styles.heading}>
+        <h1>{tripName}</h1>
+        <p>Trip Settings</p>
+      </div>
       </header>
-      <div className={styles.tabs} aria-label="Settings sections preview">
-        <span className={styles.active}>GENERAL</span>
-        <span>COMMISH</span>
+      <div className={`${tripStyles.tabs} ${styles.tabs}`} aria-label="Settings sections preview">
+        {["General", "Organizer"].map((name) => <button key={name} type="button" aria-pressed={section === name}
+          className={`${tripStyles.tab} ${section === name ? tripStyles.tabActive : ""} ${styles.tab}`}
+          onClick={() => { setSection(name); setCompetitionOpen(false); }}>{name}</button>)}
       </div>
-      <div className={styles.grid}>
-        {SETTINGS.map(({ title, description, icon: Icon }) => <section key={title} className={styles.card} aria-label={title}>
-          <Icon className={styles.icon} size={18} strokeWidth={2.8} aria-hidden />
+      {competitionOpen && competition ? <div className={styles.competition}>
+        <button type="button" className={styles.sectionBack} onClick={() => setCompetitionOpen(false)}><ChevronLeft size={18} aria-hidden />Organizer settings</button>
+        <GolfTripCompetition rounds={competition.rounds} onChange={competition.change} />
+      </div> : <div className={styles.grid}>
+        {cards.map((title, index) => title === "Competition" ? <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`} onClick={() => setCompetitionOpen(true)}>
           <h2>{title}</h2>
-          <p>{description}</p>
+        </button> : <section key={index} className={styles.card} aria-label={title}>
+          <h2>{title}</h2>
         </section>)}
-      </div>
+      </div>}
     </div>
   </main>;
 }

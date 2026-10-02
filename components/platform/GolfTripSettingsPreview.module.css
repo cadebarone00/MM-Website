@@ -1,16 +1,17 @@
-.page{box-sizing:border-box;min-height:100svh;padding:32px 16px calc(28px + env(safe-area-inset-bottom));background:var(--color-maroon-900);color:var(--color-cream-50);font-family:Arial,Helvetica,sans-serif}
+.page{box-sizing:border-box;min-height:100svh;padding:32px 16px calc(28px + env(safe-area-inset-bottom));background:var(--color-maroon-900,#240001);color:var(--color-cream-50,#fbf8f1);font-family:var(--font-barlow),sans-serif}
 .content{width:100%;max-width:560px;margin:0 auto}
-.close{display:flex;align-items:center;justify-content:center;width:32px;height:32px;margin:0 0 18px -7px;color:var(--color-cream-50);text-decoration:none}
-.heading h1{margin:0;font-size:24px;line-height:1.2;font-weight:800;letter-spacing:-.5px}
-.heading p{margin:3px 0 0;color:var(--color-maroon-200);font-size:18px;line-height:1.3}
-.tabs{display:grid;grid-template-columns:1fr 1fr;margin:20px 0 23px;padding:3px;border-radius:999px;background:var(--color-maroon-800)}
-.tabs span{display:flex;align-items:center;justify-content:center;min-height:32px;padding:7px 8px;border-radius:999px;color:var(--color-maroon-300);font:700 13px/1.2 Arial,Helvetica,sans-serif;letter-spacing:.5px}
-.tabs .active{background:var(--color-maroon-600);color:var(--color-cream-50);box-shadow:0 0 0 1px rgba(0,0,0,.15)}
+.header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.heading{min-width:0;text-align:right}
+.close{display:flex;flex:0 0 44px;align-items:center;justify-content:center;width:44px;height:44px;margin:0 0 0 -10px;color:var(--color-cream-50,#fbf8f1);text-decoration:none;border-radius:50%}
+.close:hover{background:rgba(255,255,255,.08)}
+.heading h1{margin:0;font-size:24px;line-height:1.2;font-weight:700;letter-spacing:-.5px;overflow-wrap:anywhere}
+.heading p{margin:3px 0 0;color:var(--color-maroon-200,#e3c0c2);font-size:18px;line-height:1.3}
+.tabs{margin:20px 0 23px}
+.tab{display:flex;align-items:center;justify-content:center}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0 3px}
-.card{box-sizing:border-box;min-height:184px;padding:16px 14px;border:1px solid var(--color-maroon-500);border-radius:10px;background:var(--color-maroon-700);box-shadow:0 2px 8px rgba(0,0,0,.12)}
-.icon{display:block;margin:0 0 10px 3px;color:var(--color-cream-200)}
-.card h2{margin:0 0 6px;font-size:17px;line-height:1.3;font-weight:750;letter-spacing:-.4px}
-.card p{margin:0;color:var(--color-maroon-200);font-size:14px;line-height:1.45;overflow-wrap:anywhere}
-.close:focus-visible{outline:2px solid var(--color-cream-200);outline-offset:3px}
-.page h1,.page h2{font-family:Arial,Helvetica,sans-serif !important}
-@media(min-width:600px){.page{padding-top:48px}.heading h1{font-size:32px}.heading p{font-size:23px}.tabs span{min-height:44px;font-size:16px}.card{min-height:250px;padding:22px 20px}.card h2{font-size:23px}.card p{font-size:19px}.icon{width:23px;height:23px;margin-bottom:14px}.grid{gap:12px}}
+.card{box-sizing:border-box;min-height:126px;padding:16px 14px;border:1px solid #dcc495;border-top:3px solid #c7a55e;border-radius:14px;background:linear-gradient(145deg,#fffdf7,#f2e9d7);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 4px 0 #b6975e,0 8px 16px rgba(0,0,0,.24)}
+.card h2{margin:0 0 6px;color:var(--color-maroon-900,#240001);font-size:17px;line-height:1.3;font-weight:750;letter-spacing:-.4px}
+.close:focus-visible{outline:2px solid var(--color-cream-200,#ebe2cf);outline-offset:3px}
+.page h1,.page h2{font-family:var(--font-spectral),Georgia,serif !important}
+@media(min-width:600px){.page{padding-top:48px}.heading h1{font-size:32px}.heading p{font-size:23px}.card{min-height:146px;padding:18px 20px}.card h2{font-size:23px}.card p{font-size:17px}.grid{gap:14px}}
+.cardButton{width:100%;text-align:left;font:inherit;cursor:pointer}.cardButton:hover{filter:brightness(1.03)}.cardButton:focus-visible{outline:2px solid #dcc495;outline-offset:5px}.competition{display:flex;flex-direction:column;gap:16px}.sectionBack{display:flex;align-items:center;gap:4px;align-self:flex-start;min-height:44px;padding:0;border:0;background:transparent;color:#dcc495;font:600 15px/1 var(--font-barlow),sans-serif;cursor:pointer}.sectionBack:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
