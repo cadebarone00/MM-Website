@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type PointerEvent } from "react";
-import { ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Minus, Plus } from "lucide-react";
 import styles from "./GolfTripScoring.module.css";
 
 const HOLES = 18;
@@ -22,6 +23,8 @@ export function GolfTripScoring({ par, initialHoles }: { par?: number[]; initial
   const [holesCompetitor, setHolesCompetitor] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => initialHoles?.[i] ?? null));
   const [current, setCurrent] = useState(() => { const next = holes.findIndex((h) => h === null); return next === -1 ? HOLES - 1 : next; });
   const [currentCompetitor] = useState(() => { const next = holesCompetitor.findIndex((h) => h === null); return next === -1 ? HOLES - 1 : next; });
+  const [opponentName] = useState(() => randomOpponentName());
+  const router = useRouter();
   const sheetRef = useRef<HTMLElement>(null);
   const handleRef = useRef<HTMLButtonElement>(null);
   const spacerRef = useRef<HTMLSpanElement>(null);
@@ -87,32 +90,39 @@ export function GolfTripScoring({ par, initialHoles }: { par?: number[]; initial
   const style = dragOffset !== null ? { transform: `translateY(${dragOffset}px)`, transition: "none" } : undefined;
 
   return <div className={styles.frame}><section ref={sheetRef} className={`${styles.sheet} ${open ? styles.open : ""} ${dragOffset !== null ? styles.dragging : ""}`} style={style} aria-label="Scoring">
+    {open && <button type="button" className={styles.scorecardButton} onClick={() => router.push("/portal")}>Scorecard</button>}
     <button ref={handleRef} type="button" className={styles.handle} aria-expanded={open} aria-controls="trip-scoring-body"
       onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
       onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setOpen((value) => !value); } }}>
       <span className={styles.grabber} aria-hidden />
+      <span className={styles.handleMeta}>
+        {thru > 0 ? <>
+          <span>{toPar !== null ? formatToPar(toPar) : "—"}</span>
+          <span aria-hidden>•</span>
+          <span>Thru {thru}</span>
+        </> : "Tap or pull up"}
+      </span>
       <span className={styles.handleLabel}>Scoring</span>
-      <span className={styles.handleMeta}>{thru > 0 ? `Thru ${thru}${toPar !== null ? ` • ${formatToPar(toPar)}` : ""}` : "Tap or pull up"}</span>
     </button>
 
     <div id="trip-scoring-body" className={styles.body} inert={!open}>
+      <dl className={styles.summary}>
+        <div><dt>Thru</dt><dd>{thru}</dd></div>
+        <div><dt>Strokes</dt><dd>{thru ? total : "—"}</dd></div>
+        <div><dt>To Par</dt><dd>{toPar !== null && thru ? formatToPar(toPar) : "—"}</dd></div>
+      </dl>
+
       <div className={styles.holeHeader}>
-        <button type="button" className={styles.arrow} aria-label="Previous hole" disabled={current === 0} onClick={() => setCurrent(current - 1)}>
-          <ChevronLeft size={22} strokeWidth={2.25} aria-hidden />
-        </button>
         <div className={styles.holeTitle}>
           <span className={styles.holeNumber}>Hole {current + 1}</span>
           <span className={styles.holePar}>Par {holePar ?? "—"}</span>
         </div>
-        <button type="button" className={styles.arrow} aria-label="Next hole" disabled={current === HOLES - 1} onClick={() => setCurrent(current + 1)}>
-          <ChevronRight size={22} strokeWidth={2.25} aria-hidden />
-        </button>
       </div>
 
       <div ref={chipsRef} className={styles.holes} role="group" aria-label="Holes">
         {holes.map((h, i) => <button key={i} type="button" aria-pressed={i === current} aria-label={`Hole ${i + 1}${h !== null ? `, ${h} strokes` : ""}`}
-          className={`${styles.holeChip} ${i === current ? styles.holeChipActive : ""}`} onClick={() => setCurrent(i)}>
-          <span>{i + 1}</span><b>{h ?? "·"}</b>
+          className={`${styles.holeChip} ${h !== null ? styles.holeChipFilled : ""} ${i === current ? styles.holeChipActive : ""}`} onClick={() => setCurrent(i)}>
+          <span className={styles.holeChipNumber}>{i + 1}</span>
         </button>)}
       </div>
 
@@ -126,11 +136,11 @@ export function GolfTripScoring({ par, initialHoles }: { par?: number[]; initial
 
         {scoreMode === "match" ? (
           <div className={styles.scoreSplit}>
-            <ScoreCard label="His Score" strokes={strokes} holePar={holePar} step={step} compact />
-            <ScoreCard label="Opponent Score" strokes={holesCompetitor[currentCompetitor]} holePar={holePar} step={stepCompetitor} compact />
+            <ScoreCard label="My Score" strokes={strokes} holePar={holePar} step={step} compact />
+            <ScoreCard label={`${opponentName} Score`} strokes={holesCompetitor[currentCompetitor]} holePar={holePar} step={stepCompetitor} compact />
           </div>
         ) : (
-          <ScoreCard label="His Score" strokes={strokes} holePar={holePar} step={step} compact />
+          <ScoreCard label="My Score" strokes={strokes} holePar={holePar} step={step} compact />
         )}
       </div>
 
@@ -146,11 +156,9 @@ export function GolfTripScoring({ par, initialHoles }: { par?: number[]; initial
         <Compass label="GIR" />
       </div>
 
-      <dl className={styles.summary}>
-        <div><dt>Thru</dt><dd>{thru}</dd></div>
-        <div><dt>Strokes</dt><dd>{thru ? total : "—"}</dd></div>
-        <div><dt>To Par</dt><dd>{toPar !== null && thru ? formatToPar(toPar) : "—"}</dd></div>
-      </dl>
+      <button type="button" className={styles.nextHoleButton} aria-label="Next hole" disabled={current === HOLES - 1} onClick={() => setCurrent((value) => Math.min(value + 1, HOLES - 1))}>
+        Next hole
+      </button>
       <p className={styles.note}>Practice only: scores aren&apos;t saved yet.</p>
       <span ref={spacerRef} className={styles.navSpacer} aria-hidden />
     </div>
@@ -164,7 +172,6 @@ function ScoreCard({ label, strokes, holePar, step, compact = false }: { label: 
       <button type="button" className={styles.stepButton} aria-label={`One less stroke for ${label}`} onClick={() => step(-1)}><Minus size={compact ? 20 : 26} strokeWidth={2.5} aria-hidden /></button>
       <div className={`${styles.strokes} ${compact ? styles.strokesCompact : ""}`} aria-live="polite">
         <span className={strokes === null ? styles.strokesEmpty : ""}>{strokes ?? holePar ?? "—"}</span>
-        <small>{strokes === null ? "Tap + or −" : scoreName(strokes, holePar)}</small>
       </div>
       <button type="button" className={styles.stepButton} aria-label={`One more stroke for ${label}`} onClick={() => step(1)}><Plus size={compact ? 20 : 26} strokeWidth={2.5} aria-hidden /></button>
     </div>
@@ -194,14 +201,12 @@ function Compass({ label }: { label: string }) {
   </div>;
 }
 
+function randomOpponentName(): string {
+  const names = ["Higgins", "Mason", "Patel", "Nguyen", "Bennett", "Walters", "Miller", "Chavez"];
+  return names[Math.floor(Math.random() * names.length)];
+}
+
 function formatToPar(value: number): string {
   return value === 0 ? "E" : value > 0 ? `+${value}` : String(value);
 }
 
-function scoreName(strokes: number, par: number | undefined): string {
-  if (par === undefined) return `${strokes} strokes`;
-  if (strokes === 1) return "Hole in one";
-  const diff = strokes - par;
-  return diff <= -3 ? "Albatross" : diff === -2 ? "Eagle" : diff === -1 ? "Birdie" : diff === 0 ? "Par"
-    : diff === 1 ? "Bogey" : diff === 2 ? "Double bogey" : `+${diff}`;
-}

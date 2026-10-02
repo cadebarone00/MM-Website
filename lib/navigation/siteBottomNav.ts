@@ -33,5 +33,9 @@ export function siteBottomNavTabActive(pathname: string, href: string): boolean 
   if (href === "/") {
     return pathname === "/" || pathname.startsWith("/the-maroon/");
   }
+  // Golf Trips stays lit across the trip flow, including the local dev preview used for the mobile mock.
+  if (href === "/golf-trips") {
+    return pathname === "/golf-trips" || pathname.startsWith("/golf-trips/") || pathname === "/dev/tournament" || pathname.startsWith("/dev/tournament/");
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }

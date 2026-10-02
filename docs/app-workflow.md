@@ -4,6 +4,12 @@ Reviewed September 18, 2026 against release `ce85a83`. This describes the curren
 
 Open **app-workflow.html** for the interactive version. Select a workflow box to expand its description, or search for a feature or database table.
 
+## What changed
+
+**October 2, 2026 - Full-square hole selector and summary row in the scoring sheet (implemented locally; deployment not verified).** Previously the scoring sheet used smaller hole chips with a letter-like stroke value and placed the hole summary near the bottom of the card. It now uses full square hole tiles with no clipping, keeps the completed holes filled in maroon, moves the Thru / Strokes / To Par summary just under the handle, and places the hole number/par above the selector row. This affects `components/platform/GolfTripScoring.tsx` and `GolfTripScoring.module.css`; no scoring logic or data persistence changed.
+
+**October 2, 2026 - Organizer-style hole selector and next-hole action in the scoring sheet (implemented locally; deployment not verified).** Previously the scoring sheet used an arrow-based hole navigator with the full hole chip showing stroke values. It now shows a compact rounded-square hole selector with only the hole number, fills completed holes in maroon, removes the arrow controls, and adds a Next hole button near the bottom of the scoring sheet. This affects `components/platform/GolfTripScoring.tsx` and `GolfTripScoring.module.css`; no scoring logic or data persistence changed.
+
 ## Whole-app flowchart
 
 ```mermaid
@@ -600,6 +606,8 @@ These are observations from the documentation review. No application behavior wa
 
 
 **2026-10-02 - Player-created Games UI (implemented locally; deployment not verified).** Before, Games was a placeholder. The development preview now offers scope and group-size selection, compatible game cards, fictional round/player selection and lightweight setup for six games, with an independent handicap preference. Real trip Games remains a placeholder; no scoring, storage or official Competition changes are added. Updated section 22, the Mermaid preview branch and the interactive workflow mapping.
+
+**October 2, 2026 - Organizer-style compact scorecards in the scoring sheet (implemented locally; deployment not verified).** Previously the scoring sheet used a score stepper with a secondary label beneath the number. It now centers the score value directly between the minus and plus buttons, labels the primary entry “My Score,” and shows a random opponent last name such as “Higgins Score” in the match preview. The two selectors are spaced slightly farther apart and the plus/minus controls are taller for a cleaner organizer mock. This affects `components/platform/GolfTripScoring.tsx` and `GolfTripScoring.module.css`; no scoring logic or saved data paths changed.
 
 **October 2, 2026 - Mirrored score selectors in the scoring sheet (implemented locally; deployment not verified).** Previously the scoring sheet used a single selector with optional preview chips. It now uses two compact mirrored score selectors side by side in the match preview, with a single compact selector in the single-player preview. The score selector sits above the putts row, and the match preview keeps both controls visually symmetric without a person picker. This affects `components/platform/GolfTripScoring.tsx` and `GolfTripScoring.module.css`; no scoring logic or saved data paths changed.
 

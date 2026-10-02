@@ -1,4 +1,4 @@
-/* Site-wide mobile bottom nav — frosted maroon pill (matches tournament /play nav). */
+/* Site-wide mobile bottom nav — full maroon pill matching the main screens. */
 .nav {
   position: fixed;
   left: 50%;
@@ -11,9 +11,8 @@
   width: min(370px, calc(100% - 32px));
   padding: 7px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, #240001 78%, transparent);
-  border: 1px solid color-mix(in srgb, #c9a86e 32%, #3a1620);
-  backdrop-filter: blur(18px);
+  background: #240001;
+  border: 1px solid rgba(201, 168, 110, 0.5);
   box-shadow:
     0 12px 40px rgba(36, 0, 1, 0.5),
     0 0 0 1px rgba(255, 255, 255, 0.06) inset;

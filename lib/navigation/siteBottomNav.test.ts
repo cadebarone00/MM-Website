@@ -36,5 +36,8 @@ test("siteBottomNavTabActive", () => {
   assert.equal(siteBottomNavTabActive("/website", "/"), false);
   assert.equal(siteBottomNavTabActive("/tournaments/join", "/"), false);
   assert.equal(siteBottomNavTabActive("/golf-trips", "/golf-trips"), true);
+  assert.equal(siteBottomNavTabActive("/golf-trips/trip", "/golf-trips"), true);
+  assert.equal(siteBottomNavTabActive("/dev/tournament", "/golf-trips"), true);
+  assert.equal(siteBottomNavTabActive("/dev/tournament/settings", "/golf-trips"), true);
   assert.equal(siteBottomNavTabActive("/golf-trips", "/"), false);
 });
