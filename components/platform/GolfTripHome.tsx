@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import Link from "next/link";
+import { MessageCircle, Settings } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import styles from "./GolfTripHome.module.css";
 
@@ -16,8 +18,9 @@ const subscribeNever = () => () => {};
  * Golf Trip Home: trip name, a 4-tab selector, and (on Home) one card per part of the trip. Layout only:
  * cards show the questionnaire answers kept in this tab, or an empty state. Nothing is saved yet.
  * `preview` replaces those answers with fixed ones (the /dev/tournament design preview).
+ * `settingsHref` is where the settings wheel goes (this trip's settings page).
  */
-export function GolfTripHome({ preview }: { preview?: GolfTripDraft } = {}) {
+export function GolfTripHome({ preview, settingsHref }: { preview?: GolfTripDraft; settingsHref: string }) {
   const raw = useSyncExternalStore(subscribeNever, golfTripDraftSnapshot, () => "");
   const stored = useMemo(() => parseGolfTripDraft(raw), [raw]);
   const draft = preview ?? stored;
@@ -28,6 +31,9 @@ export function GolfTripHome({ preview }: { preview?: GolfTripDraft } = {}) {
 
   return <main className={styles.page}>
     <header className={styles.header}>
+      {/* Look only for now: chat isn't built yet. */}
+      <button type="button" className={`${styles.iconButton} ${styles.iconLeft}`} aria-label="Trip chat"><MessageCircle size={24} strokeWidth={1.75} aria-hidden /></button>
+      <Link href={settingsHref} className={`${styles.iconButton} ${styles.iconRight}`} aria-label="Trip settings"><Settings size={24} strokeWidth={1.75} aria-hidden /></Link>
       <h1 className={styles.title}>{draft.tripName || "Your Golf Trip"}</h1>
       <div className={styles.tabs} role="tablist" aria-label="Trip sections">
         {TABS.map((name) => <button key={name} type="button" role="tab" aria-selected={tab === name}
@@ -73,7 +79,7 @@ function HomeSections({ draft, dates, dateRange }: { draft: Record<string, strin
   </>;
 }
 
-function Card({ title, children }: { title: string; children: ReactNode }) {
+export function Card({ title, children }: { title: string; children: ReactNode }) {
   return <section className={styles.card} aria-label={title}>
     <h2 className={styles.cardTitle}>{title}</h2>
     {children}
@@ -86,6 +92,6 @@ function Rows({ rows }: { rows: string[][] }) {
   </dl>;
 }
 
-function Empty({ children }: { children: ReactNode }) {
+export function Empty({ children }: { children: ReactNode }) {
   return <p className={styles.empty}>{children}</p>;
 }

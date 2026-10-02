@@ -2,10 +2,17 @@
    The negative bottom margin runs the maroon under the bottom menu on phones (same as the questionnaire). */
 .page{min-height:100svh;margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));background:var(--color-maroon-900);color:#fbf8f1;
   padding:48px max(16px,calc((100% - 560px)/2)) calc(24px + 5.75rem + env(safe-area-inset-bottom))}
-.header{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
-.title{margin:0;font:500 38px/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.02em;color:#fff;text-wrap:balance;overflow-wrap:anywhere}
+.header{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+/* Chat (top left) and settings (top right), level with the top of the trip name. */
+.iconButton{position:absolute;top:-8px;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;
+  background:transparent;color:#fbf8f1;cursor:pointer;transition:background .15s ease}
+.iconButton:hover{background:rgba(255,255,255,.08)}
+.iconButton:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.iconLeft{left:-8px}
+.iconRight{right:-8px}
+.title{margin:0;padding:0 40px;font:500 38px/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.02em;color:#fff;text-wrap:balance;overflow-wrap:anywhere}
 /* The selector: just the words. The chosen one lights up (cream with a soft glow) and gets a gold line under it. */
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);width:100%;margin-top:8px}
+.tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;width:100%;margin-top:8px}
 .tab{position:relative;min-height:44px;padding:0 4px;border:0;background:transparent;color:rgba(255,255,255,.55);cursor:pointer;
   font:700 15px/1 var(--font-barlow),sans-serif;letter-spacing:.02em;transition:color .15s ease,text-shadow .15s ease}
 .tab::after{content:"";position:absolute;left:20%;right:20%;bottom:0;height:2px;border-radius:2px;background:#dcc495;opacity:0;transition:opacity .15s ease}
@@ -23,3 +30,8 @@
 .row:first-child{border-top:0;padding-top:0}
 .row dt{color:#dcc495}
 .row dd{margin:0;color:#fff;text-align:right;overflow-wrap:anywhere}
+/* Trip Settings: a back arrow, then the smaller "Trip Settings" title on the left; organizers get General / Organizer
+   in the same words-and-underline style as the trip selector. */
+.settingsHeader{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
+.backButton{position:static;margin:-8px 0 0 -10px}
+.settingsTitle{margin:0;font:500 28px/1.15 var(--font-spectral),Georgia,serif;letter-spacing:-.01em;color:#fff}

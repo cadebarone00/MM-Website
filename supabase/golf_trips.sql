@@ -3,10 +3,13 @@
 -- Create Golf Trip questionnaire. Later modules (flights, lodging, itinerary, …)
 -- add their own tables that reference golf_trips(id); nothing else lives here yet.
 --
+-- golf_trips.id is the parent id for everything trip-owned. Canonical page: /golf-trips/<id>.
+--
 -- Writes only go through create_golf_trip (one all-or-nothing call) and reads
--- through get_golf_trip, both called by the server with the signed-in user's id
--- (POST /api/golf-trips and /golf-trips/<id>). RLS lets trip members read their
--- own trip directly and nobody write directly.
+-- through get_golf_trip / list_my_golf_trips, all called by the server with the
+-- signed-in user's id (POST /api/golf-trips, /golf-trips/<id>,
+-- lib/platform/golfTripsServer.ts). RLS lets trip members read their own trip
+-- directly and nobody write directly.
 --
 -- Prerequisite: schema.sql (profiles) and platform_foundation.sql (tournaments).
 -- Safe to run more than once. Undo: see the bottom of this file.
@@ -41,7 +44,7 @@ create table if not exists public.golf_trips (
 );
 create index if not exists golf_trips_created_by_idx on public.golf_trips (created_by);
 
--- Who is going. profile_id is empty for a traveler who hasn't made an account yet.
+-- Who is going: the organizer and the members. profile_id is empty for a traveler who hasn't made an account yet.
 create table if not exists public.golf_trip_members (
   id uuid primary key default gen_random_uuid(),
   golf_trip_id uuid not null references public.golf_trips(id) on delete cascade,
@@ -49,7 +52,7 @@ create table if not exists public.golf_trip_members (
   display_name text not null check (length(trim(display_name)) between 1 and 120),
   email text,
   phone text,
-  role text not null default 'traveler' check (role in ('organizer', 'traveler')),
+  role text not null default 'member' check (role in ('organizer', 'member')),
   invitation_status text not null default 'pending' check (invitation_status in ('pending', 'accepted', 'declined')),
   created_at timestamptz not null default now()
 );
@@ -172,14 +175,30 @@ language sql stable security definer set search_path = public as $$
   from golf_trips t where t.id = p_trip;
 $$;
 
+-- Every trip this person belongs to (organizer or member), soonest first, for the My Trips list.
+create or replace function public.list_my_golf_trips(p_profile uuid)
+returns jsonb
+language sql stable security definer set search_path = public as $$
+  select coalesce(jsonb_agg(jsonb_build_object(
+      'id', t.id, 'name', t.name, 'destination', t.destination, 'startDate', t.start_date, 'endDate', t.end_date,
+      'status', t.status, 'expectedTravelerCount', t.expected_traveler_count,
+      'memberCount', (select count(*) from golf_trip_members x where x.golf_trip_id = t.id), 'role', m.role
+    ) order by t.start_date, t.created_at), '[]'::jsonb)
+  from golf_trip_members m join golf_trips t on t.id = m.golf_trip_id
+  where m.profile_id = p_profile;
+$$;
+
 revoke all on function public.create_golf_trip(uuid, jsonb) from public, anon, authenticated;
 grant execute on function public.create_golf_trip(uuid, jsonb) to service_role;
 revoke all on function public.get_golf_trip(uuid, uuid) from public, anon, authenticated;
 grant execute on function public.get_golf_trip(uuid, uuid) to service_role;
+revoke all on function public.list_my_golf_trips(uuid) from public, anon, authenticated;
+grant execute on function public.list_my_golf_trips(uuid) to service_role;
 
 commit;
 
 -- Undo (deletes every saved golf trip):
+--   drop function if exists public.list_my_golf_trips(uuid);
 --   drop function if exists public.get_golf_trip(uuid, uuid);
 --   drop function if exists public.create_golf_trip(uuid, jsonb);
 --   drop table if exists public.golf_trip_rounds, public.golf_trip_members, public.golf_trips;

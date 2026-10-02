@@ -120,13 +120,24 @@ export function golfTripCreateFailure(error: { code?: string; message?: string }
   return { status: 500, error: "We couldn't create your trip. Your answers are still here, so try again." };
 }
 
+export type GolfTripRole = "organizer" | "member";
+
+/** The signed-in person's place on a trip, for UI that differs for the organizer. */
+export interface GolfTripViewer { profileId: string; memberId: string; role: GolfTripRole; isOrganizer: boolean }
+
+/** One row of the My Trips list (list_my_golf_trips). */
+export interface GolfTripSummary {
+  id: string; name: string; destination: string; startDate: string; endDate: string; status: string;
+  expectedTravelerCount: number | null; memberCount: number; role: GolfTripRole;
+}
+
 export interface SavedGolfTrip {
   trip: {
     id: string; name: string; destination: string; start_date: string; end_date: string; expected_traveler_count: number | null;
     golf_days: number; planned_rounds: number; includes_tournament: PlanAnswer; lodging_plan: PlanAnswer; flight_plan: PlanAnswer;
     transportation_plan: PlanAnswer; tournament_id: string | null; status: string; created_by: string;
   };
-  members: { id: string; profileId: string | null; displayName: string; email: string | null; role: "organizer" | "traveler"; invitationStatus: string }[];
+  members: { id: string; profileId: string | null; displayName: string; email: string | null; role: GolfTripRole; invitationStatus: string }[];
   rounds: { roundNumber: number; dayNumber: number; playDate: string | null; courseName: string | null }[];
 }
 
@@ -146,4 +157,17 @@ export function savedTripAsDraft({ trip, members, rounds }: SavedGolfTrip): Golf
     draft[`round${round.roundNumber}Course`] = round.courseName ?? "";
   }
   return draft;
+}
+
+/** This person's membership on a saved trip, or null if they aren't on it. */
+export function golfTripViewer(saved: SavedGolfTrip, profileId: string): GolfTripViewer | null {
+  const member = saved.members.find((m) => m.profileId === profileId);
+  return member ? { profileId, memberId: member.id, role: member.role, isOrganizer: member.role === "organizer" } : null;
+}
+
+/** list_my_golf_trips's reply, keeping only well-formed rows. */
+export function golfTripSummaries(data: unknown): GolfTripSummary[] {
+  if (!Array.isArray(data)) return [];
+  return data.filter((row): row is GolfTripSummary => Boolean(row) && typeof row === "object"
+    && typeof row.id === "string" && typeof row.name === "string" && (row.role === "organizer" || row.role === "member"));
 }

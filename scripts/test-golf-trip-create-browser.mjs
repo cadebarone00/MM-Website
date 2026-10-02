@@ -113,6 +113,23 @@ try {
   await p.waitForURL(tripUrl, { timeout: 20000 });
   assert.equal(await count("golf_trips"), 1);
 
+  // Refresh rebuilds the page from Supabase, even with the questionnaire answers gone.
+  const homeText = async (page) => page.locator("main").innerText();
+  await p.evaluate(() => sessionStorage.clear());
+  await p.reload();
+  for (const text of ["Maroon Masters 2027", "Pinehurst No. 2", "Cade"]) assert.ok((await homeText(p)).includes(text), `after refresh: ${text}`);
+
+  // Navigating away and coming back later, in a brand-new session, opens the same page.
+  const later = await phone(cade);
+  await later.goto(`${app}/golf-trips`);
+  await later.goto(tripUrl);
+  for (const text of ["Maroon Masters 2027", "Pinehurst, North Carolina"]) assert.ok((await homeText(later)).includes(text), `reopened: ${text}`);
+
+  // My Trips data: the creator's trip list has this trip, as organizer; a stranger's list is empty.
+  const listed = (await fake.db.query("select list_my_golf_trips($1) r", [cade.id])).rows[0].r;
+  assert.deepEqual(listed.map((t) => [t.id, t.name, t.role]), [[tripUrl.split("/").pop(), "Maroon Masters 2027", "organizer"]]);
+  assert.deepEqual((await fake.db.query("select list_my_golf_trips($1) r", [stranger.id])).rows[0].r, []);
+
   // Only members can open it.
   const s = await phone(stranger);
   assert.equal((await s.goto(tripUrl)).status(), 404);

@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import type { PGlite } from "@electric-sql/pglite";
-import { golfTripCreateFailure, golfTripPayloadFromBody, savedTripAsDraft, type CreateGolfTripPayload, type SavedGolfTrip } from "./golfTripCreate.ts";
+import { golfTripCreateFailure, golfTripPayloadFromBody, golfTripSummaries, golfTripViewer, savedTripAsDraft, type CreateGolfTripPayload, type GolfTripSummary, type SavedGolfTrip } from "./golfTripCreate.ts";
 import { reviewRows } from "./golfTripDraft.ts";
 import { database, profile, sqlFile } from "./testDatabase.ts";
 
@@ -139,4 +139,45 @@ test("only the trip's members can see it; nobody can write directly", async () =
   await assert.rejects(as("authenticated", cade, "select create_golf_trip($1, $2)", [cade, JSON.stringify(payload({ ...DRAFT, requestId: randomUUID() }))]));
   await assert.rejects(as("authenticated", stranger, "select get_golf_trip($1, $2)", [cade, tripId]));
   await db.close();
+});
+
+const listTrips = async (db: PGlite, who: string) =>
+  golfTripSummaries((await db.query<{ r: unknown }>("select list_my_golf_trips($1) as r", [who])).rows[0].r);
+
+test("each person's trips list holds only the trips they're on, with their role, soonest first", async () => {
+  const db = await tripsDatabase();
+  const cade = await profile(db, "cade");
+  const drew = await profile(db, "drew");
+  const stranger = await profile(db, "stranger");
+  const later = await create(db, cade, payload());
+  const sooner = await create(db, cade, payload({ ...DRAFT, requestId: randomUUID(), tripName: "Spring Warmup", startDate: "2027-03-05", endDate: "2027-03-07",
+    golfDays: "1", day1Date: "2027-03-05", day1Rounds: "1", day2Date: "", day2Rounds: "", playerCount: "" }));
+  // Drew joins Cade's Pinehurst trip as a member (invitations aren't built; this is what one will do).
+  await db.query("insert into golf_trip_members(golf_trip_id, profile_id, display_name, role, invitation_status) values ($1, $2, 'Drew', 'member', 'accepted')", [later.tripId, drew]);
+
+  const mine: GolfTripSummary[] = await listTrips(db, cade);
+  assert.deepEqual(mine.map((t) => [t.id, t.name, t.role, t.startDate, t.endDate]), [
+    [sooner.tripId, "Spring Warmup", "organizer", "2027-03-05", "2027-03-07"],
+    [later.tripId, "Maroon Masters 2027", "organizer", "2027-04-22", "2027-04-26"],
+  ]);
+  assert.deepEqual(mine.map((t) => [t.destination, t.expectedTravelerCount, t.memberCount, t.status]),
+    [["Pinehurst, North Carolina", null, 1, "planning"], ["Pinehurst, North Carolina", 8, 2, "planning"]]);
+  assert.deepEqual((await listTrips(db, drew)).map((t) => [t.id, t.role]), [[later.tripId, "member"]]);
+  assert.deepEqual(await listTrips(db, stranger), []);
+  await db.query("set role authenticated");
+  await assert.rejects(db.query("select list_my_golf_trips($1)", [cade]), /permission denied/);
+  await db.query("reset role");
+
+  // The trip page knows who is the organizer and who is a member.
+  const saved = (await fetchTrip(db, drew, later.tripId))!;
+  assert.deepEqual(golfTripViewer(saved, cade), { profileId: cade, memberId: saved.members[0].id, role: "organizer", isOrganizer: true });
+  assert.deepEqual(golfTripViewer(saved, drew), { profileId: drew, memberId: saved.members[1].id, role: "member", isOrganizer: false });
+  assert.equal(golfTripViewer(saved, stranger), null);
+  await db.close();
+});
+
+test("golfTripSummaries drops anything malformed", () => {
+  assert.deepEqual(golfTripSummaries(null), []);
+  assert.deepEqual(golfTripSummaries([null, { id: 1 }, { id: "a", name: "x", role: "boss" }]), []);
+  assert.equal(golfTripSummaries([{ id: "a", name: "x", role: "member" }]).length, 1);
 });

@@ -1,27 +1,23 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { GolfTripHome } from "@/components/platform/GolfTripHome";
-import { isGolfTripId, savedTripAsDraft, type SavedGolfTrip } from "@/lib/platform/golfTripCreate";
-import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { golfTripUrl, savedTripAsDraft } from "@/lib/platform/golfTripCreate";
+import { getGolfTrip } from "@/lib/platform/golfTripsServer";
 
 export const metadata: Metadata = { title: "Golf Trip | The Maroon" };
 
 /**
- * Golf Trip Home for a saved trip. Only the trip's members can open it: get_golf_trip returns nothing for
- * anyone else, so a stranger sees the same "not found" as a trip that doesn't exist.
+ * Golf Trip Home: the one canonical page for a saved trip, whether it was just created, refreshed, reopened
+ * or picked from My Trips. Rebuilt from Supabase on every request (never from the questionnaire draft).
+ * Members only: a stranger sees the same "not found" as a trip that doesn't exist.
+ * `view.viewer` says whether the signed-in person is the organizer or a member, for UI that needs it.
  */
 export default async function SavedGolfTripPage({ params }: { params: Promise<{ tripId: string }> }) {
   const { tripId } = await params;
-  if (!isGolfTripId(tripId)) notFound();
+  const view = await getGolfTrip(tripId);
+  if (view.status === "signed-out") redirect("/login");
+  if (view.status === "not-found") notFound();
 
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data, error } = await createSupabaseServiceRoleClient().rpc("get_golf_trip", { p_profile: user.id, p_trip: tripId });
-  if (error) throw new Error(`get_golf_trip failed: ${error.message}`);
-  if (!data) notFound();
-
-  // GolfTripHome reads questionnaire-shaped answers; a saved trip is passed in the same shape.
-  return <GolfTripHome preview={savedTripAsDraft(data as SavedGolfTrip)} />;
+  // GolfTripHome reads questionnaire-shaped answers; the saved trip is passed in that shape.
+  return <GolfTripHome preview={savedTripAsDraft(view.trip)} settingsHref={`${golfTripUrl(tripId)}/settings`} />;
 }

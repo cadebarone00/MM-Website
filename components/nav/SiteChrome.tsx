@@ -78,8 +78,8 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
   if (pathname === "/golf-trips") return <><PlatformHeader title="Golf Trip Home" />{children}</>;
   // The Golf Trip questionnaire has no header, like Create Tournament.
   if (pathname === "/golf-trips/new" || pathname.startsWith("/golf-trips/new/")) return <>{children}</>;
-  // Golf Trip Home and its local dev preview have no top nav either.
-  if (pathname === "/golf-trips/trip" || pathname === "/dev/tournament") return <>{children}</>;
+  // Golf Trip Home (draft and saved trips), Trip Settings and their local dev preview have no top nav either.
+  if (pathname.startsWith("/golf-trips/") || pathname === "/dev/tournament" || pathname.startsWith("/dev/tournament/")) return <>{children}</>;
 
   if (inPortal) {
     return (

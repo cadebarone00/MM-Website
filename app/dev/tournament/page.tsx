@@ -12,5 +12,5 @@ export const dynamic = "force-dynamic";
  */
 export default function GolfTripPreviewPage() {
   if (process.env.NODE_ENV !== "development") notFound();
-  return <GolfTripHome preview={GOLF_TRIP_PREVIEW_DRAFT} />;
+  return <GolfTripHome preview={GOLF_TRIP_PREVIEW_DRAFT} settingsHref="/dev/tournament/settings" />;
 }

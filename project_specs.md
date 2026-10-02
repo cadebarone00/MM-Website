@@ -1727,16 +1727,31 @@ The Maroon app is the front door. The main navigation is Explore · Tourneys · 
 
 ### Golf Trip Persistence: Create Golf Trip (owner request 2026-10-01, built; SQL not yet run in production)
 
-**What it is:** Review → **Create Golf Trip** saves the questionnaire to Supabase and opens that trip's real Golf Trip Home at `/golf-trips/<trip id>`.
+**Golf Trips are persisted entities.** The questionnaire draft (sessionStorage) is only the input. After Create Golf Trip, everything comes from Supabase.
 
+**Canonical route:** `/golf-trips/[tripId]` is the one Golf Trip Home for a saved trip. It's the same page whether the trip was just created, refreshed, reopened later, or picked from My Trips. It's rebuilt from Supabase on every request and never reads the questionnaire draft.
+
+**Core relationship:** Golf Trip → members → rounds → future trip-owned systems. `golf_trips.id` (the trip ID) is the central identifier: flights, lodging, transportation, activities, restaurants, courses, teams, pairings, tournament links and per-traveler info will each be their own table with a `golf_trip_id` reference. None are built.
+
+- **Flow:** Questionnaire → Review → Create Golf Trip → `POST /api/golf-trips` → `create_golf_trip` → trip ID → `/golf-trips/<id>`.
 - **Tables (`supabase/golf_trips.sql`):**
   - `golf_trips`: name, destination, start/end dates, expected traveler count, golf days, planned rounds, the four planning answers (`includes_tournament`, `lodging_plan`, `flight_plan`, `transportation_plan`, each `yes`/`no`/`undecided`), `status` (`planning`), `created_by`, and an empty `tournament_id` for attaching a real tournament later.
-  - `golf_trip_members`: travelers. The creator is the `organizer` (accepted). `profile_id` is optional so travelers without accounts fit later.
+  - `golf_trip_members`: the organizer and the members (`role` = `organizer` / `member`). `profile_id` is optional so travelers without accounts fit later. Its `id` is the traveler identity future per-traveler info can point at.
   - `golf_trip_rounds`: one row per round (day, date, typed course name).
-  - Future modules (flights, lodging, itinerary, …) reference `golf_trips(id)`. None are built.
-- **Writes:** only `create_golf_trip(profile, input)`, called by `POST /api/golf-trips` (service role) after `lib/platform/golfTripCreate.ts` validates the answers. It is all or nothing: a failure saves nothing. The browser sends a request id kept in the draft, so a double tap, a retry or going Back and tapping Create again returns the same trip. Changing any answer (a step's Next) starts a new request id.
-- **Reads:** `get_golf_trip(profile, trip)` returns the trip only to its members. Anyone else (or a missing trip) gets 404, and signed-out visitors go to Log In.
-- **RLS:** members can read their trip's rows. Nobody can insert/update/delete directly. Both functions are callable only by the server.
-- **Review page:** "Creating your trip…" while saving, with the button locked. Errors show in plain words (signed out → Log in link) and the answers stay in place.
-- **Tests:** `lib/platform/golfTripCreate.test.ts` (validation, all-or-nothing, double tap, members-only, RLS) and `scripts/test-golf-trip-create-browser.mjs` (`npm run test:browser:golf-trip`, after `next build`).
-- **Not built:** inviting travelers, editing a trip, trip lists on `/golf-trips`, destination map fields, cover photo, course search, and any flight/lodging/transportation records.
+  - Members and rounds are removed with their trip (`on delete cascade`).
+- **Writes:** only `create_golf_trip(profile, input)`, called by the server after `lib/platform/golfTripCreate.ts` validates the answers. It is all or nothing. The browser sends a request ID kept in the draft, so a double tap, a retry or Back → Create again returns the same trip. Changing any answer (a step's Next) starts a new request ID.
+- **Reads (`lib/platform/golfTripsServer.ts`, server only, user ID from the session):**
+  - `getGolfTrip(tripId)` returns the trip, its members and rounds, plus `viewer` (`role`, `isOrganizer`, `memberId`) for the signed-in person. It returns `signed-out` or `not-found` otherwise; a stranger gets the same `not-found` as a missing trip.
+  - `getUserGolfTrips()` lists every trip the signed-in person is on, soonest first: ID, name, destination, start/end dates, status, expected traveler count, member count, and their role. It's the data for My Trips. The selector UI is built elsewhere.
+- **RLS:** members can read their trip's rows. Nobody can insert/update/delete directly. `create_golf_trip`, `get_golf_trip` and `list_my_golf_trips` are callable only by the server.
+- **Review page:** "Creating your trip…" while saving, with the button locked. Errors show in plain words and the answers stay in place.
+- **Login return:** not supported today. `LoginForm` always goes to `/profile`, and `/login` reads no return parameter. The cleanest later fix is `/login?next=<path>`, with `LoginForm` accepting only same-site paths (starting with `/`, not `//`) and falling back to `/profile`. Review's "Log in" link and `/golf-trips/[tripId]`'s sign-in redirect would pass `next`. Not built.
+- **Old `/golf-trips/trip`:**
+  - It's the pre-persistence draft view. Nothing in the app links to it except its own `/golf-trips/trip/settings` page, and no test suite uses it (only the temporary screenshot script `_tmp-shot-trip.mjs` points at it).
+  - It shares only the `GolfTripHome` component, which `/golf-trips/[tripId]` and `/dev/tournament` also use.
+  - It's obsolete for the product and safe to remove once the Golf Trip design/settings work stops using it. Removal means deleting `app/golf-trips/trip/` and its `SiteChrome` entry; `GolfTripHome`'s draft fallback can then go too. Not removed yet.
+- **Delete Trip is handled separately (another tab)** and is not part of this work.
+- **Tests:**
+  - `lib/platform/golfTripCreate.test.ts`: validation, all-or-nothing, double tap, members-only, RLS, trip list, organizer/member.
+  - `scripts/test-golf-trip-create-browser.mjs` (`npm run test:browser:golf-trip`, after `next build`): create, double tap, refresh, reopen, members-only, signed-out.
+- **Not built:** Delete/Edit Trip, invitations, role management, trip lists UI, destination map fields, cover photo, course search, and any flight/lodging/transportation/team/tournament records.
