@@ -1,4 +1,7 @@
-import { SIDE_GAME_REGISTRY, type GameId } from "../golfTripGames";
+import { scoringConfig, validateScoring, type ScoringGameId } from "./scoringConfig";
+import { scoreSkins } from "./skins";
+export * from "./scoringConfig";
+import { SIDE_GAME_REGISTRY } from "../golfTripGames";
 import { scoreMatchPlay, calculateMatch } from "./matchPlay";
 import { scoreNinePoint } from "./ninePoint";
 import { scoreWolf } from "./wolf";
@@ -10,7 +13,8 @@ export type { GameSetup, HoleInput, HoleResult, GameResult } from "./types";
 export { wolfForHole } from "./wolf";
 export { sixesPairing } from "./sixes";
 
-export const GAME_ENGINES: Record<GameId, { participantCounts: number[]; scoreHole: Scorer }> = {
+export const GAME_ENGINES: Record<ScoringGameId, { participantCounts: number[]; scoreHole: Scorer }> = {
+  skins: { participantCounts: [1, 2, 3, 4], scoreHole: scoreSkins },
   "match-play": { participantCounts: [2, 4], scoreHole: scoreMatchPlay },
   "9-point": { participantCounts: [3], scoreHole: scoreNinePoint },
   wolf: { participantCounts: [3, 4, 5], scoreHole: scoreWolf },
@@ -20,9 +24,10 @@ export const GAME_ENGINES: Record<GameId, { participantCounts: number[]; scoreHo
 };
 
 export function validateSetup(setup: GameSetup): void {
+  if (setup.scoring) { scoringConfig(setup, setup.id); validateScoring(setup.scoring); }
   const engine = GAME_ENGINES[setup.id];
   const definition = SIDE_GAME_REGISTRY.find(game => game.id === setup.id);
-  if (!engine || !definition?.supportedScopes.includes(setup.scope)) throw new Error("Unsupported game or scope.");
+  if (!engine || !(setup.id === "skins" ? ["round", "tournament"].includes(setup.scope) : definition?.supportedScopes.includes(setup.scope))) throw new Error("Unsupported game or scope.");
   if (!engine.participantCounts.includes(setup.participants.length) || new Set(setup.participants).size !== setup.participants.length || setup.participants.some(id => !id.trim() || ["team-1", "team-2"].includes(id))) throw new Error("Invalid participants.");
   if (!setup.rounds.length || (setup.scope === "round" && setup.rounds.length !== 1) || new Set(setup.rounds.map(round => round.id)).size !== setup.rounds.length || setup.rounds.some(round => !round.id || !Number.isInteger(round.holes) || round.holes < 1 || round.holes > 18 || (setup.id === "round-robin" && round.holes !== 18))) throw new Error("Invalid configured rounds; Sixes requires 18 holes.");
   if (setup.teams) {
@@ -37,10 +42,12 @@ export function validateSetup(setup: GameSetup): void {
 export function scoreHole(setup: GameSetup, input: HoleInput): HoleResult {
   validateSetup(setup);
   const round = setup.rounds.find(round => round.id === input.roundId);
-  if (!round || !Number.isInteger(input.hole) || input.hole < 1 || input.hole > round.holes) throw new Error("Hole is outside the configured round.");
+  if (!round || !Number.isInteger(input.hole) || input.hole < 1 || (input.hole > round.holes && !(setup.id === "match-play" && scoringConfig(setup, "match-play").playoff))) throw new Error("Hole is outside the configured round.");
+  const handicap = scoringConfig(setup, setup.id).handicap;
+  if (input.par !== undefined && (!Number.isInteger(input.par) || input.par < 3 || input.par > 6)) throw new Error("Par must be between 3 and 6.");
   const scores = Object.fromEntries(setup.participants.map(id => {
-    const value = setup.handicap ? input.scores[id]?.net : input.scores[id]?.gross;
-    if (value === undefined || !Number.isSafeInteger(value) || Math.abs(value) > 99 || (!setup.handicap && value < 1)) throw new Error(`Provide a valid ${setup.handicap ? "preview net" : "gross"} score for ${id} (gross 1–99; net -99–99).`);
+    const value = handicap ? input.scores[id]?.net : input.scores[id]?.gross;
+    if (value === undefined || !Number.isSafeInteger(value) || Math.abs(value) > 99 || (!handicap && value < 1)) throw new Error(`Provide a valid ${handicap ? "preview net" : "gross"} score for ${id} (gross 1–99; net -99–99).`);
     return [id, value];
   }));
   return GAME_ENGINES[setup.id].scoreHole(setup, input, scores);
@@ -64,29 +71,55 @@ export function calculateGame(setup: GameSetup, inputs: HoleInput[]): GameResult
   for (const round of setup.rounds) {
     const roundHoles = scored.filter(hole => hole.roundId === round.id).sort((a, b) => a.hole - b.hole);
     if (setup.id === "match-play") {
-      const match = calculateMatch(roundHoles, round.holes);
+      const match = calculateMatch(roundHoles, round.holes, scoringConfig(setup, "match-play").playoff);
       matches.push({ ...match.result, roundId: round.id });
       holes.push(...match.counted);
       complete &&= match.result.status === "complete";
-      // Whole Tournament: one match point for a round win, half each for a tie.
+      const c = scoringConfig(setup, "match-play");
+      for (const hole of match.counted) for (const [id, points] of Object.entries(hole.points)) totals[id] += points;
       if (match.result.status === "complete") {
-        if (match.result.winner === undefined) { totals["team-1"] += 0.5; totals["team-2"] += 0.5; }
-        else totals[`team-${match.result.winner + 1}`] += 1;
+        if (match.result.winner === undefined) { totals["team-1"] += c.matchTie; totals["team-2"] += c.matchTie; }
+        else totals[`team-${match.result.winner + 1}`] += c.matchWin;
       }
     } else if (setup.id === "round-robin") {
       holes.push(...roundHoles);
+      const c = scoringConfig(setup, "round-robin");
+      const roundTotals: Record<string, number> = Object.fromEntries(setup.participants.map(id => [id, 0]));
+      for (const hole of roundHoles) for (const [id, points] of Object.entries(hole.points)) roundTotals[id] += points;
       for (let segment = 1; segment <= 3; segment++) {
         const segmentHoles = roundHoles.filter(hole => hole.segment === segment);
         const match = calculateMatch(segmentHoles, 6);
         matches.push({ ...match.result, roundId: round.id, segment });
         // Segment points are awarded at the end of its six holes, even if clinched early.
-        if (segmentHoles.length === 6 && match.result.winner !== undefined) for (const id of segmentHoles[0].sides![match.result.winner]) totals[id] += 1;
+        if (segmentHoles.length === 6) {
+          if (match.result.winner === undefined) for (const id of setup.participants) roundTotals[id] += c.segmentTie;
+          else for (const id of segmentHoles[0].sides![match.result.winner]) roundTotals[id] += c.segmentWin;
+        }
       }
+      if (roundHoles.length === round.holes) {
+        const max = Math.max(...Object.values(roundTotals));
+        const winners = setup.participants.filter(id => roundTotals[id] === max);
+        if (winners.length === 1) roundTotals[winners[0]] += c.roundBonus;
+      }
+      for (const id of setup.participants) totals[id] += roundTotals[id];
       complete &&= roundHoles.length === round.holes;
     } else {
       holes.push(...roundHoles);
       complete &&= roundHoles.length === round.holes;
-      for (const hole of roundHoles) for (const [id, points] of Object.entries(hole.points)) totals[id] += points;
+      let carried = 0;
+      const carryover = setup.id === "skins" ? scoringConfig(setup, "skins").carryover : setup.id === "wolf" ? scoringConfig(setup, "wolf").carryover : setup.id === "coin-flip" && scoringConfig(setup, "coin-flip").noSplit === "carryover";
+      for (const hole of roundHoles) {
+        const unresolved = setup.id === "coin-flip" ? hole.status === "no-split" : hole.status === "halved";
+        if (carryover && unresolved) carried++;
+        else if (carryover && hole.status === "scored") {
+          for (const id of Object.keys(hole.points)) {
+            // Skins carries only the skin value; bonuses belong to the winning hole.
+            hole.points[id] = setup.id === "skins" ? hole.points[id] + carried * scoringConfig(setup, "skins").skinValue : hole.points[id] * (carried + 1);
+          }
+          carried = 0;
+        }
+        for (const [id, points] of Object.entries(hole.points)) totals[id] += points;
+      }
     }
   }
   const max = Math.max(...Object.values(totals));

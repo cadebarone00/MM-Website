@@ -1,7 +1,9 @@
-import type { GameId, GameScope } from "../golfTripGames";
+import type { ScoringGameId, ScoringSettings } from "./scoringConfig";
+import type { GameScope } from "../golfTripGames";
 
 export interface GameSetup {
-  id: GameId;
+  id: ScoringGameId;
+  scoring?: ScoringSettings;
   scope: GameScope;
   participants: string[];
   handicap: boolean;
@@ -15,7 +17,8 @@ export interface HoleInput {
   roundId: string;
   hole: number;
   scores: Record<string, { gross: number; net?: number }>;
-  wolfChoice?: { kind: "lone" } | { kind: "partner"; partner: string };
+  par?: number;
+  wolfChoice?: { kind: "blind" } | { kind: "lone" } | { kind: "partner"; partner: string };
   flips?: Record<string, "heads" | "tails">;
 }
 export interface HoleResult {

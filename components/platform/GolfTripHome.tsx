@@ -2,7 +2,7 @@
 
 import { Suspense, use, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronRight, Clock, CloudRain, Flag, MapPin, MessageCircle, Plane, Plus, Settings, Sun, Thermometer, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronRight, Clock, CloudRain, Flag, MapPin, MessageCircle, Plane, Plus, Settings, Sun, Thermometer, Trash2, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import { normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import type { TripWeather } from "@/lib/platform/weather/types";
@@ -246,26 +246,136 @@ const ART = {
   photos: "linear-gradient(135deg,#e07a5f,#a8432c)",
 };
 
-/** Info tab trip logistics sections: a single entry under each category. */
-const FLIGHT_EVENTS: InfoEvent[] = [
-  { host: "Flights", title: "United 452 · Denver to San Diego", lines: [{ icon: Clock, text: "Today, 6:20AM" }, { icon: MapPin, text: "DEN → SAN" }], art: "linear-gradient(135deg,#6a1f2b,#a22d3d)", badge: "Set" },
-];
-const TRANSPORTATION_EVENTS: InfoEvent[] = [
-  { host: "Transportation", title: "Airport shuttle to the resort", lines: [{ icon: Clock, text: "Pickup at 10:15AM" }, { icon: MapPin, text: "Terminal B · 4 seats" }], art: "linear-gradient(135deg,#5a5d6b,#2e3240)", badge: "Set" },
-];
-const LODGING_EVENTS: InfoEvent[] = [
-  { host: "Lodging", title: "The Shorebreak Villas · 3 nights", lines: [{ icon: Clock, text: "Check-in 3:00PM" }, { icon: MapPin, text: "Oceanfront, 2 bedrooms" }], art: "linear-gradient(135deg,#c9b38b,#7d603a)", badge: "Set" },
+type InfoSectionKey = "gettingThere" | "lodging" | "transportation";
+
+type InfoEntry = {
+  id: string;
+  title: string;
+  host: string;
+  detail: string;
+  art: string;
+  badge?: InfoEvent["badge"];
+};
+
+const INITIAL_GETTING_THERE: InfoEntry[] = [
+  { id: "flight-1", host: "Getting there", title: "United 452 · Denver to San Diego", detail: "Today, 6:20AM · DEN → SAN", art: "linear-gradient(135deg,#6a1f2b,#a22d3d)", badge: "Set" },
+  { id: "flight-2", host: "Getting there", title: "Rental car pickup", detail: "Pickup 10:15AM · Airport lot B", art: "linear-gradient(135deg,#5a5d6b,#2e3240)", badge: "Set" },
 ];
 
-/** Info tab: keep a single section per travel category so the page reads as trip logistics. */
+const INITIAL_LODGING: InfoEntry[] = [
+  { id: "lodging-1", host: "Lodging", title: "The Shorebreak Villas · 3 nights", detail: "Check-in 3:00PM · Oceanfront, 2 bedrooms", art: "linear-gradient(135deg,#c9b38b,#7d603a)", badge: "Set" },
+];
+
+const INITIAL_TRANSPORTATION: InfoEntry[] = [
+  { id: "transport-1", host: "Transportation", title: "Airport shuttle to the resort", detail: "Pickup at 10:15AM · Terminal B · 4 seats", art: "linear-gradient(135deg,#5a5d6b,#2e3240)", badge: "Set" },
+];
+
+/** Info tab: trip logistics with add/remove controls and a delete-confirm flow. */
 function VenueEvents() {
+  const [gettingThere, setGettingThere] = useState(INITIAL_GETTING_THERE);
+  const [lodging, setLodging] = useState(INITIAL_LODGING);
+  const [transportation, setTransportation] = useState(INITIAL_TRANSPORTATION);
+  const [confirmDelete, setConfirmDelete] = useState<{ section: InfoSectionKey; entry: InfoEntry } | null>(null);
+  const [toast, setToast] = useState<{ section: InfoSectionKey; entry: InfoEntry; closing: boolean } | null>(null);
+  const [toastId, setToastId] = useState(0);
+
+  const addEntry = (section: InfoSectionKey) => {
+    const next: InfoEntry = {
+      id: `new-${section}-${Date.now()}`,
+      host: section === "gettingThere" ? "Getting there" : section === "lodging" ? "Lodging" : "Transportation",
+      title: section === "gettingThere" ? "Add a travel option" : section === "lodging" ? "Add lodging" : "Add transportation",
+      detail: section === "gettingThere" ? "Flight, bus, car, or another option" : section === "lodging" ? "Hotel, villa, or another stay" : "Shuttle, ride, or rental pickup",
+      art: section === "gettingThere" ? "linear-gradient(135deg,#6a1f2b,#a22d3d)" : section === "lodging" ? "linear-gradient(135deg,#c9b38b,#7d603a)" : "linear-gradient(135deg,#5a5d6b,#2e3240)",
+      badge: "Set",
+    };
+
+    if (section === "gettingThere") setGettingThere(current => [...current, next]);
+    else if (section === "lodging") setLodging(current => [...current, next]);
+    else setTransportation(current => [...current, next]);
+  };
+
+  const removeEntry = (section: InfoSectionKey, entry: InfoEntry) => {
+    setConfirmDelete(null);
+    if (section === "gettingThere") setGettingThere(current => current.filter(item => item.id !== entry.id));
+    else if (section === "lodging") setLodging(current => current.filter(item => item.id !== entry.id));
+    else setTransportation(current => current.filter(item => item.id !== entry.id));
+
+    const restored = { section, entry };
+    setToast({ section, entry, closing: false });
+    setToastId((value) => value + 1);
+
+    setTimeout(() => {
+      setToast((current) => current ? { ...current, closing: true } : current);
+    }, 4800);
+
+    setTimeout(() => {
+      setToast((current) => current && current.entry.id === entry.id ? null : current);
+    }, 6000);
+
+    const restore = () => {
+      if (section === "gettingThere") setGettingThere(current => [entry, ...current.filter(item => item.id !== entry.id)]);
+      else if (section === "lodging") setLodging(current => [entry, ...current.filter(item => item.id !== entry.id)]);
+      else setTransportation(current => [entry, ...current.filter(item => item.id !== entry.id)]);
+      setToast(null);
+    };
+
+    (globalThis as typeof globalThis & { __maroonUndo?: () => void }).__maroonUndo = restore;
+  };
+
+  useEffect(() => () => {
+    (globalThis as typeof globalThis & { __maroonUndo?: () => void }).__maroonUndo = undefined;
+  }, []);
+
+  const renderSection = (key: InfoSectionKey, title: string, entries: InfoEntry[], onAdd: () => void) => <section key={key} className={styles.infoSection}>
+    <div className={styles.infoHeaderRow}>
+      <h2 className={styles.eventsHeading}>{title}</h2>
+      <button type="button" className={styles.deleteSectionButton} aria-label={`Delete ${title}`} onClick={() => {
+        if (entries[0]) setConfirmDelete({ section: key, entry: entries[0] });
+      }}>
+        <Trash2 size={16} strokeWidth={2} aria-hidden />
+      </button>
+    </div>
+    {entries.map((entry) => <article key={entry.id} className={styles.infoEntry}>
+      <button type="button" className={styles.entryDelete} aria-label={`Delete ${entry.title}`} onClick={() => setConfirmDelete({ section: key, entry })}>
+        <Trash2 size={14} strokeWidth={2} aria-hidden />
+      </button>
+      <div className={styles.eventArt} style={{ background: entry.art }} aria-hidden />
+      <div className={styles.eventInfo}>
+        <p className={styles.eventHost}><span className={styles.eventAvatar} aria-hidden />{entry.host}</p>
+        <h3 className={styles.eventTitle}>{entry.title}</h3>
+        <p className={styles.eventMeta}><Clock size={14} strokeWidth={2} aria-hidden />{entry.detail}</p>
+      </div>
+    </article>)}
+    <button type="button" className={styles.addItemButton} onClick={onAdd}><Plus size={16} strokeWidth={2.5} aria-hidden />Add</button>
+  </section>;
+
   return <div className={styles.events}>
-    <h2 className={styles.eventsHeading}>Flights<ChevronRight size={20} strokeWidth={2.25} aria-hidden /></h2>
-    {FLIGHT_EVENTS.map((event) => <EventRow key={event.title} event={event} />)}
-    <h2 className={styles.eventsHeading}>Transportation<ChevronRight size={20} strokeWidth={2.25} aria-hidden /></h2>
-    {TRANSPORTATION_EVENTS.map((event) => <EventRow key={event.title} event={event} />)}
-    <h2 className={styles.eventsHeading}>Lodging<ChevronRight size={20} strokeWidth={2.25} aria-hidden /></h2>
-    {LODGING_EVENTS.map((event) => <EventRow key={event.title} event={event} />)}
+    {renderSection("gettingThere", "Getting there", gettingThere, () => addEntry("gettingThere"))}
+    {renderSection("lodging", "Lodging", lodging, () => addEntry("lodging"))}
+    {renderSection("transportation", "Transportation", transportation, () => addEntry("transportation"))}
+
+    {confirmDelete && <div className={styles.deleteOverlay} role="dialog" aria-modal="true" aria-label="Delete item confirmation">
+      <div className={styles.deleteDialog}>
+        <p className={styles.deletePrompt}>Are you sure?</p>
+        <button type="button" className={styles.cancelButton} onClick={() => setConfirmDelete(null)}>Cancel</button>
+        <button type="button" className={styles.deleteButton} onClick={() => {
+          removeEntry(confirmDelete.section, confirmDelete.entry);
+          setConfirmDelete(null);
+        }}>Delete</button>
+      </div>
+    </div>}
+
+    {toast && <div className={`${styles.toast} ${toast.closing ? styles.toastClosing : ""}`} role="status" aria-live="polite">
+      <div>
+        <strong>Item deleted</strong>
+        <span>{toast.entry.title}</span>
+      </div>
+      <button type="button" className={styles.toastUndo} onClick={() => {
+        const fn = (globalThis as typeof globalThis & { __maroonUndo?: () => void }).__maroonUndo;
+        if (fn) fn();
+        setToast(null);
+      }}>Undo</button>
+    </div>}
   </div>;
 }
 

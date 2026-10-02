@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
+import { GolfGameScoringSettings } from "./GolfGameScoringSettings";
 import { SIDE_GAME_REGISTRY } from "@/lib/platform/golfTripGames";
+import type { CompetitionRound } from "@/lib/platform/golfTripCompetitionPreview";
 import styles from "./GolfTripSettingsPreview.module.css";
 import tripStyles from "./GolfTripHome.module.css";
 import { GolfTripCompetition } from "./GolfTripCompetition";
@@ -17,14 +19,15 @@ const GAME_GROUPS = {
 } as const;
 const GAME_LOOKUP = [...GAME_GROUPS.Individual, ...GAME_GROUPS.Matches];
 
-/** Reference layout in the site's maroon palette; settings remain presentation only. */
+/** Reference layout with local game scoring settings in the site's maroon palette. */
 export function GolfTripSettingsPreview({ tripName }: { tripName: string }) {
   const [section, setSection] = useState("General");
   const [competitionOpen, setCompetitionOpen] = useState(false);
   const [gamesOpen, setGamesOpen] = useState(false);
   const [selectedRoundId, setSelectedRoundId] = useState<string | null>(null);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
-  const [gameSettings, setGameSettings] = useState({
+  const [expandedGameId, setExpandedGameId] = useState<string | null>(null);
+  const [gameSettings, setGameSettings] = useState<CompetitionRound>({
     id: "game-settings-preview",
     date: "2027-04-22",
     number: 1,
@@ -83,23 +86,29 @@ export function GolfTripSettingsPreview({ tripName }: { tripName: string }) {
           </div>}
       </div> : null}
 
-      {gamesOpen && !competitionOpen ? <div className={styles.competition}>
+      {<div hidden={!gamesOpen || competitionOpen} className={styles.competition}>
         <p className={styles.previewNote}>Preview only. Game setup resets on reload.</p>
         {selectedGame ? <GolfTripCompetition rounds={[gameSettings]} onChange={change => setGameSettings(current => ({ ...current, ...change }))} showBulk={false} /> : <div className={styles.gameGroups}>
           {Object.entries(GAME_GROUPS).map(([label, games]) => <section key={label} className={styles.gameGroup}>
-            <h2 className={styles.gameHeading}>{label}<ChevronRight size={18} strokeWidth={2.25} aria-hidden /></h2>
-            {games.map(game => <button key={game.id} type="button" className={styles.gameRow} onClick={() => { setSelectedGameId(game.id); setGameSettings(current => ({ ...current, course: current.course || "Desert Pines GC" })); }}>
-              <span className={styles.gameArt} style={{ background: label === "Individual" ? "linear-gradient(135deg,#7a1f2b,#3d0f16)" : "linear-gradient(135deg,#8b6b48,#4f3925)" }} aria-hidden />
-              <span className={styles.gameInfo}>
-                <span className={styles.gameLabel}>{game.name}</span>
-                <span className={styles.gameTitle}>{game.description}</span>
-                <span className={styles.gameMeta}>{game.players}</span>
-              </span>
-              <span className={styles.gameBadge}>Set</span>
-            </button>)}
+            <h2 className={styles.gameHeading}>{label}</h2>
+            {games.map(game => {
+              const isExpanded = expandedGameId === game.id;
+              return <div key={game.id} className={styles.gameRowWrapper}>
+                <button type="button" className={styles.gameRow} aria-expanded={isExpanded} onClick={() => setExpandedGameId(isExpanded ? null : game.id)}>
+                  <span className={styles.gameInfo}>
+                    <span className={styles.gameLabel}>{game.name}</span>
+                    <span className={styles.gameMeta}>{game.players}</span>
+                  </span>
+                  <span className={`${styles.gameToggle} ${isExpanded ? styles.gameToggleOpen : ""}`} aria-hidden>▾</span>
+                </button>
+                <div hidden={!isExpanded} className={styles.gameDropdown}>
+                  <GolfGameScoringSettings game={game.id} />
+                </div>
+              </div>;
+            })}
           </section>)}
         </div>}
-      </div> : null}
+      </div>}
 
       {!competitionOpen && !gamesOpen && <div className={styles.grid}>
         {cards.map((title, index) => {

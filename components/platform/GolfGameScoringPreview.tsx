@@ -1,16 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { calculateGame, previewScores, scoreHole, sixesPairing, wolfForHole, setupTeams, type GameSetup, type HoleInput } from "@/lib/platform/game-engine";
+import { calculateGame, previewScores, scoreHole, sixesPairing, wolfForHole, setupTeams, scoringConfig, needsGrossScores, type GameSetup, type HoleInput } from "@/lib/platform/game-engine";
 import { GAME_PREVIEW_PLAYERS, GAME_PREVIEW_ROUNDS } from "@/lib/platform/golfTripGames";
 import styles from "./GolfTripGames.module.css";
 
 const name = (id: string) => id === "team-1" ? "Team 1" : id === "team-2" ? "Team 2" : GAME_PREVIEW_PLAYERS.find(player => player.id === id)?.name ?? id;
-export function GolfGameScoringPreview({ setup }: { setup: GameSetup }) {
+export function GolfGameScoringPreview({ setup, onStart }: { setup: GameSetup; onStart?: () => void }) {
   const [inputs, setInputs] = useState<HoleInput[]>([]);
   const [scores, setScores] = useState<Record<string, { gross: string; net: string }>>(() => Object.fromEntries(setup.participants.map(id => [id, { gross: "", net: "" }])));
   const [partner, setPartner] = useState("lone");
   const [flips, setFlips] = useState<Record<string, "heads" | "tails">>(() => Object.fromEntries(setup.participants.map((id, index) => [id, index % 2 ? "tails" : "heads"])));
+  const [par, setPar] = useState(4);
+  const handicap = scoringConfig(setup, setup.id).handicap;
+  const needsGross = handicap && needsGrossScores(setup);
   const [error, setError] = useState("");
   const result = calculateGame(setup, inputs);
   const round = setup.rounds.find(item => {
@@ -21,12 +24,12 @@ export function GolfGameScoringPreview({ setup }: { setup: GameSetup }) {
   const wolf = wolfForHole(setup, hole);
   const sides = setup.id === "round-robin" ? sixesPairing(setup, hole) : ["match-play", "vegas"].includes(setup.id) ? setupTeams(setup) : undefined;
   const input: HoleInput = {
-    roundId: round?.id ?? setup.rounds[0].id, hole,
+    roundId: round?.id ?? setup.rounds[0].id, hole, par,
     scores: Object.fromEntries(setup.participants.map(id => [id, { gross: scores[id].gross === "" ? NaN : Number(scores[id].gross), net: scores[id].net === "" ? undefined : Number(scores[id].net) }])),
-    wolfChoice: partner === "lone" ? { kind: "lone" } : { kind: "partner", partner }, flips,
+    wolfChoice: partner === "blind" ? { kind: "blind" } : partner === "lone" ? { kind: "lone" } : { kind: "partner", partner }, flips,
   };
   let draft: ReturnType<typeof scoreHole> | undefined;
-  try { if (round) draft = scoreHole(setup, input); } catch { /* Empty/invalid drafts are not committed. */ }
+  try { if (round) draft = calculateGame(setup, [...inputs, input]).holes.at(-1); } catch { /* Empty/invalid drafts are not committed. */ }
   const displayed = draft ?? result.holes.at(-1);
   const simulate = () => {
     setScores(Object.fromEntries(Object.entries(previewScores(setup.participants, hole)).map(([id, score]) => [id, { gross: String(score.gross), net: String(score.net) }])));
@@ -36,26 +39,29 @@ export function GolfGameScoringPreview({ setup }: { setup: GameSetup }) {
     try {
       scoreHole(setup, input);
       setInputs([...inputs, input]);
+      onStart?.();
       setScores(Object.fromEntries(setup.participants.map(id => [id, { gross: "", net: "" }])));
       setPartner("lone"); setError("");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to score hole."); }
   };
   return <section className={styles.configuration} aria-label="DEV scoring preview">
-    <h4>DEV scoring preview</h4><p>Local scores only. Handicap {setup.handicap ? "On: enter provided preview net scores" : "Off: gross scores"}. Reload resets play.</p>
+    <h4>DEV scoring preview</h4><p>Local scores only. Handicap {handicap ? "On: enter provided preview net scores" : "Off: gross scores"}. Reload resets play.</p>
     {round && <><p><strong>{GAME_PREVIEW_ROUNDS.find(item => item.id === round.id)?.course ?? round.id} · Hole {hole}/{round.holes}</strong></p>
       {sides && <p>{setup.id === "round-robin" ? `Six-hole segment ${Math.ceil(hole / 6)}: ` : ""}Team 1: {sides[0].map(name).join(" + ")} vs Team 2: {sides[1].map(name).join(" + ")}</p>}
-      {setup.id === "wolf" && <label className={styles.label}>Wolf: {name(wolf)}<select value={partner} onChange={event => setPartner(event.target.value)}><option value="lone">Lone Wolf</option>{setup.participants.filter(id => id !== wolf).map(id => <option key={id} value={id}>{name(id)}</option>)}</select></label>}
+      {setup.id === "wolf" && <label className={styles.label}>Wolf: {name(wolf)}<select value={partner} onChange={event => setPartner(event.target.value)}><option value="lone">Lone Wolf</option>{scoringConfig(setup, "wolf").blindEnabled && <option value="blind" disabled={partner !== "blind" && Object.values(scores).some(score => score.gross !== "" || score.net !== "")}>Blind Wolf (choose before scores)</option>}{setup.participants.filter(id => id !== wolf).map(id => <option key={id} value={id}>{name(id)}</option>)}</select></label>}
+      {["wolf", "vegas", "skins"].includes(setup.id) && <label className={styles.label}>Hole par<input type="number" min={3} max={6} value={par} onChange={event => { const next = event.target.valueAsNumber; if (Number.isInteger(next) && next >= 3 && next <= 6) setPar(next); }} /></label>}
       {setup.participants.map(id => <div key={id} className={styles.scoreRow}><strong>{name(id)}</strong>
-        <label className={styles.label}>{setup.handicap ? "Preview net" : "Gross"}<input type="number" min={setup.handicap ? -99 : 1} max={99} step={1} value={scores[id][setup.handicap ? "net" : "gross"]} onChange={event => { const field = setup.handicap ? "net" : "gross"; setScores(current => ({ ...current, [id]: { ...current[id], [field]: event.target.value } })); }} /></label>
+        <label className={styles.label}>{handicap ? "Preview net" : "Gross"}<input type="number" min={handicap ? -99 : 1} max={99} step={1} value={scores[id][handicap ? "net" : "gross"]} onChange={event => { const field = handicap ? "net" : "gross"; setScores(current => ({ ...current, [id]: { ...current[id], [field]: event.target.value } })); }} /></label>
+        {needsGross && <label className={styles.label}>Gross for bonuses / flips<input type="number" min={1} max={99} step={1} value={scores[id].gross} onChange={event => setScores(current => ({ ...current, [id]: { ...current[id], gross: event.target.value } }))} /></label>}
         {setup.id === "coin-flip" && <label className={styles.label}>Flip<select value={flips[id]} onChange={event => setFlips(current => ({ ...current, [id]: event.target.value as "heads" | "tails" }))}><option value="heads">Heads</option><option value="tails">Tails</option></select></label>}
       </div>)}
       <div className={styles.choices}><button type="button" onClick={simulate}>Simulate hole scores</button><button type="button" onClick={save}>Record hole</button></div>
     </>}
     {error && <p role="alert">{error}</p>}
     {displayed && <div aria-live="polite"><strong>{draft ? "Current hole preview" : "Last recorded hole"}: {displayed.hole}</strong>
-      <p>{displayed.status === "no-split" ? "No team split — no points" : displayed.status === "halved" ? "Halved — no points" : displayed.winner !== undefined ? `${setup.id === "coin-flip" ? displayed.winner === 0 ? "Heads" : "Tails" : `Team ${displayed.winner + 1}`} wins hole` : "9 Point allocation"}</p>
+      <p>{displayed.status === "no-split" ? "No team split" : displayed.status === "halved" ? "Halved" : displayed.winner !== undefined ? `${setup.id === "coin-flip" ? displayed.winner === 0 ? "Heads" : "Tails" : `Team ${displayed.winner + 1}`} wins hole` : setup.id === "skins" ? "Skin awarded" : "9 Point allocation"}</p>
       {displayed.sideScores && <p>{setup.id === "vegas" ? "Vegas team numbers" : "Best scores"}: {displayed.sideScores.join(" vs ")}</p>}
-      <p>Hole points: {Object.entries(displayed.points).filter(([, points]) => points !== 0).map(([id, points]) => `${name(id)} +${points}`).join(" · ") || (setup.id === "match-play" || setup.id === "round-robin" ? "0 (match holes count toward Up / Down)" : "0")}</p>
+      <p>Hole points: {Object.entries(displayed.points).filter(([, points]) => points !== 0).map(([id, points]) => `${name(id)} ${points >= 0 ? "+" : ""}${points}`).join(" · ") || (setup.id === "match-play" || setup.id === "round-robin" ? "0 (match holes count toward Up / Down)" : "0")}</p>
     </div>}
     <div role="status"><strong>{result.status === "complete" ? "Final result" : "Running result"}: {result.label.replace(/team-1/g, "Team 1").replace(/team-2/g, "Team 2").replace(/\b(you|sam|jordan|casey|riley|avery|taylor|jamie)\b/g, id => name(id))}</strong>
       <p>Leaders: {result.leaders.map(name).join(" · ")}</p>
