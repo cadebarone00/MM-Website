@@ -11,6 +11,7 @@ import { flightCounts, flightTime, type FlightSummary } from "@/lib/platform/gol
 /** The Info tab's Flights card: the viewer's flight summary, and the Flights page it opens (null = not a link). */
 export interface TripFlights { summary: FlightSummary; href: string | null }
 import { GolfCourseWeather, GolfMatchup, GolfTripLeaderboard, GolfTripMatch } from "./GolfTripMatch";
+import { GolfTripScoring } from "./GolfTripScoring";
 import styles from "./GolfTripHome.module.css";
 
 const TABS = ["Home", "Golf", "Venue", "Info"] as const;
@@ -43,7 +44,11 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   const dates = tripDates(draft.startDate, draft.endDate);
   const dateRange = dates.length > 0 ? `${shortTripDate(dates[0])} – ${shortTripDate(dates[dates.length - 1])}` : "";
 
-  return <main className={styles.page}>
+  // Scoring starts from the preview's featured golfer (the organizer) so the sheet has a round in progress to show.
+  const you = previewMatch?.matches[0]?.left.name;
+  const yourHoles = previewMatch?.leaderboard.find((row) => row.golfer.name === you)?.holes;
+
+  return <main className={`${styles.page} ${styles.pageWithScoring}`}>
     {backHref && <Link href={backHref} className={styles.desktopBack}><ArrowLeft size={16} strokeWidth={2} aria-hidden />Golf Trips</Link>}
     <header className={styles.header}>
       {/* Look only for now: chat isn't built yet. */}
@@ -59,9 +64,10 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
       {tab === "Home" ? <HomeSections draft={draft} dates={dates} dateRange={dateRange} weather={weather} />
         : tab === "Golf" ? <GolfSlides previewMatch={previewMatch} />
         : tab === "Venue" ? <VenueEvents />
-        : tab === "Info" ? <InfoAccount flights={flights} />
+        : tab === "Info" ? <InfoAccount destination={draft.destination} flights={flights} />
         : <Card title={tab}><Empty>Coming soon</Empty></Card>}
     </div>
+    <GolfTripScoring par={previewMatch?.par} initialHoles={yourHoles} />
   </main>;
 }
 
@@ -278,19 +284,17 @@ function FlightsCard({ flights }: { flights?: TripFlights }) {
 }
 
 /**
- * Info tab, banking-app style (layout only, made-up numbers): a dark green top with the balance, a swipeable row of
- * account cards, a promo card with dots, then "Financial tools". It runs edge to edge and down to the bottom of the screen.
+ * Info tab, banking-app style (layout only, made-up numbers): a maroon top saying "Your trip to {destination}", a swipeable
+ * row of account cards, a promo card with dots, then "Financial tools". It runs edge to edge and down to the bottom of the screen.
  */
-function InfoAccount({ flights }: { flights?: TripFlights }) {
+function InfoAccount({ destination, flights }: { destination: string; flights?: TripFlights }) {
   return <div className={styles.account}>
     <div className={styles.accountTop}>
       <div className={styles.accountBar}>
         <button type="button" className={styles.accountBell} aria-label="Notifications"><Bell size={20} strokeWidth={1.75} aria-hidden /></button>
         <button type="button" className={styles.accountPill}>Get $150</button>
       </div>
-      <p className={styles.accountLabel}>Available</p>
-      <p className={styles.accountBalance}>$533.23<ChevronRight size={22} strokeWidth={2} aria-hidden /></p>
-      <p className={styles.accountLink}>$20.00 overdraft coverage<ChevronRight size={14} strokeWidth={2.5} aria-hidden /></p>
+      <p className={styles.accountLabel}>{destination ? `Your trip to ${destination}` : "Your trip"}</p>
     </div>
     <div className={styles.accountCards}>
       <FlightsCard flights={flights} />

@@ -2028,3 +2028,13 @@ create index if not exists golf_trip_flights_member_idx on public.golf_trip_flig
 - `/settings` now has an **Account** card: "Signed in as <email>" and a **Sign Out** button. It opens the existing "Are you sure?" popup (`SignOutConfirmDialog`, same as the account menu); Sign Out ends the session and goes to the home page.
 - Signed-out visitors see "You're not signed in." and a **Log In** button instead.
 - Files: `app/settings/page.tsx`, `components/settings/SignOutButton.tsx` (new). No other settings yet.
+
+### Round: Golf Trips page — money-app dashboard look (owner request 2026-10-02, built)
+
+Replaces the photo drop-down panel from earlier the same day. Modeled on the owner's money-app screenshot, in maroon instead of pink:
+- **Maroon band** at the top (radial maroon gradient) with the title **Your Next Golf Trip / Just Got Better** (Spectral, centered). No top bar on phones; wide screens (1024px+, no bottom menu) keep the menu and account buttons see-through over the band.
+- **Create a Golf Trip** is the big white card overlapping the band's bottom edge: small label "Plan something new", big "Create a Golf Trip", the course photo where the reference has its chart, then a "Start planning ›" row. The whole card is the link (sign-in prompt if signed out).
+- **Join a Trip** is its own white card under it (stacked, no sliding).
+- **Upcoming** and **Past Trips** replace the reference's account lists: small caps heading, then a white card of rows (rounded-square icon, trip name with destination · players · role, short dates on the right, ›). Empty: "No upcoming trip yet — Start +" (opens Create) / "No past trips yet". Signed out: one "Log in to see your trips — Log in ›" row.
+- Light page background (#f3f0eb), white cards with soft shadows.
+- Files: `app/golf-trips/page.tsx`, `app/golf-trips/page.module.css` (Join a Trip keeps using its classes), `components/nav/SiteChrome.tsx`.

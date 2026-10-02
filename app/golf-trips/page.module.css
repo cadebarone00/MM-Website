@@ -1,72 +1,117 @@
-/* Golf Trip Home: maroon top to bottom (like Tourneys). The negative bottom margin runs the
-   maroon through the site's bottom-menu padding (SITE_BOTTOM_NAV_CONTENT_CLASS) on phones. */
-
-/* Scoped by the mounted page so this does not affect other platform headers (same as Pick'ems). */
-:global(header):has(+ .page) {
-  background: #1d0b11;
-  border-bottom: 0;
-}
+/* Golf Trips, money-app dashboard look: a maroon band at the top, the Create a Golf Trip card overlapping its bottom
+   edge, Join a Trip under it, then "accounts"-style groups of white cards for Upcoming and Past trips on a light page.
+   The negative bottom margin runs the page colour through the site's bottom-menu padding on phones. */
 
 .page {
-  min-height: calc(100svh - 64px);
+  min-height: 100svh;
   margin-bottom: calc(-5.75rem - env(safe-area-inset-bottom));
-  padding: 24px max(16px, calc((100% - 560px) / 2)) calc(48px + 5.75rem + env(safe-area-inset-bottom));
-  background: #1d0b11;
-  color: #fbf8f1;
+  padding: 0 0 calc(40px + 5.75rem + env(safe-area-inset-bottom));
+  background: #f3f0eb;
+  color: #380001;
 }
 
+/* Maroon instead of the reference's pink. The Create card overlaps its bottom by 110px. */
+.band {
+  padding: calc(28px + env(safe-area-inset-top)) max(16px, calc((100% - 560px) / 2)) 138px;
+  background: radial-gradient(120% 120% at 50% 0%, #6b161a 0%, #4a0508 45%, #380001 100%);
+  color: #fbf8f1;
+}
+.title {
+  margin: 0;
+  font: 400 clamp(30px, 8.5vw, 44px)/1.05 var(--font-spectral), Georgia, serif;
+  letter-spacing: -0.045em;
+  text-align: center;
+  text-wrap: balance;
+}
+
+/* Wide screens (no bottom menu) keep the menu and account buttons (SiteChrome), see-through over the band, with the
+   title moved down below them. Scoped by the mounted page so other headers are untouched. */
+:global(div):has(+ .page) > :global(header) { background: transparent; border-bottom: 0; }
+@media (min-width: 1024px) {
+  .page { margin-bottom: 0; padding-bottom: 48px; }
+  .band { padding-top: 80px; }
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: -110px;
+  padding: 0 max(16px, calc((100% - 560px) / 2));
+}
+
+/* Shared white card look (the reference's cards): rounded, soft shadow. */
+.create,
+.join,
+.card {
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 6px 24px rgba(56, 0, 1, 0.1), 0 1px 3px rgba(56, 0, 1, 0.06);
+  color: #380001;
+}
+
+/* The big card: Create a Golf Trip. Small label, big title, the course photo where the reference has its chart,
+   then a "View Spending"-style row. The whole card is the link. */
 .create {
   display: flex;
-  align-items: center;
-  gap: 14px;
-  min-height: 72px;
-  padding: 0 20px;
-  border-radius: 18px;
-  background: #fbf8f1;
-  color: var(--color-maroon-900);
-  font: 700 18px/1.2 var(--font-barlow), sans-serif;
-  letter-spacing: -0.01em;
-  transition: background 0.15s ease, transform 0.15s ease;
+  flex-direction: column;
+  padding: 18px 18px 0;
+  transition: transform 0.15s ease;
 }
-.create:hover { background: #f3ecdd; }
 .create:active { transform: scale(0.99); }
-.create:focus-visible { outline: 3px solid #dcc495; outline-offset: 3px; }
+.create:focus-visible { outline: 3px solid #c9a86e; outline-offset: 3px; }
+.createLabel { font: 500 13px/1.3 var(--font-barlow), sans-serif; color: #38000199; }
+.createTitle { margin-top: 2px; font: 700 28px/1.15 var(--font-barlow), sans-serif; letter-spacing: -0.02em; }
+.createPhoto {
+  position: relative;
+  display: block;
+  height: 132px;
+  margin-top: 14px;
+  overflow: hidden;
+  border-radius: 14px;
+}
+.createPhoto img { object-fit: cover; object-position: center 62%; }
+.createRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  margin: 14px -18px 0;
+  padding: 0 16px 0 18px;
+  border-top: 1px solid #38000114;
+  font: 600 16px/1.2 var(--font-barlow), sans-serif;
+}
 
-.plus {
+/* Rounded-square icon on the left of every row, like the reference's account icons. */
+.iconBox {
   display: grid;
+  flex: none;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--color-maroon-700);
-  color: #fbf8f1;
+  width: 34px;
+  height: 34px;
+  border: 1.5px solid #38000140;
+  border-radius: 9px;
+  color: #380001;
 }
+.rowArrow { flex: none; margin-left: auto; color: #38000188; }
 
-.trips { margin-top: 32px; }
-
-/* Join a Trip: sits under Create; a pasted Trip ID or trip link opens that trip (no joining yet). */
-.join {
-  margin-top: 12px;
-  padding: 18px 20px 20px;
-  border-radius: 18px;
-  background: #fbf8f1;
-  color: var(--color-maroon-900);
-}
+/* Join a Trip: its own card under Create (no sliding). A pasted Trip ID or trip link opens that trip (no joining yet). */
+.join { padding: 18px 18px 20px; }
 .joinLabel { display: block; font: 700 18px/1.2 var(--font-barlow), sans-serif; letter-spacing: -0.01em; }
-.joinHint { margin: 4px 0 12px; color: #380001aa; font-size: 14px; line-height: 1.5; }
+.joinHint { margin: 4px 0 12px; color: #38000199; font-size: 14px; line-height: 1.5; }
 .joinRow { display: flex; gap: 8px; }
 .joinInput {
   flex: 1;
   min-width: 0;
   min-height: 48px;
   padding: 0 14px;
-  border: 1px solid #38000133;
+  border: 1px solid #38000126;
   border-radius: 12px;
-  background: #fff;
+  background: #f8f6f2;
   color: #380001;
   font-size: 16px;
 }
-.joinInput:focus-visible { outline: 3px solid #dcc495; outline-offset: 1px; }
+.joinInput:focus-visible { outline: 3px solid #c9a86e; outline-offset: 1px; }
 .joinButton {
   flex: none;
   min-height: 48px;
@@ -79,61 +124,45 @@
   cursor: pointer;
 }
 .joinButton:hover { background: var(--color-maroon-900); }
-.joinButton:focus-visible { outline: 3px solid #dcc495; outline-offset: 2px; }
+.joinButton:focus-visible { outline: 3px solid #c9a86e; outline-offset: 2px; }
 .joinError { margin: 8px 0 0; color: #a3122a; font-size: 14px; line-height: 1.4; }
 
+/* "ACCOUNTS"-style small caps heading over each group. */
 .heading {
-  margin: 0 0 12px;
-  color: #ead8b8;
-  font: 600 14px/1.4 var(--font-barlow), sans-serif;
-  letter-spacing: 0.04em;
+  margin: 20px 4px 8px;
+  font: 700 12px/1.3 var(--font-barlow), sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #380001cc;
 }
 
-.card {
-  overflow: hidden;
-  border-radius: 20px;
-  background: #fbf8f1;
-  color: #380001;
-}
+.card { overflow: hidden; }
+.tripList { margin: 0; padding: 0; list-style: none; }
+.tripList li + li .row { border-top: 1px solid #38000112; }
 
-.group + .group { border-top: 1px solid #38000118; }
-
-.label {
-  margin: 0;
-  padding: 18px 20px 4px;
-  font: 700 16px/1.4 var(--font-barlow), sans-serif;
-  letter-spacing: 0.01em;
-}
-
-.note {
-  margin: 0;
-  padding: 0 20px 18px;
-  color: #380001aa;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.noteLink { color: #380001; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
-
-/* My Trips rows: each saved trip opens /golf-trips/<id>. */
-.tripList { margin: 0; padding: 0 0 6px; list-style: none; }
-.trip {
+/* One row: icon, name (and details), value on the right, arrow. */
+.row {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 64px;
-  padding: 10px 16px 10px 20px;
+  min-height: 60px;
+  margin: 0;
+  padding: 10px 14px 10px 16px;
   color: inherit;
+  font: 500 15px/1.4 var(--font-barlow), sans-serif;
   transition: background 0.15s ease;
 }
-.tripList li + li .trip { border-top: 1px solid #38000112; }
-.trip:hover { background: #f3ecdd; }
-.trip:focus-visible { outline: 3px solid #dcc495; outline-offset: -3px; }
-.tripText { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
-.tripName { font: 700 17px/1.3 var(--font-barlow), sans-serif; overflow-wrap: anywhere; }
-.tripMeta { color: #380001aa; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
-.tripArrow { flex: none; color: #38000188; }
-
-@media (min-width: 1024px) {
-  .page { margin-bottom: 0; padding-bottom: 48px; }
+a.row:hover { background: #faf7f2; }
+a.row:focus-visible { outline: 3px solid #c9a86e; outline-offset: -3px; }
+.rowText { display: flex; flex: 1; flex-direction: column; gap: 1px; min-width: 0; }
+.rowName { font: 600 16px/1.3 var(--font-barlow), sans-serif; overflow-wrap: anywhere; }
+.rowMeta { color: #38000199; font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
+.rowValue {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  font: 600 15px/1.2 var(--font-barlow), sans-serif;
+  color: var(--color-maroon-700);
 }
+.rowValue + .rowArrow { margin-left: 0; }

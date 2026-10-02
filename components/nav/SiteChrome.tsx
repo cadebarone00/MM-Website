@@ -75,8 +75,12 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
   // Main platform pages share a compact title beside the menu icon.
   if (pathname === "/") return <><PlatformHeader home title="The Maroon" />{children}</>;
   if (pathname === "/pickems" || pathname === "/profile") return <><PlatformHeader title={pathname === "/pickems" ? "Pick'ems" : "Profile"} />{children}</>;
-  // Golf Trips: menu and account buttons only, no title (owner request 2026-10-02).
-  if (pathname === "/golf-trips") return <><PlatformHeader wordmark={false} />{children}</>;
+  // Golf Trips on phones has no top bar: its photo panel and title run to the top of the screen. Wide screens have no
+  // bottom menu, so they keep the menu and account buttons, floating transparent over the photo (owner request 2026-10-02).
+  if (pathname === "/golf-trips") return <>
+    <div className="hidden lg:absolute lg:inset-x-0 lg:top-0 lg:z-10 lg:block"><PlatformHeader wordmark={false} /></div>
+    {children}
+  </>;
   // The Golf Trip questionnaire has no header, like Create Tournament.
   if (pathname === "/golf-trips/new" || pathname.startsWith("/golf-trips/new/")) return <>{children}</>;
   // Golf Trip Home (draft and saved trips), Trip Settings and their local dev preview have no top nav either.
