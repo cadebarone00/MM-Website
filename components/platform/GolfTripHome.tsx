@@ -104,7 +104,7 @@ function HomeSections({ draft, dates, dateRange, weather }: { draft: Record<stri
 
   const heading = (text: string) => <h4 className={styles.eventsHeading}>{text}<ChevronRight size={20} strokeWidth={2.25} aria-hidden /></h4>;
 
-  const nextImportantEvent = rounds[0] ? {
+  const nextImportantEvent: InfoEvent | null = rounds[0] ? {
     host: `Round ${rounds[0].number}`,
     title: `${draft[`round${rounds[0].number}Course`] || "Golf day"} · ${rounds[0].date ? shortTripDate(rounds[0].date) : `Day ${rounds[0].dayNumber}`}`,
     art: ART.golf,
@@ -119,7 +119,10 @@ function HomeSections({ draft, dates, dateRange, weather }: { draft: Record<stri
         {heading("Rounds")}
         {nextImportantEvent ? <EventRow event={{ ...nextImportantEvent, lines: [{ icon: CalendarDays, text: `${nextImportantEvent.title}` }] }} /> : <EventRow event={{ host: "Golf", title: "Round 1 · Course TBD", art: ART.golf, icon: Flag, badge: "To do", lines: [{ icon: CalendarDays, text: "Add the tee time and course" }] }} />}
         {heading("Tournament")}
-        <EventRow event={{ host: "Tournament", title: tournament || "Friendly side game", art: ART.tournament, icon: Trophy, badge: tournament ? "Set" : "To do", lines: tournament ? [{ icon: CalendarDays, text: tournament }] : [{ icon: Trophy, text: "Add the event info or side match" }] }} />
+        {(() => {
+          const tournamentBadge: InfoEvent['badge'] = tournament ? "Set" : "To do";
+          return <EventRow event={{ host: "Tournament", title: tournament || "Friendly side game", art: ART.tournament, icon: Trophy, badge: tournamentBadge, lines: tournament ? [{ icon: CalendarDays, text: tournament }] : [{ icon: Trophy, text: "Add the event info or side match" }] }} />;
+        })()}
       </>,
     },
     "The Trip": {
