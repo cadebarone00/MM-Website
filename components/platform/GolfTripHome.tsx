@@ -78,8 +78,8 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
           </div>}
           <GolfSlides key={String(competitive)} previewMatch={previewMatch} competitive={competitive} />
         </>
-        : tab === "Venue" ? <VenueEvents />
-        : tab === "Info" ? <HomeSections draft={draft} dates={dates} dateRange={dateRange} weather={weather} />
+        : tab === "Venue" ? <HomeSections draft={draft} dates={dates} dateRange={dateRange} weather={weather} />
+        : tab === "Info" ? <VenueEvents />
         : <Card title={tab}><Empty>Coming soon</Empty></Card>}
     </div>
     <GolfTripScoring par={previewMatch?.par} initialHoles={yourHoles} />
