@@ -111,7 +111,7 @@ function netRanked(rows: LeaderboardRow[]): LeaderboardRow[] {
 
 /**
  * Above the Golf slide tabs: the Match box for the featured match (the first one: the organizer's). Each side shows the
- * golfer's initials, name and points earned ("3 PTS"), with the match play standing ("2 UP" / "AS") toward the middle; the match status
+ * golfer's initials, name and points earned ("3 PTS"), with the match play standing ("2 UP" / "AS") in its top outer corner; the match status
  * (tee time, THRU + holes, or F) sits at the top center in plain cream text. The leader's half fills with their team color from the box's edge, rounding
  * off before the status box, like the Match slide rows but taller. Below: one win-probability bar that fills from the
  * center toward the favorite, then each side's round stats, FWY % / GREEN % / PUTTS / SCORE to par, labels above a
@@ -245,15 +245,13 @@ export function GolfCourseWeather({ match }: { match: GolfMatchPreview }) {
   </section>;
 }
 
-/** One half of the Match box: initials + standing on top, then name and points earned; filled in team color when leading. */
+/** One half of the Match box: the standing ("2 UP" / "AS") in its top outer corner, then initials, name and points earned; filled in team color when leading. */
 function PlayerSide({ golfer, align, standing }: { golfer: GolfMatchGolfer; align: "left" | "right"; standing: GolfMatchStanding }) {
   const leading = standing?.leader === align;
   const label = !standing ? "" : standing.leader === null ? "AS" : leading ? `${standing.up} UP` : "";
   return <div className={`${styles.side} ${styles[align]} ${leading ? styles.sideLeading : ""}`}>
-    <div className={styles.sideTop}>
-      <span className={`${styles.avatar} ${align === "right" ? styles.avatarRight : ""}`}>{initials(golfer.name)}</span>
-      <span className={styles.boxStanding}>{label}</span>
-    </div>
+    <span className={styles.boxStanding}>{label}</span>
+    <span className={`${styles.avatar} ${align === "right" ? styles.avatarRight : ""}`}>{initials(golfer.name)}</span>
     <p className={styles.teamName}>{golfer.name}</p>
     {golfer.points !== undefined && <p className={styles.teamMeta}>{golfer.points} {golfer.points === 1 ? "PT" : "PTS"}</p>}
   </div>;
@@ -266,13 +264,22 @@ function initials(name: string): string {
 
 /**
  * Win probability as one bar, split at the center line: at 50 / 50 it's empty, and the favorite's team color fills
- * out from the center toward their side (all the way at 100%). Mirrored, so either side can fill.
+ * out from the center toward their side (all the way at 100%). Mirrored, so either side can fill. Over the center: the
+ * favorite's % in their team color with a ‹ or › pointing to their side; white "50%" when even.
  */
 function WinBar({ left, right }: { left: number; right: number }) {
   const fill = (pct: number) => `${Math.min(Math.max((pct - 50) * 2, 0), 100)}%`;
-  return <div className={styles.winBar} role="img" aria-label={`Win probability ${left}% to ${right}%`}>
-    <span className={styles.winHalf}><span className={styles.winFillLeft} style={{ width: fill(left) }} /></span>
-    <span className={styles.winHalf}><span className={styles.winFillRight} style={{ width: fill(right) }} /></span>
+  const leader = left > right ? "left" : right > left ? "right" : null;
+  return <div className={styles.win} role="img" aria-label={`Win probability ${left}% to ${right}%`}>
+    <span className={`${styles.winPct} ${leader ? styles[`winPct_${leader}`] : ""}`} aria-hidden>
+      {leader === "left" && <span className={styles.winArrow}>&lsaquo;</span>}
+      {leader === "right" ? right : left}%
+      {leader === "right" && <span className={styles.winArrow}>&rsaquo;</span>}
+    </span>
+    <div className={styles.winBar}>
+      <span className={styles.winHalf}><span className={styles.winFillLeft} style={{ width: fill(left) }} /></span>
+      <span className={styles.winHalf}><span className={styles.winFillRight} style={{ width: fill(right) }} /></span>
+    </div>
   </div>;
 }
 

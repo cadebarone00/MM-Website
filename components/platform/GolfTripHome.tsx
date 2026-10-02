@@ -65,49 +65,87 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   </main>;
 }
 
+const HOME_SECTIONS = ["Golf", "The Trip", "Travelers", "Logistics"] as const;
+type HomeSection = (typeof HOME_SECTIONS)[number];
+
 /**
- * Home tab, in the Venue tab's event-list style: each part of the trip is a row (square picture, small label, bold
- * title, detail lines). The tag on the picture says "Set" once the questionnaire filled that part in, "To do" if not.
+ * Home tab, search-sheet style: four cream cards, one open at a time. The open one shows a big title, then the Venue
+ * tab's event-list rows (headings with a chevron; square picture with a "Set" / "To do" tag, small label, bold title,
+ * detail lines); the others are short bars with the section on the left and a one-line summary on the right.
+ * Tapping a bar opens it and closes the one that was open.
  */
 function HomeSections({ draft, dates, dateRange, weather }: { draft: Record<string, string>; dates: string[]; dateRange: string; weather?: Promise<TripWeather> }) {
+  const [open, setOpen] = useState<HomeSection>("Golf");
   const rounds = plannedRounds(draft);
   const tournament = draft.includesTournament ? TOURNAMENT_ANSWERS[draft.includesTournament] ?? "Not sure yet" : "";
+  const nights = dates.length > 1 ? `${dates.length - 1} nights` : "";
 
-  return <div className={styles.events}>
-    <h2 className={styles.eventsHeading}>Your Trip<ChevronRight size={20} strokeWidth={2.25} aria-hidden /></h2>
-    <EventRow event={{ host: "Travel", title: draft.destination || "Add your destination and dates", art: ART.travel, icon: Plane,
-      badge: draft.destination && dates.length > 0 ? "Set" : "To do",
-      lines: [dateRange && { icon: CalendarDays, text: dateRange }, dates.length > 1 && { icon: Moon, text: `${dates.length - 1} nights` }] }} />
-    {weather && <Suspense fallback={<EventRow event={{ host: "Weather", title: "Loading forecast…", art: ART.weather, icon: Sun }} />}>
-      <WeatherRow place={draft.destination} weather={weather} />
-    </Suspense>}
-    <EventRow event={{ host: "Stay", title: "Add where you're staying", art: ART.stay, icon: BedDouble, badge: "To do" }} />
-    <EventRow event={{ host: "Transportation", title: "Add flights, rental cars or shuttles", art: ART.transport, icon: Car, badge: "To do" }} />
+  const heading = (text: string) => <h4 className={styles.eventsHeading}>{text}<ChevronRight size={20} strokeWidth={2.25} aria-hidden /></h4>;
 
-    <h2 className={styles.eventsHeading}>Golf<ChevronRight size={20} strokeWidth={2.25} aria-hidden /></h2>
-    {rounds.length > 0
-      ? rounds.map((round) => <EventRow key={round.number} event={{ host: `Round ${round.number}`, title: draft[`round${round.number}Course`] || "Course not set",
-        art: ART.golf, icon: Flag, badge: draft[`round${round.number}Course`] ? "Set" : "To do",
-        lines: [{ icon: CalendarDays, text: round.date ? shortTripDate(round.date) : `Day ${round.dayNumber}` }] }} />)
-      : <EventRow event={{ host: "Golf", title: "Add your golf days and courses", art: ART.golf, icon: Flag, badge: "To do" }} />}
-    <EventRow event={{ host: "Tournament", title: tournament || "Decide if there's a tournament", art: ART.tournament, icon: Trophy, badge: tournament ? "Set" : "To do" }} />
+  const sections: Record<HomeSection, { summary: string; rows: ReactNode }> = {
+    Golf: {
+      summary: rounds.length > 0 ? `${rounds.length} round${rounds.length === 1 ? "" : "s"}` : "Add rounds",
+      rows: <>
+        {heading("Rounds")}
+        {rounds.length > 0
+          ? rounds.map((round) => <EventRow key={round.number} event={{ host: `Round ${round.number}`, title: draft[`round${round.number}Course`] || "Course not set",
+            art: ART.golf, icon: Flag, badge: draft[`round${round.number}Course`] ? "Set" : "To do",
+            lines: [{ icon: CalendarDays, text: round.date ? shortTripDate(round.date) : `Day ${round.dayNumber}` }] }} />)
+          : <EventRow event={{ host: "Golf", title: "Add your golf days and courses", art: ART.golf, icon: Flag, badge: "To do" }} />}
+        {heading("Tournament")}
+        <EventRow event={{ host: "Tournament", title: tournament || "Decide if there's a tournament", art: ART.tournament, icon: Trophy, badge: tournament ? "Set" : "To do" }} />
+      </>,
+    },
+    "The Trip": {
+      summary: draft.destination || "Add destination",
+      rows: <>
+        {heading("Your Trip")}
+        <EventRow event={{ host: "Travel", title: draft.destination || "Add your destination and dates", art: ART.travel, icon: Plane,
+          badge: draft.destination && dates.length > 0 ? "Set" : "To do",
+          lines: [dateRange && { icon: CalendarDays, text: dateRange }, nights && { icon: Moon, text: nights }] }} />
+        {weather && <Suspense fallback={<EventRow event={{ host: "Weather", title: "Loading forecast…", art: ART.weather, icon: Sun }} />}>
+          <WeatherRow place={draft.destination} weather={weather} />
+        </Suspense>}
+        <EventRow event={{ host: "Photos", title: "Share photos from the trip", art: ART.photos, icon: Camera, badge: "To do" }} />
+        {heading("Itinerary")}
+        {dates.length > 0
+          ? dates.map((date, i) => <p key={date} className={styles.eventsDay}>Day {i + 1} <span>/ {shortTripDate(date)}</span></p>)
+          : <EventRow event={{ host: "Itinerary", title: "Your day-by-day plan shows here once dates are set", art: ART.itinerary, icon: CalendarDays, badge: "To do" }} />}
+      </>,
+    },
+    Travelers: {
+      summary: draft.yourName ? "1 traveler" : "Add travelers",
+      rows: <>
+        {heading("Your Group")}
+        {draft.yourName && <EventRow event={{ host: "Organizer", title: draft.yourName, art: ART.travelers, icon: User, badge: "Set" }} />}
+        <EventRow event={{ host: "Travelers", title: "Invite the rest of your group", art: ART.travelers, icon: Users, badge: "To do" }} />
+      </>,
+    },
+    Logistics: {
+      summary: "Add stay & rides",
+      rows: <>
+        {heading("Stay & Rides")}
+        <EventRow event={{ host: "Stay", title: "Add where you're staying", art: ART.stay, icon: BedDouble, badge: "To do" }} />
+        <EventRow event={{ host: "Transportation", title: "Add flights, rental cars or shuttles", art: ART.transport, icon: Car, badge: "To do" }} />
+        {heading("Expenses")}
+        <EventRow event={{ host: "Expenses", title: "Track who paid for what", art: ART.expenses, icon: Receipt, badge: "To do" }} />
+      </>,
+    },
+  };
 
-    <h2 className={styles.eventsHeading}>Travelers<ChevronRight size={20} strokeWidth={2.25} aria-hidden /></h2>
-    {draft.yourName && <EventRow event={{ host: "Organizer", title: draft.yourName, art: ART.travelers, icon: User, badge: "Set" }} />}
-    <EventRow event={{ host: "Travelers", title: "Invite the rest of your group", art: ART.travelers, icon: Users, badge: "To do" }} />
-
-    <h2 className={styles.eventsHeading}>Itinerary<ChevronRight size={20} strokeWidth={2.25} aria-hidden /></h2>
-    {dates.length > 0
-      ? dates.map((date, i) => <p key={date} className={styles.eventsDay}>Day {i + 1} <span>/ {shortTripDate(date)}</span></p>)
-      : <EventRow event={{ host: "Itinerary", title: "Your day-by-day plan shows here once dates are set", art: ART.itinerary, icon: CalendarDays, badge: "To do" }} />}
-
-    <h2 className={styles.eventsHeading}>Expenses &amp; Photos<ChevronRight size={20} strokeWidth={2.25} aria-hidden /></h2>
-    <EventRow event={{ host: "Expenses", title: "Track who paid for what", art: ART.expenses, icon: Receipt, badge: "To do" }} />
-    <EventRow event={{ host: "Photos", title: "Share photos from the trip", art: ART.photos, icon: Camera, badge: "To do" }} />
+  return <div className={styles.sheets}>
+    {HOME_SECTIONS.map((name) => open === name
+      ? <section key={name} className={styles.sheetOpen} aria-label={name}>
+        <h3 className={styles.sheetTitle}>{name}</h3>
+        <div className={`${styles.events} ${styles.sheetRows}`}>{sections[name].rows}</div>
+      </section>
+      : <button key={name} type="button" className={styles.sheetClosed} aria-expanded={false} onClick={() => setOpen(name)}>
+        <span className={styles.sheetName}>{name}</span><span className={styles.sheetSummary}>{sections[name].summary}</span>
+      </button>)}
   </div>;
 }
 
-/** Home's Weather row once the server's weather promise settles (Suspense shows the loading row until then). Lines with no data are left out. */
+/** The Trip's Weather row once the server's weather promise settles (Suspense shows the loading row until then). Lines with no data are left out. */
 function WeatherRow({ place, weather }: { place?: string; weather: Promise<TripWeather> }) {
   const result = use(weather);
   if (result.status !== "ok") return <EventRow event={{ host: "Weather", art: ART.weather, icon: Sun,

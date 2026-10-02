@@ -9,27 +9,35 @@
 .teams{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 44px minmax(0,1fr);gap:8px;align-items:stretch;padding:14px 14px 14px}
 /* Each half: initials + standing on top, then name and record. The leader's half fills with their team color from the
    box's edge (pulled out over the 14px padding), rounding off before the status box: the Match rows' fill, but taller. */
-.side{display:flex;flex-direction:column;gap:6px;min-width:0;padding:16px 10px 10px}
+.side{display:flex;flex-direction:column;gap:6px;min-width:0;padding:10px}
+.right.side{align-items:flex-end}
 .side.left.sideLeading{margin-left:-14px;margin-right:8px;padding-left:20px;border-radius:0 18px 18px 0;background:#dcc495}
 .side.right.sideLeading{margin-right:-14px;margin-left:8px;padding-right:20px;border-radius:18px 0 0 18px;background:#e89a9a}
-.sideTop{display:flex;align-items:center;justify-content:space-between;gap:6px}
-.right .sideTop{flex-direction:row-reverse}
 .avatar{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:50%;background:#dcc495;color:var(--color-maroon-900);font:800 15px/1 var(--font-spectral),Georgia,serif}
 .avatarRight{background:#e89a9a}
 .sideLeading .avatar{background:var(--color-maroon-900);color:#dcc495}
 .right.sideLeading .avatar{color:#e89a9a}
-.boxStanding{font:700 20px/1 var(--font-spectral),Georgia,serif;color:#fff;white-space:nowrap}
+/* Standing in the half's top outer corner; keeps its line even when blank so both halves line up. */
+.boxStanding{min-height:18px;font:700 18px/1 var(--font-spectral),Georgia,serif;color:#fff;white-space:nowrap}
 .teamName{margin:4px 0 0;font:700 17px/1.15 var(--font-spectral),Georgia,serif;color:#fff;overflow-wrap:normal}
 .teamMeta{margin:-4px 0 0;font:700 13px/1.3 var(--font-spectral),Georgia,serif;color:rgba(255,255,255,.7)}
 .sideLeading .boxStanding,.sideLeading .teamName{color:var(--color-maroon-900)}
 .sideLeading .teamMeta{color:rgba(36,0,1,.7)}
 .boxStatus{align-self:start;display:flex;justify-content:center;margin-top:-8px}
-@media(max-width:359px){.teams{gap:6px}.side{padding:14px 8px 8px}.side.left.sideLeading{margin-right:6px}.side.right.sideLeading{margin-left:6px}.side.left.sideLeading{padding-left:22px}.side.right.sideLeading{padding-right:22px}.avatar{width:34px;height:34px;font-size:12px}.boxStanding{font-size:16px}.teamName{font-size:16px}}
+@media(max-width:359px){.teams{gap:6px}.side{padding:10px 8px 8px}.side.left.sideLeading{margin-right:6px}.side.right.sideLeading{margin-left:6px}.side.left.sideLeading{padding-left:22px}.side.right.sideLeading{padding-right:22px}.avatar{width:34px;height:34px;font-size:12px}.boxStanding{min-height:16px;font-size:16px}.teamName{font-size:16px}}
 /* Round stats: the win bar, then each side's four stats mirrored either side of a thin gold center line; the labels
    sit above a line (drawn at the label height, --label) and the values below it. */
 .stats{display:grid;grid-template-columns:1fr 1fr;margin:0 14px;padding:2px 0 14px;--label:9px}
 /* Win probability: one bar across the card, split at the center; each team's fill grows out from the middle. */
-.winBar{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;height:5px;margin-bottom:14px;border-radius:5px;background:rgba(255,255,255,.12);overflow:hidden}
+.win{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:5px;margin-bottom:14px}
+/* The % sits centered over the bar's middle; the arrow hangs off its side so it never pushes the number off center. */
+.winPct{position:relative;font:700 13px/1 var(--font-spectral),Georgia,serif;color:#fff}
+.winPct_left{color:#dcc495}
+.winPct_right{color:#e89a9a}
+.winArrow{position:absolute;top:0;font-size:15px;line-height:.85}
+.winPct_left .winArrow{right:calc(100% + 3px)}
+.winPct_right .winArrow{left:calc(100% + 3px)}
+.winBar{width:100%;display:grid;grid-template-columns:1fr 1fr;height:5px;border-radius:5px;background:rgba(255,255,255,.12);overflow:hidden}
 .winHalf{display:flex}
 .winHalf:first-child{justify-content:flex-end}
 .winFillLeft,.winFillRight{display:block;height:100%}

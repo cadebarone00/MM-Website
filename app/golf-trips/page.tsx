@@ -5,6 +5,7 @@ import { ChevronRight, Plus } from "lucide-react";
 import { golfTripUrl, splitGolfTrips, tripDateRange, type GolfTripSummary } from "@/lib/platform/golfTripCreate";
 import { getUserGolfTrips } from "@/lib/platform/golfTripsServer";
 import { GolfTripJoin } from "@/components/platform/GolfTripJoin";
+import { SignInRequiredLink } from "@/components/platform/SignInRequiredLink";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = { title: "Golf Trips | The Maroon" };
@@ -23,10 +24,10 @@ export default async function GolfTripsPage() {
 
   return (
     <main className={styles.page}>
-      <Link href="/tournaments/create/golf-trip" className={styles.create}>
+      <SignInRequiredLink href="/tournaments/create/golf-trip" className={styles.create} message="Sign in to create a golf trip">
         <span className={styles.plus} aria-hidden="true"><Plus size={20} strokeWidth={2.25} /></span>
         Create a Golf Trip
-      </Link>
+      </SignInRequiredLink>
       <GolfTripJoin />
 
       <section aria-labelledby="my-trips-heading" className={styles.trips}>

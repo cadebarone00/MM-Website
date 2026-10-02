@@ -6,6 +6,7 @@ import type { PastTournament } from "@/lib/platform/pastTournaments";
 import { JoinLinkForm } from "./JoinLinkForm";
 import { JoinMethodSelector } from "./JoinMethodSelector";
 import { PlatformHeader } from "./PlatformHeader";
+import { SignInRequiredLink } from "./SignInRequiredLink";
 import styles from "./JoinTournament.module.css";
 
 /**
@@ -21,7 +22,7 @@ export async function JoinTournamentPage() {
       <div className={styles.photoPanel}>
       <h2 className={styles.descriptor}>Get started</h2>
       <div className={styles.actions}>
-        <Link href="/tournaments/create" className={styles.actionBox}><span>Creat a Tournament</span></Link>
+        <SignInRequiredLink href="/tournaments/create" className={styles.actionBox} message="Sign in to create a tournament"><span>Creat a Tournament</span></SignInRequiredLink>
         <JoinMethodSelector />
       </div>
       </div>

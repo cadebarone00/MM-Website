@@ -75,7 +75,8 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
   // Main platform pages share a compact title beside the menu icon.
   if (pathname === "/") return <><PlatformHeader home title="The Maroon" />{children}</>;
   if (pathname === "/pickems" || pathname === "/profile") return <><PlatformHeader title={pathname === "/pickems" ? "Pick'ems" : "Profile"} />{children}</>;
-  if (pathname === "/golf-trips") return <><PlatformHeader title="Golf Trip Home" />{children}</>;
+  // Golf Trips: menu and account buttons only, no title (owner request 2026-10-02).
+  if (pathname === "/golf-trips") return <><PlatformHeader wordmark={false} />{children}</>;
   // The Golf Trip questionnaire has no header, like Create Tournament.
   if (pathname === "/golf-trips/new" || pathname.startsWith("/golf-trips/new/")) return <>{children}</>;
   // Golf Trip Home (draft and saved trips), Trip Settings and their local dev preview have no top nav either.

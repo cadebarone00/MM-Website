@@ -2021,3 +2021,10 @@ create index if not exists golf_trip_flights_member_idx on public.golf_trip_flig
 - The Info tab's Flights card shows the next flight and the counts, or "Add your flights".
 - Database tests cover: own-only reads, stranger blocked, bad codes/lengths refused, 20-flight limit, provider columns untouched, deleted trip removes flights.
 - TypeScript, lint and tests pass; checked on phone and desktop width.
+
+### Round: Settings → Sign Out (owner request 2026-10-02, built)
+
+- The settings gear on Profile (and Settings in the account menu) opens `/settings`, which used to be "Coming soon".
+- `/settings` now has an **Account** card: "Signed in as <email>" and a **Sign Out** button. It opens the existing "Are you sure?" popup (`SignOutConfirmDialog`, same as the account menu); Sign Out ends the session and goes to the home page.
+- Signed-out visitors see "You're not signed in." and a **Log In** button instead.
+- Files: `app/settings/page.tsx`, `components/settings/SignOutButton.tsx` (new). No other settings yet.

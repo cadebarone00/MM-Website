@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Menu, UserRound } from "lucide-react";
+import { SignInRequiredLink } from "./SignInRequiredLink";
 import styles from "./PlatformEntry.module.css";
 
 /** Page titles share the navigation row, immediately beside the menu. */
@@ -12,7 +13,7 @@ export function PlatformHeader({ home = false, wordmark = true, title }: { home?
           <Link href="/">Home</Link>
           <Link href="/golf-trips">Golf Trips</Link>
           <Link href="/tournaments/mine">My Tournaments</Link>
-          <Link href="/tournaments/create">Create Tournament</Link>
+          <SignInRequiredLink href="/tournaments/create" message="Sign in to create a tournament">Create Tournament</SignInRequiredLink>
           <Link href="/">Explore The Maroon</Link>
           <Link href="/contact">Contact Us</Link>
         </nav>

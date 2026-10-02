@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ArrowRight, ArrowUpRight, Flag, Plus } from "lucide-react";
 import { maroonCategories } from "@/lib/data/theMaroon";
 import { MaroonSection } from "@/components/maroon/MaroonSection";
+import { SignInRequiredLink } from "./SignInRequiredLink";
 import styles from "./MobileHome.module.css";
 const sections = ["Discover", "Courses", "Equipment", "Teaching", "News"] as const;
 /** `signedIn` hides the "Already part of the club? Log In" prompt. */
@@ -27,7 +28,7 @@ export function PlatformHome({ signedIn = false }: { signedIn?: boolean }) {
             <Image src="/teams/maroon/collage/01-hero-team.jpg" alt="" fill sizes="(max-width: 600px) 90vw, 550px" />
             <div className={styles.tripOverlay}><span className={styles.kicker}><Plus size={14} aria-hidden="true" /> Make it yours</span><p>Your people.<br />Your tournament.</p></div>
           </div>
-          <Link href="/tournaments/create" className={styles.cardAction}>Create Tournament <span><ArrowRight size={16} aria-hidden="true" /></span></Link>
+          <SignInRequiredLink href="/tournaments/create" className={styles.cardAction} message="Sign in to create a tournament">Create Tournament <span><ArrowRight size={16} aria-hidden="true" /></span></SignInRequiredLink>
         </article>
       </div>
       {!signedIn && <div className={styles.accountRow}><p>Already part of the club?</p><Link href="/login">Log In <ArrowRight size={14} aria-hidden="true" /></Link></div>}
