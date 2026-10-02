@@ -55,7 +55,7 @@ export function GolfGameScoringPreview({ setup }: { setup: GameSetup }) {
     {displayed && <div aria-live="polite"><strong>{draft ? "Current hole preview" : "Last recorded hole"}: {displayed.hole}</strong>
       <p>{displayed.status === "no-split" ? "No team split — no points" : displayed.status === "halved" ? "Halved — no points" : displayed.winner !== undefined ? `${setup.id === "coin-flip" ? displayed.winner === 0 ? "Heads" : "Tails" : `Team ${displayed.winner + 1}`} wins hole` : "9 Point allocation"}</p>
       {displayed.sideScores && <p>{setup.id === "vegas" ? "Vegas team numbers" : "Best scores"}: {displayed.sideScores.join(" vs ")}</p>}
-      <p>Hole points: {Object.entries(displayed.points).filter(([, points]) => points !== 0).map(([id, points]) => `${name(id)} +${points}`).join(" · ") || "0 (match holes count toward Up / Down)"}</p>
+      <p>Hole points: {Object.entries(displayed.points).filter(([, points]) => points !== 0).map(([id, points]) => `${name(id)} +${points}`).join(" · ") || (setup.id === "match-play" || setup.id === "round-robin" ? "0 (match holes count toward Up / Down)" : "0")}</p>
     </div>}
     <div role="status"><strong>{result.status === "complete" ? "Final result" : "Running result"}: {result.label.replace(/team-1/g, "Team 1").replace(/team-2/g, "Team 2").replace(/\b(you|sam|jordan|casey|riley|avery|taylor|jamie)\b/g, id => name(id))}</strong>
       <p>Leaders: {result.leaders.map(name).join(" · ")}</p>

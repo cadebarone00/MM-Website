@@ -27,6 +27,10 @@ All findings below remain `review_required`. Owners and due dates are unassigned
 
 Engineering acceptance evidence must establish zero official Competition writes and authorized real-player access before integration. Policy/document acceptance requires a complete category checklist and data map. Professional review must supply restricted decision references for triggered legal/tax questions. Structural registry validation cannot establish compliance or authorize deployment.
 
+## Local validation evidence
+
+2026-10-02: nine deterministic game-engine tests and six compliance metadata tests pass. Targeted ESLint and scoped TypeScript validation for Games/engine/compliance files pass. The repository-wide TypeScript run reports an unrelated existing badge type error in `components/platform/GolfTripHome.tsx:119`; this feature does not modify that file. The six Games components were exercised in an isolated browser harness at mobile width for setup, simulation, results, Record hole and Undo, with no runtime errors or horizontal overflow. Generated workflow HTML was opened in a browser and its change panel, mapped navigation and search checked; `docs:workflow:check` and `compliance:check` pass. These checks verify local behavior/metadata only, not production deployment, participant permissions or legal approval.
+
 ## 2026-10-02 engine scope review
 
 Before: setup-only illustrations. After: all six v1 engines process fictional/manual local gross or supplied net scores, per-hole side choices, results and running totals. No persistence, real-player source, external service, telemetry addition, official Competition import/write, payment, subscription, advertising/sponsorship or prize is introduced. Original rule implementations follow the user-supplied defaults; existing asset/dependency provenance remains unresolved. Simulated scores are invented and are not an official handicap computation. Numeric validation and deterministic engine tests support the local engineering scope; they do not establish authorization for real players.

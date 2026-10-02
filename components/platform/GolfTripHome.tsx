@@ -2,7 +2,7 @@
 
 import { Suspense, use, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronRight, Clock, CloudRain, Flag, MapPin, MessageCircle, Moon, Plane, Plus, Receipt, Settings, Sun, Thermometer, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronRight, Clock, CloudRain, Flag, MapPin, MessageCircle, Plane, Plus, Settings, Sun, Thermometer, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import { normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import type { TripWeather } from "@/lib/platform/weather/types";
@@ -113,47 +113,46 @@ function HomeSections({ draft, dates, dateRange, weather }: { draft: Record<stri
 
   const sections: Record<HomeSection, { summary: string; rows: ReactNode }> = {
     Golf: {
-      summary: nextImportantEvent ? "Next round coming up" : "Plan the next tee time",
+      summary: nextImportantEvent ? "Round coming up" : "Golf plan",
       rows: <>
-        {heading("Next up")}
-        {nextImportantEvent ? <EventRow event={{ ...nextImportantEvent, lines: [{ icon: CalendarDays, text: "Keep your clubs ready and check the weather before you go" }] }} /> : <EventRow event={{ host: "Golf", title: "Book a tee time or a casual local round", art: ART.golf, icon: Flag, badge: "To do", lines: [{ icon: CalendarDays, text: "Local public courses and a quick lunch nearby work well here" }] }} />}
+        {heading("Rounds")}
+        {nextImportantEvent ? <EventRow event={{ ...nextImportantEvent, lines: [{ icon: CalendarDays, text: `${nextImportantEvent.title}` }] }} /> : <EventRow event={{ host: "Golf", title: "Round 1 · Course TBD", art: ART.golf, icon: Flag, badge: "To do", lines: [{ icon: CalendarDays, text: "Add the tee time and course" }] }} />}
         {heading("Tournament")}
-        <EventRow event={{ host: "Tournament", title: tournament || "Look for a weekend match or friendly side game", art: ART.tournament, icon: Trophy, badge: tournament ? "Set" : "To do", lines: tournament ? [{ icon: CalendarDays, text: tournament }] : [{ icon: Trophy, text: "If there is no formal tournament, suggest a low-key competition" }] }} />
+        <EventRow event={{ host: "Tournament", title: tournament || "Friendly side game", art: ART.tournament, icon: Trophy, badge: tournament ? "Set" : "To do", lines: tournament ? [{ icon: CalendarDays, text: tournament }] : [{ icon: Trophy, text: "Add the event info or side match" }] }} />
       </>,
     },
     "The Trip": {
-      summary: draft.destination ? "Pay attention to travel" : "Good spots nearby",
+      summary: draft.destination ? "Travel plan" : "Trip info",
       rows: <>
-        {heading("Travel")}
+        {heading("Flights")}
         {draft.destination
-          ? <EventRow event={{ host: "Travel", title: dateRange ? `Check in for ${draft.destination} travel` : `Your trip to ${draft.destination}`, art: ART.travel, icon: Plane,
+          ? <EventRow event={{ host: "Flights", title: "AA1234 · RDU → DFW", art: ART.travel, icon: Plane,
             badge: "Set",
-            lines: [dateRange && { icon: CalendarDays, text: dateRange }, nights && { icon: Moon, text: nights }, { icon: Plane, text: "The day before, remind everyone to check in to flights" }] }} />
-          : <EventRow event={{ host: "Nearby", title: "Find a fun lunch spot or a quick local activity", art: ART.travel, icon: Plane, badge: "Idea", lines: [{ icon: MapPin, text: "Use this space for nearby restaurants, sightseeing, or the best casual stop" }] }} />}
+            lines: [{ icon: CalendarDays, text: dateRange || "Trip dates TBD" }, { icon: Clock, text: "Apr 22, 6:10 AM" }, { icon: MapPin, text: nights ? `${nights} in town` : "2 getting there · 1 heading home" }] }} />
+          : <EventRow event={{ host: "Flights", title: "Flight details", art: ART.travel, icon: Plane, badge: "To do", lines: [{ icon: Clock, text: "Add the flight and arrival time" }] }} />}
         {weather && <Suspense fallback={<EventRow event={{ host: "Weather", title: "Loading forecast…", art: ART.weather, icon: Sun }} />}>
           <WeatherRow place={draft.destination} weather={weather} />
         </Suspense>}
-        <EventRow event={{ host: "Plan", title: "Dinner or lunch reservation for the evening", art: ART.photos, icon: Camera, badge: "Idea", lines: [{ icon: Clock, text: "If nothing is booked, suggest a good local spot for the group" }] }} />
+        <EventRow event={{ host: "Dinner", title: "Dinner reservation · 8:00 PM", art: ART.photos, icon: Camera, badge: "Set", lines: [{ icon: Clock, text: "Confirm the group reservation" }] }} />
       </>,
     },
     Travelers: {
-      summary: draft.yourName ? "Who is headed out" : "Group plan",
+      summary: draft.yourName ? "Group arrivals" : "Travelers",
       rows: <>
-        {heading("Group")}
+        {heading("Travelers")}
         {draft.yourName
-          ? <EventRow event={{ host: "Organizer", title: draft.yourName, art: ART.travelers, icon: User, badge: "Set", lines: [{ icon: Users, text: "Make sure the group knows the schedule and who is arriving when" }] }} />
-          : <EventRow event={{ host: "Travelers", title: "Add the people joining the trip", art: ART.travelers, icon: Users, badge: "To do" }} />}
-        <EventRow event={{ host: "Plan", title: "Who is driving, riding together, or meeting up", art: ART.travelers, icon: Users, badge: "Idea" }} />
+          ? <EventRow event={{ host: "Organizer", title: draft.yourName, art: ART.travelers, icon: User, badge: "Set", lines: [{ icon: Users, text: "Arrival window and who is driving" }] }} />
+          : <EventRow event={{ host: "Travelers", title: "Add the group", art: ART.travelers, icon: Users, badge: "To do" }} />}
+        <EventRow event={{ host: "Arrivals", title: "Who is arriving when", art: ART.travelers, icon: Users, badge: "Set", lines: [{ icon: MapPin, text: "Confirm ride share and pickup plans" }] }} />
       </>,
     },
     Logistics: {
-      summary: draft.destination ? "Stay and ride" : "Helpful defaults",
+      summary: "Stay + rides",
       rows: <>
-        {heading("Stay & rides")}
-        <EventRow event={{ host: "Lodging", title: "Check in and confirm the room setup", art: ART.stay, icon: BedDouble, badge: "Idea", lines: [{ icon: CalendarDays, text: "This is where hotel check-in, room notes, and arrival timing go" }] }} />
-        <EventRow event={{ host: "Transportation", title: draft.destination ? "Airport or shuttle timing" : "Set ride and parking plans", art: ART.transport, icon: Car, badge: "Need", lines: [{ icon: Clock, text: draft.destination ? "The day before, remind the group to check flight and car details" : "If nothing is booked, suggest shuttles, rides, or a simple airport plan" }] }} />
-        {heading("More ideas")}
-        <EventRow event={{ host: "Local picks", title: "Good places to eat, walk, or grab a drink nearby", art: ART.expenses, icon: Receipt, badge: "Idea" }} />
+        {heading("Lodging")}
+        <EventRow event={{ host: "Lodging", title: "The Shorebreak Villas · 3 nights", art: ART.stay, icon: BedDouble, badge: "Set", lines: [{ icon: CalendarDays, text: "Check-in at 3:00 PM" }] }} />
+        {heading("Transportation")}
+        <EventRow event={{ host: "Transportation", title: "Airport shuttle · 10:15 AM", art: ART.transport, icon: Car, badge: "Set", lines: [{ icon: Clock, text: "Pickup at Terminal B" }] }} />
       </>,
     },
   };

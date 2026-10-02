@@ -146,17 +146,17 @@
 @media(min-width:593px){.account{margin-inline:0;border-radius:20px 20px 0 0;overflow:hidden}}
 /* Home tab (search-sheet style): cream cards, one open at a time. Open = big title, small label, icon-tile rows;
    closed = a short bar with the section name left and a summary right. */
-.sheets{display:flex;flex-direction:column;gap:12px;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
+.sheets{display:flex;flex-direction:column;gap:12px;font-family:var(--font-barlow),sans-serif}
 .sheets p{margin:0}
 .sheetOpen{padding:24px 20px 12px;border-radius:24px;background:#fbf8f1;color:#222;box-shadow:0 6px 20px rgba(0,0,0,.25)}
-.sheetTitle{margin:0 0 18px;font-size:26px;font-weight:800;line-height:1.1;letter-spacing:-.01em;color:#222}
+.sheetTitle{margin:0 0 18px;font-size:26px;font-weight:800;line-height:1.1;letter-spacing:-.01em;color:#222;font-family:var(--font-spectral),Georgia,serif}
 /* Inside the open card: the Venue rows, with dark text so they read on cream. */
 .sheetRows{padding-bottom:12px;font-family:var(--font-barlow),sans-serif}
 .sheetRows .eventsHeading,.sheetRows .eventTitle,.sheetRows .eventsDay{color:#222}
 .sheetRows .eventsHeading{font-family:var(--font-spectral),Georgia,serif;font-weight:700}
 .sheetRows .eventsHeading svg,.sheetRows .eventsDay span,.sheetRows .eventHost,.sheetRows .eventMeta{color:#6a6a6a}
 .sheetClosed{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:58px;padding:0 20px;border:0;border-radius:16px;
-   background:#fbf8f1;box-shadow:0 4px 14px rgba(0,0,0,.2);cursor:pointer;font-family:inherit;text-align:left}
+   background:#fbf8f1;box-shadow:0 4px 14px rgba(0,0,0,.2);cursor:pointer;font-family:var(--font-barlow),sans-serif;text-align:left}
 .sheetClosed:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
 .sheetName{font-size:14px;font-weight:500;color:#6a6a6a}
 .sheetSummary{font-size:14px;font-weight:600;color:#222;text-align:right}
