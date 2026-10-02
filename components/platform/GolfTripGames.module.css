@@ -1,11 +1,20 @@
-.root{display:grid;gap:16px;padding:18px 0 30px;color:#fff;font:500 14px/1.5 var(--font-barlow),sans-serif}
+.root{display:grid;gap:16px;padding:0 0 30px;color:#fff;font:500 14px/1.5 var(--font-barlow),sans-serif}
 .root h2,.root h3,.root h4,.root p{margin:0}
-.root h2{margin:5px 0 8px;font:500 28px/1.15 var(--font-spectral),Georgia,serif}
+.root h2{margin:0;font:500 28px/1.15 var(--font-spectral),Georgia,serif}
 .root h3{font-size:19px}.root h4{font-size:18px}
 .eyebrow{color:#dcc495;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
 .notice{padding:12px;border-radius:12px;background:rgba(220,196,149,.09);color:#dcc495;font-size:12px}
 .progress{display:flex;justify-content:space-between;gap:8px;padding:0;margin:0;list-style:none;color:#c1aeb3;font-size:12px}
 .progress li[aria-current]{color:#dcc495;font-weight:800}
+.gamesHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:4px}
+.activeGamesTitle{margin:0;font:500 28px/1.15 var(--font-spectral),Georgia,serif;color:#fff}
+.newGameWrap{position:relative}
+.newGameButton{min-height:42px;padding:9px 14px;border:1px solid rgba(220,196,149,.55);border-radius:12px;background:transparent;color:#fff;font:700 14px/1 var(--font-barlow),sans-serif;cursor:pointer}
+.scopeMenu{position:absolute;right:0;top:calc(100% + 8px);display:grid;gap:8px;width:220px;padding:10px;border:1px solid rgba(220,196,149,.35);border-radius:12px;background:rgba(26,12,18,.96);box-shadow:0 16px 32px rgba(0,0,0,.3);z-index:4}
+.scopeMenuItem{min-height:40px;padding:10px 12px;border:1px solid rgba(220,196,149,.35);border-radius:10px;background:#38151f;color:#fff;font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
+.scopeMenuItem[aria-pressed=true]{background:#dcc495;color:#32121b;border-color:#dcc495}
+.scopeMenu .label{display:grid;gap:6px;margin-top:4px}
+.scopeMenu select{width:100%;min-width:0;min-height:42px;padding:8px;border:1px solid #b99a63;border-radius:10px;background:#fff8ea;color:#38151f;font:inherit}
 .section{display:grid;gap:12px;min-width:0;margin:0;padding:16px;border:1px solid rgba(220,196,149,.25);border-radius:18px;background:rgba(255,255,255,.035)}
 .section legend,.players legend{padding:0 5px;font-weight:700;font-size:16px}
 .choices{display:flex;gap:8px;flex-wrap:wrap}.choices button{flex:1;min-height:44px;border:1px solid #896b72;border-radius:12px;background:#38151f;color:#fff;padding:8px 10px;font:700 14px var(--font-barlow),sans-serif;cursor:pointer}

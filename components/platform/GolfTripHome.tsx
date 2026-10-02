@@ -2,7 +2,7 @@
 
 import { Suspense, use, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronRight, Clock, CloudRain, Flag, MapPin, MessageCircle, Plane, Plus, Settings, Sun, Thermometer, Trash2, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronRight, Clock, CloudRain, ExternalLink, FileText, Flag, LockKeyhole, MapPin, MessageCircle, Plane, Plus, Settings, Share2, ShieldCheck, ShoppingBag, Sun, Thermometer, Trash2, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import { normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import type { TripWeather } from "@/lib/platform/weather/types";
@@ -277,21 +277,40 @@ function VenueEvents() {
   const [transportation, setTransportation] = useState(INITIAL_TRANSPORTATION);
   const [confirmDelete, setConfirmDelete] = useState<{ section: InfoSectionKey; entry: InfoEntry } | null>(null);
   const [toast, setToast] = useState<{ section: InfoSectionKey; entry: InfoEntry; closing: boolean } | null>(null);
-  const [toastId, setToastId] = useState(0);
+  const [sheetSection, setSheetSection] = useState<InfoSectionKey | null>(null);
+  const nextEntryIdRef = useRef(0);
 
-  const addEntry = (section: InfoSectionKey) => {
+  const quickActionRows = [
+    { label: "Contact Pura", icon: MessageCircle },
+    { label: "Visit online store", icon: ExternalLink },
+    { label: "Share", icon: Share2 },
+    { label: "Refund policy", icon: ShieldCheck },
+    { label: "Shipping policy", icon: ShoppingBag },
+    { label: "Privacy policy", icon: LockKeyhole },
+    { label: "Terms and conditions", icon: FileText },
+    { label: "Report", icon: AlertTriangle },
+  ] as const;
+
+  const addQuickEntry = (option: string) => {
+    if (!sheetSection) return;
     const next: InfoEntry = {
-      id: `new-${section}-${Date.now()}`,
-      host: section === "gettingThere" ? "Getting there" : section === "lodging" ? "Lodging" : "Transportation",
-      title: section === "gettingThere" ? "Add a travel option" : section === "lodging" ? "Add lodging" : "Add transportation",
-      detail: section === "gettingThere" ? "Flight, bus, car, or another option" : section === "lodging" ? "Hotel, villa, or another stay" : "Shuttle, ride, or rental pickup",
-      art: section === "gettingThere" ? "linear-gradient(135deg,#6a1f2b,#a22d3d)" : section === "lodging" ? "linear-gradient(135deg,#c9b38b,#7d603a)" : "linear-gradient(135deg,#5a5d6b,#2e3240)",
+      id: `new-${sheetSection}-${nextEntryIdRef.current++}`,
+      host: sheetSection === "gettingThere" ? "Getting there" : sheetSection === "lodging" ? "Lodging" : "Transportation",
+      title: option,
+      detail: sheetSection === "gettingThere" ? "Added for this trip" : sheetSection === "lodging" ? "Stay details" : "Pickup details",
+      art: sheetSection === "gettingThere" ? "linear-gradient(135deg,#6a1f2b,#a22d3d)" : sheetSection === "lodging" ? "linear-gradient(135deg,#c9b38b,#7d603a)" : "linear-gradient(135deg,#5a5d6b,#2e3240)",
       badge: "Set",
     };
 
-    if (section === "gettingThere") setGettingThere(current => [...current, next]);
-    else if (section === "lodging") setLodging(current => [...current, next]);
+    if (sheetSection === "gettingThere") setGettingThere(current => [...current, next]);
+    else if (sheetSection === "lodging") setLodging(current => [...current, next]);
     else setTransportation(current => [...current, next]);
+
+    setSheetSection(null);
+  };
+
+  const openAddSheet = (section: InfoSectionKey) => {
+    setSheetSection(section);
   };
 
   const removeEntry = (section: InfoSectionKey, entry: InfoEntry) => {
@@ -300,9 +319,7 @@ function VenueEvents() {
     else if (section === "lodging") setLodging(current => current.filter(item => item.id !== entry.id));
     else setTransportation(current => current.filter(item => item.id !== entry.id));
 
-    const restored = { section, entry };
     setToast({ section, entry, closing: false });
-    setToastId((value) => value + 1);
 
     setTimeout(() => {
       setToast((current) => current ? { ...current, closing: true } : current);
@@ -350,9 +367,21 @@ function VenueEvents() {
   </section>;
 
   return <div className={styles.events}>
-    {renderSection("gettingThere", "Getting there", gettingThere, () => addEntry("gettingThere"))}
-    {renderSection("lodging", "Lodging", lodging, () => addEntry("lodging"))}
-    {renderSection("transportation", "Transportation", transportation, () => addEntry("transportation"))}
+    {renderSection("gettingThere", "Getting there", gettingThere, () => openAddSheet("gettingThere"))}
+    {renderSection("lodging", "Lodging", lodging, () => openAddSheet("lodging"))}
+    {renderSection("transportation", "Transportation", transportation, () => openAddSheet("transportation"))}
+
+    {sheetSection && <div className={styles.addSheetOverlay} role="dialog" aria-modal="true" aria-label="Add trip item">
+      <div className={styles.addSheet}>
+        <button type="button" className={styles.sheetClose} aria-label="Close add sheet" onClick={() => setSheetSection(null)}><X size={18} strokeWidth={2.25} aria-hidden /></button>
+        <div className={styles.sheetActionList}>
+          {quickActionRows.map(({ label, icon: Icon }) => <button key={label} type="button" className={styles.sheetActionRow} onClick={() => addQuickEntry(label)}>
+            <span className={styles.sheetActionIcon}><Icon size={18} strokeWidth={2} aria-hidden /></span>
+            <span className={styles.sheetActionText}>{label}</span>
+          </button>)}
+        </div>
+      </div>
+    </div>}
 
     {confirmDelete && <div className={styles.deleteOverlay} role="dialog" aria-modal="true" aria-label="Delete item confirmation">
       <div className={styles.deleteDialog}>

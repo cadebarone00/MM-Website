@@ -12,6 +12,7 @@ const nameOf = (id: string) => players.find(player => player.id === id)?.name ??
 export function GolfTripGames() {
   const [scope, setScope] = useState<GameScope | null>(null);
   const [size, setSize] = useState<GroupSize | null>(null);
+  const [showScopeMenu, setShowScopeMenu] = useState(false);
   const [roundId, setRoundId] = useState<string>(rounds[0].id);
   const [game, setGame] = useState<SideGameDefinition | null>(null);
   const [selected, setSelected] = useState<string[]>(["you"]);
@@ -32,20 +33,25 @@ export function GolfTripGames() {
   };
 
   return <section className={styles.root} aria-label="Side games preview">
-    <header><span className={styles.eyebrow}>A little friendly rivalry</span><h2>Make the trip your game</h2>
-      <p>Optional side games, created by players. Pick your people and play your way.</p></header>
-    <p className={styles.notice}>Local preview · Fictional players and rounds · Resets on reload. Official Competition standings and settings stay separate.</p>
-    <ol className={styles.progress} aria-label="Game setup progress">
-      {["Scope", "Group size", "Game", "Setup"].map((label, index) => <li key={label} aria-current={index === (game ? 3 : size ? 2 : scope ? 1 : 0) ? "step" : undefined}>{index + 1}. {label}</li>)}
-    </ol>
-    <fieldset className={styles.section}><legend>1. Where are you playing?</legend>
-      <div className={styles.choices}>{([["tournament", "Whole Tournament"], ["round", "Per Round"]] as const).map(([value, label]) =>
-        <button type="button" key={value} aria-pressed={scope === value} onClick={() => { setScope(value); resetGame(); }}>{label}</button>)}</div>
-      {scope === "tournament" && <p>Spans the full event. No specific round needed.</p>}
-      {scope === "round" && <label className={styles.label}>Choose one round<select value={roundId} onChange={event => { setRoundId(event.target.value); setConfirmed(false); }}>
-        {rounds.map(item => <option key={item.id} value={item.id}>Round {item.number} · {item.course} · {item.date}</option>)}
-      </select></label>}
-    </fieldset>
+    <header className={styles.gamesHeader}>
+      <h2 className={styles.activeGamesTitle}>Active Games</h2>
+      <div className={styles.newGameWrap}>
+        <button type="button" className={styles.newGameButton} aria-expanded={showScopeMenu} onClick={() => setShowScopeMenu(value => !value)}>
+          New game
+        </button>
+        {showScopeMenu && <div className={styles.scopeMenu} role="menu" aria-label="Game scope selector">
+          {(["tournament", "round"] as const).map((value) => <button type="button" key={value} className={styles.scopeMenuItem}
+            aria-pressed={scope === value} onClick={() => { setScope(value); setShowScopeMenu(false); resetGame(); }}>
+            {value === "tournament" ? "Whole Tournament" : "Per Round"}
+          </button>)}
+          {scope === "round" && <label className={styles.label}>
+            <select value={roundId} onChange={event => { setRoundId(event.target.value); setConfirmed(false); }}>
+              {rounds.map(item => <option key={item.id} value={item.id}>Round {item.number} · {item.course} · {item.date}</option>)}
+            </select>
+          </label>}
+        </div>}
+      </div>
+    </header>
     {scope && <fieldset className={styles.section}><legend>2. How big is your group?</legend><div className={`${styles.choices} ${styles.sizes}`}>
       {sizes.map(value => <button type="button" key={value} aria-pressed={size === value} onClick={() => { setSize(value); resetGame(); }}>{sizeLabel(value)}</button>)}
     </div>{size === 1 && <p>Going solo? Challenge a player in another group to Match Play.</p>}</fieldset>}
