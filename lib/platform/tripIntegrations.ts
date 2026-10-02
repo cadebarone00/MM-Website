@@ -63,7 +63,8 @@ export const PROVIDERS: Provider[] = [
   { key: "apple-maps", name: "Apple Maps", category: "maps", status: "enabled", capabilities: ["navigation", "externalLink"] },
   { key: "waze", name: "Waze", category: "maps", status: "enabled", capabilities: ["navigation", "externalLink"] },
 
-  planned("weather", "Weather", "weather", ["search"], ["WEATHER_API_KEY"]),
+  // Free and keyless; lib/platform/weather/ calls it straight from Golf Trip Home (server). US only.
+  { key: "nws", name: "National Weather Service", category: "weather", status: "enabled", capabilities: ["search"] },
   manual("email"),
   planned("gmail", "Gmail confirmation import", "email", ["import", "oauth"], ["GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET"]),
   manual("calendar"),

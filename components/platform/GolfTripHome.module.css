@@ -33,6 +33,11 @@
 .cardTitle{margin:0;font:500 22px/1.2 var(--font-spectral),Georgia,serif;letter-spacing:-.01em;color:#fff}
 .text{margin:0;font:600 16px/1.4 var(--font-barlow),sans-serif;color:#fff}
 .empty{margin:0;font:500 15px/1.4 var(--font-barlow),sans-serif;color:rgba(220,196,149,.8)}
+/* Weather card (saved trips): place, big temperature, then short lines. */
+.weather{display:flex;flex-direction:column;gap:4px}
+.weatherPlace{margin:0;font:600 14px/1.3 var(--font-barlow),sans-serif;letter-spacing:.02em;color:#dcc495}
+.weatherTemp{margin:2px 0;font:500 44px/1 var(--font-spectral),Georgia,serif;color:#fff}
+.weatherLine{margin:0;font:500 15px/1.4 var(--font-barlow),sans-serif;color:rgba(255,255,255,.75)}
 .rows{display:flex;flex-direction:column;margin:0}
 .row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid rgba(255,255,255,.08);font:600 15px/1.3 var(--font-barlow),sans-serif}
 .row:first-child{border-top:0;padding-top:0}
@@ -43,6 +48,9 @@
 .slides{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none}
 .slides::-webkit-scrollbar{display:none}
 .slide{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always}
+/* Phones: the strip runs to the screen edges (content stays put via the slide padding), so the Match slide's team
+   color can start right at the edge of the screen. */
+@media(max-width:592px){.slides{margin-inline:-16px}.slide{box-sizing:border-box;padding-inline:16px}}
 /* Trip Settings: a back arrow, then the smaller "Trip Settings" title on the left; organizers get General / Organizer
    in the same words-and-underline style as the trip selector. */
 .settingsHeader{display:flex;flex-direction:column;align-items:flex-start;gap:12px}

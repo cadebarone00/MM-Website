@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { Suspense, use, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, MessageCircle, Settings } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
+import type { TripWeather, WeatherData } from "@/lib/platform/weather/types";
 import { GolfMatchup, GolfTripLeaderboard, GolfTripMatch } from "./GolfTripMatch";
 import styles from "./GolfTripHome.module.css";
 
@@ -24,9 +25,11 @@ const subscribeNever = () => () => {};
  * `settingsHref` is where the settings wheel goes (this trip's settings page).
  * `backHref` adds a small "← Golf Trips" link on desktop, where the bottom tabs (and their Golf Trips tab) are hidden.
  * `previewMatch` fills the Golf tab's Leaderboard and Match slides with made-up data (/dev/tournament only); without it they are "Coming soon".
+ * `weather` (saved trips only, still loading on the server) adds a Weather card after Travel that shows a loading line
+ * until it settles, so the rest of the page never waits for it; without it there is no Weather card.
  */
-export function GolfTripHome({ preview, settingsHref, backHref, previewMatch }:
-  { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview }) {
+export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather }:
+  { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview; weather?: Promise<TripWeather> }) {
   const raw = useSyncExternalStore(subscribeNever, golfTripDraftSnapshot, () => "");
   const stored = useMemo(() => parseGolfTripDraft(raw), [raw]);
   const draft = preview ?? stored;
@@ -48,14 +51,14 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch }:
       </div>
     </header>
     <div className={styles.body} role="tabpanel" aria-label={tab}>
-      {tab === "Home" ? <HomeSections draft={draft} dates={dates} dateRange={dateRange} />
+      {tab === "Home" ? <HomeSections draft={draft} dates={dates} dateRange={dateRange} weather={weather} />
         : tab === "Golf" ? <GolfSlides previewMatch={previewMatch} />
         : <Card title={tab}><Empty>Coming soon</Empty></Card>}
     </div>
   </main>;
 }
 
-function HomeSections({ draft, dates, dateRange }: { draft: Record<string, string>; dates: string[]; dateRange: string }) {
+function HomeSections({ draft, dates, dateRange, weather }: { draft: Record<string, string>; dates: string[]; dateRange: string; weather?: Promise<TripWeather> }) {
   const rounds = plannedRounds(draft);
 
   return <>
@@ -64,6 +67,9 @@ function HomeSections({ draft, dates, dateRange }: { draft: Record<string, strin
         ? <Rows rows={[["Destination", draft.destination || "Not set yet"], ["Dates", dateRange || "Not set yet"], ["Nights", dates.length > 1 ? String(dates.length - 1) : "—"]]} />
         : <Empty>Add your destination and dates</Empty>}
     </Card>
+    {weather && <Card title="Weather">
+      <Suspense fallback={<Empty>Loading forecast…</Empty>}><WeatherBody place={draft.destination} weather={weather} /></Suspense>
+    </Card>}
     <Card title="Stay"><Empty>Add where you&apos;re staying</Empty></Card>
     <Card title="Golf">
       {rounds.length > 0
@@ -121,6 +127,26 @@ function GolfSlides({ previewMatch }: { previewMatch?: GolfMatchPreview }) {
       </div>)}
     </div>
   </>;
+}
+
+/** The Weather card's contents once the server's weather promise settles (Suspense shows the loading line until then). */
+function WeatherBody({ place, weather }: { place?: string; weather: Promise<TripWeather> }) {
+  const result = use(weather);
+  return result.status === "ok" ? <WeatherNow place={place} weather={result.weather} />
+    : <Empty>{result.status === "unavailable" ? "Forecast temporarily unavailable" : "Weather unavailable"}</Empty>;
+}
+
+/** Current weather at the destination. Lines with no data are left out. */
+function WeatherNow({ place, weather }: { place?: string; weather: WeatherData }) {
+  const highLow = [weather.high !== null && `High ${weather.high}°`, weather.low !== null && `Low ${weather.low}°`].filter(Boolean).join(" · ");
+  const wind = [weather.windDirection, weather.windSpeed].filter(Boolean).join(" ");
+  const lines = [highLow, weather.precipitationChance !== null && `Rain ${weather.precipitationChance}%`, wind && `Wind ${wind}`].filter(Boolean);
+  return <div className={styles.weather}>
+    {place && <p className={styles.weatherPlace}>{place}</p>}
+    {weather.temperature !== null && <p className={styles.weatherTemp}>{weather.temperature}°{weather.temperatureUnit}</p>}
+    {weather.condition && <p className={styles.text}>{weather.condition}</p>}
+    {lines.map((line) => <p key={String(line)} className={styles.weatherLine}>{line}</p>)}
+  </div>;
 }
 
 export function Card({ title, children }: { title: string; children: ReactNode }) {

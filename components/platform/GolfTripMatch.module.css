@@ -1,5 +1,5 @@
-/* Match slide: Sleeper's Match layout on the trip maroon. Gold is "our" side, rose the other side. */
-.match{display:flex;flex-direction:column;gap:16px;font-family:var(--font-barlow),sans-serif;color:#fbf8f1}
+/* Match slide: Sleeper's Match layout on the trip maroon, all in Spectral (the trip-name font). Gold is "our" side, rose the other side. */
+.match{display:flex;flex-direction:column;gap:16px;font-family:var(--font-spectral),Georgia,serif;color:#fbf8f1}
 .left{text-align:left}
 .right{text-align:right}
 
@@ -9,27 +9,27 @@
 .side{display:flex;flex-direction:column;gap:6px;min-width:0}
 .sideTop{display:flex;align-items:flex-end;gap:6px}
 .right .sideTop{flex-direction:row-reverse}
-.avatar{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:50%;background:#dcc495;color:var(--color-maroon-900);font:800 15px/1 var(--font-barlow),sans-serif}
+.avatar{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:50%;background:#dcc495;color:var(--color-maroon-900);font:800 15px/1 var(--font-spectral),Georgia,serif}
 .avatarRight{background:#e89a9a}
-.win{font:700 12px/1 var(--font-barlow),sans-serif;color:#dcc495;white-space:nowrap}
+.win{font:700 12px/1 var(--font-spectral),Georgia,serif;color:#dcc495;white-space:nowrap}
 .right .win{color:#e89a9a}
-.points{margin-left:auto;font:600 18px/1 var(--font-barlow),sans-serif}
+.points{margin-left:auto;font:600 18px/1 var(--font-spectral),Georgia,serif}
 .right .points{margin-left:0;margin-right:auto}
 .bar{height:4px;border-radius:4px;background:rgba(255,255,255,.14);overflow:hidden}
 .right .bar{transform:scaleX(-1)}
 .barFill,.barFillRight{display:block;height:100%;border-radius:4px;background:#dcc495}
 .barFillRight{background:#e89a9a}
-.teamName{margin:4px 0 0;font:700 18px/1.15 var(--font-barlow),sans-serif;color:#fff;overflow-wrap:anywhere}
-.teamMeta{margin:0;font:500 12px/1.3 var(--font-barlow),sans-serif;color:rgba(255,255,255,.6)}
-.teamMeta b{font-weight:700;color:rgba(255,255,255,.8)}
+.teamName{margin:4px 0 0;font:700 18px/1.15 var(--font-spectral),Georgia,serif;color:#fff;overflow-wrap:anywhere}
+.teamMeta{margin:0;font:500 12px/1.3 var(--font-spectral),Georgia,serif;color:rgba(255,255,255,.6)}
+.teamMeta b{font-weight:700;white-space:nowrap;color:rgba(255,255,255,.8)}
 .crest{display:grid;place-items:center;width:44px;height:44px;margin-top:22px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.25)}
 .crest img{width:26px;height:26px}
 .stats{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:8px;padding:0 14px 12px;border-top:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.18)}
-.stat{display:flex;flex-direction:column;gap:2px;margin:0;font:500 12px/1.2 var(--font-barlow),sans-serif;color:rgba(255,255,255,.7)}
-.statValue{font:700 14px/1.2 var(--font-barlow),sans-serif;color:#dcc495}
+.stat{display:flex;flex-direction:column;gap:2px;margin:0;font:500 12px/1.2 var(--font-spectral),Georgia,serif;color:rgba(255,255,255,.7)}
+.statValue{font:700 14px/1.2 var(--font-spectral),Georgia,serif;color:#dcc495}
 .avg{display:flex;flex-direction:column;align-items:center;gap:6px}
-.avgLabel{padding:5px 12px;border-radius:0 0 10px 10px;background:rgba(255,255,255,.08);font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.04em;color:rgba(255,255,255,.8)}
-.avgValues{display:flex;font:600 20px/1 var(--font-barlow),sans-serif}
+.avgLabel{padding:5px 12px;border-radius:0 0 10px 10px;background:rgba(255,255,255,.08);font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.04em;color:rgba(255,255,255,.8)}
+.avgValues{display:flex;font:600 20px/1 var(--font-spectral),Georgia,serif}
 .avgValues span{padding:0 10px}
 .avgValues span+span{border-left:1px solid rgba(255,255,255,.3)}
 
@@ -37,35 +37,84 @@
 .matchup{position:relative}
 .dots{position:absolute;top:calc(100% + 6px);left:0;right:0;display:flex;justify-content:center;align-items:center;gap:6px;pointer-events:none}
 .dot{display:grid;place-items:center;width:22px;height:16px;border-radius:999px;background:#fbf8f1}
-.dotActive{width:auto;padding:0 9px;color:var(--color-maroon-900);font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.02em;white-space:nowrap}
+.dotActive{width:auto;padding:0 9px;color:var(--color-maroon-900);font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.02em;white-space:nowrap}
 
-/* Lineup */
-.lineupHeader{display:flex;align-items:center;justify-content:space-between}
-.lineupTitle{margin:0;font:500 22px/1.2 var(--font-spectral),Georgia,serif;color:#fff}
-.roundSwitch{display:flex;align-items:center;gap:4px;font:700 15px/1 var(--font-barlow),sans-serif;color:#dcc495}
-.roundSwitch button{display:grid;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:50%;background:transparent;color:#dcc495;cursor:pointer}
-.roundSwitch button:hover{background:rgba(255,255,255,.08)}
-.roundSwitch button:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+/* Slide header (control on the right) + rows */
+.lineupHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:36px}
+/* Header text: the course in a larger version of the golfer-name style, the detail line in the tee-line style. */
+.headerText{display:flex;flex-direction:column;gap:3px;min-width:0}
+.headerTitle{margin:0;font:700 22px/1.15 var(--font-spectral),Georgia,serif;color:#fff;overflow-wrap:anywhere}
+.headerDetail{margin:0;font:500 13px/1.3 var(--font-spectral),Georgia,serif;color:rgba(220,196,149,.8)}
+/* Leaderboard CARD button: gold outline next to the position box; filled gold while that golfer's card is open. */
+.cardButton{display:grid;place-items:center;width:40px;height:30px;padding:0;border:1.5px solid #dcc495;border-radius:8px;background:transparent;
+  color:#dcc495;font:700 10px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;cursor:pointer;transition:background .15s ease,color .15s ease}
+.cardButton:hover{background:rgba(220,196,149,.12)}
+.cardButton:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.cardButton.cardButtonOpen{background:#dcc495;color:var(--color-maroon-900);font-weight:800}
+/* Open row: the boxes, name and numbers move to the top, and the card fills the row underneath. */
+.singleOpen{align-items:start;row-gap:10px}
+.singleOpen .number{line-height:30px}
+/* The card: no lines, boxes or shading; flush left, so HOLE / PAR / SCORE sit in the position box's column. Scrolls sideways. */
+.scorecard{grid-column:1/-1;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none}
+.scorecard::-webkit-scrollbar{display:none}
+.scorecard:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.scorecardTable{border-collapse:collapse;font:600 13px/1 var(--font-spectral),Georgia,serif;color:#fff;text-align:center;white-space:nowrap}
+.scorecardTable th{position:sticky;left:0;z-index:1;padding:5px 10px 5px 0;background:var(--color-maroon-900);text-align:left;
+  font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+.scorecardTable td{min-width:28px;padding:6px 3px}
+.scorecardTable tr:first-child td{color:#dcc495;font-size:12px}
+.scorecardTable tr:nth-child(2) td{color:rgba(255,255,255,.6)}
+/* SCORE row: a thin line above it (under PAR), and extra height so the marks and their outer rings fit around the numbers. */
+.scorecardTable tr:nth-child(3) th,.scorecardTable tr:nth-child(3) td{padding-top:10px;padding-bottom:6px;border-top:1px solid rgba(255,255,255,.2)}
+.scorecardTable .totalCell{min-width:34px;font-weight:800}
+/* Hole score marks: birdie circle, eagle-or-better double circle, bogey box, double-bogey-or-worse double box.
+   Hairline rings drawn with box-shadow (borders can't go under 1px): the inner line, then for doubles a page-colored
+   gap and a second line, so the cell size never changes. */
+/* Spectral's digits sit high in their line box (room is kept below for letters like g/p), so a small top padding
+   drops each number to the true middle of its shape. */
+.mark{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;width:22px;height:22px;padding-top:2px;
+  line-height:1;font-variant-numeric:lining-nums tabular-nums}
+.circle{border-radius:50%}
+.box{border-radius:2px}
+.circle,.box{box-shadow:inset 0 0 0 .5px currentColor}
+.circle.double,.box.double{box-shadow:inset 0 0 0 .5px currentColor,0 0 0 2px var(--color-maroon-900),0 0 0 2.5px currentColor}
 .lineup{display:flex;flex-direction:column;margin:0;padding:0;list-style:none}
-.pairing{display:grid;grid-template-columns:minmax(0,1fr) auto 40px auto minmax(0,1fr);align-items:center;gap:8px;padding:14px 0;border-top:1px solid rgba(255,255,255,.08)}
-/* Leaderboard row: small cream position box (maroon number), golfer, then TOT / THRU / TDY. The header row uses the
+.pairing{display:grid;grid-template-columns:minmax(0,1fr) 44px minmax(0,1fr);align-items:center;gap:8px;padding:8px 0;border-top:1px solid rgba(255,255,255,.08)}
+/* Leaderboard row: small cream position box (maroon number), CARD button, golfer, then TOT / THRU / TDY. The header row uses the
    same grid so each label sits over its column, with a line under it. */
-.rank{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:#fbf8f1;color:var(--color-maroon-900);font:800 13px/1 var(--font-barlow),sans-serif}
-.single{display:grid;grid-template-columns:30px minmax(0,1fr) 36px 36px 36px;align-items:center;gap:10px;padding:14px 0;border-top:1px solid rgba(255,255,255,.08)}
+.rank{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:#fbf8f1;color:var(--color-maroon-900);font:800 13px/1 var(--font-spectral),Georgia,serif}
+.single{display:grid;grid-template-columns:30px 40px minmax(0,1fr) 34px 34px 34px;align-items:center;gap:8px;padding:14px 0;border-top:1px solid rgba(255,255,255,.08)}
 .pairing:first-child,.single:first-child{border-top:0}
-.columns{padding:0 0 8px;border-bottom:1px solid rgba(255,255,255,.3);font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.06em;color:rgba(255,255,255,.6);text-align:center}
-.columnPlayer{grid-column:2;text-align:left;text-transform:uppercase}
-.number{font:600 15px/1 var(--font-barlow),sans-serif;color:#fff;text-align:center}
+.singleNet{grid-template-columns:30px 40px minmax(0,1fr) 28px 34px 34px 34px}
+.columns{padding:0 0 8px;border-bottom:1px solid rgba(255,255,255,.3);font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;color:rgba(255,255,255,.6);text-align:center}
+.columnPlayer{grid-column:3;text-align:left;text-transform:uppercase}
+.scoring{display:flex;padding:3px;border-radius:999px;border:1px solid rgba(255,255,255,.2)}
+.scoring button{min-height:28px;padding:0 12px;border:0;border-radius:999px;background:transparent;color:rgba(255,255,255,.7);cursor:pointer;
+  font:700 12px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;transition:background .15s ease,color .15s ease}
+.scoring button:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.scoring .scoringActive{background:#fbf8f1;color:var(--color-maroon-900)}
+/* Match status box: the position box, a little bigger, with a small label line (THRU / AM) and the main value. */
+.status{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:44px;height:40px;font-size:14px;line-height:1}
+.status small{font:700 8px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em}
+.number{font:600 15px/1 var(--font-spectral),Georgia,serif;color:#fff;text-align:center}
 .golfer{display:flex;flex-direction:column;gap:3px;min-width:0}
-.golferName{font:700 16px/1.2 var(--font-barlow),sans-serif;color:#fff;overflow-wrap:anywhere}
-.golferMeta{font:500 12px/1.3 var(--font-barlow),sans-serif;color:rgba(255,255,255,.7)}
+.golferName{font:700 16px/1.2 var(--font-spectral),Georgia,serif;color:#fff;overflow-wrap:anywhere}
+.golferMeta{font:500 12px/1.3 var(--font-spectral),Georgia,serif;color:rgba(255,255,255,.7)}
 .hcp{color:#dcc495}
-.tee{font:500 12px/1.3 var(--font-barlow),sans-serif;color:rgba(255,255,255,.6)}
+.tee{font:500 12px/1.3 var(--font-spectral),Georgia,serif;color:rgba(255,255,255,.6)}
 .course{color:rgba(220,196,149,.8)}
-.score{min-width:24px;text-align:right;font:600 16px/1 var(--font-barlow),sans-serif;color:#fff}
-.scoreRight{text-align:left}
-.badge{display:grid;place-items:center;width:40px;height:40px;border-radius:10px;font:800 14px/1 var(--font-barlow),sans-serif;color:var(--color-maroon-900)}
-.badge0{background:#e89a9a}
-.badge1{background:#dcc495}
-.badge2{background:#a8d5ba}
-.badge3{background:#9cc7e6}
+/* Match row halves: standing on the outside, name toward the status box. The leader's half fills with their team
+   color (gold left, rose right) from their edge of the screen (--bleed reaches past the page gutter on phones, where
+   the Golf slides run edge to edge) and rounds off just past the name. */
+.pairing{--bleed:0px}
+.pairSide{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;min-height:56px;padding:8px 10px}
+.pairSide.right{flex-direction:row-reverse}
+.pairSide.left.leading{margin-left:calc(-1 * var(--bleed));padding-left:calc(10px + var(--bleed));border-radius:0 16px 16px 0;background:#dcc495}
+.pairSide.right.leading{margin-right:calc(-1 * var(--bleed));padding-right:calc(10px + var(--bleed));border-radius:16px 0 0 16px;background:#e89a9a}
+.leading .golferName,.leading .standing{color:var(--color-maroon-900)}
+.leading .tee,.leading .course{color:rgba(36,0,1,.7)}
+.standing{flex:none;font:700 15px/1 var(--font-spectral),Georgia,serif;color:#fff;white-space:nowrap}
+/* Match names wrap between words only (never mid-name); the smallest phones get a little more room for them. */
+.pairing .golferName{overflow-wrap:normal}
+@media(max-width:592px){.pairing{--bleed:16px}}
+@media(max-width:359px){.pairing{column-gap:6px}.pairSide{gap:6px;padding-inline:8px}.pairing .golferName{font-size:14px}.standing{font-size:13px}}
