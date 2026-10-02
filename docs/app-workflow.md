@@ -8,6 +8,8 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
+  %% Dev Settings wheel opens a static screenshot-inspired terminal layout on maroon; live trip settings remain separate.
+  %% Golf Trip dev preview: shared local competition round state drives organizer settings and player Competition tab; started rounds lock edits. No persistence or scoring integration.
   %% Platform page headings sit beside the hamburger menu in smaller bold Spectral type.
   %% Operator recovery tooling only: REST row exports; optional explicit pg_dump to local dump/manifest; isolated restore drill documented. No provider monitoring, PITR activation or application integration.
   %% Mobile platform home: sampled #1D0B11 upper region, horizontally snapping Join/Create photo cards, Discover/Courses/News selectors and floating Home/Tournaments/Account links.
@@ -520,6 +522,11 @@ The separate test-season controls operate on a designated database season. This 
 
 ## 22. Legacy integrations and unfinished pages
 
+**Golf Trip Settings presentation (local dev preview):** The wheel at `/dev/tournament` opens `/dev/tournament/settings`, a static recreation of the supplied terminal screenshot with a maroon background, compact top labels, introduction panel, message lines and bottom prompt/footer. Terminal labels are decorative; the footer return link opens the trip preview. Live trip settings are unchanged.
+
+**Golf Trip Competition UI (local dev preview):** At `/dev/tournament`, Spring Golf Weekend uses Overview | Competition | Games, with Competition omitted for the non-competitive scenario. Overview keeps the sample leaderboard/scorecards; Games remains a placeholder. Preview view controls switch between Organizer Competition Settings and Player preview. One lifted local round array supplies both views; settings remain while switching views or trip tabs and reset on reload. Rows retain Date ? Round ? Course ? Format ? Nassau ? Handicap order. Format options are Singles, Best Ball, Alternate Shot, Scramble, Shamble, Chapman and Stableford. Handicap All and Nassau All update only scheduled rounds, show Mixed when those rounds differ, and allow individual overrides. Started rounds have disabled controls and a Started ? Locked label; player rows contain no organizer controls. Fixture status is explicit rather than driven by a clock. These flags do not calculate scores, handicaps or Nassau. No database, permission enforcement, API, persistence or deployment is added. Outside the dev preview, no fake competition rounds are supplied. Feature review: `docs/golf-trip-competition-review.md`.
+
+
 **Public Tournament Site UI kit (local presentation only):** `components/platform/tournament-site/` provides branded Home, Leaderboard, Matches, Schedule, Players, Teams, Courses and Results concepts from typed fixtures. Run `npx tsx scripts/preview-tournament-site.tsx` to generate the explicitly fictional `out/tournament-site-preview/index.html`; no application route is added and `/t/[tournament]/[year]` is not wired. Texas Cup and Coastal Open are demonstration data only. Dynamic theme colors, arbitrary teams, individual events, public-handicap display, final labels, empty/locked/coming-soon states and optional image placeholders are supported. No dashboard, persistence, readiness, authorization, scoring or database integration is added. Existing overview boxes and workflow paths remain unchanged.
 
 Current native scoring uses the Supabase transaction path. The repository still contains the older `PlayerScoringPanel`, `/api/portal/score` routes, `LIVE_FEED_URL` integration, and Python API client. The old panel is not mounted by the current app routes found in this review, but some external-feed consumers and endpoints remain.
@@ -581,6 +588,12 @@ These are observations from the documentation review. No application behavior wa
 
 
 ## What changed
+
+**2026-10-02 ? Dev Settings presentation (implemented locally; deployment not verified).** The preview wheel previously opened General/Organizer settings placeholders. It now opens the supplied screenshot layout on maroon as a static UI. Updated section 22 and the flowchart annotation; overview paths remain unchanged.
+
+
+**2026-10-02 ? Golf Trip Competition UI (implemented locally; deployment not verified).** Previously Competition was a placeholder. The dev preview now offers compact organizer round settings and a read-only player Competition tab from shared local state, with bulk flags and started-round locks. Updated section 22 and the flowchart annotation; overview boxes and mapped paths are unchanged. Scoring and persistence remain excluded.
+
 
 **2026-10-01 - Compact platform page headings (presentation implemented locally; deployment not verified).** Previously the main page titles were large and centered below an icons-only header. They now sit beside the hamburger menu in smaller, thicker Spectral type, shared across the main pages and tournament entry pages. Updated section 3 and the Mermaid annotation; workflow paths and overview mappings are unchanged.
 

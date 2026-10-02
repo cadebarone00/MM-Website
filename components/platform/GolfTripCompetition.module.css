@@ -1,0 +1,21 @@
+.card{padding:18px;border:1px solid rgba(255,255,255,.12);border-radius:20px;background:rgba(255,255,255,.05);color:#fbf8f1;font:500 14px/1.35 var(--font-barlow),sans-serif}
+.title{margin:0 0 16px;font:500 22px/1.2 var(--font-spectral),Georgia,serif;color:#fff}
+.bulk{display:flex;flex-wrap:wrap;gap:12px 24px;margin-bottom:10px}
+.bulkControl{display:flex;align-items:center;gap:12px;font-weight:700}
+.note{margin:0;color:rgba(220,196,149,.8)}
+.header,.row{display:grid;grid-template-columns:60px 40px minmax(90px,1.4fr) minmax(120px,1.5fr) 64px 64px;gap:8px;align-items:center}
+.header{margin-top:18px;padding-bottom:8px;color:#dcc495;font-size:12px;font-weight:700}
+.rounds{display:flex;flex-direction:column}
+.row{padding:12px 0;border-top:1px solid rgba(255,255,255,.12)}
+.cell{display:flex;flex-direction:column;gap:4px;min-width:0;overflow-wrap:anywhere}
+.label{display:none;color:#dcc495;font-size:12px;font-weight:700}
+.cell select{box-sizing:border-box;width:100%;min-width:0;min-height:40px;padding:6px;border:1px solid rgba(220,196,149,.5);border-radius:8px;background:var(--color-maroon-900);color:#fbf8f1;font:inherit}
+.toggle{display:inline-flex;align-items:center;justify-content:flex-start;gap:4px;min-height:40px;padding:0;border:0;background:transparent;color:#fbf8f1;font:600 12px/1 var(--font-barlow),sans-serif;cursor:pointer}
+.track{display:flex;align-items:center;flex-shrink:0;width:28px;height:18px;padding:2px;box-sizing:border-box;border-radius:12px;background:rgba(255,255,255,.22)}
+.track[data-on=true]{justify-content:flex-end;background:#dcc495}
+.thumb{display:grid;place-items:center;width:14px;height:14px;border-radius:50%;background:#fbf8f1;color:var(--color-maroon-900)}
+.toggle:disabled,.cell select:disabled{opacity:.7;cursor:default}
+.toggle:focus-visible,.cell select:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
+.enabled{color:#dcc495;font-weight:700}
+.status{grid-column:1/-1;margin:0;color:rgba(220,196,149,.8);font-size:12px}
+@media(max-width:700px){.header{display:none}.row{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px}.label{display:block}.rounds{margin-top:16px}}

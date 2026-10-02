@@ -1,16 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { GolfTripSettings } from "@/components/platform/GolfTripSettings";
+import { GolfTripSettingsPreview } from "@/components/platform/GolfTripSettingsPreview";
 
 export const metadata: Metadata = { title: "Trip Settings preview | The Maroon", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
 /**
- * LOCAL DEV PREVIEW of Trip Settings, seen as the organizer. Add `?as=traveler` to see what everyone else sees.
+ * LOCAL DEV PREVIEW of the screenshot-inspired static Settings layout.
  * No login, no database. 404 unless NODE_ENV=development (`npm run dev`).
  */
-export default async function GolfTripSettingsPreviewPage({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
+export default function GolfTripSettingsPreviewPage() {
   if (process.env.NODE_ENV !== "development") notFound();
-  const { as } = await searchParams;
-  return <GolfTripSettings backHref="/dev/tournament" isOrganizer={as !== "traveler"} tripId={null} />;
+  return <GolfTripSettingsPreview />;
 }

@@ -73,6 +73,11 @@ interface FeatureSeed {
 
 const seeds: FeatureSeed[] = [
   {
+    id: "golf-trip-competition-preview", name: "Golf Trip competition settings preview",
+    scope: "Local fictional round configuration shared by organizer settings and player preview; UI locking only, no persistence, auth or scoring. Findings and follow-ups: docs/golf-trip-competition-review.md.",
+    attentionCategories: ["privacy", "personal-data", "security", "retention", "intellectual-property", "organizer-responsibility", "legal-review"],
+  },
+  {
     id: "backup-recovery", name: "Backup and recovery operations",
     scope: "Explicit operator-only PostgreSQL export and isolated health model; no production execution, retention deletion, provider integration or restore automation. Findings and follow-ups: docs/backup-recovery-review.md.",
     attentionCategories: ["privacy", "personal-data", "user-accounts", "security", "retention", "account-deletion", "ugc", "media-rights", "platform-rules", "audit-logging", "legal-review"],

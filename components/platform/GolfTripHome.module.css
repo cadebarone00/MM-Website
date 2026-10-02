@@ -160,3 +160,6 @@
 .sheetClosed:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
 .sheetName{font-size:14px;font-weight:500;color:#6a6a6a}
 .sheetSummary{font-size:14px;font-weight:600;color:#222;text-align:right}
+
+/* Wider Golf dev preview accommodates compact competition rows on desktop. */
+@media(min-width:1024px){.pageGolfPreview{padding-inline:max(24px,calc((100% - 920px)/2))}}

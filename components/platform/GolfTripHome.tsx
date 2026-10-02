@@ -5,19 +5,20 @@ import Link from "next/link";
 import { ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronRight, ChevronsUpDown, Clock, CloudRain, Flag, MapPin, MessageCircle, Moon, Plane, Plus, Receipt, Settings, Sun, Thermometer, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import { normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
-import { resolveGolfFormat } from "@/lib/platform/formats";
 import type { TripWeather } from "@/lib/platform/weather/types";
 import { flightCounts, flightTime, type FlightSummary } from "@/lib/platform/golfTripFlights";
 
 /** The Info tab's Flights card: the viewer's flight summary, and the Flights page it opens (null = not a link). */
 export interface TripFlights { summary: FlightSummary; href: string | null }
-import { GolfCourseWeather, GolfMatchup, GolfTripLeaderboard, GolfTripMatch } from "./GolfTripMatch";
+import { GolfCourseWeather, GolfTripLeaderboard } from "./GolfTripMatch";
 import { GolfTripScoring } from "./GolfTripScoring";
+import { GolfTripCompetition } from "./GolfTripCompetition";
+import { GOLF_TRIP_COMPETITION_PREVIEW, updateCompetitionRounds, type CompetitionRound, type CompetitionRoundChange } from "@/lib/platform/golfTripCompetitionPreview";
 import styles from "./GolfTripHome.module.css";
 
 const TABS = ["Home", "Golf", "Venue", "Info"] as const;
 type Tab = (typeof TABS)[number];
-const GOLF_SLIDES = ["Leaderboard", "Match", "Overview"] as const;
+const GOLF_SLIDES = ["Overview", "Competition", "Games"] as const;
 
 const TOURNAMENT_ANSWERS: Record<string, string> = { yes: "Yes, there's a tournament", no: "No tournament, just golf", undecided: "Not sure yet" };
 
@@ -30,7 +31,7 @@ const subscribeNever = () => () => {};
  * `preview` replaces those answers with fixed ones (the /dev/tournament design preview).
  * `settingsHref` is where the settings wheel goes (this trip's settings page).
  * `backHref` adds a small "← Golf Trips" link on desktop, where the bottom tabs (and their Golf Trips tab) are hidden.
- * `previewMatch` fills the Golf tab's Leaderboard and Match slides with made-up data (/dev/tournament only); without it they are "Coming soon".
+ * `previewMatch` fills the Golf tab's Overview leaderboard with made-up data (/dev/tournament only); without it they are "Coming soon".
  * `weather` (saved trips only, still loading on the server) adds a Weather card after Travel that shows a loading line
  * until it settles, so the rest of the page never waits for it; without it there is no Weather card.
  * `flights` fills the Info tab's Flights card with the viewer's own flights; `href` (saved trips) makes it open the Flights page.
@@ -41,6 +42,13 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   const stored = useMemo(() => parseGolfTripDraft(raw), [raw]);
   const draft = preview ?? stored;
   const [tab, setTab] = useState<Tab>("Home");
+  // Local mock scenario selector, available only when the dev preview supplies data.
+  const [previewCompetition, setPreviewCompetition] = useState<boolean | null>(null);
+  const competitive = (preview ? previewCompetition : null) ?? (draft.includesTournament === "yes");
+
+  const [competitionRounds, setCompetitionRounds] = useState<CompetitionRound[]>(() => preview && previewMatch ? GOLF_TRIP_COMPETITION_PREVIEW.map(round => ({ ...round })) : []);
+  const [organizerPreview, setOrganizerPreview] = useState(false);
+  const changeCompetition = (change: CompetitionRoundChange, id?: string) => setCompetitionRounds(rounds => updateCompetitionRounds(rounds, change, id));
 
   const dates = tripDates(draft.startDate, draft.endDate);
   const dateRange = dates.length > 0 ? `${shortTripDate(dates[0])} – ${shortTripDate(dates[dates.length - 1])}` : "";
@@ -50,7 +58,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   const you = firstCompetitor?.golfers[0]?.name;
   const yourHoles = previewMatch?.leaderboard.find((row) => row.golfer.name === you)?.holes;
 
-  return <main className={`${styles.page} ${styles.pageWithScoring}`}>
+  return <main className={`${styles.page} ${styles.pageWithScoring} ${tab === "Golf" && preview && previewMatch ? styles.pageGolfPreview : ""}`}>
     {backHref && <Link href={backHref} className={styles.desktopBack}><ArrowLeft size={16} strokeWidth={2} aria-hidden />Golf Trips</Link>}
     <header className={styles.header}>
       {/* Look only for now: chat isn't built yet. */}
@@ -64,7 +72,23 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
     </header>
     <div className={styles.body} role="tabpanel" aria-label={tab}>
       {tab === "Home" ? <HomeSections draft={draft} dates={dates} dateRange={dateRange} weather={weather} />
-        : tab === "Golf" ? <GolfSlides previewMatch={previewMatch} />
+        : tab === "Golf" ? <>
+          {preview && previewMatch && <div className={styles.tabs} role="group" aria-label="Preview trip scenario">
+            {[true, false].map((value) => <button key={String(value)} type="button" aria-pressed={competitive === value}
+              className={`${styles.tab} ${competitive === value ? styles.tabActive : ""}`} onClick={() => setPreviewCompetition(value)}>
+              {value ? "Competitive preview" : "Non-competitive preview"}
+            </button>)}
+          </div>}
+          {preview && previewMatch && competitive && <div className={styles.tabs} role="group" aria-label="Competition preview view">
+            {[false, true].map(value => <button key={String(value)} type="button" aria-pressed={organizerPreview === value}
+              className={`${styles.tab} ${organizerPreview === value ? styles.tabActive : ""}`} onClick={() => setOrganizerPreview(value)}>
+              {value ? "Organizer settings" : "Player preview"}
+            </button>)}
+          </div>}
+          {organizerPreview && competitive && preview && previewMatch
+            ? <GolfTripCompetition rounds={competitionRounds} onChange={changeCompetition} />
+            : <GolfSlides key={String(competitive)} previewMatch={previewMatch} competitive={competitive} competitionRounds={competitionRounds} />}
+        </>
         : tab === "Venue" ? <VenueEvents />
         : tab === "Info" ? <InfoAccount destination={draft.destination} flights={flights} />
         : <Card title={tab}><Empty>Coming soon</Empty></Card>}
@@ -167,27 +191,11 @@ function WeatherRow({ place, weather }: { place?: string; weather: Promise<TripW
       wind && { icon: Wind, text: `Wind ${wind}` }] }} />;
 }
 
-/**
- * Golf tab, Sleeper-style: round dots + team card (preview only; on Overview the course weather takes its place,
- * in the same spot so the tabs never move), then format-driven tabs (Leaderboard / Match / Overview), then side-by-side slides.
- * The slides sit in a scroll-snap strip, so a phone swipe moves between them natively; tapping a tab scrolls to its slide,
- * and scrolling lights up its tab.
- */
-function GolfSlides({ previewMatch }: { previewMatch?: GolfMatchPreview }) {
+/** Golf sections share the existing responsive scroll-snap strip and tab styling. */
+function GolfSlides({ previewMatch, competitive, competitionRounds }: { previewMatch?: GolfMatchPreview; competitive: boolean; competitionRounds: CompetitionRound[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const formatDef = previewMatch ? resolveGolfFormat(previewMatch.formatDef?.key ?? previewMatch.format) : undefined;
-  const availableSlides = useMemo(() => {
-    if (!formatDef) return GOLF_SLIDES;
-    return GOLF_SLIDES.filter((s) => formatDef.supportedSlides.includes(s));
-  }, [formatDef]);
-
-  const defaultIndex = useMemo(() => {
-    if (!formatDef) return 0;
-    const idx = availableSlides.indexOf(formatDef.defaultSlide as (typeof GOLF_SLIDES)[number]);
-    return idx >= 0 ? idx : 0;
-  }, [formatDef, availableSlides]);
-
-  const [active, setActive] = useState(defaultIndex);
+  const availableSlides = GOLF_SLIDES.filter((name) => name !== "Competition" || competitive);
+  const [active, setActive] = useState(0);
 
   const goTo = (index: number) => {
     const track = trackRef.current;
@@ -198,38 +206,22 @@ function GolfSlides({ previewMatch }: { previewMatch?: GolfMatchPreview }) {
     const track = trackRef.current;
     if (track && track.clientWidth > 0) setActive(Math.round(track.scrollLeft / track.clientWidth));
   };
-  const currentSlide = availableSlides[active] ?? availableSlides[0];
-  const overview = currentSlide === "Overview";
 
   return <>
-    {previewMatch && <div className={styles.golfTop}>
-      <div className={overview ? styles.golfTopHidden : ""} inert={overview}>
-        <GolfMatchup match={previewMatch} showDots={currentSlide !== "Leaderboard"} />
-      </div>
-      <div className={overview ? "" : styles.golfTopHidden} inert={!overview}><GolfCourseWeather match={previewMatch} /></div>
-    </div>}
+    {previewMatch && <div className={styles.golfTop}><GolfCourseWeather match={previewMatch} /></div>}
     <div className={styles.tabs} role="tablist" aria-label="Golf sections">
       {availableSlides.map((name, i) => <button key={name} type="button" role="tab" aria-selected={active === i}
         className={`${styles.tab} ${active === i ? styles.tabActive : ""}`} onClick={() => goTo(i)}>{name}</button>)}
     </div>
     <div ref={trackRef} className={styles.slides} onScroll={onScroll}>
       {availableSlides.map((name, i) => <div key={name} className={styles.slide} role="tabpanel" aria-label={name} inert={active !== i}>
-        {name === "Match" && previewMatch ? <GolfTripMatch match={previewMatch} />
-          : name === "Leaderboard" && previewMatch ? <GolfTripLeaderboard match={previewMatch} />
-          : name === "Overview" ? <GolfOverview />
-          : <Card title={name}><Empty>Coming soon</Empty></Card>}
+        {name === "Overview"
+          ? previewMatch ? <GolfTripLeaderboard match={previewMatch} /> : <Card title="Score Overview"><Empty>Your leaderboard and round scores will show here</Empty></Card>
+          : name === "Competition" ? <GolfTripCompetition rounds={competitionRounds} />
+          : <Card title={name}><Empty>Golf games are coming soon</Empty></Card>}
       </div>)}
     </div>
   </>;
-}
-
-/** Golf tab, Overview slide: the day at a glance. Placeholders for now (nothing behind them yet). */
-function GolfOverview() {
-  return <div className={styles.overview}>
-    <Card title="Course Scorecard"><Empty>Today&apos;s course scorecard will show here</Empty></Card>
-    <Card title="Travel Plans"><Empty>Today&apos;s rides and travel will show here</Empty></Card>
-    <Card title="Reservations"><Empty>Tee times, dinners, and other reservations for the rest of today will show here</Empty></Card>
-  </div>;
 }
 
 type EventLine = { icon: LucideIcon; text: string };
