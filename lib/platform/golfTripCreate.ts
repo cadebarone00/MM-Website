@@ -171,3 +171,24 @@ export function golfTripSummaries(data: unknown): GolfTripSummary[] {
   return data.filter((row): row is GolfTripSummary => Boolean(row) && typeof row === "object"
     && typeof row.id === "string" && typeof row.name === "string" && (row.role === "organizer" || row.role === "member"));
 }
+
+/** My Trips: trips that haven't ended yet (soonest first) and past trips (most recent first). `today` is "YYYY-MM-DD". */
+export function splitGolfTrips(trips: GolfTripSummary[], today: string): { upcoming: GolfTripSummary[]; past: GolfTripSummary[] } {
+  return {
+    upcoming: trips.filter((trip) => trip.endDate >= today),
+    past: trips.filter((trip) => trip.endDate < today).reverse(),
+  };
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "Apr 22 – 26, 2027", "Apr 28 – May 2, 2027" or "Dec 30, 2027 – Jan 2, 2028". */
+export function tripDateRange(start: string, end: string): string {
+  const [sy, sm, sd] = start.split("-").map(Number);
+  const [ey, em, ed] = end.split("-").map(Number);
+  if (![sy, sm, sd, ey, em, ed].every(Number.isFinite)) return "";
+  const s = `${MONTHS[sm - 1]} ${sd}`;
+  if (start === end) return `${s}, ${sy}`;
+  if (sy !== ey) return `${s}, ${sy} – ${MONTHS[em - 1]} ${ed}, ${ey}`;
+  return sm === em ? `${s} – ${ed}, ${sy}` : `${s} – ${MONTHS[em - 1]} ${ed}, ${sy}`;
+}

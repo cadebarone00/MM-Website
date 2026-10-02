@@ -19,5 +19,5 @@ export default async function SavedGolfTripPage({ params }: { params: Promise<{ 
   if (view.status === "not-found") notFound();
 
   // GolfTripHome reads questionnaire-shaped answers; the saved trip is passed in that shape.
-  return <GolfTripHome preview={savedTripAsDraft(view.trip)} settingsHref={`${golfTripUrl(tripId)}/settings`} />;
+  return <GolfTripHome preview={savedTripAsDraft(view.trip)} settingsHref={`${golfTripUrl(tripId)}/settings`} backHref="/golf-trips" />;
 }

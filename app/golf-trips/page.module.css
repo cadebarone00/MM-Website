@@ -75,6 +75,27 @@
   line-height: 1.6;
 }
 
+.noteLink { color: #380001; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+
+/* My Trips rows: each saved trip opens /golf-trips/<id>. */
+.tripList { margin: 0; padding: 0 0 6px; list-style: none; }
+.trip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 10px 16px 10px 20px;
+  color: inherit;
+  transition: background 0.15s ease;
+}
+.tripList li + li .trip { border-top: 1px solid #38000112; }
+.trip:hover { background: #f3ecdd; }
+.trip:focus-visible { outline: 3px solid #dcc495; outline-offset: -3px; }
+.tripText { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.tripName { font: 700 17px/1.3 var(--font-barlow), sans-serif; overflow-wrap: anywhere; }
+.tripMeta { color: #380001aa; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+.tripArrow { flex: none; color: #38000188; }
+
 @media (min-width: 1024px) {
   .page { margin-bottom: 0; padding-bottom: 48px; }
 }

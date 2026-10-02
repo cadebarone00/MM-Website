@@ -1748,6 +1748,12 @@ The Maroon app is the front door. The main navigation is Explore · Tourneys · 
 
 **Canonical route:** `/golf-trips/[tripId]` is the one Golf Trip Home for a saved trip. It's the same page whether the trip was just created, refreshed, reopened later, or picked from My Trips. It's rebuilt from Supabase on every request and never reads the questionnaire draft.
 
+**Re-entry point: My Trips.** My Trips on the Golf Trips page (`/golf-trips`) is the standard way back into a saved trip: Golf Trips → My Trips → pick a trip → `/golf-trips/[tripId]`.
+- It lists the signed-in person's trips from `getUserGolfTrips()`, fresh on every visit, so a deleted trip simply disappears. Each row shows name, destination, dates, player count and Organizer/Member, and links to the canonical trip page (there's no other trip detail page).
+- Trips that haven't ended (Chicago date) are under "Upcoming Trip", soonest first; ended ones are under "Past Trips", most recent first.
+- Empty lists show "No upcoming trip yet." / "No past trips yet."; signed-out visitors see "Log in to see your trips."
+- Getting there: the **Golf Trips** bottom tab on phones (shown on the trip page too), and **Golf Trips** in the ☰ menu on every page with the platform header (desktop has no bottom tabs).
+
 **Core relationship:** Golf Trip → members → rounds → future trip-owned systems. `golf_trips.id` (the trip ID) is the central identifier: flights, lodging, transportation, activities, restaurants, courses, teams, pairings, tournament links and per-traveler info will each be their own table with a `golf_trip_id` reference. None are built.
 
 - **Flow:** Questionnaire → Review → Create Golf Trip → `POST /api/golf-trips` → `create_golf_trip` → trip ID → `/golf-trips/<id>`.
@@ -1771,7 +1777,7 @@ The Maroon app is the front door. The main navigation is Explore · Tourneys · 
 - **Tests:**
   - `lib/platform/golfTripCreate.test.ts`: validation, all-or-nothing, double tap, members-only, RLS, trip list, organizer/member.
   - `scripts/test-golf-trip-create-browser.mjs` (`npm run test:browser:golf-trip`, after `next build`): create, double tap, refresh, reopen, members-only, signed-out.
-- **Not built:** Delete/Edit Trip, invitations, role management, trip lists UI, destination map fields, cover photo, course search, and any flight/lodging/transportation/team/tournament records.
+- **Not built:** Edit Trip, invitations, role management, destination map fields, cover photo, course search, and any flight/lodging/transportation/team/tournament records.
 
 ### Round: Trip Settings + Delete Trip (owner request 2026-10-01, built)
 
@@ -1784,3 +1790,64 @@ The Maroon app is the front door. The main navigation is Explore · Tourneys · 
   - For future tables: trip-owned planning/live tables may use `golf_trip_id … on delete cascade`. Permanent player-history tables (finalized rounds, stats) must **not** cascade from `golf_trips`, `golf_trip_members` or `golf_trip_rounds`: no foreign key to them, or `on delete set null`, and they keep their own copy of what they need (player profile id, date, course, scores).
   - Separate path, not Delete Trip: `golf_trips.created_by → profiles on delete cascade` means deleting an organizer's **account** deletes the trips they created (and those trips' members and rounds). Still no player history today; revisit before history tables exist.
 - **Role rename migration:** the first version of `golf_trips.sql` (commit `a43dc14`) used role `traveler`. The file now renames any `traveler` rows to `member` and swaps the rule/default every time it runs, so the whole file is safe to run on a fresh database, on one that ran an older version, and again later.
+
+### Round: Golf Trip destination coordinates + Weather card on Home (spec 2026-10-01, awaiting approval)
+
+**What it is:** the trip's typed destination (e.g. "Pinehurst, North Carolina") gets turned into map coordinates and a timezone once, when the trip is created. Golf Trip Home uses those saved coordinates to show a simple Weather card.
+
+**Who uses it:** everyone on the trip (organizer and members), on `/golf-trips/[tripId]`.
+
+**Source of truth:** `golf_trips` only. `tournaments` and `tournament_editions` are not touched.
+
+**Database (`supabase/golf_trip_location.sql`, new, additive, safe to re-run; prerequisite: `golf_trips.sql`):**
+```sql
+alter table public.golf_trips
+  add column if not exists latitude  double precision check (latitude  between -90  and 90),
+  add column if not exists longitude double precision check (longitude between -180 and 180),
+  add column if not exists timezone  text;
+```
+- `destination` stays as is (not renamed, still required, still what the organizer typed).
+- All three new columns are optional: a trip whose destination couldn't be found still saves, just without weather.
+- `create_golf_trip` is updated (in `golf_trips.sql`, same function, `create or replace`) to also write `latitude`, `longitude`, `timezone` from its input when present.
+- Reads need no SQL change: `get_golf_trip` already returns every `golf_trips` column (`to_jsonb(t)`).
+- Not run in production until the owner runs it (like the rest of `golf_trips.sql`).
+
+**Where the coordinates come from (no Google Places):**
+- Provider: **Open-Meteo** (free, no API key). Its geocoding search turns a place name into latitude, longitude **and** IANA timezone in one call, and its forecast API gives the weather. One provider for both jobs.
+- When: on the server, inside `POST /api/golf-trips`, after validation and before `create_golf_trip`. The browser never calls Open-Meteo.
+- How: search the part before the first comma ("Pinehurst"), then prefer the result whose state/country matches the rest ("North Carolina"); otherwise take the top result. No match, timeout (3 s) or error → save the trip with empty coordinates. Creating a trip never fails because of this.
+- Registered as an implemented provider in `lib/platform/tripIntegrations.ts` / `tripIntegrationsServer.ts` (replaces the `planned("weather", …, ["WEATHER_API_KEY"])` placeholder), so it follows the existing integration rule.
+
+**Weather on Golf Trip Home:**
+- Flow: `/golf-trips/[tripId]` page (server) → `getGolfTrip` → if the trip has coordinates, fetch weather from Open-Meteo on the server (cached ~30 min) → pass the result into `GolfTripHome` as a prop.
+- One new **Weather** card, placed right after the existing Travel card, using the existing `Card` / `Rows` / `Empty` look. No other Home change.
+- What it shows:
+  - Trip starts within 16 days (forecast range) or is happening now → one row per trip day: date, high/low (°F), short condition ("Sunny", "Rain").
+  - Trip is further out → today's conditions at the destination (temperature + condition) and the line "Trip forecast shows up about 2 weeks before you go."
+  - Trip has ended → card hidden.
+  - No coordinates, or weather request fails → "Weather isn't available for this destination yet." The page never errors because of weather.
+- Times/dates shown in the trip's `timezone`.
+- `/dev/tournament` preview and the old `/golf-trips/trip` draft page get the same card from fixed made-up weather (no network call).
+
+**Files:**
+- `supabase/golf_trip_location.sql` (new) and `supabase/golf_trips.sql` (`create_golf_trip` writes the 3 fields)
+- `lib/platform/tripWeather.ts` (new: geocode + forecast calls, response checking, shaping for the card) + `lib/platform/tripWeather.test.ts`
+- `lib/platform/tripIntegrations.ts`, `lib/platform/tripIntegrationsServer.ts` (register Open-Meteo)
+- `lib/platform/golfTripCreate.ts` (carry the 3 fields), `app/api/golf-trips/route.ts` (geocode before create)
+- `app/golf-trips/[tripId]/page.tsx` (fetch weather), `components/platform/GolfTripHome.tsx` (Weather card), `lib/platform/golfTripPreviewFixture.ts` (preview weather)
+- `scripts/fake-supabase.mjs` / tests updated so the existing create tests still pass
+
+**Not in this round:** course-specific weather, weather alerts or notifications, Google Places/autocomplete, editing the destination after creation, re-geocoding existing trips (they show the "not available" line), any change to `tournaments` / `tournament_editions`, any Home redesign.
+
+**Owner decision needed:** Open-Meteo's free API is for **non-commercial** use. If The Maroon platform charges money, it needs Open-Meteo's paid plan (or a different weather provider) before launch. Fine for now; flagged here so it isn't forgotten.
+
+**Done means:**
+- Creating a trip with a real destination saves latitude, longitude and timezone; a made-up destination still creates the trip with them empty.
+- Golf Trip Home shows the Weather card in each case above (near trip, far trip, no coordinates, weather down) with no page error.
+- Existing Golf Trip create tests + new `tripWeather` tests pass; type-check and lint pass; checked on phone and desktop width.
+
+### Round: Desktop path back to Golf Trips (owner request 2026-10-01, built)
+
+- **My Trips (`/golf-trips`) is the standard re-entry point** for saved trips: phones reach it from the Golf Trips bottom tab.
+- **Desktop saved-trip pages provide a direct path back to Golf Trips:** at 1024px and wider (where the bottom tabs are hidden), `/golf-trips/<id>` shows a small "← Golf Trips" link above the trip name. Below 1024px it is hidden and the bottom tab is the way back. The `/dev/tournament` preview shows it too; the old draft view `/golf-trips/trip` does not.
+- No other change to Golf Trip Home's design, trip loading, settings or delete.

@@ -9,6 +9,14 @@
 .iconButton:hover{background:rgba(255,255,255,.08)}
 .iconButton:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
 .iconLeft{left:-8px}
+/* "← Golf Trips": desktop only (1024px+, where the bottom tabs are hidden), so phones keep using the Golf Trips tab. */
+.desktopBack{display:none}
+@media (min-width:1024px){
+  .desktopBack{display:inline-flex;align-items:center;gap:6px;margin:-32px 0 16px;color:rgba(220,196,149,.85);text-decoration:none;
+    font:600 14px/1 var(--font-barlow),sans-serif;letter-spacing:.02em}
+  .desktopBack:hover{color:#fbf8f1}
+  .desktopBack:focus-visible{outline:2px solid #dcc495;outline-offset:4px;border-radius:4px}
+}
 .iconRight{right:-8px}
 .title{margin:0;padding:0 40px;font:500 38px/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.02em;color:#fff;text-wrap:balance;overflow-wrap:anywhere}
 /* The selector: just the words. The chosen one lights up (cream with a soft glow) and gets a gold line under it. */

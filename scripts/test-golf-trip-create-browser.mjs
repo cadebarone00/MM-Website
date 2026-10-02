@@ -139,6 +139,45 @@ try {
   const api = await fetch(`${app}/api/golf-trips`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
   assert.equal(api.status, 401);
 
+  // My Trips is the way back in: leave the trip, return via the Golf Trips tab, pick it, land on the same saved trip.
+  await p.goto(`${app}/`);
+  await p.locator("[data-site-bottom-nav]").getByRole("link", { name: /Golf Trips/ }).click();
+  await p.waitForURL(`${app}/golf-trips`);
+  const myTrips = p.locator('section[aria-labelledby="my-trips-heading"]');
+  const listed1 = myTrips.getByRole("link", { name: /Maroon Masters 2027/ });
+  assert.equal(await listed1.count(), 1, "the trip is listed once under My Trips");
+  const rowText = await listed1.innerText();
+  for (const text of ["Pinehurst, North Carolina", "Apr 22 – 26, 2027", "8 players", "Organizer"]) assert.ok(rowText.includes(text), `My Trips row shows ${text}`);
+  assert.ok((await overflow(p)) <= 0, "no sideways scroll on Golf Trips");
+  await listed1.click();
+  await p.waitForURL(tripUrl);
+  await p.reload();
+  assert.ok((await homeText(p)).includes("Maroon Masters 2027"), "reopened trip survives refresh");
+
+  // Desktop has no bottom tabs: the ☰ menu leads to Golf Trips.
+  const desk = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  await desk.addCookies([{ ...fake.sessionCookie(cade), url: app }]);
+  const d = await desk.newPage();
+  await d.goto(`${app}/profile`);
+  assert.equal(await d.locator('header nav[aria-label="Platform navigation"] a', { hasText: "Golf Trips" }).getAttribute("href"), "/golf-trips");
+
+  // Other people's My Trips: a stranger sees the empty state, signed out sees Log in.
+  const sMine = await phone(stranger, 360);
+  await sMine.goto(`${app}/golf-trips`);
+  assert.match(await sMine.locator("main").innerText(), /No upcoming trip yet\.[\s\S]*No past trips yet\./);
+  assert.ok((await overflow(sMine)) <= 0, "no sideways scroll on Golf Trips at 360px");
+  const outMine = await phone(null);
+  await outMine.goto(`${app}/golf-trips`);
+  assert.match(await outMine.locator("main").innerText(), /Log in to see your trips/);
+
+  // Delete the trip (Delete Trip's own API, as the organizer), then it's gone from My Trips and its page.
+  const deleted = await p.evaluate(async (url) => (await fetch(`/api/golf-trips/${url.split("/").pop()}`, { method: "DELETE" })).status, tripUrl);
+  assert.equal(deleted, 200);
+  await p.goto(`${app}/golf-trips`);
+  assert.equal(await myTrips.getByRole("link", { name: /Maroon Masters 2027/ }).count(), 0, "deleted trip is gone from My Trips");
+  assert.match(await myTrips.innerText(), /No upcoming trip yet\./);
+  assert.equal((await p.goto(tripUrl)).status(), 404);
+
   assert.deepEqual(fake.unsupported, []);
   console.log("golf trip create browser check: PASS");
 } catch (error) {

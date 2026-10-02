@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
-import { MessageCircle, Settings } from "lucide-react";
+import { ArrowLeft, MessageCircle, Settings } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import styles from "./GolfTripHome.module.css";
 
@@ -19,8 +19,9 @@ const subscribeNever = () => () => {};
  * cards show the questionnaire answers kept in this tab, or an empty state. Nothing is saved yet.
  * `preview` replaces those answers with fixed ones (the /dev/tournament design preview).
  * `settingsHref` is where the settings wheel goes (this trip's settings page).
+ * `backHref` adds a small "← Golf Trips" link on desktop, where the bottom tabs (and their Golf Trips tab) are hidden.
  */
-export function GolfTripHome({ preview, settingsHref }: { preview?: GolfTripDraft; settingsHref: string }) {
+export function GolfTripHome({ preview, settingsHref, backHref }: { preview?: GolfTripDraft; settingsHref: string; backHref?: string }) {
   const raw = useSyncExternalStore(subscribeNever, golfTripDraftSnapshot, () => "");
   const stored = useMemo(() => parseGolfTripDraft(raw), [raw]);
   const draft = preview ?? stored;
@@ -30,6 +31,7 @@ export function GolfTripHome({ preview, settingsHref }: { preview?: GolfTripDraf
   const dateRange = dates.length > 0 ? `${shortTripDate(dates[0])} – ${shortTripDate(dates[dates.length - 1])}` : "";
 
   return <main className={styles.page}>
+    {backHref && <Link href={backHref} className={styles.desktopBack}><ArrowLeft size={16} strokeWidth={2} aria-hidden />Golf Trips</Link>}
     <header className={styles.header}>
       {/* Look only for now: chat isn't built yet. */}
       <button type="button" className={`${styles.iconButton} ${styles.iconLeft}`} aria-label="Trip chat"><MessageCircle size={24} strokeWidth={1.75} aria-hidden /></button>

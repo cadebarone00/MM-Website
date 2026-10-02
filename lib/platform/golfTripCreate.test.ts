@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import type { PGlite } from "@electric-sql/pglite";
-import { golfTripCreateFailure, golfTripPayloadFromBody, golfTripSummaries, golfTripViewer, savedTripAsDraft, type CreateGolfTripPayload, type GolfTripSummary, type SavedGolfTrip } from "./golfTripCreate.ts";
+import { golfTripCreateFailure, golfTripPayloadFromBody, golfTripSummaries, golfTripViewer, savedTripAsDraft, splitGolfTrips, tripDateRange, type CreateGolfTripPayload, type GolfTripSummary, type SavedGolfTrip } from "./golfTripCreate.ts";
 import { reviewRows } from "./golfTripDraft.ts";
 import { database, profile, sqlFile } from "./testDatabase.ts";
 
@@ -180,4 +180,19 @@ test("golfTripSummaries drops anything malformed", () => {
   assert.deepEqual(golfTripSummaries(null), []);
   assert.deepEqual(golfTripSummaries([null, { id: 1 }, { id: "a", name: "x", role: "boss" }]), []);
   assert.equal(golfTripSummaries([{ id: "a", name: "x", role: "member" }]).length, 1);
+});
+
+test("My Trips splits upcoming from past and reads dates like a calendar", () => {
+  const trip = (id: string, startDate: string, endDate: string): GolfTripSummary =>
+    ({ id, name: id, destination: "x", startDate, endDate, status: "planning", expectedTravelerCount: null, memberCount: 1, role: "organizer" });
+  const trips = [trip("old", "2026-03-01", "2026-03-03"), trip("older-end", "2026-05-01", "2026-05-02"), trip("now", "2026-09-30", "2026-10-02"), trip("next", "2027-04-22", "2027-04-26")];
+  const { upcoming, past } = splitGolfTrips(trips, "2026-10-01");
+  assert.deepEqual(upcoming.map((t) => t.id), ["now", "next"]);
+  assert.deepEqual(past.map((t) => t.id), ["older-end", "old"]);
+
+  assert.equal(tripDateRange("2027-04-22", "2027-04-26"), "Apr 22 – 26, 2027");
+  assert.equal(tripDateRange("2027-04-28", "2027-05-02"), "Apr 28 – May 2, 2027");
+  assert.equal(tripDateRange("2027-12-30", "2028-01-02"), "Dec 30, 2027 – Jan 2, 2028");
+  assert.equal(tripDateRange("2027-04-22", "2027-04-22"), "Apr 22, 2027");
+  assert.equal(tripDateRange("", "2027-04-22"), "");
 });
