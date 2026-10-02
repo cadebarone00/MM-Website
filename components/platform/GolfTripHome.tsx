@@ -96,48 +96,10 @@ type HomeSection = (typeof HOME_SECTIONS)[number];
  * Tapping a bar opens it and closes the one that was open.
  */
 function HomeSections({ draft, dates, dateRange, weather }: { draft: Record<string, string>; dates: string[]; dateRange: string; weather?: Promise<TripWeather> }) {
-  const [openIndex, setOpenIndex] = useState(0);
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
-  const [dragStartX, setDragStartX] = useState<number | null>(null);
-  const [dragOffset, setDragOffset] = useState(0);
+  const [open, setOpen] = useState<HomeSection>("Golf");
   const rounds = plannedRounds(draft);
   const tournament = draft.includesTournament ? TOURNAMENT_ANSWERS[draft.includesTournament] ?? "Not sure yet" : "";
   const nights = dates.length > 1 ? `${dates.length - 1} nights` : "";
-
-  useEffect(() => {
-    if (!isAutoPlaying) return;
-    const timer = window.setInterval(() => {
-      setOpenIndex((index) => (index + 1) % HOME_SECTIONS.length);
-    }, 3600);
-    return () => window.clearInterval(timer);
-  }, [isAutoPlaying]);
-
-  const goToSection = (nextIndex: number) => {
-    setOpenIndex((nextIndex + HOME_SECTIONS.length) % HOME_SECTIONS.length);
-  };
-
-  const beginDrag = (startX: number) => {
-    setIsAutoPlaying(false);
-    setDragStartX(startX);
-    setDragOffset(0);
-  };
-
-  const moveDrag = (currentX: number) => {
-    if (dragStartX === null) return;
-    setDragOffset(currentX - dragStartX);
-  };
-
-  const endDrag = () => {
-    if (dragStartX === null) return;
-    if (dragOffset < -60) {
-      goToSection(openIndex + 1);
-    } else if (dragOffset > 60) {
-      goToSection(openIndex - 1);
-    }
-    setDragStartX(null);
-    setDragOffset(0);
-    window.setTimeout(() => setIsAutoPlaying(true), 1500);
-  };
 
   const heading = (text: string) => <h4 className={styles.eventsHeading}>{text}<ChevronRight size={20} strokeWidth={2.25} aria-hidden /></h4>;
 
@@ -196,32 +158,15 @@ function HomeSections({ draft, dates, dateRange, weather }: { draft: Record<stri
     },
   };
 
-  const translateX = `translateX(calc(${-openIndex * 100}% + ${dragOffset}px))`;
-
   return <div className={styles.sheets}>
-    <div
-      className={styles.sheetTrack}
-      style={{ transform: translateX }}
-      onPointerDown={(event) => beginDrag(event.clientX)}
-      onPointerMove={(event) => moveDrag(event.clientX)}
-      onPointerUp={endDrag}
-      onPointerLeave={endDrag}
-      onPointerCancel={endDrag}
-      aria-live="polite"
-    >
-      {HOME_SECTIONS.map((name) => <section key={name} className={styles.sheetOpen} aria-label={name}>
+    {HOME_SECTIONS.map((name) => open === name
+      ? <section key={name} className={styles.sheetOpen} aria-label={name}>
         <h3 className={styles.sheetTitle}>{name}</h3>
         <div className={`${styles.events} ${styles.sheetRows}`}>{sections[name].rows}</div>
-      </section>)}
-    </div>
-    <div className={styles.sheetDots} aria-label="Home cards">
-      {HOME_SECTIONS.map((name, index) => <button key={name} type="button" aria-label={`Show ${name}`} aria-pressed={openIndex === index}
-        className={`${styles.sheetDot} ${openIndex === index ? styles.sheetDotActive : ""}`} onClick={() => {
-          setIsAutoPlaying(false);
-          setOpenIndex(index);
-          window.setTimeout(() => setIsAutoPlaying(true), 1500);
-        }} />)}
-    </div>
+      </section>
+      : <button key={name} type="button" className={styles.sheetClosed} aria-expanded={false} onClick={() => setOpen(name)}>
+        <span className={styles.sheetName}>{name}</span><span className={styles.sheetSummary}>{sections[name].summary}</span>
+      </button>)}
   </div>;
 }
 

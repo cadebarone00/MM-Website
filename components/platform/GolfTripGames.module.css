@@ -22,5 +22,7 @@
 .configuration{display:grid;gap:10px;padding:16px;border-radius:12px;background:rgba(220,196,149,.09)}.configuration ol{margin:0;padding-left:22px}
 .teams{display:grid;grid-template-columns:1fr 1fr;gap:10px}.teams>div{padding:10px;border:1px solid #896b72;border-radius:10px}.teams p{margin:8px 0}
 .confirmation{padding:12px;border:1px solid #dcc495;border-radius:12px;color:#dcc495}
+.scoreRow{display:grid;gap:8px;padding:12px;border:1px solid #896b72;border-radius:10px}
+.label input{width:100%;box-sizing:border-box;min-height:44px;padding:8px;border:1px solid #b99a63;border-radius:10px;background:#fff8ea;color:#38151f;font:inherit}
 .root button:disabled{opacity:.45;cursor:default}.root button:focus-visible,.root input:focus-visible,.root select:focus-visible{outline:3px solid #f5d583;outline-offset:3px}
 @media(min-width:650px){.library{grid-template-columns:1fr 1fr}}

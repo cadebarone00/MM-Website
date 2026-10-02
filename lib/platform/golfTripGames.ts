@@ -10,11 +10,11 @@ export interface SideGameDefinition {
   supportsHandicap: boolean;
   gameType: "individual" | "rotating" | "teams";
   futureConfig: readonly string[];
-  scoringStatus: "preview-only";
+  scoringStatus: "local-engine";
 }
 
 const define = (game: Omit<SideGameDefinition, "supportedScopes" | "supportsHandicap" | "scoringStatus">): SideGameDefinition => ({
-  ...game, supportedScopes: ["tournament", "round"], supportsHandicap: true, scoringStatus: "preview-only",
+  ...game, supportedScopes: ["tournament", "round"], supportsHandicap: true, scoringStatus: "local-engine",
 });
 
 export const SIDE_GAME_REGISTRY: readonly SideGameDefinition[] = [
@@ -22,8 +22,8 @@ export const SIDE_GAME_REGISTRY: readonly SideGameDefinition[] = [
   define({ id: "9-point", name: "9 Point", supportedGroupSizes: [3], description: "Three players share nine points on every hole.", gameType: "individual", futureConfig: ["ties", "point-allocation"] }),
   define({ id: "wolf", name: "Wolf", supportedGroupSizes: [3, 4, 5], description: "Take turns as the Wolf. Pick a partner or go alone.", gameType: "rotating", futureConfig: ["rotation", "lone-wolf", "points"] }),
   define({ id: "vegas", name: "Vegas", supportedGroupSizes: [4], description: "Two teams of two combine their scores into a Vegas number.", gameType: "teams", futureConfig: ["team-assignment", "score-order"] }),
-  define({ id: "coin-flip", name: "Coin Flip", supportedGroupSizes: [4, 5], description: "Let a future coin flip shake up the partners.", gameType: "rotating", futureConfig: ["partner-method", "odd-player"] }),
-  define({ id: "round-robin", name: "Round Robin", supportedGroupSizes: [3, 4, 5], description: "Mix it up with rotating partners and opponents.", gameType: "rotating", futureConfig: ["rotation", "segments"] }),
+  define({ id: "coin-flip", name: "Coin Flip", supportedGroupSizes: [4, 5], description: "Set Heads or Tails to form new sides every hole.", gameType: "rotating", futureConfig: ["partner-method", "odd-player"] }),
+  define({ id: "round-robin", name: "Round Robin / Sixes", supportedGroupSizes: [4], description: "Mix it up with rotating partners and opponents.", gameType: "rotating", futureConfig: ["rotation", "segments"] }),
 ];
 
 export function recommendedGames(size: GroupSize, scope: GameScope) {

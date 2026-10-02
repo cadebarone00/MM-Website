@@ -65,6 +65,7 @@ export interface FeatureComplianceRecord {
 }
 
 interface FeatureSeed {
+  scopeRevision?: number;
   id: string;
   name: string;
   scope: string;
@@ -73,8 +74,8 @@ interface FeatureSeed {
 
 const seeds: FeatureSeed[] = [
   {
-    id: "golf-trip-games-preview", name: "Player-created side games preview",
-    scope: "Development preview only: fictional players and rounds, scope/group compatibility, player selection and per-game setup in component memory. No score calculation, persistence, invitations, money or official Competition changes. Findings and follow-ups: docs/golf-trip-games-review.md.",
+    id: "golf-trip-games-preview", name: "Player-created side games preview", scopeRevision: 2,
+    scope: "Development preview only: fictional players and rounds, scope/group compatibility, player selection and per-game setup in component memory. Isolated v1 engines and manual/deterministic gross or preview-net hole scoring, Wolf choices, Heads/Tails assignments and results in component memory. No persistence, invitations, money or official Competition changes. Findings and follow-ups: docs/golf-trip-games-review.md.",
     attentionCategories: ["privacy", "personal-data", "ugc", "security", "retention", "intellectual-property", "organizer-responsibility", "legal-review"],
   },
   {
@@ -183,7 +184,7 @@ function createUnreviewedRecord(seed: FeatureSeed): FeatureComplianceRecord {
     owner: null, reviewer: null, reviewedOn: null, nextReviewOn: null, evidence: [], actions: [],
   } satisfies CategoryAssessment])) as Record<ComplianceCategory, CategoryAssessment>;
   return {
-    ...seed, scopeRevision: 1, owner: null, jurisdictions: [], audience: null,
+    ...seed, scopeRevision: seed.scopeRevision ?? 1, owner: null, jurisdictions: [], audience: null,
     distributionChannels: [], reviewedCommit: null, checklistReference: null,
     releaseReview: { decision: "pending", reviewer: null, reviewedOn: null, scopeRevision: null, evidence: [] },
     assessments,

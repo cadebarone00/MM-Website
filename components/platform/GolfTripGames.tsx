@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { GAME_PREVIEW_PLAYERS as players, GAME_PREVIEW_ROUNDS as rounds, recommendedGames, type GameScope, type GroupSize, type SideGameDefinition } from "@/lib/platform/golfTripGames";
+import { GolfGameScoringPreview } from "./GolfGameScoringPreview";
 import styles from "./GolfTripGames.module.css";
 
 const sizes: GroupSize[] = [1, 2, 3, 4, 5];
@@ -16,7 +17,6 @@ export function GolfTripGames() {
   const [selected, setSelected] = useState<string[]>(["you"]);
   const [handicap, setHandicap] = useState(false);
   const [pool, setPool] = useState("All players");
-  const [coinMethod, setCoinMethod] = useState("Every hole");
   const [confirmed, setConfirmed] = useState(false);
   const count = size === 1 ? 2 : size ?? 2;
   const round = rounds.find(item => item.id === roundId)!;
@@ -68,17 +68,18 @@ export function GolfTripGames() {
         </label>)}
       </fieldset>
       <div className={styles.configuration}>
-        {game.id === "match-play" && <><h4>Player vs player</h4><p>{nameOf(selected[0])} vs {nameOf(selected[1])}</p>{size === 4 && <p>{nameOf(selected[2])} vs {nameOf(selected[3])}</p>}</>}
-        {game.id === "9-point" && <><h4>9 points available per hole</h4><p>{selected.map(nameOf).join(" · ")}</p><p>Point allocation and ties will be configured later.</p></>}
-        {game.id === "wolf" && <><h4>Wolf rotation preview</h4><ol>{selected.map((id, index) => <li key={id}>{nameOf(id)} · Wolf turn {index + 1}</li>)}</ol><p>Order repeats. Lone Wolf and scoring settings are coming later.</p></>}
-        {game.id === "vegas" && <><h4>Team 1 vs Team 2</h4><div className={styles.teams}>{[0, 2].map((start, index) => <div key={start}><strong>Team {index + 1}</strong><p>{nameOf(selected[start])}<br />{nameOf(selected[start + 1])}</p><span>Example scores: 4 + 5 → <strong>45</strong></span></div>)}</div><p>Illustration only; no scores are calculated.</p></>}
-        {game.id === "coin-flip" && <><h4>Partners by coin flip</h4><p>{selected.map(nameOf).join(" · ")}</p><label className={styles.label}>Flip timing (placeholder)<select value={coinMethod} onChange={event => { setCoinMethod(event.target.value); setConfirmed(false); }}><option>Every hole</option><option>Every 3 holes</option><option>Start of round</option></select></label><p>{size === 5 ? "Odd-player assignment needs future rules. " : ""}Partners are not randomized in this preview.</p></>}
-        {game.id === "round-robin" && <><h4>Partners / opponents rotate</h4><p>{selected.map(nameOf).join(" → ")}</p><p>Preview: each segment brings a different matchup. Final pairings and rotation rules are coming later.</p></>}
+        {game.id === "match-play" && <><h4>{size === 4 ? "2v2 Best Ball Match Play" : "1v1 Match Play"}</h4><p>{size === 4 ? `${nameOf(selected[0])} + ${nameOf(selected[1])} vs ${nameOf(selected[2])} + ${nameOf(selected[3])}` : `${nameOf(selected[0])} vs ${nameOf(selected[1])}`}</p><p>Each hole counts toward Up / Down. Final ties stay tied.</p></>}
+        {game.id === "9-point" && <><h4>9 points available per hole</h4><p>{selected.map(nameOf).join(" · ")}</p><p>Low / middle / high: 5 / 3 / 1. Ties: 4 / 4 / 1, 5 / 2 / 2 or 3 / 3 / 3.</p></>}
+        {game.id === "wolf" && <><h4>Wolf rotation preview</h4><ol>{selected.map((id, index) => <li key={id}>{nameOf(id)} · Wolf turn {index + 1}</li>)}</ol><p>Order repeats each round. Choose a partner or Lone Wolf each hole; a solo win earns 2 points.</p></>}
+        {game.id === "vegas" && <><h4>Team 1 vs Team 2</h4><div className={styles.teams}>{[0, 2].map((start, index) => <div key={start}><strong>Team {index + 1}</strong><p>{nameOf(selected[start])}<br />{nameOf(selected[start + 1])}</p><span>Example scores: 4 + 5 → <strong>45</strong></span></div>)}</div><p>Lower team number wins its difference in points. Fixed teams for v1.</p></>}
+        {game.id === "coin-flip" && <><h4>Partners by coin flip</h4><p>{selected.map(nameOf).join(" ? ")}</p><p>Manually set Heads / Tails every hole. Winners earn one point per opponent; all-same flips earn no points.</p></>}
+        {game.id === "round-robin" && <><h4>Three six-hole matches</h4><p>1?6: 1 + 2 vs 3 + 4. 7?12: 1 + 3 vs 2 + 4. 13?18: 1 + 4 vs 2 + 3.</p><p>Best Ball Match Play. Winning partners each earn 1 segment point; tied segments earn 0.</p></>}
       </div>
-      {game.supportsHandicap && <fieldset className={styles.players}><legend>Side-game handicap</legend><div className={styles.choices}>{[false, true].map(value => <button type="button" key={String(value)} aria-pressed={handicap === value} onClick={() => { setHandicap(value); setConfirmed(false); }}>Handicap {value ? "On" : "Off"}</button>)}</div><p>Preview preference only. Official Competition handicap settings are unchanged.</p></fieldset>}
+      {game.supportsHandicap && <fieldset className={styles.players}><legend>Side-game handicap</legend><div className={styles.choices}>{[false, true].map(value => <button type="button" key={String(value)} aria-pressed={handicap === value} onClick={() => { setHandicap(value); setConfirmed(false); }}>Handicap {value ? "On" : "Off"}</button>)}</div><p>On uses provided preview net scores; Off uses gross scores. No stroke allocation is calculated.</p></fieldset>}
       <button type="button" className={styles.primary} disabled={!valid} onClick={() => setConfirmed(true)}>Create preview</button>
       {!valid && <p role="status">Choose exactly {count} players{size === 1 ? ", including an opponent from another group" : ""}.</p>}
-      {confirmed && <p role="status" className={styles.confirmation}>{game.name} preview ready for {selected.map(nameOf).join(", ")}. Handicap {handicap ? "On" : "Off"}. Nothing saved, sent or scored.</p>}
+      {confirmed && <p role="status" className={styles.confirmation}>{game.name} preview ready for {selected.map(nameOf).join(", ")}. Handicap {handicap ? "On" : "Off"}. Local scoring only; nothing saved or sent.</p>}
+      {confirmed && <GolfGameScoringPreview setup={{ id: game.id, scope, participants: selected, handicap, rounds: (scope === "round" ? [round] : rounds).map(item => ({ id: item.id, holes: 18 })), tiePolicy: "tied", loneWolfMultiplier: 2 }} />}
     </section>}
   </section>;
 }
