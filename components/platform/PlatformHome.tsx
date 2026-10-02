@@ -1,13 +1,22 @@
 "use client";
-import { useState } from "react";
+import { useState, type ComponentType } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ArrowUpRight, Flag, Plus } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Compass, Flag, FlagTriangleRight, GraduationCap, Newspaper, Plus } from "lucide-react";
 import { maroonCategories } from "@/lib/data/theMaroon";
 import { MaroonSection } from "@/components/maroon/MaroonSection";
 import { SignInRequiredLink } from "./SignInRequiredLink";
+import { GolfBagIcon } from "./GolfBagIcon";
 import styles from "./MobileHome.module.css";
 const sections = ["Discover", "Courses", "Equipment", "Teaching", "News"] as const;
+/** One icon per Explore filter, shown above its label. */
+const sectionIcons: Record<(typeof sections)[number], ComponentType<{ size?: number; "aria-hidden"?: "true" }>> = {
+  Discover: Compass,
+  Courses: FlagTriangleRight,
+  Equipment: GolfBagIcon,
+  Teaching: GraduationCap,
+  News: Newspaper,
+};
 /** `signedIn` hides the "Already part of the club? Log In" prompt. */
 export function PlatformHome({ signedIn = false }: { signedIn?: boolean }) {
   const [section, setSection] = useState<(typeof sections)[number]>("Discover");
@@ -35,7 +44,10 @@ export function PlatformHome({ signedIn = false }: { signedIn?: boolean }) {
     </section>
     <section className={styles.discover} aria-label="Explore The Maroon">
       <div className={styles.filters} role="group" aria-label="Explore categories">
-        {sections.map(item => <button key={item} type="button" aria-pressed={section === item} onClick={() => setSection(item)}>{item}</button>)}
+        {sections.map(item => {
+          const Icon = sectionIcons[item];
+          return <button key={item} type="button" aria-pressed={section === item} onClick={() => setSection(item)}><Icon size={22} aria-hidden="true" />{item}</button>;
+        })}
       </div>
       <div className={styles.feature}>
         <Image src={category.image} alt="" fill sizes="(max-width: 600px) 100vw, 1120px" />
