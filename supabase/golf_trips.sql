@@ -5,9 +5,10 @@
 --
 -- golf_trips.id is the parent id for everything trip-owned. Canonical page: /golf-trips/<id>.
 --
--- Writes only go through create_golf_trip (one all-or-nothing call) and reads
--- through get_golf_trip / list_my_golf_trips, all called by the server with the
--- signed-in user's id (POST /api/golf-trips, /golf-trips/<id>,
+-- Writes only go through create_golf_trip (one all-or-nothing call) and
+-- delete_golf_trip (organizer only), and reads through get_golf_trip /
+-- list_my_golf_trips, all called by the server with the signed-in user's id
+-- (POST /api/golf-trips, DELETE /api/golf-trips/<id>, /golf-trips/<id>,
 -- lib/platform/golfTripsServer.ts). RLS lets trip members read their own trip
 -- directly and nobody write directly.
 --
@@ -188,16 +189,33 @@ language sql stable security definer set search_path = public as $$
   where m.profile_id = p_profile;
 $$;
 
+-- Delete a whole trip. Only the trip's organizer can. Its members and rounds go with it (on delete cascade);
+-- players' own accounts (profiles) are never touched. Returns false when the trip doesn't exist or this person
+-- isn't its organizer, so a stranger can't tell the two apart.
+create or replace function public.delete_golf_trip(p_profile uuid, p_trip uuid)
+returns boolean
+language plpgsql security definer set search_path = public as $$
+begin
+  delete from golf_trips t
+  where t.id = p_trip
+    and exists (select 1 from golf_trip_members m where m.golf_trip_id = t.id and m.profile_id = p_profile and m.role = 'organizer');
+  return found;
+end;
+$$;
+
 revoke all on function public.create_golf_trip(uuid, jsonb) from public, anon, authenticated;
 grant execute on function public.create_golf_trip(uuid, jsonb) to service_role;
 revoke all on function public.get_golf_trip(uuid, uuid) from public, anon, authenticated;
 grant execute on function public.get_golf_trip(uuid, uuid) to service_role;
 revoke all on function public.list_my_golf_trips(uuid) from public, anon, authenticated;
 grant execute on function public.list_my_golf_trips(uuid) to service_role;
+revoke all on function public.delete_golf_trip(uuid, uuid) from public, anon, authenticated;
+grant execute on function public.delete_golf_trip(uuid, uuid) to service_role;
 
 commit;
 
 -- Undo (deletes every saved golf trip):
+--   drop function if exists public.delete_golf_trip(uuid, uuid);
 --   drop function if exists public.list_my_golf_trips(uuid);
 --   drop function if exists public.get_golf_trip(uuid, uuid);
 --   drop function if exists public.create_golf_trip(uuid, jsonb);
