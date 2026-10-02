@@ -1791,63 +1791,134 @@ The Maroon app is the front door. The main navigation is Explore · Tourneys · 
   - Separate path, not Delete Trip: `golf_trips.created_by → profiles on delete cascade` means deleting an organizer's **account** deletes the trips they created (and those trips' members and rounds). Still no player history today; revisit before history tables exist.
 - **Role rename migration:** the first version of `golf_trips.sql` (commit `a43dc14`) used role `traveler`. The file now renames any `traveler` rows to `member` and swaps the rule/default every time it runs, so the whole file is safe to run on a fresh database, on one that ran an older version, and again later.
 
-### Round: Golf Trip destination coordinates + Weather card on Home (spec 2026-10-01, awaiting approval)
+### Round: Golf Trip destination (Google Places) + Weather card on Home (spec 2026-10-01, awaiting approval)
 
-**What it is:** the trip's typed destination (e.g. "Pinehurst, North Carolina") gets turned into map coordinates and a timezone once, when the trip is created. Golf Trip Home uses those saved coordinates to show a simple Weather card.
+**What it is:** on the questionnaire's first step, the organizer picks the destination from Google Places suggestions, and the trip saves that place's coordinates. Golf Trip Home then uses the saved coordinates to show a live Weather card from the National Weather Service (NWS). This is the only weather plan; it replaces the earlier Open-Meteo plan.
 
-**Who uses it:** everyone on the trip (organizer and members), on `/golf-trips/[tripId]`.
+**Who uses it:** the organizer (picking the destination on `/golf-trips/new`); everyone on the trip (seeing the Weather card on `/golf-trips/[tripId]`).
 
 **Source of truth:** `golf_trips` only. `tournaments` and `tournament_editions` are not touched.
 
-**Database (`supabase/golf_trip_location.sql`, new, additive, safe to re-run; prerequisite: `golf_trips.sql`):**
+**Flow:** Google Places destination → saved `golf_trips` latitude/longitude → NWS weather service → normalized `WeatherData` → Weather card on Golf Trip Home.
+
+**Provider rule:** Google-specific code lives only in `lib/platform/location/providers/googlePlaces.ts`; NWS-specific code lives only in `lib/platform/weather/providers/nws.ts`. Everything else uses our own types (`PlaceSuggestion`, `PlaceLocation`, `WeatherData`), so either provider can be swapped later without touching pages or components. The browser never calls Google or NWS directly.
+
+#### Phase 1 — Location foundation (build and check this first; no weather code until it works)
+
+**Database (in `supabase/golf_trips.sql`, additive, safe to re-run):**
 ```sql
 alter table public.golf_trips
   add column if not exists latitude  double precision check (latitude  between -90  and 90),
   add column if not exists longitude double precision check (longitude between -180 and 180),
-  add column if not exists timezone  text;
+  add column if not exists external_place_id text check (external_place_id is null or length(external_place_id) <= 300);
+alter table public.golf_trips drop constraint if exists golf_trips_coordinates_pair;
+alter table public.golf_trips add constraint golf_trips_coordinates_pair
+  check ((latitude is null) = (longitude is null));   -- both coordinates or neither
 ```
-- `destination` stays as is (not renamed, still required, still what the organizer typed).
-- All three new columns are optional: a trip whose destination couldn't be found still saves, just without weather.
-- `create_golf_trip` is updated (in `golf_trips.sql`, same function, `create or replace`) to also write `latitude`, `longitude`, `timezone` from its input when present.
-- Reads need no SQL change: `get_golf_trip` already returns every `golf_trips` column (`to_jsonb(t)`).
+- `destination` stays as it is: still required, and still the text shown everywhere.
+- All three new columns are optional. A trip typed by hand (no suggestion picked, or Google unavailable) still saves, just without coordinates.
+- `create_golf_trip` (same file, `create or replace`) also writes `latitude`, `longitude`, `external_place_id` from its input when present.
+- Reads need no SQL change: `get_golf_trip` already returns every `golf_trips` column.
+- No timezone column (NWS gives times with their own offset; nothing in this round needs it).
 - Not run in production until the owner runs it (like the rest of `golf_trips.sql`).
 
-**Where the coordinates come from (no Google Places):**
-- Provider: **Open-Meteo** (free, no API key). Its geocoding search turns a place name into latitude, longitude **and** IANA timezone in one call, and its forecast API gives the weather. One provider for both jobs.
-- When: on the server, inside `POST /api/golf-trips`, after validation and before `create_golf_trip`. The browser never calls Open-Meteo.
-- How: search the part before the first comma ("Pinehurst"), then prefer the result whose state/country matches the rest ("North Carolina"); otherwise take the top result. No match, timeout (3 s) or error → save the trip with empty coordinates. Creating a trip never fails because of this.
-- Registered as an implemented provider in `lib/platform/tripIntegrations.ts` / `tripIntegrationsServer.ts` (replaces the `planned("weather", …, ["WEATHER_API_KEY"])` placeholder), so it follows the existing integration rule.
+**Destination search on `/golf-trips/new`:**
+- The Destination field becomes a search box. After 3+ letters (short pause between keystrokes), our server asks Google Places (New) Autocomplete and shows up to 5 suggestions under the field.
+- Picking one fills the field with the place's name (for example "Pinehurst, NC, USA"). Our server then asks Google Place Details for that place's coordinates, and three hidden answers are kept in the draft: `destinationPlaceId`, `destinationLatitude`, `destinationLongitude`.
+- Typing over a picked destination clears those three hidden answers. The organizer can still type a destination without picking one; it saves with no coordinates.
+- If Google isn't configured or fails, the field behaves exactly like today's plain text box (no error shown).
+- One Google "session token" is shared by the searches and the final pick, so Google bills them as one lookup.
+- Server routes: `GET /api/places/autocomplete?q=…&session=…` (suggestions, `app/api/places/autocomplete/route.ts`) and `GET /api/places/details?placeId=…&session=…` (name + coordinates, `app/api/places/details/route.ts`). Both go through `lib/platform/location/locationService.ts`, which is the only code that reads `GOOGLE_PLACES_API_KEY`. The key never reaches the browser. No key → both routes answer "not configured" and the field stays plain text.
+- Create: `golfTripPayloadFromBody` checks the three hidden answers (place ID ≤ 300 characters; latitude/longitude real numbers in range; all three or none) and sends them to `create_golf_trip`. Bad or partial values are dropped, never an error.
 
-**Weather on Golf Trip Home:**
-- Flow: `/golf-trips/[tripId]` page (server) → `getGolfTrip` → if the trip has coordinates, fetch weather from Open-Meteo on the server (cached ~30 min) → pass the result into `GolfTripHome` as a prop.
-- One new **Weather** card, placed right after the existing Travel card, using the existing `Card` / `Rows` / `Empty` look. No other Home change.
-- What it shows:
-  - Trip starts within 16 days (forecast range) or is happening now → one row per trip day: date, high/low (°F), short condition ("Sunny", "Rain").
-  - Trip is further out → today's conditions at the destination (temperature + condition) and the line "Trip forecast shows up about 2 weeks before you go."
-  - Trip has ended → card hidden.
-  - No coordinates, or weather request fails → "Weather isn't available for this destination yet." The page never errors because of weather.
-- Times/dates shown in the trip's `timezone`.
-- `/dev/tournament` preview and the old `/golf-trips/trip` draft page get the same card from fixed made-up weather (no network call).
+**Google Places key:** `GOOGLE_PLACES_API_KEY` (server-only, never `NEXT_PUBLIC_`). It needs Google Cloud → APIs & Services → enable **Places API (New)**, billing on, the key restricted to Places API (New), and a daily request cap set as a cost guard. `google-places` in `lib/platform/tripIntegrations.ts` already lists this key, so it shows as "configured" once the key is set.
+
+#### Phase 2 — Weather card (only after Phase 1 works)
+
+**Weather layer (`lib/platform/weather/`):**
+- `types.ts`: our `WeatherData` = `temperature`, `temperatureUnit` ("F"/"C"), `condition`, `high`, `low`, `precipitationChance`, `windSpeed`, `windDirection`, `updatedAt` (each may be `null` except unit and `updatedAt`), plus the result shape `{ status: "ok", weather } | { status: "no-location" } | { status: "unavailable" }`.
+- `weatherService.ts`: `getTripWeather(latitude, longitude)`. Returns `no-location` when coordinates are missing; otherwise it asks the provider. Any error, timeout or unexpected reply → `unavailable`. It never throws.
+- `providers/nws.ts`: the only file that knows NWS.
+  1. `GET https://api.weather.gov/points/{lat},{lng}` (coordinates rounded to 4 decimals, NWS's own limit).
+  2. From that reply, use `properties.forecast` and `properties.forecastHourly` as given (never building the grid URL ourselves).
+  3. Current temperature, condition, wind and rain chance come from the first hourly period. High and low come from the daily forecast: the next daytime period's temperature is the high, the next night period's is the low.
+  4. Every reply is checked before use; missing fields become `null`.
+  - Every request sends `User-Agent: The Maroon App (<NWS_CONTACT>)` and `Accept: application/geo+json`, with a 5-second timeout.
+  - NWS covers the US only. Outside the US, `/points` answers 404 and the card shows "Weather unavailable".
+
+**Cache (exact strategy):**
+- Uses Next.js's built-in server fetch cache, the same way `app/api/instagram-reels/route.ts` already does. Each NWS request is saved once on the server under its exact URL and shared by every visitor and every trip at that location.
+- `/points/{lat},{lng}`: kept 24 hours (`next: { revalidate: 86400 }`). The forecast grid for a spot almost never changes.
+- `forecast` and `forecastHourly`: kept 30 minutes (`next: { revalidate: 1800 }`).
+- Because the URL contains the rounded coordinates, the cache is per location: 50 people opening the same trip in 30 minutes cause at most one NWS forecast request. After 30 minutes, the next visitor gets the saved copy immediately while a fresh one is fetched in the background.
+- Failed replies (anything but 200) are not cached (Next.js 16.3.5 only stores status-200 fetch replies), so a short NWS outage doesn't stick for 30 minutes.
+- No database table and no weather history are stored.
+
+**Weather card on Golf Trip Home (`/golf-trips/[tripId]` only):**
+- The page (server) loads the trip with `getGolfTrip`, calls `getTripWeather(trip.latitude, trip.longitude)`, and passes the result into `GolfTripHome` as an optional `weather` prop. The weather call is wrapped so a failure can never stop the page from loading.
+- One **Weather** card, placed right after the Travel card, using the existing `Card` / `Empty` look. It shows:
+  ```
+  WEATHER
+  Pinehurst, NC          ← the trip's destination text
+  72°
+  Partly Cloudy
+  High 78° · Low 61°
+  Rain 20%
+  Wind SW 8 mph
+  ```
+  Lines with no data are left out.
+- No coordinates → "Weather unavailable". NWS error or timeout → "Forecast temporarily unavailable".
+- The `/dev/tournament` preview and the old `/golf-trips/trip` draft page pass no `weather`, so they show no Weather card.
+
+**Env vars (`.env.example`):** `GOOGLE_PLACES_API_KEY` (Phase 1, uncommented with setup notes). `NWS_CONTACT` (Phase 2, a website or email NWS can reach us at, for the User-Agent; if blank, the User-Agent is just "The Maroon App"). The unused `WEATHER_API_KEY` placeholder is removed.
 
 **Files:**
-- `supabase/golf_trip_location.sql` (new) and `supabase/golf_trips.sql` (`create_golf_trip` writes the 3 fields)
-- `lib/platform/tripWeather.ts` (new: geocode + forecast calls, response checking, shaping for the card) + `lib/platform/tripWeather.test.ts`
-- `lib/platform/tripIntegrations.ts`, `lib/platform/tripIntegrationsServer.ts` (register Open-Meteo)
-- `lib/platform/golfTripCreate.ts` (carry the 3 fields), `app/api/golf-trips/route.ts` (geocode before create)
-- `app/golf-trips/[tripId]/page.tsx` (fetch weather), `components/platform/GolfTripHome.tsx` (Weather card), `lib/platform/golfTripPreviewFixture.ts` (preview weather)
-- `scripts/fake-supabase.mjs` / tests updated so the existing create tests still pass
+- Phase 1, new: `lib/platform/location/types.ts`, `lib/platform/location/locationService.ts`, `lib/platform/location/providers/googlePlaces.ts`, `lib/platform/location/googlePlaces.test.ts`, `components/platform/DestinationSearch.tsx`, `app/api/places/autocomplete/route.ts`, `app/api/places/details/route.ts`
+- Phase 1, changed: `supabase/golf_trips.sql`, `lib/platform/golfTripCreate.ts` (+ `.test.ts`), `app/golf-trips/new/page.tsx`, `components/platform/CreateTournament.module.css` (suggestion list), `lib/platform/tripIntegrations.ts` (weather entry → NWS, no key), `.env.example`; `scripts/test-golf-trip-create-browser.mjs` only if the new field breaks it
+- Phase 2, new: `lib/platform/weather/types.ts`, `lib/platform/weather/weatherService.ts`, `lib/platform/weather/providers/nws.ts`, `lib/platform/weather/nws.test.ts`
+- Phase 2, changed: `app/golf-trips/[tripId]/page.tsx`, `components/platform/GolfTripHome.tsx`, `components/platform/GolfTripHome.module.css`
 
-**Not in this round:** course-specific weather, weather alerts or notifications, Google Places/autocomplete, editing the destination after creation, re-geocoding existing trips (they show the "not available" line), any change to `tournaments` / `tournament_editions`, any Home redesign.
-
-**Owner decision needed:** Open-Meteo's free API is for **non-commercial** use. If The Maroon platform charges money, it needs Open-Meteo's paid plan (or a different weather provider) before launch. Fine for now; flagged here so it isn't forgotten.
+**Not in this round:** course-specific weather, weather alerts, notifications, historical weather, Google Weather, a Weather tab, storing weather in the database, a timezone column, editing the destination after creation, adding coordinates to existing trips (they show "Weather unavailable"), any Home redesign.
 
 **Done means:**
-- Creating a trip with a real destination saves latitude, longitude and timezone; a made-up destination still creates the trip with them empty.
-- Golf Trip Home shows the Weather card in each case above (near trip, far trip, no coordinates, weather down) with no page error.
-- Existing Golf Trip create tests + new `tripWeather` tests pass; type-check and lint pass; checked on phone and desktop width.
+- Phase 1: picking a suggestion and creating the trip saves destination, latitude, longitude and place ID. Typing by hand, or no Google key, still creates the trip with them empty. Create tests (valid, partial, out-of-range, missing) pass.
+- Phase 2: Golf Trip Home shows the card for a trip with coordinates, "Weather unavailable" without them, and "Forecast temporarily unavailable" when NWS fails, with no page error in any case. NWS parsing tests (good reply, missing fields, 404, timeout) pass.
+- Both: `npm test`, type-check and lint pass; checked on phone and desktop width.
 
 ### Round: Desktop path back to Golf Trips (owner request 2026-10-01, built)
 
 - **My Trips (`/golf-trips`) is the standard re-entry point** for saved trips: phones reach it from the Golf Trips bottom tab.
 - **Desktop saved-trip pages provide a direct path back to Golf Trips:** at 1024px and wider (where the bottom tabs are hidden), `/golf-trips/<id>` shows a small "← Golf Trips" link above the trip name. Below 1024px it is hidden and the bottom tab is the way back. The `/dev/tournament` preview shows it too; the old draft view `/golf-trips/trip` does not.
 - No other change to Golf Trip Home's design, trip loading, settings or delete.
+
+### Round: Golf tab — Leaderboard / Match / Overview slides (owner request 2026-10-01, approved and built)
+
+**What it is:** the Golf tab on Golf Trip Home gets a Sleeper-style sub-menu: a row of 3 pills — **Leaderboard · Match · Overview** — under the main Home/Golf/Venue/Info tabs. Tapping a pill (or swiping left/right on a phone) slides to that page.
+
+**Who uses it:** everyone on the trip, on `/golf-trips/[tripId]` and the `/dev/tournament` preview.
+
+**This round is look only:**
+- Leaderboard opens first.
+- Each slide shows one card with its title and "Coming soon".
+- Same dark maroon + cream look as the rest of Golf Trip Home.
+- No new data, no Supabase, no scoring.
+
+**Files:** `components/platform/GolfTripHome.tsx`, `components/platform/GolfTripHome.module.css`.
+
+**Not in this round:** real leaderboard, match or overview content; any change to the Home, Venue or Info tabs.
+
+**Done means:** on the Golf tab, the 3 pills show, tapping each one slides to its page, swiping works on phone, Leaderboard is selected first; checked on phone and desktop width; type-check and lint pass.
+
+### Round: Golf tab — Match slide, Sleeper look (owner request 2026-10-01, approved and built)
+
+- The Match slide copies the layout of Sleeper's fantasy Match screen, translated to golf, on the Golf Trip Home maroon.
+- **Top card:** two teams (initials circle, win % bar, team points, name, handle, record), maroon logo in the middle; a strip with avg score and fairways hit %; holes left per side and one dot per round (current round highlighted).
+- **Lineup:** "‹ Round 2 ›" switcher (look only), then one row per match: golfer vs golfer, score to par each, a colored M1/M2/… badge in the middle, "HCP · Thru" and tee time + course under each name.
+- No chat drawer (the trip header already has chat).
+- **Made-up data, `/dev/tournament` only** (`lib/platform/golfTripPreviewFixture.ts`, passed as a new `previewMatch` prop). Saved trips (`/golf-trips/[tripId]`) and `/golf-trips/trip` keep "Coming soon" on Match.
+- Files: `components/platform/GolfTripMatch.tsx` + `.module.css` (new), `GolfTripHome.tsx`, `golfTripPreviewFixture.ts`, `app/dev/tournament/page.tsx`.
+
+### Round: Golf tab — Leaderboard slide (owner request 2026-10-01, built)
+
+- Same as the Match slide (same top card, holes left + round dots, "Lineup ‹ Round 2 ›"), but each row is **one golfer**: colored position badge (1, 2, T3…), golfer name / HCP · Thru / tee time + course, score on the right. 8 rows (double Match's 4).
+- Made-up data, `/dev/tournament` only (`leaderboard` in `GOLF_MATCH_PREVIEW`); saved trips keep "Coming soon".

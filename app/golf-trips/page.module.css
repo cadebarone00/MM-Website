@@ -44,6 +44,44 @@
 
 .trips { margin-top: 32px; }
 
+/* Join a Trip: sits under Create; a pasted Trip ID or trip link opens that trip (no joining yet). */
+.join {
+  margin-top: 12px;
+  padding: 18px 20px 20px;
+  border-radius: 18px;
+  background: #fbf8f1;
+  color: var(--color-maroon-900);
+}
+.joinLabel { display: block; font: 700 18px/1.2 var(--font-barlow), sans-serif; letter-spacing: -0.01em; }
+.joinHint { margin: 4px 0 12px; color: #380001aa; font-size: 14px; line-height: 1.5; }
+.joinRow { display: flex; gap: 8px; }
+.joinInput {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid #38000133;
+  border-radius: 12px;
+  background: #fff;
+  color: #380001;
+  font-size: 16px;
+}
+.joinInput:focus-visible { outline: 3px solid #dcc495; outline-offset: 1px; }
+.joinButton {
+  flex: none;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--color-maroon-700);
+  color: #fbf8f1;
+  font: 700 16px/1 var(--font-barlow), sans-serif;
+  cursor: pointer;
+}
+.joinButton:hover { background: var(--color-maroon-900); }
+.joinButton:focus-visible { outline: 3px solid #dcc495; outline-offset: 2px; }
+.joinError { margin: 8px 0 0; color: #a3122a; font-size: 14px; line-height: 1.4; }
+
 .heading {
   margin: 0 0 12px;
   color: #ead8b8;

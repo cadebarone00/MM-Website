@@ -41,6 +41,13 @@
   color:#fff;font:600 17px/1.2 var(--font-barlow),sans-serif;color-scheme:dark;transition:border-color .15s ease,background .15s ease}
 .input::placeholder{color:rgba(255,255,255,.4)}
 .input:focus{outline:none;border-color:#dcc495;background:rgba(255,255,255,.1)}
+/* Destination suggestions (DestinationSearch): in the page flow, not floating, so the scrolling .fields can't clip them. */
+.suggestions{margin:0;padding:6px;list-style:none;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18)}
+.suggestion{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:12px;cursor:pointer}
+.suggestion:hover,.suggestionActive{background:rgba(255,255,255,.1)}
+.suggestionMain{font:600 16px/1.2 var(--font-barlow),sans-serif;color:#fff}
+.suggestionSecondary{font:500 13px/1.2 var(--font-barlow),sans-serif;color:rgba(255,255,255,.6)}
+.suggestionCredit{padding:6px 12px 2px;font:500 11px/1.2 var(--font-barlow),sans-serif;color:rgba(255,255,255,.45);text-align:right}
 /* Players: the count slider (cream thumb and fill) and the outlined Invite button. */
 .slider{display:flex;flex-direction:column;gap:10px}
 .sliderHead{display:flex;align-items:baseline;justify-content:space-between}

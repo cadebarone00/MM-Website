@@ -11,6 +11,10 @@ export interface CreateGolfTripPayload {
   requestId: string;
   name: string;
   destination: string;
+  /** From the picked Google Places suggestion; all three or all null (typed by hand). */
+  latitude: number | null;
+  longitude: number | null;
+  externalPlaceId: string | null;
   startDate: string;
   endDate: string;
   expectedTravelerCount: number | null;
@@ -37,6 +41,14 @@ export function golfTripUrl(tripId: string): string {
   return `/golf-trips/${tripId}`;
 }
 
+/** Join a Trip: the trip id from a pasted Trip ID or trip link (…/golf-trips/<id>), or null when there isn't one. */
+export function tripIdFromJoinInput(input: string): string | null {
+  const value = input.trim();
+  if (isGolfTripId(value)) return value.toLowerCase();
+  const fromLink = value.match(/\/golf-trips\/([0-9a-f-]{36})(?:[/?#]|$)/i)?.[1];
+  return fromLink && isGolfTripId(fromLink) ? fromLink.toLowerCase() : null;
+}
+
 /** Validates the questionnaire draft (sent as-is by the Review page) and builds the create payload. */
 export function golfTripPayloadFromBody(body: unknown):
   { ok: true; payload: CreateGolfTripPayload } | { ok: false; errors: GolfTripFieldError[] } {
@@ -58,6 +70,7 @@ export function golfTripPayloadFromBody(body: unknown):
   const destination = text("destination");
   if (!destination) fail("destination", "Add a destination.");
   else if (destination.length > 200) fail("destination", "Keep the destination under 200 characters.");
+  const place = destinationPlace(text("destinationPlaceId"), text("destinationLatitude"), text("destinationLongitude"));
 
   const dates = tripDates(draft.startDate, draft.endDate);
   if (!dates.length) fail("dates", "Add a start and end date (the end can't be before the start).");
@@ -98,7 +111,7 @@ export function golfTripPayloadFromBody(body: unknown):
   return {
     ok: true,
     payload: {
-      requestId: requestId.toLowerCase(), name, destination, startDate: draft.startDate, endDate: draft.endDate,
+      requestId: requestId.toLowerCase(), name, destination, ...place, startDate: draft.startDate, endDate: draft.endDate,
       expectedTravelerCount: count, organizer: { displayName, email }, golfDays,
       rounds: rounds.map((round) => ({
         roundNumber: round.number, dayNumber: round.dayNumber, playDate: round.date || null,
@@ -107,6 +120,17 @@ export function golfTripPayloadFromBody(body: unknown):
       includesTournament, lodgingPlan, flightPlan, transportationPlan,
     },
   };
+}
+
+/** The picked place's id and coordinates, or all null when any is missing, malformed or out of range (never an error). */
+function destinationPlace(placeId: string, latitudeText: string, longitudeText: string):
+  Pick<CreateGolfTripPayload, "latitude" | "longitude" | "externalPlaceId"> {
+  const latitude = latitudeText ? Number(latitudeText) : NaN;
+  const longitude = longitudeText ? Number(longitudeText) : NaN;
+  const valid = /^[A-Za-z0-9_-]{1,300}$/.test(placeId)
+    && Number.isFinite(latitude) && latitude >= -90 && latitude <= 90
+    && Number.isFinite(longitude) && longitude >= -180 && longitude <= 180;
+  return valid ? { latitude, longitude, externalPlaceId: placeId } : { latitude: null, longitude: null, externalPlaceId: null };
 }
 
 /** What a failed create_golf_trip call tells the person (their answers stay in the questionnaire either way). */
@@ -136,6 +160,8 @@ export interface SavedGolfTrip {
     id: string; name: string; destination: string; start_date: string; end_date: string; expected_traveler_count: number | null;
     golf_days: number; planned_rounds: number; includes_tournament: PlanAnswer; lodging_plan: PlanAnswer; flight_plan: PlanAnswer;
     transportation_plan: PlanAnswer; tournament_id: string | null; status: string; created_by: string;
+    /** Missing on a database that hasn't run the location columns in golf_trips.sql yet. */
+    latitude?: number | null; longitude?: number | null; external_place_id?: string | null;
   };
   members: { id: string; profileId: string | null; displayName: string; email: string | null; role: GolfTripRole; invitationStatus: string }[];
   rounds: { roundNumber: number; dayNumber: number; playDate: string | null; courseName: string | null }[];

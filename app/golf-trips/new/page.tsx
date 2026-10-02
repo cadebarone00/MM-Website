@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { SetupSheet } from "@/components/platform/SetupSheet";
 import { SetupStepForm } from "@/components/platform/SetupStepForm";
+import { DestinationSearch } from "@/components/platform/DestinationSearch";
 import styles from "@/components/platform/CreateTournament.module.css";
 
 export const metadata: Metadata = { title: "Create a Golf Trip | The Maroon" };
@@ -14,10 +15,7 @@ export default function NewGolfTripPage() {
           <span className={styles.fieldLabel}>Trip Name</span>
           <input className={styles.input} type="text" name="tripName" placeholder="Maroon Masters 2027" autoComplete="off" required />
         </label>
-        <label className={styles.field}>
-          <span className={styles.fieldLabel}>Destination</span>
-          <input className={styles.input} type="text" name="destination" placeholder="Pinehurst, North Carolina" autoComplete="off" required />
-        </label>
+        <DestinationSearch />
         <div className={styles.fieldRow}>
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Start Date</span>

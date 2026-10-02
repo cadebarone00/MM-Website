@@ -4,12 +4,13 @@ import Link from "next/link";
 import { ChevronRight, Plus } from "lucide-react";
 import { golfTripUrl, splitGolfTrips, tripDateRange, type GolfTripSummary } from "@/lib/platform/golfTripCreate";
 import { getUserGolfTrips } from "@/lib/platform/golfTripsServer";
+import { GolfTripJoin } from "@/components/platform/GolfTripJoin";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = { title: "Golf Trips | The Maroon" };
 
 /**
- * Golf Trips: start a new trip, then My Trips (upcoming + past) — the standard way back into a saved trip.
+ * Golf Trips: start a new trip, Join a Trip, then My Trips (upcoming + past) — the standard way back into a saved trip.
  * Loaded fresh from Supabase on every visit (getUserGolfTrips), so a deleted trip simply isn't listed.
  * Each trip opens the one canonical trip page, /golf-trips/<id>.
  */
@@ -26,6 +27,7 @@ export default async function GolfTripsPage() {
         <span className={styles.plus} aria-hidden="true"><Plus size={20} strokeWidth={2.25} /></span>
         Create a Golf Trip
       </Link>
+      <GolfTripJoin />
 
       <section aria-labelledby="my-trips-heading" className={styles.trips}>
         <h2 id="my-trips-heading" className={styles.heading}>My Trips</h2>

@@ -1,13 +1,16 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, MessageCircle, Settings } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
+import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
+import { GolfTripLeaderboard, GolfTripMatch } from "./GolfTripMatch";
 import styles from "./GolfTripHome.module.css";
 
 const TABS = ["Home", "Golf", "Venue", "Info"] as const;
 type Tab = (typeof TABS)[number];
+const GOLF_SLIDES = ["Leaderboard", "Match", "Overview"] as const;
 
 const TOURNAMENT_ANSWERS: Record<string, string> = { yes: "Yes, there's a tournament", no: "No tournament, just golf", undecided: "Not sure yet" };
 
@@ -20,8 +23,10 @@ const subscribeNever = () => () => {};
  * `preview` replaces those answers with fixed ones (the /dev/tournament design preview).
  * `settingsHref` is where the settings wheel goes (this trip's settings page).
  * `backHref` adds a small "← Golf Trips" link on desktop, where the bottom tabs (and their Golf Trips tab) are hidden.
+ * `previewMatch` fills the Golf tab's Leaderboard and Match slides with made-up data (/dev/tournament only); without it they are "Coming soon".
  */
-export function GolfTripHome({ preview, settingsHref, backHref }: { preview?: GolfTripDraft; settingsHref: string; backHref?: string }) {
+export function GolfTripHome({ preview, settingsHref, backHref, previewMatch }:
+  { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview }) {
   const raw = useSyncExternalStore(subscribeNever, golfTripDraftSnapshot, () => "");
   const stored = useMemo(() => parseGolfTripDraft(raw), [raw]);
   const draft = preview ?? stored;
@@ -43,7 +48,9 @@ export function GolfTripHome({ preview, settingsHref, backHref }: { preview?: Go
       </div>
     </header>
     <div className={styles.body} role="tabpanel" aria-label={tab}>
-      {tab === "Home" ? <HomeSections draft={draft} dates={dates} dateRange={dateRange} /> : <Card title={tab}><Empty>Coming soon</Empty></Card>}
+      {tab === "Home" ? <HomeSections draft={draft} dates={dates} dateRange={dateRange} />
+        : tab === "Golf" ? <GolfSlides previewMatch={previewMatch} />
+        : <Card title={tab}><Empty>Coming soon</Empty></Card>}
     </div>
   </main>;
 }
@@ -78,6 +85,39 @@ function HomeSections({ draft, dates, dateRange }: { draft: Record<string, strin
     </Card>
     <Card title="Expenses"><Empty>Track who paid for what</Empty></Card>
     <Card title="Photos"><Empty>Share photos from the trip</Empty></Card>
+  </>;
+}
+
+/**
+ * Golf tab, Sleeper-style: a pill row over side-by-side slides. The slides sit in a scroll-snap strip, so a phone
+ * swipe moves between them natively; tapping a pill scrolls to its slide, and scrolling lights up the matching pill.
+ */
+function GolfSlides({ previewMatch }: { previewMatch?: GolfMatchPreview }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+
+  const goTo = (index: number) => {
+    const track = trackRef.current;
+    if (track) track.scrollTo({ left: index * track.clientWidth, behavior: "smooth" });
+    setActive(index);
+  };
+  const onScroll = () => {
+    const track = trackRef.current;
+    if (track && track.clientWidth > 0) setActive(Math.round(track.scrollLeft / track.clientWidth));
+  };
+
+  return <>
+    <div className={styles.pills} role="tablist" aria-label="Golf sections">
+      {GOLF_SLIDES.map((name, i) => <button key={name} type="button" role="tab" aria-selected={active === i}
+        className={`${styles.pill} ${active === i ? styles.pillActive : ""}`} onClick={() => goTo(i)}>{name}</button>)}
+    </div>
+    <div ref={trackRef} className={styles.slides} onScroll={onScroll}>
+      {GOLF_SLIDES.map((name, i) => <div key={name} className={styles.slide} role="tabpanel" aria-label={name} inert={active !== i}>
+        {name === "Match" && previewMatch ? <GolfTripMatch match={previewMatch} />
+          : name === "Leaderboard" && previewMatch ? <GolfTripLeaderboard match={previewMatch} />
+          : <Card title={name}><Empty>Coming soon</Empty></Card>}
+      </div>)}
+    </div>
   </>;
 }
 

@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import type { PGlite } from "@electric-sql/pglite";
-import { golfTripCreateFailure, golfTripPayloadFromBody, golfTripSummaries, golfTripViewer, savedTripAsDraft, splitGolfTrips, tripDateRange, type CreateGolfTripPayload, type GolfTripSummary, type SavedGolfTrip } from "./golfTripCreate.ts";
+import { golfTripCreateFailure, golfTripPayloadFromBody, golfTripSummaries, golfTripViewer, savedTripAsDraft, splitGolfTrips, tripDateRange, tripIdFromJoinInput, type CreateGolfTripPayload, type GolfTripSummary, type SavedGolfTrip } from "./golfTripCreate.ts";
 import { reviewRows } from "./golfTripDraft.ts";
 import { database, profile, sqlFile } from "./testDatabase.ts";
 
@@ -24,7 +24,8 @@ const fields = (body: unknown) => { const r = golfTripPayloadFromBody(body); ret
 
 test("a finished questionnaire becomes one create payload", () => {
   assert.deepEqual(payload(), {
-    requestId: DRAFT.requestId, name: "Maroon Masters 2027", destination: "Pinehurst, North Carolina", startDate: "2027-04-22", endDate: "2027-04-26",
+    requestId: DRAFT.requestId, name: "Maroon Masters 2027", destination: "Pinehurst, North Carolina",
+    latitude: null, longitude: null, externalPlaceId: null, startDate: "2027-04-22", endDate: "2027-04-26",
     expectedTravelerCount: 8, organizer: { displayName: "Cade", email: "cade@example.com" }, golfDays: 2,
     rounds: [
       { roundNumber: 1, dayNumber: 1, playDate: "2027-04-23", courseName: "Pinehurst No. 2" },
@@ -46,6 +47,21 @@ test("rejects missing, bad or mismatched answers", () => {
   assert.deepEqual(fields({ ...DRAFT, requestId: "1" }), ["requestId"]);
   assert.deepEqual(fields({ ...DRAFT, playerCount: "0" }), ["playerCount"]);
   for (const junk of [null, 5, "x", []]) assert.deepEqual(fields(junk), ["body"]);
+});
+
+const PLACE = { destinationPlaceId: "ChIJ-bfVTh8FrIkRbkHh-dl5xIk", destinationLatitude: "35.1954", destinationLongitude: "-79.4695" };
+const placeOf = (body: Record<string, string>) => { const p = payload(body); return [p.latitude, p.longitude, p.externalPlaceId]; };
+
+test("a picked Google Places destination carries its id and coordinates; anything partial or bad is dropped, never an error", () => {
+  assert.deepEqual(placeOf({ ...DRAFT, ...PLACE }), [35.1954, -79.4695, "ChIJ-bfVTh8FrIkRbkHh-dl5xIk"]);
+  const none = [null, null, null];
+  assert.deepEqual(placeOf({ ...DRAFT, ...PLACE, destinationPlaceId: "" }), none, "typed over: hidden answers cleared");
+  assert.deepEqual(placeOf({ ...DRAFT, ...PLACE, destinationLatitude: "" }), none, "missing latitude (not read as 0)");
+  assert.deepEqual(placeOf({ ...DRAFT, ...PLACE, destinationLongitude: "abc" }), none);
+  assert.deepEqual(placeOf({ ...DRAFT, ...PLACE, destinationLatitude: "91" }), none, "out of range");
+  assert.deepEqual(placeOf({ ...DRAFT, ...PLACE, destinationLongitude: "-180.5" }), none, "out of range");
+  assert.deepEqual(placeOf({ ...DRAFT, ...PLACE, destinationPlaceId: "x".repeat(301) }), none, "id too long");
+  assert.deepEqual(placeOf({ ...DRAFT, ...PLACE, destinationPlaceId: "bad id!" }), none);
 });
 
 test("database errors become plain messages", () => {
@@ -86,6 +102,21 @@ test("create_golf_trip saves the trip, its organizer and its rounds, and reads b
 
   // Golf Trip Home shows exactly what Review showed.
   assert.deepEqual(reviewRows(savedTripAsDraft(saved)), reviewRows({ ...DRAFT, round3Course: "Pinehurst No. 4" }));
+  await db.close();
+});
+
+test("create_golf_trip saves the picked place's coordinates and id, or leaves them empty for a typed destination", async () => {
+  const db = await tripsDatabase();
+  const cade = await profile(db, "cade");
+  const picked = await create(db, cade, payload({ ...DRAFT, ...PLACE }));
+  const typed = await create(db, cade, payload({ ...DRAFT, requestId: randomUUID() }));
+  const place = (s: SavedGolfTrip | null) => [s?.trip.destination, s?.trip.latitude, s?.trip.longitude, s?.trip.external_place_id];
+  assert.deepEqual(place(await fetchTrip(db, cade, picked.tripId)), ["Pinehurst, North Carolina", 35.1954, -79.4695, "ChIJ-bfVTh8FrIkRbkHh-dl5xIk"]);
+  assert.deepEqual(place(await fetchTrip(db, cade, typed.tripId)), ["Pinehurst, North Carolina", null, null, null]);
+  // The database refuses half a pair or impossible coordinates even if a caller skips the checks.
+  await assert.rejects(create(db, cade, { ...payload(), requestId: randomUUID(), latitude: 35.2, longitude: null }), /golf_trips_coordinates_pair/);
+  await assert.rejects(create(db, cade, { ...payload(), requestId: randomUUID(), latitude: 95, longitude: 10 }));
+  assert.equal(await count(db, "golf_trips"), 2);
   await db.close();
 });
 
@@ -195,4 +226,16 @@ test("My Trips splits upcoming from past and reads dates like a calendar", () =>
   assert.equal(tripDateRange("2027-12-30", "2028-01-02"), "Dec 30, 2027 – Jan 2, 2028");
   assert.equal(tripDateRange("2027-04-22", "2027-04-22"), "Apr 22, 2027");
   assert.equal(tripDateRange("", "2027-04-22"), "");
+});
+
+test("Join a Trip reads the trip id from a pasted Trip ID or trip link", () => {
+  const id = "6f1c2a52-8a3e-4c4e-9d55-0d3c8a1b2c3d";
+  assert.equal(tripIdFromJoinInput(id), id);
+  assert.equal(tripIdFromJoinInput(`  ${id.toUpperCase()} `), id);
+  assert.equal(tripIdFromJoinInput(`https://themaroon.com/golf-trips/${id}`), id);
+  assert.equal(tripIdFromJoinInput(`https://themaroon.com/golf-trips/${id}/settings?x=1`), id);
+  assert.equal(tripIdFromJoinInput(""), null);
+  assert.equal(tripIdFromJoinInput("not a trip"), null);
+  assert.equal(tripIdFromJoinInput("https://themaroon.com/golf-trips/new"), null);
+  assert.equal(tripIdFromJoinInput(`https://themaroon.com/golf-trips/${id}extra`), null);
 });

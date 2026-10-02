@@ -51,6 +51,16 @@ create table if not exists public.golf_trips (
 );
 create index if not exists golf_trips_created_by_idx on public.golf_trips (created_by);
 
+-- Where the trip is, from the Google Places suggestion the organizer picked for the destination. All optional: a
+-- destination typed by hand saves without them. destination stays the text shown everywhere; the place id is
+-- just a hint back to Google, never the identity. Weather reads latitude/longitude later.
+alter table public.golf_trips
+  add column if not exists latitude double precision check (latitude between -90 and 90),
+  add column if not exists longitude double precision check (longitude between -180 and 180),
+  add column if not exists external_place_id text check (external_place_id is null or length(external_place_id) <= 300);
+alter table public.golf_trips drop constraint if exists golf_trips_coordinates_pair;
+alter table public.golf_trips add constraint golf_trips_coordinates_pair check ((latitude is null) = (longitude is null));
+
 -- Who is going: the organizer and the members. profile_id is empty for a traveler who hasn't made an account yet.
 create table if not exists public.golf_trip_members (
   id uuid primary key default gen_random_uuid(),
@@ -140,10 +150,11 @@ begin
   end if;
 
   begin
-    insert into golf_trips (name, destination, start_date, end_date, expected_traveler_count, golf_days, planned_rounds,
+    insert into golf_trips (name, destination, latitude, longitude, external_place_id, start_date, end_date, expected_traveler_count, golf_days, planned_rounds,
       includes_tournament, lodging_plan, flight_plan, transportation_plan, created_by, client_request_id)
     values (
       trim(p_input->>'name'), trim(p_input->>'destination'),
+      (p_input->>'latitude')::double precision, (p_input->>'longitude')::double precision, nullif(trim(p_input->>'externalPlaceId'), ''),
       (p_input->>'startDate')::date, (p_input->>'endDate')::date,
       nullif(p_input->>'expectedTravelerCount', '')::integer,
       (p_input->>'golfDays')::integer, jsonb_array_length(coalesce(p_input->'rounds', '[]'::jsonb)),
@@ -228,6 +239,11 @@ grant execute on function public.delete_golf_trip(uuid, uuid) to service_role;
 
 commit;
 
+-- Undo just the location columns (keeps the trips):
+--   alter table public.golf_trips drop constraint if exists golf_trips_coordinates_pair,
+--     drop column if exists latitude, drop column if exists longitude, drop column if exists external_place_id;
+--   (then re-run the create_golf_trip definition from the previous version of this file)
+--
 -- Undo (deletes every saved golf trip):
 --   drop function if exists public.delete_golf_trip(uuid, uuid);
 --   drop function if exists public.list_my_golf_trips(uuid);
