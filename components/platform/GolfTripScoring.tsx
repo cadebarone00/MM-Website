@@ -17,8 +17,11 @@ const TAP_SLOP = 6;
  */
 export function GolfTripScoring({ par, initialHoles }: { par?: number[]; initialHoles?: (number | null)[] }) {
   const [open, setOpen] = useState(false);
+  const [scoreMode, setScoreMode] = useState<"self" | "match" | "none">("match");
   const [holes, setHoles] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => initialHoles?.[i] ?? null));
+  const [holesCompetitor, setHolesCompetitor] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => initialHoles?.[i] ?? null));
   const [current, setCurrent] = useState(() => { const next = holes.findIndex((h) => h === null); return next === -1 ? HOLES - 1 : next; });
+  const [currentCompetitor] = useState(() => { const next = holesCompetitor.findIndex((h) => h === null); return next === -1 ? HOLES - 1 : next; });
   const sheetRef = useRef<HTMLElement>(null);
   const handleRef = useRef<HTMLButtonElement>(null);
   const spacerRef = useRef<HTMLSpanElement>(null);
@@ -66,11 +69,19 @@ export function GolfTripScoring({ par, initialHoles }: { par?: number[]; initial
   const toPar = par ? played.reduce((sum, x) => sum + x.h - (x.p ?? 0), 0) : null;
 
   function step(delta: number) {
-    setHoles((current_) => current_.map((h, i) => {
-      if (i !== current) return h;
-      const start = h ?? holePar ?? 4; // the first tap starts from par
-      return Math.min(Math.max(h === null ? start + Math.min(delta, 0) : start + delta, 1), 15);
-    }));
+   setHoles((current_) => current_.map((h, i) => {
+     if (i !== current) return h;
+     const start = h ?? holePar ?? 4; // the first tap starts from par
+     return Math.min(Math.max(h === null ? start + Math.min(delta, 0) : start + delta, 1), 15);
+   }));
+  }
+
+  function stepCompetitor(delta: number) {
+   setHolesCompetitor((current_) => current_.map((h, i) => {
+     if (i !== currentCompetitor) return h;
+     const start = h ?? holePar ?? 4;
+     return Math.min(Math.max(h === null ? start + Math.min(delta, 0) : start + delta, 1), 15);
+   }));
   }
 
   const style = dragOffset !== null ? { transform: `translateY(${dragOffset}px)`, transition: "none" } : undefined;
@@ -105,20 +116,29 @@ export function GolfTripScoring({ par, initialHoles }: { par?: number[]; initial
         </button>)}
       </div>
 
+      <div className={styles.stepperWrap}>
+        <div className={styles.previewMode} role="group" aria-label="Developer score preview">
+          {[
+            { value: "match", label: "Match" },
+            { value: "none", label: "Single" },
+          ].map((option) => <button key={option.value} type="button" className={`${styles.previewChip} ${scoreMode === option.value ? styles.previewChipActive : ""}`} aria-pressed={scoreMode === option.value} onClick={() => setScoreMode(option.value as typeof scoreMode)}>{option.label}</button>)}
+        </div>
+
+        {scoreMode === "match" ? (
+          <div className={styles.scoreSplit}>
+            <ScoreCard label="His Score" strokes={strokes} holePar={holePar} step={step} compact />
+            <ScoreCard label="Opponent Score" strokes={holesCompetitor[currentCompetitor]} holePar={holePar} step={stepCompetitor} compact />
+          </div>
+        ) : (
+          <ScoreCard label="His Score" strokes={strokes} holePar={holePar} step={step} compact />
+        )}
+      </div>
+
       <div className={styles.puttsWrap} aria-label="Putts">
         <span className={styles.puttsLabel}>Putts</span>
         <div className={styles.putts} role="group" aria-label="Putts selector">
           {[0, 1, 2, 3, "4+"].map((value) => <button key={String(value)} type="button" className={styles.puttOption} aria-pressed={value === 2}>{value}</button>)}
         </div>
-      </div>
-
-      <div className={styles.stepper}>
-        <button type="button" className={styles.stepButton} aria-label="One less stroke" onClick={() => step(-1)}><Minus size={26} strokeWidth={2.5} aria-hidden /></button>
-        <div className={styles.strokes} aria-live="polite">
-          <span className={strokes === null ? styles.strokesEmpty : ""}>{strokes ?? holePar ?? "—"}</span>
-          <small>{strokes === null ? "Tap + or − to score" : scoreName(strokes, holePar)}</small>
-        </div>
-        <button type="button" className={styles.stepButton} aria-label="One more stroke" onClick={() => step(1)}><Plus size={26} strokeWidth={2.5} aria-hidden /></button>
       </div>
 
       <div className={styles.compassRow} aria-label="Shot direction">
@@ -135,6 +155,20 @@ export function GolfTripScoring({ par, initialHoles }: { par?: number[]; initial
       <span ref={spacerRef} className={styles.navSpacer} aria-hidden />
     </div>
   </section></div>;
+}
+
+function ScoreCard({ label, strokes, holePar, step, compact = false }: { label: string; strokes: number | null; holePar: number | undefined; step: (delta: number) => void; compact?: boolean }) {
+  return <div className={`${styles.scoreCard} ${compact ? styles.scoreCardCompact : ""}`}>
+    <span className={styles.scoreCardLabel}>{label}</span>
+    <div className={styles.stepper}>
+      <button type="button" className={styles.stepButton} aria-label={`One less stroke for ${label}`} onClick={() => step(-1)}><Minus size={compact ? 20 : 26} strokeWidth={2.5} aria-hidden /></button>
+      <div className={`${styles.strokes} ${compact ? styles.strokesCompact : ""}`} aria-live="polite">
+        <span className={strokes === null ? styles.strokesEmpty : ""}>{strokes ?? holePar ?? "—"}</span>
+        <small>{strokes === null ? "Tap + or −" : scoreName(strokes, holePar)}</small>
+      </div>
+      <button type="button" className={styles.stepButton} aria-label={`One more stroke for ${label}`} onClick={() => step(1)}><Plus size={compact ? 20 : 26} strokeWidth={2.5} aria-hidden /></button>
+    </div>
+  </div>;
 }
 
 function Compass({ label }: { label: string }) {

@@ -27,12 +27,31 @@
 .arrow:disabled{opacity:.35;cursor:default}
 .arrow:not(:disabled):hover{background:rgba(85,33,29,.06)}
 
-.stepper{display:flex;align-items:center;justify-content:center;gap:22px}
-.stepButton{display:grid;place-items:center;width:56px;height:56px;border:1.5px solid rgba(47,12,14,.7);border-radius:50%;background:transparent;color:var(--color-maroon-900,#2f0c0e);cursor:pointer}
+.stepperWrap{display:flex;flex-direction:column;gap:10px}
+.previewMode{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.previewChip{padding:6px 10px;border:1px solid rgba(47,12,14,.25);border-radius:999px;background:rgba(255,255,255,.18);color:var(--color-maroon-900,#2f0c0e);font:600 11px/1 var(--font-spectral),Georgia,serif;cursor:pointer}
+.previewChipActive{background:var(--color-maroon-900,#2f0c0e);border-color:var(--color-maroon-900,#2f0c0e);color:#f8f3ea}
+
+.scoreSplit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-width:300px;margin:0 auto;width:100%}
+.scoreCard{display:flex;flex-direction:column;align-items:center;gap:8px}
+.scoreCardCompact{gap:4px;min-width:0}
+.scoreCardLabel{font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(47,12,14,.7)}
+
+.stepper{display:flex;align-items:center;justify-content:center;gap:8px}
+.stepButton{display:grid;place-items:center;width:28px;height:28px;border:1.5px solid rgba(47,12,14,.7);border-radius:50%;background:transparent;color:var(--color-maroon-900,#2f0c0e);cursor:pointer}
 .stepButton:active{background:var(--color-maroon-900,#2f0c0e);color:#f8f3ea}
 .strokes{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:110px;font:700 48px/1 var(--font-spectral),Georgia,serif}
+.strokesCompact{min-width:56px;font-size:28px;gap:3px;line-height:1}
 .strokesEmpty{color:rgba(47,12,14,.35)}
 .strokes small{font:600 12px/1 var(--font-spectral),Georgia,serif;color:rgba(47,12,14,.72)}
+
+@media (max-width:360px){
+  .scoreSplit{gap:6px;max-width:270px}
+  .stepper{gap:10px}
+  .stepButton{width:38px;height:38px}
+  .strokesCompact{min-width:50px;font-size:24px}
+  .scoreCardLabel{font-size:10px}
+}
 
 .puttsWrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:4px}
 .puttsLabel{font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.08em;text-transform:uppercase;color:rgba(47,12,14,.68)}
@@ -52,7 +71,7 @@
 .directionLeft{left:0;top:50%;transform:translateY(-50%)}
 .directionRight{right:0;top:50%;transform:translateY(-50%)}
 
-.arrow:focus-visible,.stepButton:focus-visible,.holeChip:focus-visible,.puttOption:focus-visible,.compassButton:focus-visible,.compassCenter:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:2px}
+.arrow:focus-visible,.stepButton:focus-visible,.holeChip:focus-visible,.puttOption:focus-visible,.previewChip:focus-visible,.compassButton:focus-visible,.compassCenter:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:2px}
 
 /* Hole picker: one chip per hole (number over strokes); scrolls sideways. */
 .holes{position:relative;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px}
