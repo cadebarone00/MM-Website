@@ -110,31 +110,36 @@ function netRanked(rows: LeaderboardRow[]): LeaderboardRow[] {
 }
 
 /**
- * Above the Golf slide tabs: the team matchup card (each side's avatar, points, name, handle; then a line and each
- * side's round stats, FWY % / GREEN % / PUTTS / SCORE, mirrored either side of a thin gold center line), with one
- * small cream oval per match tucked just under it
- * (`showDots`; not on Leaderboard). The current match's oval widens to read "Match 2". The ovals sit in the gap
- * under the card without taking up space, so the card and tabs stay in the same place on every slide.
+ * Above the Golf slide tabs: the Match box for the featured match (the first one: the organizer's). Each side shows the
+ * golfer's initials, name and points earned ("3 PTS"), with the match play standing ("2 UP" / "AS") toward the middle; the match status
+ * (tee time, THRU + holes, or F) sits at the top center in plain cream text. The leader's half fills with their team color from the box's edge, rounding
+ * off before the status box, like the Match slide rows but taller. Below: one win-probability bar that fills from the
+ * center toward the favorite, then each side's round stats, FWY % / GREEN % / PUTTS / SCORE to par, labels above a
+ * line and values below it, mirrored either side of a thin gold center line.
+ * With `showDots` (not on Leaderboard), one small cream oval per match is tucked just under the box; the featured
+ * match's oval widens to read "Match 1". The ovals take no space, so the box and tabs stay put on every slide.
  */
 export function GolfMatchup({ match, showDots }: { match: GolfMatchPreview; showDots: boolean }) {
   const [left, right] = match.sides;
+  const featured = 0;
+  const { left: leftGolfer, right: rightGolfer, gross } = match.matches[featured];
 
   return <div className={styles.matchup}>
-    <section className={styles.versus} aria-label="Team matchup">
+    <section className={styles.versus} aria-label="Match">
       <div className={styles.teams}>
-        <TeamSide side={left} align="left" />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <span className={styles.crest}><img src="/assets/crest-white.svg" alt="" /></span>
-        <TeamSide side={right} align="right" />
+        <PlayerSide golfer={leftGolfer} align="left" standing={gross} />
+        <span className={styles.boxStatus}><MatchStatus golfer={leftGolfer} plain /></span>
+        <PlayerSide golfer={rightGolfer} align="right" standing={gross} />
       </div>
       <div className={styles.stats}>
+        <WinBar left={left.winPct} right={right.winPct} />
         <RoundStats side={left} align="left" />
         <RoundStats side={right} align="right" />
       </div>
     </section>
 
-    {showDots && <div className={styles.dots} aria-label={`Match ${match.round} of ${match.roundCount}`}>
-      {Array.from({ length: match.roundCount }, (_, i) => i + 1 === match.round
+    {showDots && <div className={styles.dots} aria-label={`Match ${featured + 1} of ${match.matches.length}`}>
+      {match.matches.map((_, i) => i === featured
         ? <span key={i} className={`${styles.dot} ${styles.dotActive}`}>Match {i + 1}</span>
         : <span key={i} className={styles.dot} />)}
     </div>}
@@ -161,15 +166,19 @@ export function roundDay(date: string): string {
   return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
 }
 
-/** The status box between a match's golfers, read from the first golfer's progress ("Not started", "Thru 12", "Thru 18" / "F"). */
-function MatchStatus({ golfer }: { golfer: GolfMatchGolfer }) {
+/**
+ * A match's status, read from the first golfer's progress ("Not started", "Thru 12", "Thru 18" / "F"): a cream box
+ * between the golfers on the Match slide, or (`plain`) bare cream text at the top center of the Match box.
+ */
+function MatchStatus({ golfer, plain = false }: { golfer: GolfMatchGolfer; plain?: boolean }) {
+  const className = plain ? `${styles.status} ${styles.statusPlain}` : `${styles.rank} ${styles.status}`;
   const holes = Number(golfer.thru.match(/^Thru (\d+)$/)?.[1]);
-  if (golfer.thru === "F" || holes >= 18) return <span className={`${styles.rank} ${styles.status}`} aria-label="Finished">F</span>;
-  if (holes > 0) return <span className={`${styles.rank} ${styles.status}`} aria-label={`Thru ${holes}`}>
+  if (golfer.thru === "F" || holes >= 18) return <span className={className} aria-label="Finished">F</span>;
+  if (holes > 0) return <span className={className} aria-label={`Thru ${holes}`}>
     <small>THRU</small>{holes}
   </span>;
   const [time, period] = golfer.teeTime.split(" ");
-  return <span className={`${styles.rank} ${styles.status}`} aria-label={`Tees off ${golfer.teeTime}`}>
+  return <span className={className} aria-label={`Tees off ${golfer.teeTime}`}>
     {time}{period && <small>{period}</small>}
   </span>;
 }
@@ -236,16 +245,34 @@ export function GolfCourseWeather({ match }: { match: GolfMatchPreview }) {
   </section>;
 }
 
-function TeamSide({ side, align }: { side: GolfMatchSide; align: "left" | "right" }) {
-  return <div className={`${styles.side} ${styles[align]}`}>
+/** One half of the Match box: initials + standing on top, then name and points earned; filled in team color when leading. */
+function PlayerSide({ golfer, align, standing }: { golfer: GolfMatchGolfer; align: "left" | "right"; standing: GolfMatchStanding }) {
+  const leading = standing?.leader === align;
+  const label = !standing ? "" : standing.leader === null ? "AS" : leading ? `${standing.up} UP` : "";
+  return <div className={`${styles.side} ${styles[align]} ${leading ? styles.sideLeading : ""}`}>
     <div className={styles.sideTop}>
-      <span className={`${styles.avatar} ${align === "right" ? styles.avatarRight : ""}`}>{side.initials}</span>
-      <span className={styles.win}>{side.winPct}% WIN</span>
-      <span className={styles.points}>{side.points}</span>
+      <span className={`${styles.avatar} ${align === "right" ? styles.avatarRight : ""}`}>{initials(golfer.name)}</span>
+      <span className={styles.boxStanding}>{label}</span>
     </div>
-    <div className={styles.bar}><span className={align === "right" ? styles.barFillRight : styles.barFill} style={{ width: `${side.winPct}%` }} /></div>
-    <p className={styles.teamName}>{side.name}</p>
-    <p className={styles.teamMeta}>{align === "left" ? <>{side.handle} • <b>{side.record}</b></> : <><b>{side.record}</b> • {side.handle}</>}</p>
+    <p className={styles.teamName}>{golfer.name}</p>
+    {golfer.points !== undefined && <p className={styles.teamMeta}>{golfer.points} {golfer.points === 1 ? "PT" : "PTS"}</p>}
+  </div>;
+}
+
+/** "A. Organizer" → "AO". */
+function initials(name: string): string {
+  return name.split(/[\s.]+/).filter(Boolean).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+}
+
+/**
+ * Win probability as one bar, split at the center line: at 50 / 50 it's empty, and the favorite's team color fills
+ * out from the center toward their side (all the way at 100%). Mirrored, so either side can fill.
+ */
+function WinBar({ left, right }: { left: number; right: number }) {
+  const fill = (pct: number) => `${Math.min(Math.max((pct - 50) * 2, 0), 100)}%`;
+  return <div className={styles.winBar} role="img" aria-label={`Win probability ${left}% to ${right}%`}>
+    <span className={styles.winHalf}><span className={styles.winFillLeft} style={{ width: fill(left) }} /></span>
+    <span className={styles.winHalf}><span className={styles.winFillRight} style={{ width: fill(right) }} /></span>
   </div>;
 }
 

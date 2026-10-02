@@ -3,35 +3,48 @@
 .left{text-align:left}
 .right{text-align:right}
 
-/* Team matchup card */
-/* Top boxes (team card, course weather): one flat color, barely rounded, with a faint gold outline. */
+/* Match box (above the Golf tabs) */
+/* Top boxes (Match box, course weather): one flat color, barely rounded, with a faint gold outline. */
 .versus{border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(220,196,149,.28);overflow:hidden}
-.teams{position:relative;display:grid;grid-template-columns:1fr 44px 1fr;gap:10px;align-items:start;padding:16px 14px 14px}
-.side{display:flex;flex-direction:column;gap:6px;min-width:0}
-.sideTop{display:flex;align-items:flex-end;gap:6px}
+.teams{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 44px minmax(0,1fr);gap:8px;align-items:stretch;padding:14px 14px 14px}
+/* Each half: initials + standing on top, then name and record. The leader's half fills with their team color from the
+   box's edge (pulled out over the 14px padding), rounding off before the status box: the Match rows' fill, but taller. */
+.side{display:flex;flex-direction:column;gap:6px;min-width:0;padding:16px 10px 10px}
+.side.left.sideLeading{margin-left:-14px;margin-right:8px;padding-left:20px;border-radius:0 18px 18px 0;background:#dcc495}
+.side.right.sideLeading{margin-right:-14px;margin-left:8px;padding-right:20px;border-radius:18px 0 0 18px;background:#e89a9a}
+.sideTop{display:flex;align-items:center;justify-content:space-between;gap:6px}
 .right .sideTop{flex-direction:row-reverse}
 .avatar{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:50%;background:#dcc495;color:var(--color-maroon-900);font:800 15px/1 var(--font-spectral),Georgia,serif}
 .avatarRight{background:#e89a9a}
-.win{font:700 12px/1 var(--font-spectral),Georgia,serif;color:#dcc495;white-space:nowrap}
-.right .win{color:#e89a9a}
-.points{margin-left:auto;font:600 18px/1 var(--font-spectral),Georgia,serif}
-.right .points{margin-left:0;margin-right:auto}
-.bar{height:4px;border-radius:4px;background:rgba(255,255,255,.14);overflow:hidden}
-.right .bar{transform:scaleX(-1)}
-.barFill,.barFillRight{display:block;height:100%;border-radius:4px;background:#dcc495}
-.barFillRight{background:#e89a9a}
-.teamName{margin:4px 0 0;font:700 18px/1.15 var(--font-spectral),Georgia,serif;color:#fff;overflow-wrap:anywhere}
-.teamMeta{margin:0;font:500 12px/1.3 var(--font-spectral),Georgia,serif;color:rgba(255,255,255,.6)}
-.teamMeta b{font-weight:700;white-space:nowrap;color:rgba(255,255,255,.8)}
-.crest{display:grid;place-items:center;width:44px;height:44px;margin-top:22px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.25)}
-.crest img{width:26px;height:26px}
-/* Round stats: a line under the handles, then each side's four stats mirrored either side of a thin gold center line. */
-.stats{display:grid;grid-template-columns:1fr 1fr;margin:0 14px;padding:12px 0 14px;border-top:1px solid rgba(220,196,149,.28)}
+.sideLeading .avatar{background:var(--color-maroon-900);color:#dcc495}
+.right.sideLeading .avatar{color:#e89a9a}
+.boxStanding{font:700 20px/1 var(--font-spectral),Georgia,serif;color:#fff;white-space:nowrap}
+.teamName{margin:4px 0 0;font:700 17px/1.15 var(--font-spectral),Georgia,serif;color:#fff;overflow-wrap:normal}
+.teamMeta{margin:-4px 0 0;font:700 13px/1.3 var(--font-spectral),Georgia,serif;color:rgba(255,255,255,.7)}
+.sideLeading .boxStanding,.sideLeading .teamName{color:var(--color-maroon-900)}
+.sideLeading .teamMeta{color:rgba(36,0,1,.7)}
+.boxStatus{align-self:start;display:flex;justify-content:center;margin-top:-8px}
+@media(max-width:359px){.teams{gap:6px}.side{padding:14px 8px 8px}.side.left.sideLeading{margin-right:6px}.side.right.sideLeading{margin-left:6px}.side.left.sideLeading{padding-left:22px}.side.right.sideLeading{padding-right:22px}.avatar{width:34px;height:34px;font-size:12px}.boxStanding{font-size:16px}.teamName{font-size:16px}}
+/* Round stats: the win bar, then each side's four stats mirrored either side of a thin gold center line; the labels
+   sit above a line (drawn at the label height, --label) and the values below it. */
+.stats{display:grid;grid-template-columns:1fr 1fr;margin:0 14px;padding:2px 0 14px;--label:9px}
+/* Win probability: one bar across the card, split at the center; each team's fill grows out from the middle. */
+.winBar{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;height:5px;margin-bottom:14px;border-radius:5px;background:rgba(255,255,255,.12);overflow:hidden}
+.winHalf{display:flex}
+.winHalf:first-child{justify-content:flex-end}
+.winFillLeft,.winFillRight{display:block;height:100%}
+.winFillLeft{background:#dcc495;border-radius:5px 0 0 5px}
+.winFillRight{background:#e89a9a;border-radius:0 5px 5px 0}
+/* Each side's line stops at its SCORE column, short of the gold center line. */
+.roundStats{position:relative}
+.roundStats::after{content:"";position:absolute;top:calc(var(--label) + 7px);border-top:1px solid rgba(220,196,149,.28)}
+.roundStats.left::after{left:0;right:10px}
+.roundStats.right::after{left:10px;right:0}
 .roundStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:0}
 .roundStats.left{padding-right:10px;border-right:1px solid rgba(220,196,149,.55)}
 .roundStats.right{padding-left:10px}
-.roundStat{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
-.roundStat dt{font:700 9px/1 var(--font-spectral),Georgia,serif;letter-spacing:.05em;color:rgba(255,255,255,.6)}
+.roundStat{display:flex;flex-direction:column;align-items:center;gap:15px;min-width:0}
+.roundStat dt{font:700 var(--label)/1 var(--font-spectral),Georgia,serif;letter-spacing:.05em;color:rgba(255,255,255,.6)}
 .roundStat dd{margin:0;font:700 15px/1 var(--font-spectral),Georgia,serif;color:#fff}
 
 /* Overview's course weather card (placeholder): same shell as the team card. */
@@ -110,6 +123,9 @@
 /* Match status box: the position box, a little bigger, with a small label line (THRU / AM) and the main value. */
 .status{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:44px;height:40px;font-size:14px;line-height:1}
 .status small{font:700 8px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em}
+/* Match box version: no box, just cream text at the top center. */
+.statusPlain{width:auto;height:auto;background:none;color:#fbf8f1;font:800 18px/1 var(--font-spectral),Georgia,serif}
+.statusPlain small{font-size:9px}
 .number{font:600 15px/1 var(--font-spectral),Georgia,serif;color:#fff;text-align:center}
 .golfer{display:flex;flex-direction:column;gap:3px;min-width:0}
 .golferName{font:700 16px/1.2 var(--font-spectral),Georgia,serif;color:#fff;overflow-wrap:anywhere}
@@ -132,4 +148,4 @@
 .pairing .golferName{overflow-wrap:normal}
 @media(max-width:592px){.pairing{--bleed:16px}}
 @media(max-width:359px){.pairing{column-gap:6px}.pairSide{gap:6px;padding-inline:8px}.pairing .golferName{font-size:14px}.standing{font-size:13px}}
-@media(max-width:359px){.stats{margin:0 10px}.roundStats{gap:2px}.roundStats.left{padding-right:5px}.roundStats.right{padding-left:5px}.roundStat dt{font-size:7.5px;letter-spacing:0}.roundStat dd{font-size:13px}}
+@media(max-width:359px){.stats{margin:0 10px}.roundStats{gap:2px}.roundStats.left{padding-right:5px}.roundStats.right{padding-left:5px}.roundStats.left::after{right:5px}.roundStats.right::after{left:5px}.stats{--label:7.5px}.roundStat dt{letter-spacing:0}.roundStat dd{font-size:13px}}

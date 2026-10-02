@@ -1,6 +1,6 @@
 /* Golf Trip Home: all dark maroon, no top nav. Trip name up top, the 4-tab selector under it, then the cards.
    The negative bottom margin runs the maroon under the bottom menu on phones (same as the questionnaire). */
-.page{min-height:100svh;margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));background:var(--color-maroon-900);color:#fbf8f1;
+.page{display:flex;flex-direction:column;min-height:100svh;margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));background:var(--color-maroon-900);color:#fbf8f1;
   padding:48px max(16px,calc((100% - 560px)/2)) calc(24px + 5.75rem + env(safe-area-inset-bottom))}
 .header{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
 /* Chat (top left) and settings (top right), level with the top of the trip name. */
@@ -12,7 +12,7 @@
 /* "← Golf Trips": desktop only (1024px+, where the bottom tabs are hidden), so phones keep using the Golf Trips tab. */
 .desktopBack{display:none}
 @media (min-width:1024px){
-  .desktopBack{display:inline-flex;align-items:center;gap:6px;margin:-32px 0 16px;color:rgba(220,196,149,.85);text-decoration:none;
+  .desktopBack{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;margin:-32px 0 16px;color:rgba(220,196,149,.85);text-decoration:none;
     font:600 14px/1 var(--font-barlow),sans-serif;letter-spacing:.02em}
   .desktopBack:hover{color:#fbf8f1}
   .desktopBack:focus-visible{outline:2px solid #dcc495;outline-offset:4px;border-radius:4px}
@@ -28,7 +28,7 @@
 .tab:focus-visible{outline:2px solid #dcc495;outline-offset:2px;border-radius:4px}
 .tabActive,.tabActive:hover{color:#fbf8f1;text-shadow:0 0 12px rgba(251,248,241,.55)}
 .tabActive::after{opacity:1}
-.body{display:flex;flex-direction:column;gap:12px;margin-top:24px}
+.body{flex:1;display:flex;flex-direction:column;gap:12px;margin-top:24px}
 .card{display:flex;flex-direction:column;gap:10px;padding:18px 18px 16px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12)}
 .cardTitle{margin:0;font:500 22px/1.2 var(--font-spectral),Georgia,serif;letter-spacing:-.01em;color:#fff}
 .text{margin:0;font:600 16px/1.4 var(--font-barlow),sans-serif;color:#fff}
@@ -57,6 +57,30 @@
 /* Phones: the strip runs to the screen edges (content stays put via the slide padding), so the Match slide's team
    color can start right at the edge of the screen. */
 @media(max-width:592px){.slides{margin-inline:-16px}.slide{box-sizing:border-box;padding-inline:16px}}
+/* Venue tab (event-list style): bold section headings with a chevron, then rows of square picture + host, title, time, place. */
+.events{display:flex;flex-direction:column;gap:18px}
+.eventsHeading{display:flex;align-items:center;gap:2px;margin:6px 0 0;font:700 20px/1.2 var(--font-barlow),sans-serif;color:#fff}
+.eventsHeading svg{color:rgba(255,255,255,.45)}
+.eventsPicker{align-self:flex-start;display:inline-flex;align-items:center;gap:4px;margin-top:-12px;padding:0;border:0;background:transparent;cursor:pointer;
+  font:600 16px/1.2 var(--font-barlow),sans-serif;color:rgba(255,255,255,.55)}
+.eventsDay{margin:0 0 -6px;font:600 15px/1.2 var(--font-barlow),sans-serif;color:#fff}
+.eventsDay span{color:rgba(255,255,255,.45)}
+.eventRow{display:flex;gap:14px;align-items:flex-start}
+.eventArt{position:relative;display:grid;place-items:center;color:rgba(255,255,255,.9);flex:0 0 76px;height:76px;border-radius:10px}
+.eventBadge{position:absolute;left:4px;bottom:-8px;padding:3px 7px;border-radius:6px;font:700 11px/1 var(--font-barlow),sans-serif}
+.badgeWaitlisted{background:#fde7cf;color:#c06a12}
+.badgeGoing{background:#d7f2dc;color:#1f8a3a}
+.badgeInvited{background:#fbdbe6;color:#c2185b}
+.badgeSet{background:#d7f2dc;color:#1f8a3a}
+.badgeTodo{background:#fde7cf;color:#c06a12}
+.eventInfo{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.eventHost{display:flex;align-items:center;gap:6px;margin:0;font:500 13px/1.3 var(--font-barlow),sans-serif;color:rgba(255,255,255,.55)}
+.eventHost span:nth-child(2){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eventAvatar{flex:0 0 16px;height:16px;border-radius:50%;background:rgba(220,196,149,.6)}
+.eventPrice{color:#5fd07a;font-weight:700}
+.eventTitle{margin:0;font:700 16px/1.25 var(--font-barlow),sans-serif;color:#fff}
+.eventMeta{display:flex;align-items:center;gap:6px;margin:0;font:500 14px/1.3 var(--font-barlow),sans-serif;color:rgba(255,255,255,.55)}
+.eventMeta svg{flex:0 0 auto}
 /* Trip Settings: a back arrow, then the smaller "Trip Settings" title on the left; organizers get General / Organizer
    in the same words-and-underline style as the trip selector. */
 .settingsHeader{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
@@ -77,3 +101,45 @@
 .cancelButton:disabled,.deleteButton:disabled{opacity:.6;cursor:default}
 .dangerButton:focus-visible,.cancelButton:focus-visible,.deleteButton:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
 .settingsMessage{margin:0;font:600 14px/1.4 var(--font-barlow),sans-serif;color:#dcc495}
+/* Info tab (banking-app style): runs to the screen edges and down under the bottom menu. Dark green top with the
+   balance, then a light page; the account cards sit across the line between the two. */
+.account{flex:1;display:flex;flex-direction:column;margin:0 -16px calc(-24px - 5.75rem - env(safe-area-inset-bottom));
+  padding-bottom:calc(24px + 5.75rem + env(safe-area-inset-bottom));
+  background:linear-gradient(#0f3d26 0,#1d5a3b 250px,#f7f8f7 250px);color:#111;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
+.account p{margin:0}
+.account button{font-family:inherit;cursor:pointer}
+.accountTop{display:flex;flex-direction:column;padding:12px 16px 0;color:#fff}
+.accountBar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.accountBell{display:grid;place-items:center;width:32px;height:32px;margin-left:-6px;padding:0;border:0;background:transparent;color:#fff}
+.accountPill{padding:7px 12px;border:1.5px solid #fff;border-radius:999px;background:transparent;color:#fff;font-size:13px;font-weight:600}
+.accountLabel{font-size:30px;font-weight:700;line-height:1.1}
+.accountBalance{display:flex;align-items:center;gap:6px;font-size:28px;font-weight:400;line-height:1.2}
+.accountLink{display:flex;align-items:center;gap:2px;margin-top:12px !important;font-size:13px;font-weight:700;color:#4fe08a}
+.accountCards{scroll-padding-inline:16px;display:flex;gap:10px;margin-top:22px;padding:0 16px 6px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.accountCards::-webkit-scrollbar,.accountPromos::-webkit-scrollbar{display:none}
+.accountCard{flex:0 0 82%;box-sizing:border-box;min-height:96px;padding:16px 14px;border-radius:12px;background:#fff;
+  box-shadow:0 1px 4px rgba(0,0,0,.12);scroll-snap-align:start}
+/* Info → Flights card: the first account card, a link to the Flights page. */
+.accountCardLink{display:block;color:inherit;text-decoration:none}
+.accountCardLink:focus-visible{outline:2px solid #15402a;outline-offset:2px}
+.accountCardName svg{vertical-align:-2px}
+.accountCardName{font-size:12px;font-weight:600}
+.accountCardAmount{margin-top:22px !important;font-size:16px;font-weight:700}
+.accountCardNote{font-size:12px;color:#444}
+.accountPromos{scroll-padding-inline:16px;display:flex;gap:8px;margin-top:22px;padding:0 16px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.accountPromo{position:relative;flex:0 0 92%;box-sizing:border-box;display:flex;align-items:center;gap:12px;min-height:118px;padding:16px 12px;
+  border-radius:12px;background:#bfe9e1;scroll-snap-align:start}
+.accountPromoNext{background:#f6d64a}
+.accountPromoClose{position:absolute;top:8px;right:8px;display:grid;place-items:center;width:18px;height:18px;padding:0;border:0;border-radius:50%;
+  background:rgba(0,0,0,.12);color:#111}
+.accountPromoText{flex:1;display:flex;flex-direction:column;gap:12px}
+.accountPromoTitle{font-size:16px;font-weight:600;line-height:1.3;color:#111}
+.accountPromoLink{display:flex;align-items:center;gap:2px;font-size:12px;font-weight:700;color:#111}
+.accountPromoIcon{flex:0 0 46px;display:grid;place-items:center;height:46px;margin-top:10px;border-radius:12px;background:#15402a;color:#4fe08a}
+.accountDots{display:flex;justify-content:center;gap:6px;margin-top:12px}
+.accountDots span{width:6px;height:6px;border-radius:50%;background:#cfd3d1}
+.accountDots .accountDotActive{background:#8b918e}
+.accountHeading{margin-top:28px !important;padding:0 16px;font-size:18px;font-weight:700;color:#111}
+.accountTools{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;padding:0 16px}
+.accountTool{min-height:80px;padding:14px 12px;border-radius:12px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.1);font-size:13px;font-weight:600}
+@media(min-width:593px){.account{margin-inline:0;border-radius:20px 20px 0 0;overflow:hidden}}

@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { golfTripSummaries, golfTripViewer, isGolfTripId, type GolfTripSummary, type GolfTripViewer, type SavedGolfTrip } from "./golfTripCreate.ts";
+import { flightsFromRows, type GolfTripFlight } from "./golfTripFlights.ts";
 
 /**
  * Server-side reads of saved Golf Trips (supabase/golf_trips.sql). The user id always comes from the session,
@@ -24,6 +25,23 @@ export const getGolfTrip = cache(async (tripId: string): Promise<GolfTripLoad> =
   const trip = data as SavedGolfTrip | null;
   const viewer = trip ? golfTripViewer(trip, user.id) : null;
   return trip && viewer ? { status: "ok", trip, viewer } : { status: "not-found" };
+});
+
+export type MyGolfTripFlights =
+  | { status: "ok"; flights: GolfTripFlight[] }
+  /** Not signed in, not on the trip, or golf_trip_flights.sql not installed: the trip page still loads, flights just don't show. */
+  | { status: "unavailable" };
+
+/** The signed-in person's own flights on this trip (supabase/golf_trip_flights.sql). Never throws. */
+export const getMyGolfTripFlights = cache(async (tripId: string): Promise<MyGolfTripFlights> => {
+  const { data: { user } } = await (await createSupabaseServerClient()).auth.getUser();
+  if (!user || !isGolfTripId(tripId)) return { status: "unavailable" };
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("list_my_golf_trip_flights", { p_profile: user.id, p_trip: tripId });
+  if (error) {
+    console.error("list_my_golf_trip_flights failed:", error.message);
+    return { status: "unavailable" };
+  }
+  return data === null ? { status: "unavailable" } : { status: "ok", flights: flightsFromRows(data) };
 });
 
 export type UserGolfTrips =

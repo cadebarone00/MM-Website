@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { GolfTripHome } from "@/components/platform/GolfTripHome";
 import { golfTripUrl, savedTripAsDraft } from "@/lib/platform/golfTripCreate";
-import { getGolfTrip } from "@/lib/platform/golfTripsServer";
+import { getGolfTrip, getMyGolfTripFlights } from "@/lib/platform/golfTripsServer";
+import { flightSummary } from "@/lib/platform/golfTripFlights";
 import { getTripWeather } from "@/lib/platform/weather/weatherService";
 import type { TripWeather } from "@/lib/platform/weather/types";
 
@@ -26,6 +27,10 @@ export default async function SavedGolfTripPage({ params }: { params: Promise<{ 
   const weather: Promise<TripWeather> = getTripWeather(view.trip.trip.latitude, view.trip.trip.longitude)
     .catch((): TripWeather => ({ status: "unavailable" }));
 
+  // Info tab's Flights card: your own flights (empty if flights aren't installed yet; the page never fails over them).
+  const mine = await getMyGolfTripFlights(tripId);
+  const flights = { summary: flightSummary(mine.status === "ok" ? mine.flights : [], new Date().toISOString().slice(0, 10)), href: `${golfTripUrl(tripId)}/flights` };
+
   // GolfTripHome reads questionnaire-shaped answers; the saved trip is passed in that shape.
-  return <GolfTripHome preview={savedTripAsDraft(view.trip)} settingsHref={`${golfTripUrl(tripId)}/settings`} backHref="/golf-trips" weather={weather} />;
+  return <GolfTripHome preview={savedTripAsDraft(view.trip)} settingsHref={`${golfTripUrl(tripId)}/settings`} backHref="/golf-trips" weather={weather} flights={flights} />;
 }

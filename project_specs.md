@@ -1932,3 +1932,92 @@ alter table public.golf_trips add constraint golf_trips_coordinates_pair
 - (follow-up) The round dots are now small cream ovals tucked just under the team card (Match and Overview, not Leaderboard). The current one widens to read "Match 2"; no glow. They take no space, so the card and the Leaderboard · Match · Overview tabs sit in exactly the same spot on every slide.
 - (follow-up) Leaderboard has a header row with a line under it: **PLAYER** (over the names), then **TOT** (whole-trip score), **THRU** (holes played this round) and **TDY** (this round's score), each over its own column. "Thru" was taken out of the name line since it has its own column now. Made-up totals added to the preview data; the two golfers who haven't started are now ranked 7 and 8 by total.
 - (follow-up) Leaderboard: "‹ Round 2 ›" removed (Match keeps it). Non-handicap events: nothing in that spot. Handicap events: a small **GROSS / NET** switch there. NET shows net TOT and TDY, re-ranks by net total, and adds an **HCP** column left of TOT (so "HCP 6" leaves the line under the name). Preview data is a handicap event (`handicap: true`) with made-up net scores.
+
+### Round: Golf Trip Info — Travel: Flights, manual entry (spec 2026-10-01, approved 2026-10-01)
+
+**What it is:** each traveler types in their own flights for a Golf Trip (getting there, heading home, and any connections). Saved per trip and per traveler. All manual: no flight API, no lookup, no live status, no booking links. The table already has empty columns for a future flight-data provider, so adding one later doesn't change the screens.
+
+**Who uses it:** any signed-in member of the trip, for their own flights only. Nobody else sees them in this round (not even the organizer), because confirmation numbers are personal. Sharing arrival times with the group is a later round.
+
+**Where it shows (keeps the current Golf Trip navigation and look):**
+- **Info tab:** the **Flights** card takes the **Savings** card's slot (first card in the swipeable row, same white-card style; owner decision 2026-10-01):
+  - title "Flights"
+  - the next flight, e.g. "AA 1234 · DFW → RDU", with its departure date/time
+  - a small note under it, e.g. "2 getting there · 1 heading home", or "Add your flights" when none are saved
+  - tapping it opens the Flights page
+- **Flights page** `/golf-trips/<id>/flights` (same pattern as Trip Settings: back arrow, small title, maroon page): this is the travel summary plus the editor.
+  - Two groups: **Getting There** and **Heading Home**. Each flight is a card: airline + flight number, DEP → ARR airport codes, departure and arrival date/time, confirmation number and notes if set, and **Edit** / **Delete**.
+  - Connections are just more flights in the same group, listed in departure order.
+  - **Add flight** opens a short form: Getting There / Heading Home, Airline, Flight number, From (airport code), To (airport code), Departure date + time, Arrival date + time, Confirmation number (optional), Notes (optional). Save / Cancel. Edit uses the same form.
+- The `/dev/tournament` preview shows the Flights card with made-up flights (no saving).
+
+**Rules (checked in the browser for the Save button, and again on the server and in the database):**
+- Airline: 1–60 characters. Flight number: letters/digits, 1–8 characters, saved in capitals (e.g. "AA1234").
+- Airports: 3-letter airport codes (DFW, RDU), saved in capitals, and From ≠ To.
+- Times are the **local times printed on the ticket** at each airport. They're saved without a timezone (a westbound flight can "land before it leaves"), so arrival isn't required to be after departure. No timezone automation.
+- Confirmation number: up to 12 letters/digits. Notes: up to 500 characters.
+- Up to 20 flights per traveler per trip.
+
+**Database (`supabase/golf_trip_flights.sql`, new, additive, safe to re-run; prerequisite `golf_trips.sql`):**
+```sql
+create table if not exists public.golf_trip_flights (
+  id uuid primary key default gen_random_uuid(),
+  golf_trip_id uuid not null references public.golf_trips(id) on delete cascade,
+  member_id uuid not null references public.golf_trip_members(id) on delete cascade,  -- whose flight
+  direction text not null check (direction in ('arrival', 'return')),                   -- Getting There / Heading Home
+  airline text not null check (length(trim(airline)) between 1 and 60),
+  flight_number text not null check (flight_number ~ '^[A-Z0-9]{1,8}$'),
+  departure_airport text not null check (departure_airport ~ '^[A-Z]{3}$'),
+  arrival_airport text not null check (arrival_airport ~ '^[A-Z]{3}$'),
+  departure_local timestamp not null,   -- local wall-clock time at the departure airport
+  arrival_local timestamp not null,     -- local wall-clock time at the arrival airport
+  confirmation_number text check (confirmation_number ~ '^[A-Z0-9]{1,12}$'),
+  notes text check (length(notes) <= 500),
+  -- Reserved for a future flight-data provider. Always empty / 'manual' in this round.
+  source text not null default 'manual' check (source in ('manual', 'provider')),
+  provider text,
+  provider_flight_id text,
+  live_status text,
+  departure_terminal text, departure_gate text,
+  arrival_terminal text, arrival_gate text,
+  estimated_departure timestamptz,
+  estimated_arrival timestamptz,
+  last_synced_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (departure_airport <> arrival_airport)
+);
+create index if not exists golf_trip_flights_member_idx on public.golf_trip_flights (member_id, departure_local);
+```
+- Belongs to a trip **member** (`golf_trip_members.id`), not straight to an account, so a traveler who hasn't signed up yet can have flights added later. Removing a member or deleting the trip removes their flights (trip-owned data, per the Golf Trip deletion rule).
+- Same safety pattern as `golf_trips.sql`: RLS on, a member can read only their own rows, no direct writes. All writes go through three server-only functions called with the signed-in user's id:
+  - `list_my_golf_trip_flights(p_profile, p_trip)`: your flights on this trip (null if you aren't a member).
+  - `save_golf_trip_flight(p_profile, p_trip, p_flight jsonb)`: adds a flight, or updates one when `p_flight.id` is one of yours. Re-checks every rule and the 20-flight limit. Never touches the reserved provider columns.
+  - `delete_golf_trip_flight(p_profile, p_flight)`: yours only; returns false otherwise.
+- Future provider: it fills `provider`, `provider_flight_id`, status, terminals, gates, estimates and `last_synced_at`, and sets `source = 'provider'`. The flight card just shows the extra fields when they exist; the form and the manual fields stay the same.
+
+**Server routes:** `POST /api/golf-trips/<id>/flights` (add or edit) and `DELETE /api/golf-trips/<id>/flights/<flightId>`. Signed-in members only; a stranger gets the same "not found" as a missing trip.
+
+**Files:**
+- New:
+  - `supabase/golf_trip_flights.sql`
+  - `lib/platform/golfTripFlights.ts` (types, checks, row parsing, grouping, "next flight" summary)
+  - `lib/platform/golfTripFlights.test.ts` (rules + the SQL in the practice database)
+  - `app/api/golf-trips/[tripId]/flights/route.ts`
+  - `app/api/golf-trips/[tripId]/flights/[flightId]/route.ts`
+  - `app/golf-trips/[tripId]/flights/page.tsx`
+  - `components/platform/GolfTripFlights.tsx` + `GolfTripFlights.module.css`
+- Changed:
+  - `lib/platform/golfTripsServer.ts` (load my flights)
+  - `app/golf-trips/[tripId]/page.tsx` (pass the flight summary and the Flights link)
+  - `components/platform/GolfTripHome.tsx` + `GolfTripHome.module.css` (Flights card in the Info card row)
+  - `lib/platform/golfTripPreviewFixture.ts` (made-up flights for the preview)
+  - `scripts/fake-supabase.mjs` (load the new SQL file for browser tests)
+
+**Not in this round:** any flight API or lookup, live status, booking links, airline/airport search lists, seeing other travelers' flights, organizer editing someone else's flights, timezone handling, changes to the Home tab's Travel/Transportation cards, lodging or rental cars.
+
+**Done means:**
+- A member can add, edit and delete their own flights (getting there, heading home, connections). They're still there after a refresh, and nobody else can see or change them.
+- The Info tab's Flights card shows the next flight and the counts, or "Add your flights".
+- Database tests cover: own-only reads, stranger blocked, bad codes/lengths refused, 20-flight limit, provider columns untouched, deleted trip removes flights.
+- TypeScript, lint and tests pass; checked on phone and desktop width.

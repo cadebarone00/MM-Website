@@ -1,4 +1,5 @@
 import type { GolfTripDraft } from "./golfTripDraft";
+import type { GolfTripFlight } from "./golfTripFlights";
 
 /**
  * DEV ONLY: a fully answered Golf Trip questionnaire, for the /dev/tournament design preview.
@@ -29,14 +30,15 @@ export const GOLF_TRIP_PREVIEW_DRAFT: GolfTripDraft = {
 };
 
 export type GolfMatchSide = {
-  name: string; handle: string; record: string; initials: string;
-  winPct: number; points: string;
-  /** This round's stats overview on the team card: fairways hit %, greens in regulation %, putts, score. */
+  name: string;
+  winPct: number;
+  /** This round's stats overview on the team card: fairways hit %, greens in regulation %, putts, score to par. */
   fairwayPct: string; greenPct: string; putts: string; score: string;
 };
 /** Match play standing: who's ahead and by how many holes (leader null = all square). null = not started. */
 export type GolfMatchStanding = { leader: "left" | "right" | null; up: number } | null;
-export type GolfMatchGolfer = { name: string; hcp: number; thru: string; score: string; teeTime: string; course: string };
+/** `points` = match points the golfer has earned, shown on the Match box above the Golf tabs ("3 PTS"). */
+export type GolfMatchGolfer = { name: string; hcp: number; thru: string; score: string; teeTime: string; course: string; points?: number };
 export type GolfMatchPreview = {
   round: number; roundCount: number;
   /** This round's course, date (YYYY-MM-DD) and format, shown in the Leaderboard / Match slide headers. */
@@ -66,12 +68,12 @@ export const GOLF_MATCH_PREVIEW: GolfMatchPreview = {
   handicap: true,
   par: [4, 5, 3, 4, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5],
   sides: [
-    { name: "Team Alex", handle: "@alexorganizer", record: "3-0 (#1)", initials: "TA", winPct: 72, points: "3.5", fairwayPct: "64%", greenPct: "50%", putts: "29", score: "81" },
-    { name: "Team Jordan", handle: "@jordanp", record: "1-2 (#3)", initials: "TJ", winPct: 28, points: "1.5", fairwayPct: "51%", greenPct: "39%", putts: "32", score: "87" },
+    { name: "Team Alex", winPct: 72, fairwayPct: "64%", greenPct: "50%", putts: "29", score: "+9" },
+    { name: "Team Jordan", winPct: 28, fairwayPct: "51%", greenPct: "39%", putts: "32", score: "+15" },
   ],
   matches: [
-    { left: { name: "A. Organizer", hcp: 6, thru: "Thru 12", score: "-1", teeTime: "8:30 AM", course: "Canyon Ridge" },
-      right: { name: "J. Parker", hcp: 9, thru: "Thru 12", score: "+3", teeTime: "8:30 AM", course: "Canyon Ridge" },
+    { left: { name: "A. Organizer", hcp: 6, thru: "Thru 12", score: "-1", teeTime: "8:30 AM", course: "Canyon Ridge", points: 3 },
+      right: { name: "J. Parker", hcp: 9, thru: "Thru 12", score: "+3", teeTime: "8:30 AM", course: "Canyon Ridge", points: 1 },
       gross: { leader: "left", up: 2 }, net: { leader: "left", up: 1 } },
     { left: { name: "M. Chen", hcp: 12, thru: "Thru 9", score: "+2", teeTime: "8:40 AM", course: "Canyon Ridge" },
       right: { name: "D. Romero", hcp: 11, thru: "Thru 9", score: "+2", teeTime: "8:40 AM", course: "Canyon Ridge" },
@@ -102,3 +104,13 @@ export const GOLF_MATCH_PREVIEW: GolfMatchPreview = {
       golfer: { name: "T. Nguyen", hcp: 14, thru: "Not started", score: "—", teeTime: "9:00 AM", course: "Canyon Ridge" } },
   ],
 };
+
+/** Made-up flights for the preview's Info → Flights card (a connection out, a nonstop home). */
+const previewFlight = (id: string, direction: GolfTripFlight["direction"], airline: string, flightNumber: string, from: string, to: string, departs: string, arrives: string): GolfTripFlight =>
+  ({ id, direction, airline, flightNumber, departureAirport: from, arrivalAirport: to, departureLocal: departs, arrivalLocal: arrives,
+    confirmationNumber: null, notes: null, source: "manual", liveStatus: null, departureTerminal: null, departureGate: null, arrivalTerminal: null, arrivalGate: null });
+export const GOLF_TRIP_PREVIEW_FLIGHTS: GolfTripFlight[] = [
+  previewFlight("preview-1", "arrival", "American Airlines", "AA1234", "RDU", "DFW", "2027-04-22T06:10", "2027-04-22T08:05"),
+  previewFlight("preview-2", "arrival", "American Airlines", "AA2210", "DFW", "PHX", "2027-04-22T09:15", "2027-04-22T10:05"),
+  previewFlight("preview-3", "return", "American Airlines", "AA987", "PHX", "RDU", "2027-04-25T13:40", "2027-04-25T21:02"),
+];
