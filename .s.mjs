@@ -1,0 +1,10 @@
+import { chromium } from "playwright";
+const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 320, height: 900 }, deviceScaleFactor: 2 });
+await p.goto("http://localhost:3001/dev/tournament", { waitUntil: "networkidle" });
+await p.getByRole("button", { name: "Golf", exact: true }).or(p.getByRole("tab", { name: "Golf" })).first().click();
+await p.waitForTimeout(600);
+const card = p.locator("section[aria-label='Team matchup']");
+const gaps = await card.locator("dl").evaluateAll((dls) => dls.map((dl) => { const ts = [...dl.querySelectorAll("dt")].map((d) => { const r = document.createRange(); r.selectNodeContents(d); return r.getBoundingClientRect(); }); return Math.min(...ts.slice(1).map((t, i) => t.left - ts[i].right)).toFixed(1); }));
+console.log("smallest space between labels (px):", gaps);
+await card.locator("dl").first().locator("xpath=..").screenshot({ path: process.argv[2] + "/stats-320b.png" });
+await b.close();

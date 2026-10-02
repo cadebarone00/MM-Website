@@ -30,7 +30,9 @@ export const GOLF_TRIP_PREVIEW_DRAFT: GolfTripDraft = {
 
 export type GolfMatchSide = {
   name: string; handle: string; record: string; initials: string;
-  winPct: number; points: string; avgScore: string; fairwaysPct: string;
+  winPct: number; points: string;
+  /** This round's stats overview on the team card: fairways hit %, greens in regulation %, putts, score. */
+  fairwayPct: string; greenPct: string; putts: string; score: string;
 };
 /** Match play standing: who's ahead and by how many holes (leader null = all square). null = not started. */
 export type GolfMatchStanding = { leader: "left" | "right" | null; up: number } | null;
@@ -64,8 +66,8 @@ export const GOLF_MATCH_PREVIEW: GolfMatchPreview = {
   handicap: true,
   par: [4, 5, 3, 4, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5],
   sides: [
-    { name: "Team Alex", handle: "@alexorganizer", record: "3-0 (#1)", initials: "TA", winPct: 72, points: "3.5", avgScore: "81.4", fairwaysPct: "64%" },
-    { name: "Team Jordan", handle: "@jordanp", record: "1-2 (#3)", initials: "TJ", winPct: 28, points: "1.5", avgScore: "86.9", fairwaysPct: "51%" },
+    { name: "Team Alex", handle: "@alexorganizer", record: "3-0 (#1)", initials: "TA", winPct: 72, points: "3.5", fairwayPct: "64%", greenPct: "50%", putts: "29", score: "81" },
+    { name: "Team Jordan", handle: "@jordanp", record: "1-2 (#3)", initials: "TJ", winPct: 28, points: "1.5", fairwayPct: "51%", greenPct: "39%", putts: "32", score: "87" },
   ],
   matches: [
     { left: { name: "A. Organizer", hcp: 6, thru: "Thru 12", score: "-1", teeTime: "8:30 AM", course: "Canyon Ridge" },

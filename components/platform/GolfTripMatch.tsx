@@ -110,7 +110,9 @@ function netRanked(rows: LeaderboardRow[]): LeaderboardRow[] {
 }
 
 /**
- * Above the Golf slide tabs: the team matchup card, with one small cream oval per match tucked just under it
+ * Above the Golf slide tabs: the team matchup card (each side's avatar, points, name, handle; then a line and each
+ * side's round stats, FWY % / GREEN % / PUTTS / SCORE, mirrored either side of a thin gold center line), with one
+ * small cream oval per match tucked just under it
  * (`showDots`; not on Leaderboard). The current match's oval widens to read "Match 2". The ovals sit in the gap
  * under the card without taking up space, so the card and tabs stay in the same place on every slide.
  */
@@ -126,12 +128,8 @@ export function GolfMatchup({ match, showDots }: { match: GolfMatchPreview; show
         <TeamSide side={right} align="right" />
       </div>
       <div className={styles.stats}>
-        <Stat value={left.fairwaysPct} label="fairways hit" align="left" />
-        <div className={styles.avg}>
-          <span className={styles.avgLabel}>AVG. SCORE</span>
-          <span className={styles.avgValues}><span>{left.avgScore}</span><span>{right.avgScore}</span></span>
-        </div>
-        <Stat value={right.fairwaysPct} label="fairways hit" align="right" />
+        <RoundStats side={left} align="left" />
+        <RoundStats side={right} align="right" />
       </div>
     </section>
 
@@ -158,7 +156,7 @@ function SlideHeader({ title, detail, children }: { title: string; detail: strin
 }
 
 /** "2027-04-23" → "Fri, Apr 23" (read as a calendar date, so no time zone can shift it). */
-function roundDay(date: string): string {
+export function roundDay(date: string): string {
   const [year, month, day] = date.split("-").map(Number);
   return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
 }
@@ -215,6 +213,29 @@ function Scorecard({ id, par, holes, name }: { id: string; par: number[]; holes:
   </div>;
 }
 
+/**
+ * Above the Golf slide tabs on Overview (in place of the team card): the weather at the course being played.
+ * Placeholder only: no forecast is fetched, so every reading (now, the day, and hour by hour) is a dash.
+ */
+export function GolfCourseWeather({ match }: { match: GolfMatchPreview }) {
+  return <section className={styles.weather} aria-label="Course weather">
+    <div className={styles.weatherTop}>
+      <div className={styles.headerText}>
+        <h3 className={styles.headerTitle}>{match.course}</h3>
+        <p className={styles.headerDetail}>{roundDay(match.roundDate)} • Round {match.round}</p>
+      </div>
+      <span className={styles.weatherTemp}>—°</span>
+    </div>
+    <div className={styles.weatherStats}>
+      {["High", "Low", "Wind", "Rain"].map((label) => <p key={label} className={styles.weatherStat}><span>{label}</span>—</p>)}
+    </div>
+    <div className={styles.weatherHours} aria-label="Hourly forecast">
+      {["8 AM", "10 AM", "12 PM", "2 PM", "4 PM"].map((hour) => <p key={hour} className={styles.weatherHour}><span>{hour}</span>—°</p>)}
+    </div>
+    <p className={styles.weatherNote}>Forecast coming soon</p>
+  </section>;
+}
+
 function TeamSide({ side, align }: { side: GolfMatchSide; align: "left" | "right" }) {
   return <div className={`${styles.side} ${styles[align]}`}>
     <div className={styles.sideTop}>
@@ -228,8 +249,14 @@ function TeamSide({ side, align }: { side: GolfMatchSide; align: "left" | "right
   </div>;
 }
 
-function Stat({ value, label, align }: { value: string; label: string; align: "left" | "right" }) {
-  return <p className={`${styles.stat} ${styles[align]}`}><span className={styles.statValue}>{value} avg</span><span>{label}</span></p>;
+/** One side's round stats. The right side runs in reverse, so each stat sits the same distance from the center line. */
+function RoundStats({ side, align }: { side: GolfMatchSide; align: "left" | "right" }) {
+  const stats = [["FWY", side.fairwayPct], ["GREEN", side.greenPct], ["PUTTS", side.putts], ["SCORE", side.score]];
+  return <dl className={`${styles.roundStats} ${styles[align]}`} aria-label={`${side.name} round stats`}>
+    {(align === "right" ? [...stats].reverse() : stats).map(([label, value]) => <div key={label} className={styles.roundStat}>
+      <dt>{label}</dt><dd>{value}</dd>
+    </div>)}
+  </dl>;
 }
 
 function Golfer({ golfer, align, showThru = true, showHcp = true }:

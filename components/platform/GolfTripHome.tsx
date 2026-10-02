@@ -6,7 +6,7 @@ import { ArrowLeft, MessageCircle, Settings } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import type { TripWeather, WeatherData } from "@/lib/platform/weather/types";
-import { GolfMatchup, GolfTripLeaderboard, GolfTripMatch } from "./GolfTripMatch";
+import { GolfCourseWeather, GolfMatchup, GolfTripLeaderboard, GolfTripMatch } from "./GolfTripMatch";
 import styles from "./GolfTripHome.module.css";
 
 const TABS = ["Home", "Golf", "Venue", "Info"] as const;
@@ -95,7 +95,8 @@ function HomeSections({ draft, dates, dateRange, weather }: { draft: Record<stri
 }
 
 /**
- * Golf tab, Sleeper-style: round dots + team card (preview only), then Leaderboard / Match / Overview tabs in the
+ * Golf tab, Sleeper-style: round dots + team card (preview only; on Overview the course weather takes its place,
+ * in the same spot so the tabs never move), then Leaderboard / Match / Overview tabs in the
  * same words-and-underline style as Home–Info, then side-by-side slides. The slides sit in a scroll-snap strip, so
  * a phone swipe moves between them natively; tapping a tab scrolls to its slide, and scrolling lights up its tab.
  */
@@ -112,9 +113,15 @@ function GolfSlides({ previewMatch }: { previewMatch?: GolfMatchPreview }) {
     const track = trackRef.current;
     if (track && track.clientWidth > 0) setActive(Math.round(track.scrollLeft / track.clientWidth));
   };
+  const overview = GOLF_SLIDES[active] === "Overview";
 
   return <>
-    {previewMatch && <GolfMatchup match={previewMatch} showDots={GOLF_SLIDES[active] !== "Leaderboard"} />}
+    {previewMatch && <div className={styles.golfTop}>
+      <div className={overview ? styles.golfTopHidden : ""} inert={overview}>
+        <GolfMatchup match={previewMatch} showDots={GOLF_SLIDES[active] !== "Leaderboard"} />
+      </div>
+      <div className={overview ? "" : styles.golfTopHidden} inert={!overview}><GolfCourseWeather match={previewMatch} /></div>
+    </div>}
     <div className={styles.tabs} role="tablist" aria-label="Golf sections">
       {GOLF_SLIDES.map((name, i) => <button key={name} type="button" role="tab" aria-selected={active === i}
         className={`${styles.tab} ${active === i ? styles.tabActive : ""}`} onClick={() => goTo(i)}>{name}</button>)}
@@ -123,10 +130,20 @@ function GolfSlides({ previewMatch }: { previewMatch?: GolfMatchPreview }) {
       {GOLF_SLIDES.map((name, i) => <div key={name} className={styles.slide} role="tabpanel" aria-label={name} inert={active !== i}>
         {name === "Match" && previewMatch ? <GolfTripMatch match={previewMatch} />
           : name === "Leaderboard" && previewMatch ? <GolfTripLeaderboard match={previewMatch} />
+          : name === "Overview" ? <GolfOverview />
           : <Card title={name}><Empty>Coming soon</Empty></Card>}
       </div>)}
     </div>
   </>;
+}
+
+/** Golf tab, Overview slide: the day at a glance. Placeholders for now (nothing behind them yet). */
+function GolfOverview() {
+  return <div className={styles.overview}>
+    <Card title="Course Scorecard"><Empty>Today&apos;s course scorecard will show here</Empty></Card>
+    <Card title="Travel Plans"><Empty>Today&apos;s rides and travel will show here</Empty></Card>
+    <Card title="Reservations"><Empty>Tee times, dinners, and other reservations for the rest of today will show here</Empty></Card>
+  </div>;
 }
 
 /** The Weather card's contents once the server's weather promise settles (Suspense shows the loading line until then). */

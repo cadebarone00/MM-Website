@@ -48,6 +48,12 @@
 .slides{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none}
 .slides::-webkit-scrollbar{display:none}
 .slide{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always}
+/* Box above the Golf tabs: the team card and Overview's course weather share one spot (stacked), so the box keeps
+   the taller one's height and the tabs never move; only the current one shows. */
+.golfTop{display:grid}
+.golfTop>*{grid-area:1/1;min-width:0}
+.golfTopHidden{visibility:hidden}
+.overview{display:flex;flex-direction:column;gap:12px}
 /* Phones: the strip runs to the screen edges (content stays put via the slide padding), so the Match slide's team
    color can start right at the edge of the screen. */
 @media(max-width:592px){.slides{margin-inline:-16px}.slide{box-sizing:border-box;padding-inline:16px}}
