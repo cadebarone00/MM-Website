@@ -1791,7 +1791,7 @@ The Maroon app is the front door. The main navigation is Explore · Tourneys · 
   - Separate path, not Delete Trip: `golf_trips.created_by → profiles on delete cascade` means deleting an organizer's **account** deletes the trips they created (and those trips' members and rounds). Still no player history today; revisit before history tables exist.
 - **Role rename migration:** the first version of `golf_trips.sql` (commit `a43dc14`) used role `traveler`. The file now renames any `traveler` rows to `member` and swaps the rule/default every time it runs, so the whole file is safe to run on a fresh database, on one that ran an older version, and again later.
 
-### Round: Golf Trip destination (Google Places) + Weather card on Home (spec 2026-10-01, awaiting approval)
+### Round: Golf Trip destination (Google Places) + Weather card on Home (spec 2026-10-01; Phase 1 approved and built 2026-10-01, SQL not yet run in production; Phase 2 not started)
 
 **What it is:** on the questionnaire's first step, the organizer picks the destination from Google Places suggestions, and the trip saves that place's coordinates. Golf Trip Home then uses the saved coordinates to show a live Weather card from the National Weather Service (NWS). This is the only weather plan; it replaces the earlier Open-Meteo plan.
 
@@ -1922,3 +1922,12 @@ alter table public.golf_trips add constraint golf_trips_coordinates_pair
 
 - Same as the Match slide (same top card, holes left + round dots, "Lineup ‹ Round 2 ›"), but each row is **one golfer**: colored position badge (1, 2, T3…), golfer name / HCP · Thru / tee time + course, score on the right. 8 rows (double Match's 4).
 - Made-up data, `/dev/tournament` only (`leaderboard` in `GOLF_MATCH_PREVIEW`); saved trips keep "Coming soon".
+
+### Round: Golf tab layout change (owner request 2026-10-01, built)
+
+- Golf tab order is now: holes left + round dots → team matchup card → **Leaderboard · Match · Overview** tabs (same words-and-underline style as Home · Golf · Venue · Info, replacing the pills) → that slide's "Lineup ‹ Round 2 ›" + rows.
+- The dots row and team card are shared above the tabs, so they stay put while the slides below change (Overview shows them too).
+- Leaderboard position boxes: small (30px) cream boxes with maroon numbers.
+- (follow-up) "holes left" text removed everywhere; the round dots show on Match and Overview only, not Leaderboard.
+- (follow-up) The round dots are now small cream ovals tucked just under the team card (Match and Overview, not Leaderboard). The current one widens to read "Match 2"; no glow. They take no space, so the card and the Leaderboard · Match · Overview tabs sit in exactly the same spot on every slide.
+- (follow-up) Leaderboard has a header row with a line under it: **PLAYER** (over the names), then **TOT** (whole-trip score), **THRU** (holes played this round) and **TDY** (this round's score), each over its own column. "Thru" was taken out of the name line since it has its own column now. Made-up totals added to the preview data; the two golfers who haven't started are now ranked 7 and 8 by total.

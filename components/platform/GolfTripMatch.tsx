@@ -3,13 +3,15 @@ import type { GolfMatchGolfer, GolfMatchPreview, GolfMatchSide } from "@/lib/pla
 import styles from "./GolfTripMatch.module.css";
 
 /**
- * Golf tab → Match slide: Sleeper's fantasy Match screen, translated to golf, on the trip's maroon.
- * Top: the team matchup card. Below: the lineup, one row per match (golfer vs golfer, M1/M2/… badge between).
- * Look only, fed by made-up data from the /dev/tournament preview.
+ * Golf tab, Sleeper's fantasy Match screen translated to golf, on the trip's maroon. Look only, fed by made-up
+ * data from the /dev/tournament preview. GolfMatchup (round dots + team card) sits above the Golf slide tabs;
+ * the Match and Leaderboard slides below them each show the "Lineup ‹ Round 2 ›" header and their own rows.
+ *
+ * Match slide: one row per match (golfer vs golfer, M1/M2/… badge between).
  */
 export function GolfTripMatch({ match }: { match: GolfMatchPreview }) {
   return <div className={styles.match}>
-    <MatchupHeader match={match} />
+    <LineupHeader round={match.round} />
     <ul className={styles.lineup}>
       {match.matches.map((m, i) => <li key={i} className={styles.pairing}>
         <Golfer golfer={m.left} align="left" />
@@ -22,25 +24,36 @@ export function GolfTripMatch({ match }: { match: GolfMatchPreview }) {
   </div>;
 }
 
-/** Golf tab → Leaderboard slide: the same top card as Match, then one golfer per row (position badge, golfer, score). */
+/** Leaderboard slide: a PLAYER / TOT / THRU / TDY header, then one golfer per row (position box, golfer, the 3 numbers). */
 export function GolfTripLeaderboard({ match }: { match: GolfMatchPreview }) {
   return <div className={styles.match}>
-    <MatchupHeader match={match} />
-    <ul className={styles.lineup}>
-      {match.leaderboard.map(({ position, golfer }, i) => <li key={golfer.name} className={styles.single}>
-        <span className={`${styles.badge} ${styles[`badge${i % 4}`]}`}>{position}</span>
-        <Golfer golfer={golfer} align="left" />
-        <span className={styles.score}>{golfer.score}</span>
-      </li>)}
-    </ul>
+    <LineupHeader round={match.round} />
+    <div>
+      <div className={`${styles.single} ${styles.columns}`} aria-hidden>
+        <span className={styles.columnPlayer}>Player</span><span>TOT</span><span>THRU</span><span>TDY</span>
+      </div>
+      <ul className={styles.lineup}>
+        {match.leaderboard.map(({ position, golfer, total, thru, today }) => <li key={golfer.name} className={styles.single}>
+          <span className={styles.rank}>{position}</span>
+          <Golfer golfer={golfer} align="left" showThru={false} />
+          <span className={styles.number} aria-label={`Total ${total}`}>{total}</span>
+          <span className={styles.number} aria-label={`Thru ${thru}`}>{thru}</span>
+          <span className={styles.number} aria-label={`Today ${today}`}>{today}</span>
+        </li>)}
+      </ul>
+    </div>
   </div>;
 }
 
-/** Shared top of Match and Leaderboard: team matchup card, holes left + round dots, and the "Lineup  ‹ Round 2 ›" header. */
-function MatchupHeader({ match }: { match: GolfMatchPreview }) {
+/**
+ * Above the Golf slide tabs: the team matchup card, with one small cream oval per match tucked just under it
+ * (`showDots`; not on Leaderboard). The current match's oval widens to read "Match 2". The ovals sit in the gap
+ * under the card without taking up space, so the card and tabs stay in the same place on every slide.
+ */
+export function GolfMatchup({ match, showDots }: { match: GolfMatchPreview; showDots: boolean }) {
   const [left, right] = match.sides;
 
-  return <>
+  return <div className={styles.matchup}>
     <section className={styles.versus} aria-label="Team matchup">
       <div className={styles.teams}>
         <TeamSide side={left} align="left" />
@@ -58,25 +71,24 @@ function MatchupHeader({ match }: { match: GolfMatchPreview }) {
       </div>
     </section>
 
-    <div className={styles.progress}>
-      <p className={styles.left}>holes left ({left.holesLeft})</p>
-      <div className={styles.dots} aria-label={`Round ${match.round} of ${match.roundCount}`}>
-        {Array.from({ length: match.roundCount }, (_, i) =>
-          <span key={i} className={i + 1 === match.round ? styles.dotActive : styles.dot} />)}
-      </div>
-      <p className={styles.right}>holes left ({right.holesLeft})</p>
-    </div>
+    {showDots && <div className={styles.dots} aria-label={`Match ${match.round} of ${match.roundCount}`}>
+      {Array.from({ length: match.roundCount }, (_, i) => i + 1 === match.round
+        ? <span key={i} className={`${styles.dot} ${styles.dotActive}`}>Match {i + 1}</span>
+        : <span key={i} className={styles.dot} />)}
+    </div>}
+  </div>;
+}
 
-    <div className={styles.lineupHeader}>
-      <h3 className={styles.lineupTitle}>Lineup</h3>
-      {/* Look only for now: there's one round of preview data. */}
-      <div className={styles.roundSwitch}>
-        <button type="button" aria-label="Previous round"><ChevronLeft size={22} strokeWidth={2.25} aria-hidden /></button>
-        <span>Round {match.round}</span>
-        <button type="button" aria-label="Next round"><ChevronRight size={22} strokeWidth={2.25} aria-hidden /></button>
-      </div>
+function LineupHeader({ round }: { round: number }) {
+  return <div className={styles.lineupHeader}>
+    <h3 className={styles.lineupTitle}>Lineup</h3>
+    {/* Look only for now: there's one round of preview data. */}
+    <div className={styles.roundSwitch}>
+      <button type="button" aria-label="Previous round"><ChevronLeft size={22} strokeWidth={2.25} aria-hidden /></button>
+      <span>Round {round}</span>
+      <button type="button" aria-label="Next round"><ChevronRight size={22} strokeWidth={2.25} aria-hidden /></button>
     </div>
-  </>;
+  </div>;
 }
 
 function TeamSide({ side, align }: { side: GolfMatchSide; align: "left" | "right" }) {
@@ -96,10 +108,10 @@ function Stat({ value, label, align }: { value: string; label: string; align: "l
   return <p className={`${styles.stat} ${styles[align]}`}><span className={styles.statValue}>{value} avg</span><span>{label}</span></p>;
 }
 
-function Golfer({ golfer, align }: { golfer: GolfMatchGolfer; align: "left" | "right" }) {
+function Golfer({ golfer, align, showThru = true }: { golfer: GolfMatchGolfer; align: "left" | "right"; showThru?: boolean }) {
   return <div className={`${styles.golfer} ${styles[align]}`}>
     <span className={styles.golferName}>{golfer.name}</span>
-    <span className={styles.golferMeta}><span className={styles.hcp}>HCP {golfer.hcp}</span> • {golfer.thru}</span>
+    <span className={styles.golferMeta}><span className={styles.hcp}>HCP {golfer.hcp}</span>{showThru && <> • {golfer.thru}</>}</span>
     <span className={styles.tee}>{golfer.teeTime} <span className={styles.course}>@ {golfer.course}</span></span>
   </div>;
 }

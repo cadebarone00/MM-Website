@@ -38,13 +38,8 @@
 .row:first-child{border-top:0;padding-top:0}
 .row dt{color:#dcc495}
 .row dd{margin:0;color:#fff;text-align:right;overflow-wrap:anywhere}
-/* Golf tab (Sleeper-style): rounded pills, then a swipeable strip of slides that snaps one slide at a time. */
-.pills{display:flex;gap:8px}
-.pill{min-height:36px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:transparent;color:rgba(255,255,255,.7);
-  cursor:pointer;font:700 14px/1 var(--font-barlow),sans-serif;letter-spacing:.02em;transition:background .15s ease,color .15s ease,border-color .15s ease}
-.pill:hover{color:#fbf8f1;border-color:rgba(255,255,255,.35)}
-.pill:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
-.pillActive,.pillActive:hover{background:#fbf8f1;border-color:#fbf8f1;color:var(--color-maroon-900)}
+/* Golf tab (Sleeper-style): the Leaderboard / Match / Overview tabs reuse .tabs/.tab above; the slides are a
+   swipeable strip that snaps one slide at a time. */
 .slides{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none}
 .slides::-webkit-scrollbar{display:none}
 .slide{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always}

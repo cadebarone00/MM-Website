@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, MessageCircle, Settings } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
-import { GolfTripLeaderboard, GolfTripMatch } from "./GolfTripMatch";
+import { GolfMatchup, GolfTripLeaderboard, GolfTripMatch } from "./GolfTripMatch";
 import styles from "./GolfTripHome.module.css";
 
 const TABS = ["Home", "Golf", "Venue", "Info"] as const;
@@ -89,8 +89,9 @@ function HomeSections({ draft, dates, dateRange }: { draft: Record<string, strin
 }
 
 /**
- * Golf tab, Sleeper-style: a pill row over side-by-side slides. The slides sit in a scroll-snap strip, so a phone
- * swipe moves between them natively; tapping a pill scrolls to its slide, and scrolling lights up the matching pill.
+ * Golf tab, Sleeper-style: round dots + team card (preview only), then Leaderboard / Match / Overview tabs in the
+ * same words-and-underline style as Home–Info, then side-by-side slides. The slides sit in a scroll-snap strip, so
+ * a phone swipe moves between them natively; tapping a tab scrolls to its slide, and scrolling lights up its tab.
  */
 function GolfSlides({ previewMatch }: { previewMatch?: GolfMatchPreview }) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -107,9 +108,10 @@ function GolfSlides({ previewMatch }: { previewMatch?: GolfMatchPreview }) {
   };
 
   return <>
-    <div className={styles.pills} role="tablist" aria-label="Golf sections">
+    {previewMatch && <GolfMatchup match={previewMatch} showDots={GOLF_SLIDES[active] !== "Leaderboard"} />}
+    <div className={styles.tabs} role="tablist" aria-label="Golf sections">
       {GOLF_SLIDES.map((name, i) => <button key={name} type="button" role="tab" aria-selected={active === i}
-        className={`${styles.pill} ${active === i ? styles.pillActive : ""}`} onClick={() => goTo(i)}>{name}</button>)}
+        className={`${styles.tab} ${active === i ? styles.tabActive : ""}`} onClick={() => goTo(i)}>{name}</button>)}
     </div>
     <div ref={trackRef} className={styles.slides} onScroll={onScroll}>
       {GOLF_SLIDES.map((name, i) => <div key={name} className={styles.slide} role="tabpanel" aria-label={name} inert={active !== i}>

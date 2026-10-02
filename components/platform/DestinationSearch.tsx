@@ -91,7 +91,7 @@ export function DestinationSearch() {
       autoComplete="off" required value={text} onChange={(event) => type(event.target.value)} onKeyDown={onKeyDown}
       onBlur={() => setSuggestions([])} role="combobox" aria-autocomplete="list" aria-expanded={open} aria-controls={`${id}-list`}
       aria-activedescendant={active >= 0 ? `${id}-option-${active}` : undefined} />
-    {open && <ul id={`${id}-list`} className={styles.suggestions} role="listbox" aria-label="Destination suggestions">
+    {open && <ul id={`${id}-list`} className={styles.suggestions} role="listbox" aria-label="Suggested places">
       {suggestions.map((suggestion, index) =>
         <li key={suggestion.placeId} id={`${id}-option-${index}`} role="option" aria-selected={index === active}
           className={`${styles.suggestion} ${index === active ? styles.suggestionActive : ""}`}
