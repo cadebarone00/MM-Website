@@ -26,7 +26,8 @@ export function simulatorTripData(mock: SimulatorTripData, maroon: SimulatorTrip
   const { source, state } = config;
   let base = source === "maroon" ? maroon : mock;
   if (source === "empty") {
-    base = { preview: {}, previewMatch: { ...(mock.previewMatch ?? GOLF_MATCH_PREVIEW), course: "Course TBD", matches: [], leaderboard: [], roundCount: 0 }, flights: { summary: flightSummary([], "2027-04-01"), href: null } };
+    const side = { name: "Team unassigned", winPct: 0, fairwayPct: "—", greenPct: "—", putts: "—", score: "—" };
+    base = { preview: {}, previewMatch: { ...(mock.previewMatch ?? GOLF_MATCH_PREVIEW), course: "Course TBD", matches: [], leaderboard: [], round: 1, roundCount: 1, sides: [{ ...side }, { ...side }] }, flights: { summary: flightSummary([], "2027-04-01"), href: null } };
   }
   if (source === "busy") {
     const preview: GolfTripDraft = { ...GOLF_TRIP_MOCK_DRAFT, tripName: "Summer Golf Festival", destination: "Pinehurst, North Carolina", playerCount: "32", golfDays: "4" };
