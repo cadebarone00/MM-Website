@@ -65,9 +65,12 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   return <main className={`${styles.page} ${styles.pageWithScoring} ${tab === "Golf" && preview && previewMatch ? styles.pageGolfPreview : ""}`}>
     {backHref && <Link href={backHref} className={styles.desktopBack}><ArrowLeft size={16} strokeWidth={2} aria-hidden />Golf Trips</Link>}
     <header className={styles.header}>
-      {/* Look only for now: chat isn't built yet. */}
-      <button type="button" className={`${styles.iconButton} ${styles.iconLeft}`} aria-label="Trip chat"><MessageCircle size={24} strokeWidth={1.75} aria-hidden /></button>
-      <Link href={settingsHref} className={`${styles.iconButton} ${styles.iconRight}`} aria-label="Trip settings"><Settings size={24} strokeWidth={1.75} aria-hidden /></Link>
+      {/* Look only for now: chat and notifications aren't built yet. */}
+      <div className={styles.headerActions}>
+        <button type="button" className={styles.iconButton} aria-label="Trip chat"><MessageCircle size={24} strokeWidth={1.75} aria-hidden /></button>
+        <button type="button" className={styles.iconButton} aria-label="Notifications"><Bell size={24} strokeWidth={1.75} aria-hidden /></button>
+        <Link href={settingsHref} className={styles.iconButton} aria-label="Trip settings"><Settings size={24} strokeWidth={1.75} aria-hidden /></Link>
+      </div>
       <h1 className={styles.title}>{draft.tripName || "Your Golf Trip"}</h1>
       <div className={styles.tabs} role="tablist" aria-label="Trip sections">
         {TABS.map((name) => <button key={name} type="button" role="tab" aria-selected={tab === name}
@@ -454,7 +457,6 @@ function InfoAccount({ destination, flights }: { destination: string; flights?: 
   return <div className={styles.account}>
     <div className={styles.accountTop}>
       <div className={styles.accountBar}>
-        <button type="button" className={styles.accountBell} aria-label="Notifications"><Bell size={20} strokeWidth={1.75} aria-hidden /></button>
         <button type="button" className={styles.accountPill}>Get $150</button>
       </div>
       <p className={styles.accountLabel}>{destination ? `Your trip to ${destination}` : "Your trip"}</p>

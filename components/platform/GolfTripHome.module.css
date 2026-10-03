@@ -6,12 +6,12 @@
 .pageWithScoring{padding-bottom:calc(24px + 64px + 5.75rem + env(safe-area-inset-bottom))}
 @media (min-width:1024px){.pageWithScoring{padding-bottom:96px}}
 .header{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
-/* Chat (top left) and settings (top right), level with the top of the trip name. */
-.iconButton{position:absolute;top:-8px;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;
+/* Chat, notifications and settings share the right side of the trip title row. */
+.headerActions{position:absolute;top:-8px;right:-8px;display:flex}
+.iconButton{display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;
   background:transparent;color:#fbf8f1;cursor:pointer;transition:background .15s ease}
 .iconButton:hover{background:rgba(255,255,255,.08)}
 .iconButton:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
-.iconLeft{left:-8px}
 /* "← Golf Trips": desktop only (1024px+, where the bottom tabs are hidden), so phones keep using the Golf Trips tab. */
 .desktopBack{display:none}
 @media (min-width:1024px){
@@ -20,8 +20,7 @@
   .desktopBack:hover{color:#fbf8f1}
   .desktopBack:focus-visible{outline:2px solid #dcc495;outline-offset:4px;border-radius:4px}
 }
-.iconRight{right:-8px}
-.title{margin:0;padding:0 40px;font:500 38px/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.02em;color:#fff;text-wrap:balance;overflow-wrap:anywhere}
+.title{align-self:stretch;min-height:28px;margin:0;padding:0 132px 0 0;text-align:left;font:500 26.6px/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.02em;color:#fff;overflow-wrap:anywhere}
 /* The selector: just the words. The chosen one lights up (cream with a soft glow) and gets a gold line under it. */
 .tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;width:100%;margin-top:8px}
 .tab{position:relative;min-height:44px;padding:0 4px;border:0;background:transparent;color:rgba(255,255,255,.55);cursor:pointer;
@@ -150,8 +149,7 @@
 .account p{margin:0}
 .account button{font-family:inherit;cursor:pointer}
 .accountTop{display:flex;flex-direction:column;padding:12px 16px 0;color:#fff}
-.accountBar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
-.accountBell{display:grid;place-items:center;width:32px;height:32px;margin-left:-6px;padding:0;border:0;background:transparent;color:#fff}
+.accountBar{display:flex;justify-content:flex-end;align-items:center;margin-bottom:24px}
 .accountPill{padding:7px 12px;border:1.5px solid #fff;border-radius:999px;background:transparent;color:#fff;font-size:13px;font-weight:600}
 .accountLabel{font-size:30px;font-weight:700;line-height:1.1}
 .accountCards{scroll-padding-inline:16px;display:flex;gap:10px;margin-top:22px;padding:0 16px 6px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}

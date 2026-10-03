@@ -23,3 +23,4 @@
 .card{width:100%;text-align:left;padding:10px 12px;border:1px solid #dfe2e8;border-radius:8px;background:#fafbfc;color:#424956;font:12px/1.5 system-ui,sans-serif;cursor:pointer}
 .card:hover{border-color:#a66679;background:#faf4f6}.card[aria-pressed=true]{border-color:#751830;background:#f5e9ed;color:#670f24;box-shadow:inset 3px 0 #751830;font-weight:650}
 .card small{display:block;overflow-wrap:anywhere;font:10px/1.5 ui-monospace,monospace;color:#828895;margin-top:4px}
+.screen{position:relative;border-radius:25px;overflow:hidden;flex:none}

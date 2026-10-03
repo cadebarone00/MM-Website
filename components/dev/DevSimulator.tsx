@@ -5,6 +5,7 @@ import { MonitorSmartphone, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { DEFAULT_SIMULATOR_STATE, parseSimulatorLocation, simulatorPageForLocation, SIMULATOR_CHANNEL, SIMULATOR_DEVICES, type SimulatorConfig, type SimulatorPage, type SimulatorSource, type SimulatorState } from "@/lib/dev/simulator";
 import { applySimulatorSafeAreas } from "./simulatorSafeAreas";
 import { HapticsVisualizer } from "./HapticsVisualizer";
+import { DesignReview } from "./DesignReview";
 import { lightTap } from "@/lib/haptics";
 import styles from "./DevSimulator.module.css";
 
@@ -30,6 +31,7 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
   const [hapticLevel, setHapticLevel] = useState(2);
   const [hapticDuration, setHapticDuration] = useState(1000);
   const iframe = useRef<HTMLIFrameElement>(null);
+  const [screen, setScreen] = useState<HTMLDivElement | null>(null);
   const stage = useRef<HTMLDivElement>(null);
   const caption = useRef<HTMLDivElement>(null);
   const command = useRef(0);
@@ -183,13 +185,16 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
       </aside>
       <div className={styles.previewColumn}>
         <div className={styles.previewToolbar}><div><span className={styles.statusDot} />{preset.label}<span className={styles.dimensions}>{size.width} × {size.height}</span></div><button type="button" onClick={() => { try { iframe.current?.contentWindow?.scrollTo({ top: 0, behavior: "smooth" }); } catch { /* external route */ } }}>Reset scroll</button></div>
+        <DesignReview key={`${currentPath}:${pageId}`} screen={screen} frame={iframe} width={size.width} height={size.height} />
         <div className={styles.stage} ref={stage}>
           <HapticsVisualizer>
           <div className={styles.deviceSpace} style={{ width: (size.width + 16) * scale, height: (size.height + 16) * scale }}>
             <div className={styles.device} style={{ width: size.width + 16, height: size.height + 16, transform: `scale(${scale})`, "--safe-top": `${insets.top}px`, "--safe-bottom": `${insets.bottom}px` } as CSSProperties}>
+              <div ref={setScreen} className={styles.screen} style={{ width: size.width, height: size.height }}>
               <iframe ref={iframe} title="Mobile application preview" src={frameSrc} width={size.width} height={size.height}
                 style={{ width: size.width, height: size.height, minWidth: size.width, minHeight: size.height, maxWidth: "none", maxHeight: "none" }}
                 className={styles.frame} onLoad={() => { setReady(true); sendConfig(); }} />
+              </div>
               {showSafeAreas && <div className={styles.safeGuides} aria-hidden><span /><span /></div>}
             </div>
           </div>

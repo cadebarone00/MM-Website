@@ -6,7 +6,9 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
-**2026-10-02 - Development storyboard (implemented locally; deployment not verified).** Before, App View, fixtures and app states used dropdown navigation. After, Groups, Pages and page-specific Conditionals appear as three horizontal card columns beside the unchanged large phone. The central registry includes the setup introduction and all nine existing questionnaire routes, shared trip tabs/subviews and existing auxiliary routes. Only implemented preview adapters are exposed. Section 22 and Mermaid annotation updated; existing workflow paths and overview mappings remain unchanged.
+**2026-10-02 - Active trip header layout (implemented locally; deployment not verified).** Previously, the trip title was centered at 38px, chat was on the left, and notifications appeared only inside Home. The shared active-trip header now left-aligns the title at 26.6px (70% of its prior size) and groups chat, notifications and settings on the right in that order. Chat and notifications remain presentation placeholders; settings retains its existing destination. Updated section 22 and the Mermaid annotation; workflow paths and overview mappings are unchanged.
+
+**2026-10-02 - Development storyboard (implemented locally; deployment not verified).** Before, App View, fixtures and app states used dropdown navigation. After, Groups, Pages and page-specific Conditionals appear as three horizontal card columns beside the unchanged large phone. The central registry includes the setup introduction and all nine existing questionnaire routes, shared trip tabs/subviews and existing auxiliary routes. Only implemented preview adapters are exposed. Section 22 and Mermaid storyboard box updated, with matching overview mapping; existing workflow paths remain unchanged.
 
 **2026-10-02 - Development Haptic Debugger (implemented locally; deployment not verified).** Before, the dev test button only requested a native light tap and desktop browsers showed nothing. After, shared haptic helpers emit development-only intensity/duration/name events to a 0-10 green/yellow/red meter outside the phone. Manual intensity and millisecond duration controls trigger rapid bounded rotation for the pulse duration, then reset to zero and the original position. Reduced motion disables rotation but preserves the meter. Iframe CSS dimensions and device selectors remain unchanged; Fit reserves horizontal space for the meter. Native presets and production UI are unchanged. Updated section 22, Mermaid/debugger mapping and `docs/haptics-review.md`.
 
@@ -52,6 +54,7 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ```mermaid
 flowchart TD
+  %% Active trip header: left-aligned 26.6px title; right-side chat > notifications > settings. Chat/notifications remain placeholders.
   %% /dev storyboard: Groups > Pages > supported Conditionals > phone; registry maps route and tab reports in both directions.
   %% Saved and draft Golf Trip General settings show six category boxes; Organizer retains permission-gated Delete Trip. Category boxes are placeholders.
   %% Dev Settings wheel opens a maroon Trip Settings layout with the fixture trip name at top right beside a back chevron, General/Organizer text-and-underline selector, short cream category boxes with gold accents and shadows and no phone status icons; General/Organizer selection is local; General shows six Place holder cards and Organizer starts with Players and Competition followed by four Place holder cards and site bottom navigation is hidden.
@@ -63,7 +66,7 @@ flowchart TD
   HT --> HF[Shared haptics: native plugin only, otherwise no-op]
   HF --> HD[Dev events: intensity, duration, name]
   HD --> HM[External 0-10 meter and bounded phone vibration]
-  DC[Dev control center: device, page, data, state] <--> NB[Validated bridge: route and shared tab reports]
+  DC[Dev storyboard: Groups, Pages, Conditionals] <--> NB[Validated bridge: route and shared tab reports]
   NB <--> IF[Isolated iframe viewport: existing app routes]
   IF --> GP[Dev Golf Trip preview: shared components]
   GM[Generic mock, empty and busy fixtures] --> GP
@@ -593,6 +596,8 @@ The separate test-season controls operate on a designated database season. This 
 **Code:** `components/portal/admin/LiveScoringPreview.tsx`, `components/portal/admin/ScoringPreviewPhone.tsx`, `components/portal/admin/TestSeasonPanel.tsx`, `lib/live/testSeason.ts`.
 
 ## 22. Legacy integrations and unfinished pages
+
+**Active golf trip header:** Saved trips, the draft trip and the shared development trip preview use a left-aligned 26.6px trip title (70% of the previous 38px). The right-hand controls appear as chat, notifications, then settings. Notifications now lives in the shared header across trip tabs rather than inside Home. Chat and notifications remain placeholders; the settings link keeps its existing trip-specific destination.
 
 **Native haptics foundation and development debugger:** `lib/haptics.ts` exports `lightTap`, `mediumImpact`, `success`, `warning`, `error` and `selectionChange` returning `Promise<void>`. Native platform/plugin checks and absorbed failures retain safe browser/server no-ops for physical feedback. Selection feedback starts/changes/ends its generator. Helpers accept optional development visualization options, e.g. `lightTap({ intensity: 2, durationMs: 1000 })` or `success({ intensity: 7, durationMs: 400 })`; these do not calibrate native hardware or alter native presets. In development only, the shared utility emits validated intensity (integer 0-10), durationMs (50-5000) and helper-name events. The top-level /dev debugger receives local CustomEvents or same-origin messages from its own iframe, including framed public routes. Standalone pages and production emit no diagnostic feedback. A right-side meter stays outside the iframe with 32px spacing: 0 is idle, 1-3 green, 4-6 toward yellow, 7-10 toward red. Manual controls choose intensity/duration in milliseconds and trigger the same shared helper. An 80ms rotation cycle scales by intensity (0.06-0.18 degrees light, 0.30-0.54 medium, 0.70-1.18 strong), stops at the requested duration and restores the original transform; repeated events replace the previous pulse. Reduced motion retains the meter without rotation. Fit reserves meter width without changing selected iframe dimensions. No other app buttons are wired. Capacitor/iOS configuration and native device verification remain future work. Review: `docs/haptics-review.md`.
 

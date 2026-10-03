@@ -39,18 +39,18 @@ export function simulatorPages(): SimulatorPage[] {
   }
   for (const page of pages) {
     page.group ??= page.path.startsWith("/golf-trips/new") ? "Golf Trip Onboarding" : page.path.startsWith("/dev/tournament") || page.path === "/golf-trips/trip/settings" ? "Golf Trip Active" : page.path.startsWith("/dev/play") ? "Tournament Active" : page.path === "/login" ? "Authentication" : "Public / Marketing";
-    page.label = page.label.replace(/^Golf Trip ? /, "");
+    page.label = page.label.replace(/^Golf Trip \u00b7 /, "");
     if (page.path === "/golf-trips/new") page.label = "Trip Basics";
     if (page.conditions) continue;
     page.conditions = [];
-    if (page.path !== "/dev/tournament" || page.navigation?.tab === "Info" || page.navigation?.golfSection === "Games") continue;
+    if (!page.path.startsWith("/dev/tournament")) continue;
     page.conditions = SIMULATOR_SOURCES.map(item => ({ id: "source-" + item.id, label: item.label, source: item.id }));
     if (page.navigation?.tab === "Home" || page.navigation?.tab === "Golf") page.conditions.push(
       { id: "competition-source", label: "Competition from data source", state: { competition: "source" } },
       { id: "competitive", label: "Competitive", state: { competition: "yes" } },
       { id: "social", label: "Non-competitive", state: { competition: "no" } },
       { id: "players", label: "Player count", playerCount: true });
-    if (page.navigation?.golfSection === "Competition") page.conditions.push(
+    if (page.navigation?.tab === "Golf" && page.navigation.golfSection !== "Games") page.conditions.push(
       { id: "format-source", label: "Format from data source", state: { format: "source" } },
       ...Object.entries(GOLF_MATCH_PREVIEWS).map(([key, sample]) => ({ id: "format-" + key, label: sample.format, state: { format: key } })),
       { id: "round-source", label: "Round from data source", state: { roundStatus: "source" } },
@@ -60,5 +60,8 @@ export function simulatorPages(): SimulatorPage[] {
       { id: "weather-loading", label: "Weather loading", state: { loading: "weather" } });
   }
   const onboardingOrder = ["/tournaments/create/golf-trip", ...steps.map(step => "/golf-trips/new" + (step ? "/" + step : ""))];
-  return pages.sort((a, b) => a.group === "Golf Trip Onboarding" && b.group === a.group ? onboardingOrder.indexOf(a.path) - onboardingOrder.indexOf(b.path) : 0);
+  const groupOrder = Array.from(new Set(pages.map(page => page.group)));
+  groupOrder.splice(groupOrder.indexOf("Golf Trip Onboarding"), 1);
+  groupOrder.splice(groupOrder.indexOf("Golf Trip Active") + 1, 0, "Golf Trip Onboarding");
+  return pages.sort((a, b) => a.group !== b.group ? groupOrder.indexOf(a.group) - groupOrder.indexOf(b.group) : a.group === "Golf Trip Onboarding" ? onboardingOrder.indexOf(a.path) - onboardingOrder.indexOf(b.path) : 0);
 }

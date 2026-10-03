@@ -1,0 +1,26 @@
+.review{flex:none;background:#fff;border-bottom:1px solid var(--studio-line);padding:10px 16px 8px;color:#535a68}
+.heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:650;color:#85818b}
+.mode{letter-spacing:0;text-transform:none;font-weight:500;color:#737a87}
+.mode[data-drawing=true]{color:#751830}
+.toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.group{display:flex;align-items:center;gap:3px}
+.group+.group{border-left:1px solid #e4e6eb;padding-left:8px}
+.review button{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:30px;height:30px;border:1px solid transparent;border-radius:6px;background:transparent;color:#636b79;font:11px system-ui;cursor:pointer;padding:0 7px;transition:background .12s,border-color .12s}
+.review button:hover:enabled{background:#f2f3f6;color:#343841}
+.review button:active:enabled{background:#e9eaf0}
+.review button[aria-pressed=true]{background:#f5e9ed;border-color:#d9b4c0;color:#751830}
+.review button:disabled{opacity:.35;cursor:default}
+.review button:focus-visible,.review input:focus-visible,.review select:focus-visible{outline:2px solid #a66679;outline-offset:2px}
+.review .swatch{min-width:26px;padding:4px;width:26px}
+.swatch span{width:14px;height:14px;border:1px solid #b6bac2;border-radius:50%}
+.thickness{display:flex;align-items:center;gap:7px;font-size:10px}
+.thickness input{width:75px;accent-color:#751830}
+.sample{width:24px;height:24px;border:1px solid #e4e6eb;background:repeating-conic-gradient(#eff0f3 0% 25%,#fff 0% 50%) 0/8px 8px;border-radius:5px;display:grid;place-items:center;overflow:hidden}
+.sample span{border-radius:50%;max-width:22px;max-height:22px;min-width:1px;min-height:1px}
+.thickness output{width:27px;font-variant-numeric:tabular-nums;color:#737a87}
+.review select{height:30px;max-width:110px;border:1px solid #e4e6eb;border-radius:6px;background:#fafbfc;font:10px system-ui;padding:0 5px;color:#636b79}
+.review .download{border-color:#e4e6eb;background:#fafbfc}
+.status{min-height:15px;margin-top:6px;font-size:10px;color:#737a87}
+.canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:inherit;touch-action:none;cursor:crosshair;z-index:2}
+.canvas[data-tool=eraser]{cursor:cell}
+.canvas[data-tool=interact]{pointer-events:none;cursor:default}
