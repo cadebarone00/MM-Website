@@ -240,9 +240,11 @@ function GolfSlides({ previewMatch, competitive }: { previewMatch?: GolfMatchPre
 }
 
 type EventLine = { icon: LucideIcon; text: string };
+const TRIP_BADGES = ["Set", "Waitlisted", "Going", "Invited", "To do"] as const;
+type TripBadge = (typeof TRIP_BADGES)[number];
 /** One row in the event-list style. `art` stands in for a picture (an optional icon sits on it); `lines` skips empty entries. */
 type InfoEvent = { host: string; title: string; art: string; icon?: LucideIcon; lines?: (EventLine | false | "" | undefined)[];
-  badge?: "Waitlisted" | "Going" | "Invited" | "Set" | "To do"; price?: string };
+  badge?: TripBadge; price?: string };
 
 /** Home tab picture colors, one per part of the trip. */
 const ART = {
