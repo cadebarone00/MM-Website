@@ -41,6 +41,15 @@ function tournamentTripDraftFromTournament(tournament: Tournament): GolfTripDraf
  */
 export const GOLF_TRIP_PREVIEW_DRAFT: GolfTripDraft = tournamentTripDraftFromTournament(palmSprings2026);
 
+/** Generic future trip with incomplete fields for empty-state previews. */
+export const GOLF_TRIP_MOCK_DRAFT: GolfTripDraft = {
+  yourName: "Alex Morgan", yourEmail: "organizer@example.com", tripName: "Friends Golf Weekend",
+  destination: "", startDate: "2027-04-22", endDate: "2027-04-26", playerCount: "8", golfDays: "2",
+  includesTournament: "yes", knowsFlights: "", knowsLodging: "", knowsTransportation: "",
+  day1Date: "2027-04-22", day1Rounds: "1", day2Date: "2027-04-23", day2Rounds: "1",
+  round1Course: "", round3Course: "Canyon Ridge",
+};
+
 export type GolfMatchSide = {
   name: string;
   winPct: number;

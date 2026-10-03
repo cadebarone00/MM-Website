@@ -43,6 +43,7 @@ export function SiteChrome({ children, nextTournamentOverride }: { children: Rea
 
 function SiteChromeBody({ children, nextTournamentOverride }: { children: ReactNode; nextTournamentOverride: NextTournamentOverride }) {
   const pathname = usePathname();
+  if (pathname === "/dev") return <>{children}</>;
   const hideBottomNav = isSiteBottomNavHidden(pathname);
   return (
     <>

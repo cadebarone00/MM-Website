@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { GolfTripHome } from "@/components/platform/GolfTripHome";
-import { GOLF_MATCH_PREVIEW, GOLF_MATCH_PREVIEWS, GOLF_TRIP_PREVIEW_FLIGHTS } from "@/lib/platform/golfTripPreviewFixture";
+import { TournamentDataPreview } from "./TournamentDataPreview";
+import { GOLF_MATCH_PREVIEW, GOLF_MATCH_PREVIEWS, GOLF_TRIP_MOCK_DRAFT, GOLF_TRIP_PREVIEW_FLIGHTS } from "@/lib/platform/golfTripPreviewFixture";
 import { flightSummary } from "@/lib/platform/golfTripFlights";
 import { palmSprings2026 } from "@/lib/data/2026-palm-springs";
 import { adaptTournamentToDraft, adaptTournamentToPreviewMatch } from "@/lib/platform/tournamentToGolfTrip";
@@ -30,12 +30,10 @@ export default async function GolfTripPreviewPage({ searchParams }: { searchPara
   // fields for a small dev inspector below.
   const { draft, unmapped } = adaptTournamentToDraft(palmSprings2026);
 
-  return <>
-    <GolfTripHome preview={draft} settingsHref="/dev/tournament/settings" backHref="/golf-trips" previewMatch={previewMatch}
-      flights={{ summary: flightSummary(GOLF_TRIP_PREVIEW_FLIGHTS, "2027-04-01"), href: null }} />
-    <details style={{ maxWidth: 920, margin: "24px auto", padding: 12, background: "#fff8ef", borderRadius: 8 }}>
-      <summary style={{ fontWeight: 600 }}>DEV: Unmapped Tournament Data (click to view)</summary>
-      <pre style={{ whiteSpace: "pre-wrap", marginTop: 8 }}>{JSON.stringify(unmapped, null, 2)}</pre>
-    </details>
-  </>;
+  const flights = { summary: flightSummary(GOLF_TRIP_PREVIEW_FLIGHTS, "2027-04-01"), href: null };
+  return <TournamentDataPreview
+    mock={{ preview: GOLF_TRIP_MOCK_DRAFT, previewMatch: GOLF_MATCH_PREVIEWS[formatKey] ?? GOLF_MATCH_PREVIEW, flights }}
+    maroon={{ preview: draft, previewMatch, flights }}
+    unmapped={unmapped}
+  />;
 }

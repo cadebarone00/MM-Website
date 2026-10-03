@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, 
 import { usePathname } from "next/navigation";
 import { DEVICE_PRESETS, parsePreviewSettings, PREVIEW_STORAGE_KEY, type DeviceKey, type PreviewSettings } from "@/lib/platform/devicePreview";
 import styles from "./DevicePreview.module.css";
+import { useSimulator } from "@/components/dev/SimulatorBridge";
 
 /**
  * DEV ONLY — wraps the /dev/play demo (app/dev/play/layout.tsx) in a phone
@@ -22,6 +23,7 @@ function subscribe(onChange: () => void) {
 }
 
 export function DevicePreview({ children }: { children: ReactNode }) {
+  const simulator = useSimulator();
   // Remembered per browser (dev convenience); the server render always uses the defaults.
   const stored = useSyncExternalStore(subscribe, readStored, () => null);
   const [chosen, setChosen] = useState<PreviewSettings | null>(null);
@@ -40,6 +42,9 @@ export function DevicePreview({ children }: { children: ReactNode }) {
 
   const preset = DEVICE_PRESETS[settings.device];
   const size = preset.width ? { "--device-w": `${preset.width}px`, "--device-h": `${preset.height}px` } as CSSProperties : undefined;
+
+  // The control center already provides a real iframe viewport; avoid nested frames.
+  if (simulator) return <>{children}</>;
 
   return <div className={styles.stage} data-mode={preset.width ? "device" : "full"} data-frame={settings.frame} data-device-preview="">
     <div className={styles.controls} role="toolbar" aria-label="Device preview (dev only)">

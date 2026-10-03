@@ -6,6 +6,10 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-10-02 - Shared Motion foundation and two homepage pilots (implemented locally; deployment not verified).** Before, the root homepage Discover button and Join Tournament card had no Motion feedback. After, Discover has a brief press scale and the Join Tournament card has a 2 px hover lift and subtle tap scale. Reduced-motion preferences disable both. Page/panel entrances and success/error feedback are reusable but unapplied. Existing styling, navigation and application/data behavior are unchanged. Affected sections: public website and navigation; overview flowchart annotation. Pattern usage and bounded scope review: `components/motion/README.md`.
+
+**2026-10-02 - Dev trip data selector (implemented locally; deployment not verified).** Before, `/dev/tournament` always supplied Maroon-adapted data. After, a local Data View selector switches between generic mock fixtures and the real tournament adapters using the same mounted `GolfTripHome`. The unmapped inspector appears only for Maroon. Updated section 22, Mermaid data paths and workflow mapping.
+
 **2026-10-02 - New Game uses the Info Add popup (implemented locally; deployment not verified).** Before, New Game opened an anchored scope dropdown. After, it reuses the exact Info Add popup panel, overlay, close button and icon-row styles through `GolfTripActionSheet`, retaining Whole Tournament / Per Round scope choices and the existing round selector. Info Add retains its existing actions and behavior. Updated section 22 and the Mermaid Games annotation; workflow paths are unchanged. No scoring, Competition or persistence changes.
 
 **2026-10-02 - Account-level event switching now distinguishes Tournament and Golf Trip views (implemented locally; deployment not verified).** Before, the profile's tournaments tab presented only the Tournament items from the player's history and did not offer a separate golf-trip mode. After, the profile's tournament section includes a `Tournament` / `Golf Trip` selector, so the same account can move between the real Maroon Tournament view and the trip-formatted view without deleting anything or changing the underlying tournament records. Affected files: `components/profile/ProfileView.tsx`.
@@ -34,7 +38,10 @@ flowchart TD
   %% Dev Settings wheel opens a maroon Trip Settings layout with the fixture trip name at top right beside a back chevron, General/Organizer text-and-underline selector, short cream category boxes with gold accents and shadows and no phone status icons; General/Organizer selection is local; General shows six Place holder cards and Organizer starts with Players and Competition followed by four Place holder cards and site bottom navigation is hidden.
   %% Golf Trip dev preview: settings wheel > Organizer > Competition opens a round-selection sheet with one day/round/course box per round, then selected-round maroon Spectral settings with gold switches and circular formats retaining all round data; Save returns to the round-selection sheet with memory-only edits; shared layout state supplies organizer settings; Golf Competition uses independent fictional format samples; started rounds lock edits. Resets on reload; no persistence or scoring integration.
   %% New Game and Info Add share the same action-sheet popup presentation; game scope choices remain Whole Tournament / Per Round.
-  GP[Dev Golf Trip preview] --> GS[Games: scope and group size]
+  GM[Generic mock fixtures] --> GP[Dev Golf Trip preview: shared components]
+  MT[Real Maroon tournament source] --> TA[tournamentToGolfTrip adapter]
+  TA --> GP
+  GP --> GS[Games: scope and group size]
   GS --> GR[Compatible side-game recommendations]
   GR --> GU[Local player selection and setup preview]
   GU --> GE[Separate side-game engines: manual gross or preview net]
@@ -62,6 +69,7 @@ flowchart TD
   %% Tournament home hero uses a neutral black readability gradient over desktop video and mobile photo.
   %% Browser tabs use a single dark-maroon M with a thin muted metallic-gold outline on transparent alpha through favicon.ico (16/32/48px) and icon.png (64px), shared by tournament and journal routes.
   %% Public entry: / opens the platform home; editorial stays at /the-maroon; founding tournament Home stays at /website.
+  %% Root homepage Motion pilot: Discover button press and Join Tournament card hover/tap only; reduced motion disables animation. Other shared patterns remain unapplied.
   %% The Maroon routes replace tournament chrome with their own maroon header and tournament-site link to /website; a shallow shared photo hero holds schedule-style Home/category navigation.
   %% More places The Maroon photo home link below social links, followed by Courses, Equipment, Teaching and News; public journal pages use existing course/history links and explicit unpublished-section placeholders.
   %% Active follows handoff; the next year becomes Upcoming the day after the active event end date in its time zone; later years are Future. Event countdown follows Upcoming Session 1 / Match 1 saved date and time, independent of home display settings or setup locks.
@@ -217,6 +225,8 @@ Home Highlights displays thirteen dated 2026 archive summaries: the 17?16 Cup re
 The tournament homepage hero uses a neutral black gradient over its desktop video and mobile fallback photo to keep overlaid text readable without a maroon tint.
 
 The public root `/` opens the platform home. Its menu links to the existing editorial landing at `/the-maroon` and founding tournament at `/website`. Tournament routes and Admin previews continue to target `/website`.
+
+The root homepage opts exactly two elements into `components/motion/useAppMotion.ts`: the Discover category button scales to 98% while pressed (120 ms), and the Join Tournament card lifts 2 px on hover and scales to 99.5% while tapped (160 ms). Reduced-motion preferences disable all animation. Shared page/panel entrances and success/error patterns are available but not applied to any app workflow. Existing styling, destinations, category selection and data behavior remain unchanged; this is implemented locally, with deployment unverified.
 
 Browser tabs use a single dark-maroon M with a thin muted metallic-gold outline on a transparent background, with no gold background or white M; the source asset is public/icons/maroon-m.png. `app/favicon.ico` includes 16px, 32px, and 48px versions, and `app/icon.png` provides a 64px Next.js metadata icon. Both tournament and journal pages inherit these icons. The existing Apple and Android home-screen icons retain their earlier gold MM artwork. Cached browser tabs may require reopening after deployment.
 
@@ -555,6 +565,8 @@ The separate test-season controls operate on a designated database season. This 
 **Code:** `components/portal/admin/LiveScoringPreview.tsx`, `components/portal/admin/ScoringPreviewPhone.tsx`, `components/portal/admin/TestSeasonPanel.tsx`, `lib/live/testSeason.ts`.
 
 ## 22. Legacy integrations and unfinished pages
+
+**Dev data views:** `/dev/tournament` remains development-only. The client wrapper defaults to Maroon and switches props without reloading or remounting `GolfTripHome`, preserving its active tab. Mock uses `GOLF_TRIP_MOCK_DRAFT` (generic, incomplete travel/course fields) and existing format previews including `?format=`. Maroon uses `palmSprings2026` through `adaptTournamentToDraft` and `adaptTournamentToPreviewMatch`, retaining the existing format fallback and Maroon-only unmapped inspector. Both retain fixture flights, shared Competition/Games previews and the Settings route. Settings and other shared placeholder content remain independent fixtures; selector state resets when the page remounts. No database, source mutation or scoring engine changes. Feature review: `docs/dev-tournament-data-review.md`.
 
 **Golf Trip Settings presentation (local dev preview):** The wheel at `/dev/tournament` opens `/dev/tournament/settings`, using the preview trip name above Trip Settings at the top right beside the back chevron, Spectral typography, with the site's maroon background, shorter cream gradient cards with gold borders, a gold base and layered shadows, without icons, the shared Overview/Games text-and-gold-underline selector, maroon card headings without descriptions. The left-chevron back link returns to the trip preview. The phone time, notification, Wi-Fi, cellular and battery indicators are omitted. The General/Organizer buttons switch the active underline locally; General shows six two-column cards labeled Place holder; Organizer shows Players at top left, Competition at top right, and four Place holder cards below. Organizer's Competition card shows only its title and opens an intermediate Competition sheet. This sheet has one box per round, labeled with day, round number and course; selecting a box opens the full settings sheet for that round. Back and SAVE return to the round boxes, and the round-list back button returns to Organizer. Other cards remain placeholders. No settings are saved to storage. Cropped, unlabeled cards are omitted. Site bottom navigation remains hidden on this preview. Saved and unsaved draft trip settings now also show six two-column category boxes under General: My Team, General, Draft, Playoffs, Roster and Scoring. These use the same cream-and-gold card style on maroon and remain presentation placeholders. Saved-trip access checks and the organizer-only Delete Trip panel are unchanged.
 
