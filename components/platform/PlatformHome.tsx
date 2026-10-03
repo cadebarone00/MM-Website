@@ -20,8 +20,7 @@ const sectionIcons: Record<(typeof sections)[number], ComponentType<{ size?: num
   Teaching: GraduationCap,
   News: Newspaper,
 };
-/** `signedIn` hides the "Already part of the club? Log In" prompt. */
-export function PlatformHome({ signedIn = false }: { signedIn?: boolean }) {
+export function PlatformHome() {
   const { buttonPress, cardInteraction } = useAppMotion();
   const [section, setSection] = useState<(typeof sections)[number]>("Discover");
   // Discover has no category of its own, so it borrows the Courses photo.
@@ -41,7 +40,6 @@ export function PlatformHome({ signedIn = false }: { signedIn?: boolean }) {
           </div>
         </motion.article>
       </div>
-      {!signedIn && <div className={styles.accountRow}><p>Already part of the club?</p><Link href="/login">Log In <ArrowRight size={14} aria-hidden="true" /></Link></div>}
     </section>
     <section className={styles.discover} aria-label="Explore The Maroon">
       <div className={styles.filters} role="group" aria-label="Explore categories">

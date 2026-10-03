@@ -63,13 +63,13 @@ try {
   assert.ok(!menu.some(([, href]) => href === "/website"), `menu has no /website link: ${JSON.stringify(menu)}`);
   assert.deepEqual(menu.filter(([label]) => label === "My Tournaments"), [["My Tournaments", "/tournaments/mine"]]);
 
-  // Explore: no "My Tournaments · Coming soon" button (Explore's own article placeholders may say "Coming soon"); signed in, no "Log In" prompt; signed out, still offered.
+  // Explore: no "My Tournaments · Coming soon" button (Explore's own article placeholders may say "Coming soon"); no "Already part of the club? Log In" prompt, signed in or out.
   const explore = await main(p);
   assert.equal(await p.locator("main").getByText("My Tournaments", { exact: true }).count(), 0, "no My Tournaments button on Explore");
   assert.doesNotMatch(explore, /Already part of the club/i);
   const out = await phone(null);
   await out.goto(app + "/");
-  assert.match(await main(out), /Already part of the club/i);
+  assert.doesNotMatch(await main(out), /Already part of the club/i);
   assert.equal(await out.locator("main").getByText("My Tournaments", { exact: true }).count(), 0);
   // Explore's article links still work.
   for (const href of ["/schedule", "/history"]) {
