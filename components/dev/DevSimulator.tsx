@@ -17,6 +17,7 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
   const [currentPath, setCurrentPath] = useState(initialPage.path);
   const [device, setDevice] = useState<string>(initialDevice.id);
   const [size, setSize] = useState({ width: initialDevice.width as number, height: initialDevice.height as number });
+  const [sizeText, setSizeText] = useState({ width: String(initialDevice.width), height: String(initialDevice.height) });
   const [insets, setInsets] = useState({ top: initialDevice.top as number, bottom: initialDevice.bottom as number });
   const [showSafeAreas, setShowSafeAreas] = useState(false);
   const [zoom, setZoom] = useState("fit");
@@ -91,11 +92,22 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
     setDevice(id);
     if (id !== "custom") {
       setSize({ width: next.width, height: next.height });
+      setSizeText({ width: String(next.width), height: String(next.height) });
       setInsets({ top: next.top, bottom: next.bottom });
     }
   }
   function updateState(id: string, value: string) {
     setState(current => ({ ...current, [id]: id === "playerCount" ? value === "" ? null : bounded(value, 1, 64, 8) : value }));
+  }
+  function editSize(edge: "width" | "height", value: string, commit = false) {
+    const min = edge === "width" ? 240 : 320;
+    const max = edge === "width" ? 1600 : 1800;
+    const parsed = Number(value);
+    if (!commit || bounded(value, min, max, size[edge]) !== size[edge]) setDevice("custom");
+    setSizeText(current => ({ ...current, [edge]: commit ? String(bounded(value, min, max, size[edge])) : value }));
+    if (commit || (value !== "" && Number.isInteger(parsed) && parsed >= min && parsed <= max)) {
+      setSize(current => ({ ...current, [edge]: bounded(value, min, max, current[edge]) }));
+    }
   }
 
   return <main className={styles.shell}>
@@ -110,7 +122,7 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
           <h2 id="device-heading">Device</h2>
           <label>Preset<select aria-label="Device preset" value={device} onChange={event => chooseDevice(event.target.value)}>{SIMULATOR_DEVICES.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
           <div className={styles.pair}>
-            {(["width", "height"] as const).map(edge => <label key={edge}>{edge === "width" ? "Width" : "Height"}<div className={styles.unitInput}><input type="number" aria-label={`Viewport ${edge}`} min={edge === "width" ? 240 : 320} max={edge === "width" ? 1600 : 1800} value={size[edge]} onChange={event => { setDevice("custom"); setSize(current => ({ ...current, [edge]: bounded(event.target.value, edge === "width" ? 240 : 320, edge === "width" ? 1600 : 1800, current[edge]) })); }} /><span>px</span></div></label>)}
+            {(["width", "height"] as const).map(edge => <label key={edge}>{edge === "width" ? "Width" : "Height"}<div className={styles.unitInput}><input type="number" aria-label={`Viewport ${edge}`} min={edge === "width" ? 240 : 320} max={edge === "width" ? 1600 : 1800} value={sizeText[edge]} onChange={event => editSize(edge, event.target.value)} onBlur={event => editSize(edge, event.target.value, true)} /><span>px</span></div></label>)}
           </div>
           <label>Display scale<select aria-label="Display scale" value={zoom} onChange={event => setZoom(event.target.value)}><option value="fit">Fit to workspace</option><option value="1">100%</option><option value="0.75">75%</option><option value="0.5">50%</option></select></label>
           <details className={styles.advanced}><summary>Safe-area testing</summary><div className={styles.pair}>{(["top", "bottom"] as const).map(edge => <label key={edge}>{edge === "top" ? "Top inset" : "Bottom inset"}<input type="number" aria-label={`Safe-area ${edge}`} min={0} max={100} value={insets[edge]} onChange={event => setInsets(current => ({ ...current, [edge]: bounded(event.target.value, 0, 100, 0) }))} /></label>)}</div><label className={styles.checkbox}><input type="checkbox" checked={showSafeAreas} onChange={event => setShowSafeAreas(event.target.checked)} />Show inset guides</label><p>Editable insets exercise existing safe-area CSS. Display scale keeps the CSS viewport unchanged.</p></details>

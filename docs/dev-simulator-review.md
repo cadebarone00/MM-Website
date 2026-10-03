@@ -24,6 +24,12 @@ Display scaling changes only the visual frame, never iframe CSS dimensions. Inse
 
 This is a viewport/layout simulator, not iOS Safari, Android, touch/pointer, DPR, on-screen keyboard, browser toolbar or device-performance emulation. Verify those on devices or browser device tools; [Chrome's device-mode documentation](https://developer.chrome.com/docs/devtools/device-mode) describes that additional tooling.
 
+## Focused validation
+
+`node scripts/test-dev-simulator-browser.cjs` checks all eight named device sizes, custom dimensions, real/mock/empty/busy switching without document reload, shared trip section navigation, weather loading and competition/format overrides, safe-area inputs, fixed bottom navigation while scrolling, Settings navigation/return, public-route control isolation, the standalone real/mock selector, narrow-host layout and generated workflow navigation/search. Screenshots are written under ignored `out/`. Browser checks passed locally. Existing randomized GolfTripScoring opponent labels can produce a hydration warning; that implementation is unchanged. The existing DEV_PLAY_DEMO flag was off, so the guarded play app was inspected but not exercised in this run.
+
+`npx tsx --test lib/dev/simulator.test.ts` checks the message parser, source immutability and fixture contents. A scoped TypeScript project for the simulator passed; focused lint has only the existing GolfTripHome TRIP_BADGES warning. Workflow generation/matching and compliance registry structure validation passed. No repo-wide build/test, deployment or legal clearance was performed.
+
 ## Applicable findings and follow-ups
 
 Privacy/personal data, source/asset IP, third-party golf content, organizer publication authority, security and retention remain relevant to viewing the existing real tournament. Existing consent/rights/retention questions are not cleared. No new disclosures, personal-data collection, media uploads, minor audience, payment, subscription, advertising or sponsorship mechanics are added by the development shell. Platform/provider rules and professional legal review still require review before any broader distribution.

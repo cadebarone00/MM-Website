@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
  * fixture answers. No login, no database. 404 unless NODE_ENV=development (`npm run dev`).
  * Accepts ?format=singles | fourball | foursome | bestball | scramble | shamble | chapman | stableford | singlesstroke | custom to preview format templates.
  */
-export default async function GolfTripPreviewPage({ searchParams }: { searchParams?: Promise<{ format?: string }> }) {
+export default async function GolfTripPreviewPage({ searchParams }: { searchParams?: Promise<{ format?: string; simulator?: string }> }) {
   if (process.env.NODE_ENV !== "development") notFound();
   const params = await searchParams;
   const formatKey = (params?.format ?? "singles").toLowerCase();
@@ -32,6 +32,7 @@ export default async function GolfTripPreviewPage({ searchParams }: { searchPara
 
   const flights = { summary: flightSummary(GOLF_TRIP_PREVIEW_FLIGHTS, "2027-04-01"), href: null };
   return <TournamentDataPreview
+    embedded={params?.simulator === "1"}
     mock={{ preview: GOLF_TRIP_MOCK_DRAFT, previewMatch: GOLF_MATCH_PREVIEWS[formatKey] ?? GOLF_MATCH_PREVIEW, flights }}
     maroon={{ preview: draft, previewMatch, flights }}
     unmapped={unmapped}

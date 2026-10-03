@@ -1,4 +1,5 @@
 .shell{--studio-bg:#f1f2f4;--studio-ink:#242832;--studio-muted:#737a87;--studio-line:#e4e6eb;min-height:100dvh;background:var(--studio-bg);color:var(--studio-ink);font:13px/1.5 system-ui,sans-serif}
+.shell h1,.shell h2{font-family:system-ui,sans-serif}
 .header{height:76px;display:flex;align-items:center;justify-content:space-between;padding:0 30px;background:#fff;border-bottom:1px solid var(--studio-line)}
 .brand{display:flex;align-items:center;gap:12px}.brand>svg{color:#670f24}.brand h1{font-size:17px;font-weight:650;margin:0;letter-spacing:-.3px}.brand p{font-size:11px;color:var(--studio-muted);margin:1px 0 0}
 .devBadge{display:flex;align-items:center;gap:7px;font-size:10px;letter-spacing:1.1px;color:#667064;padding:6px 10px;border:1px solid #e0e6df;border-radius:5px;background:#f7faf6}.devBadge span,.statusDot{width:6px;height:6px;background:#6a976f;border-radius:50%;display:inline-block}

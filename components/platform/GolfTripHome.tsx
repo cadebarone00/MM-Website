@@ -35,6 +35,7 @@ const subscribeNever = () => () => {};
  * `weather` (saved trips only, still loading on the server) adds a Weather card after Travel that shows a loading line
  * until it settles, so the rest of the page never waits for it; without it there is no Weather card.
  * `flights` fills the Info tab's Flights card with the viewer's own flights; `href` (saved trips) makes it open the Flights page.
+ * `navigation` optionally requests a shared tab/section; in-app navigation remains local between requests.
  */
 export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, navigation }:
   { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview; weather?: Promise<TripWeather>; flights?: TripFlights; navigation?: GolfTripNavigation }) {

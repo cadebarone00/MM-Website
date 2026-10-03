@@ -19,7 +19,7 @@ export function applySimulatorSafeAreas(document: Document, top: number, bottom:
     for (const rule of Array.from(rules)) {
       if ("style" in rule) {
         const style = (rule as CSSStyleRule).style;
-        for (const property of Array.from(style)) {
+        for (const property of style.cssText.includes("env(safe-area-inset-") ? Array.from(style) : []) {
           const value = style.getPropertyValue(property);
           const replaced = value.replace(/env\(safe-area-inset-(top|bottom)(?:\s*,\s*[^)]+)?\)/g, (_, edge: string) => `var(--dev-safe-area-${edge}, 0px)`);
           if (replaced !== value) style.setProperty(property, replaced, style.getPropertyPriority(property));

@@ -9,10 +9,11 @@ import type { TripWeather } from "@/lib/platform/weather/types";
 
 
 /** Data selection belongs to the dev route, never to the shared trip UI. */
-export function TournamentDataPreview({ mock, maroon, unmapped }: {
+export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false }: {
   mock: TripData;
   maroon: TripData;
   unmapped: Record<string, unknown>;
+  embedded?: boolean;
 }) {
   const [view, setView] = useState<"mock" | "maroon">("maroon");
   const simulator = useSimulator();
@@ -20,7 +21,7 @@ export function TournamentDataPreview({ mock, maroon, unmapped }: {
   const data = simulatorTripData(mock, maroon, config);
   const weather = useMemo(() => config.state.loading === "weather" ? new Promise<TripWeather>(() => {}) : undefined, [config.state.loading]);
   return <>
-    {!simulator && <div style={{ maxWidth: 920, margin: "12px auto", padding: "0 12px", fontSize: 12 }}>
+    {!simulator && !embedded && <div style={{ maxWidth: 920, margin: "12px auto", padding: "0 12px", fontSize: 12 }}>
       <div role="group" aria-label="Data View" style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span>Data View</span>
         <button type="button" aria-pressed={view === "mock"} onClick={() => setView("mock")}>Mock</button>
@@ -29,7 +30,7 @@ export function TournamentDataPreview({ mock, maroon, unmapped }: {
       <div aria-live="polite" style={{ marginTop: 4, opacity: 0.7 }}>{view === "mock" ? "Mock Data" : "Real Tournament Data"}</div>
     </div>}
     <GolfTripHome {...data} weather={weather} navigation={simulator?.navigation} settingsHref="/dev/tournament/settings" backHref="/golf-trips" />
-    {!simulator && view === "maroon" && <details style={{ maxWidth: 920, margin: "24px auto", padding: 12, background: "#fff8ef", borderRadius: 8 }}>
+    {!simulator && !embedded && view === "maroon" && <details style={{ maxWidth: 920, margin: "24px auto", padding: 12, background: "#fff8ef", borderRadius: 8 }}>
       <summary style={{ fontWeight: 600 }}>DEV: Unmapped Tournament Data (click to view)</summary>
       <pre style={{ whiteSpace: "pre-wrap", marginTop: 8 }}>{JSON.stringify(unmapped, null, 2)}</pre>
     </details>}
