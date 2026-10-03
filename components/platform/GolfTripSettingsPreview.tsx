@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { motion } from "motion/react";
 import { ChevronLeft } from "lucide-react";
 import { GolfGameScoringSettings } from "./GolfGameScoringSettings";
 import { SIDE_GAME_REGISTRY } from "@/lib/platform/golfTripGames";
@@ -53,10 +54,10 @@ export function GolfTripSettingsPreview({ tripName }: { tripName: string }) {
           else setGamesOpen(false);
         }}><ChevronLeft size={28} aria-hidden /></button>
         <h1>{selectedRound ? "Round " + selectedRound.number + " Settings" : selectedGame ? selectedGame.name : gamesOpen ? "Games" : "Competition"}</h1>
-        {selectedRound || selectedGame ? <button type="button" className={styles.save} onClick={() => {
+        {selectedRound || selectedGame ? <motion.button type="button" className={styles.save} onClick={() => {
           if (selectedRound) setSelectedRoundId(null);
           else setSelectedGameId(null);
-        }}>SAVE</button> : <span />}
+        }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }} transition={{ type: "spring", stiffness: 420, damping: 24 }}>SAVE</motion.button> : <span />}
       </header> : <header className={styles.header}>
       <Link href="/dev/tournament" className={styles.close} aria-label="Back to trip"><ChevronLeft size={26} strokeWidth={1.75} aria-hidden /></Link>
       <div className={styles.heading}>

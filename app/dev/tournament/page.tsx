@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { GolfTripHome } from "@/components/platform/GolfTripHome";
-import { GOLF_MATCH_PREVIEW, GOLF_MATCH_PREVIEWS, GOLF_TRIP_PREVIEW_DRAFT, GOLF_TRIP_PREVIEW_FLIGHTS } from "@/lib/platform/golfTripPreviewFixture";
+import { GOLF_MATCH_PREVIEW, GOLF_MATCH_PREVIEWS, GOLF_TRIP_PREVIEW_FLIGHTS } from "@/lib/platform/golfTripPreviewFixture";
 import { flightSummary } from "@/lib/platform/golfTripFlights";
+import { palmSprings2026 } from "@/lib/data/2026-palm-springs";
+import { adaptTournamentToDraft, adaptTournamentToPreviewMatch } from "@/lib/platform/tournamentToGolfTrip";
 
 export const metadata: Metadata = { title: "Golf Trip preview | The Maroon", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -16,8 +18,24 @@ export default async function GolfTripPreviewPage({ searchParams }: { searchPara
   if (process.env.NODE_ENV !== "development") notFound();
   const params = await searchParams;
   const formatKey = (params?.format ?? "singles").toLowerCase();
-  const previewMatch = GOLF_MATCH_PREVIEWS[formatKey] ?? GOLF_MATCH_PREVIEW;
+  // Prefer a tournament-derived preview when possible so the Golf tab shows real matches/leaderboard;
+  // fall back to the format fixtures where the tournament is missing match/leaderboard data.
+  const tournamentPreview = adaptTournamentToPreviewMatch(palmSprings2026);
+  const previewMatch = (tournamentPreview && tournamentPreview.leaderboard && tournamentPreview.matches && tournamentPreview.matches.length > 0)
+    ? tournamentPreview
+    : (GOLF_MATCH_PREVIEWS[formatKey] ?? GOLF_MATCH_PREVIEW);
 
-  return <GolfTripHome preview={GOLF_TRIP_PREVIEW_DRAFT} settingsHref="/dev/tournament/settings" backHref="/golf-trips" previewMatch={previewMatch}
-    flights={{ summary: flightSummary(GOLF_TRIP_PREVIEW_FLIGHTS, "2027-04-01"), href: null }} />;
+  // Adapt the real Maroon tournament into the draft the GolfTripHome expects so the UI
+  // shows real tournament data wherever available. The adapter also returns unmapped
+  // fields for a small dev inspector below.
+  const { draft, unmapped } = adaptTournamentToDraft(palmSprings2026);
+
+  return <>
+    <GolfTripHome preview={draft} settingsHref="/dev/tournament/settings" backHref="/golf-trips" previewMatch={previewMatch}
+      flights={{ summary: flightSummary(GOLF_TRIP_PREVIEW_FLIGHTS, "2027-04-01"), href: null }} />
+    <details style={{ maxWidth: 920, margin: "24px auto", padding: 12, background: "#fff8ef", borderRadius: 8 }}>
+      <summary style={{ fontWeight: 600 }}>DEV: Unmapped Tournament Data (click to view)</summary>
+      <pre style={{ whiteSpace: "pre-wrap", marginTop: 8 }}>{JSON.stringify(unmapped, null, 2)}</pre>
+    </details>
+  </>;
 }
