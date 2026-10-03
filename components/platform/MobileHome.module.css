@@ -16,3 +16,10 @@
 /* Big page title, matching the Tourneys title (JoinTournament.module.css .title). */
 .pageTitle{margin:0;padding:8px 24px 22px;font:500 40px/1.1 var(--font-spectral),Georgia,serif;text-align:center;color:#fbf8f1;letter-spacing:-.02em}
 @media(max-width:400px){.pageTitle{font-size:34px}}
+/* Single tournament card: full width, both actions under the photo. Stacked
+   on phones ("Create Tournament" won't fit half a phone width), side by side
+   on wider screens. */
+.tripCard.soloCard{flex:1 1 100%}
+.cardActions{display:grid;grid-template-columns:1fr}
+.cardActions>*+*{border-top:1px solid #b99c6b55}
+@media(min-width:601px){.cardActions{grid-template-columns:1fr 1fr}.cardActions>*+*{border-top:0;border-left:1px solid #b99c6b55}.soloCard .tripPhoto{height:260px}}

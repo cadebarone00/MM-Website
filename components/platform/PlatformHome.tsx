@@ -2,7 +2,7 @@
 import { useState, type ComponentType } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ArrowUpRight, Compass, Flag, FlagTriangleRight, GraduationCap, Newspaper, Plus } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Compass, Flag, FlagTriangleRight, GraduationCap, Newspaper } from "lucide-react";
 import { maroonCategories } from "@/lib/data/theMaroon";
 import { MaroonSection } from "@/components/maroon/MaroonSection";
 import { SignInRequiredLink } from "./SignInRequiredLink";
@@ -29,20 +29,17 @@ export function PlatformHome({ signedIn = false }: { signedIn?: boolean }) {
   return <main className={styles.home}>
     <section className={styles.upper} aria-label="Your next golf trip">
       <div className={styles.cards} aria-label="Tournament actions">
-        <motion.article className={styles.tripCard} {...cardInteraction} whileTap={buttonPress.whileTap} transition={buttonPress.transition}>
+        {/* One card, two ways in: join someone's tournament or start your own. */}
+        <motion.article className={`${styles.tripCard} ${styles.soloCard}`} {...cardInteraction} whileTap={buttonPress.whileTap} transition={buttonPress.transition}>
           <div className={styles.tripPhoto}>
-            <Image src="/schedule/mission-hills.webp" alt="" fill priority sizes="(max-width: 600px) 90vw, 550px" />
+            <Image src="/schedule/mission-hills.webp" alt="" fill priority sizes="(max-width: 600px) 95vw, 1100px" />
             <div className={styles.tripOverlay}><span className={styles.kicker}><Flag size={13} aria-hidden="true" /> Your next tradition</span><p>Great golf.<br />Even better company.</p></div>
           </div>
-          <Link href="/tournaments/join" className={styles.cardAction} onNavigate={beginJoinTournamentTransition}>Join Tournament <span><ArrowRight size={16} aria-hidden="true" /></span></Link>
-        </motion.article>
-        <article className={styles.tripCard}>
-          <div className={styles.tripPhoto}>
-            <Image src="/teams/maroon/collage/01-hero-team.jpg" alt="" fill sizes="(max-width: 600px) 90vw, 550px" />
-            <div className={styles.tripOverlay}><span className={styles.kicker}><Plus size={14} aria-hidden="true" /> Make it yours</span><p>Your people.<br />Your tournament.</p></div>
+          <div className={styles.cardActions}>
+            <Link href="/tournaments/join" className={styles.cardAction} onNavigate={beginJoinTournamentTransition}>Join Tournament <span><ArrowRight size={16} aria-hidden="true" /></span></Link>
+            <SignInRequiredLink href="/tournaments/create" className={styles.cardAction} message="Sign in to create a tournament">Create Tournament <span><ArrowRight size={16} aria-hidden="true" /></span></SignInRequiredLink>
           </div>
-          <SignInRequiredLink href="/tournaments/create" className={styles.cardAction} message="Sign in to create a tournament">Create Tournament <span><ArrowRight size={16} aria-hidden="true" /></span></SignInRequiredLink>
-        </article>
+        </motion.article>
       </div>
       {!signedIn && <div className={styles.accountRow}><p>Already part of the club?</p><Link href="/login">Log In <ArrowRight size={14} aria-hidden="true" /></Link></div>}
     </section>
