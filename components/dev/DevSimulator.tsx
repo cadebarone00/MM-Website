@@ -140,7 +140,9 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
         <div className={styles.stage} ref={stage}>
           <div className={styles.deviceSpace} style={{ width: (size.width + 16) * scale, height: (size.height + 16) * scale }}>
             <div className={styles.device} style={{ width: size.width + 16, height: size.height + 16, transform: `scale(${scale})`, "--safe-top": `${insets.top}px`, "--safe-bottom": `${insets.bottom}px` } as CSSProperties}>
-              <iframe ref={iframe} title="Mobile application preview" src={frameSrc} width={size.width} height={size.height} className={styles.frame} onLoad={() => { setReady(true); sendConfig(); }} />
+              <iframe ref={iframe} title="Mobile application preview" src={frameSrc} width={size.width} height={size.height}
+                style={{ width: size.width, height: size.height, minWidth: size.width, minHeight: size.height, maxWidth: "none", maxHeight: "none" }}
+                className={styles.frame} onLoad={() => { setReady(true); sendConfig(); }} />
               {showSafeAreas && <div className={styles.safeGuides} aria-hidden><span /><span /></div>}
             </div>
           </div>

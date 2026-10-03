@@ -22,15 +22,22 @@ const base = process.env.DEV_SIMULATOR_URL || "http://localhost:3001";
     };
     await selected("Home");
     await frame().evaluate(() => { window.__simulatorTestToken = "keep"; });
+    // CSS must not override the selected HTML dimensions with responsive embed rules.
+    const sizingConflict = await page.addStyleTag({ content: "iframe { width: 100%; height: 100%; max-width: 300px; max-height: 300px; }" });
     const devices = { iphone16: [393, 852], iphone16pro: [402, 874], iphone16promax: [440, 956], iphone17: [402, 874], iphone17pro: [402, 874], iphone17promax: [440, 956], pixel9: [412, 924], pixel9pro: [412, 918] };
     for (const [id, dimensions] of Object.entries(devices)) {
       await control("Device preset").selectOption(id);
       await page.waitForFunction(dimensions => { const preview = document.querySelector("iframe").contentWindow; return preview.innerWidth === dimensions[0] && preview.innerHeight === dimensions[1]; }, dimensions);
       assert.deepEqual(await frame().evaluate(() => [innerWidth, innerHeight]), dimensions);
+      assert.deepEqual(await page.locator("iframe").evaluate(element => {
+        const css = getComputedStyle(element);
+        return [parseFloat(css.width), parseFloat(css.height), css.maxWidth, css.maxHeight];
+      }), [...dimensions, "none", "none"]);
     }
     await page.getByRole("spinbutton", { name: "Viewport width" }).fill("768");
     await page.getByRole("spinbutton", { name: "Viewport height" }).fill("900");
     assert.deepEqual(await frame().evaluate(() => [innerWidth, innerHeight]), [768, 900]);
+    await sizingConflict.evaluate(element => element.remove());
     await control("Device preset").selectOption("iphone17pro");
     await control("App page").selectOption("trip-Golf");
     await selected("Golf");
