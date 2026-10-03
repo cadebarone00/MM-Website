@@ -1,34 +1,45 @@
+import { getPlayerDisplayName, getPlayerSlug } from "../data/players";
+import { palmSprings2026 } from "../data/2026-palm-springs";
+import type { Tournament } from "../data/types";
 import type { GolfTripDraft } from "./golfTripDraft";
 import type { GolfTripFlight } from "./golfTripFlights";
 import { FORMATS, type FormatDefinition } from "./formats";
 
+function tournamentTripDraftFromTournament(tournament: Tournament): GolfTripDraft {
+  const dayDates = tournament.dayDates ?? {};
+  const uniqueDays = Array.from(new Set(Object.keys(dayDates).map(Number))).sort((a, b) => a - b);
+  const golfDays = uniqueDays.length || Math.max(1, tournament.matches.reduce((max, match) => Math.max(max, match.day), 0));
+  const draft: GolfTripDraft = {
+    yourName: "Cade Barone",
+    yourEmail: "organizer@example.com",
+    tripName: tournament.editionLabel,
+    destination: tournament.location,
+    startDate: tournament.startDate,
+    endDate: tournament.endDate,
+    playerCount: String((tournament.roster.maroon.length + tournament.roster.white.length)),
+    golfDays: String(golfDays),
+    includesTournament: "yes",
+    knowsFlights: "",
+    knowsLodging: "",
+    knowsTransportation: "",
+  };
+
+  for (let day = 1; day <= golfDays; day++) {
+    draft[`day${day}Date`] = dayDates[day] ?? tournament.startDate;
+    draft[`day${day}Rounds`] = "1";
+    draft[`round${(day - 1) * 2 + 1}Course`] = tournament.venue;
+    if (day > 1) draft[`round${(day - 1) * 2}Course`] = tournament.venue;
+  }
+
+  // Keep the trip shell aligned to the actual tournament values while leaving all travel info empty for later manual entry.
+  return draft;
+}
+
 /**
  * DEV ONLY: a fully answered Golf Trip questionnaire, for the /dev/tournament design preview.
- * Same keys the questionnaire saves, so Golf Trip Home reads it exactly like a real draft. Made-up data.
+ * Uses real Maroon tournament data and leaves travel/lodging fields empty until the organizer adds them later.
  */
-export const GOLF_TRIP_PREVIEW_DRAFT: GolfTripDraft = {
-  yourName: "Alex Organizer",
-  yourEmail: "organizer@example.com",
-  tripName: "Spring Golf Weekend",
-  destination: "Scottsdale, AZ",
-  startDate: "2027-04-22",
-  endDate: "2027-04-25",
-  golfDays: "3",
-  day1Date: "2027-04-22",
-  day1Rounds: "1",
-  day2Date: "2027-04-23",
-  day2Rounds: "2",
-  day3Date: "2027-04-24",
-  day3Rounds: "1",
-  round1Course: "Desert Pines GC",
-  round2Course: "Canyon Ridge (Front)",
-  round3Course: "Canyon Ridge (Back)",
-  round4Course: "Saguaro Links",
-  includesTournament: "yes",
-  knowsFlights: "yes",
-  knowsLodging: "yes",
-  knowsTransportation: "no",
-};
+export const GOLF_TRIP_PREVIEW_DRAFT: GolfTripDraft = tournamentTripDraftFromTournament(palmSprings2026);
 
 export type GolfMatchSide = {
   name: string;

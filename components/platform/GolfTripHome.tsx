@@ -104,13 +104,15 @@ function HomeSections({ draft, dates, dateRange, weather }: { draft: Record<stri
 
   const heading = (text: string) => <h4 className={styles.eventsHeading}>{text}<ChevronRight size={20} strokeWidth={2.25} aria-hidden /></h4>;
 
-  const nextImportantEvent: InfoEvent | null = rounds[0] ? {
-    host: `Round ${rounds[0].number}`,
-    title: `${draft[`round${rounds[0].number}Course`] || "Golf day"} · ${rounds[0].date ? shortTripDate(rounds[0].date) : `Day ${rounds[0].dayNumber}`}`,
-    art: ART.golf,
-    icon: Flag,
-    badge: "Set",
-  } : null;
+  const nextImportantEvent: InfoEvent | null = rounds[0]
+    ? {
+        host: `Round ${rounds[0].number}`,
+        title: `${draft[`round${rounds[0].number}Course`] || "Golf day"} · ${rounds[0].date ? shortTripDate(rounds[0].date) : `Day ${rounds[0].dayNumber}`}`,
+        art: ART.golf,
+        icon: Flag,
+        badge: "Set",
+      }
+    : null;
 
   const sections: Record<HomeSection, { summary: string; rows: ReactNode }> = {
     Golf: {
