@@ -11,7 +11,7 @@ export function simulatorPages(): SimulatorPage[] {
   function walk(directory: string, path: string) {
     if (existsSync(join(directory, "page.tsx")) && path !== "/dev") {
       if (path.startsWith("/dev/play") && !isPlayDemoEnabled()) return;
-      pages.push({ id: path, path, label: path === "/dev/tournament" ? "Golf Trip · Home" : path === "/dev/tournament/settings" ? "Golf Trip · Settings" : path.replace("/dev/play", "Tournament app").replaceAll("/", " · "), fixtures: path.startsWith("/dev/tournament") });
+      pages.push({ id: path, path, label: path === "/dev/tournament" ? "Golf Trip · Home" : path === "/dev/tournament/settings" ? "Golf Trip · Settings preview" : path.replace("/dev/play", "Tournament app").replaceAll("/", " · "), fixtures: path.startsWith("/dev/tournament") });
     }
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
       if (entry.isDirectory() && !/[\[(@]/.test(entry.name)) walk(join(directory, entry.name), `${path}/${entry.name}`);
@@ -26,7 +26,7 @@ export function simulatorPages(): SimulatorPage[] {
       ...GOLF_TRIP_SECTIONS.filter(section => section !== "Overview").map(section => ({ ...home, id: `trip-${section}`, label: `Golf Trip · ${section}`, navigation: { tab: "Golf" as const, golfSection: section } })),
     );
   }
-  for (const [path, label] of [["/", "Platform home"], ["/golf-trips", "Golf Trips list"], ["/golf-trips/new", "Create Golf Trip"], ["/login", "Sign in"]]) {
+  for (const [path, label] of [["/", "Platform home"], ["/golf-trips", "Golf Trips list"], ["/golf-trips/new", "Create Golf Trip"], ["/golf-trips/trip/settings", "Golf Trip · App settings"], ["/login", "Sign in"]]) {
     if (existsSync(join(process.cwd(), "app", path, "page.tsx"))) pages.push({ id: path, path, label, fixtures: false });
   }
   return pages;
