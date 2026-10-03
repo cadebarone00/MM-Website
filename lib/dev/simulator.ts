@@ -21,7 +21,8 @@ export const SIMULATOR_SOURCES = [
   { id: "busy", label: "Populated / busy-state data" },
 ] as const;
 export type SimulatorSource = (typeof SIMULATOR_SOURCES)[number]["id"];
-export type SimulatorPage = { id: string; label: string; path: string; navigation?: GolfTripNavigation; fixtures: boolean };
+export type SimulatorConditional = { id: string; label: string; source?: SimulatorSource; state?: Partial<SimulatorState>; playerCount?: boolean };
+export type SimulatorPage = { id: string; label: string; path: string; navigation?: GolfTripNavigation; fixtures: boolean; group?: string; conditions?: SimulatorConditional[] };
 export const SIMULATOR_STATES = [
   { id: "competition", label: "Trip / tournament status", kind: "select", options: [["source", "From data source"], ["yes", "Competitive trip"], ["no", "Social golf trip"]] },
   { id: "format", label: "Golf format", kind: "format" },
@@ -41,6 +42,33 @@ export type SimulatorState = {
 export const DEFAULT_SIMULATOR_STATE: SimulatorState = { competition: "source", format: "source", playerCount: null, roundStatus: "source", loading: "off" };
 export type SimulatorConfig = { source: SimulatorSource; state: SimulatorState; navigation?: GolfTripNavigation };
 export const SIMULATOR_CHANNEL = "maroon-dev-simulator-v1";
+
+export type SimulatorLocation = { path: string; navigation?: GolfTripNavigation };
+export function isSimulatorPath(path: unknown): path is string {
+  return typeof path === "string" && /^\/[a-zA-Z0-9/_-]*$/.test(path) && !path.startsWith("//") && path !== "/dev";
+}
+export function parseSimulatorLocation(value: unknown): SimulatorLocation | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  if (!isSimulatorPath(record.path)) return null;
+  const navigation = record.navigation as GolfTripNavigation | undefined;
+  if (navigation !== undefined && (!navigation || !GOLF_TRIP_TABS.includes(navigation.tab) || (navigation.golfSection !== undefined && !GOLF_TRIP_SECTIONS.includes(navigation.golfSection)))) return null;
+  return { path: record.path, navigation };
+}
+
+/** The discovered page descriptors are the mapping in BOTH directions. */
+export function simulatorPageForLocation(pages: SimulatorPage[], location: SimulatorLocation, currentId?: string): SimulatorPage | undefined {
+  const candidates = pages.filter(page => page.path === location.path);
+  if (location.navigation) {
+    const { tab, golfSection } = location.navigation;
+    return candidates.find(page => page.navigation?.tab === tab && (tab !== "Golf" || (page.navigation.golfSection ?? "Overview") === (golfSection ?? "Overview")));
+  }
+  return candidates.find(page => page.id === currentId) ?? candidates.find(page => !page.navigation) ?? candidates[0];
+}
+
+export function sameSimulatorNavigation(left?: GolfTripNavigation, right?: GolfTripNavigation) {
+  return left?.tab === right?.tab && left?.golfSection === right?.golfSection && left?.command === right?.command;
+}
 
 /** Messages are untrusted, even from another same-origin frame. */
 export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {

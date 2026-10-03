@@ -22,6 +22,25 @@ const base = process.env.DEV_SIMULATOR_URL || "http://localhost:3001";
     };
     await selected("Home");
     await frame().evaluate(() => { window.__simulatorTestToken = "keep"; });
+    const outerSelected = async id => page.waitForFunction(id => document.querySelector('select[aria-label="App page"]').value === id, id);
+    // App clicks report actual state; observing them must not issue another command.
+    for (const tab of ["Golf", "Venue", "Info", "Home", "Golf"]) {
+      await phone.getByRole("tab", { name: tab, exact: true }).click();
+      await outerSelected(tab === "Home" ? "/dev/tournament" : `trip-${tab}`);
+    }
+    for (const section of ["Competition", "Games", "Overview"]) {
+      await phone.getByRole("tab", { name: section, exact: true }).click();
+      await outerSelected(section === "Overview" ? "trip-Golf" : `trip-${section}`);
+    }
+    await phone.getByRole("tab", { name: "Venue", exact: true }).click();
+    await control("Data source").selectOption("mock");
+    await phone.getByRole("heading", { name: "Friends Golf Weekend", exact: true }).waitFor();
+    await outerSelected("trip-Venue");
+    await control("Data source").selectOption("maroon");
+    await phone.getByRole("heading", { name: "The Maroon Tournament 2026", exact: true }).waitFor();
+    await outerSelected("trip-Venue");
+    await control("App page").selectOption("/dev/tournament");
+    await selected("Home");
     // CSS must not override the selected HTML dimensions with responsive embed rules.
     const sizingConflict = await page.addStyleTag({ content: "iframe { width: 100%; height: 100%; max-width: 300px; max-height: 300px; }" });
     const devices = { iphone16: [393, 852], iphone16pro: [402, 874], iphone16promax: [440, 956], iphone17: [402, 874], iphone17pro: [402, 874], iphone17promax: [440, 956], pixel9: [412, 924], pixel9pro: [412, 918] };
@@ -81,6 +100,8 @@ const base = process.env.DEV_SIMULATOR_URL || "http://localhost:3001";
     await page.waitForFunction(() => document.querySelector("iframe").contentWindow.scrollY === 0);
     await phone.getByRole("link", { name: "Trip settings" }).click();
     await phone.getByText("Trip Settings", { exact: true }).waitFor();
+    await outerSelected("/dev/tournament/settings");
+    assert.equal(await frame().evaluate(() => window.__simulatorTestToken), "keep");
     await control("Golf format").waitFor({ state: "visible" });
     await page.waitForFunction(() => document.querySelector('select[aria-label="Golf format"]').disabled);
     await control("Data source").selectOption("mock");
@@ -89,6 +110,8 @@ const base = process.env.DEV_SIMULATOR_URL || "http://localhost:3001";
     await selected("Home");
     await control("App page").selectOption("/");
     await phone.getByText("Discover", { exact: true }).first().waitFor();
+    await outerSelected("/");
+    assert.equal(await frame().evaluate(() => window.__simulatorTestToken), "keep");
     await page.waitForFunction(() => document.querySelector('select[aria-label="Data source"]').disabled);
     assert.equal(await phone.getByLabel("Development controls").count(), 0);
     await control("App page").selectOption("/dev/tournament");
@@ -111,7 +134,7 @@ const base = process.env.DEV_SIMULATOR_URL || "http://localhost:3001";
     await page.locator("#search").fill("Development mobile simulator");
     assert(await page.locator("details:not(.hidden)").count() > 0);
     await page.locator("#search").fill("");
-    await page.getByText("Development mobile simulator: viewport, routes, fixtures and test state", { exact: true }).click();
+    await page.getByRole("heading", { name: /^Development mobile simulator:/, level: 3 }).click();
     assert(await page.locator("details[open]").count() > 0);
     await page.setViewportSize({ width: 1440, height: 1080 });
     await page.evaluate(() => scrollTo(0, 0));

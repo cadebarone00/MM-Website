@@ -3,7 +3,8 @@ import { readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS } from "@/lib/platform/golfTripNavigation";
 import { isPlayDemoEnabled } from "@/lib/platform/playDemo";
-import type { SimulatorPage } from "./simulator";
+import { SIMULATOR_SOURCES, type SimulatorPage } from "./simulator";
+import { GOLF_MATCH_PREVIEWS } from "@/lib/platform/golfTripPreviewFixture";
 
 /** Discover existing static dev routes. No duplicate page implementation or dynamic ids. */
 export function simulatorPages(): SimulatorPage[] {
@@ -29,5 +30,35 @@ export function simulatorPages(): SimulatorPage[] {
   for (const [path, label] of [["/", "Platform home"], ["/golf-trips", "Golf Trips list"], ["/golf-trips/new", "Create Golf Trip"], ["/golf-trips/trip/settings", "Golf Trip · App settings"], ["/login", "Sign in"]]) {
     if (existsSync(join(process.cwd(), "app", path, "page.tsx"))) pages.push({ id: path, path, label, fixtures: false });
   }
-  return pages;
+  // Dynamic setup route has a real, fixed Golf Trip branch.
+  pages.push({ id: "trip-setup", path: "/tournaments/create/golf-trip", label: "Golf Trip setup", fixtures: false, group: "Golf Trip Onboarding", conditions: [] });
+  const steps = ["", "players", "golf", "courses", "format", "lodging", "flights", "transportation", "review"];
+  for (const step of steps.slice(1)) {
+    const path = "/golf-trips/new/" + step;
+    if (existsSync(join(process.cwd(), "app", path, "page.tsx"))) pages.push({ id: path, path, label: step[0].toUpperCase() + step.slice(1), fixtures: false });
+  }
+  for (const page of pages) {
+    page.group ??= page.path.startsWith("/golf-trips/new") ? "Golf Trip Onboarding" : page.path.startsWith("/dev/tournament") || page.path === "/golf-trips/trip/settings" ? "Golf Trip Active" : page.path.startsWith("/dev/play") ? "Tournament Active" : page.path === "/login" ? "Authentication" : "Public / Marketing";
+    page.label = page.label.replace(/^Golf Trip ? /, "");
+    if (page.path === "/golf-trips/new") page.label = "Trip Basics";
+    if (page.conditions) continue;
+    page.conditions = [];
+    if (page.path !== "/dev/tournament" || page.navigation?.tab === "Info" || page.navigation?.golfSection === "Games") continue;
+    page.conditions = SIMULATOR_SOURCES.map(item => ({ id: "source-" + item.id, label: item.label, source: item.id }));
+    if (page.navigation?.tab === "Home" || page.navigation?.tab === "Golf") page.conditions.push(
+      { id: "competition-source", label: "Competition from data source", state: { competition: "source" } },
+      { id: "competitive", label: "Competitive", state: { competition: "yes" } },
+      { id: "social", label: "Non-competitive", state: { competition: "no" } },
+      { id: "players", label: "Player count", playerCount: true });
+    if (page.navigation?.golfSection === "Competition") page.conditions.push(
+      { id: "format-source", label: "Format from data source", state: { format: "source" } },
+      ...Object.entries(GOLF_MATCH_PREVIEWS).map(([key, sample]) => ({ id: "format-" + key, label: sample.format, state: { format: key } })),
+      { id: "round-source", label: "Round from data source", state: { roundStatus: "source" } },
+      { id: "scheduled", label: "Scheduled", state: { roundStatus: "scheduled" } });
+    if (page.navigation?.tab === "Venue") page.conditions.push(
+      { id: "weather-off", label: "Normal weather", state: { loading: "off" } },
+      { id: "weather-loading", label: "Weather loading", state: { loading: "weather" } });
+  }
+  const onboardingOrder = ["/tournaments/create/golf-trip", ...steps.map(step => "/golf-trips/new" + (step ? "/" + step : ""))];
+  return pages.sort((a, b) => a.group === "Golf Trip Onboarding" && b.group === a.group ? onboardingOrder.indexOf(a.path) - onboardingOrder.indexOf(b.path) : 0);
 }

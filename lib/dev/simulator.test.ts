@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_SIMULATOR_STATE, parseSimulatorConfig, SIMULATOR_DEVICES } from "./simulator";
+import { DEFAULT_SIMULATOR_STATE, parseSimulatorConfig, parseSimulatorLocation, sameSimulatorNavigation, simulatorPageForLocation, SIMULATOR_DEVICES, type SimulatorPage } from "./simulator";
 import { simulatorTripData } from "./golfTripSimulatorData";
 import { GOLF_MATCH_PREVIEW, GOLF_TRIP_MOCK_DRAFT } from "@/lib/platform/golfTripPreviewFixture";
 import { palmSprings2026 } from "@/lib/data/2026-palm-springs";
@@ -8,6 +8,22 @@ import { adaptTournamentToDraft, adaptTournamentToPreviewMatch } from "@/lib/pla
 
 const mock = { preview: GOLF_TRIP_MOCK_DRAFT, previewMatch: GOLF_MATCH_PREVIEW };
 const maroon = { preview: adaptTournamentToDraft(palmSprings2026).draft, previewMatch: adaptTournamentToPreviewMatch(palmSprings2026) ?? undefined };
+
+test("one page mapping resolves route, tab and subview reports without replaying navigation", () => {
+  const pages: SimulatorPage[] = [
+    { id: "home", path: "/dev/tournament", label: "Home", fixtures: true, navigation: { tab: "Home" } },
+    { id: "golf", path: "/dev/tournament", label: "Golf", fixtures: true, navigation: { tab: "Golf" } },
+    { id: "games", path: "/dev/tournament", label: "Games", fixtures: true, navigation: { tab: "Golf", golfSection: "Games" } },
+    { id: "settings", path: "/dev/tournament/settings", label: "Settings", fixtures: true },
+  ];
+  for (const page of pages) assert.equal(simulatorPageForLocation(pages, { path: page.path, navigation: page.navigation })?.id, page.id);
+  assert.equal(simulatorPageForLocation(pages, { path: "/dev/tournament", navigation: { tab: "Golf", golfSection: "Overview" } })?.id, "golf");
+  assert.equal(simulatorPageForLocation(pages, { path: "/dev/tournament" }, "games")?.id, "games");
+  assert.equal(simulatorPageForLocation(pages, { path: "/unmapped" }), undefined);
+  for (const value of [null, { path: "javascript:alert(1)" }, { path: "//other-host" }, { path: "/dev" }, { path: "/dev/tournament", navigation: { tab: "Admin" } }, { path: "/dev/tournament", navigation: { tab: "Golf", golfSection: "Invalid" } }]) assert.equal(parseSimulatorLocation(value), null);
+  assert(sameSimulatorNavigation({ tab: "Venue", command: 1 }, { tab: "Venue", command: 1 }));
+  assert(!sameSimulatorNavigation({ tab: "Venue", command: 1 }, { tab: "Venue", command: 2 }));
+});
 
 test("frame boundary rejects invalid dimensions of state and navigation", () => {
   const config = { source: "mock", state: DEFAULT_SIMULATOR_STATE, navigation: { tab: "Golf", golfSection: "Games", command: 1 } };

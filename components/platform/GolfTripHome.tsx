@@ -36,9 +36,10 @@ const subscribeNever = () => () => {};
  * until it settles, so the rest of the page never waits for it; without it there is no Weather card.
  * `flights` fills the Info tab's Flights card with the viewer's own flights; `href` (saved trips) makes it open the Flights page.
  * `navigation` optionally requests a shared tab/section; in-app navigation remains local between requests.
+ * `onNavigationChange` optionally observes the actual tab/section; the dev wrapper supplies it only when embedded.
  */
-export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, navigation }:
-  { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview; weather?: Promise<TripWeather>; flights?: TripFlights; navigation?: GolfTripNavigation }) {
+export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, navigation, onNavigationChange }:
+  { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview; weather?: Promise<TripWeather>; flights?: TripFlights; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void }) {
   const raw = useSyncExternalStore(subscribeNever, golfTripDraftSnapshot, () => "");
   const stored = useMemo(() => parseGolfTripDraft(raw), [raw]);
   const draft = preview ?? stored;
@@ -47,9 +48,10 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   if (selection.navigation !== navigation) setSelection({ navigation, tab: navigation?.tab ?? selection.tab });
   const tab = selection.navigation === navigation ? selection.tab : navigation?.tab ?? selection.tab;
   const setTab = (tab: Tab) => setSelection({ navigation, tab });
-  // Local mock scenario selector, available only when the dev preview supplies data.
-  const [previewCompetition, setPreviewCompetition] = useState<boolean | null>(null);
-  const competitive = (preview ? previewCompetition : null) ?? (draft.includesTournament === "yes");
+  useEffect(() => {
+    if (tab !== "Golf") onNavigationChange?.({ tab });
+  }, [tab, onNavigationChange]);
+  const competitive = draft.includesTournament === "yes";
 
 
   const dates = tripDates(draft.startDate, draft.endDate);
@@ -75,13 +77,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
     <div className={styles.body} role="tabpanel" aria-label={tab}>
       {tab === "Home" ? <InfoAccount destination={draft.destination} flights={flights} />
         : tab === "Golf" ? <>
-          {preview && previewMatch && <div className={styles.tabs} role="group" aria-label="Preview trip scenario">
-            {[true, false].map((value) => <button key={String(value)} type="button" aria-pressed={competitive === value}
-              className={`${styles.tab} ${competitive === value ? styles.tabActive : ""}`} onClick={() => setPreviewCompetition(value)}>
-              {value ? "Competitive preview" : "Non-competitive preview"}
-            </button>)}
-          </div>}
-          <GolfSlides key={String(competitive)} previewMatch={previewMatch} competitive={competitive} navigation={navigation} />
+          <GolfSlides key={String(competitive)} previewMatch={previewMatch} competitive={competitive} navigation={navigation} onNavigationChange={onNavigationChange} />
         </>
         : tab === "Venue" ? <HomeSections draft={draft} dates={dates} dateRange={dateRange} weather={weather} />
         : tab === "Info" ? <VenueEvents />
@@ -194,7 +190,7 @@ function WeatherRow({ place, weather }: { place?: string; weather: Promise<TripW
 }
 
 /** Golf sections share the existing responsive scroll-snap strip and tab styling. */
-function GolfSlides({ previewMatch, competitive, navigation }: { previewMatch?: GolfMatchPreview; competitive: boolean; navigation?: GolfTripNavigation }) {
+function GolfSlides({ previewMatch, competitive, navigation, onNavigationChange }: { previewMatch?: GolfMatchPreview; competitive: boolean; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const availableSlides = GOLF_SLIDES.filter((name) => name !== "Competition" || competitive);
   const requested = Math.max(0, availableSlides.findIndex(section => section === navigation?.golfSection));
@@ -203,6 +199,10 @@ function GolfSlides({ previewMatch, competitive, navigation }: { previewMatch?: 
   const active = selection.navigation === navigation ? selection.active : requested;
   const setActive = (active: number) => setSelection({ navigation, active });
   const gamesActive = availableSlides[active] === "Games";
+  const golfSection = availableSlides[active] ?? "Overview";
+  useEffect(() => {
+    onNavigationChange?.({ tab: "Golf", golfSection });
+  }, [golfSection, onNavigationChange]);
 
   useEffect(() => {
     const track = trackRef.current;

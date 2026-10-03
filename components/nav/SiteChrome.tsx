@@ -15,6 +15,7 @@ import { isSiteBottomNavHidden, SITE_BOTTOM_NAV_CONTENT_CLASS } from "@/lib/navi
 import { AreaNavigation } from "./AreaNavigation";
 import { RoundExitProvider } from "./RoundExit";
 import { WebsiteFrameBridge } from "@/components/portal/admin/WebsiteFrameBridge";
+import { SimulatorBridge } from "@/components/dev/SimulatorBridge";
 
 /**
  * Picks the site chrome for the current route. `/broadcast` and customer
@@ -31,7 +32,7 @@ import { WebsiteFrameBridge } from "@/components/portal/admin/WebsiteFrameBridge
  * sessions).
  */
 export function SiteChrome({ children, nextTournamentOverride }: { children: ReactNode; nextTournamentOverride: NextTournamentOverride }) {
-  return (
+  const content = (
     <AreaNavigation>
       <RoundExitProvider>
         <WebsiteFrameBridge />
@@ -39,6 +40,7 @@ export function SiteChrome({ children, nextTournamentOverride }: { children: Rea
       </RoundExitProvider>
     </AreaNavigation>
   );
+  return process.env.NODE_ENV === "development" ? <SimulatorBridge>{content}</SimulatorBridge> : content;
 }
 
 function SiteChromeBody({ children, nextTournamentOverride }: { children: ReactNode; nextTournamentOverride: NextTournamentOverride }) {

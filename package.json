@@ -27,6 +27,7 @@
     "test:browser:golf-trip": "node scripts/test-golf-trip-create-browser.mjs"
   },
   "dependencies": {
+    "@capacitor/core": "8.5.2",
     "@aws-sdk/client-s3": "^3.1124.0",
     "@aws-sdk/s3-request-presigner": "^3.1124.0",
     "@capacitor/haptics": "^8.0.2",
