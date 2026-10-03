@@ -14,6 +14,17 @@ export async function reviewSnapshot(frame: HTMLIFrameElement, strokes: Stroke[]
     windowWidth: width, windowHeight: height, scale: 2,
     useCORS: true, allowTaint: false, logging: false,
     ignoreElements: element => element.tagName.toLowerCase() === "nextjs-portal",
+    onclone: clone => {
+      // Smooth scrolling must not animate the clone away from the captured viewport.
+      const style = clone.createElement("style");
+      style.textContent = "* { scroll-behavior: auto !important; }";
+      clone.head.append(style);
+      // Excluding dev portals can shorten the cloned page. Keep enough scroll range
+      // so the renderer does not shift fixed content relative to its crop origin.
+      clone.documentElement.style.minHeight = `${Math.max(doc.documentElement.scrollHeight, height + scrollY)}px`;
+      clone.documentElement.style.minWidth = `${Math.max(doc.documentElement.scrollWidth, width + scrollX)}px`;
+      clone.defaultView?.scrollTo({ left: scrollX, top: scrollY, behavior: "instant" });
+    },
   });
   const annotations = document.createElement("canvas");
   annotations.width = width * 2; annotations.height = height * 2;

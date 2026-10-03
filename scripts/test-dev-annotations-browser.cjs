@@ -65,6 +65,11 @@ const fs = require("node:fs");
     await page.getByLabel("Viewport height").fill("900");
     await page.getByLabel("Display scale").selectOption("fit");
     await page.setViewportSize({ width: 1450, height: 1000 });
+    await page.waitForFunction(() => {
+      const a = document.querySelector('[aria-label="Phone annotations"]').getBoundingClientRect();
+      const b = document.querySelector('iframe[title="Mobile application preview"]').getBoundingClientRect();
+      return Math.abs(a.width - b.width) < .1 && Math.abs(a.x - b.x) < .1 && document.querySelector("iframe").contentWindow.innerWidth === 480;
+    });
     let a = await canvas.boundingBox(), b = await page.locator('iframe[title="Mobile application preview"]').boundingBox();
     assert(Math.abs(a.width - b.width) < .1 && Math.abs(a.x - b.x) < .1);
     await page.setViewportSize({ width: 1700, height: 1150 });
@@ -84,8 +89,9 @@ const fs = require("node:fs");
     await frame.evaluate(() => {
       const marker = document.createElement("div");
       marker.style.cssText = "position:fixed;left:12px;top:110px;width:30px;height:30px;background:rgb(1,200,99);z-index:2147483647";
-      document.body.append(marker); window.scrollTo(0, 100);
+      document.body.append(marker); window.scrollTo({ top: 100, behavior: "instant" });
     });
+    await page.locator('iframe[title="Mobile application preview"]').screenshot({ path: "out/dev-review-native.png" });
     const download = page.waitForEvent("download");
     await tool("Download Snapshot").click();
     await (await download).saveAs("out/dev-review-screen.png");
@@ -107,6 +113,23 @@ const fs = require("node:fs");
     await (await framed).saveAs("out/dev-review-frame.png");
     const framedPNG = fs.readFileSync("out/dev-review-frame.png");
     assert.equal(framedPNG.readUInt32BE(16), 836); assert.equal(framedPNG.readUInt32BE(20), 1780);
+    for (const width of [1366, 1440, 1700, 1920]) {
+      await page.setViewportSize({ width, height: 1150 });
+      await page.waitForTimeout(150);
+      const geometry = await page.evaluate(() => {
+        const header = document.querySelector("main > header").getBoundingClientRect();
+        const conditions = document.querySelector('[aria-label="Conditionals"]').getBoundingClientRect();
+        const review = document.querySelector('[aria-label="Design review"]').getBoundingClientRect();
+        const phone = document.querySelector("[data-haptics-phone]").getBoundingClientRect();
+        return { headerRight: header.right, conditionsRight: conditions.right, reviewLeft: review.left, reviewRight: review.right, phoneTop: phone.top, phoneBottom: phone.bottom, height: innerHeight, width: innerWidth };
+      });
+      assert(Math.abs(geometry.headerRight - geometry.conditionsRight) < 1, "header ends at third column");
+      assert(geometry.reviewLeft > 0, "annotation column remains right of phone preview");
+      assert(Math.abs(geometry.phoneTop - geometry.height * .05) < 1, "phone starts 5% down");
+      assert(geometry.phoneBottom <= geometry.height * .95 + 1, "phone stays above bottom 5%");
+      if (width >= 1700) assert(Math.abs(geometry.phoneBottom - geometry.height * .95) < 1, "Fit fills central 90% when width allows");
+    }
+    await page.setViewportSize({ width: 1700, height: 1150 });
     await page.screenshot({ path: "out/dev-review-workspace.png" });
     await page.goto("file:///" + process.cwd().replaceAll("\\", "/") + "/docs/app-workflow.html");
     await page.getByLabel("Recent workflow changes").getByText(/Design-review annotations/).waitFor();

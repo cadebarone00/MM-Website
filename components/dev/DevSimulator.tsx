@@ -43,7 +43,7 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
   const selectedGroup = selectedPage.group ?? "Other";
   const preset = SIMULATOR_DEVICES.find(item => item.id === device)!;
   // Fit may enlarge the visual frame. The iframe itself keeps its CSS viewport.
-  const scale = zoom === "fit" ? Math.max(0.01, Math.min(Math.max(1, available.width - 100) / (size.width + 16), available.height / (size.height + 16))) : Number(zoom);
+  const scale = zoom === "fit" ? Math.max(0.01, Math.min(Math.max(1, available.width - 184) / (size.width + 16), available.height / (size.height + 16))) : Number(zoom);
 
   const sendConfig = useCallback(() => {
     iframe.current?.contentWindow?.postMessage({ channel: SIMULATOR_CHANNEL, type: "config", config, routes: pages.map(page => page.path) }, window.location.origin);
@@ -54,12 +54,16 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
     if (!target) return;
     const measure = () => {
       const padding = getComputedStyle(target);
-      const captionHeight = caption.current?.offsetHeight ?? 0;
-      const captionMargin = caption.current ? parseFloat(getComputedStyle(caption.current).marginTop) || 0 : 0;
-      setAvailable({
-        width: target.clientWidth - parseFloat(padding.paddingLeft) - parseFloat(padding.paddingRight),
-        height: target.clientHeight - parseFloat(padding.paddingTop) - parseFloat(padding.paddingBottom) - captionHeight - captionMargin,
-      });
+      const captionStyle = caption.current ? getComputedStyle(caption.current) : null;
+      const captionInFlow = captionStyle?.position !== "absolute";
+      const captionHeight = captionInFlow ? caption.current?.offsetHeight ?? 0 : 0;
+      const captionMargin = captionInFlow && captionStyle ? parseFloat(captionStyle.marginTop) || 0 : 0;
+      const measured = {
+        width: target.clientWidth - (parseFloat(padding.paddingLeft) || 0) - (parseFloat(padding.paddingRight) || 0),
+        height: target.clientHeight - (parseFloat(padding.paddingTop) || 0) - (parseFloat(padding.paddingBottom) || 0) - captionHeight - captionMargin,
+      };
+      // A transient unresolved style/zero-size frame during HMR must not poison Fit.
+      if (Object.values(measured).every(value => Number.isFinite(value) && value > 0)) setAvailable(measured);
     };
     const observer = new ResizeObserver(measure);
     observer.observe(target);
@@ -146,10 +150,10 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
     }
   }
 
-  return <main className={styles.shell}>
+  return <main className={styles.shell} style={{ "--phone-aspect": (size.width + 16) / (size.height + 16), "--phone-display-width": zoom === "fit" ? "0px" : `${(size.width + 16) * Number(zoom)}px` } as CSSProperties}>
     <header className={styles.header}>
       <div className={styles.brand}><MonitorSmartphone size={22} /><div><h1>App simulator</h1><p>The Maroon · Development workspace</p></div></div>
-      <span className={styles.devBadge}><span /> LOCAL DEV</span>
+      <div className={styles.headerStatus}><span className={styles.headerDevice}>{preset.label}</span><span className={styles.devBadge}><span /> LOCAL DEV</span></div>
     </header>
     <div className={styles.workspace}>
       <aside className={styles.controls} aria-label="Development controls">
@@ -184,8 +188,6 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
         {!!selectedPage.conditions?.length && <button type="button" onClick={() => { setState(DEFAULT_SIMULATOR_STATE); setSource("maroon"); }}><RotateCcw size={13} /> Reset conditionals</button>}
       </aside>
       <div className={styles.previewColumn}>
-        <div className={styles.previewToolbar}><div><span className={styles.statusDot} />{preset.label}<span className={styles.dimensions}>{size.width} × {size.height}</span></div><button type="button" onClick={() => { try { iframe.current?.contentWindow?.scrollTo({ top: 0, behavior: "smooth" }); } catch { /* external route */ } }}>Reset scroll</button></div>
-        <DesignReview key={`${currentPath}:${pageId}`} screen={screen} frame={iframe} width={size.width} height={size.height} />
         <div className={styles.stage} ref={stage}>
           <HapticsVisualizer>
           <div className={styles.deviceSpace} style={{ width: (size.width + 16) * scale, height: (size.height + 16) * scale }}>
@@ -199,10 +201,11 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
             </div>
           </div>
           </HapticsVisualizer>
-          <div ref={caption} className={styles.caption}>{ready ? selectedPage.label : "Loading application…"}<span>{Math.round(scale * 100)}% display · {size.width} × {size.height} CSS px</span></div>
+          <div ref={caption} className={styles.caption}>{ready ? selectedPage.label : "Loading application…"}<span>{Math.round(scale * 100)}% display · {size.width} × {size.height} CSS px</span><button type="button" onClick={() => { try { iframe.current?.contentWindow?.scrollTo({ top: 0, behavior: "smooth" }); } catch { /* external route */ } }}>Reset scroll</button></div>
         </div>
         <footer className={styles.footer}>Shared application components · Controls and fixture overrides stay in development</footer>
       </div>
+      <DesignReview key={`${currentPath}:${pageId}`} screen={screen} frame={iframe} width={size.width} height={size.height} />
     </div>
   </main>;
 }

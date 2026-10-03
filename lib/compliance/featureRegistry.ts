@@ -79,9 +79,9 @@ const seeds: FeatureSeed[] = [
     attentionCategories: ["security", "open-source", "intellectual-property", "platform-rules", "legal-review"],
   },
   {
-    id: "development-app-simulator", name: "Development app viewport simulator",
-    scope: "Development-only /dev control center frames existing routes; local viewport/inset/page controls, real tournament adapter or generic/empty/busy fixtures and validated memory-only presentation state. Existing page permissions/session remain effective; no auth simulation, source mutation, database or scoring-engine changes. Findings, limitations and follow-ups: docs/dev-simulator-review.md.",
-    attentionCategories: ["privacy", "personal-data", "security", "retention", "intellectual-property", "third-party-golf-content", "organizer-responsibility", "platform-rules", "legal-review"],
+    id: "development-app-simulator", name: "Development app viewport simulator", scopeRevision: 2,
+    scope: "Development-only /dev control center frames existing routes; local viewport/inset/page controls, real tournament adapter or generic/empty/busy fixtures and validated memory-only presentation state. Right-hand canvas review tools retain bounded memory-only stroke history; user-requested local 2x PNG clipboard/download captures the same-origin visible screen and annotations with optional frame; no upload or capture service. Existing page permissions/session remain effective; no auth simulation, source mutation, database or scoring-engine changes. Findings, limitations and follow-ups: docs/dev-simulator-review.md.",
+    attentionCategories: ["privacy", "personal-data", "security", "retention", "ugc", "intellectual-property", "media-rights", "open-source", "third-party-golf-content", "organizer-responsibility", "platform-rules", "legal-review"],
   },
   {
     id: "golf-trip-games-preview", name: "Player-created side games preview", scopeRevision: 2,

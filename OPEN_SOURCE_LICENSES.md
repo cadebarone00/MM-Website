@@ -4,6 +4,8 @@ Repository/local-metadata snapshot: 2026-09-29. Documentation only; no packages 
 
 ## Scope and provenance
 
+**2026-10-03 development simulator supplement:** Added html2canvas-pro 2.5.0, dynamically imported by the `/dev` snapshot renderer. Installed metadata declares MIT and no runtime dependencies; `node_modules/html2canvas-pro/LICENSE` retains copyright (2024-present yorickshan and contributors) and permission text. Upstream: [html2canvas-pro](https://github.com/yorickshan/html2canvas-pro). Preserve the shipped license/copyright and inspect bundled upstream notices before broader distribution; professional/distribution review remains pending. The historical counts/hash below describe the September 29 inventory, not the updated lockfile. No production distribution was verified.
+
 Inspected package.json, package-lock.json (lockfileVersion 3), installed package.json metadata at each exact lock path, and available top-level license/notice filenames. Selected license text was read for MIT, Apache, ISC, LGPL-containing Sharp binaries, MPL, CC-BY, BlueOak and Python-license packages. This is not a line-by-line legal review of all notices or a generated final distribution NOTICE file.
 
 Lockfile SHA-256: `8a02398ea6d93cf17324d5e4ce5a11eeee66bbf3e962523e2958645ea65c46c4`.

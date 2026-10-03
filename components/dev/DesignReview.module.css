@@ -1,10 +1,12 @@
-.review{flex:none;background:#fff;border-bottom:1px solid var(--studio-line);padding:10px 16px 8px;color:#535a68}
-.heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:650;color:#85818b}
+.review{min-height:0;overflow-y:auto;background:#fff;border-inline:1px solid var(--studio-line);padding:20px 16px;color:#535a68;scrollbar-width:thin}
+.heading{display:flex;flex-direction:column;align-items:flex-start;gap:7px;margin-bottom:20px;font-size:12px;font-weight:650;color:#535a68}
 .mode{letter-spacing:0;text-transform:none;font-weight:500;color:#737a87}
 .mode[data-drawing=true]{color:#751830}
-.toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.toolbar{display:flex;flex-direction:column;align-items:stretch;gap:14px}
 .group{display:flex;align-items:center;gap:3px}
-.group+.group{border-left:1px solid #e4e6eb;padding-left:8px}
+.group+.group{border-top:1px solid #e4e6eb;padding-top:14px}
+.group:last-child{flex-wrap:wrap;gap:8px}
+.group:last-child select{flex-basis:100%;max-width:none;width:100%}
 .review button{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:30px;height:30px;border:1px solid transparent;border-radius:6px;background:transparent;color:#636b79;font:11px system-ui;cursor:pointer;padding:0 7px;transition:background .12s,border-color .12s}
 .review button:hover:enabled{background:#f2f3f6;color:#343841}
 .review button:active:enabled{background:#e9eaf0}
@@ -20,7 +22,7 @@
 .thickness output{width:27px;font-variant-numeric:tabular-nums;color:#737a87}
 .review select{height:30px;max-width:110px;border:1px solid #e4e6eb;border-radius:6px;background:#fafbfc;font:10px system-ui;padding:0 5px;color:#636b79}
 .review .download{border-color:#e4e6eb;background:#fafbfc}
-.status{min-height:15px;margin-top:6px;font-size:10px;color:#737a87}
+.status{min-height:15px;margin-top:20px;font-size:10px;line-height:1.7;color:#737a87}
 .canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:inherit;touch-action:none;cursor:crosshair;z-index:2}
 .canvas[data-tool=eraser]{cursor:cell}
 .canvas[data-tool=interact]{pointer-events:none;cursor:default}
