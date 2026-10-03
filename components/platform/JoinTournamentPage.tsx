@@ -8,6 +8,7 @@ import { JoinMethodSelector } from "./JoinMethodSelector";
 import { PlatformHeader } from "./PlatformHeader";
 import { SignInRequiredLink } from "./SignInRequiredLink";
 import styles from "./JoinTournament.module.css";
+import { JoinTournamentEntrance } from "@/components/motion/JoinTournamentEntrance";
 
 /**
  * Tourneys (/tournaments/join): create a tournament, open one from its link,
@@ -18,7 +19,7 @@ export async function JoinTournamentPage() {
 
   return <>
     <PlatformHeader title="Tourneys" />
-    <main className={`${styles.page} ${styles.tourneys}`}>
+    <JoinTournamentEntrance className={`${styles.page} ${styles.tourneys}`}>
       <div className={styles.photoPanel}>
       <h2 className={styles.descriptor}>Get started</h2>
       <div className={styles.actions}>
@@ -40,7 +41,7 @@ export async function JoinTournamentPage() {
         </div>
       </section>
       </div>
-    </main>
+    </JoinTournamentEntrance>
   </>;
 }
 

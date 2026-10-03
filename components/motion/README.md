@@ -17,7 +17,7 @@ All patterns use a short tween without bounce, loops or delays. Reduced motion d
 
 ## Pilot
 
-Only two elements on `/` opt in: the Discover category button (`buttonPress`) and the first Join Tournament article (`cardInteraction`). Hover the first card or press its Join Tournament link; hold the Discover button to see its press feedback. Existing links and category selection remain unchanged. The other four patterns are available but unapplied.
+Only two elements on `/` opt in: the Discover category button (`buttonPress`) and the first Join Tournament article (card hover plus 98% button press, 120 ms). Hover the first card or press its Join Tournament link; hold the Discover button to see its press feedback. The Join Tournament link also marks a one-shot in-memory entrance intent through `onNavigate`, without preventing or delaying navigation. When the destination mounts within 30 seconds, `JoinTournamentEntrance` consumes that intent and applies `pageEntrance` to its existing main element before paint. Direct visits, reloads, other links and modifier-click new tabs do not mark that intent. The destination header and page structure remain unchanged. This is a simple page transition, not a shared-element expansion. Reduced motion skips both press and entrance. Panel and success/error patterns remain unapplied.
 
 ## Scope review — 2026-10-02
 

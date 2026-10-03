@@ -1,5 +1,6 @@
 import type { ComponentProps } from "react";
 import type { GolfTripHome } from "@/components/platform/GolfTripHome";
+import type { GolfTripDraft } from "@/lib/platform/golfTripDraft";
 import { GOLF_MATCH_PREVIEW, GOLF_MATCH_PREVIEWS, GOLF_TRIP_MOCK_DRAFT, normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import { flightSummary } from "@/lib/platform/golfTripFlights";
 import type { SimulatorConfig } from "./simulator";
@@ -28,7 +29,7 @@ export function simulatorTripData(mock: SimulatorTripData, maroon: SimulatorTrip
     base = { preview: {}, previewMatch: { ...(mock.previewMatch ?? GOLF_MATCH_PREVIEW), course: "Course TBD", matches: [], leaderboard: [], roundCount: 0 }, flights: { summary: flightSummary([], "2027-04-01"), href: null } };
   }
   if (source === "busy") {
-    const preview = { ...GOLF_TRIP_MOCK_DRAFT, tripName: "Summer Golf Festival", destination: "Pinehurst, North Carolina", playerCount: "32", golfDays: "4" };
+    const preview: GolfTripDraft = { ...GOLF_TRIP_MOCK_DRAFT, tripName: "Summer Golf Festival", destination: "Pinehurst, North Carolina", playerCount: "32", golfDays: "4" };
     for (let day = 1; day <= 4; day++) {
       preview[`day${day}Date`] = `2027-04-${21 + day}`;
       preview[`day${day}Rounds`] = "2";

@@ -74,6 +74,11 @@ interface FeatureSeed {
 
 const seeds: FeatureSeed[] = [
   {
+    id: "development-app-simulator", name: "Development app viewport simulator",
+    scope: "Development-only /dev control center frames existing routes; local viewport/inset/page controls, real tournament adapter or generic/empty/busy fixtures and validated memory-only presentation state. Existing page permissions/session remain effective; no auth simulation, source mutation, database or scoring-engine changes. Findings, limitations and follow-ups: docs/dev-simulator-review.md.",
+    attentionCategories: ["privacy", "personal-data", "security", "retention", "intellectual-property", "third-party-golf-content", "organizer-responsibility", "platform-rules", "legal-review"],
+  },
+  {
     id: "golf-trip-games-preview", name: "Player-created side games preview", scopeRevision: 2,
     scope: "Development preview only: fictional players and rounds, scope/group compatibility, player selection and per-game setup in component memory. Isolated v1 engines and manual/deterministic gross or preview-net hole scoring, Wolf choices, Heads/Tails assignments and results in component memory. No persistence, invitations, money or official Competition changes. Findings and follow-ups: docs/golf-trip-games-review.md.",
     attentionCategories: ["privacy", "personal-data", "ugc", "security", "retention", "intellectual-property", "organizer-responsibility", "legal-review"],
