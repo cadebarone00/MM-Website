@@ -56,6 +56,10 @@ export function simulatorPages(): SimulatorPage[] {
       ...Object.entries(GOLF_MATCH_PREVIEWS).map(([key, sample]) => ({ id: "format-" + key, label: sample.format, state: { format: key } })),
       { id: "round-source", label: "Round from data source", state: { roundStatus: "source" } },
       { id: "scheduled", label: "Scheduled", state: { roundStatus: "scheduled" } });
+    // The Scoring sheet sits on every trip tab.
+    if (page.navigation?.tab) page.conditions.push(
+      { id: "opponent-card-match", label: "Opponent's card matches", state: { opponentCard: "match" } },
+      { id: "opponent-card-mismatch", label: "Opponent's card has a mismatch", state: { opponentCard: "mismatch" } });
     if (page.navigation?.tab === "Venue") page.conditions.push(
       { id: "weather-off", label: "Normal weather", state: { loading: "off" } },
       { id: "weather-loading", label: "Weather loading", state: { loading: "weather" } });

@@ -29,6 +29,7 @@ export const SIMULATOR_STATES = [
   { id: "playerCount", label: "Player count", kind: "number" },
   { id: "roundStatus", label: "Round / session status", kind: "select", options: [["source", "From data source"], ["scheduled", "Not started"]] },
   { id: "loading", label: "Loading state", kind: "select", options: [["off", "Normal"], ["weather", "Weather loading (Venue)"]] },
+  { id: "opponentCard", label: "Opponent's scorecard", kind: "select", options: [["match", "Matches mine"], ["mismatch", "Has a mismatch"]] },
   { id: "role", label: "User role", kind: "pending", note: "Uses the current session; role simulation adapter pending." },
   { id: "notifications", label: "Notifications state", kind: "pending", note: "No notification-state adapter yet." },
 ] as const;
@@ -38,8 +39,10 @@ export type SimulatorState = {
   playerCount: number | null;
   roundStatus: "source" | "scheduled";
   loading: "off" | "weather";
+  /** The preview has no second scorer, so this stands in for whether the opponent's own card agrees with mine. */
+  opponentCard: "match" | "mismatch";
 };
-export const DEFAULT_SIMULATOR_STATE: SimulatorState = { competition: "source", format: "source", playerCount: null, roundStatus: "source", loading: "off" };
+export const DEFAULT_SIMULATOR_STATE: SimulatorState = { competition: "source", format: "source", playerCount: null, roundStatus: "source", loading: "off", opponentCard: "match" };
 export type SimulatorConfig = { source: SimulatorSource; state: SimulatorState; navigation?: GolfTripNavigation };
 export const SIMULATOR_CHANNEL = "maroon-dev-simulator-v1";
 
@@ -80,6 +83,7 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (!record.state || typeof record.state !== "object") return null;
   const state = record.state as Record<string, unknown>;
   if (!["source", "yes", "no"].includes(String(state.competition)) || !["source", "scheduled"].includes(String(state.roundStatus)) || !["off", "weather"].includes(String(state.loading))) return null;
+  if (state.opponentCard !== undefined && !["match", "mismatch"].includes(String(state.opponentCard))) return null;
   if (typeof state.format !== "string" || state.format.length > 32) return null;
   if (state.playerCount !== null && (typeof state.playerCount !== "number" || !Number.isInteger(state.playerCount) || state.playerCount < 1 || state.playerCount > 64)) return null;
   const navigation = record.navigation as GolfTripNavigation | undefined;

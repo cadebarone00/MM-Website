@@ -74,3 +74,5 @@ span.typeChoice{cursor:default}
 .arrivalDeparture .typeChoice{width:128px}
 .playerListRow span[class*="columnPlayer"]{grid-column:2}
 .allowedEntry{cursor:default}.allowedEntry:hover{background:transparent}
+.alwaysOn{color:rgba(255,255,255,.6);font-size:12px;font-weight:600}
+.scorecardViewNote{margin:4px 0 0;max-width:320px;color:rgba(247,240,223,.75);font-size:14px;line-height:1.4}

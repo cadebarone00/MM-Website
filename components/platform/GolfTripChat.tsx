@@ -52,10 +52,13 @@ export function GolfTripChat({ open, onClose, members, tripName }: {
     <div className={styles.layout}>
       <header className={styles.header}>
         {active && <button type="button" className={styles.iconButton} aria-label="Back to chats" onClick={() => setSelected(null)}><ArrowLeft size={22} /></button>}
-        {active && <span className={`${styles.avatar} ${active.id === TRIP ? styles.groupAvatar : ""}`}>{active.id === TRIP ? <Users size={22} /> : initials(active.name)}</span>}
-        <div className={styles.heading}><h2>{active?.name ?? "Chats"}</h2><p>{active ? active.id === TRIP ? tripName : "Trip member" : tripName}</p></div>
+        <div className={styles.heading}><h2>{tripName}</h2></div>
         <button type="button" className={styles.iconButton} aria-label="Close chats" onClick={close}><X size={22} /></button>
       </header>
+      <div className={styles.chatHeading}>
+        {active && <span className={`${styles.avatar} ${active.id === TRIP ? styles.groupAvatar : ""}`}>{active.id === TRIP ? <Users size={22} /> : initials(active.name)}</span>}
+        <h3>{active?.name ?? "Chats"}</h3>
+      </div>
       {active ? <>
         <div className={styles.messages} role="log" aria-label={`${active.name} messages`} aria-live="polite">
           {active.messages.length === 0 && <div className={styles.welcome}><span className={styles.welcomeIcon}><MessageCircle size={28} /></span><h3>{active.id === TRIP ? "Everyone. One conversation." : `Say hello to ${active.name.split(" ")[0]}.`}</h3><p>{active.id === TRIP ? "Tee times, dinner plans, and everything in between." : "Start your conversation with a message below."}</p></div>}

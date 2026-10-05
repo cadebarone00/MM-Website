@@ -43,8 +43,10 @@ const subscribeNever = () => () => {};
  * `navigation` optionally requests a shared tab/section; in-app navigation remains local between requests.
  * `onNavigationChange` optionally observes the actual tab/section; the dev wrapper supplies it only when embedded.
  */
-export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, navigation, onNavigationChange }:
-  { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview; weather?: Promise<TripWeather>; flights?: TripFlights; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void }) {
+export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, navigation, onNavigationChange, opponentCardMatches }:
+  { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview; weather?: Promise<TripWeather>; flights?: TripFlights; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void;
+    /** Dev preview only: whether the opponent's own scorecard agrees with mine (there is no second scorer yet). Without it, Save & Submit never shows. */
+    opponentCardMatches?: boolean }) {
   const raw = useSyncExternalStore(subscribeNever, golfTripDraftSnapshot, () => "");
   const stored = useMemo(() => parseGolfTripDraft(raw), [raw]);
   const draft = preview ?? stored;
@@ -123,7 +125,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
         : tab === "Info" ? <VenueEvents />
         : <Card title={tab}><Empty>Coming soon</Empty></Card>}
     </div>
-    <GolfTripScoring par={previewMatch?.par} initialHoles={yourHoles} />
+    <GolfTripScoring par={previewMatch?.par} initialHoles={yourHoles} playerName={you ? getPlayerDisplayName(you) : draft.yourName || "You"} opponentCardMatches={opponentCardMatches} />
     <GolfTripChat open={chatOpen} onClose={() => setChatOpen(false)} tripName={draft.tripName || "Your Golf Trip"}
       members={[...new Set(previewMatch?.matches.flatMap(match => [match.left, match.right].flatMap(side => side ? normalizeCompetitor(side).golfers.map(golfer => getPlayerDisplayName(golfer.name)) : [])) ?? [])].filter(name => name !== getPlayerDisplayName(you ?? draft.yourName ?? ""))} />
   </main>;

@@ -12,12 +12,15 @@ import tripStyles from "./GolfTripHome.module.css";
 import leaderboardStyles from "./GolfTripMatch.module.css";
 import { GolfTripCompetition } from "./GolfTripCompetition";
 import { GolfTripDatePicker } from "./GolfTripDatePicker";
+import toggleStyles from "./GolfTripCompetition.module.css";
+import notificationStyles from "./GolfTripNotifications.module.css";
+import { SCORING_VIEWS, setScoringView, useScoringView } from "@/lib/platform/scoringViewPreference";
 import { useGolfTripCompetitionPreview } from "./GolfTripCompetitionPreviewProvider";
 
 import { useSimulator, useSimulatorNavigationReporter } from "@/components/dev/SimulatorBridge";
 
-const GENERAL_CARDS = Array.from({ length: 6 }, () => "Place holder");
-const ORGANIZER_CARDS = ["Players", "Trip Schedule", "Competition", "Games", "Allowed", "Place holder"];
+const GENERAL_CARDS = ["Scorecard View", ...Array.from({ length: 5 }, () => "Place holder")];
+const ORGANIZER_CARDS = ["Players", "Trip Schedule", "Competition", "Games", "Allowed", "Player Scoring"];
 const GAME_GROUPS = {
   Individual: [{ id: "skins", name: "Skins", description: "Play for the lowest net score on the hole or the round.", players: "1-4 players" }],
   Matches: SIDE_GAME_REGISTRY.map(game => ({ id: game.id, name: game.name, description: game.description, players: `${game.supportedGroupSizes.join(" / ")} players` })),
@@ -42,6 +45,8 @@ const ALLOWED_PRESET: AllowedRule[] = [
   { id: "golf-carts", section: "Equipment", name: "Golf carts", detail: "Cart path only when posted" },
   { id: "music", section: "Equipment", name: "Music", detail: "Low volume · Off on the greens" },
 ];
+// Player Scoring: what players fill in on the Scoring sheet for each hole. Preview only; resets on reload.
+const PLAYER_SCORING_FIELDS = ["Opponent's score", "Putts", "Fairway", "Greens in regulation"];
 const GAME_LOOKUP = [...GAME_GROUPS.Individual, ...GAME_GROUPS.Matches];
 
 /** Reference layout with local game scoring settings in the site's maroon palette. */
@@ -53,6 +58,10 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const [roundsOpen, setRoundsOpen] = useState(false);
   const [playersOpen, setPlayersOpen] = useState(false);
   const [allowedOpen, setAllowedOpen] = useState(false);
+  const [playerScoringOpen, setPlayerScoringOpen] = useState(false);
+  const [scorecardViewOpen, setScorecardViewOpen] = useState(false);
+  const scoringView = useScoringView();
+  const [scoringFieldsOff, setScoringFieldsOff] = useState<Set<string>>(new Set());
   const [allowedRules, setAllowedRules] = useState(ALLOWED_PRESET);
   const [confirmDeleteRuleId, setConfirmDeleteRuleId] = useState<string | null>(null);
   // Players: the expected count can't drop below the players who already joined; open spots show as "Player N".
@@ -137,7 +146,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     if (!request?.settingsView || request.command === appliedCommand.current) return;
     appliedCommand.current = request.command;
     const view = request.settingsView;
-    setSection(view === "player" || /^placeholder-[1-6]$/.test(view) ? "General" : "Organizer");
+    setSection(view === "player" || view === "scorecard-view" || /^placeholder-[1-6]$/.test(view) ? "General" : "Organizer");
     setPlayersOpen(view === "players");
     setRoundsOpen(view === "schedule");
     setCompetitionOpen(view === "competition" || view === "competition-rounds" || view.startsWith("round-"));
@@ -148,12 +157,14 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     setSelectedRoundId(view.startsWith("round-") ? view.slice(6) : null);
     setPlaceholder(view.startsWith("placeholder-") ? Number(view.slice(12)) : null);
     setAllowedOpen(view === "allowed");
+    setPlayerScoringOpen(view === "player-scoring");
+    setScorecardViewOpen(view === "scorecard-view");
   }, [simulator?.navigation]);
   useEffect(() => {
     if (!reportNavigation) return;
-    const settingsView = allowedOpen ? "allowed" : playersOpen ? "players" : roundsOpen ? "schedule" : competitionOpen ? selectedRoundId ? `round-${selectedRoundId}` : competitionSection === "Rounds" ? "competition-rounds" : "competition" : gamesOpen ? expandedGameId ? `game-${expandedGameId}` : "games" : placeholder ? `placeholder-${placeholder}` : section === "General" ? "player" : "organizer";
+    const settingsView = scorecardViewOpen ? "scorecard-view" : playerScoringOpen ? "player-scoring" : allowedOpen ? "allowed" : playersOpen ? "players" : roundsOpen ? "schedule" : competitionOpen ? selectedRoundId ? `round-${selectedRoundId}` : competitionSection === "Rounds" ? "competition-rounds" : "competition" : gamesOpen ? expandedGameId ? `game-${expandedGameId}` : "games" : placeholder ? `placeholder-${placeholder}` : section === "General" ? "player" : "organizer";
     reportNavigation({ tab: "Home", settingsView }, rounds.map(({ id, number }) => ({ id, number })));
-  }, [reportNavigation, allowedOpen, playersOpen, roundsOpen, competitionOpen, competitionSection, gamesOpen, expandedGameId, placeholder, section, selectedRoundId, rounds]);
+  }, [reportNavigation, scorecardViewOpen, playerScoringOpen, allowedOpen, playersOpen, roundsOpen, competitionOpen, competitionSection, gamesOpen, expandedGameId, placeholder, section, selectedRoundId, rounds]);
   const cards = section === "Organizer" ? ORGANIZER_CARDS : GENERAL_CARDS;
   // Back arrow and SAVE both step back one level; preview changes are already kept as you make them.
   const goBack = () => {
@@ -163,14 +174,16 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     else if (roundsOpen) setRoundsOpen(false);
     else if (playersOpen) setPlayersOpen(false);
     else if (allowedOpen) setAllowedOpen(false);
+    else if (playerScoringOpen) setPlayerScoringOpen(false);
+    else if (scorecardViewOpen) setScorecardViewOpen(false);
     else setGamesOpen(false);
   };
 
-  return <main className={`${styles.page} ${competitionOpen || gamesOpen || roundsOpen || playersOpen || allowedOpen ? styles.competitionPage : ""}`}>
+  return <main className={`${styles.page} ${competitionOpen || gamesOpen || roundsOpen || playersOpen || allowedOpen || playerScoringOpen || scorecardViewOpen ? styles.competitionPage : ""}`}>
     <div className={styles.content}>
-      {(competitionOpen || gamesOpen || roundsOpen || playersOpen || allowedOpen) ? <header className={styles.competitionHeader}>
+      {(competitionOpen || gamesOpen || roundsOpen || playersOpen || allowedOpen || playerScoringOpen || scorecardViewOpen) ? <header className={styles.competitionHeader}>
         <button type="button" className={styles.close} aria-label={selectedRound ? "Back to competition rounds" : selectedGame ? "Back to games" : "Back to organizer settings"} onClick={goBack}><ChevronLeft size={28} aria-hidden /></button>
-        <h1>{selectedRound ? "Round " + selectedRound.number + " Settings" : selectedGame ? selectedGame.name : gamesOpen ? "Games" : roundsOpen ? "Trip Schedule" : playersOpen ? "Players" : allowedOpen ? "Allowed" : "Competition"}</h1>
+        <h1>{selectedRound ? "Round " + selectedRound.number + " Settings" : selectedGame ? selectedGame.name : gamesOpen ? "Games" : roundsOpen ? "Trip Schedule" : playersOpen ? "Players" : allowedOpen ? "Allowed" : playerScoringOpen ? "Player Scoring" : scorecardViewOpen ? "Scorecard View" : "Competition"}</h1>
         <motion.button type="button" className={styles.save} onClick={goBack} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }} transition={{ type: "spring", stiffness: 420, damping: 24 }}>SAVE</motion.button>
       </header> : <header className={styles.header}>
       <Link href={backHref} className={styles.close} aria-label="Back to trip"><ChevronLeft size={26} strokeWidth={1.75} aria-hidden /></Link>
@@ -180,7 +193,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
       </div>
       </header>}
 
-      {!competitionOpen && !gamesOpen && !roundsOpen && !playersOpen && !allowedOpen && <div className={`${tripStyles.tabs} ${styles.tabs}`} aria-label="Settings sections preview">
+      {!competitionOpen && !gamesOpen && !roundsOpen && !playersOpen && !allowedOpen && !playerScoringOpen && !scorecardViewOpen && <div className={`${tripStyles.tabs} ${styles.tabs}`} aria-label="Settings sections preview">
         {["General", "Organizer"].map((name) => <button key={name} type="button" aria-pressed={section === name}
           className={`${tripStyles.tab} ${section === name ? tripStyles.tabActive : ""} ${styles.tab}`}
           onClick={() => { setSection(name); setPlaceholder(null); setCompetitionOpen(false); setGamesOpen(false); setRoundsOpen(false); setPlayersOpen(false); }}>{name}</button>)}
@@ -351,6 +364,34 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
       </div>}
 
       {placeholder && <section className={styles.card}><button type="button" onClick={() => setPlaceholder(null)}>Back to settings</button><h2>Place holder {placeholder <= 6 ? placeholder : placeholder - 6}</h2></section>}
+      {scorecardViewOpen && <div className={styles.competition}>
+        <div className={styles.typeGroup} role="radiogroup" aria-label="Scorecard view">
+          <h4 className={styles.typeHeading}>How scoring opens on your phone</h4>
+          <div className={styles.typeChoices}>
+            {SCORING_VIEWS.map(option => <button key={option.value} type="button" role="radio" aria-checked={scoringView === option.value} aria-pressed={scoringView === option.value}
+              className={styles.typeChoice} onClick={() => setScoringView(option.value)}>{option.label}</button>)}
+          </div>
+          <p className={styles.scorecardViewNote}>{scoringView === "slide" ? "Pull the Scoring bar up from the bottom of the trip page." : scoringView === "hold" ? "Press and hold anywhere on the trip page for 2 seconds to open scoring full screen." : "Tap the Scoring button above the bottom menu to open scoring full screen."}</p>
+        </div>
+      </div>}
+
+      {playerScoringOpen && <div className={styles.competition}>
+        <section className={notificationStyles.category} aria-label="What players enter">
+          <h2 className={notificationStyles.categoryTitle}>What players enter</h2>
+          <div className={notificationStyles.row}><span className={notificationStyles.label}>Their own score</span><span className={styles.alwaysOn}>Always on</span></div>
+          {PLAYER_SCORING_FIELDS.map(field => {
+            const on = !scoringFieldsOff.has(field);
+            return <div key={field} className={notificationStyles.row}>
+              <span className={notificationStyles.label}>{field}</span>
+              <button type="button" role="switch" aria-checked={on} aria-label={field} className={toggleStyles.toggle}
+                onClick={() => setScoringFieldsOff(current => { const next = new Set(current); if (on) next.add(field); else next.delete(field); return next; })}>
+                <span className={toggleStyles.track} data-on={on}><span className={toggleStyles.thumb} /></span><span>{on ? "On" : "Off"}</span>
+              </button>
+            </div>;
+          })}
+        </section>
+      </div>}
+
       {allowedOpen && <div className={styles.competition}>
         <div className={tripStyles.events}>
           {ALLOWED_SECTIONS.map(name => <section key={name} className={tripStyles.infoSection}>
@@ -379,7 +420,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
         </div>}
       </div>}
 
-      {!placeholder && !competitionOpen && !gamesOpen && !roundsOpen && !playersOpen && !allowedOpen && <div className={styles.grid}>
+      {!placeholder && !competitionOpen && !gamesOpen && !roundsOpen && !playersOpen && !allowedOpen && !playerScoringOpen && !scorecardViewOpen && <div className={styles.grid}>
         {cards.map((title, index) => {
           if (title === "Competition") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`} onClick={() => setCompetitionOpen(true)}>
             <h2>{title}</h2>
@@ -388,6 +429,12 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
             <h2>{title}</h2>
           </button>;
           if (title === "Trip Schedule") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`} onClick={() => setRoundsOpen(true)}>
+            <h2>{title}</h2>
+          </button>;
+          if (title === "Scorecard View") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`} onClick={() => setScorecardViewOpen(true)}>
+            <h2>{title}</h2>
+          </button>;
+          if (title === "Player Scoring") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`} onClick={() => setPlayerScoringOpen(true)}>
             <h2>{title}</h2>
           </button>;
           if (title === "Allowed") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`} onClick={() => setAllowedOpen(true)}>
