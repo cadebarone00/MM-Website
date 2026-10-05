@@ -141,8 +141,8 @@ export function adaptTournamentToPreviewMatch(tournament: Tournament): GolfMatch
   sides[1].winPct = Math.round((whitePts / total) * 100);
 
   const matches = (tournament.matches || []).map((m: RealMatch) => {
-    const left: GolfMatchCompetitor = { golfers: (m.maroonPlayers || []).map((p) => ({ name: p, hcp: 0, thru: "", score: "", teeTime: "", course: tournament.venue })), points: undefined, totalScore: undefined, thru: undefined, teeTime: undefined, course: tournament.venue } as any;
-    const right: GolfMatchCompetitor | undefined = m.whitePlayers && m.whitePlayers.length > 0 ? { golfers: (m.whitePlayers || []).map((p) => ({ name: p, hcp: 0, thru: "", score: "", teeTime: "", course: tournament.venue })), points: undefined, totalScore: undefined, thru: undefined, teeTime: undefined, course: tournament.venue } as any : undefined;
+    const left: GolfMatchCompetitor = { golfers: (m.maroonPlayers || []).map((p) => ({ name: getPlayerDisplayName(p), hcp: 0, thru: "", score: "", teeTime: "", course: tournament.venue })), points: undefined, totalScore: undefined, thru: undefined, teeTime: undefined, course: tournament.venue } as any;
+    const right: GolfMatchCompetitor | undefined = m.whitePlayers && m.whitePlayers.length > 0 ? { golfers: (m.whitePlayers || []).map((p) => ({ name: getPlayerDisplayName(p), hcp: 0, thru: "", score: "", teeTime: "", course: tournament.venue })), points: undefined, totalScore: undefined, thru: undefined, teeTime: undefined, course: tournament.venue } as any : undefined;
     const gross = m.leader === undefined ? null : (m.leader === "maroon" ? { leader: "left", up: Math.abs(m.margin ?? 0) } : m.leader === "white" ? { leader: "right", up: Math.abs(m.margin ?? 0) } : { leader: null, up: 0 });
     const net = gross;
     return { left, right, gross, net } as any;

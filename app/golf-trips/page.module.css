@@ -1,5 +1,5 @@
-/* Golf Trips, money-app dashboard look: a maroon band at the top, the Create a Golf Trip card overlapping its bottom
-   edge, Join a Trip under it, then "accounts"-style groups of white cards for Upcoming and Past trips on a light page.
+/* Golf Trips, money-app dashboard look: a maroon band at the top, the Join a Trip card overlapping its bottom
+   edge, Create a Golf Trip and The Maroon U under it, then "accounts"-style groups of white cards for Upcoming and Past trips on a light page.
    The negative bottom margin runs the page colour through the site's bottom-menu padding on phones. */
 
 .page {
@@ -10,7 +10,7 @@
   color: #380001;
 }
 
-/* Maroon instead of the reference's pink. The Create card overlaps its bottom by 110px. */
+/* Maroon instead of the reference's pink. The Join card overlaps its bottom by 110px. */
 .band {
   padding: calc(28px + env(safe-area-inset-top)) max(16px, calc((100% - 560px) / 2)) 138px;
   background: radial-gradient(120% 120% at 50% 0%, #6b161a 0%, #4a0508 45%, #380001 100%);
@@ -95,7 +95,7 @@
 }
 .rowArrow { flex: none; margin-left: auto; color: #38000188; }
 
-/* Join a Trip: its own card under Create (no sliding). A pasted Trip ID or trip link opens that trip (no joining yet). */
+/* Join a Trip: its own card above Create (no sliding). A pasted Trip ID or trip link opens that trip (no joining yet). */
 .join { padding: 18px 18px 20px; }
 .joinLabel { display: block; font: 700 18px/1.2 var(--font-barlow), sans-serif; letter-spacing: -0.01em; }
 .joinHint { margin: 4px 0 12px; color: #38000199; font-size: 14px; line-height: 1.5; }

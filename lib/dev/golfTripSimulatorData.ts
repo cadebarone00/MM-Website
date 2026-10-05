@@ -30,7 +30,7 @@ export function simulatorTripData(mock: SimulatorTripData, maroon: SimulatorTrip
     base = { preview: {}, previewMatch: { ...(mock.previewMatch ?? GOLF_MATCH_PREVIEW), course: "Course TBD", matches: [], leaderboard: [], round: 1, roundCount: 1, sides: [{ ...side }, { ...side }] }, flights: { summary: flightSummary([], "2027-04-01"), href: null } };
   }
   if (source === "busy") {
-    const preview: GolfTripDraft = { ...GOLF_TRIP_MOCK_DRAFT, tripName: "Summer Golf Festival", destination: "Pinehurst, North Carolina", playerCount: "32", golfDays: "4" };
+    const preview: GolfTripDraft = { ...GOLF_TRIP_MOCK_DRAFT, tripName: "Summer Golf Festival", destination: "Pinehurst, North Carolina", destinationLatitude: "35.1954", destinationLongitude: "-79.4695", playerCount: "32", golfDays: "4" };
     for (let day = 1; day <= 4; day++) {
       preview[`day${day}Date`] = `2027-04-${21 + day}`;
       preview[`day${day}Rounds`] = "2";
@@ -40,9 +40,6 @@ export function simulatorTripData(mock: SimulatorTripData, maroon: SimulatorTrip
     base = { ...mock, preview, previewMatch: populatedMatch(mock.previewMatch ?? GOLF_MATCH_PREVIEW, state.playerCount ?? 32) };
   }
   const preview = { ...base.preview };
-  // Venue map pins for the fictional/dev trips (saved trips carry their own coordinates).
-  if (!preview.destinationLatitude && source === "maroon") Object.assign(preview, { destinationLatitude: "33.8303", destinationLongitude: "-116.5453" }); // Palm Springs
-  if (!preview.destinationLatitude && source === "busy") Object.assign(preview, { destinationLatitude: "35.1954", destinationLongitude: "-79.4695" }); // Pinehurst
   if (state.competition !== "source") preview.includesTournament = state.competition;
   if (state.playerCount !== null) preview.playerCount = String(state.playerCount);
   let previewMatch = base.previewMatch;

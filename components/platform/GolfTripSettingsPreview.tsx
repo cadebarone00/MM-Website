@@ -23,7 +23,7 @@ const GENERAL_CARDS = ["Scorecard View", ...Array.from({ length: 5 }, () => "Pla
 const ORGANIZER_CARDS = ["Players", "Trip Schedule", "Competition", "Games", "Allowed", "Player Scoring"];
 const GAME_GROUPS = {
   Individual: [{ id: "skins", name: "Skins", description: "Play for the lowest net score on the hole or the round.", players: "1-4 players" }],
-  Matches: SIDE_GAME_REGISTRY.map(game => ({ id: game.id, name: game.name, description: game.description, players: `${game.supportedGroupSizes.join(" / ")} players` })),
+  Matches: SIDE_GAME_REGISTRY.filter(game => game.id !== "skins").map(game => ({ id: game.id, name: game.name, description: game.description, players: `${game.supportedGroupSizes.join(" / ")} players` })),
 } as const;
 const COMPETITION_TYPES = [
   { key: "individual", title: "Individual", options: ["Stroke Play", "Points Based"] },

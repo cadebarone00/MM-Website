@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type PointerEvent, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type PointerEvent, type RefObject, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { MousePointer2, PenLine, Highlighter, Eraser, Undo2, Redo2, Trash2, Eye, EyeOff, Copy, Download } from "lucide-react";
 import { annotationPoint, paintAnnotations, strokeHit, type Point, type Stroke } from "@/lib/dev/annotations";
@@ -11,7 +11,7 @@ type Tool = "interact" | "pen" | "highlighter" | "eraser";
 const tools = [{ id: "interact", label: "Interact", icon: MousePointer2, shortcut: "V" }, { id: "pen", label: "Pen", icon: PenLine, shortcut: "P" }, { id: "highlighter", label: "Highlighter", icon: Highlighter, shortcut: "H" }, { id: "eraser", label: "Eraser", icon: Eraser, shortcut: "E" }] as const;
 const colors = [{ name: "Black", value: "#171717" }, { name: "White", value: "#ffffff" }, { name: "Red", value: "#dc2626" }];
 
-export function DesignReview({ screen, frame, width, height }: { screen: HTMLDivElement | null; frame: RefObject<HTMLIFrameElement | null>; width: number; height: number }) {
+export function DesignReview({ screen, frame, width, height, children }: { screen: HTMLDivElement | null; frame: RefObject<HTMLIFrameElement | null>; width: number; height: number; children?: ReactNode }) {
   const [tool, setTool] = useState<Tool>("interact");
   const [color, setColor] = useState(colors[2].value);
   const [penWidth, setPenWidth] = useState(3);
@@ -158,6 +158,7 @@ export function DesignReview({ screen, frame, width, height }: { screen: HTMLDiv
       </div>
     </div>
     <div className={styles.status} role="status">{status || "V interact · P pen · H highlight · E erase · Esc interact · Ctrl/⌘ Z undo"}</div>
+    <div className={styles.extraControls}>{children}</div>
     {screen && createPortal(<canvas ref={canvas} className={styles.canvas} data-tool={tool} aria-label="Phone annotations" tabIndex={tool === "interact" ? -1 : 0} onPointerDown={start} onPointerMove={move} onPointerUp={event => finish(event)} onPointerCancel={event => finish(event, true)} onLostPointerCapture={event => finish(event, true)} />, screen)}
   </section>;
 }

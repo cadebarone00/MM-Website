@@ -34,7 +34,7 @@ export default async function GolfTripPreviewPage({ searchParams }: { searchPara
   return <TournamentDataPreview
     embedded={params?.simulator === "1"}
     mock={{ preview: GOLF_TRIP_MOCK_DRAFT, previewMatch: GOLF_MATCH_PREVIEWS[formatKey] ?? GOLF_MATCH_PREVIEW, flights }}
-    maroon={{ preview: draft, previewMatch, flights }}
+    maroon={{ preview: { ...draft, destinationLatitude: "33.8303", destinationLongitude: "-116.5453" }, previewMatch, flights }} // Palm Springs pin for the Venue map
     unmapped={unmapped}
   />;
 }

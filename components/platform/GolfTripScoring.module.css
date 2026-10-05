@@ -17,12 +17,16 @@
 .handleMeta{grid-column:1;display:flex;align-items:flex-start;justify-content:flex-start;gap:6px;align-self:start;margin-top:2px;font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.04em;color:rgba(47,12,14,.75);white-space:nowrap}
 .handleMeta span{display:inline-block}
 .scorecardButton{position:absolute;top:10px;right:16px;z-index:3;padding:8px 12px;border:1px solid rgba(47,12,14,.25);border-radius:999px;background:rgba(255,255,255,.22);color:var(--color-maroon-900,#2f0c0e);font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
-/* Both pills share one width so GPS matches Scorecard, with the word centered. */
-.scorecardButton{box-sizing:border-box;width:118.8px;height:40.6px;text-align:center}
-.scorecardButton[aria-pressed=true]:not(.gpsButton){background:var(--color-maroon-900,#2f0c0e);color:#fff}
+/* Matching pills reserve the right 30% behind a divider; labels center in the left 70%. */
+.scorecardButton{box-sizing:border-box;width:118.8px;height:40.6px;display:grid;grid-template-columns:70% 30%;align-items:center;padding:0;text-align:center}
+.pillLabel,.pillLock{display:flex;align-items:center;justify-content:center;align-self:stretch;min-width:0;padding:0;border:0;border-radius:999px;background:transparent;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer}
+.pillLock[aria-pressed=true]{background:rgba(196,155,84,.28)}
+.pillLabel:focus-visible,.pillLock:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:-3px}
+.scorecardButton::after{content:"";position:absolute;right:30%;top:0;bottom:0;width:1px;background:currentColor;opacity:.45;pointer-events:none}
+.scorecardButton[data-active=true]:not(.gpsButton){background:var(--color-maroon-900,#2f0c0e);color:#fff}
 .scorecardButtonLeft{right:auto;left:16px}
 .gpsButton{border-color:#c62828;color:#c62828}
-.gpsButton[aria-pressed=true]{background:#c62828;color:#fff}
+.gpsButton[data-active=true]{background:#c62828;color:#fff}
 .gps{display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:8px}
 .scorecardTable{width:100%;border-collapse:collapse;table-layout:fixed;font:700 13px/1 var(--font-spectral),Georgia,serif;text-align:center;color:var(--color-maroon-900,#2f0c0e)}
 .scorecardTable th,.scorecardTable td{padding:8px 2px;border-bottom:1px solid rgba(47,12,14,.12)}
@@ -72,13 +76,15 @@
   .scoreCardLabel{font-size:10px}
 }
 
-.puttsWrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:4px}
+/* The body spreads spare height evenly (space-between), so margins get absorbed; a relative nudge moves Putts, and the
+   FWY / PEN / GIR row with it, up without reflowing anything else. */
+.puttsWrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:4px;position:relative;top:-12px}
 .puttsLabel{font:700 13px/1 var(--font-spectral),Georgia,serif;letter-spacing:.08em;text-transform:uppercase;color:rgba(47,12,14,.68)}
 .putts{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
 .puttOption{display:grid;place-items:center;min-width:44px;height:40px;padding:0 12px;border:1px solid rgba(47,12,14,.25);border-radius:999px;background:rgba(255,255,255,.28);color:var(--color-maroon-900,#2f0c0e);font:700 15px/1 var(--font-spectral),Georgia,serif;cursor:pointer}
 .puttOption[aria-pressed="true"]{background:var(--color-maroon-900,#2f0c0e);border-color:var(--color-maroon-900,#2f0c0e);color:#f8f3ea}
 
-.compassRow{display:grid;grid-template-columns:minmax(0,1fr) 48px minmax(0,1fr);gap:8px;margin-top:2px}
+.compassRow{display:grid;grid-template-columns:minmax(0,140px) 36px minmax(0,140px);justify-content:center;gap:2px;margin-top:2px;position:relative;top:-12px}
 .compass{display:flex;flex-direction:column;align-items:center;gap:6px}
 .compassLabel{font:700 13px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(47,12,14,.68)}
 .compassDial{position:relative;width:min(140px,100%);height:140px}
@@ -152,5 +158,7 @@
 .keepEditingButton:focus-visible,.submitScoreButton:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
 
 .penaltyColumn{display:flex;flex-direction:column;align-items:center;gap:6px}
-.penaltyButtons{height:140px;display:flex;flex-direction:column;justify-content:center;gap:10px}
-.compassCenter.penaltyButton{position:static;transform:none;flex-shrink:0;font-size:11px}
+/* PEN: FWY on the left, GRN on the right, right under the label, each the size of a compass arrow button. The pair is wider
+   than its 48px column, so it spills evenly into the empty corners beside the compasses' top arrows instead of squeezing them. */
+.penaltyButtons{display:flex;flex-direction:row;gap:8px;flex-shrink:0}
+.compassCenter.penaltyButton{position:static;transform:none;flex-shrink:0;width:40px;height:40px;font-size:11px}

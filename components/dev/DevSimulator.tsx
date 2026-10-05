@@ -180,13 +180,6 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
       <aside className={styles.controls} aria-label="Development controls">
         <div className={styles.panelHeading}><SlidersHorizontal size={16} /> Groups</div>
         <div className={styles.cards}>{groups.map(group => <button className={styles.card} type="button" key={group} aria-pressed={selectedGroup === group} onClick={() => choosePage(pages.find(page => (page.group ?? "Other") === group)!.id)}>{group}</button>)}</div>
-        <section className={styles.controlSection} aria-labelledby="haptics-heading">
-          <h2 id="haptics-heading">Haptics test</h2>
-          <label>Intensity {hapticLevel}/10<input type="range" aria-label="Haptic test level" min={0} max={10} step={1} value={hapticLevel} onChange={event => setHapticLevel(Number(event.target.value))} /></label>
-          <label>Duration (milliseconds)<input type="number" aria-label="Haptic test duration" min={50} max={5000} step={50} value={hapticDuration} onChange={event => setHapticDuration(Math.max(50, Math.min(5000, Number(event.target.value) || 1000)))} /></label>
-          <button type="button" onClick={() => { void lightTap({ intensity: hapticLevel, durationMs: hapticDuration }); }}>Test haptic</button>
-          <p>Visual simulation only. Native feedback uses device presets. Reduced motion keeps the meter without shaking.</p>
-        </section>
         <section className={styles.controlSection} aria-labelledby="device-heading">
           <h2 id="device-heading">Device</h2>
           <label>Preset<select aria-label="Device preset" value={device} onChange={event => chooseDevice(event.target.value)}>{SIMULATOR_DEVICES.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
@@ -233,7 +226,15 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
         </div>
         <footer className={styles.footer}>Shared application components · Controls and fixture overrides stay in development</footer>
       </div>
-      <DesignReview key={`${currentPath}:${pageId}`} screen={screen} frame={iframe} width={size.width} height={size.height} />
+      <DesignReview key={`${currentPath}:${pageId}`} screen={screen} frame={iframe} width={size.width} height={size.height}>
+        <section className={styles.controlSection} aria-labelledby="haptics-heading">
+          <h2 id="haptics-heading">Haptics test</h2>
+          <label>Intensity {hapticLevel}/10<input type="range" aria-label="Haptic test level" min={0} max={10} step={1} value={hapticLevel} onChange={event => setHapticLevel(Number(event.target.value))} /></label>
+          <label>Duration (milliseconds)<input type="number" aria-label="Haptic test duration" min={50} max={5000} step={50} value={hapticDuration} onChange={event => setHapticDuration(Math.max(50, Math.min(5000, Number(event.target.value) || 1000)))} /></label>
+          <button type="button" onClick={() => { void lightTap({ intensity: hapticLevel, durationMs: hapticDuration }); }}>Test haptic</button>
+          <p>Visual simulation only. Native feedback uses device presets. Reduced motion keeps the meter without shaking.</p>
+        </section>
+      </DesignReview>
     </div>
   </main>;
 }

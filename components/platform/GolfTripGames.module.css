@@ -35,12 +35,27 @@
 .label input{width:100%;box-sizing:border-box;min-height:44px;padding:8px;border:1px solid #b99a63;border-radius:10px;background:#fff8ea;color:#38151f;font:inherit}
 .root button:disabled{opacity:.45;cursor:default}.root button:focus-visible,.root input:focus-visible,.root select:focus-visible{outline:3px solid #f5d583;outline-offset:3px}
 @media(min-width:650px){.library{grid-template-columns:1fr 1fr}}
-
-
-/* Game library popup header (uses the shared white GolfTripActionSheet card). */
-.libraryHeader{padding:4px 40px 4px 8px}
-.libraryBrand{display:flex;align-items:center;gap:10px}
-.libraryLogo{display:grid;place-items:center;flex-shrink:0;width:40px;height:40px;border-radius:10px;background:var(--color-maroon-900);color:#fbf8f1}
-.libraryBrand strong{display:block;font:700 16px/1.2 var(--font-barlow),sans-serif;color:#111}
-.libraryBrand small{display:block;font:500 12px/1.3 var(--font-barlow),sans-serif;color:#555}
-.libraryHeader p{margin:12px 0 0;font:500 14px/1.4 var(--font-barlow),sans-serif;color:#111}
+/* New game popup: the whole setup (library → settings → players → submit) happens in this sheet. */
+.emptyGames{color:rgba(255,255,255,.7)}
+.activeGameHead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+div.gameSheet{position:fixed;left:50%;width:min(92vw,420px);max-height:none;transform:translateX(-50%);box-sizing:border-box;overflow-y:auto;padding:20px 16px 16px}
+.sheetBody{display:grid;gap:14px;font:500 14px/1.4 var(--font-barlow),sans-serif;color:#111}
+.sheetBody p,.sheetBody h3,.sheetBody h4{margin:0}
+.sheetTitle{padding-right:36px;font:600 24px/1.15 var(--font-spectral),Georgia,serif}
+.sheetGroup{display:grid;gap:8px}
+.sheetGroupTitle{color:#805b24;font-size:12px !important;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.sheetGame{display:grid;gap:2px;width:100%;padding:12px 14px;border:1px solid rgba(17,17,17,.1);border-radius:14px;background:#fbf8f1;color:#111;text-align:left;font:inherit;cursor:pointer}
+.sheetGame strong{font-size:16px}.sheetGame span{color:#555;font-size:13px}
+.sheetGame:hover{border-color:#dcc495}
+.sheetBack{justify-self:start;padding:0;border:0;background:none;color:#591c2e;font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
+.sheetSetting{display:grid;gap:8px}
+.sheetSetting>span{font-weight:700}
+.sheetChoices{display:flex;flex-wrap:wrap;gap:8px}
+.sheetChoices button{flex:1 1 140px;min-height:44px;padding:8px 10px;border:1px solid rgba(17,17,17,.15);border-radius:12px;background:#fff;color:#111;font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
+.sheetChoices button[aria-pressed=true]{background:#591c2e;border-color:#591c2e;color:#fff}
+.sheetPlayer{display:flex;align-items:center;gap:12px;min-height:48px;padding:8px 12px;border-radius:12px;background:#fbf8f1;cursor:pointer}
+.sheetPlayer input{width:20px;height:20px;accent-color:#591c2e}
+.sheetPlayer small{display:block;color:#805b24;font-size:12px}
+.sheetHint{color:#805b24;font-size:13px}
+.sheetPrimary{min-height:48px;border:0;border-radius:12px;background:#591c2e;color:#fff;font:700 15px var(--font-barlow),sans-serif;cursor:pointer}
+.sheetPrimary:disabled{opacity:.45;cursor:default}

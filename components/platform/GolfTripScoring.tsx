@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
-import { Minus, Plus } from "lucide-react";
+import { LockKeyhole, LockKeyholeOpen, Minus, Plus } from "lucide-react";
 import { useScoringView } from "@/lib/platform/scoringViewPreference";
 import styles from "./GolfTripScoring.module.css";
 
@@ -25,7 +25,7 @@ const HOLD_SLOP = 10;
 export function GolfTripScoring({ par, initialHoles, playerName = "You", opponentCardMatches = false }: {
   par?: number[]; initialHoles?: (number | null)[]; playerName?: string; opponentCardMatches?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, updateOpen] = useState(false);
   const [holes, setHoles] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => initialHoles?.[i] ?? null));
   const [holesCompetitor, setHolesCompetitor] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => initialHoles?.[i] ?? null));
   const [current, setCurrent] = useState(() => { const next = Array.from({ length: HOLES }, (_, i) => initialHoles?.[i] ?? null).findIndex((h) => h === null); return next === -1 ? HOLES - 1 : next; });
@@ -39,6 +39,20 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   const [opponentName] = useState(() => randomOpponentName());
   // The GPS and Scorecard pills swap the pulled-up sheet to their own view (same sheet, no page change); tapping again returns to scoring.
   const [view, setView] = useState<"scoring" | "gps" | "scorecard">("scoring");
+  const [lockedView, setLockedView] = useState<"gps" | "scorecard" | null>(() => {
+    try { const saved = localStorage.getItem("golfTripScoringLockedView"); return saved === "gps" || saved === "scorecard" ? saved : null; } catch { return null; }
+  });
+  const setOpen = useCallback((next: boolean | ((value: boolean) => boolean)) => {
+    const value = typeof next === "function" ? next(open) : next;
+    if (value && !open) setView(lockedView ?? "scoring");
+    updateOpen(value);
+  }, [open, lockedView]);
+  function toggleLock(next: "gps" | "scorecard") {
+    const value = lockedView === next ? null : next;
+    setLockedView(value);
+    if (value) setView(value);
+    try { if (value) localStorage.setItem("golfTripScoringLockedView", value); else localStorage.removeItem("golfTripScoringLockedView"); } catch { /* Keep the preference in memory for this mount. */ }
+  }
   const toggleView = (next: "gps" | "scorecard") => setView((value) => value === next ? "scoring" : next);
   const sheetRef = useRef<HTMLElement>(null);
   const handleRef = useRef<HTMLButtonElement>(null);
@@ -78,7 +92,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
       document.removeEventListener("scroll", cancel, true);
       document.removeEventListener("contextmenu", menu);
     };
-  }, [scoringView, open]);
+  }, [scoringView, open, setOpen]);
 
   // Keep the current hole's chip in view in the sideways hole picker (on open and whenever the hole changes).
   useEffect(() => {
@@ -152,10 +166,15 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   const blocking = !fullScreen && (open || dragOffset !== null);
   return <>{blocking && <div className={styles.backdrop} aria-hidden />}<div className={`${styles.frame} ${fullScreen ? styles.frameFull : ""} ${blocking ? styles.frameAbove : ""}`}><section ref={sheetRef} className={`${styles.sheet} ${open ? styles.open : ""} ${dragOffset !== null ? styles.dragging : ""} ${fullScreen ? styles.sheetFull : ""}`} style={style} aria-label="Scoring">
     {/* GPS pill (left, red) mirrors the Scorecard pill (right); both show while the sheet is pulled up. */}
-    {open && <button type="button" className={`${styles.scorecardButton} ${styles.scorecardButtonLeft} ${styles.gpsButton}`} aria-pressed={view === "gps"}
-      aria-label={view === "gps" ? "Back to scoring" : "Open GPS"} onClick={() => toggleView("gps")}>GPS</button>}
-    {open && <button type="button" className={`${styles.scorecardButton} ${fullScreen ? styles.scorecardButtonCenter : ""}`} aria-pressed={view === "scorecard"}
-      aria-label={view === "scorecard" ? "Back to scoring" : "Open scorecard"} onClick={() => toggleView("scorecard")}>Scorecard</button>}
+    {open && (["gps", "scorecard"] as const).map((target) => {
+      const label = target === "gps" ? "GPS" : "Card";
+      const locked = lockedView === target;
+      const Icon = locked ? LockKeyhole : LockKeyholeOpen;
+      return <div key={target} className={[styles.scorecardButton, target === "gps" ? styles.scorecardButtonLeft + " " + styles.gpsButton : fullScreen ? styles.scorecardButtonCenter : ""].join(" ")} data-active={view === target}>
+        <button type="button" className={styles.pillLabel} aria-pressed={view === target} aria-label={view === target ? "Back to scoring" : "Open " + label} onClick={() => toggleView(target)}>{label}</button>
+        <button type="button" className={styles.pillLock} aria-pressed={locked} aria-label={locked ? "Unlock " + label + " default scoring view" : "Lock " + label + " as default scoring view"} onClick={() => toggleLock(target)}><Icon size={14} aria-hidden="true" /></button>
+      </div>;
+    })}
     {fullScreen && <button type="button" className={styles.exitButton} onClick={() => setOpen(false)}>EXIT</button>}
     {fullScreen ? <div className={styles.fullTopBar} aria-hidden /> : <button ref={handleRef} type="button" className={styles.handle} aria-expanded={open} aria-controls="trip-scoring-body"
       onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
@@ -175,7 +194,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
     <div id="trip-scoring-body" className={styles.body} inert={!open}>
       {view === "gps" ? <GpsSection hole={current + 1} holePar={holePar} />
         : view === "scorecard" ? <>
-          <ScorecardSection par={par} holes={submittedHoles} opponentHoles={submittedOpponentHoles} opponentName={opponentName} putts={putts} fairways={fairways} greens={greens} />
+          <ScorecardSection par={par} holes={holes} opponentHoles={holesCompetitor} opponentName={opponentName} putts={putts} fairways={fairways} greens={greens} />
           {/* Both cards complete and agreeing: final scores in green, then Save & Submit. */}
           {(readyToSubmit || submitted) && <>
             <div className={styles.finalScores}>
