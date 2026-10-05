@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import styles from "./HandicapHome.module.css";
 import Image from "next/image";
 import type { Team } from "@/lib/data";
 import type { ArchivedHandicapRound, HandicapSummary } from "@/lib/handicap/types";
@@ -12,14 +13,14 @@ import { formatRoundLabel } from "@/lib/data/roundLabel";
 import { RoundInProgressCard } from "./RoundInProgressCard";
 import { SubmitScoreButton } from "./SubmitScoreButton";
 
-export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, team, initialTab = "maroon-tournament", readOnly = false }: { playerName: string; playerSlug: string; readOnly?: boolean; initialTab?: "maroon-tournament" | "overall"; summary: HandicapSummary; archivedRounds: ArchivedHandicapRound[]; team: Team | null }) {
+export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, team, initialTab = "maroon-tournament", readOnly = false, appearance = "default" }: { appearance?: "default" | "leaderboard"; playerName: string; playerSlug: string; readOnly?: boolean; initialTab?: "maroon-tournament" | "overall"; summary: HandicapSummary; archivedRounds: ArchivedHandicapRound[]; team: Team | null }) {
   const [activeTab, setActiveTab] = useState<"maroon-tournament" | "overall">(initialTab);
   const [scoreView, setScoreView] = useState<ScoreView>("recent");
   const rounds = selectHandicapScores(handicapHistory(archivedRounds, summary.rounds, activeTab), scoreView);
   const contributing = contributingRoundIds(summary.rounds, archivedRounds, activeTab);
   const index = summary.index;
   return (
-    <div className="w-full pb-10">
+    <div className={`w-full pb-10 ${appearance === "leaderboard" ? styles.leaderboard : ""}`}>
       {!readOnly && <>
       <section className="relative isolate overflow-hidden bg-maroon-950">
         <div className="relative aspect-[16/7] min-h-52 sm:min-h-64">
@@ -73,7 +74,8 @@ export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, 
         {rounds.length === 0 ? (
           <p className="mt-3 font-sans text-sm text-ink-500">{activeTab === "maroon-tournament" ? "No archived Maroon Tournament rounds yet." : readOnly ? "No rounds yet." : "No rounds yet — submit your first score above."}</p>
         ) : (
-          <div className="mt-3 divide-y divide-stone-200 border-y border-stone-200 bg-white">
+          <div className={`mt-3 divide-y divide-stone-200 border-y border-stone-200 bg-white ${appearance === "leaderboard" ? styles.rows : ""}`}>
+            {appearance === "leaderboard" && <div className={styles.columns} aria-hidden="true"><span>Score</span><span>Diff</span><span>Round / Course</span><span>Rating / Slope</span></div>}
             {rounds.map((entry) => {
               const differential = entry.source === "archive" ? archivedDifferential(entry.round) : calculateDifferential(entry.round.totalScore, entry.round.rating, entry.round.slope);
               return (

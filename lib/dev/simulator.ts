@@ -28,7 +28,7 @@ export const SIMULATOR_STATES = [
   { id: "competition", label: "Trip / tournament status", kind: "select", options: [["source", "From data source"], ["yes", "Competitive trip"], ["no", "Social golf trip"]] },
   { id: "format", label: "Golf format", kind: "format" },
   { id: "playerCount", label: "Player count", kind: "number" },
-  { id: "roundStatus", label: "Round / session status", kind: "select", options: [["source", "From data source"], ["scheduled", "Not started"]] },
+  { id: "roundStatus", label: "Round state", kind: "select", options: [["source", "From data source"], ["scheduled", "Pre-tournament / before round 1"], ["live", "Live round"], ["between", "Between rounds (round 3 done, round 4 next)"], ["complete", "Trip complete"]] },
   { id: "loading", label: "Loading state", kind: "select", options: [["off", "Normal"], ["weather", "Weather loading (Venue)"]] },
   { id: "opponentCard", label: "Opponent's scorecard", kind: "select", options: [["match", "Matches mine"], ["mismatch", "Has a mismatch"]] },
   { id: "role", label: "User role", kind: "pending", note: "Uses the current session; role simulation adapter pending." },
@@ -38,7 +38,9 @@ export type SimulatorState = {
   competition: "source" | "yes" | "no";
   format: string;
   playerCount: number | null;
-  roundStatus: "source" | "scheduled";
+  /** scheduled = pre-tournament (before round 1); live = a round in progress; between = round 3 done, waiting for
+   *  round 4; complete = every round played. */
+  roundStatus: "source" | "scheduled" | "live" | "between" | "complete";
   loading: "off" | "weather";
   /** The preview has no second scorer, so this stands in for whether the opponent's own card agrees with mine. */
   opponentCard: "match" | "mismatch";
@@ -113,7 +115,7 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (!SIMULATOR_SOURCES.some(source => source.id === record.source)) return null;
   if (!record.state || typeof record.state !== "object") return null;
   const state = record.state as Record<string, unknown>;
-  if (!["source", "yes", "no"].includes(String(state.competition)) || !["source", "scheduled"].includes(String(state.roundStatus)) || !["off", "weather"].includes(String(state.loading))) return null;
+  if (!["source", "yes", "no"].includes(String(state.competition)) || !["source", "scheduled", "live", "between", "complete"].includes(String(state.roundStatus)) || !["off", "weather"].includes(String(state.loading))) return null;
   if (state.opponentCard !== undefined && !["match", "mismatch"].includes(String(state.opponentCard))) return null;
   if (typeof state.format !== "string" || state.format.length > 32) return null;
   if (state.playerCount !== null && (typeof state.playerCount !== "number" || !Number.isInteger(state.playerCount) || state.playerCount < 1 || state.playerCount > 64)) return null;

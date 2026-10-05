@@ -5,7 +5,8 @@
  *
  * Rungs, lowest to highest (each one includes everything below it):
  * - scorecard: course info and scorecard only (pars, yardages, tees) — no map positions
- * - gps: tee and green front / center / back points, enough for GPS yardages
+ * - gps: tee location and green position (front / center / back points, or the green's outline they can be measured
+ *   from), enough for GPS yardages
  * - mapped: real shapes for most of the course (greens, fairways, hazards)
  * - verified: the mapped shapes have been reviewed and approved
  * - premium: professional-grade geometry plus elevation and / or green slope, from any provider that supplies it

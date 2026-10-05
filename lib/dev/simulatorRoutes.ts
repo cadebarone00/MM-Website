@@ -54,8 +54,14 @@ export function simulatorPages(): SimulatorPage[] {
     if (page.navigation?.tab === "Golf" && page.navigation.golfSection !== "Games") page.conditions.push(
       { id: "format-source", label: "Format from data source", state: { format: "source" } },
       ...Object.entries(GOLF_MATCH_PREVIEWS).map(([key, sample]) => ({ id: "format-" + key, label: sample.format, state: { format: key } })),
-      { id: "round-source", label: "Round from data source", state: { roundStatus: "source" } },
-      { id: "scheduled", label: "Scheduled", state: { roundStatus: "scheduled" } });
+    );
+    // Round state, on every Golf Trip Active trip page.
+    if (page.navigation?.tab) page.conditions.push(
+      { id: "round-source", label: "Round state from data source", state: { roundStatus: "source" } },
+      { id: "scheduled", label: "Pre-tournament / before round 1", state: { roundStatus: "scheduled" } },
+      { id: "round-live", label: "Live round", state: { roundStatus: "live" } },
+      { id: "round-between", label: "Between rounds (round 3 done, round 4 next)", state: { roundStatus: "between" } },
+      { id: "round-complete", label: "Trip complete (all rounds done)", state: { roundStatus: "complete" } });
     // The Scoring sheet sits on every trip tab.
     if (page.navigation?.tab) page.conditions.push(
       { id: "opponent-card-match", label: "Opponent's card matches", state: { opponentCard: "match" } },

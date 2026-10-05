@@ -158,5 +158,5 @@
 @media(max-width:359px){.pairing{column-gap:6px}.pairSide{gap:6px;padding-inline:8px}.pairing .golferName{font-size:14px}.standing{font-size:13px}}
 @media(max-width:359px){.stats{margin:0 10px}.roundStats{gap:2px}.roundStats.left{padding-right:5px}.roundStats.right{padding-left:5px}.roundStats.left::after{right:5px}.roundStats.right::after{left:5px}.stats{--label:7.5px}.roundStat dt{letter-spacing:0}.roundStat dd{font-size:13px}}
 .number[data-par="under"]{color:#ef4444}
-.number[data-par="even"]{color:#22c55e}
+.number[data-par="even"]{color:var(--color-gold-300,#dcc495)} /* E in our gold */
 .number[data-par="over"]{color:#fff}

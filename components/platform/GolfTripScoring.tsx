@@ -207,7 +207,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
       {/* GPS prototype (satellite map, live yardages, mock hole) in development; real trips keep the placeholder until course data exists. */}
       {view === "gps" ? showGpsMap ? <GolfGpsScreen holeNumber={current + 1} className={`${styles.gpsMap} ${fullScreen ? styles.gpsMapFull : styles.gpsMapFill}`} /> : <GpsSection hole={current + 1} holePar={holePar} />
         : view === "scorecard" ? <>
-          <ScorecardSection par={par} holes={holes} opponentHoles={holesCompetitor} opponentName={opponentName} putts={putts} fairways={fairways} greens={greens} />
+          <ScorecardSection par={par} holes={holes} opponentHoles={holesCompetitor} playerName={playerName} opponentName={opponentName} putts={putts} fairways={fairways} greens={greens} />
           {/* Both cards complete and agreeing: final scores in green, then Save & Submit. */}
           {(readyToSubmit || submitted) && <>
             <div className={styles.finalScores}>
@@ -311,31 +311,39 @@ function GpsSection({ hole, holePar }: { hole: number; holePar: number | undefin
  * the hole (number, yardage, par), my round (score, fairway, green, putts), then the opponent's score; lines split the three groups.
  * Fairway / green show ✓ for a hit or an arrow for the miss (blank fairway on par 3s); totals count hits. Yardage isn't known yet ("—").
  */
-function ScorecardSection({ par, holes, opponentHoles, opponentName, putts, fairways, greens }: {
-  par?: number[]; holes: (number | null)[]; opponentHoles: (number | null)[]; opponentName: string;
+/** A name's last word, at most 8 letters, for a scorecard column heading. */
+const shortName = (name: string) => (name.trim().split(/\s+/).at(-1) ?? name).slice(0, 8);
+
+/**
+ * Three sections, each lightly tinted maroon with a narrow clear gap between them: the hole (Hole · Yds · Par, against the
+ * left edge), your stats (FWY · GRN · PUT), then the scores (your last name · the opponent's last name, up to 8 letters).
+ */
+function ScorecardSection({ par, holes, opponentHoles, playerName, opponentName, putts, fairways, greens }: {
+  par?: number[]; holes: (number | null)[]; opponentHoles: (number | null)[]; playerName: string; opponentName: string;
   putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[];
 }) {
   const range = (from: number, to: number) => Array.from({ length: to - from }, (_, i) => from + i);
   const mark = (value: Direction | null) => value ? DIRECTION_MARK[value] : "—";
   const hits = (values: (Direction | null)[], index: number[]) => index.some((i) => values[i] !== null) ? index.filter((i) => values[i] === "center").length : "—";
+  const gap = <td className={styles.sectionGap} aria-hidden />;
   const holeRow = (i: number) => <tr key={i}>
-    <th scope="row">{i + 1}</th><td>—</td><td className={styles.groupEnd}>{par?.[i] ?? "—"}</td>
-    <td className={styles.myScore}>{holes[i] ?? "—"}</td><td>{par?.[i] === 3 ? "" : mark(fairways[i])}</td><td>{mark(greens[i])}</td><td className={styles.groupEnd}>{putts[i] ?? "—"}</td>
-    <td>{opponentHoles[i] ?? "—"}</td>
+    <th scope="row" className={styles.section}>{i + 1}</th><td className={styles.section}>—</td><td className={styles.section}>{par?.[i] ?? "—"}</td>{gap}
+    <td className={styles.section}>{par?.[i] === 3 ? "" : mark(fairways[i])}</td><td className={styles.section}>{mark(greens[i])}</td><td className={styles.section}>{putts[i] ?? "—"}</td>{gap}
+    <td className={`${styles.section} ${styles.myScore}`}>{holes[i] ?? "—"}</td><td className={styles.section}>{opponentHoles[i] ?? "—"}</td>
   </tr>;
   const totalRow = (label: string, index: number[]) => <tr key={label} className={styles.totalRow}>
-    <th scope="row">{label}</th><td>—</td><td className={styles.groupEnd}>{sumOf(index.map((i) => par?.[i]))}</td>
-    <td className={styles.myScore}>{sumOf(index.map((i) => holes[i]))}</td><td>{hits(fairways, index)}</td><td>{hits(greens, index)}</td><td className={styles.groupEnd}>{sumOf(index.map((i) => putts[i]))}</td>
-    <td>{sumOf(index.map((i) => opponentHoles[i]))}</td>
+    <th scope="row" className={styles.section}>{label}</th><td className={styles.section}>—</td><td className={styles.section}>{sumOf(index.map((i) => par?.[i]))}</td>{gap}
+    <td className={styles.section}>{hits(fairways, index)}</td><td className={styles.section}>{hits(greens, index)}</td><td className={styles.section}>{sumOf(index.map((i) => putts[i]))}</td>{gap}
+    <td className={`${styles.section} ${styles.myScore}`}>{sumOf(index.map((i) => holes[i]))}</td><td className={styles.section}>{sumOf(index.map((i) => opponentHoles[i]))}</td>
   </tr>;
   return <section className={styles.scorecardView} aria-label="Scorecard">
     <table className={styles.scorecardTable}>
-      {/* The opponent column gets extra room so their name fits. */}
-      <colgroup>{["12%", "11%", "10%", "11%", "10%", "10%", "10%", "26%"].map((width, i) => <col key={i} style={{ width }} />)}</colgroup>
+      <colgroup>{["10%", "10%", "9%", "3%", "10%", "10%", "9%", "3%", "18%", "18%"].map((width, i) => <col key={i} style={{ width }} />)}</colgroup>
       <thead><tr>
-        <th scope="col">Hole</th><th scope="col">Yds</th><th scope="col" className={styles.groupEnd}>Par</th>
-        <th scope="col">Me</th><th scope="col">FWY</th><th scope="col">GRN</th><th scope="col" className={styles.groupEnd}>PUT</th>
-        <th scope="col" className={styles.opponentHead}>{opponentName}</th>
+        <th scope="col" className={styles.section}>Hole</th><th scope="col" className={styles.section}>Yds</th><th scope="col" className={styles.section}>Par</th><th className={styles.sectionGap} aria-hidden />
+        <th scope="col" className={styles.section}>FWY</th><th scope="col" className={styles.section}>GRN</th><th scope="col" className={styles.section}>PUT</th><th className={styles.sectionGap} aria-hidden />
+        <th scope="col" className={`${styles.section} ${styles.nameHead}`} title={playerName}>{shortName(playerName)}</th>
+        <th scope="col" className={`${styles.section} ${styles.nameHead}`} title={opponentName}>{shortName(opponentName)}</th>
       </tr></thead>
       <tbody>
         {range(0, 9).map(holeRow)}
@@ -345,6 +353,11 @@ function ScorecardSection({ par, holes, opponentHoles, opponentName, putts, fair
         {totalRow("Total", range(0, 18))}
       </tbody>
     </table>
+    {/* Under Total: each player's last name and total score, centered in their half; a long name shrinks to fit. */}
+    <dl className={styles.scorecardTotals}>
+      <div><dt title={playerName} style={{ "--chars": shortName(playerName).length } as CSSProperties}>{shortName(playerName)}</dt><dd>{sumOf(holes)}</dd></div>
+      <div><dt title={opponentName} style={{ "--chars": shortName(opponentName).length } as CSSProperties}>{shortName(opponentName)}</dt><dd>{sumOf(opponentHoles)}</dd></div>
+    </dl>
   </section>;
 }
 

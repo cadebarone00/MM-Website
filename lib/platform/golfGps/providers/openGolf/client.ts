@@ -3,7 +3,12 @@ import type { OpenGolfCourseDetail, OpenGolfHole, OpenGolfSearchCourse, OpenGolf
 
 /**
  * OpenGolfAPI (api.opengolfapi.org): the only file that knows its URLs and checks its replies. Server-only.
- * Free, no key: anonymous use is rate-limited per IP (500 requests / day when checked on 2026-10-05).
+ *
+ * Rate limits (OpenGolf's published limits, checked 2026-10-05):
+ * - anonymous (what we use — no key): 1,000 requests / day per IP
+ * - free API key: 10,000 requests / day (sent as a Bearer token; not set up yet)
+ * Going over returns HTTP 429 (→ GolfProviderError "rate_limited"). The live X-RateLimit-Limit header showed 500 for
+ * anonymous use on 2026-10-05, so the real ceiling may be lower than published; that header is the source of truth.
  *
  * Cache: requests go through Next.js's server fetch cache keyed by URL, so repeat searches and course opens don't spend
  * the daily limit. Only status-200 replies are stored. Reply bodies are never logged.
@@ -16,7 +21,19 @@ const TIMEOUT_MS = 8000;
 export const SEARCH_CACHE_SECONDS = 60 * 60;
 export const DETAIL_CACHE_SECONDS = 24 * 60 * 60;
 const MAX_LIMIT = 50;
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Every OpenGolf path we call, in one place.
+ *
+ * Course detail: the live API (and the `_upgrade` hint in its own replies) serves full detail — course info, tees and
+ * holes in one reply — at /api/v1/courses/{id}. Some OpenGolf GitHub / homepage examples still show /v1/courses/{id},
+ * which returns less (scorecard pars only, no tees or yardages). We use /api/v1; if OpenGolf moves it, change it here.
+ */
+export const OPEN_GOLF_PATHS = {
+  search: "/v1/courses/search",
+  courseDetail: (id: string) => `/api/v1/courses/${encodeURIComponent(id)}`,
+};
+const UUID =/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type Fetch = typeof fetch;
 
@@ -60,13 +77,13 @@ export function createOpenGolfClient({ fetchImpl = fetch, baseUrl = OPEN_GOLF_BA
       if (state !== undefined && !/^[A-Za-z]{2}$/.test(state)) throw fail("bad_request", "State must be a two-letter code");
       const params = new URLSearchParams({ q, limit: String(Math.min(MAX_LIMIT, Math.max(1, Math.floor(limit)))) });
       if (state) params.set("state", state.toUpperCase());
-      const reply = parseSearchReply(await get(`/v1/courses/search?${params}`, SEARCH_CACHE_SECONDS));
+      const reply = parseSearchReply(await get(`${OPEN_GOLF_PATHS.search}?${params}`,SEARCH_CACHE_SECONDS));
       if (!reply) throw fail("malformed", "OpenGolf's search reply had no course list");
       return reply;
     },
     async courseDetail(id) {
       if (!UUID.test(id)) throw fail("bad_request", "Not an OpenGolf course id");
-      const json = await get(`/api/v1/courses/${encodeURIComponent(id)}`, DETAIL_CACHE_SECONDS, true);
+      const json = await get(OPEN_GOLF_PATHS.courseDetail(id),DETAIL_CACHE_SECONDS, true);
       if (json === null) return null;
       const detail = parseCourseDetail(json);
       if (!detail) throw fail("malformed", "OpenGolf's course reply had no course id");

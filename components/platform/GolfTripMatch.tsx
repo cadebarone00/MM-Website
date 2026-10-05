@@ -1,9 +1,9 @@
 import { useState, type ReactNode } from "react";
 import { resolveGolfFormat } from "@/lib/platform/formats";
+import { rankLeaderboard } from "@/lib/platform/golfLeaderboardOrder";
 import {
   GOLF_PREVIEW_COURSE_WEATHER,
   normalizeCompetitor,
-  type GolfLeaderboardEntry,
   type GolfMatchCompetitor,
   type GolfMatchGolfer,
   type GolfMatchPairing,
@@ -76,7 +76,8 @@ export function GolfTripLeaderboard({ match }: { match: GolfMatchPreview }) {
   const formatDef = resolveGolfFormat(match.formatDef?.key ?? match.format);
   const isStableford = formatDef.scoringMethod === "stableford";
   const showNet = match.handicap && net;
-  const rows = showNet ? netRanked(match.leaderboard, isStableford) : match.leaderboard;
+  // Always best → worst (alphabetical by last name before anyone has a score), for Gross and Net alike.
+  const rows = rankLeaderboard(match.leaderboard, { net: showNet, stableford: isStableford });
 
   function toggleCard(name: string) {
     setOpenCards((current) => {
@@ -132,26 +133,6 @@ function parColor(score: string): string | undefined {
   if (score.startsWith("-")) return "under";
   if (score.startsWith("+")) return "over";
   return undefined;
-}
-
-const scoreValue = (score: string) => {
-  const clean = score.replace(/\s*PTS/i, "");
-  return clean === "E" ? 0 : Number(clean) || 0;
-};
-
-/** Sorts by net score with "T" for ties (lowest first for stroke play, highest first for Stableford). */
-function netRanked(rows: GolfLeaderboardEntry[], isStableford = false): GolfLeaderboardEntry[] {
-  const sorted = [...rows].sort((a, b) => {
-    const valA = scoreValue(a.netTotal);
-    const valB = scoreValue(b.netTotal);
-    return isStableford ? valB - valA : valA - valB;
-  });
-  return sorted.map((row) => {
-    const value = scoreValue(row.netTotal);
-    const place = sorted.findIndex((r) => scoreValue(r.netTotal) === value) + 1;
-    const tied = sorted.filter((r) => scoreValue(r.netTotal) === value).length > 1;
-    return { ...row, position: `${tied ? "T" : ""}${place}` };
-  });
 }
 
 /**

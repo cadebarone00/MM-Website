@@ -40,7 +40,11 @@
 .scorecardTable thead th{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:rgba(47,12,14,.62);border-bottom:2px solid rgba(47,12,14,.3)}
 .scorecardTable tbody th{color:rgba(47,12,14,.75)}
 .scorecardTable .myScore{font-size:15px}
-.scorecardTable .opponentHead{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scorecardTable .nameHead{overflow:hidden;white-space:nowrap;text-transform:none;font-size:11px;letter-spacing:.02em}
+/* Three tinted sections (hole / stats / scores) with a clear gap between, just enough to see where each changes. */
+.scorecardTable .section{background:rgba(107,22,26,.06)}
+.scorecardTable .totalRow .section{background:rgba(107,22,26,.12)}
+.scorecardTable .sectionGap,.scorecardTable .totalRow .sectionGap{padding:0;border-bottom:0;background:transparent}
 .scorecardTable .totalRow th,.scorecardTable .totalRow td{background:rgba(47,12,14,.06);border-bottom:2px solid rgba(47,12,14,.3)}
 .scorecardTable .totalRow th{font-size:10px;letter-spacing:.06em;text-transform:uppercase}
 .scorecardView{display:flex;flex-direction:column;gap:14px;padding-top:8px}
@@ -193,3 +197,9 @@
    sheet is pulled up (--sheet-open 0 → 1): full when tucked away, gone when open, in between while dragging or sliding. */
 .sheet{background:linear-gradient(180deg,rgba(107,22,26,calc(.25 * (1 - var(--sheet-open)))) 0,rgba(107,22,26,0) 40px),linear-gradient(180deg,#f8f3ea 0%,#f2ebdf 100%)}
 .sheet.fastClose{transition-duration:.1s} /* tap to tuck away: 100 ms */
+.scorecardView .scorecardTable{width:calc(100% + 16px);margin:0 -8px} /* sections run to the sheet edges */
+/* Under the scorecard's Total: "Weisser 72   Patel 75". */
+.scorecardTotals{display:grid;grid-template-columns:1fr 1fr;margin:4px 0 0;font-family:var(--font-spectral),Georgia,serif;color:var(--color-maroon-900,#2f0c0e)}
+.scorecardTotals div{display:flex;align-items:baseline;justify-content:center;gap:8px;min-width:0;container-type:inline-size}
+.scorecardTotals dt{font-size:min(22px, calc((100cqw - 78px) / (var(--chars, 8) * .78)));white-space:nowrap;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:rgba(47,12,14,.7)}
+.scorecardTotals dd{margin:0;font-size:37px;line-height:1;font-weight:700}

@@ -2,10 +2,10 @@
  * OpenGolfAPI reply shapes — ONLY the fields The Maroon reads. Every field may be null or missing in real replies, so
  * the client validates before anything here is trusted. Nothing outside ./openGolf/ may import these.
  *
- * Seen live on 2026-10-05 (api.opengolfapi.org): search → GET /v1/courses/search, detail → GET /api/v1/courses/{id}.
+ * Seen live on 2026-10-05 (api.opengolfapi.org). Endpoint paths live in OPEN_GOLF_PATHS (./client.ts).
  */
 
-/** One hit from GET /v1/courses/search?q=… */
+/** One hit from the search reply (OPEN_GOLF_PATHS.search). */
 export interface OpenGolfSearchCourse {
   id: string;
   name: string;
@@ -47,7 +47,7 @@ export interface OpenGolfHole {
   geometryFieldsPresent: string[];
 }
 
-/** GET /api/v1/courses/{id} — course info, tees and holes in one reply. */
+/** The course-detail reply (OPEN_GOLF_PATHS.courseDetail) — course info, tees and holes in one reply. */
 export interface OpenGolfCourseDetail {
   id: string;
   course_name: string | null;

@@ -494,6 +494,7 @@ function FlightsCard({ flights }: { flights?: TripFlights }) {
  */
 function InfoAccount({ draft, settingsHref, flights }: { draft: GolfTripDraft; settingsHref: string; flights?: TripFlights }) {
   const destination = draft.destination;
+  const tripDateRange = [draft.startDate, draft.endDate].filter(validDay).map((day) => shortTripDate(day!)).join(" – ");
   const [activeCard, setActiveCard] = useState(0);
   const onCardsScroll = (event: UIEvent<HTMLDivElement>) => {
     const track = event.currentTarget;
@@ -502,10 +503,10 @@ function InfoAccount({ draft, settingsHref, flights }: { draft: GolfTripDraft; s
   };
   return <div className={styles.account}>
     <div className={styles.accountTop}>
-      <div className={styles.accountBar}>
-        <button type="button" className={styles.accountPill}>Get $150</button>
-      </div>
-      <p className={styles.accountLabel}>{destination ? `Your trip to ${destination}` : "Your trip"}</p>
+      {/* The trip's dates, small, top right, level with the top of "Your trip to" (left out if the trip has no dates). */}
+      {tripDateRange && <p className={styles.accountDates}>{tripDateRange}</p>}
+      {/* "Your trip to" with the destination on the line under it. */}
+      <p className={styles.accountLabel}>{destination ? <>Your trip to<span className={styles.accountDestination}>{destination}</span></> : "Your trip"}</p>
     </div>
     <div className={styles.accountCards} onScroll={onCardsScroll}>
       <FlightsCard flights={flights} />
@@ -515,6 +516,9 @@ function InfoAccount({ draft, settingsHref, flights }: { draft: GolfTripDraft; s
     <GolfTripItinerary draft={draft} settingsHref={settingsHref} />
   </div>;
 }
+
+/** A saved trip date (YYYY-MM-DD) that can be shown. */
+const validDay = (value: string | undefined) => !!value && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
 
 export function Card({ title, children }: { title: string; children: ReactNode }) {
   return <section className={styles.card} aria-label={title}>

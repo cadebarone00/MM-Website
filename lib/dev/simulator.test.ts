@@ -64,3 +64,32 @@ test("GPS test messages: only exact Real / Mock, single-step moves and reset get
   assert.deepEqual(parseGpsState({ mode: "mock", source: null, accuracyMeters: null }), { mode: "mock", source: null, accuracyMeters: null });
   for (const bad of [null, { mode: "x", source: null, accuracyMeters: null }, { mode: "real", source: "real", accuracyMeters: -1 }, { mode: "real", source: "real", accuracyMeters: "6" }]) assert.equal(parseGpsState(bad), null);
 });
+
+test("round-state conditions: pre-tournament, live, between rounds (3 done, 4 next) and trip complete", () => {
+  for (const source of ["mock", "maroon"] as const) {
+    const run = (roundStatus: typeof DEFAULT_SIMULATOR_STATE.roundStatus) => simulatorTripData(mock, maroon, { source, state: { ...DEFAULT_SIMULATOR_STATE, roundStatus } }).previewMatch!;
+    const before = JSON.stringify(source === "mock" ? mock : maroon);
+
+    const pre = run("scheduled");
+    assert.equal(pre.round, 1);
+    assert(pre.leaderboard.every(row => row.thru === "—" && row.holes.every(hole => hole === null)));
+
+    const live = run("live");
+    assert(live.leaderboard.length > 0 && live.leaderboard.every(row => row.thru === "9" && row.holes.slice(0, 9).every(hole => hole !== null) && row.holes.slice(9).every(hole => hole === null)), `${source} live`);
+
+    const between = run("between");
+    assert.equal(between.round, 3);
+    assert(between.roundCount >= 4, "a round 4 is still to come");
+    assert(between.leaderboard.every(row => row.thru === "F" && row.holes.every(hole => hole !== null)));
+
+    const complete = run("complete");
+    assert.equal(complete.round, complete.roundCount);
+    assert(complete.leaderboard.every(row => row.thru === "F" && row.holes.every(hole => hole !== null)));
+
+    // Scores add up: "today" is the to-par of the 18 holes against the round's par.
+    const row = complete.leaderboard[0];
+    const toPar = row.holes.reduce<number>((sum, strokes, hole) => sum + (strokes ?? 0) - complete.par[hole], 0);
+    assert.equal(row.today, toPar === 0 ? "E" : toPar > 0 ? `+${toPar}` : String(toPar));
+    assert.equal(JSON.stringify(source === "mock" ? mock : maroon), before, "source data untouched");
+  }
+});

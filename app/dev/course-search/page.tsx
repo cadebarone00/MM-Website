@@ -3,7 +3,10 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import type { GolfCourse, GolfHole } from "@/lib/platform/golfGps/domain";
 import { GolfProviderError, type GolfCourseImport, type GolfCourseSearchResponse } from "@/lib/platform/golfGps/providers/GolfCourseProvider";
+import type { GolfGeometryEnrichment } from "@/lib/platform/golfGps/providers/GolfGeometryProvider";
 import { createOpenGolfProvider } from "@/lib/platform/golfGps/providers/openGolf/provider";
+import { createOpenStreetMapGeometryProvider } from "@/lib/platform/golfGps/providers/openStreetMap/provider";
+import { OsmGeometryPanel } from "./OsmGeometryPanel";
 import styles from "./CourseSearch.module.css";
 
 export const metadata: Metadata = { title: "Course search (dev) | The Maroon", robots: { index: false, follow: false } };
@@ -13,9 +16,9 @@ export const dynamic = "force-dynamic";
  * LOCAL DEV TEST HARNESS for the OpenGolf course provider — not production UI. Searches and course details run on the
  * server through the provider, so this page only ever sees normalized Maroon types. 404 unless NODE_ENV=development.
  */
-export default async function CourseSearchPage({ searchParams }: { searchParams: Promise<{ q?: string; state?: string; id?: string }> }) {
+export default async function CourseSearchPage({ searchParams }: { searchParams: Promise<{ q?: string; state?: string; id?: string; osm?: string }> }) {
   if (process.env.NODE_ENV !== "development") notFound();
-  const { q = "", state = "", id = "" } = await searchParams;
+  const { q = "", state = "", id = "", osm = "" } = await searchParams;
   const provider = createOpenGolfProvider();
 
   let search: GolfCourseSearchResponse | null = null, searchError: string | null = null;
@@ -29,7 +32,14 @@ export default async function CourseSearchPage({ searchParams }: { searchParams:
       if (!detail) detailError = "OpenGolf has no course with that id.";
     } catch (error) { detailError = message(error); }
   }
-  const link = (externalId: string) => `?${new URLSearchParams({ q, ...(state && { state }), id: externalId })}`;
+  // Only when "Load OSM Geometry" is clicked: Overpass is a shared public service, so it's never queried automatically.
+  let enrichment: GolfGeometryEnrichment | null = null, osmError: string | null = null;
+  if (detail && osm === "1") {
+    try { enrichment = await createOpenStreetMapGeometryProvider().enrichCourse(detail.course); } catch (error) {
+      osmError = error instanceof GolfProviderError ? error.message : "Loading OpenStreetMap geometry failed.";
+    }
+  }
+  const link = (externalId: string, extra: Record<string, string> = {}) => `?${new URLSearchParams({ q, ...(state && { state }), id: externalId, ...extra })}`;
 
   return <main className={styles.page}>
     <div className={styles.wrap}>
@@ -64,6 +74,13 @@ export default async function CourseSearchPage({ searchParams }: { searchParams:
 
       {detailError && <section className={styles.panel}><p className={styles.error}>{detailError}</p></section>}
       {detail && <CourseDetail course={detail.course} notes={detail.notes} />}
+      {detail && <section className={styles.panel} aria-label="OpenStreetMap">
+        <h2>OpenStreetMap geometry (dev)</h2>
+        <a className={styles.action} href={link(id, { osm: "1" })}>Load OSM Geometry</a>
+        <p className={styles.credit}>Queries the public Overpass API around this course&apos;s location (two small, cached requests).</p>
+        {osmError && <p className={styles.error}>{osmError}</p>}
+      </section>}
+      {enrichment && <OsmGeometryPanel enrichment={enrichment} />}
     </div>
   </main>;
 }

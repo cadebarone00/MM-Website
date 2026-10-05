@@ -25,6 +25,8 @@ export interface GolfCoordinate3D extends GolfCoordinate {
  */
 export interface GolfPolygon {
   coordinates: GolfCoordinate[];
+  /** Cut-outs inside the outline (e.g. bunkers inside a fairway), same ring rules as `coordinates`. */
+  innerRings?: GolfCoordinate[][];
   /** Where this shape came from, when it differs from (or is more specific than) its hole / course. */
   source?: GolfSourceMetadata;
   verification?: GolfVerification;

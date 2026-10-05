@@ -2,5 +2,6 @@
 export * from "./course";
 export * from "./coverage";
 export * from "./geometry";
+export * from "./measureCoverage";
 export * from "./provenance";
 export { polygonCentroidAndArea, toPrototypeGpsCourse, toPrototypeGpsHole } from "./prototypeAdapter";

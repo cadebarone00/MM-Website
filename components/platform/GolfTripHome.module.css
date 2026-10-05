@@ -152,10 +152,12 @@
   background:linear-gradient(var(--color-maroon-900) 190px,#f7f8f7 190px);color:#111;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
 .account p{margin:0}
 .account button{font-family:inherit;cursor:pointer}
-.accountTop{display:flex;flex-direction:column;padding:12px 16px 0;color:#fff}
-.accountBar{display:flex;justify-content:flex-end;align-items:center;margin-bottom:24px}
-.accountPill{padding:7px 12px;border:1.5px solid #fff;border-radius:999px;background:transparent;color:#fff;font-size:13px;font-weight:600}
+/* Same height as when it held the old pill row, so the cards below don't move. */
+.accountTop{position:relative;display:flex;flex-direction:column;min-height:137px;padding:12px 16px 0;color:#fff}
 .accountLabel{font-size:30px;font-weight:700;line-height:1.1}
+.accountDestination{display:block}
+/* Trip dates ("Wed, Jan 7 – Sat, Jan 10"): small, top right, level with the top of "Your trip to". */
+.accountDates{position:absolute;top:15px;right:16px;margin:0;font:600 13px/1 var(--font-barlow),sans-serif;color:#fff;white-space:nowrap}
 .accountCards{scroll-padding-inline:16px;display:flex;gap:10px;margin-top:22px;padding:0 16px 6px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
 .accountCards::-webkit-scrollbar,.accountCard{flex:0 0 82%;box-sizing:border-box;min-height:96px;padding:16px 14px;border-radius:12px;background:#fff;
   box-shadow:0 1px 4px rgba(0,0,0,.12);scroll-snap-align:start}

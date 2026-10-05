@@ -39,13 +39,16 @@ export interface GolfTeeSet {
 
 /** Where a tee box is: a single point, or its outline when mapped. */
 export type GolfTeeLocation =
-  | { kind: "point"; coordinate: GolfCoordinate }
+  | { kind: "point"; coordinate: GolfCoordinate; source?: GolfSourceMetadata }
   | { kind: "polygon"; polygon: GolfPolygon };
 
-/** One tee box on one hole. Links to its course-wide GolfTeeSet by `teeSetId`. */
+/**
+ * One tee box on one hole. Links to its course-wide GolfTeeSet by `teeSetId` when known; mapped tee boxes (e.g. from
+ * OpenStreetMap) usually don't say which tee set they are, so they have a location but no `teeSetId`.
+ */
 export interface GolfTee {
   id: string;
-  teeSetId: string;
+  teeSetId?: string;
   /** Usually the tee set's name; repeated so a hole can be shown without looking up the tee set. */
   name: string;
   color?: string;
