@@ -1,0 +1,26 @@
+.page { min-height: 100dvh; background: #f1f2f4; color: #242832; font: 13px/1.5 system-ui, sans-serif; padding: 24px 16px 48px; }
+.wrap { max-width: 1100px; margin: 0 auto; display: grid; gap: 16px; }
+.header h1 { margin: 0; font-size: 18px; color: #670f24; }
+.header p { margin: 2px 0 0; color: #737a87; }
+.panel { background: #fff; border: 1px solid #e4e6eb; border-radius: 10px; padding: 16px; overflow-x: auto; }
+.panel h2 { margin: 0 0 10px; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #8b7280; }
+.form { display: flex; gap: 8px; flex-wrap: wrap; }
+.form input { flex: 1 1 220px; padding: 8px 10px; border: 1px solid #cfd3da; border-radius: 6px; font: inherit; }
+.form input[name="state"] { flex: 0 0 70px; }
+.form button { padding: 8px 16px; border: 0; border-radius: 6px; background: #670f24; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.error { color: #a1121f; font-weight: 600; }
+.results { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.results a { display: block; padding: 8px 10px; border: 1px solid #e4e6eb; border-radius: 6px; color: inherit; text-decoration: none; }
+.results a:hover, .results a[aria-current="true"] { border-color: #670f24; background: #fbf6f7; }
+.results small { color: #737a87; display: block; }
+.fields { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; }
+.fields dt { color: #737a87; }
+.fields dd { margin: 0; }
+.tag { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 4px; font-size: 10px; font-weight: 700; background: #e7f3ec; color: #1f6b3d; }
+.na { color: #a0a6b1; font-style: italic; }
+.table { border-collapse: collapse; width: 100%; }
+.table th, .table td { text-align: left; padding: 5px 8px; border-bottom: 1px solid #eef0f3; vertical-align: top; white-space: nowrap; }
+.table th { font-size: 11px; color: #737a87; font-weight: 600; }
+.notes { margin: 0; padding-left: 18px; color: #8a5a00; }
+.credit { color: #737a87; font-size: 12px; }
+.json { max-height: 420px; overflow: auto; background: #f7f8fa; padding: 10px; border-radius: 6px; font-size: 11px; }

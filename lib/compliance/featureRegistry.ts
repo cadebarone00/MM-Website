@@ -135,7 +135,7 @@ const seeds: FeatureSeed[] = [
   },
   {
     id: "player-profiles", name: "Player profiles",
-    scope: "Review names, photos, bios, handicap/history, cross-tournament linking, audience visibility, corrections and deletion.",
+    scope: "Review names, photos, bios, handicap/history, cross-tournament linking, audience visibility, corrections and deletion. Profile Rounds reuses authenticated own-player submitted and archived handicap history in a read-only view; findings and unresolved follow-ups: docs/profile-rounds-review.md.",
     attentionCategories: ["privacy", "personal-data", "ugc", "media-rights", "retention", "account-deletion", "minors", "legal-review"],
   },
   {

@@ -60,6 +60,9 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   const spacerRef = useRef<HTMLSpanElement>(null);
   const drag = useRef<{ startY: number; startOffset: number; closedOffset: number; moved: boolean } | null>(null);
   const [dragOffset, setDragOffset] = useState<number | null>(null);
+  // Tapping the bar to tuck the sheet away slides it down fast (100 ms); opening and dragging keep the normal speed.
+  const [fastClose, setFastClose] = useState(false);
+  const tapToggle = () => { setFastClose(open); setOpen(!open); };
   /** How far the sheet travels between open and closed, for the grow-to-full-screen progress while dragging. */
   const [dragRange, setDragRange] = useState(0);
   const chipsRef = useRef<HTMLDivElement>(null);
@@ -125,8 +128,8 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
     const d = drag.current;
     drag.current = null;
     if (!d) return;
-    if (!d.moved) setOpen((value) => !value); // a tap toggles
-    else setOpen((dragOffset ?? d.startOffset) < d.closedOffset / 2); // a drag snaps to whichever end is closer
+    if (!d.moved) tapToggle(); // a tap toggles
+    else { setFastClose(false); setOpen((dragOffset ?? d.startOffset) < d.closedOffset / 2); } // a drag snaps to whichever end is closer
     setDragOffset(null);
   }
 
@@ -171,7 +174,9 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   // Pulled up (or being dragged), a dimmed layer covers the rest of the page, bottom menu included, so nothing
   // behind the sheet can be tapped; the sheet sits above it.
   const blocking = !fullScreen && (open || dragOffset !== null);
-  return <>{blocking && <div className={styles.backdrop} aria-hidden />}<div className={`${styles.frame} ${fullScreen ? styles.frameFull : ""} ${blocking ? styles.frameAbove : ""}`}><section ref={sheetRef} className={`${styles.sheet} ${open ? styles.open : ""} ${dragOffset !== null ? styles.dragging : ""} ${fullScreen ? styles.sheetFull : ""} ${fullScreen && view === "gps" ? styles.gpsFullScreen : ""}`} style={style} aria-label="Scoring">
+  // The GPS prototype (dev only): its satellite map fills the whole sheet, with the handle, pills and yardages on top.
+  const showGpsMap = view === "gps" && process.env.NODE_ENV === "development";
+  return <>{blocking && <div className={styles.backdrop} aria-hidden />}<div className={`${styles.frame} ${fullScreen ? styles.frameFull : ""} ${blocking ? styles.frameAbove : ""}`}><section ref={sheetRef} className={`${styles.sheet} ${open ? styles.open : ""} ${dragOffset !== null ? styles.dragging : ""} ${fastClose ? styles.fastClose : ""} ${fullScreen ? styles.sheetFull : ""} ${fullScreen && view === "gps" ? styles.gpsFullScreen : ""} ${!fullScreen && showGpsMap ? styles.gpsOverlay : ""}`} style={style} aria-label="Scoring">
     {/* GPS pill (left, red) mirrors the Scorecard pill (right); both show while the sheet is pulled up. */}
     {open && (["gps", "scorecard"] as const).map((target) => {
       const label = target === "gps" ? "GPS" : "Card";
@@ -185,7 +190,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
     {fullScreen && <button type="button" className={styles.exitButton} onClick={() => setOpen(false)}>EXIT</button>}
     {fullScreen ? <div className={styles.fullTopBar} aria-hidden /> : <button ref={handleRef} type="button" className={styles.handle} aria-expanded={open} aria-controls="trip-scoring-body"
       onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
-      onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setOpen((value) => !value); } }}>
+      onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); tapToggle(); } }}>
       <span className={styles.grabber} aria-hidden />
       <span className={styles.handleMeta}>
         {/* The score line hides while open so it doesn't sit under the left Scorecard pill. */}
@@ -200,7 +205,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
 
     <div id="trip-scoring-body" className={styles.body} inert={!open}>
       {/* GPS prototype (satellite map, live yardages, mock hole) in development; real trips keep the placeholder until course data exists. */}
-      {view === "gps" ? process.env.NODE_ENV === "development" ? <GolfGpsScreen holeNumber={current + 1} className={`${styles.gpsMap} ${fullScreen ? styles.gpsMapFull : ""}`} /> : <GpsSection hole={current + 1} holePar={holePar} />
+      {view === "gps" ? showGpsMap ? <GolfGpsScreen holeNumber={current + 1} className={`${styles.gpsMap} ${fullScreen ? styles.gpsMapFull : styles.gpsMapFill}`} /> : <GpsSection hole={current + 1} holePar={holePar} />
         : view === "scorecard" ? <>
           <ScorecardSection par={par} holes={holes} opponentHoles={holesCompetitor} opponentName={opponentName} putts={putts} fairways={fairways} greens={greens} />
           {/* Both cards complete and agreeing: final scores in green, then Save & Submit. */}

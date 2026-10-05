@@ -3,32 +3,24 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { ChevronRight, Pencil, Settings } from "lucide-react";
-import { formatDateRange } from "@/lib/platform/publicSite";
+import { Pencil, Settings } from "lucide-react";
+import { HandicapHome } from "@/components/portal/handicap/HandicapHome";
 import { CareerGlance } from "@/components/stats/CareerGlance";
 import type { MyProfile } from "@/lib/profile/myProfile";
-import type { PastTournament } from "@/lib/platform/pastTournaments";
 
-type Tab = "tournaments" | "stats" | "about";
+type Tab = "overview" | "rounds" | "stats";
 // Pinned Year/Event columns on the Stats table; the solid background hides the columns scrolling under them.
 const STICKY_YEAR = "sticky left-0 z-10 w-14 min-w-14 bg-cream-50 pl-4 pr-2";
 const STICKY_EVENT = "sticky left-14 z-10 w-28 min-w-28 whitespace-normal bg-cream-50 pr-3 shadow-[1px_0_0_rgba(56,0,1,0.12)]";
 const TABS: { key: Tab; label: string }[] = [
-  { key: "tournaments", label: "Tournaments" },
+  { key: "overview", label: "Overview" },
+  { key: "rounds", label: "Rounds" },
   { key: "stats", label: "Stats" },
-  { key: "about", label: "About" },
 ];
 
 /** The signed-in person's own profile, laid out like a fantasy-app account screen. */
 export function ProfileView({ profile }: { profile: MyProfile }) {
-  const [tab, setTab] = useState<Tab>("tournaments");
-  const [showCompleted, setShowCompleted] = useState(false);
-  const [eventMode, setEventMode] = useState<"tournament" | "golf-trip">("tournament");
-
-  const eventRows = eventMode === "tournament"
-    ? [...profile.active, ...profile.completed]
-    : [{ name: "Maroon Tournament", year: 2027, destination: "Palm Springs, CA", startDate: null, endDate: null, href: "/dev/tournament" }, ...profile.active.slice(0, 2).map((row) => ({ ...row, href: "/golf-trips/trip" }))];
-
+  const [tab, setTab] = useState<Tab>("overview");
   return (
     // Extend the profile background through the bottom-menu padding.
     <div className="flex min-h-screen min-w-0 flex-col bg-cream-50 text-maroon-900 mb-[calc(-5.75rem-env(safe-area-inset-bottom))] lg:mb-0">
@@ -66,37 +58,15 @@ export function ProfileView({ profile }: { profile: MyProfile }) {
       </header>
 
       <main className="relative mx-auto -mt-6 w-full max-w-[640px] flex-1 bg-cream-50 px-4 pb-32 pt-12">
-        {tab === "tournaments" && (
-          <section aria-label="Tournaments">
-            <div className="mb-3 grid grid-cols-2 rounded-full bg-maroon-900/5 p-1" role="group" aria-label="Event view">
-              {(["tournament", "golf-trip"] as const).map((mode) => (
-                <button key={mode} type="button" aria-pressed={eventMode === mode} onClick={() => setEventMode(mode)}
-                  className={`rounded-full font-condensed text-sm font-semibold tracking-wide ${eventMode === mode ? "bg-white text-maroon-900 shadow-sm" : "text-maroon-900/55"}`}>
-                  {mode === "tournament" ? "Tournament" : "Golf Trip"}
-                </button>
-              ))}
-            </div>
-            <div className="grid h-11 grid-cols-2 rounded-full bg-maroon-900/5 p-1" role="group" aria-label="Show">
-              {[{ label: "Active", on: !showCompleted }, { label: "Completed", on: showCompleted }].map((o) => (
-                <button key={o.label} type="button" aria-pressed={o.on} onClick={() => setShowCompleted(o.label === "Completed")}
-                  className={`rounded-full font-condensed text-sm font-semibold tracking-wide ${o.on ? "bg-white text-maroon-900 shadow-sm" : "text-maroon-900/55"}`}>
-                  {o.label}
-                </button>
-              ))}
-            </div>
-            <div className="-mx-4 mt-3">
-              {eventMode === "tournament" ? (showCompleted
-                ? <TournamentList rows={profile.completed} empty={<p className="px-4 py-5 text-center text-maroon-900/60">No completed tournaments yet</p>} />
-                : <TournamentList rows={profile.active} empty={
-                    <p className="px-4 py-5 text-center text-maroon-900/60">No active tournaments<br />
-                      <Link href="/tournaments/join" className="mt-2 inline-block font-condensed font-semibold uppercase tracking-[0.12em] text-maroon-700">Join a Tournament</Link>
-                    </p>} />)
-                : <TournamentList rows={eventRows.filter((row) => showCompleted ? row.year < new Date().getFullYear() || row.name.includes("Maroon Tournament") : true)} empty={
-                    <p className="px-4 py-5 text-center text-maroon-900/60">No Golf Trip items yet.</p>} />}
-            </div>
+        {tab === "rounds" && (
+          <section aria-label="Rounds" className="-mx-4 -mt-6">
+            {profile.roundHistory ? (
+              <HandicapHome playerName={profile.name} playerSlug={profile.roundHistory.playerSlug}
+                summary={profile.roundHistory.summary} archivedRounds={profile.roundHistory.archivedRounds}
+                team={null} initialTab="overall" readOnly />
+            ) : <p className="px-4 py-5 text-center text-maroon-900/60">{profile.canEditBio ? "Round history is unavailable right now." : "No rounds yet."}</p>}
           </section>
         )}
-
         {tab === "stats" && (
           <section aria-label="Stats">
             {!profile.stats ? <p className="px-4 py-5 text-center text-maroon-900/60">No stats yet.</p> : (
@@ -131,33 +101,13 @@ export function ProfileView({ profile }: { profile: MyProfile }) {
           </section>
         )}
 
-        {tab === "about" && (
-          <section aria-label="About">
+        {tab === "overview" && (
+          <section aria-label="Overview">
             {profile.bio ? <p className="whitespace-pre-line leading-relaxed text-maroon-900/90">{profile.bio}</p>
               : <p className="px-4 py-5 text-center text-maroon-900/60">No bio yet.</p>}
           </section>
         )}
       </main>
     </div>
-  );
-}
-
-function TournamentList({ rows, empty }: { rows: PastTournament[]; empty: React.ReactNode }) {
-  if (rows.length === 0) return <>{empty}</>;
-  return (
-    <ul className="divide-y divide-maroon-900/10">
-      {rows.map((t) => (
-        <li key={`${t.href}-${t.year}`}>
-          <Link href={t.href} className="flex min-h-[92px] items-center gap-4 px-5 py-5 transition-colors hover:bg-maroon-900/5">
-            <span className="min-w-0 flex-1">
-              <strong className="block break-words text-lg font-bold leading-snug">{t.name} {t.year}</strong>
-              {t.destination && <span className="mt-1 block break-words text-sm text-maroon-900/65">{t.destination}</span>}
-              {t.startDate && <span className="mt-1.5 block text-xs text-maroon-900/50">{formatDateRange(t.startDate, t.endDate)}</span>}
-            </span>
-            <ChevronRight size={18} aria-hidden="true" className="shrink-0 text-maroon-900/35" />
-          </Link>
-        </li>
-      ))}
-    </ul>
   );
 }

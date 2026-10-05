@@ -39,7 +39,6 @@
 .scorecardTable th,.scorecardTable td{padding:8px 2px;border-bottom:1px solid rgba(47,12,14,.12)}
 .scorecardTable thead th{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:rgba(47,12,14,.62);border-bottom:2px solid rgba(47,12,14,.3)}
 .scorecardTable tbody th{color:rgba(47,12,14,.75)}
-.scorecardTable .groupEnd{border-right:2px solid rgba(47,12,14,.3)}
 .scorecardTable .myScore{font-size:15px}
 .scorecardTable .opponentHead{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .scorecardTable .totalRow th,.scorecardTable .totalRow td{background:rgba(47,12,14,.06);border-bottom:2px solid rgba(47,12,14,.3)}
@@ -179,3 +178,18 @@
 .gpsMap.gpsMapFull{min-height:0;margin:0;border-radius:0;--gps-top-offset:calc(52px + env(safe-area-inset-top))}
 .gpsFullScreen .scorecardButton:not([aria-pressed=true]){background:#f8f3ea;box-shadow:0 2px 8px rgba(0,0,0,.3)}
 .gpsFullScreen .exitButton{padding:8px 14px;border-radius:999px;background:#f8f3ea;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+/* Pull-up sheet on GPS: the map fills the whole sheet (edge to edge, top to bottom, clipped to its corners while it
+   grows). The grabber, "Scoring" and the pills float on it over a soft dark fade, and the yardage card starts below them. */
+.sheet.gpsOverlay{overflow:hidden}
+.sheet.gpsOverlay.open:not(.dragging){border-width:0}
+.gpsOverlay::before{content:"";position:absolute;left:0;right:0;top:0;height:calc(100px + env(safe-area-inset-top));z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(20,6,8,.62),rgba(20,6,8,0))}
+.gpsOverlay .handle{position:relative;z-index:2;color:#fbf8f1;text-shadow:0 1px 3px rgba(0,0,0,.55)}
+.gpsOverlay .grabber{background:rgba(251,248,241,.85)}
+.gpsOverlay .scorecardButton:not([data-active=true]){background:#f8f3ea;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.gpsMap.gpsMapFill{position:absolute;inset:0;z-index:0;min-height:0;margin:0;border-radius:0;
+  --gps-top-offset:calc(52px + max(0px, env(safe-area-inset-top) - 8px) * var(--sheet-open));--gps-bottom-offset:env(safe-area-inset-bottom)}
+/* A slight maroon tint (25%) along the top edge, fading into the cream within ~40px. Its strength follows how far the
+   sheet is pulled up (--sheet-open 0 → 1): full when tucked away, gone when open, in between while dragging or sliding. */
+.sheet{background:linear-gradient(180deg,rgba(107,22,26,calc(.25 * (1 - var(--sheet-open)))) 0,rgba(107,22,26,0) 40px),linear-gradient(180deg,#f8f3ea 0%,#f2ebdf 100%)}
+.sheet.fastClose{transition-duration:.1s} /* tap to tuck away: 100 ms */

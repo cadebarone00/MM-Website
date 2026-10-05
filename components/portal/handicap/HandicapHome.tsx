@@ -71,7 +71,7 @@ export function HandicapHome({ playerName, playerSlug, summary, archivedRounds, 
           </select>
         </div>
         {rounds.length === 0 ? (
-          <p className="mt-3 font-sans text-sm text-ink-500">{activeTab === "maroon-tournament" ? "No archived Maroon Tournament rounds yet." : "No rounds yet — submit your first score above."}</p>
+          <p className="mt-3 font-sans text-sm text-ink-500">{activeTab === "maroon-tournament" ? "No archived Maroon Tournament rounds yet." : readOnly ? "No rounds yet." : "No rounds yet — submit your first score above."}</p>
         ) : (
           <div className="mt-3 divide-y divide-stone-200 border-y border-stone-200 bg-white">
             {rounds.map((entry) => {

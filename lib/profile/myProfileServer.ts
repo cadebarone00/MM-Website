@@ -2,6 +2,9 @@ import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/l
 import { getPlayerProfileBySlug } from "@/lib/data/players";
 import { getProfileOverrides, mergeProfile } from "@/lib/data/players/overrides";
 import { getPlayerStatsByYear } from "@/lib/data/stats";
+import { getHandicapSummaryForPlayer } from "@/lib/handicap/data";
+import { getArchivedHandicapRounds } from "@/lib/data/archivedScorecards";
+import { combinedHandicapIndexes } from "@/lib/handicap/archiveIndex";
 import { loadLegacyPastRows, loadLegacyPlayingRows, withoutLegacyRows } from "@/lib/platform/legacyTournaments";
 import { summarizePastEditions, type PastTournament } from "@/lib/platform/pastTournaments";
 import {
@@ -66,8 +69,20 @@ export async function loadMyProfile(): Promise<MyProfile | null> {
     (a.startDate ?? "9999").localeCompare(b.startDate ?? "9999") || a.name.localeCompare(b.name) || a.year - b.year);
   const name = profileDisplayName({ fullName, displayName: row?.display_name, username: row?.username, email: row?.email ?? user.email });
   const stats = playerSlug ? careerStats(getPlayerStatsByYear(playerSlug)) : null;
+  let roundHistory: MyProfile["roundHistory"] = null;
+  if (playerSlug) {
+    try {
+      const [summary, archivedRounds] = await Promise.all([
+        getHandicapSummaryForPlayer(playerSlug), getArchivedHandicapRounds(playerSlug),
+      ]);
+      roundHistory = { playerSlug, summary: { ...summary, ...combinedHandicapIndexes(summary.rounds, archivedRounds) }, archivedRounds };
+    } catch {
+      console.error("Profile round history could not be loaded.");
+    }
+  }
 
   return {
+    roundHistory,
     name,
     initials: initialsFor(name),
     avatarSrc,

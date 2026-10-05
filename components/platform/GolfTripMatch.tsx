@@ -102,23 +102,36 @@ export function GolfTripLeaderboard({ match }: { match: GolfMatchPreview }) {
         {rows.map(({ position, golfer, total, thru, today, netTotal, netToday, pointsTotal, pointsToday, holes }) => {
           const open = openCards.has(golfer.name);
           const cardId = `scorecard-${golfer.name.replace(/\W+/g, "-")}`;
-          const totDisplay = isStableford ? (pointsTotal !== undefined ? `${pointsTotal} PTS` : total) : (showNet ? netTotal : total);
-          const tdyDisplay = isStableford ? (pointsToday !== undefined ? `${pointsToday} PTS` : today) : (showNet ? netToday : today);
+          const totDisplay = isStableford ? (pointsTotal !== undefined ? `${pointsTotal} PTS` : total) : parLabel(showNet ? netTotal : total);
+          const tdyDisplay = isStableford ? (pointsToday !== undefined ? `${pointsToday} PTS` : today) : parLabel(showNet ? netToday : today);
           return <li key={golfer.name} className={`${styles.single} ${showNet ? styles.singleNet : ""} ${open ? styles.singleOpen : ""}`}>
             <span className={styles.rank}>{position}</span>
             <button type="button" className={`${styles.cardButton} ${open ? styles.cardButtonOpen : ""}`} onClick={() => toggleCard(golfer.name)}
               aria-expanded={open} aria-controls={open ? cardId : undefined} aria-label={`${golfer.name} scorecard`}>CARD</button>
             <Golfer golfer={golfer} align="left" showThru={false} showHcp={false} />
             {showNet && <span className={styles.number} aria-label={`Handicap ${golfer.hcp}`}>{golfer.hcp}</span>}
-            <span className={styles.number} aria-label={`Total ${totDisplay}`}>{totDisplay}</span>
+            <span className={styles.number} data-par={isStableford ? undefined : parColor(totDisplay)} aria-label={`Total ${totDisplay}`}>{totDisplay}</span>
             <span className={styles.number} aria-label={`Thru ${thru}`}>{thru}</span>
-            <span className={styles.number} aria-label={`Today ${tdyDisplay}`}>{tdyDisplay}</span>
+            <span className={styles.number} data-par={isStableford ? undefined : parColor(tdyDisplay)} aria-label={`Today ${tdyDisplay}`}>{tdyDisplay}</span>
             {open && <Scorecard id={cardId} par={match.par} holes={holes} name={golfer.name} />}
           </li>;
         })}
       </ul>
     </div>
   </div>;
+}
+
+function parLabel(score: string): string {
+  const value = score.trim() === "E" ? 0 : Number(score);
+  if (!score.trim() || !Number.isFinite(value)) return score;
+  return value === 0 ? "E" : value > 0 ? `+${value}` : String(value);
+}
+
+function parColor(score: string): string | undefined {
+  if (score === "E") return "even";
+  if (score.startsWith("-")) return "under";
+  if (score.startsWith("+")) return "over";
+  return undefined;
 }
 
 const scoreValue = (score: string) => {

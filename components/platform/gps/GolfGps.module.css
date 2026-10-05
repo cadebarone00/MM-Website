@@ -26,7 +26,7 @@
 .measureHint,.measureLabel{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(251,248,241,.85)}
 
 /* Hole view (recenter): floating bottom right, just above Google's attribution (its bottom is set from the screen). */
-.recenter{position:absolute;right:12px;bottom:156px;z-index:2;display:grid;place-items:center;width:46px;height:46px;padding:0;border:1px solid rgba(220,196,149,.45);border-radius:50%;background:rgba(36,0,1,.82);color:#dcc495;box-shadow:0 6px 18px rgba(0,0,0,.35);cursor:pointer}
+.recenter{position:absolute;right:12px;bottom:156px;margin-bottom:var(--gps-bottom-offset, 0px);z-index:2;display:grid;place-items:center;width:46px;height:46px;padding:0;border:1px solid rgba(220,196,149,.45);border-radius:50%;background:rgba(36,0,1,.82);color:#dcc495;box-shadow:0 6px 18px rgba(0,0,0,.35);cursor:pointer}
 .recenter:disabled{opacity:.45;cursor:default}
 .recenter:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
 
