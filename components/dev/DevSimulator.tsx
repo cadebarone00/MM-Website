@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { MonitorSmartphone, RotateCcw, SlidersHorizontal } from "lucide-react";
-import { DEFAULT_SIMULATOR_STATE, parseSimulatorLocation, simulatorPageForLocation, SIMULATOR_CHANNEL, SIMULATOR_DEVICES, type SimulatorConfig, type SimulatorPage, type SimulatorSource, type SimulatorState } from "@/lib/dev/simulator";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, MonitorSmartphone, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { DEFAULT_SIMULATOR_STATE, parseGpsState, parseSimulatorLocation, simulatorPageForLocation, SIMULATOR_CHANNEL, SIMULATOR_DEVICES, type SimulatorConfig, type SimulatorGpsCommand, type SimulatorGpsState, type SimulatorPage, type SimulatorSource, type SimulatorState } from "@/lib/dev/simulator";
 import { applySimulatorSafeAreas } from "./simulatorSafeAreas";
 import { HapticsVisualizer } from "./HapticsVisualizer";
 import { DesignReview } from "./DesignReview";
@@ -12,7 +12,9 @@ import styles from "./DevSimulator.module.css";
 const initialDevice = SIMULATOR_DEVICES[4];
 const bounded = (value: string, min: number, max: number, fallback: number) => value === "" || !Number.isFinite(Number(value)) ? fallback : Math.max(min, Math.min(max, Math.round(Number(value))));
 
-export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unmapped: Record<string, unknown> }) {
+export function DevSimulator({ pages: registryPages, unmapped }: { pages: SimulatorPage[]; unmapped: Record<string, unknown> }) {
+  const [settingsRounds, setSettingsRounds] = useState<{ id: string; number: number }[]>([]);
+  const pages = useMemo(() => [...registryPages, ...settingsRounds.map(round => ({ ...registryPages.find(page => page.id === "settings-competition-rounds")!, id: `settings-round-${round.id}`, label: `Round ${round.number}`, parentId: "settings-competition-rounds", navigation: { tab: "Home" as const, settingsView: `round-${round.id}` } }))], [registryPages, settingsRounds]);
   const initialPage = pages.find(page => page.path === "/dev/tournament") ?? pages[0];
   const [pageId, setPageId] = useState(initialPage.id);
   const [frameSrc, setFrameSrc] = useState(`${initialPage.path}?simulator=1`);
@@ -30,6 +32,8 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
   const [ready, setReady] = useState(false);
   const [hapticLevel, setHapticLevel] = useState(2);
   const [hapticDuration, setHapticDuration] = useState(1000);
+  // GPS test: the open GPS screen's state (null when the phone isn't showing one).
+  const [gps, setGps] = useState<SimulatorGpsState | null>(null);
   const iframe = useRef<HTMLIFrameElement>(null);
   const [screen, setScreen] = useState<HTMLDivElement | null>(null);
   const stage = useRef<HTMLDivElement>(null);
@@ -41,6 +45,21 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
   const supportsFixtures = currentPath.startsWith("/dev/tournament");
   const groups = Array.from(new Set(pages.map(page => page.group ?? "Other")));
   const selectedGroup = selectedPage.group ?? "Other";
+  const branchPath: SimulatorPage[] = [];
+  let branchPage: SimulatorPage | undefined = selectedPage;
+  while (branchPage) {
+    branchPath.unshift(branchPage);
+    branchPage = pages.find(page => page.id === branchPage?.parentId);
+  }
+  const branchColumns = branchPath.filter(page => pages.some(child => child.parentId === page.id));
+  const activeIds = new Set(branchPath.map(page => page.id));
+  const conditionalColumn = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (selectedPage.parentId || branchColumns.length) {
+      const workspace = conditionalColumn.current?.closest("main");
+      workspace?.scrollTo({ left: workspace.scrollWidth - workspace.clientWidth, behavior: "smooth" });
+    }
+  }, [pageId, selectedPage.parentId, branchColumns.length]);
   const preset = SIMULATOR_DEVICES.find(item => item.id === device)!;
   // Fit may enlarge the visual frame. The iframe itself keeps its CSS viewport.
   const scale = zoom === "fit" ? Math.max(0.01, Math.min(Math.max(1, available.width - 184) / (size.width + 16), available.height / (size.height + 16))) : Number(zoom);
@@ -76,9 +95,14 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
       if (event.origin !== window.location.origin || event.source !== iframe.current?.contentWindow || event.data?.channel !== SIMULATOR_CHANNEL || !["ready", "location"].includes(event.data.type)) return;
       const location = parseSimulatorLocation(event.data.location);
       if (!location) return;
+      const rounds = event.data.location?.rounds;
+      if (location.path === "/dev/tournament/settings" && Array.isArray(rounds) && rounds.length <= 100 && rounds.every(round => round && typeof round.id === "string" && /^[a-z0-9-]{1,80}$/.test(round.id) && Number.isInteger(round.number) && round.number > 0)) {
+        setSettingsRounds(current => JSON.stringify(current) === JSON.stringify(rounds) ? current : rounds.map(({ id, number }: { id: string; number: number }) => ({ id, number })));
+      }
       setCurrentPath(location.path);
       setPageId(current => simulatorPageForLocation(pages, location, current)?.id ?? "");
       if (event.data.type === "ready") {
+        setGps(null); // a fresh page; a GPS screen on it reports itself again
         bridgeReady.current = true;
         setReady(true);
         sendConfig();
@@ -88,6 +112,17 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
     sendConfig();
     return () => window.removeEventListener("message", receive);
   }, [sendConfig, pages]);
+
+  // GPS test: the phone's GPS screen reports its mode and accuracy (or null when it closes).
+  useEffect(() => {
+    function receive(event: MessageEvent) {
+      if (event.origin !== window.location.origin || event.source !== iframe.current?.contentWindow || event.data?.channel !== SIMULATOR_CHANNEL || event.data.type !== "gps-state") return;
+      setGps(event.data.state === null ? null : parseGpsState(event.data.state));
+    }
+    window.addEventListener("message", receive);
+    return () => window.removeEventListener("message", receive);
+  }, []);
+  const sendGps = (command: SimulatorGpsCommand) => iframe.current?.contentWindow?.postMessage({ channel: SIMULATOR_CHANNEL, type: "gps-command", command }, window.location.origin);
 
   // Safe-area updates are event-driven too: document loads, route reports and HMR styles.
   useEffect(() => {
@@ -155,17 +190,10 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
       <div className={styles.brand}><MonitorSmartphone size={22} /><div><h1>App simulator</h1><p>The Maroon · Development workspace</p></div></div>
       <div className={styles.headerStatus}><span className={styles.headerDevice}>{preset.label}</span><span className={styles.devBadge}><span /> LOCAL DEV</span></div>
     </header>
-    <div className={styles.workspace}>
+    <div className={styles.workspace} style={{ gridTemplateColumns: `var(--groups-width) var(--pages-width) ${branchColumns.map(() => "var(--pages-width)").join(" ")} var(--conditions-width) minmax(var(--preview-min-width),1fr) 230px` }}>
       <aside className={styles.controls} aria-label="Development controls">
         <div className={styles.panelHeading}><SlidersHorizontal size={16} /> Groups</div>
         <div className={styles.cards}>{groups.map(group => <button className={styles.card} type="button" key={group} aria-pressed={selectedGroup === group} onClick={() => choosePage(pages.find(page => (page.group ?? "Other") === group)!.id)}>{group}</button>)}</div>
-        <section className={styles.controlSection} aria-labelledby="haptics-heading">
-          <h2 id="haptics-heading">Haptics test</h2>
-          <label>Intensity {hapticLevel}/10<input type="range" aria-label="Haptic test level" min={0} max={10} step={1} value={hapticLevel} onChange={event => setHapticLevel(Number(event.target.value))} /></label>
-          <label>Duration (milliseconds)<input type="number" aria-label="Haptic test duration" min={50} max={5000} step={50} value={hapticDuration} onChange={event => setHapticDuration(Math.max(50, Math.min(5000, Number(event.target.value) || 1000)))} /></label>
-          <button type="button" onClick={() => { void lightTap({ intensity: hapticLevel, durationMs: hapticDuration }); }}>Test haptic</button>
-          <p>Visual simulation only. Native feedback uses device presets. Reduced motion keeps the meter without shaking.</p>
-        </section>
         <section className={styles.controlSection} aria-labelledby="device-heading">
           <h2 id="device-heading">Device</h2>
           <label>Preset<select aria-label="Device preset" value={device} onChange={event => chooseDevice(event.target.value)}>{SIMULATOR_DEVICES.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
@@ -179,10 +207,17 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
       </aside>
       <aside className={styles.controls} aria-label="Pages">
         <div className={styles.panelHeading}>Pages</div>
-        <div className={styles.cards}>{pages.filter(page => (page.group ?? "Other") === selectedGroup).map(page => <button data-page-id={page.id} className={styles.card} type="button" key={page.id} aria-pressed={pageId === page.id} onClick={() => choosePage(page.id)}>{page.label}<small>{page.path}</small></button>)}</div>
+        <div className={styles.cards}>{pages.filter(page => (page.group ?? "Other") === selectedGroup && !page.parentId).map(page => <button data-page-id={page.id} className={styles.card} type="button" key={page.id} aria-pressed={activeIds.has(page.id)} onClick={() => choosePage(page.id)}>{page.label}<small>{page.path}</small></button>)}</div>
         {!pageId && <p>Unmapped route: {currentPath}</p>}
       </aside>
-      <aside className={styles.controls} aria-label="Conditionals">
+      {branchColumns.map(parent => <aside key={parent.id} className={styles.controls} aria-label={`${parent.label} pages`}>
+        <div className={styles.panelHeading}>{parent.label}</div>
+        {Array.from(new Set(pages.filter(page => page.parentId === parent.id).map(page => page.section ?? "Pages"))).map(section => <section key={section}>
+          <h2 className={styles.branchHeading}>{section}</h2>
+          <div className={styles.cards}>{pages.filter(page => page.parentId === parent.id && (page.section ?? "Pages") === section).map(page => <button data-page-id={page.id} key={page.id} type="button" className={styles.card} aria-pressed={activeIds.has(page.id)} onClick={() => choosePage(page.id)}>{page.label}</button>)}</div>
+        </section>)}
+      </aside>)}
+      <aside ref={conditionalColumn} className={styles.controls} aria-label="Conditionals">
         <div className={styles.panelHeading}>Conditionals</div>
         <div className={styles.cards}>{selectedPage.conditions?.length ? selectedPage.conditions.map(condition => condition.playerCount ? <section key={condition.id} className={styles.controlSection}><label>{condition.label}<input type="number" aria-label={condition.label} min={1} max={64} placeholder="From data source" value={state.playerCount ?? ""} onChange={event => updateState("playerCount", event.target.value)} /></label></section> : <button className={styles.card} type="button" key={condition.id} aria-pressed={condition.source ? source === condition.source : Object.entries(condition.state ?? {}).every(([key, value]) => state[key as keyof SimulatorState] === value)} onClick={() => { if (condition.source) setSource(condition.source); if (condition.state) setState(current => ({ ...current, ...condition.state })); }}>{condition.label}</button>) : <p>No conditional states</p>}</div>
         {!!selectedPage.conditions?.length && <button type="button" onClick={() => { setState(DEFAULT_SIMULATOR_STATE); setSource("maroon"); }}><RotateCcw size={13} /> Reset conditionals</button>}
@@ -196,6 +231,9 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
               <iframe ref={iframe} title="Mobile application preview" src={frameSrc} width={size.width} height={size.height}
                 style={{ width: size.width, height: size.height, minWidth: size.width, minHeight: size.height, maxWidth: "none", maxHeight: "none" }}
                 className={styles.frame} onLoad={() => { setReady(true); sendConfig(); }} />
+              {/* The phone's front camera, drawn over the screen like the real hardware (taps pass through). */}
+              {device.startsWith("iphone") && <span className={`${styles.camera} ${styles.dynamicIsland}`} aria-hidden />}
+              {device.startsWith("pixel") && <span className={`${styles.camera} ${styles.punchHole}`} aria-hidden />}
               </div>
               {showSafeAreas && <div className={styles.safeGuides} aria-hidden><span /><span /></div>}
             </div>
@@ -205,7 +243,32 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
         </div>
         <footer className={styles.footer}>Shared application components · Controls and fixture overrides stay in development</footer>
       </div>
-      <DesignReview key={`${currentPath}:${pageId}`} screen={screen} frame={iframe} width={size.width} height={size.height} />
+      <DesignReview key={`${currentPath}:${pageId}`} screen={screen} frame={iframe} width={size.width} height={size.height}>
+        <section className={styles.controlSection} aria-labelledby="haptics-heading">
+          <h2 id="haptics-heading">Haptics test</h2>
+          <label>Intensity {hapticLevel}/10<input type="range" aria-label="Haptic test level" min={0} max={10} step={1} value={hapticLevel} onChange={event => setHapticLevel(Number(event.target.value))} /></label>
+          <label>Duration (milliseconds)<input type="number" aria-label="Haptic test duration" min={50} max={5000} step={50} value={hapticDuration} onChange={event => setHapticDuration(Math.max(50, Math.min(5000, Number(event.target.value) || 1000)))} /></label>
+          <button type="button" onClick={() => { void lightTap({ intensity: hapticLevel, durationMs: hapticDuration }); }}>Test haptic</button>
+          <p>Visual simulation only. Native feedback uses device presets. Reduced motion keeps the meter without shaking.</p>
+        </section>
+        <section className={styles.controlSection} aria-labelledby="gps-heading">
+          <h2 id="gps-heading">GPS test</h2>
+          {gps ? <>
+            <div className={styles.gpsToggle} role="group" aria-label="GPS source">
+              {(["real", "mock"] as const).map(mode => <button key={mode} type="button" aria-pressed={gps.mode === mode} onClick={() => sendGps({ mode })}>{mode === "real" ? "Real GPS" : "Mock GPS"}</button>)}
+            </div>
+            <p>Accuracy: <strong>{gps.source === "mock" ? "Mock (exact)" : gps.accuracyMeters !== null ? `±${Math.round(gps.accuracyMeters / 0.9144)} yds` : "Waiting for a fix…"}</strong></p>
+            {gps.mode === "mock" && <div className={styles.gpsPad} role="group" aria-label="Move mock player 10 yards">
+              <button type="button" className={styles.gpsUp} aria-label="Move north" onClick={() => sendGps({ move: { north: 1, east: 0 } })}><ArrowUp size={14} aria-hidden /></button>
+              <button type="button" className={styles.gpsLeft} aria-label="Move west" onClick={() => sendGps({ move: { north: 0, east: -1 } })}><ArrowLeft size={14} aria-hidden /></button>
+              <button type="button" className={styles.gpsReset} aria-label="Reset to the tee" onClick={() => sendGps({ reset: true })}><RotateCcw size={13} aria-hidden /></button>
+              <button type="button" className={styles.gpsRight} aria-label="Move east" onClick={() => sendGps({ move: { north: 0, east: 1 } })}><ArrowRight size={14} aria-hidden /></button>
+              <button type="button" className={styles.gpsDown} aria-label="Move south" onClick={() => sendGps({ move: { north: -1, east: 0 } })}><ArrowDown size={14} aria-hidden /></button>
+            </div>}
+            <p>Moves the mock player 10 yards; ↺ puts them back on the tee. Not part of the app — real players never see these.</p>
+          </> : <p>Open a GPS screen in the phone (Golf Trip Active → GPS prototype, or Scoring → GPS) to switch Real / Mock GPS and move the mock player.</p>}
+        </section>
+      </DesignReview>
     </div>
   </main>;
 }

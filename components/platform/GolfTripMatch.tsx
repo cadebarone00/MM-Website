@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from "react";
 import { resolveGolfFormat } from "@/lib/platform/formats";
+import { rankLeaderboard } from "@/lib/platform/golfLeaderboardOrder";
 import {
+  GOLF_PREVIEW_COURSE_WEATHER,
   normalizeCompetitor,
-  type GolfLeaderboardEntry,
   type GolfMatchCompetitor,
   type GolfMatchGolfer,
   type GolfMatchPairing,
@@ -75,7 +76,8 @@ export function GolfTripLeaderboard({ match }: { match: GolfMatchPreview }) {
   const formatDef = resolveGolfFormat(match.formatDef?.key ?? match.format);
   const isStableford = formatDef.scoringMethod === "stableford";
   const showNet = match.handicap && net;
-  const rows = showNet ? netRanked(match.leaderboard, isStableford) : match.leaderboard;
+  // Always best → worst (alphabetical by last name before anyone has a score), for Gross and Net alike.
+  const rows = rankLeaderboard(match.leaderboard, { net: showNet, stableford: isStableford });
 
   function toggleCard(name: string) {
     setOpenCards((current) => {
@@ -101,17 +103,17 @@ export function GolfTripLeaderboard({ match }: { match: GolfMatchPreview }) {
         {rows.map(({ position, golfer, total, thru, today, netTotal, netToday, pointsTotal, pointsToday, holes }) => {
           const open = openCards.has(golfer.name);
           const cardId = `scorecard-${golfer.name.replace(/\W+/g, "-")}`;
-          const totDisplay = isStableford ? (pointsTotal !== undefined ? `${pointsTotal} PTS` : total) : (showNet ? netTotal : total);
-          const tdyDisplay = isStableford ? (pointsToday !== undefined ? `${pointsToday} PTS` : today) : (showNet ? netToday : today);
+          const totDisplay = isStableford ? (pointsTotal !== undefined ? `${pointsTotal} PTS` : total) : parLabel(showNet ? netTotal : total);
+          const tdyDisplay = isStableford ? (pointsToday !== undefined ? `${pointsToday} PTS` : today) : parLabel(showNet ? netToday : today);
           return <li key={golfer.name} className={`${styles.single} ${showNet ? styles.singleNet : ""} ${open ? styles.singleOpen : ""}`}>
             <span className={styles.rank}>{position}</span>
             <button type="button" className={`${styles.cardButton} ${open ? styles.cardButtonOpen : ""}`} onClick={() => toggleCard(golfer.name)}
               aria-expanded={open} aria-controls={open ? cardId : undefined} aria-label={`${golfer.name} scorecard`}>CARD</button>
             <Golfer golfer={golfer} align="left" showThru={false} showHcp={false} />
             {showNet && <span className={styles.number} aria-label={`Handicap ${golfer.hcp}`}>{golfer.hcp}</span>}
-            <span className={styles.number} aria-label={`Total ${totDisplay}`}>{totDisplay}</span>
+            <span className={styles.number} data-par={isStableford ? undefined : parColor(totDisplay)} aria-label={`Total ${totDisplay}`}>{totDisplay}</span>
             <span className={styles.number} aria-label={`Thru ${thru}`}>{thru}</span>
-            <span className={styles.number} aria-label={`Today ${tdyDisplay}`}>{tdyDisplay}</span>
+            <span className={styles.number} data-par={isStableford ? undefined : parColor(tdyDisplay)} aria-label={`Today ${tdyDisplay}`}>{tdyDisplay}</span>
             {open && <Scorecard id={cardId} par={match.par} holes={holes} name={golfer.name} />}
           </li>;
         })}
@@ -120,24 +122,17 @@ export function GolfTripLeaderboard({ match }: { match: GolfMatchPreview }) {
   </div>;
 }
 
-const scoreValue = (score: string) => {
-  const clean = score.replace(/\s*PTS/i, "");
-  return clean === "E" ? 0 : Number(clean) || 0;
-};
+function parLabel(score: string): string {
+  const value = score.trim() === "E" ? 0 : Number(score);
+  if (!score.trim() || !Number.isFinite(value)) return score;
+  return value === 0 ? "E" : value > 0 ? `+${value}` : String(value);
+}
 
-/** Sorts by net score with "T" for ties (lowest first for stroke play, highest first for Stableford). */
-function netRanked(rows: GolfLeaderboardEntry[], isStableford = false): GolfLeaderboardEntry[] {
-  const sorted = [...rows].sort((a, b) => {
-    const valA = scoreValue(a.netTotal);
-    const valB = scoreValue(b.netTotal);
-    return isStableford ? valB - valA : valA - valB;
-  });
-  return sorted.map((row) => {
-    const value = scoreValue(row.netTotal);
-    const place = sorted.findIndex((r) => scoreValue(r.netTotal) === value) + 1;
-    const tied = sorted.filter((r) => scoreValue(r.netTotal) === value).length > 1;
-    return { ...row, position: `${tied ? "T" : ""}${place}` };
-  });
+function parColor(score: string): string | undefined {
+  if (score === "E") return "even";
+  if (score.startsWith("-")) return "under";
+  if (score.startsWith("+")) return "over";
+  return undefined;
 }
 
 /**
@@ -251,15 +246,15 @@ export function GolfCourseWeather({ match }: { match: GolfMatchPreview }) {
         <h3 className={styles.headerTitle}>{match.course}</h3>
         <p className={styles.headerDetail}>{roundDay(match.roundDate)} • Round {match.round} • {formatDef.label}</p>
       </div>
-      <span className={styles.weatherTemp}>—°</span>
+      <span className={styles.weatherTemp}>{GOLF_PREVIEW_COURSE_WEATHER.temperature}°</span>
     </div>
     <div className={styles.weatherStats}>
-      {["High", "Low", "Wind", "Rain"].map((label) => <p key={label} className={styles.weatherStat}><span>{label}</span>—</p>)}
+      {GOLF_PREVIEW_COURSE_WEATHER.stats.map(([label, value]) => <p key={label} className={styles.weatherStat}><span>{label}</span>{value}</p>)}
     </div>
     <div className={styles.weatherHours} aria-label="Hourly forecast">
-      {["8 AM", "10 AM", "12 PM", "2 PM", "4 PM"].map((hour) => <p key={hour} className={styles.weatherHour}><span>{hour}</span>—°</p>)}
+      {GOLF_PREVIEW_COURSE_WEATHER.hours.map(([hour, temp]) => <p key={hour} className={styles.weatherHour}><span>{hour}</span>{temp}</p>)}
     </div>
-    <p className={styles.weatherNote}>Forecast coming soon</p>
+    <p className={styles.weatherNote}>Sample forecast</p>
   </section>;
 }
 

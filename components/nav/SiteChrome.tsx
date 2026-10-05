@@ -45,7 +45,8 @@ export function SiteChrome({ children, nextTournamentOverride }: { children: Rea
 
 function SiteChromeBody({ children, nextTournamentOverride }: { children: ReactNode; nextTournamentOverride: NextTournamentOverride }) {
   const pathname = usePathname();
-  if (pathname === "/dev") return <>{children}</>;
+  // The /dev/gps prototype is a full-screen map, so no header or bottom menu over it.
+  if (pathname === "/dev" || pathname === "/new-user" || pathname === "/dev/gps") return <>{children}</>;
   const hideBottomNav = isSiteBottomNavHidden(pathname);
   return (
     <>

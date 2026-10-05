@@ -58,9 +58,11 @@ export function PlayerScorecardView({
   scorecard,
   tournament,
   shotVideos,
+  profile,
 }: {
   scorecard: PlayerScorecard;
   tournament: Tournament;
+  profile?: import("@/lib/data/types").PlayerProfile;
   shotVideos?: Record<number, Record<number, Record<number, string>>>; // round -> hole -> shot -> url
 }) {
   const [round, setRound] = useState(String(scorecard.rounds[scorecard.rounds.length - 1].round));
@@ -206,7 +208,7 @@ export function PlayerScorecardView({
 
       <StatsSection tournament={tournament} player={scorecard.player} />
 
-      <PlayerBioSection featuredYear={tournament.year} profile={getPlayerProfile(scorecard.player)} />
+      <PlayerBioSection featuredYear={tournament.year} profile={profile ?? getPlayerProfile(scorecard.player)} />
     </div>
   );
 }

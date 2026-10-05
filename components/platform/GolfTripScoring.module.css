@@ -1,47 +1,78 @@
-/* Scoring pull-up sheet. It runs to the bottom of the screen, 3% in from each side, and the floating bottom menu sits on
-   top of it. --nav-zone is the strip the menu covers (12px gap + 68px menu + 8px); collapsed, the sheet slides down
-   until just its handle (56px) shows above that strip. The fixed frame lets taps through; only the sheet catches them. */
-.frame{--nav-zone:calc(88px + env(safe-area-inset-bottom));position:fixed;left:0;right:0;bottom:0;z-index:25;height:80svh;pointer-events:none}
-.sheet{position:absolute;left:0;right:0;bottom:0;height:100%;max-height:100%;width:94%;margin:0 auto;display:flex;flex-direction:column;
-  border-radius:18px 18px 0 0;background:linear-gradient(180deg,#f8f3ea 0%,#f2ebdf 100%);border:1px solid rgba(126,81,59,.3);border-bottom:0;box-shadow:0 -10px 30px rgba(0,0,0,.18);
-  color:var(--color-maroon-900,#2f0c0e);font-family:var(--font-spectral),Georgia,serif;pointer-events:auto;transform:translateY(calc(100% - 56px - var(--nav-zone)));transition:transform .28s cubic-bezier(.2,.8,.2,1);z-index:25}
-.open{transform:translateY(0)}
+/* Scoring pull-up sheet. Collapsed, it's a card 3% in from each side with just its handle (56px) showing above the strip
+   the floating bottom menu covers (--nav-zone: 12px gap + 68px menu + 8px). Pulled up, it rises to the top of the screen
+   and grows into full screen on the way: --sheet-open runs 0 (closed) → 1 (open) and drives the width, corners, border
+   and the drop below the phone's camera (the safe area), so the grabber ends up just under the front camera. While
+   dragging it follows the finger (set inline); otherwise it animates. The fixed frame lets taps through. */
+@property --sheet-open{syntax:"<number>";inherits:true;initial-value:0}
+.frame{--nav-zone:calc(88px + env(safe-area-inset-bottom));position:fixed;left:0;right:0;bottom:0;z-index:25;height:100svh;pointer-events:none}
+.sheet{--sheet-open:0;position:absolute;left:0;right:0;bottom:0;height:100%;max-height:100%;width:calc(94% + 6% * var(--sheet-open));margin:0 auto;display:flex;flex-direction:column;box-sizing:border-box;
+  /* The safe area runs a little past the camera; 8px less tucks the grabber just under it. */
+  padding-top:calc(max(0px, env(safe-area-inset-top) - 8px) * var(--sheet-open));
+  border-radius:calc(18px * (1 - var(--sheet-open))) calc(18px * (1 - var(--sheet-open))) 0 0;background:linear-gradient(180deg,#f8f3ea 0%,#f2ebdf 100%);border:1px solid rgba(126,81,59,calc(.3 * (1 - var(--sheet-open))));border-bottom:0;box-shadow:0 -10px 30px rgba(0,0,0,.18);
+  color:var(--color-maroon-900,#2f0c0e);font-family:var(--font-spectral),Georgia,serif;pointer-events:auto;transform:translateY(calc(100% - 56px - var(--nav-zone)));transition:transform .28s cubic-bezier(.2,.8,.2,1),--sheet-open .28s cubic-bezier(.2,.8,.2,1);z-index:25}
+.open{transform:translateY(0);--sheet-open:1}
 
 /* Handle: grabber bar, "Scoring", and a one-line summary. touch-action:none so a drag moves the sheet, not the page. */
-.handle{flex:none;display:grid;grid-template-columns:1fr auto 1fr;align-items:start;height:56px;padding:10px 16px 0;border:0;background:none;color:inherit;
+.handle{flex:none;display:grid;grid-template-columns:1fr auto 1fr;align-items:start;height:calc(56px + 36px * var(--sheet-open));padding:calc(10px + 36px * var(--sheet-open)) 16px 0;border:0;background:none;color:inherit;
   cursor:grab;touch-action:none;position:relative}
 .handle:active{cursor:grabbing}
 .handle:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:-4px;border-radius:18px 18px 0 0}
-.grabber{position:absolute;top:7px;left:50%;width:40px;height:4px;margin-left:-20px;border-radius:4px;background:rgba(122,79,41,.5)}
-.handleLabel{grid-column:2;justify-self:center;align-self:start;margin-top:12px;font:700 18px/1 var(--font-spectral),Georgia,serif}
+.handleLabel{grid-column:2;justify-self:center;align-self:start;margin-top:0;box-sizing:border-box;width:118.8px;height:40.6px;display:grid;place-items:center;padding:0;border:1px solid var(--color-maroon-900,#2f0c0e);border-radius:999px;background:var(--color-maroon-900,#2f0c0e);color:#fff;font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;text-shadow:none}
 .handleMeta{grid-column:1;display:flex;align-items:flex-start;justify-content:flex-start;gap:6px;align-self:start;margin-top:2px;font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.04em;color:rgba(47,12,14,.75);white-space:nowrap}
 .handleMeta span{display:inline-block}
-.scorecardButton{position:absolute;top:10px;right:16px;z-index:3;padding:8px 12px;border:1px solid rgba(47,12,14,.25);border-radius:999px;background:rgba(255,255,255,.22);color:var(--color-maroon-900,#2f0c0e);font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.scorecardButton{position:absolute;top:calc(46px + max(0px, env(safe-area-inset-top) - 8px) * var(--sheet-open));right:16px;z-index:3;padding:8px 12px;border:1px solid rgba(47,12,14,.25);border-radius:999px;background:rgba(255,255,255,.22);color:var(--color-maroon-900,#2f0c0e);font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+/* Matching pills reserve the right 30% behind a divider; labels center in the left 70%. */
+.scorecardButton{box-sizing:border-box;width:118.8px;height:40.6px;display:grid;grid-template-columns:70% 30%;align-items:center;padding:0;text-align:center}
+.pillLabel,.pillLock{display:flex;align-items:center;justify-content:center;align-self:stretch;min-width:0;padding:0;border:0;border-radius:999px;background:transparent;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer}
+.pillLock[aria-pressed=true]{background:rgba(196,155,84,.28)}
+.pillLabel:focus-visible,.pillLock:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:-3px}
+.scorecardButton::after{content:"";position:absolute;right:30%;top:0;bottom:0;width:1px;background:currentColor;opacity:.45;pointer-events:none}
+.scorecardButton:not(.gpsButton){border-color:#fff;background:#fff;color:var(--color-maroon-900,#2f0c0e)}
+.scorecardButtonLeft{right:auto;left:16px}
+.gpsButton{border-color:#c62828;background:#c62828;color:#fff}
+.gps{display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:8px}
+/* The GPS prototype fills the sheet under the pills, as a rounded card. */
+.gpsMap{flex:1 1 auto;min-height:440px;margin-top:6px;border-radius:16px}
+.scorecardTable{width:100%;border-collapse:collapse;table-layout:fixed;font:700 13px/1 var(--font-spectral),Georgia,serif;text-align:center;color:var(--color-maroon-900,#2f0c0e)}
+.scorecardTable th,.scorecardTable td{padding:8px 2px;border-bottom:1px solid rgba(47,12,14,.12)}
+.scorecardTable thead th{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:rgba(47,12,14,.62);border-bottom:2px solid rgba(47,12,14,.3)}
+.scorecardTable tbody th{color:rgba(47,12,14,.75)}
+.scorecardTable .myScore{font-size:15px}
+.scorecardTable .nameHead{overflow:hidden;white-space:nowrap;text-transform:none;font-size:11px;letter-spacing:.02em}
+/* Three tinted sections (hole / stats / scores) with a clear gap between, just enough to see where each changes. */
+.scorecardTable .section{background:rgba(107,22,26,.06)}
+.scorecardTable .totalRow .section{background:rgba(107,22,26,.12)}
+.scorecardTable .sectionGap,.scorecardTable .totalRow .sectionGap{padding:0;border-bottom:0;background:transparent}
+.scorecardTable .totalRow th,.scorecardTable .totalRow td{background:rgba(47,12,14,.06);border-bottom:2px solid rgba(47,12,14,.3)}
+.scorecardTable .totalRow th{font-size:10px;letter-spacing:.06em;text-transform:uppercase}
+.scorecardView{display:flex;flex-direction:column;gap:14px;padding-top:8px}
+.gpsNote{margin:0;color:rgba(47,12,14,.65);font-size:13px;text-align:center}
 .scorecardButton:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:2px}
 
 /* Tucked away, the controls fade out so nothing peeks around the bottom menu; they show while open or being dragged. */
 .sheet:not(.open):not(.dragging) .body{opacity:0}
-.body{transition:opacity .2s ease;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:16px;padding:0 8px 10px}
-.holeHeader{display:flex;align-items:center;justify-content:center;margin-top:-4px}
+.body{transition:opacity .2s ease;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;justify-content:space-between;gap:14px;padding:0 8px calc(16px + env(safe-area-inset-bottom))}
+.body>*{flex-shrink:0} /* short screens scroll instead of squashing controls */
+.holeHeader{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-top:6px}
+.holeStat{margin:0;text-align:center}
+.holeStat dt{font:700 12px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(47,12,14,.62)}
+.holeStat dd{margin:6px 0 0;font:700 20px/1 var(--font-spectral),Georgia,serif}
 .holeTitle{display:flex;flex-direction:column;align-items:center;gap:2px}
-.holeNumber{font:700 24px/1 var(--font-spectral),Georgia,serif}
-.holePar{font:600 13px/1 var(--font-spectral),Georgia,serif;color:rgba(47,12,14,.7)}
+.holeNumber{font:700 28px/1 var(--font-spectral),Georgia,serif}
+.holePar{font:600 15px/1 var(--font-spectral),Georgia,serif;color:rgba(47,12,14,.7)}
 
 .stepperWrap{display:flex;flex-direction:column;gap:10px}
-.previewMode{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
-.previewChip{padding:6px 10px;border:1px solid rgba(47,12,14,.25);border-radius:999px;background:rgba(255,255,255,.18);color:var(--color-maroon-900,#2f0c0e);font:600 11px/1 var(--font-spectral),Georgia,serif;cursor:pointer}
-.previewChipActive{background:var(--color-maroon-900,#2f0c0e);border-color:var(--color-maroon-900,#2f0c0e);color:#f8f3ea}
 
-.scoreSplit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:300px;margin:0 auto;width:100%}
+.scoreSplit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:340px;margin:0 auto;width:100%}
 .scoreCard{display:flex;flex-direction:column;align-items:center;gap:8px}
-.scoreCardCompact{gap:4px;min-width:0}
-.scoreCardLabel{font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(47,12,14,.7)}
+.scoreCardCompact{gap:10px;min-width:0}
+.scoreCardLabel{font:700 13px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(47,12,14,.7)}
 
 .stepper{display:flex;align-items:center;justify-content:center;gap:6px}
-.stepButton{display:grid;place-items:center;width:36px;height:36px;border:1.5px solid rgba(47,12,14,.7);border-radius:50%;background:transparent;color:var(--color-maroon-900,#2f0c0e);cursor:pointer}
+.stepButton{display:grid;place-items:center;width:44px;height:44px;border:1.5px solid rgba(47,12,14,.7);border-radius:50%;background:transparent;color:var(--color-maroon-900,#2f0c0e);cursor:pointer}
 .stepButton:active{background:var(--color-maroon-900,#2f0c0e);color:#f8f3ea}
 .strokes{display:flex;align-items:center;justify-content:center;min-width:52px;font:700 48px/1 var(--font-spectral),Georgia,serif}
-.strokesCompact{min-width:42px;font-size:28px;line-height:1}
+.strokesCompact{min-width:44px;font-size:36px;line-height:1}
 .strokesEmpty{color:rgba(47,12,14,.35)}
 .strokes small{font:600 12px/1 var(--font-spectral),Georgia,serif;color:rgba(47,12,14,.72)}
 
@@ -53,43 +84,49 @@
   .scoreCardLabel{font-size:10px}
 }
 
-.puttsWrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:4px}
-.puttsLabel{font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.08em;text-transform:uppercase;color:rgba(47,12,14,.68)}
-.putts{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
-.puttOption{display:grid;place-items:center;min-width:36px;height:32px;padding:0 10px;border:1px solid rgba(47,12,14,.25);border-radius:999px;background:rgba(255,255,255,.28);color:var(--color-maroon-900,#2f0c0e);font:700 13px/1 var(--font-spectral),Georgia,serif;cursor:pointer}
+/* The body spreads spare height evenly (space-between), so margins get absorbed; a relative nudge moves Putts, and the
+   FWY / PEN / GIR row with it, up without reflowing anything else. */
+.puttsWrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:4px;position:relative;top:-12px}
+.puttsLabel{font:700 13px/1 var(--font-spectral),Georgia,serif;letter-spacing:.08em;text-transform:uppercase;color:rgba(47,12,14,.68)}
+.putts{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.puttOption{display:grid;place-items:center;min-width:44px;height:40px;padding:0 12px;border:1px solid rgba(47,12,14,.25);border-radius:999px;background:rgba(255,255,255,.28);color:var(--color-maroon-900,#2f0c0e);font:700 15px/1 var(--font-spectral),Georgia,serif;cursor:pointer}
 .puttOption[aria-pressed="true"]{background:var(--color-maroon-900,#2f0c0e);border-color:var(--color-maroon-900,#2f0c0e);color:#f8f3ea}
 
-.compassRow{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:12px;margin-top:2px}
+.compassRow{display:grid;grid-template-columns:minmax(0,140px) 36px minmax(0,140px);justify-content:center;gap:2px;margin-top:2px;position:relative;top:-12px}
 .compass{display:flex;flex-direction:column;align-items:center;gap:6px}
-.compassLabel{font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(47,12,14,.68)}
-.compassDial{position:relative;width:120px;height:120px}
+.compassLabel{font:700 13px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(47,12,14,.68)}
+.compassDial{position:relative;width:min(140px,100%);height:140px}
 .compassButton,.compassCenter{position:absolute;display:grid;place-items:center;border:1px solid rgba(47,12,14,.3);background:rgba(255,255,255,.22);color:var(--color-maroon-900,#2f0c0e);font:700 18px/1 var(--font-spectral),Georgia,serif;cursor:pointer}
-.compassCenter{left:50%;top:50%;width:42px;height:42px;border-radius:50%;transform:translate(-50%, -50%);background:var(--color-maroon-900,#2f0c0e);border-color:var(--color-maroon-900,#2f0c0e);color:#f8f3ea;z-index:2}
-.compassButton{width:34px;height:34px;border-radius:50%}
+.compassCenter{left:50%;top:50%;width:48px;height:48px;border-radius:50%;transform:translate(-50%, -50%);z-index:2}
+.compassButton{width:40px;height:40px;border-radius:50%}
+/* The picked spot on a compass fills in maroon; a disabled compass (par 3 fairway, or a submitted card) fades. */
+.compassButton[aria-pressed=true],.compassCenter[aria-pressed=true]{background:var(--color-maroon-900,#2f0c0e);border-color:var(--color-maroon-900,#2f0c0e);color:#f8f3ea}
+.compassButton:disabled,.compassCenter:disabled,.puttOption:disabled,.stepButton:disabled{opacity:.4;cursor:default}
 .directionUp{top:0;left:50%;transform:translateX(-50%)}
 .directionDown{bottom:0;left:50%;transform:translateX(-50%)}
 .directionLeft{left:0;top:50%;transform:translateY(-50%)}
 .directionRight{right:0;top:50%;transform:translateY(-50%)}
 
-.arrow:focus-visible,.stepButton:focus-visible,.holeChip:focus-visible,.puttOption:focus-visible,.previewChip:focus-visible,.compassButton:focus-visible,.compassCenter:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:2px}
+.arrow:focus-visible,.stepButton:focus-visible,.holeChip:focus-visible,.puttOption:focus-visible,.compassButton:focus-visible,.compassCenter:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:2px}
 
 /* Hole picker: one horizontal slider of full square selectors; completed holes fill in maroon. */
 .holes{position:relative;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px;background:transparent}
 .holes::-webkit-scrollbar{display:none}
-.holeChip{flex:none;display:grid;place-items:center;width:38px;height:38px;border:1px solid rgba(47,12,14,.22);border-radius:10px;background:#f8f3ea;color:var(--color-maroon-900,#2f0c0e);cursor:pointer;box-shadow:inset 0 0 0 1px rgba(47,12,14,.05)}
-.holeChipNumber{font:700 15px/1 var(--font-spectral),Georgia,serif}
+.holeChip{flex:none;display:grid;place-items:center;width:42px;height:42px;border:1px solid rgba(47,12,14,.22);border-radius:10px;background:#f8f3ea;color:var(--color-maroon-900,#2f0c0e);cursor:pointer;box-shadow:inset 0 0 0 1px rgba(47,12,14,.05)}
+.holeChipNumber{font:700 17px/1 var(--font-spectral),Georgia,serif}
 .holeChipFilled{background:var(--color-maroon-900,#2f0c0e);border-color:var(--color-maroon-900,#2f0c0e);color:#f8f3ea}
 .holeChipActive{box-shadow:inset 0 0 0 1px rgba(255,255,255,.7), 0 0 0 1px rgba(47,12,14,.12)}
 
-.nextHoleButton{width:calc(100% - 12px);max-width:220px;margin:2px auto 0;padding:12px 16px;border:0;border-radius:12px;background:var(--color-maroon-900,#2f0c0e);color:#f8f3ea;font:700 14px/1 var(--font-spectral),Georgia,serif;cursor:pointer}
+.nextHoleButton{width:calc((100% + 16px) * .7);margin:0 auto; /* 15% in from each side of the sheet (body has 8px side padding) */ height:46px;padding:0 16px;border:0;border-radius:12px;background:var(--color-maroon-900,#2f0c0e);color:#f8f3ea;font:700 14px/1 var(--font-spectral),Georgia,serif;cursor:pointer}
 .nextHoleButton:disabled{opacity:.4;cursor:default}
 
 .summary{display:grid;grid-template-columns:repeat(3,1fr);margin:0;text-align:center}
 .summary dt{font:700 10px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(47,12,14,.62)}
 .summary dd{margin:6px 0 0;font:700 18px/1 var(--font-spectral),Georgia,serif}
 /* Last thing in the body: keeps the content clear of the menu that covers the sheet's bottom (and gives JS its height). */
-.navSpacer{flex:none;height:var(--nav-zone);margin-top:-16px}
-.note{margin:0;text-align:center;font:500 12px/1.3 var(--font-spectral),Georgia,serif;color:rgba(47,12,14,.75)}
+/* The open sheet covers the bottom menu, so this spacer sits outside the layout (Next hole goes to the very bottom);
+   it keeps the menu's height for the closed-position maths in GolfTripScoring. */
+.navSpacer{position:absolute;left:0;bottom:0;width:0;height:var(--nav-zone);visibility:hidden;pointer-events:none}
 
 .handle,.stepButton,.holeChip{-webkit-tap-highlight-color:transparent}
 .stepButton:focus-visible,.holeChip:focus-visible,.nextHoleButton:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:2px}
@@ -97,3 +134,77 @@
 /* Desktop: no bottom menu, so the sheet sits at the bottom of the window. */
 @media (min-width:1024px){.frame{--nav-zone:0px}.sheet{width:min(560px,94%)}}
 @media (prefers-reduced-motion:reduce){.sheet{transition:none}}
+/* Desktop has no camera or full-screen phone: keep the card, 80% of the window tall. */
+@media (min-width:1024px){.frame{height:80svh}.sheet{--sheet-open:0}}
+/* Full-screen scoring ("Hold for scoring" and "Scoring button" views): the sheet covers the whole screen with no
+   drag handle; GPS stays top left, Scorecard moves to the top middle, EXIT (styled like the settings SAVE) top right. */
+.frameFull{top:0;height:auto;z-index:110} /* above the bottom menu (100) */
+.sheet.sheetFull{width:100%;height:100%;border-radius:0;border:0;transform:none;padding-top:env(safe-area-inset-top)}
+.sheetFull .scorecardButton{top:calc(46px + env(safe-area-inset-top))}
+.sheetFull .scorecardButtonCenter{right:auto;left:50%;transform:translateX(-50%)}
+.fullTopBar{flex:none;height:92px;display:flex;justify-content:center;align-items:flex-start;padding-top:46px;box-sizing:border-box}
+.exitButton{position:absolute;top:calc(8px + max(0px, env(safe-area-inset-top) - 8px) * var(--sheet-open));right:16px;z-index:3;min-height:28px;padding:0;border:0;background:transparent;color:var(--color-maroon-900,#2f0c0e);font:750 15px/1 var(--font-barlow),sans-serif;cursor:pointer}
+.exitButton:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:4px}
+/* "Scoring button" view, closed: a Next hole-style button in Next hole's spot, just above the bottom menu. */
+.openScoringButton{position:absolute;left:0;right:0;bottom:calc(var(--nav-zone) + 10px);pointer-events:auto;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+/* Pulled-up sheet: dim everything behind it (bottom menu included) and swallow taps there. */
+.backdrop{position:fixed;inset:0;z-index:101;background:rgba(10,4,6,.35);touch-action:none;animation:backdropIn .2s ease both}
+.frameAbove{z-index:102}
+@keyframes backdropIn{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.backdrop{animation:none}}
+
+/* Scorecard: both final scores in green once the cards are complete and agree, above Save & Submit. */
+/* Submit score confirmation, same look as the trip's delete confirmation, with a green Submit Score. */
+.confirmOverlay{position:fixed;inset:0;display:grid;place-items:center;background:rgba(5,4,6,.55);z-index:120}
+.confirmDialog{display:flex;flex-direction:column;gap:12px;width:min(300px,calc(100vw - 32px));padding:18px 16px;border-radius:14px;background:var(--color-maroon-900,#2f0c0e);border:1px solid rgba(220,196,149,.4);box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.confirmPrompt{margin:0;color:#fff;font:700 20px/1.2 var(--font-spectral),Georgia,serif;text-align:center}
+.keepEditingButton,.submitScoreButton{min-height:42px;padding:0 18px;border-radius:10px;cursor:pointer;font:700 14px/1 var(--font-barlow),sans-serif}
+.keepEditingButton{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fbf8f1}
+.submitScoreButton{background:#2e7d32;border:1px solid #2e7d32;color:#fff}
+.keepEditingButton:focus-visible,.submitScoreButton:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+
+.penaltyColumn{display:flex;flex-direction:column;align-items:center;gap:6px}
+/* PEN: FWY on the left, GRN on the right, right under the label, each the size of a compass arrow button. The pair is wider
+   than its 48px column, so it spills evenly into the empty corners beside the compasses' top arrows instead of squeezing them. */
+.penaltyButtons{display:flex;flex-direction:row;gap:8px;flex-shrink:0}
+.compassCenter.penaltyButton{position:static;transform:none;flex-shrink:0;width:40px;height:40px;font-size:11px}
+/* Full-screen GPS: the map runs edge to edge, top to bottom; GPS / Scorecard / EXIT float on the image (solid so they
+   read over satellite), and the yardage card starts below them. */
+.sheet.gpsFullScreen{padding-top:0}
+.gpsFullScreen .fullTopBar{position:absolute;top:env(safe-area-inset-top);left:0;right:0;z-index:2}
+.gpsFullScreen .body{padding:0;gap:0}
+.gpsMap.gpsMapFull{min-height:0;margin:0;border-radius:0;--gps-top-offset:calc(88px + env(safe-area-inset-top))}
+.gpsFullScreen .scorecardButton{box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.gpsFullScreen .exitButton{padding:8px 14px;border-radius:999px;background:#f8f3ea;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+/* Pull-up sheet on GPS: the map fills the whole sheet (edge to edge, top to bottom, clipped to its corners while it
+   grows). The grabber, "Scoring" and the pills float on it over a soft dark fade, and the yardage card starts below them. */
+.sheet.gpsOverlay{overflow:hidden}
+.sheet.gpsOverlay.open:not(.dragging){border-width:0}
+.gpsOverlay::before{content:"";position:absolute;left:0;right:0;top:0;height:calc(108px + env(safe-area-inset-top));z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(20,6,8,.62),rgba(20,6,8,0))}
+.gpsOverlay .handle{position:relative;z-index:2;color:#fbf8f1;text-shadow:0 1px 3px rgba(0,0,0,.55)}
+.gpsOverlay .scorecardButton{box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.gpsMap.gpsMapFill{position:absolute;inset:0;z-index:0;min-height:0;margin:0;border-radius:0;
+  --gps-top-offset:calc(88px + max(0px, env(safe-area-inset-top) - 8px) * var(--sheet-open));--gps-bottom-offset:env(safe-area-inset-bottom)}
+/* A slight maroon tint (25%) along the top edge, fading into the cream within ~40px. Its strength follows how far the
+   sheet is pulled up (--sheet-open 0 → 1): full when tucked away, gone when open, in between while dragging or sliding. */
+.sheet{background:linear-gradient(180deg,rgba(107,22,26,calc(.25 * (1 - var(--sheet-open)))) 0,rgba(107,22,26,0) 40px),linear-gradient(180deg,#f8f3ea 0%,#f2ebdf 100%)}
+.sheet.fastClose{transition-duration:.1s} /* tap to tuck away: 100 ms */
+.scorecardView .scorecardTable{width:calc(100% + 16px);margin:0 -8px} /* sections run to the sheet edges */
+/* Under the scorecard's Total: "Weisser 72   Patel 75". */
+.scorecardTotals{display:grid;grid-template-columns:1fr 1fr;margin:4px 0 0;font-family:var(--font-spectral),Georgia,serif;color:var(--color-maroon-900,#2f0c0e)}
+.scorecardTotals div{display:flex;align-items:baseline;justify-content:center;gap:8px;min-width:0;container-type:inline-size}
+.scorecardTotals dt{font-size:min(22px, calc((100cqw - 78px) / (var(--chars, 8) * .78)));white-space:nowrap;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:rgba(47,12,14,.7)}
+.scorecardTotals dd{margin:0;font-size:37px;line-height:1;font-weight:700}
+/* Card view: the course name above the scorecard; totals turn green once the card can be submitted; Submit & Save under them. */
+.scorecardCourse{margin:2px 0 0;text-align:center;font:700 20px/1.2 var(--font-spectral),Georgia,serif;color:var(--color-maroon-900,#2f0c0e)}
+.scorecardTotalsReady dd{color:#2e7d32}
+.submitSave{flex:none;margin-top:6px}
+.untouchedScore{color:rgba(47,12,14,.38);font-weight:600}
+
+/* Grabber and Exit sit above the lowered, aligned pill row. */
+.grabber{position:absolute;top:7px;left:50%;width:40px;height:4px;margin-left:-20px;border-radius:4px;background:rgba(122,79,41,.5)}
+.gpsOverlay .grabber{background:rgba(251,248,241,.85)}
+.gpsOverlay .exitButton{color:#fff}
+.sheetFull .exitButton{top:calc(8px + env(safe-area-inset-top))}
+.holeSelection{display:flex;flex-direction:column;gap:6px}

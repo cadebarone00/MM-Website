@@ -1,94 +1,135 @@
 "use client";
 
 import { useState } from "react";
-import { Flag, Trophy } from "lucide-react";
 import { GolfTripActionSheet } from "./GolfTripActionSheet";
-import { GAME_PREVIEW_PLAYERS as players, GAME_PREVIEW_ROUNDS as rounds, recommendedGames, type GameScope, type GroupSize, type SideGameDefinition } from "@/lib/platform/golfTripGames";
+import { GAME_PREVIEW_PLAYERS as players, GAME_PREVIEW_ROUNDS as rounds, GAME_PREVIEW_ROUNDS_PLAYED as roundsPlayed, SIDE_GAME_REGISTRY, type GameId, type SideGameDefinition } from "@/lib/platform/golfTripGames";
 import { GolfGameScoringPreview } from "./GolfGameScoringPreview";
 import styles from "./GolfTripGames.module.css";
 
-const sizes: GroupSize[] = [1, 2, 3, 4, 5];
-const sizeLabel = (size: number) => size === 1 ? "Single" : `${size}some`;
+type Length = "round" | "tournament";
+type ActiveGame = { key: number; game: SideGameDefinition; length: Length; handicap: boolean; participants: string[] };
+
+const INDIVIDUAL_GAME_IDS: GameId[] = ["skins"];
+const LIBRARY = [
+  { title: "Individual", games: SIDE_GAME_REGISTRY.filter(game => INDIVIDUAL_GAME_IDS.includes(game.id)) },
+  { title: "Team", games: SIDE_GAME_REGISTRY.filter(game => !INDIVIDUAL_GAME_IDS.includes(game.id)) },
+];
 const nameOf = (id: string) => players.find(player => player.id === id)?.name ?? "Choose player";
 
+// Length: defaults to the upcoming round. The other option covers every round still to play —
+// "Whole tournament" before Round 1, "Rest of tournament" once rounds have been played.
+const remainingRounds = rounds.slice(Math.min(roundsPlayed, rounds.length - 1));
+const upcoming = remainingRounds[0];
+const roundsFor = (length: Length) => length === "round" ? [upcoming] : remainingRounds;
+const lengthLabel = (length: Length) => length === "round" ? `Round ${upcoming.number} · ${upcoming.course}`
+  : roundsPlayed === 0 ? "Whole tournament" : `Rest of tournament · Rounds ${upcoming.number}–${rounds[rounds.length - 1].number}`;
+
+/** How many players a game takes: Match Play follows its 1v1 / 2v2 setting, the rest use their group sizes. */
+function playerRange(game: SideGameDefinition, matchFormat: 2 | 4): [number, number] {
+  if (game.id === "match-play") return [matchFormat, matchFormat];
+  const sizes = game.supportedGroupSizes.filter(size => size !== 1);
+  return [Math.min(...sizes), Math.max(...sizes)];
+}
+
+function GameRules({ game, selected }: { game: SideGameDefinition; selected: string[] }) {
+  if (game.id === "skins") return <><h4>Skins</h4><p>{selected.map(nameOf).join(" · ")}</p><p>Lowest score on a hole wins the skin. Tied holes carry the skin to the next hole.</p></>;
+  if (game.id === "match-play") return <><h4>{selected.length === 4 ? "2v2 Best Ball Match Play" : "1v1 Match Play"}</h4><p>{selected.length === 4 ? `${nameOf(selected[0])} + ${nameOf(selected[1])} vs ${nameOf(selected[2])} + ${nameOf(selected[3])}` : `${nameOf(selected[0])} vs ${nameOf(selected[1])}`}</p><p>Each hole counts toward Up / Down. Final ties stay tied.</p></>;
+  if (game.id === "9-point") return <><h4>9 points available per hole</h4><p>{selected.map(nameOf).join(" · ")}</p><p>Low / middle / high: 5 / 3 / 1. Ties: 4 / 4 / 1, 5 / 2 / 2 or 3 / 3 / 3.</p></>;
+  if (game.id === "wolf") return <><h4>Wolf rotation</h4><ol>{selected.map((id, index) => <li key={id}>{nameOf(id)} · Wolf turn {index + 1}</li>)}</ol><p>Order repeats each round. Choose a partner or Lone Wolf each hole; a solo win earns 2 points.</p></>;
+  if (game.id === "vegas") return <><h4>Team 1 vs Team 2</h4><div className={styles.teams}>{[0, 2].map((start, index) => <div key={start}><strong>Team {index + 1}</strong><p>{nameOf(selected[start])}<br />{nameOf(selected[start + 1])}</p><span>Example scores: 4 + 5 → <strong>45</strong></span></div>)}</div><p>Lower team number wins its difference in points.</p></>;
+  if (game.id === "coin-flip") return <><h4>Partners by coin flip</h4><p>{selected.map(nameOf).join(" / ")}</p><p>Set Heads / Tails every hole. Winners earn one point per opponent; all-same flips earn no points.</p></>;
+  return <><h4>Three six-hole matches</h4><p>1–6: 1 + 2 vs 3 + 4. 7–12: 1 + 3 vs 2 + 4. 13–18: 1 + 4 vs 2 + 3.</p><p>Best Ball Match Play. Winning partners each earn 1 segment point; tied segments earn 0.</p></>;
+}
+
 export function GolfTripGames() {
-  const [scope, setScope] = useState<GameScope | null>(null);
-  const [size, setSize] = useState<GroupSize | null>(null);
-  const [showScopeMenu, setShowScopeMenu] = useState(false);
-  const [roundId, setRoundId] = useState<string>(rounds[0].id);
+  const [open, setOpen] = useState(false);
+  const [sheetBox, setSheetBox] = useState<{ top: number; bottom: number }>({ top: 16, bottom: 16 });
   const [game, setGame] = useState<SideGameDefinition | null>(null);
-  const [selected, setSelected] = useState<string[]>(["you"]);
+  const [length, setLength] = useState<Length>("round");
+  const [matchFormat, setMatchFormat] = useState<2 | 4>(2);
   const [handicap, setHandicap] = useState(false);
-  const [pool, setPool] = useState("All players");
-  const [confirmed, setConfirmed] = useState(false);
-  const count = size === 1 ? 2 : size ?? 2;
-  const round = rounds.find(item => item.id === roundId)!;
-  const valid = selected.length === count && (size !== 1 || selected.some(id => players.find(player => player.id === id)?.group === "Another group"));
-  const resetGame = () => { setGame(null); setConfirmed(false); };
-  const chooseGame = (next: SideGameDefinition) => {
-    setGame(next); setConfirmed(false); setHandicap(false); setPool("All players");
-    setSelected(size === 1 ? ["you", "riley"] : players.slice(0, count).map(player => player.id));
+  const [showPlayers, setShowPlayers] = useState(false);
+  const [selected, setSelected] = useState<string[]>(["you"]);
+  const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
+  const [openGameKey, setOpenGameKey] = useState<number | null>(null);
+  const [min, max] = game ? playerRange(game, matchFormat) : [2, 2];
+  const valid = selected.length >= min && selected.length <= max;
+
+  // Fixed popup size: top just covers the Home–Info tabs; bottom sits 5% of the screen above the bottom nav.
+  const openPopup = () => {
+    const tabs = document.querySelector("[aria-label='Trip sections']")?.getBoundingClientRect();
+    const nav = document.querySelector("[data-site-bottom-nav]")?.getBoundingClientRect();
+    const gap = window.innerHeight * 0.05;
+    setSheetBox({ top: Math.max(16, tabs?.top ?? 16), bottom: (nav && nav.height > 0 ? window.innerHeight - nav.top : 0) + gap });
+    setOpen(true);
   };
-  const togglePlayer = (id: string) => {
-    setConfirmed(false);
-    setSelected(current => current.includes(id) ? current.filter(value => value !== id) : current.length < count ? [...current, id] : current);
+  const closePopup = () => { setOpen(false); setGame(null); };
+  const chooseGame = (next: SideGameDefinition) => {
+    setGame(next); setLength("round"); setMatchFormat(2); setHandicap(false); setShowPlayers(false); setSelected(["you"]);
+  };
+  const togglePlayer = (id: string) => setSelected(current => current.includes(id) ? current.filter(value => value !== id) : current.length < max ? [...current, id] : current);
+  const submitGame = () => {
+    if (!game || !valid) return;
+    setActiveGames(current => [...current, { key: Date.now(), game, length, handicap, participants: selected }]);
+    closePopup();
   };
 
   return <section className={styles.root} aria-label="Side games preview">
     <header className={styles.gamesHeader}>
       <h2 className={styles.activeGamesTitle}>Active Games</h2>
-      <div className={styles.newGameWrap}>
-        <button type="button" className={styles.newGameButton} aria-expanded={showScopeMenu} onClick={() => setShowScopeMenu(value => !value)}>
-          New game
-        </button>
-        {showScopeMenu && <GolfTripActionSheet label="Game scope selector" onClose={() => setShowScopeMenu(false)}
-          actions={(["tournament", "round"] as const).map(value => ({
-            label: value === "tournament" ? "Whole Tournament" : "Per Round",
-            icon: value === "tournament" ? Trophy : Flag,
-            pressed: scope === value,
-          }))} onAction={label => { setScope(label === "Whole Tournament" ? "tournament" : "round"); setShowScopeMenu(false); resetGame(); }}>
-          {scope === "round" && <label className={styles.label}>
-            <select aria-label="Game round" value={roundId} onChange={event => { setRoundId(event.target.value); setConfirmed(false); }}>
-              {rounds.map(item => <option key={item.id} value={item.id}>Round {item.number} · {item.course} · {item.date}</option>)}
-            </select>
-          </label>}
-        </GolfTripActionSheet>}
-      </div>
+      <button type="button" className={styles.newGameButton} aria-haspopup="dialog" onClick={openPopup}>New game</button>
     </header>
-    {scope && <fieldset className={styles.section}><legend>2. How big is your group?</legend><div className={`${styles.choices} ${styles.sizes}`}>
-      {sizes.map(value => <button type="button" key={value} aria-pressed={size === value} onClick={() => { setSize(value); resetGame(); }}>{sizeLabel(value)}</button>)}
-    </div>{size === 1 && <p>Going solo? Challenge a player in another group to Match Play.</p>}</fieldset>}
-    {scope && size && !game && <section className={styles.section} aria-label="Recommended Games"><h3>3. Recommended Games</h3><p>Good company. A little competition. These fit your {sizeLabel(size).toLowerCase()}.</p>
-      <div className={styles.library}>{recommendedGames(size, scope).map(item => <article key={item.id} className={styles.gameCard}>
-        <span className={styles.eyebrow}>{item.gameType === "teams" ? "Team up" : item.gameType === "rotating" ? "Mix it up" : "Head to head"}</span>
-        <h4>{item.name}</h4><p>{item.description}</p>
-        <small>{item.supportedGroupSizes.filter(value => value !== 1).join(" / ")} players{item.id === "match-play" && " · Single: outside-group challenge"}</small>
-        <button type="button" className={styles.primary} onClick={() => chooseGame(item)}>Select {item.name}</button>
-      </article>)}</div></section>}
-    {game && scope && size && <section className={styles.section} aria-label="Game setup preview">
-      <button type="button" className={styles.back} onClick={resetGame}>← Change game</button><h3>4. {game.name} setup</h3>
-      <p className={styles.summary}>{scope === "tournament" ? "Whole Tournament · Full event" : `Round ${round.number} · ${round.course} · ${round.date}`} · {sizeLabel(size)}</p>
-      <fieldset className={styles.players}><legend>Choose players · {selected.length}/{count}</legend>
-        <div className={styles.choices}>{["All players", "Your group", "Another group"].map(value => <button type="button" key={value} aria-pressed={pool === value} onClick={() => setPool(value)}>{value}</button>)}</div>
-        <p>Selection order sets the preview order. Deselect a player to replace them.</p>
-        {players.filter(player => pool === "All players" || player.group === pool).map(player => <label key={player.id} className={styles.player}>
-          <input type="checkbox" checked={selected.includes(player.id)} disabled={player.id === "you" || (!selected.includes(player.id) && selected.length >= count) || (size === 1 && player.group !== "Another group")} onChange={() => togglePlayer(player.id)} />
-          <span>{player.name}<small>{player.group}</small></span>
-        </label>)}
-      </fieldset>
-      <div className={styles.configuration}>
-        {game.id === "match-play" && <><h4>{size === 4 ? "2v2 Best Ball Match Play" : "1v1 Match Play"}</h4><p>{size === 4 ? `${nameOf(selected[0])} + ${nameOf(selected[1])} vs ${nameOf(selected[2])} + ${nameOf(selected[3])}` : `${nameOf(selected[0])} vs ${nameOf(selected[1])}`}</p><p>Each hole counts toward Up / Down. Final ties stay tied.</p></>}
-        {game.id === "9-point" && <><h4>9 points available per hole</h4><p>{selected.map(nameOf).join(" · ")}</p><p>Low / middle / high: 5 / 3 / 1. Ties: 4 / 4 / 1, 5 / 2 / 2 or 3 / 3 / 3.</p></>}
-        {game.id === "wolf" && <><h4>Wolf rotation preview</h4><ol>{selected.map((id, index) => <li key={id}>{nameOf(id)} · Wolf turn {index + 1}</li>)}</ol><p>Order repeats each round. Choose a partner or Lone Wolf each hole; a solo win earns 2 points.</p></>}
-        {game.id === "vegas" && <><h4>Team 1 vs Team 2</h4><div className={styles.teams}>{[0, 2].map((start, index) => <div key={start}><strong>Team {index + 1}</strong><p>{nameOf(selected[start])}<br />{nameOf(selected[start + 1])}</p><span>Example scores: 4 + 5 → <strong>45</strong></span></div>)}</div><p>Lower team number wins its difference in points. Fixed teams for v1.</p></>}
-        {game.id === "coin-flip" && <><h4>Partners by coin flip</h4><p>{selected.map(nameOf).join(" / ")}</p><p>Manually set Heads / Tails every hole. Winners earn one point per opponent; all-same flips earn no points.</p></>}
-        {game.id === "round-robin" && <><h4>Three six-hole matches</h4><p>1?6: 1 + 2 vs 3 + 4. 7?12: 1 + 3 vs 2 + 4. 13?18: 1 + 4 vs 2 + 3.</p><p>Best Ball Match Play. Winning partners each earn 1 segment point; tied segments earn 0.</p></>}
+
+    {activeGames.length === 0 && <p className={styles.emptyGames}>No active games yet. Tap New game to start one.</p>}
+    {activeGames.map(item => <article key={item.key} className={styles.section}>
+      <div className={styles.activeGameHead}>
+        <div><h3>{item.game.name}</h3><p className={styles.summary}>{lengthLabel(item.length)} · Handicap {item.handicap ? "On" : "Off"}</p></div>
+        <button type="button" className={styles.back} aria-expanded={openGameKey === item.key} onClick={() => setOpenGameKey(key => key === item.key ? null : item.key)}>{openGameKey === item.key ? "Hide" : "Open"}</button>
       </div>
-      {game.supportsHandicap && <fieldset className={styles.players}><legend>Side-game handicap</legend><div className={styles.choices}>{[false, true].map(value => <button type="button" key={String(value)} aria-pressed={handicap === value} onClick={() => { setHandicap(value); setConfirmed(false); }}>Handicap {value ? "On" : "Off"}</button>)}</div><p>On uses provided preview net scores; Off uses gross scores. No stroke allocation is calculated.</p></fieldset>}
-      <button type="button" className={styles.primary} disabled={!valid} onClick={() => setConfirmed(true)}>Create preview</button>
-      {!valid && <p role="status">Choose exactly {count} players{size === 1 ? ", including an opponent from another group" : ""}.</p>}
-      {confirmed && <p role="status" className={styles.confirmation}>{game.name} preview ready for {selected.map(nameOf).join(", ")}. Handicap {handicap ? "On" : "Off"}. Local scoring only; nothing saved or sent.</p>}
-      {confirmed && <GolfGameScoringPreview setup={{ id: game.id, scope, participants: selected, handicap, rounds: (scope === "round" ? [round] : rounds).map(item => ({ id: item.id, holes: 18 })), tiePolicy: "tied", loneWolfMultiplier: 2 }} />}
-    </section>}
+      <p>{item.participants.map(nameOf).join(" · ")}</p>
+      {openGameKey === item.key && <>
+        <div className={styles.configuration}><GameRules game={item.game} selected={item.participants} /></div>
+        <GolfGameScoringPreview setup={{ id: item.game.id, scope: item.length, participants: item.participants, handicap: item.handicap, rounds: roundsFor(item.length).map(round => ({ id: round.id, holes: 18 })), tiePolicy: "tied", loneWolfMultiplier: 2 }} />
+      </>}
+    </article>)}
+
+    {open && <GolfTripActionSheet label="New game" onClose={closePopup} className={styles.gameSheet} style={sheetBox}>
+      {!game ? <div className={styles.sheetBody}>
+        <h3 className={styles.sheetTitle}>New game</h3>
+        {LIBRARY.map(group => <section key={group.title} className={styles.sheetGroup} aria-label={group.title}>
+          <h4 className={styles.sheetGroupTitle}>{group.title}</h4>
+          {group.games.map(item => <button type="button" key={item.id} className={styles.sheetGame} onClick={() => chooseGame(item)}>
+            <strong>{item.name}</strong><span>{item.description}</span>
+          </button>)}
+        </section>)}
+      </div> : <div className={styles.sheetBody}>
+        <button type="button" className={styles.sheetBack} onClick={() => setGame(null)}>← All games</button>
+        <h3 className={styles.sheetTitle}>{game.name}</h3>
+
+        <div className={styles.sheetSetting}><span>Length</span><div className={styles.sheetChoices}>
+          <button type="button" aria-pressed={length === "round"} onClick={() => setLength("round")}>{lengthLabel("round")}</button>
+          {remainingRounds.length > 1 && <button type="button" aria-pressed={length === "tournament"} onClick={() => setLength("tournament")}>{lengthLabel("tournament")}</button>}
+        </div></div>
+
+        {game.id === "match-play" && <div className={styles.sheetSetting}><span>Format</span><div className={styles.sheetChoices}>
+          {([2, 4] as const).map(value => <button type="button" key={value} aria-pressed={matchFormat === value} onClick={() => { setMatchFormat(value); setSelected(current => current.slice(0, value)); }}>{value === 2 ? "1v1" : "2v2 Best Ball"}</button>)}
+        </div></div>}
+
+        {game.supportsHandicap && <div className={styles.sheetSetting}><span>Handicap</span><div className={styles.sheetChoices}>
+          {[false, true].map(value => <button type="button" key={String(value)} aria-pressed={handicap === value} onClick={() => setHandicap(value)}>{value ? "On" : "Off"}</button>)}
+        </div></div>}
+
+        {!showPlayers ? <button type="button" className={styles.sheetPrimary} onClick={() => setShowPlayers(true)}>Select players</button> : <>
+          <div className={styles.sheetSetting}><span>Players · {selected.length}/{min === max ? max : `${min}–${max}`}</span>
+            {players.map(player => <label key={player.id} className={styles.sheetPlayer}>
+              <input type="checkbox" checked={selected.includes(player.id)} disabled={player.id === "you" || (!selected.includes(player.id) && selected.length >= max)} onChange={() => togglePlayer(player.id)} />
+              <span>{player.name}<small>{player.group}</small></span>
+            </label>)}
+          </div>
+          {!valid && <p role="status" className={styles.sheetHint}>Choose {min === max ? min : `${min} to ${max}`} players, including you.</p>}
+          <button type="button" className={styles.sheetPrimary} disabled={!valid} onClick={submitGame}>Submit game</button>
+        </>}
+      </div>}
+    </GolfTripActionSheet>}
   </section>;
 }

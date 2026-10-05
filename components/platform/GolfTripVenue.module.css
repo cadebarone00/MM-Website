@@ -1,0 +1,43 @@
+/* Venue tab (maps-app style): an edge-to-edge map, then a light sheet with a grabber that overlaps it and runs down
+   under the bottom menu. Cards are white on a light grey sheet. */
+.venue{flex:1;display:flex;flex-direction:column;margin:0 -16px calc(-24px - 5.75rem - env(safe-area-inset-bottom));color:#111;
+  font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
+.venue h2,.venue h3,.venue p{margin:0}
+.map{position:relative;height:300px;overflow:hidden;background:#e8e8e6}
+.tile{position:absolute;width:256px;height:256px;max-width:none;user-select:none;filter:grayscale(1) brightness(1.06) contrast(.88)}
+.pin{position:absolute;left:50%;top:50%;transform:translate(-4px,-28px);color:#d32f2f;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3))}
+.attribution{position:absolute;right:6px;bottom:30px;padding:1px 4px;border-radius:4px;background:rgba(255,255,255,.75);color:#555;font-size:9px}
+.sheet{position:relative;flex:1;display:flex;flex-direction:column;gap:12px;margin-top:-22px;padding:8px 16px calc(24px + 5.75rem + env(safe-area-inset-bottom));
+  border-radius:22px 22px 0 0;background:#f2f2f4;box-shadow:0 -4px 16px rgba(0,0,0,.12)}
+.grabber{align-self:center;width:36px;height:5px;border-radius:3px;background:#c7c7cc}
+.searchRow{display:flex;align-items:center;gap:10px;min-height:40px}
+.searchBar{flex:1;display:flex;align-items:center;gap:8px;min-width:0;height:40px;padding:0 14px;border-radius:999px;background:#fff;color:#6b6b6b;box-shadow:0 1px 3px rgba(0,0,0,.12);cursor:text}
+.searchBar:focus-within{outline:2px solid var(--color-maroon-600,#6b161a);outline-offset:2px}
+.searchInput{flex:1;min-width:0;border:0;background:transparent;color:#111;font:500 15px/1 var(--font-barlow),sans-serif;outline:none}
+.searchInput::placeholder{color:#8a8a8a}
+.roundButton{flex:0 0 auto;display:grid;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:50%;background:#fff;color:#111;box-shadow:0 1px 3px rgba(0,0,0,.12);cursor:pointer}
+.statsCard,.card{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.avatar{display:grid;place-items:center;flex:0 0 40px;height:40px;border-radius:50%;background:#e5e5ea;color:#333;font-size:14px;font-weight:700}
+.stat{flex:1;display:flex;flex-direction:column;gap:2px}
+.stat strong{font-size:17px}
+.stat span{display:flex;align-items:center;gap:4px;font-size:12px;color:#777}
+.chevron{flex-shrink:0;color:#b0b0b5}
+.sectionRow{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px}
+.sectionRow h3{font-size:20px;font-weight:700}
+.sectionLink{color:var(--color-maroon-600,#6b161a);font-size:14px;font-weight:600;text-decoration:none}
+.tripIcon{display:grid;place-items:center;flex:0 0 40px;height:44px;color:#333}
+.tripIcon small{font-size:11px;font-weight:700;line-height:1}
+.cardText{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.cardText strong{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cardText span{font-size:13px;color:#777}
+.list{display:flex;flex-direction:column;gap:10px}
+.dateBlock{display:flex;flex-direction:column;align-items:center;flex:0 0 40px;line-height:1.1}
+.dateBlock small{font-size:12px;color:#777}
+.dateBlock strong{font-size:20px}
+.thumb{display:grid;place-items:center;flex:0 0 44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#3f8a55,#1c4a2b);color:#fff}
+.empty{color:#777;font-size:14px}
+.roundButton:focus-visible,.sectionLink:focus-visible{outline:2px solid var(--color-maroon-600,#6b161a);outline-offset:2px}
+@media(min-width:593px){.venue{margin-inline:0;border-radius:20px 20px 0 0;overflow:hidden}}
+
+.itinerary{display:flex;flex-direction:column;gap:12px;padding:22px 16px 0;color:#111}
+.itinerary h3,.itinerary p{margin:0}

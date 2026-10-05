@@ -1,6 +1,6 @@
 export type GameScope = "tournament" | "round";
 export type GroupSize = 1 | 2 | 3 | 4 | 5;
-export type GameId = "match-play" | "9-point" | "wolf" | "vegas" | "coin-flip" | "round-robin";
+export type GameId = "skins" | "match-play" | "9-point" | "wolf" | "vegas" | "coin-flip" | "round-robin";
 export interface SideGameDefinition {
   id: GameId;
   name: string;
@@ -18,6 +18,7 @@ const define = (game: Omit<SideGameDefinition, "supportedScopes" | "supportsHand
 });
 
 export const SIDE_GAME_REGISTRY: readonly SideGameDefinition[] = [
+  define({ id: "skins", name: "Skins", supportedGroupSizes: [2, 3, 4], description: "Lowest score on a hole wins the skin. Ties carry over.", gameType: "individual", futureConfig: ["skin-value", "carryover", "bonuses"] }),
   define({ id: "match-play", name: "Match Play", supportedGroupSizes: [1, 2, 4], description: "Go head to head, one hole at a time.", gameType: "individual", futureConfig: ["handicap", "pairings"] }),
   define({ id: "9-point", name: "9 Point", supportedGroupSizes: [3], description: "Three players share nine points on every hole.", gameType: "individual", futureConfig: ["ties", "point-allocation"] }),
   define({ id: "wolf", name: "Wolf", supportedGroupSizes: [3, 4, 5], description: "Take turns as the Wolf. Pick a partner or go alone.", gameType: "rotating", futureConfig: ["rotation", "lone-wolf", "points"] }),
@@ -41,6 +42,8 @@ export const GAME_PREVIEW_PLAYERS = [
   { id: "taylor", name: "Taylor Ellis", group: "Another group" },
   { id: "jamie", name: "Jamie Rowan", group: "Another group" },
 ] as const;
+/** How many preview rounds are already played; the next one is the "upcoming" round. */
+export const GAME_PREVIEW_ROUNDS_PLAYED = 0;
 export const GAME_PREVIEW_ROUNDS = [
   { id: "round-1", number: 1, course: "Maroon Pines", date: "Apr 16, 2027" },
   { id: "round-2", number: 2, course: "Gold Dunes", date: "Apr 17, 2027" },

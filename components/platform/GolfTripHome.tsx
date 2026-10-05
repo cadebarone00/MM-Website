@@ -1,10 +1,12 @@
 "use client";
 
-import { Suspense, use, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { Suspense, use, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentProps, type ReactNode, type UIEvent } from "react";
 import Link from "next/link";
-import { AlertTriangle, ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronRight, Clock, CloudRain, ExternalLink, FileText, Flag, LockKeyhole, MapPin, MessageCircle, Plane, Plus, Settings, Share2, ShieldCheck, ShoppingBag, Sun, Thermometer, Trash2, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
+import { createPortal } from "react-dom";
+import { AlertTriangle, ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronRight, Clock, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Droplets, ExternalLink, FileText, Flag, LockKeyhole, MapPin, MessageCircle, Plane, Plus, Settings, Share2, ShieldCheck, ShoppingBag, Sun, Thermometer, Trash2, Trophy, User, Users, UtensilsCrossed, Wind, X, type LucideIcon } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import { normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
+import { ITINERARY_KIND_LABEL, itineraryByDay, itineraryDay, itineraryTime, localNow, upcomingItinerary, type ItineraryItem, type ItineraryKind } from "@/lib/platform/golfTripItinerary";
 import type { TripWeather } from "@/lib/platform/weather/types";
 import { flightCounts, flightTime, type FlightSummary } from "@/lib/platform/golfTripFlights";
 
@@ -15,6 +17,10 @@ import { GolfTripScoring } from "./GolfTripScoring";
 import { GolfTripCompetitionMatchPreview } from "./GolfTripCompetitionMatchPreview";
 import { GolfTripActionSheet } from "./GolfTripActionSheet";
 import { GolfTripGames } from "./GolfTripGames";
+import { GolfTripChat } from "./GolfTripChat";
+import { GolfTripItinerary, GolfTripVenue } from "./GolfTripVenue";
+import { GolfTripNotifications } from "./GolfTripNotifications";
+import { getPlayerDisplayName } from "@/lib/data/players";
 import styles from "./GolfTripHome.module.css";
 
 import { GOLF_TRIP_TABS as TABS, GOLF_TRIP_SECTIONS as GOLF_SLIDES, type GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
@@ -38,8 +44,14 @@ const subscribeNever = () => () => {};
  * `navigation` optionally requests a shared tab/section; in-app navigation remains local between requests.
  * `onNavigationChange` optionally observes the actual tab/section; the dev wrapper supplies it only when embedded.
  */
-export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, navigation, onNavigationChange }:
-  { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview; weather?: Promise<TripWeather>; flights?: TripFlights; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void }) {
+export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, itinerary, navigation, onNavigationChange, opponentCardMatches, scoringPrefill }:
+  { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview; weather?: Promise<TripWeather>; flights?: TripFlights;
+    /** The trip's itinerary (Home "what's next" cards + Info → Itinerary). Only the dev mock trip has one for now. */
+    itinerary?: ItineraryItem[]; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void;
+    /** Dev preview only: whether the opponent's own scorecard agrees with mine (there is no second scorer yet). Without it, Save & Submit never shows. */
+    opponentCardMatches?: boolean;
+    /** Dev preview only: a finished-but-unsubmitted Scoring card (the "End of round" conditionals). */
+    scoringPrefill?: ComponentProps<typeof GolfTripScoring>["prefill"] }) {
   const raw = useSyncExternalStore(subscribeNever, golfTripDraftSnapshot, () => "");
   const stored = useMemo(() => parseGolfTripDraft(raw), [raw]);
   const draft = preview ?? stored;
@@ -48,10 +60,37 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   if (selection.navigation !== navigation) setSelection({ navigation, tab: navigation?.tab ?? selection.tab });
   const tab = selection.navigation === navigation ? selection.tab : navigation?.tab ?? selection.tab;
   const setTab = (tab: Tab) => setSelection({ navigation, tab });
+  // Info tab: 0 = My Info, 1 = Itinerary. A Home itinerary card opens Info on Itinerary.
+  const [infoSlide, setInfoSlide] = useState(0);
+  const openItinerary = () => { setInfoSlide(1); setTab("Info"); };
   useEffect(() => {
     if (tab !== "Golf") onNavigationChange?.({ tab });
   }, [tab, onNavigationChange]);
   const competitive = draft.includesTournament === "yes";
+  const [chatOpen, setChatOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const notificationsRef = useRef<HTMLDivElement>(null);
+  const notificationButtonRef = useRef<HTMLButtonElement>(null);
+  const notificationCloseRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!notificationsOpen) return;
+    notificationCloseRef.current?.focus();
+    const dismiss = (event: PointerEvent) => {
+      if (event.target instanceof Node && !notificationsRef.current?.contains(event.target) && !notificationButtonRef.current?.contains(event.target)) setNotificationsOpen(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setNotificationsOpen(false);
+        notificationButtonRef.current?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", dismiss);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", dismiss);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [notificationsOpen]);
 
 
   const dates = tripDates(draft.startDate, draft.endDate);
@@ -65,10 +104,17 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   return <main className={`${styles.page} ${styles.pageWithScoring} ${tab === "Golf" && preview && previewMatch ? styles.pageGolfPreview : ""}`}>
     {backHref && <Link href={backHref} className={styles.desktopBack}><ArrowLeft size={16} strokeWidth={2} aria-hidden />Golf Trips</Link>}
     <header className={styles.header}>
-      {/* Look only for now: chat and notifications aren't built yet. */}
       <div className={styles.headerActions}>
-        <button type="button" className={styles.iconButton} aria-label="Trip chat"><MessageCircle size={24} strokeWidth={1.75} aria-hidden /></button>
-        <button type="button" className={styles.iconButton} aria-label="Notifications"><Bell size={24} strokeWidth={1.75} aria-hidden /></button>
+        <button type="button" className={styles.iconButton} aria-label="Trip chat" onClick={() => setChatOpen(true)}><MessageCircle size={24} strokeWidth={1.75} aria-hidden /></button>
+        <div className={styles.notificationsAnchor}>
+          <button ref={notificationButtonRef} type="button" className={styles.iconButton} aria-label="Notifications" aria-expanded={notificationsOpen} aria-controls="trip-notifications" onClick={() => setNotificationsOpen(open => !open)}><Bell size={24} strokeWidth={1.75} aria-hidden /></button>
+          {notificationsOpen && createPortal(<div ref={notificationsRef} onBlur={event => {
+            if (!event.currentTarget.contains(event.relatedTarget) && event.relatedTarget !== notificationButtonRef.current) setNotificationsOpen(false);
+          }} id="trip-notifications" role="region" aria-label="Notifications" className={`${styles.addSheet} ${styles.notificationsDropdown}`}>
+            <button ref={notificationCloseRef} type="button" className={styles.sheetClose} aria-label="Close notifications" onClick={() => { setNotificationsOpen(false); notificationButtonRef.current?.focus(); }}><X size={18} strokeWidth={2.25} aria-hidden /></button>
+            <GolfTripNotifications />
+          </div>, document.body)}
+        </div>
         <Link href={settingsHref} className={styles.iconButton} aria-label="Trip settings"><Settings size={24} strokeWidth={1.75} aria-hidden /></Link>
       </div>
       <h1 className={styles.title}>{draft.tripName || "Your Golf Trip"}</h1>
@@ -78,17 +124,23 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
       </div>
     </header>
     <div className={styles.body} role="tabpanel" aria-label={tab}>
-      {tab === "Home" ? <InfoAccount destination={draft.destination} flights={flights} />
+      {tab === "Home" ? <InfoAccount draft={draft} settingsHref={settingsHref} flights={flights} weather={weather} itinerary={itinerary} onOpenItinerary={openItinerary} />
         : tab === "Golf" ? <>
           <GolfSlides key={String(competitive)} previewMatch={previewMatch} competitive={competitive} navigation={navigation} onNavigationChange={onNavigationChange} />
         </>
-        : tab === "Venue" ? <HomeSections draft={draft} dates={dates} dateRange={dateRange} weather={weather} />
-        : tab === "Info" ? <VenueEvents />
+        : tab === "Venue" ? <GolfTripVenue draft={draft} settingsHref={settingsHref}
+          latitude={coordinate(draft.destinationLatitude)} longitude={coordinate(draft.destinationLongitude)} />
+        : tab === "Info" ? <InfoSlides active={infoSlide} onActive={setInfoSlide} itinerary={itinerary} />
         : <Card title={tab}><Empty>Coming soon</Empty></Card>}
     </div>
-    <GolfTripScoring par={previewMatch?.par} initialHoles={yourHoles} />
+    <GolfTripScoring key={scoringPrefill ? "prefilled" : "blank"} prefill={scoringPrefill} par={previewMatch?.par} initialHoles={yourHoles} courseName={previewMatch?.course} playerName={you ? getPlayerDisplayName(you) : draft.yourName || "You"} opponentCardMatches={opponentCardMatches} />
+    <GolfTripChat open={chatOpen} onClose={() => setChatOpen(false)} tripName={draft.tripName || "Your Golf Trip"}
+      members={[...new Set(previewMatch?.matches.flatMap(match => [match.left, match.right].flatMap(side => side ? normalizeCompetitor(side).golfers.map(golfer => getPlayerDisplayName(golfer.name)) : [])) ?? [])].filter(name => name !== getPlayerDisplayName(you ?? draft.yourName ?? ""))} />
   </main>;
 }
+
+/** A saved coordinate from the trip answers, or undefined when missing or not a number. */
+const coordinate = (value: string | undefined) => value && Number.isFinite(Number(value)) ? Number(value) : undefined;
 
 const HOME_SECTIONS = ["Golf", "The Trip", "Travelers", "Logistics"] as const;
 type HomeSection = (typeof HOME_SECTIONS)[number];
@@ -176,6 +228,33 @@ function HomeSections({ draft, dates, dateRange, weather }: { draft: Record<stri
         <span className={styles.sheetName}>{name}</span><span className={styles.sheetSummary}>{sections[name].summary}</span>
       </button>)}
   </div>;
+}
+
+/** Home's quick weather (right of "Your trip to"): degrees with a condition icon, the condition, low / high, and the chance of rain. */
+function QuickWeather({ weather }: { weather: Promise<TripWeather> }) {
+  const result = use(weather);
+  if (result.status !== "ok") return <div className={styles.quickWeather}><span className={styles.quickCondition}>Weather unavailable</span></div>;
+  const now = result.weather;
+  const lowHigh = [now.low !== null && `L ${now.low}°`, now.high !== null && `H ${now.high}°`].filter(Boolean).join("  ");
+  return <div className={styles.quickWeather} aria-label="Weather now">
+    <span className={styles.quickTemp}><ConditionIcon condition={now.condition} />{now.temperature !== null ? `${now.temperature}°` : "—°"}</span>
+    {now.condition && <span className={styles.quickCondition}>{now.condition}</span>}
+    {lowHigh && <span className={styles.quickDetail}>{lowHigh}</span>}
+    {now.precipitationChance !== null && <span className={styles.quickDetail}><Droplets size={13} strokeWidth={2.25} aria-hidden />{now.precipitationChance}%<span className={styles.srOnly}> chance of precipitation</span></span>}
+  </div>;
+}
+
+/** A weather icon from the forecast's words ("Sunny", "Partly Cloudy", "Chance Rain Showers", …). */
+function ConditionIcon({ condition }: { condition: string | null }) {
+  const words = (condition ?? "").toLowerCase();
+  const props = { size: 22, strokeWidth: 2, "aria-hidden": true } as const;
+  if (/thunder|storm/.test(words)) return <CloudLightning {...props} />;
+  if (/snow|sleet|flurr|ice/.test(words)) return <CloudSnow {...props} />;
+  if (/rain|shower|drizzle/.test(words)) return <CloudRain {...props} />;
+  if (/fog|haze|smoke/.test(words)) return <CloudFog {...props} />;
+  if (/partly|mostly sunny|mostly clear|few clouds/.test(words)) return <CloudSun {...props} />;
+  if (/cloud|overcast/.test(words)) return <Cloud {...props} />;
+  return <Sun {...props} />;
 }
 
 /** The Trip's Weather row once the server's weather promise settles (Suspense shows the loading row until then). Lines with no data are left out. */
@@ -365,11 +444,6 @@ function VenueEvents() {
   const renderSection = (key: InfoSectionKey, title: string, entries: InfoEntry[], onAdd: () => void) => <section key={key} className={styles.infoSection}>
     <div className={styles.infoHeaderRow}>
       <h2 className={styles.eventsHeading}>{title}</h2>
-      <button type="button" className={styles.deleteSectionButton} aria-label={`Delete ${title}`} onClick={() => {
-        if (entries[0]) setConfirmDelete({ section: key, entry: entries[0] });
-      }}>
-        <Trash2 size={16} strokeWidth={2} aria-hidden />
-      </button>
     </div>
     {entries.map((entry) => <article key={entry.id} className={styles.infoEntry}>
       <button type="button" className={styles.entryDelete} aria-label={`Delete ${entry.title}`} onClick={() => setConfirmDelete({ section: key, entry })}>
@@ -433,6 +507,66 @@ function EventRow({ event }: { event: InfoEvent }) {
   </article>;
 }
 
+const ITINERARY_ICON: Record<ItineraryKind, LucideIcon> = { flight: Plane, lodging: BedDouble, teeTime: Flag, ride: Car, dining: UtensilsCrossed };
+const ITINERARY_ART: Record<ItineraryKind, string> = { flight: ART.travel, lodging: ART.stay, teeTime: ART.golf, ride: ART.transport, dining: ART.expenses };
+
+/** A Home "what's next" card: what it is, the headline, when, and one more line. Opens Info → Itinerary. */
+function ItineraryCard({ item, onOpen }: { item: ItineraryItem; onOpen: () => void }) {
+  const when = `${itineraryDay(item.startsAt)} · ${itineraryTime(item.startsAt)}`;
+  const label = ITINERARY_KIND_LABEL[item.kind];
+  return <button type="button" className={`${styles.accountCard} ${styles.itineraryCard}`} onClick={onOpen}
+    aria-label={`${label}: ${item.title}, ${when}${item.detail ? `, ${item.detail}` : ""}. Open the itinerary`}>
+    <p className={styles.accountCardName}><ItineraryIcon kind={item.kind} size={14} /> {label}</p>
+    <p className={styles.accountCardAmount}>{item.title}</p>
+    <p className={styles.accountCardNote}>{when}</p>
+    {item.detail && <p className={styles.accountCardNote}>{item.detail}</p>}
+  </button>;
+}
+
+function ItineraryIcon({ kind, size }: { kind: ItineraryKind; size: number }) {
+  const props = { size, strokeWidth: 2, "aria-hidden": true } as const;
+  return kind === "flight" ? <Plane {...props} /> : kind === "lodging" ? <BedDouble {...props} /> : kind === "teeTime" ? <Flag {...props} />
+    : kind === "ride" ? <Car {...props} /> : <UtensilsCrossed {...props} />;
+}
+
+/** Info tab: a slider with My Info (getting there, lodging, transportation) and Itinerary (everything, by day). Tap or swipe. */
+const INFO_SLIDES = ["My Info", "Itinerary"] as const;
+function InfoSlides({ active, onActive, itinerary }: { active: number; onActive: (index: number) => void; itinerary?: ItineraryItem[] }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  // Follow the chosen tab (taps, or a Home card opening Itinerary).
+  useEffect(() => {
+    const track = trackRef.current;
+    if (track && Math.round(track.scrollLeft / Math.max(1, track.clientWidth)) !== active) track.scrollTo({ left: active * track.clientWidth, behavior: "instant" });
+  }, [active]);
+  const onScroll = () => {
+    const track = trackRef.current;
+    if (track && track.clientWidth > 0) { const index = Math.round(track.scrollLeft / track.clientWidth); if (index !== active) onActive(index); }
+  };
+  return <>
+    <div className={styles.tabs} role="tablist" aria-label="Info sections">
+      {INFO_SLIDES.map((name, index) => <button key={name} type="button" role="tab" aria-selected={active === index}
+        className={`${styles.tab} ${active === index ? styles.tabActive : ""}`} onClick={() => onActive(index)}>{name}</button>)}
+    </div>
+    <div ref={trackRef} className={styles.slides} onScroll={onScroll}>
+      <div className={styles.slide} role="tabpanel" aria-label="My Info" inert={active !== 0}><VenueEvents /></div>
+      <div className={styles.slide} role="tabpanel" aria-label="Itinerary" inert={active !== 1}><ItineraryList items={itinerary} /></div>
+    </div>
+  </>;
+}
+
+/** Info → Itinerary: every item in time order, under a heading for each day. */
+function ItineraryList({ items }: { items?: ItineraryItem[] }) {
+  const days = itineraryByDay(items ?? []);
+  if (!days.length) return <Card title="Itinerary"><Empty>Nothing on the itinerary yet</Empty></Card>;
+  return <div className={styles.events}>
+    {days.map(({ day, items: dayItems }) => <section key={day} className={styles.infoSection} aria-label={itineraryDay(day)}>
+      <h2 className={styles.eventsHeading}>{itineraryDay(day)}</h2>
+      {dayItems.map((item) => <EventRow key={item.id} event={{ host: ITINERARY_KIND_LABEL[item.kind], title: item.title, art: ITINERARY_ART[item.kind],
+        icon: ITINERARY_ICON[item.kind], lines: [{ icon: Clock, text: itineraryTime(item.startsAt) }, item.detail && { icon: MapPin, text: item.detail }] }} />)}
+    </section>)}
+  </div>;
+}
+
 /** Info → Flights card (in the first account-card slot): your next flight and how many you've saved; opens the Flights page. */
 function FlightsCard({ flights }: { flights?: TripFlights }) {
   const summary = flights?.summary;
@@ -451,39 +585,63 @@ function FlightsCard({ flights }: { flights?: TripFlights }) {
 
 /**
  * Info tab, banking-app style (layout only, made-up numbers): a maroon top saying "Your trip to {destination}", a swipeable
- * row of account cards, a promo card with dots, then "Financial tools". It runs edge to edge and down to the bottom of the screen.
+ * row of two cards with a dot for each (the filled dot follows the swipe), then the upcoming trip and planned rounds. It runs edge to edge and down to the bottom of the screen.
  */
-function InfoAccount({ destination, flights }: { destination: string; flights?: TripFlights }) {
+function InfoAccount({ draft, settingsHref, flights, weather, itinerary, onOpenItinerary }: {
+  draft: GolfTripDraft; settingsHref: string; flights?: TripFlights; weather?: Promise<TripWeather>; itinerary?: ItineraryItem[]; onOpenItinerary: () => void;
+}) {
+  const destination = draft.destination;
+  const tripDateRange = dateRangeLabel(draft.startDate, draft.endDate);
+  // The next 5 things on the itinerary that haven't started yet ("now" read once, when Home opens).
+  const [now] = useState(() => localNow(new Date()));
+  const upcoming = itinerary ? upcomingItinerary(itinerary, now) : [];
+  const cardCount = itinerary ? Math.max(1, upcoming.length) : 2;
+  const [activeCard, setActiveCard] = useState(0);
+  const onCardsScroll = (event: UIEvent<HTMLDivElement>) => {
+    const track = event.currentTarget;
+    const maxScroll = track.scrollWidth - track.clientWidth;
+    setActiveCard(maxScroll > 0 ? Math.round((track.scrollLeft / maxScroll) * (cardCount - 1)) : 0);
+  };
   return <div className={styles.account}>
     <div className={styles.accountTop}>
-      <div className={styles.accountBar}>
-        <button type="button" className={styles.accountPill}>Get $150</button>
+      {/* Left 65%: "Your trip to", the destination under it, then the trip's dates in gold (left out if there are none). */}
+      <div className={styles.accountTitleBlock}>
+        <p className={styles.accountLabel}>{destination ? <>Your trip to<span className={styles.accountDestination}>{destination}</span></> : "Your trip"}</p>
+        {tripDateRange && <p className={styles.accountDates}>{tripDateRange}</p>}
       </div>
-      <p className={styles.accountLabel}>{destination ? `Your trip to ${destination}` : "Your trip"}</p>
+      {/* Right 35%: quick weather at the destination (only when the trip has a weather lookup). */}
+      {weather && <Suspense fallback={<div className={styles.quickWeather} role="status"><span className={styles.quickTemp}>—°</span><span className={styles.quickCondition}>Loading weather…</span></div>}>
+        <QuickWeather weather={weather} />
+      </Suspense>}
     </div>
-    <div className={styles.accountCards}>
-      <FlightsCard flights={flights} />
-      <div className={styles.accountCard} aria-hidden />
+    {/* What's next: the next few itinerary items, soonest first (tap one to open Info → Itinerary). Trips without an
+        itinerary keep the Flights card. One dot per card; the filled dot follows the swipe. */}
+    <div className={styles.accountCards} onScroll={onCardsScroll}>
+      {itinerary
+        ? upcoming.length
+          ? upcoming.map((item) => <ItineraryCard key={item.id} item={item} onOpen={onOpenItinerary} />)
+          : <button type="button" className={`${styles.accountCard} ${styles.itineraryCard}`} onClick={onOpenItinerary}>
+            <p className={styles.accountCardName}><CalendarDays size={14} strokeWidth={2} aria-hidden /> Itinerary</p>
+            <p className={styles.accountCardAmount}>Nothing else coming up</p>
+            <p className={styles.accountCardNote}>See the full itinerary</p>
+          </button>
+        : <><FlightsCard flights={flights} /><div className={styles.accountCard} aria-hidden /></>}
     </div>
-    <div className={styles.accountPromos}>
-      <div className={styles.accountPromo}>
-        <button type="button" className={styles.accountPromoClose} aria-label="Dismiss"><X size={12} strokeWidth={2.5} aria-hidden /></button>
-        <div className={styles.accountPromoText}>
-          <p className={styles.accountPromoTitle}>Welcome to Chime+! Enjoy 3.00% APY, fee-free overdraft, and more</p>
-          <p className={styles.accountPromoLink}>See your benefits<ChevronRight size={14} strokeWidth={2.5} aria-hidden /></p>
-        </div>
-        <span className={styles.accountPromoIcon} aria-hidden><Plus size={26} strokeWidth={4} /></span>
-      </div>
-      <div className={`${styles.accountPromo} ${styles.accountPromoNext}`} aria-hidden />
-    </div>
-    <div className={styles.accountDots} aria-hidden><span className={styles.accountDotActive} /><span /><span /><span /></div>
-    <p className={styles.accountHeading}>Financial tools</p>
-    <div className={styles.accountTools}>
-      <div className={styles.accountTool}>Direct Deposit</div>
-      <div className={styles.accountTool}>Rewards</div>
-    </div>
+    <div className={styles.accountDots} aria-hidden>{Array.from({ length: cardCount }, (_, index) => <span key={index} className={activeCard === index ? styles.accountDotActive : undefined} />)}</div>
+    <GolfTripItinerary draft={draft} settingsHref={settingsHref} />
   </div>;
 }
+
+/** "Jan 7 – Jan 10, 2026": the year once, on the second date (on both if the trip crosses a year); one date if only one is set. */
+function dateRangeLabel(start: string | undefined, end: string | undefined): string {
+  const format = (day: string, withYear: boolean) => new Date(`${day}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", ...(withYear ? { year: "numeric" } : {}), timeZone: "UTC" });
+  const from = validDay(start) ? start! : null, to = validDay(end) ? end! : null;
+  if (from && to) return `${format(from, from.slice(0, 4) !== to.slice(0, 4))} – ${format(to, true)}`;
+  return from || to ? format((from ?? to)!, true) : "";
+}
+
+/** A saved trip date (YYYY-MM-DD) that can be shown. */
+const validDay = (value: string | undefined) => !!value && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
 
 export function Card({ title, children }: { title: string; children: ReactNode }) {
   return <section className={styles.card} aria-label={title}>

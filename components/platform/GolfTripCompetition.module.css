@@ -19,7 +19,7 @@
 .enabled{color:#dcc495;font-weight:700}
 .status{grid-column:1/-1;margin:0;color:rgba(220,196,149,.8);font-size:12px}
 @media(max-width:700px){.header{display:none}.row{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px}.label{display:block}.rounds{margin-top:16px}}
-.settings{padding:24px 0;border:0;border-radius:0;background:var(--color-maroon-900,#240001);color:#fff;font-family:var(--font-spectral),Georgia,serif}
+.settings{padding:24px 0;border:0;border-radius:0;background:var(--color-maroon-900,#240001);color:#fff;font-family:var(--font-barlow),sans-serif}
 .settings .title{margin:0 0 36px;text-align:center;color:#fff;font:700 clamp(24px,5vw,32px)/1.2 var(--font-spectral),Georgia,serif}
 .settings .bulk{display:flex;flex-direction:column;gap:32px;margin-bottom:20px}
 .settings .bulkControl{justify-content:space-between;gap:20px;color:#dcc495;font-size:15px;letter-spacing:1.2px;text-transform:uppercase}
@@ -32,7 +32,7 @@
 .settings .cell:nth-child(4){flex-direction:column;align-items:stretch;gap:18px}
 .settings .cell:nth-child(3)>span:last-child{text-align:right}
 .settings .choices{display:flex;gap:14px;overflow-x:auto;padding:4px 3px 12px;scrollbar-width:thin;scrollbar-color:rgba(220,196,149,.3) var(--color-maroon-900,#240001)}
-.settings .choice{display:flex;align-items:center;justify-content:center;flex:0 0 76px;width:76px;height:76px;padding:8px;border:2px solid rgba(220,196,149,.3);border-radius:50%;background:rgba(255,255,255,.05);color:#fff;font:700 13px/1.2 var(--font-spectral),Georgia,serif;cursor:pointer}
+.settings .choice{display:flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:76px;height:44px;padding:0 18px;border:2px solid rgba(220,196,149,.3);border-radius:999px;white-space:nowrap;background:rgba(255,255,255,.05);color:#fff;font:700 13px/1.2 var(--font-barlow),sans-serif;cursor:pointer}
 .settings .choice[aria-pressed=true]{border-color:#dcc495;background:rgba(220,196,149,.2)}
 .settings .toggle{position:relative;min-height:44px;gap:8px;font-size:12px}
 .settings .toggle>span:last-child{position:absolute;right:0;top:100%;color:#dcc495;font-size:10px}

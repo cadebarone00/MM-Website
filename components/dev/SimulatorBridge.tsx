@@ -7,7 +7,7 @@ import type { GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
 
 const SimulatorContext = createContext<SimulatorConfig | null>(null);
 export const useSimulator = () => useContext(SimulatorContext);
-const NavigationReporter = createContext<((navigation: GolfTripNavigation) => void) | undefined>(undefined);
+const NavigationReporter = createContext<((navigation: GolfTripNavigation, rounds?: { id: string; number: number }[]) => void) | undefined>(undefined);
 export const useSimulatorNavigationReporter = () => useContext(NavigationReporter);
 
 /** Mounted only in development; activated only inside the same-origin /dev simulator. */
@@ -18,9 +18,9 @@ export function SimulatorBridge({ children }: { children: ReactNode }) {
   const active = useRef(false);
   const allowedRoutes = useRef(new Set<string>());
   const lastReport = useRef("");
-  const reportNavigation = useCallback((navigation: GolfTripNavigation) => {
+  const reportNavigation = useCallback((navigation: GolfTripNavigation, rounds?: { id: string; number: number }[]) => {
     if (!active.current) return;
-    const location = { path: window.location.pathname, navigation: { tab: navigation.tab, golfSection: navigation.golfSection } };
+    const location = { rounds, path: window.location.pathname, navigation: { tab: navigation.tab, golfSection: navigation.golfSection, settingsView: navigation.settingsView } };
     const signature = JSON.stringify(location);
     if (lastReport.current === signature) return;
     lastReport.current = signature;

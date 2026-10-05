@@ -1,0 +1,8 @@
+/* Notification settings, styled like a round's settings page: white serif title, gold uppercase labels,
+   On/Off switches on the right, gold rule above each category. */
+.notifications{display:flex;flex-direction:column;gap:24px;padding:4px 8px 24px;color:#fff;font-family:var(--font-barlow),sans-serif}
+.title{margin:0;text-align:center;font:700 24px/1.2 var(--font-spectral),Georgia,serif;color:#fff}
+.category{display:flex;flex-direction:column;gap:18px;padding-top:22px;border-top:1px solid rgba(220,196,149,.3)}
+.categoryTitle{margin:0;font:700 20px/1.2 var(--font-spectral),Georgia,serif;color:#fff}
+.row{display:flex;align-items:center;justify-content:space-between;gap:20px}
+.label{color:#dcc495;font-size:14px;font-weight:750;letter-spacing:1.2px;text-transform:uppercase}

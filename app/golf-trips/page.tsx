@@ -12,7 +12,7 @@ import styles from "./page.module.css";
 export const metadata: Metadata = { title: "Golf Trips | The Maroon" };
 
 /**
- * Golf Trips: start a new trip, Join a Trip, then My Trips (upcoming + past) — the standard way back into a saved trip.
+ * Golf Trips: Join a Trip, start a new trip, then My Trips (upcoming + past) — the standard way back into a saved trip.
  * Loaded fresh from Supabase on every visit (getUserGolfTrips), so a deleted trip simply isn't listed.
  * Each trip opens the one canonical trip page, /golf-trips/<id>.
  */
@@ -23,12 +23,13 @@ export default async function GolfTripsPage() {
 
   return (
     <main className={styles.page}>
-      {/* Maroon band at the top; the Create card overlaps its bottom edge (money-app dashboard look). */}
+      {/* Maroon band at the top; the Join card overlaps its bottom edge (money-app dashboard look). */}
       <div className={styles.band}>
         <h1 className={styles.title}>Your Next Golf Trip<br />Just Got Better</h1>
       </div>
 
       <div className={styles.content}>
+        <GolfTripJoin />
         <SignInRequiredLink href="/tournaments/create/golf-trip" className={styles.create} message="Sign in to create a golf trip">
           <span className={styles.createLabel}>Plan something new</span>
           <span className={styles.createTitle}>Create a Golf Trip</span>
@@ -42,7 +43,17 @@ export default async function GolfTripsPage() {
           </span>
         </SignInRequiredLink>
 
-        <GolfTripJoin />
+        <Link href="/maroon-u" className={styles.create}>
+          <span className={styles.createTitle}>The Maroon U</span>
+          <span className={styles.createPhoto}>
+            <Image src="/schedule/courses/petedye/37c88500018493969bee.webp" alt="" fill sizes="(max-width: 600px) 90vw, 528px" />
+          </span>
+          <span className={styles.createRow}>
+            <span className={styles.iconBox} aria-hidden="true"><Flag size={18} strokeWidth={2.25} /></span>
+            The Maroon U
+            <ChevronRight size={20} strokeWidth={2} aria-hidden="true" className={styles.rowArrow} />
+          </span>
+        </Link>
 
         {result.status === "ok" ? <>
           <TripSection id="upcoming-trips" heading="Upcoming" trips={upcoming} icon={Plane}

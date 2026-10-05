@@ -1,5 +1,6 @@
 import type { PastTournament } from "../platform/pastTournaments";
-import type { Team, Tournament } from "../data/types";
+import type { ArchivedHandicapRound, HandicapSummary } from "../handicap/types";
+import type { PlayerProfile, PlayerScorecard, Team, Tournament } from "../data/types";
 import type { PlayerYearStats } from "../data/stats";
 import { CAREER_STAT_COLUMNS } from "../data/stats/careerColumns";
 import { pastTournaments } from "../data";
@@ -20,6 +21,9 @@ export interface CareerStats {
 }
 
 export interface MyProfile {
+  playerPage?: { tournament: Tournament; scorecard: PlayerScorecard; team: Team; shotVideos: Record<number, Record<number, Record<number, string>>> } | null;
+  playerBio?: PlayerProfile | null;
+  roundHistory?: { playerSlug: string; summary: HandicapSummary; archivedRounds: ArchivedHandicapRound[] } | null;
   name: string;
   initials: string;
   avatarSrc: string | null;
