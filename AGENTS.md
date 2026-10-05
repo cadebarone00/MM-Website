@@ -1,5 +1,7 @@
 # Living application workflow guide
 
+Do not add "Preview only" banners, notes, or equivalent disclaimers to the development app UI. The development context already makes this clear; document persistence and feature limitations in the workflow guide instead.
+
 When changing application behavior, update `docs/app-workflow.md` in the same change. This includes scoring, data sources or destinations, permissions, schemas, handicap calculations, tournament setup, archives, odds, broadcast, and feature availability. Keep descriptions grounded in the implementation and clearly distinguish live features, legacy paths, and placeholders.
 
 Update the affected descriptions and Mermaid flowchart. If the overview boxes or workflow paths change, also update their mapping in `scripts/render-workflow.cjs`.

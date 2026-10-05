@@ -25,3 +25,16 @@ export const GOLF_TRIP_COMPETITION_PREVIEW: CompetitionRound[] = [
 export function updateCompetitionRounds(rounds: CompetitionRound[], change: CompetitionRoundChange, id?: string): CompetitionRound[] {
   return rounds.map(round => round.status === "started" || (id !== undefined && round.id !== id) ? round : { ...round, ...change });
 }
+
+/** Adds a scheduled round at the end of `date`, then renumbers every round 1..n in day order. */
+export function addCompetitionRound(rounds: CompetitionRound[], date: string, id: string): CompetitionRound[] {
+  const lastOnOrBefore = rounds.reduce((last, round, index) => round.date <= date ? index : last, -1);
+  const next: CompetitionRound = { id, date, number: 0, course: "Course TBD", format: "Singles", nassau: false, handicap: false, status: "scheduled" };
+  const inserted = [...rounds.slice(0, lastOnOrBefore + 1), next, ...rounds.slice(lastOnOrBefore + 1)];
+  return inserted.map((round, index) => ({ ...round, number: index + 1 }));
+}
+
+/** Removes a scheduled round, then renumbers every round 1..n. Started rounds are locked and stay. */
+export function removeCompetitionRound(rounds: CompetitionRound[], id: string): CompetitionRound[] {
+  return rounds.filter(round => round.id !== id || round.status === "started").map((round, index) => ({ ...round, number: index + 1 }));
+}

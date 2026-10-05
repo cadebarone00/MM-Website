@@ -37,3 +37,7 @@ Supersedes the summary placement above: Competition is title-only; a separate sh
 ## 2026-10-02 head-to-head format preview scope review
 
 Golf Competition restores fictional match-play versus cards/pairings and adds local format selection across the loaded format catalog plus Chapman. Stroke/points formats reuse leaderboard presentation; Custom has sample stroke presentation only. Preview selection is component memory, resets on remount/reload and never changes organizer round configuration, scores, permissions or storage. No new personal data, vendors, assets, UGC, payments, subscriptions, advertising, sponsorship or provider integrations. Existing IP, security, privacy, retention, platform and professional-review follow-ups remain review_required. No deployment verified. Evidence: GolfTripCompetitionMatchPreview.tsx and golfTripPreviewFixture.ts.
+
+## 2026-10-04 competition overview scope review
+
+Overview summarizes existing fictional round formats, flags, schedule and status. Missing competition type and point/handicap/tiebreak rules explicitly remain Not configured. No new collection, personal data, UGC, assets, vendors, permissions, storage, retention destinations, payments, subscriptions, advertising or sponsorship. Existing privacy, IP, security, retention, organizer authority, platform/provider and professional legal-review findings and owner-assignment follow-ups remain `review_required`. No release or deployment verified. Evidence: components/platform/GolfTripSettingsPreview.tsx.

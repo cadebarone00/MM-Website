@@ -365,11 +365,6 @@ function VenueEvents() {
   const renderSection = (key: InfoSectionKey, title: string, entries: InfoEntry[], onAdd: () => void) => <section key={key} className={styles.infoSection}>
     <div className={styles.infoHeaderRow}>
       <h2 className={styles.eventsHeading}>{title}</h2>
-      <button type="button" className={styles.deleteSectionButton} aria-label={`Delete ${title}`} onClick={() => {
-        if (entries[0]) setConfirmDelete({ section: key, entry: entries[0] });
-      }}>
-        <Trash2 size={16} strokeWidth={2} aria-hidden />
-      </button>
     </div>
     {entries.map((entry) => <article key={entry.id} className={styles.infoEntry}>
       <button type="button" className={styles.entryDelete} aria-label={`Delete ${entry.title}`} onClick={() => setConfirmDelete({ section: key, entry })}>
