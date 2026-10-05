@@ -28,6 +28,8 @@
 .gpsButton{border-color:#c62828;color:#c62828}
 .gpsButton[data-active=true]{background:#c62828;color:#fff}
 .gps{display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:8px}
+/* The GPS prototype fills the sheet under the pills, as a rounded card. */
+.gpsMap{flex:1 1 auto;min-height:440px;margin-top:6px;border-radius:16px}
 .scorecardTable{width:100%;border-collapse:collapse;table-layout:fixed;font:700 13px/1 var(--font-spectral),Georgia,serif;text-align:center;color:var(--color-maroon-900,#2f0c0e)}
 .scorecardTable th,.scorecardTable td{padding:8px 2px;border-bottom:1px solid rgba(47,12,14,.12)}
 .scorecardTable thead th{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:rgba(47,12,14,.62);border-bottom:2px solid rgba(47,12,14,.3)}

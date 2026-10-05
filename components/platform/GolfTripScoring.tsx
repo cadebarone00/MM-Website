@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent } from "rea
 import { createPortal } from "react-dom";
 import { LockKeyhole, LockKeyholeOpen, Minus, Plus } from "lucide-react";
 import { useScoringView } from "@/lib/platform/scoringViewPreference";
+import { GolfGpsScreen } from "./gps/GolfGpsScreen";
 import styles from "./GolfTripScoring.module.css";
 
 const HOLES = 18;
@@ -192,7 +193,8 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
     </button>}
 
     <div id="trip-scoring-body" className={styles.body} inert={!open}>
-      {view === "gps" ? <GpsSection hole={current + 1} holePar={holePar} />
+      {/* GPS prototype (satellite map, live yardages, mock hole) in development; real trips keep the placeholder until course data exists. */}
+      {view === "gps" ? process.env.NODE_ENV === "development" ? <GolfGpsScreen showDevControls className={styles.gpsMap} /> : <GpsSection hole={current + 1} holePar={holePar} />
         : view === "scorecard" ? <>
           <ScorecardSection par={par} holes={holes} opponentHoles={holesCompetitor} opponentName={opponentName} putts={putts} fairways={fairways} greens={greens} />
           {/* Both cards complete and agreeing: final scores in green, then Save & Submit. */}

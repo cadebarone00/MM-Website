@@ -39,7 +39,7 @@ export function simulatorPages(): SimulatorPage[] {
     if (existsSync(join(process.cwd(), "app", path, "page.tsx"))) pages.push({ id: path, path, label: step[0].toUpperCase() + step.slice(1), fixtures: false });
   }
   for (const page of pages) {
-    page.group ??= page.path.startsWith("/golf-trips/new") ? "Golf Trip Onboarding" : page.path.startsWith("/dev/tournament") || page.path === "/golf-trips/trip/settings" ? "Golf Trip Active" : page.path.startsWith("/dev/play") ? "Tournament Active" : ["/login", "/signup", "/new-user"].includes(page.path) ? "Authentication" : "Public / Marketing";
+    page.group ??= page.path.startsWith("/golf-trips/new") ? "Golf Trip Onboarding" : page.path.startsWith("/dev/tournament") || page.path === "/golf-trips/trip/settings" || page.path === "/dev/gps" ? "Golf Trip Active" : page.path.startsWith("/dev/play") ? "Tournament Active" : ["/login", "/signup", "/new-user"].includes(page.path) ? "Authentication" : "Public / Marketing";
     page.label = page.label.replace(/^Golf Trip \u00b7 /, "");
     if (page.path === "/golf-trips/new") page.label = "Trip Basics";
     if (page.conditions) continue;
@@ -64,6 +64,8 @@ export function simulatorPages(): SimulatorPage[] {
       { id: "weather-off", label: "Normal weather", state: { loading: "off" } },
       { id: "weather-loading", label: "Weather loading", state: { loading: "weather" } });
   }
+  const gps = pages.find(page => page.path === "/dev/gps");
+  if (gps) gps.label = "GPS prototype";
   const settings = pages.find(page => page.path === "/dev/tournament/settings");
   if (settings) {
     settings.label = "Settings preview";
