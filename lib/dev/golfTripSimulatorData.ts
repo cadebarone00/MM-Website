@@ -40,6 +40,9 @@ export function simulatorTripData(mock: SimulatorTripData, maroon: SimulatorTrip
     base = { ...mock, preview, previewMatch: populatedMatch(mock.previewMatch ?? GOLF_MATCH_PREVIEW, state.playerCount ?? 32) };
   }
   const preview = { ...base.preview };
+  // Venue map pins for the fictional/dev trips (saved trips carry their own coordinates).
+  if (!preview.destinationLatitude && source === "maroon") Object.assign(preview, { destinationLatitude: "33.8303", destinationLongitude: "-116.5453" }); // Palm Springs
+  if (!preview.destinationLatitude && source === "busy") Object.assign(preview, { destinationLatitude: "35.1954", destinationLongitude: "-79.4695" }); // Pinehurst
   if (state.competition !== "source") preview.includesTournament = state.competition;
   if (state.playerCount !== null) preview.playerCount = String(state.playerCount);
   let previewMatch = base.previewMatch;

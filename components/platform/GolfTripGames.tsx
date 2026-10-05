@@ -1,20 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Flag, Trophy } from "lucide-react";
+import { Coins, Dices, Repeat, RotateCw, Swords, Target, Trophy, Users, type LucideIcon } from "lucide-react";
 import { GolfTripActionSheet } from "./GolfTripActionSheet";
-import { GAME_PREVIEW_PLAYERS as players, GAME_PREVIEW_ROUNDS as rounds, recommendedGames, type GameScope, type GroupSize, type SideGameDefinition } from "@/lib/platform/golfTripGames";
+import { GAME_PREVIEW_PLAYERS as players, GAME_PREVIEW_ROUNDS as rounds, SIDE_GAME_REGISTRY, type GameScope, type GroupSize, type SideGameDefinition } from "@/lib/platform/golfTripGames";
 import { GolfGameScoringPreview } from "./GolfGameScoringPreview";
 import styles from "./GolfTripGames.module.css";
 
-const sizes: GroupSize[] = [1, 2, 3, 4, 5];
 const sizeLabel = (size: number) => size === 1 ? "Single" : `${size}some`;
 const nameOf = (id: string) => players.find(player => player.id === id)?.name ?? "Choose player";
+const GAME_ICONS: Record<string, LucideIcon> = { "match-play": Swords, "9-point": Target, wolf: RotateCw, vegas: Users, "coin-flip": Coins, "round-robin": Repeat };
 
 export function GolfTripGames() {
-  const [scope, setScope] = useState<GameScope | null>(null);
+  const [scope, setScope] = useState<GameScope>("tournament");
   const [size, setSize] = useState<GroupSize | null>(null);
-  const [showScopeMenu, setShowScopeMenu] = useState(false);
+  const [showLibrary, setShowLibrary] = useState(false);
   const [roundId, setRoundId] = useState<string>(rounds[0].id);
   const [game, setGame] = useState<SideGameDefinition | null>(null);
   const [selected, setSelected] = useState<string[]>(["you"]);
@@ -25,9 +25,13 @@ export function GolfTripGames() {
   const round = rounds.find(item => item.id === roundId)!;
   const valid = selected.length === count && (size !== 1 || selected.some(id => players.find(player => player.id === id)?.group === "Another group"));
   const resetGame = () => { setGame(null); setConfirmed(false); };
+  const chooseSize = (nextSize: GroupSize) => {
+    setSize(nextSize); setConfirmed(false);
+    setSelected(nextSize === 1 ? ["you", "riley"] : players.slice(0, nextSize).map(player => player.id));
+  };
   const chooseGame = (next: SideGameDefinition) => {
-    setGame(next); setConfirmed(false); setHandicap(false); setPool("All players");
-    setSelected(size === 1 ? ["you", "riley"] : players.slice(0, count).map(player => player.id));
+    setGame(next); setHandicap(false); setPool("All players");
+    chooseSize(next.supportedGroupSizes.find(value => value !== 1) ?? 1);
   };
   const togglePlayer = (id: string) => {
     setConfirmed(false);
@@ -38,35 +42,27 @@ export function GolfTripGames() {
     <header className={styles.gamesHeader}>
       <h2 className={styles.activeGamesTitle}>Active Games</h2>
       <div className={styles.newGameWrap}>
-        <button type="button" className={styles.newGameButton} aria-expanded={showScopeMenu} onClick={() => setShowScopeMenu(value => !value)}>
+        <button type="button" className={styles.newGameButton} aria-expanded={showLibrary} onClick={() => setShowLibrary(true)}>
           New game
         </button>
-        {showScopeMenu && <GolfTripActionSheet label="Game scope selector" onClose={() => setShowScopeMenu(false)}
-          actions={(["tournament", "round"] as const).map(value => ({
-            label: value === "tournament" ? "Whole Tournament" : "Per Round",
-            icon: value === "tournament" ? Trophy : Flag,
-            pressed: scope === value,
-          }))} onAction={label => { setScope(label === "Whole Tournament" ? "tournament" : "round"); setShowScopeMenu(false); resetGame(); }}>
-          {scope === "round" && <label className={styles.label}>
-            <select aria-label="Game round" value={roundId} onChange={event => { setRoundId(event.target.value); setConfirmed(false); }}>
-              {rounds.map(item => <option key={item.id} value={item.id}>Round {item.number} · {item.course} · {item.date}</option>)}
-            </select>
-          </label>}
-        </GolfTripActionSheet>}
       </div>
     </header>
-    {scope && <fieldset className={styles.section}><legend>2. How big is your group?</legend><div className={`${styles.choices} ${styles.sizes}`}>
-      {sizes.map(value => <button type="button" key={value} aria-pressed={size === value} onClick={() => { setSize(value); resetGame(); }}>{sizeLabel(value)}</button>)}
-    </div>{size === 1 && <p>Going solo? Challenge a player in another group to Match Play.</p>}</fieldset>}
-    {scope && size && !game && <section className={styles.section} aria-label="Recommended Games"><h3>3. Recommended Games</h3><p>Good company. A little competition. These fit your {sizeLabel(size).toLowerCase()}.</p>
-      <div className={styles.library}>{recommendedGames(size, scope).map(item => <article key={item.id} className={styles.gameCard}>
-        <span className={styles.eyebrow}>{item.gameType === "teams" ? "Team up" : item.gameType === "rotating" ? "Mix it up" : "Head to head"}</span>
-        <h4>{item.name}</h4><p>{item.description}</p>
-        <small>{item.supportedGroupSizes.filter(value => value !== 1).join(" / ")} players{item.id === "match-play" && " · Single: outside-group challenge"}</small>
-        <button type="button" className={styles.primary} onClick={() => chooseGame(item)}>Select {item.name}</button>
-      </article>)}</div></section>}
+    {showLibrary && <GolfTripActionSheet label="Game library" onClose={() => setShowLibrary(false)}
+      header={<div className={styles.libraryHeader}>
+        <div className={styles.libraryBrand}><span className={styles.libraryLogo}><Trophy size={22} strokeWidth={2} aria-hidden /></span>
+          <div><strong>Game library</strong><small>{SIDE_GAME_REGISTRY.length} games</small></div></div>
+        <p>Good company. A little competition.</p>
+      </div>}
+      actions={SIDE_GAME_REGISTRY.map(item => ({ label: item.name, icon: GAME_ICONS[item.id] ?? Dices, pressed: game?.id === item.id }))}
+      onAction={label => { const next = SIDE_GAME_REGISTRY.find(item => item.name === label); if (next) chooseGame(next); setShowLibrary(false); }} />}
     {game && scope && size && <section className={styles.section} aria-label="Game setup preview">
-      <button type="button" className={styles.back} onClick={resetGame}>← Change game</button><h3>4. {game.name} setup</h3>
+      <button type="button" className={styles.back} onClick={() => { resetGame(); setShowLibrary(true); }}>← Change game</button><h3>{game.name} setup</h3>
+      <fieldset className={styles.players}><legend>Play across</legend><div className={styles.choices}>
+        {(["tournament", "round"] as const).map(value => <button type="button" key={value} aria-pressed={scope === value} onClick={() => { setScope(value); setConfirmed(false); }}>{value === "tournament" ? "Whole Tournament" : "Per Round"}</button>)}
+      </div>{scope === "round" && <label className={styles.label}>Round<select aria-label="Game round" value={roundId} onChange={event => { setRoundId(event.target.value); setConfirmed(false); }}>{rounds.map(item => <option key={item.id} value={item.id}>Round {item.number} {"·"} {item.course} {"·"} {item.date}</option>)}</select></label>}</fieldset>
+      {game.supportedGroupSizes.length > 1 && <fieldset className={styles.players}><legend>Group size</legend><div className={`${styles.choices} ${styles.sizes}`}>
+        {game.supportedGroupSizes.map(value => <button type="button" key={value} aria-pressed={size === value} onClick={() => chooseSize(value)}>{sizeLabel(value)}</button>)}
+      </div>{size === 1 && <p>Going solo? Challenge a player in another group to Match Play.</p>}</fieldset>}
       <p className={styles.summary}>{scope === "tournament" ? "Whole Tournament · Full event" : `Round ${round.number} · ${round.course} · ${round.date}`} · {sizeLabel(size)}</p>
       <fieldset className={styles.players}><legend>Choose players · {selected.length}/{count}</legend>
         <div className={styles.choices}>{["All players", "Your group", "Another group"].map(value => <button type="button" key={value} aria-pressed={pool === value} onClick={() => setPool(value)}>{value}</button>)}</div>

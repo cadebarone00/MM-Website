@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { resolveGolfFormat } from "@/lib/platform/formats";
 import {
+  GOLF_PREVIEW_COURSE_WEATHER,
   normalizeCompetitor,
   type GolfLeaderboardEntry,
   type GolfMatchCompetitor,
@@ -251,15 +252,15 @@ export function GolfCourseWeather({ match }: { match: GolfMatchPreview }) {
         <h3 className={styles.headerTitle}>{match.course}</h3>
         <p className={styles.headerDetail}>{roundDay(match.roundDate)} • Round {match.round} • {formatDef.label}</p>
       </div>
-      <span className={styles.weatherTemp}>—°</span>
+      <span className={styles.weatherTemp}>{GOLF_PREVIEW_COURSE_WEATHER.temperature}°</span>
     </div>
     <div className={styles.weatherStats}>
-      {["High", "Low", "Wind", "Rain"].map((label) => <p key={label} className={styles.weatherStat}><span>{label}</span>—</p>)}
+      {GOLF_PREVIEW_COURSE_WEATHER.stats.map(([label, value]) => <p key={label} className={styles.weatherStat}><span>{label}</span>{value}</p>)}
     </div>
     <div className={styles.weatherHours} aria-label="Hourly forecast">
-      {["8 AM", "10 AM", "12 PM", "2 PM", "4 PM"].map((hour) => <p key={hour} className={styles.weatherHour}><span>{hour}</span>—°</p>)}
+      {GOLF_PREVIEW_COURSE_WEATHER.hours.map(([hour, temp]) => <p key={hour} className={styles.weatherHour}><span>{hour}</span>{temp}</p>)}
     </div>
-    <p className={styles.weatherNote}>Forecast coming soon</p>
+    <p className={styles.weatherNote}>Sample forecast</p>
   </section>;
 }
 

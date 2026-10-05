@@ -1,7 +1,8 @@
 "use client";
 
-import { Suspense, use, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { Suspense, use, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type UIEvent } from "react";
 import Link from "next/link";
+import { createPortal } from "react-dom";
 import { AlertTriangle, ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronRight, Clock, CloudRain, ExternalLink, FileText, Flag, LockKeyhole, MapPin, MessageCircle, Plane, Plus, Settings, Share2, ShieldCheck, ShoppingBag, Sun, Thermometer, Trash2, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import { normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
@@ -15,6 +16,9 @@ import { GolfTripScoring } from "./GolfTripScoring";
 import { GolfTripCompetitionMatchPreview } from "./GolfTripCompetitionMatchPreview";
 import { GolfTripActionSheet } from "./GolfTripActionSheet";
 import { GolfTripGames } from "./GolfTripGames";
+import { GolfTripChat } from "./GolfTripChat";
+import { GolfTripItinerary, GolfTripVenue } from "./GolfTripVenue";
+import { getPlayerDisplayName } from "@/lib/data/players";
 import styles from "./GolfTripHome.module.css";
 
 import { GOLF_TRIP_TABS as TABS, GOLF_TRIP_SECTIONS as GOLF_SLIDES, type GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
@@ -52,6 +56,30 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
     if (tab !== "Golf") onNavigationChange?.({ tab });
   }, [tab, onNavigationChange]);
   const competitive = draft.includesTournament === "yes";
+  const [chatOpen, setChatOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const notificationsRef = useRef<HTMLDivElement>(null);
+  const notificationButtonRef = useRef<HTMLButtonElement>(null);
+  const notificationCloseRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!notificationsOpen) return;
+    notificationCloseRef.current?.focus();
+    const dismiss = (event: PointerEvent) => {
+      if (event.target instanceof Node && !notificationsRef.current?.contains(event.target) && !notificationButtonRef.current?.contains(event.target)) setNotificationsOpen(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setNotificationsOpen(false);
+        notificationButtonRef.current?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", dismiss);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", dismiss);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [notificationsOpen]);
 
 
   const dates = tripDates(draft.startDate, draft.endDate);
@@ -65,10 +93,23 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   return <main className={`${styles.page} ${styles.pageWithScoring} ${tab === "Golf" && preview && previewMatch ? styles.pageGolfPreview : ""}`}>
     {backHref && <Link href={backHref} className={styles.desktopBack}><ArrowLeft size={16} strokeWidth={2} aria-hidden />Golf Trips</Link>}
     <header className={styles.header}>
-      {/* Look only for now: chat and notifications aren't built yet. */}
       <div className={styles.headerActions}>
-        <button type="button" className={styles.iconButton} aria-label="Trip chat"><MessageCircle size={24} strokeWidth={1.75} aria-hidden /></button>
-        <button type="button" className={styles.iconButton} aria-label="Notifications"><Bell size={24} strokeWidth={1.75} aria-hidden /></button>
+        <button type="button" className={styles.iconButton} aria-label="Trip chat" onClick={() => setChatOpen(true)}><MessageCircle size={24} strokeWidth={1.75} aria-hidden /></button>
+        <div className={styles.notificationsAnchor}>
+          <button ref={notificationButtonRef} type="button" className={styles.iconButton} aria-label="Notifications" aria-expanded={notificationsOpen} aria-controls="trip-notifications" onClick={() => setNotificationsOpen(open => !open)}><Bell size={24} strokeWidth={1.75} aria-hidden /></button>
+          {notificationsOpen && createPortal(<div ref={notificationsRef} onBlur={event => {
+            if (!event.currentTarget.contains(event.relatedTarget) && event.relatedTarget !== notificationButtonRef.current) setNotificationsOpen(false);
+          }} id="trip-notifications" role="region" aria-label="Notifications" className={`${styles.addSheet} ${styles.notificationsDropdown}`}>
+            <button ref={notificationCloseRef} type="button" className={styles.sheetClose} aria-label="Close notifications" onClick={() => { setNotificationsOpen(false); notificationButtonRef.current?.focus(); }}><X size={18} strokeWidth={2.25} aria-hidden /></button>
+            <div className={styles.sheetActionList}>
+              <div className={styles.sheetActionRow}><span className={styles.sheetActionIcon}><Bell size={18} strokeWidth={2} aria-hidden /></span><span className={styles.sheetActionText}>Notifications</span></div>
+              {NOTIFICATION_CATEGORIES.map(({ name, icon: Icon }) => <section key={name} className={styles.notificationsCategory} aria-label={`${name} notifications`}>
+                <h3 className={styles.notificationsCategoryTitle}><Icon size={14} strokeWidth={2.25} aria-hidden />{name}</h3>
+                <p className={styles.notificationsEmpty}>No {name.toLowerCase()} notifications yet</p>
+              </section>)}
+            </div>
+          </div>, document.body)}
+        </div>
         <Link href={settingsHref} className={styles.iconButton} aria-label="Trip settings"><Settings size={24} strokeWidth={1.75} aria-hidden /></Link>
       </div>
       <h1 className={styles.title}>{draft.tripName || "Your Golf Trip"}</h1>
@@ -78,17 +119,26 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
       </div>
     </header>
     <div className={styles.body} role="tabpanel" aria-label={tab}>
-      {tab === "Home" ? <InfoAccount destination={draft.destination} flights={flights} />
+      {tab === "Home" ? <InfoAccount draft={draft} settingsHref={settingsHref} flights={flights} />
         : tab === "Golf" ? <>
           <GolfSlides key={String(competitive)} previewMatch={previewMatch} competitive={competitive} navigation={navigation} onNavigationChange={onNavigationChange} />
         </>
-        : tab === "Venue" ? <HomeSections draft={draft} dates={dates} dateRange={dateRange} weather={weather} />
+        : tab === "Venue" ? <GolfTripVenue draft={draft} settingsHref={settingsHref}
+          latitude={coordinate(draft.destinationLatitude)} longitude={coordinate(draft.destinationLongitude)} />
         : tab === "Info" ? <VenueEvents />
         : <Card title={tab}><Empty>Coming soon</Empty></Card>}
     </div>
     <GolfTripScoring par={previewMatch?.par} initialHoles={yourHoles} />
+    <GolfTripChat open={chatOpen} onClose={() => setChatOpen(false)} tripName={draft.tripName || "Your Golf Trip"}
+      members={[...new Set(previewMatch?.matches.flatMap(match => [match.left, match.right].flatMap(side => side ? normalizeCompetitor(side).golfers.map(golfer => getPlayerDisplayName(golfer.name)) : [])) ?? [])].filter(name => name !== getPlayerDisplayName(you ?? draft.yourName ?? ""))} />
   </main>;
 }
+
+/** Notifications drop-down is grouped into these categories. */
+const NOTIFICATION_CATEGORIES: { name: string; icon: LucideIcon }[] = [{ name: "Golf", icon: Flag }, { name: "Travel", icon: Plane }, { name: "Logistics", icon: Car }];
+
+/** A saved coordinate from the trip answers, or undefined when missing or not a number. */
+const coordinate = (value: string | undefined) => value && Number.isFinite(Number(value)) ? Number(value) : undefined;
 
 const HOME_SECTIONS = ["Golf", "The Trip", "Travelers", "Logistics"] as const;
 type HomeSection = (typeof HOME_SECTIONS)[number];
@@ -446,9 +496,16 @@ function FlightsCard({ flights }: { flights?: TripFlights }) {
 
 /**
  * Info tab, banking-app style (layout only, made-up numbers): a maroon top saying "Your trip to {destination}", a swipeable
- * row of account cards, a promo card with dots, then "Financial tools". It runs edge to edge and down to the bottom of the screen.
+ * row of two cards with a dot for each (the filled dot follows the swipe), then the upcoming trip and planned rounds. It runs edge to edge and down to the bottom of the screen.
  */
-function InfoAccount({ destination, flights }: { destination: string; flights?: TripFlights }) {
+function InfoAccount({ draft, settingsHref, flights }: { draft: GolfTripDraft; settingsHref: string; flights?: TripFlights }) {
+  const destination = draft.destination;
+  const [activeCard, setActiveCard] = useState(0);
+  const onCardsScroll = (event: UIEvent<HTMLDivElement>) => {
+    const track = event.currentTarget;
+    const maxScroll = track.scrollWidth - track.clientWidth;
+    setActiveCard(maxScroll > 0 && track.scrollLeft > maxScroll / 2 ? 1 : 0);
+  };
   return <div className={styles.account}>
     <div className={styles.accountTop}>
       <div className={styles.accountBar}>
@@ -456,27 +513,12 @@ function InfoAccount({ destination, flights }: { destination: string; flights?: 
       </div>
       <p className={styles.accountLabel}>{destination ? `Your trip to ${destination}` : "Your trip"}</p>
     </div>
-    <div className={styles.accountCards}>
+    <div className={styles.accountCards} onScroll={onCardsScroll}>
       <FlightsCard flights={flights} />
       <div className={styles.accountCard} aria-hidden />
     </div>
-    <div className={styles.accountPromos}>
-      <div className={styles.accountPromo}>
-        <button type="button" className={styles.accountPromoClose} aria-label="Dismiss"><X size={12} strokeWidth={2.5} aria-hidden /></button>
-        <div className={styles.accountPromoText}>
-          <p className={styles.accountPromoTitle}>Welcome to Chime+! Enjoy 3.00% APY, fee-free overdraft, and more</p>
-          <p className={styles.accountPromoLink}>See your benefits<ChevronRight size={14} strokeWidth={2.5} aria-hidden /></p>
-        </div>
-        <span className={styles.accountPromoIcon} aria-hidden><Plus size={26} strokeWidth={4} /></span>
-      </div>
-      <div className={`${styles.accountPromo} ${styles.accountPromoNext}`} aria-hidden />
-    </div>
-    <div className={styles.accountDots} aria-hidden><span className={styles.accountDotActive} /><span /><span /><span /></div>
-    <p className={styles.accountHeading}>Financial tools</p>
-    <div className={styles.accountTools}>
-      <div className={styles.accountTool}>Direct Deposit</div>
-      <div className={styles.accountTool}>Rewards</div>
-    </div>
+    <div className={styles.accountDots} aria-hidden>{[0, 1].map(index => <span key={index} className={activeCard === index ? styles.accountDotActive : undefined} />)}</div>
+    <GolfTripItinerary draft={draft} settingsHref={settingsHref} />
   </div>;
 }
 

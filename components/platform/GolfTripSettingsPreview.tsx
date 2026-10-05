@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { ChevronLeft, Clock, Minus, Plus, Trash2 } from "lucide-react";
+import { Check, ChevronLeft, Clock, Minus, Plus, Trash2 } from "lucide-react";
 import { GolfGameScoringSettings } from "./GolfGameScoringSettings";
 import { SIDE_GAME_REGISTRY } from "@/lib/platform/golfTripGames";
 import type { CompetitionRound } from "@/lib/platform/golfTripCompetitionPreview";
@@ -17,7 +17,7 @@ import { useGolfTripCompetitionPreview } from "./GolfTripCompetitionPreviewProvi
 import { useSimulator, useSimulatorNavigationReporter } from "@/components/dev/SimulatorBridge";
 
 const GENERAL_CARDS = Array.from({ length: 6 }, () => "Place holder");
-const ORGANIZER_CARDS = ["Players", "Trip Schedule", "Competition", "Games", "Place holder", "Place holder"];
+const ORGANIZER_CARDS = ["Players", "Trip Schedule", "Competition", "Games", "Allowed", "Place holder"];
 const GAME_GROUPS = {
   Individual: [{ id: "skins", name: "Skins", description: "Play for the lowest net score on the hole or the round.", players: "1-4 players" }],
   Matches: SIDE_GAME_REGISTRY.map(game => ({ id: game.id, name: game.name, description: game.description, players: `${game.supportedGroupSizes.join(" / ")} players` })),
@@ -28,6 +28,20 @@ const COMPETITION_TYPES = [
 ] as const;
 const MAX_DAYS = 14;
 const MAX_PLAYERS = 100;
+// Allowed: the trip's house rules, grouped like the Competition Rounds tab. Preview only; resets on reload.
+type AllowedRule = { id: string; section: string; name: string; detail: string };
+const ALLOWED_SECTIONS = ["On the course", "Scoring", "Equipment"];
+const ALLOWED_PRESET: AllowedRule[] = [
+  { id: "mulligans", section: "On the course", name: "Mulligans", detail: "1 per nine · Not on the 18th" },
+  { id: "gimmes", section: "On the course", name: "Gimmes", detail: "Inside the leather" },
+  { id: "breakfast-ball", section: "On the course", name: "Breakfast ball", detail: "First tee only" },
+  { id: "max-score", section: "Scoring", name: "Max score", detail: "Pick up at double par" },
+  { id: "winter-rules", section: "Scoring", name: "Winter rules", detail: "Lift, clean & place in the fairway" },
+  { id: "hazard-drop", section: "Scoring", name: "Hazard drop", detail: "One-stroke penalty" },
+  { id: "rangefinders", section: "Equipment", name: "Rangefinders", detail: "Slope off" },
+  { id: "golf-carts", section: "Equipment", name: "Golf carts", detail: "Cart path only when posted" },
+  { id: "music", section: "Equipment", name: "Music", detail: "Low volume · Off on the greens" },
+];
 const GAME_LOOKUP = [...GAME_GROUPS.Individual, ...GAME_GROUPS.Matches];
 
 /** Reference layout with local game scoring settings in the site's maroon palette. */
@@ -38,8 +52,13 @@ export function GolfTripSettingsPreview({ tripName, playerCount = 0, players = [
   const [gamesOpen, setGamesOpen] = useState(false);
   const [roundsOpen, setRoundsOpen] = useState(false);
   const [playersOpen, setPlayersOpen] = useState(false);
+  const [allowedOpen, setAllowedOpen] = useState(false);
+  const [allowedRules, setAllowedRules] = useState(ALLOWED_PRESET);
+  const [confirmDeleteRuleId, setConfirmDeleteRuleId] = useState<string | null>(null);
   // Players: the expected count can't drop below the players who already joined; open spots show as "Player N".
   const [playerTotal, setPlayerTotal] = useState(() => Math.min(MAX_PLAYERS, Math.max(1, playerCount, players.length)));
+  const [removedPlayers, setRemovedPlayers] = useState<Set<string>>(() => new Set());
+  const joinedPlayers = players.map((name, index) => ({ name, key: `${index}:${name}` })).filter(player => !removedPlayers.has(player.key));
   const [selectedRoundId, setSelectedRoundId] = useState<string | null>(null);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [expandedGameId, setExpandedGameId] = useState<string | null>(null);
@@ -96,12 +115,18 @@ export function GolfTripSettingsPreview({ tripName, playerCount = 0, players = [
     return enabled === rounds.length ? "On · All rounds" : enabled === 0 ? "Off · All rounds" : `Mixed · On for ${enabled} of ${rounds.length} rounds`;
   };
   const overview: [string, ReactNode][] = [
-    ["Round number", rounds.length ? `${rounds.length} rounds · ${days.length} days` : "Not configured"],
-    ["Course & format", rounds.length ? rounds.map(round => <span key={round.id} className={styles.overviewLine}>R{round.number} · {round.course} · {round.format}</span>) : "Not configured"],
     ["Points available", "Not configured"],
     ["Handicap", flagSummary("handicap")],
     ["Tiebreaker", "Not configured"],
     ["Status", `${rounds.filter(round => round.status === "started").length} started · ${rounds.filter(round => round.status === "scheduled").length} scheduled`],
+  ];
+  // Summary: a read-only recap of every competition choice, one row each.
+  const chosenTypes = [competitionType.individual, competitionType.team].filter(Boolean).join(" · ");
+  const summary: [string, ReactNode][] = [
+    ["Type", chosenTypes || "Not chosen"],
+    ["Rounds", rounds.length ? `${rounds.length} rounds · ${days.length} days` : "Not configured"],
+    ...rounds.map((round): [string, ReactNode] => [`R${round.number}`, `${round.course} · ${round.format}`]),
+    ...overview,
   ];
   const simulator = useSimulator();
   const reportNavigation = useSimulatorNavigationReporter();
@@ -122,30 +147,31 @@ export function GolfTripSettingsPreview({ tripName, playerCount = 0, players = [
     setSelectedGameId(null);
     setSelectedRoundId(view.startsWith("round-") ? view.slice(6) : null);
     setPlaceholder(view.startsWith("placeholder-") ? Number(view.slice(12)) : null);
+    setAllowedOpen(view === "allowed");
   }, [simulator?.navigation]);
   useEffect(() => {
     if (!reportNavigation) return;
-    const settingsView = playersOpen ? "players" : roundsOpen ? "schedule" : competitionOpen ? selectedRoundId ? `round-${selectedRoundId}` : competitionSection === "Rounds" ? "competition-rounds" : "competition" : gamesOpen ? expandedGameId ? `game-${expandedGameId}` : "games" : placeholder ? `placeholder-${placeholder}` : section === "General" ? "player" : "organizer";
+    const settingsView = allowedOpen ? "allowed" : playersOpen ? "players" : roundsOpen ? "schedule" : competitionOpen ? selectedRoundId ? `round-${selectedRoundId}` : competitionSection === "Rounds" ? "competition-rounds" : "competition" : gamesOpen ? expandedGameId ? `game-${expandedGameId}` : "games" : placeholder ? `placeholder-${placeholder}` : section === "General" ? "player" : "organizer";
     reportNavigation({ tab: "Home", settingsView }, rounds.map(({ id, number }) => ({ id, number })));
-  }, [reportNavigation, playersOpen, roundsOpen, competitionOpen, competitionSection, gamesOpen, expandedGameId, placeholder, section, selectedRoundId, rounds]);
+  }, [reportNavigation, allowedOpen, playersOpen, roundsOpen, competitionOpen, competitionSection, gamesOpen, expandedGameId, placeholder, section, selectedRoundId, rounds]);
   const cards = section === "Organizer" ? ORGANIZER_CARDS : GENERAL_CARDS;
+  // Back arrow and SAVE both step back one level; preview changes are already kept as you make them.
+  const goBack = () => {
+    if (selectedRound) setSelectedRoundId(null);
+    else if (selectedGame) setSelectedGameId(null);
+    else if (competitionOpen) setCompetitionOpen(false);
+    else if (roundsOpen) setRoundsOpen(false);
+    else if (playersOpen) setPlayersOpen(false);
+    else if (allowedOpen) setAllowedOpen(false);
+    else setGamesOpen(false);
+  };
 
-  return <main className={`${styles.page} ${competitionOpen || gamesOpen || roundsOpen || playersOpen ? styles.competitionPage : ""}`}>
+  return <main className={`${styles.page} ${competitionOpen || gamesOpen || roundsOpen || playersOpen || allowedOpen ? styles.competitionPage : ""}`}>
     <div className={styles.content}>
-      {(competitionOpen || gamesOpen || roundsOpen || playersOpen) ? <header className={styles.competitionHeader}>
-        <button type="button" className={styles.close} aria-label={selectedRound ? "Back to competition rounds" : selectedGame ? "Back to games" : "Back to organizer settings"} onClick={() => {
-          if (selectedRound) setSelectedRoundId(null);
-          else if (selectedGame) setSelectedGameId(null);
-          else if (competitionOpen) setCompetitionOpen(false);
-          else if (roundsOpen) setRoundsOpen(false);
-          else if (playersOpen) setPlayersOpen(false);
-          else setGamesOpen(false);
-        }}><ChevronLeft size={28} aria-hidden /></button>
-        <h1>{selectedRound ? "Round " + selectedRound.number + " Settings" : selectedGame ? selectedGame.name : gamesOpen ? "Games" : roundsOpen ? "Trip Schedule" : playersOpen ? "Players" : "Competition"}</h1>
-        {selectedRound || selectedGame ? <motion.button type="button" className={styles.save} onClick={() => {
-          if (selectedRound) setSelectedRoundId(null);
-          else setSelectedGameId(null);
-        }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }} transition={{ type: "spring", stiffness: 420, damping: 24 }}>SAVE</motion.button> : <span />}
+      {(competitionOpen || gamesOpen || roundsOpen || playersOpen || allowedOpen) ? <header className={styles.competitionHeader}>
+        <button type="button" className={styles.close} aria-label={selectedRound ? "Back to competition rounds" : selectedGame ? "Back to games" : "Back to organizer settings"} onClick={goBack}><ChevronLeft size={28} aria-hidden /></button>
+        <h1>{selectedRound ? "Round " + selectedRound.number + " Settings" : selectedGame ? selectedGame.name : gamesOpen ? "Games" : roundsOpen ? "Trip Schedule" : playersOpen ? "Players" : allowedOpen ? "Allowed" : "Competition"}</h1>
+        <motion.button type="button" className={styles.save} onClick={goBack} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }} transition={{ type: "spring", stiffness: 420, damping: 24 }}>SAVE</motion.button>
       </header> : <header className={styles.header}>
       <Link href="/dev/tournament" className={styles.close} aria-label="Back to trip"><ChevronLeft size={26} strokeWidth={1.75} aria-hidden /></Link>
       <div className={styles.heading}>
@@ -154,7 +180,7 @@ export function GolfTripSettingsPreview({ tripName, playerCount = 0, players = [
       </div>
       </header>}
 
-      {!competitionOpen && !gamesOpen && !roundsOpen && !playersOpen && <div className={`${tripStyles.tabs} ${styles.tabs}`} aria-label="Settings sections preview">
+      {!competitionOpen && !gamesOpen && !roundsOpen && !playersOpen && !allowedOpen && <div className={`${tripStyles.tabs} ${styles.tabs}`} aria-label="Settings sections preview">
         {["General", "Organizer"].map((name) => <button key={name} type="button" aria-pressed={section === name}
           className={`${tripStyles.tab} ${section === name ? tripStyles.tabActive : ""} ${styles.tab}`}
           onClick={() => { setSection(name); setPlaceholder(null); setCompetitionOpen(false); setGamesOpen(false); setRoundsOpen(false); setPlayersOpen(false); }}>{name}</button>)}
@@ -162,7 +188,7 @@ export function GolfTripSettingsPreview({ tripName, playerCount = 0, players = [
 
       {competitionOpen && competition ? <div className={styles.competition}>
         {!selectedRound && <div className={`${tripStyles.tabs} ${styles.tabs}`} aria-label="Competition sections">
-          {["Overview", "Rounds"].map(name => <button key={name} type="button" aria-pressed={competitionSection === name}
+          {["Overview", "Rounds", "Summary"].map(name => <button key={name} type="button" aria-pressed={competitionSection === name}
             className={`${tripStyles.tab} ${competitionSection === name ? tripStyles.tabActive : ""} ${styles.tab}`}
             onClick={() => setCompetitionSection(name)}>{name}</button>)}
         </div>}
@@ -180,6 +206,13 @@ export function GolfTripSettingsPreview({ tripName, playerCount = 0, players = [
               </div>
               <dl className={styles.overview}>
                 {overview.map(([label, value]) => <div key={label} className={styles.overviewRow}>
+                  <dt>{label}</dt><dd>{value}</dd>
+                </div>)}
+              </dl>
+            </section>}
+            {competitionSection === "Summary" && <section className={tripStyles.infoSection} aria-label="Summary">
+              <dl className={styles.overview}>
+                {summary.map(([label, value]) => <div key={label} className={styles.overviewRow}>
                   <dt>{label}</dt><dd>{value}</dd>
                 </div>)}
               </dl>
@@ -252,26 +285,36 @@ export function GolfTripSettingsPreview({ tripName, playerCount = 0, players = [
                 <button type="button" className={styles.typeChoice} aria-haspopup="dialog" onClick={() => setDatePickerOpen(true)}>{dayDate(dayCount - 1)}</button>
               </div>
             </div>
-            {Array.from({ length: dayCount }, (_, index) => {
-              const perDay = roundsPerDay[index] ?? 1;
-              const dayRounds = rounds.filter(round => round.date === days[index]);
-              return <div key={index} className={styles.typeGroup} role="group" aria-label={`Day ${index + 1}`}>
-                <div className={styles.dayRow}>
-                  <h4 className={styles.typeHeading}>Day {index + 1}</h4>
-                  <div className={styles.roundSlider} role="radiogroup" aria-label={`Day ${index + 1} rounds`} data-value={perDay}>
-                    <span className={styles.roundSliderThumb} aria-hidden />
-                    {([0, 1, 2] as const).map(value => <button key={value} type="button" role="radio" aria-checked={perDay === value}
-                      onClick={() => setRoundsPerDay(current => ({ ...current, [index]: value }))}>{value}</button>)}
-                  </div>
-                </div>
-                {Array.from({ length: perDay }, (_, slot) => <div key={slot} className={styles.roundSlot}>
-                  <span className={tripStyles.eventTitle}>{dayRounds[slot]?.course ?? "Course TBD"}</span>
-                  <span className={tripStyles.eventMeta}>{dayDate(index)}</span>
-                </div>)}
-              </div>;
-            })}
           </div>
         </section>
+        {/* Day rows use the same look as Competition → Rounds. */}
+        <div className={tripStyles.events}>
+          {Array.from({ length: dayCount }, (_, index) => {
+            const perDay = roundsPerDay[index] ?? 1;
+            const dayRounds = rounds.filter(round => round.date === days[index]);
+            const roundsBefore = Array.from({ length: index }, (_, day) => roundsPerDay[day] ?? 1).reduce<number>((sum, count) => sum + count, 0);
+            return <section key={index} className={tripStyles.infoSection} aria-label={`Day ${index + 1}`}>
+              <div className={tripStyles.infoHeaderRow}>
+                <h2 className={tripStyles.eventsHeading}>Day {index + 1}</h2>
+                <div className={styles.roundSlider} role="radiogroup" aria-label={`Day ${index + 1} rounds`} data-value={perDay}>
+                  <span className={styles.roundSliderThumb} aria-hidden />
+                  {([0, 1, 2] as const).map(value => <button key={value} type="button" role="radio" aria-checked={perDay === value}
+                    onClick={() => setRoundsPerDay(current => ({ ...current, [index]: value }))}>{value}</button>)}
+                </div>
+              </div>
+              {Array.from({ length: perDay }, (_, slot) => <div key={slot} className={`${tripStyles.infoEntry} ${styles.roundEntry}`}>
+                <span className={tripStyles.eventInfo}>
+                  <span className={tripStyles.eventHost}>Round {roundsBefore + slot + 1}</span>
+                  <span className={tripStyles.eventTitle}>{dayRounds[slot]?.course ?? "Course TBD"}</span>
+                  <span className={tripStyles.eventMeta}><Clock size={14} aria-hidden />
+                    <span>{dayDate(index)}</span>
+                    {dayRounds[slot] && <span>· {dayRounds[slot].format}</span>}
+                  </span>
+                </span>
+              </div>)}
+            </section>;
+          })}
+        </div>
       </div>}
 
       {playersOpen && <div className={styles.competition}>
@@ -279,23 +322,23 @@ export function GolfTripSettingsPreview({ tripName, playerCount = 0, players = [
             <div className={leaderboardStyles.lineupHeader} role="group" aria-label="Number of players">
               <h2 className={leaderboardStyles.headerTitle}>Players</h2>
               <div className={`${styles.typeChoice} ${styles.stepper}`}>
-                <button type="button" aria-label="Fewer players" disabled={playerTotal <= Math.max(1, players.length)} onClick={() => setPlayerTotal(count => count - 1)}><Minus size={14} strokeWidth={2.5} aria-hidden /></button>
+                <button type="button" aria-label="Fewer players" disabled={playerTotal <= Math.max(1, joinedPlayers.length)} onClick={() => setPlayerTotal(count => count - 1)}><Minus size={14} strokeWidth={2.5} aria-hidden /></button>
                 <span aria-live="polite">{playerTotal}</span>
                 <button type="button" aria-label="More players" disabled={playerTotal >= MAX_PLAYERS} onClick={() => setPlayerTotal(count => count + 1)}><Plus size={14} strokeWidth={2.5} aria-hidden /></button>
               </div>
             </div>
             <div>
-              <div className={`${leaderboardStyles.single} ${leaderboardStyles.columns} ${styles.playerRow}`} aria-hidden="true">
+              <div className={`${leaderboardStyles.single} ${leaderboardStyles.columns} ${styles.playerRow} ${styles.playerListRow}`} aria-hidden="true">
                 <span className={leaderboardStyles.columnPlayer}>Player</span>
               </div>
               <ol className={leaderboardStyles.lineup}>
-                {Array.from({ length: playerTotal }, (_, index) => <li key={index} className={`${leaderboardStyles.single} ${styles.playerRow}`}>
+                {Array.from({ length: playerTotal }, (_, index) => <li key={index} className={`${leaderboardStyles.single} ${styles.playerRow} ${styles.playerListRow}`}>
                   <span className={leaderboardStyles.rank}>{index + 1}</span>
-                  <span className={leaderboardStyles.cardButton} aria-hidden="true">{players[index] ? <span>IN</span> : <Plus size={16} />}</span>
                   <div className={leaderboardStyles.golfer}>
-                    <span className={leaderboardStyles.golferName}>{players[index] ?? `Player ${index + 1}`}</span>
-                    <span className={leaderboardStyles.tee}>{players[index] ? "Joined" : "Open spot"}</span>
+                    <span className={leaderboardStyles.golferName}>{joinedPlayers[index]?.name ?? `Player ${index + 1}`}</span>
+                    {!joinedPlayers[index] && <span className={leaderboardStyles.tee}>Open spot</span>}
                   </div>
+                  {joinedPlayers[index] && <button type="button" className={styles.playerDelete} aria-label={`Delete ${joinedPlayers[index].name}`} onClick={() => setRemovedPlayers(previous => new Set([...previous, joinedPlayers[index].key]))}><Trash2 size={18} aria-hidden /></button>}
                 </li>)}
               </ol>
               <button type="button" className={`${leaderboardStyles.single} ${styles.playerRow} ${styles.addPlayer}`} disabled={playerTotal >= MAX_PLAYERS} onClick={() => setPlayerTotal(count => count + 1)}>
@@ -308,7 +351,35 @@ export function GolfTripSettingsPreview({ tripName, playerCount = 0, players = [
       </div>}
 
       {placeholder && <section className={styles.card}><button type="button" onClick={() => setPlaceholder(null)}>Back to settings</button><h2>Place holder {placeholder <= 6 ? placeholder : placeholder - 6}</h2></section>}
-      {!placeholder && !competitionOpen && !gamesOpen && !roundsOpen && !playersOpen && <div className={styles.grid}>
+      {allowedOpen && <div className={styles.competition}>
+        <div className={tripStyles.events}>
+          {ALLOWED_SECTIONS.map(name => <section key={name} className={tripStyles.infoSection}>
+            <div className={tripStyles.infoHeaderRow}>
+              <h2 className={tripStyles.eventsHeading}>{name}</h2>
+            </div>
+            {allowedRules.filter(rule => rule.section === name).map(rule => <div key={rule.id} className={styles.roundRow}>
+              <div className={`${tripStyles.infoEntry} ${styles.roundEntry} ${styles.allowedEntry}`}>
+                <span className={tripStyles.eventInfo}>
+                  <span className={tripStyles.eventHost}>Allowed</span>
+                  <span className={tripStyles.eventTitle}>{rule.name}</span>
+                  <span className={tripStyles.eventMeta}><Check size={14} aria-hidden /><span>{rule.detail}</span></span>
+                </span>
+              </div>
+              <button type="button" className={`${tripStyles.entryDelete} ${styles.roundDelete}`} aria-label={`Delete ${rule.name}`} onClick={() => setConfirmDeleteRuleId(rule.id)}><Trash2 size={16} aria-hidden /></button>
+            </div>)}
+            <button type="button" className={tripStyles.addItemButton} onClick={() => setAllowedRules(current => [...current, { id: `rule-${Date.now()}`, section: name, name: "New rule", detail: "Details TBD" }])}><Plus size={16} strokeWidth={2.5} aria-hidden />Add rule</button>
+          </section>)}
+        </div>
+        {confirmDeleteRuleId && <div className={tripStyles.deleteOverlay} role="dialog" aria-modal="true" aria-label="Delete rule confirmation">
+          <div className={tripStyles.deleteDialog}>
+            <p className={tripStyles.deletePrompt}>Are you sure?</p>
+            <button type="button" className={tripStyles.cancelButton} onClick={() => setConfirmDeleteRuleId(null)}>Keep editing</button>
+            <button type="button" className={tripStyles.deleteButton} onClick={() => { setAllowedRules(current => current.filter(rule => rule.id !== confirmDeleteRuleId)); setConfirmDeleteRuleId(null); }}>Delete</button>
+          </div>
+        </div>}
+      </div>}
+
+      {!placeholder && !competitionOpen && !gamesOpen && !roundsOpen && !playersOpen && !allowedOpen && <div className={styles.grid}>
         {cards.map((title, index) => {
           if (title === "Competition") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`} onClick={() => setCompetitionOpen(true)}>
             <h2>{title}</h2>
@@ -317,6 +388,9 @@ export function GolfTripSettingsPreview({ tripName, playerCount = 0, players = [
             <h2>{title}</h2>
           </button>;
           if (title === "Trip Schedule") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`} onClick={() => setRoundsOpen(true)}>
+            <h2>{title}</h2>
+          </button>;
+          if (title === "Allowed") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`} onClick={() => setAllowedOpen(true)}>
             <h2>{title}</h2>
           </button>;
           if (title === "Games") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`} onClick={() => { setGamesOpen(true); setSelectedGameId(null); }}>

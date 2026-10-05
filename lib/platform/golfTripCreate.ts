@@ -177,6 +177,8 @@ export function savedTripAsDraft({ trip, members, rounds }: SavedGolfTrip): Golf
     includesTournament: trip.includes_tournament, knowsLodging: trip.lodging_plan, knowsFlights: trip.flight_plan,
     knowsTransportation: trip.transportation_plan,
   };
+  // The Venue map centres on the saved destination's coordinates when the trip has them.
+  if (trip.latitude != null && trip.longitude != null) { draft.destinationLatitude = String(trip.latitude); draft.destinationLongitude = String(trip.longitude); }
   for (const round of rounds) {
     draft[`day${round.dayNumber}Date`] = round.playDate ?? "";
     draft[`day${round.dayNumber}Rounds`] = String(rounds.filter((r) => r.dayNumber === round.dayNumber).length);

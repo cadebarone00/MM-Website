@@ -389,6 +389,13 @@ export const GOLF_MATCH_PREVIEWS: Record<string, GolfMatchPreview> = {
 /** Default preview matching previous export for complete backward compatibility. */
 export const GOLF_MATCH_PREVIEW: GolfMatchPreview = GOLF_MATCH_PREVIEW_SINGLES;
 
+/** Made-up course forecast for the preview's Golf tab weather card (not real weather). */
+export const GOLF_PREVIEW_COURSE_WEATHER = {
+  temperature: 78,
+  stats: [["High", "84°"], ["Low", "61°"], ["Wind", "8 mph SW"], ["Rain", "10%"]],
+  hours: [["8 AM", "64°"], ["10 AM", "71°"], ["12 PM", "78°"], ["2 PM", "83°"], ["4 PM", "81°"]],
+} as const;
+
 /** Made-up flights for the preview's Info → Flights card (a connection out, a nonstop home). */
 const previewFlight = (id: string, direction: GolfTripFlight["direction"], airline: string, flightNumber: string, from: string, to: string, departs: string, arrives: string): GolfTripFlight =>
   ({ id, direction, airline, flightNumber, departureAirport: from, arrivalAirport: to, departureLocal: departs, arrivalLocal: arrives,

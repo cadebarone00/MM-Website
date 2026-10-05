@@ -35,3 +35,12 @@
 .label input{width:100%;box-sizing:border-box;min-height:44px;padding:8px;border:1px solid #b99a63;border-radius:10px;background:#fff8ea;color:#38151f;font:inherit}
 .root button:disabled{opacity:.45;cursor:default}.root button:focus-visible,.root input:focus-visible,.root select:focus-visible{outline:3px solid #f5d583;outline-offset:3px}
 @media(min-width:650px){.library{grid-template-columns:1fr 1fr}}
+
+
+/* Game library popup header (uses the shared white GolfTripActionSheet card). */
+.libraryHeader{padding:4px 40px 4px 8px}
+.libraryBrand{display:flex;align-items:center;gap:10px}
+.libraryLogo{display:grid;place-items:center;flex-shrink:0;width:40px;height:40px;border-radius:10px;background:var(--color-maroon-900);color:#fbf8f1}
+.libraryBrand strong{display:block;font:700 16px/1.2 var(--font-barlow),sans-serif;color:#111}
+.libraryBrand small{display:block;font:500 12px/1.3 var(--font-barlow),sans-serif;color:#555}
+.libraryHeader p{margin:12px 0 0;font:500 14px/1.4 var(--font-barlow),sans-serif;color:#111}

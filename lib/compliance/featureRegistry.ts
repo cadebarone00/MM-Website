@@ -74,6 +74,11 @@ interface FeatureSeed {
 
 const seeds: FeatureSeed[] = [
   {
+    id: "golf-trip-chat-layout", name: "Golf Trip chat layout",
+    scope: "Memory-only inbox, pinned Trip Chat, search over supplied match participants and local text composition. No message transport, persistence, notifications, attachments, calls or encryption claims. Findings and follow-ups: docs/golf-trip-chat-review.md.",
+    attentionCategories: ["privacy", "personal-data", "ugc", "security", "retention", "account-deletion", "intellectual-property", "organizer-responsibility", "platform-rules", "legal-review"],
+  },
+  {
     id: "development-haptics-debugger", name: "Development haptics debugger",
     scope: "Local /dev-only intensity/duration/name events from shared haptic helpers; same-origin frame validation, bounded memory-only meter and cancellable phone-frame vibration with reduced-motion support. Native Capacitor feedback remains separate and unchanged. No new data collection, persistence, permissions or production UI. Findings and unresolved distribution/license review: docs/haptics-review.md.",
     attentionCategories: ["security", "open-source", "intellectual-property", "platform-rules", "legal-review"],
