@@ -12,7 +12,9 @@ import styles from "./DevSimulator.module.css";
 const initialDevice = SIMULATOR_DEVICES[4];
 const bounded = (value: string, min: number, max: number, fallback: number) => value === "" || !Number.isFinite(Number(value)) ? fallback : Math.max(min, Math.min(max, Math.round(Number(value))));
 
-export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unmapped: Record<string, unknown> }) {
+export function DevSimulator({ pages: registryPages, unmapped }: { pages: SimulatorPage[]; unmapped: Record<string, unknown> }) {
+  const [settingsRounds, setSettingsRounds] = useState<{ id: string; number: number }[]>([]);
+  const pages = useMemo(() => [...registryPages, ...settingsRounds.map(round => ({ ...registryPages.find(page => page.id === "settings-competition-rounds")!, id: `settings-round-${round.id}`, label: `Round ${round.number}`, parentId: "settings-competition-rounds", navigation: { tab: "Home" as const, settingsView: `round-${round.id}` } }))], [registryPages, settingsRounds]);
   const initialPage = pages.find(page => page.path === "/dev/tournament") ?? pages[0];
   const [pageId, setPageId] = useState(initialPage.id);
   const [frameSrc, setFrameSrc] = useState(`${initialPage.path}?simulator=1`);
@@ -41,6 +43,21 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
   const supportsFixtures = currentPath.startsWith("/dev/tournament");
   const groups = Array.from(new Set(pages.map(page => page.group ?? "Other")));
   const selectedGroup = selectedPage.group ?? "Other";
+  const branchPath: SimulatorPage[] = [];
+  let branchPage: SimulatorPage | undefined = selectedPage;
+  while (branchPage) {
+    branchPath.unshift(branchPage);
+    branchPage = pages.find(page => page.id === branchPage?.parentId);
+  }
+  const branchColumns = branchPath.filter(page => pages.some(child => child.parentId === page.id));
+  const activeIds = new Set(branchPath.map(page => page.id));
+  const conditionalColumn = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (selectedPage.parentId || branchColumns.length) {
+      const workspace = conditionalColumn.current?.closest("main");
+      workspace?.scrollTo({ left: workspace.scrollWidth - workspace.clientWidth, behavior: "smooth" });
+    }
+  }, [pageId, selectedPage.parentId, branchColumns.length]);
   const preset = SIMULATOR_DEVICES.find(item => item.id === device)!;
   // Fit may enlarge the visual frame. The iframe itself keeps its CSS viewport.
   const scale = zoom === "fit" ? Math.max(0.01, Math.min(Math.max(1, available.width - 184) / (size.width + 16), available.height / (size.height + 16))) : Number(zoom);
@@ -76,6 +93,10 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
       if (event.origin !== window.location.origin || event.source !== iframe.current?.contentWindow || event.data?.channel !== SIMULATOR_CHANNEL || !["ready", "location"].includes(event.data.type)) return;
       const location = parseSimulatorLocation(event.data.location);
       if (!location) return;
+      const rounds = event.data.location?.rounds;
+      if (location.path === "/dev/tournament/settings" && Array.isArray(rounds) && rounds.length <= 100 && rounds.every(round => round && typeof round.id === "string" && /^[a-z0-9-]{1,80}$/.test(round.id) && Number.isInteger(round.number) && round.number > 0)) {
+        setSettingsRounds(current => JSON.stringify(current) === JSON.stringify(rounds) ? current : rounds.map(({ id, number }: { id: string; number: number }) => ({ id, number })));
+      }
       setCurrentPath(location.path);
       setPageId(current => simulatorPageForLocation(pages, location, current)?.id ?? "");
       if (event.data.type === "ready") {
@@ -155,7 +176,7 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
       <div className={styles.brand}><MonitorSmartphone size={22} /><div><h1>App simulator</h1><p>The Maroon · Development workspace</p></div></div>
       <div className={styles.headerStatus}><span className={styles.headerDevice}>{preset.label}</span><span className={styles.devBadge}><span /> LOCAL DEV</span></div>
     </header>
-    <div className={styles.workspace}>
+    <div className={styles.workspace} style={{ gridTemplateColumns: `var(--groups-width) var(--pages-width) ${branchColumns.map(() => "var(--pages-width)").join(" ")} var(--conditions-width) minmax(var(--preview-min-width),1fr) 230px` }}>
       <aside className={styles.controls} aria-label="Development controls">
         <div className={styles.panelHeading}><SlidersHorizontal size={16} /> Groups</div>
         <div className={styles.cards}>{groups.map(group => <button className={styles.card} type="button" key={group} aria-pressed={selectedGroup === group} onClick={() => choosePage(pages.find(page => (page.group ?? "Other") === group)!.id)}>{group}</button>)}</div>
@@ -179,10 +200,17 @@ export function DevSimulator({ pages, unmapped }: { pages: SimulatorPage[]; unma
       </aside>
       <aside className={styles.controls} aria-label="Pages">
         <div className={styles.panelHeading}>Pages</div>
-        <div className={styles.cards}>{pages.filter(page => (page.group ?? "Other") === selectedGroup).map(page => <button data-page-id={page.id} className={styles.card} type="button" key={page.id} aria-pressed={pageId === page.id} onClick={() => choosePage(page.id)}>{page.label}<small>{page.path}</small></button>)}</div>
+        <div className={styles.cards}>{pages.filter(page => (page.group ?? "Other") === selectedGroup && !page.parentId).map(page => <button data-page-id={page.id} className={styles.card} type="button" key={page.id} aria-pressed={activeIds.has(page.id)} onClick={() => choosePage(page.id)}>{page.label}<small>{page.path}</small></button>)}</div>
         {!pageId && <p>Unmapped route: {currentPath}</p>}
       </aside>
-      <aside className={styles.controls} aria-label="Conditionals">
+      {branchColumns.map(parent => <aside key={parent.id} className={styles.controls} aria-label={`${parent.label} pages`}>
+        <div className={styles.panelHeading}>{parent.label}</div>
+        {Array.from(new Set(pages.filter(page => page.parentId === parent.id).map(page => page.section ?? "Pages"))).map(section => <section key={section}>
+          <h2 className={styles.branchHeading}>{section}</h2>
+          <div className={styles.cards}>{pages.filter(page => page.parentId === parent.id && (page.section ?? "Pages") === section).map(page => <button data-page-id={page.id} key={page.id} type="button" className={styles.card} aria-pressed={activeIds.has(page.id)} onClick={() => choosePage(page.id)}>{page.label}</button>)}</div>
+        </section>)}
+      </aside>)}
+      <aside ref={conditionalColumn} className={styles.controls} aria-label="Conditionals">
         <div className={styles.panelHeading}>Conditionals</div>
         <div className={styles.cards}>{selectedPage.conditions?.length ? selectedPage.conditions.map(condition => condition.playerCount ? <section key={condition.id} className={styles.controlSection}><label>{condition.label}<input type="number" aria-label={condition.label} min={1} max={64} placeholder="From data source" value={state.playerCount ?? ""} onChange={event => updateState("playerCount", event.target.value)} /></label></section> : <button className={styles.card} type="button" key={condition.id} aria-pressed={condition.source ? source === condition.source : Object.entries(condition.state ?? {}).every(([key, value]) => state[key as keyof SimulatorState] === value)} onClick={() => { if (condition.source) setSource(condition.source); if (condition.state) setState(current => ({ ...current, ...condition.state })); }}>{condition.label}</button>) : <p>No conditional states</p>}</div>
         {!!selectedPage.conditions?.length && <button type="button" onClick={() => { setState(DEFAULT_SIMULATOR_STATE); setSource("maroon"); }}><RotateCcw size={13} /> Reset conditionals</button>}

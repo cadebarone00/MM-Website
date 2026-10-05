@@ -1,4 +1,5 @@
 import type { Tournament, RealMatch } from "../data/types";
+import { getPlayerDisplayName } from "../data/players";
 import type { GolfTripDraft } from "./golfTripDraft";
 import type { GolfMatchPreview, GolfMatchCompetitor, GolfLeaderboardEntry } from "./golfTripPreviewFixture";
 const DEFAULT_PAR = [4,5,3,4,4,4,3,5,4,4,4,3,5,4,4,3,4,5];
@@ -155,7 +156,7 @@ export function adaptTournamentToPreviewMatch(tournament: Tournament): GolfMatch
     netToday: `${s.toPar}`,
     today: `${s.toPar}`,
     holes: Array(18).fill(null),
-    golfer: { name: s.player, hcp: 0, thru: "F", score: `${s.toPar}`, teeTime: "", course: tournament.venue },
+    golfer: { name: getPlayerDisplayName(s.player), hcp: 0, thru: "F", score: `${s.toPar}`, teeTime: "", course: tournament.venue },
   }));
 
   const preview: GolfMatchPreview = {

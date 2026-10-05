@@ -1,4 +1,5 @@
 import "server-only";
+import { SIDE_GAME_REGISTRY } from "@/lib/platform/golfTripGames";
 import { readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS } from "@/lib/platform/golfTripNavigation";
@@ -58,6 +59,21 @@ export function simulatorPages(): SimulatorPage[] {
     if (page.navigation?.tab === "Venue") page.conditions.push(
       { id: "weather-off", label: "Normal weather", state: { loading: "off" } },
       { id: "weather-loading", label: "Weather loading", state: { loading: "weather" } });
+  }
+  const settings = pages.find(page => page.path === "/dev/tournament/settings");
+  if (settings) {
+    settings.label = "Settings preview";
+    const add = (view: string, label: string, parentId: string, section?: string) => pages.push({
+      ...settings, id: `settings-${view}`, label, parentId, section,
+      navigation: { tab: "Home", settingsView: view },
+      conditions: settings.conditions?.map(condition => ({ ...condition })),
+    });
+    add("player", "Player settings", settings.id, "Player");
+    for (let index = 1; index <= 6; index++) add(`placeholder-${index}`, `Place holder ${index}`, settings.id, "Player");
+    add("organizer", "Organizer settings", settings.id, "Organizer");
+    for (const [view, label] of [["players", "Players"], ["schedule", "Trip Schedule"], ["competition", "Competition"], ["games", "Games"], ["placeholder-7", "Place holder 1"], ["placeholder-8", "Place holder 2"]]) add(view, label, settings.id, "Organizer");
+    add("competition-rounds", "Rounds", "settings-competition");
+    for (const game of [{ id: "skins", name: "Skins" }, ...SIDE_GAME_REGISTRY]) add(`game-${game.id}`, game.name, "settings-games");
   }
   const onboardingOrder = ["/tournaments/create/golf-trip", ...steps.map(step => "/golf-trips/new" + (step ? "/" + step : ""))];
   const groupOrder = Array.from(new Set(pages.map(page => page.group)));
