@@ -3,10 +3,13 @@
 import { Suspense, use, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentProps, type ReactNode, type UIEvent } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
-import { AlertTriangle, ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronRight, Clock, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Droplets, ExternalLink, FileText, Flag, LockKeyhole, MapPin, MessageCircle, Plane, Plus, Settings, Share2, ShieldCheck, ShoppingBag, Sun, Thermometer, Trash2, Trophy, User, Users, UtensilsCrossed, Wind, X, type LucideIcon } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronRight, Clock, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Droplets, ExternalLink, FileText, Flag, LockKeyhole, MapPin, MessageCircle, Plane, Plus, Settings, Share2, ShieldCheck, ShoppingBag, Sun, Thermometer, Trash2, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import { normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import { ITINERARY_KIND_LABEL, itineraryByDay, itineraryDay, itineraryTime, localNow, upcomingItinerary, type ItineraryItem, type ItineraryKind } from "@/lib/platform/golfTripItinerary";
+import { addMyItem, itineraryFor, removeMyItem, updateMyItem, type TripTravel } from "@/lib/platform/tripTravel";
+import { GolfTripMyTravel, type MyTravelChange } from "./GolfTripMyTravel";
+import { TRAVEL_KIND_ART, TravelKindIcon } from "./travelKinds";
 import type { TripWeather } from "@/lib/platform/weather/types";
 import { flightCounts, flightTime, type FlightSummary } from "@/lib/platform/golfTripFlights";
 
@@ -44,10 +47,10 @@ const subscribeNever = () => () => {};
  * `navigation` optionally requests a shared tab/section; in-app navigation remains local between requests.
  * `onNavigationChange` optionally observes the actual tab/section; the dev wrapper supplies it only when embedded.
  */
-export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, itinerary, navigation, onNavigationChange, opponentCardMatches, scoringPrefill }:
+export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, opponentCardMatches, scoringPrefill }:
   { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview; weather?: Promise<TripWeather>; flights?: TripFlights;
-    /** The trip's itinerary (Home "what's next" cards + Info → Itinerary). Only the dev mock trip has one for now. */
-    itinerary?: ItineraryItem[]; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void;
+    /** Everyone's travel (My Info, the Itinerary and the Home "what's next" cards). Only the dev mock trip has it for now. */
+    travel?: TripTravel; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void;
     /** Dev preview only: whether the opponent's own scorecard agrees with mine (there is no second scorer yet). Without it, Save & Submit never shows. */
     opponentCardMatches?: boolean;
     /** Dev preview only: a finished-but-unsubmitted Scoring card (the "End of round" conditionals). */
@@ -63,6 +66,19 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   // Info tab: 0 = My Info, 1 = Itinerary. A Home itinerary card opens Info on Itinerary.
   const [infoSlide, setInfoSlide] = useState(0);
   const openItinerary = () => { setInfoSlide(1); setTab("Info"); };
+  // Trip travel lives in page state for now (dev mock trip): edits in My Info rebuild the itinerary and Home cards right
+  // away, and reset on reload. A different seed (e.g. the simulator switching data) starts fresh.
+  const [travelState, setTravelState] = useState({ seed: travelSeed, travel: travelSeed });
+  if (travelState.seed !== travelSeed) setTravelState({ seed: travelSeed, travel: travelSeed });
+  const travel = travelState.travel;
+  const itinerary = travel ? itineraryFor(travel) : undefined;
+  const changeMyTravel = (change: MyTravelChange) => setTravelState((current) => {
+    if (!current.travel) return current;
+    const next = change.type === "add" ? addMyItem(current.travel, change.item)
+      : change.type === "update" ? updateMyItem(current.travel, change.id, change.changes)
+      : removeMyItem(current.travel, change.id);
+    return { ...current, travel: next };
+  });
   useEffect(() => {
     if (tab !== "Golf") onNavigationChange?.({ tab });
   }, [tab, onNavigationChange]);
@@ -130,10 +146,11 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
         </>
         : tab === "Venue" ? <GolfTripVenue draft={draft} settingsHref={settingsHref}
           latitude={coordinate(draft.destinationLatitude)} longitude={coordinate(draft.destinationLongitude)} />
-        : tab === "Info" ? <InfoSlides active={infoSlide} onActive={setInfoSlide} itinerary={itinerary} />
+        : tab === "Info" ? <InfoSlides active={infoSlide} onActive={setInfoSlide} itinerary={itinerary}
+          myInfo={travel ? <GolfTripMyTravel travel={travel} onChange={changeMyTravel} /> : <VenueEvents />} />
         : <Card title={tab}><Empty>Coming soon</Empty></Card>}
     </div>
-    <GolfTripScoring key={scoringPrefill ? "prefilled" : "blank"} prefill={scoringPrefill} par={previewMatch?.par} initialHoles={yourHoles} courseName={previewMatch?.course} playerName={you ? getPlayerDisplayName(you) : draft.yourName || "You"} opponentCardMatches={opponentCardMatches} />
+    <GolfTripScoring key={scoringPrefill ? `prefilled-${scoringPrefill.otherCardDiff ? "mismatch" : "match"}` : "blank"} prefill={scoringPrefill} par={previewMatch?.par} initialHoles={yourHoles} courseName={previewMatch?.course} playerName={you ? getPlayerDisplayName(you) : draft.yourName || "You"} opponentCardMatches={opponentCardMatches} />
     <GolfTripChat open={chatOpen} onClose={() => setChatOpen(false)} tripName={draft.tripName || "Your Golf Trip"}
       members={[...new Set(previewMatch?.matches.flatMap(match => [match.left, match.right].flatMap(side => side ? normalizeCompetitor(side).golfers.map(golfer => getPlayerDisplayName(golfer.name)) : [])) ?? [])].filter(name => name !== getPlayerDisplayName(you ?? draft.yourName ?? ""))} />
   </main>;
@@ -333,7 +350,7 @@ type EventLine = { icon: LucideIcon; text: string };
 const TRIP_BADGES = ["Set", "Waitlisted", "Going", "Invited", "To do"] as const;
 type TripBadge = (typeof TRIP_BADGES)[number];
 /** One row in the event-list style. `art` stands in for a picture (an optional icon sits on it); `lines` skips empty entries. */
-type InfoEvent = { host: string; title: string; art: string; icon?: LucideIcon; lines?: (EventLine | false | "" | undefined)[];
+type InfoEvent = { host: string; title: string; art: string; icon?: LucideIcon; kindIcon?: ItineraryKind; lines?: (EventLine | false | "" | undefined)[];
   badge?: TripBadge; price?: string };
 
 /** Home tab picture colors, one per part of the trip. */
@@ -496,6 +513,7 @@ function EventRow({ event }: { event: InfoEvent }) {
   return <article className={styles.eventRow}>
     <div className={styles.eventArt} style={{ background: event.art }}>
       {event.icon && <event.icon size={30} strokeWidth={1.75} aria-hidden />}
+      {event.kindIcon && <TravelKindIcon kind={event.kindIcon} size={26} />}
       {event.badge && <span className={`${styles.eventBadge} ${styles[`badge${event.badge.replace(" ", "")}`]}`}>{event.badge}</span>}
     </div>
     <div className={styles.eventInfo}>
@@ -507,31 +525,22 @@ function EventRow({ event }: { event: InfoEvent }) {
   </article>;
 }
 
-const ITINERARY_ICON: Record<ItineraryKind, LucideIcon> = { flight: Plane, lodging: BedDouble, teeTime: Flag, ride: Car, dining: UtensilsCrossed };
-const ITINERARY_ART: Record<ItineraryKind, string> = { flight: ART.travel, lodging: ART.stay, teeTime: ART.golf, ride: ART.transport, dining: ART.expenses };
-
 /** A Home "what's next" card: what it is, the headline, when, and one more line. Opens Info → Itinerary. */
 function ItineraryCard({ item, onOpen }: { item: ItineraryItem; onOpen: () => void }) {
   const when = `${itineraryDay(item.startsAt)} · ${itineraryTime(item.startsAt)}`;
   const label = ITINERARY_KIND_LABEL[item.kind];
   return <button type="button" className={`${styles.accountCard} ${styles.itineraryCard}`} onClick={onOpen}
     aria-label={`${label}: ${item.title}, ${when}${item.detail ? `, ${item.detail}` : ""}. Open the itinerary`}>
-    <p className={styles.accountCardName}><ItineraryIcon kind={item.kind} size={14} /> {label}</p>
+    <p className={styles.accountCardName}><TravelKindIcon kind={item.kind} size={14} /> {label}</p>
     <p className={styles.accountCardAmount}>{item.title}</p>
     <p className={styles.accountCardNote}>{when}</p>
     {item.detail && <p className={styles.accountCardNote}>{item.detail}</p>}
   </button>;
 }
 
-function ItineraryIcon({ kind, size }: { kind: ItineraryKind; size: number }) {
-  const props = { size, strokeWidth: 2, "aria-hidden": true } as const;
-  return kind === "flight" ? <Plane {...props} /> : kind === "lodging" ? <BedDouble {...props} /> : kind === "teeTime" ? <Flag {...props} />
-    : kind === "ride" ? <Car {...props} /> : <UtensilsCrossed {...props} />;
-}
-
-/** Info tab: a slider with My Info (getting there, lodging, transportation) and Itinerary (everything, by day). Tap or swipe. */
+/** Info tab: a slider with My Info (your travel; for trips without travel data, the older getting there / lodging / transportation lists) and Itinerary (everything, by day). Tap or swipe. */
 const INFO_SLIDES = ["My Info", "Itinerary"] as const;
-function InfoSlides({ active, onActive, itinerary }: { active: number; onActive: (index: number) => void; itinerary?: ItineraryItem[] }) {
+function InfoSlides({ active, onActive, itinerary, myInfo }: { active: number; onActive: (index: number) => void; itinerary?: ItineraryItem[]; myInfo: ReactNode }) {
   const trackRef = useRef<HTMLDivElement>(null);
   // Follow the chosen tab (taps, or a Home card opening Itinerary).
   useEffect(() => {
@@ -548,7 +557,7 @@ function InfoSlides({ active, onActive, itinerary }: { active: number; onActive:
         className={`${styles.tab} ${active === index ? styles.tabActive : ""}`} onClick={() => onActive(index)}>{name}</button>)}
     </div>
     <div ref={trackRef} className={styles.slides} onScroll={onScroll}>
-      <div className={styles.slide} role="tabpanel" aria-label="My Info" inert={active !== 0}><VenueEvents /></div>
+      <div className={styles.slide} role="tabpanel" aria-label="My Info" inert={active !== 0}>{myInfo}</div>
       <div className={styles.slide} role="tabpanel" aria-label="Itinerary" inert={active !== 1}><ItineraryList items={itinerary} /></div>
     </div>
   </>;
@@ -561,8 +570,8 @@ function ItineraryList({ items }: { items?: ItineraryItem[] }) {
   return <div className={styles.events}>
     {days.map(({ day, items: dayItems }) => <section key={day} className={styles.infoSection} aria-label={itineraryDay(day)}>
       <h2 className={styles.eventsHeading}>{itineraryDay(day)}</h2>
-      {dayItems.map((item) => <EventRow key={item.id} event={{ host: ITINERARY_KIND_LABEL[item.kind], title: item.title, art: ITINERARY_ART[item.kind],
-        icon: ITINERARY_ICON[item.kind], lines: [{ icon: Clock, text: itineraryTime(item.startsAt) }, item.detail && { icon: MapPin, text: item.detail }] }} />)}
+      {dayItems.map((item) => <EventRow key={item.id} event={{ host: ITINERARY_KIND_LABEL[item.kind], title: item.title, art: TRAVEL_KIND_ART[item.kind],
+        kindIcon: item.kind, lines: [{ icon: Clock, text: itineraryTime(item.startsAt) }, item.detail && { icon: MapPin, text: item.detail }] }} />)}
     </section>)}
   </div>;
 }

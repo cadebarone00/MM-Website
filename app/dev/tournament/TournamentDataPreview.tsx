@@ -24,7 +24,7 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
   const config = simulator ?? { source: view, state: DEFAULT_SIMULATOR_STATE };
   const data = simulatorTripData(mock, maroon, config);
   // "End of round, unsubmitted": the Scoring card starts filled in (scores match or not comes from opponentCard).
-  const scoringPrefill = useMemo(() => simulatorScorecard(config.state.roundStatus, data.previewMatch?.par), [config.state.roundStatus, data.previewMatch?.par]);
+  const scoringPrefill = useMemo(() => simulatorScorecard(config.state.roundStatus, data.previewMatch?.par, config.state.opponentCard), [config.state.roundStatus, data.previewMatch?.par, config.state.opponentCard]);
   // Home's quick weather: made-up numbers for a trip with a destination, or "loading" forever for the simulator's Weather loading state.
   const hasDestination = Boolean(data.preview?.destination);
   const weather = useMemo(() => config.state.loading === "weather" ? new Promise<TripWeather>(() => {})

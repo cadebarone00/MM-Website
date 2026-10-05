@@ -20,13 +20,16 @@ const HOLD_SLOP = 10;
  * up (or tap it) to open score entry, drag it down (or tap) to tuck it away again. Look only for now: strokes live in
  * this page only and are never saved. `par` (holes 1–18) and `initialHoles` (strokes, null = not played) come from
  * the /dev/tournament preview; supplied scores are retained; untouched holes display par but remain unrecorded until submission.
- * Save & Submit (on the Scorecard view) only appears once every hole has both scores and my stats (fairway not needed on
- * par 3s) and `opponentCardMatches` says the opponent's own card agrees; submitting locks the card until the page reloads.
+ * Submit & Save (on the Scorecard view) lights up once every hole has both scores and my stats (fairway not needed on
+ * par 3s) and each player's scores agree with the other phone (names turn green; a red name shows whose scores differ);
+ * submitting locks the card until the page reloads.
  */
 export function GolfTripScoring({ par, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill }: {
   par?: number[]; initialHoles?: (number | null)[]; playerName?: string; opponentCardMatches?: boolean; courseName?: string;
   /** Dev preview only: a finished card (opponent scores, putts, fairways, greens) to start from. */
-  prefill?: { opponentHoles: (number | null)[]; putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[] };
+  prefill?: { opponentHoles: (number | null)[]; putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[];
+    /** Where the opponent's own phone disagrees with this starting card ("scores don't match"); none means it agrees. */
+    otherCardDiff?: { player: "me" | "opponent"; hole: number; delta: number } };
 }) {
   const [open, updateOpen] = useState(false);
   const [holes, setHoles] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => initialHoles?.[i] ?? null));
@@ -217,7 +220,22 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   const submittedHoles = holes.map((h, i) => h ?? par?.[i] ?? null);
   const submittedOpponentHoles = holesCompetitor.map((h, i) => h ?? par?.[i] ?? null);
   const complete = submittedHoles.every((h, i) => h !== null && submittedOpponentHoles[i] !== null && putts[i] !== null && greens[i] !== null && (par?.[i] === 3 || fairways[i] !== null));
-  const readyToSubmit = complete && opponentCardMatches;
+  // Each player is checked against the other phone: my scores for myself vs what my opponent entered for me, and what I
+  // entered for my opponent vs what they entered for themselves. With a dev prefill the other phone's card is the starting
+  // card (plus any otherCardDiff); otherwise opponentCardMatches stands in for both. Green = agrees, red = needs fixing.
+  const [otherCard] = useState(() => {
+    if (!prefill) return null;
+    const card = { me: Array.from({ length: HOLES }, (_, i) => initialHoles?.[i] ?? par?.[i] ?? null), opponent: Array.from({ length: HOLES }, (_, i) => prefill.opponentHoles[i] ?? par?.[i] ?? null) };
+    const diff = prefill.otherCardDiff;
+    if (diff) card[diff.player][diff.hole] = Math.max(1, (card[diff.player][diff.hole] ?? par?.[diff.hole] ?? 4) + diff.delta);
+    return card;
+  });
+  const sameAs = (mine: (number | null)[], theirs: (number | null)[]) => mine.every((value, i) => value === theirs[i]);
+  const meMatches = otherCard ? sameAs(submittedHoles, otherCard.me) : opponentCardMatches;
+  const opponentMatches = otherCard ? sameAs(submittedOpponentHoles, otherCard.opponent) : opponentCardMatches;
+  const readyToSubmit = complete && meMatches && opponentMatches;
+  // Colours show once the card is complete (or submitted): green when that player's scores agree, red when they don't.
+  const check = (matches: boolean) => complete || submitted ? matches ? "ok" as const : "wrong" as const : null;
 
   // While dragging, the sheet follows the finger and grows toward full screen as it rises (--sheet-open: 0 closed → 1 open).
   const style = dragOffset !== null
@@ -267,7 +285,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
         : view === "scorecard" ? <>
           {courseName && <h3 className={styles.scorecardCourse}>{courseName}</h3>}
           <ScorecardSection par={par} holes={holes} opponentHoles={holesCompetitor} playerName={playerName} opponentName={opponentName} putts={putts} fairways={fairways} greens={greens}
-            myTotal={sumOf(submittedHoles)} opponentTotal={sumOf(submittedOpponentHoles)} ready={readyToSubmit || submitted} />
+            myTotal={sumOf(submittedHoles)} opponentTotal={sumOf(submittedOpponentHoles)} myCheck={check(meMatches)} opponentCheck={check(opponentMatches)} />
           {/* Always shown; only lights up once both cards are complete and the opponent's card agrees. */}
           <button type="button" className={`${styles.nextHoleButton} ${styles.submitSave}`} disabled={!readyToSubmit || submitted} onClick={() => setConfirmOpen(true)}>{submitted ? "Submitted" : "Submit & Save"}</button>
         </>
@@ -368,6 +386,14 @@ function GpsSection({ hole, holePar }: { hole: number; holePar: number | undefin
  * the hole (number, yardage, par), my round (score, fairway, green, putts), then the opponent's score; lines split the three groups.
  * Fairway / green show ✓ for a hit or an arrow for the miss (blank fairway on par 3s); totals count hits. Yardage isn't known yet ("—").
  */
+/** Scorecard shapes, as on the leaderboard card: birdie circle, eagle-or-better double circle, bogey box,
+ *  double-bogey-or-worse double box; par has none. */
+function scoreShape(toPar: number): string {
+  const shape = toPar <= -2 ? `${styles.shapeCircle} ${styles.shapeDouble}` : toPar === -1 ? styles.shapeCircle
+    : toPar === 1 ? styles.shapeBox : toPar >= 2 ? `${styles.shapeBox} ${styles.shapeDouble}` : "";
+  return `${styles.shape} ${shape}`;
+}
+
 /** A name's last word, at most 8 letters, for a scorecard column heading. */
 const shortName = (name: string) => (name.trim().split(/\s+/).at(-1) ?? name).slice(0, 8);
 
@@ -375,9 +401,9 @@ const shortName = (name: string) => (name.trim().split(/\s+/).at(-1) ?? name).sl
  * Three sections, each lightly tinted maroon with a narrow clear gap between them: the hole (Hole · Yds · Par, against the
  * left edge), your stats (FWY · GRN · PUT), then the scores (your last name · the opponent's last name, up to 8 letters).
  */
-function ScorecardSection({ par, holes, opponentHoles, playerName, opponentName, putts, fairways, greens, myTotal, opponentTotal, ready }: {
+function ScorecardSection({ par, holes, opponentHoles, playerName, opponentName, putts, fairways, greens, myTotal, opponentTotal, myCheck, opponentCheck }: {
   par?: number[]; holes: (number | null)[]; opponentHoles: (number | null)[]; playerName: string; opponentName: string;
-  myTotal: number | "—"; opponentTotal: number | "—"; ready: boolean;
+  myTotal: number | "—"; opponentTotal: number | "—"; myCheck: "ok" | "wrong" | null; opponentCheck: "ok" | "wrong" | null;
   putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[];
 }) {
   const range = (from: number, to: number) => Array.from({ length: to - from }, (_, i) => from + i);
@@ -385,7 +411,9 @@ function ScorecardSection({ par, holes, opponentHoles, playerName, opponentName,
   const hits = (values: (Direction | null)[], index: number[]) => index.some((i) => values[i] !== null) ? index.filter((i) => values[i] === "center").length : "—";
   const gap = <td className={styles.sectionGap} aria-hidden />;
   // An untouched hole counts as par (as on the scoring screen), shown faded until it's entered.
-  const scoreCell = (strokes: number | null, i: number) => strokes ?? (par?.[i] !== undefined ? <span className={styles.untouchedScore}>{par[i]}</span> : "—");
+  const scoreCell = (strokes: number | null, i: number) => strokes === null
+    ? par?.[i] !== undefined ? <span className={styles.untouchedScore}>{par[i]}</span> : "—"
+    : par?.[i] === undefined ? strokes : <span className={scoreShape(strokes - par[i])}>{strokes}</span>;
   const holeRow = (i: number) => <tr key={i}>
     <th scope="row" className={styles.section}>{i + 1}</th><td className={styles.section}>—</td><td className={styles.section}>{par?.[i] ?? "—"}</td>{gap}
     <td className={styles.section}>{par?.[i] === 3 ? "" : mark(fairways[i])}</td><td className={styles.section}>{mark(greens[i])}</td><td className={styles.section}>{putts[i] ?? "—"}</td>{gap}
@@ -414,9 +442,9 @@ function ScorecardSection({ par, holes, opponentHoles, playerName, opponentName,
       </tbody>
     </table>
     {/* Under Total: each player's last name and total score, centered in their half; a long name shrinks to fit. */}
-    <dl className={`${styles.scorecardTotals} ${ready ? styles.scorecardTotalsReady : ""}`}>
-      <div><dt title={playerName} style={{ "--chars": shortName(playerName).length } as CSSProperties}>{shortName(playerName)}</dt><dd>{myTotal}</dd></div>
-      <div><dt title={opponentName} style={{ "--chars": shortName(opponentName).length } as CSSProperties}>{shortName(opponentName)}</dt><dd>{opponentTotal}</dd></div>
+    <dl className={styles.scorecardTotals}>
+      <div data-check={myCheck ?? undefined} aria-label={myCheck === "wrong" ? `${playerName}: scores don't match` : undefined}><dt title={playerName} style={{ "--chars": shortName(playerName).length } as CSSProperties}>{shortName(playerName)}</dt><dd>{myTotal}</dd></div>
+      <div data-check={opponentCheck ?? undefined} aria-label={opponentCheck === "wrong" ? `${opponentName}: scores don't match` : undefined}><dt title={opponentName} style={{ "--chars": shortName(opponentName).length } as CSSProperties}>{shortName(opponentName)}</dt><dd>{opponentTotal}</dd></div>
     </dl>
   </section>;
 }

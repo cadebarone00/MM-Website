@@ -5,6 +5,9 @@ import type { GolfCourse, GolfHole } from "@/lib/platform/golfGps/domain";
 import { GolfProviderError, type GolfCourseImport, type GolfCourseSearchResponse } from "@/lib/platform/golfGps/providers/GolfCourseProvider";
 import { createOpenGolfProvider } from "@/lib/platform/golfGps/providers/openGolf/provider";
 import { enrichGolfCourse, type PlayableCourse } from "@/lib/platform/golfGps/courseEnrichment";
+import { getCourseLibrary } from "@/lib/platform/golfGps/repository/courseLibrary";
+import type { CourseLibraryEntry } from "@/lib/platform/golfGps/repository/courseRepository";
+import { LibraryPanel } from "./LibraryPanel";
 import { OsmGeometryPanel } from "./OsmGeometryPanel";
 import styles from "./CourseSearch.module.css";
 
@@ -15,9 +18,9 @@ export const dynamic = "force-dynamic";
  * LOCAL DEV TEST HARNESS for the OpenGolf course provider — not production UI. Searches and course details run on the
  * server through the provider, so this page only ever sees normalized Maroon types. 404 unless NODE_ENV=development.
  */
-export default async function CourseSearchPage({ searchParams }: { searchParams: Promise<{ q?: string; state?: string; id?: string; osm?: string }> }) {
+export default async function CourseSearchPage({ searchParams }: { searchParams: Promise<{ q?: string; state?: string; id?: string; osm?: string; library?: string; libraryError?: string }> }) {
   if (process.env.NODE_ENV !== "development") notFound();
-  const { q = "", state = "", id = "", osm = "" } = await searchParams;
+  const { q = "", state = "", id = "", osm = "", library = "", libraryError = "" } = await searchParams;
   const provider = createOpenGolfProvider();
 
   let search: GolfCourseSearchResponse | null = null, searchError: string | null = null;
@@ -31,6 +34,14 @@ export default async function CourseSearchPage({ searchParams }: { searchParams:
       if (!detail) detailError = "OpenGolf has no course with that id.";
     } catch (error) { detailError = message(error); }
   }
+  // Is this OpenGolf course already in the Maroon course library? (Reads Supabase only — no provider calls.)
+  let saved: CourseLibraryEntry | null = null, lookupError: string | null = null;
+  if (detail) {
+    try { saved = await getCourseLibrary().findCourseByExternalId("open_golf", id); } catch (error) {
+      lookupError = error instanceof Error ? error.message : "Couldn't read the course library.";
+    }
+  }
+  const libraryNotice = libraryError || ({ saved: "Saved to the Maroon course library.", "already-saved": "Already in the library — loaded the stored copy (no provider calls).", refreshed: "Refreshed from OpenGolf + OpenStreetMap and saved." } as Record<string, string>)[library] || null;
   // Only when "Load OSM Geometry" is clicked: Overpass is a shared public service, so it's never queried automatically.
   let playable: PlayableCourse | null = null, osmError: string | null = null;
   if (detail && osm === "1") {
@@ -72,6 +83,7 @@ export default async function CourseSearchPage({ searchParams }: { searchParams:
       </section>}
 
       {detailError && <section className={styles.panel}><p className={styles.error}>{detailError}</p></section>}
+      {detail && <LibraryPanel entry={saved} lookupError={lookupError} notice={libraryNotice} form={{ q, state, id }} />}
       {detail && <CourseDetail course={detail.course} notes={detail.notes} />}
       {detail && <section className={styles.panel} aria-label="OpenStreetMap">
         <h2>OpenStreetMap geometry (dev)</h2>

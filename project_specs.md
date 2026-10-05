@@ -2038,3 +2038,46 @@ Replaces the photo drop-down panel from earlier the same day. Modeled on the own
 - **Upcoming** and **Past Trips** replace the reference's account lists: small caps heading, then a white card of rows (rounded-square icon, trip name with destination · players · role, short dates on the right, ›). Empty: "No upcoming trip yet — Start +" (opens Create) / "No past trips yet". Signed out: one "Log in to see your trips — Log in ›" row.
 - Light page background (#f3f0eb), white cards with soft shadows.
 - Files: `app/golf-trips/page.tsx`, `app/golf-trips/page.module.css` (Join a Trip keeps using its classes), `components/nav/SiteChrome.tsx`.
+
+### Round: Golf Trip Info — My Info, group travel, joining, organizer assignments, self-building Itinerary (spec 2026-10-05, approved 2026-10-05; Step 1 built 2026-10-05)
+
+**What it does / who uses it.** Trip members (players) and the trip organizer, on the Golf Trip's **Info** tab.
+- **My Info** (Info → My Info): each player enters their own travel — flights, rental car / ride (driving, from where, seats), lodging, other bookings. Everything they add (or join, or get assigned) builds **their Itinerary** automatically, which also feeds the Home "what's next" cards.
+- **Group travel** (inside My Info): see what everyone else is doing — who's on which flight (public info only: airline, flight number, route, departure/arrival times, terminal/gate when known; never confirmation numbers), who has a rental car or is driving, from where, and how many seats are open; who's staying where.
+- **Joining:** whoever creates a ride (or other shareable plan) either **invites** people or leaves it **open to join**. Others tap **Request to join**; the **creator** accepts or declines. Accepted → it lands on the joiner's itinerary and a seat is used. Flights: **"I'm on this flight too"** links you to that flight (copies it to your info, shows you on it).
+- **Organizer assignments:** the organizer creates an item (e.g. a dinner reservation found on Venue, a tee time) and a **Who's going?** pop-up (avatar + name for each player, plus "All players") assigns it. It appears on each chosen player's itinerary. Players can **opt out** of an organizer assignment ("Can't make it") — **except tee times**, which can't be opted out of.
+- **Notifications:** join requests, accept / decline, and new assignments go to the bell's notification list.
+
+**Decisions (owner, 2026-10-05):** creator approves joins (invite or open-to-join); others see public flight info only; opt-out allowed except tee times; Who's going shows avatar + name; requests and assignments notify; **build in dev first**.
+
+**Tech / data (this round: dev only, no database).**
+- Next.js / React / TypeScript, same as the rest of the Golf Trip. No new third-party services (Venue keeps its existing map).
+- Data lives in a dev-only, in-memory **trip travel store** for the mock trip (mock players with avatars, flights, rides, lodging, reservations), shared across Home, Info and Venue while the page is open; resets on reload. Only the **Mock golf trip data** source has it — real trips and the Maroon data are unchanged.
+- Models (in `lib/platform/`), shaped so they can become database tables later:
+  - `TripMember` — id, name, avatar initials/color, role (organizer | player).
+  - `TravelItem` — id, kind (flight | ride | lodging | dining | teeTime | other), title, details (public fields only), startsAt / endsAt (local trip time), place, createdBy, source (mine | organizer), joinPolicy (invite | open | none), seats (rides), optOutAllowed (false for tee times).
+  - `TravelParticipant` — itemId, memberId, status (going | requested | invited | declined | optedOut).
+  - `TripNotification` — id, to, kind (joinRequest | requestAccepted | requestDeclined | assigned | invited), itemId, from, createdAt, read.
+- **Itinerary = derived**, never stored: for a member, every item where they're `going`, sorted by time (existing `golfTripItinerary` helpers).
+- Pure logic (who's going, seats left, can join, can opt out, notifications to send) in plain functions with tests, separate from the screens.
+
+**Screens / flows (dev preview, Golf Trip Active pages).**
+1. **Info → My Info:** "My travel" (my items, Add button: Flight / Ride / Lodging / Other) and "The group" (everyone's flights, rides with seats open, lodging), each row with Request to join / I'm on this flight too where allowed.
+2. **Add / edit item sheets** (reuse the existing action-sheet look): flight, ride (driving or rental, from, seats, invite people or open to join), lodging, other.
+3. **Requests:** creator sees pending requests on the item (Accept / Decline); requester sees "Requested".
+4. **Organizer:** "Add to itinerary" on Venue places / Info, then **Who's going?** (avatar + name list, All players); assigned players see it with **Can't make it** (hidden for tee times).
+5. **Notifications** (bell): request / accept / decline / assigned / invited, tap to open the item.
+6. **Itinerary + Home cards** come from the store, so adding, joining or being assigned immediately shows there.
+7. A dev simulator condition to **view as** a mock player or the organizer, to test both sides.
+
+**Built in steps (each one shippable and tested):**
+- **Step 1:** store + models + My Info "My travel" with add / edit / delete; Itinerary and Home cards build from it.
+- **Step 2:** "The group" view (public info only, seats left) + view-as simulator condition.
+- **Step 3:** joining — rides (invite / open, request, accept / decline, seats) and "I'm on this flight too".
+- **Step 4:** organizer assignments — Who's going? pop-up, opt-out (not for tee times), from Venue and Info.
+- **Step 5:** notifications in the bell.
+- **Later (separate spec):** real database tables + security rules, real-trip data, production SQL.
+
+**Not in this round:** saving to the database, real trips, live flight status or lookups, booking links, payments / splitting costs, chat about items, email or push notifications.
+
+**Done means (per step):** the flow works end to end in the dev preview as the organizer and as at least two mock players; logic has unit tests (join rules, seats, opt-out incl. tee-time lock, itinerary order, notifications); TypeScript, lint and tests pass; checked at phone width in the /dev simulator.

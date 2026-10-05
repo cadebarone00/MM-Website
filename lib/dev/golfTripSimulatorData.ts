@@ -5,7 +5,7 @@ import { GOLF_MATCH_PREVIEW, GOLF_MATCH_PREVIEWS, GOLF_TRIP_MOCK_DRAFT, normaliz
 import { flightSummary } from "@/lib/platform/golfTripFlights";
 import type { SimulatorConfig } from "./simulator";
 
-export type SimulatorTripData = Pick<ComponentProps<typeof GolfTripHome>, "preview" | "previewMatch" | "flights" | "itinerary">;
+export type SimulatorTripData = Pick<ComponentProps<typeof GolfTripHome>, "preview" | "previewMatch" | "flights" | "travel">;
 
 /** Deterministic fictional crowd, derived from the existing generic format fixture. */
 function populatedMatch(sample: GolfMatchPreview, count: number): GolfMatchPreview {
@@ -157,10 +157,12 @@ export type ScoringPrefill = {
   putts: number[];
   fairways: (ScoringDirection | null)[];
   greens: ScoringDirection[];
+  /** "Scores don't match": where the opponent's own phone differs by a stroke. */
+  otherCardDiff?: { player: "me" | "opponent"; hole: number; delta: number };
 };
 type ScoringDirection = "up" | "left" | "center" | "right" | "down";
 
-export function simulatorScorecard(roundStatus: SimulatorConfig["state"]["roundStatus"], par: number[] | undefined): ScoringPrefill | undefined {
+export function simulatorScorecard(roundStatus: SimulatorConfig["state"]["roundStatus"], par: number[] | undefined, opponentCard: SimulatorConfig["state"]["opponentCard"] = "match"): ScoringPrefill | undefined {
   if (roundStatus !== "roundEnd" || !par?.length) return undefined;
   const random = seededRandom(20261005);
   const miss = (): ScoringDirection => (["left", "right", "up", "down"] as const)[Math.floor(random() * 4)];
@@ -171,5 +173,7 @@ export function simulatorScorecard(roundStatus: SimulatorConfig["state"]["roundS
     putts: greens.map(green => green === "center" ? [1, 2, 2, 2, 3][Math.floor(random() * 5)] : [1, 1, 2][Math.floor(random() * 3)]),
     fairways: par.map(holePar => holePar === 3 ? null : random() < 0.55 ? "center" : random() < 0.5 ? "left" : "right"),
     greens,
+    // One player, one hole, one stroke off on the other phone; which player alternates with the seed.
+    otherCardDiff: opponentCard === "mismatch" ? { player: random() < 0.5 ? "me" : "opponent", hole: Math.floor(random() * par.length), delta: random() < 0.5 ? -1 : 1 } : undefined,
   };
 }
