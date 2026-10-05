@@ -3,6 +3,7 @@ import test from "node:test";
 import type { GolfCourse, GolfHole } from "../../domain";
 import { GolfProviderError } from "../GolfCourseProvider";
 import { createOverpassClient, OSM_ATTRIBUTION, OVERPASS_CACHE_SECONDS, OVERPASS_ENDPOINT, parseOverpassReply } from "./client";
+import { deriveCourseGreenTargets } from "../../targets/deriveGreenTargets";
 import { parseHoleRef } from "./adapter";
 import { nameSimilarity } from "./matching";
 import { createOpenStreetMapGeometryProvider } from "./provider";
@@ -141,10 +142,13 @@ test("unassigned: practice green, water between holes, unnumbered hole line — 
 
 test("coverage is measured from what was attached; the course stays imported, never verified", async () => {
   const { course, notes } = await matched().provider.enrichCourse(COURSE);
-  assert.deepEqual(course.holes.map((h) => h.coverage.level), ["mapped", "mapped"], "hole 2 is a par 3, so no fairway needed");
+  // OSM alone gives outlines, not front / center / back, so no hole is at GPS level until targets are derived.
+  assert.deepEqual(course.holes.map((h) => h.coverage.level), ["scorecard", "scorecard"]);
   assert.deepEqual(course.holes[0].coverage.features, { ...SCORECARD, teeCoordinates: true, greenPolygons: true, fairways: true, hazardLocations: true, hazardPolygons: true, centerlines: true });
-  assert.equal(course.coverage.level, "mapped");
-  assert.equal(course.coverage.holesWithGps, 2);
+  const playable = deriveCourseGreenTargets(course, NOW.toISOString()).course;
+  assert.deepEqual(playable.holes.map((h) => h.coverage.level), ["mapped", "mapped"], "hole 2 is a par 3, so no fairway needed");
+  assert.equal(playable.coverage.level, "mapped");
+  assert.equal(playable.coverage.holesWithGps, 2);
   assert.equal(course.verification.status, "imported");
   assert.ok(course.holes.every((h) => h.verification.status === "imported"));
   assert.deepEqual(course.externalIds.map((e) => e.id), ["abc", "way/100"]);

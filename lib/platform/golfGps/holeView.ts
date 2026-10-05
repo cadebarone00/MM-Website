@@ -27,12 +27,13 @@ const METERS_PER_PIXEL_ZOOM_0 = 156543.03392;
 
 /**
  * The "hole view": turn the map so the tee is at the bottom and the green at the top, zoom so every part of the hole
- * (tee, green front / center / back, hazards) fits between the yardage card and the bottom controls, and center it in
- * that clear band (not the middle of the screen, which sits partly under the card).
+ * (tee, green front / center / back, hazards, and any mapped hole line / green outline) fits between the yardage card
+ * and the bottom controls, and center it in that clear band (not the middle of the screen, which sits partly under the
+ * card).
  */
 export function holeCamera(hole: GpsHole, viewport: HoleViewport): HoleCamera {
   const heading = bearingDegrees(hole.tee, hole.green.center);
-  const points = [hole.tee, hole.green.front, hole.green.center, hole.green.back, ...hole.hazards.map((hazard) => hazard.center)];
+  const points = [hole.tee, hole.green.front, hole.green.center, hole.green.back, ...hole.hazards.map((hazard) => hazard.center), ...(hole.frame ?? [])];
 
   // Each point in "hole space": yards up the hole (along) and yards right of the line (across), from the tee.
   const local = points.map((point) => {

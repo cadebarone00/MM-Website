@@ -5,7 +5,10 @@ export interface LatLng {
   lng: number;
 }
 
-/** A bunker or water hazard: its middle point, a rough size, and (for water) an outline to shade on the map. */
+/**
+ * A bunker or water hazard: its middle point, a rough size, and — when mapped — its real outline. With an outline the
+ * map draws that shape and the HUD distance is to its nearest edge; without one, a circle and the distance to its middle.
+ */
 export interface GpsHazard {
   id: string;
   kind: "bunker" | "water";
@@ -19,9 +22,14 @@ export interface GpsHazard {
 export interface GpsHole {
   number: number;
   par: number;
+  /** Where the hole starts: the tee, or — when no tee is mapped — the start of the mapped hole line (see `teeMapped`). */
   tee: LatLng;
+  /** False when `tee` is only the start of the hole line, so no tee marker is drawn. Absent = a real tee. */
+  teeMapped?: boolean;
   green: { front: LatLng; center: LatLng; back: LatLng };
   hazards: GpsHazard[];
+  /** Extra real geometry (hole line, green outline, tees) the hole view should keep on screen. */
+  frame?: LatLng[];
 }
 
 export interface GpsCourse {

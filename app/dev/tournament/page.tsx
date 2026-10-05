@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { TournamentDataPreview } from "./TournamentDataPreview";
-import { GOLF_MATCH_PREVIEW, GOLF_MATCH_PREVIEWS, GOLF_TRIP_MOCK_DRAFT, GOLF_TRIP_PREVIEW_FLIGHTS } from "@/lib/platform/golfTripPreviewFixture";
+import { GOLF_MATCH_PREVIEW, GOLF_MATCH_PREVIEWS, GOLF_TRIP_MOCK_DRAFT, GOLF_TRIP_MOCK_ITINERARY, GOLF_TRIP_PREVIEW_FLIGHTS } from "@/lib/platform/golfTripPreviewFixture";
 import { flightSummary } from "@/lib/platform/golfTripFlights";
 import { palmSprings2026 } from "@/lib/data/2026-palm-springs";
 import { adaptTournamentToDraft, adaptTournamentToPreviewMatch } from "@/lib/platform/tournamentToGolfTrip";
@@ -33,7 +33,7 @@ export default async function GolfTripPreviewPage({ searchParams }: { searchPara
   const flights = { summary: flightSummary(GOLF_TRIP_PREVIEW_FLIGHTS, "2027-04-01"), href: null };
   return <TournamentDataPreview
     embedded={params?.simulator === "1"}
-    mock={{ preview: GOLF_TRIP_MOCK_DRAFT, previewMatch: GOLF_MATCH_PREVIEWS[formatKey] ?? GOLF_MATCH_PREVIEW, flights }}
+    mock={{ preview: GOLF_TRIP_MOCK_DRAFT, previewMatch: GOLF_MATCH_PREVIEWS[formatKey] ?? GOLF_MATCH_PREVIEW, flights, itinerary: GOLF_TRIP_MOCK_ITINERARY }} // only the mock trip has an itinerary
     maroon={{ preview: { ...draft, destinationLatitude: "33.8303", destinationLongitude: "-116.5453" }, previewMatch, flights }} // Palm Springs pin for the Venue map
     unmapped={unmapped}
   />;

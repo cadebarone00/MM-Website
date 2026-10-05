@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Flag } from "lucide-react";
-import { distanceYards } from "@/lib/platform/golfGps/distance";
+import { distanceToHazardYards, distanceYards } from "@/lib/platform/golfGps/distance";
 import { MISSION_HILLS_PETE_DYE } from "@/lib/platform/golfGps/missionHillsPeteDye";
-import type { GpsCourse, GpsStatus, LatLng, PlayerFix } from "@/lib/platform/golfGps/types";
+import type { GpsCourse, GpsHazard, GpsStatus, LatLng, PlayerFix } from "@/lib/platform/golfGps/types";
 import { usePlayerLocation } from "@/lib/platform/golfGps/usePlayerLocation";
 import { useSimulatorGps } from "@/components/dev/useSimulatorGps";
 import { GolfGpsHud } from "./GolfGpsHud";
@@ -70,7 +70,7 @@ export function GolfGpsScreen({ holeNumber, course = MISSION_HILLS_PETE_DYE, cla
   return <div ref={screenRef} className={`${styles.screen} ${className}`}>
     <GolfGpsMap apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY} hole={hole} player={fix} target={target} onTap={setTarget} recenterToken={recenterToken} insets={insets} />
     <GolfGpsHud ref={topRef} hole={hole} front={yards(hole.green.front)} center={yards(hole.green.center)} back={yards(hole.green.back)}
-      hazards={hole.hazards.map((hazard) => ({ id: hazard.id, label: hazard.label, yards: yards(hazard.center) }))}
+      hazards={hudHazards(hole.hazards, fix && !far ? fix : null)}
       target={target ? yards(target) : null} notice={notice} />
     <button type="button" className={styles.recenter} style={{ bottom: insets.bottom + 4 }} aria-label="Back to hole view"
       onClick={() => setRecenterToken((token) => token + 1)}>
@@ -79,6 +79,19 @@ export function GolfGpsScreen({ holeNumber, course = MISSION_HILLS_PETE_DYE, cla
     {/* OpenStreetMap's licence (ODbL) requires crediting it wherever its hole data shows. */}
     <span className={styles.dataCredit} style={{ bottom: insets.bottom + 4 }}>Hole data © OpenStreetMap contributors</span>
   </div>;
+}
+
+/** At most this many hazards on the card; a fully mapped hole can have 15+ bunkers. */
+const MAX_HUD_HAZARDS = 4;
+
+/**
+ * Hazard rows for the card: yards to each hazard's nearest edge (mapped outline) or middle (no outline). When a hole has
+ * more than fit, the nearest ones are shown; otherwise they keep the hole's own order.
+ */
+function hudHazards(hazards: GpsHazard[], from: LatLng | null) {
+  const rows = hazards.map((hazard) => ({ id: hazard.id, label: hazard.label, yards: from ? distanceToHazardYards(from, hazard) : null }));
+  if (rows.length <= MAX_HUD_HAZARDS || !from) return rows.slice(0, MAX_HUD_HAZARDS);
+  return [...rows].sort((a, b) => a.yards! - b.yards!).slice(0, MAX_HUD_HAZARDS);
 }
 
 /** The one-line GPS message under the yardages, or null when everything's normal. */

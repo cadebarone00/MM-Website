@@ -57,35 +57,45 @@ function hazardCircle(geometry: GolfHazardGeometry): { center: LatLng; radiusYar
 }
 
 /**
- * The prototype hole for one domain hole, measured from `teeSetId`'s tee (or the first tee with a location). Returns
- * null when the hole lacks what the prototype needs — a located tee and green front / center / back — rather than
- * guessing. Penalty areas that aren't water are left out: the prototype has no kind for them.
+ * The prototype hole for one domain hole, measured from `teeSetId`'s tee (or the first tee with a location). Needs green
+ * front / center / back. A located tee is preferred as the hole's start; without one, the start of the mapped hole
+ * line is used for framing and the mock player's start (`teeMapped: false`, so no tee marker is drawn). Returns null
+ * when the hole has no green targets or no start at all, rather than guessing. Penalty areas that aren't water are left
+ * out: the prototype has no kind for them.
  */
 export function toPrototypeGpsHole(hole: GolfHole, teeSetId?: string): GpsHole | null {
   const located = hole.tees.filter((tee) => tee.location);
   const tee = located.find((candidate) => candidate.teeSetId === teeSetId) ?? located[0];
   const teeAt = tee?.location ? teePoint(tee.location) : null;
+  const lineStart = hole.centerline?.coordinates[0];
   const green = hole.green;
-  if (!teeAt || !green?.front || !green.center || !green.back) return null;
+  if (!(teeAt || lineStart) || !green?.front || !green.center || !green.back) return null;
 
+  const outlineOf = (geometry: GolfHazardGeometry) => geometry.kind === "polygon" ? { outline: geometry.polygon.coordinates.map(flat) } : {};
   const hazards: GpsHazard[] = [];
   for (const bunker of hole.bunkers) {
     const circle = hazardCircle(bunker.geometry);
-    if (circle) hazards.push({ id: bunker.id, kind: "bunker", label: bunker.label ?? "Bunker", ...circle });
+    if (circle) hazards.push({ id: bunker.id, kind: "bunker", label: bunker.label ?? "Bunker", ...circle, ...outlineOf(bunker.geometry) });
   }
   for (const area of hole.penaltyAreas) {
     if (area.kind !== "water") continue;
     const circle = hazardCircle(area.geometry);
-    const outline = area.geometry.kind === "polygon" ? area.geometry.polygon.coordinates.map(flat) : undefined;
-    if (circle) hazards.push({ id: area.id, kind: "water", label: area.label ?? "Water", ...circle, ...(outline && { outline }) });
+    if (circle) hazards.push({ id: area.id, kind: "water", label: area.label ?? "Water", ...circle, ...outlineOf(area.geometry) });
   }
 
+  const frame = [
+    ...(hole.centerline?.coordinates ?? []),
+    ...(green.polygon?.coordinates ?? []),
+    ...located.map((t) => teePoint(t.location!)).filter((p): p is LatLng => p !== null),
+  ].map(flat);
   return {
     number: hole.number,
     par: tee?.par ?? hole.par,
-    tee: teeAt,
+    tee: teeAt ?? flat(lineStart!),
+    ...(!teeAt && { teeMapped: false }),
     green: { front: flat(green.front), center: flat(green.center), back: flat(green.back) },
     hazards,
+    ...(frame.length && { frame }),
   };
 }
 

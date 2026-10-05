@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/platform/golfGps/loadGoogleMaps";
 import styles from "./CourseSearch.module.css";
 
-export type PreviewKind = "boundary" | "centerline" | "green" | "tee" | "fairway" | "bunker" | "water" | "penalty" | "unassigned";
+export type PreviewKind = "boundary" | "centerline" | "green" | "tee" | "fairway" | "bunker" | "water" | "penalty" | "unassigned"
+  | "approach" | "front" | "center" | "back";
 
 /** One shape to draw, already converted from Maroon geometry on the server (no OSM data reaches the browser raw). */
 export interface PreviewShape {
@@ -19,6 +20,7 @@ export interface PreviewShape {
 export const PREVIEW_COLORS: Record<PreviewKind, string> = {
   boundary: "#ffffff", centerline: "#ffd400", green: "#39e75f", tee: "#3d8bff", fairway: "#a6f28a",
   bunker: "#f2dfa0", water: "#1ec8ff", penalty: "#ff4d4d", unassigned: "#ff3df5",
+  approach: "#ff8a00", front: "#ffffff", center: "#e0002a", back: "#111111",
 };
 
 /**
@@ -40,11 +42,12 @@ export function OsmPreviewMap({ shapes, attribution }: { shapes: PreviewShape[];
       const bounds = new google.maps.LatLngBounds();
       for (const shape of shapes) {
         const color = PREVIEW_COLORS[shape.kind];
+        const target = shape.kind === "front" || shape.kind === "center" || shape.kind === "back";
         if (shape.point) {
-          drawn.push(new maps.Circle({ map, center: shape.point, radius: 3, strokeColor: color, strokeWeight: 2, fillColor: color, fillOpacity: 0.6, clickable: false }));
+          drawn.push(new maps.Circle({ map, center: shape.point, radius: target ? 1.2 : 3, zIndex: target ? 5 : 1, strokeColor: color, strokeWeight: 2, fillColor: color, fillOpacity: 0.6, clickable: false }));
           bounds.extend(shape.point);
         } else if (shape.path) {
-          const common = { map, clickable: false, strokeColor: color, strokeWeight: shape.kind === "boundary" ? 3 : 2 };
+          const common = { map, clickable: false, strokeColor: color, strokeWeight: shape.kind === "boundary" || shape.kind === "approach" ? 3 : 2, zIndex: shape.kind === "approach" ? 4 : 1 };
           drawn.push(shape.closed
             ? new maps.Polygon({ ...common, paths: shape.path, fillColor: color, fillOpacity: shape.kind === "boundary" ? 0 : 0.35 })
             : new maps.Polyline({ ...common, path: shape.path }));

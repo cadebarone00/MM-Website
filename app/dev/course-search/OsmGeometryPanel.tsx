@@ -1,11 +1,16 @@
+import { moveAlong } from "@/lib/platform/golfGps/distance";
 import type { GolfCoordinate, GolfHazardGeometry, GolfPolygon } from "@/lib/platform/golfGps/domain";
 import type { GolfGeometryEnrichment } from "@/lib/platform/golfGps/providers/GolfGeometryProvider";
 import { OSM_COPYRIGHT_URL } from "@/lib/platform/golfGps/providers/openStreetMap/client";
+import type { HoleTargetReport } from "@/lib/platform/golfGps/targets/deriveGreenTargets";
 import { OsmPreviewMap, type PreviewKind, type PreviewShape } from "./OsmPreviewMap";
 import styles from "./CourseSearch.module.css";
 
-/** DEV ONLY: what OpenStreetMap added to the selected course — match evidence, counts, per-hole coverage, leftovers, map. */
-export function OsmGeometryPanel({ enrichment }: { enrichment: GolfGeometryEnrichment }) {
+/**
+ * DEV ONLY: what OpenStreetMap added to the selected course — match evidence, counts, per-hole coverage and derived
+ * green targets, leftovers, and a map with the derived front / center / back points and approach direction drawn in.
+ */
+export function OsmGeometryPanel({ enrichment, targets, gpsHref }: { enrichment: GolfGeometryEnrichment; targets: HoleTargetReport[]; gpsHref: string }) {
   const { status, match, candidates, counts, course, unassigned, notes, attribution } = enrichment;
   const yes = (on: boolean) => on ? "yes" : <span className={styles.na}>no</span>;
   return <>
@@ -25,9 +30,11 @@ export function OsmGeometryPanel({ enrichment }: { enrichment: GolfGeometryEnric
         <dt>Bunkers</dt><dd>{counts.bunkers}</dd>
         <dt>Penalty areas</dt><dd>{counts.penaltyAreas}</dd>
         <dt>Unassigned features</dt><dd>{counts.unassigned}</dd>
+        <dt>Green targets</dt><dd>center on {targets.filter((t) => t.center).length} holes · front / back on {targets.filter((t) => t.frontBack).length} holes</dd>
         <dt>Course coverage</dt><dd><strong>{course.coverage.level}</strong> · {course.coverage.holesWithGps ?? 0} of {course.holeCount} holes at GPS level · verification: {course.verification.status}</dd>
       </dl>}
       {notes.length > 0 && <ul className={styles.notes}>{notes.map((note) => <li key={note}>{note}</li>)}</ul>}
+      {status === "matched" && <p><a className={styles.action} href={gpsHref}>Open in GPS</a> <span className={styles.credit}>Opens this course in the GPS prototype (in the /dev simulator, the GPS test panel moves the mock player).</span></p>}
       <p className={styles.credit}>Map data {attribution} · <a href={OSM_COPYRIGHT_URL}>openstreetmap.org/copyright</a></p>
     </section>
 
@@ -35,7 +42,7 @@ export function OsmGeometryPanel({ enrichment }: { enrichment: GolfGeometryEnric
       <section className={styles.panel} aria-label="OSM per-hole coverage">
         <h2>Per-hole geometry (from OpenStreetMap)</h2>
         <table className={styles.table}>
-          <thead><tr><th>Hole</th><th>Coverage</th><th>Green polygon</th><th>Tees</th><th>Fairways</th><th>Bunkers</th><th>Penalty areas</th><th>Centerline</th></tr></thead>
+          <thead><tr><th>Hole</th><th>Coverage</th><th>Green polygon</th><th>Tees</th><th>Fairways</th><th>Bunkers</th><th>Penalty areas</th><th>Centerline</th><th>Green center</th><th>Front / back</th><th>Direction from</th><th>Why not</th></tr></thead>
           <tbody>{course.holes.map((hole) => <tr key={hole.id}>
             <td>{hole.number}</td><td>{hole.coverage.level}</td><td>{yes(Boolean(hole.green?.polygon))}</td>
             <td>{hole.tees.filter((tee) => tee.location).length || <span className={styles.na}>0</span>}</td>
@@ -43,6 +50,10 @@ export function OsmGeometryPanel({ enrichment }: { enrichment: GolfGeometryEnric
             <td>{hole.bunkers.length || <span className={styles.na}>0</span>}</td>
             <td>{hole.penaltyAreas.length || <span className={styles.na}>0</span>}</td>
             <td>{yes(Boolean(hole.centerline))}</td>
+            <td>{yes(Boolean(hole.green?.center))}{hole.green?.derivation?.center && <small> ({hole.green.derivation.center.method.replace(/_/g, " ")})</small>}</td>
+            <td>{yes(Boolean(hole.green?.front && hole.green?.back))}</td>
+            <td>{hole.green?.derivation?.frontBack ? `${hole.green.derivation.frontBack.directionSource?.replace(/_/g, " ")} · ${hole.green.derivation.frontBack.approachBearingDegrees}°` : <span className={styles.na}>—</span>}</td>
+            <td>{targets.find((t) => t.number === hole.number)?.reason ?? ""}</td>
           </tr>)}</tbody>
         </table>
       </section>
@@ -81,6 +92,13 @@ function previewShapes({ course, courseBoundary, unassigned }: GolfGeometryEnric
       else if (tee.location) polygon("tee", `${at} tee`, tee.location.polygon);
     }
     if (hole.centerline) shapes.push({ kind: "centerline", label: `${at} centerline`, path: hole.centerline.coordinates.map(flat) });
+    // Debug: derived targets, and the direction of play onto the green (35 yd shaft ending at the center).
+    const green = hole.green;
+    const bearing = green?.derivation?.frontBack?.approachBearingDegrees;
+    if (green?.center && bearing !== undefined) shapes.push({ kind: "approach", label: `${at} approach`, path: [moveAlong(green.center, bearing + 180, 35), flat(green.center)] });
+    if (green?.front) shapes.push({ kind: "front", label: `${at} front`, point: flat(green.front) });
+    if (green?.back) shapes.push({ kind: "back", label: `${at} back`, point: flat(green.back) });
+    if (green?.center) shapes.push({ kind: "center", label: `${at} center`, point: flat(green.center) });
   }
   for (const feature of unassigned) {
     const g = feature.geometry;

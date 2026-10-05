@@ -13,25 +13,23 @@
 .open{transform:translateY(0);--sheet-open:1}
 
 /* Handle: grabber bar, "Scoring", and a one-line summary. touch-action:none so a drag moves the sheet, not the page. */
-.handle{flex:none;display:grid;grid-template-columns:1fr auto 1fr;align-items:start;height:56px;padding:10px 16px 0;border:0;background:none;color:inherit;
+.handle{flex:none;display:grid;grid-template-columns:1fr auto 1fr;align-items:start;height:calc(56px + 36px * var(--sheet-open));padding:calc(10px + 36px * var(--sheet-open)) 16px 0;border:0;background:none;color:inherit;
   cursor:grab;touch-action:none;position:relative}
 .handle:active{cursor:grabbing}
 .handle:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:-4px;border-radius:18px 18px 0 0}
-.grabber{position:absolute;top:7px;left:50%;width:40px;height:4px;margin-left:-20px;border-radius:4px;background:rgba(122,79,41,.5)}
-.handleLabel{grid-column:2;justify-self:center;align-self:start;margin-top:12px;font:700 18px/1 var(--font-spectral),Georgia,serif}
+.handleLabel{grid-column:2;justify-self:center;align-self:start;margin-top:0;box-sizing:border-box;width:118.8px;height:40.6px;display:grid;place-items:center;padding:0;border:1px solid var(--color-maroon-900,#2f0c0e);border-radius:999px;background:var(--color-maroon-900,#2f0c0e);color:#fff;font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;text-shadow:none}
 .handleMeta{grid-column:1;display:flex;align-items:flex-start;justify-content:flex-start;gap:6px;align-self:start;margin-top:2px;font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.04em;color:rgba(47,12,14,.75);white-space:nowrap}
 .handleMeta span{display:inline-block}
-.scorecardButton{position:absolute;top:calc(10px + max(0px, env(safe-area-inset-top) - 8px) * var(--sheet-open));right:16px;z-index:3;padding:8px 12px;border:1px solid rgba(47,12,14,.25);border-radius:999px;background:rgba(255,255,255,.22);color:var(--color-maroon-900,#2f0c0e);font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.scorecardButton{position:absolute;top:calc(46px + max(0px, env(safe-area-inset-top) - 8px) * var(--sheet-open));right:16px;z-index:3;padding:8px 12px;border:1px solid rgba(47,12,14,.25);border-radius:999px;background:rgba(255,255,255,.22);color:var(--color-maroon-900,#2f0c0e);font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
 /* Matching pills reserve the right 30% behind a divider; labels center in the left 70%. */
 .scorecardButton{box-sizing:border-box;width:118.8px;height:40.6px;display:grid;grid-template-columns:70% 30%;align-items:center;padding:0;text-align:center}
 .pillLabel,.pillLock{display:flex;align-items:center;justify-content:center;align-self:stretch;min-width:0;padding:0;border:0;border-radius:999px;background:transparent;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer}
 .pillLock[aria-pressed=true]{background:rgba(196,155,84,.28)}
 .pillLabel:focus-visible,.pillLock:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:-3px}
 .scorecardButton::after{content:"";position:absolute;right:30%;top:0;bottom:0;width:1px;background:currentColor;opacity:.45;pointer-events:none}
-.scorecardButton[data-active=true]:not(.gpsButton){background:var(--color-maroon-900,#2f0c0e);color:#fff}
+.scorecardButton:not(.gpsButton){border-color:#fff;background:#fff;color:var(--color-maroon-900,#2f0c0e)}
 .scorecardButtonLeft{right:auto;left:16px}
-.gpsButton{border-color:#c62828;color:#c62828}
-.gpsButton[data-active=true]{background:#c62828;color:#fff}
+.gpsButton{border-color:#c62828;background:#c62828;color:#fff}
 .gps{display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:8px}
 /* The GPS prototype fills the sheet under the pills, as a rounded card. */
 .gpsMap{flex:1 1 auto;min-height:440px;margin-top:6px;border-radius:16px}
@@ -142,10 +140,10 @@
    drag handle; GPS stays top left, Scorecard moves to the top middle, EXIT (styled like the settings SAVE) top right. */
 .frameFull{top:0;height:auto;z-index:110} /* above the bottom menu (100) */
 .sheet.sheetFull{width:100%;height:100%;border-radius:0;border:0;transform:none;padding-top:env(safe-area-inset-top)}
-.sheetFull .scorecardButton{top:calc(12px + env(safe-area-inset-top))}
+.sheetFull .scorecardButton{top:calc(46px + env(safe-area-inset-top))}
 .sheetFull .scorecardButtonCenter{right:auto;left:50%;transform:translateX(-50%)}
-.fullTopBar{flex:none;height:56px}
-.exitButton{position:absolute;top:calc(12px + env(safe-area-inset-top));right:16px;z-index:3;min-height:32px;padding:0;border:0;background:transparent;color:var(--color-maroon-900,#2f0c0e);font:750 15px/1 var(--font-barlow),sans-serif;cursor:pointer}
+.fullTopBar{flex:none;height:92px;display:flex;justify-content:center;align-items:flex-start;padding-top:46px;box-sizing:border-box}
+.exitButton{position:absolute;top:calc(8px + max(0px, env(safe-area-inset-top) - 8px) * var(--sheet-open));right:16px;z-index:3;min-height:28px;padding:0;border:0;background:transparent;color:var(--color-maroon-900,#2f0c0e);font:750 15px/1 var(--font-barlow),sans-serif;cursor:pointer}
 .exitButton:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:4px}
 /* "Scoring button" view, closed: a Next hole-style button in Next hole's spot, just above the bottom menu. */
 .openScoringButton{position:absolute;left:0;right:0;bottom:calc(var(--nav-zone) + 10px);pointer-events:auto;box-shadow:0 6px 18px rgba(0,0,0,.25)}
@@ -156,10 +154,6 @@
 @media(prefers-reduced-motion:reduce){.backdrop{animation:none}}
 
 /* Scorecard: both final scores in green once the cards are complete and agree, above Save & Submit. */
-.finalScores{display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:center}
-.finalScores div{display:flex;flex-direction:column;gap:4px;min-width:0}
-.finalScores span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 11px/1.2 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(47,12,14,.7)}
-.finalScores strong{font:700 30px/1 var(--font-spectral),Georgia,serif;color:#2e7d32}
 /* Submit score confirmation, same look as the trip's delete confirmation, with a green Submit Score. */
 .confirmOverlay{position:fixed;inset:0;display:grid;place-items:center;background:rgba(5,4,6,.55);z-index:120}
 .confirmDialog{display:flex;flex-direction:column;gap:12px;width:min(300px,calc(100vw - 32px));padding:18px 16px;border-radius:14px;background:var(--color-maroon-900,#2f0c0e);border:1px solid rgba(220,196,149,.4);box-shadow:0 18px 40px rgba(0,0,0,.35)}
@@ -177,22 +171,21 @@
 /* Full-screen GPS: the map runs edge to edge, top to bottom; GPS / Scorecard / EXIT float on the image (solid so they
    read over satellite), and the yardage card starts below them. */
 .sheet.gpsFullScreen{padding-top:0}
-.gpsFullScreen .fullTopBar{display:none}
+.gpsFullScreen .fullTopBar{position:absolute;top:env(safe-area-inset-top);left:0;right:0;z-index:2}
 .gpsFullScreen .body{padding:0;gap:0}
-.gpsMap.gpsMapFull{min-height:0;margin:0;border-radius:0;--gps-top-offset:calc(52px + env(safe-area-inset-top))}
-.gpsFullScreen .scorecardButton:not([aria-pressed=true]){background:#f8f3ea;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.gpsMap.gpsMapFull{min-height:0;margin:0;border-radius:0;--gps-top-offset:calc(88px + env(safe-area-inset-top))}
+.gpsFullScreen .scorecardButton{box-shadow:0 2px 8px rgba(0,0,0,.3)}
 .gpsFullScreen .exitButton{padding:8px 14px;border-radius:999px;background:#f8f3ea;box-shadow:0 2px 8px rgba(0,0,0,.3)}
 /* Pull-up sheet on GPS: the map fills the whole sheet (edge to edge, top to bottom, clipped to its corners while it
    grows). The grabber, "Scoring" and the pills float on it over a soft dark fade, and the yardage card starts below them. */
 .sheet.gpsOverlay{overflow:hidden}
 .sheet.gpsOverlay.open:not(.dragging){border-width:0}
-.gpsOverlay::before{content:"";position:absolute;left:0;right:0;top:0;height:calc(100px + env(safe-area-inset-top));z-index:1;pointer-events:none;
+.gpsOverlay::before{content:"";position:absolute;left:0;right:0;top:0;height:calc(108px + env(safe-area-inset-top));z-index:1;pointer-events:none;
   background:linear-gradient(180deg,rgba(20,6,8,.62),rgba(20,6,8,0))}
 .gpsOverlay .handle{position:relative;z-index:2;color:#fbf8f1;text-shadow:0 1px 3px rgba(0,0,0,.55)}
-.gpsOverlay .grabber{background:rgba(251,248,241,.85)}
-.gpsOverlay .scorecardButton:not([data-active=true]){background:#f8f3ea;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.gpsOverlay .scorecardButton{box-shadow:0 2px 8px rgba(0,0,0,.3)}
 .gpsMap.gpsMapFill{position:absolute;inset:0;z-index:0;min-height:0;margin:0;border-radius:0;
-  --gps-top-offset:calc(52px + max(0px, env(safe-area-inset-top) - 8px) * var(--sheet-open));--gps-bottom-offset:env(safe-area-inset-bottom)}
+  --gps-top-offset:calc(88px + max(0px, env(safe-area-inset-top) - 8px) * var(--sheet-open));--gps-bottom-offset:env(safe-area-inset-bottom)}
 /* A slight maroon tint (25%) along the top edge, fading into the cream within ~40px. Its strength follows how far the
    sheet is pulled up (--sheet-open 0 → 1): full when tucked away, gone when open, in between while dragging or sliding. */
 .sheet{background:linear-gradient(180deg,rgba(107,22,26,calc(.25 * (1 - var(--sheet-open)))) 0,rgba(107,22,26,0) 40px),linear-gradient(180deg,#f8f3ea 0%,#f2ebdf 100%)}
@@ -203,3 +196,15 @@
 .scorecardTotals div{display:flex;align-items:baseline;justify-content:center;gap:8px;min-width:0;container-type:inline-size}
 .scorecardTotals dt{font-size:min(22px, calc((100cqw - 78px) / (var(--chars, 8) * .78)));white-space:nowrap;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:rgba(47,12,14,.7)}
 .scorecardTotals dd{margin:0;font-size:37px;line-height:1;font-weight:700}
+/* Card view: the course name above the scorecard; totals turn green once the card can be submitted; Submit & Save under them. */
+.scorecardCourse{margin:2px 0 0;text-align:center;font:700 20px/1.2 var(--font-spectral),Georgia,serif;color:var(--color-maroon-900,#2f0c0e)}
+.scorecardTotalsReady dd{color:#2e7d32}
+.submitSave{flex:none;margin-top:6px}
+.untouchedScore{color:rgba(47,12,14,.38);font-weight:600}
+
+/* Grabber and Exit sit above the lowered, aligned pill row. */
+.grabber{position:absolute;top:7px;left:50%;width:40px;height:4px;margin-left:-20px;border-radius:4px;background:rgba(122,79,41,.5)}
+.gpsOverlay .grabber{background:rgba(251,248,241,.85)}
+.gpsOverlay .exitButton{color:#fff}
+.sheetFull .exitButton{top:calc(8px + env(safe-area-inset-top))}
+.holeSelection{display:flex;flex-direction:column;gap:6px}

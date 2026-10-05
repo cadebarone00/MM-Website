@@ -3,9 +3,8 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import type { GolfCourse, GolfHole } from "@/lib/platform/golfGps/domain";
 import { GolfProviderError, type GolfCourseImport, type GolfCourseSearchResponse } from "@/lib/platform/golfGps/providers/GolfCourseProvider";
-import type { GolfGeometryEnrichment } from "@/lib/platform/golfGps/providers/GolfGeometryProvider";
 import { createOpenGolfProvider } from "@/lib/platform/golfGps/providers/openGolf/provider";
-import { createOpenStreetMapGeometryProvider } from "@/lib/platform/golfGps/providers/openStreetMap/provider";
+import { enrichGolfCourse, type PlayableCourse } from "@/lib/platform/golfGps/courseEnrichment";
 import { OsmGeometryPanel } from "./OsmGeometryPanel";
 import styles from "./CourseSearch.module.css";
 
@@ -33,9 +32,9 @@ export default async function CourseSearchPage({ searchParams }: { searchParams:
     } catch (error) { detailError = message(error); }
   }
   // Only when "Load OSM Geometry" is clicked: Overpass is a shared public service, so it's never queried automatically.
-  let enrichment: GolfGeometryEnrichment | null = null, osmError: string | null = null;
+  let playable: PlayableCourse | null = null, osmError: string | null = null;
   if (detail && osm === "1") {
-    try { enrichment = await createOpenStreetMapGeometryProvider().enrichCourse(detail.course); } catch (error) {
+    try { playable = await enrichGolfCourse(detail.course); } catch (error) {
       osmError = error instanceof GolfProviderError ? error.message : "Loading OpenStreetMap geometry failed.";
     }
   }
@@ -80,7 +79,7 @@ export default async function CourseSearchPage({ searchParams }: { searchParams:
         <p className={styles.credit}>Queries the public Overpass API around this course&apos;s location (two small, cached requests).</p>
         {osmError && <p className={styles.error}>{osmError}</p>}
       </section>}
-      {enrichment && <OsmGeometryPanel enrichment={enrichment} />}
+      {playable && <OsmGeometryPanel enrichment={playable.geometry} targets={playable.targets} gpsHref={`/dev/gps?course=${encodeURIComponent(id)}&hole=1`} />}
     </div>
   </main>;
 }

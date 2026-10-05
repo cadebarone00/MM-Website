@@ -60,6 +60,8 @@ export function simulatorPages(): SimulatorPage[] {
       { id: "round-source", label: "Round state from data source", state: { roundStatus: "source" } },
       { id: "scheduled", label: "Pre-tournament / before round 1", state: { roundStatus: "scheduled" } },
       { id: "round-live", label: "Live round", state: { roundStatus: "live" } },
+      { id: "round-end-match", label: "End of round, unsubmitted — scores match", state: { roundStatus: "roundEnd", opponentCard: "match" } },
+      { id: "round-end-mismatch", label: "End of round, unsubmitted — scores don't match", state: { roundStatus: "roundEnd", opponentCard: "mismatch" } },
       { id: "round-between", label: "Between rounds (round 3 done, round 4 next)", state: { roundStatus: "between" } },
       { id: "round-complete", label: "Trip complete (all rounds done)", state: { roundStatus: "complete" } });
     // The Scoring sheet sits on every trip tab.

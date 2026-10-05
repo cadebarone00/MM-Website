@@ -86,14 +86,36 @@ export interface GolfGreenContour {
 }
 
 /**
+ * How The Maroon worked a value out from other data (rather than a source measuring it). Derived values are never
+ * "surveyed" or "verified" — `inputs` says which source data they came from.
+ */
+export interface GolfDerivation {
+  derivedBy: "maroon";
+  /**
+   * polygon_centroid: area-weighted middle of the outline. polygon_interior_point: the outline's middle fell outside
+   * it (odd shape), so the middle of the widest strip through it was used. approach_axis_intersection: where the line
+   * of play through the center crosses the outline.
+   */
+  method: "polygon_centroid" | "polygon_interior_point" | "approach_axis_intersection";
+  /** ISO 8601. */
+  derivedAt: string;
+  inputs: GolfSourceMetadata[];
+  /** For front / back: the compass direction of play onto the green, and where that direction came from. */
+  approachBearingDegrees?: number;
+  directionSource?: "centerline_final_segment" | "tee_to_green";
+}
+
+/**
  * The green. A scorecard-only course has no green data; a GPS course has front / center / back points; a mapped course
- * also has the outline. Front / back are relative to the normal line of play.
+ * also has the outline. Front / back are relative to the normal line of play. When the points were worked out from the
+ * outline (not given by a source), `derivation` says how.
  */
 export interface GolfGreen {
   polygon?: GolfPolygon;
   front?: GolfCoordinate;
   center?: GolfCoordinate;
   back?: GolfCoordinate;
+  derivation?: { center?: GolfDerivation; frontBack?: GolfDerivation };
   elevation?: GolfGreenElevation;
   slope?: GolfGreenSlope;
   contours?: GolfGreenContour[];

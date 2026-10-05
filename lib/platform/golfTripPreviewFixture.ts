@@ -3,6 +3,8 @@ import { palmSprings2026 } from "../data/2026-palm-springs";
 import type { Tournament } from "../data/types";
 import type { GolfTripDraft } from "./golfTripDraft";
 import type { GolfTripFlight } from "./golfTripFlights";
+import type { TripWeather } from "./weather/types";
+import type { ItineraryItem } from "./golfTripItinerary";
 import { FORMATS, type FormatDefinition } from "./formats";
 
 function tournamentTripDraftFromTournament(tournament: Tournament): GolfTripDraft {
@@ -389,6 +391,12 @@ export const GOLF_MATCH_PREVIEWS: Record<string, GolfMatchPreview> = {
 /** Default preview matching previous export for complete backward compatibility. */
 export const GOLF_MATCH_PREVIEW: GolfMatchPreview = GOLF_MATCH_PREVIEW_SINGLES;
 
+/** Made-up current weather for the preview's Home quick-weather area (matches the course forecast below; not real weather). */
+export const GOLF_PREVIEW_TRIP_WEATHER: TripWeather = {
+  status: "ok",
+  weather: { temperature: 78, temperatureUnit: "F", condition: "Partly Cloudy", high: 84, low: 61, precipitationChance: 10, windSpeed: "8 mph", windDirection: "SW", updatedAt: "2027-04-22T08:00:00Z" },
+};
+
 /** Made-up course forecast for the preview's Golf tab weather card (not real weather). */
 export const GOLF_PREVIEW_COURSE_WEATHER = {
   temperature: 78,
@@ -404,4 +412,22 @@ export const GOLF_TRIP_PREVIEW_FLIGHTS: GolfTripFlight[] = [
   previewFlight("preview-1", "arrival", "American Airlines", "AA1234", "RDU", "DFW", "2027-04-22T06:10", "2027-04-22T08:05"),
   previewFlight("preview-2", "arrival", "American Airlines", "AA2210", "DFW", "PHX", "2027-04-22T09:15", "2027-04-22T10:05"),
   previewFlight("preview-3", "return", "American Airlines", "AA987", "PHX", "RDU", "2027-04-25T13:40", "2027-04-25T21:02"),
+];
+
+/**
+ * DEV ONLY: the mock trip's itinerary (Friends Golf Weekend, Phoenix area, Apr 22–25 2027), matching its flights and
+ * courses. Feeds the Home "what's next" cards and Info → Itinerary. Made up; real trips don't have an itinerary yet.
+ */
+export const GOLF_TRIP_MOCK_ITINERARY: ItineraryItem[] = [
+  { id: "it-flight-out-1", kind: "flight", title: "AA1234 · RDU → DFW", detail: "American Airlines · Lands 8:05 AM", startsAt: "2027-04-22T06:10" },
+  { id: "it-flight-out-2", kind: "flight", title: "AA2210 · DFW → PHX", detail: "American Airlines · Lands 10:05 AM", startsAt: "2027-04-22T09:15" },
+  { id: "it-car-pickup", kind: "ride", title: "Rental car pickup", detail: "PHX Sky Harbor · Rental Car Center", startsAt: "2027-04-22T10:45" },
+  { id: "it-hotel-in", kind: "lodging", title: "The Shorebreak Villas", detail: "Check-in · 3 nights", startsAt: "2027-04-22T15:00" },
+  { id: "it-dinner-1", kind: "dining", title: "Fireside Grill", detail: "Dinner reservation · 8 people", startsAt: "2027-04-22T19:30" },
+  { id: "it-tee-1", kind: "teeTime", title: "Desert Pines GC", detail: "Round 1 · Tee time", startsAt: "2027-04-23T08:30" },
+  { id: "it-dinner-2", kind: "dining", title: "Canyon Steakhouse", detail: "Dinner reservation · 8 people", startsAt: "2027-04-23T19:00" },
+  { id: "it-tee-2", kind: "teeTime", title: "Canyon Ridge", detail: "Round 2 · Tee time", startsAt: "2027-04-24T09:10" },
+  { id: "it-hotel-out", kind: "lodging", title: "The Shorebreak Villas", detail: "Check-out", startsAt: "2027-04-25T10:00" },
+  { id: "it-car-return", kind: "ride", title: "Rental car return", detail: "PHX Sky Harbor · Rental Car Center", startsAt: "2027-04-25T11:30" },
+  { id: "it-flight-home", kind: "flight", title: "AA987 · PHX → RDU", detail: "American Airlines · Lands 9:02 PM", startsAt: "2027-04-25T13:40" },
 ];

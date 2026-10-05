@@ -99,13 +99,17 @@ export function GolfGpsMap({ apiKey, hole, player, target, onTap, recenterToken,
     if (!ready || !map || !libs) return;
     const drawn: Overlay[] = [];
     for (const hazard of hole.hazards) {
-      drawn.push(hazard.kind === "water" && hazard.outline
-        ? new libs.maps.Polygon({ map, paths: hazard.outline, clickable: false, strokeColor: "#4fc3f7", strokeWeight: 2, fillColor: "#29b6f6", fillOpacity: 0.35 })
-        : new libs.maps.Circle({ map, center: hazard.center, radius: hazard.radiusYards * YARDS_TO_METERS, clickable: false, strokeColor: "#f3e2b3", strokeWeight: 2, fillColor: "#ead9a8", fillOpacity: 0.55 }));
+      const colors = hazard.kind === "water"
+        ? { strokeColor: "#4fc3f7", fillColor: "#29b6f6", fillOpacity: 0.35 }
+        : { strokeColor: "#f3e2b3", fillColor: "#ead9a8", fillOpacity: 0.55 };
+      // A mapped outline is drawn as it is; otherwise a circle of the hazard's rough size.
+      drawn.push(hazard.outline
+        ? new libs.maps.Polygon({ map, paths: hazard.outline, clickable: false, strokeWeight: 2, ...colors })
+        : new libs.maps.Circle({ map, center: hazard.center, radius: hazard.radiusYards * YARDS_TO_METERS, clickable: false, strokeWeight: 2, ...colors }));
     }
     const marker = (position: LatLng, title: string, className: string) =>
       drawn.push(new libs.marker.AdvancedMarkerElement({ map, position, title, content: dot(className), gmpClickable: false }));
-    marker(hole.tee, "Tee", `${styles.marker} ${styles.markerTee}`);
+    if (hole.teeMapped !== false) marker(hole.tee, "Tee", `${styles.marker} ${styles.markerTee}`);
     marker(hole.green.front, "Green front", `${styles.marker} ${styles.markerEdge}`);
     marker(hole.green.back, "Green back", `${styles.marker} ${styles.markerEdge}`);
     marker(hole.green.center, "Green center", `${styles.marker} ${styles.markerPin}`);
@@ -122,7 +126,7 @@ export function GolfGpsMap({ apiKey, hole, player, target, onTap, recenterToken,
       map.moveCamera({ ...holeCamera(hole, { width, height, top: insets.top, bottom: insets.bottom, side: 16 }), tilt: 0 });
     } else {
       const bounds = new google.maps.LatLngBounds();
-      [hole.tee, hole.green.front, hole.green.back, ...hole.hazards.map((hazard) => hazard.center)].forEach((point) => bounds.extend(point));
+      [hole.tee, hole.green.front, hole.green.back, ...hole.hazards.map((hazard) => hazard.center), ...(hole.frame ?? [])].forEach((point) => bounds.extend(point));
       map.setHeading(0);
       map.fitBounds(bounds, { top: insets.top, bottom: insets.bottom, left: 16, right: 16 });
     }

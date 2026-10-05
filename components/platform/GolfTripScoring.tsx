@@ -23,17 +23,19 @@ const HOLD_SLOP = 10;
  * Save & Submit (on the Scorecard view) only appears once every hole has both scores and my stats (fairway not needed on
  * par 3s) and `opponentCardMatches` says the opponent's own card agrees; submitting locks the card until the page reloads.
  */
-export function GolfTripScoring({ par, initialHoles, playerName = "You", opponentCardMatches = false }: {
-  par?: number[]; initialHoles?: (number | null)[]; playerName?: string; opponentCardMatches?: boolean;
+export function GolfTripScoring({ par, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill }: {
+  par?: number[]; initialHoles?: (number | null)[]; playerName?: string; opponentCardMatches?: boolean; courseName?: string;
+  /** Dev preview only: a finished card (opponent scores, putts, fairways, greens) to start from. */
+  prefill?: { opponentHoles: (number | null)[]; putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[] };
 }) {
   const [open, updateOpen] = useState(false);
   const [holes, setHoles] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => initialHoles?.[i] ?? null));
-  const [holesCompetitor, setHolesCompetitor] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => initialHoles?.[i] ?? null));
+  const [holesCompetitor, setHolesCompetitor] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => prefill?.opponentHoles[i] ?? initialHoles?.[i] ?? null));
   const [current, setCurrent] = useState(() => { const next = Array.from({ length: HOLES }, (_, i) => initialHoles?.[i] ?? null).findIndex((h) => h === null); return next === -1 ? HOLES - 1 : next; });
   // My stats for each hole: putts, and where the drive (fairway) and approach (green) finished; "center" = hit.
-  const [putts, setPutts] = useState<(number | null)[]>(() => Array<number | null>(HOLES).fill(null));
-  const [fairways, setFairways] = useState<(Direction | null)[]>(() => Array<Direction | null>(HOLES).fill(null));
-  const [greens, setGreens] = useState<(Direction | null)[]>(() => Array<Direction | null>(HOLES).fill(null));
+  const [putts, setPutts] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => prefill?.putts[i] ?? null));
+  const [fairways, setFairways] = useState<(Direction | null)[]>(() => Array.from({ length: HOLES }, (_, i) => prefill?.fairways[i] ?? null));
+  const [greens, setGreens] = useState<(Direction | null)[]>(() => Array.from({ length: HOLES }, (_, i) => prefill?.greens[i] ?? null));
   const [penalties, setPenalties] = useState(() => Array.from({ length: HOLES }, () => ({ fairway: false, green: false })));
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -110,6 +112,62 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   // Collapsed, the sheet is pushed down so only its handle shows above the strip the bottom menu covers.
   const closedOffset = () => (sheetRef.current?.offsetHeight ?? 0) - (handleRef.current?.offsetHeight ?? 0) - (spacerRef.current?.offsetHeight ?? 0);
 
+  const suppressDragClickUntil = useRef(0);
+  // A brief stationary press arms page-wide touch dragging in Slide mode without taking over quick scrolling.
+  useEffect(() => {
+    if (fullScreen || confirmOpen) return;
+    let gesture: { id: number; x: number; y: number; armed: boolean; moved: boolean; offset: number; closed: number } | null = null;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const clear = () => { clearTimeout(timer); gesture = null; };
+    const start = (event: TouchEvent) => {
+      if (event.touches.length !== 1 || (event.target instanceof Element && (handleRef.current?.contains(event.target) || event.target.closest('[role="dialog"], input, textarea, select')))) { clear(); return; }
+      const t = event.touches[0];
+      const closed = closedOffset();
+      gesture = { id: t.identifier, x: t.clientX, y: t.clientY, armed: false, moved: false, offset: open ? 0 : closed, closed };
+      timer = setTimeout(() => { if (gesture) gesture.armed = true; }, 200);
+    };
+    const move = (event: TouchEvent) => {
+      const g = gesture;
+      if (!g) return;
+      if (event.touches.length !== 1) { clear(); setDragOffset(null); return; }
+      const t = Array.from(event.touches).find(touch => touch.identifier === g.id);
+      if (!t) return;
+      const dy = t.clientY - g.y, dx = t.clientX - g.x;
+      if (!g.armed) { if (Math.hypot(dx, dy) > TAP_SLOP) clear(); return; }
+      if (!g.moved && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > TAP_SLOP) { clear(); return; }
+      if (Math.abs(dy) < TAP_SLOP && !g.moved) return;
+      if (!event.cancelable) { clear(); setDragOffset(null); return; }
+      event.preventDefault();
+      g.moved = true;
+      suppressDragClickUntil.current = Date.now() + 800;
+      g.offset = Math.min(Math.max((open ? 0 : g.closed) + dy, 0), g.closed);
+      setDragRange(g.closed);
+      setDragOffset(g.offset);
+    };
+    const end = () => {
+      if (gesture?.moved) { setFastClose(false); setOpen(gesture.offset < gesture.closed / 2); }
+      clear(); setDragOffset(null);
+    };
+    const cancel = () => { clear(); setDragOffset(null); };
+    const click = (event: MouseEvent) => { if (Date.now() < suppressDragClickUntil.current) { event.preventDefault(); event.stopImmediatePropagation(); suppressDragClickUntil.current = 0; } };
+    const menu = (event: Event) => { if (gesture?.armed) event.preventDefault(); };
+    document.addEventListener('touchstart', start, { passive: true });
+    document.addEventListener('touchmove', move, { passive: false });
+    document.addEventListener('touchend', end);
+    document.addEventListener('touchcancel', cancel);
+    document.addEventListener('click', click, true);
+    document.addEventListener('contextmenu', menu);
+    return () => {
+      clear();
+      document.removeEventListener('touchstart', start);
+      document.removeEventListener('touchmove', move);
+      document.removeEventListener('touchend', end);
+      document.removeEventListener('touchcancel', cancel);
+      document.removeEventListener('click', click, true);
+      document.removeEventListener('contextmenu', menu);
+    };
+  }, [fullScreen, confirmOpen, open, setOpen]);
+
   function onPointerDown(event: PointerEvent<HTMLButtonElement>) {
     const closed = closedOffset();
     drag.current = { startY: event.clientY, startOffset: open ? 0 : closed, closedOffset: closed, moved: false };
@@ -182,13 +240,13 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
       const label = target === "gps" ? "GPS" : "Card";
       const locked = lockedView === target;
       const Icon = locked ? LockKeyhole : LockKeyholeOpen;
-      return <div key={target} className={[styles.scorecardButton, target === "gps" ? styles.scorecardButtonLeft + " " + styles.gpsButton : fullScreen ? styles.scorecardButtonCenter : ""].join(" ")} data-active={view === target}>
+      return <div key={target} className={[styles.scorecardButton, target === "gps" ? styles.scorecardButtonLeft + " " + styles.gpsButton : ""].join(" ")} data-active={view === target}>
         <button type="button" className={styles.pillLabel} aria-pressed={view === target} aria-label={view === target ? "Back to scoring" : "Open " + label} onClick={() => toggleView(target)}>{label}</button>
         <button type="button" className={styles.pillLock} aria-pressed={locked} aria-label={locked ? "Unlock " + label + " default scoring view" : "Lock " + label + " as default scoring view"} onClick={() => toggleLock(target)}><Icon size={14} aria-hidden="true" /></button>
       </div>;
     })}
-    {fullScreen && <button type="button" className={styles.exitButton} onClick={() => setOpen(false)}>EXIT</button>}
-    {fullScreen ? <div className={styles.fullTopBar} aria-hidden /> : <button ref={handleRef} type="button" className={styles.handle} aria-expanded={open} aria-controls="trip-scoring-body"
+    {open && <button type="button" className={styles.exitButton} onClick={() => setOpen(false)}>EXIT</button>}
+    {fullScreen ? <div className={styles.fullTopBar}><button type="button" className={styles.handleLabel} onClick={() => setView("scoring")}>Scoring</button></div> : <button ref={handleRef} type="button" className={styles.handle} aria-expanded={open} aria-controls="trip-scoring-body"
       onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
       onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); tapToggle(); } }}>
       <span className={styles.grabber} aria-hidden />
@@ -207,18 +265,15 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
       {/* GPS prototype (satellite map, live yardages, mock hole) in development; real trips keep the placeholder until course data exists. */}
       {view === "gps" ? showGpsMap ? <GolfGpsScreen holeNumber={current + 1} className={`${styles.gpsMap} ${fullScreen ? styles.gpsMapFull : styles.gpsMapFill}`} /> : <GpsSection hole={current + 1} holePar={holePar} />
         : view === "scorecard" ? <>
-          <ScorecardSection par={par} holes={holes} opponentHoles={holesCompetitor} playerName={playerName} opponentName={opponentName} putts={putts} fairways={fairways} greens={greens} />
-          {/* Both cards complete and agreeing: final scores in green, then Save & Submit. */}
-          {(readyToSubmit || submitted) && <>
-            <div className={styles.finalScores}>
-              <div><span>{playerName}</span><strong>{sumOf(submittedHoles)}</strong></div>
-              <div><span>{opponentName}</span><strong>{sumOf(submittedOpponentHoles)}</strong></div>
-            </div>
-            <button type="button" className={styles.nextHoleButton} disabled={submitted} onClick={() => setConfirmOpen(true)}>{submitted ? "Submitted" : "Save & Submit"}</button>
-          </>}
+          {courseName && <h3 className={styles.scorecardCourse}>{courseName}</h3>}
+          <ScorecardSection par={par} holes={holes} opponentHoles={holesCompetitor} playerName={playerName} opponentName={opponentName} putts={putts} fairways={fairways} greens={greens}
+            myTotal={sumOf(submittedHoles)} opponentTotal={sumOf(submittedOpponentHoles)} ready={readyToSubmit || submitted} />
+          {/* Always shown; only lights up once both cards are complete and the opponent's card agrees. */}
+          <button type="button" className={`${styles.nextHoleButton} ${styles.submitSave}`} disabled={!readyToSubmit || submitted} onClick={() => setConfirmOpen(true)}>{submitted ? "Submitted" : "Submit & Save"}</button>
         </>
         : <>
       {/* One row: Thru on the left, the hole in the middle, To Par on the right, all lined up vertically. */}
+      <div className={styles.holeSelection}>
       <div className={styles.holeHeader}>
         <dl className={styles.holeStat}><dt>Thru</dt><dd>{thru}</dd></dl>
         <div className={styles.holeTitle}>
@@ -233,6 +288,8 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
           className={`${styles.holeChip} ${h !== null ? styles.holeChipFilled : ""} ${i === current ? styles.holeChipActive : ""}`} onClick={() => setCurrent(i)}>
           <span className={styles.holeChipNumber}>{i + 1}</span>
         </button>)}
+      </div>
+
       </div>
 
       <div className={styles.stepperWrap}>
@@ -318,23 +375,26 @@ const shortName = (name: string) => (name.trim().split(/\s+/).at(-1) ?? name).sl
  * Three sections, each lightly tinted maroon with a narrow clear gap between them: the hole (Hole · Yds · Par, against the
  * left edge), your stats (FWY · GRN · PUT), then the scores (your last name · the opponent's last name, up to 8 letters).
  */
-function ScorecardSection({ par, holes, opponentHoles, playerName, opponentName, putts, fairways, greens }: {
+function ScorecardSection({ par, holes, opponentHoles, playerName, opponentName, putts, fairways, greens, myTotal, opponentTotal, ready }: {
   par?: number[]; holes: (number | null)[]; opponentHoles: (number | null)[]; playerName: string; opponentName: string;
+  myTotal: number | "—"; opponentTotal: number | "—"; ready: boolean;
   putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[];
 }) {
   const range = (from: number, to: number) => Array.from({ length: to - from }, (_, i) => from + i);
   const mark = (value: Direction | null) => value ? DIRECTION_MARK[value] : "—";
   const hits = (values: (Direction | null)[], index: number[]) => index.some((i) => values[i] !== null) ? index.filter((i) => values[i] === "center").length : "—";
   const gap = <td className={styles.sectionGap} aria-hidden />;
+  // An untouched hole counts as par (as on the scoring screen), shown faded until it's entered.
+  const scoreCell = (strokes: number | null, i: number) => strokes ?? (par?.[i] !== undefined ? <span className={styles.untouchedScore}>{par[i]}</span> : "—");
   const holeRow = (i: number) => <tr key={i}>
     <th scope="row" className={styles.section}>{i + 1}</th><td className={styles.section}>—</td><td className={styles.section}>{par?.[i] ?? "—"}</td>{gap}
     <td className={styles.section}>{par?.[i] === 3 ? "" : mark(fairways[i])}</td><td className={styles.section}>{mark(greens[i])}</td><td className={styles.section}>{putts[i] ?? "—"}</td>{gap}
-    <td className={`${styles.section} ${styles.myScore}`}>{holes[i] ?? "—"}</td><td className={styles.section}>{opponentHoles[i] ?? "—"}</td>
+    <td className={`${styles.section} ${styles.myScore}`}>{scoreCell(holes[i], i)}</td><td className={styles.section}>{scoreCell(opponentHoles[i], i)}</td>
   </tr>;
   const totalRow = (label: string, index: number[]) => <tr key={label} className={styles.totalRow}>
     <th scope="row" className={styles.section}>{label}</th><td className={styles.section}>—</td><td className={styles.section}>{sumOf(index.map((i) => par?.[i]))}</td>{gap}
     <td className={styles.section}>{hits(fairways, index)}</td><td className={styles.section}>{hits(greens, index)}</td><td className={styles.section}>{sumOf(index.map((i) => putts[i]))}</td>{gap}
-    <td className={`${styles.section} ${styles.myScore}`}>{sumOf(index.map((i) => holes[i]))}</td><td className={styles.section}>{sumOf(index.map((i) => opponentHoles[i]))}</td>
+    <td className={`${styles.section} ${styles.myScore}`}>{sumOf(index.map((i) => holes[i] ?? par?.[i]))}</td><td className={styles.section}>{sumOf(index.map((i) => opponentHoles[i] ?? par?.[i]))}</td>
   </tr>;
   return <section className={styles.scorecardView} aria-label="Scorecard">
     <table className={styles.scorecardTable}>
@@ -354,9 +414,9 @@ function ScorecardSection({ par, holes, opponentHoles, playerName, opponentName,
       </tbody>
     </table>
     {/* Under Total: each player's last name and total score, centered in their half; a long name shrinks to fit. */}
-    <dl className={styles.scorecardTotals}>
-      <div><dt title={playerName} style={{ "--chars": shortName(playerName).length } as CSSProperties}>{shortName(playerName)}</dt><dd>{sumOf(holes)}</dd></div>
-      <div><dt title={opponentName} style={{ "--chars": shortName(opponentName).length } as CSSProperties}>{shortName(opponentName)}</dt><dd>{sumOf(opponentHoles)}</dd></div>
+    <dl className={`${styles.scorecardTotals} ${ready ? styles.scorecardTotalsReady : ""}`}>
+      <div><dt title={playerName} style={{ "--chars": shortName(playerName).length } as CSSProperties}>{shortName(playerName)}</dt><dd>{myTotal}</dd></div>
+      <div><dt title={opponentName} style={{ "--chars": shortName(opponentName).length } as CSSProperties}>{shortName(opponentName)}</dt><dd>{opponentTotal}</dd></div>
     </dl>
   </section>;
 }

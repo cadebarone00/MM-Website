@@ -3,8 +3,10 @@ import { GOLF_COVERAGE_LEVELS, hasCoverage, type GolfCoverageFeatures, type Golf
 
 /**
  * Coverage worked out from the data actually present — never set by hand. Rungs:
- * - gps: a located tee and the green's position (front / center / back points or its outline)
- * - mapped: gps + the hole's centerline + a fairway (par 3s don't need one)
+ * - gps: green front, center AND back points (given by a source or derived from the real green outline). No tee is
+ *   required: on the course, yardages are measured from the player's live position, not from a tee.
+ * - mapped: gps + a located tee + the hole's centerline + a fairway (par 3s don't need one). Tees are required here so
+ *   dropping the tee from gps doesn't make more holes "mapped".
  * - verified: mapped and reviewed (verification admin_verified / professional_source) — never from an import alone
  * - premium: not reachable here; it needs professional elevation / slope data, which nothing imports yet
  */
@@ -24,8 +26,8 @@ export function measureHoleCoverage(hole: GolfHole): GolfDataCoverage {
     greenSlope: Boolean(hole.green?.slope),
   };
   let level: GolfCoverageLevel = "scorecard";
-  if (features.teeCoordinates && (features.greenPoints || features.greenPolygons)) level = "gps";
-  if (level === "gps" && features.centerlines && (features.fairways || hole.par === 3)) level = "mapped";
+  if (features.greenPoints) level = "gps";
+  if (level === "gps" && features.teeCoordinates && features.centerlines && (features.fairways || hole.par === 3)) level = "mapped";
   if (level === "mapped" && ["admin_verified", "professional_source"].includes(hole.verification.status)) level = "verified";
   return { level, features };
 }
