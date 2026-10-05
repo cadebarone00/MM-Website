@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { MonitorSmartphone, RotateCcw, SlidersHorizontal } from "lucide-react";
-import { DEFAULT_SIMULATOR_STATE, parseSimulatorLocation, simulatorPageForLocation, SIMULATOR_CHANNEL, SIMULATOR_DEVICES, type SimulatorConfig, type SimulatorPage, type SimulatorSource, type SimulatorState } from "@/lib/dev/simulator";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, MonitorSmartphone, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { DEFAULT_SIMULATOR_STATE, parseGpsState, parseSimulatorLocation, simulatorPageForLocation, SIMULATOR_CHANNEL, SIMULATOR_DEVICES, type SimulatorConfig, type SimulatorGpsCommand, type SimulatorGpsState, type SimulatorPage, type SimulatorSource, type SimulatorState } from "@/lib/dev/simulator";
 import { applySimulatorSafeAreas } from "./simulatorSafeAreas";
 import { HapticsVisualizer } from "./HapticsVisualizer";
 import { DesignReview } from "./DesignReview";
@@ -32,6 +32,8 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
   const [ready, setReady] = useState(false);
   const [hapticLevel, setHapticLevel] = useState(2);
   const [hapticDuration, setHapticDuration] = useState(1000);
+  // GPS test: the open GPS screen's state (null when the phone isn't showing one).
+  const [gps, setGps] = useState<SimulatorGpsState | null>(null);
   const iframe = useRef<HTMLIFrameElement>(null);
   const [screen, setScreen] = useState<HTMLDivElement | null>(null);
   const stage = useRef<HTMLDivElement>(null);
@@ -100,6 +102,7 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
       setCurrentPath(location.path);
       setPageId(current => simulatorPageForLocation(pages, location, current)?.id ?? "");
       if (event.data.type === "ready") {
+        setGps(null); // a fresh page; a GPS screen on it reports itself again
         bridgeReady.current = true;
         setReady(true);
         sendConfig();
@@ -109,6 +112,17 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
     sendConfig();
     return () => window.removeEventListener("message", receive);
   }, [sendConfig, pages]);
+
+  // GPS test: the phone's GPS screen reports its mode and accuracy (or null when it closes).
+  useEffect(() => {
+    function receive(event: MessageEvent) {
+      if (event.origin !== window.location.origin || event.source !== iframe.current?.contentWindow || event.data?.channel !== SIMULATOR_CHANNEL || event.data.type !== "gps-state") return;
+      setGps(event.data.state === null ? null : parseGpsState(event.data.state));
+    }
+    window.addEventListener("message", receive);
+    return () => window.removeEventListener("message", receive);
+  }, []);
+  const sendGps = (command: SimulatorGpsCommand) => iframe.current?.contentWindow?.postMessage({ channel: SIMULATOR_CHANNEL, type: "gps-command", command }, window.location.origin);
 
   // Safe-area updates are event-driven too: document loads, route reports and HMR styles.
   useEffect(() => {
@@ -217,6 +231,9 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
               <iframe ref={iframe} title="Mobile application preview" src={frameSrc} width={size.width} height={size.height}
                 style={{ width: size.width, height: size.height, minWidth: size.width, minHeight: size.height, maxWidth: "none", maxHeight: "none" }}
                 className={styles.frame} onLoad={() => { setReady(true); sendConfig(); }} />
+              {/* The phone's front camera, drawn over the screen like the real hardware (taps pass through). */}
+              {device.startsWith("iphone") && <span className={`${styles.camera} ${styles.dynamicIsland}`} aria-hidden />}
+              {device.startsWith("pixel") && <span className={`${styles.camera} ${styles.punchHole}`} aria-hidden />}
               </div>
               {showSafeAreas && <div className={styles.safeGuides} aria-hidden><span /><span /></div>}
             </div>
@@ -233,6 +250,23 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
           <label>Duration (milliseconds)<input type="number" aria-label="Haptic test duration" min={50} max={5000} step={50} value={hapticDuration} onChange={event => setHapticDuration(Math.max(50, Math.min(5000, Number(event.target.value) || 1000)))} /></label>
           <button type="button" onClick={() => { void lightTap({ intensity: hapticLevel, durationMs: hapticDuration }); }}>Test haptic</button>
           <p>Visual simulation only. Native feedback uses device presets. Reduced motion keeps the meter without shaking.</p>
+        </section>
+        <section className={styles.controlSection} aria-labelledby="gps-heading">
+          <h2 id="gps-heading">GPS test</h2>
+          {gps ? <>
+            <div className={styles.gpsToggle} role="group" aria-label="GPS source">
+              {(["real", "mock"] as const).map(mode => <button key={mode} type="button" aria-pressed={gps.mode === mode} onClick={() => sendGps({ mode })}>{mode === "real" ? "Real GPS" : "Mock GPS"}</button>)}
+            </div>
+            <p>Accuracy: <strong>{gps.source === "mock" ? "Mock (exact)" : gps.accuracyMeters !== null ? `±${Math.round(gps.accuracyMeters / 0.9144)} yds` : "Waiting for a fix…"}</strong></p>
+            {gps.mode === "mock" && <div className={styles.gpsPad} role="group" aria-label="Move mock player 10 yards">
+              <button type="button" className={styles.gpsUp} aria-label="Move north" onClick={() => sendGps({ move: { north: 1, east: 0 } })}><ArrowUp size={14} aria-hidden /></button>
+              <button type="button" className={styles.gpsLeft} aria-label="Move west" onClick={() => sendGps({ move: { north: 0, east: -1 } })}><ArrowLeft size={14} aria-hidden /></button>
+              <button type="button" className={styles.gpsReset} aria-label="Reset to the tee" onClick={() => sendGps({ reset: true })}><RotateCcw size={13} aria-hidden /></button>
+              <button type="button" className={styles.gpsRight} aria-label="Move east" onClick={() => sendGps({ move: { north: 0, east: 1 } })}><ArrowRight size={14} aria-hidden /></button>
+              <button type="button" className={styles.gpsDown} aria-label="Move south" onClick={() => sendGps({ move: { north: -1, east: 0 } })}><ArrowDown size={14} aria-hidden /></button>
+            </div>}
+            <p>Moves the mock player 10 yards; ↺ puts them back on the tee. Not part of the app — real players never see these.</p>
+          </> : <p>Open a GPS screen in the phone (Golf Trip Active → GPS prototype, or Scoring → GPS) to switch Real / Mock GPS and move the mock player.</p>}
         </section>
       </DesignReview>
     </div>

@@ -36,3 +36,21 @@
 
 .branchHeading{font-size:11px;color:#8b7280;margin:0 0 12px;text-transform:uppercase;letter-spacing:1px}
 .header{position:fixed}
+
+/* GPS test (drives the phone's GPS screen). */
+.gpsToggle{display:flex;gap:4px;padding:3px;border:1px solid #dfe2e8;border-radius:999px;background:#fff;width:max-content}
+.gpsToggle button{padding:6px 12px;border:0;border-radius:999px;background:transparent;color:#626977;font:600 11px system-ui,sans-serif;cursor:pointer}
+.gpsToggle button[aria-pressed=true]{background:#6b161a;color:#fff}
+.gpsPad{display:grid;grid-template-columns:repeat(3,32px);grid-template-rows:repeat(3,32px);gap:3px;margin-top:10px}
+.gpsPad button{display:grid;place-items:center;padding:0;border:1px solid #dfe2e8;border-radius:50%;background:#fff;color:#303643;cursor:pointer}
+.gpsPad button:hover{border-color:#a66679}
+.gpsUp{grid-area:1/2}
+.gpsLeft{grid-area:2/1}
+.gpsReset{grid-area:2/2;color:#6b161a !important}
+.gpsRight{grid-area:2/3}
+.gpsDown{grid-area:3/2}
+
+/* Front camera over the phone screen: iPhone Dynamic Island (126 × 37, 11px down) or a Pixel punch-hole camera. */
+.camera{position:absolute;left:50%;transform:translateX(-50%);z-index:2;background:#000;pointer-events:none}
+.dynamicIsland{top:11px;width:126px;height:37px;border-radius:20px}
+.punchHole{top:8px;width:13px;height:13px;border-radius:50%;box-shadow:inset 0 0 0 2px #1b1d22}

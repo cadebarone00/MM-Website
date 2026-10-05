@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { LockKeyhole, LockKeyholeOpen, Minus, Plus } from "lucide-react";
 import { useScoringView } from "@/lib/platform/scoringViewPreference";
@@ -60,6 +60,8 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   const spacerRef = useRef<HTMLSpanElement>(null);
   const drag = useRef<{ startY: number; startOffset: number; closedOffset: number; moved: boolean } | null>(null);
   const [dragOffset, setDragOffset] = useState<number | null>(null);
+  /** How far the sheet travels between open and closed, for the grow-to-full-screen progress while dragging. */
+  const [dragRange, setDragRange] = useState(0);
   const chipsRef = useRef<HTMLDivElement>(null);
   // The player's scorecard view (General settings). "slide" is the pull-up sheet; the others open scoring full screen.
   const scoringView = useScoringView();
@@ -108,6 +110,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   function onPointerDown(event: PointerEvent<HTMLButtonElement>) {
     const closed = closedOffset();
     drag.current = { startY: event.clientY, startOffset: open ? 0 : closed, closedOffset: closed, moved: false };
+    setDragRange(closed);
     event.currentTarget.setPointerCapture(event.pointerId);
   }
   function onPointerMove(event: PointerEvent<HTMLButtonElement>) {
@@ -155,7 +158,10 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   const complete = submittedHoles.every((h, i) => h !== null && submittedOpponentHoles[i] !== null && putts[i] !== null && greens[i] !== null && (par?.[i] === 3 || fairways[i] !== null));
   const readyToSubmit = complete && opponentCardMatches;
 
-  const style = dragOffset !== null ? { transform: `translateY(${dragOffset}px)`, transition: "none" } : undefined;
+  // While dragging, the sheet follows the finger and grows toward full screen as it rises (--sheet-open: 0 closed → 1 open).
+  const style = dragOffset !== null
+    ? { transform: `translateY(${dragOffset}px)`, transition: "none", "--sheet-open": dragRange > 0 ? 1 - dragOffset / dragRange : 1 } as CSSProperties
+    : undefined;
 
   // Full-screen views: closed shows nothing ("hold") or a Scoring button where Next hole sits ("button").
   if (fullScreen && !open) return scoringView === "button"
@@ -165,7 +171,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   // Pulled up (or being dragged), a dimmed layer covers the rest of the page, bottom menu included, so nothing
   // behind the sheet can be tapped; the sheet sits above it.
   const blocking = !fullScreen && (open || dragOffset !== null);
-  return <>{blocking && <div className={styles.backdrop} aria-hidden />}<div className={`${styles.frame} ${fullScreen ? styles.frameFull : ""} ${blocking ? styles.frameAbove : ""}`}><section ref={sheetRef} className={`${styles.sheet} ${open ? styles.open : ""} ${dragOffset !== null ? styles.dragging : ""} ${fullScreen ? styles.sheetFull : ""}`} style={style} aria-label="Scoring">
+  return <>{blocking && <div className={styles.backdrop} aria-hidden />}<div className={`${styles.frame} ${fullScreen ? styles.frameFull : ""} ${blocking ? styles.frameAbove : ""}`}><section ref={sheetRef} className={`${styles.sheet} ${open ? styles.open : ""} ${dragOffset !== null ? styles.dragging : ""} ${fullScreen ? styles.sheetFull : ""} ${fullScreen && view === "gps" ? styles.gpsFullScreen : ""}`} style={style} aria-label="Scoring">
     {/* GPS pill (left, red) mirrors the Scorecard pill (right); both show while the sheet is pulled up. */}
     {open && (["gps", "scorecard"] as const).map((target) => {
       const label = target === "gps" ? "GPS" : "Card";
@@ -194,7 +200,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
 
     <div id="trip-scoring-body" className={styles.body} inert={!open}>
       {/* GPS prototype (satellite map, live yardages, mock hole) in development; real trips keep the placeholder until course data exists. */}
-      {view === "gps" ? process.env.NODE_ENV === "development" ? <GolfGpsScreen showDevControls className={styles.gpsMap} /> : <GpsSection hole={current + 1} holePar={holePar} />
+      {view === "gps" ? process.env.NODE_ENV === "development" ? <GolfGpsScreen holeNumber={current + 1} className={`${styles.gpsMap} ${fullScreen ? styles.gpsMapFull : ""}`} /> : <GpsSection hole={current + 1} holePar={holePar} />
         : view === "scorecard" ? <>
           <ScorecardSection par={par} holes={holes} opponentHoles={holesCompetitor} opponentName={opponentName} putts={putts} fairways={fairways} greens={greens} />
           {/* Both cards complete and agreeing: final scores in green, then Save & Submit. */}

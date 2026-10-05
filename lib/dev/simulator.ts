@@ -1,3 +1,4 @@
+import type { GpsMode } from "@/lib/platform/golfGps/types";
 import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS, type GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
 
 // Portrait CSS pixels, not panel pixels. Safe insets are editable test inputs.
@@ -45,6 +46,36 @@ export type SimulatorState = {
 export const DEFAULT_SIMULATOR_STATE: SimulatorState = { competition: "source", format: "source", playerCount: null, roundStatus: "source", loading: "off", opponentCard: "match" };
 export type SimulatorConfig = { source: SimulatorSource; state: SimulatorState; navigation?: GolfTripNavigation };
 export const SIMULATOR_CHANNEL = "maroon-dev-simulator-v1";
+
+/**
+ * GPS test (simulator panel ↔ the app's GPS screen). The app reports its GPS state ("gps-state", null when no GPS screen is
+ * open); the panel sends commands ("gps-command"): switch Real / Mock, step the mock player, or reset it to the tee.
+ */
+export type SimulatorGpsState = { mode: GpsMode; source: GpsMode | null; accuracyMeters: number | null };
+export type SimulatorGpsCommand = { mode: GpsMode } | { move: { north: -1 | 0 | 1; east: -1 | 0 | 1 } } | { reset: true };
+const isMode = (value: unknown): value is GpsMode => value === "real" || value === "mock";
+const isStep = (value: unknown): value is -1 | 0 | 1 => value === -1 || value === 0 || value === 1;
+
+/** Messages are untrusted: anything that isn't exactly a known command is dropped. */
+export function parseGpsCommand(value: unknown): SimulatorGpsCommand | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  if ("mode" in record) return isMode(record.mode) ? { mode: record.mode } : null;
+  if ("reset" in record) return record.reset === true ? { reset: true } : null;
+  if ("move" in record && record.move && typeof record.move === "object") {
+    const { north, east } = record.move as Record<string, unknown>;
+    return isStep(north) && isStep(east) && (north !== 0 || east !== 0) ? { move: { north, east } } : null;
+  }
+  return null;
+}
+
+export function parseGpsState(value: unknown): SimulatorGpsState | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  if (!isMode(record.mode) || (record.source !== null && !isMode(record.source))) return null;
+  if (record.accuracyMeters !== null && (typeof record.accuracyMeters !== "number" || !Number.isFinite(record.accuracyMeters) || record.accuracyMeters < 0)) return null;
+  return { mode: record.mode, source: record.source as GpsMode | null, accuracyMeters: record.accuracyMeters as number | null };
+}
 
 export type SimulatorLocation = { path: string; navigation?: GolfTripNavigation };
 export function isSimulatorPath(path: unknown): path is string {

@@ -1,3 +1,4 @@
+import type { Ref } from "react";
 import type { GpsHole } from "@/lib/platform/golfGps/types";
 import styles from "./GolfGps.module.css";
 
@@ -7,7 +8,7 @@ type Yards = number | null;
  * The yardage card over the map: hole and par, then Front / Center / Back (Center biggest), the hazards, and the
  * tap-to-measure distance. A dash means there's no player position yet.
  */
-export function GolfGpsHud({ hole, front, center, back, hazards, target, notice }: {
+export function GolfGpsHud({ hole, front, center, back, hazards, target, notice, ref }: {
   hole: GpsHole;
   front: Yards;
   center: Yards;
@@ -17,9 +18,11 @@ export function GolfGpsHud({ hole, front, center, back, hazards, target, notice 
   target: Yards;
   /** One line about GPS (e.g. "Location blocked — using Mock GPS"), or null. */
   notice: string | null;
+  /** The card + measure pill, so the map can keep the hole out from under them. */
+  ref?: Ref<HTMLDivElement>;
 }) {
   const show = (yards: Yards) => yards === null ? "—" : yards.toLocaleString("en-US");
-  return <div className={styles.topStack}>
+  return <div ref={ref} className={styles.topStack}>
     <section className={styles.hud} aria-label="Yardages">
       <div className={styles.hudHole}>
         <span className={styles.hudHoleNumber}>Hole {hole.number}</span>

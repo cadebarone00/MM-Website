@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_SIMULATOR_STATE, parseSimulatorConfig, parseSimulatorLocation, sameSimulatorNavigation, simulatorPageForLocation, SIMULATOR_DEVICES, type SimulatorPage } from "./simulator";
+import { DEFAULT_SIMULATOR_STATE, parseGpsCommand, parseGpsState, parseSimulatorConfig, parseSimulatorLocation, sameSimulatorNavigation, simulatorPageForLocation, SIMULATOR_DEVICES, type SimulatorPage } from "./simulator";
 import { simulatorTripData } from "./golfTripSimulatorData";
 import { GOLF_MATCH_PREVIEW, GOLF_TRIP_MOCK_DRAFT } from "@/lib/platform/golfTripPreviewFixture";
 import { palmSprings2026 } from "@/lib/data/2026-palm-springs";
@@ -53,4 +53,14 @@ test("real and mock preserve their sources; fixture/state overrides cannot mutat
 test("requested device presets specify portrait CSS dimensions", () => {
   assert.equal(SIMULATOR_DEVICES.length, 9);
   assert.deepEqual(SIMULATOR_DEVICES.filter(device => device.id.startsWith("iphone17")).map(device => [device.width, device.height]), [[402, 874], [402, 874], [440, 956]]);
+});
+
+test("GPS test messages: only exact Real / Mock, single-step moves and reset get through", () => {
+  assert.deepEqual(parseGpsCommand({ mode: "mock" }), { mode: "mock" });
+  assert.deepEqual(parseGpsCommand({ move: { north: 1, east: 0 } }), { move: { north: 1, east: 0 } });
+  assert.deepEqual(parseGpsCommand({ reset: true }), { reset: true });
+  for (const bad of [null, {}, { mode: "satellite" }, { move: { north: 5, east: 0 } }, { move: { north: 0, east: 0 } }, { reset: "yes" }, "mock"]) assert.equal(parseGpsCommand(bad), null);
+  assert.deepEqual(parseGpsState({ mode: "real", source: "real", accuracyMeters: 6 }), { mode: "real", source: "real", accuracyMeters: 6 });
+  assert.deepEqual(parseGpsState({ mode: "mock", source: null, accuracyMeters: null }), { mode: "mock", source: null, accuracyMeters: null });
+  for (const bad of [null, { mode: "x", source: null, accuracyMeters: null }, { mode: "real", source: "real", accuracyMeters: -1 }, { mode: "real", source: "real", accuracyMeters: "6" }]) assert.equal(parseGpsState(bad), null);
 });

@@ -1,11 +1,16 @@
-/* Scoring pull-up sheet. It runs to the bottom of the screen, 3% in from each side, and the floating bottom menu sits on
-   top of it. --nav-zone is the strip the menu covers (12px gap + 68px menu + 8px); collapsed, the sheet slides down
-   until just its handle (56px) shows above that strip. The fixed frame lets taps through; only the sheet catches them. */
-.frame{--nav-zone:calc(88px + env(safe-area-inset-bottom));position:fixed;left:0;right:0;bottom:0;z-index:25;height:80svh;pointer-events:none}
-.sheet{position:absolute;left:0;right:0;bottom:0;height:100%;max-height:100%;width:94%;margin:0 auto;display:flex;flex-direction:column;
-  border-radius:18px 18px 0 0;background:linear-gradient(180deg,#f8f3ea 0%,#f2ebdf 100%);border:1px solid rgba(126,81,59,.3);border-bottom:0;box-shadow:0 -10px 30px rgba(0,0,0,.18);
-  color:var(--color-maroon-900,#2f0c0e);font-family:var(--font-spectral),Georgia,serif;pointer-events:auto;transform:translateY(calc(100% - 56px - var(--nav-zone)));transition:transform .28s cubic-bezier(.2,.8,.2,1);z-index:25}
-.open{transform:translateY(0)}
+/* Scoring pull-up sheet. Collapsed, it's a card 3% in from each side with just its handle (56px) showing above the strip
+   the floating bottom menu covers (--nav-zone: 12px gap + 68px menu + 8px). Pulled up, it rises to the top of the screen
+   and grows into full screen on the way: --sheet-open runs 0 (closed) → 1 (open) and drives the width, corners, border
+   and the drop below the phone's camera (the safe area), so the grabber ends up just under the front camera. While
+   dragging it follows the finger (set inline); otherwise it animates. The fixed frame lets taps through. */
+@property --sheet-open{syntax:"<number>";inherits:true;initial-value:0}
+.frame{--nav-zone:calc(88px + env(safe-area-inset-bottom));position:fixed;left:0;right:0;bottom:0;z-index:25;height:100svh;pointer-events:none}
+.sheet{--sheet-open:0;position:absolute;left:0;right:0;bottom:0;height:100%;max-height:100%;width:calc(94% + 6% * var(--sheet-open));margin:0 auto;display:flex;flex-direction:column;box-sizing:border-box;
+  /* The safe area runs a little past the camera; 8px less tucks the grabber just under it. */
+  padding-top:calc(max(0px, env(safe-area-inset-top) - 8px) * var(--sheet-open));
+  border-radius:calc(18px * (1 - var(--sheet-open))) calc(18px * (1 - var(--sheet-open))) 0 0;background:linear-gradient(180deg,#f8f3ea 0%,#f2ebdf 100%);border:1px solid rgba(126,81,59,calc(.3 * (1 - var(--sheet-open))));border-bottom:0;box-shadow:0 -10px 30px rgba(0,0,0,.18);
+  color:var(--color-maroon-900,#2f0c0e);font-family:var(--font-spectral),Georgia,serif;pointer-events:auto;transform:translateY(calc(100% - 56px - var(--nav-zone)));transition:transform .28s cubic-bezier(.2,.8,.2,1),--sheet-open .28s cubic-bezier(.2,.8,.2,1);z-index:25}
+.open{transform:translateY(0);--sheet-open:1}
 
 /* Handle: grabber bar, "Scoring", and a one-line summary. touch-action:none so a drag moves the sheet, not the page. */
 .handle{flex:none;display:grid;grid-template-columns:1fr auto 1fr;align-items:start;height:56px;padding:10px 16px 0;border:0;background:none;color:inherit;
@@ -16,7 +21,7 @@
 .handleLabel{grid-column:2;justify-self:center;align-self:start;margin-top:12px;font:700 18px/1 var(--font-spectral),Georgia,serif}
 .handleMeta{grid-column:1;display:flex;align-items:flex-start;justify-content:flex-start;gap:6px;align-self:start;margin-top:2px;font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.04em;color:rgba(47,12,14,.75);white-space:nowrap}
 .handleMeta span{display:inline-block}
-.scorecardButton{position:absolute;top:10px;right:16px;z-index:3;padding:8px 12px;border:1px solid rgba(47,12,14,.25);border-radius:999px;background:rgba(255,255,255,.22);color:var(--color-maroon-900,#2f0c0e);font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.scorecardButton{position:absolute;top:calc(10px + max(0px, env(safe-area-inset-top) - 8px) * var(--sheet-open));right:16px;z-index:3;padding:8px 12px;border:1px solid rgba(47,12,14,.25);border-radius:999px;background:rgba(255,255,255,.22);color:var(--color-maroon-900,#2f0c0e);font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
 /* Matching pills reserve the right 30% behind a divider; labels center in the left 70%. */
 .scorecardButton{box-sizing:border-box;width:118.8px;height:40.6px;display:grid;grid-template-columns:70% 30%;align-items:center;padding:0;text-align:center}
 .pillLabel,.pillLock{display:flex;align-items:center;justify-content:center;align-self:stretch;min-width:0;padding:0;border:0;border-radius:999px;background:transparent;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer}
@@ -128,6 +133,8 @@
 /* Desktop: no bottom menu, so the sheet sits at the bottom of the window. */
 @media (min-width:1024px){.frame{--nav-zone:0px}.sheet{width:min(560px,94%)}}
 @media (prefers-reduced-motion:reduce){.sheet{transition:none}}
+/* Desktop has no camera or full-screen phone: keep the card, 80% of the window tall. */
+@media (min-width:1024px){.frame{height:80svh}.sheet{--sheet-open:0}}
 /* Full-screen scoring ("Hold for scoring" and "Scoring button" views): the sheet covers the whole screen with no
    drag handle; GPS stays top left, Scorecard moves to the top middle, EXIT (styled like the settings SAVE) top right. */
 .frameFull{top:0;height:auto;z-index:110} /* above the bottom menu (100) */
@@ -164,3 +171,11 @@
    than its 48px column, so it spills evenly into the empty corners beside the compasses' top arrows instead of squeezing them. */
 .penaltyButtons{display:flex;flex-direction:row;gap:8px;flex-shrink:0}
 .compassCenter.penaltyButton{position:static;transform:none;flex-shrink:0;width:40px;height:40px;font-size:11px}
+/* Full-screen GPS: the map runs edge to edge, top to bottom; GPS / Scorecard / EXIT float on the image (solid so they
+   read over satellite), and the yardage card starts below them. */
+.sheet.gpsFullScreen{padding-top:0}
+.gpsFullScreen .fullTopBar{display:none}
+.gpsFullScreen .body{padding:0;gap:0}
+.gpsMap.gpsMapFull{min-height:0;margin:0;border-radius:0;--gps-top-offset:calc(52px + env(safe-area-inset-top))}
+.gpsFullScreen .scorecardButton:not([aria-pressed=true]){background:#f8f3ea;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.gpsFullScreen .exitButton{padding:8px 14px;border-radius:999px;background:#f8f3ea;box-shadow:0 2px 8px rgba(0,0,0,.3)}
