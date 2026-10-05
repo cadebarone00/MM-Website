@@ -18,6 +18,7 @@ import { GolfTripActionSheet } from "./GolfTripActionSheet";
 import { GolfTripGames } from "./GolfTripGames";
 import { GolfTripChat } from "./GolfTripChat";
 import { GolfTripItinerary, GolfTripVenue } from "./GolfTripVenue";
+import { GolfTripNotifications } from "./GolfTripNotifications";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import styles from "./GolfTripHome.module.css";
 
@@ -101,13 +102,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
             if (!event.currentTarget.contains(event.relatedTarget) && event.relatedTarget !== notificationButtonRef.current) setNotificationsOpen(false);
           }} id="trip-notifications" role="region" aria-label="Notifications" className={`${styles.addSheet} ${styles.notificationsDropdown}`}>
             <button ref={notificationCloseRef} type="button" className={styles.sheetClose} aria-label="Close notifications" onClick={() => { setNotificationsOpen(false); notificationButtonRef.current?.focus(); }}><X size={18} strokeWidth={2.25} aria-hidden /></button>
-            <div className={styles.sheetActionList}>
-              <div className={styles.sheetActionRow}><span className={styles.sheetActionIcon}><Bell size={18} strokeWidth={2} aria-hidden /></span><span className={styles.sheetActionText}>Notifications</span></div>
-              {NOTIFICATION_CATEGORIES.map(({ name, icon: Icon }) => <section key={name} className={styles.notificationsCategory} aria-label={`${name} notifications`}>
-                <h3 className={styles.notificationsCategoryTitle}><Icon size={14} strokeWidth={2.25} aria-hidden />{name}</h3>
-                <p className={styles.notificationsEmpty}>No {name.toLowerCase()} notifications yet</p>
-              </section>)}
-            </div>
+            <GolfTripNotifications />
           </div>, document.body)}
         </div>
         <Link href={settingsHref} className={styles.iconButton} aria-label="Trip settings"><Settings size={24} strokeWidth={1.75} aria-hidden /></Link>
@@ -133,9 +128,6 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
       members={[...new Set(previewMatch?.matches.flatMap(match => [match.left, match.right].flatMap(side => side ? normalizeCompetitor(side).golfers.map(golfer => getPlayerDisplayName(golfer.name)) : [])) ?? [])].filter(name => name !== getPlayerDisplayName(you ?? draft.yourName ?? ""))} />
   </main>;
 }
-
-/** Notifications drop-down is grouped into these categories. */
-const NOTIFICATION_CATEGORIES: { name: string; icon: LucideIcon }[] = [{ name: "Golf", icon: Flag }, { name: "Travel", icon: Plane }, { name: "Logistics", icon: Car }];
 
 /** A saved coordinate from the trip answers, or undefined when missing or not a number. */
 const coordinate = (value: string | undefined) => value && Number.isFinite(Number(value)) ? Number(value) : undefined;

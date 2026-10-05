@@ -59,12 +59,13 @@ export function GolfTripVenue({ draft, latitude, longitude, settingsHref }: {
     <VenueMap latitude={latitude} longitude={longitude} />
     <section className={styles.sheet} aria-label="Venue">
       <span className={styles.grabber} aria-hidden />
-      <div className={styles.titleRow}>
-        <h2 className={styles.title}>Venue</h2>
-        <div className={styles.titleActions}>
-          <button type="button" className={styles.roundButton} aria-label="Search the venue"><Search size={20} aria-hidden /></button>
-          <Link href={settingsHref} className={styles.roundButton} aria-label="Add to the trip"><Plus size={22} aria-hidden /></Link>
-        </div>
+      {/* Look only for now: the search bar doesn't search anything yet. */}
+      <div className={styles.searchRow}>
+        <label className={styles.searchBar}>
+          <Search size={18} aria-hidden />
+          <input type="search" className={styles.searchInput} placeholder="Search the venue" aria-label="Search the venue" />
+        </label>
+        <Link href={settingsHref} className={styles.roundButton} aria-label="Add to the trip"><Plus size={22} aria-hidden /></Link>
       </div>
 
       <div className={styles.statsCard}>

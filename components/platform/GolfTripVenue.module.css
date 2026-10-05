@@ -10,10 +10,12 @@
 .sheet{position:relative;flex:1;display:flex;flex-direction:column;gap:12px;margin-top:-22px;padding:8px 16px calc(24px + 5.75rem + env(safe-area-inset-bottom));
   border-radius:22px 22px 0 0;background:#f2f2f4;box-shadow:0 -4px 16px rgba(0,0,0,.12)}
 .grabber{align-self:center;width:36px;height:5px;border-radius:3px;background:#c7c7cc}
-.titleRow{position:relative;display:flex;justify-content:center;align-items:center;min-height:40px}
-.title{font-size:22px;font-weight:700;letter-spacing:-.01em}
-.titleActions{position:absolute;right:0;display:flex;gap:8px}
-.roundButton{display:grid;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:50%;background:#fff;color:#111;box-shadow:0 1px 3px rgba(0,0,0,.12);cursor:pointer}
+.searchRow{display:flex;align-items:center;gap:10px;min-height:40px}
+.searchBar{flex:1;display:flex;align-items:center;gap:8px;min-width:0;height:40px;padding:0 14px;border-radius:999px;background:#fff;color:#6b6b6b;box-shadow:0 1px 3px rgba(0,0,0,.12);cursor:text}
+.searchBar:focus-within{outline:2px solid var(--color-maroon-600,#6b161a);outline-offset:2px}
+.searchInput{flex:1;min-width:0;border:0;background:transparent;color:#111;font:500 15px/1 var(--font-barlow),sans-serif;outline:none}
+.searchInput::placeholder{color:#8a8a8a}
+.roundButton{flex:0 0 auto;display:grid;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:50%;background:#fff;color:#111;box-shadow:0 1px 3px rgba(0,0,0,.12);cursor:pointer}
 .statsCard,.card{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .avatar{display:grid;place-items:center;flex:0 0 40px;height:40px;border-radius:50%;background:#e5e5ea;color:#333;font-size:14px;font-weight:700}
 .stat{flex:1;display:flex;flex-direction:column;gap:2px}

@@ -17,6 +17,11 @@
 .handleMeta{grid-column:1;display:flex;align-items:flex-start;justify-content:flex-start;gap:6px;align-self:start;margin-top:2px;font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.04em;color:rgba(47,12,14,.75);white-space:nowrap}
 .handleMeta span{display:inline-block}
 .scorecardButton{position:absolute;top:10px;right:16px;z-index:3;padding:8px 12px;border:1px solid rgba(47,12,14,.25);border-radius:999px;background:rgba(255,255,255,.22);color:var(--color-maroon-900,#2f0c0e);font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.scorecardButtonLeft{right:auto;left:16px}
+.gpsButton{border-color:#c62828;color:#c62828}
+.gpsButton[aria-pressed=true]{background:#c62828;color:#fff}
+.gps{display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:8px}
+.gpsNote{margin:0;color:rgba(47,12,14,.65);font-size:13px;text-align:center}
 .scorecardButton:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:2px}
 
 /* Tucked away, the controls fade out so nothing peeks around the bottom menu; they show while open or being dragged. */
@@ -27,10 +32,7 @@
 .holeNumber{font:700 24px/1 var(--font-spectral),Georgia,serif}
 .holePar{font:600 13px/1 var(--font-spectral),Georgia,serif;color:rgba(47,12,14,.7)}
 
-.stepperWrap{display:flex;flex-direction:column;gap:10px}
-.previewMode{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
-.previewChip{padding:6px 10px;border:1px solid rgba(47,12,14,.25);border-radius:999px;background:rgba(255,255,255,.18);color:var(--color-maroon-900,#2f0c0e);font:600 11px/1 var(--font-spectral),Georgia,serif;cursor:pointer}
-.previewChipActive{background:var(--color-maroon-900,#2f0c0e);border-color:var(--color-maroon-900,#2f0c0e);color:#f8f3ea}
+.stepperWrap{display:flex;flex-direction:column;gap:10px;margin-top:auto} /* scores → Next hole sit at the bottom of the sheet */
 
 .scoreSplit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:300px;margin:0 auto;width:100%}
 .scoreCard{display:flex;flex-direction:column;align-items:center;gap:8px}
@@ -71,7 +73,7 @@
 .directionLeft{left:0;top:50%;transform:translateY(-50%)}
 .directionRight{right:0;top:50%;transform:translateY(-50%)}
 
-.arrow:focus-visible,.stepButton:focus-visible,.holeChip:focus-visible,.puttOption:focus-visible,.previewChip:focus-visible,.compassButton:focus-visible,.compassCenter:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:2px}
+.arrow:focus-visible,.stepButton:focus-visible,.holeChip:focus-visible,.puttOption:focus-visible,.compassButton:focus-visible,.compassCenter:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:2px}
 
 /* Hole picker: one horizontal slider of full square selectors; completed holes fill in maroon. */
 .holes{position:relative;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px;background:transparent}
@@ -89,7 +91,6 @@
 .summary dd{margin:6px 0 0;font:700 18px/1 var(--font-spectral),Georgia,serif}
 /* Last thing in the body: keeps the content clear of the menu that covers the sheet's bottom (and gives JS its height). */
 .navSpacer{flex:none;height:var(--nav-zone);margin-top:-16px}
-.note{margin:0;text-align:center;font:500 12px/1.3 var(--font-spectral),Georgia,serif;color:rgba(47,12,14,.75)}
 
 .handle,.stepButton,.holeChip{-webkit-tap-highlight-color:transparent}
 .stepButton:focus-visible,.holeChip:focus-visible,.nextHoleButton:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:2px}

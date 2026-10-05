@@ -18,12 +18,13 @@ const TAP_SLOP = 6;
  */
 export function GolfTripScoring({ par, initialHoles }: { par?: number[]; initialHoles?: (number | null)[] }) {
   const [open, setOpen] = useState(false);
-  const [scoreMode, setScoreMode] = useState<"self" | "match" | "none">("match");
   const [holes, setHoles] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => initialHoles?.[i] ?? null));
   const [holesCompetitor, setHolesCompetitor] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => initialHoles?.[i] ?? null));
   const [current, setCurrent] = useState(() => { const next = holes.findIndex((h) => h === null); return next === -1 ? HOLES - 1 : next; });
   const [currentCompetitor] = useState(() => { const next = holesCompetitor.findIndex((h) => h === null); return next === -1 ? HOLES - 1 : next; });
   const [opponentName] = useState(() => randomOpponentName());
+  // The red GPS pill swaps the pulled-up sheet between scoring and the GPS section (same sheet, no page change).
+  const [gpsOpen, setGpsOpen] = useState(false);
   const router = useRouter();
   const sheetRef = useRef<HTMLElement>(null);
   const handleRef = useRef<HTMLButtonElement>(null);
@@ -90,22 +91,27 @@ export function GolfTripScoring({ par, initialHoles }: { par?: number[]; initial
   const style = dragOffset !== null ? { transform: `translateY(${dragOffset}px)`, transition: "none" } : undefined;
 
   return <div className={styles.frame}><section ref={sheetRef} className={`${styles.sheet} ${open ? styles.open : ""} ${dragOffset !== null ? styles.dragging : ""}`} style={style} aria-label="Scoring">
+    {/* GPS pill (left, red) mirrors the Scorecard pill (right); both show while the sheet is pulled up. */}
+    {open && <button type="button" className={`${styles.scorecardButton} ${styles.scorecardButtonLeft} ${styles.gpsButton}`} aria-pressed={gpsOpen}
+      aria-label={gpsOpen ? "Back to scoring" : "Open GPS"} onClick={() => setGpsOpen((value) => !value)}>GPS</button>}
     {open && <button type="button" className={styles.scorecardButton} onClick={() => router.push("/portal")}>Scorecard</button>}
     <button ref={handleRef} type="button" className={styles.handle} aria-expanded={open} aria-controls="trip-scoring-body"
       onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
       onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setOpen((value) => !value); } }}>
       <span className={styles.grabber} aria-hidden />
       <span className={styles.handleMeta}>
-        {thru > 0 ? <>
+        {/* The score line hides while open so it doesn't sit under the left Scorecard pill. */}
+        {thru > 0 && !open && <>
           <span>{toPar !== null ? formatToPar(toPar) : "—"}</span>
           <span aria-hidden>•</span>
           <span>Thru {thru}</span>
-        </> : "Tap or pull up"}
+        </>}
       </span>
       <span className={styles.handleLabel}>Scoring</span>
     </button>
 
     <div id="trip-scoring-body" className={styles.body} inert={!open}>
+      {gpsOpen ? <GpsSection hole={current + 1} holePar={holePar} /> : <>
       <dl className={styles.summary}>
         <div><dt>Thru</dt><dd>{thru}</dd></div>
         <div><dt>Strokes</dt><dd>{thru ? total : "—"}</dd></div>
@@ -127,21 +133,11 @@ export function GolfTripScoring({ par, initialHoles }: { par?: number[]; initial
       </div>
 
       <div className={styles.stepperWrap}>
-        <div className={styles.previewMode} role="group" aria-label="Developer score preview">
-          {[
-            { value: "match", label: "Match" },
-            { value: "none", label: "Single" },
-          ].map((option) => <button key={option.value} type="button" className={`${styles.previewChip} ${scoreMode === option.value ? styles.previewChipActive : ""}`} aria-pressed={scoreMode === option.value} onClick={() => setScoreMode(option.value as typeof scoreMode)}>{option.label}</button>)}
-        </div>
 
-        {scoreMode === "match" ? (
-          <div className={styles.scoreSplit}>
-            <ScoreCard label="My Score" strokes={strokes} holePar={holePar} step={step} compact />
-            <ScoreCard label={`${opponentName} Score`} strokes={holesCompetitor[currentCompetitor]} holePar={holePar} step={stepCompetitor} compact />
-          </div>
-        ) : (
+        <div className={styles.scoreSplit}>
           <ScoreCard label="My Score" strokes={strokes} holePar={holePar} step={step} compact />
-        )}
+          <ScoreCard label={`${opponentName} Score`} strokes={holesCompetitor[currentCompetitor]} holePar={holePar} step={stepCompetitor} compact />
+        </div>
       </div>
 
       <div className={styles.puttsWrap} aria-label="Putts">
@@ -159,10 +155,26 @@ export function GolfTripScoring({ par, initialHoles }: { par?: number[]; initial
       <button type="button" className={styles.nextHoleButton} aria-label="Next hole" disabled={current === HOLES - 1} onClick={() => setCurrent((value) => Math.min(value + 1, HOLES - 1))}>
         Next hole
       </button>
-      <p className={styles.note}>Practice only: scores aren&apos;t saved yet.</p>
+      </>}
       <span ref={spacerRef} className={styles.navSpacer} aria-hidden />
     </div>
   </section></div>;
+}
+
+/** The GPS section of the scoring sheet: the current hole's yardages. Look only for now: no GPS data yet, so distances show "—". */
+function GpsSection({ hole, holePar }: { hole: number; holePar: number | undefined }) {
+  return <section className={styles.gps} aria-label="GPS">
+    <div className={styles.holeTitle}>
+      <span className={styles.holeNumber}>Hole {hole}</span>
+      <span className={styles.holePar}>Par {holePar ?? "—"}</span>
+    </div>
+    <dl className={styles.summary}>
+      <div><dt>Front</dt><dd>—</dd></div>
+      <div><dt>Middle</dt><dd>—</dd></div>
+      <div><dt>Back</dt><dd>—</dd></div>
+    </dl>
+    <p className={styles.gpsNote}>Yards to the green will show here once GPS is connected.</p>
+  </section>;
 }
 
 function ScoreCard({ label, strokes, holePar, step, compact = false }: { label: string; strokes: number | null; holePar: number | undefined; step: (delta: number) => void; compact?: boolean }) {

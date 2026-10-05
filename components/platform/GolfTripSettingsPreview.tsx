@@ -45,7 +45,7 @@ const ALLOWED_PRESET: AllowedRule[] = [
 const GAME_LOOKUP = [...GAME_GROUPS.Individual, ...GAME_GROUPS.Matches];
 
 /** Reference layout with local game scoring settings in the site's maroon palette. */
-export function GolfTripSettingsPreview({ tripName, playerCount = 0, players = [] }: { tripName: string; playerCount?: number; players?: string[] }) {
+export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament", playerCount = 0, players = [] }: { tripName: string; backHref?: string; playerCount?: number; players?: string[] }) {
   const [section, setSection] = useState("General");
   const [competitionOpen, setCompetitionOpen] = useState(false);
   const [competitionSection, setCompetitionSection] = useState("Overview");
@@ -173,7 +173,7 @@ export function GolfTripSettingsPreview({ tripName, playerCount = 0, players = [
         <h1>{selectedRound ? "Round " + selectedRound.number + " Settings" : selectedGame ? selectedGame.name : gamesOpen ? "Games" : roundsOpen ? "Trip Schedule" : playersOpen ? "Players" : allowedOpen ? "Allowed" : "Competition"}</h1>
         <motion.button type="button" className={styles.save} onClick={goBack} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }} transition={{ type: "spring", stiffness: 420, damping: 24 }}>SAVE</motion.button>
       </header> : <header className={styles.header}>
-      <Link href="/dev/tournament" className={styles.close} aria-label="Back to trip"><ChevronLeft size={26} strokeWidth={1.75} aria-hidden /></Link>
+      <Link href={backHref} className={styles.close} aria-label="Back to trip"><ChevronLeft size={26} strokeWidth={1.75} aria-hidden /></Link>
       <div className={styles.heading}>
         <h1>{tripName}</h1>
         <p>Trip Settings</p>

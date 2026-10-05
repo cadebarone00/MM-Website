@@ -108,11 +108,9 @@
 .sheetActionText{font:600 16px/1.3 var(--font-barlow),sans-serif;letter-spacing:-.01em;color:#111}
 .notificationsAnchor{position:relative}
 .notificationsDropdown{box-sizing:border-box;position:fixed;top:0;left:0;right:0;margin:0 auto;width:min(100vw,560px);padding-top:calc(16px + env(safe-area-inset-top));border-top:0;border-radius:0 0 28px 28px;height:70vh;height:70svh;max-height:none;overflow-y:auto;z-index:40;text-align:left;animation:notificationsDrop .38s cubic-bezier(.22,1,.36,1) both}
-.notificationsDropdown .sheetClose{top:calc(12px + env(safe-area-inset-top))}
+.notificationsDropdown .sheetClose{top:calc(12px + env(safe-area-inset-top));color:#fff}
+.notificationsDropdown.notificationsDropdown{background:var(--color-maroon-900,#240001);border-color:rgba(220,196,149,.25);color:#fff}
 .notificationsEmpty{margin:0;padding:10px 8px 16px;font:400 14px/1.4 var(--font-barlow),sans-serif;color:#666}
-.notificationsCategory{padding:6px 8px 0;border-top:1px solid rgba(17,17,17,.08)}
-.notificationsCategoryTitle{display:flex;align-items:center;gap:6px;margin:8px 0 0;font:700 12px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#6b161a}
-.notificationsCategory .notificationsEmpty{padding:8px 0 12px}
 @keyframes notificationsDrop{from{transform:translateY(calc(-100% - 40px))}to{transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.notificationsDropdown{animation:none}}
 .deleteOverlay{position:fixed;inset:0;display:grid;place-items:center;background:rgba(5,4,6,.55);z-index:30}
