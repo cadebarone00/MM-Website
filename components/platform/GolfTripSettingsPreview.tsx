@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight, Flag, Clock } from "lucide-react";
 import { GolfGameScoringSettings } from "./GolfGameScoringSettings";
 import { SIDE_GAME_REGISTRY } from "@/lib/platform/golfTripGames";
 import type { CompetitionRound } from "@/lib/platform/golfTripCompetitionPreview";
@@ -75,14 +75,25 @@ export function GolfTripSettingsPreview({ tripName }: { tripName: string }) {
       {competitionOpen && competition ? <div className={styles.competition}>
         <p className={styles.previewNote}>Preview only. Changes stay during navigation and reset on reload.</p>
         {selectedRound ? <GolfTripCompetition rounds={[selectedRound]} onChange={change => competition.change(change, selectedRound.id)} showBulk={false} />
-          : <div className={styles.grid}>
-            {competition.rounds.map(round => <button key={round.id} type="button" className={styles.card + " " + styles.cardButton} onClick={() => setSelectedRoundId(round.id)}>
-              <h2>Round {round.number}</h2>
-              <div className={styles.cardSummary}>
-                <span>Day {days.indexOf(round.date) + 1}</span>
-                <span>{round.course}</span>
+          : <div className={tripStyles.events}>
+            {days.map((date, index) => <section key={date} className={tripStyles.infoSection}>
+              <div className={tripStyles.infoHeaderRow}>
+                <h2 className={tripStyles.eventsHeading}>Day {index + 1}</h2>
               </div>
-            </button>)}
+              {competition.rounds.filter(round => round.date === date).map(round => <button key={round.id} type="button"
+                className={`${tripStyles.infoEntry} ${styles.roundEntry}`} onClick={() => setSelectedRoundId(round.id)}>
+                <span className={`${tripStyles.eventArt} ${styles.roundArt}`} aria-hidden><Flag size={24} /></span>
+                <span className={tripStyles.eventInfo}>
+                  <span className={tripStyles.eventHost}>Round {round.number}</span>
+                  <span className={tripStyles.eventTitle}>{round.course}</span>
+                  <span className={tripStyles.eventMeta}><Clock size={14} aria-hidden />
+                    <time dateTime={date}>{new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`))}</time>
+                    <span>· {round.format}</span>
+                  </span>
+                </span>
+                <ChevronRight size={18} className={styles.roundChevron} aria-hidden />
+              </button>)}
+            </section>)}
             {!competition.rounds.length && <p>No competition rounds configured yet.</p>}
           </div>}
       </div> : null}
