@@ -6,9 +6,12 @@ import { useSimulator, useSimulatorNavigationReporter } from "@/components/dev/S
 import { simulatorNow, simulatorRoundLive, simulatorScorecard, simulatorTripData, type SimulatorTripData as TripData } from "@/lib/dev/golfTripSimulatorData";
 import { DEFAULT_SIMULATOR_STATE } from "@/lib/dev/simulator";
 import { dispatchDevRounds, useDevPlayerRounds } from "@/components/dev/useDevPlayerRounds";
-import { DEFAULT_DEV_ACCOUNT } from "@/lib/dev/devAccounts";
-import { DEV_TRIP_ID, devTripRound, devTripRoundId } from "@/lib/dev/devPlayerRounds";
-import { devTripGroup, withSavedRounds } from "@/lib/dev/devTripScores";
+import { DEFAULT_DEV_ACCOUNT, DEV_ACCOUNTS } from "@/lib/dev/devAccounts";
+import { DEV_TRIP_ID, devRoundMeta, devTripRound, devTripRoundId } from "@/lib/dev/devPlayerRounds";
+import { attesteeOf, devTripGroup, withSavedRounds } from "@/lib/dev/devTripScores";
+import { liveCardFromSheet, type SheetCard } from "@/lib/platform/liveCards";
+import { organizerOwnEdits } from "@/lib/platform/scoreEdits";
+import { tripStats } from "@/lib/platform/tripStats";
 import { tripRoundOpen } from "@/lib/platform/tripRoundState";
 import { cardFromHoles, playerRoundId, type ScoredCard } from "@/lib/platform/playerRounds";
 import { GOLF_PREVIEW_TRIP_WEATHER } from "@/lib/platform/golfTripPreviewFixture";
@@ -47,6 +50,13 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
   const tripNow = simulatorNow(config, data, roundLive);
   const tripRounds = devRounds.rounds.filter((r) => r.source === "trip" && r.tripId === DEV_TRIP_ID);
   const shownMatch = match && group ? withSavedRounds(match, group, tripRounds) : match;
+  // I keep my attestee's score (the Card's second column); trip stats and the organizer's own changes show on Overview.
+  const nameOf = (id: string) => group?.names[id] ?? DEV_ACCOUNTS.find((a) => a.id === id)?.name ?? id;
+  const attestee = group ? attesteeOf(group, viewAs) : null;
+  const stats = tripStats(devRounds.rounds, DEV_TRIP_ID);
+  const tripStatsView = { players: stats.players.map((p) => ({ ...p, name: nameOf(p.profileId) })), trip: stats.trip };
+  const scoreChanges = organizerOwnEdits(tripRounds).map(({ round, edit }) => ({ name: nameOf(round.profileId), edit }));
+  const onScoringCardChange = (sheet: SheetCard) => { if (match && group) dispatchDevRounds({ type: "saveLiveCard", card: { ...liveCardFromSheet(group.id, viewAs, sheet), meta: devRoundMeta(match) } }); };
   const submittedCard = useMemo(() => saved ? cardFromHoles(saved.holes) : undefined, [saved]);
   const onScoringSubmit = (card: ScoredCard) => { if (match) dispatchDevRounds({ type: "saveRound", round: devTripRound(match, viewAs, card, { groupId: group?.id }) }); };
   // "End of round, unsubmitted": the Scoring card starts filled in (scores match or not comes from opponentCard).
@@ -64,7 +74,7 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
       </div>
       <div aria-live="polite" style={{ marginTop: 4, opacity: 0.7 }}>{view === "mock" || fictional ? "Mock Data" : "Real Tournament Data"}</div>
     </div>}
-    <GolfTripHome {...data} now={tripNow} weather={weather} previewMatch={shownMatch} roundLive={roundLive} opponentCardMatches={config.state.opponentCard !== "mismatch"} scoringPrefill={scoringPrefill} onScoringSubmit={onScoringSubmit} submittedCard={submittedCard} scoringOwner={viewAs} navigation={simulator?.navigation} onNavigationChange={reportNavigation} settingsHref={settingsHref} backHref="/golf-trips" />
+    <GolfTripHome {...data} now={tripNow} weather={weather} previewMatch={shownMatch} tripStats={tripStatsView} scoreChanges={scoreChanges} attesteeName={attestee ? nameOf(attestee) : undefined} scoringEdits={saved?.edits} onScoringCardChange={onScoringCardChange} roundLive={roundLive} opponentCardMatches={config.state.opponentCard !== "mismatch"} scoringPrefill={scoringPrefill} onScoringSubmit={onScoringSubmit} submittedCard={submittedCard} scoringOwner={viewAs} navigation={simulator?.navigation} onNavigationChange={reportNavigation} settingsHref={settingsHref} backHref="/golf-trips" />
     {!simulator && !embedded && !fictional && view === "maroon" && <details style={{ maxWidth: 920, margin: "24px auto", padding: 12, background: "#fff8ef", borderRadius: 8 }}>
       <summary style={{ fontWeight: 600 }}>DEV: Unmapped Tournament Data (click to view)</summary>
       <pre style={{ whiteSpace: "pre-wrap", marginTop: 8 }}>{JSON.stringify(unmapped, null, 2)}</pre>
