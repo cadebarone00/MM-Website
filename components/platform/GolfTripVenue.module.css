@@ -41,3 +41,27 @@
 
 .itinerary{display:flex;flex-direction:column;gap:12px;padding:22px 16px 0;color:#111}
 .itinerary h3,.itinerary p{margin:0}
+/* Venue home (maroon + cream): photo card, players + dates with Map / Itinerary tiles, then category tiles two across. */
+.venueHome{display:grid;gap:12px;padding-bottom:calc(24px + 5.75rem + env(safe-area-inset-bottom));color:#591c2e}
+.hero{position:relative;height:180px;border-radius:22px;background:radial-gradient(circle at 25% 20%,rgba(220,196,149,.35),transparent 55%),linear-gradient(160deg,#7a2a3e 0%,#4a1525 60%,#2b0a14 100%);box-shadow:0 8px 20px rgba(0,0,0,.35);overflow:hidden}
+.heroChip{position:absolute;left:50%;bottom:14px;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;transform:translateX(-50%);border-radius:999px;background:rgba(251,248,241,.92);color:#591c2e;font:700 13px/1 var(--font-barlow),sans-serif;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.venueRow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.venueColumn{display:grid;gap:12px;align-content:start}
+.venueTile{display:grid;gap:4px;align-content:start;min-width:0;padding:12px 14px;box-sizing:border-box;border:1px solid rgba(214,184,121,.55);border-radius:16px;background:linear-gradient(180deg,#fffdf8 0%,#fbf8f1 55%,#efe7d6 100%);color:#591c2e;text-align:left;box-shadow:inset 0 1px 0 #fff,inset 0 -2px 0 rgba(89,28,46,.12),0 6px 14px rgba(0,0,0,.35),0 2px 4px rgba(0,0,0,.25)}
+.tileButton{min-height:56px;font:inherit;cursor:pointer}
+.tileButton:disabled{cursor:default}
+.tileButton:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
+.tileLabel{display:inline-flex;align-items:center;gap:6px;color:#805b24;font:700 12px/1.2 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase}
+.tileValue{color:#591c2e;font:700 15px/1.25 var(--font-spectral),Georgia,serif}
+.tileMuted{color:#805b24;font:500 12px/1.2 var(--font-barlow),sans-serif}
+.avatars{display:flex;align-items:center;min-height:36px;padding-left:6px}
+.avatarDot{display:grid;place-items:center;width:34px;height:34px;margin-left:-6px;border:2px solid #591c2e;border-radius:50%;background:#dcc495;color:#591c2e;font:700 12px/1 var(--font-barlow),sans-serif}
+.avatarMore{background:#fbf8f1}
+.avatars .tileMuted{color:rgba(251,248,241,.7)}
+.categoryGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.categoryGrid .venueTile{display:flex;align-items:center;gap:10px}
+.categoryIcon{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#591c2e;color:#dcc495}
+.categoryText{display:grid;gap:2px;min-width:0}
+.categoryText strong{font:700 15px/1.2 var(--font-spectral),Georgia,serif}
+.categoryText span{color:#805b24;font:500 12px/1.2 var(--font-barlow),sans-serif}
+.mapBack{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:8px 2px;border:0;background:transparent;color:#591c2e;font:700 14px/1 var(--font-barlow),sans-serif;cursor:pointer}

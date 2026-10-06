@@ -153,16 +153,16 @@
    then a light page; the account cards sit across the line between the two. */
 .account{flex:1;display:flex;flex-direction:column;margin:0 -16px calc(-24px - 5.75rem - env(safe-area-inset-bottom));
   padding-bottom:calc(24px + 5.75rem + env(safe-area-inset-bottom));
-  background:linear-gradient(var(--color-maroon-900) 190px,#f7f8f7 190px);color:#111;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
+  background:linear-gradient(var(--color-maroon-900) calc(190px + 3vh),#f7f8f7 calc(190px + 3vh));color:#111;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
 .account p{margin:0}
 .account button{font-family:inherit;cursor:pointer}
 /* Same height as when it held the old pill row, so the cards below don't move. */
-.accountTop{position:relative;display:flex;align-items:flex-start;min-height:137px;padding:12px 16px 0;color:#fff}
+.accountTop{position:relative;display:flex;align-items:flex-start;min-height:calc(137px + 3vh);padding:12px 16px 0;color:#fff}
 /* Left 65%: the trip heading; right 35%: quick weather. */
 .accountTitleBlock{flex:0 0 65%;min-width:0}
 /* Sized so "Your trip to" and a typical "City, ST" fit in the left 65% (long names wrap). */
 .accountLabel{font-size:clamp(20px,6.6vw,30px);font-weight:700;line-height:1.1}
-.accountDestination{display:block}
+.accountDestination{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Trip dates ("Jan 7 – Jan 10, 2026") in gold under the location. */
 .accountTop .accountDates{margin:8px 0 0;font:600 15px/1.2 var(--font-barlow),sans-serif;color:#dcc495}
 .accountCards{scroll-padding-inline:16px;display:flex;gap:10px;margin-top:22px;padding:0 16px 6px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
@@ -219,3 +219,51 @@
 .itineraryEmptyDay{margin:0;font:500 14px/1.4 var(--font-barlow),sans-serif;color:rgba(255,255,255,.6)}
 
 @media(max-width:1023px){.page{padding-top:var(--app-top-clearance)}}
+/* Info → Itinerary day selector: < and > either side of the weekday (over the date), with a line under it. */
+.itineraryDayHeading{display:grid;grid-template-columns:40px minmax(0,1fr) 40px;align-items:center;padding-bottom:10px;border-bottom:1px solid rgba(214,184,121,.35)}
+.itineraryDayTitle{display:grid;justify-items:center;gap:3px;margin:0;text-align:center}
+.itineraryDayTitle span{color:#fbf8f1;font:700 20px/1.15 var(--font-spectral),Georgia,serif}
+.itineraryDayTitle small{color:#dcc495;font:600 12px/1.2 var(--font-barlow),sans-serif;letter-spacing:.04em}
+.itineraryDayStep{display:grid;place-items:center;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:transparent;color:#dcc495;cursor:pointer}
+.itineraryDayStep:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+/* Info → Itinerary: each plan is a raised cream box (same look as Competition → Format round boxes). */
+.itineraryBox{display:grid;gap:2px;padding:14px 16px;border:1px solid rgba(214,184,121,.55);border-radius:16px;background:linear-gradient(180deg,#fffdf8 0%,#fbf8f1 55%,#efe7d6 100%);color:#591c2e;box-shadow:inset 0 1px 0 #fff,inset 0 -2px 0 rgba(89,28,46,.12),0 6px 14px rgba(0,0,0,.35),0 2px 4px rgba(0,0,0,.25)}
+.itineraryBoxTime{color:#805b24;font:500 13px/1.2 var(--font-barlow),sans-serif}
+.itineraryBoxKind{color:#805b24;font:700 12px/1.2 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase}
+.itineraryBoxTitle{color:#591c2e;font:700 17px/1.2 var(--font-spectral),Georgia,serif;overflow-wrap:anywhere}
+.itineraryBoxTop{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.itineraryBoxTop .itineraryBoxKind{flex:none;text-align:right}
+/* Itinerary box: a header (time left, type right) in bigger maroon text over a line, the details under it; slimmer padding. */
+.itineraryBox.itineraryBox{gap:4px;padding:10px 14px}
+.itineraryBoxTop.itineraryBoxTop{align-items:center;padding-bottom:6px;margin-bottom:2px;border-bottom:1px solid rgba(89,28,46,.2)}
+.itineraryBoxTop .itineraryBoxTime{color:#591c2e;font:700 16px/1.2 var(--font-spectral),Georgia,serif}
+.itineraryBoxTop .itineraryBoxKind{color:#591c2e;font:700 13px/1.2 var(--font-barlow),sans-serif;letter-spacing:.08em}
+/* Itinerary boxes are buttons that open the plan's sheet. */
+button.itineraryBox{width:100%;text-align:left;font:inherit;cursor:pointer}
+button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
+/* Itinerary: each plan's type sits outside, above its box — cream, left-aligned, bold, with a line under it. */
+.itineraryEntry{display:grid;gap:8px}
+.itineraryType{margin:6px 0 0;padding-bottom:6px;border-bottom:1px solid rgba(251,248,241,.35);color:#fbf8f1;font:700 18px/1.15 var(--font-spectral),Georgia,serif;text-align:left}
+/* Info: My Info / Itinerary selector sits higher, closer to the trip header (32px gap → 8px). */
+.tabs.infoTabs{margin-top:-16px}
+/* Main trip tabs (Home … Info): a faint line runs edge to edge under them; the chosen tab's whole share of it lights up gold. */
+.tripTabs{position:relative}
+.tripTabs::before{content:"";position:absolute;left:-16px;right:-16px;bottom:0;height:2px;background:rgba(251,248,241,.18);pointer-events:none}
+.tripTabs .tab::after{left:0;right:0;border-radius:0;z-index:1}
+/* Itinerary day change: the day slides out (50 ms) toward the side you're leaving, the next slides in from the other side (50 ms). */
+.itineraryDayBody{display:grid;gap:12px;min-width:0}
+.dayOutLeft{animation:dayOutLeft 50ms ease-in forwards}
+.dayOutRight{animation:dayOutRight 50ms ease-in forwards}
+.dayInRight{animation:dayInRight 50ms ease-out}
+.dayInLeft{animation:dayInLeft 50ms ease-out}
+@keyframes dayOutLeft{to{transform:translateX(-40%);opacity:0}}
+@keyframes dayOutRight{to{transform:translateX(40%);opacity:0}}
+@keyframes dayInRight{from{transform:translateX(40%);opacity:0}}
+@keyframes dayInLeft{from{transform:translateX(-40%);opacity:0}}
+.infoSection:has(> .itineraryDayBody){overflow-x:clip}
+/* Home: Live and Upcoming boxes stacked, each 90% wide (5% in from each side of the screen). */
+.liveBoxes{display:grid;gap:10px;margin:22px 5% 0}
+.liveBoxes .accountCard{width:100%;flex:none}
+.liveLabel{display:inline-flex;align-items:center;gap:6px;margin:0 0 6px;color:#805b24;font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase}
+.liveLabel[data-live=true]{color:#c62828}
+.liveLabel[data-live=true]::before{content:"";width:7px;height:7px;border-radius:50%;background:#c62828;box-shadow:0 0 0 3px rgba(198,40,40,.2)}

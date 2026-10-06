@@ -46,7 +46,7 @@ export interface ScoredCard { strokes: number[]; putts: (number | null)[]; fairw
 export const playerRoundId = (...parts: string[]) => parts.join(":");
 
 /** Not own ball the whole way → never counts. Four-ball / best ball is own ball and does count. */
-const TEAM_FORMAT = /scramble|alternate shot|alt[- ]?shot|foursome|shamble|greensome|chapman/i;
+const TEAM_FORMAT = /scramble|alternate[- ]?shot|alt[- ]?shot|foursome|shamble|greensome|chapman|pinehurst|gruesome/i;
 
 export function handicapEligibility(round: Pick<PlayerRound, "holesPlayed" | "format" | "tee" | "holes" | "total" | "enteredBy">):
   { counts: true; differential: number } | { counts: false; reason: string } {

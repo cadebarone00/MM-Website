@@ -14,6 +14,8 @@ import { GolfTripCompetition } from "./GolfTripCompetition";
 import { GolfTripDatePicker } from "./GolfTripDatePicker";
 import { TripScheduleCoursePicker, type PickedCourse } from "./TripScheduleCoursePicker";
 import { TeeTimePicker } from "./TeeTimePicker";
+import { RoundCompetitionSettings } from "./RoundCompetitionSettings";
+import { defaultRoundComp, type RoundCompSettings } from "@/lib/platform/roundCompetition";
 import { GolfTripHistory, type HistoryLinking } from "./GolfTripHistory";
 import { dispatchDevRounds, useDevPlayerRounds } from "@/components/dev/useDevPlayerRounds";
 import { DEV_ACCOUNTS, devAccount } from "@/lib/dev/devAccounts";
@@ -100,6 +102,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   // Rounds page: a day count, and 0, 1 or 2 round slots for each day. Lowering Days only hides that day's row.
   const [competitionType, setCompetitionType] = useState<{ individual: string | null; team: string | null }>({ individual: null, team: null });
   const [overviewType, setOverviewType] = useState<"individual" | "team">("individual");
+  // Submit & Save Individual / Team Competition locks that side (greyed, no edits) until Undo and Change.
+  const [lockedComp, setLockedComp] = useState<{ individual: boolean; team: boolean }>({ individual: false, team: false });
   // Players ticked under each competition type (by roster slot). Preview only; resets on reload.
   const [typePlayers, setTypePlayers] = useState<Record<"individual" | "team", Set<number>>>({ individual: new Set(), team: new Set() });
   // Any Team type (not None): teams are named under the ovals; + Add Player opens a drop-down list of players not yet on a team. Preview only; resets on reload.
@@ -170,6 +174,11 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const [pickedCourses, setPickedCourses] = useState<Record<string, PickedCourse>>({});
   // Competition → Format: which Golf Schedule round slots count toward the competition (on unless switched off).
   const [compRounds, setCompRounds] = useState<Record<string, boolean>>({});
+  // Competition → Format → tap a comp round: that round's competition settings (players, format, match type, points, Nassau, handicap), kept per round slot.
+  const [compRoundSlot, setCompRoundSlot] = useState<{ day: number; slot: number } | null>(null);
+  const [compFormats, setCompFormats] = useState<Record<string, RoundCompSettings>>({});
+  // Turning a round's Comp switch off waits for this confirm (it removes the round's format).
+  const [confirmCompOff, setConfirmCompOff] = useState<string | null>(null);
   const [coursePicker, setCoursePicker] = useState<{ key: string; label: string } | null>(null);
   // Golf Schedule: tap a round's tee time → the tee time sheet. Each group's time ("HH:MM") is kept per day/round slot.
   const [teeTimes, setTeeTimes] = useState<Record<string, string[]>>({});
@@ -246,12 +255,18 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     const place = picked?.place ?? "";
     return { key, number, course, place, groupTimes, label: `Round ${number} · ${golfDate(day)}` };
   };
+  // The open Format round: its slot, number and settings (defaults until changed: every trip player, Singles match play, 1 point, gross).
+  const compRound = compRoundSlot ? (() => {
+    const slot = scheduleSlot(compRoundSlot.day, compRoundSlot.slot);
+    const date = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${golfIso(compRoundSlot.day)}T12:00:00Z`));
+    return { id: slot.key, number: slot.number, course: slot.course, date, settings: compFormats[slot.key] ?? defaultRoundComp(playerTotal) };
+  })() : undefined;
   // Moves a round to another place (max 2 a day). Same day: it keeps its settings. Another day: course, tee times, players and Comp go back to default.
   const moveRound = (from: { day: number; slot: number }, to: { day: number; index: number }) => {
-    type Slot = { picked?: PickedCourse; tees?: string[]; comp?: boolean; players?: Record<number, number[]>; name: string };
+    type Slot = { picked?: PickedCourse; tees?: string[]; comp?: boolean; format?: RoundCompSettings; players?: Record<number, number[]>; name: string };
     const lists: Slot[][] = Array.from({ length: golfDayCount }, (_, day) => Array.from({ length: roundsPerDay[day] ?? 1 }, (_, slot) => {
       const key = `${day}-${slot}`;
-      return { picked: pickedCourses[key], tees: teeTimes[key], comp: compRounds[key], players: teePlayers[key], name: scheduleSlot(day, slot).course };
+      return { picked: pickedCourses[key], tees: teeTimes[key], comp: compRounds[key], format: compFormats[key], players: teePlayers[key], name: scheduleSlot(day, slot).course };
     }));
     const [item] = lists[from.day].splice(from.slot, 1);
     const index = from.day === to.day && to.index > from.slot ? to.index - 1 : to.index;
@@ -259,12 +274,14 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     if (lists[to.day].length > 2) return;
     const picked: Record<string, PickedCourse> = {}, tees: Record<string, string[]> = {}, comp: Record<string, boolean> = {}, names: Record<string, string> = {};
     const players: Record<string, Record<number, number[]>> = {};
+    const formats: Record<string, RoundCompSettings> = {};
     lists.forEach((list, day) => list.forEach((slot, at) => {
       const key = `${day}-${at}`;
       if (slot.picked) picked[key] = slot.picked;
       if (slot.tees) tees[key] = slot.tees;
       if (slot.comp !== undefined) comp[key] = slot.comp;
       if (slot.players) players[key] = slot.players;
+      if (slot.format) formats[key] = slot.format;
       names[key] = slot.name;
     }));
     setRoundsPerDay(Object.fromEntries(lists.map((list, day) => [day, list.length as 0 | 1 | 2])));
@@ -272,6 +289,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     setTeeTimes(tees);
     setCompRounds(comp);
     setTeePlayers(players);
+    setCompFormats(formats);
     setSlotCourseNames(names);
   };
   // While dragging: the round under the pointer (drop above or below its middle), or the end of a day; a full other day can't take it.
@@ -318,6 +336,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   // Back arrow and SAVE both step back one level; preview changes are already kept as you make them.
   const goBack = () => {
     if (selectedRound) setSelectedRoundId(null);
+    else if (compRound) setCompRoundSlot(null);
     else if (selectedGame) setSelectedGameId(null);
     else if (scheduleRound) { setScheduleRound(null); setTeePlayersGroup(null); }
     else if (competitionOpen) setCompetitionOpen(false);
@@ -333,8 +352,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   return <main className={`${styles.page} ${competitionOpen || gamesOpen || roundsOpen || playersOpen || allowedOpen || playerScoringOpen || scorecardViewOpen || historyOpen ? styles.competitionPage : ""}`}>
     <div className={styles.content}>
       {(competitionOpen || gamesOpen || roundsOpen || playersOpen || allowedOpen || playerScoringOpen || scorecardViewOpen || historyOpen) ? <header className={styles.competitionHeader}>
-        <button type="button" className={styles.close} aria-label={selectedRound ? "Back to competition rounds" : selectedGame ? "Back to games" : "Back to organizer settings"} onClick={goBack}><ChevronLeft size={28} aria-hidden /></button>
-        <h1>{selectedRound ? "Round " + selectedRound.number + " Settings" : selectedGame ? selectedGame.name : gamesOpen ? "Games" : roundsOpen ? scheduleRound ? `Round ${scheduleSlot(scheduleRound.day, scheduleRound.slot).number}` : "Golf Schedule" : playersOpen ? "Players" : allowedOpen ? "Allowed" : playerScoringOpen ? "Player Scoring" : scorecardViewOpen ? "Scorecard View" : historyOpen ? "History" : "Competition"}</h1>
+        <button type="button" className={styles.close} aria-label={selectedRound || compRound ? "Back to competition rounds" : selectedGame ? "Back to games" : "Back to organizer settings"} onClick={goBack}><ChevronLeft size={28} aria-hidden /></button>
+        <h1>{selectedRound ? "Round " + selectedRound.number + " Settings" : compRound ? `Round ${compRound.number} Competition` : selectedGame ? selectedGame.name : gamesOpen ? "Games" : roundsOpen ? scheduleRound ? `Round ${scheduleSlot(scheduleRound.day, scheduleRound.slot).number}` : "Golf Schedule" : playersOpen ? "Players" : allowedOpen ? "Allowed" : playerScoringOpen ? "Player Scoring" : scorecardViewOpen ? "Scorecard View" : historyOpen ? "History" : "Competition"}</h1>
         <motion.button type="button" className={styles.save} onClick={goBack} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }} transition={{ type: "spring", stiffness: 420, damping: 24 }}>SAVE</motion.button>
       </header> : <header className={styles.header}>
       <Link href={backHref} className={styles.close} aria-label="Back to trip"><ChevronLeft size={26} strokeWidth={1.75} aria-hidden /></Link>
@@ -351,12 +370,14 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
       </div>}
 
       {competitionOpen && competition ? <div className={styles.competition}>
-        {!selectedRound && <div className={`${tripStyles.tabs} ${styles.tabs}`} aria-label="Competition sections">
+        {!selectedRound && !compRound && <div className={`${tripStyles.tabs} ${styles.tabs}`} aria-label="Competition sections">
           {["Overview", "Format", "Summary"].map(name => <button key={name} type="button" aria-pressed={competitionSection === name}
             className={`${tripStyles.tab} ${competitionSection === name ? tripStyles.tabActive : ""} ${styles.tab}`}
             onClick={() => setCompetitionSection(name)}>{name}</button>)}
         </div>}
         {selectedRound ? <GolfTripCompetition rounds={[selectedRound]} onChange={change => competition.change(change, selectedRound.id)} showBulk={false} />
+          : compRound ? <RoundCompetitionSettings key={compRound.id} course={compRound.course} date={compRound.date} round={compRound.number} settings={compRound.settings} maxPlayers={playerTotal}
+            onSubmit={next => { setCompFormats(current => ({ ...current, [compRound.id]: next })); setCompRoundSlot(null); }} />
           : <div className={tripStyles.events}>
             {competitionSection === "Overview" && <section className={tripStyles.infoSection} aria-label="Overview">
               {/* Individual / Team pill slider (the Gross / Net style); each shows only its own type page. */}
@@ -366,6 +387,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
               <div className={styles.typePicker}>
                 {COMPETITION_TYPES.filter(group => group.key === overviewType).map(group => <div key={group.key} className={styles.typeGroup} role="group" aria-label={group.title}>
                   <h4 className={styles.typeHeading}>{group.title}</h4>
+                  <fieldset className={styles.compLock} disabled={lockedComp[group.key]}>
                   <div className={`${styles.typeChoices} ${styles.typeChoicesRow}`}>
                     {[...group.options, null].map(option => <button key={option ?? "none"} type="button" className={styles.typeChoice} aria-pressed={competitionType[group.key] === option}
                       onClick={() => {
@@ -418,7 +440,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                     {/* Submit teams lights up once every player is on a team; after submitting it becomes Undo & Change. */}
                     {submittedTeams ? <button type="button" className={`${styles.typeChoice} ${styles.selectTeams}`} onClick={() => setSubmittedTeams(null)}>Undo &amp; Change</button>
                       : <button type="button" className={`${styles.typeChoice} ${styles.selectTeams}`} disabled={!allPicked} onClick={() => setSubmittedTeams(teamSplit)}>Submit teams</button>}
-                  </div> : (() => {
+                  </div> : competitionType.individual && (() => {
                     const checked = typePlayers[group.key];
                     const allChecked = playerTotal > 0 && Array.from({ length: playerTotal }, (_, index) => index).every(index => checked.has(index));
                     return <div className={styles.typePlayers}>
@@ -442,13 +464,15 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                       </ul>
                     </div>;
                   })()}
+                  </fieldset>
+                  {/* Team: needs submitted teams first (or None). Individual: any time. */}
+                  <button type="button" className={`${styles.typeChoice} ${styles.selectTeams} ${styles.compLockButton}`}
+                    disabled={!lockedComp[group.key] && group.key === "team" && !!competitionType.team && !submittedTeams}
+                    onClick={() => setLockedComp(current => ({ ...current, [group.key]: !current[group.key] }))}>
+                    {lockedComp[group.key] ? "Undo and Change" : `Submit & Save ${group.title} Competition`}
+                  </button>
                 </div>)}
               </div>
-              <dl className={styles.overview}>
-                {overview.map(([label, value]) => <div key={label} className={styles.overviewRow}>
-                  <dt>{label}</dt><dd>{value}</dd>
-                </div>)}
-              </dl>
             </section>}
             {competitionSection === "Summary" && <section className={tripStyles.infoSection} aria-label="Summary">
               <dl className={styles.overview}>
@@ -458,34 +482,38 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
               </dl>
             </section>}
             {/* One section per trip day (Arrival to Departure): centered Day N, its date small underneath, then a line and that day's rounds. */}
-            {/* Format: laid out exactly like Golf Schedule (centered Day N + date over a line, a raised cream box per round with Round / course / City, ST), with a Comp switch on the right of each box. */}
-            {competitionSection === "Format" && Array.from({ length: golfDayCount }, (_, index) => golfIso(index)).map((date, index) => {
-              const perDay = roundsPerDay[index] ?? 1;
-              const roundsBefore = Array.from({ length: index }, (_, day) => roundsPerDay[day] ?? 1).reduce<number>((sum, count) => sum + count, 0);
-              return <section key={date} className={tripStyles.infoSection}>
-                <div className={styles.roundDayHeader}>
-                  <h2>Day {index + 1}</h2>
-                  <time dateTime={date}>{new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`))}</time>
-                </div>
-                {Array.from({ length: perDay }, (_, slot) => {
-                  const key = `${index}-${slot}`, number = roundsBefore + slot + 1, inComp = compRounds[key] ?? true;
-                  const round = scheduleSlot(index, slot);
-                  return <div key={slot} className={`${styles.compRoundRow} ${styles.scheduleRoundCard}`}>
+            {/* Format: just the round boxes (no day headers). Each box: Date / Round # / course (+ format when on), with a Comp switch top right; tap a comp round for its competition settings. On = a competition round (box lit); off = not (box greyed). */}
+            {competitionSection === "Format" && <div className={styles.formatRounds}>
+              {Array.from({ length: golfDayCount }, (_, day) => Array.from({ length: roundsPerDay[day] ?? 1 }, (_, slot) => {
+                const round = scheduleSlot(day, slot), inComp = compRounds[round.key] ?? true;
+                return <div key={round.key} className={`${styles.compRoundRow} ${styles.scheduleRoundCard} ${styles.formatRoundCard}`} data-comp={inComp}>
+                  {/* A comp round opens its competition settings; a non-comp round can't be opened. */}
+                  <button type="button" className={styles.roundCardButton} disabled={!inComp} aria-label={`Round ${round.number}: ${round.course}. Competition settings`} onClick={() => setCompRoundSlot({ day, slot })}>
                     <span className={tripStyles.eventInfo}>
-                      <span className={tripStyles.eventHost}>Round {number}</span>
+                      <span className={styles.roundCardPlace}>{golfDate(day)}</span>
+                      <span className={tripStyles.eventHost}>Round {round.number}</span>
                       <span className={tripStyles.eventTitle}>{round.course}</span>
-                      {round.place && <span className={styles.roundCardPlace}>{round.place}</span>}
+                      {inComp && <span className={styles.roundCardPlace}>{(compFormats[round.key] ?? defaultRoundComp(playerTotal)).format} · {(compFormats[round.key] ?? defaultRoundComp(playerTotal)).matchType}</span>}
                     </span>
-                    <span className={styles.compSwitch}>
-                      <span aria-hidden="true">Comp</span>
-                      <button type="button" role="switch" aria-checked={inComp} aria-label={`Round ${number} part of the competition`} className={toggleStyles.toggle} onClick={() => setCompRounds(current => ({ ...current, [key]: !inComp }))}>
-                        <span className={toggleStyles.track} data-on={inComp}><span className={toggleStyles.thumb} /></span><span>{inComp ? "On" : "Off"}</span>
-                      </button>
-                    </span>
-                  </div>;
-                })}
-              </section>;
-            })}
+                  </button>
+                  <button type="button" role="switch" aria-checked={inComp} aria-label={`Round ${round.number} is a competition round`} className={styles.formatSwitch} onClick={() => inComp ? setConfirmCompOff(round.key) : setCompRounds(current => ({ ...current, [round.key]: true }))}>
+                    <span className={styles.formatThumb} />
+                  </button>
+                </div>;
+              }))}
+            </div>}
+            {/* Turning a round off: Keep in Competition cancels; Confirm takes it out and removes its format. */}
+            {confirmCompOff && <div className={tripStyles.deleteOverlay} role="dialog" aria-modal="true" aria-label="Remove round from competition">
+              <div className={tripStyles.deleteDialog}>
+                <p className={tripStyles.deletePrompt}>Removing this round from competition will remove its format</p>
+                <button type="button" className={tripStyles.cancelButton} onClick={() => setConfirmCompOff(null)}>Keep in Competition</button>
+                <button type="button" className={tripStyles.deleteButton} onClick={() => {
+                  setCompRounds(current => ({ ...current, [confirmCompOff]: false }));
+                  setCompFormats(current => { const next = { ...current }; delete next[confirmCompOff]; return next; });
+                  setConfirmCompOff(null);
+                }}>Confirm</button>
+              </div>
+            </div>}
             {/* Add Player drop-down: slides from the top to 80% of the screen; a list of players not on a team. Tap one, then Add to <team> on its right. */}
             {addingToTeam !== null && <div className={`${styles.teamsDropdown} ${styles.addPlayerDropdown}`} role="dialog" aria-modal="false" aria-label={`Add player to ${teamLabels[addingToTeam]}`}>
               <button type="button" className={tripStyles.sheetClose} aria-label="Close add player" onClick={() => setAddingToTeam(null)}><X size={18} strokeWidth={2.25} aria-hidden /></button>
@@ -633,12 +661,14 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                 <button type="button" className={styles.typeChoice} aria-haspopup="dialog" onClick={() => setDatePickerOpen(true)}>{dayDate(dayCount - 1)}</button>
               </div>
             </div>
-            {([["Golf on Arrival Day", golfOnArrival, setGolfOnArrival], ["Golf on Departure Day", golfOnDeparture, setGolfOnDeparture]] as const).map(([label, on, set]) => <div key={label} className={styles.totalPlayers}>
+            <div className={styles.golfDaySettings}>
+            {([["Golf on Arrival Day", golfOnArrival, setGolfOnArrival], ["Golf on Departure Day", golfOnDeparture, setGolfOnDeparture]] as const).map(([label, on, set]) => <div key={label} className={`${styles.totalPlayers} ${styles.golfDaySetting}`}>
               <span className={styles.typeHeading}>{label}</span>
               <button type="button" role="switch" aria-checked={on} aria-label={label} className={toggleStyles.toggle} onClick={() => set(!on)}>
                 <span className={toggleStyles.track} data-on={on}><span className={toggleStyles.thumb} /></span><span>{on ? "On" : "Off"}</span>
               </button>
             </div>)}
+            </div>
           </div>
         </section>
         {/* Day sections use the Competition → Format look: centered Day N + date over a line, each round as a cream box (tap for its settings page), then + Add Round. */}

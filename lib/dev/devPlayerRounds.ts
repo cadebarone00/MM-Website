@@ -64,11 +64,19 @@ export function devRoundsReducer(state: DevRoundsState, action: DevRoundsAction)
   }
 }
 
-/** sessionStorage text → state; anything unexpected → a fresh seed (never throws). */
+const isObject = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === "object" && !Array.isArray(value);
+const isRound = (value: unknown) => isObject(value) && typeof value.id === "string" && typeof value.profileId === "string"
+  && typeof value.datePlayed === "string" && Array.isArray(value.holes) && typeof value.total === "number" && typeof value.countsForHandicap === "boolean"
+  && isObject(value.course) && typeof value.course.name === "string";
+const isLinkRequest = (value: unknown) => isObject(value) && typeof value.id === "string" && typeof value.profileId === "string"
+  && ["pending", "accepted", "declined"].includes(String(value.status)) && Array.isArray(value.rounds);
+
+/** sessionStorage text → state; anything unexpected (bad JSON, an older shape, one malformed entry) → a fresh seed (never throws). */
 export function parseDevRounds(text: string | null): DevRoundsState {
   try {
-    const value = text ? JSON.parse(text) as Partial<DevRoundsState> : null;
-    if (value && Array.isArray(value.rounds) && Array.isArray(value.linkRequests) && value.visibility && typeof value.visibility === "object") return value as DevRoundsState;
+    const value: unknown = text ? JSON.parse(text) : null;
+    if (isObject(value) && Array.isArray(value.rounds) && value.rounds.every(isRound) && Array.isArray(value.linkRequests) && value.linkRequests.every(isLinkRequest)
+      && isObject(value.visibility) && Object.values(value.visibility).every((v) => v === "public" || v === "private")) return value as unknown as DevRoundsState;
   } catch { /* fall through */ }
   return seedDevRounds();
 }

@@ -2111,7 +2111,7 @@ Replaces the photo drop-down panel from earlier the same day. Modeled on the own
 - Data: dev only, page memory (`lib/platform/golfTripHistory.ts`, tested), one sample trip; resets on reload. No database yet.
 - Not yet: hole-by-hole scorecards, spreadsheet import, team / match formats, saving to the database, showing History to players, moving The Maroon's existing archive into it.
 
-### Round: Player rounds — one saved round per account, shown on the trip and the profile (spec 2026-10-06, approved 2026-10-06)
+### Round: Player rounds — one saved round per account, shown on the trip and the profile (spec 2026-10-06, approved 2026-10-06; Step 1 built 2026-10-06 — dev preview)
 
 **What it does / who uses it.** Every player (account) gets one golf record, like a handicap app. A round played on a trip (later: a tournament, or logged in the handicap tracker) is saved **once, to the player's account**; the trip, its leaderboard, the player's **Profile → Rounds** and their handicap all read that same saved round.
 
@@ -2140,8 +2140,84 @@ Replaces the photo drop-down panel from earlier the same day. Modeled on the own
 
 **Built in steps.**
 - **Step 1 (dev preview, no database):** an in-memory player-rounds store with mock accounts, shared across the dev trip and a dev profile; Trip Submit & Save writes to it; a dev Profile → Rounds + handicap read from it; Settings Privacy switch; History Link to account + Accept / Decline in notifications; a simulator "view as" mock account to test both sides. Pure logic (qualifies-for-handicap, differential, visibility, link requests) in plain tested functions.
+- Step 1 notes: 9-hole rounds are saved but not counted until Step 2; link requests show in a Requests card on `/dev/profile` (no notification inbox yet). Try it: simulator → Golf Trip Active / Profile groups, "Signed in as …" conditions.
 - **Step 2 (real database, separate approval):** a SQL file the owner runs (tables + security rules: owner-only writes, visibility rules above) and the server code to save / load.
 
-**Not in this round:** moving old handicap / Maroon rounds into the new model, tournament (Maroon) live scoring writing player rounds, editing a submitted round, guest players, posting to an official handicap service (GHIN).
+**Not in this round:** moving old handicap / Maroon rounds into the new model, tournament (Maroon) live scoring writing player rounds, players editing their own submitted round (they never can; mistakes and discrepancies are fixed by the organizer override in the add-on below), guest players, posting to an official handicap service (GHIN).
 
 **Done means (Step 1):** submitting a dev trip round shows it on the trip and in that mock account's Rounds; the handicap counts only qualifying rounds; Private hides Rounds from another mock account but not the handicap index for a trip-mate; a History link shows as a request and only Accept adds the rounds (marked "Entered by organizer", not counted); logic has unit tests; TypeScript, lint and tests pass; checked at localhost:3001/dev.
+
+#### Add-on: Player & Attest, groups, round privacy, organizer overrides, live rounds, trip stats, submit animation (spec 2026-10-06, approved 2026-10-06)
+
+Builds **on top of** the Player rounds plan above. Nothing above changes: `PlayerRound` stays the one locked, saved round per account, and everything still reads from it. This add-on covers how a round gets checked before it becomes a `PlayerRound`, and what happens after.
+
+**Owner decisions (2026-10-06):**
+1. **Player & Attest rule.** Every player keeps their own score and stats. One other player in the group is assigned to keep that same player's strokes (the attester). The player's strokes and the attester's strokes must match on every hole.
+2. **Attesters are picked automatically** when a group's round is created: 2 players = 1 ↔ 2; 3 players = circle (1 attests 2, 2 attests 3, 3 attests 1); 4 players = two pairs (1 ↔ 2, 3 ↔ 4); 5 players = circle. In a competitive group (two sides, e.g. a fourball), each player is paired with someone on the other side, never a teammate. The organizer (or, for a personal round, whoever started it) can swap attesters until cards are submitted.
+3. **Solo personal rounds** save normally, with no attester and no label.
+4. **Only the player enters their stats** (putts, fairway, green, penalties). The attester enters strokes only.
+5. **Matching unlocks Submit.** When all 18 holes match: the player's name and total on the Card turn green, and **Submit & Save** lights up. Only the player presses it; the attester doesn't have to.
+6. **Submit & Save does two things:** (a) plays the full-screen submit animation; (b) saves the round as the player's `PlayerRound` (source trip / tournament / personal), which the trip or tournament leaderboard, stats and the player's profile all read.
+7. **Submitted = locked.** Only the organizer can change it afterwards (decision 9).
+8. **Players who can't agree:** the card simply can't be submitted.
+9. **Organizer override (trips and tournaments, same rules).** The trip organizer (who is playing) or tournament organizer (who isn't) can change any hole on a submitted round in their event. A reason is required; every change goes in a permanent change log (old value, new value, who, when, reason). The player sees an "Edited by organizer" mark on that hole and can tap it to read the reason. The trip organizer may also change their **own** round, but those changes show in a log everyone on the trip can see. No override on personal rounds (no organizer).
+10. **Push-through setting.** A new organizer setting, **Allow push-through**, off by default (trip Organizer settings; same setting for tournaments). When on, the organizer sees **Push through** on a card that can't be submitted, picks which score counts on each mismatched hole (player's or attester's) with a reason, and the card submits. Logged and marked like an override. Not available on personal rounds.
+11. **Personal-round privacy.** Each personal ("just playing") round is **Public** or **Private**, chosen when the round is started; it starts matching the player's Privacy setting (decision 5 above). Others see a submitted personal round only when the profile is Public **and** that round is Public. You always see all your own rounds. While a personal round is being played, its group can see each other's cards (needed to attest). Trip and tournament rounds ignore this switch.
+12. **Live rounds.** A trip round opens automatically on its scheduled date; the organizer can also tap **Start round** early or **End round** when everyone's done. The Scoring sheet only shows while a round is open (already built in the dev preview). Cards still in progress can be finished and submitted after the round ends.
+13. **Groups for trips (for now).** Trips don't have groups yet, so each trip round's groups are made automatically from the trip's players, in order, in fours. A proper "set groups and tee times" organizer screen is a later round.
+14. **Organizer-fixed rounds still count.** A round changed by an organizer override or push-through counts toward handicap like any other round (when it qualifies under decision 1 above).
+15. **Players can remove a round from their own profile.** Removing it permanently takes it off that player's profile, stats and handicap (it no longer counts); it cannot be undone. Before removing, the player must confirm a warning that says exactly that: all of this round's data will be lost from their profile. The round stays on the trip (or tournament) and its leaderboard and stats.
+16. **Submit animation (full screen, about 2–3 seconds).** After **Submit Score** in the "Are you sure?" box, a maroon screen fills the phone with the final score big (e.g. "78 · +6"), a checkmark and "Card submitted", then slides away to the locked Card.
+
+**Data added (all new; nothing in `PlayerRound` is renamed or removed):**
+- **`RoundGroup`**: the players playing one round together. `id`, `source` + source link (same as `PlayerRound`: trip + trip round, tournament round, or none for personal), `course` + `datePlayed` snapshot, `players[]` { `profileId`, `attesterProfileId` (null when solo) }, `startedBy`, `visibility` (personal only: public | private).
+- **`LiveCard`**: one per player per group while the round is being played; becomes that player's `PlayerRound` on submit. `groupId`, `profileId`, `holes[]` { `number`, `strokes`, `putts`, `fairway`, `green`, `penalties` { `fairway`, `green` }, `attestStrokes` (written by the attester's phone) }.
+- **`PlayerRound` gains:** `groupId` (null for History rounds), `holes[].penalties`, `visibility` (personal rounds only), `removedFromProfile` (decision 15), and `edits[]`, the change log { `hole`, `field`, `from`, `to`, `byProfileId`, `at`, `reason`, `kind`: override | pushThrough }.
+- **Trip round state:** `open` / `closed` + `openedAt` / `closedAt` on the trip round, opened automatically on the play date or by the organizer.
+- **Organizer setting:** `allowPushThrough` (trip; same for tournaments later), default off.
+
+**Who can do what (enforced by the database in Step 2, not just the screen):** write your own `LiveCard` holes only while it's in progress and the round is open; write `attestStrokes` only on the card you're assigned to attest; submit only your own card, and the database re-checks 18 holes filled and matching before saving the `PlayerRound`; override / push-through only by that event's organizer; trip leaderboard + trip stats readable by the trip's members; personal rounds per decision 11; nothing for signed-out visitors.
+
+**What shows where:**
+- **Trip → Golf tab:** the leaderboard updates live from in-progress cards, shows F when finished and is official once submitted; tapping a player shows their card with any "Edited by organizer" marks; **Trip stats** (new): per-player totals across the trip's rounds (scoring average, putts, fairways %, greens %) plus a trip-wide row.
+- **Tournament:** the same, once platform tournaments write `PlayerRound`s. The Maroon keeps its current live scoring (unchanged, as above).
+- **Profile:** Rounds and Stats read `PlayerRound`, labeled Golf Trip · name, Tournament · name, or Just Playing; a round the player removed (decision 15) no longer shows there.
+
+**Built in steps (same two-step pattern as above):**
+- **Step 1 add-on (dev preview, no database):** groups + automatic attesters (pure, tested function); a mock second phone for the attester so matching can be tested in the simulator; green name/total + Submit lighting up on a full match; the submit animation; saving to the existing dev player-rounds store; trip stats from it; Start / End round; organizer override / push-through with the change log and marks.
+- **Step 2 (real database, separate approval):** the add-on's tables and rules join the Step 2 SQL file the owner runs, plus the server code. Never run by Claude.
+
+**Not in this add-on:** a no-animation mode (all animations stay for now; that mode is built at the end), the "set groups and tee times" organizer screen, the screens for starting a personal round (the data is ready for it), The Maroon writing `PlayerRound`s, notifications for overrides.
+
+**Done means (Step 1 add-on):** in the dev simulator, a trip group gets the right attesters for 2 / 3 / 4 players and for competitive groups; a full match turns the name and total green and lights Submit; a mismatch never does; Submit plays the animation and the round appears on the trip leaderboard, trip stats and the dev profile; an organizer override and a push-through show in the log with the mark on the hole; the organizer's own edits show in the trip-visible log; logic has unit tests; TypeScript, lint and tests pass; checked at localhost:3001/dev.
+
+### Round: Golf Trip Home — the "Mom" section (spec 2026-10-06, awaiting approval)
+
+**What it really is (owner, 2026-10-06).** The Mom section is the app's **notifications, shown live in the app** — a built-in notification "toast" with personality. Tone (owner, updated): **simple and friendly** — short, clear, helpful; not jokey.
+- **One line of words, ever**, in our white/cream text. A notification may add a **small button** at the end of the line (e.g. **Check in**).
+- **Buckets:** each kind of notification (e.g. flight check-in) has a bucket of approved lines; the app **randomly picks one line** from the bucket each time it shows it. Not every line has to get used.
+- **No Mom advice active → a countdown** in the same spot, styled like the owner's flip-clock reference: four tiles in a row — **Days · Hours · Minutes · Seconds** — each a big two-digit number in its own tile (split down the middle like a flip clock) with the label under it, ticking every second. Our colors: dark maroon tiles, cream numbers, gold labels. It counts down to **7:00 AM on arrival day**; once the itinerary has anything on arrival day, it counts down to **the first item on arrival day** instead. When several are active, they rotate: every **10 seconds** the current one **slides out to the left** and the next **slides in from the right**, in **100 ms**. One notification → no rotation.
+
+**What it does / who uses it.** On the trip's Home tab, a small section sits in the gap under "Your trip to · City, ST" (+ dates and weather) and above the Live / Upcoming boxes. It shows friendly, helpful nudges ("Mom" advice) that change with what's happening on the trip — e.g. a flight tomorrow: "Don't forget to check in for your flight!" with a button straight to the airline's check-in. Every player sees the tips that apply to *their own* plans.
+
+**Rules (owner's).**
+- **Every message is written in the code and approved by the owner.** Nothing is generated, pulled from the internet or written by AI at runtime. Adding / changing a tip = a code change the owner signs off on.
+- **Each tip has a condition** (when it shows) and can have **one button** (a link out, e.g. the airline's check-in page). Links only go to an approved list of official sites.
+- **It's a living list:** new tips get added over time, one at a time, each approved first.
+
+**How it's built (simple).**
+- `lib/platform/momTips.ts` — the approved tip list. Each tip: `id`, the message text, an optional button (label + approved link), and a plain rule for when it shows, written against the trip data we already have (itinerary items, trip dates, "now"). One function `momTipsFor(trip, now)` returns the tips to show, most urgent first.
+- `momTips.test.ts` — a test per tip: shows when it should, hidden when it shouldn't.
+- Home shows the active notifications as a rotating stack (10 s each, 100 ms slide left-out / right-in), styled to match the maroon header.
+- Preview only for now: same dev trip data as the Itinerary; nothing saved; no notifications / texts / emails.
+
+**First tip, for approval (only this one is built in round 1):**
+1. **Flight check-in** — shows from 24 hours before a flight departs until it departs. **Approved bucket (owner, 2026-10-06), one picked at random:** *"Don't forget to check in for your flight to {airport}."* · *"Time to check in for {airline} {flight #}. It leaves at {time}."* Small **Check in** button at the end of the line. Push (later round): *"Check-in opens in 5 minutes."* Button: **Check in** → the airline's official check-in page, only for airlines on the approved list (American, Delta, United, Southwest to start — exact URLs verified before building). Unknown airline → the tip shows with no button.
+
+**Ideas for later (not built until approved one by one):** pack your clubs / sunscreen the night before; tee time in the morning → "Early night!"; rental car return today; weather (rain / heat) on a golf day; "Hydrate" on hot golf days.
+
+**Push notifications (later round, same approved list).** The Mom tips double as push notifications: each tip can also have an approved **notification** — its own short, fun line and an exact send time worked out from the trip data. Same rules: written in code, owner-approved, one test each. First one planned: **24 hours 5 minutes before a flight** → *"5 min to check-in time! ✈️"* (exact wording to be approved). Building it needs the real push setup (permission prompt, device tokens, a scheduled sender) — a separate spec + approval before any of that.
+
+**Not in this round:** sending push notifications (planned above), choosing a favorite airline app (deep links into installed apps), anything not on the approved list.
+
+**Done means:** the flight check-in tip shows on Home only inside its 24-hour window, with the right airline's check-in button; tests for the window and the unknown-airline case pass; `tsc`, lint and tests pass; checked at phone width in the dev simulator.

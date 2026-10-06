@@ -33,6 +33,22 @@ export function upcomingItinerary(items: ItineraryItem[], now: string, count = 5
 }
 
 /**
+ * Home's two boxes. Live = the latest plan that has already started today (plans have no end time, so the last one that
+ * started today is what's happening now); then Upcoming = the next plan after now. With nothing live — before the trip, or
+ * before today's first plan — both boxes are the next two upcoming plans. Missing ones are left out.
+ */
+export function liveAndUpcoming(items: ItineraryItem[], now: string): { label: "Live" | "Upcoming"; item: ItineraryItem }[] {
+  const sorted = sortItinerary(items);
+  const started = sorted.filter((item) => item.startsAt <= now);
+  const latest = started.at(-1);
+  const live = latest && latest.startsAt.slice(0, 10) === now.slice(0, 10) ? latest : undefined;
+  const next = sorted.filter((item) => item.startsAt > now);
+  return live
+    ? [{ label: "Live", item: live }, ...next.slice(0, 1).map((item) => ({ label: "Upcoming" as const, item }))]
+    : next.slice(0, 2).map((item) => ({ label: "Upcoming" as const, item }));
+}
+
+/**
  * Everything, grouped by day in order: [{ day: "2027-04-22", items }, …]. `tripDays` ("YYYY-MM-DD", e.g. every day of the
  * trip) are always included, even with no items (items: []); days outside them still show if something is on them.
  */
@@ -51,6 +67,27 @@ const asUtc = (local: string) => new Date(`${local.length === 10 ? `${local}T00:
 /** "Thu, Apr 22" for a day ("YYYY-MM-DD") or the day of a local time. */
 export function itineraryDay(local: string): string {
   return asUtc(local.slice(0, 10)).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
+}
+
+/**
+ * The category in an Itinerary box's top-right corner: the kind, made more specific where we can tell —
+ * rental car pickups/returns read "Rental car", and dining reads Breakfast (before 11 AM), Lunch (before 4 PM) or Dinner.
+ */
+export function itineraryCategory(item: Pick<ItineraryItem, "kind" | "title" | "startsAt">): string {
+  if (item.kind === "ride" && /^rental car/i.test(item.title)) return "Rental car";
+  if (item.kind === "dining") {
+    const hour = Number(item.startsAt.slice(11, 13));
+    return hour < 11 ? "Breakfast" : hour < 16 ? "Lunch" : "Dinner";
+  }
+  return ITINERARY_KIND_LABEL[item.kind];
+}
+
+/** The Itinerary's day selector: "Thursday" over "April 22, 2027". */
+export function itineraryWeekday(local: string): string {
+  return asUtc(local.slice(0, 10)).toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });
+}
+export function itineraryLongDate(local: string): string {
+  return asUtc(local.slice(0, 10)).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
 /** "6:10 AM" for a local time. */

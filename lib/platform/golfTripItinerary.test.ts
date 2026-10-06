@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { itineraryByDay, itineraryDay, itineraryTime, localNow, sortItinerary, upcomingItinerary, type ItineraryItem } from "./golfTripItinerary";
+import { itineraryByDay, itineraryCategory, itineraryDay, liveAndUpcoming, itineraryLongDate, itineraryTime, itineraryWeekday, localNow, sortItinerary, upcomingItinerary, type ItineraryItem } from "./golfTripItinerary";
 import { GOLF_TRIP_MOCK_TRAVEL } from "./golfTripPreviewFixture";
 import { itineraryFor } from "./tripTravel";
 
@@ -28,6 +28,14 @@ test("by day: every trip day is listed (empty days included), plus any day outsi
 
 test("labels: day, time, and local now", () => {
   assert.equal(itineraryDay("2027-04-22T06:10"), "Thu, Apr 22");
+  assert.equal(itineraryWeekday("2027-04-22T06:10"), "Thursday");
+  assert.equal(itineraryLongDate("2027-04-22"), "April 22, 2027");
+  assert.equal(itineraryCategory({ kind: "ride", title: "Rental car pickup", startsAt: "2027-04-22T10:00" }), "Rental car");
+  assert.equal(itineraryCategory({ kind: "ride", title: "Driving from Austin", startsAt: "2027-04-22T10:00" }), "Ride");
+  assert.equal(itineraryCategory({ kind: "dining", title: "Diner", startsAt: "2027-04-22T08:30" }), "Breakfast");
+  assert.equal(itineraryCategory({ kind: "dining", title: "Grill", startsAt: "2027-04-22T12:15" }), "Lunch");
+  assert.equal(itineraryCategory({ kind: "dining", title: "Steakhouse", startsAt: "2027-04-22T19:00" }), "Dinner");
+  assert.equal(itineraryCategory({ kind: "flight", title: "AA1234", startsAt: "2027-04-22T06:10" }), "Flight");
   assert.equal(itineraryTime("2027-04-22T06:10"), "6:10 AM");
   assert.equal(itineraryTime("2027-04-22T19:30"), "7:30 PM");
   assert.equal(localNow(new Date(2027, 3, 22, 9, 5)), "2027-04-22T09:05");
@@ -38,4 +46,26 @@ test("mock trip itinerary: valid times, unique ids, enough for the Home cards", 
   assert.equal(sortItinerary(mock).length, mock.length);
   assert.equal(new Set(mock.map((i) => i.id)).size, mock.length);
   assert.ok(mock.length >= 5, "enough for the 5 Home cards");
+});
+
+test("liveAndUpcoming: before the trip both boxes are the next two plans", () => {
+  const plans: ItineraryItem[] = [
+    { id: "a", kind: "flight", title: "Out", startsAt: "2027-04-22T06:10" },
+    { id: "b", kind: "lodging", title: "Villa", startsAt: "2027-04-22T15:00" },
+    { id: "c", kind: "dining", title: "Dinner", startsAt: "2027-04-22T19:00" },
+  ];
+  assert.deepEqual(liveAndUpcoming(plans, "2027-04-01T09:00").map(({ label, item }) => `${label}:${item.id}`), ["Upcoming:a", "Upcoming:b"]);
+});
+
+test("liveAndUpcoming: during the day, the latest started plan is live and the next is upcoming", () => {
+  const plans: ItineraryItem[] = [
+    { id: "a", kind: "flight", title: "Out", startsAt: "2027-04-22T06:10" },
+    { id: "b", kind: "lodging", title: "Villa", startsAt: "2027-04-22T15:00" },
+    { id: "c", kind: "dining", title: "Dinner", startsAt: "2027-04-22T19:00" },
+  ];
+  assert.deepEqual(liveAndUpcoming(plans, "2027-04-22T16:30").map(({ label, item }) => `${label}:${item.id}`), ["Live:b", "Upcoming:c"]);
+  // Yesterday's last plan isn't live this morning.
+  assert.deepEqual(liveAndUpcoming(plans, "2027-04-23T08:00").map(({ label }) => label), []);
+  assert.deepEqual(liveAndUpcoming(plans, "2027-04-22T20:00").map(({ label, item }) => `${label}:${item.id}`), ["Live:c"]);
+  assert.deepEqual(liveAndUpcoming([], "2027-04-22T20:00"), []);
 });

@@ -1,15 +1,15 @@
 "use client";
 
-import { Suspense, use, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentProps, type ReactNode, type UIEvent } from "react";
+import { Suspense, use, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentProps, type ReactNode } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
-import { AlertTriangle, ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronRight, Clock, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Droplets, ExternalLink, FileText, Flag, LockKeyhole, MapPin, MessageCircle, Plane, Plus, Settings, Share2, ShieldCheck, ShoppingBag, Sun, Thermometer, Trash2, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronLeft, ChevronRight, Clock, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Droplets, ExternalLink, FileText, Flag, LockKeyhole, MapPin, MessageCircle, Plane, Plus, Settings, Share2, ShieldCheck, ShoppingBag, Sun, Thermometer, Trash2, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import { normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
-import { ITINERARY_KIND_LABEL, itineraryByDay, itineraryDay, itineraryTime, localNow, upcomingItinerary, type ItineraryItem, type ItineraryKind } from "@/lib/platform/golfTripItinerary";
+import { ITINERARY_KIND_LABEL, itineraryByDay, itineraryCategory, itineraryDay, itineraryLongDate, itineraryTime, itineraryWeekday, liveAndUpcoming, localNow, type ItineraryItem, type ItineraryKind } from "@/lib/platform/golfTripItinerary";
 import { addMyItem, itineraryFor, removeMyItem, updateMyItem, type TripTravel } from "@/lib/platform/tripTravel";
 import { GolfTripMyTravel, type MyTravelChange } from "./GolfTripMyTravel";
-import { TRAVEL_KIND_ART, TravelKindIcon } from "./travelKinds";
+import { TravelKindIcon } from "./travelKinds";
 import type { TripWeather } from "@/lib/platform/weather/types";
 import { flightCounts, flightTime, type FlightSummary } from "@/lib/platform/golfTripFlights";
 
@@ -22,6 +22,8 @@ import { GolfTripActionSheet } from "./GolfTripActionSheet";
 import { GolfTripGames } from "./GolfTripGames";
 import { GolfTripChat } from "./GolfTripChat";
 import { GolfTripItinerary, GolfTripVenue } from "./GolfTripVenue";
+import { ItineraryDetailSheet } from "./ItineraryDetailSheet";
+import { shortPlace } from "@/lib/platform/placeLabel";
 import { GolfTripNotifications } from "./GolfTripNotifications";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import styles from "./GolfTripHome.module.css";
@@ -49,7 +51,7 @@ const subscribeNever = () => () => {};
  * `navigation` optionally requests a shared tab/section; in-app navigation remains local between requests.
  * `onNavigationChange` optionally observes the actual tab/section; the dev wrapper supplies it only when embedded.
  */
-export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, roundLive = false, opponentCardMatches, scoringPrefill, onScoringSubmit, submittedCard }:
+export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, roundLive = false, opponentCardMatches, scoringPrefill, onScoringSubmit, submittedCard, scoringOwner }:
   { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview; weather?: Promise<TripWeather>; flights?: TripFlights;
     /** Everyone's travel (My Info, the Itinerary and the Home "what's next" cards). Only the dev mock trip has it for now. */
     travel?: TripTravel; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void; roundLive?: boolean;
@@ -58,7 +60,9 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
     /** Dev preview only: a finished-but-unsubmitted Scoring card (the "End of round" conditionals). */
     scoringPrefill?: ComponentProps<typeof GolfTripScoring>["prefill"];
     /** Player rounds: Submit & Save hands over the card; a round already saved for this player reopens locked. */
-    onScoringSubmit?: ComponentProps<typeof GolfTripScoring>["onSubmit"]; submittedCard?: ComponentProps<typeof GolfTripScoring>["submittedCard"] }) {
+    onScoringSubmit?: ComponentProps<typeof GolfTripScoring>["onSubmit"]; submittedCard?: ComponentProps<typeof GolfTripScoring>["submittedCard"];
+    /** Whose card this is (dev: the signed-in mock account). A different person gets a fresh Scoring sheet. */
+    scoringOwner?: string }) {
   const raw = useSyncExternalStore(subscribeNever, golfTripDraftSnapshot, () => "");
   const stored = useMemo(() => parseGolfTripDraft(raw), [raw]);
   const draft = preview ?? stored;
@@ -138,7 +142,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
         <Link href={settingsHref} className={styles.iconButton} aria-label="Trip settings"><Settings size={24} strokeWidth={1.75} aria-hidden /></Link>
       </div>
       <h1 className={styles.title}>{draft.tripName || "Your Golf Trip"}</h1>
-      <div className={styles.tabs} role="tablist" aria-label="Trip sections">
+      <div className={`${styles.tabs} ${styles.tripTabs}`} role="tablist" aria-label="Trip sections">
         {TABS.map((name) => <button key={name} type="button" role="tab" aria-selected={tab === name}
           className={`${styles.tab} ${tab === name ? styles.tabActive : ""}`} onClick={() => setTab(name)}>{name}</button>)}
       </div>
@@ -149,12 +153,14 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
           <GolfSlides key={String(competitive)} previewMatch={previewMatch} competitive={competitive} navigation={navigation} onNavigationChange={onNavigationChange} />
         </>
         : tab === "Venue" ? <GolfTripVenue draft={draft} settingsHref={settingsHref}
-          latitude={coordinate(draft.destinationLatitude)} longitude={coordinate(draft.destinationLongitude)} />
+          latitude={coordinate(draft.destinationLatitude)} longitude={coordinate(draft.destinationLongitude)}
+          players={travel?.members.map(member => member.name) ?? []} items={itinerary ?? []} onOpenItinerary={openItinerary} />
         : tab === "Info" ? <InfoSlides active={infoSlide} onActive={setInfoSlide} itinerary={itinerary} tripDays={dates}
+          whoFor={id => travel ? travel.participants.filter(p => p.itemId === id.split(":")[0] && p.status === "going").map(p => travel.members.find(m => m.id === p.memberId)?.name ?? "").filter(Boolean) : []}
           myInfo={travel ? <GolfTripMyTravel travel={travel} onChange={changeMyTravel} /> : <VenueEvents />} />
         : <Card title={tab}><Empty>Coming soon</Empty></Card>}
     </div>
-    {roundLive && <GolfTripScoring key={scoringPrefill ? `prefilled-${scoringPrefill.otherCardDiff ? "mismatch" : "match"}` : "blank"} prefill={scoringPrefill} onSubmit={onScoringSubmit} submittedCard={submittedCard} par={previewMatch?.par} initialHoles={yourHoles} courseName={previewMatch?.course} playerName={you ? getPlayerDisplayName(you) : draft.yourName || "You"} opponentCardMatches={opponentCardMatches} />}
+    {roundLive && <GolfTripScoring key={`${scoringOwner ?? "me"}-${scoringPrefill ? `prefilled-${scoringPrefill.otherCardDiff ? "mismatch" : "match"}` : "blank"}`} prefill={scoringPrefill} onSubmit={onScoringSubmit} submittedCard={submittedCard} par={previewMatch?.par} initialHoles={yourHoles} courseName={previewMatch?.course} playerName={you ? getPlayerDisplayName(you) : draft.yourName || "You"} opponentCardMatches={opponentCardMatches} />}
     <GolfTripChat open={chatOpen} onClose={() => setChatOpen(false)} tripName={draft.tripName || "Your Golf Trip"}
       members={[...new Set(previewMatch?.matches.flatMap(match => [match.left, match.right].flatMap(side => side ? normalizeCompetitor(side).golfers.map(golfer => getPlayerDisplayName(golfer.name)) : [])) ?? [])].filter(name => name !== getPlayerDisplayName(you ?? draft.yourName ?? ""))} />
   </main>;
@@ -544,11 +550,12 @@ function EventRow({ event }: { event: InfoEvent }) {
 }
 
 /** A Home "what's next" card: what it is, the headline, when, and one more line. Opens Info → Itinerary. */
-function ItineraryCard({ item, onOpen }: { item: ItineraryItem; onOpen: () => void }) {
+function ItineraryCard({ item, label: status, onOpen }: { item: ItineraryItem; label?: "Live" | "Upcoming"; onOpen: () => void }) {
   const when = `${itineraryDay(item.startsAt)} · ${itineraryTime(item.startsAt)}`;
   const label = ITINERARY_KIND_LABEL[item.kind];
   return <button type="button" className={`${styles.accountCard} ${styles.itineraryCard}`} onClick={onOpen}
-    aria-label={`${label}: ${item.title}, ${when}${item.detail ? `, ${item.detail}` : ""}. Open the itinerary`}>
+    aria-label={`${status ? `${status}: ` : ""}${label}: ${item.title}, ${when}${item.detail ? `, ${item.detail}` : ""}. Open the itinerary`}>
+    {status && <p className={styles.liveLabel} data-live={status === "Live"}>{status}</p>}
     <p className={styles.accountCardName}><TravelKindIcon kind={item.kind} size={14} /> {label}</p>
     <p className={styles.accountCardAmount}>{item.title}</p>
     <p className={styles.accountCardNote}>{when}</p>
@@ -558,40 +565,97 @@ function ItineraryCard({ item, onOpen }: { item: ItineraryItem; onOpen: () => vo
 
 /** Info tab: a slider with My Info (your travel; for trips without travel data, the older getting there / lodging / transportation lists) and Itinerary (everything, by day). Tap or swipe. */
 const INFO_SLIDES = ["My Info", "Itinerary"] as const;
-function InfoSlides({ active, onActive, itinerary, tripDays, myInfo }: { active: number; onActive: (index: number) => void; itinerary?: ItineraryItem[]; tripDays: string[]; myInfo: ReactNode }) {
+function InfoSlides({ active, onActive, itinerary, tripDays, myInfo, whoFor }: { active: number; onActive: (index: number) => void; itinerary?: ItineraryItem[]; tripDays: string[]; myInfo: ReactNode; whoFor?: (itemId: string) => string[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
-  // Follow the chosen tab (taps, or a Home card opening Itinerary).
+  // True while a tab tap is sliding the track, so the scroll handler doesn't read the halfway point as a swipe.
+  const sliding = useRef(false);
+  // Follow the chosen tab (taps, or a Home card opening Itinerary): slide there in 100 ms (snapping paused while it moves).
   useEffect(() => {
     const track = trackRef.current;
-    if (track && Math.round(track.scrollLeft / Math.max(1, track.clientWidth)) !== active) track.scrollTo({ left: active * track.clientWidth, behavior: "instant" });
+    if (!track || Math.round(track.scrollLeft / Math.max(1, track.clientWidth)) === active) return;
+    const from = track.scrollLeft, to = active * track.clientWidth;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { track.scrollTo({ left: to, behavior: "instant" }); return; }
+    track.style.scrollSnapType = "none";
+    sliding.current = true;
+    const start = performance.now();
+    let frame = 0;
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / 100);
+      track.scrollLeft = from + (to - from) * (1 - (1 - t) ** 3);
+      if (t < 1) frame = requestAnimationFrame(step);
+      else { track.style.scrollSnapType = ""; sliding.current = false; }
+    };
+    frame = requestAnimationFrame(step);
+    return () => { cancelAnimationFrame(frame); track.style.scrollSnapType = ""; sliding.current = false; };
   }, [active]);
   const onScroll = () => {
+    if (sliding.current) return;
     const track = trackRef.current;
     if (track && track.clientWidth > 0) { const index = Math.round(track.scrollLeft / track.clientWidth); if (index !== active) onActive(index); }
   };
   return <>
-    <div className={styles.tabs} role="tablist" aria-label="Info sections">
+    <div className={`${styles.tabs} ${styles.infoTabs}`} role="tablist" aria-label="Info sections">
       {INFO_SLIDES.map((name, index) => <button key={name} type="button" role="tab" aria-selected={active === index}
         className={`${styles.tab} ${active === index ? styles.tabActive : ""}`} onClick={() => onActive(index)}>{name}</button>)}
     </div>
     <div ref={trackRef} className={styles.slides} onScroll={onScroll}>
       <div className={styles.slide} role="tabpanel" aria-label="My Info" inert={active !== 0}>{myInfo}</div>
-      <div className={styles.slide} role="tabpanel" aria-label="Itinerary" inert={active !== 1}><ItineraryList items={itinerary} tripDays={tripDays} /></div>
+      <div className={styles.slide} role="tabpanel" aria-label="Itinerary" inert={active !== 1}><ItineraryList items={itinerary} tripDays={tripDays} whoFor={whoFor} /></div>
     </div>
   </>;
 }
 
-/** Info → Itinerary: every day of the trip (plus any day outside it with something on it), each item in time order. */
-function ItineraryList({ items, tripDays }: { items?: ItineraryItem[]; tripDays: string[] }) {
+/**
+ * Info → Itinerary: one day at a time. A day selector (< weekday / date >) over a line, then that day's plans in time order.
+ * Days run from the trip's first day (plus any earlier day with something on it) to its last; no < on the first, no > on the last.
+ * Opens on today when today is one of the days.
+ */
+function ItineraryList({ items, tripDays, whoFor }: { items?: ItineraryItem[]; tripDays: string[]; whoFor?: (itemId: string) => string[] }) {
   const days = itineraryByDay(items ?? [], tripDays);
+  const [picked, setPicked] = useState<number | null>(null);
+  // Tap a plan's box → its detail sheet slides up.
+  const [openItem, setOpenItem] = useState<ItineraryItem | null>(null);
+  const [todayIso] = useState(() => localNow(new Date()).slice(0, 10));
+  // Arrows: the day slides away (50 ms), then the next one slides in from that side (50 ms) — 100 ms in all.
+  const [slide, setSlide] = useState<{ to: number; dir: 1 | -1; stage: "out" | "in" } | null>(null);
   if (!days.length) return <Card title="Itinerary"><Empty>Nothing on the itinerary yet</Empty></Card>;
+  const today = days.findIndex(({ day }) => day === todayIso);
+  const index = Math.min(days.length - 1, picked ?? Math.max(0, today));
+  const { day, items: dayItems } = days[index];
+  const go = (dir: 1 | -1) => {
+    if (slide) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) setPicked(index + dir);
+    else setSlide({ to: index + dir, dir, stage: "out" });
+  };
+  const slideClass = !slide ? "" : slide.stage === "out" ? (slide.dir === 1 ? styles.dayOutLeft : styles.dayOutRight) : (slide.dir === 1 ? styles.dayInRight : styles.dayInLeft);
+  const onSlideEnd = () => {
+    if (slide?.stage === "out") { setPicked(slide.to); setSlide({ ...slide, stage: "in" }); }
+    else setSlide(null);
+  };
   return <div className={styles.events}>
-    {days.map(({ day, items: dayItems }) => <section key={day} className={styles.infoSection} aria-label={itineraryDay(day)}>
-      <h2 className={styles.eventsHeading}>{itineraryDay(day)}</h2>
+    <section className={styles.infoSection} aria-label={`${itineraryWeekday(day)}, ${itineraryLongDate(day)}`}>
+      <div className={styles.itineraryDayHeading}>
+        {index > 0 ? <button type="button" className={styles.itineraryDayStep} aria-label="Previous day" onClick={() => go(-1)}><ChevronLeft size={22} strokeWidth={2.25} aria-hidden /></button> : <span className={styles.itineraryDayStep} aria-hidden />}
+        <h2 className={`${styles.itineraryDayTitle} ${slideClass}`}><span>{itineraryWeekday(day)}</span><small>{itineraryLongDate(day)}</small></h2>
+        {index < days.length - 1 ? <button type="button" className={styles.itineraryDayStep} aria-label="Next day" onClick={() => go(1)}><ChevronRight size={22} strokeWidth={2.25} aria-hidden /></button> : <span className={styles.itineraryDayStep} aria-hidden />}
+      </div>
+      <div className={`${styles.itineraryDayBody} ${slideClass}`} onAnimationEnd={event => { if (event.target === event.currentTarget) onSlideEnd(); }}>
       {dayItems.length === 0 && <p className={styles.itineraryEmptyDay}>Nothing planned for today.</p>}
-      {dayItems.map((item) => <EventRow key={item.id} event={{ host: ITINERARY_KIND_LABEL[item.kind], title: item.title, art: TRAVEL_KIND_ART[item.kind],
-        kindIcon: item.kind, lines: [{ icon: Clock, text: itineraryTime(item.startsAt) }, item.detail && { icon: MapPin, text: item.detail }] }} />)}
-    </section>)}
+      {/* Each of your plans that day: its type above, then a raised cream box (like Competition → Format rounds) with the time over a line, the headline and details. Tap for its sheet. */}
+      {dayItems.map((item, index) => <div key={item.id} className={styles.itineraryEntry}>
+        {/* The type sits above its box in cream, left-aligned, over a line — once for a run of the same type back to back. */}
+        {(index === 0 || itineraryCategory(dayItems[index - 1]) !== itineraryCategory(item)) && <h3 className={styles.itineraryType}>{itineraryCategory(item)}</h3>}
+        <button type="button" className={styles.itineraryBox} aria-haspopup="dialog" aria-label={`${itineraryCategory(item)}: ${item.title}, ${itineraryTime(item.startsAt)}`} onClick={() => setOpenItem(item)}>
+          <div className={styles.itineraryBoxTop}>
+            <span className={styles.itineraryBoxTime}>{itineraryTime(item.startsAt)}</span>
+          </div>
+          <span className={styles.itineraryBoxTitle}>{item.title}</span>
+          {item.detail && <span className={styles.itineraryBoxTime}>{item.detail}</span>}
+        </button>
+      </div>)}
+      </div>
+    </section>
+    {openItem && <ItineraryDetailSheet item={openItem} going={whoFor?.(openItem.id) ?? []} onClose={() => setOpenItem(null)} />}
   </div>;
 }
 
@@ -620,21 +684,15 @@ function InfoAccount({ draft, settingsHref, flights, weather, itinerary, onOpenI
 }) {
   const destination = draft.destination;
   const tripDateRange = dateRangeLabel(draft.startDate, draft.endDate);
-  // The next 5 things on the itinerary that haven't started yet ("now" read once, when Home opens).
+  // Live (what's happening now) and Upcoming (what's next); before the trip, the first two upcoming. "now" is read once, when Home opens.
   const [now] = useState(() => localNow(new Date()));
-  const upcoming = itinerary ? upcomingItinerary(itinerary, now) : [];
-  const cardCount = itinerary ? Math.max(1, upcoming.length) : 2;
-  const [activeCard, setActiveCard] = useState(0);
-  const onCardsScroll = (event: UIEvent<HTMLDivElement>) => {
-    const track = event.currentTarget;
-    const maxScroll = track.scrollWidth - track.clientWidth;
-    setActiveCard(maxScroll > 0 ? Math.round((track.scrollLeft / maxScroll) * (cardCount - 1)) : 0);
-  };
+  const boxes = itinerary ? liveAndUpcoming(itinerary, now) : [];
   return <div className={styles.account}>
     <div className={styles.accountTop}>
       {/* Left 65%: "Your trip to", the destination under it, then the trip's dates in gold (left out if there are none). */}
       <div className={styles.accountTitleBlock}>
-        <p className={styles.accountLabel}>{destination ? <>Your trip to<span className={styles.accountDestination}>{destination}</span></> : "Your trip"}</p>
+        {/* Always two rows: "Your trip to", then "City, ST" (US) or "City, CC" (country code abroad) on one line. */}
+        <p className={styles.accountLabel}>{destination ? <>Your trip to<span className={styles.accountDestination} title={destination}>{shortPlace(destination)}</span></> : "Your trip"}</p>
         {tripDateRange && <p className={styles.accountDates}>{tripDateRange}</p>}
       </div>
       {/* Right 35%: quick weather at the destination (only when the trip has a weather lookup). */}
@@ -642,20 +700,19 @@ function InfoAccount({ draft, settingsHref, flights, weather, itinerary, onOpenI
         <QuickWeather weather={weather} />
       </Suspense>}
     </div>
-    {/* What's next: the next few itinerary items, soonest first (tap one to open Info → Itinerary). Trips without an
-        itinerary keep the Flights card. One dot per card; the filled dot follows the swipe. */}
-    <div className={styles.accountCards} onScroll={onCardsScroll}>
+    {/* Two boxes, one over the other, 5% in from each side: Live then Upcoming (or two Upcoming before anything is live).
+        Tap one to open Info → Itinerary. Trips without an itinerary keep the Flights card. */}
+    <div className={styles.liveBoxes}>
       {itinerary
-        ? upcoming.length
-          ? upcoming.map((item) => <ItineraryCard key={item.id} item={item} onOpen={onOpenItinerary} />)
+        ? boxes.length
+          ? boxes.map(({ label, item }) => <ItineraryCard key={item.id} label={label} item={item} onOpen={onOpenItinerary} />)
           : <button type="button" className={`${styles.accountCard} ${styles.itineraryCard}`} onClick={onOpenItinerary}>
             <p className={styles.accountCardName}><CalendarDays size={14} strokeWidth={2} aria-hidden /> Itinerary</p>
             <p className={styles.accountCardAmount}>Nothing else coming up</p>
             <p className={styles.accountCardNote}>See the full itinerary</p>
           </button>
-        : <><FlightsCard flights={flights} /><div className={styles.accountCard} aria-hidden /></>}
+        : <FlightsCard flights={flights} />}
     </div>
-    <div className={styles.accountDots} aria-hidden>{Array.from({ length: cardCount }, (_, index) => <span key={index} className={activeCard === index ? styles.accountDotActive : undefined} />)}</div>
     <GolfTripItinerary draft={draft} settingsHref={settingsHref} />
   </div>;
 }

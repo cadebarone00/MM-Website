@@ -35,3 +35,10 @@ test("empty, corrupt or wrong-shaped saved data falls back to the seed", () => {
   const saved = devRoundsReducer(seedDevRounds(), { type: "setVisibility", profileId: "dev-jake", visibility: "public" });
   assert.deepEqual(parseDevRounds(JSON.stringify(saved)), saved);
 });
+
+test("saved data with malformed entries falls back to the seed instead of crashing later", () => {
+  assert.deepEqual(parseDevRounds(JSON.stringify({ rounds: [null, { id: "x" }], linkRequests: [{}], visibility: [] })), seedDevRounds());
+  const good = seedDevRounds();
+  assert.deepEqual(parseDevRounds(JSON.stringify({ ...good, linkRequests: [{ id: "l1" }] })), seedDevRounds());
+  assert.deepEqual(parseDevRounds(JSON.stringify({ ...good, visibility: { "dev-cade": "everyone" } })), seedDevRounds());
+});

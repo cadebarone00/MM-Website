@@ -172,7 +172,50 @@ span.typeChoice{cursor:default}
 /* Golf Schedule spacing: half the old gaps (12px between boxes, 15px from the day line to the first box). */
 .roundDayHeader:has(+ .scheduleRoundCard){margin-bottom:3px}
 .scheduleRoundCard .roundCardPlace{display:block;margin-top:3px;color:#805b24;font:500 13px/1.2 var(--font-barlow),sans-serif}
-/* Format: Comp switch on the right of a cream round box (maroon text, darker off track for contrast on cream). */
-.compSwitch{flex:none;display:grid;justify-items:center;gap:2px;color:#805b24;font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
-.compSwitch button{min-height:30px;color:#591c2e}
-.compSwitch [data-on=false]{background:rgba(89,28,46,.22)}
+/* Format: a list of round boxes; horizontal Comp switch top right (thumb right = on). Off greys the box out. */
+.formatRounds{display:grid;gap:12px}
+.scheduleRoundCard.formatRoundCard{align-items:flex-start;justify-content:space-between;gap:14px;cursor:default;transition:opacity .2s,filter .2s}
+/* Off: the box and its text grey out, but the switch stays bright so it's clear it can be turned back on. */
+.scheduleRoundCard.formatRoundCard[data-comp=false]{background:linear-gradient(180deg,#d9d6d1 0%,#c9c5bf 100%);border-color:rgba(255,255,255,.2)}
+.formatRoundCard[data-comp=false] > span{opacity:.5;filter:grayscale(1)}
+.formatRoundCard[data-comp=false] .formatSwitch{background:#fbf8f1;box-shadow:inset 0 0 0 2px #591c2e,0 0 0 3px rgba(220,196,149,.55)}
+.formatRoundCard[data-comp=false] .formatThumb{background:#591c2e}
+.formatRoundCard .roundCardPlace{margin:0 0 2px}
+.formatSwitch{flex:none;display:flex;justify-content:flex-start;align-items:center;width:44px;height:24px;padding:3px;box-sizing:border-box;border:0;border-radius:999px;background:rgba(89,28,46,.22);cursor:pointer;transition:background .2s}
+.formatSwitch[aria-checked=true]{justify-content:flex-end;background:#591c2e}
+.formatThumb{width:18px;height:18px;border-radius:50%;background:#fbf8f1;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.formatSwitch[aria-checked=true] .formatThumb{background:#dcc495}
+.formatSwitch:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
+/* Golf on Arrival / Departure Day: two tight rows tucked under the date pills. */
+.golfDaySettings{display:grid;gap:0;margin-top:-30px}
+.golfDaySetting.golfDaySetting{margin:0}
+.golfDaySetting button{min-height:28px}
+.formatRoundCard .roundCardButton:disabled{cursor:default}
+.formatRoundCard .roundCardButton{flex:1}
+/* Round competition settings: stacked groups; choice ovals wrap across the row. */
+.roundComp{display:grid;gap:20px;padding-top:4px}
+.roundComp .totalPlayers{margin:0}
+.roundCompChoices{display:flex;flex-wrap:wrap;gap:8px}
+.roundCompChoices .typeChoice{min-height:38px;padding:4px 14px}
+/* Round competition: format ovals in two columns, filled down the left first. */
+.formatColumns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(4,auto);grid-auto-flow:column;gap:8px 10px}
+.formatColumns .typeChoice{min-height:40px}
+/* Round competition: Submit & Save, full width at the bottom (gold on maroon). */
+.roundCompSubmit{width:100%;min-height:48px;margin-top:4px;border:0;border-radius:999px;background:#dcc495;color:var(--color-maroon-900);font:700 14px/1 var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;box-shadow:0 6px 14px rgba(0,0,0,.3)}
+.roundCompSubmit:focus-visible{outline:2px solid #fbf8f1;outline-offset:3px}
+/* Format heading with the (i) rules button on the right, over the second column. */
+.formatHeading{display:flex;align-items:center;justify-content:space-between}
+.formatInfo{display:grid;place-items:center;width:30px;height:30px;padding:0;border:0;background:transparent;color:#dcc495;cursor:pointer}
+.formatInfo:focus-visible{outline:2px solid #dcc495;outline-offset:2px;border-radius:50%}
+/* Format rules pop-up: scrolls inside the card when the list is long. */
+.rulesBody{max-height:calc(72vh - 40px);overflow-y:auto;padding-top:4px}
+.rulesList{display:grid;gap:8px;margin:0;padding-left:20px;color:#111;font:500 15px/1.4 var(--font-spectral),Georgia,serif}
+/* Overview: a side's settings sit in a fieldset; once submitted & saved it's disabled and greyed out. */
+.compLock{display:grid;gap:10px;min-width:0;margin:0;padding:0;border:0;transition:opacity .2s,filter .2s}
+.compLock:disabled{opacity:.45;filter:grayscale(1)}
+.compLockButton.compLockButton{margin-top:12px}
+/* Save / submit / undo buttons use the Scoring button's look (button scoring mode): 70% wide, centered, 46px tall, 12px corners,
+   Spectral bold 14px and a soft shadow. Its maroon and cream are swapped so it shows on this maroon page. */
+.selectTeams.selectTeams,.roundCompSubmit.roundCompSubmit{display:block;width:70%;height:46px;min-height:46px;margin:14px auto 0;padding:0 16px;border:0;border-radius:12px;background:#f8f3ea;color:var(--color-maroon-900,#2f0c0e);font:700 14px/1 var(--font-spectral),Georgia,serif;letter-spacing:0;text-transform:none;box-shadow:0 6px 18px rgba(0,0,0,.25);cursor:pointer}
+.selectTeams.selectTeams:disabled,.roundCompSubmit.roundCompSubmit:disabled{opacity:.4;cursor:default}
+.selectTeams.selectTeams:focus-visible,.roundCompSubmit.roundCompSubmit:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:2px}

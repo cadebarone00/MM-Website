@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { BedDouble, CalendarDays, ChevronRight, Flag, Plus, Search } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, BedDouble, CalendarDays, Camera, Car, ChevronRight, Flag, LayoutGrid, ListChecks, Map as MapIcon, MapPin, ShoppingBag, Utensils } from "lucide-react";
+import type { ItineraryItem } from "@/lib/platform/golfTripItinerary";
 import { plannedRounds, tripDates, type GolfTripDraft } from "@/lib/platform/golfTripDraft";
 import styles from "./GolfTripVenue.module.css";
 
@@ -47,36 +49,81 @@ const monthDay = (date: string) => {
 };
 
 /** Venue tab: map on top, then a sheet with the round and night counts. */
-export function GolfTripVenue({ draft, latitude, longitude, settingsHref }: {
-  draft: GolfTripDraft; latitude?: number; longitude?: number; settingsHref: string;
+/** Counts my plans by base item (a lodging check-in and check-out are one stay). */
+function countKinds(items: ItineraryItem[], kinds: ItineraryItem["kind"][]): number {
+  return new Set(items.filter(item => kinds.includes(item.kind)).map(item => item.id.split(":")[0])).size;
+}
+
+/**
+ * Venue tab: a photo card for the destination, the trip's players with its dates, Map and Itinerary tiles, then category tiles
+ * with how many things are in each. The photo is a placeholder for now; Map opens the venue map; Itinerary opens Info → Itinerary.
+ */
+export function GolfTripVenue({ draft, latitude, longitude, players = [], items = [], onOpenItinerary }: {
+  draft: GolfTripDraft; latitude?: number; longitude?: number; settingsHref?: string;
+  players?: string[]; items?: ItineraryItem[]; onOpenItinerary?: () => void;
 }) {
+  const [mapOpen, setMapOpen] = useState(false);
+  const [today] = useState(() => new Date().toISOString().slice(0, 10));
   const rounds = plannedRounds(draft);
   const dates = tripDates(draft.startDate, draft.endDate);
-  const nights = Math.max(0, dates.length - 1);
+  const range = dates.length ? `${monthDay(dates[0]).month} ${monthDay(dates[0]).day} – ${monthDay(dates.at(-1)!).month} ${monthDay(dates.at(-1)!).day}, ${dates.at(-1)!.slice(0, 4)}` : "Dates TBD";
+  const daysToGo = dates.length ? Math.round((Date.parse(`${dates[0]}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000) : null;
+  const countdown = daysToGo === null ? "" : daysToGo > 1 ? `${daysToGo} days to go` : daysToGo === 1 ? "1 day to go" : daysToGo === 0 ? "Starts today" : dates.at(-1)! >= today ? "Happening now" : "Trip over";
+  const place = (draft.destination ?? "").split(",")[0]?.trim() || "Destination TBD";
+  const categories: { name: string; icon: typeof Flag; count: number }[] = [
+    { name: "Golf", icon: Flag, count: rounds.length },
+    { name: "Stay", icon: BedDouble, count: countKinds(items, ["lodging"]) },
+    { name: "Transport", icon: Car, count: countKinds(items, ["flight", "ride"]) },
+    { name: "Eat & Drink", icon: Utensils, count: countKinds(items, ["dining"]) },
+    { name: "See & Do", icon: Camera, count: 0 },
+    { name: "Shop", icon: ShoppingBag, count: 0 },
+    { name: "General", icon: LayoutGrid, count: countKinds(items, ["other"]) },
+  ];
 
-
-  return <div className={styles.venue}>
+  if (mapOpen) return <div className={styles.venue}>
     <VenueMap latitude={latitude} longitude={longitude} />
-    <section className={styles.sheet} aria-label="Venue">
+    <section className={styles.sheet} aria-label="Venue map">
       <span className={styles.grabber} aria-hidden />
-      {/* Look only for now: the search bar doesn't search anything yet. */}
-      <div className={styles.searchRow}>
-        <label className={styles.searchBar}>
-          <Search size={18} aria-hidden />
-          <input type="search" className={styles.searchInput} placeholder="Search the venue" aria-label="Search the venue" />
-        </label>
-        <Link href={settingsHref} className={styles.roundButton} aria-label="Add to the trip"><Plus size={22} aria-hidden /></Link>
-      </div>
-
-      <div className={styles.statsCard}>
-        <span className={styles.avatar} aria-hidden>{initials(draft.destination ?? "")}</span>
-        <div className={styles.stat}><strong>{rounds.length}</strong><span><Flag size={12} aria-hidden />rounds</span></div>
-        <div className={styles.stat}><strong>{nights}</strong><span><BedDouble size={12} aria-hidden />nights</span></div>
-        <ChevronRight className={styles.chevron} size={18} aria-hidden />
-      </div>
-
-
+      <button type="button" className={styles.mapBack} onClick={() => setMapOpen(false)}><ArrowLeft size={18} aria-hidden /> Back to Venue</button>
     </section>
+  </div>;
+
+  return <div className={styles.venueHome}>
+    {/* Photo card: placeholder until there's a real destination photo; the destination sits in a chip at the bottom. */}
+    <div className={styles.hero} role="img" aria-label={`${place} photo placeholder`}>
+      <span className={styles.heroChip}><MapPin size={14} aria-hidden /> {place}</span>
+    </div>
+
+    <div className={styles.venueRow}>
+      <div className={styles.venueColumn}>
+        <div className={styles.avatars} aria-label={`${players.length} players`}>
+          {players.slice(0, 4).map((name, index) => <span key={`${index}-${name}`} className={styles.avatarDot} title={name}>{initials(name)}</span>)}
+          {players.length > 4 && <span className={`${styles.avatarDot} ${styles.avatarMore}`}>+{players.length - 4}</span>}
+          {!players.length && <span className={styles.tileMuted}>No players yet</span>}
+        </div>
+        <div className={styles.venueTile}>
+          <span className={styles.tileLabel}><CalendarDays size={15} aria-hidden /> Dates</span>
+          <strong className={styles.tileValue}>{range}</strong>
+          {countdown && <span className={styles.tileMuted}>{countdown}</span>}
+        </div>
+      </div>
+      <div className={styles.venueColumn}>
+        <button type="button" className={`${styles.venueTile} ${styles.tileButton}`} onClick={() => setMapOpen(true)}>
+          <span className={styles.tileLabel}><MapIcon size={15} aria-hidden /> Map</span>
+        </button>
+        <button type="button" className={`${styles.venueTile} ${styles.tileButton}`} onClick={onOpenItinerary} disabled={!onOpenItinerary}>
+          <span className={styles.tileLabel}><ListChecks size={15} aria-hidden /> Itinerary</span>
+        </button>
+      </div>
+    </div>
+
+    {/* Category tiles, two across, with how many things each holds (from the rounds and your plans). */}
+    <div className={styles.categoryGrid}>
+      {categories.map(({ name, icon: Icon, count }) => <div key={name} className={styles.venueTile}>
+        <span className={styles.categoryIcon} aria-hidden><Icon size={18} /></span>
+        <span className={styles.categoryText}><strong>{name}</strong><span>{count} {count === 1 ? "item" : "items"}</span></span>
+      </div>)}
+    </div>
   </div>;
 }
 

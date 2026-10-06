@@ -59,3 +59,12 @@ test("handicap index needs 3 counting rounds and uses the most recent 20", () =>
   const three = [...two, counting(88, "2027-01-03", "c")];
   assert.deepEqual(handicapSummary(three), { index: 6, lowIndex: 6, counting: 3 }); // lowest of 8/13/16 = 8, −2.0 for 3 rounds
 });
+
+test("other spellings and names of team formats don't count either", () => {
+  for (const format of ["Alternate-Shot", "Pinehurst", "Gruesome", "Gruesomes", "Texas Scramble"]) {
+    assert.equal(buildPlayerRound(input({ format })).countsForHandicap, false, format);
+  }
+  for (const format of ["Singles Stroke Play", "Best Ball", "Four-Ball", "Stableford"]) {
+    assert.equal(buildPlayerRound(input({ format })).countsForHandicap, true, format);
+  }
+});
