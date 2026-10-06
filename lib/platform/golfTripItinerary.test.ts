@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { itineraryByDay, itineraryDay, itineraryTime, localNow, sortItinerary, upcomingItinerary, type ItineraryItem } from "./golfTripItinerary";
-import { GOLF_TRIP_MOCK_ITINERARY } from "./golfTripPreviewFixture";
+import { GOLF_TRIP_MOCK_TRAVEL } from "./golfTripPreviewFixture";
+import { itineraryFor } from "./tripTravel";
 
 const item = (id: string, startsAt: string): ItineraryItem => ({ id, kind: "teeTime", title: id, startsAt });
 
@@ -25,8 +26,9 @@ test("labels: day, time, and local now", () => {
   assert.equal(localNow(new Date(2027, 3, 22, 9, 5)), "2027-04-22T09:05");
 });
 
-test("mock trip itinerary: valid times, unique ids, spans the trip", () => {
-  assert.equal(sortItinerary(GOLF_TRIP_MOCK_ITINERARY).length, GOLF_TRIP_MOCK_ITINERARY.length);
-  assert.equal(new Set(GOLF_TRIP_MOCK_ITINERARY.map((i) => i.id)).size, GOLF_TRIP_MOCK_ITINERARY.length);
-  assert.ok(GOLF_TRIP_MOCK_ITINERARY.length >= 5, "enough for the 5 Home cards");
+test("mock trip itinerary: valid times, unique ids, enough for the Home cards", () => {
+  const mock = itineraryFor(GOLF_TRIP_MOCK_TRAVEL);
+  assert.equal(sortItinerary(mock).length, mock.length);
+  assert.equal(new Set(mock.map((i) => i.id)).size, mock.length);
+  assert.ok(mock.length >= 5, "enough for the 5 Home cards");
 });

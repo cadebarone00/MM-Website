@@ -198,7 +198,9 @@
 .scorecardTotals dd{margin:0;font-size:37px;line-height:1;font-weight:700}
 /* Card view: the course name above the scorecard; totals turn green once the card can be submitted; Submit & Save under them. */
 .scorecardCourse{margin:2px 0 0;text-align:center;font:700 20px/1.2 var(--font-spectral),Georgia,serif;color:var(--color-maroon-900,#2f0c0e)}
-.scorecardTotalsReady dd{color:#2e7d32}
+/* Each player's name + score: green when the other phone agrees, red when it doesn't. */
+.scorecardTotals [data-check=ok] dt,.scorecardTotals [data-check=ok] dd{color:#2e7d32}
+.scorecardTotals [data-check=wrong] dt,.scorecardTotals [data-check=wrong] dd{color:#c62828}
 .submitSave{flex:none;margin-top:6px}
 .untouchedScore{color:rgba(47,12,14,.38);font-weight:600}
 
@@ -208,3 +210,10 @@
 .gpsOverlay .exitButton{color:#fff}
 .sheetFull .exitButton{top:calc(8px + env(safe-area-inset-top))}
 .holeSelection{display:flex;flex-direction:column;gap:6px}
+/* Card score shapes (match the leaderboard card): birdie circle, eagle-or-better double circle, bogey box, double bogey or
+   worse double box. Rings are box-shadows so the cell never changes size; the double's gap is the tinted section colour. */
+.shape{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;width:24px;height:24px;padding-top:2px;line-height:1;font-variant-numeric:lining-nums tabular-nums}
+.shapeCircle{border-radius:50%}
+.shapeBox{border-radius:2px}
+.shapeCircle,.shapeBox{box-shadow:inset 0 0 0 1px currentColor}
+.shapeCircle.shapeDouble,.shapeBox.shapeDouble{box-shadow:inset 0 0 0 1px currentColor,0 0 0 2px #ede1d8,0 0 0 3px currentColor}

@@ -4,7 +4,7 @@ import type { Tournament } from "../data/types";
 import type { GolfTripDraft } from "./golfTripDraft";
 import type { GolfTripFlight } from "./golfTripFlights";
 import type { TripWeather } from "./weather/types";
-import type { ItineraryItem } from "./golfTripItinerary";
+import type { TravelItem, TravelParticipant, TripTravel } from "./tripTravel";
 import { FORMATS, type FormatDefinition } from "./formats";
 
 function tournamentTripDraftFromTournament(tournament: Tournament): GolfTripDraft {
@@ -415,19 +415,44 @@ export const GOLF_TRIP_PREVIEW_FLIGHTS: GolfTripFlight[] = [
 ];
 
 /**
- * DEV ONLY: the mock trip's itinerary (Friends Golf Weekend, Phoenix area, Apr 22–25 2027), matching its flights and
- * courses. Feeds the Home "what's next" cards and Info → Itinerary. Made up; real trips don't have an itinerary yet.
+ * DEV ONLY: the mock trip's travel (Friends Golf Weekend, Phoenix area, Apr 22–25 2027) — mock players, my flights / rental
+ * car / hotel, the organizer's dinners and tee times, and a few other players' plans. Everyone's itinerary is built from
+ * this (tripTravel.itineraryFor). Made up; real trips don't have travel yet.
  */
-export const GOLF_TRIP_MOCK_ITINERARY: ItineraryItem[] = [
-  { id: "it-flight-out-1", kind: "flight", title: "AA1234 · RDU → DFW", detail: "American Airlines · Lands 8:05 AM", startsAt: "2027-04-22T06:10" },
-  { id: "it-flight-out-2", kind: "flight", title: "AA2210 · DFW → PHX", detail: "American Airlines · Lands 10:05 AM", startsAt: "2027-04-22T09:15" },
-  { id: "it-car-pickup", kind: "ride", title: "Rental car pickup", detail: "PHX Sky Harbor · Rental Car Center", startsAt: "2027-04-22T10:45" },
-  { id: "it-hotel-in", kind: "lodging", title: "The Shorebreak Villas", detail: "Check-in · 3 nights", startsAt: "2027-04-22T15:00" },
-  { id: "it-dinner-1", kind: "dining", title: "Fireside Grill", detail: "Dinner reservation · 8 people", startsAt: "2027-04-22T19:30" },
-  { id: "it-tee-1", kind: "teeTime", title: "Desert Pines GC", detail: "Round 1 · Tee time", startsAt: "2027-04-23T08:30" },
-  { id: "it-dinner-2", kind: "dining", title: "Canyon Steakhouse", detail: "Dinner reservation · 8 people", startsAt: "2027-04-23T19:00" },
-  { id: "it-tee-2", kind: "teeTime", title: "Canyon Ridge", detail: "Round 2 · Tee time", startsAt: "2027-04-24T09:10" },
-  { id: "it-hotel-out", kind: "lodging", title: "The Shorebreak Villas", detail: "Check-out", startsAt: "2027-04-25T10:00" },
-  { id: "it-car-return", kind: "ride", title: "Rental car return", detail: "PHX Sky Harbor · Rental Car Center", startsAt: "2027-04-25T11:30" },
-  { id: "it-flight-home", kind: "flight", title: "AA987 · PHX → RDU", detail: "American Airlines · Lands 9:02 PM", startsAt: "2027-04-25T13:40" },
-];
+const ME = "member-alex", PARKER = "member-jordan", CHEN = "member-morgan", DIAZ = "member-riley";
+const going = (itemId: string, ...memberIds: string[]): TravelParticipant[] => memberIds.map((memberId) => ({ itemId, memberId, status: "going" }));
+const ALL = [ME, PARKER, CHEN, DIAZ];
+const mine = (id: string, kind: TravelItem["kind"], details: TravelItem["details"], startsAt: string, endsAt: string | undefined, createdBy: string): TravelItem =>
+  ({ id, kind, details, startsAt, endsAt, createdBy, source: "mine", joinPolicy: "none", optOutAllowed: true });
+const organized = (id: string, kind: TravelItem["kind"], details: TravelItem["details"], startsAt: string): TravelItem =>
+  ({ id, kind, details, startsAt, createdBy: ME, source: "organizer", joinPolicy: "none", optOutAllowed: kind !== "teeTime" });
+
+export const GOLF_TRIP_MOCK_TRAVEL: TripTravel = {
+  meId: ME,
+  members: [
+    { id: ME, name: "Alex Morgan", role: "organizer" },
+    { id: PARKER, name: "Jordan Parker", role: "player" },
+    { id: CHEN, name: "Morgan Chen", role: "player" },
+    { id: DIAZ, name: "Riley Diaz", role: "player" },
+  ],
+  items: [
+    mine("tr-flight-out-1", "flight", { airline: "American Airlines", flightNumber: "AA1234", from: "RDU", to: "DFW" }, "2027-04-22T06:10", "2027-04-22T08:05", ME),
+    mine("tr-flight-out-2", "flight", { airline: "American Airlines", flightNumber: "AA2210", from: "DFW", to: "PHX" }, "2027-04-22T09:15", "2027-04-22T10:05", ME),
+    mine("tr-car", "ride", { rideType: "rental", place: "PHX Sky Harbor · Rental Car Center", seats: 3 }, "2027-04-22T10:45", "2027-04-25T11:30", ME),
+    mine("tr-hotel", "lodging", { name: "The Shorebreak Villas", place: "Scottsdale" }, "2027-04-22T15:00", "2027-04-25T10:00", ME),
+    mine("tr-flight-home", "flight", { airline: "American Airlines", flightNumber: "AA987", from: "PHX", to: "RDU" }, "2027-04-25T13:40", "2027-04-25T21:02", ME),
+    organized("tr-dinner-1", "dining", { name: "Fireside Grill", note: "Reservation for 8" }, "2027-04-22T19:30"),
+    organized("tr-tee-1", "teeTime", { name: "Desert Pines GC", note: "Round 1" }, "2027-04-23T08:30"),
+    organized("tr-dinner-2", "dining", { name: "Canyon Steakhouse", note: "Reservation for 8" }, "2027-04-23T19:00"),
+    organized("tr-tee-2", "teeTime", { name: "Canyon Ridge", note: "Round 2" }, "2027-04-24T09:10"),
+    // Other players' own plans (shown in the group view in a later step).
+    mine("tr-parker-flight", "flight", { airline: "American Airlines", flightNumber: "AA2210", from: "DFW", to: "PHX" }, "2027-04-22T09:15", "2027-04-22T10:05", PARKER),
+    mine("tr-chen-drive", "ride", { rideType: "driving", from: "Tucson", to: "Scottsdale", seats: 2 }, "2027-04-22T11:00", undefined, CHEN),
+    mine("tr-diaz-flight", "flight", { airline: "Southwest", flightNumber: "WN1456", from: "DEN", to: "PHX" }, "2027-04-22T12:20", "2027-04-22T13:35", DIAZ),
+  ],
+  participants: [
+    ...going("tr-flight-out-1", ME), ...going("tr-flight-out-2", ME), ...going("tr-car", ME), ...going("tr-hotel", ME), ...going("tr-flight-home", ME),
+    ...going("tr-dinner-1", ...ALL), ...going("tr-tee-1", ...ALL), ...going("tr-dinner-2", ...ALL), ...going("tr-tee-2", ...ALL),
+    ...going("tr-parker-flight", PARKER), ...going("tr-chen-drive", CHEN), ...going("tr-diaz-flight", DIAZ),
+  ],
+};

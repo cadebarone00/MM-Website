@@ -1,9 +1,9 @@
 /**
  * A trip's itinerary: flights, lodging, tee times, rides and dining, each at a local trip time. Shown as the Home
- * "what's next" cards (the next few things) and the Info → Itinerary list (everything, by day). Only the dev mock trip
- * has an itinerary for now; real trips don't store one yet. Safe to import anywhere.
+ * "what's next" cards (the next few things) and the Info → Itinerary list (everything, by day). Built from trip travel
+ * (lib/platform/tripTravel.ts: itineraryFor); only the dev mock trip has travel for now. Safe to import anywhere.
  */
-export type ItineraryKind = "flight" | "lodging" | "teeTime" | "ride" | "dining";
+export type ItineraryKind = "flight" | "lodging" | "teeTime" | "ride" | "dining" | "other";
 
 export interface ItineraryItem {
   id: string;
@@ -17,7 +17,7 @@ export interface ItineraryItem {
 }
 
 export const ITINERARY_KIND_LABEL: Record<ItineraryKind, string> = {
-  flight: "Flight", lodging: "Lodging", teeTime: "Tee time", ride: "Ride", dining: "Dining",
+  flight: "Flight", lodging: "Lodging", teeTime: "Tee time", ride: "Ride", dining: "Dining", other: "Plans",
 };
 
 const LOCAL_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
