@@ -4,8 +4,10 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Poin
 import { createPortal } from "react-dom";
 import { LockKeyhole, LockKeyholeOpen, Minus, Plus } from "lucide-react";
 import { useScoringView } from "@/lib/platform/scoringViewPreference";
-import type { ScoredCard, ShotResult } from "@/lib/platform/playerRounds";
+import type { ScoreEdit, ScoredCard, ShotResult } from "@/lib/platform/playerRounds";
+import type { SheetCard } from "@/lib/platform/liveCards";
 import { GolfGpsScreen } from "./gps/GolfGpsScreen";
+import { SubmitCelebration } from "./SubmitCelebration";
 import styles from "./GolfTripScoring.module.css";
 
 const HOLES = 18;
@@ -26,7 +28,7 @@ const HOLD_SLOP = 10;
  * submitting locks the card until the page reloads. Submit & Save calls `onSubmit` with the card (the dev preview saves it
  * as the player's round); `submittedCard` reopens a saved round locked.
  */
-export function GolfTripScoring({ par, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard }: {
+export function GolfTripScoring({ par, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange }: {
   par?: number[]; initialHoles?: (number | null)[]; playerName?: string; opponentCardMatches?: boolean; courseName?: string;
   /** Dev preview only: a finished card (opponent scores, putts, fairways, greens) to start from. */
   prefill?: { opponentHoles: (number | null)[]; putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[];
@@ -35,6 +37,12 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   onSubmit?: (card: ScoredCard) => void;
   /** A round already saved for this player: the card opens locked as Submitted. */
   submittedCard?: ScoredCard;
+  /** Player & Attest: whose score I keep (the second column); without it a made-up opponent name shows. */
+  attesteeName?: string;
+  /** A saved round's organizer changes: the Card marks those holes and shows the reason when tapped. */
+  edits?: ScoreEdit[];
+  /** Every change to an unsubmitted card (the dev preview keeps it as the live card the attester and organizer see). */
+  onCardChange?: (card: SheetCard) => void;
 }) {
   const [open, updateOpen] = useState(false);
   const [holes, setHoles] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => submittedCard?.strokes[i] ?? initialHoles?.[i] ?? null));
@@ -55,7 +63,8 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
       setHoles(submittedCard.strokes); setPutts(submittedCard.putts); setFairways(submittedCard.fairways); setGreens(submittedCard.greens); setSubmitted(true);
     }
   }
-  const [opponentName] = useState(() => randomOpponentName());
+  const [madeUpName] = useState(() => randomOpponentName());
+  const opponentName = attesteeName ?? madeUpName;
   // The GPS and Scorecard pills swap the pulled-up sheet to their own view (same sheet, no page change); tapping again returns to scoring.
   const [view, setView] = useState<"scoring" | "gps" | "scorecard">("scoring");
   const [lockedView, setLockedView] = useState<"gps" | "scorecard" | null>(() => {
@@ -252,6 +261,15 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   const meMatches = otherCard ? sameAs(submittedHoles, otherCard.me) : opponentCardMatches;
   const opponentMatches = otherCard ? sameAs(submittedOpponentHoles, otherCard.opponent) : opponentCardMatches;
   const readyToSubmit = complete && meMatches && opponentMatches;
+  // The live card (dev): reported only when something changed, so the store isn't written on every render. My
+  // attester's strokes for me come from the other phone (otherCard), or stand in from the simulator's card setting.
+  const attestStrokes = otherCard ? otherCard.me : submittedHoles.map((h) => opponentCardMatches ? h : null);
+  const liveKey = !submitted && (thru > 0 || putts.some((p) => p !== null)) ? JSON.stringify({ strokes: holes, putts, fairways, greens, penalties, attestStrokes }) : null;
+  const reportCard = useRef(onCardChange);
+  useEffect(() => { reportCard.current = onCardChange; }, [onCardChange]);
+  useEffect(() => { if (liveKey) reportCard.current?.(JSON.parse(liveKey) as SheetCard); }, [liveKey]);
+  // Submit Score plays the full-screen moment over the now-locked card.
+  const [celebration, setCelebration] = useState<{ total: number; toPar: string } | null>(null);
   // Colours show once the card is complete (or submitted): green when that player's scores agree, red when they don't.
   const check = (matches: boolean) => complete || submitted ? matches ? "ok" as const : "wrong" as const : null;
 
@@ -303,7 +321,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
         : view === "scorecard" ? <>
           {courseName && <h3 className={styles.scorecardCourse}>{courseName}</h3>}
           <ScorecardSection par={par} holes={holes} opponentHoles={holesCompetitor} playerName={playerName} opponentName={opponentName} putts={putts} fairways={fairways} greens={greens}
-            myTotal={sumOf(submittedHoles)} opponentTotal={sumOf(submittedOpponentHoles)} myCheck={check(meMatches)} opponentCheck={check(opponentMatches)} />
+            myTotal={sumOf(submittedHoles)} opponentTotal={sumOf(submittedOpponentHoles)} myCheck={check(meMatches)} opponentCheck={check(opponentMatches)} edits={edits} />
           {/* Always shown; only lights up once both cards are complete and the opponent's card agrees. */}
           <button type="button" className={`${styles.nextHoleButton} ${styles.submitSave}`} disabled={!readyToSubmit || submitted} onClick={() => setConfirmOpen(true)}>{submitted ? "Submitted" : "Submit & Save"}</button>
         </>
@@ -372,9 +390,12 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
         <p className={styles.confirmPrompt}>Are you sure?</p>
         <button type="button" className={styles.keepEditingButton} onClick={() => setConfirmOpen(false)}>Keep Editing</button>
         <button type="button" className={styles.submitScoreButton} onClick={() => { setHoles(submittedHoles); setHolesCompetitor(submittedOpponentHoles); setSubmitted(true); setConfirmOpen(false);
-          onSubmit?.({ strokes: submittedHoles.map((h) => h ?? 0), putts, fairways, greens }); }}>Submit Score</button>
+          const total = submittedHoles.reduce<number>((sum, h) => sum + (h ?? 0), 0);
+          setCelebration({ total, toPar: par ? formatToPar(total - par.reduce((sum, p) => sum + p, 0)) : "" });
+          onSubmit?.({ strokes: submittedHoles.map((h) => h ?? 0), putts, fairways, greens, penalties }); }}>Submit Score</button>
       </div>
     </div>, document.body)}
+    {celebration && <SubmitCelebration total={celebration.total} toPar={celebration.toPar} onDone={() => setCelebration(null)} />}
   </section></div></>;
 }
 
@@ -422,11 +443,14 @@ const shortName = (name: string) => (name.trim().split(/\s+/).at(-1) ?? name).sl
  * Three sections, each lightly tinted maroon with a narrow clear gap between them: the hole (Hole · Yds · Par, against the
  * left edge), your stats (FWY · GRN · PUT), then the scores (your last name · the opponent's last name, up to 8 letters).
  */
-function ScorecardSection({ par, holes, opponentHoles, playerName, opponentName, putts, fairways, greens, myTotal, opponentTotal, myCheck, opponentCheck }: {
+function ScorecardSection({ par, holes, opponentHoles, playerName, opponentName, putts, fairways, greens, myTotal, opponentTotal, myCheck, opponentCheck, edits }: {
   par?: number[]; holes: (number | null)[]; opponentHoles: (number | null)[]; playerName: string; opponentName: string;
   myTotal: number | "—"; opponentTotal: number | "—"; myCheck: "ok" | "wrong" | null; opponentCheck: "ok" | "wrong" | null;
-  putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[];
+  putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[]; edits?: ScoreEdit[];
 }) {
+  // Organizer changes (add-on decision 9): a gold mark on the hole; tapping it shows the reason under the card.
+  const [shownEdit, setShownEdit] = useState<number | null>(null);
+  const editsFor = (hole: number) => (edits ?? []).filter((e) => e.hole === hole);
   const range = (from: number, to: number) => Array.from({ length: to - from }, (_, i) => from + i);
   const mark = (value: Direction | null) => value ? DIRECTION_MARK[value] : "—";
   const hits = (values: (Direction | null)[], index: number[]) => index.some((i) => values[i] !== null) ? index.filter((i) => values[i] === "center").length : "—";
@@ -436,7 +460,7 @@ function ScorecardSection({ par, holes, opponentHoles, playerName, opponentName,
     ? par?.[i] !== undefined ? <span className={styles.untouchedScore}>{par[i]}</span> : "—"
     : par?.[i] === undefined ? strokes : <span className={scoreShape(strokes - par[i])}>{strokes}</span>;
   const holeRow = (i: number) => <tr key={i}>
-    <th scope="row" className={styles.section}>{i + 1}</th><td className={styles.section}>—</td><td className={styles.section}>{par?.[i] ?? "—"}</td>{gap}
+    <th scope="row" className={styles.section}>{i + 1}{editsFor(i + 1).length > 0 && <button type="button" className={styles.editMark} aria-label={`Hole ${i + 1} edited by organizer`} onClick={() => setShownEdit(shownEdit === i + 1 ? null : i + 1)}>✎</button>}</th><td className={styles.section}>—</td><td className={styles.section}>{par?.[i] ?? "—"}</td>{gap}
     <td className={styles.section}>{par?.[i] === 3 ? "" : mark(fairways[i])}</td><td className={styles.section}>{mark(greens[i])}</td><td className={styles.section}>{putts[i] ?? "—"}</td>{gap}
     <td className={`${styles.section} ${styles.myScore}`}>{scoreCell(holes[i], i)}</td><td className={styles.section}>{scoreCell(opponentHoles[i], i)}</td>
   </tr>;
@@ -462,6 +486,7 @@ function ScorecardSection({ par, holes, opponentHoles, playerName, opponentName,
         {totalRow("Total", range(0, 18))}
       </tbody>
     </table>
+    {shownEdit !== null && editsFor(shownEdit).map((e, k) => <p key={k} className={styles.editNote}>Hole {e.hole} edited by organizer{e.kind === "pushThrough" ? " (push-through)" : ""}: {String(e.from ?? "—")} → {String(e.to ?? "—")}. {e.reason}</p>)}
     {/* Under Total: each player's last name and total score, centered in their half; a long name shrinks to fit. */}
     <dl className={styles.scorecardTotals}>
       <div data-check={myCheck ?? undefined} aria-label={myCheck === "wrong" ? `${playerName}: scores don't match` : undefined}><dt title={playerName} style={{ "--chars": shortName(playerName).length } as CSSProperties}>{shortName(playerName)}</dt><dd>{myTotal}</dd></div>

@@ -222,3 +222,6 @@
 .shapeBox{border-radius:2px}
 .shapeCircle,.shapeBox{box-shadow:inset 0 0 0 1px currentColor}
 .shapeCircle.shapeDouble,.shapeBox.shapeDouble{box-shadow:inset 0 0 0 1px currentColor,0 0 0 2px #ede1d8,0 0 0 3px currentColor}
+/* Organizer-edited hole on the Card (Player & Attest): a small gold pencil next to the hole number; its reason shows under the card. */
+.editMark{margin-left:2px;padding:0 2px;border:0;background:none;color:var(--color-gold-500,#c49b54);font:700 11px/1 var(--font-barlow),sans-serif;cursor:pointer}
+.editNote{margin:8px 0 0;font:600 12px/1.35 var(--font-spectral),Georgia,serif;color:rgba(47,12,14,.8)}

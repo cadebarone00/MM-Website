@@ -1,9 +1,0 @@
-.page{min-height:100dvh;display:grid;place-items:center;background:#380001;color:#fbf8f1;padding:calc(32px + 0px) 24px calc(32px + env(safe-area-inset-bottom));box-sizing:border-box}
-.welcome{width:100%;max-width:360px;text-align:center}
-.title{font:400 clamp(48px,12vw,64px)/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.04em;margin:0 0 64px}
-.actions{display:flex;flex-direction:column;align-items:stretch;gap:16px}
-.signIn,.create{display:flex;align-items:center;justify-content:center;min-height:56px;border-radius:14px;font:600 18px/1.3 var(--font-barlow),sans-serif;padding:12px 20px;border:1px solid #c9a86e;transition:background .15s}
-.signIn{background:#571016;color:#fbf8f1}.create{background:#380001;color:#fbf8f1}
-.signIn:hover,.create:hover{background:#6b161a}
-.signIn:focus-visible,.create:focus-visible{outline:3px solid #fbf8f1;outline-offset:4px}
-.or{font:400 15px/1.3 var(--font-barlow),sans-serif;color:#e1cec4}

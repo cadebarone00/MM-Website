@@ -153,11 +153,11 @@
    then a light page; the account cards sit across the line between the two. */
 .account{flex:1;display:flex;flex-direction:column;margin:0 -16px calc(-24px - 5.75rem - env(safe-area-inset-bottom));
   padding-bottom:calc(24px + 5.75rem + env(safe-area-inset-bottom));
-  background:linear-gradient(var(--color-maroon-900) calc(190px + 3vh),#f7f8f7 calc(190px + 3vh));color:#111;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
+  background:#f7f8f7;color:#111;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
 .account p{margin:0}
 .account button{font-family:inherit;cursor:pointer}
 /* Same height as when it held the old pill row, so the cards below don't move. */
-.accountTop{position:relative;display:flex;align-items:flex-start;min-height:calc(137px + 3vh);padding:12px 16px 0;color:#fff}
+.accountTop{position:relative;display:flex;align-items:flex-start;padding:12px 16px 0;color:#fff}
 /* Left 65%: the trip heading; right 35%: quick weather. */
 .accountTitleBlock{flex:0 0 65%;min-width:0}
 /* Sized so "Your trip to" and a typical "City, ST" fit in the left 65% (long names wrap). */
@@ -267,3 +267,12 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 .liveLabel{display:inline-flex;align-items:center;gap:6px;margin:0 0 6px;color:#805b24;font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase}
 .liveLabel[data-live=true]{color:#c62828}
 .liveLabel[data-live=true]::before{content:"";width:7px;height:7px;border-radius:50%;background:#c62828;box-shadow:0 0 0 3px rgba(198,40,40,.2)}
+/* Home head: always the same height on every trip (no jumping): the heading at the top, then a fixed slot for the Mom
+   section (a notification line, the countdown, or empty) near the bottom; the Live / Upcoming boxes overlap its bottom 31px. */
+.accountHead{box-sizing:border-box;display:flex;flex-direction:column;height:calc(212px + 5vh);padding-bottom:31px;overflow:hidden;background:var(--color-maroon-900)}
+.accountHead .accountTop{flex:none}
+/* The Mom box: everything between the heading/weather and the top of the white box below, edge to edge; its content
+   is always centered across and up-and-down. */
+.momSlot{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;align-items:stretch;text-align:center}
+.momSlot > *{margin-top:0;margin-bottom:0}
+.liveBoxes.liveBoxes{margin-top:-31px}

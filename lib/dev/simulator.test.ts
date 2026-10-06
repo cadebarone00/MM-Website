@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { DEFAULT_SIMULATOR_STATE, parseGpsCommand, parseGpsState, parseSimulatorConfig, parseSimulatorLocation, sameSimulatorNavigation, simulatorPageForLocation, SIMULATOR_DEVICES, type SimulatorPage } from "./simulator";
-import { simulatorRoundLive, simulatorTripData } from "./golfTripSimulatorData";
+import { simulatorNow, simulatorRoundLive, simulatorTripData } from "./golfTripSimulatorData";
 import { GOLF_MATCH_PREVIEW, GOLF_TRIP_MOCK_DRAFT } from "@/lib/platform/golfTripPreviewFixture";
 import { palmSprings2026 } from "@/lib/data/2026-palm-springs";
 import { adaptTournamentToDraft, adaptTournamentToPreviewMatch } from "@/lib/platform/tournamentToGolfTrip";
@@ -112,4 +112,26 @@ test("viewAs: defaults to Cade, accepts a mock account, rejects anything else", 
   assert.equal(config("dev-jake")?.state.viewAs, "dev-jake");
   assert.equal(config("someone-else"), null);
   assert.equal(config(undefined)?.state.viewAs, "dev-cade", "older panels without viewAs still work");
+});
+
+test("trip clock matches the round state, so a live round is on the trip's day (busy data)", () => {
+  const mock = { preview: GOLF_TRIP_MOCK_DRAFT, previewMatch: GOLF_MATCH_PREVIEW };
+  const at = (roundStatus: typeof DEFAULT_SIMULATOR_STATE.roundStatus) => {
+    const config = { source: "busy" as const, state: { ...DEFAULT_SIMULATOR_STATE, roundStatus } };
+    const data = simulatorTripData(mock, mock, config);
+    return simulatorNow(config, data, simulatorRoundLive(roundStatus, data.previewMatch));
+  };
+  // Busy: Apr 22–25, two rounds a day. Before round 1 = the night before arrival; complete = the day after the trip.
+  assert.equal(at("scheduled"), "2027-04-21T18:00:00");
+  assert.equal(at("complete"), "2027-04-27T12:00:00");
+  // The busy field is on round 2 = day 1's afternoon round: mid-round, then just after it ends; between rounds 3 and 4 = day 2, lunch.
+  assert.equal(at("live"), "2027-04-22T15:30:00");
+  assert.equal(at("roundEnd"), "2027-04-22T17:35:00");
+  assert.equal(at("between"), "2027-04-23T12:45:00");
+});
+
+test("trip clock: real Maroon data and non-live sources use the device clock", () => {
+  const mock = { preview: GOLF_TRIP_MOCK_DRAFT, previewMatch: GOLF_MATCH_PREVIEW };
+  const config = { source: "maroon" as const, state: DEFAULT_SIMULATOR_STATE };
+  assert.equal(simulatorNow(config, simulatorTripData(mock, mock, config), false), undefined);
 });

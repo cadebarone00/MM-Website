@@ -2191,12 +2191,13 @@ Builds **on top of** the Player rounds plan above. Nothing above changes: `Playe
 
 **Done means (Step 1 add-on):** in the dev simulator, a trip group gets the right attesters for 2 / 3 / 4 players and for competitive groups; a full match turns the name and total green and lights Submit; a mismatch never does; Submit plays the animation and the round appears on the trip leaderboard, trip stats and the dev profile; an organizer override and a push-through show in the log with the mark on the hole; the organizer's own edits show in the trip-visible log; logic has unit tests; TypeScript, lint and tests pass; checked at localhost:3001/dev.
 
-### Round: Golf Trip Home — the "Mom" section (spec 2026-10-06, awaiting approval)
+### Round: Golf Trip Home — the "Mom" section (spec 2026-10-06, approved; round 1 built locally — flight check-in + countdown)
 
 **What it really is (owner, 2026-10-06).** The Mom section is the app's **notifications, shown live in the app** — a built-in notification "toast" with personality. Tone (owner, updated): **simple and friendly** — short, clear, helpful; not jokey.
-- **One line of words, ever**, in our white/cream text. A notification may add a **small button** at the end of the line (e.g. **Check in**).
+- **One message at a time**, in our white/cream text, **up to two lines** (owner, updated). A notification may add a **small button** under it (e.g. **Check in**).
+- **The Mom box** is a fixed space on Home: everything between the heading/weather and the top of the white box below, edge to edge. Its content (message or countdown) is always **centered horizontally and vertically**.
 - **Buckets:** each kind of notification (e.g. flight check-in) has a bucket of approved lines; the app **randomly picks one line** from the bucket each time it shows it. Not every line has to get used.
-- **No Mom advice active → a countdown** in the same spot, styled like the owner's flip-clock reference: four tiles in a row — **Days · Hours · Minutes · Seconds** — each a big two-digit number in its own tile (split down the middle like a flip clock) with the label under it, ticking every second. Our colors: dark maroon tiles, cream numbers, gold labels. It counts down to **7:00 AM on arrival day**; once the itinerary has anything on arrival day, it counts down to **the first item on arrival day** instead. When several are active, they rotate: every **10 seconds** the current one **slides out to the left** and the next **slides in from the right**, in **100 ms**. One notification → no rotation.
+- **No Mom advice active → a countdown** in the same spot, styled like the owner's flip-clock reference: four tiles in a row — **Days · Hours · Minutes · Seconds** — each a big two-digit number in its own tile (split down the middle like a flip clock) with the label under it, ticking every second. Our colors: dark maroon tiles, cream numbers, gold labels. It counts down to **7:00 AM on arrival day**; once the itinerary has anything on arrival day, it counts down to **the first item on arrival day** instead. When several are active, they rotate every **10 seconds**: the current one **fades out over 500 ms**, then the next **fades in over 500 ms**. One notification → no rotation.
 
 **What it does / who uses it.** On the trip's Home tab, a small section sits in the gap under "Your trip to · City, ST" (+ dates and weather) and above the Live / Upcoming boxes. It shows friendly, helpful nudges ("Mom" advice) that change with what's happening on the trip — e.g. a flight tomorrow: "Don't forget to check in for your flight!" with a button straight to the airline's check-in. Every player sees the tips that apply to *their own* plans.
 
@@ -2208,7 +2209,7 @@ Builds **on top of** the Player rounds plan above. Nothing above changes: `Playe
 **How it's built (simple).**
 - `lib/platform/momTips.ts` — the approved tip list. Each tip: `id`, the message text, an optional button (label + approved link), and a plain rule for when it shows, written against the trip data we already have (itinerary items, trip dates, "now"). One function `momTipsFor(trip, now)` returns the tips to show, most urgent first.
 - `momTips.test.ts` — a test per tip: shows when it should, hidden when it shouldn't.
-- Home shows the active notifications as a rotating stack (10 s each, 100 ms slide left-out / right-in), styled to match the maroon header.
+- Home shows the active notifications as a rotating stack (10 s each, 500 ms fade out then 500 ms fade in), styled to match the maroon header.
 - Preview only for now: same dev trip data as the Itinerary; nothing saved; no notifications / texts / emails.
 
 **First tip, for approval (only this one is built in round 1):**

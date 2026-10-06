@@ -1,6 +1,7 @@
-import { LoginForm } from "@/components/auth/LoginForm";
-import { AuthLayout } from "@/components/auth/AuthLayout";
+import { LoginWelcome } from "@/components/auth/LoginWelcome";
+
+export const metadata = { title: "Log In | The Maroon" };
 
 export default function LoginPage() {
-  return <AuthLayout><LoginForm /></AuthLayout>;
+  return <LoginWelcome />;
 }

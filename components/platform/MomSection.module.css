@@ -1,0 +1,29 @@
+/* Mom section: sits in the maroon header, 5% in from each side. */
+.mom{margin:0 5% 6px;color:#fbf8f1}
+/* One line of cream words, never wrapping, with a small gold button at the end. */
+.note{display:flex;align-items:center;gap:10px;min-height:34px}
+.line{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:600 15px/1.2 var(--font-barlow),sans-serif}
+.action{flex:none;padding:6px 12px;border:1.5px solid #dcc495;border-radius:999px;color:#dcc495;font:700 12px/1 var(--font-barlow),sans-serif;text-decoration:none;white-space:nowrap}
+.action:focus-visible{outline:2px solid #fbf8f1;outline-offset:2px}
+/* Several notes: each shows for 10 s — fades in over 500 ms, holds, then fades out over the last 500 ms. */
+.rotating{animation:momTurn 10s linear both}
+@keyframes momTurn{0%{opacity:0}5%{opacity:1}95%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.rotating{animation:none}}
+/* Countdown: four flip-clock tiles (dark maroon, cream numbers split across the middle) with gold labels under them. */
+.countdown{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.unit{display:grid;justify-items:center;gap:6px}
+.tile{position:relative;display:grid;place-items:center;width:100%;height:56px;border-radius:10px;background:linear-gradient(180deg,#4a1525 0%,#3a0f1c 50%,#2b0a14 50%,#3a0f1c 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 6px 14px rgba(0,0,0,.35);color:#fbf8f1;font:700 30px/1 var(--font-spectral),Georgia,serif;font-variant-numeric:tabular-nums}
+.tile::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(0,0,0,.45)}
+.label{color:#dcc495;font:700 10px/1 var(--font-barlow),sans-serif;letter-spacing:.12em;text-transform:uppercase}
+/* Countdown sizing: labels above the tiles; the row takes the middle 70% of the screen (the section is 90% wide, so 70/90 of it);
+   tiles a little smaller with the same spacing and proportions. */
+.countdown{width:calc(100% * 70 / 90);margin:0 auto;gap:8px}
+.unit{gap:5px}
+.label{order:-1}
+.tile{height:44px;border-radius:8px;font-size:24px}
+/* Mom box layout (owner, 2026-10-06): centered both ways; a notification may use up to two lines, with its button
+   centered under the words. */
+.note{flex-direction:column;justify-content:center;gap:8px}
+.line{flex:none;max-width:100%;white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;text-align:center;font-size:16px;line-height:1.3}
+/* Countdown labels 30% larger (10px → 13px). */
+.label{font-size:13px}

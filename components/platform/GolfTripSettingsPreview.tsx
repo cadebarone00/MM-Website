@@ -18,7 +18,8 @@ import { RoundCompetitionSettings } from "./RoundCompetitionSettings";
 import { defaultRoundComp, type RoundCompSettings } from "@/lib/platform/roundCompetition";
 import { GolfTripHistory, type HistoryLinking } from "./GolfTripHistory";
 import { dispatchDevRounds, useDevPlayerRounds } from "@/components/dev/useDevPlayerRounds";
-import { DEV_ACCOUNTS, devAccount } from "@/lib/dev/devAccounts";
+import { DEFAULT_DEV_ACCOUNT, DEV_ACCOUNTS, devAccount } from "@/lib/dev/devAccounts";
+import { OrganizerScores } from "./OrganizerScores";
 import { historyLinkInput, linkStatus } from "@/lib/platform/historyLinks";
 import gamesStyles from "./GolfTripGames.module.css";
 import { samplePastTrips, type PastTrip } from "@/lib/platform/golfTripHistory";
@@ -797,6 +798,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
             </div>;
           })}
         </section>
+        <OrganizerScores roundNumbers={rounds.map(round => round.number)} organizerId={simulator?.state.viewAs ?? DEFAULT_DEV_ACCOUNT} />
       </div>}
 
       {allowedOpen && <div className={styles.competition}>

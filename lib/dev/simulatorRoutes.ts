@@ -29,7 +29,7 @@ export function simulatorPages(): SimulatorPage[] {
       ...GOLF_TRIP_SECTIONS.filter(section => section !== "Overview").map(section => ({ ...home, id: `trip-${section}`, label: `Golf Trip · ${section}`, navigation: { tab: "Golf" as const, golfSection: section } })),
     );
   }
-  for (const [path, label] of [["/new-user", "New User"], ["/signup", "Create an Account"], ["/", "Explore / Home"], ["/golf-trips", "Golf Trips"], ["/profile", "Profile"], ["/tournaments/join", "Tourneys"], ["/pickems", "Pick?ems"], ["/golf-trips/new", "Create Golf Trip"], ["/golf-trips/trip/settings", "Golf Trip · App settings"], ["/login", "Sign in"]]) {
+  for (const [path, label] of [["/new-user", "New User"], ["/signup", "Create an Account"], ["/", "Explore / Home"], ["/golf-trips", "Golf Trips"], ["/profile", "Profile"], ["/tournaments/join", "Tourneys"], ["/pickems", "Pick?ems"], ["/golf-trips/new", "Create Golf Trip"], ["/golf-trips/trip/settings", "Golf Trip · App settings"], ["/login", "Log In welcome"], ["/login/email", "Email sign in"]]) {
     if (existsSync(join(process.cwd(), "app", path, "page.tsx"))) pages.push({ id: path, path, label, fixtures: false });
   }
   // Dynamic setup route has a real, fixed Golf Trip branch.
@@ -40,7 +40,7 @@ export function simulatorPages(): SimulatorPage[] {
     if (existsSync(join(process.cwd(), "app", path, "page.tsx"))) pages.push({ id: path, path, label: step[0].toUpperCase() + step.slice(1), fixtures: false });
   }
   for (const page of pages) {
-    page.group ??= page.path.startsWith("/golf-trips/new") ? "Golf Trip Onboarding" : page.path.startsWith("/dev/tournament") || page.path === "/golf-trips/trip/settings" || page.path === "/dev/gps" ? "Golf Trip Active" : page.path.startsWith("/dev/play") ? "Tournament Active" : ["/login", "/signup", "/new-user"].includes(page.path) ? "Authentication" : "Public / Marketing";
+    page.group ??= page.path.startsWith("/golf-trips/new") ? "Golf Trip Onboarding" : page.path.startsWith("/dev/tournament") || page.path === "/golf-trips/trip/settings" || page.path === "/dev/gps" ? "Golf Trip Active" : page.path.startsWith("/dev/play") ? "Tournament Active" : ["/login", "/login/email", "/signup", "/new-user"].includes(page.path) ? "Authentication" : "Public / Marketing";
     page.label = page.label.replace(/^Golf Trip \u00b7 /, "");
     if (page.path === "/golf-trips/new") page.label = "Trip Basics";
     if (page.conditions) continue;

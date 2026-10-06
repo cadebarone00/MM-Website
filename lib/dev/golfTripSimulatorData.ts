@@ -187,3 +187,43 @@ export function simulatorScorecard(roundStatus: SimulatorConfig["state"]["roundS
     otherCardDiff: opponentCard === "mismatch" ? { player: random() < 0.5 ? "me" : "opponent", hole: Math.floor(random() * par.length), delta: random() < 0.5 ? -1 : 1 } : undefined,
   };
 }
+
+/** Adds days to "YYYY-MM-DD". */
+const shiftDay = (day: string, days: number) => {
+  const date = new Date(`${day}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+};
+
+/** Which day (date) and which slot that day (0 = morning, 1 = afternoon) round `round` falls on, from the trip's day rows. */
+function roundSlot(preview: GolfTripDraft, round: number): { date: string; slot: number } | null {
+  let seen = 0;
+  for (let day = 1; day <= 31; day++) {
+    const date = preview[`day${day}Date`];
+    if (!date) break;
+    const count = Math.max(1, Number(preview[`day${day}Rounds`]) || 1);
+    if (round <= seen + count) return { date, slot: round - seen - 1 };
+    seen += count;
+  }
+  return preview.startDate ? { date: shiftDay(preview.startDate, round - 1), slot: 0 } : null;
+}
+
+/**
+ * The trip clock ("YYYY-MM-DDTHH:mm:ss", trip-local) that matches the simulator's round state, so Home's countdown, Live /
+ * Upcoming boxes, Mom notes and Itinerary agree with the Scoring sheet. Morning rounds 8 AM–12:30, afternoon 1–5:30.
+ * Pre-tournament: 6 PM the night before arrival. Live: mid-round. End of round: just after it ends. Between rounds: 15 minutes
+ * after round 3 ends. Complete: noon the day after the trip. "From data source": mid-round when a round is live; otherwise
+ * (and for the real Maroon / empty data) undefined = the device's real clock.
+ */
+export function simulatorNow(config: SimulatorConfig, data: SimulatorTripData, roundLive: boolean): string | undefined {
+  const preview = data.preview ?? {};
+  const status = config.state.roundStatus;
+  if (status === "source" && (!roundLive || config.source === "maroon" || config.source === "empty")) return undefined;
+  if (status === "scheduled") return preview.startDate ? `${shiftDay(preview.startDate, -1)}T18:00:00` : undefined;
+  if (status === "complete") return preview.endDate ? `${shiftDay(preview.endDate, 1)}T12:00:00` : undefined;
+  const round = status === "between" ? 3 : data.previewMatch?.round ?? 1;
+  const at = roundSlot(preview, round);
+  if (!at) return undefined;
+  const times = at.slot === 0 ? { live: "10:30", end: "12:35", after: "12:45" } : { live: "15:30", end: "17:35", after: "17:45" };
+  return `${at.date}T${status === "between" ? times.after : status === "roundEnd" ? times.end : times.live}:00`;
+}

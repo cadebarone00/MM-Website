@@ -1,0 +1,11 @@
+/* Trip stats inside the trip's dark maroon Card (Player & Attest add-on). */
+.empty{margin:0;color:rgba(251,248,241,.7);font-size:14px}
+.scroll{overflow-x:auto}
+.table{width:100%;border-collapse:collapse;font:600 13px/1.2 var(--font-barlow),sans-serif;color:#fbf8f1;white-space:nowrap}
+.table th,.table td{padding:8px 6px;text-align:right;border-bottom:1px solid rgba(251,248,241,.12)}
+.table th[scope=row],.table thead th:first-child{text-align:left}
+.table thead th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:rgba(251,248,241,.6)}
+.total th,.total td{color:var(--color-gold-500,#c49b54);border-bottom:0}
+.changes{margin-top:14px}
+.changes h3{margin:0 0 6px;font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(251,248,241,.6)}
+.changes ul{margin:0;padding-left:18px;color:#fbf8f1;font-size:13px;line-height:1.4}

@@ -5,7 +5,8 @@ import { useSimulator } from "@/components/dev/SimulatorBridge";
 import { dispatchDevRounds, useDevPlayerRounds } from "@/components/dev/useDevPlayerRounds";
 import { DEFAULT_DEV_ACCOUNT, DEV_ACCOUNTS, devAccount, devPlayTogether } from "@/lib/dev/devAccounts";
 import { visibilityOf } from "@/lib/dev/devPlayerRounds";
-import { handicapSummary } from "@/lib/platform/playerRounds";
+import { handicapSummary, type PlayerRound } from "@/lib/platform/playerRounds";
+import { profileRounds } from "@/lib/platform/roundVisibility";
 import { profileAccess, type RoundsVisibility } from "@/lib/platform/playerRoundsPrivacy";
 
 const SOURCE: Record<string, string> = { trip: "Golf trip", tournament: "Tournament", personal: "Logged myself", history: "Past trip" };
@@ -24,8 +25,10 @@ export function DevProfileRounds() {
   const store = useDevPlayerRounds();
   const visibility = visibilityOf(store, owner);
   const access = profileAccess({ viewerId: viewer, ownerId: owner, visibility, playTogether: devPlayTogether(viewer, owner) });
-  const rounds = store.rounds.filter((r) => r.profileId === owner).sort((a, b) => b.datePlayed.localeCompare(a.datePlayed));
-  const summary = handicapSummary(rounds);
+  // Removed rounds never show; personal rounds also need to be Public for others (Player & Attest decision 11).
+  const rounds = profileRounds(store.rounds, { viewerId: viewer, ownerId: owner, profileVisibility: visibility }).sort((a, b) => b.datePlayed.localeCompare(a.datePlayed));
+  const summary = handicapSummary(store.rounds.filter((r) => r.profileId === owner));
+  const [removing, setRemoving] = useState<PlayerRound | null>(null);
   const requests = store.linkRequests.filter((r) => r.profileId === owner && r.status === "pending");
   const isOwner = viewer === owner;
 
@@ -64,6 +67,9 @@ export function DevProfileRounds() {
             <p className="font-semibold text-ink-900">{round.course.name}</p>
             <p className="text-sm text-ink-600">{day(round.datePlayed)} · {SOURCE[round.source]}{round.enteredBy === "organizer" ? " · Entered by organizer" : ""}</p>
             <p className="text-sm text-ink-500">{round.countsForHandicap ? `Counts · differential ${round.differential}` : `Not counted · ${round.notCountedReason}`}</p>
+            {round.edits?.length ? <details className="mt-1 text-sm text-ink-600"><summary>Edited by organizer</summary>
+              <ul className="mt-1 list-disc pl-5">{round.edits.map((e, i) => <li key={i}>Hole {e.hole} {e.field}: {String(e.from ?? "—")} → {String(e.to ?? "—")}. {e.reason}</li>)}</ul></details> : null}
+            {isOwner && <button type="button" className="mt-2 text-sm font-semibold text-maroon-900 underline" onClick={() => setRemoving(round)}>Remove from my profile</button>}
           </div>
           <p className="text-xl font-bold text-maroon-900">{round.total}</p>
         </li>)}</ol>}
@@ -77,5 +83,15 @@ export function DevProfileRounds() {
           onClick={() => dispatchDevRounds({ type: "setVisibility", profileId: owner, visibility: value })}>{value === "public" ? "Public" : "Private"}</button>)}
       </div>
     </section>}
+    {removing && <div role="dialog" aria-modal="true" aria-label="Remove round" className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
+      <div className="w-full max-w-[320px] rounded-md bg-white p-4">
+        <p className="font-semibold text-ink-900">Remove this round from your profile?</p>
+        <p className="mt-2 text-sm text-ink-600">All of this round&rsquo;s data will be lost from your profile, stats and handicap. This can&rsquo;t be undone.{removing.source === "trip" || removing.source === "tournament" ? " It stays on the trip's leaderboard and stats." : ""}</p>
+        <div className="mt-4 flex gap-2">
+          <button type="button" className={chip(false)} onClick={() => setRemoving(null)}>Keep it</button>
+          <button type="button" className={chip(true)} onClick={() => { dispatchDevRounds({ type: "removeFromProfile", roundId: removing.id, profileId: owner }); setRemoving(null); }}>Remove round</button>
+        </div>
+      </div>
+    </div>}
   </main>;
 }

@@ -58,12 +58,15 @@ function countKinds(items: ItineraryItem[], kinds: ItineraryItem["kind"][]): num
  * Venue tab: a photo card for the destination, the trip's players with its dates, Map and Itinerary tiles, then category tiles
  * with how many things are in each. The photo is a placeholder for now; Map opens the venue map; Itinerary opens Info → Itinerary.
  */
-export function GolfTripVenue({ draft, latitude, longitude, players = [], items = [], onOpenItinerary }: {
+export function GolfTripVenue({ draft, latitude, longitude, players = [], items = [], onOpenItinerary, today: tripToday }: {
   draft: GolfTripDraft; latitude?: number; longitude?: number; settingsHref?: string;
   players?: string[]; items?: ItineraryItem[]; onOpenItinerary?: () => void;
+  /** "YYYY-MM-DD" from the dev trip clock; otherwise the device's date. */
+  today?: string;
 }) {
   const [mapOpen, setMapOpen] = useState(false);
-  const [today] = useState(() => new Date().toISOString().slice(0, 10));
+  const [deviceToday] = useState(() => new Date().toISOString().slice(0, 10));
+  const today = tripToday ?? deviceToday;
   const rounds = plannedRounds(draft);
   const dates = tripDates(draft.startDate, draft.endDate);
   const range = dates.length ? `${monthDay(dates[0]).month} ${monthDay(dates[0]).day} – ${monthDay(dates.at(-1)!).month} ${monthDay(dates.at(-1)!).day}, ${dates.at(-1)!.slice(0, 4)}` : "Dates TBD";

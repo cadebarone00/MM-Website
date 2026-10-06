@@ -24,6 +24,7 @@ import { GolfTripChat } from "./GolfTripChat";
 import { GolfTripItinerary, GolfTripVenue } from "./GolfTripVenue";
 import { ItineraryDetailSheet } from "./ItineraryDetailSheet";
 import { shortPlace } from "@/lib/platform/placeLabel";
+import { MomSection } from "./MomSection";
 import { GolfTripNotifications } from "./GolfTripNotifications";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import styles from "./GolfTripHome.module.css";
@@ -46,15 +47,17 @@ const subscribeNever = () => () => {};
  * `weather` (saved trips only, still loading on the server) adds a Weather card after Travel that shows a loading line
  * until it settles, so the rest of the page never waits for it; without it there is no Weather card.
  * `flights` fills the Info tab's Flights card with the viewer's own flights; `href` (saved trips) makes it open the Flights page.
+ * `now` (dev simulator only) is the trip clock, "YYYY-MM-DDTHH:mm:ss": Home's countdown, Live / Upcoming, Mom notes and the
+ * Itinerary's opening day follow it (and keep ticking from it). Without it they use the device's clock.
  * `roundLive` shows the Scoring sheet: only while a round is being played (or finished but not yet submitted). Before the
  * first round, between rounds and after the trip there is nothing to score. Saved trips have no round data yet, so no sheet.
  * `navigation` optionally requests a shared tab/section; in-app navigation remains local between requests.
  * `onNavigationChange` optionally observes the actual tab/section; the dev wrapper supplies it only when embedded.
  */
-export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, roundLive = false, opponentCardMatches, scoringPrefill, onScoringSubmit, submittedCard, scoringOwner }:
+export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, now: tripNow, roundLive = false, opponentCardMatches, scoringPrefill, onScoringSubmit, submittedCard, scoringOwner }:
   { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview; weather?: Promise<TripWeather>; flights?: TripFlights;
     /** Everyone's travel (My Info, the Itinerary and the Home "what's next" cards). Only the dev mock trip has it for now. */
-    travel?: TripTravel; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void; roundLive?: boolean;
+    travel?: TripTravel; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void; now?: string; roundLive?: boolean;
     /** Dev preview only: whether the opponent's own scorecard agrees with mine (there is no second scorer yet). Without it, Save & Submit never shows. */
     opponentCardMatches?: boolean;
     /** Dev preview only: a finished-but-unsubmitted Scoring card (the "End of round" conditionals). */
@@ -148,14 +151,14 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
       </div>
     </header>
     <div className={styles.body} role="tabpanel" aria-label={tab}>
-      {tab === "Home" ? <InfoAccount draft={draft} settingsHref={settingsHref} flights={flights} weather={weather} itinerary={itinerary} onOpenItinerary={openItinerary} />
+      {tab === "Home" ? <InfoAccount draft={draft} settingsHref={settingsHref} flights={flights} weather={weather} itinerary={itinerary} travel={travel} tripNow={tripNow} onOpenItinerary={openItinerary} />
         : tab === "Golf" ? <>
           <GolfSlides key={String(competitive)} previewMatch={previewMatch} competitive={competitive} navigation={navigation} onNavigationChange={onNavigationChange} />
         </>
-        : tab === "Venue" ? <GolfTripVenue draft={draft} settingsHref={settingsHref}
+        : tab === "Venue" ? <GolfTripVenue draft={draft} settingsHref={settingsHref} today={tripNow?.slice(0, 10)}
           latitude={coordinate(draft.destinationLatitude)} longitude={coordinate(draft.destinationLongitude)}
           players={travel?.members.map(member => member.name) ?? []} items={itinerary ?? []} onOpenItinerary={openItinerary} />
-        : tab === "Info" ? <InfoSlides active={infoSlide} onActive={setInfoSlide} itinerary={itinerary} tripDays={dates}
+        : tab === "Info" ? <InfoSlides active={infoSlide} onActive={setInfoSlide} itinerary={itinerary} tripDays={dates} today={tripNow?.slice(0, 10)}
           whoFor={id => travel ? travel.participants.filter(p => p.itemId === id.split(":")[0] && p.status === "going").map(p => travel.members.find(m => m.id === p.memberId)?.name ?? "").filter(Boolean) : []}
           myInfo={travel ? <GolfTripMyTravel travel={travel} onChange={changeMyTravel} /> : <VenueEvents />} />
         : <Card title={tab}><Empty>Coming soon</Empty></Card>}
@@ -565,7 +568,7 @@ function ItineraryCard({ item, label: status, onOpen }: { item: ItineraryItem; l
 
 /** Info tab: a slider with My Info (your travel; for trips without travel data, the older getting there / lodging / transportation lists) and Itinerary (everything, by day). Tap or swipe. */
 const INFO_SLIDES = ["My Info", "Itinerary"] as const;
-function InfoSlides({ active, onActive, itinerary, tripDays, myInfo, whoFor }: { active: number; onActive: (index: number) => void; itinerary?: ItineraryItem[]; tripDays: string[]; myInfo: ReactNode; whoFor?: (itemId: string) => string[] }) {
+function InfoSlides({ active, onActive, itinerary, tripDays, today, myInfo, whoFor }: { active: number; onActive: (index: number) => void; itinerary?: ItineraryItem[]; tripDays: string[]; today?: string; myInfo: ReactNode; whoFor?: (itemId: string) => string[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
   // True while a tab tap is sliding the track, so the scroll handler doesn't read the halfway point as a swipe.
   const sliding = useRef(false);
@@ -600,7 +603,7 @@ function InfoSlides({ active, onActive, itinerary, tripDays, myInfo, whoFor }: {
     </div>
     <div ref={trackRef} className={styles.slides} onScroll={onScroll}>
       <div className={styles.slide} role="tabpanel" aria-label="My Info" inert={active !== 0}>{myInfo}</div>
-      <div className={styles.slide} role="tabpanel" aria-label="Itinerary" inert={active !== 1}><ItineraryList items={itinerary} tripDays={tripDays} whoFor={whoFor} /></div>
+      <div className={styles.slide} role="tabpanel" aria-label="Itinerary" inert={active !== 1}><ItineraryList items={itinerary} tripDays={tripDays} today={today} whoFor={whoFor} /></div>
     </div>
   </>;
 }
@@ -610,7 +613,7 @@ function InfoSlides({ active, onActive, itinerary, tripDays, myInfo, whoFor }: {
  * Days run from the trip's first day (plus any earlier day with something on it) to its last; no < on the first, no > on the last.
  * Opens on today when today is one of the days.
  */
-function ItineraryList({ items, tripDays, whoFor }: { items?: ItineraryItem[]; tripDays: string[]; whoFor?: (itemId: string) => string[] }) {
+function ItineraryList({ items, tripDays, today: tripToday, whoFor }: { items?: ItineraryItem[]; tripDays: string[]; today?: string; whoFor?: (itemId: string) => string[] }) {
   const days = itineraryByDay(items ?? [], tripDays);
   const [picked, setPicked] = useState<number | null>(null);
   // Tap a plan's box → its detail sheet slides up.
@@ -619,7 +622,7 @@ function ItineraryList({ items, tripDays, whoFor }: { items?: ItineraryItem[]; t
   // Arrows: the day slides away (50 ms), then the next one slides in from that side (50 ms) — 100 ms in all.
   const [slide, setSlide] = useState<{ to: number; dir: 1 | -1; stage: "out" | "in" } | null>(null);
   if (!days.length) return <Card title="Itinerary"><Empty>Nothing on the itinerary yet</Empty></Card>;
-  const today = days.findIndex(({ day }) => day === todayIso);
+  const today = days.findIndex(({ day }) => day === (tripToday ?? todayIso));
   const index = Math.min(days.length - 1, picked ?? Math.max(0, today));
   const { day, items: dayItems } = days[index];
   const go = (dir: 1 | -1) => {
@@ -679,15 +682,18 @@ function FlightsCard({ flights }: { flights?: TripFlights }) {
  * Info tab, banking-app style (layout only, made-up numbers): a maroon top saying "Your trip to {destination}", a swipeable
  * row of two cards with a dot for each (the filled dot follows the swipe), then the upcoming trip and planned rounds. It runs edge to edge and down to the bottom of the screen.
  */
-function InfoAccount({ draft, settingsHref, flights, weather, itinerary, onOpenItinerary }: {
-  draft: GolfTripDraft; settingsHref: string; flights?: TripFlights; weather?: Promise<TripWeather>; itinerary?: ItineraryItem[]; onOpenItinerary: () => void;
+function InfoAccount({ draft, settingsHref, flights, weather, itinerary, travel, tripNow, onOpenItinerary }: {
+  draft: GolfTripDraft; settingsHref: string; flights?: TripFlights; weather?: Promise<TripWeather>; itinerary?: ItineraryItem[]; travel?: TripTravel; tripNow?: string; onOpenItinerary: () => void;
 }) {
   const destination = draft.destination;
   const tripDateRange = dateRangeLabel(draft.startDate, draft.endDate);
   // Live (what's happening now) and Upcoming (what's next); before the trip, the first two upcoming. "now" is read once, when Home opens.
-  const [now] = useState(() => localNow(new Date()));
+  const [deviceNow] = useState(() => localNow(new Date()));
+  const now = tripNow?.slice(0, 16) ?? deviceNow;
   const boxes = itinerary ? liveAndUpcoming(itinerary, now) : [];
   return <div className={styles.account}>
+    {/* Maroon head: the heading + weather, then the Mom section; the boxes below overlap its bottom edge. */}
+    <div className={styles.accountHead}>
     <div className={styles.accountTop}>
       {/* Left 65%: "Your trip to", the destination under it, then the trip's dates in gold (left out if there are none). */}
       <div className={styles.accountTitleBlock}>
@@ -699,6 +705,9 @@ function InfoAccount({ draft, settingsHref, flights, weather, itinerary, onOpenI
       {weather && <Suspense fallback={<div className={styles.quickWeather} role="status"><span className={styles.quickTemp}>—°</span><span className={styles.quickCondition}>Loading weather…</span></div>}>
         <QuickWeather weather={weather} />
       </Suspense>}
+    </div>
+    {/* Mom: my live notifications, or a countdown to arrival day when there are none (between the heading and the boxes). */}
+    <div className={styles.momSlot}><MomSection travel={travel} arrivalDay={draft.startDate} plans={itinerary ?? []} startAt={tripNow} /></div>
     </div>
     {/* Two boxes, one over the other, 5% in from each side: Live then Upcoming (or two Upcoming before anything is live).
         Tap one to open Info → Itinerary. Trips without an itinerary keep the Flights card. */}

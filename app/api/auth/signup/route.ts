@@ -3,11 +3,20 @@ import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/l
 import { findUnclaimedSlotForUsername } from "@/lib/portal/matchPlayerUsername";
 
 export async function POST(request: Request) {
-  const { name, email, username, password } = await request.json();
-
-  if (!name || !email || !username || !password) {
-    return NextResponse.json({ ok: false, error: "All fields are required." }, { status: 400 });
+  let body;
+  try { body = await request.json(); } catch {
+    return NextResponse.json({ ok: false, error: "Invalid signup request." }, { status: 400 });
   }
+  if (!body || typeof body.email !== "string" || typeof body.password !== "string") {
+    return NextResponse.json({ ok: false, error: "Email and password are required." }, { status: 400 });
+  }
+  const email = body.email.trim();
+  const password = body.password;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return NextResponse.json({ ok: false, error: "Enter a valid email address." }, { status: 400 });
+  }
+  const name = typeof body.name === "string" && body.name.trim() ? body.name.trim() : "Golfer";
+  const username = typeof body.username === "string" && body.username.trim() ? body.username.trim() : `golfer_${crypto.randomUUID().replaceAll("-", "")}`;
 
   if (password.length < 6) {
     return NextResponse.json({ ok: false, error: "Password must be at least 6 characters." }, { status: 400 });
