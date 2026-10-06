@@ -16,6 +16,7 @@ import { AreaNavigation } from "./AreaNavigation";
 import { RoundExitProvider } from "./RoundExit";
 import { WebsiteFrameBridge } from "@/components/portal/admin/WebsiteFrameBridge";
 import { SimulatorBridge } from "@/components/dev/SimulatorBridge";
+import { PageScrollBackground } from "./PageScrollBackground";
 
 /**
  * Picks the site chrome for the current route. `/broadcast` and customer
@@ -33,12 +34,13 @@ import { SimulatorBridge } from "@/components/dev/SimulatorBridge";
  */
 export function SiteChrome({ children, nextTournamentOverride }: { children: ReactNode; nextTournamentOverride: NextTournamentOverride }) {
   const content = (
-    <AreaNavigation>
+    <div className="app-camera-buffer"><AreaNavigation>
       <RoundExitProvider>
         <WebsiteFrameBridge />
+        <PageScrollBackground />
         <SiteChromeBody nextTournamentOverride={nextTournamentOverride}>{children}</SiteChromeBody>
       </RoundExitProvider>
-    </AreaNavigation>
+    </AreaNavigation></div>
   );
   return process.env.NODE_ENV === "development" ? <SimulatorBridge>{content}</SimulatorBridge> : content;
 }
@@ -50,7 +52,7 @@ function SiteChromeBody({ children, nextTournamentOverride }: { children: ReactN
   const hideBottomNav = isSiteBottomNavHidden(pathname);
   return (
     <>
-      <div className={hideBottomNav ? undefined : SITE_BOTTOM_NAV_CONTENT_CLASS}>
+      <div className={`app-camera-content ${hideBottomNav ? "" : SITE_BOTTOM_NAV_CONTENT_CLASS}`}>
         <AreaChrome nextTournamentOverride={nextTournamentOverride}>{children}</AreaChrome>
       </div>
       {!hideBottomNav && <SiteBottomNav />}

@@ -1,5 +1,5 @@
 .header{position:sticky;top:0;z-index:300;background:#240001;color:#fbf8f1;border-bottom:1px solid #c9a86e55}
-.homeHeader{background:#1d0b11;border-bottom:0;position:relative}.homeHeader .wordmark{font:500 12px var(--font-barlow),sans-serif;text-transform:uppercase;letter-spacing:.13em}.homeHeader .headerInner{max-width:1160px}.homeHeader .menu nav{background:#1d0b11}.homeHeader .account svg{width:18px}
+.homeHeader{background:#1d0b11;border-bottom:0;position:relative;top:0}.homeHeader .wordmark{font:500 12px var(--font-barlow),sans-serif;text-transform:uppercase;letter-spacing:.13em}.homeHeader .headerInner{max-width:1160px}.homeHeader .menu nav{background:#1d0b11}.homeHeader .account svg{width:18px}
 .headerInner{max-width:1080px;margin:auto;min-height:72px;padding:0 20px;display:grid;grid-template-columns:44px 1fr 44px;align-items:center}
 .wordmark{justify-self:center;font-family:var(--font-spectral),Georgia,serif;font-size:27px;font-weight:600;letter-spacing:-.04em}
 .pageTitle{margin:0 0 0 4px;font:600 clamp(24px,5vw,30px)/1.2 var(--font-spectral),Georgia,serif;letter-spacing:-.025em;color:inherit}

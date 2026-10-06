@@ -15,7 +15,7 @@ import { flightCounts, flightTime, type FlightSummary } from "@/lib/platform/gol
 
 /** The Info tab's Flights card: the viewer's flight summary, and the Flights page it opens (null = not a link). */
 export interface TripFlights { summary: FlightSummary; href: string | null }
-import { GolfCourseWeather, GolfTripLeaderboard } from "./GolfTripMatch";
+import { GolfGamesSummary, GolfMatchup, GolfTournamentSummary, GolfTripLeaderboard } from "./GolfTripMatch";
 import { GolfTripScoring } from "./GolfTripScoring";
 import { GolfTripCompetitionMatchPreview } from "./GolfTripCompetitionMatchPreview";
 import { GolfTripActionSheet } from "./GolfTripActionSheet";
@@ -146,7 +146,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
         </>
         : tab === "Venue" ? <GolfTripVenue draft={draft} settingsHref={settingsHref}
           latitude={coordinate(draft.destinationLatitude)} longitude={coordinate(draft.destinationLongitude)} />
-        : tab === "Info" ? <InfoSlides active={infoSlide} onActive={setInfoSlide} itinerary={itinerary}
+        : tab === "Info" ? <InfoSlides active={infoSlide} onActive={setInfoSlide} itinerary={itinerary} tripDays={dates}
           myInfo={travel ? <GolfTripMyTravel travel={travel} onChange={changeMyTravel} /> : <VenueEvents />} />
         : <Card title={tab}><Empty>Coming soon</Empty></Card>}
     </div>
@@ -290,6 +290,8 @@ function WeatherRow({ place, weather }: { place?: string; weather: Promise<TripW
 
 /** Golf sections share the existing responsive scroll-snap strip and tab styling. */
 function GolfSlides({ previewMatch, competitive, navigation, onNavigationChange }: { previewMatch?: GolfMatchPreview; competitive: boolean; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void }) {
+  // Competition is about the round being played: only that round's matches (matches without a round count as current).
+  const roundMatch = useMemo(() => previewMatch && { ...previewMatch, matches: previewMatch.matches.filter(pairing => pairing.round === undefined || pairing.round === previewMatch.round) }, [previewMatch]);
   const trackRef = useRef<HTMLDivElement>(null);
   const availableSlides = GOLF_SLIDES.filter((name) => name !== "Competition" || competitive);
   const requested = Math.max(0, availableSlides.findIndex(section => section === navigation?.golfSection));
@@ -328,7 +330,19 @@ function GolfSlides({ previewMatch, competitive, navigation, onNavigationChange 
   };
 
   return <>
-    {previewMatch && <div className={styles.golfTop}><GolfCourseWeather match={previewMatch} /></div>}
+    {/* Top box: a summary leaderboard for the section — the whole tournament on Overview, the round being played on
+        Competition, games (placeholder) on Games. All three share one grid cell so the tabs don't move when it switches.
+        The weather lives on Home. */}
+    {previewMatch && <div className={styles.golfTop}>
+      {(["Overview", "Competition", "Games"] as const).map(section => {
+        const shown = (availableSlides[active] ?? "Overview") === section;
+        // Overview's box sets the size; Competition and Games fill exactly that box.
+        return <div key={section} className={`${section === "Overview" ? styles.golfTopSize : styles.golfTopFill} ${shown ? "" : styles.golfTopHidden}`} inert={!shown}>
+          {section === "Overview" ? <GolfTournamentSummary match={previewMatch} />
+            : section === "Competition" ? <GolfMatchup match={roundMatch ?? previewMatch} showDots compact /> : <GolfGamesSummary />}
+        </div>;
+      })}
+    </div>}
     <div className={styles.tabs} role="tablist" aria-label="Golf sections">
       {availableSlides.map((name, i) => <button key={name} type="button" role="tab" aria-selected={active === i}
         className={`${styles.tab} ${active === i ? styles.tabActive : ""}`} onClick={() => goTo(i)}>{name}</button>)}
@@ -337,7 +351,7 @@ function GolfSlides({ previewMatch, competitive, navigation, onNavigationChange 
       {availableSlides.filter(name => name !== "Games").map((name, i) => <div key={name} className={styles.slide} role="tabpanel" aria-label={name} inert={active !== i}>
         {name === "Overview"
           ? previewMatch ? <GolfTripLeaderboard match={previewMatch} /> : <Card title="Score Overview"><Empty>Your leaderboard and round scores will show here</Empty></Card>
-          : previewMatch ? <GolfTripCompetitionMatchPreview initialMatch={previewMatch} /> : <Card title="Competition"><Empty>Your matchups will show here</Empty></Card>}
+          : roundMatch ? <GolfTripCompetitionMatchPreview initialMatch={roundMatch} /> : <Card title="Competition"><Empty>Your matchups will show here</Empty></Card>}
       </div>)}
     </div>
     <div role="tabpanel" aria-label="Games" hidden={!gamesActive}>
@@ -540,7 +554,7 @@ function ItineraryCard({ item, onOpen }: { item: ItineraryItem; onOpen: () => vo
 
 /** Info tab: a slider with My Info (your travel; for trips without travel data, the older getting there / lodging / transportation lists) and Itinerary (everything, by day). Tap or swipe. */
 const INFO_SLIDES = ["My Info", "Itinerary"] as const;
-function InfoSlides({ active, onActive, itinerary, myInfo }: { active: number; onActive: (index: number) => void; itinerary?: ItineraryItem[]; myInfo: ReactNode }) {
+function InfoSlides({ active, onActive, itinerary, tripDays, myInfo }: { active: number; onActive: (index: number) => void; itinerary?: ItineraryItem[]; tripDays: string[]; myInfo: ReactNode }) {
   const trackRef = useRef<HTMLDivElement>(null);
   // Follow the chosen tab (taps, or a Home card opening Itinerary).
   useEffect(() => {
@@ -558,18 +572,19 @@ function InfoSlides({ active, onActive, itinerary, myInfo }: { active: number; o
     </div>
     <div ref={trackRef} className={styles.slides} onScroll={onScroll}>
       <div className={styles.slide} role="tabpanel" aria-label="My Info" inert={active !== 0}>{myInfo}</div>
-      <div className={styles.slide} role="tabpanel" aria-label="Itinerary" inert={active !== 1}><ItineraryList items={itinerary} /></div>
+      <div className={styles.slide} role="tabpanel" aria-label="Itinerary" inert={active !== 1}><ItineraryList items={itinerary} tripDays={tripDays} /></div>
     </div>
   </>;
 }
 
-/** Info → Itinerary: every item in time order, under a heading for each day. */
-function ItineraryList({ items }: { items?: ItineraryItem[] }) {
-  const days = itineraryByDay(items ?? []);
+/** Info → Itinerary: every day of the trip (plus any day outside it with something on it), each item in time order. */
+function ItineraryList({ items, tripDays }: { items?: ItineraryItem[]; tripDays: string[] }) {
+  const days = itineraryByDay(items ?? [], tripDays);
   if (!days.length) return <Card title="Itinerary"><Empty>Nothing on the itinerary yet</Empty></Card>;
   return <div className={styles.events}>
     {days.map(({ day, items: dayItems }) => <section key={day} className={styles.infoSection} aria-label={itineraryDay(day)}>
       <h2 className={styles.eventsHeading}>{itineraryDay(day)}</h2>
+      {dayItems.length === 0 && <p className={styles.itineraryEmptyDay}>Nothing planned for today.</p>}
       {dayItems.map((item) => <EventRow key={item.id} event={{ host: ITINERARY_KIND_LABEL[item.kind], title: item.title, art: TRAVEL_KIND_ART[item.kind],
         kindIcon: item.kind, lines: [{ icon: Clock, text: itineraryTime(item.startsAt) }, item.detail && { icon: MapPin, text: item.detail }] }} />)}
     </section>)}

@@ -12,7 +12,7 @@
 
 /* Maroon instead of the reference's pink. The Join card overlaps its bottom by 110px. */
 .band {
-  padding: calc(28px + env(safe-area-inset-top)) max(16px, calc((100% - 560px) / 2)) 138px;
+  padding: calc(28px + 0px) max(16px, calc((100% - 560px) / 2)) 138px;
   background: radial-gradient(120% 120% at 50% 0%, #6b161a 0%, #4a0508 45%, #380001 100%);
   color: #fbf8f1;
 }

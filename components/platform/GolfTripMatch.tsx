@@ -138,7 +138,8 @@ function parColor(score: string): string | undefined {
 /**
  * Above the Golf slide tabs: the Match box for the featured matchup (first pair).
  */
-export function GolfMatchup({ match, showDots }: { match: GolfMatchPreview; showDots: boolean }) {
+/** `compact`: tighter layout so it fits the Golf tab's top box (the same size as the tournament summary). */
+export function GolfMatchup({ match, showDots, compact = false }: { match: GolfMatchPreview; showDots: boolean; compact?: boolean }) {
   const [left, right] = match.sides;
   const featured = 0;
   const pairing: GolfMatchPairing | undefined = match.matches[featured];
@@ -146,7 +147,7 @@ export function GolfMatchup({ match, showDots }: { match: GolfMatchPreview; show
   const rightComp = pairing?.right ? normalizeCompetitor(pairing.right) : leftComp;
   const gross = pairing?.gross ?? null;
 
-  return <div className={styles.matchup}>
+  return <div className={`${styles.matchup} ${compact ? styles.matchupCompact : ""}`}>
     <section className={styles.versus} aria-label="Match">
       <div className={styles.teams}>
         {leftComp && <PlayerSide competitor={leftComp} align="left" standing={gross} />}
@@ -180,6 +181,41 @@ function SlideHeader({ title, detail, children }: { title: string; detail: strin
 }
 
 /** "2027-04-23" → "Fri, Apr 23" (read as a calendar date, so no time zone can shift it). */
+/**
+ * Top box on Overview: the whole tournament at a glance — both teams with their overall score, where the event is
+ * (round N of M), the win % bar and team stats. Same box as the round matchup card on Competition.
+ */
+export function GolfTournamentSummary({ match }: { match: GolfMatchPreview }) {
+  const [left, right] = match.sides;
+  return <div className={styles.matchup}>
+    <section className={styles.versus} aria-label="Tournament standings">
+      <p className={styles.summaryLabel}>Tournament · Round {match.round} of {match.roundCount}</p>
+      <div className={styles.summaryTeams}>
+        {[left, right].map((side, i) => <div key={side.name} className={i ? styles.summaryRight : ""}>
+          <p className={styles.teamName}>{side.name}</p>
+          <p className={styles.summaryScore}>{side.score || "—"}</p>
+        </div>)}
+      </div>
+      <div className={styles.stats}>
+        <WinBar left={left.winPct} right={right.winPct} />
+        <RoundStats side={left} align="left" />
+        <RoundStats side={right} align="right" />
+      </div>
+    </section>
+  </div>;
+}
+
+/** Top box on Games: placeholder until the games leaderboard exists. */
+export function GolfGamesSummary() {
+  return <div className={styles.matchup}>
+    <section className={`${styles.versus} ${styles.summaryPlaceholder}`} aria-label="Games leaderboard">
+      <p className={styles.summaryLabel}>Games leaderboard</p>
+      <p className={styles.teamName}>Coming soon</p>
+      <p className={styles.summaryNote}>Standings for your side games will show here.</p>
+    </section>
+  </div>;
+}
+
 export function roundDay(date: string): string {
   const [year, month, day] = date.split("-").map(Number);
   return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });

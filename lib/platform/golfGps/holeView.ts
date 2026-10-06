@@ -26,14 +26,25 @@ const METERS_PER_YARD = 0.9144;
 const METERS_PER_PIXEL_ZOOM_0 = 156543.03392;
 
 /**
- * The "hole view": turn the map so the tee is at the bottom and the green at the top, zoom so every part of the hole
- * (tee, green front / center / back, hazards, and any mapped hole line / green outline) fits between the yardage card
- * and the bottom controls, and center it in that clear band (not the middle of the screen, which sits partly under the
- * card).
+ * The points the hole view keeps on screen — the HOLE only, never the player. A real (mapped) hole uses its geometry
+ * (`frame`: mapped tees, hole line, fairways, green outline, boundary) plus its start and green targets; hazards are
+ * left out so a stray bunker can't widen the view. A hole without mapped geometry (the hand-built prototype holes) falls
+ * back to its tee, green targets and hazards.
+ */
+export function holeFramePoints(hole: GpsHole): LatLng[] {
+  const core = [hole.tee, hole.green.front, hole.green.center, hole.green.back];
+  return hole.frame?.length ? [...core, ...hole.frame] : [...core, ...hole.hazards.map((hazard) => hazard.center)];
+}
+
+/**
+ * The "hole view": turn the map so the tee (or hole-line start) is at the bottom and the green at the top, zoom so the
+ * whole hole (holeFramePoints) fits between the yardage card and the bottom controls, and center it in that clear band
+ * (not the middle of the screen, which sits partly under the card). Depends only on the hole and the screen — the
+ * player's position never moves this camera.
  */
 export function holeCamera(hole: GpsHole, viewport: HoleViewport): HoleCamera {
   const heading = bearingDegrees(hole.tee, hole.green.center);
-  const points = [hole.tee, hole.green.front, hole.green.center, hole.green.back, ...hole.hazards.map((hazard) => hazard.center), ...(hole.frame ?? [])];
+  const points = holeFramePoints(hole);
 
   // Each point in "hole space": yards up the hole (along) and yards right of the line (across), from the tee.
   const local = points.map((point) => {

@@ -135,6 +135,7 @@
 /* Plain custom properties (not part of the Tailwind theme scale —
    referenced directly via var() for gradients/scrims/motion) */
 :root {
+  --app-safe-top: var(--app-top-clearance);
   --gradient-maroon: linear-gradient(160deg, var(--color-maroon-700) 0%, var(--color-maroon-900) 100%);
   --gradient-trophy: linear-gradient(135deg, var(--color-gold-300) 0%, var(--color-gold-600) 100%);
   --scrim-bottom: linear-gradient(to top, rgba(36, 0, 1, 0.85) 0%, rgba(36, 0, 1, 0) 70%);
@@ -144,7 +145,7 @@
 
 html,
 body {
-  background: var(--color-cream-50);
+  background: var(--app-scroll-background, var(--color-cream-50));
   color: var(--color-ink-900);
 }
 
@@ -308,4 +309,19 @@ body {
 h1, h2 {
   font-family: var(--font-spectral), Georgia, "Times New Roman", serif !important;
   font-weight: 700 !important;
+}
+
+/* Paint each top surface to the screen edge; only its content gets clearance. */
+:root { --app-top-clearance: 0px; }
+@media (max-width: 1023px) {
+  :root { --app-top-clearance: calc(env(safe-area-inset-top, 0px) + 2svh); }
+  .app-camera-buffer { --app-page-top-inset: 0px; }
+  .app-camera-buffer > :first-child:not(.app-camera-content),
+  .app-camera-content > :first-child {
+    padding-top: var(--app-top-clearance);
+  }
+  /* Containers with a header delegate clearance to that colored header. */
+  .app-camera-content > :first-child:has(> header:first-child) { padding-top: 0; }
+  .app-camera-content > :first-child > header:first-child { padding-top: var(--app-top-clearance); }
+  .fixed.inset-0 { padding-top: var(--app-top-clearance); }
 }

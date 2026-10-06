@@ -1,7 +1,7 @@
 .pageHeader {
   position: relative;
   isolation: isolate;
-  padding-top: max(80px, calc(68px + env(safe-area-inset-top)));
+  padding-top: max(80px, calc(68px + 0px));
   background: #1d0b11;
 }
 
@@ -17,7 +17,7 @@
 .pageHeader > header {
   position: absolute;
   inset: 0 0 auto;
-  padding-top: env(safe-area-inset-top);
+  padding-top: 0px;
   background: transparent;
   border-bottom: 0;
 }

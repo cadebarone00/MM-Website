@@ -110,6 +110,8 @@ export type GolfMatchPairing = {
   right?: GolfMatchCompetitor | GolfMatchGolfer;
   gross: GolfMatchStanding;
   net: GolfMatchStanding;
+  /** Which round (trip day) this match is played in; fixtures without it count as the current round. */
+  round?: number;
 };
 
 export type GolfLeaderboardEntry = {

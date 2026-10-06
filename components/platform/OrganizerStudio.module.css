@@ -3,7 +3,7 @@
 /* In preview the page's own preview banner is the sticky part, so the site scrolls as it will for visitors. */
 .header[data-page="preview"] { position: static; }
 .bar, .context { max-width: 1180px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.bar { min-height: 58px; padding-top: env(safe-area-inset-top); }
+.bar { min-height: 58px; padding-top: 0; }
 .brand { display: flex; align-items: baseline; gap: 10px; margin: 0; min-width: 0; }
 .wordmark { font-size: 22px; color: #f6f1e8; }
 .label { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #c7a55e; white-space: nowrap; }

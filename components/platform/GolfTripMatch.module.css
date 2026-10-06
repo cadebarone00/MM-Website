@@ -160,3 +160,20 @@
 .number[data-par="under"]{color:#ef4444}
 .number[data-par="even"]{color:var(--color-gold-300,#dcc495)} /* E in our gold */
 .number[data-par="over"]{color:#fff}
+/* Golf tab summary boxes (Overview: tournament; Games: placeholder), in the matchup card's box. */
+.summaryLabel{margin:0;padding:12px 14px 0;font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#dcc495}
+.summaryTeams{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:10px 14px 12px}
+.summaryRight{text-align:right}
+.summaryScore{margin:6px 0 0;font:700 30px/1 var(--font-spectral),Georgia,serif;color:#fff}
+.summaryPlaceholder{padding-bottom:16px}
+.summaryPlaceholder .teamName{padding:8px 14px 0}
+.summaryNote{margin:6px 0 0;padding:0 14px;font:500 13px/1.4 var(--font-barlow),sans-serif;color:rgba(251,248,241,.7)}
+/* Compact matchup (Golf tab top box): fits the tournament summary's height — smaller initials, two-line names, less padding. */
+.matchupCompact .teams{padding:8px 14px 4px}
+.matchupCompact .side{gap:3px;padding:6px 10px}
+.matchupCompact .avatar{width:30px;height:30px;font-size:12px}
+.matchupCompact .boxStanding{min-height:14px;font-size:15px}
+.matchupCompact .teamName{margin:2px 0 0;font-size:15px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.matchupCompact .teamMeta{margin:-2px 0 0;font-size:12px}
+.matchupCompact .stats{padding-bottom:10px}
+.matchupCompact .win{margin-bottom:8px}

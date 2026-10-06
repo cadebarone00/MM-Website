@@ -184,3 +184,5 @@
 .navRow svg:last-child{color:var(--dim)}
 .navRow[aria-disabled="true"]{opacity:.6}
 a.navRow:hover{background:var(--surface-2)}
+
+@media(max-width:1023px){.app{padding-top:0!important}.topBar{padding-top:var(--app-top-clearance)}}

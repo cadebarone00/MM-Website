@@ -5,7 +5,7 @@ import { loadPlayableOpenGolfCourse } from "@/lib/platform/golfGps/courseEnrichm
 import { toPrototypeGpsCourse } from "@/lib/platform/golfGps/domain";
 import { GolfProviderError } from "@/lib/platform/golfGps/providers/GolfCourseProvider";
 import { getCourseLibrary } from "@/lib/platform/golfGps/repository/courseLibrary";
-import { RealCourseGps } from "./RealCourseGps";
+import { CourseGpsNavigator } from "@/components/platform/gps/CourseGpsNavigator";
 
 export const metadata: Metadata = { title: "GPS prototype | The Maroon", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -46,7 +46,7 @@ export default async function GolfGpsPrototypePage({ searchParams }: { searchPar
   }
   const holeNumbers = [...loaded.course.holes].map((h) => h.number).sort((a, b) => a - b);
   const first = Number(hole) || gpsCourse.holes[0].number;
-  return <RealCourseGps course={gpsCourse} holeNumbers={holeNumbers.length ? holeNumbers : gpsCourse.holes.map((h) => h.number)} initialHole={first} />;
+  return <main style={{ height: "100svh" }}><CourseGpsNavigator course={gpsCourse} holeNumbers={holeNumbers} initialHole={first} /></main>;
 }
 
 /** A course from the Maroon course library (Supabase), shown in the GPS screen. No provider calls. */
@@ -68,5 +68,5 @@ async function SavedCourseGps({ maroonCourse, hole }: { maroonCourse: string; ho
     </main>;
   }
   const holeNumbers = entry.course.holes.map((h) => h.number).sort((a, b) => a - b);
-  return <RealCourseGps course={gpsCourse} holeNumbers={holeNumbers} initialHole={Number(hole) || gpsCourse.holes[0].number} />;
+  return <main style={{ height: "100svh" }}><CourseGpsNavigator course={gpsCourse} holeNumbers={holeNumbers} initialHole={Number(hole) || gpsCourse.holes[0].number} /></main>;
 }

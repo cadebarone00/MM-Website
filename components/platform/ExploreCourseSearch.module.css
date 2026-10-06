@@ -1,0 +1,40 @@
+/* Explore → Courses. Sits where the Explore feature photo sits, on the same warm card background as the filters. */
+.panel{min-height:460px;padding:22px 20px 32px;color:#1d0b11}
+.kicker{margin:0;font:500 10px/1.5 var(--font-barlow),sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#7a1b2e}
+.title{margin:10px 0 18px;font:400 clamp(32px,8.5vw,48px)/1.08 var(--font-spectral),Georgia,serif;letter-spacing:-.045em}
+.searchBox{display:flex;align-items:center;gap:10px;min-height:54px;padding:0 16px;border:1px solid #b99c6b;border-radius:14px;background:#fffdf8;color:#7a1b2e;box-shadow:0 2px 8px #1d0b1110}
+.searchBox:focus-within{border-color:#7a1b2e;box-shadow:0 0 0 3px #7a1b2e22}
+.searchBox input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:#1d0b11;font:500 16px var(--font-barlow),sans-serif}
+.searchBox input::placeholder{color:#8c7d72}
+.spinner{animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hint{margin:16px 2px 0;font:400 14px/1.5 var(--font-barlow),sans-serif;color:#5d4f47}
+.results{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:8px}
+.results button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:64px;padding:12px 14px 12px 16px;border:1px solid #d9cdb8;border-radius:14px;background:#fffdf8;color:#1d0b11;text-align:left;cursor:pointer}
+.results button:hover,.results button:focus-visible{border-color:#b99c6b;background:#fff}
+.results button>svg{flex:none;color:#7a1b2e}
+.resultText{display:flex;flex-direction:column;gap:3px;min-width:0}
+.resultText strong{font:400 19px/1.2 var(--font-spectral),Georgia,serif;letter-spacing:-.02em}
+.resultText small{font:500 12px/1.4 var(--font-barlow),sans-serif;color:#6b5a50;letter-spacing:.02em}
+.credit{margin:14px 2px 0;font:400 11px/1.4 var(--font-barlow),sans-serif;color:#8c7d72}
+.back{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0;border:0;background:transparent;color:#7a1b2e;font:600 14px var(--font-barlow),sans-serif;cursor:pointer}
+.course{margin-top:10px;padding:22px 20px;border:1px solid #b99c6b;border-radius:16px;background:#fffdf8}
+.course h2{margin:10px 0 8px;font:400 clamp(28px,7.5vw,40px)/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.04em}
+.place{display:flex;align-items:center;gap:6px;margin:0;font:500 14px var(--font-barlow),sans-serif;color:#5d4f47}
+.facts{display:flex;gap:8px;margin:14px 0 0}
+.facts span{padding:5px 10px;border-radius:999px;background:#efe7da;font:600 12px var(--font-barlow),sans-serif;color:#1d0b11}
+.soon{margin:18px 0 0;padding-top:16px;border-top:1px solid #e6dccb;font:400 14px/1.55 var(--font-barlow),sans-serif;color:#5d4f47}
+/* Picked course: what's available, tees, actions, and the full-screen GPS layer. */
+.status{display:flex;align-items:center;gap:7px;margin:14px 0 0;font:600 13px var(--font-barlow),sans-serif;color:#6b5a50}
+.status[data-tone=good]{color:#1f6b3d}
+.tees{margin-top:16px}
+.teeNames{margin:6px 0 0;font:500 14px/1.5 var(--font-barlow),sans-serif;color:#1d0b11}
+.teeList{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+.teeList li{display:flex;justify-content:space-between;gap:12px;padding:9px 12px;border-radius:10px;background:#f6f0e6;font:500 14px var(--font-barlow),sans-serif}
+.teeList li span:last-child{color:#6b5a50}
+.actions{display:grid;gap:8px;margin-top:20px}
+.primary,.secondary{display:flex;align-items:center;justify-content:center;gap:8px;min-height:50px;border-radius:12px;font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
+.primary{border:0;background:#1d0b11;color:#fffdf8}
+.secondary{border:1px solid #1d0b11;background:transparent;color:#1d0b11}
+.primary:disabled,.secondary:disabled{opacity:.6;cursor:default}
+.gpsLayer{position:fixed;inset:0;z-index:1000;background:#240001}

@@ -7,6 +7,7 @@ import { maroonCategories } from "@/lib/data/theMaroon";
 import { MaroonSection } from "@/components/maroon/MaroonSection";
 import { SignInRequiredLink } from "./SignInRequiredLink";
 import { GolfBagIcon } from "./GolfBagIcon";
+import { ExploreCourseSearch } from "./ExploreCourseSearch";
 import styles from "./MobileHome.module.css";
 import { motion } from "motion/react";
 import { useAppMotion } from "@/components/motion/useAppMotion";
@@ -51,7 +52,8 @@ export function PlatformHome({ signedIn = false }: { signedIn?: boolean }) {
           return <button key={item} type="button" aria-pressed={section === item} onClick={() => setSection(item)}><Icon size={22} aria-hidden="true" />{item}</button>;
         })}
       </div>
-      <div className={styles.feature}>
+      {/* Courses turns this spot into course search; every other filter keeps the photo feature. */}
+      {section === "Courses" ? <ExploreCourseSearch /> : <div className={styles.feature}>
         <Image src={category.image} alt="" fill sizes="(max-width: 600px) 100vw, 1120px" />
         <div className={styles.featureCopy}>
           <p className={styles.kicker}>The Maroon &middot; {section === "Discover" ? "Beyond the scorecard" : section}</p>
@@ -59,7 +61,7 @@ export function PlatformHome({ signedIn = false }: { signedIn?: boolean }) {
           <p className={styles.description}>{section === "Discover" ? "The places, the people, and the moments between rounds." : category.description}</p>
           <Link href={section === "Discover" ? "#beyond-the-scorecard" : "/the-maroon/" + category.slug}>Explore {section === "Discover" ? "The Maroon" : section}<ArrowRight size={16} aria-hidden="true" /></Link>
         </div>
-      </div>
+      </div>}
     </section>
     <div className="mx-auto max-w-[1120px] bg-cream-50 px-4 py-5 font-title text-ink-900 sm:px-7 sm:py-8">
       <header id="beyond-the-scorecard" className="scroll-mt-4 pt-2"><p className="font-condensed text-xs uppercase tracking-widest text-maroon-700">The Maroon</p><h2 className="mt-2 text-3xl font-bold sm:text-4xl">Beyond the scorecard.</h2><p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-500">The courses, the gear, the lessons, and the stories that bring us back to golf.</p></header>

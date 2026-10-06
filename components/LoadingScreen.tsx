@@ -51,7 +51,7 @@ export function LoadingScreen({
       <div className="absolute inset-0 bg-gradient-to-b from-maroon-900/70 via-maroon-900/30 to-maroon-900/70" />
 
       {topSlot && (
-        <div className="absolute inset-x-0 top-[calc(env(safe-area-inset-top)+2rem)] px-6 text-center font-sans text-sm font-medium text-cream-50/90">
+        <div className="absolute inset-x-0 top-[calc(var(--app-safe-top)+2rem)] px-6 text-center font-sans text-sm font-medium text-cream-50/90">
           {topSlot}
         </div>
       )}

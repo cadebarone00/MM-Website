@@ -32,15 +32,18 @@ export function upcomingItinerary(items: ItineraryItem[], now: string, count = 5
   return sortItinerary(items).filter((item) => item.startsAt >= now).slice(0, count);
 }
 
-/** Everything, grouped by day in order: [{ day: "2027-04-22", items }, …]. */
-export function itineraryByDay(items: ItineraryItem[]): { day: string; items: ItineraryItem[] }[] {
-  const days: { day: string; items: ItineraryItem[] }[] = [];
+/**
+ * Everything, grouped by day in order: [{ day: "2027-04-22", items }, …]. `tripDays` ("YYYY-MM-DD", e.g. every day of the
+ * trip) are always included, even with no items (items: []); days outside them still show if something is on them.
+ */
+export function itineraryByDay(items: ItineraryItem[], tripDays: string[] = []): { day: string; items: ItineraryItem[] }[] {
+  const byDay = new Map<string, ItineraryItem[]>();
+  for (const day of tripDays) if (/^\d{4}-\d{2}-\d{2}$/.test(day)) byDay.set(day, []);
   for (const item of sortItinerary(items)) {
     const day = item.startsAt.slice(0, 10);
-    if (days[days.length - 1]?.day !== day) days.push({ day, items: [] });
-    days[days.length - 1].items.push(item);
+    byDay.set(day, [...(byDay.get(day) ?? []), item]);
   }
-  return days;
+  return [...byDay.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([day, dayItems]) => ({ day, items: dayItems }));
 }
 
 const asUtc = (local: string) => new Date(`${local.length === 10 ? `${local}T00:00` : local}:00Z`);

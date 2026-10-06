@@ -19,6 +19,13 @@ test("malformed times are dropped; by-day keeps time order within each day", () 
   assert.deepEqual(days.map((d) => [d.day, d.items.map((i) => i.id)]), [["2027-04-22", ["z", "y"]], ["2027-04-23", ["x"]]]);
 });
 
+test("by day: every trip day is listed (empty days included), plus any day outside the trip that has something", () => {
+  const days = itineraryByDay([item("early", "2027-04-21T18:00"), item("tee", "2027-04-23T08:30")], ["2027-04-22", "2027-04-23", "2027-04-24"]);
+  assert.deepEqual(days.map((d) => [d.day, d.items.map((i) => i.id)]), [["2027-04-21", ["early"]], ["2027-04-22", []], ["2027-04-23", ["tee"]], ["2027-04-24", []]]);
+  assert.deepEqual(itineraryByDay([], ["2027-04-22"]), [{ day: "2027-04-22", items: [] }], "a trip with nothing planned still shows its days");
+  assert.deepEqual(itineraryByDay([], []), []);
+});
+
 test("labels: day, time, and local now", () => {
   assert.equal(itineraryDay("2027-04-22T06:10"), "Thu, Apr 22");
   assert.equal(itineraryTime("2027-04-22T06:10"), "6:10 AM");

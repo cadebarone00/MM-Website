@@ -73,7 +73,7 @@ export function Header({ nextTournamentOverride }: { nextTournamentOverride: Nex
     <header className="sticky top-0 z-[300] relative shadow-lg">
       <div className="bg-gradient-maroon">
         {/* Mobile header row — white background to blend with the phone's status bar, 3 zones: sponsor / back arrow (left), wordmark (center, bottom-aligned), account icon (right, always visible). */}
-        <div className="lg:hidden grid grid-cols-3 items-end gap-2 bg-white px-4 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem+2vh)]">
+        <div className="lg:hidden grid grid-cols-3 items-end gap-2 bg-white px-4 pb-2 pt-[calc(0px+0.5rem+2vh)]">
           <div className="flex min-w-0 items-center gap-1.5 justify-self-start">
             {showBack ? (
               <Link

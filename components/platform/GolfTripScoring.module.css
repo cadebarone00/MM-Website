@@ -7,7 +7,7 @@
 .frame{--nav-zone:calc(88px + env(safe-area-inset-bottom));position:fixed;left:0;right:0;bottom:0;z-index:25;height:100svh;pointer-events:none}
 .sheet{--sheet-open:0;position:absolute;left:0;right:0;bottom:0;height:100%;max-height:100%;width:calc(94% + 6% * var(--sheet-open));margin:0 auto;display:flex;flex-direction:column;box-sizing:border-box;
   /* The safe area runs a little past the camera; 8px less tucks the grabber just under it. */
-  padding-top:calc(max(0px, env(safe-area-inset-top) - 8px) * var(--sheet-open));
+  padding-top:calc(var(--app-safe-top) * var(--sheet-open));
   border-radius:calc(18px * (1 - var(--sheet-open))) calc(18px * (1 - var(--sheet-open))) 0 0;background:linear-gradient(180deg,#f8f3ea 0%,#f2ebdf 100%);border:1px solid rgba(126,81,59,calc(.3 * (1 - var(--sheet-open))));border-bottom:0;box-shadow:0 -10px 30px rgba(0,0,0,.18);
   color:var(--color-maroon-900,#2f0c0e);font-family:var(--font-spectral),Georgia,serif;pointer-events:auto;transform:translateY(calc(100% - 56px - var(--nav-zone)));transition:transform .28s cubic-bezier(.2,.8,.2,1),--sheet-open .28s cubic-bezier(.2,.8,.2,1);z-index:25}
 .open{transform:translateY(0);--sheet-open:1}
@@ -20,7 +20,7 @@
 .handleLabel{grid-column:2;justify-self:center;align-self:start;margin-top:0;box-sizing:border-box;width:118.8px;height:40.6px;display:grid;place-items:center;padding:0;border:1px solid var(--color-maroon-900,#2f0c0e);border-radius:999px;background:var(--color-maroon-900,#2f0c0e);color:#fff;font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;text-shadow:none}
 .handleMeta{grid-column:1;display:flex;align-items:flex-start;justify-content:flex-start;gap:6px;align-self:start;margin-top:2px;font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.04em;color:rgba(47,12,14,.75);white-space:nowrap}
 .handleMeta span{display:inline-block}
-.scorecardButton{position:absolute;top:calc(46px + max(0px, env(safe-area-inset-top) - 8px) * var(--sheet-open));right:16px;z-index:3;padding:8px 12px;border:1px solid rgba(47,12,14,.25);border-radius:999px;background:rgba(255,255,255,.22);color:var(--color-maroon-900,#2f0c0e);font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.scorecardButton{position:absolute;top:calc(46px + var(--app-safe-top) * var(--sheet-open));right:16px;z-index:3;padding:8px 12px;border:1px solid rgba(47,12,14,.25);border-radius:999px;background:rgba(255,255,255,.22);color:var(--color-maroon-900,#2f0c0e);font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
 /* Matching pills reserve the right 30% behind a divider; labels center in the left 70%. */
 .scorecardButton{box-sizing:border-box;width:118.8px;height:40.6px;display:grid;grid-template-columns:70% 30%;align-items:center;padding:0;text-align:center}
 .pillLabel,.pillLock{display:flex;align-items:center;justify-content:center;align-self:stretch;min-width:0;padding:0;border:0;border-radius:999px;background:transparent;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer}
@@ -139,11 +139,11 @@
 /* Full-screen scoring ("Hold for scoring" and "Scoring button" views): the sheet covers the whole screen with no
    drag handle; GPS stays top left, Scorecard moves to the top middle, EXIT (styled like the settings SAVE) top right. */
 .frameFull{top:0;height:auto;z-index:110} /* above the bottom menu (100) */
-.sheet.sheetFull{width:100%;height:100%;border-radius:0;border:0;transform:none;padding-top:env(safe-area-inset-top)}
-.sheetFull .scorecardButton{top:calc(46px + env(safe-area-inset-top))}
+.sheet.sheetFull{width:100%;height:100%;border-radius:0;border:0;transform:none;padding-top:var(--app-safe-top)}
+.sheetFull .scorecardButton{top:calc(46px + var(--app-safe-top))}
 .sheetFull .scorecardButtonCenter{right:auto;left:50%;transform:translateX(-50%)}
 .fullTopBar{flex:none;height:92px;display:flex;justify-content:center;align-items:flex-start;padding-top:46px;box-sizing:border-box}
-.exitButton{position:absolute;top:calc(8px + max(0px, env(safe-area-inset-top) - 8px) * var(--sheet-open));right:16px;z-index:3;min-height:28px;padding:0;border:0;background:transparent;color:var(--color-maroon-900,#2f0c0e);font:750 15px/1 var(--font-barlow),sans-serif;cursor:pointer}
+.exitButton{position:absolute;top:calc(8px + var(--app-safe-top) * var(--sheet-open));right:16px;z-index:3;min-height:28px;padding:0;border:0;background:transparent;color:var(--color-maroon-900,#2f0c0e);font:750 15px/1 var(--font-barlow),sans-serif;cursor:pointer}
 .exitButton:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:4px}
 /* "Scoring button" view, closed: a Next hole-style button in Next hole's spot, just above the bottom menu. */
 .openScoringButton{position:absolute;left:0;right:0;bottom:calc(var(--nav-zone) + 10px);pointer-events:auto;box-shadow:0 6px 18px rgba(0,0,0,.25)}
@@ -171,21 +171,21 @@
 /* Full-screen GPS: the map runs edge to edge, top to bottom; GPS / Scorecard / EXIT float on the image (solid so they
    read over satellite), and the yardage card starts below them. */
 .sheet.gpsFullScreen{padding-top:0}
-.gpsFullScreen .fullTopBar{position:absolute;top:env(safe-area-inset-top);left:0;right:0;z-index:2}
+.gpsFullScreen .fullTopBar{position:absolute;top:var(--app-safe-top);left:0;right:0;z-index:2}
 .gpsFullScreen .body{padding:0;gap:0}
-.gpsMap.gpsMapFull{min-height:0;margin:0;border-radius:0;--gps-top-offset:calc(88px + env(safe-area-inset-top))}
+.gpsMap.gpsMapFull{min-height:0;margin:0;border-radius:0;--gps-top-offset:calc(88px + var(--app-safe-top))}
 .gpsFullScreen .scorecardButton{box-shadow:0 2px 8px rgba(0,0,0,.3)}
 .gpsFullScreen .exitButton{padding:8px 14px;border-radius:999px;background:#f8f3ea;box-shadow:0 2px 8px rgba(0,0,0,.3)}
 /* Pull-up sheet on GPS: the map fills the whole sheet (edge to edge, top to bottom, clipped to its corners while it
    grows). The grabber, "Scoring" and the pills float on it over a soft dark fade, and the yardage card starts below them. */
 .sheet.gpsOverlay{overflow:hidden}
 .sheet.gpsOverlay.open:not(.dragging){border-width:0}
-.gpsOverlay::before{content:"";position:absolute;left:0;right:0;top:0;height:calc(108px + env(safe-area-inset-top));z-index:1;pointer-events:none;
+.gpsOverlay::before{content:"";position:absolute;left:0;right:0;top:0;height:calc(108px + var(--app-safe-top));z-index:1;pointer-events:none;
   background:linear-gradient(180deg,rgba(20,6,8,.62),rgba(20,6,8,0))}
 .gpsOverlay .handle{position:relative;z-index:2;color:#fbf8f1;text-shadow:0 1px 3px rgba(0,0,0,.55)}
 .gpsOverlay .scorecardButton{box-shadow:0 2px 8px rgba(0,0,0,.3)}
 .gpsMap.gpsMapFill{position:absolute;inset:0;z-index:0;min-height:0;margin:0;border-radius:0;
-  --gps-top-offset:calc(88px + max(0px, env(safe-area-inset-top) - 8px) * var(--sheet-open));--gps-bottom-offset:env(safe-area-inset-bottom)}
+  --gps-top-offset:calc(88px + var(--app-safe-top) * var(--sheet-open));--gps-bottom-offset:env(safe-area-inset-bottom)}
 /* A slight maroon tint (25%) along the top edge, fading into the cream within ~40px. Its strength follows how far the
    sheet is pulled up (--sheet-open 0 → 1): full when tucked away, gone when open, in between while dragging or sliding. */
 .sheet{background:linear-gradient(180deg,rgba(107,22,26,calc(.25 * (1 - var(--sheet-open)))) 0,rgba(107,22,26,0) 40px),linear-gradient(180deg,#f8f3ea 0%,#f2ebdf 100%)}
@@ -208,7 +208,7 @@
 .grabber{position:absolute;top:7px;left:50%;width:40px;height:4px;margin-left:-20px;border-radius:4px;background:rgba(122,79,41,.5)}
 .gpsOverlay .grabber{background:rgba(251,248,241,.85)}
 .gpsOverlay .exitButton{color:#fff}
-.sheetFull .exitButton{top:calc(8px + env(safe-area-inset-top))}
+.sheetFull .exitButton{top:calc(8px + var(--app-safe-top))}
 .holeSelection{display:flex;flex-direction:column;gap:6px}
 /* Card score shapes (match the leaderboard card): birdie circle, eagle-or-better double circle, bogey box, double bogey or
    worse double box. Rings are box-shadows so the cell never changes size; the double's gap is the tinted section colour. */

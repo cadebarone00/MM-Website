@@ -1,4 +1,4 @@
-.page{min-height:100dvh;display:grid;place-items:center;background:#380001;color:#fbf8f1;padding:calc(32px + env(safe-area-inset-top)) 24px calc(32px + env(safe-area-inset-bottom));box-sizing:border-box}
+.page{min-height:100dvh;display:grid;place-items:center;background:#380001;color:#fbf8f1;padding:calc(32px + 0px) 24px calc(32px + env(safe-area-inset-bottom));box-sizing:border-box}
 .welcome{width:100%;max-width:360px;text-align:center}
 .title{font:400 clamp(48px,12vw,64px)/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.04em;margin:0 0 64px}
 .actions{display:flex;flex-direction:column;align-items:stretch;gap:16px}

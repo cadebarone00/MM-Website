@@ -50,6 +50,12 @@ export function createCourseRepository({ store, importOpenGolf, now = () => new 
     getCourseById,
     findCourseByExternalId,
     saveCourse: async (course: PlayableCourse["course"]) => entry(await store.save(course)),
+    /**
+     * Import from the sources (OpenGolf → OpenStreetMap → targets) and save — creating the course, or rebuilding a stored
+     * one in place (same course and hole ids) when the refresh rule allows. Null when OpenGolf has no such course. A
+     * provider failure throws before anything is saved.
+     */
+    importOpenGolfCourse: importAndSave,
 
     /**
      * The one import flow: stored course if there is one (no provider calls); otherwise OpenGolf → OSM → targets → save.

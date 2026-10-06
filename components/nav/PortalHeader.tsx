@@ -44,7 +44,7 @@ export function PortalHeader() {
 
   return (
     <header className="sticky top-0 z-[300] shadow-lg bg-maroon-900">
-      <div className="grid grid-cols-3 items-center gap-2 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] lg:px-7 lg:py-4">
+      <div className="grid grid-cols-3 items-center gap-2 px-4 pb-3 pt-[calc(0px+0.75rem)] lg:px-7 lg:py-4">
         <div className="justify-self-start shrink-0">
           {showExit ? (
             <Link href="/portal/handicap" onNavigate={back.onNavigate} aria-label="Exit round" title="Exit" className="inline-flex items-center gap-1 font-condensed text-2xs font-bold uppercase text-cream-50">

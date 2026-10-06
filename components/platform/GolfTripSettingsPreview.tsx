@@ -12,6 +12,7 @@ import tripStyles from "./GolfTripHome.module.css";
 import leaderboardStyles from "./GolfTripMatch.module.css";
 import { GolfTripCompetition } from "./GolfTripCompetition";
 import { GolfTripDatePicker } from "./GolfTripDatePicker";
+import { TripScheduleCoursePicker, type PickedCourse } from "./TripScheduleCoursePicker";
 import toggleStyles from "./GolfTripCompetition.module.css";
 import notificationStyles from "./GolfTripNotifications.module.css";
 import { SCORING_VIEWS, setScoringView, useScoringView } from "@/lib/platform/scoringViewPreference";
@@ -95,6 +96,9 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   // Arrival / Departure: moving Arrival keeps Departure where it is, so the day count grows or shrinks with it.
   const [arrivalShift, setArrivalShift] = useState(0);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  // Trip Schedule: tap a round's course → the course pop-up (like New game). Picks are kept per day/round slot.
+  const [pickedCourses, setPickedCourses] = useState<Record<string, PickedCourse>>({});
+  const [coursePicker, setCoursePicker] = useState<{ key: string; label: string } | null>(null);
   const [today] = useState(() => new Date().toISOString().slice(0, 10));
   const baseDate = days[0] ?? today;
   const isoForDay = (index: number) => {
@@ -282,6 +286,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
         </div>}
       </div>}
 
+      {coursePicker && <TripScheduleCoursePicker roundLabel={coursePicker.label} current={pickedCourses[coursePicker.key]} onClose={() => setCoursePicker(null)}
+        onPick={(course) => { setPickedCourses(current => ({ ...current, [coursePicker.key]: course })); setCoursePicker(null); }} />}
       {datePickerOpen && <GolfTripDatePicker arrival={arrivalIso} departure={departureIso} maxDays={MAX_DAYS}
         onSubmit={setTripDates} onClose={() => setDatePickerOpen(false)} />}
 
@@ -315,16 +321,22 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                     onClick={() => setRoundsPerDay(current => ({ ...current, [index]: value }))}>{value}</button>)}
                 </div>
               </div>
-              {Array.from({ length: perDay }, (_, slot) => <div key={slot} className={`${tripStyles.infoEntry} ${styles.roundEntry}`}>
-                <span className={tripStyles.eventInfo}>
-                  <span className={tripStyles.eventHost}>Round {roundsBefore + slot + 1}</span>
-                  <span className={tripStyles.eventTitle}>{dayRounds[slot]?.course ?? "Course TBD"}</span>
-                  <span className={tripStyles.eventMeta}><Clock size={14} aria-hidden />
-                    <span>{dayDate(index)}</span>
-                    {dayRounds[slot] && <span>· {dayRounds[slot].format}</span>}
+              {Array.from({ length: perDay }, (_, slot) => {
+                const key = `${index}-${slot}`, picked = pickedCourses[key], label = `Round ${roundsBefore + slot + 1} · ${dayDate(index)}`;
+                return <button type="button" key={slot} className={`${tripStyles.infoEntry} ${styles.roundEntry}`} aria-haspopup="dialog"
+                  aria-label={`${label}: ${picked?.name ?? dayRounds[slot]?.course ?? "Course TBD"}. Choose course`} onClick={() => setCoursePicker({ key, label })}>
+                  <span className={tripStyles.eventInfo}>
+                    <span className={tripStyles.eventHost}>Round {roundsBefore + slot + 1}</span>
+                    <span className={tripStyles.eventTitle}>{picked?.name ?? dayRounds[slot]?.course ?? "Course TBD"}</span>
+                    <span className={tripStyles.eventMeta}><Clock size={14} aria-hidden />
+                      <span>{dayDate(index)}</span>
+                      {picked?.settings ? <span>· {teeTimeLabel(picked.settings.teeTime)}{picked.settings.tees ? ` · ${picked.settings.tees} tees` : ""}</span>
+                        : picked ? <span>· Course settings later</span>
+                        : dayRounds[slot] && <span>· {dayRounds[slot].format}</span>}
+                    </span>
                   </span>
-                </span>
-              </div>)}
+                </button>;
+              })}
             </section>;
           })}
         </div>
@@ -450,4 +462,11 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
       </div>}
     </div>
   </main>;
+}
+
+/** "08:30" → "8:30 AM" (a tee time from the course pop-up). */
+function teeTimeLabel(time: string): string {
+  const [hours, minutes] = time.split(":").map(Number);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return time;
+  return `${hours % 12 || 12}:${String(minutes).padStart(2, "0")} ${hours < 12 ? "AM" : "PM"}`;
 }

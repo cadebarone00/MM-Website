@@ -83,10 +83,13 @@ export function toPrototypeGpsHole(hole: GolfHole, teeSetId?: string): GpsHole |
     if (circle) hazards.push({ id: area.id, kind: "water", label: area.label ?? "Water", ...circle, ...outlineOf(area.geometry) });
   }
 
+  // The hole view frames real geometry only, in this order: mapped tees, hole line, fairways, green outline, boundary.
   const frame = [
-    ...(hole.centerline?.coordinates ?? []),
-    ...(green.polygon?.coordinates ?? []),
     ...located.map((t) => teePoint(t.location!)).filter((p): p is LatLng => p !== null),
+    ...(hole.centerline?.coordinates ?? []),
+    ...hole.fairways.flatMap((fairway) => fairway.polygon.coordinates),
+    ...(green.polygon?.coordinates ?? []),
+    ...(hole.boundary?.coordinates ?? []),
   ].map(flat);
   return {
     number: hole.number,

@@ -145,7 +145,7 @@ export function adaptTournamentToPreviewMatch(tournament: Tournament): GolfMatch
     const right: GolfMatchCompetitor | undefined = m.whitePlayers && m.whitePlayers.length > 0 ? { golfers: (m.whitePlayers || []).map((p) => ({ name: getPlayerDisplayName(p), hcp: 0, thru: "", score: "", teeTime: "", course: tournament.venue })), points: undefined, totalScore: undefined, thru: undefined, teeTime: undefined, course: tournament.venue } as any : undefined;
     const gross = m.leader === undefined ? null : (m.leader === "maroon" ? { leader: "left", up: Math.abs(m.margin ?? 0) } : m.leader === "white" ? { leader: "right", up: Math.abs(m.margin ?? 0) } : { leader: null, up: 0 });
     const net = gross;
-    return { left, right, gross, net } as any;
+    return { left, right, gross, net, round: m.day } as any;
   });
 
   const leaderboard: GolfLeaderboardEntry[] = (tournament.individualLeaderboard || []).map((s, i) => ({
