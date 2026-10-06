@@ -1,0 +1,39 @@
+/* Tee time sheet: slides up from the bottom; maroon with gold accents, Spectral numbers, a centered selection band. */
+.overlay{position:fixed;inset:0;z-index:40;display:flex;align-items:flex-end;justify-content:center;background:rgba(10,4,6,.55)}
+.sheet{position:relative;width:min(100vw,480px);box-sizing:border-box;padding:28px 24px calc(28px + env(safe-area-inset-bottom));border-radius:28px 28px 0 0;background:var(--color-maroon-900);color:#fbf8f1;text-align:center;box-shadow:0 -16px 40px rgba(0,0,0,.35);animation:rise .3s ease-out}
+@keyframes rise{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}}
+.title{margin:0;padding:0 56px;font:700 20px/1.2 var(--font-spectral),Georgia,serif;letter-spacing:.04em}
+.detail{max-width:260px;margin:6px auto 0;color:rgba(251,248,241,.6);font:500 12px/1.4 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
+/* Three wheels, each five rows tall; padding lets the first and last values reach the middle band. */
+.wheels{position:relative;display:flex;justify-content:center;gap:18px;margin:20px auto 28px;height:220px;-webkit-mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent);mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent)}
+.band{position:absolute;top:88px;left:12%;right:12%;height:44px;border-top:1px solid rgba(220,196,149,.5);border-bottom:1px solid rgba(220,196,149,.5);pointer-events:none}
+.wheel{width:64px;height:220px;padding:88px 0;box-sizing:border-box;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;outline:none}
+.wheel::-webkit-scrollbar{display:none}
+.wheel:focus-visible{border-radius:12px;box-shadow:0 0 0 2px #dcc495}
+.item{height:44px;display:grid;place-items:center;scroll-snap-align:center;color:rgba(251,248,241,.45);font:600 20px/1 var(--font-spectral),Georgia,serif;cursor:pointer;transition:color .15s,font-size .15s}
+.item[data-selected=true]{color:#fbf8f1;font-size:26px}
+.save{min-width:180px;min-height:46px;padding:0 28px;border:1.5px solid #dcc495;border-radius:999px;background:transparent;color:#dcc495;font:700 13px/1 var(--font-barlow),sans-serif;letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
+.save:active{background:#dcc495;color:var(--color-maroon-900)}
+.save:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
+/* Group boxes across the top (scroll sideways when there are many): "Group N" above a short wide box holding its time; the chosen group fills gold. */
+.groups{display:flex;gap:10px;margin:22px -24px 0;padding:2px 24px 4px;overflow-x:auto;scrollbar-width:none}
+.groups::-webkit-scrollbar{display:none}
+.groupSlot{flex:none;display:grid;justify-items:center;gap:6px}
+.groupLabel{color:rgba(251,248,241,.7);font:600 11px/1 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.groupBox{display:grid;place-items:center;width:96px;height:48px;padding:0 6px;box-sizing:border-box;border:1.5px solid rgba(220,196,149,.35);border-radius:12px;background:rgba(255,255,255,.04);color:#fbf8f1;cursor:pointer}
+.groupBox strong{font:700 17px/1 var(--font-spectral),Georgia,serif;white-space:nowrap}
+.groupBox small{color:rgba(251,248,241,.6);font:600 11px/1 var(--font-barlow),sans-serif}
+.groupBox[aria-pressed=true]{border-color:#dcc495;background:#dcc495;color:var(--color-maroon-900)}
+.groupBox[aria-pressed=true] small{color:var(--color-maroon-900)}
+.groupBox:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.addGroup{border-style:dashed;color:#dcc495}
+/* SAVE: top right of the sheet; saves every group's time and closes. */
+.saveAll{position:absolute;top:22px;right:20px;padding:6px 4px;border:0;background:transparent;color:#dcc495;font:700 14px/1 var(--font-barlow),sans-serif;letter-spacing:.1em;cursor:pointer}
+.saveAll:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+/* X: top left; slides the sheet down and away in 100 ms before closing. */
+.closeX{position:absolute;top:16px;left:16px;display:grid;place-items:center;width:34px;height:34px;padding:0;border:0;border-radius:50%;background:transparent;color:#fbf8f1;cursor:pointer}
+.closeX:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.sheet.leaving{animation:drop .1s ease-in forwards}
+@keyframes drop{from{transform:translateY(0)}to{transform:translateY(100%)}}
+@media (prefers-reduced-motion:reduce){.sheet.leaving{animation:drop .01s forwards}}

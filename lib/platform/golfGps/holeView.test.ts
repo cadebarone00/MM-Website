@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { bearingDegrees, distanceYards, moveAlong, offsetByYards } from "./distance";
-import { holeCamera } from "./holeView";
+import { holeCamera, holeFramePoints } from "./holeView";
 import { MOCK_HOLE } from "./mockCourse";
 import type { GpsHole } from "./types";
 
@@ -43,4 +43,16 @@ test("a short hole zooms in closer than a long one, and zoom stays in a sane ran
   const longer = holeCamera(MOCK_HOLE, PHONE), shorter = holeCamera(short, PHONE);
   assert.ok(shorter.zoom > longer.zoom);
   for (const camera of [longer, shorter]) assert.ok(camera.zoom >= 14 && camera.zoom <= 20);
+});
+
+test("real holes frame their geometry only: hazards (and the player) never widen or move the hole view", () => {
+  const frame = [moveAlong(MOCK_HOLE.tee, 100, 60), moveAlong(MOCK_HOLE.tee, 100, 300)];
+  const mapped: GpsHole = { ...MOCK_HOLE, frame };
+  assert.deepEqual(holeFramePoints(mapped), [mapped.tee, mapped.green.front, mapped.green.center, mapped.green.back, ...frame]);
+  const farBunker = { id: "far", kind: "bunker" as const, label: "Bunker", center: moveAlong(MOCK_HOLE.tee, 10, 900), radiusYards: 5 };
+  assert.deepEqual(holeCamera({ ...mapped, hazards: [...mapped.hazards, farBunker] }, PHONE), holeCamera(mapped, PHONE));
+  // Prototype holes without mapped geometry keep their old framing (tee, green, hazards).
+  assert.ok(holeFramePoints(MOCK_HOLE).includes(MOCK_HOLE.hazards[0].center));
+  // holeCamera takes only the hole and the screen — there is no player input to move it.
+  assert.equal(holeCamera.length, 2);
 });

@@ -8,10 +8,11 @@ import type { CoursePreview } from "@/lib/platform/golfGps/coursePreview";
 import type { GpsCourse } from "@/lib/platform/golfGps/types";
 import type { CourseResult } from "./ExploreCourseSearch";
 import styles from "./ExploreCourseSearch.module.css";
+import { cityState } from "@/lib/data/usStates";
 
 type Load<T> = { status: "loading" } | { status: "ready"; data: T } | { status: "error"; message: string };
 
-const place = (course: { city?: string | null; state?: string | null }) => [course.city, course.state].filter(Boolean).join(", ");
+const place = (course: { city?: string | null; state?: string | null }) => cityState(course.city, course.state);
 const busy = (code?: string) => code === "busy" ? "Course data is busy right now. Try again in a few minutes." : "Course details aren't available right now.";
 
 /**

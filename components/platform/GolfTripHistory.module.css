@@ -1,0 +1,47 @@
+/* Organizer settings → History. Sits on the dark maroon settings page; lists reuse Trip Home / settings styles. */
+.root{display:flex;flex-direction:column;gap:22px}
+.back{align-self:flex-start;display:flex;align-items:center;gap:4px;padding:0;border:0;background:none;color:#dcc495;font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
+.back:focus-visible,.add:focus-visible,.primary:focus-visible,.secondary:focus-visible,.row:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
+.intro{margin:0;color:rgba(255,255,255,.7);font:500 14px/1.45 var(--font-barlow),sans-serif}
+.empty{margin:0;color:rgba(255,255,255,.55);font:500 14px/1.4 var(--font-barlow),sans-serif}
+.trophy{color:#dcc495}
+.row{width:100%;border:0;background:none;text-align:left;cursor:pointer}
+.add{display:flex;align-items:center;justify-content:center;gap:6px;min-height:48px;border:1px dashed rgba(220,196,149,.55);border-radius:12px;background:rgba(255,255,255,.04);color:#dcc495;font:700 15px var(--font-barlow),sans-serif;cursor:pointer}
+.primary{min-height:48px;border:0;border-radius:12px;background:#dcc495;color:#240001;font:800 15px var(--font-barlow),sans-serif;cursor:pointer}
+.primary:disabled{opacity:.4;cursor:default}
+.secondary{min-height:48px;border:1px solid rgba(220,196,149,.4);border-radius:12px;background:transparent;color:#fff;font:700 15px var(--font-barlow),sans-serif;cursor:pointer}
+.field{display:grid;gap:6px;color:#dcc495;font:700 13px var(--font-barlow),sans-serif}
+.input{box-sizing:border-box;width:100%;min-height:46px;padding:0 12px;border:1px solid rgba(220,196,149,.35);border-radius:12px;background:rgba(255,255,255,.06);color:#fff;font:600 16px var(--font-barlow),sans-serif}
+.input::placeholder{color:rgba(255,255,255,.4)}
+.input:focus{outline:0;border-color:#dcc495;box-shadow:0 0 0 3px rgba(220,196,149,.2)}
+.fields{display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px}
+.error{margin:0;color:#ffb4a8;font:600 13px var(--font-barlow),sans-serif}
+.board{width:100%;border-collapse:collapse;color:#fff;font:600 15px var(--font-barlow),sans-serif}
+.board th{padding:0 0 8px;color:#dcc495;font-size:12px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.4px}
+.board td{padding:10px 0;border-top:1px solid rgba(255,255,255,.08)}
+.board .num{text-align:right;font-variant-numeric:tabular-nums}
+.board .place{width:44px;color:rgba(255,255,255,.6)}
+.scoreRow{display:grid;grid-template-columns:minmax(0,1fr) 92px;align-items:center;gap:12px;padding:6px 0;border-top:1px solid rgba(255,255,255,.08);color:#fff;font:600 15px var(--font-barlow),sans-serif}
+.scoreRow .input{text-align:center}
+.pickRow{display:flex;flex-wrap:wrap;gap:8px}
+.pick{min-height:40px;padding:6px 14px;border:2px solid rgba(220,196,149,.3);border-radius:999px;background:rgba(255,255,255,.05);color:#fff;font:700 13px var(--font-barlow),sans-serif;cursor:pointer}
+.pick[aria-pressed=true]{border-color:#dcc495;background:rgba(220,196,149,.2)}
+.playerRow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid rgba(255,255,255,.08);color:#fff;font:600 15px var(--font-barlow),sans-serif}
+.iconButton{display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:10px;background:transparent;color:rgba(255,255,255,.6);cursor:pointer}
+.addRow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}
+.addRow .primary{padding:0 18px}
+.note{margin:0;color:rgba(255,255,255,.5);font:500 12px/1.4 var(--font-barlow),sans-serif}
+.tripRow{display:flex;align-items:center;gap:8px;border-top:1px solid rgba(255,255,255,.08)}
+.tripRow:first-child{border-top:0}
+.tripOpen{flex:1;min-width:0;display:grid;grid-template-columns:96px minmax(0,1fr);align-items:center;gap:14px;padding:12px 0;border:0;background:none;text-align:left;color:#fff;cursor:pointer}
+.tripOpen:focus-visible{outline:2px solid #dcc495;outline-offset:3px;border-radius:8px}
+.tripDates{display:flex;flex-direction:column;gap:2px;color:#dcc495;font:700 13px/1.25 var(--font-barlow),sans-serif;font-variant-numeric:tabular-nums}
+.tripDates time+time{color:rgba(220,196,149,.7)}
+.tripText{display:flex;flex-direction:column;gap:3px;min-width:0}
+.tripText strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 16px/1.25 var(--font-barlow),sans-serif}
+.tripText span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:rgba(255,255,255,.6);font:500 13px/1.3 var(--font-barlow),sans-serif}
+.dateFields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.deleteNote{margin:0;color:rgba(255,255,255,.8);font:500 14px/1.4 var(--font-barlow),sans-serif;text-align:center}
+.deleteNote strong{color:#fff;font-weight:800}
+.linkStatus{display:block;color:#dcc495;font:600 12px var(--font-barlow),sans-serif}
+.rowActions{display:flex;align-items:center;gap:6px}

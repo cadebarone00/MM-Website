@@ -20,3 +20,17 @@ export const US_STATES: { code: string; name: string }[] = [
 ];
 
 export const US_STATE_CODES = new Set(US_STATES.map((state) => state.code));
+
+const CODE_BY_NAME = new Map(US_STATES.map((state) => [state.name.toLowerCase(), state.code]));
+
+/** App-wide rule: a US state always shows as its two-letter code ("Texas" or "texas" → "TX"). Anything else is returned trimmed, unchanged. */
+export function stateAbbreviation(state: string): string {
+  const trimmed = state.trim();
+  if (US_STATE_CODES.has(trimmed.toUpperCase()) && trimmed.length === 2) return trimmed.toUpperCase();
+  return CODE_BY_NAME.get(trimmed.toLowerCase()) ?? trimmed;
+}
+
+/** "City, ST" from optional parts, e.g. ("Austin", "Texas") → "Austin, TX"; missing parts are skipped. */
+export function cityState(city?: string | null, state?: string | null): string {
+  return [city?.trim(), state ? stateAbbreviation(state) : null].filter(Boolean).join(", ");
+}

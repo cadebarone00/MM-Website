@@ -150,6 +150,16 @@ export function simulatorTripData(mock: SimulatorTripData, maroon: SimulatorTrip
   return { ...base, preview, previewMatch };
 }
 
+/**
+ * Whether a round is being played, so the Scoring sheet shows: a live round, or one just finished but not yet submitted.
+ * Before the first round, between rounds and after the trip there is nothing to score. "From data source" counts as live
+ * when someone has started today's round but not finished it.
+ */
+export function simulatorRoundLive(roundStatus: SimulatorConfig["state"]["roundStatus"], match: GolfMatchPreview | undefined): boolean {
+  if (roundStatus !== "source") return roundStatus === "live" || roundStatus === "roundEnd";
+  return Boolean(match?.leaderboard.some(row => row.holes.some(strokes => strokes !== null) && row.holes.some(strokes => strokes === null)));
+}
+
 /** A Scoring-sheet card filled in for the "End of round, unsubmitted" conditionals (dev only). My strokes come from my
  *  leaderboard row; the rest is filled randomly but the same on every load. */
 export type ScoringPrefill = {

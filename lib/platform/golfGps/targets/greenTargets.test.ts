@@ -182,3 +182,17 @@ test("hazard distance: nearest edge of a mapped outline (0 inside), middle point
   assert.equal(distanceToHazardYards(at(25, 280 - 0.9144 * 50), bunker), 50, "50 yd south of its south edge");
   assert.equal(distanceToHazardYards(at(25, 280 - 0.9144 * 50), { center: bunker.center }), 55, "no outline → to the middle (5 m further)");
 });
+
+test("GPS adapter frame: mapped tees, hole line, fairways, green outline and boundary — a tee only when one is mapped", () => {
+  const fairway = { id: "f", polygon: polygon([[-15, 50], [15, 50], [15, 250], [-15, 250]]) };
+  const boundary = polygon([[-40, -20], [40, -20], [40, 330], [-40, 330]]);
+  const noTee = deriveHoleGreenTargets(hole({ green: { polygon: OSM_GREEN }, centerline: CENTERLINE, fairways: [fairway], boundary }), NOW).hole;
+  const gps = toPrototypeGpsHole(noTee)!;
+  assert.equal(gps.teeMapped, false);
+  assert.deepEqual(gps.frame, [...CENTERLINE.coordinates, ...fairway.polygon.coordinates, ...OSM_GREEN.coordinates, ...boundary.coordinates]);
+  const teeAt = at(0, -8);
+  const withTee = toPrototypeGpsHole({ ...noTee, tees: [{ id: "t", name: "Tee box", location: { kind: "point", coordinate: teeAt } }] })!;
+  assert.equal(withTee.teeMapped, undefined, "a mapped tee is drawn");
+  assert.deepEqual(withTee.tee, teeAt);
+  assert.deepEqual(withTee.frame?.[0], teeAt, "mapped tee comes first in the frame");
+});

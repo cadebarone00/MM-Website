@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { DEFAULT_SIMULATOR_STATE, parseGpsCommand, parseGpsState, parseSimulatorConfig, parseSimulatorLocation, sameSimulatorNavigation, simulatorPageForLocation, SIMULATOR_DEVICES, type SimulatorPage } from "./simulator";
-import { simulatorTripData } from "./golfTripSimulatorData";
+import { simulatorRoundLive, simulatorTripData } from "./golfTripSimulatorData";
 import { GOLF_MATCH_PREVIEW, GOLF_TRIP_MOCK_DRAFT } from "@/lib/platform/golfTripPreviewFixture";
 import { palmSprings2026 } from "@/lib/data/2026-palm-springs";
 import { adaptTournamentToDraft, adaptTournamentToPreviewMatch } from "@/lib/platform/tournamentToGolfTrip";
@@ -92,4 +92,24 @@ test("round-state conditions: pre-tournament, live, between rounds (3 done, 4 ne
     assert.equal(row.today, toPar === 0 ? "E" : toPar > 0 ? `+${toPar}` : String(toPar));
     assert.equal(JSON.stringify(source === "mock" ? mock : maroon), before, "source data untouched");
   }
+});
+
+test("the Scoring sheet shows only while a round is being played", () => {
+  const match = (roundStatus: typeof DEFAULT_SIMULATOR_STATE.roundStatus) => simulatorTripData(mock, maroon, { source: "mock", state: { ...DEFAULT_SIMULATOR_STATE, roundStatus } }).previewMatch;
+  assert.equal(simulatorRoundLive("live", match("live")), true);
+  assert.equal(simulatorRoundLive("roundEnd", match("roundEnd")), true);
+  for (const off of ["scheduled", "between", "complete"] as const) assert.equal(simulatorRoundLive(off, match(off)), false, off);
+  // From the data source: live when someone has started but not finished the round.
+  assert.equal(simulatorRoundLive("source", match("live")), true);
+  assert.equal(simulatorRoundLive("source", match("scheduled")), false);
+  assert.equal(simulatorRoundLive("source", match("complete")), false);
+  assert.equal(simulatorRoundLive("source", undefined), false);
+});
+
+test("viewAs: defaults to Cade, accepts a mock account, rejects anything else", () => {
+  assert.equal(DEFAULT_SIMULATOR_STATE.viewAs, "dev-cade");
+  const config = (viewAs: unknown) => parseSimulatorConfig({ source: "mock", state: { ...DEFAULT_SIMULATOR_STATE, viewAs } });
+  assert.equal(config("dev-jake")?.state.viewAs, "dev-jake");
+  assert.equal(config("someone-else"), null);
+  assert.equal(config(undefined)?.state.viewAs, "dev-cade", "older panels without viewAs still work");
 });

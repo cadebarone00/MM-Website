@@ -43,10 +43,13 @@
 .roundRow+.roundRow .roundEntry{border-top:1px solid rgba(255,255,255,.08);padding-top:8px}
 .roundRow .roundDelete{top:50%;width:32px;height:32px;transform:translateY(-50%)}
 /* Overview → Type: oval selectors, one Individual and/or one Team type, or None. */
-.typePicker{display:grid;grid-template-columns:repeat(2,max-content);align-content:start;column-gap:24px;row-gap:22px;padding:0 0 16px;border-bottom:1px solid rgba(214,184,121,.25)}
+.typePicker{display:grid;grid-template-columns:minmax(0,1fr);align-content:start;row-gap:22px;padding:0 0 16px;border-bottom:1px solid rgba(214,184,121,.25)}
 .typeGroup{display:grid;gap:10px;align-content:start}
 .typeHeading{margin:0;color:rgba(247,240,223,.7);font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
 .typeChoices{display:flex;flex-direction:column;align-items:stretch;gap:10px;width:128px}
+/* Overview type ovals: one horizontal row; five equal columns (sized for Team) so Individual's ovals match. */
+.typeChoicesRow.typeChoicesRow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;width:auto}
+.typeChoicesRow .typeChoice{padding:4px 2px}
 .typeChoice{display:flex;align-items:center;justify-content:center;gap:4px;box-sizing:border-box;min-height:44px;padding:4px 8px;text-align:center;border:2px solid rgba(220,196,149,.3);border-radius:999px;background:rgba(255,255,255,.05);color:#fff;font:700 12px/1.15 var(--font-barlow),sans-serif;cursor:pointer}
 .typeChoice[aria-pressed=true]{border-color:#dcc495;background:rgba(220,196,149,.2)}
 .typeChoice:focus-visible{outline:2px solid #dcc495;outline-offset:4px}
@@ -58,16 +61,9 @@ span.typeChoice{cursor:default}
 .stepper button{display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:transparent;color:#dcc495;cursor:pointer}
 .stepper button:disabled{opacity:.35;cursor:default}
 .stepper span{font-size:15px;white-space:nowrap}
-.arrivalDeparture{display:flex;flex-wrap:wrap;gap:12px}
+.arrivalDeparture{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin:-8px 0 24px}
+.arrivalDeparture .typeGroup{justify-items:center;text-align:center}
 .dayRow{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
-/* 0 / 1 / 2 rounds slider: tap a number; the gold thumb slides under it. */
-.roundSlider{position:relative;display:grid;grid-template-columns:repeat(3,1fr);flex:0 0 96px;height:32px;padding:2px;box-sizing:border-box;border:2px solid rgba(220,196,149,.3);border-radius:999px;background:rgba(255,255,255,.05)}
-.roundSlider button{position:relative;padding:0;border:0;background:transparent;color:#fff;font:700 12px var(--font-barlow),sans-serif;cursor:pointer}
-.roundSlider button[aria-checked=true]{color:#32121b}
-.roundSlider button:focus-visible{outline:2px solid #dcc495;outline-offset:2px;border-radius:999px}
-.roundSliderThumb{position:absolute;top:2px;left:2px;width:calc((100% - 4px) / 3);height:calc(100% - 4px);border-radius:999px;background:#dcc495;transition:transform .2s ease}
-.roundSlider[data-value="1"] .roundSliderThumb{transform:translateX(100%)}
-.roundSlider[data-value="2"] .roundSliderThumb{transform:translateX(200%)}
 /* Round slot: course on top, date under; a line separates a day's second round. */
 .roundSlot{display:grid;gap:2px;padding:10px 0}
 .roundSlot+.roundSlot{border-top:1px solid rgba(255,255,255,.12)}
@@ -78,3 +74,105 @@ span.typeChoice{cursor:default}
 .scorecardViewNote{margin:4px 0 0;max-width:320px;color:rgba(247,240,223,.75);font-size:14px;line-height:1.4}
 
 @media(max-width:1023px){.page{padding-top:var(--app-top-clearance)}}
+/* Overview type players: Select all over a line, then two even checkbox columns. */
+.typePlayers{margin-top:14px;font-family:var(--font-spectral),Georgia,serif}
+.typePlayersHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 0 8px;border-bottom:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.6);font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase}
+.typePlayerGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-flow:column;column-gap:16px;margin:0;padding:0;list-style:none}
+.typePlayerGrid li{min-width:0;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.typePlayer{display:flex;align-items:center;gap:10px;min-width:0;cursor:pointer}
+.typePlayer input{flex:none;width:18px;height:18px;margin:0;accent-color:#dcc495;cursor:pointer}
+.typePlayerName.typePlayerName{font-size:14px;white-space:nowrap;overflow:hidden;overflow-wrap:normal}
+.typePlayerMore{font-size:.7em;margin-left:1px}
+/* Team types: Undo & Change button. */
+.selectTeams{width:100%;margin-top:14px}
+/* 2 Teams: two even team columns (Team Summary pop-up and the submitted sheet). */
+.teamColumns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px;row-gap:20px;align-items:start}
+.teamColumnList{margin:0;padding:0;list-style:none}
+.teamColumnList li{min-width:0;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.summaryTeam{margin:0 0 6px;padding-bottom:6px;border-bottom:1.5px solid rgba(17,17,17,.35);color:#591c2e;font:600 13px/1.2 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;overflow-wrap:anywhere}
+.summaryList{display:grid;gap:6px;margin:0;padding:0;list-style:none;font:500 15px/1.3 var(--font-spectral),Georgia,serif;overflow-wrap:anywhere}
+.overviewSwitch{align-self:center;justify-self:center;width:max-content;margin:0 auto 16px}
+/* Rounds tab: centered Day N with its date small underneath, over a line. */
+.roundDayHeader{display:grid;justify-items:center;gap:4px;padding:0 0 10px;margin-bottom:6px;border-bottom:1px solid rgba(214,184,121,.35);text-align:center}
+.roundDayHeader h2{margin:0;color:#fbf8f1;font:600 20px/1.15 var(--font-spectral),Georgia,serif}
+.roundDayHeader time{color:#dcc495;font:600 12px/1.2 var(--font-barlow),sans-serif;letter-spacing:.04em}
+/* Select teams drop-down: white panel from the top of the phone down to just above the Team ovals; contents scroll. */
+.teamsDropdown{position:fixed;top:0;left:50%;z-index:30;width:min(100vw,480px);box-sizing:border-box;padding:16px 16px 18px;overflow-y:auto;transform:translateX(-50%);border-radius:0 0 28px 28px;background:#fff;color:#111;box-shadow:0 16px 32px rgba(0,0,0,.28);animation:teamsDrop .28s ease-out}
+@keyframes teamsDrop{from{transform:translate(-50%,-100%)}to{transform:translate(-50%,0)}}
+@media (prefers-reduced-motion:reduce){.teamsDropdown{animation:none}}
+/* Team columns on the sheet: the heading line is the team name field; + Add Player sits under each list. */
+.teamNameInput{width:100%;box-sizing:border-box;padding:0 0 8px;border:0;border-bottom:1px solid rgba(255,255,255,.3);border-radius:0;background:transparent;color:#fbf8f1;font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;outline:none}
+.teamNameInput::placeholder{color:rgba(255,255,255,.6)}
+.teamNameInput:focus{border-bottom-color:#dcc495}
+.addTeamPlayer{display:inline-flex;align-items:center;gap:4px;padding:0;border:0;background:transparent;color:#dcc495;font:700 13px/1.2 var(--font-barlow),sans-serif;cursor:pointer}
+.addTeamPlayer:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+/* Add Player drop-down: 80% of the screen; tap a player, then Add to <team> appears on the right of that row. */
+.addPlayerDropdown.addPlayerDropdown{height:80vh;height:80dvh}
+.addPlayerList{display:grid;gap:6px;margin:14px 0 0;padding:0;list-style:none}
+.addPlayerRow{display:flex;align-items:center;gap:8px;min-height:48px;padding:4px 6px 4px 12px;border-radius:12px;background:#fbf8f1;border:2px solid transparent}
+.addPlayerRow[data-selected=true]{border-color:#591c2e}
+.addPlayerName{flex:1;min-width:0;padding:8px 0;border:0;background:transparent;color:#111;text-align:left;font:500 15px/1.3 var(--font-spectral),Georgia,serif;overflow-wrap:anywhere;cursor:pointer}
+.addToTeam{flex:none;min-height:36px;padding:0 12px;border:0;border-radius:999px;background:#591c2e;color:#fff;font:700 13px/1.1 var(--font-barlow),sans-serif;cursor:pointer}
+.addPlayerName:focus-visible,.addToTeam:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.selectTeams:disabled{opacity:.45;cursor:default}
+.totalPlayers{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+/* Team rows: name with a small swap button on the right. */
+.teamPlayerRow.teamPlayerRow{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.swapButton{flex:none;display:grid;place-items:center;width:26px;height:26px;padding:0;border:1px solid rgba(220,196,149,.45);border-radius:50%;background:transparent;color:#dcc495;cursor:pointer}
+.swapButton:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+/* Swap drop-down: one section per team; the moving player is outlined; empty spots are dashed. */
+.swapTeam{margin-top:16px}
+.swapTeam .addPlayerList{margin-top:6px}
+.addPlayerName:disabled{cursor:default;color:#555}
+.emptySpot{background:transparent;border:2px dashed rgba(89,28,46,.3)}
+.emptySpot .addPlayerName{color:#805b24;font-style:italic}
+.emptySpot[data-selected=true]{border-style:solid;border-color:#591c2e}
+/* Competition → Format rows. */
+.compRoundRow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 2px;border-bottom:1px solid rgba(255,255,255,.08)}
+.compRoundRow > span{min-width:0}
+/* Golf Schedule: tee times listed under the course. */
+.addRound{display:inline-flex;align-items:center;gap:4px;margin-top:10px;padding:6px 2px;border:0;background:transparent;color:#dcc495;font:700 13px/1.2 var(--font-barlow),sans-serif;cursor:pointer}
+.addRound:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.scheduleTeeList{display:grid;gap:3px;margin-top:6px;color:#dcc495;font:600 13px/1.2 var(--font-barlow),sans-serif}
+/* Golf Schedule round: a raised cream box (bright top edge, shaded bottom edge, soft drop shadow) with maroon text. */
+.scheduleRoundCard.scheduleRoundCard{width:100%;align-items:flex-start;margin-top:0;padding:14px 16px;border:1px solid rgba(214,184,121,.55);border-radius:16px;background:linear-gradient(180deg,#fffdf8 0%,#fbf8f1 55%,#efe7d6 100%);color:#591c2e;text-align:left;font:inherit;cursor:pointer;box-shadow:inset 0 1px 0 #fff,inset 0 -2px 0 rgba(89,28,46,.12),0 6px 14px rgba(0,0,0,.35),0 2px 4px rgba(0,0,0,.25)}
+.scheduleRoundCard [class*="eventHost"]{color:#805b24}
+.scheduleRoundCard [class*="eventTitle"]{color:#591c2e}
+.scheduleRoundCard .scheduleTeeList{color:#805b24}
+.scheduleRoundCard:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
+/* Round settings page (Golf Schedule → a round). */
+.roundSettingsSection{display:grid;gap:8px;margin-top:22px}
+.roundSettingsSection .scheduleRoundCard{margin-top:0;align-items:center}
+.roundSettingsSection .addRound{justify-self:start;margin-top:4px}
+.roundSettingsEmpty{margin:0;color:rgba(251,248,241,.6);font:500 13px/1.3 var(--font-barlow),sans-serif}
+/* Golf Schedule round box: 2x3-dot grip on the left (drag to move), the rest opens the round; tee times run down the right (4 visible, then scroll). */
+.roundGrip{flex:none;display:grid;place-items:center;align-self:stretch;width:22px;margin:-4px 0 -4px -6px;color:rgba(89,28,46,.45);cursor:grab;touch-action:none}
+.roundDragging .roundGrip{cursor:grabbing}
+.roundCardButton{flex:1;min-width:0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:0;border:0;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer}
+.roundCardButton:focus-visible{outline:2px solid #dcc495;outline-offset:3px;border-radius:8px}
+.roundCardButton > span:first-child{min-width:0}
+.roundCardButton .scheduleTeeList{flex:none;max-height:74px;margin-top:0;overflow-y:auto;text-align:right;font-size:12px;overscroll-behavior:contain}
+.scheduleRoundCard.roundDragging{position:relative;z-index:5;pointer-events:none;opacity:.92;box-shadow:0 14px 28px rgba(0,0,0,.45)}
+.roundDropLine{height:3px;margin:10px 4px -6px;border-radius:2px;background:#fff}
+/* Round settings: Tee Times | Players table under the header line, with the same gold line under its headings. */
+.teeTable{display:grid;gap:0;margin-top:14px}
+.teeTableHeader{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:12px;padding:0 0 10px;margin-bottom:4px;border-bottom:1px solid rgba(214,184,121,.35);color:rgba(247,240,223,.7);font:700 12px/1 var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase}
+.teeTableRow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:12px;align-items:start;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.teeTableTime{display:grid;gap:3px;color:#fbf8f1;font:700 17px/1.1 var(--font-spectral),Georgia,serif}
+.teeTableTime small{color:#dcc495;font:600 11px/1 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase}
+.teeTablePlayers{display:grid;gap:4px;justify-items:start;min-height:36px;padding:0;border:0;background:transparent;color:#fbf8f1;text-align:left;font:inherit;cursor:pointer}
+.teeTablePlayers:focus-visible{outline:2px solid #dcc495;outline-offset:2px;border-radius:6px}
+.teeTableAdd{display:inline-flex;align-items:center;gap:4px;color:#dcc495;font:700 13px/1.2 var(--font-barlow),sans-serif}
+.teeTable .addRound{justify-self:start}
+.teePlayerPick{flex:1;display:flex;align-items:center;gap:10px;min-width:0;padding:8px 0;color:#111;font:500 15px/1.3 var(--font-spectral),Georgia,serif;cursor:pointer}
+.teePlayerPick input{flex:none;width:18px;height:18px;margin:0;accent-color:#591c2e}
+.teePlayerPick span{flex:1;min-width:0;overflow-wrap:anywhere}
+.teePlayerPick small{flex:none;color:#805b24;font:600 12px/1 var(--font-barlow),sans-serif}
+.teePlayerPick:has(input:disabled){cursor:default;opacity:.55}
+/* Golf Schedule spacing: half the old gaps (12px between boxes, 15px from the day line to the first box). */
+.roundDayHeader:has(+ .scheduleRoundCard){margin-bottom:3px}
+.scheduleRoundCard .roundCardPlace{display:block;margin-top:3px;color:#805b24;font:500 13px/1.2 var(--font-barlow),sans-serif}
+/* Format: Comp switch on the right of a cream round box (maroon text, darker off track for contrast on cream). */
+.compSwitch{flex:none;display:grid;justify-items:center;gap:2px;color:#805b24;font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.compSwitch button{min-height:30px;color:#591c2e}
+.compSwitch [data-on=false]{background:rgba(89,28,46,.22)}

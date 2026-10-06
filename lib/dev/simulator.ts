@@ -1,5 +1,6 @@
 import type { GpsMode } from "@/lib/platform/golfGps/types";
 import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS, type GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
+import { DEFAULT_DEV_ACCOUNT, DEV_ACCOUNTS } from "./devAccounts";
 
 // Portrait CSS pixels, not panel pixels. Safe insets are editable test inputs.
 // Dimensions/provenance and browser-emulation limits: docs/dev-simulator-review.md.
@@ -45,8 +46,10 @@ export type SimulatorState = {
   loading: "off" | "weather";
   /** The preview has no second scorer, so this stands in for whether the opponent's own card agrees with mine. */
   opponentCard: "match" | "mismatch";
+  /** Which mock account the preview is signed in as (player-rounds preview: trip submit, dev profile, History links). */
+  viewAs: string;
 };
-export const DEFAULT_SIMULATOR_STATE: SimulatorState = { competition: "source", format: "source", playerCount: null, roundStatus: "source", loading: "off", opponentCard: "match" };
+export const DEFAULT_SIMULATOR_STATE: SimulatorState = { competition: "source", format: "source", playerCount: null, roundStatus: "source", loading: "off", opponentCard: "match", viewAs: DEFAULT_DEV_ACCOUNT };
 export type SimulatorConfig = { source: SimulatorSource; state: SimulatorState; navigation?: GolfTripNavigation };
 export const SIMULATOR_CHANNEL = "maroon-dev-simulator-v1";
 
@@ -90,7 +93,7 @@ export function parseSimulatorLocation(value: unknown): SimulatorLocation | null
   if (!isSimulatorPath(record.path)) return null;
   const navigation = record.navigation as GolfTripNavigation | undefined;
   if (navigation !== undefined && (!navigation || !GOLF_TRIP_TABS.includes(navigation.tab) || (navigation.golfSection !== undefined && !GOLF_TRIP_SECTIONS.includes(navigation.golfSection)))) return null;
-  if (navigation?.settingsView !== undefined && !/^(player|organizer|players|schedule|competition|competition-rounds|game-[a-z0-9-]+|games|placeholder-[1-8]|round-[a-z0-9-]+)$/.test(navigation.settingsView)) return null;
+  if (navigation?.settingsView !== undefined && !/^(player|organizer|players|schedule|competition|competition-rounds|game-[a-z0-9-]+|games|history|placeholder-[1-8]|round-[a-z0-9-]+)$/.test(navigation.settingsView)) return null;
   return { path: record.path, navigation };
 }
 
@@ -118,10 +121,11 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   const state = record.state as Record<string, unknown>;
   if (!["source", "yes", "no"].includes(String(state.competition)) || !["source", "scheduled", "live", "roundEnd", "between", "complete"].includes(String(state.roundStatus)) || !["off", "weather"].includes(String(state.loading))) return null;
   if (state.opponentCard !== undefined && !["match", "mismatch"].includes(String(state.opponentCard))) return null;
+  if (state.viewAs !== undefined && !DEV_ACCOUNTS.some((account) => account.id === state.viewAs)) return null;
   if (typeof state.format !== "string" || state.format.length > 32) return null;
   if (state.playerCount !== null && (typeof state.playerCount !== "number" || !Number.isInteger(state.playerCount) || state.playerCount < 1 || state.playerCount > 64)) return null;
   const navigation = record.navigation as GolfTripNavigation | undefined;
   if (navigation && (!GOLF_TRIP_TABS.includes(navigation.tab) || (navigation.golfSection && !GOLF_TRIP_SECTIONS.includes(navigation.golfSection)) || (navigation.command !== undefined && !Number.isSafeInteger(navigation.command)))) return null;
   if (!parseSimulatorLocation({ path: "/dev/tournament/settings", navigation })) return null;
-  return { source: record.source as SimulatorSource, state: state as SimulatorState, navigation };
+  return { source: record.source as SimulatorSource, state: { ...(state as SimulatorState), viewAs: (state.viewAs as string | undefined) ?? DEFAULT_DEV_ACCOUNT }, navigation };
 }

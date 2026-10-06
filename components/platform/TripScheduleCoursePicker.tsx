@@ -5,6 +5,7 @@ import { LoaderCircle, Search } from "lucide-react";
 import { GolfTripActionSheet } from "./GolfTripActionSheet";
 import gameStyles from "./GolfTripGames.module.css";
 import styles from "./TripScheduleCoursePicker.module.css";
+import { cityState } from "@/lib/data/usStates";
 
 /** A course picked for a Trip Schedule round, with its optional settings (set now or later). */
 export interface PickedCourse {
@@ -21,18 +22,20 @@ interface CourseDetail { teeSets: { name: string; totalYards?: number }[]; attri
 type Search = { status: "idle" } | { status: "loading" } | { status: "done"; courses: CourseResult[]; attribution: string } | { status: "error"; message: string };
 
 const DEBOUNCE_MS = 350;
-const placeOf = (course: Pick<CourseResult, "city" | "state">) => [course.city, course.state].filter(Boolean).join(", ");
+const placeOf = (course: Pick<CourseResult, "city" | "state">) => cityState(course.city, course.state);
 
 /**
  * Trip Schedule → tap a round's course: the same pop-up as Games → New game. 1) Search golf courses (the app's course
  * search, /api/courses/search) and tap one. 2) Choose course settings now or later. 3) Now: tee box (from the course's
  * real tee sets), tee time and handicap, then Save course. Later saves just the course.
+ * `askSettings={false}` (History's past rounds) saves the course as soon as it's tapped — no settings step.
  */
-export function TripScheduleCoursePicker({ roundLabel, current, onPick, onClose }: {
+export function TripScheduleCoursePicker({ roundLabel, current, onPick, onClose, askSettings = true }: {
   roundLabel: string;
   current?: PickedCourse;
   onPick: (course: PickedCourse) => void;
   onClose: () => void;
+  askSettings?: boolean;
 }) {
   // Same fixed size as New game: top just covers the trip tabs (or 16px), bottom sits 5% of the screen above the bottom nav.
   const [sheetBox] = useState(() => {
@@ -86,7 +89,7 @@ export function TripScheduleCoursePicker({ roundLabel, current, onPick, onClose 
         ? <p className={gameStyles.sheetHint}>No courses found for “{query.trim()}”. Try the club name or the city.</p>
         : <section className={gameStyles.sheetGroup} aria-label="Courses">
           <h4 className={gameStyles.sheetGroupTitle}>Courses</h4>
-          {search.courses.map((course) => <button type="button" key={course.ref} className={gameStyles.sheetGame} onClick={() => { setChosen(course); setSettingUp(false); }}>
+          {search.courses.map((course) => <button type="button" key={course.ref} className={gameStyles.sheetGame} onClick={() => { if (!askSettings) onPick({ ref: course.ref, name: course.name, place: placeOf(course), par: course.par }); else { setChosen(course); setSettingUp(false); } }}>
             <strong>{course.name}</strong><span>{[placeOf(course), course.par !== null ? `Par ${course.par}` : null].filter(Boolean).join(" · ") || "Location unavailable"}</span>
           </button>)}
           {search.attribution && <p className={styles.credit}>{search.attribution}</p>}

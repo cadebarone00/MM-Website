@@ -3,8 +3,12 @@
 import { useMemo, useState } from "react";
 import { GolfTripHome } from "@/components/platform/GolfTripHome";
 import { useSimulator, useSimulatorNavigationReporter } from "@/components/dev/SimulatorBridge";
-import { simulatorScorecard, simulatorTripData, type SimulatorTripData as TripData } from "@/lib/dev/golfTripSimulatorData";
+import { simulatorRoundLive, simulatorScorecard, simulatorTripData, type SimulatorTripData as TripData } from "@/lib/dev/golfTripSimulatorData";
 import { DEFAULT_SIMULATOR_STATE } from "@/lib/dev/simulator";
+import { dispatchDevRounds, useDevPlayerRounds } from "@/components/dev/useDevPlayerRounds";
+import { DEFAULT_DEV_ACCOUNT } from "@/lib/dev/devAccounts";
+import { DEV_TRIP_ID, devTripRound, devTripRoundId } from "@/lib/dev/devPlayerRounds";
+import { cardFromHoles, playerRoundId, type ScoredCard } from "@/lib/platform/playerRounds";
 import { GOLF_PREVIEW_TRIP_WEATHER } from "@/lib/platform/golfTripPreviewFixture";
 import type { TripWeather } from "@/lib/platform/weather/types";
 
@@ -23,6 +27,13 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
   const reportNavigation = useSimulatorNavigationReporter();
   const config = simulator ?? { source: view, state: DEFAULT_SIMULATOR_STATE };
   const data = simulatorTripData(mock, maroon, config);
+  // Player rounds (dev): Submit & Save saves this round once to the signed-in mock account; reopening shows it locked.
+  const viewAs = config.state.viewAs ?? DEFAULT_DEV_ACCOUNT;
+  const devRounds = useDevPlayerRounds();
+  const match = data.previewMatch;
+  const saved = match ? devRounds.rounds.find((r) => r.id === playerRoundId("trip", DEV_TRIP_ID, devTripRoundId(match), viewAs)) : undefined;
+  const submittedCard = useMemo(() => saved ? cardFromHoles(saved.holes) : undefined, [saved]);
+  const onScoringSubmit = (card: ScoredCard) => { if (match) dispatchDevRounds({ type: "saveRound", round: devTripRound(match, viewAs, card) }); };
   // "End of round, unsubmitted": the Scoring card starts filled in (scores match or not comes from opponentCard).
   const scoringPrefill = useMemo(() => simulatorScorecard(config.state.roundStatus, data.previewMatch?.par, config.state.opponentCard), [config.state.roundStatus, data.previewMatch?.par, config.state.opponentCard]);
   // Home's quick weather: made-up numbers for a trip with a destination, or "loading" forever for the simulator's Weather loading state.
@@ -38,7 +49,7 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
       </div>
       <div aria-live="polite" style={{ marginTop: 4, opacity: 0.7 }}>{view === "mock" || fictional ? "Mock Data" : "Real Tournament Data"}</div>
     </div>}
-    <GolfTripHome {...data} weather={weather} opponentCardMatches={config.state.opponentCard !== "mismatch"} scoringPrefill={scoringPrefill} navigation={simulator?.navigation} onNavigationChange={reportNavigation} settingsHref={settingsHref} backHref="/golf-trips" />
+    <GolfTripHome {...data} weather={weather} roundLive={simulatorRoundLive(config.state.roundStatus, data.previewMatch)} opponentCardMatches={config.state.opponentCard !== "mismatch"} scoringPrefill={scoringPrefill} onScoringSubmit={onScoringSubmit} submittedCard={submittedCard} navigation={simulator?.navigation} onNavigationChange={reportNavigation} settingsHref={settingsHref} backHref="/golf-trips" />
     {!simulator && !embedded && !fictional && view === "maroon" && <details style={{ maxWidth: 920, margin: "24px auto", padding: 12, background: "#fff8ef", borderRadius: 8 }}>
       <summary style={{ fontWeight: 600 }}>DEV: Unmapped Tournament Data (click to view)</summary>
       <pre style={{ whiteSpace: "pre-wrap", marginTop: 8 }}>{JSON.stringify(unmapped, null, 2)}</pre>

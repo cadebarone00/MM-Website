@@ -314,7 +314,7 @@ h1, h2 {
 /* Paint each top surface to the screen edge; only its content gets clearance. */
 :root { --app-top-clearance: 0px; }
 @media (max-width: 1023px) {
-  :root { --app-top-clearance: calc(env(safe-area-inset-top, 0px) + 2svh); }
+  :root { --app-top-clearance: calc(env(safe-area-inset-top, 0px) + 1svh); }
   .app-camera-buffer { --app-page-top-inset: 0px; }
   .app-camera-buffer > :first-child:not(.app-camera-content),
   .app-camera-content > :first-child {

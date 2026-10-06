@@ -2081,3 +2081,67 @@ Replaces the photo drop-down panel from earlier the same day. Modeled on the own
 **Not in this round:** saving to the database, real trips, live flight status or lookups, booking links, payments / splitting costs, chat about items, email or push notifications.
 
 **Done means (per step):** the flow works end to end in the dev preview as the organizer and as at least two mock players; logic has unit tests (join rules, seats, opt-out incl. tee-time lock, itinerary order, notifications); TypeScript, lint and tests pass; checked at phone width in the /dev simulator.
+
+### Round: Golf course architecture cleanup — OpenGolf API as the one source of course data (spec 2026-10-06, awaiting approval)
+
+**What it does / who uses it.** No new screens. Players and organizers using Explore → Courses, Trip Schedule, Competition, Itinerary and GPS get course info from one place (the OpenGolf API), and a round remembers *which* course by the API's id instead of a typed name.
+
+**What exists today (traced 2026-10-06).**
+1. **OpenGolf API** (`lib/platform/golfGps/providers/openGolf/`) — search (`/api/courses/search`) and course detail. Already cached by Next's server fetch cache.
+2. **Maroon GPS course store** (`golf_courses` + child tables, `supabase/golf_course_data.sql`, run in the .env Supabase) — a saved copy of OpenGolf scorecard + OpenStreetMap shapes + Maroon-derived green targets. Today it is used for GPS **and** as a *first* source for course info: `/api/courses/<ref>` reads name / place / tees from it before OpenGolf. That is the duplicate source of truth.
+3. **Legacy tournament Course Library** (`live_courses`, `course_library_*.sql`, Admin Center → Course Library, CSV import) — 29 files: live scoring, broadcast, handicap tracker, career stats, archived scorecards, wagers. Hand-entered rating / slope / hole pars / stroke index for The Maroon Tournament (production data). **No golf trip feature uses it.**
+4. **Platform `edition_courses`** (Create Tournament / dashboard, typed courses) — not a golf trip feature either.
+5. **Golf trip rounds** — `golf_trip_rounds.course_name` is free text from the creation questionnaire; the Trip Schedule picker (dev preview) keeps the picked course only in page memory; Competition / Itinerary / Games / Match read plain `course` name strings from preview fixtures.
+
+**Changes (proposed).**
+- **A. Course info = API only.** `/api/courses/<ref>` always builds name / place / par / tee sets from OpenGolf detail. The GPS store is asked only "is GPS ready for this ref / can it be prepared?". Remove the "library first" display branch in `coursePreview.ts` (+ its tests).
+- **B. GPS store = GPS cache keyed by the OpenGolf ref.** One id everywhere: GPS opens with `GET /api/courses/<ref>/gps` (cache lookup by `open_golf` external id; no provider calls). Remove `/api/courses/library/<id>/gps` and stop sending `maroonCourseId` to the browser. Tables / functions unchanged (no SQL); internal names stay.
+- **C. Rounds carry the API reference.** One shared round-course model in `lib/platform/`: `course: { ref, name, place, par } | null` (name/place = display label saved at pick time so the schedule still shows if the API is down — the ref is the truth) + Maroon-only settings `{ tees, teeTime, handicap }`. Trip Schedule's picker (UI unchanged) saves into it; Competition, Itinerary, Games and Match read the course name from the round instead of their own strings.
+- **D. Database (owner runs, not run by Claude):** new `supabase/golf_trip_round_course.sql` adding `course_ref`, `tee_name`, `tee_time`, `handicap` to `golf_trip_rounds` (keeps `course_name` as the label).
+- **Kept as-is:** OpenGolf + OpenStreetMap clients and their caches; GPS store + Prepare GPS (7-day retry, dedupe); the course picker UI; Explore UI; legacy tournament Course Library (3) and `edition_courses` (4) unless the owner says otherwise.
+
+**Done means:** no screen reads course name / tees from the GPS store; GPS opens by ref; every golf trip round view reads its course from the round model; obsolete route / branch / tests removed; `tsc`, lint and unit tests pass; Explore → Courses, Trip Schedule picker and GPS checked in the dev simulator.
+
+### Round: Organizer settings → History, first version (owner request 2026-10-06, built in dev preview)
+
+**What it does / who uses it.** Any trip organizer can enter past trips (not only The Maroon): Organizer settings → **History** → Past Champions + Past Trips → a trip's **Leaderboard / Rounds / Players**.
+- Add past trip: year, name, where, players (this trip's players, or add them by hand).
+- Rounds: course from the course search (the API's `ref` is saved) or typed by name + par when the search can't find it; date played; each player's round total (18–200).
+- Leaderboard is built from the totals (lowest total wins, T for ties; players missing a round listed after with "—"). Champion = outright leader, or the organizer's pick (ties, other formats).
+- Data: dev only, page memory (`lib/platform/golfTripHistory.ts`, tested), one sample trip; resets on reload. No database yet.
+- Not yet: hole-by-hole scorecards, spreadsheet import, team / match formats, saving to the database, showing History to players, moving The Maroon's existing archive into it.
+
+### Round: Player rounds — one saved round per account, shown on the trip and the profile (spec 2026-10-06, approved 2026-10-06)
+
+**What it does / who uses it.** Every player (account) gets one golf record, like a handicap app. A round played on a trip (later: a tournament, or logged in the handicap tracker) is saved **once, to the player's account**; the trip, its leaderboard, the player's **Profile → Rounds** and their handicap all read that same saved round.
+
+**Owner decisions (2026-10-06):**
+1. **Handicap:** a round counts automatically when it qualifies: 9 or 18 holes, an individual own-ball format, and a tee box with a known rating + slope. Scramble / alternate shot, or no rating, = listed as "not counted".
+2. **Accounts required:** everyone needs an account to play, join a trip or play in a tournament. Every saved round belongs to an account (no guest rounds).
+3. **History (past trips):** players stay typed names inside the trip. The organizer can later **link a name to an account**.
+4. **Linking needs the player's OK:** the player gets a notification request ("Desert Classic wants to add 2 past rounds to your profile") → Accept (rounds appear) / Decline (nothing changes). Linked past rounds show as "Entered by organizer" and **don't count** toward handicap.
+5. **Privacy:** Settings (the Profile gear → `/settings`) gets a **Privacy** card with **Public / Private** (new accounts start Private). Public: any signed-in user sees your Rounds + handicap. Private: only you see your Rounds, but people on the same trip / tournament still see your handicap index (games need it for strokes). Trip rounds always stay visible on the trip to its members.
+
+**Data model — `PlayerRound` (one per account per round played):**
+- `id`, `profileId` (owner), `source`: `trip` | `tournament` | `personal` | `history`, plus the source link (`tripId` + `tripRoundId`, or `historyTripId`).
+- `datePlayed`, `course` { `ref` (course API id, null for a typed course), `name`, `place` } — the ref is the truth, name/place are the label saved at play time.
+- `tee` { `name`, `rating`, `slope` } — a snapshot when submitted (null when the API has none), so a later course change never changes a past round.
+- `holesPlayed` (9 | 18), `format`, `holes[]` { `number`, `par`, `strokes`, `putts`, `fairway`, `green` } (History rounds may have only a `total`), `total`.
+- `countsForHandicap` + `differential` (computed when saved, from the rules in decision 1), `enteredBy`: `player` | `organizer`, `status`: `submitted` (locked).
+- **Link requests** — `HistoryLinkRequest` { `historyTripId`, `playerName`, `profileId`, `status`: pending | accepted | declined }.
+- **Privacy** — `roundsVisibility`: `public` | `private` per account.
+- Handicap index = the existing WHS engine (`lib/handicap/whs.ts`) over the account's counting rounds.
+- The existing handicap-tracker rounds (`handicap_rounds`, keyed by Maroon player slug) and Maroon archived scorecards keep showing in Profile → Rounds as they do now; moving them into `PlayerRound` is a later, separate step.
+
+**Flows.**
+- Trip → Scoring → **Submit & Save** → saves my `PlayerRound` (source trip) → trip leaderboard + Profile → Rounds + handicap update if it counts.
+- Organizer settings → History → a past trip → Players → **Link to account** (pick an account) → pending request → the player's notifications → Accept / Decline.
+- Settings → Privacy → Public / Private → changes what other people see on my profile.
+
+**Built in steps.**
+- **Step 1 (dev preview, no database):** an in-memory player-rounds store with mock accounts, shared across the dev trip and a dev profile; Trip Submit & Save writes to it; a dev Profile → Rounds + handicap read from it; Settings Privacy switch; History Link to account + Accept / Decline in notifications; a simulator "view as" mock account to test both sides. Pure logic (qualifies-for-handicap, differential, visibility, link requests) in plain tested functions.
+- **Step 2 (real database, separate approval):** a SQL file the owner runs (tables + security rules: owner-only writes, visibility rules above) and the server code to save / load.
+
+**Not in this round:** moving old handicap / Maroon rounds into the new model, tournament (Maroon) live scoring writing player rounds, editing a submitted round, guest players, posting to an official handicap service (GHIN).
+
+**Done means (Step 1):** submitting a dev trip round shows it on the trip and in that mock account's Rounds; the handicap counts only qualifying rounds; Private hides Rounds from another mock account but not the handicap index for a trip-mate; a History link shows as a request and only Accept adds the rounds (marked "Entered by organizer", not counted); logic has unit tests; TypeScript, lint and tests pass; checked at localhost:3001/dev.

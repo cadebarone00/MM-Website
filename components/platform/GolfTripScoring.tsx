@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Poin
 import { createPortal } from "react-dom";
 import { LockKeyhole, LockKeyholeOpen, Minus, Plus } from "lucide-react";
 import { useScoringView } from "@/lib/platform/scoringViewPreference";
+import type { ScoredCard, ShotResult } from "@/lib/platform/playerRounds";
 import { GolfGpsScreen } from "./gps/GolfGpsScreen";
 import styles from "./GolfTripScoring.module.css";
 
@@ -22,26 +23,38 @@ const HOLD_SLOP = 10;
  * the /dev/tournament preview; supplied scores are retained; untouched holes display par but remain unrecorded until submission.
  * Submit & Save (on the Scorecard view) lights up once every hole has both scores and my stats (fairway not needed on
  * par 3s) and each player's scores agree with the other phone (names turn green; a red name shows whose scores differ);
- * submitting locks the card until the page reloads.
+ * submitting locks the card until the page reloads. Submit & Save calls `onSubmit` with the card (the dev preview saves it
+ * as the player's round); `submittedCard` reopens a saved round locked.
  */
-export function GolfTripScoring({ par, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill }: {
+export function GolfTripScoring({ par, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard }: {
   par?: number[]; initialHoles?: (number | null)[]; playerName?: string; opponentCardMatches?: boolean; courseName?: string;
   /** Dev preview only: a finished card (opponent scores, putts, fairways, greens) to start from. */
   prefill?: { opponentHoles: (number | null)[]; putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[];
     /** Where the opponent's own phone disagrees with this starting card ("scores don't match"); none means it agrees. */
     otherCardDiff?: { player: "me" | "opponent"; hole: number; delta: number } };
+  onSubmit?: (card: ScoredCard) => void;
+  /** A round already saved for this player: the card opens locked as Submitted. */
+  submittedCard?: ScoredCard;
 }) {
   const [open, updateOpen] = useState(false);
-  const [holes, setHoles] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => initialHoles?.[i] ?? null));
+  const [holes, setHoles] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => submittedCard?.strokes[i] ?? initialHoles?.[i] ?? null));
   const [holesCompetitor, setHolesCompetitor] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => prefill?.opponentHoles[i] ?? initialHoles?.[i] ?? null));
   const [current, setCurrent] = useState(() => { const next = Array.from({ length: HOLES }, (_, i) => initialHoles?.[i] ?? null).findIndex((h) => h === null); return next === -1 ? HOLES - 1 : next; });
   // My stats for each hole: putts, and where the drive (fairway) and approach (green) finished; "center" = hit.
-  const [putts, setPutts] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => prefill?.putts[i] ?? null));
-  const [fairways, setFairways] = useState<(Direction | null)[]>(() => Array.from({ length: HOLES }, (_, i) => prefill?.fairways[i] ?? null));
-  const [greens, setGreens] = useState<(Direction | null)[]>(() => Array.from({ length: HOLES }, (_, i) => prefill?.greens[i] ?? null));
+  const [putts, setPutts] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => submittedCard?.putts[i] ?? prefill?.putts[i] ?? null));
+  const [fairways, setFairways] = useState<(Direction | null)[]>(() => Array.from({ length: HOLES }, (_, i) => submittedCard?.fairways[i] ?? prefill?.fairways[i] ?? null));
+  const [greens, setGreens] = useState<(Direction | null)[]>(() => Array.from({ length: HOLES }, (_, i) => submittedCard?.greens[i] ?? prefill?.greens[i] ?? null));
   const [penalties, setPenalties] = useState(() => Array.from({ length: HOLES }, () => ({ fairway: false, green: false })));
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState(Boolean(submittedCard));
+  // A saved round can arrive after the first render (the dev store loads after hydration): take it in once, locked.
+  const [loadedCard, setLoadedCard] = useState(submittedCard);
+  if (submittedCard !== loadedCard) {
+    setLoadedCard(submittedCard);
+    if (submittedCard && !submitted) {
+      setHoles(submittedCard.strokes); setPutts(submittedCard.putts); setFairways(submittedCard.fairways); setGreens(submittedCard.greens); setSubmitted(true);
+    }
+  }
   const [opponentName] = useState(() => randomOpponentName());
   // The GPS and Scorecard pills swap the pulled-up sheet to their own view (same sheet, no page change); tapping again returns to scoring.
   const [view, setView] = useState<"scoring" | "gps" | "scorecard">("scoring");
@@ -63,7 +76,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   const sheetRef = useRef<HTMLElement>(null);
   const handleRef = useRef<HTMLButtonElement>(null);
   const spacerRef = useRef<HTMLSpanElement>(null);
-  const drag = useRef<{ startY: number; startOffset: number; closedOffset: number; moved: boolean } | null>(null);
+  const drag = useRef<{ startY: number; startOffset: number; closedOffset: number; moved: boolean; onLabel: boolean } | null>(null);
   const [dragOffset, setDragOffset] = useState<number | null>(null);
   // Tapping the bar to tuck the sheet away slides it down fast (100 ms); opening and dragging keep the normal speed.
   const [fastClose, setFastClose] = useState(false);
@@ -173,7 +186,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
 
   function onPointerDown(event: PointerEvent<HTMLButtonElement>) {
     const closed = closedOffset();
-    drag.current = { startY: event.clientY, startOffset: open ? 0 : closed, closedOffset: closed, moved: false };
+    drag.current = { startY: event.clientY, startOffset: open ? 0 : closed, closedOffset: closed, moved: false, onLabel: !!(event.target as Element).closest("." + styles.handleLabel) };
     setDragRange(closed);
     event.currentTarget.setPointerCapture(event.pointerId);
   }
@@ -189,7 +202,9 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
     const d = drag.current;
     drag.current = null;
     if (!d) return;
-    if (!d.moved) tapToggle(); // a tap toggles
+    // While open, a tap on the Scoring pill is a view button like GPS / Card (back to score entry), not a collapse.
+    if (!d.moved && open && d.onLabel) setView("scoring");
+    else if (!d.moved) tapToggle(); // a tap toggles
     else { setFastClose(false); setOpen((dragOffset ?? d.startOffset) < d.closedOffset / 2); } // a drag snaps to whichever end is closer
     setDragOffset(null);
   }
@@ -219,7 +234,10 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   const setForHole = <T,>(setter: (update: (values: T[]) => T[]) => void, value: T) => setter((values) => values.map((v, i) => i === current ? value : v));
   const submittedHoles = holes.map((h, i) => h ?? par?.[i] ?? null);
   const submittedOpponentHoles = holesCompetitor.map((h, i) => h ?? par?.[i] ?? null);
-  const complete = submittedHoles.every((h, i) => h !== null && submittedOpponentHoles[i] !== null && putts[i] !== null && greens[i] !== null && (par?.[i] === 3 || fairways[i] !== null));
+  const holeFilled = (i: number) => submittedHoles[i] !== null && submittedOpponentHoles[i] !== null && putts[i] !== null && greens[i] !== null && (par?.[i] === 3 || fairways[i] !== null);
+  const complete = submittedHoles.every((_, i) => holeFilled(i));
+  // The last hole has no next hole: its button opens the Card (where Submit & Save is) once that hole is filled in.
+  const lastHole = current === HOLES - 1;
   // Each player is checked against the other phone: my scores for myself vs what my opponent entered for me, and what I
   // entered for my opponent vs what they entered for themselves. With a dev prefill the other phone's card is the starting
   // card (plus any otherCardDiff); otherwise opponentCardMatches stands in for both. Green = agrees, red = needs fixing.
@@ -341,9 +359,11 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
         <Compass label="GIR" value={greens[current]} onChange={(value) => setForHole(setGreens, value)} disabled={submitted} />
       </div>
 
-      <button type="button" className={styles.nextHoleButton} aria-label="Next hole" disabled={current === HOLES - 1} onClick={() => setCurrent((value) => Math.min(value + 1, HOLES - 1))}>
+      {lastHole ? <button type="button" className={styles.nextHoleButton} disabled={!holeFilled(current)} onClick={() => setView("scorecard")}>
+        Scorecard
+      </button> : <button type="button" className={styles.nextHoleButton} aria-label="Next hole" onClick={() => setCurrent((value) => Math.min(value + 1, HOLES - 1))}>
         Next hole
-      </button>
+      </button>}
       </>}
       <span ref={spacerRef} className={styles.navSpacer} aria-hidden />
     </div>
@@ -351,13 +371,14 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
       <div className={styles.confirmDialog}>
         <p className={styles.confirmPrompt}>Are you sure?</p>
         <button type="button" className={styles.keepEditingButton} onClick={() => setConfirmOpen(false)}>Keep Editing</button>
-        <button type="button" className={styles.submitScoreButton} onClick={() => { setHoles(submittedHoles); setHolesCompetitor(submittedOpponentHoles); setSubmitted(true); setConfirmOpen(false); }}>Submit Score</button>
+        <button type="button" className={styles.submitScoreButton} onClick={() => { setHoles(submittedHoles); setHolesCompetitor(submittedOpponentHoles); setSubmitted(true); setConfirmOpen(false);
+          onSubmit?.({ strokes: submittedHoles.map((h) => h ?? 0), putts, fairways, greens }); }}>Submit Score</button>
       </div>
     </div>, document.body)}
   </section></div></>;
 }
 
-type Direction = "up" | "left" | "center" | "right" | "down";
+type Direction = ShotResult;
 const DIRECTION_MARK: Record<Direction, string> = { up: "↑", left: "←", center: "✓", right: "→", down: "↓" };
 
 /** A score total, or "—" until any hole has a number. */

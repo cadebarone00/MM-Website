@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS } from "@/lib/platform/golfTripNavigation";
 import { isPlayDemoEnabled } from "@/lib/platform/playDemo";
 import { SIMULATOR_SOURCES, type SimulatorPage } from "./simulator";
+import { DEV_ACCOUNTS } from "./devAccounts";
 import { GOLF_MATCH_PREVIEWS } from "@/lib/platform/golfTripPreviewFixture";
 
 /** Discover existing static dev routes. No duplicate page implementation or dynamic ids. */
@@ -68,6 +69,8 @@ export function simulatorPages(): SimulatorPage[] {
     if (page.navigation?.tab) page.conditions.push(
       { id: "opponent-card-match", label: "Opponent's card matches", state: { opponentCard: "match" } },
       { id: "opponent-card-mismatch", label: "Opponent's card has a mismatch", state: { opponentCard: "mismatch" } });
+    // Player rounds preview: which mock account is signed in (trip Submit & Save saves to them).
+    if (page.navigation?.tab) page.conditions.push(...signedInAs());
     if (page.navigation?.tab === "Venue") page.conditions.push(
       { id: "weather-off", label: "Normal weather", state: { loading: "off" } },
       { id: "weather-loading", label: "Weather loading", state: { loading: "weather" } });
@@ -85,9 +88,15 @@ export function simulatorPages(): SimulatorPage[] {
     add("player", "Player settings", settings.id, "Player");
     for (let index = 1; index <= 6; index++) add(`placeholder-${index}`, `Place holder ${index}`, settings.id, "Player");
     add("organizer", "Organizer settings", settings.id, "Organizer");
-    for (const [view, label] of [["players", "Players"], ["schedule", "Trip Schedule"], ["competition", "Competition"], ["games", "Games"], ["placeholder-7", "Place holder 1"], ["placeholder-8", "Place holder 2"]]) add(view, label, settings.id, "Organizer");
+    for (const [view, label] of [["players", "Players"], ["schedule", "Golf Schedule"], ["competition", "Competition"], ["games", "Games"], ["history", "History"], ["placeholder-7", "Place holder 1"], ["placeholder-8", "Place holder 2"]]) add(view, label, settings.id, "Organizer");
     add("competition-rounds", "Rounds", "settings-competition");
     for (const game of [{ id: "skins", name: "Skins" }, ...SIDE_GAME_REGISTRY.filter(game => game.id !== "skins")]) add(`game-${game.id}`, game.name, "settings-games");
+  }
+  const profile = pages.find(page => page.path === "/dev/profile");
+  if (profile) {
+    profile.label = "Profile (player rounds)";
+    profile.group = "Profile";
+    profile.conditions = signedInAs();
   }
   const maroonUPath = "/dev/tournament/maroon-u";
   for (let index = pages.length - 1; index >= 0; index--) {
@@ -105,4 +114,9 @@ export function simulatorPages(): SimulatorPage[] {
   groupOrder.splice(groupOrder.indexOf("Golf Trip Onboarding"), 1);
   groupOrder.splice(groupOrder.indexOf("Golf Trip Active") + 1, 0, "Golf Trip Onboarding");
   return pages.sort((a, b) => a.group !== b.group ? groupOrder.indexOf(a.group) - groupOrder.indexOf(b.group) : a.group === "Golf Trip Onboarding" ? onboardingOrder.indexOf(a.path) - onboardingOrder.indexOf(b.path) : 0);
+}
+
+/** "Signed in as <mock account>" conditions for the player-rounds preview. */
+function signedInAs() {
+  return DEV_ACCOUNTS.map((account) => ({ id: `view-as-${account.id}`, label: `Signed in as ${account.name}`, state: { viewAs: account.id } }));
 }

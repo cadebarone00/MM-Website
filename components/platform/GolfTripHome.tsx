@@ -44,17 +44,21 @@ const subscribeNever = () => () => {};
  * `weather` (saved trips only, still loading on the server) adds a Weather card after Travel that shows a loading line
  * until it settles, so the rest of the page never waits for it; without it there is no Weather card.
  * `flights` fills the Info tab's Flights card with the viewer's own flights; `href` (saved trips) makes it open the Flights page.
+ * `roundLive` shows the Scoring sheet: only while a round is being played (or finished but not yet submitted). Before the
+ * first round, between rounds and after the trip there is nothing to score. Saved trips have no round data yet, so no sheet.
  * `navigation` optionally requests a shared tab/section; in-app navigation remains local between requests.
  * `onNavigationChange` optionally observes the actual tab/section; the dev wrapper supplies it only when embedded.
  */
-export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, opponentCardMatches, scoringPrefill }:
+export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, roundLive = false, opponentCardMatches, scoringPrefill, onScoringSubmit, submittedCard }:
   { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview; weather?: Promise<TripWeather>; flights?: TripFlights;
     /** Everyone's travel (My Info, the Itinerary and the Home "what's next" cards). Only the dev mock trip has it for now. */
-    travel?: TripTravel; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void;
+    travel?: TripTravel; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void; roundLive?: boolean;
     /** Dev preview only: whether the opponent's own scorecard agrees with mine (there is no second scorer yet). Without it, Save & Submit never shows. */
     opponentCardMatches?: boolean;
     /** Dev preview only: a finished-but-unsubmitted Scoring card (the "End of round" conditionals). */
-    scoringPrefill?: ComponentProps<typeof GolfTripScoring>["prefill"] }) {
+    scoringPrefill?: ComponentProps<typeof GolfTripScoring>["prefill"];
+    /** Player rounds: Submit & Save hands over the card; a round already saved for this player reopens locked. */
+    onScoringSubmit?: ComponentProps<typeof GolfTripScoring>["onSubmit"]; submittedCard?: ComponentProps<typeof GolfTripScoring>["submittedCard"] }) {
   const raw = useSyncExternalStore(subscribeNever, golfTripDraftSnapshot, () => "");
   const stored = useMemo(() => parseGolfTripDraft(raw), [raw]);
   const draft = preview ?? stored;
@@ -117,7 +121,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   const you = firstCompetitor?.golfers[0]?.name;
   const yourHoles = previewMatch?.leaderboard.find((row) => row.golfer.name === you)?.holes;
 
-  return <main className={`${styles.page} ${styles.pageWithScoring} ${tab === "Golf" && preview && previewMatch ? styles.pageGolfPreview : ""}`}>
+  return <main className={`${styles.page} ${roundLive ? styles.pageWithScoring : ""} ${tab === "Golf" && preview && previewMatch ? styles.pageGolfPreview : ""}`}>
     {backHref && <Link href={backHref} className={styles.desktopBack}><ArrowLeft size={16} strokeWidth={2} aria-hidden />Golf Trips</Link>}
     <header className={styles.header}>
       <div className={styles.headerActions}>
@@ -150,7 +154,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
           myInfo={travel ? <GolfTripMyTravel travel={travel} onChange={changeMyTravel} /> : <VenueEvents />} />
         : <Card title={tab}><Empty>Coming soon</Empty></Card>}
     </div>
-    <GolfTripScoring key={scoringPrefill ? `prefilled-${scoringPrefill.otherCardDiff ? "mismatch" : "match"}` : "blank"} prefill={scoringPrefill} par={previewMatch?.par} initialHoles={yourHoles} courseName={previewMatch?.course} playerName={you ? getPlayerDisplayName(you) : draft.yourName || "You"} opponentCardMatches={opponentCardMatches} />
+    {roundLive && <GolfTripScoring key={scoringPrefill ? `prefilled-${scoringPrefill.otherCardDiff ? "mismatch" : "match"}` : "blank"} prefill={scoringPrefill} onSubmit={onScoringSubmit} submittedCard={submittedCard} par={previewMatch?.par} initialHoles={yourHoles} courseName={previewMatch?.course} playerName={you ? getPlayerDisplayName(you) : draft.yourName || "You"} opponentCardMatches={opponentCardMatches} />}
     <GolfTripChat open={chatOpen} onClose={() => setChatOpen(false)} tripName={draft.tripName || "Your Golf Trip"}
       members={[...new Set(previewMatch?.matches.flatMap(match => [match.left, match.right].flatMap(side => side ? normalizeCompetitor(side).golfers.map(golfer => getPlayerDisplayName(golfer.name)) : [])) ?? [])].filter(name => name !== getPlayerDisplayName(you ?? draft.yourName ?? ""))} />
   </main>;

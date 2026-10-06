@@ -17,7 +17,12 @@
   cursor:grab;touch-action:none;position:relative}
 .handle:active{cursor:grabbing}
 .handle:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:-4px;border-radius:18px 18px 0 0}
-.handleLabel{grid-column:2;justify-self:center;align-self:start;margin-top:0;box-sizing:border-box;width:118.8px;height:40.6px;display:grid;place-items:center;padding:0;border:1px solid var(--color-maroon-900,#2f0c0e);border-radius:999px;background:var(--color-maroon-900,#2f0c0e);color:#fff;font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;text-shadow:none}
+.handleLabel{grid-column:2;justify-self:center;align-self:start;margin-top:0;box-sizing:border-box;width:118.8px;height:40.6px;display:grid;place-items:center;padding:0;border-radius:999px;font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;text-shadow:none;
+  /* Tucked away it's just the maroon word; as the sheet slides up (--sheet-open 0 → 1) it fills into a maroon pill with white lettering. */
+  --pill-fill:var(--sheet-open);border:1px solid rgba(47,12,14,var(--pill-fill));background:rgba(47,12,14,var(--pill-fill));
+  color:rgb(calc(47 + 208 * var(--pill-fill)),calc(12 + 243 * var(--pill-fill)),calc(14 + 241 * var(--pill-fill)))}
+/* Desktop pins --sheet-open at 0, so the open sheet fills the pill directly. */
+@media (min-width:1024px){.open .handleLabel{--pill-fill:1}}
 .handleMeta{grid-column:1;display:flex;align-items:flex-start;justify-content:flex-start;gap:6px;align-self:start;margin-top:2px;font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.04em;color:rgba(47,12,14,.75);white-space:nowrap}
 .handleMeta span{display:inline-block}
 .scorecardButton{position:absolute;top:calc(46px + var(--app-safe-top) * var(--sheet-open));right:16px;z-index:3;padding:8px 12px;border:1px solid rgba(47,12,14,.25);border-radius:999px;background:rgba(255,255,255,.22);color:var(--color-maroon-900,#2f0c0e);font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}

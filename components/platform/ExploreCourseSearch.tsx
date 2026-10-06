@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ChevronRight, LoaderCircle, Search } from "lucide-react";
 import { ExploreCourseProfile } from "./ExploreCourseProfile";
 import styles from "./ExploreCourseSearch.module.css";
+import { cityState } from "@/lib/data/usStates";
 
 /** One search result as /api/courses/search returns it. `ref` opens the course later; it is never shown. */
 export interface CourseResult { ref: string; name: string; city: string | null; state: string | null; par: number | null }
@@ -15,7 +16,7 @@ type SearchState =
   | { status: "error"; message: string };
 
 const DEBOUNCE_MS = 350;
-export const place = (course: Pick<CourseResult, "city" | "state">) => [course.city, course.state].filter(Boolean).join(", ");
+export const place = (course: Pick<CourseResult, "city" | "state">) => cityState(course.city, course.state);
 
 /**
  * Explore → Courses: search golf courses by name, club or city, and pick one. Searches run on the server

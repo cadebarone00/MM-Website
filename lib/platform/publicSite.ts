@@ -1,6 +1,7 @@
 import { FORMATS, isFormatKey } from "./formats.ts";
 import { SITE_SECTIONS, type SiteSections } from "./setup.ts";
 import { resolveTournamentTheme } from "../theme/tournamentTheme.ts";
+import { cityState } from "../data/usStates.ts";
 import type { Branding, Course, Player, ScheduleDay, SiteLinks, SitePage, Team, TournamentSiteData, TournamentStatus } from "@/components/platform/tournament-site/types";
 
 /**
@@ -104,7 +105,7 @@ export function toSiteData(p: PublicTournament): TournamentSiteData {
   const teams: Team[] = p.competitionType === "teams" ? p.teams.map((team) => ({ id: team.ref, name: team.name, color: team.color })) : [];
   const players: Player[] = on("players") ? p.players.map((player) => ({ id: player.ref, name: player.name, teamId: player.teamRef ?? undefined, captain: player.captain })) : [];
   const courses: Course[] = on("courses") ? p.courses.map((course) => ({
-    id: course.ref, name: course.name, location: [course.city, course.state].filter(Boolean).join(", ") || "Location to be announced",
+    id: course.ref, name: course.name, location: cityState(course.city, course.state) || "Location to be announced",
     tee: course.teeName ?? "TBD", par: course.par ?? undefined, yardage: course.yards ?? undefined,
   })) : [];
 
