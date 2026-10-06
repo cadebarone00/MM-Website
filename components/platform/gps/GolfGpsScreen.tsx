@@ -20,7 +20,8 @@ const ATTRIBUTION_HEIGHT = 30;
 
 /**
  * The on-course GPS screen: satellite map in "hole view" (tee at the bottom, green at the top) with the yardage card on
- * top, Hole view (recenter) and tap-to-measure. Used full screen at /dev/gps and inside the Scoring sheet's GPS view, where
+ * top, Hole view (frames the whole hole), Center on me (pans to the player, only when tapped) and tap-to-measure. The
+ * camera frames the HOLE, never the player; GPS only moves the player marker and the yardages. Used full screen at /dev/gps and inside the Scoring sheet's GPS view, where
  * `holeNumber` follows the scorecard's current hole and the map re-frames when it changes. The Real / Mock GPS test
  * controls live in the /dev simulator's side panel (GPS test), never on the phone screen. Prototype: the course is Mission
  * Hills' Pete Dye Challenge Course, where OpenStreetMap only maps hole 6, so other hole numbers show hole 6 with a note.
