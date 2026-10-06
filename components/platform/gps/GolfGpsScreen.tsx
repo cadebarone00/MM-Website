@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Flag } from "lucide-react";
+import { Flag, LocateFixed } from "lucide-react";
 import { distanceToHazardYards, distanceYards } from "@/lib/platform/golfGps/distance";
 import { MISSION_HILLS_PETE_DYE } from "@/lib/platform/golfGps/missionHillsPeteDye";
 import type { GpsCourse, GpsHazard, GpsStatus, LatLng, PlayerFix } from "@/lib/platform/golfGps/types";
@@ -38,6 +38,7 @@ export function GolfGpsScreen({ holeNumber, course = MISSION_HILLS_PETE_DYE, cla
   const [target, setTarget] = useState<LatLng | null>(null);
   useSimulatorGps({ mode, setMode, fix, moveMock, resetMock: () => { resetMock(); setTarget(null); } });
   const [recenterToken, setRecenterToken] = useState(0);
+  const [focusPlayerToken, setFocusPlayerToken] = useState(0);
   const [insets, setInsets] = useState<MapInsets>({ top: 250, bottom: ATTRIBUTION_HEIGHT });
   const screenRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
@@ -68,10 +69,15 @@ export function GolfGpsScreen({ holeNumber, course = MISSION_HILLS_PETE_DYE, cla
   const notice = mapped ? gpsNotice(status, fix, center) : `No map for Hole ${holeNumber} yet — showing Hole ${hole.number}.`;
 
   return <div ref={screenRef} className={`${styles.screen} ${className}`}>
-    <GolfGpsMap apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY} hole={hole} player={fix} target={target} onTap={setTarget} recenterToken={recenterToken} insets={insets} />
+    <GolfGpsMap apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY} hole={hole} player={fix} target={target} onTap={setTarget} recenterToken={recenterToken} focusPlayerToken={focusPlayerToken} insets={insets} />
     <GolfGpsHud ref={topRef} hole={hole} front={yards(hole.green.front)} center={yards(hole.green.center)} back={yards(hole.green.back)}
       hazards={hudHazards(hole.hazards, fix && !far ? fix : null)}
       target={target ? yards(target) : null} notice={notice} />
+    {/* Center on me: the only way the camera goes to the player. The flag below always brings back the whole hole. */}
+    <button type="button" className={styles.recenter} style={{ bottom: insets.bottom + 58 }} aria-label="Center on me" disabled={!fix}
+      onClick={() => setFocusPlayerToken((token) => token + 1)}>
+      <LocateFixed size={20} aria-hidden />
+    </button>
     <button type="button" className={styles.recenter} style={{ bottom: insets.bottom + 4 }} aria-label="Back to hole view"
       onClick={() => setRecenterToken((token) => token + 1)}>
       <Flag size={20} aria-hidden />
