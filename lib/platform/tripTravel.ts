@@ -113,7 +113,7 @@ export function itineraryFor(travel: TripTravel, memberId = travel.meId): Itiner
     if (!going.has(item.id)) continue;
     const d = item.details, title = travelTitle(item);
     if (item.kind === "flight") {
-      entries.push({ id: item.id, kind: "flight", title, startsAt: item.startsAt, detail: [d.airline, item.endsAt && `Lands ${timeOf(item.endsAt)}`].filter(Boolean).join(" · ") || undefined });
+      entries.push({ id: item.id, kind: "flight", title, startsAt: item.startsAt, ...(item.endsAt ? { endsAt: item.endsAt } : {}), detail: [d.airline, item.endsAt && `Lands ${timeOf(item.endsAt)}`].filter(Boolean).join(" · ") || undefined });
     } else if (item.kind === "lodging") {
       entries.push({ id: `${item.id}:in`, kind: "lodging", title, startsAt: item.startsAt, detail: ["Check-in", d.place].filter(Boolean).join(" · ") });
       if (item.endsAt) entries.push({ id: `${item.id}:out`, kind: "lodging", title, startsAt: item.endsAt, detail: "Check-out" });

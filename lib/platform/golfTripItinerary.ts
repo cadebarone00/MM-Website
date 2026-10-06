@@ -14,6 +14,8 @@ export interface ItineraryItem {
   detail?: string;
   /** Local trip time, "YYYY-MM-DDTHH:mm". */
   startsAt: string;
+  /** Optional end, same format (e.g. a flight's landing): it's happening from startsAt until then. */
+  endsAt?: string;
 }
 
 export const ITINERARY_KIND_LABEL: Record<ItineraryKind, string> = {
@@ -32,20 +34,34 @@ export function upcomingItinerary(items: ItineraryItem[], now: string, count = 5
   return sortItinerary(items).filter((item) => item.startsAt >= now).slice(0, count);
 }
 
+/** Without an end time, how long a plan counts as happening ("NOW") after it starts, in minutes. */
+export const HAPPENING_MINUTES: Record<ItineraryKind, number> = { flight: 30, lodging: 30, teeTime: 0, ride: 30, dining: 90, other: 60 };
+
+export type HomeStatus = "LIVE" | "NOW" | "NEXT" | "UPCOMING";
+
+const minutesOf = (local: string) => Date.parse(`${local.slice(0, 16)}:00Z`) / 60000;
+
+/** Happening right now: started, and before its end (or before its kind's usual length is up). */
+export function isHappening(item: ItineraryItem, now: string): boolean {
+  const start = minutesOf(item.startsAt), at = minutesOf(now);
+  const end = item.endsAt ? minutesOf(item.endsAt) : start + HAPPENING_MINUTES[item.kind];
+  return at >= start && at < end;
+}
+
 /**
- * Home's two boxes. Live = the latest plan that has already started today (plans have no end time, so the last one that
- * started today is what's happening now); then Upcoming = the next plan after now. With nothing live — before the trip, or
- * before today's first plan — both boxes are the next two upcoming plans. Missing ones are left out.
+ * Home's two boxes, each with its status (top right):
+ * - A golf round in play (`liveRound`) is LIVE (the only red, dotted status) and wins over anything else; then NEXT.
+ * - Otherwise something happening now (a flight in the air, a check-in, dinner) is NOW; then NEXT.
+ * - Nothing happening (before the trip, between plans, everyone's rounds submitted): NEXT, then UPCOMING.
+ * Missing ones are left out. `now` is local time, "YYYY-MM-DDTHH:mm".
  */
-export function liveAndUpcoming(items: ItineraryItem[], now: string): { label: "Live" | "Upcoming"; item: ItineraryItem }[] {
+export function homeBoxes(items: ItineraryItem[], now: string, liveRound?: ItineraryItem): { status: HomeStatus; item: ItineraryItem }[] {
   const sorted = sortItinerary(items);
-  const started = sorted.filter((item) => item.startsAt <= now);
-  const latest = started.at(-1);
-  const live = latest && latest.startsAt.slice(0, 10) === now.slice(0, 10) ? latest : undefined;
-  const next = sorted.filter((item) => item.startsAt > now);
-  return live
-    ? [{ label: "Live", item: live }, ...next.slice(0, 1).map((item) => ({ label: "Upcoming" as const, item }))]
-    : next.slice(0, 2).map((item) => ({ label: "Upcoming" as const, item }));
+  const happening = sorted.filter((item) => isHappening(item, now)).at(-1);
+  const current = liveRound ? { status: "LIVE" as const, item: liveRound } : happening ? { status: "NOW" as const, item: happening } : null;
+  const later = sorted.filter((item) => item.startsAt > now.slice(0, 16) && item !== current?.item);
+  if (current) return [current, ...later.slice(0, 1).map((item) => ({ status: "NEXT" as const, item }))];
+  return later.slice(0, 2).map((item, index) => ({ status: index === 0 ? "NEXT" as const : "UPCOMING" as const, item }));
 }
 
 /**

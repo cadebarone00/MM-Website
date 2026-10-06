@@ -264,9 +264,12 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 /* Home: Live and Upcoming boxes stacked, each 90% wide (5% in from each side of the screen). */
 .liveBoxes{display:grid;gap:10px;margin:22px 5% 0}
 .liveBoxes .accountCard{width:100%;flex:none}
-.liveLabel{display:inline-flex;align-items:center;gap:6px;margin:0 0 6px;color:#805b24;font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase}
-.liveLabel[data-live=true]{color:#c62828}
-.liveLabel[data-live=true]::before{content:"";width:7px;height:7px;border-radius:50%;background:#c62828;box-shadow:0 0 0 3px rgba(198,40,40,.2)}
+/* Box header: kind on the left, status (LIVE / NOW / NEXT / UPCOMING) top right. Only a live golf round is red with a dot. */
+.cardHeadRow.cardHeadRow{justify-content:space-between;gap:10px}
+.cardKind{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.statusTag{display:inline-flex;align-items:center;gap:6px;flex:none;color:#805b24;font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.1em}
+.statusTag[data-live=true]{color:#c62828}
+.statusTag[data-live=true]::before{content:"";width:7px;height:7px;border-radius:50%;background:#c62828;box-shadow:0 0 0 3px rgba(198,40,40,.2)}
 /* Home head: always the same height on every trip (no jumping): the heading at the top, then a fixed slot for the Mom
    section (a notification line, the countdown, or empty) near the bottom; the Live / Upcoming boxes overlap its bottom 31px. */
 .accountHead{box-sizing:border-box;display:flex;flex-direction:column;height:calc(212px + 5vh);padding-bottom:31px;overflow:hidden;background:var(--color-maroon-900)}

@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { AlertTriangle, ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronLeft, ChevronRight, Clock, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Droplets, ExternalLink, FileText, Flag, LockKeyhole, MapPin, MessageCircle, Plane, Plus, Settings, Share2, ShieldCheck, ShoppingBag, Sun, Thermometer, Trash2, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import { normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
-import { ITINERARY_KIND_LABEL, itineraryByDay, itineraryCategory, itineraryDay, itineraryLongDate, itineraryTime, itineraryWeekday, liveAndUpcoming, localNow, type ItineraryItem, type ItineraryKind } from "@/lib/platform/golfTripItinerary";
+import { ITINERARY_KIND_LABEL, itineraryByDay, itineraryCategory, itineraryDay, itineraryLongDate, itineraryTime, itineraryWeekday, homeBoxes, localNow, type HomeStatus, type ItineraryItem, type ItineraryKind } from "@/lib/platform/golfTripItinerary";
 import { addMyItem, itineraryFor, removeMyItem, updateMyItem, type TripTravel } from "@/lib/platform/tripTravel";
 import { GolfTripMyTravel, type MyTravelChange } from "./GolfTripMyTravel";
 import { TravelKindIcon } from "./travelKinds";
@@ -151,7 +151,8 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
       </div>
     </header>
     <div className={styles.body} role="tabpanel" aria-label={tab}>
-      {tab === "Home" ? <InfoAccount draft={draft} settingsHref={settingsHref} flights={flights} weather={weather} itinerary={itinerary} travel={travel} tripNow={tripNow} onOpenItinerary={openItinerary} />
+      {tab === "Home" ? <InfoAccount draft={draft} settingsHref={settingsHref} flights={flights} weather={weather} itinerary={itinerary} travel={travel} tripNow={tripNow} onOpenItinerary={openItinerary}
+        liveRound={roundLive && previewMatch ? { id: `round-${previewMatch.round}`, kind: "teeTime", title: `Round ${previewMatch.round} · ${previewMatch.course}`, startsAt: (tripNow ?? "").slice(0, 16) } : undefined} />
         : tab === "Golf" ? <>
           <GolfSlides key={String(competitive)} previewMatch={previewMatch} competitive={competitive} navigation={navigation} onNavigationChange={onNavigationChange} />
         </>
@@ -553,13 +554,17 @@ function EventRow({ event }: { event: InfoEvent }) {
 }
 
 /** A Home "what's next" card: what it is, the headline, when, and one more line. Opens Info → Itinerary. */
-function ItineraryCard({ item, label: status, onOpen }: { item: ItineraryItem; label?: "Live" | "Upcoming"; onOpen: () => void }) {
-  const when = `${itineraryDay(item.startsAt)} · ${itineraryTime(item.startsAt)}`;
-  const label = ITINERARY_KIND_LABEL[item.kind];
+function ItineraryCard({ item, status, onOpen }: { item: ItineraryItem; status?: HomeStatus; onOpen: () => void }) {
+  // A live golf round shows "Golf" and how far in; everything else its kind and when.
+  const golf = status === "LIVE";
+  const when = golf ? "In play now" : `${itineraryDay(item.startsAt)} · ${itineraryTime(item.startsAt)}`;
+  const label = golf ? "Golf" : ITINERARY_KIND_LABEL[item.kind];
   return <button type="button" className={`${styles.accountCard} ${styles.itineraryCard}`} onClick={onOpen}
     aria-label={`${status ? `${status}: ` : ""}${label}: ${item.title}, ${when}${item.detail ? `, ${item.detail}` : ""}. Open the itinerary`}>
-    {status && <p className={styles.liveLabel} data-live={status === "Live"}>{status}</p>}
-    <p className={styles.accountCardName}><TravelKindIcon kind={item.kind} size={14} /> {label}</p>
+    <p className={`${styles.accountCardName} ${styles.cardHeadRow}`}>
+      <span className={styles.cardKind}><TravelKindIcon kind={item.kind} size={14} /> {label}</span>
+      {status && <span className={styles.statusTag} data-live={golf}>{status}</span>}
+    </p>
     <p className={styles.accountCardAmount}>{item.title}</p>
     <p className={styles.accountCardNote}>{when}</p>
     {item.detail && <p className={styles.accountCardNote}>{item.detail}</p>}
@@ -682,15 +687,18 @@ function FlightsCard({ flights }: { flights?: TripFlights }) {
  * Info tab, banking-app style (layout only, made-up numbers): a maroon top saying "Your trip to {destination}", a swipeable
  * row of two cards with a dot for each (the filled dot follows the swipe), then the upcoming trip and planned rounds. It runs edge to edge and down to the bottom of the screen.
  */
-function InfoAccount({ draft, settingsHref, flights, weather, itinerary, travel, tripNow, onOpenItinerary }: {
-  draft: GolfTripDraft; settingsHref: string; flights?: TripFlights; weather?: Promise<TripWeather>; itinerary?: ItineraryItem[]; travel?: TripTravel; tripNow?: string; onOpenItinerary: () => void;
+function InfoAccount({ draft, settingsHref, flights, weather, itinerary, travel, tripNow, liveRound, onOpenItinerary }: {
+  draft: GolfTripDraft; settingsHref: string; flights?: TripFlights; weather?: Promise<TripWeather>; itinerary?: ItineraryItem[]; travel?: TripTravel; tripNow?: string;
+  /** The golf round being played right now (its Scoring sheet is up): the only thing marked LIVE. */
+  liveRound?: ItineraryItem; onOpenItinerary: () => void;
 }) {
   const destination = draft.destination;
   const tripDateRange = dateRangeLabel(draft.startDate, draft.endDate);
-  // Live (what's happening now) and Upcoming (what's next); before the trip, the first two upcoming. "now" is read once, when Home opens.
+  // Two boxes with a status top right: LIVE (a golf round in play) or NOW (anything else happening), then NEXT; with nothing
+  // happening, NEXT then UPCOMING. "now" is read once, when Home opens (or comes from the dev trip clock).
   const [deviceNow] = useState(() => localNow(new Date()));
   const now = tripNow?.slice(0, 16) ?? deviceNow;
-  const boxes = itinerary ? liveAndUpcoming(itinerary, now) : [];
+  const boxes = itinerary ? homeBoxes(itinerary, now, liveRound) : [];
   return <div className={styles.account}>
     {/* Maroon head: the heading + weather, then the Mom section; the boxes below overlap its bottom edge. */}
     <div className={styles.accountHead}>
@@ -709,12 +717,12 @@ function InfoAccount({ draft, settingsHref, flights, weather, itinerary, travel,
     {/* Mom: my live notifications, or a countdown to arrival day when there are none (between the heading and the boxes). */}
     <div className={styles.momSlot}><MomSection travel={travel} arrivalDay={draft.startDate} plans={itinerary ?? []} startAt={tripNow} /></div>
     </div>
-    {/* Two boxes, one over the other, 5% in from each side: Live then Upcoming (or two Upcoming before anything is live).
+    {/* Two boxes, one over the other, 5% in from each side: LIVE / NOW then NEXT, or NEXT then UPCOMING (status top right).
         Tap one to open Info → Itinerary. Trips without an itinerary keep the Flights card. */}
     <div className={styles.liveBoxes}>
       {itinerary
         ? boxes.length
-          ? boxes.map(({ label, item }) => <ItineraryCard key={item.id} label={label} item={item} onOpen={onOpenItinerary} />)
+          ? boxes.map(({ status, item }) => <ItineraryCard key={item.id} status={status} item={item} onOpen={onOpenItinerary} />)
           : <button type="button" className={`${styles.accountCard} ${styles.itineraryCard}`} onClick={onOpenItinerary}>
             <p className={styles.accountCardName}><CalendarDays size={14} strokeWidth={2} aria-hidden /> Itinerary</p>
             <p className={styles.accountCardAmount}>Nothing else coming up</p>
