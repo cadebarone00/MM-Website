@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { holeCamera } from "@/lib/platform/golfGps/holeView";
+import { holeCamera, holeFramePoints } from "@/lib/platform/golfGps/holeView";
 import { loadGoogleMaps, onGoogleMapsAuthFailure } from "@/lib/platform/golfGps/loadGoogleMaps";
 import type { GpsHole, LatLng, PlayerFix } from "@/lib/platform/golfGps/types";
 import styles from "./GolfGps.module.css";
@@ -36,14 +36,16 @@ function dot(className: string): HTMLElement {
  * Google's controls are off; its logo and attribution stay visible. Without a key or if loading fails it shows a message;
  * yardages still work.
  */
-export function GolfGpsMap({ apiKey, hole, player, target, onTap, recenterToken, insets }: {
+export function GolfGpsMap({ apiKey, hole, player, target, onTap, recenterToken, focusPlayerToken = 0, insets }: {
   apiKey: string | undefined;
   hole: GpsHole;
   player: PlayerFix | null;
   target: LatLng | null;
   onTap: (point: LatLng) => void;
-  /** Bumped by the Recenter button: back to the hole view. */
+  /** Bumped by the Hole view button: frame the whole hole again. */
   recenterToken: number;
+  /** Bumped by the Center on me button: pan to the player (only then — the camera never follows GPS on its own). */
+  focusPlayerToken?: number;
   insets: MapInsets;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -51,11 +53,15 @@ export function GolfGpsMap({ apiKey, hole, player, target, onTap, recenterToken,
   const libsRef = useRef<Awaited<ReturnType<typeof loadGoogleMaps>> | null>(null);
   const live = useRef<{ player?: google.maps.marker.AdvancedMarkerElement; accuracy?: google.maps.Circle; target?: google.maps.marker.AdvancedMarkerElement; targetLine?: google.maps.Polyline; greenLine?: google.maps.Polyline }>({});
   const onTapRef = useRef(onTap);
+  const playerRef = useRef(player);
+  /** Which hole view was last framed (hole + Hole view presses + map kind); the camera re-frames only when it changes. */
+  const framedFor = useRef("");
   const [ready, setReady] = useState(false);
   const [rendering, setRendering] = useState<"vector" | "raster" | null>(null);
   const [error, setError] = useState<string | null>(apiKey ? null : "missing-key");
 
   useEffect(() => { onTapRef.current = onTap; }, [onTap]);
+  useEffect(() => { playerRef.current = player; }, [player]);
 
   // Create the map once.
   useEffect(() => {
@@ -116,24 +122,41 @@ export function GolfGpsMap({ apiKey, hole, player, target, onTap, recenterToken,
     return () => drawn.forEach(remove);
   }, [ready, hole]);
 
-  // Hole view: tee at the bottom, green at the top (vector), or the same framing north-up (raster).
+  // Hole view: the whole hole (holeFramePoints — never the player), tee / hole start at the bottom and green at the top
+  // (vector), or the same framing north-up (raster). Returns false when the map can't be framed yet.
   const showHole = useCallback(() => {
     const map = mapRef.current, container = containerRef.current;
-    if (!map || !container || !rendering) return;
+    if (!map || !container || !rendering) return false;
     const { width, height } = container.getBoundingClientRect();
-    if (!width || !height) return;
+    if (!width || !height) return false;
     if (rendering === "vector") {
       map.moveCamera({ ...holeCamera(hole, { width, height, top: insets.top, bottom: insets.bottom, side: 16 }), tilt: 0 });
     } else {
       const bounds = new google.maps.LatLngBounds();
-      [hole.tee, hole.green.front, hole.green.back, ...hole.hazards.map((hazard) => hazard.center), ...(hole.frame ?? [])].forEach((point) => bounds.extend(point));
+      holeFramePoints(hole).forEach((point) => bounds.extend(point));
       map.setHeading(0);
       map.fitBounds(bounds, { top: insets.top, bottom: insets.bottom, left: 16, right: 16 });
     }
+    container.dataset.camera = "hole";
+    container.dataset.holeFrames = String(Number(container.dataset.holeFrames ?? 0) + 1);
+    return true;
   }, [hole, rendering, insets.top, insets.bottom]);
 
-  // On load, whenever the hole (or the space around it) changes, and when Recenter is pressed.
-  useEffect(() => { if (ready) showHole(); }, [ready, showHole, recenterToken]);
+  // Frame the hole once per hole (and per Hole view press). Later changes — the yardage card growing or shrinking as
+  // hazards and GPS messages update, the player moving — never move the camera.
+  useEffect(() => {
+    if (!ready) return;
+    const key = `${hole.number}|${hole.green.center.lat},${hole.green.center.lng}|${recenterToken}|${rendering}`;
+    if (framedFor.current !== key && showHole()) framedFor.current = key;
+  }, [ready, showHole, recenterToken, hole, rendering]);
+
+  // Center on me: an explicit tap only. Keeps the zoom and direction; GPS updates afterwards don't follow.
+  useEffect(() => {
+    const map = mapRef.current, me = playerRef.current, container = containerRef.current;
+    if (!focusPlayerToken || !ready || !map || !me || !container) return;
+    map.panTo(me);
+    container.dataset.camera = "player";
+  }, [focusPlayerToken, ready]);
 
   // The player marker, its accuracy ring, and the thin line to the middle of the green.
   useEffect(() => {
