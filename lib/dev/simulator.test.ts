@@ -172,3 +172,23 @@ test("Randomize data: a seed builds a realistic made-up mock trip, the same ever
   assert.ok(parseSimulatorConfig({ source: "mock", state: { ...DEFAULT_SIMULATOR_STATE, seed: 12345 } }));
   assert.equal(parseSimulatorConfig({ source: "mock", state: { ...DEFAULT_SIMULATOR_STATE, seed: "x" } }), null);
 });
+
+test("live / between round states give every round its matches: past ones final, the current one live, later ones not started", () => {
+  const mock = { preview: GOLF_TRIP_MOCK_DRAFT, previewMatch: GOLF_MATCH_PREVIEW };
+  const at = (roundStatus: typeof DEFAULT_SIMULATOR_STATE.roundStatus) => simulatorTripData(mock, mock, { source: "busy", state: { ...DEFAULT_SIMULATOR_STATE, roundStatus } }).previewMatch!;
+  const between = at("between");
+  const byRound = (match: typeof between, round: number) => match.matches.filter(pairing => pairing.round === round);
+  assert.equal(between.round, 3);
+  assert.ok(byRound(between, 1).length > 0 && byRound(between, 1).every(pairing => pairing.result));
+  assert.ok(byRound(between, 3).every(pairing => pairing.result));
+  assert.ok(byRound(between, 4).every(pairing => !pairing.result && pairing.gross === null));
+  const live = at("live");
+  const current = byRound(live, live.round);
+  assert.ok(current.length > 0 && current.every(pairing => !pairing.result && /^Thru \d+$/.test(("thru" in pairing.left && pairing.left.thru) || "")));
+  // Live standings are never already decided (up by more than the holes left).
+  for (const pairing of current) {
+    const holes = Number(/\d+/.exec(("thru" in pairing.left && pairing.left.thru) || "")?.[0]);
+    assert.ok(!pairing.gross || pairing.gross.up <= 18 - holes);
+  }
+  assert.deepEqual(at("live"), live);
+});

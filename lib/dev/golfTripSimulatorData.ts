@@ -67,8 +67,53 @@ function mixedRound(index: number, roundState: string, par: number[], holesPlaye
  * scores. scheduled: round 1, nothing played. live: holes 1–9 played. between: round 3 finished, round 4 next.
  * complete: the last round finished.
  */
+/**
+ * Mock / busy data: matches for every round, so the Matches list can step through them. Each round re-pairs the same
+ * players (the right-hand sides rotate one place a round). Rounds before the current one are over (a random final
+ * result: halved, "1 UP", or won "u&r" with r holes left); the current one depends on the round state (live: each match
+ * at a random hole with a random, not-yet-decided standing; just ended / between / complete: over; before round 1:
+ * not started); later rounds haven't started. Seeded, so the same state shows the same results every time.
+ */
+function roundByRoundMatches(match: GolfMatchPreview, current: number, currentState: "pre" | "live" | "final", seed: number): GolfMatchPreview["matches"] {
+  const base = match.matches.filter(pairing => pairing.round === undefined || pairing.round === match.round);
+  if (!base.length) return match.matches;
+  const random = seededRandom(seed * 7919 + current * 104729 + currentState.length * 31 + 17);
+  const withThru = (side: GolfMatchPreview["matches"][number]["left"], thru: string) => {
+    const comp = normalizeCompetitor(side);
+    return { ...comp, thru, golfers: comp.golfers.map(golfer => ({ ...golfer, thru, score: thru ? golfer.score : "—" })) };
+  };
+  const rights = base.map(pairing => pairing.right);
+  const all: GolfMatchPreview["matches"] = [];
+  for (let round = 1; round <= Math.max(1, match.roundCount); round++) {
+    const state = round < current ? "final" : round > current ? "pre" : currentState;
+    base.forEach((pairing, index) => {
+      const right = rights[(index + round - 1) % rights.length];
+      if (state === "pre") {
+        all.push({ ...pairing, round, right: right && withThru(right, ""), left: withThru(pairing.left, ""), gross: null, net: null, result: undefined });
+        return;
+      }
+      if (state === "live") {
+        const holes = 1 + Math.floor(random() * 17);
+        const up = Math.floor(random() * Math.min(holes, 18 - holes) + 0.5) === 0 ? 0 : 1 + Math.floor(random() * Math.min(holes, 18 - holes));
+        const standing = up === 0 ? { leader: null, up: 0 } : { leader: random() < 0.5 ? "left" as const : "right" as const, up };
+        all.push({ ...pairing, round, right: right && withThru(right, `Thru ${holes}`), left: withThru(pairing.left, `Thru ${holes}`), gross: standing, net: standing, result: undefined });
+        return;
+      }
+      // Over: halved about one match in six; otherwise won by 1–5, finishing on the last hole or with holes to spare.
+      const halved = random() < 0.17;
+      const up = 1 + Math.floor(random() * 5);
+      const left = up === 1 ? 0 : Math.floor(random() * up);
+      const standing = halved ? { leader: null, up: 0 } : { leader: random() < 0.5 ? "left" as const : "right" as const, up };
+      const result = halved ? "AS" : left > 0 ? `${up}&${left}` : `${up} UP`;
+      all.push({ ...pairing, round, right: right && withThru(right, "F"), left: withThru(pairing.left, "F"), gross: standing, net: standing, result });
+    });
+  }
+  return all;
+}
+
 function withRoundState(match: GolfMatchPreview, roundState: Exclude<SimulatorConfig["state"]["roundStatus"], "source">, mixed = false, seed = 0): GolfMatchPreview {
   const resetGolfer = (golfer: ReturnType<typeof normalizeCompetitor>["golfers"][number]) => ({ ...golfer, thru: "—", score: "—", points: 0 });
+  if (roundState === "scheduled" && mixed) return { ...withRoundState(match, "scheduled", false, seed), matches: roundByRoundMatches({ ...match, round: 1 }, 1, "pre", seed) };
   if (roundState === "scheduled") {
     return { ...match, round: 1,
       matches: match.matches.map(pairing => ({ ...pairing, gross: null, net: null,
@@ -111,6 +156,8 @@ function withRoundState(match: GolfMatchPreview, roundState: Exclude<SimulatorCo
     });
   }
   const golferThru = (golfer: ReturnType<typeof normalizeCompetitor>["golfers"][number]) => ({ ...golfer, thru: thru === "F" ? "F" : `Thru ${thru}` });
+  if (mixed) return { ...match, round, roundCount, leaderboard,
+    matches: roundByRoundMatches({ ...match, roundCount }, round, roundState === "live" ? "live" : "final", seed) };
   return { ...match, round, roundCount, leaderboard,
     matches: match.matches.map(pairing => ({ ...pairing,
       left: { ...normalizeCompetitor(pairing.left), golfers: normalizeCompetitor(pairing.left).golfers.map(golferThru) },
