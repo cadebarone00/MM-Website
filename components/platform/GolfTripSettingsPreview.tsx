@@ -29,6 +29,7 @@ import { SCORING_VIEWS, setScoringView, useScoringView } from "@/lib/platform/sc
 import { useGolfTripCompetitionPreview } from "./GolfTripCompetitionPreviewProvider";
 
 import { useSimulator, useSimulatorNavigationReporter } from "@/components/dev/SimulatorBridge";
+import { usePersistedState } from "@/lib/dev/justCreatedStore";
 
 const GENERAL_CARDS = ["Scorecard View", ...Array.from({ length: 5 }, () => "Place holder")];
 const ORGANIZER_CARDS = ["Players", "Golf Schedule", "Competition", "Games", "Allowed", "Player Scoring", "History"];
@@ -73,6 +74,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   /** The trip's own rounds (from the chosen data: mock, busy, empty or the real tournament). Without it, the shared sample rounds. */
   tripRounds?: CompetitionRound[];
 }) {
+  // Dev "Just created" trip: everything set up here is saved as you go (lib/dev/justCreatedStore) until Reset.
+  const persist = dataKey === "empty";
   const [section, setSection] = useState("General");
   const [competitionOpen, setCompetitionOpen] = useState(false);
   const [competitionSection, setCompetitionSection] = useState("Overview");
@@ -84,7 +87,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const [scorecardViewOpen, setScorecardViewOpen] = useState(false);
   // History: past trips the organizer entered. Preview only; one sample trip, resets on reload.
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [pastTrips, setPastTrips] = useState<PastTrip[]>(() => tripHistory ?? samplePastTrips(players));
+  const [pastTrips, setPastTrips] = usePersistedState<PastTrip[]>(persist, "pastTrips", () => tripHistory ?? samplePastTrips(players));
   // History → Link to account (dev): requests go to the shared player-rounds store; the player answers on /dev/profile.
   const devRounds = useDevPlayerRounds();
   const historyLinking: HistoryLinking = {
@@ -99,12 +102,12 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     },
   };
   const scoringView = useScoringView();
-  const [scoringFieldsOff, setScoringFieldsOff] = useState<Set<string>>(new Set());
-  const [allowedRules, setAllowedRules] = useState(houseRules ?? ALLOWED_PRESET);
+  const [scoringFieldsOff, setScoringFieldsOff] = usePersistedState<Set<string>>(persist, "scoringFieldsOff", new Set());
+  const [allowedRules, setAllowedRules] = usePersistedState(persist, "allowedRules", houseRules ?? ALLOWED_PRESET);
   const [confirmDeleteRuleId, setConfirmDeleteRuleId] = useState<string | null>(null);
   // Players: the expected count can't drop below the players who already joined; open spots show as "Player N".
-  const [playerTotal, setPlayerTotal] = useState(() => Math.min(MAX_PLAYERS, Math.max(1, playerCount, players.length)));
-  const [removedPlayers, setRemovedPlayers] = useState<Set<string>>(() => new Set());
+  const [playerTotal, setPlayerTotal] = usePersistedState(persist, "playerTotal", () => Math.min(MAX_PLAYERS, Math.max(1, playerCount, players.length)));
+  const [removedPlayers, setRemovedPlayers] = usePersistedState<Set<string>>(persist, "removedPlayers", () => new Set());
   const joinedPlayers = players.map((name, index) => ({ name, key: `${index}:${name}` })).filter(player => !removedPlayers.has(player.key));
   const [selectedRoundId, setSelectedRoundId] = useState<string | null>(null);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
@@ -114,15 +117,18 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   // Rounds page: a day count, and 0, 1 or 2 round slots for each day. Lowering Days only hides that day's row.
   // Shared with the Golf tab (dev layout provider) so its sections follow these choices; local state when there's no provider.
   const sharedCompetition = useGolfTripCompetitionPreview();
-  const [localCompetitionType, setLocalCompetitionType] = useState<{ individual: string | null; team: string | null }>(competitionSetup?.types ?? { individual: null, team: null });
-  const competitionType = sharedCompetition?.competitionTypes[dataKey] ?? competitionSetup?.types ?? localCompetitionType;
-  const setCompetitionType = sharedCompetition ? sharedCompetition.setCompetitionType(dataKey) : setLocalCompetitionType;
+  const [localCompetitionType, setLocalCompetitionType] = usePersistedState<{ individual: string | null; team: string | null }>(persist, "localCompetitionType", competitionSetup?.types ?? { individual: null, team: null });
+  // The Just created trip keeps its picks saved (and tells the Golf tab); other trips share them with the Golf tab only.
+  const competitionType = persist ? localCompetitionType : sharedCompetition?.competitionTypes[dataKey] ?? competitionSetup?.types ?? localCompetitionType;
+  const setCompetitionType: typeof setLocalCompetitionType = persist
+    ? update => { setLocalCompetitionType(update); sharedCompetition?.setCompetitionType(dataKey)(update); }
+    : sharedCompetition ? sharedCompetition.setCompetitionType(dataKey) : setLocalCompetitionType;
   const [overviewType, setOverviewType] = useState<"individual" | "team">("individual");
   // Submit & Save Individual / Team Competition locks that side (greyed, no edits) until Undo and Change.
-  const [lockedComp, setLockedComp] = useState<{ individual: boolean; team: boolean }>({ individual: false, team: false });
+  const [lockedComp, setLockedComp] = usePersistedState<{ individual: boolean; team: boolean }>(persist, "lockedComp", { individual: false, team: false });
   // Players ticked under each competition type (by roster slot). Preview only; resets on reload.
   // A trip with an individual competition already set up counts everyone on it.
-  const [typePlayers, setTypePlayers] = useState<Record<"individual" | "team", Set<number>>>(() => ({
+  const [typePlayers, setTypePlayers] = usePersistedState<Record<"individual" | "team", Set<number>>>(persist, "typePlayers", () => ({
     individual: new Set(competitionSetup?.types.individual ? players.map((_, index) => index) : []), team: new Set() }));
   // Any Team type (not None): teams are named under the ovals; + Add Player opens a drop-down list of players not yet on a team. Preview only; resets on reload.
   const [addingToTeam, setAddingToTeam] = useState<number | null>(null);
@@ -131,9 +137,9 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   // Swap pop-up: pick a player on another team to swap with, or an empty spot on another team to move into.
   const [swapFrom, setSwapFrom] = useState<number | null>(null);
   const [swapTarget, setSwapTarget] = useState<{ player: number } | { emptyTeam: number; open: number } | null>(null);
-  const [teamNames, setTeamNames] = useState<string[]>(competitionSetup?.teamNames ?? []);
+  const [teamNames, setTeamNames] = usePersistedState<string[]>(persist, "teamNames", competitionSetup?.teamNames ?? []);
   // Which team (0 = A, 1 = B, ...) each roster slot is on; a player can only be on one team.
-  const [teamPicks, setTeamPicks] = useState<Record<number, number>>(() =>
+  const [teamPicks, setTeamPicks] = usePersistedState<Record<number, number>>(persist, "teamPicks", () =>
     Object.fromEntries((competitionSetup?.teams ?? []).flatMap((team, teamIndex) => team.map(player => [player, teamIndex]))));
   const playerName = (index: number) => joinedPlayers[index]?.name ?? `Player ${index + 1}`;
   const rosterSlots = Array.from({ length: playerTotal }, (_, index) => index);
@@ -141,9 +147,9 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   // Pairs / 3-Ball / 4-Ball: fixed players per team, Total players in steps of that size, at least 2 teams.
   // 2 Teams: Total players in steps of 2 split in half, or (Add Sub/Uneven Teams on) a separate size per team up to the trip's players.
   const groupSize = ({ Pairs: 2, "3-Ball": 3, "4-Ball": 4 } as Record<string, number>)[competitionType.team ?? ""] ?? null;
-  const [teamTotalChoice, setTeamTotalChoice] = useState<number | null>(null);
-  const [unevenTeams, setUnevenTeams] = useState(false);
-  const [unevenSizes, setUnevenSizes] = useState<[number, number]>([2, 2]);
+  const [teamTotalChoice, setTeamTotalChoice] = usePersistedState<number | null>(persist, "teamTotalChoice", null);
+  const [unevenTeams, setUnevenTeams] = usePersistedState(persist, "unevenTeams", false);
+  const [unevenSizes, setUnevenSizes] = usePersistedState<[number, number]>(persist, "unevenSizes", [2, 2]);
   const uneven = unevenTeams && !groupSize;
   const teamStep = groupSize ?? 2;
   const teamTotalMax = playerTotal - (playerTotal % teamStep);
@@ -168,8 +174,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     setUnevenSizes(next);
   };
   // Set by Submit teams; the sheet then shows the submitted team columns.
-  const [submittedTeams, setSubmittedTeams] = useState<number[][] | null>(competitionSetup?.teams.length ? competitionSetup.teams : null);
-  const [gameSettings, setGameSettings] = useState<CompetitionRound>({
+  const [submittedTeams, setSubmittedTeams] = usePersistedState<number[][] | null>(persist, "submittedTeams", competitionSetup?.teams.length ? competitionSetup.teams : null);
+  const [gameSettings, setGameSettings] = usePersistedState<CompetitionRound>(persist, "gameSettings", {
     id: "game-settings-preview",
     date: "2027-04-22",
     number: 1,
@@ -184,31 +190,31 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const selectedGame = GAME_LOOKUP.find(game => game.id === selectedGameId) ?? null;
   const rounds = useMemo(() => tripRounds ?? competition?.rounds ?? [], [tripRounds, competition?.rounds]);
   const days = Array.from(new Set(rounds.map(round => round.date).filter(Boolean))).sort();
-  const [dayCount, setDayCount] = useState(() => Math.max(1, days.length));
-  const [roundsPerDay, setRoundsPerDay] = useState<Record<number, 0 | 1 | 2>>(() => Object.fromEntries(days.map((date, index) => [index, Math.min(2, rounds.filter(round => round.date === date).length) as 0 | 1 | 2])));
+  const [dayCount, setDayCount] = usePersistedState(persist, "dayCount", () => Math.max(1, days.length));
+  const [roundsPerDay, setRoundsPerDay] = usePersistedState<Record<number, 0 | 1 | 2>>(persist, "roundsPerDay", () => Object.fromEntries(days.map((date, index) => [index, Math.min(2, rounds.filter(round => round.date === date).length) as 0 | 1 | 2])));
   // Arrival / Departure: moving Arrival keeps Departure where it is, so the day count grows or shrinks with it.
-  const [arrivalShift, setArrivalShift] = useState(0);
+  const [arrivalShift, setArrivalShift] = usePersistedState(persist, "arrivalShift", 0);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   // Golf Schedule: tap a round's course → the course pop-up (like New game). Picks are kept per day/round slot.
-  const [pickedCourses, setPickedCourses] = useState<Record<string, PickedCourse>>({});
+  const [pickedCourses, setPickedCourses] = usePersistedState<Record<string, PickedCourse>>(persist, "pickedCourses", {});
   // Competition → Format: which Golf Schedule round slots count toward the competition (on unless switched off).
-  const [compRounds, setCompRounds] = useState<Record<string, boolean>>({});
+  const [compRounds, setCompRounds] = usePersistedState<Record<string, boolean>>(persist, "compRounds", {});
   // Competition → Format → tap a comp round: that round's competition settings (players, format, match type, points, Nassau, handicap), kept per round slot.
   const [compRoundSlot, setCompRoundSlot] = useState<{ day: number; slot: number } | null>(null);
-  const [compFormats, setCompFormats] = useState<Record<string, RoundCompSettings>>({});
+  const [compFormats, setCompFormats] = usePersistedState<Record<string, RoundCompSettings>>(persist, "compFormats", {});
   // Turning a round's Comp switch off waits for this confirm (it removes the round's format).
   const [confirmCompOff, setConfirmCompOff] = useState<string | null>(null);
   const [coursePicker, setCoursePicker] = useState<{ key: string; label: string } | null>(null);
   // Golf Schedule: tap a round's tee time → the tee time sheet. Each group's time ("HH:MM") is kept per day/round slot.
-  const [teeTimes, setTeeTimes] = useState<Record<string, string[]>>({});
+  const [teeTimes, setTeeTimes] = usePersistedState<Record<string, string[]>>(persist, "teeTimes", {});
   const [teeTimePicker, setTeeTimePicker] = useState<{ key: string; course: string; date: string; round: number } | null>(null);
   // Golf Schedule → tap a round's box → that round's settings page (course, tee times).
   const [scheduleRound, setScheduleRound] = useState<{ day: number; slot: number } | null>(null);
   // Round settings → Players: up to 4 roster slots per tee time group, kept per round slot. A player can be in one group per round.
-  const [teePlayers, setTeePlayers] = useState<Record<string, Record<number, number[]>>>({});
+  const [teePlayers, setTeePlayers] = usePersistedState<Record<string, Record<number, number[]>>>(persist, "teePlayers", {});
   const [teePlayersGroup, setTeePlayersGroup] = useState<number | null>(null);
   // Course names carried by rounds that were dragged (they no longer line up with the sample schedule).
-  const [slotCourseNames, setSlotCourseNames] = useState<Record<string, string>>({});
+  const [slotCourseNames, setSlotCourseNames] = usePersistedState<Record<string, string>>(persist, "slotCourseNames", {});
   // Dragging a round by its grip: where it started, how far it moved, and where it would land.
   const [roundDrag, setRoundDrag] = useState<{ day: number; slot: number; startY: number; dy: number } | null>(null);
   const [roundDrop, setRoundDrop] = useState<{ day: number; index: number } | null>(null);
@@ -225,8 +231,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const arrivalIso = isoForDay(0);
   const departureIso = isoForDay(dayCount - 1);
   // Golf on Arrival / Departure Day: when off, golf Day 1 is the day after Arrival, or the last golf day is the day before Departure.
-  const [golfOnArrival, setGolfOnArrival] = useState(true);
-  const [golfOnDeparture, setGolfOnDeparture] = useState(true);
+  const [golfOnArrival, setGolfOnArrival] = usePersistedState(persist, "golfOnArrival", true);
+  const [golfOnDeparture, setGolfOnDeparture] = usePersistedState(persist, "golfOnDeparture", true);
   const golfStart = golfOnArrival ? 0 : 1;
   const golfDayCount = Math.max(0, dayCount - golfStart - (golfOnDeparture ? 0 : 1));
   const golfIso = (index: number) => isoForDay(index + golfStart);

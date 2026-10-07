@@ -28,7 +28,7 @@ const HOLD_SLOP = 10;
  * submitting locks the card until the page reloads. Submit & Save calls `onSubmit` with the card (the dev preview saves it
  * as the player's round); `submittedCard` reopens a saved round locked.
  */
-export function GolfTripScoring({ par, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange }: {
+export function GolfTripScoring({ par, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange }: {
   par?: number[]; initialHoles?: (number | null)[]; playerName?: string; opponentCardMatches?: boolean; courseName?: string;
   /** Dev preview only: a finished card (opponent scores, putts, fairways, greens) to start from. */
   prefill?: { opponentHoles: (number | null)[]; putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[];
@@ -43,6 +43,10 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   edits?: ScoreEdit[];
   /** Every change to an unsubmitted card (the dev preview keeps it as the live card the attester and organizer see). */
   onCardChange?: (card: SheetCard) => void;
+  /** Player & Attest, the second phone: what my attester entered for me (wins over the simulator stand-in once they've entered any). */
+  attestedStrokes?: (number | null)[];
+  /** My entries for the player I keep score for, sent to their card. */
+  onAttestChange?: (strokes: (number | null)[]) => void;
 }) {
   const [open, updateOpen] = useState(false);
   const [holes, setHoles] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => submittedCard?.strokes[i] ?? initialHoles?.[i] ?? null));
@@ -260,16 +264,24 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
     return card;
   });
   const sameAs = (mine: (number | null)[], theirs: (number | null)[]) => mine.every((value, i) => value === theirs[i]);
-  const meMatches = otherCard ? sameAs(submittedHoles, otherCard.me) : opponentCardMatches;
+  // My score vs what my attester entered for me: their real entries once there are any, else the simulator stand-in.
+  const fromAttester = attestedStrokes?.some((h) => h !== null) ? attestedStrokes : null;
+  const meMatches = fromAttester ? sameAs(submittedHoles, fromAttester) : otherCard ? sameAs(submittedHoles, otherCard.me) : opponentCardMatches;
   const opponentMatches = otherCard ? sameAs(submittedOpponentHoles, otherCard.opponent) : opponentCardMatches;
-  const readyToSubmit = complete && meMatches && opponentMatches;
+  // Only my own score has to match my attester's (owner decision): the column I keep for someone else is shown, never blocks me.
+  const readyToSubmit = complete && meMatches;
   // The live card (dev): reported only when something changed, so the store isn't written on every render. My
   // attester's strokes for me come from the other phone (otherCard), or stand in from the simulator's card setting.
-  const attestStrokes = otherCard ? otherCard.me : submittedHoles.map((h) => opponentCardMatches ? h : null);
+  const attestStrokes = fromAttester ?? (otherCard ? otherCard.me : submittedHoles.map((h) => opponentCardMatches ? h : null));
   const liveKey = !submitted && (thru > 0 || putts.some((p) => p !== null)) ? JSON.stringify(sheetCardFromScoring({ holes, par, putts, fairways, greens, penalties, attestStrokes })) : null;
   const reportCard = useRef(onCardChange);
   useEffect(() => { reportCard.current = onCardChange; }, [onCardChange]);
   useEffect(() => { if (liveKey) reportCard.current?.(JSON.parse(liveKey) as SheetCard); }, [liveKey]);
+  // The second phone: once I've entered anything for the player I attest, my column (untouched holes = par) goes to their card.
+  const attestKey = !submitted && holesCompetitor.some((h) => h !== null) ? JSON.stringify(submittedOpponentHoles) : null;
+  const reportAttest = useRef(onAttestChange);
+  useEffect(() => { reportAttest.current = onAttestChange; }, [onAttestChange]);
+  useEffect(() => { if (attestKey) reportAttest.current?.(JSON.parse(attestKey) as (number | null)[]); }, [attestKey]);
   // Submit Score plays the full-screen moment over the now-locked card.
   const [celebration, setCelebration] = useState<{ total: number; toPar: string } | null>(null);
   // Colours show once the card is complete (or submitted): green when that player's scores agree, red when they don't.

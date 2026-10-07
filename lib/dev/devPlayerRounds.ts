@@ -27,6 +27,8 @@ export type DevRoundsAction =
   | { type: "answerLink"; requestId: string; accept: boolean }
   | { type: "saveLiveCard"; card: DevLiveCard }
   | { type: "saveGroup"; group: DevGroup }
+  /** The attester's phone: their strokes for the player they keep score for, written onto that player's card. */
+  | { type: "saveAttestStrokes"; groupId: string; profileId: string; strokes: (number | null)[]; meta: DevRoundMeta }
   | { type: "setTripRound"; tripRoundId: string; state: "open" | "closed"; at: string }
   | { type: "setAllowPushThrough"; on: boolean }
   | { type: "swapAttester"; groupId: string; profileId: string; attesterProfileId: string }
@@ -90,8 +92,19 @@ export function devRoundsReducer(state: DevRoundsState, action: DevRoundsAction)
     case "saveLiveCard": {
       const same = (c: DevLiveCard) => c.groupId === action.card.groupId && c.profileId === action.card.profileId;
       const existing = state.liveCards.find(same);
-      if (existing && JSON.stringify(existing) === JSON.stringify(action.card)) return state; // the sheet reports every change
-      return { ...state, liveCards: [...state.liveCards.filter((c) => !same(c)), action.card] };
+      // The attester's phone owns attestStrokes: the player's own save never wipes what their attester entered.
+      const card = { ...action.card, holes: action.card.holes.map((h, i) => ({ ...h, attestStrokes: existing?.holes[i]?.attestStrokes ?? h.attestStrokes })) };
+      if (existing && JSON.stringify(existing) === JSON.stringify(card)) return state; // the sheet reports every change
+      return { ...state, liveCards: [...state.liveCards.filter((c) => !same(c)), card] };
+    }
+    case "saveAttestStrokes": {
+      const same = (c: DevLiveCard) => c.groupId === action.groupId && c.profileId === action.profileId;
+      const existing = state.liveCards.find(same);
+      const base: DevLiveCard = existing ?? { groupId: action.groupId, profileId: action.profileId, meta: action.meta,
+        holes: action.strokes.map((_, i) => ({ number: i + 1, strokes: null, putts: null, fairway: null, green: null, penalties: { fairway: false, green: false }, attestStrokes: null })) };
+      const card = { ...base, holes: base.holes.map((h, i) => ({ ...h, attestStrokes: action.strokes[i] ?? null })) };
+      if (existing && JSON.stringify(existing) === JSON.stringify(card)) return state;
+      return { ...state, liveCards: [...state.liveCards.filter((c) => !same(c)), card] };
     }
     case "saveGroup": {
       const existing = state.groups.find((g) => g.id === action.group.id);

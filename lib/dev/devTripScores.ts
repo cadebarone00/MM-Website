@@ -66,6 +66,7 @@ export function devTripScoring(store: DevRoundsState, match: GolfMatchPreview | 
     group,
     myLiveCard: group ? store.liveCards.find((c) => c.groupId === group.id && c.profileId === viewAs) : undefined,
     shownMatch: match && group ? withSavedRounds(match, group, tripRounds) : match,
+    attesteeId: attestee,
     attesteeName: attestee ? nameOf(attestee) : undefined,
     tripStats: { players: stats.players.map((p) => ({ ...p, name: nameOf(p.profileId) })), trip: stats.trip },
     scoreChanges: organizerOwnEdits(tripRounds).map(({ round, edit }) => ({ name: nameOf(round.profileId), edit })),

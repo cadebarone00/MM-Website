@@ -62,3 +62,21 @@ test("a tab saved before this add-on keeps its rounds and gets empty new parts",
   assert.equal(parsed.rounds.length, old.rounds.length);
   assert.deepEqual([parsed.liveCards, parsed.groups, parsed.tripRounds, parsed.allowPushThrough, parsed.attesters], [[], [], {}, false, {}]);
 });
+
+test("second phone: my entries for my attestee land on their card as attestStrokes, even before they've scored", () => {
+  const strokes = par.map((p, i) => (i === 0 ? p + 1 : p));
+  const once = devRoundsReducer(seedDevRounds(), { type: "saveAttestStrokes", groupId: "g1", profileId: "dev-jake", strokes, meta: devRoundMeta(match) });
+  const card = once.liveCards.find((c) => c.profileId === "dev-jake")!;
+  assert.deepEqual(card.holes.map((h) => h.attestStrokes), strokes);
+  assert.equal(card.holes[0].strokes, null);
+  assert.equal(devRoundsReducer(once, { type: "saveAttestStrokes", groupId: "g1", profileId: "dev-jake", strokes, meta: devRoundMeta(match) }), once);
+});
+
+test("second phone: the player's own saves keep what their attester entered", () => {
+  const attested = devRoundsReducer(seedDevRounds(), { type: "saveAttestStrokes", groupId: "g1", profileId: "dev-jake", strokes: par.map((p, i) => (i === 4 ? p + 1 : p)), meta: devRoundMeta(match) });
+  const mine = { ...live(), holes: live().holes.map((h) => ({ ...h, attestStrokes: null })) };
+  const saved = devRoundsReducer(attested, { type: "saveLiveCard", card: mine });
+  const card = saved.liveCards.find((c) => c.profileId === "dev-jake")!;
+  assert.equal(card.holes[4].attestStrokes, par[4] + 1);
+  assert.equal(card.holes[0].strokes, par[0]);
+});

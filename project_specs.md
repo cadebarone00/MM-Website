@@ -2156,7 +2156,7 @@ Builds **on top of** the Player rounds plan above. Nothing above changes: `Playe
 2. **Attesters are picked automatically** when a group's round is created: 2 players = 1 ↔ 2; 3 players = circle (1 attests 2, 2 attests 3, 3 attests 1); 4 players = two pairs (1 ↔ 2, 3 ↔ 4); 5 players = circle. In a competitive group (two sides, e.g. a fourball), each player is paired with someone on the other side, never a teammate. The organizer (or, for a personal round, whoever started it) can swap attesters until cards are submitted.
 3. **Solo personal rounds** save normally, with no attester and no label.
 4. **Only the player enters their stats** (putts, fairway, green, penalties). The attester enters strokes only.
-5. **Matching unlocks Submit.** When all 18 holes match: the player's name and total on the Card turn green, and **Submit & Save** lights up. Only the player presses it; the attester doesn't have to.
+5. **Matching unlocks Submit.** When the player's own strokes and what their attester entered for them match on all 18 holes: the player's name and total on the Card turn green, and **Submit & Save** lights up. Only the player presses it; the attester doesn't have to. The column a player keeps for someone else shows green / red but never blocks their own Submit (owner decision 2026-10-06).
 6. **Submit & Save does two things:** (a) plays the full-screen submit animation; (b) saves the round as the player's `PlayerRound` (source trip / tournament / personal), which the trip or tournament leaderboard, stats and the player's profile all read.
 7. **Submitted = locked.** Only the organizer can change it afterwards (decision 9).
 8. **Players who can't agree:** the card simply can't be submitted.
@@ -2184,7 +2184,7 @@ Builds **on top of** the Player rounds plan above. Nothing above changes: `Playe
 - **Profile:** Rounds and Stats read `PlayerRound`, labeled Golf Trip · name, Tournament · name, or Just Playing; a round the player removed (decision 15) no longer shows there.
 
 **Built in steps (same two-step pattern as above):**
-- **Step 1 add-on (dev preview, no database):** groups + automatic attesters (pure, tested function); a mock second phone for the attester so matching can be tested in the simulator; green name/total + Submit lighting up on a full match; the submit animation; saving to the existing dev player-rounds store; trip stats from it; Start / End round; organizer override / push-through with the change log and marks.
+- **Step 1 add-on (dev preview, no database):** groups + automatic attesters (pure, tested function); the second phone built in code (what a player enters for the person they attest is written onto that person's card as `attestStrokes`, and a card reads its attester's real entries, falling back to the simulator's stand-in until there are any; real two-phone testing comes later); green name/total + Submit lighting up on a full match; the submit animation; saving to the existing dev player-rounds store; trip stats from it; Start / End round; organizer override / push-through with the change log and marks.
 - **Step 2 (real database, separate approval):** the add-on's tables and rules join the Step 2 SQL file the owner runs, plus the server code. Never run by Claude.
 
 **Not in this add-on:** a no-animation mode (all animations stay for now; that mode is built at the end), the "set groups and tee times" organizer screen, the screens for starting a personal round (the data is ready for it), The Maroon writing `PlayerRound`s, notifications for overrides.

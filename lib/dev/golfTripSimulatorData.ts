@@ -8,7 +8,7 @@ import type { SimulatorConfig } from "./simulator";
 export type SimulatorTripData = Pick<ComponentProps<typeof GolfTripHome>, "preview" | "previewMatch" | "flights" | "travel">;
 
 /** Deterministic fictional crowd, derived from the existing generic format fixture. `names` (randomized busy data) replaces "Guest Golfer N". */
-function populatedMatch(sample: GolfMatchPreview, count: number, names?: string[]): GolfMatchPreview {
+export function populatedMatch(sample: GolfMatchPreview, count: number, names?: string[]): GolfMatchPreview {
   const leaderboard = Array.from({ length: count }, (_, index) => {
     const row = sample.leaderboard[index % sample.leaderboard.length];
     return { ...row, position: String(index + 1), golfer: { ...row.golfer, name: names?.[index] ?? `Guest Golfer ${index + 1}` }, holes: [...row.holes] };
@@ -259,6 +259,11 @@ export function randomMockTrip(mock: SimulatorTripData, seed: number, playerCoun
   return { ...mock, preview, travel, previewMatch: withRoundState(field, "live", true, seed) };
 }
 
+/** The just-created trip's travel: only the organizer, nothing booked. One shared object, so it reads as "unchanged". */
+export const JUST_CREATED_TRAVEL: NonNullable<SimulatorTripData["travel"]> = {
+  meId: "organizer", members: [{ id: "organizer", name: JUST_CREATED_DRAFT.yourName, role: "organizer" }], items: [], participants: [],
+};
+
 /** Pure presentation overrides; never edit the imported tournament or fixture objects. */
 export function simulatorTripData(mock: SimulatorTripData, maroon: SimulatorTripData, config: SimulatorConfig): SimulatorTripData {
   const { source, state } = config;
@@ -266,13 +271,13 @@ export function simulatorTripData(mock: SimulatorTripData, maroon: SimulatorTrip
   if (source === "empty") {
     // Just created: the onboarding answers, round 1 not started, no players' scores, and travel with only the organizer (so
     // the Itinerary is empty and + Add works).
-    const side = { name: "Team unassigned", winPct: 0, fairwayPct: "—", greenPct: "—", putts: "—", score: "—" };
+    const side = { winPct: 0, fairwayPct: "—", greenPct: "—", putts: "—", score: "—" };
     const draft = JUST_CREATED_DRAFT;
     base = {
       preview: { ...draft },
-      previewMatch: { ...(mock.previewMatch ?? GOLF_MATCH_PREVIEW), course: draft.round1Course, roundDate: draft.day1Date, matches: [], leaderboard: [], round: 1, roundCount: 4, sides: [{ ...side }, { ...side }] },
+      previewMatch: { ...(mock.previewMatch ?? GOLF_MATCH_PREVIEW), course: draft.round1Course, roundDate: draft.day1Date, matches: [], leaderboard: [], round: 1, roundCount: 4, sides: [{ ...side, name: "Team A" }, { ...side, name: "Team B" }] },
       flights: { summary: flightSummary([], draft.startDate), href: null },
-      travel: { meId: "organizer", members: [{ id: "organizer", name: draft.yourName, role: "organizer" }], items: [], participants: [] },
+      travel: JUST_CREATED_TRAVEL,
     };
   }
   if (source === "mock" && state.seed) base = randomMockTrip(mock, state.seed, state.playerCount);

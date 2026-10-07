@@ -5,6 +5,7 @@ import { ALLOWED_PRESET, GolfTripSettingsPreview } from "@/components/platform/G
 import { getPlayerDisplayName } from "@/lib/data/players";
 import { simulatorRoundLive, simulatorTripData, type SimulatorTripData } from "@/lib/dev/golfTripSimulatorData";
 import { DEFAULT_SIMULATOR_STATE } from "@/lib/dev/simulator";
+import { useJustCreatedVersion } from "@/lib/dev/justCreatedStore";
 import { adaptTournamentToPastTrip } from "@/lib/platform/tournamentToGolfTrip";
 import { pinehurst2024 } from "@/lib/data/2024-pinehurst";
 import { danzante2025 } from "@/lib/data/2025-danzante";
@@ -14,6 +15,8 @@ import type { CompetitionRound } from "@/lib/platform/golfTripCompetitionPreview
 export function SettingsDataPreview({ mock, maroon }: { mock: SimulatorTripData; maroon: SimulatorTripData }) {
   const simulator = useSimulator();
   const config = simulator ?? { source: "maroon" as const, state: DEFAULT_SIMULATOR_STATE };
+  // Just created: Reset in the /dev panel changes this, so Settings starts fresh from onboarding again.
+  const savedVersion = useJustCreatedVersion();
   const data = simulatorTripData(mock, maroon, config);
   const source = config.source;
   const preview = data.preview;
@@ -47,6 +50,6 @@ export function SettingsDataPreview({ mock, maroon }: { mock: SimulatorTripData;
     teams: [roster.slice(0, maroonCount).map((_, index) => index), roster.slice(maroonCount).map((_, index) => maroonCount + index)],
   } : undefined;
   // A different data choice starts the settings fresh (its days, rounds and players).
-  return <GolfTripSettingsPreview key={`${source}-${seed ?? 0}`} dataKey={source} tripName={preview?.tripName || "Your Golf Trip"} playerCount={Number(preview?.playerCount) || 0}
+  return <GolfTripSettingsPreview key={`${source}-${seed ?? 0}-${source === "empty" ? savedVersion : 0}`} dataKey={source} tripName={preview?.tripName || "Your Golf Trip"} playerCount={Number(preview?.playerCount) || 0}
     players={players} tripRounds={tripRounds} pastTrips={pastTrips} houseRules={houseRules} competitionSetup={competitionSetup} />;
 }

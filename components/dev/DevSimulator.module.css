@@ -54,3 +54,6 @@
 .camera{position:absolute;left:50%;transform:translateX(-50%);z-index:2;background:#000;pointer-events:none}
 .dynamicIsland{top:11px;width:126px;height:37px;border-radius:20px}
 .punchHole{top:8px;width:13px;height:13px;border-radius:50%;box-shadow:inset 0 0 0 2px #1b1d22}
+/* Small reset link under the "Just created" card. */
+.resetJustCreated{display:inline-flex;align-items:center;gap:5px;align-self:flex-start;margin:-2px 0 6px 4px;padding:4px 6px;border:0;background:transparent;color:#7b1e2e;font:600 12px/1.2 inherit;cursor:pointer}
+.resetJustCreated:hover{text-decoration:underline}
