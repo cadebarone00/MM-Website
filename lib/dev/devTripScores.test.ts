@@ -39,3 +39,19 @@ test("a saved round replaces my leaderboard row: holes, F, and the round's score
   assert.equal(row.today, "+1");
   assert.equal(row.holes[0], match.par[0] + 1);
 });
+
+test("devTripScoring: my attestee's name, my saved round on the leaderboard, and trip stats with names", async () => {
+  const { devRoundsReducer, devTripRound, seedDevRounds } = await import("./devPlayerRounds");
+  const { devTripScoring } = await import("./devTripScores");
+  const match = GOLF_MATCH_PREVIEW_SINGLES;
+  const empty = devTripScoring(seedDevRounds(), match, "dev-cade");
+  const opponent = normalizeCompetitor(match.matches[0].right!).golfers[0].name;
+  assert.equal(empty.attesteeName, opponent);
+  assert.equal(empty.tripStats.trip, null);
+  const card = { strokes: match.par, putts: match.par.map(() => 2), fairways: match.par.map(() => null), greens: match.par.map(() => null) };
+  const store = devRoundsReducer(seedDevRounds(), { type: "saveRound", round: devTripRound(match, "dev-cade", card, { groupId: empty.group!.id }) });
+  const after = devTripScoring(store, match, "dev-cade");
+  assert.equal(after.tripStats.players[0].name, empty.group!.names["dev-cade"]);
+  assert.equal(after.shownMatch!.leaderboard.find((r) => r.golfer.name === empty.group!.names["dev-cade"])!.thru, "F");
+  assert.equal(devTripScoring(seedDevRounds(), undefined, "dev-cade").group, null);
+});

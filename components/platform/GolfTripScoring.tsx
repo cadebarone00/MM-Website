@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { LockKeyhole, LockKeyholeOpen, Minus, Plus } from "lucide-react";
 import { useScoringView } from "@/lib/platform/scoringViewPreference";
 import type { ScoreEdit, ScoredCard, ShotResult } from "@/lib/platform/playerRounds";
-import type { SheetCard } from "@/lib/platform/liveCards";
+import { sheetCardFromScoring, type SheetCard } from "@/lib/platform/liveCards";
 import { GolfGpsScreen } from "./gps/GolfGpsScreen";
 import { SubmitCelebration } from "./SubmitCelebration";
 import styles from "./GolfTripScoring.module.css";
@@ -59,8 +59,10 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   const [loadedCard, setLoadedCard] = useState(submittedCard);
   if (submittedCard !== loadedCard) {
     setLoadedCard(submittedCard);
-    if (submittedCard && !submitted) {
+    // Also after submit: an organizer change to the saved round shows on the locked card right away.
+    if (submittedCard) {
       setHoles(submittedCard.strokes); setPutts(submittedCard.putts); setFairways(submittedCard.fairways); setGreens(submittedCard.greens); setSubmitted(true);
+      if (submittedCard.penalties) setPenalties(submittedCard.penalties);
     }
   }
   const [madeUpName] = useState(() => randomOpponentName());
@@ -264,7 +266,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   // The live card (dev): reported only when something changed, so the store isn't written on every render. My
   // attester's strokes for me come from the other phone (otherCard), or stand in from the simulator's card setting.
   const attestStrokes = otherCard ? otherCard.me : submittedHoles.map((h) => opponentCardMatches ? h : null);
-  const liveKey = !submitted && (thru > 0 || putts.some((p) => p !== null)) ? JSON.stringify({ strokes: holes, putts, fairways, greens, penalties, attestStrokes }) : null;
+  const liveKey = !submitted && (thru > 0 || putts.some((p) => p !== null)) ? JSON.stringify(sheetCardFromScoring({ holes, par, putts, fairways, greens, penalties, attestStrokes })) : null;
   const reportCard = useRef(onCardChange);
   useEffect(() => { reportCard.current = onCardChange; }, [onCardChange]);
   useEffect(() => { if (liveKey) reportCard.current?.(JSON.parse(liveKey) as SheetCard); }, [liveKey]);

@@ -101,7 +101,11 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const [confirmDeleteRoundId, setConfirmDeleteRoundId] = useState<string | null>(null);
   // Competition type: one choice per grouping (Individual, Team); None applies to its own grouping only.
   // Rounds page: a day count, and 0, 1 or 2 round slots for each day. Lowering Days only hides that day's row.
-  const [competitionType, setCompetitionType] = useState<{ individual: string | null; team: string | null }>({ individual: null, team: null });
+  // Shared with the Golf tab (dev layout provider) so its sections follow these choices; local state when there's no provider.
+  const sharedCompetition = useGolfTripCompetitionPreview();
+  const [localCompetitionType, setLocalCompetitionType] = useState<{ individual: string | null; team: string | null }>({ individual: null, team: null });
+  const competitionType = sharedCompetition?.competitionType ?? localCompetitionType;
+  const setCompetitionType = sharedCompetition?.setCompetitionType ?? setLocalCompetitionType;
   const [overviewType, setOverviewType] = useState<"individual" | "team">("individual");
   // Submit & Save Individual / Team Competition locks that side (greyed, no edits) until Undo and Change.
   const [lockedComp, setLockedComp] = useState<{ individual: boolean; team: boolean }>({ individual: false, team: false });
@@ -798,7 +802,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
             </div>;
           })}
         </section>
-        <OrganizerScores roundNumbers={rounds.map(round => round.number)} organizerId={simulator?.state.viewAs ?? DEFAULT_DEV_ACCOUNT} />
+        <OrganizerScores roundNumbers={rounds.map(round => round.number)} organizerId={simulator?.state.viewAs ?? DEFAULT_DEV_ACCOUNT}
+          scheduledToday={simulator?.state.roundStatus === "live" || simulator?.state.roundStatus === "roundEnd"} />
       </div>}
 
       {allowedOpen && <div className={styles.competition}>

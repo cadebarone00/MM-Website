@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { checkInLink, countdownParts, countdownTarget, momNotes, pickLine } from "./momNotifications.ts";
+import { checkInLink, countdownParts, countdownTarget, momNotes, nextRoundReminder, pickLine } from "./momNotifications.ts";
 import type { TripTravel } from "./tripTravel.ts";
 
 const flight = (id: string, startsAt: string, details: Record<string, string>) => ({
@@ -54,4 +54,17 @@ test("countdown counts to the first plan on arrival day, else 7:00 AM", () => {
   assert.equal(countdownTarget(undefined, []), null);
   assert.deepEqual(countdownParts("2027-04-22T07:00", "2027-04-20T05:58:30"), { days: 2, hours: 1, minutes: 1, seconds: 30 });
   assert.equal(countdownParts("2027-04-22T07:00", "2027-04-22T07:00:00"), null);
+});
+
+test("next-round reminder: the next round after the ones played, with format and my tee time", () => {
+  const rounds = [
+    { number: 1, date: "2027-04-22", course: "Desert Pines GC", format: "Fourball" },
+    { number: 2, date: "2027-04-22", course: "Canyon Ridge" },
+    { number: 3, date: "2027-04-23", course: "Saguaro Links", format: "Singles Match Play" },
+  ];
+  assert.deepEqual(nextRoundReminder(rounds, "2027-04-22", 1, []), { line: "Next up is Canyon Ridge", sub: "Round 2" });
+  assert.deepEqual(nextRoundReminder(rounds, "2027-04-22", 2, ["2027-04-23T08:10", "2027-04-22T13:00"]), { line: "Next up is Saguaro Links", sub: "Singles Match Play · Round 3 · 8:10 AM" });
+  // Rounds on days already gone are skipped; none left → nothing.
+  assert.equal(nextRoundReminder(rounds, "2027-04-23", 3, [])?.line, undefined);
+  assert.equal(nextRoundReminder(rounds, "2027-04-24", 0, []), null);
 });

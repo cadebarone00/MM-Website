@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import { countdownParts, countdownTarget, momNotes, pickLine } from "@/lib/platform/momNotifications";
+import { countdownParts, countdownTarget, momNotes, nextRoundReminder, pickLine, type MomRound } from "@/lib/platform/momNotifications";
 import type { TripTravel } from "@/lib/platform/tripTravel";
 import styles from "./MomSection.module.css";
 
@@ -21,10 +21,13 @@ const shiftStamp = (stamp: string, seconds: number) => new Date(Date.parse(`${st
 /**
  * Home's Mom section: my live notifications as one cream line (with a small button when there's a link), rotating every
  * 10 seconds — 500 ms fade out, then the next fades in over 500 ms. With no notifications, a flip-clock countdown
- * (Days · Hrs · Min · Sec) to the first plan on arrival day, or 7:00 AM that day. Nothing once that time has come.
+ * (Days · Hrs · Min · Sec) to the first plan on arrival day, or 7:00 AM that day. Once that time has come: the next-round
+ * reminder ("Next up is {course}" over "{format} · Round {n} · {tee time}"), or nothing when no rounds are left.
  */
-export function MomSection({ travel, arrivalDay, plans, startAt }: {
+export function MomSection({ travel, arrivalDay, plans, startAt, rounds = [], afterRound = 0 }: {
   travel?: TripTravel; arrivalDay?: string; plans: { startsAt: string }[];
+  /** The trip's rounds, for the next-round reminder; `afterRound` = the last round played or in play. */
+  rounds?: MomRound[]; afterRound?: number;
   /** Dev trip clock "YYYY-MM-DDTHH:mm:ss": time starts there when the page loads and ticks on from it. */
   startAt?: string;
 }) {
@@ -49,7 +52,18 @@ export function MomSection({ travel, arrivalDay, plans, startAt }: {
   // the target is still ahead — a trip that has started or is over shows nothing here.
   const target = countdownTarget(arrivalDay, plans);
   const parts = target && now ? countdownParts(target, now) : null;
-  if (!parts) return null;
+  if (!parts) {
+    // Nothing else to show (the trip is under way): the next-round reminder, two centered lines.
+    const myTeeTimes = travel ? travel.items.filter(item => item.kind === "teeTime" && travel.participants.some(p => p.itemId === item.id && p.memberId === travel.meId && p.status === "going")).map(item => item.startsAt) : [];
+    const reminder = now ? nextRoundReminder(rounds, now.slice(0, 10), afterRound, myTeeTimes) : null;
+    if (!reminder) return null;
+    return <div className={styles.mom} role="status">
+      <div className={styles.note}>
+        <span className={styles.line}>{reminder.line}</span>
+        {reminder.sub && <span className={styles.sub}>{reminder.sub}</span>}
+      </div>
+    </div>;
+  }
   const units = [["Days", parts.days], ["Hrs", parts.hours], ["Min", parts.minutes], ["Sec", parts.seconds]] as const;
   return <div className={styles.mom} role="timer" aria-label={`${parts.days} days, ${parts.hours} hours, ${parts.minutes} minutes until the trip`}>
     <div className={styles.countdown}>

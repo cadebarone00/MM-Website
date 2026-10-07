@@ -27,3 +27,5 @@
 .line{flex:none;max-width:100%;white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;text-align:center;font-size:16px;line-height:1.3}
 /* Countdown labels 30% larger (10px → 13px). */
 .label{font-size:13px}
+/* Next-round reminder: the sub heading under the line, smaller and gold. */
+.sub{color:#dcc495;font:600 13px/1.25 var(--font-barlow),sans-serif;letter-spacing:.04em}

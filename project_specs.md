@@ -2147,7 +2147,7 @@ Replaces the photo drop-down panel from earlier the same day. Modeled on the own
 
 **Done means (Step 1):** submitting a dev trip round shows it on the trip and in that mock account's Rounds; the handicap counts only qualifying rounds; Private hides Rounds from another mock account but not the handicap index for a trip-mate; a History link shows as a request and only Accept adds the rounds (marked "Entered by organizer", not counted); logic has unit tests; TypeScript, lint and tests pass; checked at localhost:3001/dev.
 
-#### Add-on: Player & Attest, groups, round privacy, organizer overrides, live rounds, trip stats, submit animation (spec 2026-10-06, approved 2026-10-06)
+#### Add-on: Player & Attest, groups, round privacy, organizer overrides, live rounds, trip stats, submit animation (spec 2026-10-06, approved 2026-10-06; Step 1 built 2026-10-06 — dev preview, not committed)
 
 Builds **on top of** the Player rounds plan above. Nothing above changes: `PlayerRound` stays the one locked, saved round per account, and everything still reads from it. This add-on covers how a round gets checked before it becomes a `PlayerRound`, and what happens after.
 
@@ -2215,6 +2215,8 @@ Builds **on top of** the Player rounds plan above. Nothing above changes: `Playe
 **First tip, for approval (only this one is built in round 1):**
 1. **Flight check-in** — shows from 24 hours before a flight departs until it departs. **Approved bucket (owner, 2026-10-06), one picked at random:** *"Don't forget to check in for your flight to {airport}."* · *"Time to check in for {airline} {flight #}. It leaves at {time}."* Small **Check in** button at the end of the line. Push (later round): *"Check-in opens in 5 minutes."* Button: **Check in** → the airline's official check-in page, only for airlines on the approved list (American, Delta, United, Southwest to start — exact URLs verified before building). Unknown airline → the tip shows with no button.
 
+2. **Next-round reminder (fallback)** — when there's no notification and no countdown (the trip is under way), the Mom box shows *"Next up is {course}"* with a sub heading *"{format} · Round {n} · {tee time}"* (format when known; tee time only if one is assigned to me). Nothing when no rounds are left. Approved by the owner 2026-10-06.
+
 **Ideas for later (not built until approved one by one):** pack your clubs / sunscreen the night before; tee time in the morning → "Early night!"; rental car return today; weather (rain / heat) on a golf day; "Hydrate" on hot golf days.
 
 **Push notifications (later round, same approved list).** The Mom tips double as push notifications: each tip can also have an approved **notification** — its own short, fun line and an exact send time worked out from the trip data. Same rules: written in code, owner-approved, one test each. First one planned: **24 hours 5 minutes before a flight** → *"5 min to check-in time! ✈️"* (exact wording to be approved). Building it needs the real push setup (permission prompt, device tokens, a scheduled sender) — a separate spec + approval before any of that.
@@ -2222,3 +2224,28 @@ Builds **on top of** the Player rounds plan above. Nothing above changes: `Playe
 **Not in this round:** sending push notifications (planned above), choosing a favorite airline app (deep links into installed apps), anything not on the approved list.
 
 **Done means:** the flight check-in tip shows on Home only inside its 24-hour window, with the right airline's check-in button; tests for the window and the unknown-airline case pass; `tsc`, lint and tests pass; checked at phone width in the dev simulator.
+
+### Round: Player rounds Step 2A — database foundation (spec 2026-10-06, awaiting approval)
+
+**What it does / who uses it.** Signed-in players. This puts the "one saved round per account" model (Step 1, dev preview) into the real database with its security rules, plus a working **Settings → Privacy** switch and a **Rounds** list on the real Profile. Trips and History will save into it in later steps (2B trips, 2C History); nothing in the real app saves a round yet, so the list starts empty for everyone.
+
+**Tech / data.**
+- New `supabase/player_rounds.sql` (owner runs it — first in the .env Supabase, production later; Claude never runs SQL). Prerequisite: `schema.sql` (profiles). Not tied to `golf_trips.sql`, so it can run on its own.
+- Table `player_rounds`: `id`, `profile_id` (→ profiles, deleted with the account), `source` (trip / tournament / personal / history), `source_key` (e.g. `trip:<trip id>:<round id>`; **unique per account**, so a round can only be saved once), `source_label` (e.g. the trip's name, kept even if the trip is deleted later), `date_played`, `course_ref` / `course_name` / `course_place`, `tee_name` / `tee_rating` / `tee_slope` (snapshot, may be empty), `holes_played` (9 / 18), `format`, `holes` (hole-by-hole list), `total`, `counts_for_handicap`, `not_counted_reason`, `differential`, `entered_by` (player / organizer), `created_at`.
+- `profiles.rounds_visibility`: `public` / `private`, default **private**.
+- Security: nobody reads or writes the table directly (row security on, no policies). The server calls database functions with the signed-in user's id, like Flights:
+  - `save_player_round(profile, round)` — saves if new, otherwise returns the round already saved (locked after submit). It re-checks the rules: total = sum of the holes, a counted round must be the player's own with a rating + slope, and the differential must match the handicap formula.
+  - `list_my_player_rounds(profile)` — my rounds, newest first.
+  - `set_rounds_visibility(profile, visibility)` / reading it with the profile.
+- Server code: `lib/platform/playerRoundsServer.ts` (list mine, save mine, read / set privacy), reusing Step 1's `buildPlayerRound` rules so the app and the database agree. If the SQL hasn't been run yet, pages show the empty state instead of an error.
+
+**Screens.**
+- **Settings → Privacy** card under Account: Public / Private with one plain sentence for each (same words as the dev preview). Saves straight away; shows an error if it couldn't save.
+- **Profile → Rounds**: a "Golf rounds" list from `player_rounds` (course, date, where it came from, total, counts / not counted + why), shown under the existing handicap view for players who have one, or on its own for everyone else. Empty: "Rounds you play on golf trips will show here."
+- The handicap index stays the existing one for now. Adding saved rounds into it comes with Step 2B, the first step that actually saves rounds (until then nobody has any).
+
+**Who can see a profile's rounds:** today only you can open your own profile, so Step 2A stores the Public / Private choice and shows it in Settings. The rule (Public: anyone signed in; Private: only you, plus your handicap index for people you play with) is enforced when pages for viewing other players' profiles are built. The database never hands rounds to anyone else in 2A.
+
+**Not in this step:** trips or History saving rounds, viewing other players' profiles, merging new rounds into the handicap index, moving the old handicap / Maroon rounds over, the 9-hole handicap rule.
+
+**Done means:** the SQL runs cleanly twice in a row on a fresh database (PGlite test, like Flights); tests prove a round saves once, bad rounds are refused, one account can't read or save as another, and privacy defaults to private and can change; Settings → Privacy and Profile → Rounds work against the .env Supabase once the owner runs the SQL (and show the empty state before); TypeScript, lint and tests pass.

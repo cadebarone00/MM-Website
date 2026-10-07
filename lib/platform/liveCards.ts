@@ -38,3 +38,8 @@ export function scoredCardFrom(card: LiveCard, strokes?: number[]): ScoredCard {
     penalties: card.holes.map((h) => h.penalties),
   };
 }
+
+/** The Scoring sheet's state → its live card. Untouched holes count as par, exactly as the sheet shows and submits them. */
+export function sheetCardFromScoring({ holes, par, ...rest }: Omit<SheetCard, "strokes"> & { holes: (number | null)[]; par?: number[] }): SheetCard {
+  return { ...rest, strokes: holes.map((h, i) => h ?? par?.[i] ?? null) };
+}

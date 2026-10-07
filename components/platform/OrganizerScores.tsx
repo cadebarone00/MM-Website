@@ -8,6 +8,7 @@ import { cardComplete, mismatchedHoles } from "@/lib/platform/liveCards";
 import type { EditableField, PlayerRound, ShotResult } from "@/lib/platform/playerRounds";
 import { swapAttester } from "@/lib/platform/roundGroups";
 import type { PushChoice } from "@/lib/platform/scoreEdits";
+import { roundRow } from "@/lib/platform/tripRoundState";
 import notificationStyles from "./GolfTripNotifications.module.css";
 import toggleStyles from "./GolfTripCompetition.module.css";
 
@@ -18,7 +19,7 @@ const message = (e: unknown) => e instanceof Error ? e.message : String(e);
  * each round, change who attests whom, Allow push-through (off by default), push a stuck card through, and override a
  * submitted hole. Every change needs a reason and lands in the round's change log. Reads and writes the shared dev store.
  */
-export function OrganizerScores({ roundNumbers, organizerId }: { roundNumbers: number[]; organizerId: string }) {
+export function OrganizerScores({ roundNumbers, organizerId, scheduledToday = false }: { roundNumbers: number[]; organizerId: string; scheduledToday?: boolean }) {
   const store = useDevPlayerRounds();
   const [error, setError] = useState<string | null>(null);
   const run = (action: DevRoundsAction) => { try { dispatchDevRounds(action); setError(null); return true; } catch (e) { setError(message(e)); return false; } };
@@ -32,11 +33,11 @@ export function OrganizerScores({ roundNumbers, organizerId }: { roundNumbers: n
     <section className={notificationStyles.category} aria-label="Rounds">
       <h2 className={notificationStyles.categoryTitle}>Rounds</h2>
       {roundNumbers.map((n) => {
-        const entry = store.tripRounds[`round-${n}`];
+        const row = roundRow(store.tripRounds[`round-${n}`], scheduledToday);
         return <div key={n} className={notificationStyles.row}>
-          <span className={notificationStyles.label}>Round {n} · {entry ? entry.state === "open" ? "Open" : "Ended" : "Opens on its day"}</span>
-          <button type="button" className={toggleStyles.toggle} onClick={() => run({ type: "setTripRound", tripRoundId: `round-${n}`, state: entry?.state === "open" ? "closed" : "open", at: now() })}>
-            {entry?.state === "open" ? "End round" : "Start round"}</button>
+          <span className={notificationStyles.label}>Round {n} · {row.label}</span>
+          <button type="button" className={toggleStyles.toggle} onClick={() => run({ type: "setTripRound", tripRoundId: `round-${n}`, state: row.next, at: now() })}>
+            {row.next === "closed" ? "End round" : "Start round"}</button>
         </div>;
       })}
     </section>

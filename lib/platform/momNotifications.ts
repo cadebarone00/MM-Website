@@ -80,3 +80,18 @@ export function countdownParts(target: string, now: string): { days: number; hou
   if (!(left > 0)) return null;
   return { days: Math.floor(left / 86400), hours: Math.floor(left / 3600) % 24, minutes: Math.floor(left / 60) % 60, seconds: left % 60 };
 }
+
+export type MomRound = { number: number; date: string; course: string; format?: string };
+
+/**
+ * The next-round reminder (shown when there's no notification and no countdown). Approved wording (owner, 2026-10-06):
+ * "Next up is {course}", and under it "{format} · Round {n} · {tee time}" — format when known, tee time only if one is
+ * assigned to me that day. The next round is the first one after `afterRound` (rounds already played or in play) that's
+ * today or later. Null when there's none left.
+ */
+export function nextRoundReminder(rounds: MomRound[], today: string, afterRound: number, myTeeTimes: string[]): { line: string; sub: string } | null {
+  const next = rounds.filter(round => round.number > afterRound && round.date >= today).sort((a, b) => a.number - b.number)[0];
+  if (!next) return null;
+  const teeTime = myTeeTimes.filter(start => start.startsWith(next.date)).sort()[0];
+  return { line: `Next up is ${next.course}`, sub: [next.format, `Round ${next.number}`, teeTime && clock(teeTime)].filter(Boolean).join(" · ") };
+}

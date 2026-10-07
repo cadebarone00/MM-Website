@@ -1,7 +1,10 @@
 import { normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import type { PlayerRound } from "@/lib/platform/playerRounds";
 import { assignAttesters, type RoundGroup } from "@/lib/platform/roundGroups";
-import { DEV_TRIP_ID, devTripRoundId } from "./devPlayerRounds";
+import { organizerOwnEdits } from "@/lib/platform/scoreEdits";
+import { tripStats } from "@/lib/platform/tripStats";
+import { DEV_ACCOUNTS } from "./devAccounts";
+import { DEV_TRIP_ID, devTripRoundId, type DevRoundsState } from "./devPlayerRounds";
 
 /**
  * DEV ONLY: the preview trip's group for Player & Attest. The first match's golfers are the group; the signed-in mock
@@ -47,4 +50,24 @@ export function withSavedRounds(match: GolfMatchPreview, group: DevGroup, rounds
       golfer: { ...row.golfer, thru: "F", score: label(total) } };
   });
   return { ...match, leaderboard };
+}
+
+/**
+ * Everything the preview trip page needs from the store for Player & Attest, worked out in one place: the group, my live
+ * card, the leaderboard with saved rounds, whose score I keep, trip stats and the organizer's own changes.
+ */
+export function devTripScoring(store: DevRoundsState, match: GolfMatchPreview | undefined, viewAs: string) {
+  const group = match ? devTripGroup(match, viewAs, store.attesters) : null;
+  const nameOf = (id: string) => group?.names[id] ?? DEV_ACCOUNTS.find((a) => a.id === id)?.name ?? id;
+  const tripRounds = store.rounds.filter((r) => r.source === "trip" && r.tripId === DEV_TRIP_ID);
+  const stats = tripStats(store.rounds, DEV_TRIP_ID);
+  const attestee = group ? attesteeOf(group, viewAs) : null;
+  return {
+    group,
+    myLiveCard: group ? store.liveCards.find((c) => c.groupId === group.id && c.profileId === viewAs) : undefined,
+    shownMatch: match && group ? withSavedRounds(match, group, tripRounds) : match,
+    attesteeName: attestee ? nameOf(attestee) : undefined,
+    tripStats: { players: stats.players.map((p) => ({ ...p, name: nameOf(p.profileId) })), trip: stats.trip },
+    scoreChanges: organizerOwnEdits(tripRounds).map(({ round, edit }) => ({ name: nameOf(round.profileId), edit })),
+  };
 }

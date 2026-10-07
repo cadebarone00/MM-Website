@@ -45,3 +45,14 @@ test("scoredCardFrom keeps stats and penalties, and can take chosen strokes", ()
   assert.equal(scored.penalties?.[4].green, true);
   assert.throws(() => scoredCardFrom(liveCardFromSheet("g1", "me", sheet({ strokes: par.map((p, i) => (i === 0 ? null : p)) }))), /Hole 1 has no score/);
 });
+
+test("the sheet's untouched holes count as par on the saved live card, same as on screen", async () => {
+  const { sheetCardFromScoring } = await import("./liveCards.ts");
+  const holes = par.map((p, i) => (i < 3 ? p + 1 : null));
+  const sheet = sheetCardFromScoring({ holes, par, putts: par.map(() => 2), fairways: par.map((p) => (p === 3 ? null : "center")), greens: par.map(() => "left"),
+    penalties: par.map(() => ({ fairway: false, green: false })), attestStrokes: par.map((p, i) => (i < 3 ? p + 1 : p)) });
+  assert.deepEqual(sheet.strokes.slice(2, 5), [par[2] + 1, par[3], par[4]]);
+  const card = liveCardFromSheet("g1", "me", sheet);
+  assert.deepEqual(mismatchedHoles(card), []);
+  assert.equal(cardComplete(card, par), true);
+});

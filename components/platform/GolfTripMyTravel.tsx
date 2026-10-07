@@ -91,6 +91,26 @@ function placeLabel(item: TravelItem): string {
 
 type FormFields = { airline: string; flightNumber: string; from: string; to: string; rideType: "driving" | "rental"; place: string; seats: string; name: string; note: string; startsAt: string; endsAt: string };
 
+/**
+ * Itinerary tab → "+ Add": the same pop-ups as My Info's Add — pick flight / ride or rental car / lodging / other plans,
+ * then fill it in. Saving puts it on your itinerary (and Home's boxes).
+ */
+export function GolfTripAddTravel({ onChange, className }: { onChange: (change: MyTravelChange) => void; className?: string }) {
+  const [choosing, setChoosing] = useState(false);
+  const [adding, setAdding] = useState<TravelKind | null>(null);
+  return <>
+    <button type="button" className={className ?? homeStyles.addItemButton} aria-haspopup="dialog" onClick={() => setChoosing(true)}><Plus size={16} strokeWidth={2.5} aria-hidden />Add</button>
+    {choosing && <GolfTripActionSheet label="Add to my travel" onClose={() => setChoosing(false)}
+      actions={ADDABLE.map(({ label, icon }) => ({ label, icon }))}
+      onAction={(label) => { const pick = ADDABLE.find((option) => option.label === label); setChoosing(false); if (pick) setAdding(pick.kind); }} />}
+    {adding && <TravelForm kind={adding} onCancel={() => setAdding(null)}
+      onSave={(details, startsAt, endsAt) => {
+        onChange({ type: "add", item: { id: `tr-${crypto.randomUUID()}`, kind: adding, details, startsAt, endsAt, joinPolicy: "none" } });
+        setAdding(null);
+      }} />}
+  </>;
+}
+
 /** Add / edit sheet. Fields change with the kind; problems show under each field when you tap Save. */
 function TravelForm({ kind, item, onSave, onCancel }: {
   kind: TravelKind; item?: TravelItem; onSave: (details: TravelDetails, startsAt: string, endsAt?: string) => void; onCancel: () => void;

@@ -7,7 +7,7 @@ const empty: TripTravel = { meId: "me", members: [{ id: "me", name: "Me", role: 
 
 test("adding my own booking puts it on my itinerary (and only mine)", () => {
   const travel = addMyItem(empty, { id: "f1", kind: "flight", details: { airline: "American Airlines", flightNumber: "AA1234", from: "RDU", to: "DFW" }, startsAt: "2027-04-22T06:10", endsAt: "2027-04-22T08:05", joinPolicy: "none" });
-  assert.deepEqual(itineraryFor(travel), [{ id: "f1", kind: "flight", title: "AA1234 · RDU → DFW", detail: "American Airlines · Lands 8:05 AM", startsAt: "2027-04-22T06:10" }]);
+  assert.deepEqual(itineraryFor(travel), [{ id: "f1", kind: "flight", title: "AA1234 · RDU → DFW", detail: "American Airlines · Lands 8:05 AM", startsAt: "2027-04-22T06:10", endsAt: "2027-04-22T08:05" }]);
   assert.deepEqual(itineraryFor(travel, "you"), []);
   assert.equal(myItems(travel)[0].source, "mine");
 });
