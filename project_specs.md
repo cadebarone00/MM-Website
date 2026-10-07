@@ -2389,3 +2389,30 @@ Builds **on top of** the Player rounds plan above. Nothing above changes: `Playe
   - Roster rows are only for the picked tournament players (must belong to this tournament).
   - Duplicate years are refused ("This tournament already has 2028"). The source edition is only read. All or nothing.
 - **Code:** `lib/platform/nextEdition.ts` (input checks, draft reader), `dashboardServer.ts` (`getNextEditionDraft`, `createNextEdition`), `POST …/next-edition`, `components/tournament-dashboard/NextEditionForm.tsx`.
+
+### Round: Explore becomes "Play" (spec 2026-10-07, approved and built 2026-10-07)
+
+**What it does / who uses it.** Everyone who opens the home page (`/`). The home page turns into a "Play" page that starts with ways to play golf. The Maroon's articles (the ribbon and everything under it) stay below.
+
+**Bottom menu.**
+- The **Explore** button is renamed **Play** and gets a **golf flag** icon (flag in the hole, `LandPlot` from the icon set the app already uses). It still opens `/`, and still lights up on `/` and the `/the-maroon/...` sub-pages.
+- The other buttons don't change.
+
+**Top of the home page (top to bottom).**
+1. **Play a round card** (big photo card, full width, replaces today's "Your next tradition" card). Headline about playing a normal round. One button, **Pick a course →**. It switches the ribbon below to **Courses** and scrolls down to the course search that's already there. No scoring yet.
+2. **Two smaller cards side by side** (they stack on narrow phones):
+   - **Tournament:** **Join Tournament →** opens `/tournaments/join`. **Create Tournament →** opens `/tournaments/create` (sign-in required, same as today).
+   - **Golf Trip:** **Join a Trip →** opens `/golf-trips`, where the existing "Join a Trip" box is. **Create a Trip →** opens `/tournaments/create/golf-trip` (sign-in required, same as the Golf Trips page).
+3. The "Already part of the club? Log In" line stays for signed-out visitors.
+
+**Ribbon (filter row) underneath.**
+- The leftmost item, **Discover**, becomes **Explore**, using the Explore icon (the one currently in the bottom menu) with "Explore" under it. It shows the same "There's more to the game" feature that Discover shows today.
+- Courses, Equipment, Teaching and News stay exactly the same.
+
+**Everything below the ribbon** ("Beyond the scorecard", the category cards and sections) doesn't change.
+
+**Tech / data.** Only changes the look: `components/platform/PlatformHome.tsx`, its `MobileHome.module.css`, and `components/nav/SiteBottomNav.tsx`. No database, API or new pages.
+
+**Not in this round:** a real "play a round" / scoring flow, any new pages, or changes to the Golf Trips, Tourneys or Explore article pages.
+
+**Done means:** the bottom menu shows Play with a flag; the home page shows the round card, then the Tournament and Golf Trip cards, then the ribbon starting with Explore; every button goes where listed above; Pick a course opens course search; TypeScript, lint and tests pass; checked at phone width in the dev simulator with no errors.

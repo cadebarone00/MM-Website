@@ -19,7 +19,7 @@ function imageIcon(src: string) {
   };
 }
 
-// Golfer looking through binoculars — "Explore" tab.
+// Golfer looking through binoculars — "Explore" item on the Play page ribbon.
 export const ExploreIcon = imageIcon("/icons/explore.png");
 
 // Hand picking from a row of golfers — "Pick'ems" tab.
