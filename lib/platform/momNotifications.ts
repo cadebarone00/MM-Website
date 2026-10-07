@@ -92,6 +92,8 @@ export type MomRound = { number: number; date: string; course: string; format?: 
 export function nextRoundReminder(rounds: MomRound[], today: string, afterRound: number, myTeeTimes: string[]): { line: string; sub: string } | null {
   const next = rounds.filter(round => round.number > afterRound && round.date >= today).sort((a, b) => a.number - b.number)[0];
   if (!next) return null;
-  const teeTime = myTeeTimes.filter(start => start.startsWith(next.date)).sort()[0];
+  // Two rounds the same day: the earlier round gets the earlier tee time.
+  const position = rounds.filter(round => round.date === next.date).sort((a, b) => a.number - b.number).indexOf(next);
+  const teeTime = myTeeTimes.filter(start => start.startsWith(next.date)).sort()[position];
   return { line: `Next up is ${next.course}`, sub: [next.format, `Round ${next.number}`, teeTime && clock(teeTime)].filter(Boolean).join(" · ") };
 }

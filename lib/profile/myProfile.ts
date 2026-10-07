@@ -1,5 +1,6 @@
 import type { PastTournament } from "../platform/pastTournaments";
 import type { ArchivedHandicapRound, HandicapSummary } from "../handicap/types";
+import type { PlayerRound } from "../platform/playerRounds";
 import type { PlayerProfile, PlayerScorecard, Team, Tournament } from "../data/types";
 import type { PlayerYearStats } from "../data/stats";
 import { CAREER_STAT_COLUMNS } from "../data/stats/careerColumns";
@@ -24,6 +25,8 @@ export interface MyProfile {
   playerPage?: { tournament: Tournament; scorecard: PlayerScorecard; team: Team; shotVideos: Record<number, Record<number, Record<number, string>>> } | null;
   playerBio?: PlayerProfile | null;
   roundHistory?: { playerSlug: string; summary: HandicapSummary; archivedRounds: ArchivedHandicapRound[] } | null;
+  /** My saved golf rounds (supabase/player_rounds.sql), newest first; null when they can't be loaded (e.g. SQL not run yet). */
+  playerRounds?: PlayerRound[] | null;
   name: string;
   initials: string;
   avatarSrc: string | null;

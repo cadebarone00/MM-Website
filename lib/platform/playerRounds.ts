@@ -27,6 +27,8 @@ export interface PlayerRound {
   tripId?: string;
   tripRoundId?: string;
   historyTripId?: string;
+  /** Where it came from, as words (e.g. the trip's name) — kept even if the trip is deleted later. */
+  sourceLabel?: string;
   datePlayed: string;
   /** `ref` = the course API id (null for a typed course); name / place = the label saved at play time. */
   course: { ref: string | null; name: string; place: string };

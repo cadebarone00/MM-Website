@@ -43,9 +43,9 @@ const COMPETITION_TYPES = [
 const MAX_DAYS = 14;
 const MAX_PLAYERS = 100;
 // Allowed: the trip's house rules, grouped like the Competition Rounds tab. Preview only; resets on reload.
-type AllowedRule = { id: string; section: string; name: string; detail: string };
+export type AllowedRule = { id: string; section: string; name: string; detail: string };
 const ALLOWED_SECTIONS = ["On the course", "Scoring", "Equipment"];
-const ALLOWED_PRESET: AllowedRule[] = [
+export const ALLOWED_PRESET: AllowedRule[] = [
   { id: "mulligans", section: "On the course", name: "Mulligans", detail: "1 per nine · Not on the 18th" },
   { id: "gimmes", section: "On the course", name: "Gimmes", detail: "Inside the leather" },
   { id: "breakfast-ball", section: "On the course", name: "Breakfast ball", detail: "First tee only" },
@@ -61,7 +61,18 @@ const PLAYER_SCORING_FIELDS = ["Opponent's score", "Putts", "Fairway", "Greens i
 const GAME_LOOKUP = [...GAME_GROUPS.Individual, ...GAME_GROUPS.Matches];
 
 /** Reference layout with local game scoring settings in the site's maroon palette. */
-export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament", playerCount = 0, players = [] }: { tripName: string; backHref?: string; playerCount?: number; players?: string[] }) {
+export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament", playerCount = 0, players = [], tripRounds, pastTrips: tripHistory, houseRules, dataKey = "default", competitionSetup }: {
+  tripName: string; backHref?: string; playerCount?: number; players?: string[];
+  /** The chosen trip's past trips and house rules; without them, the samples. */
+  pastTrips?: PastTrip[]; houseRules?: AllowedRule[];
+  /** Which trip data this is (dev): the Individual / Team picks are kept per trip, shared with its Golf tab. */
+  dataKey?: string;
+  /** The trip's competition as it already stands (the real tournament: its Individual / Team types and its two teams by
+   *  roster position, submitted). Picks made in Settings take over from it. */
+  competitionSetup?: { types: { individual: string | null; team: string | null }; teamNames: string[]; teams: number[][] };
+  /** The trip's own rounds (from the chosen data: mock, busy, empty or the real tournament). Without it, the shared sample rounds. */
+  tripRounds?: CompetitionRound[];
+}) {
   const [section, setSection] = useState("General");
   const [competitionOpen, setCompetitionOpen] = useState(false);
   const [competitionSection, setCompetitionSection] = useState("Overview");
@@ -73,7 +84,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const [scorecardViewOpen, setScorecardViewOpen] = useState(false);
   // History: past trips the organizer entered. Preview only; one sample trip, resets on reload.
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [pastTrips, setPastTrips] = useState<PastTrip[]>(() => samplePastTrips(players));
+  const [pastTrips, setPastTrips] = useState<PastTrip[]>(() => tripHistory ?? samplePastTrips(players));
   // History → Link to account (dev): requests go to the shared player-rounds store; the player answers on /dev/profile.
   const devRounds = useDevPlayerRounds();
   const historyLinking: HistoryLinking = {
@@ -89,7 +100,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   };
   const scoringView = useScoringView();
   const [scoringFieldsOff, setScoringFieldsOff] = useState<Set<string>>(new Set());
-  const [allowedRules, setAllowedRules] = useState(ALLOWED_PRESET);
+  const [allowedRules, setAllowedRules] = useState(houseRules ?? ALLOWED_PRESET);
   const [confirmDeleteRuleId, setConfirmDeleteRuleId] = useState<string | null>(null);
   // Players: the expected count can't drop below the players who already joined; open spots show as "Player N".
   const [playerTotal, setPlayerTotal] = useState(() => Math.min(MAX_PLAYERS, Math.max(1, playerCount, players.length)));
@@ -103,14 +114,16 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   // Rounds page: a day count, and 0, 1 or 2 round slots for each day. Lowering Days only hides that day's row.
   // Shared with the Golf tab (dev layout provider) so its sections follow these choices; local state when there's no provider.
   const sharedCompetition = useGolfTripCompetitionPreview();
-  const [localCompetitionType, setLocalCompetitionType] = useState<{ individual: string | null; team: string | null }>({ individual: null, team: null });
-  const competitionType = sharedCompetition?.competitionType ?? localCompetitionType;
-  const setCompetitionType = sharedCompetition?.setCompetitionType ?? setLocalCompetitionType;
+  const [localCompetitionType, setLocalCompetitionType] = useState<{ individual: string | null; team: string | null }>(competitionSetup?.types ?? { individual: null, team: null });
+  const competitionType = sharedCompetition?.competitionTypes[dataKey] ?? competitionSetup?.types ?? localCompetitionType;
+  const setCompetitionType = sharedCompetition ? sharedCompetition.setCompetitionType(dataKey) : setLocalCompetitionType;
   const [overviewType, setOverviewType] = useState<"individual" | "team">("individual");
   // Submit & Save Individual / Team Competition locks that side (greyed, no edits) until Undo and Change.
   const [lockedComp, setLockedComp] = useState<{ individual: boolean; team: boolean }>({ individual: false, team: false });
   // Players ticked under each competition type (by roster slot). Preview only; resets on reload.
-  const [typePlayers, setTypePlayers] = useState<Record<"individual" | "team", Set<number>>>({ individual: new Set(), team: new Set() });
+  // A trip with an individual competition already set up counts everyone on it.
+  const [typePlayers, setTypePlayers] = useState<Record<"individual" | "team", Set<number>>>(() => ({
+    individual: new Set(competitionSetup?.types.individual ? players.map((_, index) => index) : []), team: new Set() }));
   // Any Team type (not None): teams are named under the ovals; + Add Player opens a drop-down list of players not yet on a team. Preview only; resets on reload.
   const [addingToTeam, setAddingToTeam] = useState<number | null>(null);
   const [addPick, setAddPick] = useState<number | null>(null);
@@ -118,9 +131,10 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   // Swap pop-up: pick a player on another team to swap with, or an empty spot on another team to move into.
   const [swapFrom, setSwapFrom] = useState<number | null>(null);
   const [swapTarget, setSwapTarget] = useState<{ player: number } | { emptyTeam: number; open: number } | null>(null);
-  const [teamNames, setTeamNames] = useState<string[]>([]);
+  const [teamNames, setTeamNames] = useState<string[]>(competitionSetup?.teamNames ?? []);
   // Which team (0 = A, 1 = B, ...) each roster slot is on; a player can only be on one team.
-  const [teamPicks, setTeamPicks] = useState<Record<number, number>>({});
+  const [teamPicks, setTeamPicks] = useState<Record<number, number>>(() =>
+    Object.fromEntries((competitionSetup?.teams ?? []).flatMap((team, teamIndex) => team.map(player => [player, teamIndex]))));
   const playerName = (index: number) => joinedPlayers[index]?.name ?? `Player ${index + 1}`;
   const rosterSlots = Array.from({ length: playerTotal }, (_, index) => index);
   const pickedOn = (team: number) => rosterSlots.filter(index => teamPicks[index] === team);
@@ -154,7 +168,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     setUnevenSizes(next);
   };
   // Set by Submit teams; the sheet then shows the submitted team columns.
-  const [submittedTeams, setSubmittedTeams] = useState<number[][] | null>(null);
+  const [submittedTeams, setSubmittedTeams] = useState<number[][] | null>(competitionSetup?.teams.length ? competitionSetup.teams : null);
   const [gameSettings, setGameSettings] = useState<CompetitionRound>({
     id: "game-settings-preview",
     date: "2027-04-22",
@@ -168,8 +182,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const competition = useGolfTripCompetitionPreview();
   const selectedRound = competition?.rounds.find(round => round.id === selectedRoundId);
   const selectedGame = GAME_LOOKUP.find(game => game.id === selectedGameId) ?? null;
-  const days = Array.from(new Set(competition?.rounds.map(round => round.date) ?? [])).sort();
-  const rounds = useMemo(() => competition?.rounds ?? [], [competition?.rounds]);
+  const rounds = useMemo(() => tripRounds ?? competition?.rounds ?? [], [tripRounds, competition?.rounds]);
+  const days = Array.from(new Set(rounds.map(round => round.date).filter(Boolean))).sort();
   const [dayCount, setDayCount] = useState(() => Math.max(1, days.length));
   const [roundsPerDay, setRoundsPerDay] = useState<Record<number, 0 | 1 | 2>>(() => Object.fromEntries(days.map((date, index) => [index, Math.min(2, rounds.filter(round => round.date === date).length) as 0 | 1 | 2])));
   // Arrival / Departure: moving Arrival keeps Departure where it is, so the day count grows or shrinks with it.

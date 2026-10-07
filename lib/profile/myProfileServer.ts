@@ -8,6 +8,7 @@ import { getHandicapSummaryForPlayer } from "@/lib/handicap/data";
 import { getArchivedHandicapRounds, getScorecardsForTournament, getShotVideoUrls } from "@/lib/data/archivedScorecards";
 import { combinedHandicapIndexes } from "@/lib/handicap/archiveIndex";
 import { loadLegacyPastRows, loadLegacyPlayingRows, withoutLegacyRows } from "@/lib/platform/legacyTournaments";
+import { getMyPlayerRounds } from "@/lib/platform/playerRoundsServer";
 import { summarizePastEditions, type PastTournament } from "@/lib/platform/pastTournaments";
 import {
   careerStats, initialsFor, memberSinceLabel, mergeCompleted, playerFullName, profileDisplayName, teamsPlayed, type MyProfile,
@@ -62,11 +63,12 @@ export async function loadMyProfile(): Promise<MyProfile | null> {
     bio = playerBio.bio?.trim() || null;
   }
 
-  const [platformActive, platformPast, legacyActive, legacyPast] = await Promise.all([
+  const [platformActive, platformPast, legacyActive, legacyPast, myRounds] = await Promise.all([
     platformList("list_my_active_editions", user.id),
     platformList("list_my_past_editions", user.id),
     legacyList(loadLegacyPlayingRows, user.id),
     legacyList(loadLegacyPastRows, user.id),
+    getMyPlayerRounds(user.id),
   ]);
   // Soonest first, undated last (same order as the database list).
   const active = [...legacyActive, ...platformActive].sort((a, b) =>
@@ -110,6 +112,7 @@ export async function loadMyProfile(): Promise<MyProfile | null> {
     playerPage,
     playerBio,
     roundHistory,
+    playerRounds: myRounds.status === "ok" ? myRounds.rounds : null,
     name,
     initials: initialsFor(name),
     avatarSrc,

@@ -8,3 +8,9 @@ export function profileAccess({ viewerId, ownerId, visibility, playTogether }: {
   if (viewerId === ownerId || visibility === "public") return { rounds: true, handicapIndex: true };
   return { rounds: false, handicapIndex: playTogether };
 }
+
+/** Settings → Privacy request body ({ visibility }) → the choice, or null if it isn't one. */
+export function roundsVisibilityFromBody(body: unknown): RoundsVisibility | null {
+  const value = body && typeof body === "object" ? (body as Record<string, unknown>).visibility : undefined;
+  return value === "public" || value === "private" ? value : null;
+}

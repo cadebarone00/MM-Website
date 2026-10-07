@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ArrowLeft, BedDouble, CalendarDays, Camera, Car, ChevronRight, Flag, LayoutGrid, ListChecks, Map as MapIcon, MapPin, ShoppingBag, Utensils } from "lucide-react";
 import type { ItineraryItem } from "@/lib/platform/golfTripItinerary";
+import { shortPlace } from "@/lib/platform/placeLabel";
 import { plannedRounds, tripDates, type GolfTripDraft } from "@/lib/platform/golfTripDraft";
 import styles from "./GolfTripVenue.module.css";
 
@@ -141,7 +142,7 @@ export function GolfTripItinerary({ draft, settingsHref }: { draft: GolfTripDraf
       <div className={styles.sectionRow}><h3>Upcoming</h3><Link href={settingsHref} className={styles.sectionLink}>Add Round</Link></div>
       <div className={styles.card}>
         <span className={styles.tripIcon} aria-hidden><CalendarDays size={18} /><small>{dates.length || "—"}</small></span>
-        <div className={styles.cardText}><strong>{dates.length ? `${dates.length}-Day Trip` : "Trip"}</strong><span>{draft.destination || "Destination TBD"} · {range}</span></div>
+        <div className={styles.cardText}><strong>{dates.length ? `${dates.length}-Day Trip` : "Trip"}</strong><span>{draft.destination ? shortPlace(draft.destination) : "Destination TBD"} · {range}</span></div>
         <ChevronRight className={styles.chevron} size={18} aria-hidden />
       </div>
 

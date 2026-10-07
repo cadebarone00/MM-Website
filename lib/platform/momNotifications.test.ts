@@ -68,3 +68,8 @@ test("next-round reminder: the next round after the ones played, with format and
   assert.equal(nextRoundReminder(rounds, "2027-04-23", 3, [])?.line, undefined);
   assert.equal(nextRoundReminder(rounds, "2027-04-24", 0, []), null);
 });
+
+test("next-round reminder: the second round of a day gets that day's second tee time", () => {
+  const rounds = [{ number: 3, date: "2027-09-24", course: "Heron Dunes GC" }, { number: 4, date: "2027-09-24", course: "Desert Meadows GC" }];
+  assert.equal(nextRoundReminder(rounds, "2027-09-24", 3, ["2027-09-24T13:10", "2027-09-24T07:30"])?.sub, "Round 4 · 1:10 PM");
+});

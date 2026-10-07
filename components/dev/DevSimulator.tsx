@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, MonitorSmartphone, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, MonitorSmartphone, RotateCcw, Shuffle, SlidersHorizontal } from "lucide-react";
 import { DEFAULT_SIMULATOR_STATE, parseGpsState, parseSimulatorLocation, simulatorPageForLocation, SIMULATOR_CHANNEL, SIMULATOR_DEVICES, type SimulatorConfig, type SimulatorGpsCommand, type SimulatorGpsState, type SimulatorPage, type SimulatorSource, type SimulatorState } from "@/lib/dev/simulator";
 import { applySimulatorSafeAreas } from "./simulatorSafeAreas";
 import { HapticsVisualizer } from "./HapticsVisualizer";
@@ -220,6 +220,9 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
       <aside ref={conditionalColumn} className={styles.controls} aria-label="Conditionals">
         <div className={styles.panelHeading}>Conditionals</div>
         <div className={styles.cards}>{selectedPage.conditions?.length ? selectedPage.conditions.map(condition => condition.playerCount ? <section key={condition.id} className={styles.controlSection}><label>{condition.label}<input type="number" aria-label={condition.label} min={1} max={64} placeholder="From data source" value={state.playerCount ?? ""} onChange={event => updateState("playerCount", event.target.value)} /></label></section> : <button className={styles.card} type="button" key={condition.id} aria-pressed={condition.source ? source === condition.source : Object.entries(condition.state ?? {}).every(([key, value]) => state[key as keyof SimulatorState] === value)} onClick={() => { if (condition.source) setSource(condition.source); if (condition.state) setState(current => ({ ...current, ...condition.state })); }}>{condition.label}</button>) : <p>No conditional states</p>}</div>
+        {/* Mock data only: a whole new made-up trip that reads like a real one (people, place, dates, courses, formats, scores,
+            tee times, dinners, travel, rules) from a new seed. */}
+        {source === "mock" && !!selectedPage.conditions?.length && <button type="button" onClick={() => setState(current => ({ ...current, seed: 1 + Math.floor(Math.random() * 2 ** 31) }))}><Shuffle size={13} /> Randomize data</button>}
         {!!selectedPage.conditions?.length && <button type="button" onClick={() => { setState(DEFAULT_SIMULATOR_STATE); setSource("maroon"); }}><RotateCcw size={13} /> Reset conditionals</button>}
       </aside>
       <div className={styles.previewColumn}>

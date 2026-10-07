@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Pencil, Settings } from "lucide-react";
 import { HandicapHome } from "@/components/portal/handicap/HandicapHome";
+import { PlayerRoundsList } from "@/components/profile/PlayerRoundsList";
 import { PlayerBioSection } from "@/components/scorecard/PlayerBioSection";
 import { PlayerScorecardView } from "@/components/scorecard/PlayerScorecardView";
 import type { MyProfile } from "@/lib/profile/myProfile";
@@ -62,7 +63,9 @@ export function ProfileView({ profile }: { profile: MyProfile }) {
               <HandicapHome playerName={profile.name} playerSlug={profile.roundHistory.playerSlug}
                 summary={profile.roundHistory.summary} archivedRounds={profile.roundHistory.archivedRounds}
                 team={null} initialTab="overall" readOnly appearance="leaderboard" />
-            ) : <p className="px-4 py-5 text-center text-cream-50/70">{profile.canEditBio ? "Round history is unavailable right now." : "No rounds yet."}</p>}
+            ) : profile.canEditBio && <p className="px-4 py-5 text-center text-cream-50/70">Round history is unavailable right now.</p>}
+            {/* Saved golf rounds (one per round played) — under the handicap view, or on their own for everyone else. */}
+            <PlayerRoundsList rounds={profile.playerRounds ?? []} />
           </section>
         )}
         {tab === "stats" && (

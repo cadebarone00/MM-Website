@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { DEFAULT_SIMULATOR_STATE, parseGpsCommand, parseGpsState, parseSimulatorConfig, parseSimulatorLocation, sameSimulatorNavigation, simulatorPageForLocation, SIMULATOR_DEVICES, type SimulatorPage } from "./simulator";
-import { simulatorNow, simulatorRoundLive, simulatorTripData } from "./golfTripSimulatorData";
+import { randomMockTrip, simulatorNow, simulatorRoundLive, simulatorTripData } from "./golfTripSimulatorData";
 import { GOLF_MATCH_PREVIEW, GOLF_TRIP_MOCK_DRAFT } from "@/lib/platform/golfTripPreviewFixture";
 import { palmSprings2026 } from "@/lib/data/2026-palm-springs";
 import { adaptTournamentToDraft, adaptTournamentToPreviewMatch } from "@/lib/platform/tournamentToGolfTrip";
@@ -35,10 +35,14 @@ test("real and mock preserve their sources; fixture/state overrides cannot mutat
   const original = JSON.stringify({ tournament: palmSprings2026, mock, maroon });
   assert.deepEqual(simulatorTripData(mock, maroon, { source: "maroon", state: DEFAULT_SIMULATOR_STATE }), maroon);
   assert.deepEqual(simulatorTripData(mock, maroon, { source: "mock", state: DEFAULT_SIMULATOR_STATE }), mock);
-  const empty = simulatorTripData(mock, maroon, { source: "empty", state: DEFAULT_SIMULATOR_STATE });
-  assert.deepEqual(empty.preview, {});
-  assert.equal(empty.previewMatch?.leaderboard.length, 0);
-  assert.equal(empty.previewMatch?.matches.length, 0);
+  // Just created: every onboarding answer, nothing else (no scores, only the organizer on the trip, no travel items).
+  const justCreated = simulatorTripData(mock, maroon, { source: "empty", state: DEFAULT_SIMULATOR_STATE });
+  assert.equal(justCreated.preview?.tripName, "Myrtle Beach Golf Trip");
+  assert.equal(justCreated.preview?.round4Course, "The Dunes Golf & Beach Club");
+  assert.equal(justCreated.previewMatch?.leaderboard.length, 0);
+  assert.equal(justCreated.previewMatch?.matches.length, 0);
+  assert.deepEqual(justCreated.travel?.items, []);
+  assert.deepEqual(justCreated.travel?.members.map(member => member.name), ["Jordan Lee"]);
   const busy = simulatorTripData(mock, maroon, { source: "busy", state: DEFAULT_SIMULATOR_STATE });
   assert.equal(busy.previewMatch?.leaderboard.length, 32);
   assert.equal(busy.preview?.day4Rounds, "2");
@@ -134,4 +138,37 @@ test("trip clock: real Maroon data and non-live sources use the device clock", (
   const mock = { preview: GOLF_TRIP_MOCK_DRAFT, previewMatch: GOLF_MATCH_PREVIEW };
   const config = { source: "maroon" as const, state: DEFAULT_SIMULATOR_STATE };
   assert.equal(simulatorNow(config, simulatorTripData(mock, mock, config), false), undefined);
+});
+
+test("Randomize data: a seed builds a realistic made-up mock trip, the same every time for that seed", () => {
+  const mock = { preview: GOLF_TRIP_MOCK_DRAFT, previewMatch: GOLF_MATCH_PREVIEW };
+  const first = randomMockTrip(mock, 12345, null);
+  assert.deepEqual(randomMockTrip(mock, 12345, null), first);
+  assert.notDeepEqual(randomMockTrip(mock, 999, null).preview, first.preview);
+  // Players: 4–32, mostly in fours.
+  const counts = Array.from({ length: 200 }, (_, index) => Number(randomMockTrip(mock, index + 1, null).preview?.playerCount));
+  assert.ok(counts.every(count => count >= 4 && count <= 32));
+  assert.ok(counts.filter(count => count % 4 === 0).length / counts.length > 0.75);
+  for (let seed = 1; seed <= 60; seed++) {
+    const trip = randomMockTrip(mock, seed, null);
+    const items = trip.travel?.items ?? [];
+    const time = (stamp: string) => stamp.slice(11, 16);
+    // Tee times never before 7 AM (and done by mid-afternoon); dinners at dinner time.
+    for (const tee of items.filter(item => item.kind === "teeTime")) assert.ok(time(tee.startsAt) >= "07:00" && time(tee.startsAt) <= "13:30", tee.startsAt);
+    for (const dinner of items.filter(item => item.kind === "dining")) assert.ok(time(dinner.startsAt) >= "18:30" && time(dinner.startsAt) <= "20:00", dinner.startsAt);
+    // Fly in, pick up the car after landing, check in, golf, then check out and fly home after the last round.
+    const outbound = items.find(item => item.id === "rnd-flight-out")!, car = items.find(item => item.id === "rnd-car")!, home = items.find(item => item.id === "rnd-flight-home")!;
+    assert.ok(car.startsAt > outbound.endsAt!);
+    assert.ok(car.endsAt! < home.startsAt);
+    const lastTee = items.filter(item => item.kind === "teeTime").map(item => item.startsAt).sort().at(-1)!;
+    assert.ok(home.startsAt > lastTee);
+    assert.equal(trip.previewMatch?.leaderboard.length, Number(trip.preview?.playerCount));
+    assert.ok(trip.preview?.round1Format);
+  }
+  // Simulator state with a seed uses it for mock; without one, the default mock trip.
+  const config = { source: "mock" as const, state: { ...DEFAULT_SIMULATOR_STATE, seed: 12345 } };
+  assert.equal(simulatorTripData(mock, mock, config).preview?.tripName, first.preview?.tripName);
+  assert.equal(simulatorTripData(mock, mock, { source: "mock", state: DEFAULT_SIMULATOR_STATE }).preview?.tripName, GOLF_TRIP_MOCK_DRAFT.tripName);
+  assert.ok(parseSimulatorConfig({ source: "mock", state: { ...DEFAULT_SIMULATOR_STATE, seed: 12345 } }));
+  assert.equal(parseSimulatorConfig({ source: "mock", state: { ...DEFAULT_SIMULATOR_STATE, seed: "x" } }), null);
 });

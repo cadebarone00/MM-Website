@@ -282,3 +282,7 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 /* Trip name: a little smaller so more names fit on one line, in a box always two lines tall (centered up-and-down), so the
    Home / Golf / Venue / Info tabs sit in the same spot for one- and two-line names. Longer names stop at two lines with "…". */
 .title.title{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;box-sizing:content-box;min-height:0;height:calc(2 * 1.1em);font-size:23px;align-content:center}
+/* Itinerary tab: "+ Add" pill centered right under the Itinerary tab (the 4th of the main tabs). */
+.itineraryAddRow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:-12px}
+.itineraryAddPill{grid-column:4;justify-self:center;display:inline-flex;align-items:center;gap:4px;padding:7px 14px;border:1.5px solid #dcc495;border-radius:999px;background:transparent;color:#dcc495;font:700 13px/1 var(--font-barlow),sans-serif;cursor:pointer}
+.itineraryAddPill:focus-visible{outline:2px solid #fbf8f1;outline-offset:2px}

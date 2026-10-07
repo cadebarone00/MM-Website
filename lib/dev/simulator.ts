@@ -19,7 +19,7 @@ export const SIMULATOR_DEVICES = [
 export const SIMULATOR_SOURCES = [
   { id: "maroon", label: "Real development golf trip data" },
   { id: "mock", label: "Mock golf trip data" },
-  { id: "empty", label: "Empty-state data" },
+  { id: "empty", label: "Just created (onboarding finished)" },
   { id: "busy", label: "Populated / busy-state data" },
 ] as const;
 export type SimulatorSource = (typeof SIMULATOR_SOURCES)[number]["id"];
@@ -48,6 +48,8 @@ export type SimulatorState = {
   opponentCard: "match" | "mismatch";
   /** Which mock account the preview is signed in as (player-rounds preview: trip submit, dev profile, History links). */
   viewAs: string;
+  /** Mock data: "Randomize data" picks a new seed; the same seed always builds the same made-up trip. Unset = the default mock trip. */
+  seed?: number;
 };
 export const DEFAULT_SIMULATOR_STATE: SimulatorState = { competition: "source", format: "source", playerCount: null, roundStatus: "source", loading: "off", opponentCard: "match", viewAs: DEFAULT_DEV_ACCOUNT };
 export type SimulatorConfig = { source: SimulatorSource; state: SimulatorState; navigation?: GolfTripNavigation };
@@ -123,6 +125,7 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.opponentCard !== undefined && !["match", "mismatch"].includes(String(state.opponentCard))) return null;
   if (state.viewAs !== undefined && !DEV_ACCOUNTS.some((account) => account.id === state.viewAs)) return null;
   if (typeof state.format !== "string" || state.format.length > 32) return null;
+  if (state.seed !== undefined && (typeof state.seed !== "number" || !Number.isSafeInteger(state.seed) || state.seed < 1 || state.seed > 2 ** 31)) return null;
   if (state.playerCount !== null && (typeof state.playerCount !== "number" || !Number.isInteger(state.playerCount) || state.playerCount < 1 || state.playerCount > 64)) return null;
   const navigation = record.navigation as GolfTripNavigation | undefined;
   if (navigation && (!GOLF_TRIP_TABS.includes(navigation.tab) || (navigation.golfSection && !GOLF_TRIP_SECTIONS.includes(navigation.golfSection)) || (navigation.command !== undefined && !Number.isSafeInteger(navigation.command)))) return null;

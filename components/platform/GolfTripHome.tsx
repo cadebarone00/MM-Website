@@ -8,7 +8,7 @@ import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedR
 import { normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import { ITINERARY_KIND_LABEL, itineraryByDay, itineraryCategory, itineraryDay, itineraryLongDate, itineraryTime, itineraryWeekday, homeBoxes, localNow, type HomeStatus, type ItineraryItem, type ItineraryKind } from "@/lib/platform/golfTripItinerary";
 import { addMyItem, itineraryFor, removeMyItem, updateMyItem, type TripTravel } from "@/lib/platform/tripTravel";
-import { GolfTripMyTravel, type MyTravelChange } from "./GolfTripMyTravel";
+import { GolfTripAddTravel, type MyTravelChange } from "./GolfTripMyTravel";
 import { TravelKindIcon } from "./travelKinds";
 import type { TripWeather } from "@/lib/platform/weather/types";
 import { flightCounts, flightTime, type FlightSummary } from "@/lib/platform/golfTripFlights";
@@ -54,15 +54,16 @@ const subscribeNever = () => () => {};
  * `flights` fills the Info tab's Flights card with the viewer's own flights; `href` (saved trips) makes it open the Flights page.
  * `now` (dev simulator only) is the trip clock, "YYYY-MM-DDTHH:mm:ss": Home's countdown, Live / Upcoming, Mom notes and the
  * Itinerary's opening day follow it (and keep ticking from it). Without it they use the device's clock.
+ * `competitionKey` (dev) says which trip data this is, so the Golf tab follows that trip's Individual / Team picks in Settings.
  * `roundLive` shows the Scoring sheet: only while a round is being played (or finished but not yet submitted). Before the
  * first round, between rounds and after the trip there is nothing to score. Saved trips have no round data yet, so no sheet.
  * `navigation` optionally requests a shared tab/section; in-app navigation remains local between requests.
  * `onNavigationChange` optionally observes the actual tab/section; the dev wrapper supplies it only when embedded.
  */
-export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, now: tripNow, roundLive = false, opponentCardMatches, scoringPrefill, onScoringSubmit, submittedCard, scoringOwner, tripStats, scoreChanges, attesteeName, scoringEdits, onScoringCardChange }:
+export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, now: tripNow, competitionKey, roundLive = false, opponentCardMatches, scoringPrefill, onScoringSubmit, submittedCard, scoringOwner, tripStats, scoreChanges, attesteeName, scoringEdits, onScoringCardChange }:
   { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview; weather?: Promise<TripWeather>; flights?: TripFlights;
     /** Everyone's travel (My Info, the Itinerary and the Home "what's next" cards). Only the dev mock trip has it for now. */
-    travel?: TripTravel; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void; now?: string; roundLive?: boolean;
+    travel?: TripTravel; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void; now?: string; competitionKey?: string; roundLive?: boolean;
     /** Dev preview only: whether the opponent's own scorecard agrees with mine (there is no second scorer yet). Without it, Save & Submit never shows. */
     opponentCardMatches?: boolean;
     /** Dev preview only: a finished-but-unsubmitted Scoring card (the "End of round" conditionals). */
@@ -83,8 +84,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   if (selection.navigation !== navigation) setSelection({ navigation, tab: navigation?.tab ?? selection.tab });
   const tab = selection.navigation === navigation ? selection.tab : navigation?.tab ?? selection.tab;
   const setTab = (tab: Tab) => setSelection({ navigation, tab });
-  // Info tab: 0 = My Info, 1 = Itinerary. A Home itinerary card opens Info on Itinerary.
-  const [infoSlide, setInfoSlide] = useState(0);
+  // A Home box or the Venue's Itinerary tile opens the Itinerary tab.
   const openItinerary = () => setTab("Itinerary");
   // Trip travel lives in page state for now (dev mock trip): edits in My Info rebuild the itinerary and Home cards right
   // away, and reset on reload. A different seed (e.g. the simulator switching data) starts fresh.
@@ -106,7 +106,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   // Which competition the trip has, for the Golf tab's sections: none without a tournament; otherwise the organizer's
   // Individual / Team choices (dev Settings), or, until those are picked, the format (match play = team matches, stroke /
   // Stableford = individual leaderboard; unknown = both).
-  const sharedType = useGolfTripCompetitionPreview()?.competitionType;
+  const sharedType = useGolfTripCompetitionPreview()?.competitionTypes[competitionKey ?? "default"];
   const scoring = previewMatch?.formatDef?.scoringMethod;
   const structure: CompetitionStructure = !competitive ? { individual: false, team: false }
     : sharedType ? { individual: Boolean(sharedType.individual), team: Boolean(sharedType.team) }
@@ -169,7 +169,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
     </header>
     <div className={styles.body} role="tabpanel" aria-label={tab}>
       {tab === "Home" ? <InfoAccount draft={draft} settingsHref={settingsHref} flights={flights} weather={weather} itinerary={itinerary} travel={travel} tripNow={tripNow} onOpenItinerary={openItinerary}
-        rounds={plannedRounds(draft).map(round => ({ number: round.number, date: round.date, course: draft[`round${round.number}Course`] || "Course TBD", format: previewMatch && round.number === previewMatch.round ? previewMatch.formatDef?.label : undefined }))}
+        rounds={plannedRounds(draft).map(round => ({ number: round.number, date: round.date, course: draft[`round${round.number}Course`] || "Course TBD", format: draft[`round${round.number}Format`] || (previewMatch && round.number === previewMatch.round ? previewMatch.formatDef?.label : undefined) }))}
         afterRound={previewMatch ? (roundLive || previewMatch.leaderboard.some(row => row.holes.every(strokes => strokes !== null)) ? previewMatch.round : previewMatch.round - 1) : 0}
         liveRound={roundLive && previewMatch ? { id: `round-${previewMatch.round}`, kind: "teeTime", title: `Round ${previewMatch.round} · ${previewMatch.course}`, startsAt: (tripNow ?? "").slice(0, 16) } : undefined} />
         : tab === "Golf" ? <>
@@ -595,47 +595,6 @@ function ItineraryCard({ item, status, onOpen }: { item: ItineraryItem; status?:
   </button>;
 }
 
-/** Info tab: a slider with My Info (your travel; for trips without travel data, the older getting there / lodging / transportation lists) and Itinerary (everything, by day). Tap or swipe. */
-const INFO_SLIDES = ["My Info", "Itinerary"] as const;
-function InfoSlides({ active, onActive, itinerary, tripDays, today, myInfo, whoFor }: { active: number; onActive: (index: number) => void; itinerary?: ItineraryItem[]; tripDays: string[]; today?: string; myInfo: ReactNode; whoFor?: (itemId: string) => string[] }) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  // True while a tab tap is sliding the track, so the scroll handler doesn't read the halfway point as a swipe.
-  const sliding = useRef(false);
-  // Follow the chosen tab (taps, or a Home card opening Itinerary): slide there in 100 ms (snapping paused while it moves).
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track || Math.round(track.scrollLeft / Math.max(1, track.clientWidth)) === active) return;
-    const from = track.scrollLeft, to = active * track.clientWidth;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { track.scrollTo({ left: to, behavior: "instant" }); return; }
-    track.style.scrollSnapType = "none";
-    sliding.current = true;
-    const start = performance.now();
-    let frame = 0;
-    const step = (now: number) => {
-      const t = Math.min(1, (now - start) / 100);
-      track.scrollLeft = from + (to - from) * (1 - (1 - t) ** 3);
-      if (t < 1) frame = requestAnimationFrame(step);
-      else { track.style.scrollSnapType = ""; sliding.current = false; }
-    };
-    frame = requestAnimationFrame(step);
-    return () => { cancelAnimationFrame(frame); track.style.scrollSnapType = ""; sliding.current = false; };
-  }, [active]);
-  const onScroll = () => {
-    if (sliding.current) return;
-    const track = trackRef.current;
-    if (track && track.clientWidth > 0) { const index = Math.round(track.scrollLeft / track.clientWidth); if (index !== active) onActive(index); }
-  };
-  return <>
-    <div className={`${styles.tabs} ${styles.infoTabs}`} role="tablist" aria-label="Info sections">
-      {INFO_SLIDES.map((name, index) => <button key={name} type="button" role="tab" aria-selected={active === index}
-        className={`${styles.tab} ${active === index ? styles.tabActive : ""}`} onClick={() => onActive(index)}>{name}</button>)}
-    </div>
-    <div ref={trackRef} className={styles.slides} onScroll={onScroll}>
-      <div className={styles.slide} role="tabpanel" aria-label="My Info" inert={active !== 0}>{myInfo}</div>
-      <div className={styles.slide} role="tabpanel" aria-label="Itinerary" inert={active !== 1}><ItineraryList items={itinerary} tripDays={tripDays} today={today} whoFor={whoFor} /></div>
-    </div>
-  </>;
-}
 
 /**
  * Info → Itinerary: one day at a time. A day selector (< weekday / date >) over a line, then that day's plans in time order.

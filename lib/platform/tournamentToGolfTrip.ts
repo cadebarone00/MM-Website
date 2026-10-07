@@ -1,6 +1,8 @@
 import type { Tournament, RealMatch } from "../data/types";
 import { getPlayerDisplayName } from "../data/players";
 import type { GolfTripDraft } from "./golfTripDraft";
+import type { PastTrip } from "./golfTripHistory";
+import { shortPlace } from "./placeLabel.ts";
 import type { GolfMatchPreview, GolfMatchCompetitor, GolfLeaderboardEntry } from "./golfTripPreviewFixture";
 const DEFAULT_PAR = [4,5,3,4,4,4,3,5,4,4,4,3,5,4,4,3,4,5];
 
@@ -174,4 +176,18 @@ export function adaptTournamentToPreviewMatch(tournament: Tournament): GolfMatch
   };
 
   return preview;
+}
+
+/**
+ * A past Maroon tournament as a Settings → History entry: its name, dates, place, roster and champion. The old data has no
+ * per-player round totals (only standings to par), so no rounds are made up — the champion comes from the tournament.
+ */
+export function adaptTournamentToPastTrip(tournament: Tournament): PastTrip {
+  return {
+    id: tournament.slug, arrival: tournament.startDate, departure: tournament.endDate, name: tournament.editionLabel,
+    place: shortPlace(tournament.location),
+    players: [...tournament.roster.maroon, ...tournament.roster.white].map(getPlayerDisplayName),
+    rounds: [],
+    championOverride: tournament.individualChampion ? getPlayerDisplayName(tournament.individualChampion) : null,
+  };
 }

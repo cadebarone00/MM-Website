@@ -2225,7 +2225,7 @@ Builds **on top of** the Player rounds plan above. Nothing above changes: `Playe
 
 **Done means:** the flight check-in tip shows on Home only inside its 24-hour window, with the right airline's check-in button; tests for the window and the unknown-airline case pass; `tsc`, lint and tests pass; checked at phone width in the dev simulator.
 
-### Round: Player rounds Step 2A — database foundation (spec 2026-10-06, awaiting approval)
+### Round: Player rounds Step 2A — database foundation (spec 2026-10-06, approved and built 2026-10-06; `supabase/player_rounds.sql` not run yet)
 
 **What it does / who uses it.** Signed-in players. This puts the "one saved round per account" model (Step 1, dev preview) into the real database with its security rules, plus a working **Settings → Privacy** switch and a **Rounds** list on the real Profile. Trips and History will save into it in later steps (2B trips, 2C History); nothing in the real app saves a round yet, so the list starts empty for everyone.
 
