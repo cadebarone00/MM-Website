@@ -29,7 +29,7 @@ export function siteBottomNavTabActive(pathname: string, href: string): boolean 
   if (href === "/profile") {
     return pathname === "/profile" || pathname.startsWith("/profile/") || pathname.startsWith("/account");
   }
-  // Explore is the home page; it stays lit on The Maroon's category sub-pages too.
+  // Play is the home page; it stays lit on The Maroon's category sub-pages too.
   if (href === "/") {
     return pathname === "/" || pathname.startsWith("/the-maroon/");
   }

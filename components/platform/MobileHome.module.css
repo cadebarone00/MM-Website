@@ -23,3 +23,15 @@
 .cardActions{display:grid;grid-template-columns:1fr}
 .cardActions>*+*{border-top:1px solid #b99c6b55}
 @media(min-width:601px){.cardActions{grid-template-columns:1fr 1fr}.cardActions>*+*{border-top:0;border-left:1px solid #b99c6b55}.soloCard .tripPhoto{height:260px}}
+/* Play page: the "Play a round" card on top, then Tournament + Golf Trip side by side. */
+.roundCard{display:block;margin:0 24px;border-bottom:1px solid #b99c6b}.roundCard .cardActions{grid-template-columns:1fr}
+/* Leaves room for the sticky top bar when "Pick a course" scrolls here. */
+.discover{scroll-margin-top:72px}
+button.cardAction{width:100%;border:0;background:transparent;font-family:inherit;text-align:left;cursor:pointer}
+.playCards{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px 24px 8px}
+.playCard{display:flex;flex-direction:column;min-width:0;border:1px solid #b99c6b;border-radius:14px;background:var(--app-cream);color:var(--app-maroon);overflow:hidden}
+.playCard h2{display:flex;align-items:center;gap:8px;margin:0;padding:14px 16px 10px;font:500 21px/1.15 var(--font-spectral),Georgia,serif;letter-spacing:-.02em}
+.playAction{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:48px;padding:10px 16px;border-top:1px solid #b99c6b55;font-size:15px;font-weight:600}
+.playAction:focus-visible{outline-offset:-4px}
+@media(max-width:600px){.roundCard{margin:0 18px}.playCards{padding:12px 18px 6px;gap:10px}.playCard h2{font-size:18px;padding:12px 14px 8px}.playAction{padding:10px 14px}}
+@media(max-width:340px){.playCards{grid-template-columns:1fr}}
