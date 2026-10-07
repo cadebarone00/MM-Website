@@ -286,3 +286,22 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 .itineraryAddRow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:-12px}
 .itineraryAddPill{grid-column:4;justify-self:center;display:inline-flex;align-items:center;gap:4px;padding:7px 14px;border:1.5px solid #dcc495;border-radius:999px;background:transparent;color:#dcc495;font:700 13px/1 var(--font-barlow),sans-serif;cursor:pointer}
 .itineraryAddPill:focus-visible{outline:2px solid #fbf8f1;outline-offset:2px}
+/* Itinerary golf rounds: Sit out then Play (green) side by side in the header row, level with the tee time and inside
+   the box above its line; the chosen one is filled. */
+.itineraryBoxWrap{position:relative}
+.itineraryBox[data-round=true] .itineraryBoxTop{padding-right:132px;min-height:24px}
+.rsvpButtons{position:absolute;top:9px;right:12px;display:flex;gap:6px}
+.rsvpPlay,.rsvpSit{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;height:24px;min-height:0;padding:0 10px;border-radius:999px;font:700 12px/1 var(--font-barlow),sans-serif;text-align:center;cursor:pointer}
+.rsvpPlay{border:1.5px solid #2e7d32;background:transparent;color:#2e7d32}
+.rsvpPlay[aria-pressed=true]{background:#2e7d32;color:#fff}
+.rsvpSit{border:1.5px solid #c62828;background:transparent;color:#c62828}
+.rsvpSit[aria-pressed=true]{border-color:#c62828;background:#c62828;color:#fff}
+.rsvpPlay:focus-visible,.rsvpSit:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+/* Playing: a green tag bottom right. Sitting out: the box shows only its top row (no line, course or round). */
+.itineraryBox[data-rsvp=in]{position:relative;padding-bottom:28px}
+.itineraryPlaying{position:absolute;right:14px;bottom:10px;color:#2e7d32;font:700 12px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.itineraryBox[data-rsvp=out] .itineraryBoxTop.itineraryBoxTop{padding-bottom:0;margin-bottom:0;border-bottom:0}
+/* Play / Sit out and "Playing" in the box's own font (Spectral, like the tee time and course); locked once tee times start. */
+.rsvpPlay.rsvpPlay,.rsvpSit.rsvpSit{font:700 13px/1 var(--font-spectral),Georgia,serif}
+.itineraryPlaying.itineraryPlaying{font:700 13px/1 var(--font-spectral),Georgia,serif;letter-spacing:.04em;text-transform:none}
+.rsvpPlay:disabled,.rsvpSit:disabled{opacity:.5;cursor:default}

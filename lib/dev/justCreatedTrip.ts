@@ -11,7 +11,7 @@
 import type { GolfTripDraft } from "@/lib/platform/golfTripDraft";
 import { plannedRounds } from "@/lib/platform/golfTripDraft";
 import { GOLF_MATCH_PREVIEW, GOLF_MATCH_PREVIEWS, type GolfLeaderboardEntry, type GolfMatchGolfer, type GolfMatchPairing, type GolfMatchSide } from "@/lib/platform/golfTripPreviewFixture";
-import type { RoundCompSettings } from "@/lib/platform/roundCompetition";
+import { defaultRoundComp, matchesPerTeeTime, type RoundCompSettings } from "@/lib/platform/roundCompetition";
 import type { PickedCourse } from "@/components/platform/TripScheduleCoursePicker";
 import type { TravelItem, TripTravel } from "@/lib/platform/tripTravel";
 import type { SimulatorTripData } from "./golfTripSimulatorData";
@@ -21,6 +21,7 @@ export type JustCreatedSetup = {
   roundsPerDay?: Record<number, 0 | 1 | 2>; dayCount?: number; arrivalShift?: number; golfOnArrival?: boolean; golfOnDeparture?: boolean;
   pickedCourses?: Record<string, PickedCourse>; slotCourseNames?: Record<string, string>;
   teeTimes?: Record<string, string[]>; teePlayers?: Record<string, Record<number, number[]>>;
+  teeMatches?: Record<string, Record<number, { a: (number | null)[]; b: (number | null)[] }>>;
   compRounds?: Record<string, boolean>; compFormats?: Record<string, RoundCompSettings>;
   playerTotal?: number; removedPlayers?: Set<string>;
   teamNames?: string[]; teamPicks?: Record<number, number>; submittedTeams?: number[][] | null;
@@ -70,8 +71,9 @@ export function applyJustCreatedSetup(base: SimulatorTripData, saved: JustCreate
       const onboarding = onboardingRounds.filter(round => round.date === days[day])[slot];
       const course = saved.pickedCourses?.[key]?.name ?? saved.slotCourseNames?.[key] ?? (onboarding ? original[`round${onboarding.number}Course`] : undefined) ?? "Course TBD";
       draft[`round${number}Course`] = course;
-      const format = saved.compRounds?.[key] === false ? undefined : saved.compFormats?.[key]?.format;
-      if (format) draft[`round${number}Format`] = format;
+      const comp = saved.compRounds?.[key] === false ? undefined : saved.compFormats?.[key];
+      if (comp?.format) draft[`round${number}Format`] = comp.format;
+      if (comp?.scoring) draft[`round${number}Scoring`] = comp.scoring;
       slots.push({ key, date, number, course });
     }
   }
@@ -86,8 +88,12 @@ export function applyJustCreatedSetup(base: SimulatorTripData, saved: JustCreate
   const meId = travel?.meId;
   const teeItems: TravelItem[] = [];
   for (const { key, date, number, course } of slots) {
+    // Matches rounds put me in a tee time through a match: match m plays in tee time ⌊m ÷ matches per tee time⌋.
+    const perGroup = matchesPerTeeTime((saved.compFormats?.[key] ?? defaultRoundComp(0)).format);
+    const inMatch = (group: number) => Object.entries(saved.teeMatches?.[key] ?? {}).some(([match, sides]) =>
+      Math.floor(Number(match) / perGroup) === group && [...sides.a, ...sides.b].includes(0));
     (saved.teeTimes?.[key] ?? []).forEach((time, group) => {
-      if (!(saved.teePlayers?.[key]?.[group] ?? []).includes(0)) return;
+      if (!time || !((saved.teePlayers?.[key]?.[group] ?? []).includes(0) || inMatch(group))) return;
       teeItems.push({ id: `jc-tee-${key}-${group}`, kind: "teeTime", details: { name: course, note: `Round ${number} · Group ${group + 1}` }, startsAt: `${date}T${time}`,
         createdBy: meId ?? "organizer", source: "organizer", joinPolicy: "none", optOutAllowed: false });
     });
@@ -109,8 +115,14 @@ export function applyJustCreatedSetup(base: SimulatorTripData, saved: JustCreate
     return all;
   }, []) : []);
   const label = (team: number) => saved.teamNames?.[team]?.trim() || `Team ${String.fromCharCode(65 + team)}`;
-  // Two teams: player against player down the lineup. More teams (pairs, 3- / 4-balls): team against team.
-  const matches: GolfMatchPairing[] = teams.length === 2
+  // Round 1's matchups built in Golf Schedule win; otherwise two teams play player against player down the lineup, and
+  // more teams (pairs, 3- / 4-balls) team against team.
+  const built = Object.entries(saved.teeMatches?.["0-0"] ?? {}).sort(([x], [y]) => Number(x) - Number(y))
+    .map(([, sides]) => ({ a: sides.a.filter((player): player is number => player !== null), b: sides.b.filter((player): player is number => player !== null) }))
+    .filter(sides => sides.a.length || sides.b.length);
+  const matches: GolfMatchPairing[] = built.length
+    ? built.map(sides => ({ left: { name: label(0), golfers: sides.a.map(golfer) }, right: { name: label(1), golfers: sides.b.map(golfer) }, gross: null, net: null }))
+    : teams.length === 2
     ? Array.from({ length: Math.max(teams[0]?.length ?? 0, teams[1]?.length ?? 0) }, (_, index) => ({
       left: { name: label(0), golfers: teams[0]?.[index] !== undefined ? [golfer(teams[0][index])] : [] },
       right: teams[1]?.[index] !== undefined ? { name: label(1), golfers: [golfer(teams[1][index])] } : undefined, gross: null, net: null }))
@@ -119,6 +131,8 @@ export function applyJustCreatedSetup(base: SimulatorTripData, saved: JustCreate
       right: teams[index * 2 + 1] ? { name: label(index * 2 + 1), golfers: teams[index * 2 + 1].map(golfer) } : undefined, gross: null, net: null }));
   const previewMatch = base.previewMatch && {
     ...base.previewMatch, format: sample.format, formatDef: sample.formatDef, course: draft.round1Course ?? base.previewMatch.course,
+    // Round 1's Handicap setting (Gross / Net / Both) once it's been set.
+    ...(draft.round1Scoring ? { scoring: draft.round1Scoring as "Gross" | "Net" | "Both", handicap: draft.round1Scoring !== "Gross" } : {}),
     roundDate: draft.day1Date ?? base.previewMatch.roundDate, round: 1, roundCount: Math.max(1, slots.length), leaderboard, matches,
     sides: [{ ...base.previewMatch.sides[0], name: label(0) }, { ...base.previewMatch.sides[1], name: label(1) }] as [GolfMatchSide, GolfMatchSide],
   };

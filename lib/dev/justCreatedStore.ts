@@ -74,6 +74,9 @@ export function resetJustCreated(): void {
   cache = {};
   try {
     storage()?.removeItem(KEY);
+    // Players' Play / Sit out on the Just created trip (lib/platform/roundRsvp, trip key "empty") go too.
+    const rsvp = JSON.parse(storage()?.getItem("golfTripRoundRsvp") ?? "{}") as Record<string, unknown>;
+    if ("empty" in rsvp) { delete rsvp.empty; storage()?.setItem("golfTripRoundRsvp", JSON.stringify(rsvp)); window.dispatchEvent(new Event("golf-trip-round-rsvp")); }
     storage()?.setItem(VERSION_KEY, String(version() + 1));
   } catch { /* nothing saved to clear */ }
   notify();

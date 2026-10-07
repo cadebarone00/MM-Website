@@ -177,3 +177,5 @@
 .matchupCompact .teamMeta{margin:-2px 0 0;font-size:12px}
 .matchupCompact .stats{padding-bottom:10px}
 .matchupCompact .win{margin-bottom:8px}
+/* Net-only rounds: a plain label where the GROSS / NET switch would be. */
+.scoringLabel{display:inline-flex;align-items:center;min-height:34px;padding:0 4px;color:#dcc495;font:700 12px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}

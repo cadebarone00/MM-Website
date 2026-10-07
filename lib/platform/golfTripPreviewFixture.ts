@@ -105,6 +105,11 @@ export function normalizeCompetitor(input: GolfMatchCompetitor | GolfMatchGolfer
   };
 }
 
+/** How the round is scored for the Leaderboard / Matches headers (see `scoring`). */
+export function matchScoring(match: Pick<GolfMatchPreview, "scoring" | "handicap">): "Gross" | "Net" | "Both" {
+  return match.scoring ?? (match.handicap ? "Both" : "Gross");
+}
+
 export type GolfMatchPairing = {
   left: GolfMatchCompetitor | GolfMatchGolfer;
   right?: GolfMatchCompetitor | GolfMatchGolfer;
@@ -138,6 +143,9 @@ export type GolfMatchPreview = {
   formatDef?: FormatDefinition;
   /** Handicap on for this event: the Leaderboard gets a GROSS / NET switch. */
   handicap: boolean;
+  /** The round's Handicap setting (Competition → a round): Gross only (no switch), Net only ("Net Scoring", net scores),
+   *  or Both (the GROSS / NET switch). Unset: Both when `handicap` is on, else Gross. */
+  scoring?: "Gross" | "Net" | "Both";
   /** This round's par for holes 1–18 (the Leaderboard's SCORECARD view). */
   par: number[];
   sides: [GolfMatchSide, GolfMatchSide];

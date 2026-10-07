@@ -237,6 +237,7 @@ export function randomMockTrip(mock: SimulatorTripData, seed: number, playerCoun
       formats.push(format);
       preview[`round${round}Course`] = course;
       preview[`round${round}Format`] = (GOLF_MATCH_PREVIEWS[format] ?? GOLF_MATCH_PREVIEW).formatDef?.label ?? format;
+      preview[`round${round}Scoring`] = pickFrom(random, ["Gross", "Net", "Both"]);
       add(`rnd-tee-${round}`, "teeTime", { name: course, note: `Round ${round}` }, `${date}T${time}`, undefined, "organizer");
     }
   }
@@ -255,7 +256,8 @@ export function randomMockTrip(mock: SimulatorTripData, seed: number, playerCoun
   const travel = { meId: members[0].id, members, items: items.sort((x, y) => x.startsAt.localeCompare(y.startsAt)), participants };
   // Golf: round 1's format, the field, random scores with round 1 in play.
   const sample = GOLF_MATCH_PREVIEWS[formats[0]] ?? GOLF_MATCH_PREVIEW;
-  const field = { ...populatedMatch(sample, players, names), round: 1, course: preview.round1Course, roundDate: preview.day1Date, roundCount: round };
+  const scoring = preview.round1Scoring as "Gross" | "Net" | "Both";
+  const field = { ...populatedMatch(sample, players, names), round: 1, course: preview.round1Course, roundDate: preview.day1Date, roundCount: round, scoring, handicap: scoring !== "Gross" };
   return { ...mock, preview, travel, previewMatch: withRoundState(field, "live", true, seed) };
 }
 

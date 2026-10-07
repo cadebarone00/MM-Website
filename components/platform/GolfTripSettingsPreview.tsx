@@ -15,7 +15,7 @@ import { GolfTripDatePicker } from "./GolfTripDatePicker";
 import { TripScheduleCoursePicker, type PickedCourse } from "./TripScheduleCoursePicker";
 import { TeeTimePicker } from "./TeeTimePicker";
 import { RoundCompetitionSettings } from "./RoundCompetitionSettings";
-import { defaultRoundComp, type RoundCompSettings } from "@/lib/platform/roundCompetition";
+import { defaultRoundComp, matchesPerTeeTime, playersPerSide, roundMatches, teeTimesNeeded, type RoundCompSettings } from "@/lib/platform/roundCompetition";
 import { GolfTripHistory, type HistoryLinking } from "./GolfTripHistory";
 import { dispatchDevRounds, useDevPlayerRounds } from "@/components/dev/useDevPlayerRounds";
 import { DEFAULT_DEV_ACCOUNT, DEV_ACCOUNTS, devAccount } from "@/lib/dev/devAccounts";
@@ -30,6 +30,8 @@ import { useGolfTripCompetitionPreview } from "./GolfTripCompetitionPreviewProvi
 
 import { useSimulator, useSimulatorNavigationReporter } from "@/components/dev/SimulatorBridge";
 import { usePersistedState } from "@/lib/dev/justCreatedStore";
+import { setPlayerStats, usePlayerStats } from "@/lib/platform/playerStatsSetting";
+import { useRoundRsvps } from "@/lib/platform/roundRsvp";
 
 const GENERAL_CARDS = ["Scorecard View", ...Array.from({ length: 5 }, () => "Place holder")];
 const ORGANIZER_CARDS = ["Players", "Golf Schedule", "Competition", "Games", "Allowed", "Player Scoring", "History"];
@@ -102,6 +104,10 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     },
   };
   const scoringView = useScoringView();
+  // Player Stats (Player Scoring): when off, players only enter their score and the Golf tab has no Stats section.
+  const playerStats = usePlayerStats();
+  // Players' Play / Sit out for each round (they choose on their Itinerary).
+  const roundRsvps = useRoundRsvps(dataKey);
   const [scoringFieldsOff, setScoringFieldsOff] = usePersistedState<Set<string>>(persist, "scoringFieldsOff", new Set());
   const [allowedRules, setAllowedRules] = usePersistedState(persist, "allowedRules", houseRules ?? ALLOWED_PRESET);
   const [confirmDeleteRuleId, setConfirmDeleteRuleId] = useState<string | null>(null);
@@ -207,12 +213,16 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const [coursePicker, setCoursePicker] = useState<{ key: string; label: string } | null>(null);
   // Golf Schedule: tap a round's tee time → the tee time sheet. Each group's time ("HH:MM") is kept per day/round slot.
   const [teeTimes, setTeeTimes] = usePersistedState<Record<string, string[]>>(persist, "teeTimes", {});
-  const [teeTimePicker, setTeeTimePicker] = useState<{ key: string; course: string; date: string; round: number } | null>(null);
+  const [teeTimePicker, setTeeTimePicker] = useState<{ key: string; course: string; date: string; round: number; fixedGroups?: number; startGroup?: number } | null>(null);
   // Golf Schedule → tap a round's box → that round's settings page (course, tee times).
   const [scheduleRound, setScheduleRound] = useState<{ day: number; slot: number } | null>(null);
   // Round settings → Players: up to 4 roster slots per tee time group, kept per round slot. A player can be in one group per round.
   const [teePlayers, setTeePlayers] = usePersistedState<Record<string, Record<number, number[]>>>(persist, "teePlayers", {});
   const [teePlayersGroup, setTeePlayersGroup] = useState<number | null>(null);
+  // 2 Teams + a comp match-play round: the matchups, per round slot, by match number — each side's players (roster slots,
+  // null = still open). The slot being filled (which match, which side, which spot) while its player list is open.
+  const [teeMatches, setTeeMatches] = usePersistedState<Record<string, Record<number, { a: (number | null)[]; b: (number | null)[] }>>>(persist, "teeMatches", {});
+  const [matchSlot, setMatchSlot] = useState<{ match: number; side: "a" | "b"; spot: number } | null>(null);
   // Course names carried by rounds that were dragged (they no longer line up with the sample schedule).
   const [slotCourseNames, setSlotCourseNames] = usePersistedState<Record<string, string>>(persist, "slotCourseNames", {});
   // Dragging a round by its grip: where it started, how far it moved, and where it would land.
@@ -288,10 +298,10 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   })() : undefined;
   // Moves a round to another place (max 2 a day). Same day: it keeps its settings. Another day: course, tee times, players and Comp go back to default.
   const moveRound = (from: { day: number; slot: number }, to: { day: number; index: number }) => {
-    type Slot = { picked?: PickedCourse; tees?: string[]; comp?: boolean; format?: RoundCompSettings; players?: Record<number, number[]>; name: string };
+    type Slot = { picked?: PickedCourse; tees?: string[]; comp?: boolean; format?: RoundCompSettings; players?: Record<number, number[]>; matches?: Record<number, { a: (number | null)[]; b: (number | null)[] }>; name: string };
     const lists: Slot[][] = Array.from({ length: golfDayCount }, (_, day) => Array.from({ length: roundsPerDay[day] ?? 1 }, (_, slot) => {
       const key = `${day}-${slot}`;
-      return { picked: pickedCourses[key], tees: teeTimes[key], comp: compRounds[key], format: compFormats[key], players: teePlayers[key], name: scheduleSlot(day, slot).course };
+      return { picked: pickedCourses[key], tees: teeTimes[key], comp: compRounds[key], format: compFormats[key], players: teePlayers[key], matches: teeMatches[key], name: scheduleSlot(day, slot).course };
     }));
     const [item] = lists[from.day].splice(from.slot, 1);
     const index = from.day === to.day && to.index > from.slot ? to.index - 1 : to.index;
@@ -300,6 +310,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     const picked: Record<string, PickedCourse> = {}, tees: Record<string, string[]> = {}, comp: Record<string, boolean> = {}, names: Record<string, string> = {};
     const players: Record<string, Record<number, number[]>> = {};
     const formats: Record<string, RoundCompSettings> = {};
+    const matchups: Record<string, Record<number, { a: (number | null)[]; b: (number | null)[] }>> = {};
     lists.forEach((list, day) => list.forEach((slot, at) => {
       const key = `${day}-${at}`;
       if (slot.picked) picked[key] = slot.picked;
@@ -307,6 +318,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
       if (slot.comp !== undefined) comp[key] = slot.comp;
       if (slot.players) players[key] = slot.players;
       if (slot.format) formats[key] = slot.format;
+      if (slot.matches) matchups[key] = slot.matches;
       names[key] = slot.name;
     }));
     setRoundsPerDay(Object.fromEntries(lists.map((list, day) => [day, list.length as 0 | 1 | 2])));
@@ -315,6 +327,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     setCompRounds(comp);
     setTeePlayers(players);
     setCompFormats(formats);
+    setTeeMatches(matchups);
     setSlotCourseNames(names);
   };
   // While dragging: the round under the pointer (drop above or below its middle), or the end of a day; a full other day can't take it.
@@ -363,7 +376,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     if (selectedRound) setSelectedRoundId(null);
     else if (compRound) setCompRoundSlot(null);
     else if (selectedGame) setSelectedGameId(null);
-    else if (scheduleRound) { setScheduleRound(null); setTeePlayersGroup(null); }
+    else if (scheduleRound) { setScheduleRound(null); setTeePlayersGroup(null); setMatchSlot(null); }
     else if (competitionOpen) setCompetitionOpen(false);
     else if (roundsOpen) setRoundsOpen(false);
     else if (playersOpen) setPlayersOpen(false);
@@ -614,7 +627,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
         </div>}
       </div>}
 
-      {teeTimePicker && <TeeTimePicker course={teeTimePicker.course} date={teeTimePicker.date} round={teeTimePicker.round} value={teeTimes[teeTimePicker.key] ?? (pickedCourses[teeTimePicker.key]?.settings?.teeTime ? [pickedCourses[teeTimePicker.key]!.settings!.teeTime] : undefined)}
+      {teeTimePicker && <TeeTimePicker key={`${teeTimePicker.key}-${teeTimePicker.startGroup ?? 0}`} fixedGroups={teeTimePicker.fixedGroups} startGroup={teeTimePicker.startGroup} course={teeTimePicker.course} date={teeTimePicker.date} round={teeTimePicker.round} value={teeTimes[teeTimePicker.key] ?? (pickedCourses[teeTimePicker.key]?.settings?.teeTime ? [pickedCourses[teeTimePicker.key]!.settings!.teeTime] : undefined)}
         onClose={() => setTeeTimePicker(null)} onSave={times => { setTeeTimes(current => ({ ...current, [teeTimePicker.key]: times })); setTeeTimePicker(null); }} />}
       {coursePicker && <TripScheduleCoursePicker roundLabel={coursePicker.label} current={pickedCourses[coursePicker.key]} onClose={() => setCoursePicker(null)}
         onPick={(course) => { setPickedCourses(current => ({ ...current, [coursePicker.key]: course })); setCoursePicker(null); }} />}
@@ -632,12 +645,52 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
           const next = list.includes(player) ? list.filter(value => value !== player) : list.length < 4 ? [...list, player] : list;
           return { ...current, [round.key]: { ...current[round.key], [group]: next } };
         });
+        // Matches: a 2 Teams competition on a comp match-play round. The round's format sets the matches (players ÷ both
+        // sides) and how many fit a tee time (two 1 v 1 or one 2 v 2), so the tee times are worked out, not added.
+        const comp = compRounds[round.key] !== false ? compFormats[round.key] ?? defaultRoundComp(playerTotal) : null;
+        const matchesMode = competitionType.team === "2 Teams" && comp !== null && comp.matchType === "Match Play" && roundMatches(comp) > 0;
+        const perSide = comp ? playersPerSide(comp.format) : 1;
+        const perGroup = comp ? matchesPerTeeTime(comp.format) : 1;
+        const matchCount = comp ? roundMatches(comp) : 0;
+        const groupCount = comp ? teeTimesNeeded(comp) : 0;
+        const roundMatchups = teeMatches[round.key] ?? {};
+        const sideOf = (match: number, side: "a" | "b") => roundMatchups[match]?.[side] ?? Array<number | null>(perSide).fill(null);
+        // Who's already in a match this round (and which), so nobody plays twice.
+        const matchOf = (player: number) => Object.entries(roundMatchups).find(([, sides]) => sides.a.includes(player) || sides.b.includes(player))?.[0];
+        const fillSlot = (match: number, side: "a" | "b", spot: number, player: number | null) => setTeeMatches(current => {
+          const sides = current[round.key]?.[match] ?? { a: Array<number | null>(perSide).fill(null), b: Array<number | null>(perSide).fill(null) };
+          const nextSide = [...sides[side]];
+          nextSide[spot] = player;
+          return { ...current, [round.key]: { ...current[round.key], [match]: { ...sides, [side]: nextSide } } };
+        });
         return <div className={styles.competition}>
           <div className={styles.roundDayHeader}>
             <h2>{round.course}</h2>
             <time dateTime={date}>{new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`))} · Round {round.number}</time>
           </div>
-          <section className={styles.teeTable} aria-label="Tee times and players">
+          {matchesMode ? <section className={styles.teeTable} aria-label="Tee times and matches">
+            {/* Tee Times | Team A | Team B: one row per tee time with its match(es); tap a spot to put a player there. */}
+            <div className={`${styles.teeTableHeader} ${styles.matchHeader}`} aria-hidden="true"><span>Tee Times</span><span>{teamLabels[0]}</span><span>{teamLabels[1]}</span></div>
+            {Array.from({ length: groupCount }, (_, group) => {
+              const time = round.groupTimes[group];
+              const matches = Array.from({ length: perGroup }, (_, offset) => group * perGroup + offset).filter(match => match < matchCount);
+              return <div key={group} className={`${styles.teeTableRow} ${styles.matchRow}`}>
+                <button type="button" className={`${styles.teeTableTime} ${styles.matchTime}`} aria-haspopup="dialog" aria-label={`Group ${group + 1} tee time: ${time ? teeTimeLabel(time) : "not set"}`}
+                  onClick={() => setTeeTimePicker({ key: round.key, course: round.course, date: golfDate(scheduleRound.day), round: round.number, fixedGroups: groupCount, startGroup: group })}>
+                  <small>Group {group + 1}</small>{time ? teeTimeLabel(time) : <span className={styles.teeTableAdd}>Set time</span>}
+                </button>
+                {matches.map(match => <div key={match} className={styles.matchLine} aria-label={`Match ${match + 1}`}>
+                  {(["a", "b"] as const).map(side => <div key={side} className={styles.matchSide}>
+                    {sideOf(match, side).map((player, spot) => <button key={spot} type="button" className={styles.matchSpot} data-filled={player !== null} aria-haspopup="dialog"
+                      aria-label={`Match ${match + 1}, ${teamLabels[side === "a" ? 0 : 1]}: ${player !== null ? playerName(player) : "add player"}`} onClick={() => setMatchSlot({ match, side, spot })}>
+                      {player !== null ? <ShortName name={playerName(player)} /> : <span className={styles.teeTableAdd}><Plus size={13} strokeWidth={2.5} aria-hidden /> Add player</span>}
+                    </button>)}
+                  </div>)}
+                </div>)}
+              </div>;
+            })}
+            <p className={styles.roundSettingsEmpty}>{matchCount} {matchCount === 1 ? "match" : "matches"} ({perSide} v {perSide}) · {groupCount} tee {groupCount === 1 ? "time" : "times"}</p>
+          </section> : <section className={styles.teeTable} aria-label="Tee times and players">
             <div className={styles.teeTableHeader} aria-hidden="true"><span>Tee Times</span><span>Players</span></div>
             {round.groupTimes.length ? round.groupTimes.map((time, group) => {
               const names = (groups[group] ?? []).filter(player => player < playerTotal);
@@ -649,7 +702,32 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
               </div>;
             }) : <p className={styles.roundSettingsEmpty}>No tee times yet.</p>}
             <button type="button" className={styles.addRound} aria-haspopup="dialog" onClick={() => setTeeTimePicker({ key: round.key, course: round.course, date: golfDate(scheduleRound.day), round: round.number })}><Plus size={14} strokeWidth={2.5} aria-hidden /> Add Tee Time</button>
-          </section>
+          </section>}
+          {/* A match spot's player list: only that team's players; anyone sitting out, or already in another match this round, is greyed. */}
+          {matchesMode && matchSlot && (() => {
+            const team = matchSlot.side === "a" ? 0 : 1;
+            const current = sideOf(matchSlot.match, matchSlot.side)[matchSlot.spot];
+            return <div className={`${styles.teamsDropdown} ${styles.addPlayerDropdown}`} role="dialog" aria-modal="false" aria-label={`Match ${matchSlot.match + 1} ${teamLabels[team]} player`}>
+              <button type="button" className={tripStyles.sheetClose} aria-label="Close players" onClick={() => setMatchSlot(null)}><X size={18} strokeWidth={2.25} aria-hidden /></button>
+              <h3 className={gamesStyles.sheetTitle}>Match {matchSlot.match + 1} · {teamLabels[team]}</h3>
+              <ul className={styles.addPlayerList}>
+                {teamSplit[team].map(player => {
+                  const rsvp = roundRsvps[round.number]?.[playerName(player)];
+                  const other = matchOf(player);
+                  const taken = other !== undefined && player !== current;
+                  const out = rsvp === "out" && player !== current;
+                  return <li key={player} className={styles.addPlayerRow} data-selected={player === current} data-out={out || taken}>
+                    <button type="button" className={styles.addPlayerName} disabled={out || taken} onClick={() => { fillSlot(matchSlot.match, matchSlot.side, matchSlot.spot, player); setMatchSlot(null); }}>
+                      <span className={styles.teePlayerName}>{playerName(player)}{rsvp && <em className={styles.rsvpNote} data-rsvp={rsvp}>{rsvp === "in" ? "I'm in!" : "I'm out"}</em>}</span>
+                    </button>
+                    {taken && <small className={styles.matchTaken}>Match {Number(other) + 1}</small>}
+                  </li>;
+                })}
+              </ul>
+              {!teamSplit[team].length && <p className={gamesStyles.sheetHint}>No players on {teamLabels[team]} yet — add them in Competition → Overview → Team.</p>}
+              {current !== null && current !== undefined && <button type="button" className={styles.addRound} onClick={() => { fillSlot(matchSlot.match, matchSlot.side, matchSlot.spot, null); setMatchSlot(null); }}>Remove {playerName(current)}</button>}
+            </div>;
+          })()}
           {/* Players drop-down for one group: tick up to 4; anyone already in another group this round is shown with that group and can't be picked. */}
           {teePlayersGroup !== null && <div className={`${styles.teamsDropdown} ${styles.addPlayerDropdown}`} role="dialog" aria-modal="false" aria-label={`Group ${teePlayersGroup + 1} players`}>
             <button type="button" className={tripStyles.sheetClose} aria-label="Close players" onClick={() => setTeePlayersGroup(null)}><X size={18} strokeWidth={2.25} aria-hidden /></button>
@@ -661,10 +739,16 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                 const inThis = (groups[teePlayersGroup] ?? []).includes(player);
                 const full = !inThis && (groups[teePlayersGroup] ?? []).length >= 4;
                 const taken = other !== undefined && Number(other) !== teePlayersGroup;
-                return <li key={player} className={styles.addPlayerRow} data-selected={inThis}>
+                // The player's own Play / Sit out for this round: "I'm out" greys them out and they can't be picked.
+                const rsvp = roundRsvps[round.number]?.[playerName(player)];
+                const sittingOut = rsvp === "out" && !inThis;
+                return <li key={player} className={styles.addPlayerRow} data-selected={inThis} data-out={sittingOut}>
                   <label className={styles.teePlayerPick}>
-                    <input type="checkbox" checked={inThis} disabled={taken || full} onChange={() => togglePlayer(teePlayersGroup, player)} />
-                    <span>{playerName(player)}</span>
+                    <input type="checkbox" checked={inThis} disabled={taken || full || sittingOut} onChange={() => togglePlayer(teePlayersGroup, player)} />
+                    <span className={styles.teePlayerName}>
+                      {playerName(player)}
+                      {rsvp && <em className={styles.rsvpNote} data-rsvp={rsvp}>{rsvp === "in" ? "I'm in!" : "I'm out"}</em>}
+                    </span>
                     {taken && <small>Group {Number(other) + 1}</small>}
                   </label>
                 </li>;
@@ -736,8 +820,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                         {round.place && <span className={styles.roundCardPlace}>{round.place}</span>}
                       </span>
                       {/* Every group's tee time down the right side; four show, then the list scrolls. */}
-                      {round.groupTimes.length > 0 && <span className={styles.scheduleTeeList}>
-                        {round.groupTimes.map((time, group) => <span key={group}>Group {group + 1} · {teeTimeLabel(time)}</span>)}
+                      {round.groupTimes.some(Boolean) && <span className={styles.scheduleTeeList}>
+                        {round.groupTimes.map((time, group) => time && <span key={group}>Group {group + 1} · {teeTimeLabel(time)}</span>)}
                       </span>}
                     </button>
                   </div>
@@ -813,14 +897,25 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
           <div className={notificationStyles.row}><span className={notificationStyles.label}>Their own score</span><span className={styles.alwaysOn}>Always on</span></div>
           {PLAYER_SCORING_FIELDS.map(field => {
             const on = !scoringFieldsOff.has(field);
-            return <div key={field} className={notificationStyles.row}>
-              <span className={notificationStyles.label}>{field}</span>
-              <button type="button" role="switch" aria-checked={on} aria-label={field} className={toggleStyles.toggle}
-                onClick={() => setScoringFieldsOff(current => { const next = new Set(current); if (on) next.add(field); else next.delete(field); return next; })}>
-                <span className={toggleStyles.track} data-on={on}><span className={toggleStyles.thumb} /></span><span>{on ? "On" : "Off"}</span>
-              </button>
-            </div>;
+            // Putts, Fairway and Greens are stats: only asked for while Player Stats is on.
+            const stat = field !== "Opponent's score";
+            return <Fragment key={field}>
+              {field === "Putts" && <div className={notificationStyles.row}>
+                <span className={notificationStyles.label}>Player Stats</span>
+                <button type="button" role="switch" aria-checked={playerStats} aria-label="Player Stats" className={toggleStyles.toggle} onClick={() => setPlayerStats(!playerStats)}>
+                  <span className={toggleStyles.track} data-on={playerStats}><span className={toggleStyles.thumb} /></span><span>{playerStats ? "On" : "Off"}</span>
+                </button>
+              </div>}
+              <div className={`${notificationStyles.row} ${stat ? styles.statRow : ""}`} data-off={stat && !playerStats}>
+                <span className={notificationStyles.label}>{field}</span>
+                <button type="button" role="switch" aria-checked={on && (!stat || playerStats)} aria-label={field} className={toggleStyles.toggle} disabled={stat && !playerStats}
+                  onClick={() => setScoringFieldsOff(current => { const next = new Set(current); if (on) next.add(field); else next.delete(field); return next; })}>
+                  <span className={toggleStyles.track} data-on={on && (!stat || playerStats)}><span className={toggleStyles.thumb} /></span><span>{on && (!stat || playerStats) ? "On" : "Off"}</span>
+                </button>
+              </div>
+            </Fragment>;
           })}
+          {!playerStats && <p className={styles.statNote}>Stats off: players only enter their score, and no stats are recorded.</p>}
         </section>
         <OrganizerScores roundNumbers={rounds.map(round => round.number)} organizerId={simulator?.state.viewAs ?? DEFAULT_DEV_ACCOUNT}
           scheduledToday={simulator?.state.roundStatus === "live" || simulator?.state.roundStatus === "roundEnd"} />

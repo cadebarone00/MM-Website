@@ -103,3 +103,13 @@ export function pointsPerMatchTotal(settings: RoundCompSettings): number {
 export function roundPointsAvailable(settings: RoundCompSettings): number {
   return roundMatches(settings) * pointsPerMatchTotal(settings);
 }
+
+/** A tee time holds up to 4 players: two 1 v 1 matches, or one 2 v 2 match. */
+export function matchesPerTeeTime(format: RoundFormat): number {
+  return Math.max(1, Math.floor(4 / (playersPerSide(format) * 2)));
+}
+
+/** Tee times a match-play round needs for all its matches (16 players of Fourball = 4 matches = 4 tee times). */
+export function teeTimesNeeded(settings: RoundCompSettings): number {
+  return Math.ceil(roundMatches(settings) / matchesPerTeeTime(settings.format));
+}

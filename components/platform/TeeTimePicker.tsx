@@ -51,16 +51,21 @@ function Wheel({ label, values, index, onIndex }: { label: string; values: strin
  * the top (Group 1, 2, ...) with an Add Group box at the end. The wheels pick a time; Set gives it to the selected group and stays
  * open; SAVE (top right) saves every group's time and closes. Times are "HH:MM" (24-hour); a new group has none until set.
  */
-export function TeeTimePicker({ course, date, round, value, onSave, onClose }: {
+export function TeeTimePicker({ course, date, round, value, onSave, onClose, fixedGroups, startGroup = 0 }: {
   course: string; date: string; round: number; value?: string[]; onSave: (times: string[]) => void; onClose: () => void;
+  /** Matches rounds: exactly this many groups (one per set of matches), no Add Group; SAVE keeps unset ones as "" so each
+   *  group stays in its place. `startGroup` opens on that group. */
+  fixedGroups?: number; startGroup?: number;
 }) {
-  const [groups, setGroups] = useState<(string | null)[]>(value?.length ? value : [null]);
-  const [selected, setSelected] = useState(0);
+  const [groups, setGroups] = useState<(string | null)[]>(() => fixedGroups
+    ? Array.from({ length: fixedGroups }, (_, index) => value?.[index] || null)
+    : value?.length ? value : [null]);
+  const [selected, setSelected] = useState(fixedGroups ? Math.min(startGroup, fixedGroups - 1) : 0);
   // X: the sheet slides down and away (100 ms), then closes.
   const [leaving, setLeaving] = useState(false);
   // The wheels start from the group's own time, else the group before it, else 8:00 AM.
   const startFor = (index: number, list = groups) => toParts(list[index] ?? list.slice(0, index).filter(Boolean).at(-1) ?? "08:00");
-  const [parts, setParts] = useState<Parts>(() => startFor(0));
+  const [parts, setParts] = useState<Parts>(() => startFor(fixedGroups ? Math.min(startGroup, fixedGroups - 1) : 0));
   useEffect(() => {
     const close = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
     window.addEventListener("keydown", close);
@@ -70,8 +75,8 @@ export function TeeTimePicker({ course, date, round, value, onSave, onClose }: {
   const change = (field: keyof Parts, next: number) => setParts(current => ({ ...current, [field]: next }));
   const setTime = () => setGroups(current => current.map((time, index) => index === selected ? toTime(parts) : time));
   const addGroup = () => { const next = [...groups, null]; setGroups(next); choose(next.length - 1, next); };
-  // SAVE keeps every group that has a set time.
-  const save = () => onSave(groups.filter((time): time is string => !!time));
+  // SAVE keeps every group that has a set time (fixed groups keep their places, unset ones as "").
+  const save = () => onSave(fixedGroups ? groups.map(time => time ?? "") : groups.filter((time): time is string => !!time));
   return <div className={styles.overlay} onClick={onClose}>
     <div className={`${styles.sheet} ${leaving ? styles.leaving : ""}`} role="dialog" aria-modal="true" aria-label="Tee time" onClick={event => event.stopPropagation()}
       onAnimationEnd={() => { if (leaving) onClose(); }}>
@@ -87,10 +92,10 @@ export function TeeTimePicker({ course, date, round, value, onSave, onClose }: {
             {time ? <strong>{timeLabel(time)}</strong> : <small>Set time</small>}
           </button>
         </div>)}
-        <div className={styles.groupSlot}>
+        {!fixedGroups && <div className={styles.groupSlot}>
           <span className={styles.groupLabel}>Add Group</span>
           <button type="button" className={`${styles.groupBox} ${styles.addGroup}`} aria-label="Add group" onClick={addGroup}><Plus size={18} strokeWidth={2.5} aria-hidden /></button>
-        </div>
+        </div>}
       </div>
       <div className={styles.wheels}>
         <span className={styles.band} aria-hidden />

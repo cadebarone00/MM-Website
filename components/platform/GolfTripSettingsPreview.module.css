@@ -219,3 +219,23 @@ span.typeChoice{cursor:default}
 .selectTeams.selectTeams,.roundCompSubmit.roundCompSubmit{display:block;width:70%;height:46px;min-height:46px;margin:14px auto 0;padding:0 16px;border:0;border-radius:12px;background:#f8f3ea;color:var(--color-maroon-900,#2f0c0e);font:700 14px/1 var(--font-spectral),Georgia,serif;letter-spacing:0;text-transform:none;box-shadow:0 6px 18px rgba(0,0,0,.25);cursor:pointer}
 .selectTeams.selectTeams:disabled,.roundCompSubmit.roundCompSubmit:disabled{opacity:.4;cursor:default}
 .selectTeams.selectTeams:focus-visible,.roundCompSubmit.roundCompSubmit:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:2px}
+/* Player Scoring: stat rows grey out while Player Stats is off. */
+.statRow[data-off=true]{opacity:.45}
+.statNote{margin:8px 0 0;color:rgba(251,248,241,.6);font:500 13px/1.35 var(--font-barlow),sans-serif}
+/* Tee-time player picker: each player's Play / Sit out under their name; sitting out greys the row. */
+.teePlayerName{display:grid;gap:2px}
+.rsvpNote{font:700 12px/1.1 var(--font-barlow),sans-serif;font-style:normal}
+.rsvpNote[data-rsvp=in]{color:#2e7d32}
+.rsvpNote[data-rsvp=out]{color:#c62828}
+.addPlayerRow[data-out=true]{opacity:.5}
+/* Matches rounds: Tee Times | Team A | Team B. Each row: the tee time, then its match(es), each side's spots in its column. */
+.teeTableHeader.matchHeader,.matchLine{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr);gap:10px}
+.matchHeader span:nth-child(n+2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.teeTableRow.matchRow{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,2fr);gap:10px;align-items:start}
+.matchRow > .matchLine{grid-column:2;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.matchRow > .matchLine + .matchLine{padding-top:8px;border-top:1px dashed rgba(255,255,255,.12)}
+.matchTime{padding:0;border:0;background:transparent;text-align:left;cursor:pointer;grid-row:span 2}
+.matchSide{display:grid;gap:6px;min-width:0}
+.matchSpot{display:flex;align-items:center;min-width:0;min-height:30px;padding:0;border:0;background:transparent;color:#fbf8f1;text-align:left;font:inherit;cursor:pointer}
+.matchSpot:focus-visible,.matchTime:focus-visible{outline:2px solid #dcc495;outline-offset:2px;border-radius:6px}
+.matchTaken{flex:none;color:#805b24;font:600 12px/1 var(--font-barlow),sans-serif}

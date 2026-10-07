@@ -3,6 +3,7 @@ import { resolveGolfFormat } from "@/lib/platform/formats";
 import { rankLeaderboard } from "@/lib/platform/golfLeaderboardOrder";
 import {
   GOLF_PREVIEW_COURSE_WEATHER,
+  matchScoring,
   normalizeCompetitor,
   type GolfMatchCompetitor,
   type GolfMatchGolfer,
@@ -21,12 +22,14 @@ import styles from "./GolfTripMatch.module.css";
  */
 export function GolfTripMatch({ match }: { match: GolfMatchPreview }) {
   const [net, setNet] = useState(false);
-  const showNet = match.handicap && net;
+  // Gross only: gross, no control. Net only: net, "Net Scoring". Both: the GROSS / NET switch.
+  const scoring = matchScoring(match);
+  const showNet = scoring === "Net" || (scoring === "Both" && net);
   const formatDef = resolveGolfFormat(match.formatDef?.key ?? match.format);
 
   return <div className={styles.match}>
     <SlideHeader title={match.course} detail={`Round ${match.round} of ${match.roundCount} • ${formatDef.label}`}>
-      {match.handicap && <ScoringSwitch net={net} onNet={setNet} />}
+      <ScoringControl scoring={scoring} net={net} onNet={setNet} />
     </SlideHeader>
     <ul className={styles.lineup}>
       {match.matches.map((m, i) => {
@@ -75,7 +78,8 @@ export function GolfTripLeaderboard({ match }: { match: GolfMatchPreview }) {
   const [openCards, setOpenCards] = useState<ReadonlySet<string>>(new Set());
   const formatDef = resolveGolfFormat(match.formatDef?.key ?? match.format);
   const isStableford = formatDef.scoringMethod === "stableford";
-  const showNet = match.handicap && net;
+  const scoring = matchScoring(match);
+  const showNet = scoring === "Net" || (scoring === "Both" && net);
   // Always best → worst (alphabetical by last name before anyone has a score), for Gross and Net alike.
   const rows = rankLeaderboard(match.leaderboard, { net: showNet, stableford: isStableford });
 
@@ -89,7 +93,7 @@ export function GolfTripLeaderboard({ match }: { match: GolfMatchPreview }) {
 
   return <div className={styles.match}>
     <SlideHeader title={match.course} detail={`${roundDay(match.roundDate)} • Round ${match.round} • ${formatDef.label}`}>
-      {match.handicap && <ScoringSwitch net={net} onNet={setNet} />}
+      <ScoringControl scoring={scoring} net={net} onNet={setNet} />
     </SlideHeader>
     <div>
       <div className={`${styles.single} ${showNet ? styles.singleNet : ""} ${styles.columns}`} aria-hidden>
@@ -236,6 +240,13 @@ function MatchStatus({ competitor, plain = false }: { competitor: GolfMatchCompe
   return <span className={className} aria-label={`Tees off ${teeTime}`}>
     {time}{period && <small>{period}</small>}
   </span>;
+}
+
+/** The header's scoring control: nothing for Gross only, a "Net Scoring" label for Net only, the switch for Both. */
+function ScoringControl({ scoring, net, onNet }: { scoring: "Gross" | "Net" | "Both"; net: boolean; onNet: (net: boolean) => void }) {
+  if (scoring === "Gross") return null;
+  if (scoring === "Net") return <span className={styles.scoringLabel}>Net Scoring</span>;
+  return <ScoringSwitch net={net} onNet={onNet} />;
 }
 
 function ScoringSwitch({ net, onNet }: { net: boolean; onNet: (net: boolean) => void }) {

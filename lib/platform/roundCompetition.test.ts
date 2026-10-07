@@ -33,3 +33,12 @@ test("empty or tiny fields give zero matches", () => {
   assert.equal(roundMatches(defaultRoundComp(1)), 0);
   assert.equal(playersLeftOver(defaultRoundComp(1)), 1);
 });
+
+test("tee times needed: one 2 v 2 match per tee time, or two 1 v 1 matches", async () => {
+  const { teeTimesNeeded, matchesPerTeeTime } = await import("./roundCompetition.ts");
+  assert.equal(teeTimesNeeded({ ...defaultRoundComp(16), format: "Fourball" }), 4);
+  assert.equal(teeTimesNeeded({ ...defaultRoundComp(16), format: "Singles" }), 4);
+  assert.equal(matchesPerTeeTime("Singles"), 2);
+  assert.equal(teeTimesNeeded({ ...defaultRoundComp(10), format: "Singles" }), 3);
+  assert.equal(teeTimesNeeded({ ...defaultRoundComp(16), matchType: "Stroke Play" }), 0);
+});

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { itineraryByDay, itineraryCategory, itineraryDay, homeBoxes, itineraryLongDate, itineraryTime, itineraryWeekday, localNow, sortItinerary, upcomingItinerary, type ItineraryItem } from "./golfTripItinerary";
+import { itineraryByDay, itineraryCategory, itineraryDay, withGolfRounds, homeBoxes, itineraryLongDate, itineraryTime, itineraryWeekday, localNow, sortItinerary, upcomingItinerary, type ItineraryItem } from "./golfTripItinerary";
 import { GOLF_TRIP_MOCK_TRAVEL } from "./golfTripPreviewFixture";
 import { itineraryFor } from "./tripTravel";
 
@@ -71,4 +71,21 @@ test("homeBoxes: a live golf round wins and is the only LIVE", () => {
   const round: ItineraryItem = { id: "round-2", kind: "teeTime", title: "Round 2 · Desert Pines", startsAt: "2027-04-22T13:00" };
   assert.deepEqual(show(homeBoxes(plans, "2027-04-22T15:20", round)), ["LIVE:round-2", "NEXT:dinner"]);
   assert.deepEqual(homeBoxes([], "2027-04-22T20:00"), []);
+});
+
+test("withGolfRounds: every round shows; my tee time is the round, the others are Tee time TBD in the morning / afternoon", () => {
+  const items: ItineraryItem[] = [
+    { id: "tee-1", kind: "teeTime", title: "Desert Pines GC", detail: "Round 1", startsAt: "2027-04-23T08:30" },
+    { id: "dinner", kind: "dining", title: "Grill", startsAt: "2027-04-23T19:00" },
+  ];
+  const rounds = [
+    { number: 1, date: "2027-04-23", course: "Desert Pines GC" },
+    { number: 2, date: "2027-04-23", course: "Canyon Ridge" },
+    { number: 3, date: "2027-04-24", course: "Saguaro Links" },
+  ];
+  const result = withGolfRounds(items, rounds);
+  assert.deepEqual(result.map((item) => `${item.id}:${item.round ?? ""}:${item.timeTbd ? "tbd" : item.startsAt.slice(11)}`),
+    ["tee-1:1:08:30", "round-2:2:tbd", "dinner::19:00", "round-3:3:tbd"]);
+  assert.equal(result.find((item) => item.id === "round-3")?.startsAt, "2027-04-24T07:00");
+  assert.equal(result.find((item) => item.id === "round-2")?.startsAt, "2027-04-23T12:30");
 });

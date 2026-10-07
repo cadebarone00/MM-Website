@@ -16,6 +16,10 @@ export interface ItineraryItem {
   startsAt: string;
   /** Optional end, same format (e.g. a flight's landing): it's happening from startsAt until then. */
   endsAt?: string;
+  /** A golf round's number (its tee time, or the round itself when I'm not on a tee time yet). */
+  round?: number;
+  /** No tee time yet: the time only places it in the day (morning / afternoon) and shows as "Tee time TBD". */
+  timeTbd?: boolean;
 }
 
 export const ITINERARY_KIND_LABEL: Record<ItineraryKind, string> = {
@@ -32,6 +36,22 @@ export function sortItinerary(items: ItineraryItem[]): ItineraryItem[] {
 /** The next `count` things that haven't started yet, soonest first. `now` is local time, "YYYY-MM-DDTHH:mm". */
 export function upcomingItinerary(items: ItineraryItem[], now: string, count = 5): ItineraryItem[] {
   return sortItinerary(items).filter((item) => item.startsAt >= now).slice(0, count);
+}
+
+/**
+ * Golf rounds always show on everyone's itinerary. A tee time I'm on is that round ("Round N" in its details); a round
+ * I'm not on a tee time for yet is added on its day with "Tee time TBD" — placed in the morning (first round of the day)
+ * or the afternoon (second). `rounds`: the trip's rounds in order, each with its date and course.
+ */
+export function withGolfRounds(items: ItineraryItem[], rounds: { number: number; date: string; course: string }[]): ItineraryItem[] {
+  const roundOf = (item: ItineraryItem) => item.kind === "teeTime" ? Number(/Round (\d+)/.exec(`${item.detail ?? ""} ${item.title}`)?.[1]) || undefined : undefined;
+  const tagged = items.map((item) => { const round = roundOf(item); return round ? { ...item, round } : item; });
+  const onTeeTime = new Set(tagged.map((item) => item.round).filter(Boolean));
+  const added = rounds.filter((round) => round.date && !onTeeTime.has(round.number)).map((round) => {
+    const morning = rounds.filter((other) => other.date === round.date).findIndex((other) => other.number === round.number) === 0;
+    return { id: `round-${round.number}`, kind: "teeTime" as const, title: round.course, detail: `Round ${round.number}`, startsAt: `${round.date}T${morning ? "07:00" : "12:30"}`, round: round.number, timeTbd: true };
+  });
+  return sortItinerary([...tagged, ...added]);
 }
 
 /** Without an end time, how long a plan counts as happening ("NOW") after it starts, in minutes. */

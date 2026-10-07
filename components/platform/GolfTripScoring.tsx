@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
+import { usePlayerStats } from "@/lib/platform/playerStatsSetting";
 import { createPortal } from "react-dom";
 import { LockKeyhole, LockKeyholeOpen, Minus, Plus } from "lucide-react";
 import { useScoringView } from "@/lib/platform/scoringViewPreference";
@@ -49,6 +50,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   onAttestChange?: (strokes: (number | null)[]) => void;
 }) {
   const [open, updateOpen] = useState(false);
+  const playerStats = usePlayerStats();
   const [holes, setHoles] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => submittedCard?.strokes[i] ?? initialHoles?.[i] ?? null));
   const [holesCompetitor, setHolesCompetitor] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => prefill?.opponentHoles[i] ?? initialHoles?.[i] ?? null));
   const [current, setCurrent] = useState(() => { const next = Array.from({ length: HOLES }, (_, i) => initialHoles?.[i] ?? null).findIndex((h) => h === null); return next === -1 ? HOLES - 1 : next; });
@@ -249,7 +251,8 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   const setForHole = <T,>(setter: (update: (values: T[]) => T[]) => void, value: T) => setter((values) => values.map((v, i) => i === current ? value : v));
   const submittedHoles = holes.map((h, i) => h ?? par?.[i] ?? null);
   const submittedOpponentHoles = holesCompetitor.map((h, i) => h ?? par?.[i] ?? null);
-  const holeFilled = (i: number) => submittedHoles[i] !== null && submittedOpponentHoles[i] !== null && putts[i] !== null && greens[i] !== null && (par?.[i] === 3 || fairways[i] !== null);
+  // Player Stats off (Organizer → Player Scoring): a hole only needs the two scores.
+  const holeFilled = (i: number) => submittedHoles[i] !== null && submittedOpponentHoles[i] !== null && (!playerStats || (putts[i] !== null && greens[i] !== null && (par?.[i] === 3 || fairways[i] !== null)));
   const complete = submittedHoles.every((_, i) => holeFilled(i));
   // The last hole has no next hole: its button opens the Card (where Submit & Save is) once that hole is filled in.
   const lastHole = current === HOLES - 1;
@@ -368,6 +371,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
         </div>
       </div>
 
+      {playerStats && <>
       <div className={styles.puttsWrap} aria-label="Putts">
         <span className={styles.puttsLabel}>Putts</span>
         <div className={styles.putts} role="group" aria-label="Putts selector">
@@ -390,6 +394,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
         </div>
         <Compass label="GIR" value={greens[current]} onChange={(value) => setForHole(setGreens, value)} disabled={submitted} />
       </div>
+      </>}
 
       {lastHole ? <button type="button" className={styles.nextHoleButton} disabled={!holeFilled(current)} onClick={() => setView("scorecard")}>
         Scorecard
