@@ -117,11 +117,21 @@ export function applyJustCreatedSetup(base: SimulatorTripData, saved: JustCreate
   const label = (team: number) => saved.teamNames?.[team]?.trim() || `Team ${String.fromCharCode(65 + team)}`;
   // Round 1's matchups built in Golf Schedule win; otherwise two teams play player against player down the lineup, and
   // more teams (pairs, 3- / 4-balls) team against team.
+  // Each match plays in its Golf Schedule tee time (match m → tee time ⌊m ÷ matches per tee time⌋), shown in the middle
+  // of its row before the round.
+  const roundOnePerGroup = matchesPerTeeTime((saved.compFormats?.["0-0"] ?? defaultRoundComp(0)).format);
+  const clock = (time: string) => {
+    const [hours, minutes] = time.split(":").map(Number);
+    return `${hours % 12 || 12}:${String(minutes).padStart(2, "0")} ${hours < 12 ? "AM" : "PM"}`;
+  };
   const built = Object.entries(saved.teeMatches?.["0-0"] ?? {}).sort(([x], [y]) => Number(x) - Number(y))
-    .map(([, sides]) => ({ a: sides.a.filter((player): player is number => player !== null), b: sides.b.filter((player): player is number => player !== null) }))
+    .map(([match, sides]) => {
+      const time = saved.teeTimes?.["0-0"]?.[Math.floor(Number(match) / roundOnePerGroup)];
+      return { teeTime: time ? clock(time) : "", a: sides.a.filter((player): player is number => player !== null), b: sides.b.filter((player): player is number => player !== null) };
+    })
     .filter(sides => sides.a.length || sides.b.length);
   const matches: GolfMatchPairing[] = built.length
-    ? built.map(sides => ({ left: { name: label(0), golfers: sides.a.map(golfer) }, right: { name: label(1), golfers: sides.b.map(golfer) }, gross: null, net: null }))
+    ? built.map(sides => ({ left: { name: label(0), teeTime: sides.teeTime, golfers: sides.a.map(golfer) }, right: { name: label(1), teeTime: sides.teeTime, golfers: sides.b.map(golfer) }, gross: null, net: null }))
     : teams.length === 2
     ? Array.from({ length: Math.max(teams[0]?.length ?? 0, teams[1]?.length ?? 0) }, (_, index) => ({
       left: { name: label(0), golfers: teams[0]?.[index] !== undefined ? [golfer(teams[0][index])] : [] },

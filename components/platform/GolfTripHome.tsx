@@ -411,7 +411,7 @@ function GolfSlides({ previewMatch, structure, navigation, onNavigationChange, t
       {sections.filter(({ id }) => !offStrip(id)).map(({ id: name, label }, i) => <div key={name} className={styles.slide} role="tabpanel" aria-label={label} inert={active !== i}>
         {name === "Overview"
           ? previewMatch ? <GolfTripLeaderboard match={previewMatch} /> : <Card title="Score Overview"><Empty>Your leaderboard and round scores will show here</Empty></Card>
-          : roundMatch ? <GolfTripCompetitionMatchPreview initialMatch={roundMatch} /> : <Card title="Competition"><Empty>Your matchups will show here</Empty></Card>}
+          : previewMatch && roundMatch ? <GolfTripCompetitionMatchPreview key={previewMatch.round} initialMatch={previewMatch} /> : <Card title="Competition"><Empty>Your matchups will show here</Empty></Card>}
       </div>)}
     </div>
     <div role="tabpanel" aria-label="Games" hidden={!gamesActive || statsActive}>

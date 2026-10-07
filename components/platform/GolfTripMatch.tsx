@@ -1,9 +1,11 @@
 import { useState, type ReactNode } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { resolveGolfFormat } from "@/lib/platform/formats";
 import { rankLeaderboard } from "@/lib/platform/golfLeaderboardOrder";
 import {
   GOLF_PREVIEW_COURSE_WEATHER,
   matchScoring,
+  matchStatus,
   normalizeCompetitor,
   type GolfMatchCompetitor,
   type GolfMatchGolfer,
@@ -20,26 +22,51 @@ import styles from "./GolfTripMatch.module.css";
  * GolfMatchup (round dots + team card) sits above the Golf slide tabs;
  * the Match and Leaderboard slides below them each show their own header control and rows.
  */
-export function GolfTripMatch({ match }: { match: GolfMatchPreview }) {
+export function GolfTripMatch({ match: fullMatch }: { match: GolfMatchPreview }) {
   const [net, setNet] = useState(false);
+  // < Current Round >: step back to past rounds (their final results) or forward to future ones (their matchups).
+  // Matches without a round count as the current round's.
+  const [viewRound, setViewRound] = useState(fullMatch.round);
+  const match = { ...fullMatch, round: viewRound,
+    matches: fullMatch.matches.filter(pairing => (pairing.round ?? fullMatch.round) === viewRound) };
+  const roundLabel = viewRound === fullMatch.round ? "Current Round" : `Round ${viewRound}`;
   // Gross only: gross, no control. Net only: net, "Net Scoring". Both: the GROSS / NET switch.
   const scoring = matchScoring(match);
   const showNet = scoring === "Net" || (scoring === "Both" && net);
   const formatDef = resolveGolfFormat(match.formatDef?.key ?? match.format);
+  const sideNames = match.matches.map(m => [normalizeCompetitor(m.left).name, m.right ? normalizeCompetitor(m.right).name : undefined]);
+  // The two teams: the matches' own side names when every match is the same two, else the competition's two sides.
+  const sameSides = sideNames.length && sideNames[0][0] && sideNames[0][1] && sideNames.every(([left, right]) => left === sideNames[0][0] && right === sideNames[0][1]);
+  const teamNames = !match.matches.length ? null : sameSides ? [sideNames[0][0], sideNames[0][1]] as const
+    : match.sides?.[0]?.name && match.sides[1]?.name ? [match.sides[0].name, match.sides[1].name] as const : null;
 
   return <div className={styles.match}>
     <SlideHeader title={match.course} detail={`Round ${match.round} of ${match.roundCount} • ${formatDef.label}`}>
       <ScoringControl scoring={scoring} net={net} onNet={setNet} />
     </SlideHeader>
+    {/* Round picker over the left team's name, then the two teams' names once, above the matches. */}
+    <div className={styles.roundNav} role="group" aria-label="Round">
+      <button type="button" aria-label="Previous round" disabled={viewRound <= 1} onClick={() => setViewRound(round => Math.max(1, round - 1))}><ChevronLeft size={16} strokeWidth={2.5} aria-hidden /></button>
+      <span aria-live="polite">{roundLabel}</span>
+      <button type="button" aria-label="Next round" disabled={viewRound >= fullMatch.roundCount} onClick={() => setViewRound(round => Math.min(fullMatch.roundCount, round + 1))}><ChevronRight size={16} strokeWidth={2.5} aria-hidden /></button>
+    </div>
+    {teamNames && <div className={styles.teamNames}><span>{teamNames[0]}</span><span>{teamNames[1]}</span></div>}
+    {!match.matches.length && <p className={styles.noMatches}>No matches set for {roundLabel === "Current Round" ? "this round" : roundLabel} yet.</p>}
     <ul className={styles.lineup}>
       {match.matches.map((m, i) => {
         const standing = showNet ? m.net : m.gross;
         const leftComp = normalizeCompetitor(m.left);
         const rightComp = m.right ? normalizeCompetitor(m.right) : undefined;
+        // A finished match says its result in the middle, so the sides drop their own "2 UP" / "AS".
+        const finished = matchStatus({ thru: leftComp.thru || leftComp.golfers[0]?.thru, standing, result: m.result }).kind === "final";
         return <li key={i} className={styles.pairing}>
-          <MatchSide competitor={leftComp} side="left" standing={standing} />
-          <MatchStatus competitor={leftComp} />
-          {rightComp && <MatchSide competitor={rightComp} side="right" standing={standing} />}
+          <MatchSide competitor={leftComp} side="left" standing={standing} hideLabel={finished} />
+          {/* The middle: the match number in gold over its status (tee time, THRU, or the final result), no box. */}
+          <span className={styles.matchCenter}>
+            <span className={styles.matchNumber}>Match {i + 1}</span>
+            <MatchStatus competitor={leftComp} plain standing={standing} result={m.result} />
+          </span>
+          {rightComp && <MatchSide competitor={rightComp} side="right" standing={standing} hideLabel={finished} />}
         </li>;
       })}
     </ul>
@@ -47,24 +74,21 @@ export function GolfTripMatch({ match }: { match: GolfMatchPreview }) {
 }
 
 /** One competitor side's half of a match row: standing on outside, player(s) toward center. */
-function MatchSide({ competitor, side, standing }: { competitor: GolfMatchCompetitor | GolfMatchGolfer; side: "left" | "right"; standing: GolfMatchStanding }) {
+function MatchSide({ competitor, side, standing, hideLabel = false }: { competitor: GolfMatchCompetitor | GolfMatchGolfer; side: "left" | "right"; standing: GolfMatchStanding; hideLabel?: boolean }) {
   const comp = normalizeCompetitor(competitor);
   const leading = standing?.leader === side;
-  const label = !standing ? "" : standing.leader === null ? "AS" : leading ? `${standing.up} UP` : "";
+  const label = !standing || hideLabel ? "" : standing.leader === null ? "AS" : leading ? `${standing.up} UP` : "";
   const isMulti = comp.golfers.length > 1;
 
   return <div className={`${styles.pairSide} ${styles[side]} ${leading ? styles.leading : ""}`}>
     <span className={styles.standing}>{label}</span>
     {isMulti ? (
       <div className={`${styles.golfer} ${styles[side]}`}>
-        <span className={styles.golferName}>{comp.name || comp.golfers.map((g) => g.name).join(" / ")}</span>
-        <span className={styles.golferMeta}>
-          {comp.golfers.map((g) => `${g.name}${g.hcp ? ` (${g.hcp})` : ""}`).join(" • ")}
-        </span>
-        <span className={styles.tee}>{comp.teeTime || comp.golfers[0]?.teeTime} <span className={styles.course}>@ {comp.course || comp.golfers[0]?.course}</span></span>
+        {/* The side's players, one name per line (the team name sits above the matches). */}
+        {comp.golfers.map((g) => <span key={g.name} className={styles.golferName}>{g.name}</span>)}
       </div>
     ) : (
-      <Golfer golfer={comp.golfers[0]} align={side === "left" ? "right" : "left"} showThru={false} showHcp={false} />
+      <Golfer golfer={comp.golfers[0]} align={side} showThru={false} showHcp={false} showTee={false} />
     )}
   </div>;
 }
@@ -226,16 +250,18 @@ export function roundDay(date: string): string {
 }
 
 /** Status box between competitors on the Match slide, or bare cream text at the top of the Match box. */
-function MatchStatus({ competitor, plain = false }: { competitor: GolfMatchCompetitor | GolfMatchGolfer; plain?: boolean }) {
+function MatchStatus({ competitor, plain = false, standing = null, result }: {
+  competitor: GolfMatchCompetitor | GolfMatchGolfer; plain?: boolean; standing?: GolfMatchStanding; result?: string;
+}) {
   const comp = normalizeCompetitor(competitor);
-  const thru = comp.thru || comp.golfers[0]?.thru || "";
-  const teeTime = comp.teeTime || comp.golfers[0]?.teeTime || "";
   const className = plain ? `${styles.status} ${styles.statusPlain}` : `${styles.rank} ${styles.status}`;
-  const holes = Number(thru.match(/^Thru (\d+)$/)?.[1]);
-  if (thru === "F" || holes >= 18) return <span className={className} aria-label="Finished">F</span>;
-  if (holes > 0) return <span className={className} aria-label={`Thru ${holes}`}>
-    <small>THRU</small>{holes}
+  // Tee time before the round, THRU and holes played during it, the final result ("4&2", "1 UP", "AS") after.
+  const status = matchStatus({ thru: comp.thru || comp.golfers[0]?.thru, teeTime: comp.teeTime || comp.golfers[0]?.teeTime, standing, result });
+  if (status.kind === "final") return <span className={`${className} ${styles.statusFinal}`} aria-label={`Final ${status.text}`}>{status.text}</span>;
+  if (status.kind === "thru") return <span className={className} aria-label={`Thru ${status.holes}`}>
+    <small>THRU</small>{status.holes}
   </span>;
+  const teeTime = status.time;
   const [time, period] = teeTime.split(" ");
   return <span className={className} aria-label={`Tees off ${teeTime}`}>
     {time}{period && <small>{period}</small>}
@@ -350,14 +376,14 @@ function RoundStats({ side, align }: { side: GolfMatchSide; align: "left" | "rig
   </dl>;
 }
 
-function Golfer({ golfer, align, showThru = true, showHcp = true }:
-  { golfer: GolfMatchGolfer; align: "left" | "right"; showThru?: boolean; showHcp?: boolean }) {
+function Golfer({ golfer, align, showThru = true, showHcp = true, showTee = true }:
+  { golfer: GolfMatchGolfer; align: "left" | "right"; showThru?: boolean; showHcp?: boolean; showTee?: boolean }) {
   return <div className={`${styles.golfer} ${styles[align]}`}>
     <span className={styles.golferName}>{golfer.name}</span>
     {(showHcp || showThru) && <span className={styles.golferMeta}>
       {showHcp && <span className={styles.hcp}>HCP {golfer.hcp}</span>}{showHcp && showThru && " • "}{showThru && golfer.thru}
     </span>}
-    <span className={styles.tee}>{golfer.teeTime} <span className={styles.course}>@ {golfer.course}</span></span>
+    {showTee && <span className={styles.tee}>{golfer.teeTime} <span className={styles.course}>@ {golfer.course}</span></span>}
   </div>;
 }
 

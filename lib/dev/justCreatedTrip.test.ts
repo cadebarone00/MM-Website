@@ -59,6 +59,8 @@ test("matchups built for round 1 become its Golf matches, and put me on that tee
   });
   assert.equal(trip.previewMatch?.matches.length, 1);
   const match = trip.previewMatch?.matches[0];
+  // Match 2 plays in tee time 2: its time shows on the Golf tab's match row.
+  assert.equal(match && "teeTime" in match.left ? match.left.teeTime : undefined, "8:10 AM");
   assert.deepEqual(match && "golfers" in match.left ? match.left.golfers.map(golfer => golfer.name) : [], ["Jordan Lee", "Player 2"]);
   // Match 2 is in tee time 2 (one 2 v 2 match per tee time) — I'm in it, so 8:10 is on my itinerary; the unset tee time isn't.
   assert.deepEqual(trip.travel?.items.filter(item => item.kind === "teeTime").map(item => item.startsAt), ["2027-05-13T08:10"]);

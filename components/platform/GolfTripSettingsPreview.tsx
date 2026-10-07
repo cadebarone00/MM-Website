@@ -15,7 +15,7 @@ import { GolfTripDatePicker } from "./GolfTripDatePicker";
 import { TripScheduleCoursePicker, type PickedCourse } from "./TripScheduleCoursePicker";
 import { TeeTimePicker } from "./TeeTimePicker";
 import { RoundCompetitionSettings } from "./RoundCompetitionSettings";
-import { defaultRoundComp, matchesPerTeeTime, playersPerSide, roundMatches, teeTimesNeeded, type RoundCompSettings } from "@/lib/platform/roundCompetition";
+import { defaultRoundComp, matchesPerTeeTime, playersPerSide, roundMatches, roundPointsAvailable, teeTimesNeeded, type RoundCompSettings } from "@/lib/platform/roundCompetition";
 import { GolfTripHistory, type HistoryLinking } from "./GolfTripHistory";
 import { dispatchDevRounds, useDevPlayerRounds } from "@/components/dev/useDevPlayerRounds";
 import { DEFAULT_DEV_ACCOUNT, DEV_ACCOUNTS, devAccount } from "@/lib/dev/devAccounts";
@@ -434,6 +434,10 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                         setCompetitionType(current => ({ ...current, [group.key]: option }));
                       }}>{option ?? "None"}</button>)}
                   </div>
+                  {/* Submitted & saved: a small "Saved" under the chosen pill (stays bright while the rest is greyed). */}
+                  {lockedComp[group.key] && <div className={`${styles.typeChoicesRow} ${styles.savedRow}`} aria-live="polite">
+                    {[...group.options, null].map(option => <span key={option ?? "none"} className={styles.savedTag}>{competitionType[group.key] === option ? "Saved" : ""}</span>)}
+                  </div>}
                   {/* The trip's players under each type as checkboxes in two columns, filled down the left first (left gets the extra); Select all heads the list. */}
                   {group.key === "team" ? competitionType.team && <div className={styles.typePlayers}>
                     {/* Add Sub/Uneven Teams off: one even Total players stepper. On: a size stepper per team instead. */}
@@ -668,6 +672,10 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
             <h2>{round.course}</h2>
             <time dateTime={date}>{new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`))} · Round {round.number}</time>
           </div>
+          {/* A competition round: a one-line overview of its competition (format · points available) under the line. */}
+          {comp && <p className={styles.roundCompOverview}>
+            {comp.format} · {comp.matchType === "Match Play" ? `${roundPointsAvailable(comp)} ${roundPointsAvailable(comp) === 1 ? "point" : "points"} available` : "Stroke play"}
+          </p>}
           {matchesMode ? <section className={styles.teeTable} aria-label="Tee times and matches">
             {/* Tee Times | Team A | Team B: one row per tee time with its match(es); tap a spot to put a player there. */}
             <div className={`${styles.teeTableHeader} ${styles.matchHeader}`} aria-hidden="true"><span>Tee Times</span><span>{teamLabels[0]}</span><span>{teamLabels[1]}</span></div>

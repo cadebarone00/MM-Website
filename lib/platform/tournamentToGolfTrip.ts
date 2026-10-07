@@ -145,9 +145,14 @@ export function adaptTournamentToPreviewMatch(tournament: Tournament): GolfMatch
   const matches = (tournament.matches || []).map((m: RealMatch) => {
     const left: GolfMatchCompetitor = { golfers: (m.maroonPlayers || []).map((p) => ({ name: getPlayerDisplayName(p), hcp: 0, thru: "", score: "", teeTime: "", course: tournament.venue })), points: undefined, totalScore: undefined, thru: undefined, teeTime: undefined, course: tournament.venue } as any;
     const right: GolfMatchCompetitor | undefined = m.whitePlayers && m.whitePlayers.length > 0 ? { golfers: (m.whitePlayers || []).map((p) => ({ name: getPlayerDisplayName(p), hcp: 0, thru: "", score: "", teeTime: "", course: tournament.venue })), points: undefined, totalScore: undefined, thru: undefined, teeTime: undefined, course: tournament.venue } as any : undefined;
-    const gross = m.leader === undefined ? null : (m.leader === "maroon" ? { leader: "left", up: Math.abs(m.margin ?? 0) } : m.leader === "white" ? { leader: "right", up: Math.abs(m.margin ?? 0) } : { leader: null, up: 0 });
+    // Who's ahead: the match's own leader, or for a finished match without one, whoever took more points.
+    const leader = m.leader ?? (m.maroonPts > m.whitePts ? "maroon" : m.whitePts > m.maroonPts ? "white" : m.status === "live" || m.status === "scheduled" ? undefined : "tie");
+    const gross = leader === undefined ? null : (leader === "maroon" ? { leader: "left", up: Math.abs(m.margin ?? 0) } : leader === "white" ? { leader: "right", up: Math.abs(m.margin ?? 0) } : { leader: null, up: 0 });
     const net = gross;
-    return { left, right, gross, net, round: m.day } as any;
+    // Finished matches: their final result as golfers say it.
+    const result = m.margin && m.holesRemaining ? `${m.margin}&${m.holesRemaining}` : m.margin ? `${m.margin} UP`
+      : m.status !== "live" && m.status !== "scheduled" && m.maroonPts === m.whitePts ? "AS" : undefined;
+    return { left, right, gross, net, round: m.day, result } as any;
   });
 
   const leaderboard: GolfLeaderboardEntry[] = (tournament.individualLeaderboard || []).map((s, i) => ({

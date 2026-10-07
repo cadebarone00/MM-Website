@@ -212,7 +212,7 @@ span.typeChoice{cursor:default}
 .rulesList{display:grid;gap:8px;margin:0;padding-left:20px;color:#111;font:500 15px/1.4 var(--font-spectral),Georgia,serif}
 /* Overview: a side's settings sit in a fieldset; once submitted & saved it's disabled and greyed out. */
 .compLock{display:grid;gap:10px;min-width:0;margin:0;padding:0;border:0;transition:opacity .2s,filter .2s}
-.compLock:disabled{opacity:.45;filter:grayscale(1)}
+.compLock:disabled > :not(.savedRow){opacity:.45;filter:grayscale(1)}
 .compLockButton.compLockButton{margin-top:12px}
 /* Save / submit / undo buttons use the Scoring button's look (button scoring mode): 70% wide, centered, 46px tall, 12px corners,
    Spectral bold 14px and a soft shadow. Its maroon and cream are swapped so it shows on this maroon page. */
@@ -239,3 +239,8 @@ span.typeChoice{cursor:default}
 .matchSpot{display:flex;align-items:center;min-width:0;min-height:30px;padding:0;border:0;background:transparent;color:#fbf8f1;text-align:left;font:inherit;cursor:pointer}
 .matchSpot:focus-visible,.matchTime:focus-visible{outline:2px solid #dcc495;outline-offset:2px;border-radius:6px}
 .matchTaken{flex:none;color:#805b24;font:600 12px/1 var(--font-barlow),sans-serif}
+/* "Saved" under the chosen type pill once that side is submitted & saved. */
+.savedRow.savedRow{display:grid;margin-top:-4px}
+.savedTag{text-align:center;color:#dcc495;font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
+/* Golf Schedule → a competition round: its competition in one line under the header line. */
+.roundCompOverview{margin:10px 0 0;text-align:center;color:#dcc495;font:700 13px/1.3 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase}

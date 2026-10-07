@@ -179,3 +179,34 @@
 .matchupCompact .win{margin-bottom:8px}
 /* Net-only rounds: a plain label where the GROSS / NET switch would be. */
 .scoringLabel{display:inline-flex;align-items:center;min-height:34px;padding:0 4px;color:#dcc495;font:700 12px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
+/* Two-team matches: the team names once, above the match rows, one at each side. */
+.teamNames{display:flex;justify-content:space-between;gap:12px;padding:0 2px 8px;border-bottom:1px solid rgba(255,255,255,.3);color:#dcc495;font:700 13px/1.2 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.teamNames span:last-child{text-align:right}
+/* Match rows: each side's names against its own edge of the screen (left team left, right team right); the standing
+   ("2 UP" / "AS") sits toward the middle. */
+.pairSide.left{flex-direction:row-reverse}
+.pairSide.right.right{flex-direction:row}
+.statusFinal.statusFinal{font-size:15px;white-space:nowrap}
+/* Match row middle: "MATCH n" in small gold over the status. */
+.matchCenter{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
+.matchNumber{color:#dcc495;font:700 9px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+/* A little more room (1% of the screen) between each match row and the line above it. */
+.pairing.pairing{padding-top:calc(8px + 1vh)}
+/* "MATCH n" about 30% larger (9px → 12px); the middle column widens to fit "MATCH 10". */
+.matchNumber.matchNumber{font-size:12px}
+.pairing.pairing{grid-template-columns:minmax(0,1fr) 64px minmax(0,1fr)}
+/* Each player name stays on one line in a match row ("…" if it is too long for its half). */
+.pairSide .golferName{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pairing.pairing.pairing{grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr);gap:6px}
+.pairSide .golferName.golferName{font-size:15px}
+/* "MATCH n" sits just under the line above its row (same spot on every row, the top one included); the status stays in
+   the middle. */
+.pairing.pairing{position:relative}
+.matchNumber.matchNumber{position:absolute;top:6px;left:50%;transform:translateX(-50%)}
+/* Matches: < Current Round > over the left team's name; the round picker, team names and matches sit a bit lower. */
+.roundNav{display:flex;align-items:center;gap:6px;margin-top:14px;color:#fbf8f1;font:700 13px/1 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase}
+.roundNav button{display:grid;place-items:center;width:28px;height:28px;padding:0;border:0;border-radius:50%;background:transparent;color:#dcc495;cursor:pointer}
+.roundNav button:disabled{opacity:.3;cursor:default}
+.roundNav button:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.roundNav button:first-child{margin-left:-8px}
+.noMatches{margin:10px 0 0;color:rgba(251,248,241,.6);font:500 14px/1.35 var(--font-barlow),sans-serif}
