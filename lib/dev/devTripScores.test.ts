@@ -55,3 +55,16 @@ test("devTripScoring: my attestee's name, my saved round on the leaderboard, and
   assert.equal(after.shownMatch!.leaderboard.find((r) => r.golfer.name === empty.group!.names["dev-cade"])!.thru, "F");
   assert.equal(devTripScoring(seedDevRounds(), undefined, "dev-cade").group, null);
 });
+
+test("the preview group's assignment is locked once scoring starts, and a recalculation never replaces it", async () => {
+  const { devRoundsReducer, seedDevRounds } = await import("./devPlayerRounds");
+  const { devTripScoring } = await import("./devTripScores");
+  const match = GOLF_MATCH_PREVIEW_FOURBALL;
+  const first = devTripScoring(seedDevRounds(), match, "dev-cade").group!;
+  // Pretend the saved assignment differs from what a fresh calculation gives (e.g. made before a rule change).
+  const lockedPlayers = first.players.map((p, i, all) => ({ ...p, attesterProfileId: all[(i + 1) % all.length].profileId }));
+  let store = devRoundsReducer(seedDevRounds(), { type: "saveGroup", group: { ...first, players: lockedPlayers } });
+  assert.deepEqual(devTripScoring(store, match, "dev-cade").group!.players, first.players, "not started yet → fresh assignment");
+  store = devRoundsReducer(store, { type: "saveAttestStrokes", groupId: first.id, profileId: first.players[1].profileId, strokes: match.par, meta: { tripRoundId: first.tripRoundId!, course: match.course, datePlayed: match.roundDate, format: match.format, par: match.par } });
+  assert.deepEqual(devTripScoring(store, match, "dev-cade").group!.players, lockedPlayers, "scoring started → saved assignment kept");
+});

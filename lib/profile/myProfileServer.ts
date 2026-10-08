@@ -1,4 +1,5 @@
-import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { getCurrentProfile } from "./currentProfile";
 import { getPlayerProfileBySlug, getPlayerSlug } from "@/lib/data/players";
 import { getCatalogTournament, getSeasonCatalog } from "@/lib/data/seasonCatalog";
 import { getPlayerScorecard } from "@/lib/data";
@@ -42,12 +43,14 @@ async function legacyList(load: (profileId: string) => Promise<PastTournament[]>
  * The user id comes from the session only (never the request).
  */
 export async function loadMyProfile(): Promise<MyProfile | null> {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: row } = await supabase.from("profiles").select("player_slug, display_name, username, email").eq("id", user.id).single();
-  const playerSlug: string | null = row?.player_slug ?? null;
+  const current = await getCurrentProfile();
+  if (current.status === "signed-out") return null;
+  const user = current.account;
+  const me = current.status === "ok" ? current.profile : null;
+  // Product lookups use the profile id (= profiles.id; equals the account id, see lib/profile/profileIdentity.ts).
+  const profileId = me?.profileId ?? user.id;
+  // LEGACY COMPATIBILITY: the old Maroon player slot, only for pre-platform Maroon data (bio, scorecards, handicap).
+  const playerSlug = me?.legacyMaroonPlayerSlug ?? null;
 
   let fullName: string | null = null;
   let avatarSrc: string | null = null;
@@ -64,16 +67,16 @@ export async function loadMyProfile(): Promise<MyProfile | null> {
   }
 
   const [platformActive, platformPast, legacyActive, legacyPast, myRounds] = await Promise.all([
-    platformList("list_my_active_editions", user.id),
-    platformList("list_my_past_editions", user.id),
-    legacyList(loadLegacyPlayingRows, user.id),
-    legacyList(loadLegacyPastRows, user.id),
-    getMyPlayerRounds(user.id),
+    platformList("list_my_active_editions", profileId),
+    platformList("list_my_past_editions", profileId),
+    legacyList(loadLegacyPlayingRows, profileId),
+    legacyList(loadLegacyPastRows, profileId),
+    getMyPlayerRounds(profileId),
   ]);
   // Soonest first, undated last (same order as the database list).
   const active = [...legacyActive, ...platformActive].sort((a, b) =>
     (a.startDate ?? "9999").localeCompare(b.startDate ?? "9999") || a.name.localeCompare(b.name) || a.year - b.year);
-  const name = profileDisplayName({ fullName, displayName: row?.display_name, username: row?.username, email: row?.email ?? user.email });
+  const name = profileDisplayName({ fullName, displayName: me?.displayName, username: me?.username, email: me?.email || user.email });
   const stats = playerSlug ? careerStats(getPlayerStatsByYear(playerSlug)) : null;
   let roundHistory: MyProfile["roundHistory"] = null;
   let playerPage: MyProfile["playerPage"] = null;

@@ -38,3 +38,9 @@ test("last names: last word of the first golfer, numbers sort naturally", () => 
   const guests = rankLeaderboard([row("Guest Golfer 10", "—"), row("Guest Golfer 2", "—")]);
   assert.deepEqual(order(guests), ["— Guest Golfer 2", "— Guest Golfer 10"]);
 });
+
+test("no competition: ranked by the day's score, not the trip total", () => {
+  const day = (name: string, total: string, today: string) => ({ ...row(name, total), today });
+  const ranked = rankLeaderboard([day("Cam Latto", "-6", "+4"), day("Drew Weisser", "+9", "-1"), day("Hugo Moebel", "E", "E")], { today: true });
+  assert.deepEqual(ranked.map(({ golfer, position }) => `${position} ${golfer.name}`), ["1 Drew Weisser", "2 Hugo Moebel", "3 Cam Latto"]);
+});

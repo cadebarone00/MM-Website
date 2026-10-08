@@ -55,7 +55,7 @@ alter table public.golf_trip_flights enable row level security;
 -- Read-only, and only your own. No insert / update / delete policies: writes go through save/delete below.
 drop policy if exists golf_trip_flights_select_own on public.golf_trip_flights;
 create policy golf_trip_flights_select_own on public.golf_trip_flights for select to authenticated
-  using (exists (select 1 from public.golf_trip_members m where m.id = member_id and m.profile_id = auth.uid()));
+  using (public.is_my_golf_trip_member(member_id));
 
 revoke all on public.golf_trip_flights from anon;
 grant select on public.golf_trip_flights to authenticated;

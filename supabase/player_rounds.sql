@@ -1,10 +1,10 @@
 -- supabase/player_rounds.sql
--- Player rounds: one saved round per account per round played (a golf trip round, later tournament / logged-myself /
+-- Player rounds: one saved round per golfer PROFILE per round played (a golf trip round, later tournament / logged-myself /
 -- past-trip rounds). The trip, Profile → Rounds and the handicap all read this one record — never a copy. Plus each
--- account's Rounds privacy (Settings → Privacy). See project_specs.md, "Player rounds Step 2A — database foundation".
+-- profile's Rounds privacy (Settings → Privacy). See project_specs.md, "Player rounds Step 2A — database foundation".
 --
--- A round belongs to an account, not to a trip: deleting a trip later keeps the player's round (source_label keeps
--- the trip's name). source_key ("trip:<trip id>:<round id>") is unique per account, so a round can only be saved once;
+-- A round belongs to a profile (profile_id → profiles.id, the golfer), not to a trip or a login: deleting a trip later keeps the player's round (source_label keeps
+-- the trip's name). source_key ("trip:<trip id>:<round id>") is unique per profile, so a round can only be saved once;
 -- saving it again returns the round already saved (locked after submit).
 --
 -- Course and tee are snapshots taken when the round was submitted (course_ref = the course API's id), so a later
@@ -17,7 +17,7 @@
 --
 -- Access: nobody reads or writes the table directly (RLS on, no policies). The server calls the functions below with
 -- the signed-in user's id, using the service-role key (lib/platform/playerRoundsServer.ts). Nothing here returns one
--- account's rounds to another account.
+-- profile's rounds to another profile.
 --
 -- Prerequisite: schema.sql (profiles). Safe to run more than once. Undo: see the bottom of this file.
 
@@ -55,7 +55,7 @@ create table if not exists public.player_rounds (
 create index if not exists player_rounds_profile_idx on public.player_rounds (profile_id, date_played desc);
 
 -- Settings → Privacy. Private: only you see your Rounds (people you play with still see your handicap index, once
--- other players' profiles can be viewed). New accounts start private.
+-- other players' profiles can be viewed). New profiles start private.
 alter table public.profiles add column if not exists rounds_visibility text not null default 'private';
 alter table public.profiles drop constraint if exists profiles_rounds_visibility_check;
 alter table public.profiles add constraint profiles_rounds_visibility_check check (rounds_visibility in ('public', 'private'));

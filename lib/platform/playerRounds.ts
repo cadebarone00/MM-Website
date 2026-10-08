@@ -2,7 +2,7 @@ import { calculateDifferential, calculateHandicapIndex, calculateLowIndex } from
 import type { RoundsVisibility } from "./playerRoundsPrivacy";
 
 /**
- * Player rounds: one saved round per account per round played. The trip, its leaderboard, Profile → Rounds and the
+ * Player rounds: one saved round per golfer profile (profiles.id) per round played. The trip, its leaderboard, Profile → Rounds and the
  * handicap all read this same record — never a copy. See project_specs.md, "Player rounds — one saved round per account".
  * Pure functions, safe anywhere; Step 1 keeps the records in a dev store, Step 2 in the database.
  */
@@ -58,7 +58,7 @@ export type PlayerRoundInput = Omit<PlayerRound, "total" | "countsForHandicap" |
 /** The Scoring sheet's card: one entry per hole, 1–18. */
 export interface ScoredCard { strokes: number[]; putts: (number | null)[]; fairways: (ShotResult | null)[]; greens: (ShotResult | null)[]; penalties?: HolePenalties[] }
 
-/** Deterministic ids: the same account + round always gets the same id, so a round can only be saved once. */
+/** Deterministic ids: the same profile + round always gets the same id, so a round can only be saved once. */
 export const playerRoundId = (...parts: string[]) => parts.join(":");
 
 /** Not own ball the whole way → never counts. Four-ball / best ball is own ball and does count. */

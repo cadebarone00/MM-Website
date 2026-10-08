@@ -7,7 +7,9 @@ import type { HolePenalties, ScoredCard, ShotResult } from "./playerRounds";
 export interface LiveCardHole { number: number; strokes: number | null; putts: number | null; fairway: ShotResult | null; green: ShotResult | null; penalties: HolePenalties; attestStrokes: number | null }
 export interface LiveCard { groupId: string; profileId: string; holes: LiveCardHole[] }
 /** The Scoring sheet's arrays, one entry per hole. */
-export interface SheetCard { strokes: (number | null)[]; putts: (number | null)[]; fairways: (ShotResult | null)[]; greens: (ShotResult | null)[]; penalties: HolePenalties[]; attestStrokes: (number | null)[] }
+export interface SheetCard { strokes: (number | null)[]; putts: (number | null)[]; fairways: (ShotResult | null)[]; greens: (ShotResult | null)[]; penalties: HolePenalties[]; attestStrokes: (number | null)[];
+  /** Which holes' strokes the player actually typed (untouched holes show par but were never entered). */
+  entered?: boolean[] }
 
 export function liveCardFromSheet(groupId: string, profileId: string, sheet: SheetCard): LiveCard {
   return { groupId, profileId, holes: sheet.strokes.map((strokes, i) => ({
@@ -41,5 +43,5 @@ export function scoredCardFrom(card: LiveCard, strokes?: number[]): ScoredCard {
 
 /** The Scoring sheet's state → its live card. Untouched holes count as par, exactly as the sheet shows and submits them. */
 export function sheetCardFromScoring({ holes, par, ...rest }: Omit<SheetCard, "strokes"> & { holes: (number | null)[]; par?: number[] }): SheetCard {
-  return { ...rest, strokes: holes.map((h, i) => h ?? par?.[i] ?? null) };
+  return { ...rest, strokes: holes.map((h, i) => h ?? par?.[i] ?? null), entered: holes.map((h) => h !== null) };
 }

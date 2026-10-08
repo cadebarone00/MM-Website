@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PrivacySetting } from "@/components/settings/PrivacySetting";
 import { SignOutButton } from "@/components/settings/SignOutButton";
 import { getMyRoundsVisibility } from "@/lib/platform/playerRoundsServer";
+import { getCurrentProfile } from "@/lib/profile/currentProfile";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Settings | The Maroon" };
@@ -10,7 +11,9 @@ export const metadata: Metadata = { title: "Settings | The Maroon" };
 /** Settings (the gear on Profile and in the account menu): Account (Sign Out) and Privacy (Rounds public / private). Signed-out visitors get Log In. */
 export default async function SettingsPage() {
   const { data: { user } } = await (await createSupabaseServerClient()).auth.getUser();
-  const privacy = user ? await getMyRoundsVisibility(user.id) : null;
+  const current = await getCurrentProfile();
+  // Privacy is a profile setting, so it only shows once the account has its profile.
+  const privacy = current.status === "ok" ? await getMyRoundsVisibility(current.profile.profileId) : null;
 
   return (
     <div className="mx-auto max-w-[480px] px-4 py-12 sm:px-7 sm:py-16">

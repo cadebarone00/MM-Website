@@ -19,6 +19,10 @@ export function golfSections(structure: CompetitionStructure, stats = false): { 
   const { individual, team } = structure;
   const statsTab = stats ? [{ id: "Stats" as const, label: "Stats" }] : [];
   if (!individual && !team) return [{ id: "Overview", label: "Overview" }, { id: "Games", label: "Games" }, { id: "Stats", label: "Stats" }];
+  // Individual only: the same as no competition, with Overview called Leaderboard.
+  if (individual && !team) return [{ id: "Overview", label: "Leaderboard" }, { id: "Games", label: "Games" }, { id: "Stats", label: "Stats" }];
+  // Team only: Overview (the tee sheet) and Match (the matchups), then Games · Stats.
+  if (team && !individual) return [{ id: "Overview", label: "Overview" }, { id: "Competition", label: "Match" }, { id: "Games", label: "Games" }, { id: "Stats", label: "Stats" }];
   return [
     ...(individual ? [{ id: "Overview" as const, label: "Leaderboard" }] : []),
     ...(team ? [{ id: "Competition" as const, label: "Matches" }] : []),

@@ -2,7 +2,7 @@ import type { PlayerRound, PlayerRoundHole, RoundSource } from "./playerRounds";
 
 /**
  * Player rounds ↔ the database (supabase/player_rounds.sql). The payload is what save_player_round takes; the round's
- * id is its source key (unique per account). Rows coming back are checked before the screens use them.
+ * id is its source key (unique per profile). Rows coming back are checked before the screens use them.
  */
 export function playerRoundPayload(round: PlayerRound, sourceLabel: string | null) {
   return {

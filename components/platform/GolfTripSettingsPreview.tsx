@@ -31,6 +31,7 @@ import { useGolfTripCompetitionPreview } from "./GolfTripCompetitionPreviewProvi
 import { useSimulator, useSimulatorNavigationReporter } from "@/components/dev/SimulatorBridge";
 import { usePersistedState } from "@/lib/dev/justCreatedStore";
 import { setMyStatsOptIn, setPlayerStats, useMyStatsOptIn, usePlayerStats } from "@/lib/platform/playerStatsSetting";
+import { setInAppScoring, useInAppScoring } from "@/lib/platform/inAppScoringSetting";
 import { useRoundRsvps } from "@/lib/platform/roundRsvp";
 
 const GENERAL_CARDS = ["Scorecard View", ...Array.from({ length: 5 }, () => "Place holder")];
@@ -107,6 +108,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   // Player Stats (Player Scoring): when off, players only enter their score and the Golf tab has no Stats section.
   const playerStats = usePlayerStats();
   const myStats = useMyStatsOptIn();
+  const inAppScoring = useInAppScoring();
   // Players' Play / Sit out for each round (they choose on their Itinerary).
   const roundRsvps = useRoundRsvps(dataKey);
   const [scoringFieldsOff, setScoringFieldsOff] = usePersistedState<Set<string>>(persist, "scoringFieldsOff", new Set());
@@ -516,6 +518,13 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                   </button>
                 </div>)}
               </div>
+              {/* No competition (Individual and Team both None): players can still score in the app, or not at all. */}
+              {!competitionType.individual && !competitionType.team && <div className={styles.totalPlayers}>
+                <span className={styles.typeHeading}>Score in the app</span>
+                <button type="button" role="switch" aria-checked={inAppScoring} aria-label="Score in the app" className={toggleStyles.toggle} onClick={() => setInAppScoring(!inAppScoring)}>
+                  <span className={toggleStyles.track} data-on={inAppScoring}><span className={toggleStyles.thumb} /></span><span>{inAppScoring ? "On" : "Off"}</span>
+                </button>
+              </div>}
             </section>}
             {competitionSection === "Summary" && <section className={tripStyles.infoSection} aria-label="Summary">
               <dl className={styles.overview}>

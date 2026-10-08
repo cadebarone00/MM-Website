@@ -12,9 +12,10 @@ const byLastName = (a: GolfLeaderboardEntry, b: GolfLeaderboardEntry) =>
   || a.golfer.name.localeCompare(b.golfer.name, "en", { sensitivity: "base", numeric: true });
 
 /** A to-par label ("-3", "E", "+2") or points as a number; null when there's no score yet ("—", blank). */
-function scoreOf(row: GolfLeaderboardEntry, net: boolean, stableford: boolean): number | null {
-  if (stableford && row.pointsTotal !== undefined) return row.pointsTotal;
-  const label = (net ? row.netTotal : row.total).replace(/\s*PTS/i, "").trim();
+function scoreOf(row: GolfLeaderboardEntry, net: boolean, stableford: boolean, today: boolean): number | null {
+  const points = today ? row.pointsToday : row.pointsTotal;
+  if (stableford && points !== undefined) return points;
+  const label = (today ? (net ? row.netToday : row.today) : (net ? row.netTotal : row.total)).replace(/\s*PTS/i, "").trim();
   if (label === "E") return 0;
   if (!/^[+-]?\d+(\.\d+)?$/.test(label)) return null;
   return Number(label);
@@ -24,9 +25,10 @@ function scoreOf(row: GolfLeaderboardEntry, net: boolean, stableford: boolean): 
  * Leaderboard order, always: best score first, worst last (lowest to par for stroke play, most points for Stableford),
  * with "T" for ties; ties and anyone without a score yet fall back to last name A–Z, and unscored players go at the
  * bottom with "—" for a place. Before the tournament (nobody has a score) that makes it simply alphabetical by last name.
+ * `today`: rank by the day's score instead of the trip total (no competition: just that day's round).
  */
-export function rankLeaderboard(rows: GolfLeaderboardEntry[], { net = false, stableford = false } = {}): GolfLeaderboardEntry[] {
-  const scored = rows.map((row) => ({ row, score: scoreOf(row, net, stableford) }));
+export function rankLeaderboard(rows: GolfLeaderboardEntry[], { net = false, stableford = false, today = false } = {}): GolfLeaderboardEntry[] {
+  const scored = rows.map((row) => ({ row, score: scoreOf(row, net, stableford, today) }));
   const sorted = [...scored].sort((a, b) => {
     if (a.score === null || b.score === null) return a.score === b.score ? byLastName(a.row, b.row) : a.score === null ? 1 : -1;
     return (stableford ? b.score - a.score : a.score - b.score) || byLastName(a.row, b.row);

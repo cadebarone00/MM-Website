@@ -15,8 +15,9 @@
 -- delete_golf_trip (organizer only), and reads through get_golf_trip /
 -- list_my_golf_trips, all called by the server with the signed-in user's id
 -- (POST /api/golf-trips, DELETE /api/golf-trips/<id>, /golf-trips/<id>,
--- lib/platform/golfTripsServer.ts). RLS lets trip members read their own trip
--- directly and nobody write directly.
+-- lib/platform/golfTripsServer.ts). RLS lets trip members read their own trip and rounds
+-- directly and nobody write directly. Members' rows (emails, invitations) are never readable
+-- directly: the server sends each viewer only what they may see.
 --
 -- Prerequisite: schema.sql (profiles) and platform_foundation.sql (tournaments).
 -- Safe to run more than once. Undo: see the bottom of this file.
@@ -105,6 +106,16 @@ $$;
 revoke all on function public.is_golf_trip_member(uuid, uuid) from public, anon;
 grant execute on function public.is_golf_trip_member(uuid, uuid) to authenticated, service_role;
 
+-- Is this membership row mine? For other tables' policies (e.g. golf_trip_flights) now that members' rows can't be
+-- read directly. Answers yes / no only.
+create or replace function public.is_my_golf_trip_member(p_member uuid)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from golf_trip_members where id = p_member and profile_id = auth.uid());
+$$;
+revoke all on function public.is_my_golf_trip_member(uuid) from public, anon;
+grant execute on function public.is_my_golf_trip_member(uuid) to authenticated, service_role;
+
 alter table public.golf_trips enable row level security;
 alter table public.golf_trip_members enable row level security;
 alter table public.golf_trip_rounds enable row level security;
@@ -113,15 +124,15 @@ alter table public.golf_trip_rounds enable row level security;
 drop policy if exists golf_trips_select_members on public.golf_trips;
 create policy golf_trips_select_members on public.golf_trips for select to authenticated
   using (public.is_golf_trip_member(id, auth.uid()));
+-- No direct reads of members (their emails and invitations stay on the server); see lib/platform/golfTripMembers.ts.
 drop policy if exists golf_trip_members_select_members on public.golf_trip_members;
-create policy golf_trip_members_select_members on public.golf_trip_members for select to authenticated
-  using (public.is_golf_trip_member(golf_trip_id, auth.uid()));
 drop policy if exists golf_trip_rounds_select_members on public.golf_trip_rounds;
 create policy golf_trip_rounds_select_members on public.golf_trip_rounds for select to authenticated
   using (public.is_golf_trip_member(golf_trip_id, auth.uid()));
 
 revoke all on public.golf_trips, public.golf_trip_members, public.golf_trip_rounds from anon;
-grant select on public.golf_trips, public.golf_trip_members, public.golf_trip_rounds to authenticated;
+revoke all on public.golf_trip_members from authenticated;
+grant select on public.golf_trips, public.golf_trip_rounds to authenticated;
 
 -- Create a trip, its organizer and its rounds in one go (all or nothing). p_input is what
 -- lib/platform/golfTripCreate.ts builds after validating the questionnaire; the checks here
@@ -208,7 +219,9 @@ language sql stable security definer set search_path = public as $$
   select coalesce(jsonb_agg(jsonb_build_object(
       'id', t.id, 'name', t.name, 'destination', t.destination, 'startDate', t.start_date, 'endDate', t.end_date,
       'status', t.status, 'expectedTravelerCount', t.expected_traveler_count,
-      'memberCount', (select count(*) from golf_trip_members x where x.golf_trip_id = t.id), 'role', m.role
+      -- Players = accepted members with a profile; pending invitations aren't players yet.
+      'memberCount', (select count(*) from golf_trip_members x where x.golf_trip_id = t.id and x.profile_id is not null and x.invitation_status = 'accepted'),
+      'role', m.role
     ) order by t.start_date, t.created_at), '[]'::jsonb)
   from golf_trip_members m join golf_trips t on t.id = m.golf_trip_id
   where m.profile_id = p_profile;

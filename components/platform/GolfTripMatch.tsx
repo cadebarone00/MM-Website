@@ -102,7 +102,8 @@ function MatchSide({ competitor, side, standing, hideLabel = false }: { competit
  * Leaderboard slide: a PLAYER / TOT (or PTS) / THRU / TDY header, then one competitor per row.
  * Stableford formats display PTS columns; stroke play formats display TOT relative to par.
  */
-export function GolfTripLeaderboard({ match }: { match: GolfMatchPreview }) {
+/** `byToday` (no competition): ranked by the day's score, best first, rather than the trip total. */
+export function GolfTripLeaderboard({ match, byToday = false }: { match: GolfMatchPreview; byToday?: boolean }) {
   const [net, setNet] = useState(false);
   const [openCards, setOpenCards] = useState<ReadonlySet<string>>(new Set());
   const formatDef = resolveGolfFormat(match.formatDef?.key ?? match.format);
@@ -110,7 +111,7 @@ export function GolfTripLeaderboard({ match }: { match: GolfMatchPreview }) {
   const scoring = matchScoring(match);
   const showNet = scoring === "Net" || (scoring === "Both" && net);
   // Always best → worst (alphabetical by last name before anyone has a score), for Gross and Net alike.
-  const rows = rankLeaderboard(match.leaderboard, { net: showNet, stableford: isStableford });
+  const rows = rankLeaderboard(match.leaderboard, { net: showNet, stableford: isStableford, today: byToday });
 
   function toggleCard(name: string) {
     setOpenCards((current) => {
@@ -275,26 +276,71 @@ function teeMinutes(time: string): number {
 /**
  * Top box on Overview with no competition: just the day's round — the course, then each tee time with who's in it.
  * Players who chose Sit out for this round are left off.
+ * `topFive` (individual only): the box splits down the middle — the round on the left, the leaderboard's top 5 on the right.
  */
-export function GolfRoundInfo({ match, sittingOut }: { match: GolfMatchPreview; sittingOut?: ReadonlySet<string> }) {
-  const groups = new Map<string, string[]>();
+export function GolfRoundInfo({ match, sittingOut, topFive = false }: { match: GolfMatchPreview; sittingOut?: ReadonlySet<string>; topFive?: boolean }) {
+  const teeTimes = teeSheet(match, sittingOut).map(([time, golfers]) => [time, golfers.map(golfer => golfer.name)] as const);
+  const round = <>
+    {/* Split (half width): the date and the round on their own lines rather than wrapping mid-phrase. */}
+    <p className={styles.summaryLabel}>{roundDay(match.roundDate)}{topFive ? <br /> : " · "}Round {match.round} of {match.roundCount}</p>
+    <p className={styles.roundInfoCourse}>{match.course}</p>
+    {teeTimes.length ? <ul className={styles.roundInfoTimes}>
+      {teeTimes.map(([time, players]) => <li key={time}>
+        <span className={styles.roundInfoTime}>{time}</span>
+        <span className={styles.roundInfoPlayers}>{players.join(", ")}</span>
+      </li>)}
+    </ul> : <p className={styles.summaryNote}>No one is playing this round yet.</p>}
+  </>;
+  if (!topFive) return <div className={styles.matchup}>
+    <section className={`${styles.versus} ${styles.roundInfo}`} aria-label="Today's round">{round}</section>
+  </div>;
+  // The leaderboard's order (best first, ties shown as T2), its first five; points for Stableford, else to par.
+  const stableford = resolveGolfFormat(match.formatDef?.key ?? match.format).scoringMethod === "stableford";
+  const leaders = rankLeaderboard(match.leaderboard, { stableford }).slice(0, 5);
+  return <div className={styles.matchup}>
+    <section className={`${styles.versus} ${styles.roundInfo} ${styles.roundInfoSplit}`} aria-label="Today's round and top 5">
+      <div className={styles.roundInfoHalf}>{round}</div>
+      <div className={styles.roundInfoHalf}>
+        <p className={styles.summaryLabel}>Top 5</p>
+        <ol className={styles.topFive}>
+          {leaders.map(({ position, golfer, total, pointsTotal }) => {
+            const score = stableford && pointsTotal !== undefined ? `${pointsTotal} PTS` : parLabel(total);
+            return <li key={golfer.name}>
+              <span className={styles.topFivePlace}>{position}</span>
+              <span className={styles.topFiveName}>{golfer.name}</span>
+              <span className={styles.number} data-par={stableford ? undefined : parColor(score)}>{score}</span>
+            </li>;
+          })}
+        </ol>
+      </div>
+    </section>
+  </div>;
+}
+
+/** The round's tee times in order, each with its players (no one who chose Sit out); no tee time yet → "Tee time TBD". */
+function teeSheet(match: GolfMatchPreview, sittingOut?: ReadonlySet<string>): [string, GolfMatchGolfer[]][] {
+  const groups = new Map<string, GolfMatchGolfer[]>();
   for (const { golfer } of match.leaderboard) {
     if (sittingOut?.has(golfer.name)) continue;
     const time = golfer.teeTime || "Tee time TBD";
-    groups.set(time, [...(groups.get(time) ?? []), golfer.name]);
+    groups.set(time, [...(groups.get(time) ?? []), golfer]);
   }
-  const teeTimes = [...groups].sort(([a], [b]) => teeMinutes(a) - teeMinutes(b));
-  return <div className={styles.matchup}>
-    <section className={`${styles.versus} ${styles.roundInfo}`} aria-label="Today's round">
-      <p className={styles.summaryLabel}>{roundDay(match.roundDate)} · Round {match.round} of {match.roundCount}</p>
-      <p className={styles.roundInfoCourse}>{match.course}</p>
-      {teeTimes.length ? <ul className={styles.roundInfoTimes}>
-        {teeTimes.map(([time, players]) => <li key={time}>
-          <span className={styles.roundInfoTime}>{time}</span>
-          <span className={styles.roundInfoPlayers}>{players.join(", ")}</span>
-        </li>)}
-      </ul> : <p className={styles.summaryNote}>No one is playing this round yet.</p>}
-    </section>
+  return [...groups].sort(([a], [b]) => teeMinutes(a) - teeMinutes(b));
+}
+
+/** Under Overview (team only): the tee sheet — each tee time, then its players one per line with their handicaps. */
+export function GolfTeeSheet({ match, sittingOut }: { match: GolfMatchPreview; sittingOut?: ReadonlySet<string> }) {
+  const teeTimes = teeSheet(match, sittingOut);
+  return <div className={styles.match}>
+    <SlideHeader title="Tee Sheet" detail={`${match.course} • ${roundDay(match.roundDate)} • Round ${match.round}`} />
+    {teeTimes.length ? <ul className={styles.lineup}>
+      {teeTimes.map(([time, golfers]) => <li key={time} className={styles.teeSheetRow}>
+        <span className={styles.teeSheetTime}>{time}</span>
+        <ul className={styles.teeSheetPlayers}>
+          {golfers.map(golfer => <li key={golfer.name}><span>{golfer.name}</span><span className={styles.teeSheetHcp}>HCP {golfer.hcp}</span></li>)}
+        </ul>
+      </li>)}
+    </ul> : <p className={styles.summaryNote}>No one is playing this round yet.</p>}
   </div>;
 }
 

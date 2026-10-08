@@ -2249,3 +2249,35 @@ Builds **on top of** the Player rounds plan above. Nothing above changes: `Playe
 **Not in this step:** trips or History saving rounds, viewing other players' profiles, merging new rounds into the handicap index, moving the old handicap / Maroon rounds over, the 9-hole handicap rule.
 
 **Done means:** the SQL runs cleanly twice in a row on a fresh database (PGlite test, like Flights); tests prove a round saves once, bad rounds are refused, one account can't read or save as another, and privacy defaults to private and can change; Settings → Privacy and Profile → Rounds work against the .env Supabase once the owner runs the SQL (and show the empty state before); TypeScript, lint and tests pass.
+
+### Round: Profile identity foundation (owner request 2026-10-08, built; `supabase/profile_identity.sql` not run yet)
+
+**Rule:** ACCOUNT (Supabase auth) = login only. PROFILE = the golfer and the source of truth for the person. Golf / product records point at the profile (`profile_id`), never at email, username, display name, `player_slug` or a team. Teams belong to a context (an edition roster, a trip), never to a profile.
+
+- **profile_id = `profiles.id`.** It is already permanent and is both the primary key and a foreign key to `auth.users(id)`, so one account has exactly one profile, and "which profile does this account control?" is `profiles.id = auth.uid()`. No second id was added.
+- `supabase/profile_identity.sql` (owner runs; checks existing data first and stops with a message if anything breaks the rules):
+  - Unique `profiles.player_slug` and unique `player_slots.claimed_by`, so the legacy Maroon link is one-to-one.
+  - Unique (`tournament_id`, `profile_id`) on `tournament_players` for linked players.
+  - Column comments documenting the rule.
+- Server helper `lib/profile/currentProfile.ts` (`getCurrentProfile()` → signed-out / no-profile / ok + `ProfileIdentity`) and `lib/profile/profileIdentity.ts` (`ProfileId`, `legacyMaroonPlayerSlug` marked as legacy compatibility). New code uses `profile.profileId`; Profile, Settings → Privacy and player rounds already do.
+- Player rounds already reference `profiles(id)` (`player_rounds.profile_id`); only the wording changed from "account" to "profile".
+- Not enforced in the database: that every account HAS a profile (signup creates both and removes the account if the profile insert fails). Dev database check 2026-10-08: 16 accounts, 14 profiles, 2 accounts with no profile (left alone; owner decides).
+- Not in this step: profile UI redesign, public profiles, Maroon U, migrating Maroon history, refactoring older code that passes `user.id` (same value as `profile_id`) or reads `player_slug`.
+
+### Round: Golf Trip membership identity (owner request 2026-10-08, built; `supabase/golf_trip_invitations.sql` not run yet)
+
+**Rule:** profile → `golf_trip_members` → `golf_trip`. A member row is one profile's participation in one trip. Once it has a `profile_id`, that is the golfer; name / email on the row are only the invitation and a name snapshot.
+
+- **Invitations (new):** the organizer invites a name + optional email. That creates the member row now (`profile_id` NULL, `pending`, `invite_token_hash`, `invited_by`). The invite link carries a random secret, and only its SHA-256 hash is stored. A signed-in golfer who opens the link and accepts gets their profile attached to that same row (`accepted`, `claimed_at`). The email is never used to find an account, and replies are the same either way, so there is no account enumeration.
+- **SQL `supabase/golf_trip_invitations.sql`** (owner runs; checks existing data first):
+  - Unique rules: one organizer row per trip, an email invited once per trip, one row per invite secret.
+  - Trigger: a claimed row can't move to another profile.
+  - Functions: `invite_golf_trip_member`, `get_golf_trip_invitation`, `accept_golf_trip_invitation` (safe to repeat), `remove_golf_trip_member` (organizer; cancels invites), `leave_golf_trip` (members).
+- **Server / routes:** `lib/platform/golfTripsServer.ts` (now via `getCurrentProfile()`), `lib/platform/golfTripInvitations.ts`.
+  - `POST /api/golf-trips/<id>/members`
+  - `DELETE /api/golf-trips/<id>/members/<memberId>`
+  - `POST /api/golf-trips/<id>/leave`
+  - `GET` and `POST /api/golf-trips/invitations/<secret>`
+  - Create / delete / flights routes now use the profile too.
+- **Not built:** screens for inviting, the invite-link page, Accept / Decline buttons, Leave / Remove buttons, trip teams.
+- **Teams (planned, not built):** a trip competition table plus a per-competition participant table (member → team / sitting out). Never `team_id` on `golf_trip_members`, never on profiles.

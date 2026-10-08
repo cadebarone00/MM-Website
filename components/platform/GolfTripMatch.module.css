@@ -230,3 +230,23 @@
 .roundInfoTimes li{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:baseline}
 .roundInfoTime{font:700 13px/1.3 var(--font-barlow),sans-serif;color:#dcc495}
 .roundInfoPlayers{font:500 14px/1.3 var(--font-barlow),sans-serif;color:rgba(251,248,241,.9)}
+/* Individual only: the round box splits in half — the round (condensed) left, the top 5 right, a line down the middle. */
+.roundInfoSplit{display:grid;grid-template-columns:1fr 1fr}
+.roundInfoHalf{min-width:0}
+.roundInfoHalf+.roundInfoHalf{border-left:1px solid rgba(220,196,149,.28)}
+.roundInfoSplit .roundInfoCourse{font-size:17px}
+.roundInfoSplit .roundInfoTimes{gap:5px}
+.roundInfoSplit .roundInfoTimes li{grid-template-columns:1fr;gap:1px}
+.roundInfoSplit .roundInfoTime{font-size:12px}
+.roundInfoSplit .roundInfoPlayers{font-size:12.5px}
+.topFive{list-style:none;margin:10px 0 0;padding:0 12px;display:grid;gap:8px}
+.topFive li{display:grid;grid-template-columns:22px 1fr auto;gap:6px;align-items:baseline}
+.topFivePlace{font:700 12px/1.3 var(--font-barlow),sans-serif;color:#dcc495}
+.topFiveName{font:600 13px/1.3 var(--font-barlow),sans-serif;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.roundInfoSplit .summaryLabel{line-height:1.4}
+/* Team only, under Overview: the tee sheet — tee time on the left, its players stacked on the right. */
+.teeSheetRow{display:grid;grid-template-columns:78px 1fr;gap:12px;padding:14px 0;border-top:1px solid rgba(255,255,255,.08)}
+.teeSheetTime{font:700 14px/1.4 var(--font-barlow),sans-serif;color:#dcc495}
+.teeSheetPlayers{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.teeSheetPlayers li{display:flex;justify-content:space-between;gap:10px;font:600 16px/1.3 var(--font-spectral),Georgia,serif;color:#fff}
+.teeSheetHcp{font:500 12px/1.3 var(--font-barlow),sans-serif;color:rgba(251,248,241,.6);align-self:center}

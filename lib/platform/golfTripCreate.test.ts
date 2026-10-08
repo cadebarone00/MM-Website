@@ -163,7 +163,9 @@ test("only the trip's members can see it; nobody can write directly", async () =
   assert.equal((await as("authenticated", cade, "select id from golf_trips")).rows.length, 1);
   assert.equal((await as("authenticated", cade, "select id from golf_trip_rounds")).rows.length, 3);
   assert.equal((await as("authenticated", stranger, "select id from golf_trips")).rows.length, 0);
-  assert.equal((await as("authenticated", stranger, "select id from golf_trip_members")).rows.length, 0);
+  // Members' rows (emails, invitations) are never readable directly, not even by the trip's own members.
+  await assert.rejects(as("authenticated", stranger, "select id from golf_trip_members"));
+  await assert.rejects(as("authenticated", cade, "select email from golf_trip_members"));
   await assert.rejects(as("anon", null, "select id from golf_trips"));
   await assert.rejects(as("authenticated", stranger, "insert into golf_trip_members(golf_trip_id, profile_id, display_name) values ($1, $2, 'me')", [tripId, stranger]));
   await assert.rejects(as("authenticated", cade, "update golf_trips set name = 'x'"));

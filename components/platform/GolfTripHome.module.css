@@ -305,3 +305,6 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 .rsvpPlay.rsvpPlay,.rsvpSit.rsvpSit{font:700 13px/1 var(--font-spectral),Georgia,serif}
 .itineraryPlaying.itineraryPlaying{font:700 13px/1 var(--font-spectral),Georgia,serif;letter-spacing:.04em;text-transform:none}
 .rsvpPlay:disabled,.rsvpSit:disabled{opacity:.5;cursor:default}
+/* Golf sections (Leaderboard / Games / Stats…): equal gaps between the words, not equal boxes. */
+.tabs.sectionTabs{display:flex;justify-content:space-evenly;padding:0 8px;box-sizing:border-box}
+.sectionTabs .tab{padding:0 8px}

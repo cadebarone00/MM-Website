@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { assignAttesters, groupTripPlayers, swapAttester } from "./roundGroups.ts";
+import { assignAttesters, groupTripPlayers, stableAttesters, swapAttester, validateAttesters } from "./roundGroups.ts";
 
 const ids = (...names: string[]) => names.map((profileId) => ({ profileId }));
 const attesterOf = (players: ReturnType<typeof assignAttesters>) => Object.fromEntries(players.map((p) => [p.profileId, p.attesterProfileId]));
@@ -36,4 +36,48 @@ test("swapping an attester: allowed to another group member, never yourself or a
   assert.throws(() => swapAttester(players, "a", "a"), /can't attest themselves/);
   assert.throws(() => swapAttester(players, "a", "z"), /isn't in this group/);
   assert.throws(() => swapAttester(players, "z", "a"), /isn't in this group/);
+});
+
+test("larger even groups are reciprocal pairs in playing order", () => {
+  assert.deepEqual(attesterOf(assignAttesters(ids("a", "b", "c", "d", "e", "f"))), { a: "b", b: "a", c: "d", d: "c", e: "f", f: "e" });
+  assert.deepEqual(attesterOf(assignAttesters(ids("a", "b", "c", "d", "e", "f", "g", "h"))), { a: "b", b: "a", c: "d", d: "c", e: "f", f: "e", g: "h", h: "g" });
+});
+
+test("larger odd groups are a circle in playing order", () =>
+  assert.deepEqual(attesterOf(assignAttesters(ids("a", "b", "c", "d", "e", "f", "g"))), { a: "g", b: "a", c: "b", d: "c", e: "d", f: "e", g: "f" }));
+
+test("every size from 2 to 12: each player attests exactly one other and is attested by exactly one, never themselves", () => {
+  for (let n = 2; n <= 12; n++) {
+    const players = assignAttesters(Array.from({ length: n }, (_, i) => ({ profileId: `p${i}` })));
+    assert.equal(validateAttesters(players), null, `size ${n}`);
+  }
+});
+
+test("the same group in the same order always gets the same assignments", () =>
+  assert.deepEqual(assignAttesters(ids("a", "b", "c", "d", "e")), assignAttesters(ids("a", "b", "c", "d", "e"))));
+
+test("invalid groups are refused: no players, or a blank profile id", () => {
+  assert.throws(() => assignAttesters([]), /at least one player/);
+  assert.throws(() => assignAttesters(ids("a", " ")), /profile id/);
+});
+
+test("validateAttesters names what's wrong with a broken assignment", () => {
+  assert.match(validateAttesters([{ profileId: "a", attesterProfileId: "a" }, { profileId: "b", attesterProfileId: "a" }]) ?? "", /themselves/);
+  assert.match(validateAttesters([{ profileId: "a", attesterProfileId: "b" }, { profileId: "b", attesterProfileId: "z" }]) ?? "", /isn't in this group/);
+  assert.match(validateAttesters([{ profileId: "a", attesterProfileId: "c" }, { profileId: "b", attesterProfileId: "c" }, { profileId: "c", attesterProfileId: "a" }]) ?? "", /attests 2 players/);
+  assert.equal(validateAttesters([{ profileId: "a", attesterProfileId: null }]), null);
+});
+
+test("once scoring has begun the saved assignment is kept, even if the group comes back in a new order", () => {
+  const saved = assignAttesters(ids("a", "b", "c", "d"));
+  const reordered = assignAttesters(ids("a", "c", "b", "d"));
+  assert.deepEqual(stableAttesters(saved, reordered, true), saved);
+  assert.deepEqual(stableAttesters(saved, reordered, false), reordered);
+  assert.deepEqual(stableAttesters(undefined, reordered, true), reordered);
+});
+
+test("a different set of players is a new group: the saved assignment no longer applies", () => {
+  const saved = assignAttesters(ids("a", "b", "c", "d"));
+  const newRoster = assignAttesters(ids("a", "b", "c", "e"));
+  assert.deepEqual(stableAttesters(saved, newRoster, true), newRoster);
 });

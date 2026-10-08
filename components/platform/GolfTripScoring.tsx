@@ -29,7 +29,7 @@ const HOLD_SLOP = 10;
  * submitting locks the card until the page reloads. Submit & Save calls `onSubmit` with the card (the dev preview saves it
  * as the player's round); `submittedCard` reopens a saved round locked.
  */
-export function GolfTripScoring({ par, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange }: {
+export function GolfTripScoring({ par, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard }: {
   par?: number[]; initialHoles?: (number | null)[]; playerName?: string; opponentCardMatches?: boolean; courseName?: string;
   /** Dev preview only: a finished card (opponent scores, putts, fairways, greens) to start from. */
   prefill?: { opponentHoles: (number | null)[]; putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[];
@@ -47,19 +47,21 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   /** Player & Attest, the second phone: what my attester entered for me (wins over the simulator stand-in once they've entered any). */
   attestedStrokes?: (number | null)[];
   /** My entries for the player I keep score for, sent to their card. */
-  onAttestChange?: (strokes: (number | null)[]) => void;
+  onAttestChange?: (strokes: (number | null)[], entered: boolean[]) => void;
+  /** A saved trip's card in progress (my strokes + stats, and what I entered for the player I attest): the sheet starts from it. */
+  savedCard?: { holes: (number | null)[]; opponentHoles: (number | null)[]; putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[]; penalties: { fairway: boolean; green: boolean }[] };
 }) {
   const [open, updateOpen] = useState(false);
   // Stats on my card: required by the organizer, or (when optional) I chose to record them.
   const playerStats = useRecordMyStats();
-  const [holes, setHoles] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => submittedCard?.strokes[i] ?? initialHoles?.[i] ?? null));
-  const [holesCompetitor, setHolesCompetitor] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => prefill?.opponentHoles[i] ?? initialHoles?.[i] ?? null));
-  const [current, setCurrent] = useState(() => { const next = Array.from({ length: HOLES }, (_, i) => initialHoles?.[i] ?? null).findIndex((h) => h === null); return next === -1 ? HOLES - 1 : next; });
+  const [holes, setHoles] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => submittedCard?.strokes[i] ?? savedCard?.holes[i] ?? initialHoles?.[i] ?? null));
+  const [holesCompetitor, setHolesCompetitor] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => prefill?.opponentHoles[i] ?? savedCard?.opponentHoles[i] ?? initialHoles?.[i] ?? null));
+  const [current, setCurrent] = useState(() => { const next = Array.from({ length: HOLES }, (_, i) => savedCard?.holes[i] ?? initialHoles?.[i] ?? null).findIndex((h) => h === null); return next === -1 ? HOLES - 1 : next; });
   // My stats for each hole: putts, and where the drive (fairway) and approach (green) finished; "center" = hit.
-  const [putts, setPutts] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => submittedCard?.putts[i] ?? prefill?.putts[i] ?? null));
-  const [fairways, setFairways] = useState<(Direction | null)[]>(() => Array.from({ length: HOLES }, (_, i) => submittedCard?.fairways[i] ?? prefill?.fairways[i] ?? null));
-  const [greens, setGreens] = useState<(Direction | null)[]>(() => Array.from({ length: HOLES }, (_, i) => submittedCard?.greens[i] ?? prefill?.greens[i] ?? null));
-  const [penalties, setPenalties] = useState(() => Array.from({ length: HOLES }, () => ({ fairway: false, green: false })));
+  const [putts, setPutts] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => submittedCard?.putts[i] ?? savedCard?.putts[i] ?? prefill?.putts[i] ?? null));
+  const [fairways, setFairways] = useState<(Direction | null)[]>(() => Array.from({ length: HOLES }, (_, i) => submittedCard?.fairways[i] ?? savedCard?.fairways[i] ?? prefill?.fairways[i] ?? null));
+  const [greens, setGreens] = useState<(Direction | null)[]>(() => Array.from({ length: HOLES }, (_, i) => submittedCard?.greens[i] ?? savedCard?.greens[i] ?? prefill?.greens[i] ?? null));
+  const [penalties, setPenalties] = useState(() => Array.from({ length: HOLES }, (_, i) => savedCard?.penalties[i] ?? { fairway: false, green: false }));
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitted, setSubmitted] = useState(Boolean(submittedCard));
   // A saved round can arrive after the first render (the dev store loads after hydration): take it in once, locked.
@@ -282,10 +284,10 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   useEffect(() => { reportCard.current = onCardChange; }, [onCardChange]);
   useEffect(() => { if (liveKey) reportCard.current?.(JSON.parse(liveKey) as SheetCard); }, [liveKey]);
   // The second phone: once I've entered anything for the player I attest, my column (untouched holes = par) goes to their card.
-  const attestKey = !submitted && holesCompetitor.some((h) => h !== null) ? JSON.stringify(submittedOpponentHoles) : null;
+  const attestKey = !submitted && holesCompetitor.some((h) => h !== null) ? JSON.stringify({ strokes: submittedOpponentHoles, entered: holesCompetitor.map((h) => h !== null) }) : null;
   const reportAttest = useRef(onAttestChange);
   useEffect(() => { reportAttest.current = onAttestChange; }, [onAttestChange]);
-  useEffect(() => { if (attestKey) reportAttest.current?.(JSON.parse(attestKey) as (number | null)[]); }, [attestKey]);
+  useEffect(() => { if (!attestKey) return; const sent = JSON.parse(attestKey) as { strokes: (number | null)[]; entered: boolean[] }; reportAttest.current?.(sent.strokes, sent.entered); }, [attestKey]);
   // Submit Score plays the full-screen moment over the now-locked card.
   const [celebration, setCelebration] = useState<{ total: number; toPar: string } | null>(null);
   // Colours show once the card is complete (or submitted): green when that player's scores agree, red when they don't.

@@ -1,6 +1,6 @@
 import { normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import type { PlayerRound } from "@/lib/platform/playerRounds";
-import { assignAttesters, type RoundGroup } from "@/lib/platform/roundGroups";
+import { assignAttesters, stableAttesters, type RoundGroup, type RoundGroupPlayer } from "@/lib/platform/roundGroups";
 import { organizerOwnEdits } from "@/lib/platform/scoreEdits";
 import { tripStats } from "@/lib/platform/tripStats";
 import { DEV_ACCOUNTS } from "./devAccounts";
@@ -14,7 +14,8 @@ import { DEV_TRIP_ID, devTripRoundId, type DevRoundsState } from "./devPlayerRou
 export interface DevGroup extends RoundGroup { names: Record<string, string> }
 export const devGolferId = (name: string) => `dev-golfer:${name}`;
 
-export function devTripGroup(match: GolfMatchPreview, viewAs: string, swaps: Record<string, string> = {}): DevGroup | null {
+export function devTripGroup(match: GolfMatchPreview, viewAs: string, swaps: Record<string, string> = {},
+  locked?: { players: RoundGroupPlayer[] | undefined; scoringStarted: boolean }): DevGroup | null {
   const pairing = match.matches[0];
   if (!pairing) return null;
   const left = normalizeCompetitor(pairing.left).golfers, right = pairing.right ? normalizeCompetitor(pairing.right).golfers : [];
@@ -23,7 +24,9 @@ export function devTripGroup(match: GolfMatchPreview, viewAs: string, swaps: Rec
   const competitive = right.length > 0;
   const idOf = (name: string, index: number) => index === 0 ? viewAs : devGolferId(name);
   const id = `${DEV_TRIP_ID}:${devTripRoundId(match)}:group-1`;
-  const players = assignAttesters(golfers.map((g, i) => ({ profileId: idOf(g.name, i), side: competitive ? g.side : undefined })))
+  // Fresh from the saved playing order, unless scoring has begun: then the saved assignment stays (organizer swaps on top).
+  const fresh = assignAttesters(golfers.map((g, i) => ({ profileId: idOf(g.name, i), side: competitive ? g.side : undefined })));
+  const players = stableAttesters(locked?.players, fresh, locked?.scoringStarted ?? false)
     .map((p) => swaps[`${id}|${p.profileId}`] ? { ...p, attesterProfileId: swaps[`${id}|${p.profileId}`] } : p);
   return {
     id, source: "trip", tripId: DEV_TRIP_ID, tripRoundId: devTripRoundId(match), course: { ref: null, name: match.course, place: "" },
@@ -57,7 +60,10 @@ export function withSavedRounds(match: GolfMatchPreview, group: DevGroup, rounds
  * card, the leaderboard with saved rounds, whose score I keep, trip stats and the organizer's own changes.
  */
 export function devTripScoring(store: DevRoundsState, match: GolfMatchPreview | undefined, viewAs: string) {
-  const group = match ? devTripGroup(match, viewAs, store.attesters) : null;
+  // The group's saved assignment is locked once anyone in it has a card in progress or a saved round.
+  const groupId = match ? `${DEV_TRIP_ID}:${devTripRoundId(match)}:group-1` : null;
+  const scoringStarted = store.liveCards.some((c) => c.groupId === groupId) || store.rounds.some((r) => r.groupId === groupId);
+  const group = match ? devTripGroup(match, viewAs, store.attesters, { players: store.groups.find((g) => g.id === groupId)?.players, scoringStarted }) : null;
   const nameOf = (id: string) => group?.names[id] ?? DEV_ACCOUNTS.find((a) => a.id === id)?.name ?? id;
   const tripRounds = store.rounds.filter((r) => r.source === "trip" && r.tripId === DEV_TRIP_ID);
   const stats = tripStats(store.rounds, DEV_TRIP_ID);

@@ -1,0 +1,25 @@
+/* Trip Settings → Members. Cards, buttons and confirm boxes come from GolfTripHome.module.css; fields from CreateTournament.module.css. */
+.list{display:flex;flex-direction:column;margin:0;padding:0;list-style:none}
+.member{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-top:1px solid rgba(255,255,255,.1)}
+.member:first-child{border-top:0;padding-top:0}
+.who{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.name{font:700 16px/1.3 var(--font-barlow),sans-serif;color:#fff;overflow-wrap:anywhere}
+.badge{padding:3px 8px;border-radius:999px;font:700 11px/1.2 var(--font-barlow),sans-serif;letter-spacing:.04em;text-transform:uppercase}
+.organizer{background:#dcc495;color:var(--color-maroon-900)}
+.accepted{background:#d7f2dc;color:#1f8a3a}
+.pending{background:#fbdbe6;color:#c2185b}
+.declined{background:rgba(255,255,255,.12);color:rgba(255,255,255,.75)}
+.you{font:600 13px/1.2 var(--font-barlow),sans-serif;color:#dcc495}
+.email{margin:0;font:500 13px/1.3 var(--font-barlow),sans-serif;color:rgba(255,255,255,.6);overflow-wrap:anywhere}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.smallButton{min-height:40px;padding:0 14px;border-radius:10px;cursor:pointer;background:transparent;border:1px solid #dcc495;color:#dcc495;font:600 14px/1 var(--font-barlow),sans-serif}
+.smallButton:hover{background:rgba(220,196,149,.1)}
+.smallDanger{border-color:rgba(255,138,128,.6);color:#ffb4ab}
+.smallDanger:hover{background:rgba(255,138,128,.1)}
+.smallButton:disabled{opacity:.6;cursor:default}
+.smallButton:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.link{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:12px;background:rgba(220,196,149,.1);border:1px solid rgba(220,196,149,.35)}
+.linkTitle{margin:0;font:700 14px/1.3 var(--font-barlow),sans-serif;color:#dcc495}
+.linkText{width:100%;box-sizing:border-box;min-height:40px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.2);color:#fff;font:500 13px/1 var(--font-barlow),sans-serif}
+.form{display:flex;flex-direction:column;gap:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1)}
+.formTitle{margin:0;font:700 16px/1.3 var(--font-barlow),sans-serif;color:#fff}
