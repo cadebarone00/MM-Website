@@ -91,7 +91,7 @@ export function SavedTournamentDashboard({ initialSetup, initialReadiness, apiBa
       <h3 ref={editorHeading} tabIndex={-1}>{open}</h3>
       {errors.length > 0 && <div className={base.errors} role="alert"><strong>{errors[0]}</strong>{errors.length > 1 && <ul>{errors.slice(1).map((error) => <li key={error}>{error}</li>)}</ul>}</div>}
       {open === "Publish" ? <PublishPanel readiness={readiness} setup={setup} saving={saving} onPublish={publish} onCancel={() => setOpen(null)} />
-        : (() => { const { key, Editor } = EDITORS[open]; return <Editor setup={setup} saving={saving} onSave={save(key, open)} onCancel={() => { setOpen(null); setErrors([]); }} />; })()}
+        : (() => { const { key, Editor } = EDITORS[open]; return <Editor setup={setup} saving={saving} apiBase={apiBase} onSave={save(key, open)} onCancel={() => { setOpen(null); setErrors([]); }} />; })()}
     </div>}
 
     <div className={base.cards}>{readiness.sections.map((section) =>

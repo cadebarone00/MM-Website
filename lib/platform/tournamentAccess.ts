@@ -1,4 +1,5 @@
-import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { getCurrentProfile } from "@/lib/profile/currentProfile";
 
 /**
  * Who may manage a tournament (THE_MAROON_PRODUCT_SPEC.md §4). Checked on
@@ -14,7 +15,8 @@ export function roleAtLeast(role: TournamentRole | null, minimum: TournamentRole
 }
 
 export interface TournamentAccess {
-  userId: string;
+  /** The signed-in golfer's profile (profiles.id) — tournament roles belong to the profile. */
+  profileId: string;
   tournamentId: string;
   /** Platform admins act as owner of every tournament. */
   role: TournamentRole;
@@ -22,24 +24,24 @@ export interface TournamentAccess {
 
 /** null = not signed in, no such tournament, or not allowed — callers treat all three the same. */
 export async function requireTournamentRole(tournamentSlug: string, minimum: TournamentRole): Promise<TournamentAccess | null> {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  const current = await getCurrentProfile();
+  if (current.status !== "ok") return null;
+  const profileId = current.profile.profileId;
 
   const service = createSupabaseServiceRoleClient();
   const [{ data: tournament }, { data: profile }] = await Promise.all([
     service.from("tournaments").select("id").eq("slug", tournamentSlug).maybeSingle(),
-    service.from("profiles").select("platform_role").eq("id", user.id).maybeSingle(),
+    service.from("profiles").select("platform_role").eq("id", profileId).maybeSingle(),
   ]);
   if (!tournament) return null;
-  if (profile?.platform_role === "admin") return { userId: user.id, tournamentId: tournament.id, role: "owner" };
+  if (profile?.platform_role === "admin") return { profileId, tournamentId: tournament.id, role: "owner" };
 
   const { data: member } = await service
     .from("tournament_members")
     .select("role")
     .eq("tournament_id", tournament.id)
-    .eq("profile_id", user.id)
+    .eq("profile_id", profileId)
     .maybeSingle();
   const role = (member?.role ?? null) as TournamentRole | null;
-  return roleAtLeast(role, minimum) ? { userId: user.id, tournamentId: tournament.id, role: role! } : null;
+  return roleAtLeast(role, minimum) ? { profileId, tournamentId: tournament.id, role: role! } : null;
 }

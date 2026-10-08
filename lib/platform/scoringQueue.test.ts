@@ -166,3 +166,21 @@ test("two syncs at once don't send the same ops twice", async () => {
   await Promise.all([sync.sync(), sync.sync()]);
   assert.equal(calls, 1);
 });
+
+test("late offline writes to a submitted card: refused as locked, kept on the phone, never resent, not 'pending'", async () => {
+  const storage = memoryQueueStorage();
+  let calls = 0;
+  const send: SendBatch = async (b) => { calls++; return b.scoredProfileId === "me" ? { ok: false, reason: "locked" } : okSend()(b); };
+  const sync = createScoringSync({ storage, send, scope, newId, now });
+  await sync.load();
+  await sync.edit(change(4, 6), 1);
+  await sync.edit(change(4, 5, "attest"), 0);
+  await sync.sync();
+  assert.equal(sync.ops().length, 1);
+  assert.equal(sync.ops()[0].status, "rejected");
+  assert.equal(sync.status(), "synced", "a locked card's leftovers don't block anything");
+  const before = calls;
+  await sync.sync();
+  assert.equal(calls, before, "never sent again");
+  assert.equal((await storage.load(scope))[0].status, "rejected", "kept on the phone");
+});

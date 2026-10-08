@@ -1,6 +1,6 @@
+import { getCurrentProfile } from "@/lib/profile/currentProfile";
 import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { loadTournamentActivity } from "./activityServer.ts";
 import { legacyAdapterFor } from "./legacyTournaments.ts";
 import { publicBasePath, toSiteData } from "./publicSite.ts";
@@ -16,11 +16,14 @@ export type { TournamentHome } from "./tournamentHome.ts";
  * is whatever get_tournament_activity lets this viewer see.
  */
 export const loadTournamentHome = cache(async (slug: string, year: string): Promise<TournamentHome> => {
-  const { data: { user } } = await (await createSupabaseServerClient()).auth.getUser();
-  if (!user) redirect("/login");
+  const current = await getCurrentProfile();
+  if (current.status === "signed-out") redirect("/login");
+  // An account without a golfer profile isn't in any tournament.
+  if (current.status === "no-profile") notFound();
+  const profileId = current.profile.profileId;
   // A tournament still on a legacy system is answered by its adapter (access included).
   const legacy = legacyAdapterFor(slug);
-  if (legacy) return (await legacy.loadHome(year, user.id)) ?? notFound();
+  if (legacy) return (await legacy.loadHome(year, profileId)) ?? notFound();
   const tournament = await loadPublicTournament(slug, year);
   if (!tournament) notFound();
   const feed = await loadTournamentActivity(tournament.tournament.slug, tournament.edition.seasonYear);

@@ -13,6 +13,9 @@
 -- invites). When they are signed in and accept, their profile is attached to THAT player row (claimed_at), and they
 -- become a 'player' member of the tournament so they can see it if it's private. The email is contact info only —
 -- it is never used to find an account, so nothing reveals whether an email has a Maroon account.
+-- Declining (signed in, holding the link) leaves the player unclaimed, records declined_at and kills the link; only an
+-- organizer re-opens it with a new link. Organizers (and platform admins) see each player as joined / invited /
+-- declined / none through list_edition_player_invites.
 --
 -- Guarantees:
 --   * one profile is at most one player per tournament (tournament_players_tournament_profile_key, also in
@@ -36,7 +39,8 @@ begin;
 alter table public.tournament_players
   add column if not exists invite_token_hash text,
   add column if not exists invited_by uuid references public.profiles(id) on delete set null,
-  add column if not exists claimed_at timestamptz;
+  add column if not exists claimed_at timestamptz,
+  add column if not exists declined_at timestamptz;
 
 comment on column public.tournament_players.profile_id is 'Who the golfer is (profiles.id). NULL until the invited golfer claims this place.';
 comment on column public.tournament_players.legacy_player_slug is 'LEGACY: The Maroon''s old player slot; kept for live scoring and archives that still use player_slug.';
@@ -98,8 +102,16 @@ language sql immutable set search_path = public as $$
   select encode(sha256(convert_to(p_token, 'UTF8')), 'hex');
 $$;
 
--- Organizer gives an unclaimed player an invite link (or a new one: the old link stops working).
--- False when not allowed: not an owner / organizer of that tournament, already claimed, or not found.
+-- Who may manage a tournament's players: its owners / organizers, or a platform admin (same rule as the dashboard).
+create or replace function public.can_manage_tournament_players(p_profile uuid, p_tournament uuid)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select coalesce((select platform_role = 'admin' from profiles where id = p_profile), false)
+      or exists (select 1 from tournament_members m where m.tournament_id = p_tournament and m.profile_id = p_profile and m.role in ('owner', 'organizer'));
+$$;
+
+-- Organizer gives an unclaimed player an invite link (or a new one: the old link stops working; a decline is cleared).
+-- False when not allowed: not someone who manages that tournament, already claimed, or not found.
 create or replace function public.invite_tournament_player(p_profile uuid, p_player uuid, p_token text)
 returns boolean
 language plpgsql security definer set search_path = public as $$
@@ -107,10 +119,47 @@ begin
   if p_token is null or length(p_token) < 32 then
     raise exception 'Invite secret is too short.' using errcode = '22023';
   end if;
-  update tournament_players p set invite_token_hash = tournament_invite_hash(p_token), invited_by = p_profile
-  where p.id = p_player and p.profile_id is null
-    and exists (select 1 from tournament_members m where m.tournament_id = p.tournament_id and m.profile_id = p_profile and m.role in ('owner', 'organizer'));
+  update tournament_players p set invite_token_hash = tournament_invite_hash(p_token), invited_by = p_profile, declined_at = null
+  where p.id = p_player and p.profile_id is null and can_manage_tournament_players(p_profile, p.tournament_id);
   return found;
+end;
+$$;
+
+-- Organizer view of one edition's players: { <tournament player id>: joined | invited | declined | none }.
+-- Null when this person doesn't manage the tournament.
+create or replace function public.list_edition_player_invites(p_profile uuid, p_edition uuid)
+returns jsonb
+language sql stable security definer set search_path = public as $$
+  select case when can_manage_tournament_players(p_profile, e.tournament_id) then coalesce((
+    select jsonb_object_agg(p.id, case when p.profile_id is not null then 'joined' when p.invite_token_hash is not null then 'invited'
+      when p.declined_at is not null then 'declined' else 'none' end)
+    from edition_roster r join tournament_players p on p.id = r.tournament_player_id where r.edition_id = e.id), '{}'::jsonb) end
+  from tournament_editions e where e.id = p_edition;
+$$;
+
+-- The signed-in person holding the link says no: the player stays unclaimed, the link stops working.
+-- { status: declined | already_player (it's already your place) | not_found }.
+create or replace function public.decline_tournament_player_invitation(p_profile uuid, p_token text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_player tournament_players;
+begin
+  if not exists (select 1 from profiles where id = p_profile) then
+    raise exception 'No profile found.' using errcode = '42501';
+  end if;
+  select * into v_player from tournament_players where invite_token_hash = tournament_invite_hash(p_token) for update;
+  if v_player.id is null then
+    return jsonb_build_object('status', 'not_found');
+  end if;
+  if v_player.profile_id = p_profile then
+    return jsonb_build_object('status', 'already_player');
+  end if;
+  if v_player.profile_id is not null then
+    return jsonb_build_object('status', 'not_found');
+  end if;
+  update tournament_players set invite_token_hash = null, declined_at = now(), updated_at = now() where id = v_player.id;
+  return jsonb_build_object('status', 'declined');
 end;
 $$;
 
@@ -166,9 +215,14 @@ $$;
 revoke all on function public.keep_tournament_player_profile() from public, anon, authenticated;
 revoke all on function public.sync_legacy_tournament_player_profile() from public, anon, authenticated;
 revoke all on function public.tournament_invite_hash(text) from public, anon, authenticated;
+revoke all on function public.can_manage_tournament_players(uuid, uuid) from public, anon, authenticated;
+revoke all on function public.list_edition_player_invites(uuid, uuid) from public, anon, authenticated;
+revoke all on function public.decline_tournament_player_invitation(uuid, text) from public, anon, authenticated;
 revoke all on function public.invite_tournament_player(uuid, uuid, text) from public, anon, authenticated;
 revoke all on function public.get_tournament_player_invitation(uuid, text) from public, anon, authenticated;
 revoke all on function public.accept_tournament_player_invitation(uuid, text) from public, anon, authenticated;
+grant execute on function public.list_edition_player_invites(uuid, uuid) to service_role;
+grant execute on function public.decline_tournament_player_invitation(uuid, text) to service_role;
 grant execute on function public.invite_tournament_player(uuid, uuid, text) to service_role;
 grant execute on function public.get_tournament_player_invitation(uuid, text) to service_role;
 grant execute on function public.accept_tournament_player_invitation(uuid, text) to service_role;
@@ -177,11 +231,12 @@ commit;
 
 -- Undo (keeps every player and every profile link already made):
 --   drop function if exists public.accept_tournament_player_invitation(uuid, text), public.get_tournament_player_invitation(uuid, text),
---     public.invite_tournament_player(uuid, uuid, text), public.tournament_invite_hash(text);
+--     public.decline_tournament_player_invitation(uuid, text), public.list_edition_player_invites(uuid, uuid),
+--     public.invite_tournament_player(uuid, uuid, text), public.can_manage_tournament_players(uuid, uuid), public.tournament_invite_hash(text);
 --   drop trigger if exists sync_legacy_tournament_player_profile on public.player_slots;
 --   drop function if exists public.sync_legacy_tournament_player_profile();
 --   drop trigger if exists keep_tournament_player_profile on public.tournament_players;
 --   drop function if exists public.keep_tournament_player_profile();
 --   drop index if exists public.tournament_players_invite_token_key;
---   alter table public.tournament_players drop column if exists claimed_at, drop column if exists invited_by,
+--   alter table public.tournament_players drop column if exists declined_at, drop column if exists claimed_at, drop column if exists invited_by,
 --     drop column if exists invite_token_hash;

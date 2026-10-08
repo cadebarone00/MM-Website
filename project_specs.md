@@ -2189,6 +2189,7 @@ Builds **on top of** the Player rounds plan above. Nothing above changes: `Playe
 - **Step 2 attestation persistence (owner request 2026-10-08, built; `supabase/golf_trip_scoring.sql` not run yet):** `scoring_groups` / `scoring_group_players` (attester per player, permanent profile ids, playing order) / `hole_score_entries` (one row per golfer scored + golfer typing + hole; attester rows strokes only). Writes only through `save_trip_scoring_groups` and `save_hole_scores` (server, signed-in profile); assignments lock at the first entry. Saved trips (`/golf-trips/<id>`) show Scoring when a trip round is dated today (server date) and save as you type. Applied to Supabase 2026-10-08.
 - **Step 3 live sync (owner request 2026-10-08, built; `supabase/golf_trip_scoring_realtime.sql` not run yet):** one Realtime subscription per playing group triggers a reload through the server (plus tab-return, reconnect and a 10 s poll); newest answer wins; matching colors and Submit only count while all my changes are saved and the connection is live; unsaved holes resend on reconnect. Not yet: saving Submit to `player_rounds`, organizer tools on real trips.
 - **Step 4 offline scoring (owner request 2026-10-08, built; `supabase/golf_trip_scoring_offline.sql` not run yet):** every change is queued in IndexedDB (scoped to signed-in golfer + trip + round) before sending; ops have stable ids (retries apply once) and the server version they were based on (`save_hole_score_ops` answers conflict instead of overwriting); the route refuses ops queued under another account; my card and my attest column queue separately; Card shows Saved locally · Pending sync / Synced / Conflict (Keep mine / Use saved) / Verified / Submitted; Submit and verification wait for synced + live.
+- **Step 5 permanent submission (owner request 2026-10-08, built; `supabase/golf_trip_scoring_submission.sql` not run yet):** `scorecard_submissions` (one per golfer per group) + `submit_trip_scorecard`, under the same group lock as score writes: own card only, all 18 complete (strokes, putts, fairway, green), attester matches every hole, card version unchanged; then `submitted_at` locks the card (save functions already refuse it, incl. late offline writes, which the phone keeps as rejected and stops sending). Idempotent. Card shows Submitted with a lock after refresh / sign-in / live update; Submit waits for the server and only celebrates on success.
 
 **Not in this add-on:** a no-animation mode (all animations stay for now; that mode is built at the end), the "set groups and tee times" organizer screen, the screens for starting a personal round (the data is ready for it), The Maroon writing `PlayerRound`s, notifications for overrides.
 
@@ -2302,3 +2303,30 @@ Builds **on top of** the Player rounds plan above. Nothing above changes: `Playe
 - **Players** = accepted members with a profile (`acceptedMembers`; My Trips `memberCount` counts only those).
 - **SQL (owner runs, in this order, all safe to re-run):** `golf_trips.sql` → `golf_trip_flights.sql` → `profile_identity.sql` → `golf_trip_invitations.sql`.
 - **Tests:** `npm run test:browser:golf-trip-invite` (after `next build`). Note: `test:browser:golf-trip` (Create) was already failing before this step; it doesn't tap the Congratulations pop-up added on 2026-10-01.
+
+### Round: Tournament player identity (owner request 2026-10-08, built; `supabase/tournament_player_identity.sql` not run yet)
+
+**Model (kept as it already was; no schema reshuffle):**
+- `profiles.id` is who the golfer is.
+- `tournament_players.id` is their place in one tournament, kept across all its editions.
+- `edition_roster` (key: edition + tournament player) is that player in one year, with `team_id` and handicap.
+- `edition_teams.captain_player_id` is the captain of one year's team.
+- `tournament_members` holds tournament roles and access (owner / organizer / player / viewer).
+- Nothing about teams or captaincy is on profiles.
+
+**Added:**
+- `supabase/tournament_player_identity.sql`:
+  - Organizer-added golfers stay `profile_id` NULL until they claim their place through an invite link (`invite_tournament_player`, `get_tournament_player_invitation`, `accept_tournament_player_invitation`; only a hash of the secret is stored). Claiming attaches the profile to the same row and adds a 'player' tournament member.
+  - Unique (tournament, profile).
+  - Trigger: a claimed player can't move to another profile.
+  - Legacy bridge: claiming or unlinking a Maroon player slot now updates that tournament player's `profile_id` (trigger plus a one-time backfill).
+- Server code `lib/platform/tournamentPlayersServer.ts` and `lib/platform/tournamentPlayerInvitations.ts`.
+- Routes:
+  - `POST /api/platform/tournaments/<t>/<year>/players/<playerId>/invite`
+  - `GET` and `POST /api/platform/tournament-invitations/<secret>`
+- `loadMyTournaments`, `loadMyPastTournaments` and `loadMyPlayingTournaments` now use `getCurrentProfile()`.
+- `testDatabase` and the fake Supabase load `profile_identity.sql` and `tournament_player_identity.sql`.
+
+**Not built:** an invite button in the Tournament Dashboard, the invite landing page, decline, "copy last year's roster" (re-adding by name makes a second unclaimed player), and moving Maroon live scoring off `player_slug`.
+
+**SQL order (owner runs):** `profile_identity.sql` → `tournament_player_identity.sql` (after the platform files already in production).

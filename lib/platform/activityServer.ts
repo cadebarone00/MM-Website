@@ -1,4 +1,5 @@
-import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { getCurrentProfile } from "@/lib/profile/currentProfile";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { parseActivityFeed, setupActivityChanges, type TournamentActivityFeed } from "./activity.ts";
 import type { ManagedEdition } from "./dashboardServer.ts";
 import type { TournamentSetup } from "./setup.ts";
@@ -13,9 +14,9 @@ import type { TournamentSetup } from "./setup.ts";
 export async function loadTournamentActivity(slug: string, year: string | number, options: { limit?: number } = {}): Promise<TournamentActivityFeed | null> {
   const seasonYear = Number(year);
   if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug) || slug.length > 60 || !Number.isInteger(seasonYear)) return null;
-  const { data: { user } } = await (await createSupabaseServerClient()).auth.getUser();
+  const current = await getCurrentProfile();
   const { data, error } = await createSupabaseServiceRoleClient().rpc("get_tournament_activity", {
-    p_slug: slug, p_year: seasonYear, p_viewer: user?.id ?? null, p_limit: options.limit ?? 30,
+    p_slug: slug, p_year: seasonYear, p_viewer: current.status === "ok" ? current.profile.profileId : null, p_limit: options.limit ?? 30,
   });
   if (error) {
     if (error.code !== "PGRST202") console.error("get_tournament_activity failed:", error.message);
@@ -26,7 +27,7 @@ export async function loadTournamentActivity(slug: string, year: string | number
 
 async function record(edition: ManagedEdition, type: string, metadata: Record<string, number>) {
   const { error } = await createSupabaseServiceRoleClient().rpc("record_edition_activity", {
-    p_profile: edition.userId, p_edition: edition.editionId, p_type: type, p_metadata: metadata,
+    p_profile: edition.profileId, p_edition: edition.editionId, p_type: type, p_metadata: metadata,
   });
   // Best effort: the activity feed must never make a save or publish fail.
   if (error && error.code !== "PGRST202") console.error(`record_edition_activity(${type}) failed:`, error.message);

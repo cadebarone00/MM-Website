@@ -194,8 +194,9 @@ begin
     end if;
     select array_agg((p->>'profileId')::uuid), array_agg((p->>'attesterProfileId')::uuid)
       into v_ids, v_attesters from jsonb_array_elements(v_group->'players') p;
-    if exists (select 1 from unnest(v_ids) id where not exists (
-        select 1 from golf_trip_members m where m.golf_trip_id = p_trip and m.profile_id = id and m.invitation_status = 'accepted')) then
+    -- u(pid), not "id": golf_trip_members has its own id column, which would shadow it.
+    if exists (select 1 from unnest(v_ids) u(pid) where not exists (
+        select 1 from golf_trip_members m where m.golf_trip_id = p_trip and m.profile_id = u.pid and m.invitation_status = 'accepted')) then
       raise exception 'Every player must be on this trip.' using errcode = '22023';
     end if;
     if (v_all && v_ids) or (select count(distinct id) from unnest(v_ids) id) <> array_length(v_ids, 1) then

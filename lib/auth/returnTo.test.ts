@@ -14,3 +14,8 @@ test("login / signup links carry the invite page along", () => {
   assert.equal(withReturnTo("/login/email", back), `/login/email?next=${encodeURIComponent(back)}`);
   assert.equal(withReturnTo("/signup", null), "/signup");
 });
+
+test("tournament invite pages are allowed too", () => {
+  assert.equal(inviteReturnPath("/tournaments/invite/abcdefghijklmnopqrstuvwxyzABCDEF012345"), "/tournaments/invite/abcdefghijklmnopqrstuvwxyzABCDEF012345");
+  assert.equal(inviteReturnPath("/tournaments/texas-cup/2027"), null);
+});

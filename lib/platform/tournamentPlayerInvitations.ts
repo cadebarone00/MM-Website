@@ -33,3 +33,22 @@ export function playerAcceptResultFromJson(value: unknown): PlayerAcceptResult {
   if ((r.status === "accepted" || r.status === "already_player") && typeof r.tournamentId === "string") return { status: r.status, tournamentId: r.tournamentId };
   return r.status === "claimed" ? { status: "claimed" } : { status: "not_found" };
 }
+
+export type PlayerDeclineResult = "declined" | "already_player" | "not_found";
+
+export function playerDeclineResultFromJson(value: unknown): PlayerDeclineResult {
+  const status = value && typeof value === "object" ? (value as Record<string, unknown>).status : null;
+  return status === "declined" || status === "already_player" ? status : "not_found";
+}
+
+/** Organizer view: each tournament player's invite state for one edition. */
+export type PlayerInviteStatus = "joined" | "invited" | "declined" | "none";
+
+export function inviteStatusesFromJson(value: unknown): Record<string, PlayerInviteStatus> {
+  if (!value || typeof value !== "object") return {};
+  return Object.fromEntries(Object.entries(value as Record<string, unknown>)
+    .filter((entry): entry is [string, PlayerInviteStatus] => entry[1] === "joined" || entry[1] === "invited" || entry[1] === "declined" || entry[1] === "none"));
+}
+
+/** The page a tournament invite link opens. */
+export const tournamentPlayerInvitePath = (token: string) => `/tournaments/invite/${token}`;

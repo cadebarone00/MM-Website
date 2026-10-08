@@ -4,9 +4,11 @@ import { useEffect, useRef, useState, type ComponentProps } from "react";
 import { GolfTripHome } from "./GolfTripHome";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { SheetCard } from "@/lib/platform/liveCards";
-import type { QueuedOp } from "@/lib/platform/scoringQueue";
+import { queueStatus, type QueuedOp } from "@/lib/platform/scoringQueue";
 import { idbQueueStorage } from "@/lib/platform/scoringQueueIdb";
 import { createScoringSync, memoryQueueStorage, type SendBatch } from "@/lib/platform/scoringSync";
+import { cardVersion, submissionCheck, submitBodyFrom, submitRefusal, submitResultFromJson } from "@/lib/platform/tripSubmission";
+import type { ScoredCard } from "@/lib/platform/playerRounds";
 import { cardFromEntries, changedEntries, latestGate, mergeSent, myScoringSeat, opResultsFromJson, scoresVerified, type HoleEntryInput, type TripRoundScoring } from "@/lib/platform/tripScoring";
 
 /** How long after the last tap queued changes are sent (one request for a burst of taps). */
@@ -44,6 +46,7 @@ export function SavedGolfTripHome({ scoring, ...home }: ComponentProps<typeof Go
   const gate = useRef(latestGate());
   const timer = useRef<number | undefined>(undefined);
   const engine = useRef<ReturnType<typeof createScoringSync> | null>(null);
+  const [locked, setLocked] = useState<{ key: string | null; card: ScoredCard | undefined }>({ key: null, card: undefined });
 
   async function request(init?: RequestInit) {
     const n = gate.current.begin();
@@ -60,6 +63,7 @@ export function SavedGolfTripHome({ scoring, ...home }: ComponentProps<typeof Go
         ops: batch.ops.map((o) => ({ opId: o.opId, baseVersion: o.baseVersion, supersedes: o.supersedes, clientUpdatedAt: o.clientUpdatedAt, entry: o.entry })) }) });
       if (response.status === 401) return { ok: false, reason: "signed-out" };
       if (response.status === 409 && body.reason === "wrong-account") return { ok: false, reason: "wrong-account" };
+      if (response.status === 403 && body.reason === "locked") return { ok: false, reason: "locked" };
       const answer = response.ok && body.ok ? opResultsFromJson(body) : null;
       if (!answer) return { ok: false, reason: "error" };
       if (answer.scoring && gate.current.accept(n)) setLive(answer.scoring);
@@ -169,9 +173,40 @@ export function SavedGolfTripHome({ scoring, ...home }: ComponentProps<typeof Go
     void run.resolve(key, choice).then(() => run.sync());
   }
 
+  // Submit & Save (Step 5): only once every change is synced; the server re-checks everything and locks the card.
+  async function submit(): Promise<{ ok: boolean; message?: string }> {
+    const run = engine.current;
+    if (!scoring || !run) return { ok: false, message: "Scores are still loading." };
+    await run.sync();
+    if (run.status() !== "synced") return { ok: false, message: run.status() === "conflict" ? "Settle the score conflicts first." : "Your scores haven't synced yet. Try again when you're back online." };
+    const latest = await (async () => { try { const { response, body } = await request(); return response.ok && body.ok ? body.scoring as TripRoundScoring : null; } catch { return null; } })();
+    const current = latest ?? live;
+    if (!current) return { ok: false, message: "Couldn't load your card. Try again." };
+    if (latest) setLive(latest);
+    const check = submissionCheck(current, scoring.profileId, scoring.profileId);
+    if (!check.ok) return { ok: false, message: "holes" in check ? submitRefusal({ status: "rejected", reason: check.reason, holes: check.holes, scoring: null }) : "You can only submit your own card." };
+    const group = myScoringSeat(current, scoring.profileId)?.groupId;
+    if (!group) return { ok: false, message: "Couldn't find your group." };
+    try {
+      const response = await fetch(`/api/golf-trips/${scoring.tripId}/scoring/submit`, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(submitBodyFrom(group, scoring.profileId, cardVersion(current, scoring.profileId))) });
+      const body = await response.json().catch(() => ({})) as Record<string, unknown>;
+      const result = response.ok && body.ok ? submitResultFromJson(body) : null;
+      if (!result) return { ok: false, message: String(body.error ?? "Couldn't submit the card. Try again.") };
+      if (result.scoring) setLive(result.scoring);
+      return result.status === "rejected" ? { ok: false, message: submitRefusal(result) } : { ok: true };
+    } catch {
+      return { ok: false, message: "You're offline. Submit when you're back online." };
+    }
+  }
+
   if (!scoring || !seat) return <GolfTripHome {...home} />;
   if (!startCard || !ops) return <GolfTripHome {...home} />; // the stored queue is loading (a moment)
-  const status = ops.some((o) => o.status === "conflict") ? "conflict" : ops.length ? "pending" : "synced";
+  const status = queueStatus(ops);
+  // The server says this card is submitted (after a refresh, sign-in, reconnect or a live update): show it locked.
+  const lockedKey = seat.submitted ? JSON.stringify(seat.card) : null;
+  if (lockedKey !== locked.key) setLocked({ key: lockedKey, card: lockedKey
+    ? { strokes: seat.card.holes.map((h) => h ?? 0), putts: seat.card.putts, fairways: seat.card.fairways, greens: seat.card.greens, penalties: seat.card.penalties } : undefined });
   const nameOf = (s: Seat, id: string) => id === scoring.profileId ? "Your score" : `${s.attesteeName ?? "Their"} score`;
   return <GolfTripHome {...home} roundLive scoringOwner={scoring.profileId} scoringPlayerName={seat.myName} attesteeName={seat.attesteeName ?? undefined}
     attestedStrokes={seat.attestedForMe} attesteeStrokes={seat.attesteeId ? seat.attesteeOwn : undefined}
@@ -179,6 +214,7 @@ export function SavedGolfTripHome({ scoring, ...home }: ComponentProps<typeof Go
     syncStatus={status}
     conflicts={ops.filter((o) => o.status === "conflict").map((o) => ({ key: o.key, label: `${nameOf(seat, o.scoredProfileId)}, hole ${o.entry.hole}`, mine: show(o.entry), saved: show(o.server?.entry) }))}
     onResolveConflict={resolve} resetScoringCard={reset}
+    onScoringSubmit={submit} submittedCard={locked.card}
     savedScoringCard={startCard}
     onScoringCardChange={(card) => queue("own", card.strokes.map((h, i) => card.entered?.[i] === false ? null : h), card)}
     onAttestChange={(strokes, entered) => queue("attest", strokes.map((h, i) => entered[i] ? h : null))} />;

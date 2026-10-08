@@ -25,7 +25,7 @@ export async function POST(request: Request, { params }: Params) {
   if (!checked.ok) return NextResponse.json({ ok: false, error: checked.error }, { status: 400 });
 
   const { data, error } = await createSupabaseServiceRoleClient().rpc("post_commissioner_announcement", {
-    p_profile: edition.userId, p_edition: edition.editionId, p_title: checked.data.title, p_body: checked.data.body, p_visibility: checked.data.visibility,
+    p_profile: edition.profileId, p_edition: edition.editionId, p_title: checked.data.title, p_body: checked.data.body, p_visibility: checked.data.visibility,
   });
   if (error) {
     if (error.code === "42501" && /Admin Center/.test(error.message ?? "")) return NextResponse.json({ ok: false, error: "The Maroon Tournament is managed in the Admin Center." }, { status: 403 });

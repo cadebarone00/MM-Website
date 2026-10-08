@@ -35,7 +35,8 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   prefill?: { opponentHoles: (number | null)[]; putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[];
     /** Where the opponent's own phone disagrees with this starting card ("scores don't match"); none means it agrees. */
     otherCardDiff?: { player: "me" | "opponent"; hole: number; delta: number } };
-  onSubmit?: (card: ScoredCard) => void;
+  /** Saved trips return the server's answer: the card only locks (and celebrates) when it says ok. */
+  onSubmit?: (card: ScoredCard) => void | Promise<{ ok: boolean; message?: string }>;
   /** A round already saved for this player: the card opens locked as Submitted. */
   submittedCard?: ScoredCard;
   /** Player & Attest: whose score I keep (the second column); without it a made-up opponent name shows. */
@@ -312,6 +313,8 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   useEffect(() => { if (!attestKey) return; const sent = JSON.parse(attestKey) as { strokes: (number | null)[]; entered: boolean[] }; reportAttest.current?.(sent.strokes, sent.entered); }, [attestKey]);
   // Submit Score plays the full-screen moment over the now-locked card.
   const [celebration, setCelebration] = useState<{ total: number; toPar: string } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   // Colours show once the card is complete (or submitted): green when that player's scores agree, red when they don't.
   const check = (matches: boolean) => (complete || submitted) && (scoresVerified || submitted) ? matches ? "ok" as const : "wrong" as const : null;
 
@@ -370,8 +373,9 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
               <button type="button" onClick={() => onResolveConflict?.(c.key, "mine")}>Keep mine</button>
               <button type="button" onClick={() => onResolveConflict?.(c.key, "saved")}>Use saved</button></div>)}
           </div>}
-          {statusLabel && <p className={styles.syncStatus} data-state={statusLabel.split(" ")[0].toLowerCase()} role="status">{statusLabel}</p>}
-          <button type="button" className={`${styles.nextHoleButton} ${styles.submitSave}`} disabled={!readyToSubmit || submitted} onClick={() => setConfirmOpen(true)}>{submitted ? "Submitted" : "Submit & Save"}</button>
+          {statusLabel && <p className={styles.syncStatus} data-state={statusLabel.split(" ")[0].toLowerCase()} role="status">{statusLabel === "Submitted" && <LockKeyhole size={11} aria-hidden="true" />} {statusLabel}</p>}
+          {submitError && <p className={styles.syncStatus} data-state="conflict" role="alert">{submitError}</p>}
+          <button type="button" className={`${styles.nextHoleButton} ${styles.submitSave}`} disabled={!readyToSubmit || submitted || submitting} onClick={() => setConfirmOpen(true)}>{submitted ? "Submitted" : submitting ? "Submitting…" : "Submit & Save"}</button>
         </>
         : <>
       {/* One row: Thru on the left, the hole in the middle, To Par on the right, all lined up vertically. */}
@@ -439,10 +443,19 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
       <div className={styles.confirmDialog}>
         <p className={styles.confirmPrompt}>Are you sure?</p>
         <button type="button" className={styles.keepEditingButton} onClick={() => setConfirmOpen(false)}>Keep Editing</button>
-        <button type="button" className={styles.submitScoreButton} onClick={() => { setHoles(submittedHoles); setHolesCompetitor(submittedOpponentHoles); setSubmitted(true); setConfirmOpen(false);
+        <button type="button" className={styles.submitScoreButton} onClick={async () => {
+          setConfirmOpen(false); setSubmitError(null);
+          // Saved trips: the server decides. Nothing locks or celebrates until it says the card is submitted.
+          const outcome = onSubmit?.({ strokes: submittedHoles.map((h) => h ?? 0), putts, fairways, greens, penalties });
+          if (outcome instanceof Promise) {
+            setSubmitting(true);
+            const answer = await outcome.catch(() => ({ ok: false, message: "Couldn't submit the card. Try again." }));
+            setSubmitting(false);
+            if (!answer.ok) { setSubmitError(answer.message ?? "Couldn't submit the card. Try again."); return; }
+          }
+          setHoles(submittedHoles); setHolesCompetitor(submittedOpponentHoles); setSubmitted(true);
           const total = submittedHoles.reduce<number>((sum, h) => sum + (h ?? 0), 0);
-          setCelebration({ total, toPar: par ? formatToPar(total - par.reduce((sum, p) => sum + p, 0)) : "" });
-          onSubmit?.({ strokes: submittedHoles.map((h) => h ?? 0), putts, fairways, greens, penalties }); }}>Submit Score</button>
+          setCelebration({ total, toPar: par ? formatToPar(total - par.reduce((sum, p) => sum + p, 0)) : "" }); }}>Submit Score</button>
       </div>
     </div>, document.body)}
     {celebration && <SubmitCelebration total={celebration.total} toPar={celebration.toPar} onDone={() => setCelebration(null)} />}

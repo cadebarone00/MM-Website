@@ -1,16 +1,16 @@
+import { getCurrentProfile } from "@/lib/profile/currentProfile";
 import { cache } from "react";
-import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import type { PublicTournament } from "./publicSite.ts";
 import { resolveManagedEdition } from "./dashboardServer.ts";
 
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const YEAR = /^\d{4}$/;
 
-/** The signed-in viewer (for private tournaments), or null. Never trusted from the request. */
+/** The signed-in viewer's profile (for private tournaments), or null. Never trusted from the request. */
 async function viewerId(): Promise<string | null> {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  return user?.id ?? null;
+  const current = await getCurrentProfile();
+  return current.status === "ok" ? current.profile.profileId : null;
 }
 
 /**
@@ -56,7 +56,7 @@ export const loadTournamentPreview = cache(async (slug: string, year: string): P
   const edition = await resolveManagedEdition(slug, year);
   if (!edition) return null;
   const { data, error } = await createSupabaseServiceRoleClient()
-    .rpc("get_tournament_site_preview", { p_profile: edition.userId, p_edition: edition.editionId });
+    .rpc("get_tournament_site_preview", { p_profile: edition.profileId, p_edition: edition.editionId });
   if (error || !data) {
     if (error && error.code !== "42501" && error.code !== "PGRST202") console.error("get_tournament_site_preview failed:", error.message);
     return null;

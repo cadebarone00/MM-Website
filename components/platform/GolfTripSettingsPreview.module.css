@@ -259,3 +259,5 @@ span.typeChoice{cursor:default}
 .teamSelection{display:grid;gap:10px;margin-bottom:16px}
 .teamSelectionChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .teamSelectionChoices .typeChoice{min-height:38px}
+/* Format: this page's players / team builder above the round boxes. */
+.formatBuilder{margin-bottom:20px}

@@ -21,7 +21,8 @@ export interface QueuedOp extends QueueScope {
   /** My earlier ops for this hole the server may already have (a lost answer): finding one of them isn't a conflict. */
   supersedes: string[];
   clientUpdatedAt: string;
-  status: "pending" | "conflict";
+  /** rejected = the card was submitted (locked) before this reached the server: kept on the phone, never resent. */
+  status: "pending" | "conflict" | "rejected";
   /** On conflict: what the server has now. */
   server?: { version: number; entry: HoleEntryInput };
 }
@@ -67,7 +68,11 @@ export function resolveConflict(ops: QueuedOp[], key: string, choice: "mine" | "
 }
 
 export const queueStatus = (ops: QueuedOp[]): "synced" | "pending" | "conflict" =>
-  ops.some((o) => o.status === "conflict") ? "conflict" : ops.length ? "pending" : "synced";
+  ops.some((o) => o.status === "conflict") ? "conflict" : ops.some((o) => o.status === "pending") ? "pending" : "synced";
+
+/** The card these ops are for was submitted: keep them on the phone, stop sending them. */
+export const markRejected = (ops: QueuedOp[], opIds: string[]): QueuedOp[] =>
+  ops.map((o) => opIds.includes(o.opId) ? { ...o, status: "rejected" as const } : o);
 
 /** Pending ops grouped into one request per (group, golfer scored). Conflicts wait for the golfer. */
 export function batches(ops: QueuedOp[]): { groupId: string; scoredProfileId: string; ops: QueuedOp[] }[] {

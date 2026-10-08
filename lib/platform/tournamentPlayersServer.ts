@@ -2,7 +2,9 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/profile/currentProfile";
-import { isPlayerId, playerAcceptResultFromJson, playerInvitationFromJson, type PlayerAcceptResult, type TournamentPlayerInvitation } from "./tournamentPlayerInvitations.ts";
+import { inviteStatusesFromJson, isPlayerId, playerAcceptResultFromJson, playerDeclineResultFromJson, playerInvitationFromJson, type PlayerAcceptResult,
+  type PlayerDeclineResult, type PlayerInviteStatus, type TournamentPlayerInvitation } from "./tournamentPlayerInvitations.ts";
+import type { ManagedEdition } from "./dashboardServer.ts";
 
 /**
  * Server-side tournament player claiming (supabase/tournament_player_identity.sql). The golfer is the signed-in
@@ -45,4 +47,23 @@ export async function acceptTournamentPlayerInvitation(token: string): Promise<P
   const { data, error } = await createSupabaseServiceRoleClient().rpc("accept_tournament_player_invitation", { p_profile: current.profile.profileId, p_token: token });
   if (error) throw failure("accept_tournament_player_invitation", error);
   return playerAcceptResultFromJson(data);
+}
+
+/** The signed-in person holding the link says no: the player stays unclaimed and the link stops working. */
+export async function declineTournamentPlayerInvitation(token: string): Promise<PlayerDeclineResult | "signed-out" | "no-profile"> {
+  const current = await getCurrentProfile();
+  if (current.status !== "ok") return current.status;
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("decline_tournament_player_invitation", { p_profile: current.profile.profileId, p_token: token });
+  if (error) throw failure("decline_tournament_player_invitation", error);
+  return playerDeclineResultFromJson(data);
+}
+
+/** Organizer view of one edition: each player's joined / invited / declined / none. Null when unavailable. */
+export async function getEditionInviteStatuses(edition: ManagedEdition): Promise<Record<string, PlayerInviteStatus> | null> {
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("list_edition_player_invites", { p_profile: edition.profileId, p_edition: edition.editionId });
+  if (error) {
+    if (error.code !== "PGRST202" && error.code !== "42883") console.error("list_edition_player_invites failed:", error.message);
+    return null;
+  }
+  return data === null ? null : inviteStatusesFromJson(data);
 }

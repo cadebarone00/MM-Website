@@ -1,4 +1,4 @@
-import { applyResults, batches, enqueue, queueStatus, resolveConflict, type OpResult, type QueueChange, type QueuedOp, type QueueScope } from "./scoringQueue";
+import { applyResults, batches, enqueue, markRejected, queueStatus, resolveConflict, type OpResult, type QueueChange, type QueuedOp, type QueueScope } from "./scoringQueue";
 import type { TripRoundScoring } from "./tripScoring";
 
 /**
@@ -14,7 +14,7 @@ export interface QueueStorage {
 }
 export type SendResult =
   | { ok: true; results: OpResult[]; scoring: TripRoundScoring | null }
-  | { ok: false; reason: "offline" | "signed-out" | "wrong-account" | "error" };
+  | { ok: false; reason: "offline" | "signed-out" | "wrong-account" | "error" | "locked" };
 export type SendBatch = (batch: { groupId: string; scoredProfileId: string; ops: QueuedOp[] }) => Promise<SendResult>;
 
 export function createScoringSync({ storage, send, scope, newId, now, onChange, onScoring }: {
@@ -32,6 +32,13 @@ export function createScoringSync({ storage, send, scope, newId, now, onChange, 
   async function syncOnce() {
     for (const batch of batches(ops)) {
       const result = await send(batch);
+      if (!result.ok && result.reason === "locked") {
+        // That golfer's card was submitted first: these changes can never apply. Kept, not resent.
+        ops = markRejected(ops, batch.ops.map((o) => o.opId));
+        await persist();
+        onChange?.();
+        continue;
+      }
       if (!result.ok) {
         if (result.reason === "signed-out" || result.reason === "wrong-account") blockedBy = result.reason;
         break; // keep everything; try again on the next sync

@@ -146,3 +146,38 @@ test("existing slot claims are backfilled once", async () => {
   await db.exec(sqlFile("tournament_player_identity.sql"));
   assert.equal(await one(db, "select profile_id as r from tournament_players where tournament_id = $1 and legacy_player_slug = 'cam-latto'", [maroon]), cam);
 });
+
+test("decline: no profile attached, the link dies; the organizer sees joined / invited / declined and can invite again", async () => {
+  const db = await setup();
+  const owner = await profile(db, "owner", { approved: true });
+  const cup = await texasCup(db, owner);
+  const names = Object.fromEntries((await load(db, owner, cup.edition)).players.map((p) => [p.id, p.name]));
+  const statuses = async () => Object.fromEntries(Object.entries(await one<Record<string, string>>(db, "select list_edition_player_invites($1, $2) as r", [owner, cup.edition]) ?? {})
+    .map(([id, status]) => [names[id], status]));
+  assert.deepEqual(await statuses(), { "Ann Lee": "none", "Cy Park": "none" });
+  await invite(db, owner, cup.ann);
+  await invite(db, owner, cup.cy, "cy-secret-0123456789abcdefghijklmnopq");
+  assert.deepEqual(await statuses(), { "Ann Lee": "invited", "Cy Park": "invited" });
+  const someone = await profile(db, "someone");
+  assert.deepEqual(await one(db, "select decline_tournament_player_invitation($1, $2) as r", [someone, TOKEN]), { status: "declined" });
+  assert.equal((await playerRow(db, cup.ann)).profile_id, null);
+  assert.equal(await preview(db, someone), null);
+  assert.deepEqual(await accept(db, someone), { status: "not_found" }, "a declined link can't be accepted later");
+  await accept(db, await profile(db, "cypark"), "cy-secret-0123456789abcdefghijklmnopq");
+  assert.deepEqual(await statuses(), { "Ann Lee": "declined", "Cy Park": "joined" });
+  // You can't decline a place you already hold.
+  await refused(db.query("select decline_tournament_player_invitation($1, $2)", ["00000000-0000-0000-0000-000000000000", TOKEN]));
+  assert.equal(await invite(db, owner, cup.ann, "ann-again-0123456789abcdefghijklmnopq"), true, "invite again after a decline");
+  assert.deepEqual(await statuses(), { "Ann Lee": "invited", "Cy Park": "joined" });
+  assert.equal(await one(db, "select list_edition_player_invites($1, $2) as r", [someone, cup.edition]), null, "only organizers see invite statuses");
+});
+
+test("platform admins may make invite links too (same rule as the dashboard); plain players may not", async () => {
+  const db = await setup();
+  const owner = await profile(db, "owner", { approved: true });
+  const cup = await texasCup(db, owner);
+  assert.equal(await invite(db, await profile(db, "admin", { admin: true }), cup.ann), true);
+  const member = await profile(db, "member");
+  await db.query("insert into tournament_members (tournament_id, profile_id, role) values ($1, $2, 'player')", [cup.tournament, member]);
+  assert.equal(await invite(db, member, cup.cy, "member-try-0123456789abcdefghijklmnop"), false);
+});

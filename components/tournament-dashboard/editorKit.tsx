@@ -14,6 +14,8 @@ export interface EditorProps {
   saving: boolean;
   onSave: (data: unknown) => void;
   onCancel: () => void;
+  /** /api/platform/tournaments/<slug>/<year> — for editors that call their own routes (player invitations). */
+  apiBase?: string;
 }
 
 export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isPlayerId, playerAcceptResultFromJson, playerInvitationFromJson } from "./tournamentPlayerInvitations";
+import { inviteStatusesFromJson, isPlayerId, playerAcceptResultFromJson, playerDeclineResultFromJson, playerInvitationFromJson } from "./tournamentPlayerInvitations";
 
 test("player ids are uuids; anything else is refused before the database", () => {
   assert.equal(isPlayerId("6f1c2a52-8a3e-4c4e-9d55-0d3c8a1b2c3d"), true);
@@ -19,4 +19,12 @@ test("accept results are checked", () => {
   assert.deepEqual(playerAcceptResultFromJson({ status: "already_player", tournamentId: "t" }), { status: "already_player", tournamentId: "t" });
   assert.deepEqual(playerAcceptResultFromJson({ status: "claimed" }), { status: "claimed" });
   assert.deepEqual(playerAcceptResultFromJson({ status: "accepted" }), { status: "not_found" });
+});
+
+test("decline replies and organizer invite statuses are checked", () => {
+  assert.equal(playerDeclineResultFromJson({ status: "declined" }), "declined");
+  assert.equal(playerDeclineResultFromJson({ status: "already_player" }), "already_player");
+  assert.equal(playerDeclineResultFromJson({ status: "x" }), "not_found");
+  assert.deepEqual(inviteStatusesFromJson({ a: "joined", b: "invited", c: "declined", d: "none", e: "hacked" }), { a: "joined", b: "invited", c: "declined", d: "none" });
+  assert.deepEqual(inviteStatusesFromJson(null), {});
 });

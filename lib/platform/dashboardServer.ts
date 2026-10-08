@@ -8,7 +8,8 @@ import { parseSetup, type TournamentSetup } from "./setup.ts";
  * and the database functions check it again.
  */
 export interface ManagedEdition {
-  userId: string;
+  /** The organizer's profile (profiles.id). */
+  profileId: string;
   editionId: string;
 }
 
@@ -24,7 +25,7 @@ export async function resolveManagedEdition(slug: string, year: string | number)
   if (!access) return null;
   const { data } = await createSupabaseServiceRoleClient()
     .from("tournament_editions").select("id").eq("tournament_id", access.tournamentId).eq("season_year", seasonYear).maybeSingle();
-  return data ? { userId: access.userId, editionId: data.id } : null;
+  return data ? { profileId: access.profileId, editionId: data.id } : null;
 }
 
 type Rpc<T> = { ok: true; value: T } | { ok: false; error: { code?: string; message?: string } };
@@ -36,13 +37,13 @@ async function rpc(name: string, args: Record<string, unknown>): Promise<Rpc<Tou
 }
 
 export function loadSetup(edition: ManagedEdition) {
-  return rpc("get_tournament_setup", { p_profile: edition.userId, p_edition: edition.editionId });
+  return rpc("get_tournament_setup", { p_profile: edition.profileId, p_edition: edition.editionId });
 }
 
 export function saveSection(edition: ManagedEdition, section: string, data: Record<string, unknown>) {
-  return rpc("save_tournament_section", { p_profile: edition.userId, p_edition: edition.editionId, p_section: section, p_data: data });
+  return rpc("save_tournament_section", { p_profile: edition.profileId, p_edition: edition.editionId, p_section: section, p_data: data });
 }
 
 export function setPublished(edition: ManagedEdition, publish: boolean) {
-  return rpc("set_edition_published", { p_profile: edition.userId, p_edition: edition.editionId, p_publish: publish });
+  return rpc("set_edition_published", { p_profile: edition.profileId, p_edition: edition.editionId, p_publish: publish });
 }
