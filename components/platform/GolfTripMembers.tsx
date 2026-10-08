@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card } from "./GolfTripHome";
 import type { SavedGolfTrip } from "@/lib/platform/golfTripCreate";
 import { golfTripInvitePath } from "@/lib/platform/golfTripInvitations";
-import { memberState, type MemberState } from "@/lib/platform/golfTripMembers";
+import { acceptedMembers, memberState, type MemberState } from "@/lib/platform/golfTripMembers";
 import home from "./GolfTripHome.module.css";
 import fields from "./CreateTournament.module.css";
 import styles from "./GolfTripMembers.module.css";
@@ -63,7 +63,10 @@ export function GolfTripMembers({ tripId, members, viewerMemberId, manage }: { t
     } else setMessage(reply.error ?? "We couldn't do that. Try again.");
   }
 
+  const players = acceptedMembers(members).length;
+  const invited = members.filter((m) => memberState(m) === "pending").length;
   return <Card title="Members">
+    <p className={home.settingsNote}>{players} {players === 1 ? "player" : "players"}{invited ? ` · ${invited} invited` : ""}</p>
     <ul className={styles.list} aria-label="Trip members">
       {members.map((member) => {
         const state = memberState(member);

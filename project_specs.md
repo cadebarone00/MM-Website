@@ -2186,6 +2186,9 @@ Builds **on top of** the Player rounds plan above. Nothing above changes: `Playe
 **Built in steps (same two-step pattern as above):**
 - **Step 1 add-on (dev preview, no database):** groups + automatic attesters (pure, tested function); the second phone built in code (what a player enters for the person they attest is written onto that person's card as `attestStrokes`, and a card reads its attester's real entries, falling back to the simulator's stand-in until there are any; real two-phone testing comes later); green name/total + Submit lighting up on a full match; the submit animation; saving to the existing dev player-rounds store; trip stats from it; Start / End round; organizer override / push-through with the change log and marks.
 - **Step 2 (real database, separate approval):** the add-on's tables and rules join the Step 2 SQL file the owner runs, plus the server code. Never run by Claude.
+- **Step 2 attestation persistence (owner request 2026-10-08, built; `supabase/golf_trip_scoring.sql` not run yet):** `scoring_groups` / `scoring_group_players` (attester per player, permanent profile ids, playing order) / `hole_score_entries` (one row per golfer scored + golfer typing + hole; attester rows strokes only). Writes only through `save_trip_scoring_groups` and `save_hole_scores` (server, signed-in profile); assignments lock at the first entry. Saved trips (`/golf-trips/<id>`) show Scoring when a trip round is dated today (server date) and save as you type. Applied to Supabase 2026-10-08.
+- **Step 3 live sync (owner request 2026-10-08, built; `supabase/golf_trip_scoring_realtime.sql` not run yet):** one Realtime subscription per playing group triggers a reload through the server (plus tab-return, reconnect and a 10 s poll); newest answer wins; matching colors and Submit only count while all my changes are saved and the connection is live; unsaved holes resend on reconnect. Not yet: saving Submit to `player_rounds`, organizer tools on real trips.
+- **Step 4 offline scoring (owner request 2026-10-08, built; `supabase/golf_trip_scoring_offline.sql` not run yet):** every change is queued in IndexedDB (scoped to signed-in golfer + trip + round) before sending; ops have stable ids (retries apply once) and the server version they were based on (`save_hole_score_ops` answers conflict instead of overwriting); the route refuses ops queued under another account; my card and my attest column queue separately; Card shows Saved locally · Pending sync / Synced / Conflict (Keep mine / Use saved) / Verified / Submitted; Submit and verification wait for synced + live.
 
 **Not in this add-on:** a no-animation mode (all animations stay for now; that mode is built at the end), the "set groups and tee times" organizer screen, the screens for starting a personal round (the data is ready for it), The Maroon writing `PlayerRound`s, notifications for overrides.
 
@@ -2281,3 +2284,21 @@ Builds **on top of** the Player rounds plan above. Nothing above changes: `Playe
   - Create / delete / flights routes now use the profile too.
 - **Not built:** screens for inviting, the invite-link page, Accept / Decline buttons, Leave / Remove buttons, trip teams.
 - **Teams (planned, not built):** a trip competition table plus a per-competition participant table (member → team / sitting out). Never `team_id` on `golf_trip_members`, never on profiles.
+
+### Round: Golf Trip invites — usable end-to-end (owner request 2026-10-08, built; SQL re-runs pending)
+
+- **Trip Settings:**
+  - General (everyone): a **Members** card with names and badges (Organizer / Member / Invited / Declined), plus "N players · M invited".
+  - Normal members also get **Leave trip**.
+  - Organizer tab: **Members** with **Invite member** (name, optional email), which shows the invite link once with **Copy invite link**. Pending rows get **New invite link** and declined rows **Invite again**; both make a new link on the same row and kill the old one. **Cancel invite** and **Remove** have confirms. Then **Delete trip**.
+- **Invite page `/golf-trips/invite/<secret>`:** a safe preview (trip, dates, place, "Cade invited John Smith"; never the email).
+  - Signed out: **Log in** / **Create an account**, which return to the invite (`?next=`; only invite pages are allowed).
+  - Signed in: **Accept** (profile attached to the same row, then on to the trip) or **Decline** (with confirm).
+  - Other states: already in the trip, already accepted by someone else (no identity shown), and invalid link (cancelled / replaced / declined / unknown).
+- **Decline** keeps the row as history (`declined`, `declined_at`, no profile) and clears the link's hash, so it can never be accepted later. Only the organizer re-opens it, with a new link.
+- **Privacy:**
+  - The server sends other members' emails to the organizer only (`membersForViewer` in `getGolfTrip`, used by the trip page and Trip Settings). The organizer's email no longer reaches members through the trip page either.
+  - Members' rows can't be read directly from the browser (no grant or policy). `is_my_golf_trip_member()` keeps the Flights policy working.
+- **Players** = accepted members with a profile (`acceptedMembers`; My Trips `memberCount` counts only those).
+- **SQL (owner runs, in this order, all safe to re-run):** `golf_trips.sql` → `golf_trip_flights.sql` → `profile_identity.sql` → `golf_trip_invitations.sql`.
+- **Tests:** `npm run test:browser:golf-trip-invite` (after `next build`). Note: `test:browser:golf-trip` (Create) was already failing before this step; it doesn't tap the Congratulations pop-up added on 2026-10-01.

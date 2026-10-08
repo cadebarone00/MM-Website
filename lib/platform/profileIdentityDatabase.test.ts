@@ -45,6 +45,7 @@ test("a profile is at most one player in a tournament; unlinked players are fine
 
 test("existing duplicates stop the migration with a clear message and change nothing", async () => {
   const db = await database();
+  await db.exec("drop index if exists profiles_player_slug_key"); // a database from before this file was run
   const [cade, jake] = [await profile(db, "cade"), await profile(db, "jake")];
   await db.query("update profiles set player_slug = 'cade-barone' where id in ($1, $2)", [cade, jake]);
   await assert.rejects(db.exec(sqlFile("profile_identity.sql")), /more than one profile/);

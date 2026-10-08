@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AuthMethods } from "./AuthMethods";
+import { inviteReturnPath } from "@/lib/auth/returnTo";
 import { Eye, EyeOff } from "lucide-react";
 
 export function LoginForm() {
@@ -41,8 +42,8 @@ export function LoginForm() {
         return;
       }
       window.dispatchEvent(new CustomEvent("mm:session-changed"));
-      // Every login lands on your profile; The Maroon Tournament is reached from Tourneys.
-      router.push("/profile");
+      // Logins land on your profile, except from a Golf Trip invite (?next=, invite pages only), which returns there.
+      router.push(inviteReturnPath(new URLSearchParams(window.location.search).get("next")) ?? "/profile");
     } catch {
       setError("Something went wrong. Try again.");
     } finally {

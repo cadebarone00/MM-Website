@@ -1,7 +1,8 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/profile/currentProfile";
 import type { SavedGolfTrip } from "./golfTripCreate.ts";
-import { liveTripRound, tripGroupsPayload, tripScoringFromJson, type HoleEntryInput, type TripRoundScoring } from "./tripScoring.ts";
+import { submitResultFromJson } from "./tripSubmission.ts";
+import { liveTripRound, opResultsFromJson, tripGroupsPayload, tripScoringFromJson, type HoleEntryInput, type HoleOpInput, type TripRoundScoring } from "./tripScoring.ts";
 
 /**
  * Server-side saved-trip scoring (supabase/golf_trip_scoring.sql). The golfer typing is always the signed-in profile,
@@ -38,7 +39,9 @@ export async function loadLiveTripScoring(trip: SavedGolfTrip, today = new Date(
 }
 
 /** Database errors → what the API answers (the function's own messages are safe to show). */
-export function scoringFailure(error: { code?: string; message?: string }): { status: number; error: string } {
+export function scoringFailure(error: { code?: string; message?: string }): { status: number; error: string; reason?: "locked" } {
+  // A submitted card is locked: the phone stops resending changes to it (they stay on the phone).
+  if (error.code === "42501" && error.message === "That card is already submitted.") return { status: 403, error: error.message, reason: "locked" };
   if (error.code === "42501") return { status: 403, error: error.message ?? "You can't change that score." };
   if (error.code === "P0002") return { status: 404, error: "Round not found." };
   if (error.code === "22023") return { status: 400, error: error.message ?? "Check the hole scores." };
@@ -52,4 +55,35 @@ export async function saveTripHoleScores(profileId: string, groupId: string, sco
   if (error) return { ok: false as const, ...scoringFailure(error) };
   const scoring = tripScoringFromJson(data);
   return scoring ? { ok: true as const, scoring } : { ok: false as const, status: 500, error: "Couldn't save the score. Try again." };
+}
+
+/** One trip round's groups and entries for a member (live sync refresh). Null when not on the trip or the round is missing. */
+export async function getTripRoundScoring(profileId: string, tripId: string, roundNumber: number): Promise<TripRoundScoring | null | "failed"> {
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("get_trip_round_scoring", { p_profile: profileId, p_trip: tripId, p_round_number: roundNumber });
+  if (error) { console.error("get_trip_round_scoring failed:", error.message); return "failed"; }
+  return data === null ? null : tripScoringFromJson(data) ?? "failed";
+}
+
+/**
+ * Save queued ops (Step 4 offline scoring, supabase/golf_trip_scoring_offline.sql): each is applied once, or answered
+ * "conflict" when the saved score moved on since the phone last saw it.
+ */
+export async function saveTripHoleOps(profileId: string, groupId: string, scoredProfileId: string, ops: HoleOpInput[]) {
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("save_hole_score_ops",
+    { p_profile: profileId, p_group: groupId, p_scored: scoredProfileId, p_ops: ops });
+  if (error) return { ok: false as const, ...scoringFailure(error) };
+  const answer = opResultsFromJson(data);
+  return answer ? { ok: true as const, ...answer } : { ok: false as const, status: 500, error: "Couldn't save the score. Try again." };
+}
+
+/**
+ * Submit the signed-in golfer's own card (Step 5, supabase/golf_trip_scoring_submission.sql). The database checks
+ * completeness, the attester match and the card version under the same lock as score writes, then locks the card.
+ */
+export async function submitTripScorecard(profileId: string, groupId: string, golferProfileId: string, cardVersion: number) {
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("submit_trip_scorecard",
+    { p_profile: profileId, p_group: groupId, p_golfer: golferProfileId, p_card_version: cardVersion });
+  if (error) return { ok: false as const, ...scoringFailure(error) };
+  const result = submitResultFromJson(data);
+  return result ? { ok: true as const, result } : { ok: false as const, status: 500, error: "Couldn't submit the card. Try again." };
 }

@@ -3,8 +3,13 @@
  * it, so anything drawn in a team's color stays readable:
  * - `text`: lettering on the team color (white or near-black, whichever reads better).
  * - `secondary`: a softer shade of the color for borders, bars and tints next to it.
+ * - `onDark`: the color as it shows on the app's dark maroon (the win % and its bar) — the color itself when it already
+ *   stands out there, otherwise lightened just enough to read (navy, black, maroon…).
  */
-export type TeamColor = { id: string; name: string; base: string; text: string; secondary: string };
+export type TeamColor = { id: string; name: string; base: string; text: string; secondary: string; onDark: string };
+
+/** The app's dark background (maroon-900), which team colors sit on in the match box. */
+export const DARK_BACKGROUND = "#240001";
 
 const PALETTE: [id: string, name: string, base: string][] = [
   ["maroon", "Maroon", "#6b1e2a"],
@@ -54,7 +59,9 @@ export const TEAM_COLORS: TeamColor[] = PALETTE.map(([id, name, base]) => {
   const text = contrast(base, LIGHT_TEXT) >= contrast(base, DARK_TEXT) ? LIGHT_TEXT : DARK_TEXT;
   // Dark colors soften toward white; light ones deepen toward black.
   const secondary = text === LIGHT_TEXT ? mix(base, "#ffffff", 0.45) : mix(base, "#000000", 0.25);
-  return { id, name, base, text, secondary };
+  let onDark = base;
+  for (let amount = 0.05; contrast(onDark, DARK_BACKGROUND) < 4.5 && amount <= 1; amount += 0.05) onDark = mix(base, "#ffffff", amount);
+  return { id, name, base, text, secondary, onDark };
 });
 
 export function teamColor(id: string | null | undefined): TeamColor | undefined {

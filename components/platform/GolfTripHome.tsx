@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, use, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentProps, type ReactNode } from "react";
+import { Suspense, use, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentProps, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { AlertTriangle, ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronLeft, ChevronRight, Clock, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Droplets, ExternalLink, FileText, Flag, LockKeyhole, MapPin, MessageCircle, Plane, Plus, Settings, Share2, ShieldCheck, ShoppingBag, Sun, Thermometer, Trash2, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
@@ -39,6 +39,7 @@ import { useSwipe } from "./useSwipe";
 import { usePlayerStats } from "@/lib/platform/playerStatsSetting";
 import { setRoundRsvp, useRoundRsvps } from "@/lib/platform/roundRsvp";
 import { useInAppScoring } from "@/lib/platform/inAppScoringSetting";
+import { teamColor } from "@/lib/platform/teamColors";
 type Tab = (typeof TABS)[number];
 
 const TOURNAMENT_ANSWERS: Record<string, string> = { yes: "Yes, there's a tournament", no: "No tournament, just golf", undecided: "Not sure yet" };
@@ -64,10 +65,12 @@ const subscribeNever = () => () => {};
  * `navigation` optionally requests a shared tab/section; in-app navigation remains local between requests.
  * `onNavigationChange` optionally observes the actual tab/section; the dev wrapper supplies it only when embedded.
  */
-export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, now: tripNow, competitionKey, savedCompetitionType, onTravelChange, roundLive = false, opponentCardMatches, scoringPrefill, onScoringSubmit, submittedCard, scoringOwner, tripStats, scoreChanges, attesteeName, scoringEdits, onScoringCardChange, attestedStrokes, onAttestChange, scoringPlayerName, savedScoringCard }:
+export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, now: tripNow, competitionKey, savedCompetitionType, savedTeamColors, onTravelChange, roundLive = false, opponentCardMatches, scoringPrefill, onScoringSubmit, submittedCard, scoringOwner, tripStats, scoreChanges, attesteeName, scoringEdits, onScoringCardChange, attestedStrokes, onAttestChange, scoringPlayerName, savedScoringCard, attesteeStrokes, scoresVerified, syncStatus, conflicts, onResolveConflict, resetScoringCard }:
   { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview; weather?: Promise<TripWeather>; flights?: TripFlights;
     /** Everyone's travel (My Info, the Itinerary and the Home "what's next" cards). Only the dev mock trip has it for now. */
     travel?: TripTravel; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void; now?: string; competitionKey?: string;
+    /** Each team's color (TEAM_COLORS ids, Team A first) saved with the trip, until Settings picks them in this session. */
+    savedTeamColors?: (string | null)[];
     /** Dev Just created trip: its saved Individual / Team picks (used until Settings is opened this session). */
     savedCompetitionType?: { individual: string | null; team: string | null };
     /** Told about every change to my travel (dev Just created trip saves it). */
@@ -88,7 +91,12 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
     /** The second phone: my attester's entries for me, and my entries for the player I attest. */
     attestedStrokes?: (number | null)[]; onAttestChange?: (strokes: (number | null)[], entered: boolean[]) => void;
     /** A saved trip's scoring: the signed-in golfer's name on the card, and their card in progress to start from. */
-    scoringPlayerName?: string; savedScoringCard?: ComponentProps<typeof GolfTripScoring>["savedCard"] }) {
+    scoringPlayerName?: string; savedScoringCard?: ComponentProps<typeof GolfTripScoring>["savedCard"];
+    /** Live sync (saved trips): my attestee's own strokes, and whether my scores are saved and current. */
+    attesteeStrokes?: (number | null)[]; scoresVerified?: boolean;
+    /** Offline scoring (saved trips): sync status, conflicts to settle, and a card to put back on screen. */
+    syncStatus?: ComponentProps<typeof GolfTripScoring>["syncStatus"]; conflicts?: ComponentProps<typeof GolfTripScoring>["conflicts"];
+    onResolveConflict?: ComponentProps<typeof GolfTripScoring>["onResolveConflict"]; resetScoringCard?: ComponentProps<typeof GolfTripScoring>["resetCard"] }) {
   const raw = useSyncExternalStore(subscribeNever, golfTripDraftSnapshot, () => "");
   const stored = useMemo(() => parseGolfTripDraft(raw), [raw]);
   const draft = preview ?? stored;
@@ -125,7 +133,15 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   // Which competition the trip has, for the Golf tab's sections: none without a tournament; otherwise the organizer's
   // Individual / Team choices (dev Settings), or, until those are picked, the format (match play = team matches, stroke /
   // Stableford = individual leaderboard; unknown = both).
-  const sharedType = useGolfTripCompetitionPreview()?.competitionTypes[competitionKey ?? "default"] ?? savedCompetitionType;
+  const sharedCompetition = useGolfTripCompetitionPreview();
+  const sharedType = sharedCompetition?.competitionTypes[competitionKey ?? "default"] ?? savedCompetitionType;
+  // Team colors (Settings → Competition → Team Color): the match box and match list draw each team in its color — the
+  // "UP" highlight, the win % and its bar. Left = Team A, right = Team B; unpicked teams keep the gold / rose defaults.
+  const teamColorIds = sharedCompetition?.teamColors[competitionKey ?? "default"] ?? savedTeamColors ?? [];
+  const teamColorVars = Object.fromEntries((["left", "right"] as const).flatMap((side, team) => {
+    const color = teamColor(teamColorIds[team]);
+    return color ? [[`--team-${side}`, color.base], [`--team-${side}-text`, color.text], [`--team-${side}-on-dark`, color.onDark]] : [];
+  })) as CSSProperties;
   const scoring = previewMatch?.formatDef?.scoringMethod;
   const structure: CompetitionStructure = !competitive ? { individual: false, team: false }
     : sharedType ? { individual: Boolean(sharedType.individual), team: Boolean(sharedType.team) }
@@ -192,7 +208,9 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
         afterRound={previewMatch ? (roundLive || previewMatch.leaderboard.some(row => row.holes.every(strokes => strokes !== null)) ? previewMatch.round : previewMatch.round - 1) : 0}
         liveRound={roundLive && previewMatch ? { id: `round-${previewMatch.round}`, kind: "teeTime", title: `Round ${previewMatch.round} · ${previewMatch.course}`, startsAt: (tripNow ?? "").slice(0, 16) } : undefined} />
         : tab === "Golf" ? <>
-          <GolfSlides key={`${structure.individual}-${structure.team}`} previewMatch={previewMatch} structure={structure} rsvpKey={rsvpKey} navigation={navigation} onNavigationChange={onNavigationChange} tripStats={tripStats} scoreChanges={scoreChanges} />
+          <div style={{ display: "contents", ...teamColorVars }}>
+            <GolfSlides key={`${structure.individual}-${structure.team}`} previewMatch={previewMatch} structure={structure} rsvpKey={rsvpKey} navigation={navigation} onNavigationChange={onNavigationChange} tripStats={tripStats} scoreChanges={scoreChanges} />
+          </div>
         </>
         : tab === "Venue" ? <GolfTripVenue draft={draft} settingsHref={settingsHref} today={tripNow?.slice(0, 10)}
           latitude={coordinate(draft.destinationLatitude)} longitude={coordinate(draft.destinationLongitude)}
@@ -205,7 +223,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
         </>
         : <Card title={tab}><Empty>Coming soon</Empty></Card>}
     </div>
-    {roundLive && <GolfTripScoring key={`${scoringOwner ?? "me"}-${scoringPrefill ? `prefilled-${scoringPrefill.otherCardDiff ? "mismatch" : "match"}` : "blank"}`} prefill={scoringPrefill} onSubmit={onScoringSubmit} submittedCard={submittedCard} par={previewMatch?.par} initialHoles={yourHoles} courseName={previewMatch?.course} playerName={scoringPlayerName ?? (you ? getPlayerDisplayName(you) : draft.yourName || "You")} opponentCardMatches={opponentCardMatches}  attesteeName={attesteeName} edits={scoringEdits} onCardChange={onScoringCardChange} attestedStrokes={attestedStrokes} onAttestChange={onAttestChange} savedCard={savedScoringCard} />}
+    {roundLive && <GolfTripScoring key={`${scoringOwner ?? "me"}-${scoringPrefill ? `prefilled-${scoringPrefill.otherCardDiff ? "mismatch" : "match"}` : "blank"}`} prefill={scoringPrefill} onSubmit={onScoringSubmit} submittedCard={submittedCard} par={previewMatch?.par} initialHoles={yourHoles} courseName={previewMatch?.course} playerName={scoringPlayerName ?? (you ? getPlayerDisplayName(you) : draft.yourName || "You")} opponentCardMatches={opponentCardMatches}  attesteeName={attesteeName} edits={scoringEdits} onCardChange={onScoringCardChange} attestedStrokes={attestedStrokes} onAttestChange={onAttestChange} savedCard={savedScoringCard} attesteeStrokes={attesteeStrokes} scoresVerified={scoresVerified} syncStatus={syncStatus} conflicts={conflicts} onResolveConflict={onResolveConflict} resetCard={resetScoringCard} />}
     <GolfTripChat open={chatOpen} onClose={() => setChatOpen(false)} tripName={draft.tripName || "Your Golf Trip"}
       members={[...new Set(previewMatch?.matches.flatMap(match => [match.left, match.right].flatMap(side => side ? normalizeCompetitor(side).golfers.map(golfer => getPlayerDisplayName(golfer.name)) : [])) ?? [])].filter(name => name !== getPlayerDisplayName(you ?? draft.yourName ?? ""))} />
   </main>;

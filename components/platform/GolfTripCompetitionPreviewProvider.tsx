@@ -12,6 +12,9 @@ const CompetitionContext = createContext<{
    *  that trip's Golf tab follows it. */
   competitionTypes: Record<string, CompetitionTypeChoice>;
   setCompetitionType: (key: string) => Dispatch<SetStateAction<CompetitionTypeChoice>>;
+  /** Per trip data: each team's color (Team A, Team B… → a TEAM_COLORS id), once the organizer picks them. */
+  teamColors: Record<string, (string | null)[]>;
+  setTeamColors: (key: string) => Dispatch<SetStateAction<(string | null)[]>>;
   rounds: CompetitionRound[];
   change: (change: CompetitionRoundChange, id?: string) => void;
   addRound: (date: string) => void;
@@ -24,7 +27,10 @@ export function GolfTripCompetitionPreviewProvider({ children }: { children: Rea
   const [competitionTypes, setTypes] = useState<Record<string, CompetitionTypeChoice>>({});
   const setCompetitionType = (key: string): Dispatch<SetStateAction<CompetitionTypeChoice>> => update =>
     setTypes(current => ({ ...current, [key]: typeof update === "function" ? update(current[key] ?? NO_TYPES) : update }));
-  return <CompetitionContext.Provider value={{ competitionTypes, setCompetitionType, rounds, change: (change, id) => setRounds(current => updateCompetitionRounds(current, change, id)),
+  const [teamColors, setColors] = useState<Record<string, (string | null)[]>>({});
+  const setTeamColors = (key: string): Dispatch<SetStateAction<(string | null)[]>> => update =>
+    setColors(current => ({ ...current, [key]: typeof update === "function" ? update(current[key] ?? []) : update }));
+  return <CompetitionContext.Provider value={{ competitionTypes, setCompetitionType, teamColors, setTeamColors, rounds, change: (change, id) => setRounds(current => updateCompetitionRounds(current, change, id)),
     addRound: date => setRounds(current => addCompetitionRound(current, date, `round-${Date.now()}`)),
     removeRound: id => setRounds(current => removeCompetitionRound(current, id)) }}>
     {children}

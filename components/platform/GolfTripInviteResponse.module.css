@@ -1,0 +1,11 @@
+/* The invite link's page. Page, card and confirm styles come from GolfTripHome.module.css. */
+.content{display:flex;flex-direction:column;gap:16px;width:100%;max-width:520px;margin:0 auto;padding:56px 20px 120px;box-sizing:border-box}
+.eyebrow{margin:0;font:700 13px/1.2 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#dcc495}
+.tripName{margin:0;font:500 30px/1.15 var(--font-spectral),Georgia,serif;color:#fff;overflow-wrap:anywhere}
+.details{margin:0;font:500 16px/1.45 var(--font-barlow),sans-serif;color:rgba(255,255,255,.8)}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+.primary,.secondary{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 22px;border-radius:12px;cursor:pointer;text-decoration:none;font:700 15px/1 var(--font-barlow),sans-serif}
+.primary{background:#fbf8f1;border:1px solid #fbf8f1;color:var(--color-maroon-900)}
+.secondary{background:transparent;border:1px solid #dcc495;color:#dcc495}
+.primary:disabled,.secondary:disabled{opacity:.6;cursor:default}
+.primary:focus-visible,.secondary:focus-visible{outline:2px solid #dcc495;outline-offset:2px}

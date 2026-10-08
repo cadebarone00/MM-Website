@@ -1,4 +1,5 @@
-import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { getCurrentProfile } from "@/lib/profile/currentProfile";
 import { loadLegacyPastRows, loadLegacyPlayingRows, withoutLegacyRows } from "./legacyTournaments.ts";
 import { summarizeMyTournaments, summarizePastEditions, type PastTournament } from "./pastTournaments.ts";
 
@@ -8,16 +9,19 @@ export type MyPastTournaments =
   | { signedIn: true; ok: false };
 
 /**
- * The signed-in user's finished tournaments. The user id comes from the
- * session only (never the request). Legacy tournaments' rows come live from
+ * The signed-in golfer's finished tournaments (through their profile: tournament_players.profile_id).
+ * The profile comes from the session only (getCurrentProfile, never the request). Legacy tournaments' rows come live from
  * their adapters (legacyTournaments.ts) and open their /play home.
  */
 export async function loadMyPastTournaments(): Promise<MyPastTournaments> {
-  const { data: { user } } = await (await createSupabaseServerClient()).auth.getUser();
-  if (!user) return { signedIn: false };
+  const current = await getCurrentProfile();
+  if (current.status === "signed-out") return { signedIn: false };
+  // An account without a profile is no golfer in any tournament.
+  if (current.status === "no-profile") return { signedIn: true, ok: true, tournaments: [] };
+  const profileId = current.profile.profileId;
   const [platform, legacy] = await Promise.all([
-    createSupabaseServiceRoleClient().rpc("list_my_past_editions", { p_profile: user.id }),
-    loadLegacyPastRows(user.id).catch((error: unknown) => error instanceof Error ? error : new Error(String(error))),
+    createSupabaseServiceRoleClient().rpc("list_my_past_editions", { p_profile: profileId }),
+    loadLegacyPastRows(profileId).catch((error: unknown) => error instanceof Error ? error : new Error(String(error))),
   ]);
   if (platform.error) {
     console.error("list_my_past_editions failed:", platform.error.message);
@@ -40,11 +44,14 @@ export async function loadMyPastTournaments(): Promise<MyPastTournaments> {
  * every other tournament's from list_my_active_editions.
  */
 export async function loadMyPlayingTournaments(): Promise<MyPastTournaments> {
-  const { data: { user } } = await (await createSupabaseServerClient()).auth.getUser();
-  if (!user) return { signedIn: false };
+  const current = await getCurrentProfile();
+  if (current.status === "signed-out") return { signedIn: false };
+  // An account without a profile is no golfer in any tournament.
+  if (current.status === "no-profile") return { signedIn: true, ok: true, tournaments: [] };
+  const profileId = current.profile.profileId;
   const [platform, legacy] = await Promise.all([
-    createSupabaseServiceRoleClient().rpc("list_my_active_editions", { p_profile: user.id }),
-    loadLegacyPlayingRows(user.id).catch((error: unknown) => error instanceof Error ? error : new Error(String(error))),
+    createSupabaseServiceRoleClient().rpc("list_my_active_editions", { p_profile: profileId }),
+    loadLegacyPlayingRows(profileId).catch((error: unknown) => error instanceof Error ? error : new Error(String(error))),
   ]);
   if (platform.error) {
     console.error("list_my_active_editions failed:", platform.error.message);

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { GolfTripHome } from "@/components/platform/GolfTripHome";
+import { SavedGolfTripHome } from "@/components/platform/SavedGolfTripHome";
 import { golfTripUrl, savedTripAsDraft } from "@/lib/platform/golfTripCreate";
 import { getGolfTrip, getMyGolfTripFlights } from "@/lib/platform/golfTripsServer";
+import { loadLiveTripScoring } from "@/lib/platform/tripScoringServer";
 import { flightSummary } from "@/lib/platform/golfTripFlights";
 import { getTripWeather } from "@/lib/platform/weather/weatherService";
 import type { TripWeather } from "@/lib/platform/weather/types";
@@ -31,6 +32,11 @@ export default async function SavedGolfTripPage({ params }: { params: Promise<{ 
   const mine = await getMyGolfTripFlights(tripId);
   const flights = { summary: flightSummary(mine.status === "ok" ? mine.flights : [], new Date().toISOString().slice(0, 10)), href: `${golfTripUrl(tripId)}/flights` };
 
+  // Scoring: today's round, its playing groups and this golfer's saved scores (none when no round is today or
+  // golf_trip_scoring.sql isn't installed yet; the page loads either way).
+  const live = await loadLiveTripScoring(view.trip);
+  const scoring = live.status === "ok" ? { tripId, profileId: live.profileId, scoring: live.scoring } : undefined;
+
   // GolfTripHome reads questionnaire-shaped answers; the saved trip is passed in that shape.
-  return <GolfTripHome preview={savedTripAsDraft(view.trip)} settingsHref={`${golfTripUrl(tripId)}/settings`} backHref="/golf-trips" weather={weather} flights={flights} />;
+  return <SavedGolfTripHome preview={savedTripAsDraft(view.trip)} settingsHref={`${golfTripUrl(tripId)}/settings`} backHref="/golf-trips" weather={weather} flights={flights} scoring={scoring} />;
 }

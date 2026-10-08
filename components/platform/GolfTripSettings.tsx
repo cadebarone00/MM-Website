@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { Card } from "./GolfTripHome";
+import { GolfTripMembers, LeaveGolfTrip } from "./GolfTripMembers";
+import type { SavedGolfTrip } from "@/lib/platform/golfTripCreate";
 import styles from "./GolfTripHome.module.css";
 import settingsStyles from "./GolfTripSettingsPreview.module.css";
 
@@ -14,9 +16,13 @@ type Tab = (typeof TABS)[number];
 /**
  * Trip Settings, opened from the settings wheel on Golf Trip Home. The trip's organizer gets a General / Organizer
  * selector; everyone else just sees General. `tripId` is the saved trip Delete Trip removes, or null in the
- * /dev/tournament preview, where Delete Trip only says what would happen.
+ * /dev/tournament preview, where Delete Trip only says what would happen. A saved trip also passes its members (as the
+ * server lets this viewer see them): everyone gets the member list, members get Leave Trip, the organizer manages invites.
  */
-export function GolfTripSettings({ backHref, isOrganizer, tripId }: { backHref: string; isOrganizer: boolean; tripId: string | null }) {
+export function GolfTripSettings({ backHref, isOrganizer, tripId, members, viewerMemberId }: {
+  backHref: string; isOrganizer: boolean; tripId: string | null; members?: SavedGolfTrip["members"]; viewerMemberId?: string;
+}) {
+  const saved = tripId !== null && members && viewerMemberId ? { tripId, members, viewerMemberId } : null;
   const [tab, setTab] = useState<Tab>("General");
   const shown: Tab = isOrganizer ? tab : "General";
 
@@ -31,13 +37,20 @@ export function GolfTripSettings({ backHref, isOrganizer, tripId }: { backHref: 
     </header>
     <div className={styles.body} role={isOrganizer ? "tabpanel" : undefined} aria-label={`${shown} settings`}>
       {shown === "Organizer"
-        ? <DeleteTrip tripId={tripId} />
-        : <div className={settingsStyles.grid}>
+        ? <>
+          {saved && <GolfTripMembers {...saved} manage />}
+          <DeleteTrip tripId={tripId} />
+        </>
+        : <>
+        {saved && <GolfTripMembers {...saved} manage={false} />}
+        {saved && !isOrganizer && <LeaveGolfTrip tripId={saved.tripId} />}
+        <div className={settingsStyles.grid}>
           {["My Team", "General", "Draft", "Playoffs", "Roster", "Scoring"].map(title =>
             <section key={title} className={settingsStyles.card} aria-label={title}>
               <h2>{title}</h2>
             </section>)}
-        </div>}
+        </div>
+        </>}
     </div>
   </main>;
 }

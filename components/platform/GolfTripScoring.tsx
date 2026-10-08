@@ -29,7 +29,7 @@ const HOLD_SLOP = 10;
  * submitting locks the card until the page reloads. Submit & Save calls `onSubmit` with the card (the dev preview saves it
  * as the player's round); `submittedCard` reopens a saved round locked.
  */
-export function GolfTripScoring({ par, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard }: {
+export function GolfTripScoring({ par, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard, attesteeStrokes, scoresVerified = true, syncStatus, conflicts, onResolveConflict, resetCard }: {
   par?: number[]; initialHoles?: (number | null)[]; playerName?: string; opponentCardMatches?: boolean; courseName?: string;
   /** Dev preview only: a finished card (opponent scores, putts, fairways, greens) to start from. */
   prefill?: { opponentHoles: (number | null)[]; putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[];
@@ -49,6 +49,17 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   /** My entries for the player I keep score for, sent to their card. */
   onAttestChange?: (strokes: (number | null)[], entered: boolean[]) => void;
   /** A saved trip's card in progress (my strokes + stats, and what I entered for the player I attest): the sheet starts from it. */
+  /** My attestee's own strokes (saved trips): what the column I keep is checked against. */
+  attesteeStrokes?: (number | null)[];
+  /** Saved trips: false while a change of mine is unsaved or the connection is down, so nothing shows as matched / mismatched and Submit stays off. */
+  scoresVerified?: boolean;
+  /** Saved trips (offline scoring): where my entries stand. Shown as one status line on the Card. */
+  syncStatus?: "pending" | "synced" | "conflict";
+  /** Holes where the saved score changed while mine waited to sync: mine is kept until I choose. */
+  conflicts?: { key: string; label: string; mine: string; saved: string }[];
+  onResolveConflict?: (key: string, choice: "mine" | "saved") => void;
+  /** A new token puts this card on screen (e.g. after choosing the saved score in a conflict). */
+  resetCard?: { token: number; card: { holes: (number | null)[]; opponentHoles: (number | null)[]; putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[]; penalties: { fairway: boolean; green: boolean }[] } };
   savedCard?: { holes: (number | null)[]; opponentHoles: (number | null)[]; putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[]; penalties: { fairway: boolean; green: boolean }[] };
 }) {
   const [open, updateOpen] = useState(false);
@@ -64,6 +75,12 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   const [penalties, setPenalties] = useState(() => Array.from({ length: HOLES }, (_, i) => savedCard?.penalties[i] ?? { fairway: false, green: false }));
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitted, setSubmitted] = useState(Boolean(submittedCard));
+  const [resetToken, setResetToken] = useState(resetCard?.token);
+  if (resetCard && resetCard.token !== resetToken) {
+    setResetToken(resetCard.token);
+    setHoles(resetCard.card.holes); setHolesCompetitor(resetCard.card.opponentHoles); setPutts(resetCard.card.putts);
+    setFairways(resetCard.card.fairways); setGreens(resetCard.card.greens); setPenalties(resetCard.card.penalties);
+  }
   // A saved round can arrive after the first render (the dev store loads after hydration): take it in once, locked.
   const [loadedCard, setLoadedCard] = useState(submittedCard);
   if (submittedCard !== loadedCard) {
@@ -271,11 +288,16 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   });
   const sameAs = (mine: (number | null)[], theirs: (number | null)[]) => mine.every((value, i) => value === theirs[i]);
   // My score vs what my attester entered for me: their real entries once there are any, else the simulator stand-in.
-  const fromAttester = attestedStrokes?.some((h) => h !== null) ? attestedStrokes : null;
+  // Someone else's untouched hole counts as par, same as mine.
+  const parFilled = (values: (number | null)[]) => values.map((h, i) => h ?? par?.[i] ?? null);
+  const fromAttester = attestedStrokes?.some((h) => h !== null) ? parFilled(attestedStrokes) : null;
   const meMatches = fromAttester ? sameAs(submittedHoles, fromAttester) : otherCard ? sameAs(submittedHoles, otherCard.me) : opponentCardMatches;
-  const opponentMatches = otherCard ? sameAs(submittedOpponentHoles, otherCard.opponent) : opponentCardMatches;
+  const opponentMatches = attesteeStrokes ? sameAs(submittedOpponentHoles, parFilled(attesteeStrokes)) : otherCard ? sameAs(submittedOpponentHoles, otherCard.opponent) : opponentCardMatches;
   // Only my own score has to match my attester's (owner decision): the column I keep for someone else is shown, never blocks me.
-  const readyToSubmit = complete && meMatches;
+  const readyToSubmit = complete && meMatches && scoresVerified && (syncStatus === undefined || syncStatus === "synced");
+  // Saved trips: one status line. Verified only when everything of mine is synced and my attester agrees on all 18.
+  const statusLabel = syncStatus === undefined ? null : submitted ? "Submitted" : syncStatus === "conflict" ? "Conflict"
+    : syncStatus === "pending" ? "Saved locally · Pending sync" : complete && meMatches && scoresVerified ? "Verified" : "Synced";
   // The live card (dev): reported only when something changed, so the store isn't written on every render. My
   // attester's strokes for me come from the other phone (otherCard), or stand in from the simulator's card setting.
   const attestStrokes = fromAttester ?? (otherCard ? otherCard.me : submittedHoles.map((h) => opponentCardMatches ? h : null));
@@ -291,7 +313,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   // Submit Score plays the full-screen moment over the now-locked card.
   const [celebration, setCelebration] = useState<{ total: number; toPar: string } | null>(null);
   // Colours show once the card is complete (or submitted): green when that player's scores agree, red when they don't.
-  const check = (matches: boolean) => complete || submitted ? matches ? "ok" as const : "wrong" as const : null;
+  const check = (matches: boolean) => (complete || submitted) && (scoresVerified || submitted) ? matches ? "ok" as const : "wrong" as const : null;
 
   // While dragging, the sheet follows the finger and grows toward full screen as it rises (--sheet-open: 0 closed → 1 open).
   const style = dragOffset !== null
@@ -343,6 +365,12 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
           <ScorecardSection par={par} holes={holes} opponentHoles={holesCompetitor} playerName={playerName} opponentName={opponentName} putts={putts} fairways={fairways} greens={greens}
             myTotal={sumOf(submittedHoles)} opponentTotal={sumOf(submittedOpponentHoles)} myCheck={check(meMatches)} opponentCheck={check(opponentMatches)} edits={edits} />
           {/* Always shown; only lights up once both cards are complete and the opponent's card agrees. */}
+          {conflicts && conflicts.length > 0 && <div className={styles.conflicts} role="group" aria-label="Score conflicts">
+            {conflicts.map((c) => <div key={c.key} className={styles.conflictRow}><span>{c.label}: yours {c.mine} · saved {c.saved}</span>
+              <button type="button" onClick={() => onResolveConflict?.(c.key, "mine")}>Keep mine</button>
+              <button type="button" onClick={() => onResolveConflict?.(c.key, "saved")}>Use saved</button></div>)}
+          </div>}
+          {statusLabel && <p className={styles.syncStatus} data-state={statusLabel.split(" ")[0].toLowerCase()} role="status">{statusLabel}</p>}
           <button type="button" className={`${styles.nextHoleButton} ${styles.submitSave}`} disabled={!readyToSubmit || submitted} onClick={() => setConfirmOpen(true)}>{submitted ? "Submitted" : "Submit & Save"}</button>
         </>
         : <>

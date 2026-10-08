@@ -11,18 +11,19 @@
    box's edge (pulled out over the 14px padding), rounding off before the status box: the Match rows' fill, but taller. */
 .side{display:flex;flex-direction:column;gap:6px;min-width:0;padding:10px}
 .right.side{align-items:flex-end}
-.side.left.sideLeading{margin-left:-14px;margin-right:8px;padding-left:20px;border-radius:0 18px 18px 0;background:#dcc495}
-.side.right.sideLeading{margin-right:-14px;margin-left:8px;padding-right:20px;border-radius:18px 0 0 18px;background:#e89a9a}
-.avatar{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:50%;background:#dcc495;color:var(--color-maroon-900);font:800 15px/1 var(--font-spectral),Georgia,serif}
-.avatarRight{background:#e89a9a}
-.sideLeading .avatar{background:var(--color-maroon-900);color:#dcc495}
-.right.sideLeading .avatar{color:#e89a9a}
+.side.left.sideLeading{margin-left:-14px;margin-right:8px;padding-left:20px;border-radius:0 18px 18px 0;background:var(--team-left,#dcc495)}
+.side.right.sideLeading{margin-right:-14px;margin-left:8px;padding-right:20px;border-radius:18px 0 0 18px;background:var(--team-right,#e89a9a)}
+.avatar{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:50%;background:var(--team-left,#dcc495);color:var(--team-left-text,var(--color-maroon-900));font:800 15px/1 var(--font-spectral),Georgia,serif}
+.avatarRight{background:var(--team-right,#e89a9a);color:var(--team-right-text,var(--color-maroon-900))}
+.sideLeading .avatar{background:var(--color-maroon-900);color:var(--team-left-on-dark,#dcc495)}
+.right.sideLeading .avatar{color:var(--team-right-on-dark,#e89a9a)}
 /* Standing in the half's top outer corner; keeps its line even when blank so both halves line up. */
 .boxStanding{min-height:18px;font:700 18px/1 var(--font-spectral),Georgia,serif;color:#fff;white-space:nowrap}
 .teamName{margin:4px 0 0;font:700 17px/1.15 var(--font-spectral),Georgia,serif;color:#fff;overflow-wrap:normal}
 .teamMeta{margin:-4px 0 0;font:700 13px/1.3 var(--font-spectral),Georgia,serif;color:rgba(255,255,255,.7)}
-.sideLeading .boxStanding,.sideLeading .teamName{color:var(--color-maroon-900)}
-.sideLeading .teamMeta{color:rgba(36,0,1,.7)}
+.left.sideLeading .boxStanding,.left.sideLeading .teamName,.left.sideLeading .teamMeta{color:var(--team-left-text,var(--color-maroon-900))}
+.right.sideLeading .boxStanding,.right.sideLeading .teamName,.right.sideLeading .teamMeta{color:var(--team-right-text,var(--color-maroon-900))}
+.sideLeading .teamMeta{opacity:.75}
 .boxStatus{align-self:start;display:flex;justify-content:center;margin-top:-8px}
 @media(max-width:359px){.teams{gap:6px}.side{padding:10px 8px 8px}.side.left.sideLeading{margin-right:6px}.side.right.sideLeading{margin-left:6px}.side.left.sideLeading{padding-left:22px}.side.right.sideLeading{padding-right:22px}.avatar{width:34px;height:34px;font-size:12px}.boxStanding{min-height:16px;font-size:16px}.teamName{font-size:16px}}
 /* Round stats: the win bar, then each side's four stats mirrored either side of a thin gold center line; the labels
@@ -32,8 +33,8 @@
 .win{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:5px;margin-bottom:14px}
 /* The % sits centered over the bar's middle; the arrow hangs off its side so it never pushes the number off center. */
 .winPct{position:relative;font:700 13px/1 var(--font-spectral),Georgia,serif;color:#fff}
-.winPct_left{color:#dcc495}
-.winPct_right{color:#e89a9a}
+.winPct_left{color:var(--team-left-on-dark,#dcc495)}
+.winPct_right{color:var(--team-right-on-dark,#e89a9a)}
 .winArrow{position:absolute;top:0;font-size:15px;line-height:.85}
 .winPct_left .winArrow{right:calc(100% + 3px)}
 .winPct_right .winArrow{left:calc(100% + 3px)}
@@ -41,8 +42,8 @@
 .winHalf{display:flex}
 .winHalf:first-child{justify-content:flex-end}
 .winFillLeft,.winFillRight{display:block;height:100%}
-.winFillLeft{background:#dcc495;border-radius:5px 0 0 5px}
-.winFillRight{background:#e89a9a;border-radius:0 5px 5px 0}
+.winFillLeft{background:var(--team-left-on-dark,#dcc495);border-radius:5px 0 0 5px}
+.winFillRight{background:var(--team-right-on-dark,#e89a9a);border-radius:0 5px 5px 0}
 /* Each side's line stops at its SCORE column, short of the gold center line. */
 .roundStats{position:relative}
 .roundStats::after{content:"";position:absolute;top:calc(var(--label) + 7px);border-top:1px solid rgba(220,196,149,.28)}
@@ -147,9 +148,10 @@
 .pairing{--bleed:0px}
 .pairSide{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;min-height:56px;padding:8px 10px}
 .pairSide.right{flex-direction:row-reverse}
-.pairSide.left.leading{margin-left:calc(-1 * var(--bleed));padding-left:calc(10px + var(--bleed));border-radius:0 16px 16px 0;background:#dcc495}
-.pairSide.right.leading{margin-right:calc(-1 * var(--bleed));padding-right:calc(10px + var(--bleed));border-radius:16px 0 0 16px;background:#e89a9a}
-.leading .golferName,.leading .standing{color:var(--color-maroon-900)}
+.pairSide.left.leading{margin-left:calc(-1 * var(--bleed));padding-left:calc(10px + var(--bleed));border-radius:0 16px 16px 0;background:var(--team-left,#dcc495)}
+.pairSide.right.leading{margin-right:calc(-1 * var(--bleed));padding-right:calc(10px + var(--bleed));border-radius:16px 0 0 16px;background:var(--team-right,#e89a9a)}
+.left.leading .golferName,.left.leading .standing{color:var(--team-left-text,var(--color-maroon-900))}
+.right.leading .golferName,.right.leading .standing{color:var(--team-right-text,var(--color-maroon-900))}
 .leading .tee,.leading .course{color:rgba(36,0,1,.7)}
 .standing{flex:none;font:700 15px/1 var(--font-spectral),Georgia,serif;color:#fff;white-space:nowrap}
 /* Match names wrap between words only (never mid-name); the smallest phones get a little more room for them. */

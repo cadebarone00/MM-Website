@@ -87,3 +87,69 @@ test("the API body is checked: group, golfer, 1–18 holes, sane values; atteste
   assert.equal(bad({ hole: 3, strokes: 4, fairway: "sideways" }), false);
   assert.equal(bad({ hole: 3, strokes: 4, putts: 11 }), false);
 });
+
+test("after a save, the saved holes replace what was sent before (by hole); my name comes with my seat", async () => {
+  const { mergeSent } = await import("./tripScoring.ts");
+  const merged = mergeSent([{ hole: 1, strokes: 5 }, { hole: 2, strokes: 4 }], [{ hole: 2, strokes: 3 }, { hole: 5, strokes: 6 }]);
+  assert.deepEqual(merged.sort((a, b) => a.hole - b.hole), [{ hole: 1, strokes: 5 }, { hole: 2, strokes: 3 }, { hole: 5, strokes: 6 }]);
+  assert.equal(myScoringSeat(tripScoringFromJson(json)!, "p2")!.myName, "Jake");
+});
+
+test("my seat also carries my attestee's own strokes, for the column I keep", () => {
+  const withOwn = tripScoringFromJson({ ...json, entries: [...json.entries, { ...json.entries[2], enteredByProfileId: "p2", version: 1 }] })!;
+  assert.equal(myScoringSeat(withOwn, "p1")!.attesteeOwn[1], 4);
+  assert.equal(myScoringSeat(tripScoringFromJson(json)!, "p1")!.attesteeOwn[1], null);
+});
+
+test("latest wins: an answer to an older request never replaces a newer one", async () => {
+  const { latestGate } = await import("./tripScoring.ts");
+  const gate = latestGate();
+  const first = gate.begin(), second = gate.begin();
+  assert.equal(gate.accept(second), true);
+  assert.equal(gate.accept(first), false);
+  assert.equal(gate.accept(gate.begin()), true);
+});
+
+test("scores are verified only when nothing is unsaved and the connection is live", async () => {
+  const { scoresVerified } = await import("./tripScoring.ts");
+  assert.equal(scoresVerified({ connected: true, unsaved: false, saving: 0 }), true);
+  assert.equal(scoresVerified({ connected: false, unsaved: false, saving: 0 }), false);
+  assert.equal(scoresVerified({ connected: true, unsaved: true, saving: 0 }), false);
+  assert.equal(scoresVerified({ connected: true, unsaved: false, saving: 1 }), false);
+});
+
+const G = "6c0f2f2e-8a4c-4c3e-9a1e-2b9d6f1f3a10", P = "7c0f2f2e-8a4c-4c3e-9a1e-2b9d6f1f3a10", O1 = "8c0f2f2e-8a4c-4c3e-9a1e-2b9d6f1f3a10", O2 = "9c0f2f2e-8a4c-4c3e-9a1e-2b9d6f1f3a10";
+const opsBody = (ops: unknown[], extra: Record<string, unknown> = {}) => ({ groupId: G, scoredProfileId: P, expectedProfileId: P, ops, ...extra });
+
+test("queued ops in the API body are checked: uuid op ids, versions, earlier ops, one per hole", async () => {
+  const { holeOpsFromBody } = await import("./tripScoring.ts");
+  const ok = holeOpsFromBody(opsBody([{ opId: O1, baseVersion: 2, supersedes: [O2], clientUpdatedAt: "2027-04-11T15:00:00.000Z", entry: { hole: 3, strokes: 4 } }]));
+  assert.equal(ok.ok, true);
+  if (ok.ok) { assert.equal(ok.expectedProfileId, P); assert.equal(ok.ops[0].baseVersion, 2); assert.deepEqual(ok.ops[0].supersedes, [O2]); }
+  const bad = (op: Record<string, unknown>) => holeOpsFromBody(opsBody([{ opId: O1, baseVersion: 0, supersedes: [], clientUpdatedAt: "2027-04-11T15:00:00.000Z", entry: { hole: 3, strokes: 4 }, ...op }])).ok;
+  assert.equal(bad({ opId: "x" }), false);
+  assert.equal(bad({ baseVersion: -1 }), false);
+  assert.equal(bad({ supersedes: ["nope"] }), false);
+  assert.equal(bad({ entry: { hole: 19, strokes: 4 } }), false);
+  assert.equal(holeOpsFromBody(opsBody([{ opId: O1, baseVersion: 0, supersedes: [], clientUpdatedAt: "2027-04-11T15:00:00.000Z", entry: { hole: 3, strokes: 4 } }], { expectedProfileId: "x" })).ok, false);
+});
+
+test("the server's op results are checked; anything malformed is rejected", async () => {
+  const { opResultsFromJson } = await import("./tripScoring.ts");
+  const answer = { results: [{ opId: O1, status: "applied", version: 3 }, { opId: O2, status: "conflict", version: 4, server: { hole: 2, strokes: 6, putts: null, fairway: null, green: null, penaltyFairway: false, penaltyGreen: false } }], scoring: json };
+  const parsed = opResultsFromJson(answer)!;
+  assert.equal(parsed.results[1].server?.strokes, 6);
+  assert.equal(parsed.scoring?.roundId, "r1");
+  assert.equal(opResultsFromJson({ ...answer, results: [{ opId: O1, status: "maybe", version: 3 }] }), null);
+});
+
+test("the card is rebuilt from saved entries with queued (offline) ones on top", async () => {
+  const { cardFromEntries } = await import("./tripScoring.ts");
+  const card = cardFromEntries([{ hole: 1, strokes: 5, putts: 2, fairway: "center", green: null, penaltyFairway: false, penaltyGreen: true }], [{ hole: 2, strokes: 4 }]);
+  assert.equal(card.holes[0], 5);
+  assert.equal(card.putts[0], 2);
+  assert.deepEqual(card.penalties[0], { fairway: false, green: true });
+  assert.equal(card.holes[1], null);
+  assert.equal(card.opponentHoles[1], 4);
+  assert.equal(card.opponentHoles[0], null);
+});

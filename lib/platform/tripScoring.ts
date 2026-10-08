@@ -87,8 +87,10 @@ export function myScoringSeat(scoring: TripRoundScoring, profileId: string) {
   }
   const strokesOf = (list: HoleScoreEntry[]) => { const out = blank<number | null>(null); for (const e of list) out[e.hole - 1] = e.strokes; return out; };
   return {
-    groupId: group.id, attesterId: me.attesterProfileId, attesteeId: attestee?.profileId ?? null, attesteeName: attestee?.displayName ?? null,
+    groupId: group.id, myName: me.displayName, attesterId: me.attesterProfileId, attesteeId: attestee?.profileId ?? null, attesteeName: attestee?.displayName ?? null,
     submitted: me.submittedAt !== null, card, attestedForMe: strokesOf(forMe), myAttestEntries: strokesOf(mine),
+    // My attestee's own strokes: what the column I keep is checked against.
+    attesteeOwn: strokesOf(attestee ? entriesBy(attestee.profileId, attestee.profileId) : []),
     // What's already saved, so the sheet only sends holes that change.
     sentOwn: own.map((e): HoleEntryInput => ({ hole: e.hole, strokes: e.strokes, putts: e.putts, fairway: e.fairway, green: e.green, penaltyFairway: e.penaltyFairway, penaltyGreen: e.penaltyGreen })),
     sentAttest: mine.map((e): HoleEntryInput => ({ hole: e.hole, strokes: e.strokes })),
@@ -130,4 +132,79 @@ export function holeEntriesFromBody(body: unknown):
       green: (e.green ?? null) as ShotResult | null, penaltyFairway: e.penaltyFairway === true, penaltyGreen: e.penaltyGreen === true });
   }
   return { ok: true, groupId: body.groupId, scoredProfileId: body.scoredProfileId, clientUpdatedAt: body.clientUpdatedAt, entries };
+}
+
+/** What's saved after a save: the new entries replace the old ones for the same holes. */
+export function mergeSent(previous: HoleEntryInput[], saved: HoleEntryInput[]): HoleEntryInput[] {
+  const byHole = new Map(previous.map((e) => [e.hole, e]));
+  for (const e of saved) byHole.set(e.hole, e);
+  return [...byHole.values()];
+}
+
+/** Live sync: each refresh / save takes a number; only the newest answer is applied, so a slow old one can't undo a newer one. */
+export function latestGate() {
+  let started = 0, applied = 0;
+  return { begin: () => ++started, accept: (n: number) => { if (n < applied) return false; applied = n; return true; } };
+}
+
+/**
+ * Green / red matching only counts when it's real: every change of mine is saved and the connection is live (so my
+ * attester's entries are current). Otherwise nothing is marked matched or mismatched, and Submit stays off.
+ */
+export const scoresVerified = ({ connected, unsaved, saving }: { connected: boolean; unsaved: boolean; saving: number }) => connected && !unsaved && saving === 0;
+
+/** One queued op as the API receives it (Step 4 offline scoring). */
+export interface HoleOpInput { opId: string; baseVersion: number; supersedes: string[]; clientUpdatedAt: string; entry: HoleEntryInput }
+
+/**
+ * POST body with queued ops → checked. `expectedProfileId` is who the phone queued them as: the route refuses them when
+ * someone else is signed in now, so one account's offline edits can never be replayed as another's.
+ */
+export function holeOpsFromBody(body: unknown):
+  { ok: true; groupId: string; scoredProfileId: string; expectedProfileId: string; ops: HoleOpInput[] } | { ok: false; error: string } {
+  if (!isObject(body) || !Array.isArray(body.ops) || typeof body.expectedProfileId !== "string" || !UUID.test(body.expectedProfileId)) return { ok: false, error: "Invalid scoring request." };
+  const ops = body.ops as unknown[];
+  for (const o of ops) {
+    if (!isObject(o) || typeof o.opId !== "string" || !UUID.test(o.opId) || !intIn(o.baseVersion, 0, 1_000_000)) return { ok: false, error: "Invalid scoring request." };
+    if (!Array.isArray(o.supersedes) || o.supersedes.length > 20 || o.supersedes.some((id) => typeof id !== "string" || !UUID.test(id))) return { ok: false, error: "Invalid scoring request." };
+    if (typeof o.clientUpdatedAt !== "string" || Number.isNaN(Date.parse(o.clientUpdatedAt))) return { ok: false, error: "Invalid scoring request." };
+  }
+  // The entries go through the same checks as a direct save.
+  const entries = holeEntriesFromBody({ groupId: body.groupId, scoredProfileId: body.scoredProfileId, clientUpdatedAt: new Date(0).toISOString(), entries: ops.map((o) => (o as Record<string, unknown>).entry) });
+  if (!entries.ok) return entries;
+  return { ok: true, groupId: entries.groupId, scoredProfileId: entries.scoredProfileId, expectedProfileId: body.expectedProfileId,
+    ops: ops.map((o, i) => { const op = o as Record<string, unknown>; return { opId: op.opId as string, baseVersion: op.baseVersion as number, supersedes: op.supersedes as string[], clientUpdatedAt: op.clientUpdatedAt as string, entry: entries.entries[i] }; }) };
+}
+
+export interface OpResultJson { opId: string; status: "applied" | "duplicate" | "conflict"; version: number; server?: HoleEntryInput }
+
+/** save_hole_score_ops's answer, checked; null for anything unexpected. */
+export function opResultsFromJson(value: unknown): { results: OpResultJson[]; scoring: TripRoundScoring | null } | null {
+  if (!isObject(value) || !Array.isArray(value.results)) return null;
+  const results: OpResultJson[] = [];
+  for (const r of value.results) {
+    if (!isObject(r) || !str(r.opId) || !["applied", "duplicate", "conflict"].includes(String(r.status)) || !intIn(r.version, 0, 1_000_000)) return null;
+    let server: HoleEntryInput | undefined;
+    if (r.status === "conflict") {
+      const s = r.server;
+      if (!isObject(s) || !intIn(s.hole, 1, HOLES) || !optInt(s.strokes, 1, 20) || !optInt(s.putts, 0, 10) || !optShot(s.fairway) || !optShot(s.green)) return null;
+      server = { hole: s.hole as number, strokes: (s.strokes ?? null) as number | null, putts: (s.putts ?? null) as number | null, fairway: (s.fairway ?? null) as ShotResult | null,
+        green: (s.green ?? null) as ShotResult | null, penaltyFairway: s.penaltyFairway === true, penaltyGreen: s.penaltyGreen === true };
+    }
+    results.push({ opId: r.opId as string, status: r.status as OpResultJson["status"], version: r.version as number, ...(server ? { server } : {}) });
+  }
+  return { results, scoring: value.scoring === null || value.scoring === undefined ? null : tripScoringFromJson(value.scoring) };
+}
+
+/** The sheet's card from entries (saved ones with any queued offline ones merged on top): my own row, and my attest column. */
+export function cardFromEntries(own: HoleEntryInput[], attest: HoleEntryInput[]) {
+  const card = { holes: blank<number | null>(null), opponentHoles: blank<number | null>(null), putts: blank<number | null>(null), fairways: blank<ShotResult | null>(null),
+    greens: blank<ShotResult | null>(null), penalties: blank<HolePenalties>({ fairway: false, green: false }).map((p) => ({ ...p })) };
+  for (const e of own) {
+    const i = e.hole - 1;
+    card.holes[i] = e.strokes; card.putts[i] = e.putts ?? null; card.fairways[i] = e.fairway ?? null; card.greens[i] = e.green ?? null;
+    card.penalties[i] = { fairway: e.penaltyFairway ?? false, green: e.penaltyGreen ?? false };
+  }
+  for (const e of attest) card.opponentHoles[e.hole - 1] = e.strokes;
+  return card;
 }

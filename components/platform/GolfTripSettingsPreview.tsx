@@ -30,6 +30,7 @@ import { useGolfTripCompetitionPreview } from "./GolfTripCompetitionPreviewProvi
 
 import { useSimulator, useSimulatorNavigationReporter } from "@/components/dev/SimulatorBridge";
 import { usePersistedState } from "@/lib/dev/justCreatedStore";
+import { TEAM_COLORS, teamColor } from "@/lib/platform/teamColors";
 import { setMyStatsOptIn, setPlayerStats, useMyStatsOptIn, usePlayerStats } from "@/lib/platform/playerStatsSetting";
 import { setInAppScoring, useInAppScoring } from "@/lib/platform/inAppScoringSetting";
 import { useRoundRsvps } from "@/lib/platform/roundRsvp";
@@ -44,6 +45,9 @@ const COMPETITION_TYPES = [
   { key: "individual", title: "Individual", options: ["Stroke Play", "Points Based"] },
   { key: "team", title: "Team", options: ["2 Teams", "Pairs", "3-Ball", "4-Ball"] },
 ] as const;
+// Team Selection (Competition → Team): the ways players get put on teams.
+const TEAM_SELECTIONS = ["Manual", "Draft", "Random"] as const;
+type TeamSelection = (typeof TEAM_SELECTIONS)[number];
 const MAX_DAYS = 14;
 const MAX_PLAYERS = 100;
 // Allowed: the trip's house rules, grouped like the Competition Rounds tab. Preview only; resets on reload.
@@ -147,6 +151,13 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const [swapFrom, setSwapFrom] = useState<number | null>(null);
   const [swapTarget, setSwapTarget] = useState<{ player: number } | { emptyTeam: number; open: number } | null>(null);
   const [teamNames, setTeamNames] = usePersistedState<string[]>(persist, "teamNames", competitionSetup?.teamNames ?? []);
+  // Each team's color (an id from TEAM_COLORS), and which team's color list is open.
+  const [localTeamColors, setLocalTeamColors] = usePersistedState<(string | null)[]>(persist, "teamColors", []);
+  const teamColors = persist ? localTeamColors : sharedCompetition?.teamColors[dataKey] ?? localTeamColors;
+  const setTeamColors: typeof setLocalTeamColors = persist
+    ? update => { setLocalTeamColors(update); sharedCompetition?.setTeamColors(dataKey)(update); }
+    : sharedCompetition ? sharedCompetition.setTeamColors(dataKey) : setLocalTeamColors;
+  const [colorPicker, setColorPicker] = useState<number | null>(null);
   // Which team (0 = A, 1 = B, ...) each roster slot is on; a player can only be on one team.
   const [teamPicks, setTeamPicks] = usePersistedState<Record<number, number>>(persist, "teamPicks", () =>
     Object.fromEntries((competitionSetup?.teams ?? []).flatMap((team, teamIndex) => team.map(player => [player, teamIndex]))));
@@ -160,6 +171,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const [unevenTeams, setUnevenTeams] = usePersistedState(persist, "unevenTeams", false);
   const [unevenSizes, setUnevenSizes] = usePersistedState<[number, number]>(persist, "unevenSizes", [2, 2]);
   const uneven = unevenTeams && !groupSize;
+  const [teamSelection, setTeamSelection] = usePersistedState<TeamSelection>(persist, "teamSelection", "Manual");
   const teamStep = groupSize ?? 2;
   const teamTotalMax = playerTotal - (playerTotal % teamStep);
   const highestTeam = Math.max(-1, ...rosterSlots.map(index => teamPicks[index] ?? -1));
@@ -465,11 +477,45 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                         <span className={toggleStyles.track} data-on={unevenTeams}><span className={toggleStyles.thumb} /></span><span>{unevenTeams ? "On" : "Off"}</span>
                       </button>
                     </div>}
+                    {/* Team Selection: how players get onto teams — picked by the organizer, a draft, or at random. */}
+                    <div className={styles.teamSelection} role="group" aria-label="Team Selection">
+                      <span className={styles.typeHeading}>Team Selection</span>
+                      <div className={styles.teamSelectionChoices}>
+                        {TEAM_SELECTIONS.map(option => <button key={option} type="button" className={styles.typeChoice} aria-pressed={teamSelection === option}
+                          disabled={!!submittedTeams} onClick={() => setTeamSelection(option)}>{option}</button>)}
+                      </div>
+                    </div>
                     <div className={styles.teamColumns}>
                       {(submittedTeams ?? teamSplit).map((team, column) => <div key={column}>
+                        {/* Team Color: a small pill; tap it for the color list (a color the other team has is taken). */}
+                        {(() => {
+                          const color = teamColor(teamColors[column]);
+                          return <div className={styles.teamColorField}>
+                            <span className={styles.teamFieldLabel}>Team Color</span>
+                            <button type="button" className={styles.teamColorPill} disabled={!!submittedTeams} aria-haspopup="listbox" aria-expanded={colorPicker === column}
+                              aria-label={`Team ${teamLetter(column)} color: ${color?.name ?? "not picked"}`}
+                              style={color ? { background: color.base, color: color.text, borderColor: color.secondary } : undefined}
+                              onClick={() => setColorPicker(open => open === column ? null : column)}>{color?.name ?? "Pick"}</button>
+                            {colorPicker === column && !submittedTeams && <ul className={styles.teamColorList} role="listbox" aria-label={`Team ${teamLetter(column)} color`}>
+                              {TEAM_COLORS.map(option => {
+                                const taken = teamColors.some((id, other) => other !== column && id === option.id);
+                                return <li key={option.id}>
+                                  <button type="button" role="option" aria-selected={option.id === teamColors[column]} disabled={taken}
+                                    onClick={() => { setTeamColors(current => { const next = [...current]; next[column] = option.id; return next; }); setColorPicker(null); }}>
+                                    <span className={styles.teamColorSwatch} style={{ background: option.base, borderColor: option.secondary }} aria-hidden />
+                                    {option.name}{taken ? " (taken)" : ""}
+                                  </button>
+                                </li>;
+                              })}
+                            </ul>}
+                          </div>;
+                        })()}
                         {submittedTeams ? <div className={styles.typePlayersHeader}>{teamLabels[column]}</div>
-                          : <input type="text" className={styles.teamNameInput} aria-label={`Team ${teamLetter(column)} name`} placeholder={`Team ${teamLetter(column)}`} value={teamNames[column] ?? ""}
-                            onChange={event => setTeamNames(current => { const next = [...current]; next[column] = event.target.value; return next; })} />}
+                          : <>
+                            <span className={styles.teamFieldLabel}>Team Name</span>
+                            <input type="text" className={styles.teamNameInput} aria-label={`Team ${teamLetter(column)} name`} placeholder="Create team name" value={teamNames[column] ?? ""}
+                              onChange={event => setTeamNames(current => { const next = [...current]; next[column] = event.target.value; return next; })} />
+                          </>}
                         <ul className={styles.teamColumnList} aria-label={`${teamLabels[column]} players`}>
                           {team.map(index => <li key={index} className={styles.teamPlayerRow}>
                             <ShortName name={playerName(index)} />
