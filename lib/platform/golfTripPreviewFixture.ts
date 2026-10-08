@@ -119,7 +119,21 @@ export type GolfMatchPairing = {
   round?: number;
   /** A finished match's final result as golfers say it ("4&2", "1 UP", "AS" for halved), when the data has it. */
   result?: string;
+  /** This match's own win chances and stats (left side, right side), when the data has them; the match box shows these. */
+  sides?: [GolfMatchSide, GolfMatchSide];
 };
+
+/**
+ * A match's win chances for the match box, left side's % (right = 100 − it). Over: 100 / 0 for the winner, 50 halved.
+ * Not started: 50. In play: the lead measured against the holes still to play — 50 + 47 × tanh(0.9 × lead ÷ √(holes left + 1)),
+ * kept between 3 and 97 until it's decided (3 up after 4 ≈ 77%, 3 up with 4 to play ≈ 87%, 1 up on the 18th tee ≈ 75%).
+ */
+export function matchWinPct(standing: GolfMatchStanding, holesPlayed: number, finished: boolean): number {
+  const lead = !standing || standing.leader === null ? 0 : standing.leader === "left" ? standing.up : -standing.up;
+  if (finished) return lead > 0 ? 100 : lead < 0 ? 0 : 50;
+  if (holesPlayed <= 0) return 50;
+  return Math.round(Math.min(97, Math.max(3, 50 + 47 * Math.tanh(0.9 * lead / Math.sqrt(18 - holesPlayed + 1)))));
+}
 
 /**
  * The middle of a match row: its status. Before it starts, the tee time; while it's going, THRU and holes played; once

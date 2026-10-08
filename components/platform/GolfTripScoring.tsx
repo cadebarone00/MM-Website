@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
-import { usePlayerStats } from "@/lib/platform/playerStatsSetting";
+import { useRecordMyStats } from "@/lib/platform/playerStatsSetting";
 import { createPortal } from "react-dom";
 import { LockKeyhole, LockKeyholeOpen, Minus, Plus } from "lucide-react";
 import { useScoringView } from "@/lib/platform/scoringViewPreference";
@@ -50,7 +50,8 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   onAttestChange?: (strokes: (number | null)[]) => void;
 }) {
   const [open, updateOpen] = useState(false);
-  const playerStats = usePlayerStats();
+  // Stats on my card: required by the organizer, or (when optional) I chose to record them.
+  const playerStats = useRecordMyStats();
   const [holes, setHoles] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => submittedCard?.strokes[i] ?? initialHoles?.[i] ?? null));
   const [holesCompetitor, setHolesCompetitor] = useState<(number | null)[]>(() => Array.from({ length: HOLES }, (_, i) => prefill?.opponentHoles[i] ?? initialHoles?.[i] ?? null));
   const [current, setCurrent] = useState(() => { const next = Array.from({ length: HOLES }, (_, i) => initialHoles?.[i] ?? null).findIndex((h) => h === null); return next === -1 ? HOLES - 1 : next; });

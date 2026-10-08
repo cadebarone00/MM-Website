@@ -210,3 +210,23 @@
 .roundNav button:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
 .roundNav button:first-child{margin-left:-8px}
 .noMatches{margin:10px 0 0;color:rgba(251,248,241,.6);font:500 14px/1.35 var(--font-barlow),sans-serif}
+/* The round picker under the big match box: centered, in the old match-ovals spot. */
+.matchup .roundNav{position:absolute;top:100%;left:0;right:0;z-index:2;justify-content:center;height:20px;margin:0;font-size:12px}
+.matchup .roundNav button{width:22px;height:20px}
+.matchup .roundNav button:first-child{margin-left:0}
+/* The match list's round picker sits between the two team names, centered, matching the one under the box. */
+.teamNames{align-items:center}
+.teamNames .roundNav{margin:0;justify-content:center;font-size:12px}
+.teamNames .roundNav button{width:22px;height:20px}
+.teamNames .roundNav button:first-child{margin-left:0}
+.teamNames > span{flex:1;min-width:0}
+/* The match list is swipeable all the way down the screen, not just where the rows are. */
+.swipeArea{min-height:45vh}
+.teamNames > span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* No competition: the Overview box is the day's round — course, then tee times with who's playing (scrolls if long). */
+.roundInfo{padding-bottom:12px}
+.roundInfoCourse{margin:6px 0 0;padding:0 14px;font:700 20px/1.15 var(--font-spectral),Georgia,serif;color:#fff}
+.roundInfoTimes{list-style:none;margin:10px 0 0;padding:0 14px;display:grid;gap:6px;max-height:180px;overflow-y:auto}
+.roundInfoTimes li{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:baseline}
+.roundInfoTime{font:700 13px/1.3 var(--font-barlow),sans-serif;color:#dcc495}
+.roundInfoPlayers{font:500 14px/1.3 var(--font-barlow),sans-serif;color:rgba(251,248,241,.9)}

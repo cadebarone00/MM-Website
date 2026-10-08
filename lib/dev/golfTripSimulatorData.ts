@@ -1,7 +1,7 @@
 import type { ComponentProps } from "react";
 import type { GolfTripHome } from "@/components/platform/GolfTripHome";
 import type { GolfTripDraft } from "@/lib/platform/golfTripDraft";
-import { GOLF_MATCH_PREVIEW, GOLF_MATCH_PREVIEWS, GOLF_TRIP_MOCK_DRAFT, normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
+import { GOLF_MATCH_PREVIEW, GOLF_MATCH_PREVIEWS, GOLF_TRIP_MOCK_DRAFT, matchWinPct, normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import { flightSummary } from "@/lib/platform/golfTripFlights";
 import type { SimulatorConfig } from "./simulator";
 
@@ -84,19 +84,30 @@ function roundByRoundMatches(match: GolfMatchPreview, current: number, currentSt
   };
   const rights = base.map(pairing => pairing.right);
   const all: GolfMatchPreview["matches"] = [];
+  // A match's own stats for its box: fairways / greens hit, putts and score to par for the holes played (none before it starts).
+  const sideStats = (name: string, holes: number, winPct: number) => {
+    if (!holes) return { name, winPct, fairwayPct: "—", greenPct: "—", putts: "—", score: "—" };
+    const toPar = Math.round((random() - 0.35) * holes / 2.5);
+    return { name, winPct, fairwayPct: `${30 + Math.floor(random() * 50)}%`, greenPct: `${20 + Math.floor(random() * 50)}%`,
+      putts: String(Math.round(holes * (1.6 + random() * 0.5))), score: toPar === 0 ? "E" : toPar > 0 ? `+${toPar}` : String(toPar) };
+  };
+  const matchSides = (pairing: GolfMatchPreview["matches"][number], right: GolfMatchPreview["matches"][number]["right"], holes: number, leftPct: number) =>
+    [sideStats(normalizeCompetitor(pairing.left).name ?? match.sides[0].name, holes, leftPct), sideStats((right && normalizeCompetitor(right).name) ?? match.sides[1].name, holes, 100 - leftPct)] as [GolfMatchPreview["sides"][0], GolfMatchPreview["sides"][1]];
   for (let round = 1; round <= Math.max(1, match.roundCount); round++) {
     const state = round < current ? "final" : round > current ? "pre" : currentState;
     base.forEach((pairing, index) => {
       const right = rights[(index + round - 1) % rights.length];
       if (state === "pre") {
-        all.push({ ...pairing, round, right: right && withThru(right, ""), left: withThru(pairing.left, ""), gross: null, net: null, result: undefined });
+        all.push({ ...pairing, round, right: right && withThru(right, ""), left: withThru(pairing.left, ""), gross: null, net: null, result: undefined, sides: matchSides(pairing, right, 0, 50) });
         return;
       }
       if (state === "live") {
         const holes = 1 + Math.floor(random() * 17);
-        const up = Math.floor(random() * Math.min(holes, 18 - holes) + 0.5) === 0 ? 0 : 1 + Math.floor(random() * Math.min(holes, 18 - holes));
+        // All square about one time in five; otherwise up by 1 to as many as can still be caught (never more than holes left).
+        const up = random() < 0.2 ? 0 : 1 + Math.floor(random() * Math.min(holes, 18 - holes));
         const standing = up === 0 ? { leader: null, up: 0 } : { leader: random() < 0.5 ? "left" as const : "right" as const, up };
-        all.push({ ...pairing, round, right: right && withThru(right, `Thru ${holes}`), left: withThru(pairing.left, `Thru ${holes}`), gross: standing, net: standing, result: undefined });
+        all.push({ ...pairing, round, right: right && withThru(right, `Thru ${holes}`), left: withThru(pairing.left, `Thru ${holes}`), gross: standing, net: standing, result: undefined,
+          sides: matchSides(pairing, right, holes, matchWinPct(standing, holes, false)) });
         return;
       }
       // Over: halved about one match in six; otherwise won by 1–5, finishing on the last hole or with holes to spare.
@@ -105,7 +116,8 @@ function roundByRoundMatches(match: GolfMatchPreview, current: number, currentSt
       const left = up === 1 ? 0 : Math.floor(random() * up);
       const standing = halved ? { leader: null, up: 0 } : { leader: random() < 0.5 ? "left" as const : "right" as const, up };
       const result = halved ? "AS" : left > 0 ? `${up}&${left}` : `${up} UP`;
-      all.push({ ...pairing, round, right: right && withThru(right, "F"), left: withThru(pairing.left, "F"), gross: standing, net: standing, result });
+      all.push({ ...pairing, round, right: right && withThru(right, "F"), left: withThru(pairing.left, "F"), gross: standing, net: standing, result,
+        sides: matchSides(pairing, right, 18 - left, matchWinPct(standing, 18, true)) });
     });
   }
   return all;

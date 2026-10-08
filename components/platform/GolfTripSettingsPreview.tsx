@@ -30,7 +30,7 @@ import { useGolfTripCompetitionPreview } from "./GolfTripCompetitionPreviewProvi
 
 import { useSimulator, useSimulatorNavigationReporter } from "@/components/dev/SimulatorBridge";
 import { usePersistedState } from "@/lib/dev/justCreatedStore";
-import { setPlayerStats, usePlayerStats } from "@/lib/platform/playerStatsSetting";
+import { setMyStatsOptIn, setPlayerStats, useMyStatsOptIn, usePlayerStats } from "@/lib/platform/playerStatsSetting";
 import { useRoundRsvps } from "@/lib/platform/roundRsvp";
 
 const GENERAL_CARDS = ["Scorecard View", ...Array.from({ length: 5 }, () => "Place holder")];
@@ -106,6 +106,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const scoringView = useScoringView();
   // Player Stats (Player Scoring): when off, players only enter their score and the Golf tab has no Stats section.
   const playerStats = usePlayerStats();
+  const myStats = useMyStatsOptIn();
   // Players' Play / Sit out for each round (they choose on their Itinerary).
   const roundRsvps = useRoundRsvps(dataKey);
   const [scoringFieldsOff, setScoringFieldsOff] = usePersistedState<Set<string>>(persist, "scoringFieldsOff", new Set());
@@ -897,6 +898,14 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
           </div>
           <p className={styles.scorecardViewNote}>{scoringView === "slide" ? "Pull the Scoring bar up from the bottom of the trip page." : scoringView === "hold" ? "Press and hold anywhere on the trip page for 2 seconds to open scoring full screen." : "Tap the Scoring button above the bottom menu to open scoring full screen."}</p>
         </div>
+        {/* My stats: required by the organizer (locked on), or my own choice when they're optional. */}
+        <div className={notificationStyles.row}>
+          <span className={notificationStyles.label}>My stats</span>
+          <button type="button" role="switch" aria-checked={playerStats || myStats} aria-label="Record my stats" className={toggleStyles.toggle} disabled={playerStats} onClick={() => setMyStatsOptIn(!myStats)}>
+            <span className={toggleStyles.track} data-on={playerStats || myStats}><span className={toggleStyles.thumb} /></span><span>{playerStats || myStats ? "On" : "Off"}</span>
+          </button>
+        </div>
+        <p className={styles.scorecardViewNote}>{playerStats ? "Your organizer requires stats: putts, fairways and greens on every hole." : myStats ? "You'll record putts, fairways and greens on your scorecard." : "Off: you only enter your score. Turn on to record putts, fairways and greens."}</p>
       </div>}
 
       {playerScoringOpen && <div className={styles.competition}>
@@ -910,20 +919,20 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
             return <Fragment key={field}>
               {field === "Putts" && <div className={notificationStyles.row}>
                 <span className={notificationStyles.label}>Player Stats</span>
-                <button type="button" role="switch" aria-checked={playerStats} aria-label="Player Stats" className={toggleStyles.toggle} onClick={() => setPlayerStats(!playerStats)}>
-                  <span className={toggleStyles.track} data-on={playerStats}><span className={toggleStyles.thumb} /></span><span>{playerStats ? "On" : "Off"}</span>
+                <button type="button" role="switch" aria-checked={playerStats} aria-label="Player Stats required" className={toggleStyles.toggle} onClick={() => setPlayerStats(!playerStats)}>
+                  <span className={toggleStyles.track} data-on={playerStats}><span className={toggleStyles.thumb} /></span><span>{playerStats ? "Required" : "Optional"}</span>
                 </button>
               </div>}
-              <div className={`${notificationStyles.row} ${stat ? styles.statRow : ""}`} data-off={stat && !playerStats}>
+              <div className={`${notificationStyles.row} ${stat ? styles.statRow : ""}`}>
                 <span className={notificationStyles.label}>{field}</span>
-                <button type="button" role="switch" aria-checked={on && (!stat || playerStats)} aria-label={field} className={toggleStyles.toggle} disabled={stat && !playerStats}
+                <button type="button" role="switch" aria-checked={on} aria-label={field} className={toggleStyles.toggle}
                   onClick={() => setScoringFieldsOff(current => { const next = new Set(current); if (on) next.add(field); else next.delete(field); return next; })}>
-                  <span className={toggleStyles.track} data-on={on && (!stat || playerStats)}><span className={toggleStyles.thumb} /></span><span>{on && (!stat || playerStats) ? "On" : "Off"}</span>
+                  <span className={toggleStyles.track} data-on={on}><span className={toggleStyles.thumb} /></span><span>{on ? "On" : "Off"}</span>
                 </button>
               </div>
             </Fragment>;
           })}
-          {!playerStats && <p className={styles.statNote}>Stats off: players only enter their score, and no stats are recorded.</p>}
+          {!playerStats && <p className={styles.statNote}>Optional: each player chooses in their own settings (Scorecard View) whether to record stats. Players who don&apos;t only enter their score.</p>}
         </section>
         <OrganizerScores roundNumbers={rounds.map(round => round.number)} organizerId={simulator?.state.viewAs ?? DEFAULT_DEV_ACCOUNT}
           scheduledToday={simulator?.state.roundStatus === "live" || simulator?.state.roundStatus === "roundEnd"} />

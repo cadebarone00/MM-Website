@@ -15,7 +15,7 @@ import { flightCounts, flightTime, type FlightSummary } from "@/lib/platform/gol
 
 /** The Info tab's Flights card: the viewer's flight summary, and the Flights page it opens (null = not a link). */
 export interface TripFlights { summary: FlightSummary; href: string | null }
-import { GolfGamesSummary, GolfMatchup, GolfTournamentSummary, GolfTripLeaderboard } from "./GolfTripMatch";
+import { MatchNav, GolfGamesSummary, GolfMatchup, GolfRoundInfo, GolfTournamentSummary, GolfTripLeaderboard } from "./GolfTripMatch";
 import { GolfTripScoring } from "./GolfTripScoring";
 import { GolfTripStats, type ScoreChangeLine, type TripStatsView } from "./GolfTripStats";
 import type { ScoreEdit } from "@/lib/platform/playerRounds";
@@ -35,6 +35,7 @@ import styles from "./GolfTripHome.module.css";
 
 import { GOLF_TRIP_TABS as TABS, golfSections, type CompetitionStructure, type GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
 import { useGolfTripCompetitionPreview } from "./GolfTripCompetitionPreviewProvider";
+import { useSwipe } from "./useSwipe";
 import { usePlayerStats } from "@/lib/platform/playerStatsSetting";
 import { setRoundRsvp, useRoundRsvps } from "@/lib/platform/roundRsvp";
 type Tab = (typeof TABS)[number];
@@ -188,7 +189,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
         afterRound={previewMatch ? (roundLive || previewMatch.leaderboard.some(row => row.holes.every(strokes => strokes !== null)) ? previewMatch.round : previewMatch.round - 1) : 0}
         liveRound={roundLive && previewMatch ? { id: `round-${previewMatch.round}`, kind: "teeTime", title: `Round ${previewMatch.round} · ${previewMatch.course}`, startsAt: (tripNow ?? "").slice(0, 16) } : undefined} />
         : tab === "Golf" ? <>
-          <GolfSlides key={`${structure.individual}-${structure.team}`} previewMatch={previewMatch} structure={structure} navigation={navigation} onNavigationChange={onNavigationChange} tripStats={tripStats} scoreChanges={scoreChanges} />
+          <GolfSlides key={`${structure.individual}-${structure.team}`} previewMatch={previewMatch} structure={structure} rsvpKey={rsvpKey} navigation={navigation} onNavigationChange={onNavigationChange} tripStats={tripStats} scoreChanges={scoreChanges} />
         </>
         : tab === "Venue" ? <GolfTripVenue draft={draft} settingsHref={settingsHref} today={tripNow?.slice(0, 10)}
           latitude={coordinate(draft.destinationLatitude)} longitude={coordinate(draft.destinationLongitude)}
@@ -340,14 +341,28 @@ function WeatherRow({ place, weather }: { place?: string; weather: Promise<TripW
 }
 
 /** Golf sections share the existing responsive scroll-snap strip and tab styling. */
-function GolfSlides({ previewMatch, structure, navigation, onNavigationChange, tripStats, scoreChanges }: { previewMatch?: GolfMatchPreview; structure: CompetitionStructure; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void; tripStats?: TripStatsView; scoreChanges?: ScoreChangeLine[] }) {
+function GolfSlides({ previewMatch, structure, rsvpKey = "default", navigation, onNavigationChange, tripStats, scoreChanges }: { previewMatch?: GolfMatchPreview; structure: CompetitionStructure; rsvpKey?: string; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void; tripStats?: TripStatsView; scoreChanges?: ScoreChangeLine[] }) {
   // Competition is about the round being played: only that round's matches (matches without a round count as current).
-  const roundMatch = useMemo(() => previewMatch && { ...previewMatch, matches: previewMatch.matches.filter(pairing => pairing.round === undefined || pairing.round === previewMatch.round) }, [previewMatch]);
+  // The big box (Matches) shows the current round's matches one at a time: ‹ Match N › under it, or swipe the box
+  // (left = next match, right = previous). Starts on match 1 again whenever the round changes.
+  const roundMatch = useMemo(() => previewMatch && { ...previewMatch, matches: previewMatch.matches.filter(pairing => (pairing.round ?? previewMatch.round) === previewMatch.round) }, [previewMatch]);
+  const matchCount = Math.max(1, roundMatch?.matches.length ?? 1);
+  const [boxMatch, setBoxMatch] = useState({ round: previewMatch?.round ?? 1, index: 0 });
+  if (previewMatch && boxMatch.round !== previewMatch.round) setBoxMatch({ round: previewMatch.round, index: 0 });
+  const featured = Math.min(boxMatch.index, matchCount - 1);
+  const boxSwipe = useSwipe(
+    () => setBoxMatch(view => ({ ...view, index: Math.min(matchCount - 1, view.index + 1) })),
+    () => setBoxMatch(view => ({ ...view, index: Math.max(0, view.index - 1) })));
   const trackRef = useRef<HTMLDivElement>(null);
   // No competition: Overview · Games. Individual: Leaderboard · Games. Team: Matches · Games. Both: Leaderboard · Matches · Games.
   // Player Stats on (Organizer → Player Scoring) adds Stats after Games.
   const playerStats = usePlayerStats();
   const sections = golfSections(structure, playerStats);
+  // No competition: the Overview box is the day's round (course, tee times, who's playing — not those sitting out).
+  const noComp = !structure.individual && !structure.team;
+  const rsvps = useRoundRsvps(rsvpKey);
+  const roundRsvps = previewMatch ? rsvps[previewMatch.round] ?? {} : {};
+  const sittingOut = new Set(Object.keys(roundRsvps).filter(name => roundRsvps[name] === "out"));
   const availableSlides = sections.map(section => section.id);
   const requested = Math.max(0, availableSlides.findIndex(section => section === navigation?.golfSection));
   const [selection, setSelection] = useState({ navigation, active: requested });
@@ -398,8 +413,9 @@ function GolfSlides({ previewMatch, structure, navigation, onNavigationChange, t
         const shown = current === section;
         // Overview's box sets the size; Competition and Games fill exactly that box.
         return <div key={section} className={`${section === "Overview" ? styles.golfTopSize : styles.golfTopFill} ${shown ? "" : styles.golfTopHidden}`} inert={!shown}>
-          {section === "Overview" ? <GolfTournamentSummary match={previewMatch} />
-            : section === "Competition" ? <GolfMatchup match={roundMatch ?? previewMatch} showDots compact /> : <GolfGamesSummary />}
+          {section === "Overview" ? noComp ? <GolfRoundInfo match={previewMatch} sittingOut={sittingOut} /> : <GolfTournamentSummary match={previewMatch} />
+            : section === "Competition" ? <GolfMatchup match={roundMatch ?? previewMatch} compact swipe={boxSwipe} featured={featured}
+              below={<MatchNav match={featured + 1} count={matchCount} onMatch={match => setBoxMatch(view => ({ ...view, index: match - 1 }))} />} /> : <GolfGamesSummary />}
         </div>;
       })}
     </div>}

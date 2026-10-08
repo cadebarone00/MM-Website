@@ -1,11 +1,13 @@
 import { useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useSwipe } from "./useSwipe";
 import { resolveGolfFormat } from "@/lib/platform/formats";
 import { rankLeaderboard } from "@/lib/platform/golfLeaderboardOrder";
 import {
   GOLF_PREVIEW_COURSE_WEATHER,
   matchScoring,
   matchStatus,
+  matchWinPct,
   normalizeCompetitor,
   type GolfMatchCompetitor,
   type GolfMatchGolfer,
@@ -22,11 +24,14 @@ import styles from "./GolfTripMatch.module.css";
  * GolfMatchup (round dots + team card) sits above the Golf slide tabs;
  * the Match and Leaderboard slides below them each show their own header control and rows.
  */
-export function GolfTripMatch({ match: fullMatch }: { match: GolfMatchPreview }) {
+export function GolfTripMatch({ match: fullMatch, viewRound: shownRound }: { match: GolfMatchPreview; viewRound?: number }) {
   const [net, setNet] = useState(false);
-  // < Current Round >: step back to past rounds (their final results) or forward to future ones (their matchups).
+  // Which round's matches: `viewRound` from the round picker under the big box (Golf tab), else this list's own picker.
   // Matches without a round count as the current round's.
-  const [viewRound, setViewRound] = useState(fullMatch.round);
+  const [ownRound, setViewRound] = useState(fullMatch.round);
+  const viewRound = shownRound ?? ownRound;
+  // Swiping anywhere on the matches steps the round like the picker's arrows (left = next, right = previous).
+  const swipe = useSwipe(() => setViewRound(round => Math.min(fullMatch.roundCount, round + 1)), () => setViewRound(round => Math.max(1, round - 1)));
   const match = { ...fullMatch, round: viewRound,
     matches: fullMatch.matches.filter(pairing => (pairing.round ?? fullMatch.round) === viewRound) };
   const roundLabel = viewRound === fullMatch.round ? "Current Round" : `Round ${viewRound}`;
@@ -44,15 +49,15 @@ export function GolfTripMatch({ match: fullMatch }: { match: GolfMatchPreview })
     <SlideHeader title={match.course} detail={`Round ${match.round} of ${match.roundCount} • ${formatDef.label}`}>
       <ScoringControl scoring={scoring} net={net} onNet={setNet} />
     </SlideHeader>
-    {/* Round picker over the left team's name, then the two teams' names once, above the matches. */}
-    <div className={styles.roundNav} role="group" aria-label="Round">
-      <button type="button" aria-label="Previous round" disabled={viewRound <= 1} onClick={() => setViewRound(round => Math.max(1, round - 1))}><ChevronLeft size={16} strokeWidth={2.5} aria-hidden /></button>
-      <span aria-live="polite">{roundLabel}</span>
-      <button type="button" aria-label="Next round" disabled={viewRound >= fullMatch.roundCount} onClick={() => setViewRound(round => Math.min(fullMatch.roundCount, round + 1))}><ChevronRight size={16} strokeWidth={2.5} aria-hidden /></button>
-    </div>
-    {teamNames && <div className={styles.teamNames}><span>{teamNames[0]}</span><span>{teamNames[1]}</span></div>}
+    {/* The two teams' names once, above the matches, with this list's own round picker between them (it moves only the
+        matches below; the picker under the big box moves only the box). */}
+    {teamNames ? <div className={styles.teamNames}>
+      <span>{teamNames[0]}</span>
+      {shownRound === undefined && <RoundNav round={viewRound} current={fullMatch.round} count={fullMatch.roundCount} onRound={setViewRound} />}
+      <span>{teamNames[1]}</span>
+    </div> : shownRound === undefined && <RoundNav round={viewRound} current={fullMatch.round} count={fullMatch.roundCount} onRound={setViewRound} />}
     {!match.matches.length && <p className={styles.noMatches}>No matches set for {roundLabel === "Current Round" ? "this round" : roundLabel} yet.</p>}
-    <ul className={styles.lineup}>
+    <ul className={`${styles.lineup} ${shownRound === undefined ? styles.swipeArea : ""}`} {...(shownRound === undefined ? swipe : {})}>
       {match.matches.map((m, i) => {
         const standing = showNet ? m.net : m.gross;
         const leftComp = normalizeCompetitor(m.left);
@@ -167,33 +172,60 @@ function parColor(score: string): string | undefined {
  * Above the Golf slide tabs: the Match box for the featured matchup (first pair).
  */
 /** `compact`: tighter layout so it fits the Golf tab's top box (the same size as the tournament summary). */
-export function GolfMatchup({ match, showDots, compact = false }: { match: GolfMatchPreview; showDots: boolean; compact?: boolean }) {
+/** ‹ label ›: the shared look of the round / match pickers. */
+function StepNav({ label, name, value, count, onValue }: { label: string; name: string; value: number; count: number; onValue: (value: number) => void }) {
+  return <div className={styles.roundNav} role="group" aria-label={name}>
+    <button type="button" aria-label={`Previous ${name.toLowerCase()}`} disabled={value <= 1} onClick={() => onValue(Math.max(1, value - 1))}><ChevronLeft size={16} strokeWidth={2.5} aria-hidden /></button>
+    <span aria-live="polite">{label}</span>
+    <button type="button" aria-label={`Next ${name.toLowerCase()}`} disabled={value >= count} onClick={() => onValue(Math.min(count, value + 1))}><ChevronRight size={16} strokeWidth={2.5} aria-hidden /></button>
+  </div>;
+}
+
+/** < Current Round >: steps to past rounds (their results) and future rounds (their matchups); "Round N" off the current one. */
+export function RoundNav({ round, current, count, onRound }: { round: number; current: number; count: number; onRound: (round: number) => void }) {
+  return <StepNav name="Round" label={round === current ? "Current Round" : `Round ${round}`} value={round} count={count} onValue={onRound} />;
+}
+
+/** < Match N >: steps through the round's matches (1-based). */
+export function MatchNav({ match, count, onMatch }: { match: number; count: number; onMatch: (match: number) => void }) {
+  return <StepNav name="Match" label={`Match ${match}`} value={match} count={count} onValue={onMatch} />;
+}
+
+export function GolfMatchup({ match, compact = false, below, swipe, featured = 0 }: {
+  match: GolfMatchPreview; compact?: boolean; below?: ReactNode; swipe?: ReturnType<typeof useSwipe>;
+  /** Which of the round's matches the box shows (0-based). */
+  featured?: number;
+}) {
   const [left, right] = match.sides;
-  const featured = 0;
   const pairing: GolfMatchPairing | undefined = match.matches[featured];
   const leftComp = pairing ? normalizeCompetitor(pairing.left) : undefined;
   const rightComp = pairing?.right ? normalizeCompetitor(pairing.right) : leftComp;
   const gross = pairing?.gross ?? null;
+  // The box is about the chosen match: its own win chances and stats when the data has them; otherwise win chances from
+  // its standing and no stats yet ("—"). Without any match, the competition's two sides.
+  const status = pairing && leftComp ? matchStatus({ thru: leftComp.thru || leftComp.golfers[0]?.thru, standing: gross, result: pairing.result }) : null;
+  const leftPct = status ? matchWinPct(gross, status.kind === "thru" ? status.holes : status.kind === "final" ? 18 : 0, status.kind === "final") : left.winPct;
+  const blank = (side: GolfMatchSide, name: string, winPct: number): GolfMatchSide => ({ ...side, name, winPct, fairwayPct: "—", greenPct: "—", putts: "—", score: "—" });
+  const [boxLeft, boxRight] = pairing?.sides ?? (pairing && leftComp
+    ? [blank(left, leftComp.name ?? left.name, leftPct), blank(right, rightComp?.name ?? right.name, 100 - leftPct)]
+    : [left, right]);
 
   return <div className={`${styles.matchup} ${compact ? styles.matchupCompact : ""}`}>
-    <section className={styles.versus} aria-label="Match">
+    <section className={styles.versus} aria-label="Match" {...swipe}>
       <div className={styles.teams}>
         {leftComp && <PlayerSide competitor={leftComp} align="left" standing={gross} />}
-        {leftComp && <span className={styles.boxStatus}><MatchStatus competitor={leftComp} plain /></span>}
+        {leftComp && <span className={styles.boxStatus}><MatchStatus competitor={leftComp} plain standing={gross} result={pairing?.result} /></span>}
         {rightComp && <PlayerSide competitor={rightComp} align="right" standing={gross} />}
       </div>
       <div className={styles.stats}>
-        <WinBar left={left.winPct} right={right.winPct} />
-        <RoundStats side={left} align="left" />
-        <RoundStats side={right} align="right" />
+        <WinBar left={boxLeft.winPct} right={boxRight.winPct} />
+        <RoundStats side={boxLeft} align="left" />
+        <RoundStats side={boxRight} align="right" />
       </div>
     </section>
 
-    {showDots && <div className={styles.dots} aria-label={`Match ${featured + 1} of ${match.matches.length}`}>
-      {match.matches.map((_, i) => i === featured
-        ? <span key={i} className={`${styles.dot} ${styles.dotActive}`}>Match {i + 1}</span>
-        : <span key={i} className={styles.dot} />)}
-    </div>}
+    {/* Under the big box: the round picker (where the match ovals used to be). */}
+    {below}
   </div>;
 }
 
@@ -229,6 +261,39 @@ export function GolfTournamentSummary({ match }: { match: GolfMatchPreview }) {
         <RoundStats side={left} align="left" />
         <RoundStats side={right} align="right" />
       </div>
+    </section>
+  </div>;
+}
+
+/** A "8:30 AM"-style time as minutes after midnight, for ordering tee times (unknown times go last). */
+function teeMinutes(time: string): number {
+  const found = /^(\d{1,2}):(\d{2})\s*([AP]M)$/i.exec(time.trim());
+  if (!found) return Number.MAX_SAFE_INTEGER;
+  return (Number(found[1]) % 12 + (found[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(found[2]);
+}
+
+/**
+ * Top box on Overview with no competition: just the day's round — the course, then each tee time with who's in it.
+ * Players who chose Sit out for this round are left off.
+ */
+export function GolfRoundInfo({ match, sittingOut }: { match: GolfMatchPreview; sittingOut?: ReadonlySet<string> }) {
+  const groups = new Map<string, string[]>();
+  for (const { golfer } of match.leaderboard) {
+    if (sittingOut?.has(golfer.name)) continue;
+    const time = golfer.teeTime || "Tee time TBD";
+    groups.set(time, [...(groups.get(time) ?? []), golfer.name]);
+  }
+  const teeTimes = [...groups].sort(([a], [b]) => teeMinutes(a) - teeMinutes(b));
+  return <div className={styles.matchup}>
+    <section className={`${styles.versus} ${styles.roundInfo}`} aria-label="Today's round">
+      <p className={styles.summaryLabel}>{roundDay(match.roundDate)} · Round {match.round} of {match.roundCount}</p>
+      <p className={styles.roundInfoCourse}>{match.course}</p>
+      {teeTimes.length ? <ul className={styles.roundInfoTimes}>
+        {teeTimes.map(([time, players]) => <li key={time}>
+          <span className={styles.roundInfoTime}>{time}</span>
+          <span className={styles.roundInfoPlayers}>{players.join(", ")}</span>
+        </li>)}
+      </ul> : <p className={styles.summaryNote}>No one is playing this round yet.</p>}
     </section>
   </div>;
 }
@@ -336,13 +401,15 @@ function PlayerSide({ competitor, align, standing }: { competitor: GolfMatchComp
   const comp = normalizeCompetitor(competitor);
   const leading = standing?.leader === align;
   const label = !standing ? "" : standing.leader === null ? "AS" : leading ? `${standing.up} UP` : "";
-  const name = comp.name || comp.golfers.map((g) => g.name).join(" & ");
+  // This match's players, one per line (a team name only when there are no players listed).
+  const players = comp.golfers.map((g) => g.name);
+  const name = players.length ? players.join(" & ") : comp.name ?? "";
   const points = comp.points ?? comp.golfers[0]?.points;
 
   return <div className={`${styles.side} ${styles[align]} ${leading ? styles.sideLeading : ""}`}>
     <span className={styles.boxStanding}>{label}</span>
-    <span className={`${styles.avatar} ${align === "right" ? styles.avatarRight : ""}`}>{initials(name)}</span>
-    <p className={styles.teamName}>{name}</p>
+    <span className={`${styles.avatar} ${align === "right" ? styles.avatarRight : ""}`}>{players.length > 1 ? players.map(player => player[0]).join("").slice(0, 2).toUpperCase() : initials(name)}</span>
+    {players.length > 1 ? players.map(player => <p key={player} className={styles.teamName}>{player}</p>) : <p className={styles.teamName}>{name}</p>}
     {points !== undefined && <p className={styles.teamMeta}>{points} {points === 1 ? "PT" : "PTS"}</p>}
   </div>;
 }
