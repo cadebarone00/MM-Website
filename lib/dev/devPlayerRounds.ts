@@ -13,7 +13,7 @@ import type { DevGroup } from "./devTripScores";
  * Organizer settings → History all share it.
  */
 /** What a trip round's saved card needs (so Organizer settings can save a pushed-through card without the match). */
-export interface DevRoundMeta { tripRoundId: string; course: string; datePlayed: string; format: string; par: number[] }
+export interface DevRoundMeta { tripId?: string; tripRoundId: string; course: string; datePlayed: string; format: string; par: number[] }
 export interface DevLiveCard extends LiveCard { meta: DevRoundMeta }
 export interface DevRoundsState {
   rounds: PlayerRound[]; visibility: Record<string, RoundsVisibility>; linkRequests: HistoryLinkRequest[];
@@ -40,11 +40,13 @@ export const DEV_TRIP_ID = "dev-trip";
 /** The preview's courses have no real tee data; this rated tee lets dev trip rounds count. */
 export const DEV_TRIP_TEE = { name: "Blue", rating: 71.4, slope: 131 };
 
-export const devTripRoundId = (match: GolfMatchPreview) => `round-${match.round}`;
-export const devRoundMeta = (match: GolfMatchPreview): DevRoundMeta => ({ tripRoundId: devTripRoundId(match), course: match.course, datePlayed: match.roundDate, format: match.format, par: match.par });
+export const devTripId = (match: GolfMatchPreview) => match.devTripId ?? DEV_TRIP_ID;
+export const scopedRoundId = (tripId:string,round:number) => tripId===DEV_TRIP_ID ? `round-${round}` : `${tripId}:round-${round}`;
+export const devTripRoundId = (match: GolfMatchPreview) => scopedRoundId(devTripId(match),match.round);
+export const devRoundMeta = (match: GolfMatchPreview): DevRoundMeta => ({ tripId:devTripId(match), tripRoundId: devTripRoundId(match), course: match.course, datePlayed: match.roundDate, format: match.format, par: match.par });
 export function devTripRoundFrom(meta: DevRoundMeta, profileId: string, card: ScoredCard, extra: Pick<PlayerRound, "groupId" | "edits"> = {}): PlayerRound {
   return buildPlayerRound({
-    id: playerRoundId("trip", DEV_TRIP_ID, meta.tripRoundId, profileId), profileId, source: "trip", tripId: DEV_TRIP_ID, tripRoundId: meta.tripRoundId,
+    id: playerRoundId("trip", meta.tripId??DEV_TRIP_ID, meta.tripRoundId, profileId), profileId, source: "trip", tripId: meta.tripId??DEV_TRIP_ID, tripRoundId: meta.tripRoundId,
     datePlayed: meta.datePlayed, course: { ref: null, name: meta.course, place: "" }, tee: DEV_TRIP_TEE,
     holesPlayed: 18, format: meta.format, holes: holesFromCard(card, meta.par), enteredBy: "player", ...extra,
   });

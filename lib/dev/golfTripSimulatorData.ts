@@ -2,6 +2,7 @@ import type { ComponentProps } from "react";
 import type { GolfTripHome } from "@/components/platform/GolfTripHome";
 import type { GolfTripDraft } from "@/lib/platform/golfTripDraft";
 import { GOLF_MATCH_PREVIEW, GOLF_MATCH_PREVIEWS, GOLF_TRIP_MOCK_DRAFT, matchWinPct, normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
+import { getPlayerDisplayName } from "@/lib/data/players";
 import { flightSummary } from "@/lib/platform/golfTripFlights";
 import type { SimulatorConfig } from "./simulator";
 
@@ -363,7 +364,10 @@ export function simulatorTripData(mock: SimulatorTripData, maroon: SimulatorTrip
     previewMatch = { ...previewMatch, format: format.format, formatDef: format.formatDef };
   }
   if (previewMatch && state.roundStatus !== "source") previewMatch = withRoundState(previewMatch, state.roundStatus, source !== "maroon", source === "mock" ? state.seed ?? 0 : 0);
-  return { ...base, preview, previewMatch };
+  const roster=[preview.rosterMaroon,preview.rosterWhite].flatMap(value=>(value??'').split(',')).map(value=>value.trim()).filter(Boolean).map(getPlayerDisplayName);
+  const names=roster.length?roster:previewMatch?.leaderboard.map(row=>row.golfer.name)??[];
+  const travel=base.travel??{meId:'dev-organizer',members:names.map((name,index)=>({id:index===0?'dev-organizer':'dev-member-'+index,name,role:index===0?'organizer' as const:'player' as const})),items:[],participants:[],notifications:[]};
+  return { ...base, preview, previewMatch, travel };
 }
 
 /**

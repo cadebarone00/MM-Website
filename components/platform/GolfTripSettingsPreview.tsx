@@ -90,7 +90,7 @@ const PLAYER_SCORING_FIELDS = ["Opponent's score", "Putts", "Fairway", "Greens i
 const GAME_LOOKUP = [...GAME_GROUPS.Individual, ...GAME_GROUPS.Matches];
 
 /** Reference layout with local game scoring settings in the site's maroon palette. */
-export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament", playerCount = 0, players = [], tripRounds, pastTrips: tripHistory, houseRules, dataKey = "default", competitionSetup }: {
+export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament", playerCount = 0, players = [], tripRounds, pastTrips: tripHistory, houseRules, dataKey = "default", persistenceScope, scoringTripId, competitionSetup }: {
   tripName: string; backHref?: string; playerCount?: number; players?: string[];
   /** The chosen trip's past trips and house rules; without them, the samples. */
   pastTrips?: PastTrip[]; houseRules?: AllowedRule[];
@@ -98,12 +98,13 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   dataKey?: string;
   /** The trip's competition as it already stands (the real tournament: its Individual / Team types and its two teams by
    *  roster position, submitted). Picks made in Settings take over from it. */
+  persistenceScope?: string; scoringTripId?: string;
   competitionSetup?: { types: { individual: string | null; team: string | null }; teamNames: string[]; teams: number[][] };
   /** The trip's own rounds (from the chosen data: mock, busy, empty or the real tournament). Without it, the shared sample rounds. */
   tripRounds?: CompetitionRound[];
 }) {
   // Dev "Just created" trip: everything set up here is saved as you go (lib/dev/justCreatedStore) until Reset.
-  const persist = dataKey === "empty";
+  const persist = persistenceScope ?? (dataKey === "empty");
   const [section, setSection] = useState("General");
   const [competitionOpen, setCompetitionOpen] = useState(false);
   const [competitionSection, setCompetitionSection] = useState("Overview");
@@ -1064,7 +1065,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
           })}
           {!playerStats && <p className={styles.statNote}>Optional: each player chooses in their own settings (Scorecard View) whether to record stats. Players who don&apos;t only enter their score.</p>}
         </section>
-        <OrganizerScores roundNumbers={rounds.map(round => round.number)} organizerId={simulator?.state.viewAs ?? DEFAULT_DEV_ACCOUNT}
+        <OrganizerScores tripId={scoringTripId} roundNumbers={rounds.map(round => round.number)} organizerId={simulator?.state.viewAs ?? DEFAULT_DEV_ACCOUNT}
           scheduledToday={simulator?.state.roundStatus === "live" || simulator?.state.roundStatus === "roundEnd"} />
       </div>}
 

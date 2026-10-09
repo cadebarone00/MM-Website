@@ -171,6 +171,8 @@ export type GolfLeaderboardEntry = {
 };
 
 export type GolfMatchPreview = {
+  /** Development source identity; absent from public and saved-trip data. */
+  devTripId?: string;
   round: number;
   roundCount: number;
   /** This round's course, date (YYYY-MM-DD) and format, shown in the Leaderboard / Match slide headers. */

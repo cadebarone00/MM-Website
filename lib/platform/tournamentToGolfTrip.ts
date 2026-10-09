@@ -3,7 +3,18 @@ import { getPlayerDisplayName } from "../data/players";
 import type { GolfTripDraft } from "./golfTripDraft";
 import type { PastTrip } from "./golfTripHistory";
 import { shortPlace } from "./placeLabel.ts";
+import { FORMATS } from "./formats";
 import type { GolfMatchPreview, GolfMatchCompetitor, GolfLeaderboardEntry } from "./golfTripPreviewFixture";
+const formatName=(name:string)=>name==='Alt Shot'?'Alternate Shot':name;
+const formatKey=(name:string)=>({'Fourball':'fourball','Alternate Shot':'foursome','Singles':'singles','Stroke Play':'singlesstroke','Scramble':'scramble','Shamble':'shamble','Chapman':'chapman','Stableford':'stableford'} as Record<string,string>)[formatName(name)];
+export function tournamentSessions(tournament:Tournament){
+ const days=[...new Set([...Object.keys(tournament.dayDates??{}).map(Number),...tournament.matches.map(match=>match.day)])].sort((a,b)=>a-b);
+ return days.flatMap(day=>{
+  const matches=tournament.matches.filter(match=>match.day===day);
+  const sessions=(['Morning','Afternoon'] as const).filter(session=>matches.some(match=>match.session===session));
+  return (sessions.length?sessions:['Morning'] as const).map(session=>({day,session,date:tournament.dayDates?.[day]??'',format:formatName(matches.find(match=>match.session===session)?.format??''),course:tournament.venue}));
+ }).map((session,index)=>({...session,round:index+1}));
+}
 const DEFAULT_PAR = [4,5,3,4,4,4,3,5,4,4,4,3,5,4,4,3,4,5];
 
 /**
@@ -44,17 +55,12 @@ export function adaptTournamentToDraft(tournament: Tournament): { draft: GolfTri
   const golfDays = Math.max(1, dayNumbers.length || 1);
   draft.golfDays = String(golfDays);
 
-  // Fill dayXDate and round courses in a simple sequence. If there are multiple rounds per day we only put one course value per day for now.
-  for (let i = 1; i <= golfDays; i++) {
-    draft[`day${i}Date`] = dayDates[i] ?? "";
-    draft[`day${i}Rounds`] = "1";
-    // try to find a match assigned to this day and use its venue/course if available
-    const matchForDay = (tournament.matches || []).find((m) => m.day === i);
-    if (matchForDay) {
-      draft[`round${i}Course`] = matchForDay.format ? `${matchForDay.format} · ${tournament.venue || ""}` : tournament.venue || "";
-    } else {
-      draft[`round${i}Course`] = tournament.venue || "";
-    }
+  const sessions=tournamentSessions(tournament);
+  for (const [index,day] of dayNumbers.entries()) {
+   const rounds=sessions.filter(session=>session.day===day);
+   draft['day'+(index+1)+'Date']=dayDates[day]??'';
+   draft['day'+(index+1)+'Rounds']=String(rounds.length||1);
+   for(const session of rounds){draft['round'+session.round+'Course']=session.course;draft['round'+session.round+'Format']=session.format;}
   }
 
   // Basic competition metadata that the trip UI may read
@@ -130,7 +136,9 @@ export function adaptTournamentToDraft(tournament: Tournament): { draft: GolfTri
  */
 export function adaptTournamentToPreviewMatch(tournament: Tournament): GolfMatchPreview {
   const par = DEFAULT_PAR.slice();
-  const roundCount = 4;
+  const sessions=tournamentSessions(tournament);
+  const roundCount=Math.max(1,sessions.length);
+  const current=sessions[0];
   const sides: [any, any] = [
     { name: "Maroon", winPct: 0, fairwayPct: "", greenPct: "", putts: "", score: "" },
     { name: "White", winPct: 0, fairwayPct: "", greenPct: "", putts: "", score: "" },
@@ -143,7 +151,7 @@ export function adaptTournamentToPreviewMatch(tournament: Tournament): GolfMatch
   sides[1].winPct = Math.round((whitePts / total) * 100);
 
   const matches = (tournament.matches || []).map((m: RealMatch) => {
-    const left: GolfMatchCompetitor = { golfers: (m.maroonPlayers || []).map((p) => ({ name: getPlayerDisplayName(p), hcp: 0, thru: "", score: "", teeTime: "", course: tournament.venue })), points: undefined, totalScore: undefined, thru: undefined, teeTime: undefined, course: tournament.venue } as any;
+    const left: GolfMatchCompetitor = { golfers: (m.maroonPlayers || []).map((p) => ({ name: getPlayerDisplayName(p), hcp: 0, thru: "", score: "", teeTime: m.teeTimeCst??"", course: tournament.venue })), points: undefined, totalScore: undefined, thru: undefined, teeTime: undefined, course: tournament.venue } as any;
     const right: GolfMatchCompetitor | undefined = m.whitePlayers && m.whitePlayers.length > 0 ? { golfers: (m.whitePlayers || []).map((p) => ({ name: getPlayerDisplayName(p), hcp: 0, thru: "", score: "", teeTime: "", course: tournament.venue })), points: undefined, totalScore: undefined, thru: undefined, teeTime: undefined, course: tournament.venue } as any : undefined;
     // Who's ahead: the match's own leader, or for a finished match without one, whoever took more points.
     const leader = m.leader ?? (m.maroonPts > m.whitePts ? "maroon" : m.whitePts > m.maroonPts ? "white" : m.status === "live" || m.status === "scheduled" ? undefined : "tie");
@@ -152,7 +160,7 @@ export function adaptTournamentToPreviewMatch(tournament: Tournament): GolfMatch
     // Finished matches: their final result as golfers say it.
     const result = m.margin && m.holesRemaining ? `${m.margin}&${m.holesRemaining}` : m.margin ? `${m.margin} UP`
       : m.status !== "live" && m.status !== "scheduled" && m.maroonPts === m.whitePts ? "AS" : undefined;
-    return { left, right, gross, net, round: m.day, result } as any;
+    return { left, right, gross, net, round: sessions.find(session=>session.day===m.day&&session.session===m.session)?.round??m.day, result } as any;
   });
 
   const leaderboard: GolfLeaderboardEntry[] = (tournament.individualLeaderboard || []).map((s, i) => ({
@@ -170,7 +178,7 @@ export function adaptTournamentToPreviewMatch(tournament: Tournament): GolfMatch
     round: 1,
     roundCount,
     course: tournament.venue || "",
-    roundDate: tournament.startDate || "",
+    roundDate: current?.date||tournament.startDate||"",
     format: "Tournament",
     formatDef: undefined,
     handicap: false,

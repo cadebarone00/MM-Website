@@ -5,17 +5,20 @@ import { GolfTripHome } from "@/components/platform/GolfTripHome";
 import { CELEBRATION_MS } from "@/components/platform/SubmitCelebration";
 import { useSimulator, useSimulatorNavigationReporter } from "@/components/dev/SimulatorBridge";
 import { readJustCreated, readJustCreatedAll, useJustCreatedReady, useJustCreatedVersion, writeJustCreated } from "@/lib/dev/justCreatedStore";
+import { applyEditedTrip } from "@/lib/dev/editedTrip";
+import { devTripScope, useDevSetup, writeDevSetup } from "@/lib/dev/tripSetupStore";
 import { applyJustCreatedSetup, type JustCreatedSetup } from "@/lib/dev/justCreatedTrip";
 import { simulatorNow, simulatorRoundLive, simulatorScorecard, simulatorTripData, type SimulatorTripData as TripData } from "@/lib/dev/golfTripSimulatorData";
 import { DEFAULT_SIMULATOR_STATE, competitionSetupTypes } from "@/lib/dev/simulator";
 import { dispatchDevRounds, useDevPlayerRounds } from "@/components/dev/useDevPlayerRounds";
 import { DEFAULT_DEV_ACCOUNT } from "@/lib/dev/devAccounts";
-import { DEV_TRIP_ID, devRoundMeta, devTripRound, devTripRoundId } from "@/lib/dev/devPlayerRounds";
+import { devRoundMeta, devTripRound, devTripRoundId } from "@/lib/dev/devPlayerRounds";
 import { devTripScoring } from "@/lib/dev/devTripScores";
 import { liveCardFromSheet, type SheetCard } from "@/lib/platform/liveCards";
 import { tripRoundOpen } from "@/lib/platform/tripRoundState";
 import { cardFromHoles, playerRoundId, type ScoredCard } from "@/lib/platform/playerRounds";
 import { GOLF_PREVIEW_TRIP_WEATHER } from "@/lib/platform/golfTripPreviewFixture";
+import type { TeamDraft } from "@/lib/platform/teamDraft";
 import type { TripWeather } from "@/lib/platform/weather/types";
 
 
@@ -33,25 +36,29 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
   const [celebrating, setCelebrating] = useState(false);
   const simulator = useSimulator();
   const reportNavigation = useSimulatorNavigationReporter();
-  const config = simulator ?? { source: view, state: DEFAULT_SIMULATOR_STATE };
+  const selection=useDevSetup("selection");
+  const config = simulator ?? { source: selection.source === "mock" ? "mock" as const : selection.source === "maroon" ? "maroon" as const : view, state: DEFAULT_SIMULATOR_STATE };
   // Just created: everything set up in Settings and your own travel are saved until Reset in the /dev panel, and the trip
   // here is built from them (days, rounds, courses, formats, tee times, players, teams). Only in the browser after the first
   // render (the server has no saved data), and rebuilt only when the data choice or a reset changes it.
   const justCreated = config.source === "empty";
+  const scope=devTripScope(config,maroon.preview?.tripName??"maroon");
+  const setup=useDevSetup(scope);
   const savedVersion = useJustCreatedVersion();
   const ready = useJustCreatedReady();
   const configKey = JSON.stringify(config);
   const data = useMemo(() => {
     const generated = simulatorTripData(mock, maroon, JSON.parse(configKey));
-    return justCreated && ready ? applyJustCreatedSetup(generated, readJustCreatedAll(savedVersion) as JustCreatedSetup) : generated;
-  }, [mock, maroon, configKey, justCreated, ready, savedVersion]);
+    const edited=justCreated && ready ? applyJustCreatedSetup(generated, readJustCreatedAll(savedVersion) as JustCreatedSetup) : applyEditedTrip(generated,setup as JustCreatedSetup);
+    return {...edited,previewMatch:edited.previewMatch?{...edited.previewMatch,devTripId:scope}:undefined};
+  }, [mock, maroon, configKey, justCreated, ready, savedVersion, setup, scope]);
   // Player rounds (dev): Submit & Save saves this round once to the signed-in mock account; reopening shows it locked.
   const viewAs = config.state.viewAs ?? DEFAULT_DEV_ACCOUNT;
   // Busy data: the competition setup picked under its card in the simulator.
   const busySetup = config.source === "busy" ? config.state.competitionSetup : undefined;
   const devRounds = useDevPlayerRounds();
   const match = data.previewMatch;
-  const saved = match ? devRounds.rounds.find((r) => r.id === playerRoundId("trip", DEV_TRIP_ID, devTripRoundId(match), viewAs)) : undefined;
+  const saved = match ? devRounds.rounds.find((r) => r.id === playerRoundId("trip", scope, devTripRoundId(match), viewAs)) : undefined;
   // Player & Attest (dev): this round's group (stored so Organizer settings can show it and swap attesters), whose score I
   // keep, the leaderboard with saved rounds, trip stats and the organizer's own changes.
   const scoring = devTripScoring(devRounds, match, viewAs);
@@ -79,18 +86,18 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
     {!simulator && !embedded && <div style={{ maxWidth: 920, margin: "12px auto", padding: "0 12px", fontSize: 12 }}>
       <div role="group" aria-label="Data View" style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span>Data View</span>
-        <button type="button" aria-pressed={view === "mock"} onClick={() => setView("mock")}>Mock</button>
-        <button type="button" aria-pressed={view === "maroon"} onClick={() => setView("maroon")}>{fictional ? "Maroon U" : "Maroon Tournament"}</button>
+        <button type="button" aria-pressed={config.source === "mock"} onClick={() => {setView("mock");writeDevSetup("selection","source","mock");}}>Mock</button>
+        <button type="button" aria-pressed={config.source === "maroon"} onClick={() => {setView("maroon");writeDevSetup("selection","source","maroon");}}>{fictional ? "Maroon U" : "Maroon Tournament"}</button>
       </div>
       <div aria-live="polite" style={{ marginTop: 4, opacity: 0.7 }}>{view === "mock" || fictional ? "Mock Data" : "Real Tournament Data"}</div>
     </div>}
-    <GolfTripHome key={justCreated ? `just-created-${savedVersion}` : config.source} {...data} now={tripNow} competitionKey={config.source}
-      savedCompetitionType={justCreated ? readJustCreated("localCompetitionType") : busySetup ? competitionSetupTypes(busySetup) : undefined}
-      savedTeamColors={justCreated ? readJustCreated("teamColors") : undefined}
+    <GolfTripHome key={justCreated ? `just-created-${savedVersion}` : scope} {...data} now={tripNow} competitionKey={scope}
+      savedCompetitionType={justCreated ? readJustCreated("localCompetitionType") : busySetup ? competitionSetupTypes(busySetup) : config.source === "maroon" ? {individual:"Stroke Play",team:"2 Teams"} : setup.localCompetitionType as {individual:string|null;team:string|null}|undefined}
+      savedTeamColors={justCreated ? readJustCreated("teamColors") : setup.teamColors as (string|null)[]|undefined}
       organizer={viewAs === DEFAULT_DEV_ACCOUNT}
       savedTeamDraft={justCreated ? { teamType: readJustCreated<{ team: string | null }>("localCompetitionType")?.team ?? null, selection: readJustCreated("teamSelection") ?? null,
-        date: readJustCreated("draftDate") ?? "", time: readJustCreated("draftTime") ?? "", type: readJustCreated("draftType") ?? "Snake" } : undefined}
-      onTravelChange={justCreated ? travel => writeJustCreated("travel", travel) : undefined} weather={weather} previewMatch={scoring.shownMatch} tripStats={scoring.tripStats} scoreChanges={scoring.scoreChanges} attesteeName={scoring.attesteeName} attestedStrokes={scoring.myLiveCard?.holes.map((h) => h.attestStrokes)} onAttestChange={onAttestChange} scoringEdits={saved?.edits} onScoringCardChange={onScoringCardChange} roundLive={roundLive} opponentCardMatches={config.state.opponentCard !== "mismatch"} scoringPrefill={scoringPrefill} onScoringSubmit={onScoringSubmit} submittedCard={submittedCard} scoringOwner={viewAs} navigation={simulator?.navigation} onNavigationChange={reportNavigation} settingsHref={settingsHref} backHref="/golf-trips" />
+        date: readJustCreated("draftDate") ?? "", time: readJustCreated("draftTime") ?? "", type: readJustCreated("draftType") ?? "Snake" } : setup.teamSelection ? {teamType:(setup.localCompetitionType as {team:string|null}|undefined)?.team??(config.source==="maroon"?"2 Teams":null),selection:setup.teamSelection as TeamDraft["selection"],date:(setup.draftDate as string)??"",time:(setup.draftTime as string)??"",type:(setup.draftType as TeamDraft["type"])??"Snake"} : undefined}
+      onTravelChange={travel => justCreated ? writeJustCreated("travel", travel) : writeDevSetup(scope,"travel",travel)} weather={weather} previewMatch={scoring.shownMatch} tripStats={scoring.tripStats} scoreChanges={scoring.scoreChanges} attesteeName={scoring.attesteeName} attestedStrokes={scoring.myLiveCard?.holes.map((h) => h.attestStrokes)} onAttestChange={onAttestChange} scoringEdits={saved?.edits} onScoringCardChange={onScoringCardChange} roundLive={roundLive} opponentCardMatches={config.state.opponentCard !== "mismatch"} scoringPrefill={scoringPrefill} onScoringSubmit={onScoringSubmit} submittedCard={submittedCard} scoringOwner={viewAs} navigation={simulator?.navigation} onNavigationChange={reportNavigation} settingsHref={settingsHref} backHref="/golf-trips" />
     {!simulator && !embedded && !fictional && view === "maroon" && <details style={{ maxWidth: 920, margin: "24px auto", padding: 12, background: "#fff8ef", borderRadius: 8 }}>
       <summary style={{ fontWeight: 600 }}>DEV: Unmapped Tournament Data (click to view)</summary>
       <pre style={{ whiteSpace: "pre-wrap", marginTop: 8 }}>{JSON.stringify(unmapped, null, 2)}</pre>

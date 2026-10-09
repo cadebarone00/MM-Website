@@ -86,14 +86,15 @@ export function applyJustCreatedSetup(base: SimulatorTripData, saved: JustCreate
 
   // Tee times: one per group I'm in (I'm slot 0), on my itinerary.
   const meId = travel?.meId;
+  const meIndex=Math.max(0,travel?.members.findIndex(member=>member.id===meId)??0);
   const teeItems: TravelItem[] = [];
   for (const { key, date, number, course } of slots) {
     // Matches rounds put me in a tee time through a match: match m plays in tee time ⌊m ÷ matches per tee time⌋.
     const perGroup = matchesPerTeeTime((saved.compFormats?.[key] ?? defaultRoundComp(0)).format);
     const inMatch = (group: number) => Object.entries(saved.teeMatches?.[key] ?? {}).some(([match, sides]) =>
-      Math.floor(Number(match) / perGroup) === group && [...sides.a, ...sides.b].includes(0));
+      Math.floor(Number(match) / perGroup) === group && [...sides.a, ...sides.b].includes(meIndex));
     (saved.teeTimes?.[key] ?? []).forEach((time, group) => {
-      if (!time || !((saved.teePlayers?.[key]?.[group] ?? []).includes(0) || inMatch(group))) return;
+      if (!time || !((saved.teePlayers?.[key]?.[group] ?? []).includes(meIndex) || inMatch(group))) return;
       teeItems.push({ id: `jc-tee-${key}-${group}`, kind: "teeTime", details: { name: course, note: `Round ${number} · Group ${group + 1}` }, startsAt: `${date}T${time}`,
         createdBy: meId ?? "organizer", source: "organizer", joinPolicy: "none", optOutAllowed: false });
     });

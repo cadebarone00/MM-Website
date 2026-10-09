@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { dispatchDevRounds, useDevPlayerRounds } from "@/components/dev/useDevPlayerRounds";
 import { DEV_ACCOUNTS } from "@/lib/dev/devAccounts";
-import { DEV_TRIP_ID, type DevLiveCard, type DevRoundsAction } from "@/lib/dev/devPlayerRounds";
+import { DEV_TRIP_ID, scopedRoundId, type DevLiveCard, type DevRoundsAction } from "@/lib/dev/devPlayerRounds";
 import { cardComplete, mismatchedHoles } from "@/lib/platform/liveCards";
 import type { EditableField, PlayerRound, ShotResult } from "@/lib/platform/playerRounds";
 import { swapAttester } from "@/lib/platform/roundGroups";
@@ -19,24 +19,25 @@ const message = (e: unknown) => e instanceof Error ? e.message : String(e);
  * each round, change who attests whom, Allow push-through (off by default), push a stuck card through, and override a
  * submitted hole. Every change needs a reason and lands in the round's change log. Reads and writes the shared dev store.
  */
-export function OrganizerScores({ roundNumbers, organizerId, scheduledToday = false }: { roundNumbers: number[]; organizerId: string; scheduledToday?: boolean }) {
+export function OrganizerScores({ roundNumbers, organizerId, scheduledToday = false, tripId=DEV_TRIP_ID }: { tripId?:string; roundNumbers: number[]; organizerId: string; scheduledToday?: boolean }) {
   const store = useDevPlayerRounds();
   const [error, setError] = useState<string | null>(null);
   const run = (action: DevRoundsAction) => { try { dispatchDevRounds(action); setError(null); return true; } catch (e) { setError(message(e)); return false; } };
   const nameOf = (id: string) => store.groups.flatMap((g) => Object.entries(g.names)).find(([key]) => key === id)?.[1] ?? DEV_ACCOUNTS.find((a) => a.id === id)?.name ?? id;
   const now = () => new Date().toISOString();
-  const submitted = store.rounds.filter((r) => r.source === "trip" && r.tripId === DEV_TRIP_ID);
-  const stuck = store.liveCards.filter((c) => cardComplete(c, c.meta.par) && mismatchedHoles(c).length > 0);
+  const submitted = store.rounds.filter((r) => r.source === "trip" && r.tripId === tripId);
+  const groups=store.groups.filter(g=>g.tripId===tripId);
+  const stuck = store.liveCards.filter((c) => groups.some(g=>g.id===c.groupId) && cardComplete(c, c.meta.par) && mismatchedHoles(c).length > 0);
 
   return <>
     {error && <p role="alert" className={notificationStyles.categoryTitle}>{error}</p>}
     <section className={notificationStyles.category} aria-label="Rounds">
       <h2 className={notificationStyles.categoryTitle}>Rounds</h2>
       {roundNumbers.map((n) => {
-        const row = roundRow(store.tripRounds[`round-${n}`], scheduledToday);
+        const row = roundRow(store.tripRounds[scopedRoundId(tripId,n)], scheduledToday);
         return <div key={n} className={notificationStyles.row}>
           <span className={notificationStyles.label}>Round {n} · {row.label}</span>
-          <button type="button" className={toggleStyles.toggle} onClick={() => run({ type: "setTripRound", tripRoundId: `round-${n}`, state: row.next, at: now() })}>
+          <button type="button" className={toggleStyles.toggle} onClick={() => run({ type: "setTripRound", tripRoundId: scopedRoundId(tripId,n), state: row.next, at: now() })}>
             {row.next === "closed" ? "End round" : "Start round"}</button>
         </div>;
       })}
@@ -44,8 +45,8 @@ export function OrganizerScores({ roundNumbers, organizerId, scheduledToday = fa
 
     <section className={notificationStyles.category} aria-label="Attesters">
       <h2 className={notificationStyles.categoryTitle}>Who attests whom</h2>
-      {store.groups.length === 0 && <p className={notificationStyles.label}>Groups show once a round is being scored.</p>}
-      {store.groups.flatMap((group) => group.players.map((player) => {
+      {groups.length === 0 && <p className={notificationStyles.label}>Groups show once a round is being scored.</p>}
+      {groups.flatMap((group) => group.players.map((player) => {
         const locked = submitted.some((r) => r.profileId === player.profileId && r.groupId === group.id);
         return <div key={`${group.id}|${player.profileId}`} className={notificationStyles.row}>
           <span className={notificationStyles.label}>{nameOf(player.profileId)} — attested by</span>

@@ -4,7 +4,7 @@ import { assignAttesters, stableAttesters, type RoundGroup, type RoundGroupPlaye
 import { organizerOwnEdits } from "@/lib/platform/scoreEdits";
 import { tripStats } from "@/lib/platform/tripStats";
 import { DEV_ACCOUNTS } from "./devAccounts";
-import { DEV_TRIP_ID, devTripRoundId, type DevRoundsState } from "./devPlayerRounds";
+import { DEV_TRIP_ID, devTripId, devTripRoundId, type DevRoundsState } from "./devPlayerRounds";
 
 /**
  * DEV ONLY: the preview trip's group for Player & Attest. The first match's golfers are the group; the signed-in mock
@@ -23,13 +23,13 @@ export function devTripGroup(match: GolfMatchPreview, viewAs: string, swaps: Rec
   if (!golfers.length) return null;
   const competitive = right.length > 0;
   const idOf = (name: string, index: number) => index === 0 ? viewAs : devGolferId(name);
-  const id = `${DEV_TRIP_ID}:${devTripRoundId(match)}:group-1`;
+  const id = `${devTripId(match)}:${devTripRoundId(match)}:group-1`;
   // Fresh from the saved playing order, unless scoring has begun: then the saved assignment stays (organizer swaps on top).
   const fresh = assignAttesters(golfers.map((g, i) => ({ profileId: idOf(g.name, i), side: competitive ? g.side : undefined })));
   const players = stableAttesters(locked?.players, fresh, locked?.scoringStarted ?? false)
     .map((p) => swaps[`${id}|${p.profileId}`] ? { ...p, attesterProfileId: swaps[`${id}|${p.profileId}`] } : p);
   return {
-    id, source: "trip", tripId: DEV_TRIP_ID, tripRoundId: devTripRoundId(match), course: { ref: null, name: match.course, place: "" },
+    id, source: "trip", tripId: devTripId(match), tripRoundId: devTripRoundId(match), course: { ref: null, name: match.course, place: "" },
     datePlayed: match.roundDate, players, startedBy: viewAs, names: Object.fromEntries(golfers.map((g, i) => [idOf(g.name, i), g.name])),
   };
 }
@@ -65,8 +65,8 @@ export function devTripScoring(store: DevRoundsState, match: GolfMatchPreview | 
   const scoringStarted = store.liveCards.some((c) => c.groupId === groupId) || store.rounds.some((r) => r.groupId === groupId);
   const group = match ? devTripGroup(match, viewAs, store.attesters, { players: store.groups.find((g) => g.id === groupId)?.players, scoringStarted }) : null;
   const nameOf = (id: string) => group?.names[id] ?? DEV_ACCOUNTS.find((a) => a.id === id)?.name ?? id;
-  const tripRounds = store.rounds.filter((r) => r.source === "trip" && r.tripId === DEV_TRIP_ID);
-  const stats = tripStats(store.rounds, DEV_TRIP_ID);
+  const tripRounds = store.rounds.filter((r) => r.source === "trip" && r.tripId === (match?devTripId(match):DEV_TRIP_ID));
+  const stats = tripStats(store.rounds, match?devTripId(match):DEV_TRIP_ID);
   const attestee = group ? attesteeOf(group, viewAs) : null;
   return {
     group,

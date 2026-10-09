@@ -1,5 +1,7 @@
 "use client";
 
+import { devTripScope, useDevSetup } from "@/lib/dev/tripSetupStore";
+import { useJustCreatedReady } from "@/lib/dev/justCreatedStore";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
 import { ALLOWED_PRESET, GolfTripSettingsPreview } from "@/components/platform/GolfTripSettingsPreview";
 import { getPlayerDisplayName } from "@/lib/data/players";
@@ -14,11 +16,14 @@ import type { CompetitionRound } from "@/lib/platform/golfTripCompetitionPreview
 
 export function SettingsDataPreview({ mock, maroon }: { mock: SimulatorTripData; maroon: SimulatorTripData }) {
   const simulator = useSimulator();
-  const config = simulator ?? { source: "maroon" as const, state: DEFAULT_SIMULATOR_STATE };
+  const selection=useDevSetup("selection");
+  const config = simulator ?? { source: selection.source === "mock" ? "mock" as const : "maroon" as const, state: DEFAULT_SIMULATOR_STATE };
   // Just created: Reset in the /dev panel changes this, so Settings starts fresh from onboarding again.
   const savedVersion = useJustCreatedVersion();
   const data = simulatorTripData(mock, maroon, config);
   const source = config.source;
+  const scope=devTripScope(config,maroon.preview?.tripName??"maroon");
+  const ready=useJustCreatedReady();
   const preview = data.preview;
   // Players who have joined, from the tournament roster; the rest of the expected count shows as open spots.
   const roster = [preview?.rosterMaroon, preview?.rosterWhite].flatMap(list => (list ?? "").split(",")).map(slug => slug.trim()).filter(Boolean).map(getPlayerDisplayName);
@@ -34,7 +39,7 @@ export function SettingsDataPreview({ mock, maroon }: { mock: SimulatorTripData;
     : match ? (live || match.leaderboard.some(row => row.holes.every(strokes => strokes !== null)) ? match.round : match.round - 1) : 0;
   const tripRounds: CompetitionRound[] = preview ? plannedRounds(preview).filter(round => round.date).map(round => ({
     id: `round-${round.number}`, date: round.date, number: round.number, course: preview[`round${round.number}Course`] || "Course TBD",
-    format: "Singles", nassau: false, handicap: false, status: round.number <= playedThrough ? "started" : "scheduled",
+    format: (preview[`round${round.number}Format`] || "Singles") as CompetitionRound["format"], nassau: false, handicap: false, status: round.number <= playedThrough ? "started" : "scheduled",
   })) : [];
   // History and house rules from the chosen trip: the real trip's past Maroon tournaments (old code) and no house rules
   // (the old data has none); a just-created trip has neither; the mock / busy trips keep their samples.
@@ -51,6 +56,6 @@ export function SettingsDataPreview({ mock, maroon }: { mock: SimulatorTripData;
     teams: [roster.slice(0, maroonCount).map((_, index) => index), roster.slice(maroonCount).map((_, index) => maroonCount + index)],
   } : busySetup ? { types: competitionSetupTypes(busySetup), teamNames: [], teams: [] } : undefined;
   // A different data choice starts the settings fresh (its days, rounds and players).
-  return <GolfTripSettingsPreview key={`${source}-${seed ?? 0}-${source === "empty" ? savedVersion : 0}-${busySetup ?? ""}-${config.state.playerCount ?? ""}`} dataKey={source} tripName={preview?.tripName || "Your Golf Trip"} playerCount={Number(preview?.playerCount) || 0}
-    players={players} tripRounds={tripRounds} pastTrips={pastTrips} houseRules={houseRules} competitionSetup={competitionSetup} />;
+  return ready ? <GolfTripSettingsPreview key={`${source}-${seed ?? 0}-${source === "empty" ? savedVersion : 0}-${busySetup ?? ""}-${config.state.playerCount ?? ""}`} dataKey={source === "empty" ? source : scope} persistenceScope={source === "empty" ? undefined : scope} scoringTripId={scope} tripName={preview?.tripName || "Your Golf Trip"} playerCount={Number(preview?.playerCount) || 0}
+    players={players} tripRounds={tripRounds} pastTrips={pastTrips} houseRules={houseRules} competitionSetup={competitionSetup} /> : null;
 }
