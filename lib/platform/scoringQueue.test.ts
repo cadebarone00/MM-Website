@@ -41,6 +41,15 @@ test("results: applied and duplicate leave the queue; a conflict keeps my entry 
   assert.equal(queueStatus([]), "synced");
 });
 
+test("results: a hole outside an approved correction is answered locked → kept on the phone, never resent; the rest still apply", () => {
+  let ops = enqueue(enqueue([], change(3, 5), 2, newId, now()), change(5, 4), 1, newId, now());
+  const [ok, locked] = ops.map((o) => o.opId);
+  ops = applyResults(ops, [{ opId: ok, status: "applied", version: 3 }, { opId: locked, status: "locked", version: 1 }]);
+  assert.deepEqual(ops.map((o) => [o.entry.hole, o.status]), [[5, "rejected"]]);
+  assert.deepEqual(batches(ops), [], "a locked change is never sent again");
+  assert.equal(queueStatus(ops), "synced");
+});
+
 test("a result for an op I've since replaced doesn't drop the newer edit", () => {
   let ops = enqueue([], change(1, 5), 0, newId, now());
   const old = ops[0].opId;
@@ -183,4 +192,12 @@ test("late offline writes to a submitted card: refused as locked, kept on the ph
   await sync.sync();
   assert.equal(calls, before, "never sent again");
   assert.equal((await storage.load(scope))[0].status, "rejected", "kept on the phone");
+});
+
+test("after a card reopens, a new edit to a hole whose old change was rejected starts fresh from the server's version", () => {
+  let ops = enqueue([], change(3, 6), 1, newId, now());
+  ops = ops.map((o) => ({ ...o, status: "rejected" as const }));
+  ops = enqueue(ops, change(3, 5), 2, newId, now());
+  assert.equal(ops.length, 1);
+  assert.deepEqual([ops[0].status, ops[0].baseVersion, ops[0].supersedes], ["pending", 2, []]);
 });

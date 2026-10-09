@@ -101,7 +101,9 @@ export function validateSection(section: SectionKey, input: unknown, setup: Tour
         const email = optionalText(player.email);
         const handicap = optionalNumber(player.handicap);
         const teamKey = optionalText(player.teamKey);
-        if (id && !setup.players.some((existing) => existing.id === id)) fail(`players.${index}`, "That player no longer exists. Reload the page.");
+        // An id is this edition's player OR an existing player of this tournament being brought back (the database
+        // refuses anyone else's: "Unknown player."). Rows without an id are new people, never matched by name.
+        if (id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) fail(`players.${index}`, "That player no longer exists. Reload the page.");
         if (name.length < 1 || name.length > LIMITS.nameLength) fail(`players.${index}.name`, "Player name must be 1-80 characters.");
         if (email && !isEmail(email)) fail(`players.${index}.email`, `${name || "A player"}'s email doesn't look right.`);
         if (handicap !== null && !(Number.isFinite(handicap) && handicap >= LIMITS.handicapMin && handicap <= LIMITS.handicapMax)) {

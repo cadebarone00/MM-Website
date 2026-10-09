@@ -181,3 +181,78 @@ test("platform admins may make invite links too (same rule as the dashboard); pl
   await db.query("insert into tournament_members (tournament_id, profile_id, role) values ($1, $2, 'player')", [cup.tournament, member]);
   assert.equal(await invite(db, member, cup.cy, "member-try-0123456789abcdefghijklmnop"), false);
 });
+
+// --- Recurring tournaments: one tournament player, many editions -----------------------------
+
+/** Texas Cup 2028: a second edition of the same tournament with its own Blue / Gold teams (no app flow makes one yet). */
+async function nextEdition(db: PGlite, tournament: string, firstEdition: string) {
+  const e = await one<string>(db, "insert into tournament_editions (tournament_id, season_year, label) values ($1, 2028, 'Texas Cup 2028') returning id as r", [tournament]);
+  await db.query("insert into edition_settings (edition_id, scoring, plan) select $1, scoring, plan from edition_settings where edition_id = $2", [e, firstEdition]);
+  await db.query("insert into edition_teams (edition_id, key, name, sort_order) values ($1, 'blue', 'Blue', 0), ($1, 'gold', 'Gold', 1)", [e]);
+  return e;
+}
+const pool = (db: PGlite, who: string, edition: string) =>
+  one<{ id: string; name: string; email: string | null; joined: boolean; lastSeason: number | null }[] | null>(db, "select list_tournament_player_pool($1, $2) as r", [who, edition]);
+const playersIn = async (db: PGlite, tournament: string) => (await db.query<{ n: number }>("select count(*)::int n from tournament_players where tournament_id = $1", [tournament])).rows[0].n;
+
+test("a claimed player comes back next year as the SAME tournament player: new roster entry, new team, no captaincy carried over", async () => {
+  const db = await setup();
+  const owner = await profile(db, "owner", { approved: true });
+  const cup = await texasCup(db, owner);
+  const golfer = await profile(db, "golfer");
+  await invite(db, owner, cup.ann);
+  await accept(db, golfer);
+  const s2027 = await load(db, owner, cup.edition);
+  const blue2027 = s2027.teams.find((t) => t.name === "Blue")!;
+  await save(db, owner, cup.edition, "teams", { competitionType: "teams", teams: s2027.teams.map((t) => ({ id: t.id, name: t.name, color: t.color, captainPlayerId: t.id === blue2027.id ? cup.ann : null })) });
+  const e2028 = await nextEdition(db, cup.tournament, cup.edition);
+  // The organizer sees last year's players (not yet on 2028) and picks Ann.
+  const before = await pool(db, owner, e2028);
+  assert.deepEqual(before?.map((p) => [p.name, p.joined, p.lastSeason]), [["Ann Lee", true, 2027], ["Cy Park", false, 2027]]);
+  assert.equal(JSON.stringify(before).includes(golfer), false, "no profile ids in the pool");
+  const s2028 = await load(db, owner, e2028);
+  const gold2028 = s2028.teams.find((t) => t.key === "gold")!;
+  await save(db, owner, e2028, "players", { players: [{ id: cup.ann, name: "Ann Lee", email: "ann@secret.example", teamKey: gold2028.key }] });
+  assert.equal(await playersIn(db, cup.tournament), 2, "no new tournament player");
+  const rosters = (await db.query<{ season: number; team: string | null }>(`select e.season_year::int season, t.name team from edition_roster r
+    join tournament_editions e on e.id = r.edition_id left join edition_teams t on t.id = r.team_id where r.tournament_player_id = $1 order by e.season_year`, [cup.ann])).rows;
+  assert.deepEqual(rosters.map((r) => [r.season, r.team]), [[2027, "Blue"], [2028, "Gold"]]);
+  assert.equal((await playerRow(db, cup.ann)).profile_id, golfer, "same profile, no new invite needed");
+  assert.equal((await load(db, owner, e2028)).teams.some((t) => t.captainPlayerId === cup.ann), false, "2027 captaincy doesn't carry to 2028");
+  assert.deepEqual((await pool(db, owner, e2028))?.map((p) => p.name), ["Cy Park"], "once added, Ann leaves the pool");
+});
+
+test("an unclaimed player is reused only when the organizer picks them; their open invite stays; new names are new players", async () => {
+  const db = await setup();
+  const owner = await profile(db, "owner", { approved: true });
+  const cup = await texasCup(db, owner);
+  await invite(db, owner, cup.cy, "cy-secret-0123456789abcdefghijklmnopq");
+  const e2028 = await nextEdition(db, cup.tournament, cup.edition);
+  // Typing a new "Cy Park" (no existing player picked) is a NEW person — never merged by name.
+  await save(db, owner, e2028, "players", { players: [{ name: "Cy Park", teamKey: "gold" }] });
+  assert.equal(await playersIn(db, cup.tournament), 3, "two same-name players are never merged");
+  assert.deepEqual((await pool(db, owner, e2028))?.map((p) => [p.name, p.id === cup.cy]), [["Ann Lee", false], ["Cy Park", true]], "the original Cy is still a separate player");
+  // Picking the existing Cy (organizer intent) reuses that player; their open invite still works.
+  const newCy = await one<string>(db, "select tournament_player_id as r from edition_roster where edition_id = $1", [e2028]);
+  await save(db, owner, e2028, "players", { players: [{ id: newCy, name: "Cy Park (new)", teamKey: "gold" }, { id: cup.cy, name: "Cy Park", teamKey: "blue" }] });
+  assert.equal(await playersIn(db, cup.tournament), 3, "reusing creates nothing");
+  assert.equal((await preview(db, null, "cy-secret-0123456789abcdefghijklmnopq"))?.playerName, "Cy Park", "the reused player's invite still works");
+  const golfer = await profile(db, "cyreal");
+  assert.equal((await accept(db, golfer, "cy-secret-0123456789abcdefghijklmnopq")).status, "accepted");
+  const cyRosters = await one<number>(db, "select count(*)::int as r from edition_roster where tournament_player_id = $1", [cup.cy]);
+  assert.equal(cyRosters, 2, "claiming once covers every edition they're on");
+});
+
+test("one player once per edition; players can't be borrowed from another tournament; only organizers see the pool", async () => {
+  const db = await setup();
+  const owner = await profile(db, "owner", { approved: true });
+  const cup = await texasCup(db, owner);
+  await refused(db.query("insert into edition_roster (edition_id, tournament_id, tournament_player_id) values ($1, $2, $3)", [cup.edition, cup.tournament, cup.ann]));
+  // Sending the same player twice in one save (straight to the database) still leaves one roster entry.
+  await db.query("select save_tournament_section($1, $2, 'players', $3)", [owner, cup.edition, JSON.stringify({ players: [{ id: cup.ann, name: "Ann Lee" }, { id: cup.cy, name: "Cy Park" }, { id: cup.ann, name: "Ann Lee" }] })]);
+  assert.equal(await one<number>(db, "select count(*)::int as r from edition_roster where edition_id = $1 and tournament_player_id = $2", [cup.edition, cup.ann]), 1);
+  const other = await createTournament(db, owner, { ...quick, name: "Desert Open", slug: "desert-open" });
+  await refused(db.query("select save_tournament_section($1, $2, 'players', $3)", [owner, other, JSON.stringify({ players: [{ id: cup.ann, name: "Ann Lee" }] })]));
+  assert.equal(await pool(db, await profile(db, "stranger"), cup.edition), null);
+  assert.deepEqual(await pool(db, owner, cup.edition), [], "everyone is already on this edition");
+});

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { inviteStatusesFromJson, isPlayerId, playerAcceptResultFromJson, playerDeclineResultFromJson, playerInvitationFromJson } from "./tournamentPlayerInvitations";
+import { inviteStatusesFromJson, isPlayerId, playerAcceptResultFromJson, playerDeclineResultFromJson, playerInvitationFromJson, playerPoolFromJson } from "./tournamentPlayerInvitations";
 
 test("player ids are uuids; anything else is refused before the database", () => {
   assert.equal(isPlayerId("6f1c2a52-8a3e-4c4e-9d55-0d3c8a1b2c3d"), true);
@@ -27,4 +27,11 @@ test("decline replies and organizer invite statuses are checked", () => {
   assert.equal(playerDeclineResultFromJson({ status: "x" }), "not_found");
   assert.deepEqual(inviteStatusesFromJson({ a: "joined", b: "invited", c: "declined", d: "none", e: "hacked" }), { a: "joined", b: "invited", c: "declined", d: "none" });
   assert.deepEqual(inviteStatusesFromJson(null), {});
+});
+
+test("the bring-back list keeps only well-formed players (name, optional email, joined, last season)", () => {
+  const id = "6f1c2a52-8a3e-4c4e-9d55-0d3c8a1b2c3d";
+  assert.deepEqual(playerPoolFromJson([{ id, name: "Ann Lee", email: null, joined: true, lastSeason: 2027, profileId: "x" }, { id: "bad", name: "X" }, null]),
+    [{ id, name: "Ann Lee", email: null, joined: true, lastSeason: 2027 }]);
+  assert.deepEqual(playerPoolFromJson(null), []);
 });

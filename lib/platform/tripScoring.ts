@@ -176,14 +176,14 @@ export function holeOpsFromBody(body: unknown):
     ops: ops.map((o, i) => { const op = o as Record<string, unknown>; return { opId: op.opId as string, baseVersion: op.baseVersion as number, supersedes: op.supersedes as string[], clientUpdatedAt: op.clientUpdatedAt as string, entry: entries.entries[i] }; }) };
 }
 
-export interface OpResultJson { opId: string; status: "applied" | "duplicate" | "conflict"; version: number; server?: HoleEntryInput }
+export interface OpResultJson { opId: string; status: "applied" | "duplicate" | "conflict" | "locked"; version: number; server?: HoleEntryInput }
 
 /** save_hole_score_ops's answer, checked; null for anything unexpected. */
 export function opResultsFromJson(value: unknown): { results: OpResultJson[]; scoring: TripRoundScoring | null } | null {
   if (!isObject(value) || !Array.isArray(value.results)) return null;
   const results: OpResultJson[] = [];
   for (const r of value.results) {
-    if (!isObject(r) || !str(r.opId) || !["applied", "duplicate", "conflict"].includes(String(r.status)) || !intIn(r.version, 0, 1_000_000)) return null;
+    if (!isObject(r) || !str(r.opId) || !["applied", "duplicate", "conflict", "locked"].includes(String(r.status)) || !intIn(r.version, 0, 1_000_000)) return null;
     let server: HoleEntryInput | undefined;
     if (r.status === "conflict") {
       const s = r.server;

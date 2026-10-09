@@ -137,6 +137,23 @@ language sql stable security definer set search_path = public as $$
   from tournament_editions e where e.id = p_edition;
 $$;
 
+-- Recurring tournaments: a golfer keeps ONE tournament player across every edition. When an organizer adds players
+-- to an edition they pick from this list (the tournament's players not on this edition yet) instead of typing the
+-- name again; a typed name is always a new person (nothing is matched by name or email). Organizers / platform admins
+-- only; null for anyone else. No profile ids — just whether the player has joined (claimed their place).
+create or replace function public.list_tournament_player_pool(p_profile uuid, p_edition uuid)
+returns jsonb
+language sql stable security definer set search_path = public as $$
+  select case when can_manage_tournament_players(p_profile, e.tournament_id) then coalesce((
+    select jsonb_agg(jsonb_build_object('id', p.id, 'name', p.display_name, 'email', p.email, 'joined', p.profile_id is not null,
+        'lastSeason', (select max(x.season_year) from edition_roster r join tournament_editions x on x.id = r.edition_id where r.tournament_player_id = p.id))
+      order by lower(p.display_name), p.created_at)
+    from tournament_players p
+    where p.tournament_id = e.tournament_id
+      and not exists (select 1 from edition_roster r where r.edition_id = e.id and r.tournament_player_id = p.id)), '[]'::jsonb) end
+  from tournament_editions e where e.id = p_edition;
+$$;
+
 -- The signed-in person holding the link says no: the player stays unclaimed, the link stops working.
 -- { status: declined | already_player (it's already your place) | not_found }.
 create or replace function public.decline_tournament_player_invitation(p_profile uuid, p_token text)
@@ -217,11 +234,13 @@ revoke all on function public.sync_legacy_tournament_player_profile() from publi
 revoke all on function public.tournament_invite_hash(text) from public, anon, authenticated;
 revoke all on function public.can_manage_tournament_players(uuid, uuid) from public, anon, authenticated;
 revoke all on function public.list_edition_player_invites(uuid, uuid) from public, anon, authenticated;
+revoke all on function public.list_tournament_player_pool(uuid, uuid) from public, anon, authenticated;
 revoke all on function public.decline_tournament_player_invitation(uuid, text) from public, anon, authenticated;
 revoke all on function public.invite_tournament_player(uuid, uuid, text) from public, anon, authenticated;
 revoke all on function public.get_tournament_player_invitation(uuid, text) from public, anon, authenticated;
 revoke all on function public.accept_tournament_player_invitation(uuid, text) from public, anon, authenticated;
 grant execute on function public.list_edition_player_invites(uuid, uuid) to service_role;
+grant execute on function public.list_tournament_player_pool(uuid, uuid) to service_role;
 grant execute on function public.decline_tournament_player_invitation(uuid, text) to service_role;
 grant execute on function public.invite_tournament_player(uuid, uuid, text) to service_role;
 grant execute on function public.get_tournament_player_invitation(uuid, text) to service_role;
@@ -231,7 +250,7 @@ commit;
 
 -- Undo (keeps every player and every profile link already made):
 --   drop function if exists public.accept_tournament_player_invitation(uuid, text), public.get_tournament_player_invitation(uuid, text),
---     public.decline_tournament_player_invitation(uuid, text), public.list_edition_player_invites(uuid, uuid),
+--     public.decline_tournament_player_invitation(uuid, text), public.list_edition_player_invites(uuid, uuid), public.list_tournament_player_pool(uuid, uuid),
 --     public.invite_tournament_player(uuid, uuid, text), public.can_manage_tournament_players(uuid, uuid), public.tournament_invite_hash(text);
 --   drop trigger if exists sync_legacy_tournament_player_profile on public.player_slots;
 --   drop function if exists public.sync_legacy_tournament_player_profile();

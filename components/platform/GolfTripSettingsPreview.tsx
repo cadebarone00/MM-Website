@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { ArrowLeftRight, Check, ChevronLeft, GripVertical, Minus, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeftRight, Check, ChevronLeft, GripVertical, Minus, Plus, Shuffle, Trash2, X } from "lucide-react";
 import { GolfGameScoringSettings } from "./GolfGameScoringSettings";
 import { SIDE_GAME_REGISTRY } from "@/lib/platform/golfTripGames";
 import type { CompetitionRound } from "@/lib/platform/golfTripCompetitionPreview";
@@ -49,7 +49,27 @@ const COMPETITION_TYPES = [
 // Team Selection (Competition → Team): the ways players get put on teams.
 const TEAM_SELECTIONS = ["Manual", "Draft", "Random"] as const;
 type TeamSelection = (typeof TEAM_SELECTIONS)[number];
+const DRAFT_TYPES = ["Snake", "Straight"] as const;
+type DraftType = (typeof DRAFT_TYPES)[number];
 const MAX_DAYS = 14;
+/** The items in a random order (Fisher–Yates). */
+/** "2027-05-12" → "May 12, 2027". */
+function golfDateLabel(iso: string): string {
+  return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${iso}T12:00:00Z`));
+}
+/** "19:30" → "7:30 PM". */
+function clockLabel(time: string): string {
+  const [hours, minutes] = time.split(":").map(Number);
+  return `${hours % 12 || 12}:${String(minutes).padStart(2, "0")} ${hours < 12 ? "AM" : "PM"}`;
+}
+function shuffleOrder<T>(items: T[]): T[] {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
 const MAX_PLAYERS = 100;
 // Allowed: the trip's house rules, grouped like the Competition Rounds tab. Preview only; resets on reload.
 export type AllowedRule = { id: string; section: string; name: string; detail: string };
@@ -173,7 +193,16 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const [unevenSizes, setUnevenSizes] = usePersistedState<[number, number]>(persist, "unevenSizes", [2, 2]);
   const uneven = unevenTeams && !groupSize;
   const pageGroup = COMPETITION_TYPES.find(group => group.key === overviewType) ?? COMPETITION_TYPES[0];
-  const [teamSelection, setTeamSelection] = usePersistedState<TeamSelection>(persist, "teamSelection", "Manual");
+  // Team Selection starts unpicked. Switching how teams are picked starts the teams over.
+  const [teamSelection, setTeamSelectionState] = usePersistedState<TeamSelection | null>(persist, "teamSelection", null);
+  const setTeamSelection = (choice: TeamSelection) => {
+    if (choice === teamSelection) return;
+    setTeamSelectionState(choice); setTeamPicks({}); setSubmittedTeams(null);
+  };
+  // Draft: when it happens and its order (Snake reverses each round; Straight keeps the same order).
+  const [draftDate, setDraftDate] = usePersistedState(persist, "draftDate", "");
+  const [draftTime, setDraftTime] = usePersistedState(persist, "draftTime", "");
+  const [draftType, setDraftType] = usePersistedState<DraftType>(persist, "draftType", "Snake");
   const teamStep = groupSize ?? 2;
   const teamTotalMax = playerTotal - (playerTotal % teamStep);
   const highestTeam = Math.max(-1, ...rosterSlots.map(index => teamPicks[index] ?? -1));
@@ -188,6 +217,14 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const teamTotal = teamSizes.reduce((sum, size) => sum + size, 0);
   const teamAssigned = teamSplit.reduce((sum, team) => sum + team.length, 0);
   const allPicked = teamAssigned === teamTotal;
+  // Random: shuffle the trip's players and deal them onto the teams, filling each team's size in order.
+  const randomizeTeams = () => {
+    const shuffled = shuffleOrder(rosterSlots);
+    const picks: Record<number, number> = {};
+    let next = 0;
+    teamSizes.forEach((size, team) => { for (const index of shuffled.slice(next, next + size)) picks[index] = team; next += size; });
+    setTeamPicks(picks);
+  };
   // Team A, B, ... Z, then AA, AB, ...; blank names fall back to these.
   const teamLetter = (team: number) => team < 26 ? String.fromCharCode(65 + team) : String.fromCharCode(64 + Math.floor(team / 26)) + String.fromCharCode(65 + (team % 26));
   const teamLabels = teamSizes.map((_, team) => teamNames[team]?.trim() || `Team ${teamLetter(team)}`);
@@ -307,7 +344,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
       const playing = [...typePlayers.individual].sort((x, y) => x - y);
       rows.push(["Players", playing.length ? `${playing.length} of ${playerTotal} · ${playing.map(playerName).join(", ")}` : "None picked yet"]);
     } else {
-      rows.push(["Team selection", teamSelection]);
+      rows.push(["Team selection", teamSelection ?? "Not chosen"]);
+      if (teamSelection === "Draft") rows.push(["Draft", `${draftType} · ${draftDate ? golfDateLabel(draftDate) : "Date not set"}${draftTime ? ` · ${clockLabel(draftTime)}` : " · Time not set"}`]);
       const teams = submittedTeams ?? teamSplit;
       teams.forEach((team, index) => rows.push([teamLabels[index], `${teamColor(teamColors[index])?.name ?? "No color"} · ${team.length ? team.map(playerName).join(", ") : "No players yet"}${submittedTeams ? "" : " (not submitted)"}`]));
     }
@@ -468,38 +506,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                     </div>
                   </div>
                   </>}
-                  </fieldset>
-                  {/* Locks the type (and, for teams, how they're picked); players and teams are set up in Format. */}
-                  <button type="button" className={`${styles.typeChoice} ${styles.selectTeams} ${styles.compLockButton}`}
-                    onClick={() => setLockedComp(current => ({ ...current, [group.key]: !current[group.key] }))}>
-                    {lockedComp[group.key] ? "Undo and Change" : `Submit & Save ${group.title} Competition`}
-                  </button>
-                </div>)}
-              </div>
-              {/* No competition (Individual and Team both None): players can still score in the app, or not at all. */}
-              {!competitionType.individual && !competitionType.team && <div className={styles.totalPlayers}>
-                <span className={styles.typeHeading}>Score in the app</span>
-                <button type="button" role="switch" aria-checked={inAppScoring} aria-label="Score in the app" className={toggleStyles.toggle} onClick={() => setInAppScoring(!inAppScoring)}>
-                  <span className={toggleStyles.track} data-on={inAppScoring}><span className={toggleStyles.thumb} /></span><span>{inAppScoring ? "On" : "Off"}</span>
-                </button>
-              </div>}
-            </section>}
-            {competitionSection === "Summary" && <section className={tripStyles.infoSection} aria-label="Summary">
-              <dl className={styles.overview}>
-                {competitionSummary().map(([label, value]) => <div key={label} className={styles.overviewRow}>
-                  <dt>{label}</dt><dd>{value}</dd>
-                </div>)}
-              </dl>
-            </section>}
-            {/* One section per trip day (Arrival to Departure): centered Day N, its date small underneath, then a line and that day's rounds. */}
-            {/* Format: just the round boxes (no day headers). Each box: Date / Round # / course (+ format when on), with a Comp switch top right; tap a comp round for its competition settings. On = a competition round (box lit); off = not (box greyed). */}
-            {/* Format, after the type (and team selection) chosen in Overview: individual → who's playing; team → team sizes,
-                colors, names and players; then the round boxes. */}
-            {competitionSection === "Format" && (() => {
-              const group = pageGroup;
-              return <div className={styles.formatBuilder}>
-                {!competitionType[group.key] ? <p className={styles.statNote}>Choose a {group.title.toLowerCase()} competition type in Overview first.</p>
-                  : <>
+                  {/* Who's playing (individual) or the teams (team: once Manual / Draft / Random is picked). */}
+                  {competitionType[group.key] && (group.key !== "team" || teamSelection) && <>
                   {/* The trip's players under each type as checkboxes in two columns, filled down the left first (left gets the extra); Select all heads the list. */}
                   {group.key === "team" ? <div className={styles.typePlayers}>
                     {/* Add Sub/Uneven Teams off: one even Total players stepper. On: a size stepper per team instead. */}
@@ -524,6 +532,10 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                         <span className={toggleStyles.track} data-on={unevenTeams}><span className={toggleStyles.thumb} /></span><span>{unevenTeams ? "On" : "Off"}</span>
                       </button>
                     </div>}
+                    {/* Random: deal everyone onto teams; tap again for a new shuffle (until the teams are submitted). */}
+                    {teamSelection === "Random" && !submittedTeams && <button type="button" className={`${styles.typeChoice} ${styles.randomizeButton}`} onClick={randomizeTeams}>
+                      <Shuffle size={15} strokeWidth={2.25} aria-hidden /> {teamAssigned ? "Randomize again" : "Randomize teams"}
+                    </button>}
                     <div className={styles.teamColumns}>
                       {(submittedTeams ?? teamSplit).map((team, column) => <div key={column}>
                         {/* Team Color: a small pill; tap it for the color list (a color the other team has is taken). */}
@@ -560,15 +572,33 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                             <ShortName name={playerName(index)} />
                             {!submittedTeams && <button type="button" className={styles.swapButton} aria-haspopup="dialog" aria-label={`Move or swap ${playerName(index)}`} onClick={() => { setSwapTarget(null); setSwapFrom(index); }}><ArrowLeftRight size={14} strokeWidth={2.25} aria-hidden /></button>}
                           </li>)}
-                          {/* One + Add Player row per open spot on this team. */}
-                          {!submittedTeams && Array.from({ length: Math.max(0, teamSizes[column] - team.length) }, (_, open) => <li key={`open-${open}`}>
+                          {/* Draft: the team fills up in the draft. */}
+                          {teamSelection === "Draft" && !team.length && <li className={styles.draftNote}>Picked in the draft</li>}
+                          {/* Manual: one + Add Player row per open spot on this team. */}
+                          {!submittedTeams && teamSelection === "Manual" && Array.from({ length: Math.max(0, teamSizes[column] - team.length) }, (_, open) => <li key={`open-${open}`}>
                             <button type="button" className={styles.addTeamPlayer} aria-haspopup="dialog" onClick={() => openAddPlayer(column)}><Plus size={14} strokeWidth={2.5} aria-hidden /> Add Player</button>
                           </li>)}
                         </ul>
                       </div>)}
                     </div>
-                    {/* Submit teams lights up once every player is on a team; after submitting it becomes Undo & Change. */}
-                    {submittedTeams ? <button type="button" className={`${styles.typeChoice} ${styles.selectTeams}`} onClick={() => setSubmittedTeams(null)}>Undo &amp; Change</button>
+                    {/* Draft: when the draft happens, and its order. */}
+                    {teamSelection === "Draft" && <div className={styles.draftSettings} role="group" aria-label="Draft settings">
+                      <div className={styles.totalPlayers}>
+                        <span className={styles.typeHeading}>Draft date</span>
+                        <input type="date" className={styles.draftInput} aria-label="Draft date" value={draftDate} onChange={event => setDraftDate(event.target.value)} />
+                      </div>
+                      <div className={styles.totalPlayers}>
+                        <span className={styles.typeHeading}>Draft time</span>
+                        <input type="time" className={styles.draftInput} aria-label="Draft time" value={draftTime} onChange={event => setDraftTime(event.target.value)} />
+                      </div>
+                      <span className={styles.typeHeading}>Draft type</span>
+                      <div className={styles.draftTypes} role="group" aria-label="Draft type">
+                        {DRAFT_TYPES.map(option => <button key={option} type="button" className={styles.typeChoice} aria-pressed={draftType === option} onClick={() => setDraftType(option)}>{option}</button>)}
+                      </div>
+                      <p className={styles.statNote}>{draftType === "Snake" ? "Snake: the pick order flips every round (A, B, then B, A…), so no team always picks first." : "Straight: the same pick order every round (A, B, then A, B…)."}</p>
+                    </div>}
+                    {/* Submit teams lights up once every player is on a team; after submitting it becomes Undo & Change. Draft: the draft sets the teams. */}
+                    {teamSelection === "Draft" ? null : submittedTeams ? <button type="button" className={`${styles.typeChoice} ${styles.selectTeams}`} onClick={() => setSubmittedTeams(null)}>Undo &amp; Change</button>
                       : <button type="button" className={`${styles.typeChoice} ${styles.selectTeams}`} disabled={!allPicked} onClick={() => setSubmittedTeams(teamSplit)}>Submit teams</button>}
                   </div> : (() => {
                     const checked = typePlayers[group.key];
@@ -594,9 +624,33 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                       </ul>
                     </div>;
                   })()}
-                </>}
-              </div>;
-            })()}
+                  </>}
+                  </fieldset>
+                  {/* Saves the whole competition: type, players / teams (Manual and Random need submitted teams; Draft its settings). */}
+                  <button type="button" className={`${styles.typeChoice} ${styles.selectTeams} ${styles.compLockButton}`}
+                    disabled={!lockedComp[group.key] && group.key === "team" && !!competitionType.team && (!teamSelection || (teamSelection !== "Draft" && !submittedTeams))}
+                    onClick={() => setLockedComp(current => ({ ...current, [group.key]: !current[group.key] }))}>
+                    {lockedComp[group.key] ? "Undo and Change" : `Submit & Save ${group.title} Competition`}
+                  </button>
+                </div>)}
+              </div>
+              {/* No competition (Individual and Team both None): players can still score in the app, or not at all. */}
+              {!competitionType.individual && !competitionType.team && <div className={styles.totalPlayers}>
+                <span className={styles.typeHeading}>Score in the app</span>
+                <button type="button" role="switch" aria-checked={inAppScoring} aria-label="Score in the app" className={toggleStyles.toggle} onClick={() => setInAppScoring(!inAppScoring)}>
+                  <span className={toggleStyles.track} data-on={inAppScoring}><span className={toggleStyles.thumb} /></span><span>{inAppScoring ? "On" : "Off"}</span>
+                </button>
+              </div>}
+            </section>}
+            {competitionSection === "Summary" && <section className={tripStyles.infoSection} aria-label="Summary">
+              <dl className={styles.overview}>
+                {competitionSummary().map(([label, value]) => <div key={label} className={styles.overviewRow}>
+                  <dt>{label}</dt><dd>{value}</dd>
+                </div>)}
+              </dl>
+            </section>}
+            {/* One section per trip day (Arrival to Departure): centered Day N, its date small underneath, then a line and that day's rounds. */}
+            {/* Format: just the round boxes (no day headers). Each box: Date / Round # / course (+ format when on), with a Comp switch top right; tap a comp round for its competition settings. On = a competition round (box lit); off = not (box greyed). */}
             {competitionSection === "Format" && <div className={styles.formatRounds}>
               {Array.from({ length: golfDayCount }, (_, day) => Array.from({ length: roundsPerDay[day] ?? 1 }, (_, slot) => {
                 const round = scheduleSlot(day, slot), inComp = compRounds[round.key] ?? true;

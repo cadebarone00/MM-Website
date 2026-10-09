@@ -141,6 +141,7 @@ test("the server's op results are checked; anything malformed is rejected", asyn
   assert.equal(parsed.results[1].server?.strokes, 6);
   assert.equal(parsed.scoring?.roundId, "r1");
   assert.equal(opResultsFromJson({ ...answer, results: [{ opId: O1, status: "maybe", version: 3 }] }), null);
+  assert.equal(opResultsFromJson({ ...answer, results: [{ opId: O1, status: "locked", version: 3 }] })?.results[0].status, "locked", "Step 6: a hole outside an approved correction");
 });
 
 test("the card is rebuilt from saved entries with queued (offline) ones on top", async () => {

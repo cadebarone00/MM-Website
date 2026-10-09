@@ -52,3 +52,17 @@ export function inviteStatusesFromJson(value: unknown): Record<string, PlayerInv
 
 /** The page a tournament invite link opens. */
 export const tournamentPlayerInvitePath = (token: string) => `/tournaments/invite/${token}`;
+
+/** Organizer "Add existing player": this tournament's players not on the edition yet (never a profile id). */
+export interface PoolPlayer { id: string; name: string; email: string | null; joined: boolean; lastSeason: number | null }
+
+export function playerPoolFromJson(value: unknown): PoolPlayer[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((row): PoolPlayer[] => {
+    if (!row || typeof row !== "object") return [];
+    const r = row as Record<string, unknown>;
+    if (typeof r.id !== "string" || !isPlayerId(r.id) || typeof r.name !== "string" || !r.name) return [];
+    return [{ id: r.id, name: r.name, email: typeof r.email === "string" && r.email ? r.email : null, joined: r.joined === true,
+      lastSeason: typeof r.lastSeason === "number" && Number.isInteger(r.lastSeason) ? r.lastSeason : null }];
+  });
+}

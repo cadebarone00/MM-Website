@@ -29,7 +29,7 @@ const HOLD_SLOP = 10;
  * submitting locks the card until the page reloads. Submit & Save calls `onSubmit` with the card (the dev preview saves it
  * as the player's round); `submittedCard` reopens a saved round locked.
  */
-export function GolfTripScoring({ par, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard, attesteeStrokes, scoresVerified = true, syncStatus, conflicts, onResolveConflict, resetCard }: {
+export function GolfTripScoring({ par, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard, attesteeStrokes, scoresVerified = true, syncStatus, conflicts, onResolveConflict, resetCard, corrections, onRequestCorrection, onDecideCorrection }: {
   par?: number[]; initialHoles?: (number | null)[]; playerName?: string; opponentCardMatches?: boolean; courseName?: string;
   /** Dev preview only: a finished card (opponent scores, putts, fairways, greens) to start from. */
   prefill?: { opponentHoles: (number | null)[]; putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[];
@@ -61,6 +61,11 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   onResolveConflict?: (key: string, choice: "mine" | "saved") => void;
   /** A new token puts this card on screen (e.g. after choosing the saved score in a conflict). */
   resetCard?: { token: number; card: { holes: (number | null)[]; opponentHoles: (number | null)[]; putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[]; penalties: { fairway: boolean; green: boolean }[] } };
+  /** Saved trips (Step 6): my latest correction request, my submission history, and (organizer) pending requests to decide. */
+  corrections?: { myRequest: { status: "pending" | "approved" | "denied" | "resubmitted"; holes: number[]; decisionNote: string | null } | null;
+    revisions: { revision: number; submittedAt: string; submittedByName: string }[]; pending: { id: string; name: string; holes: number[]; reason: string }[] };
+  onRequestCorrection?: (holes: number[], reason: string) => Promise<{ ok: boolean; message?: string }>;
+  onDecideCorrection?: (requestId: string, approve: boolean) => Promise<{ ok: boolean; message?: string }>;
   savedCard?: { holes: (number | null)[]; opponentHoles: (number | null)[]; putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[]; penalties: { fairway: boolean; green: boolean }[] };
 }) {
   const [open, updateOpen] = useState(false);
@@ -90,7 +95,21 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
     if (submittedCard) {
       setHoles(submittedCard.strokes); setPutts(submittedCard.putts); setFairways(submittedCard.fairways); setGreens(submittedCard.greens); setSubmitted(true);
       if (submittedCard.penalties) setPenalties(submittedCard.penalties);
-    }
+    } else if (loadedCard) setSubmitted(false); // the server reopened it (an approved correction)
+  }
+  // Request Correction (saved trips): which holes, and why.
+  const [requesting, setRequesting] = useState(false);
+  const [correctionHoles, setCorrectionHoles] = useState<number[]>([]);
+  const [correctionReason, setCorrectionReason] = useState("");
+  const [correctionError, setCorrectionError] = useState<string | null>(null);
+  const [correctionBusy, setCorrectionBusy] = useState(false);
+  async function sendCorrection() {
+    if (!onRequestCorrection) return;
+    setCorrectionBusy(true); setCorrectionError(null);
+    const answer = await onRequestCorrection(correctionHoles, correctionReason).catch(() => ({ ok: false, message: "Couldn't send the request. Try again." }));
+    setCorrectionBusy(false);
+    if (!answer.ok) { setCorrectionError(answer.message ?? "Couldn't send the request. Try again."); return; }
+    setRequesting(false); setCorrectionHoles([]); setCorrectionReason("");
   }
   const [madeUpName] = useState(() => randomOpponentName());
   const opponentName = attesteeName ?? madeUpName;
@@ -375,6 +394,11 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
           </div>}
           {statusLabel && <p className={styles.syncStatus} data-state={statusLabel.split(" ")[0].toLowerCase()} role="status">{statusLabel === "Submitted" && <LockKeyhole size={11} aria-hidden="true" />} {statusLabel}</p>}
           {submitError && <p className={styles.syncStatus} data-state="conflict" role="alert">{submitError}</p>}
+          {corrections && <CorrectionsPanel corrections={corrections} submitted={submitted} requesting={requesting} busy={correctionBusy} error={correctionError}
+            holes={correctionHoles} reason={correctionReason} canRequest={Boolean(onRequestCorrection)} onDecide={onDecideCorrection}
+            onOpen={() => { setRequesting(true); setCorrectionError(null); }} onCancel={() => setRequesting(false)} onSend={() => void sendCorrection()}
+            onToggleHole={(h) => setCorrectionHoles((list) => list.includes(h) ? list.filter((x) => x !== h) : [...list, h].sort((a, b) => a - b))}
+            onReason={setCorrectionReason} />}
           <button type="button" className={`${styles.nextHoleButton} ${styles.submitSave}`} disabled={!readyToSubmit || submitted || submitting} onClick={() => setConfirmOpen(true)}>{submitted ? "Submitted" : submitting ? "Submitting…" : "Submit & Save"}</button>
         </>
         : <>
@@ -460,6 +484,53 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
     </div>, document.body)}
     {celebration && <SubmitCelebration total={celebration.total} toPar={celebration.toPar} onDone={() => setCelebration(null)} />}
   </section></div></>;
+}
+
+const CORRECTION_LABEL = { pending: "Correction pending", approved: "Correction approved · card reopened", denied: "Correction denied", resubmitted: "Resubmitted" } as const;
+const when = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+
+/**
+ * Saved trips (Step 6), under Submit & Save on the Card: Request Correction on a submitted card (pick holes, say why),
+ * my request's status, the organizer's pending requests with Approve / Deny, and a read-only submission history.
+ */
+function CorrectionsPanel({ corrections, submitted, requesting, busy, error, holes, reason, canRequest, onDecide, onOpen, onCancel, onSend, onToggleHole, onReason }: {
+  corrections: NonNullable<Parameters<typeof GolfTripScoring>[0]["corrections"]>; submitted: boolean; requesting: boolean; busy: boolean; error: string | null;
+  holes: number[]; reason: string; canRequest: boolean; onDecide?: (id: string, approve: boolean) => Promise<{ ok: boolean; message?: string }>;
+  onOpen: () => void; onCancel: () => void; onSend: () => void; onToggleHole: (hole: number) => void; onReason: (reason: string) => void;
+}) {
+  const [deciding, setDeciding] = useState<string | null>(null);
+  const [decideError, setDecideError] = useState<string | null>(null);
+  const mine = corrections.myRequest;
+  const open = mine?.status === "pending" || mine?.status === "approved";
+  return <div className={styles.corrections}>
+    {mine && <p className={styles.syncStatus} data-state={mine.status === "denied" ? "conflict" : mine.status === "pending" ? "saved" : "verified"} role="status">
+      {CORRECTION_LABEL[mine.status]} · hole {mine.holes.join(", ")}{mine.status === "denied" && mine.decisionNote ? ` · ${mine.decisionNote}` : ""}</p>}
+    {submitted && canRequest && !open && !requesting && <button type="button" className={styles.correctionButton} onClick={onOpen}>Request Correction</button>}
+    {requesting && <div className={styles.correctionForm} role="group" aria-label="Request a correction">
+      <span className={styles.correctionLabel}>Holes to correct</span>
+      <div className={styles.correctionHoles}>{Array.from({ length: 18 }, (_, i) => i + 1).map((h) =>
+        <button key={h} type="button" aria-pressed={holes.includes(h)} onClick={() => onToggleHole(h)}>{h}</button>)}</div>
+      <textarea aria-label="Why the card needs correcting" placeholder="What's wrong? (required)" maxLength={500} value={reason} onChange={(e) => onReason(e.target.value)} />
+      {error && <p className={styles.syncStatus} data-state="conflict" role="alert">{error}</p>}
+      <div className={styles.correctionActions}>
+        <button type="button" onClick={onCancel}>Cancel</button>
+        <button type="button" disabled={busy || holes.length === 0 || reason.trim().length < 3} onClick={onSend}>{busy ? "Sending…" : "Send request"}</button>
+      </div>
+    </div>}
+    {corrections.pending.length > 0 && onDecide && <div className={styles.correctionForm} role="group" aria-label="Correction requests">
+      <span className={styles.correctionLabel}>Correction requests</span>
+      {corrections.pending.map((p) => <div key={p.id} className={styles.conflictRow}>
+        <span>{p.name} · hole {p.holes.join(", ")} · {p.reason}</span>
+        {(["Approve", "Deny"] as const).map((label) => <button key={label} type="button" disabled={deciding === p.id}
+          onClick={async () => { setDeciding(p.id); setDecideError(null); const answer = await onDecide(p.id, label === "Approve").catch(() => ({ ok: false, message: "Couldn't save the decision." })); setDeciding(null); if (!answer.ok) setDecideError(answer.message ?? "Couldn't save the decision."); }}>{label}</button>)}
+      </div>)}
+      {decideError && <p className={styles.syncStatus} data-state="conflict" role="alert">{decideError}</p>}
+    </div>}
+    {corrections.revisions.length > 0 && <details className={styles.history}>
+      <summary>Submission history</summary>
+      <ol>{corrections.revisions.map((r) => <li key={r.revision}>Revision {r.revision} · {r.submittedByName} · {when(r.submittedAt)}</li>)}</ol>
+    </details>}
+  </div>;
 }
 
 type Direction = ShotResult;

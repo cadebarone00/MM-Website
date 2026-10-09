@@ -2,6 +2,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/profile/currentProfile";
 import type { SavedGolfTrip } from "./golfTripCreate.ts";
 import { submitResultFromJson } from "./tripSubmission.ts";
+import { correctionsFromJson, type TripCorrections } from "./tripCorrections.ts";
 import { liveTripRound, opResultsFromJson, tripGroupsPayload, tripScoringFromJson, type HoleEntryInput, type HoleOpInput, type TripRoundScoring } from "./tripScoring.ts";
 
 /**
@@ -86,4 +87,29 @@ export async function submitTripScorecard(profileId: string, groupId: string, go
   if (error) return { ok: false as const, ...scoringFailure(error) };
   const result = submitResultFromJson(data);
   return result ? { ok: true as const, result } : { ok: false as const, status: 500, error: "Couldn't submit the card. Try again." };
+}
+
+// --- Step 6: corrections (supabase/golf_trip_scoring_corrections.sql) -------------------------------------------
+
+/** A trip round's correction requests and submission history. Null when not installed / not on the trip (never throws). */
+export async function getScorecardCorrections(profileId: string, tripId: string, roundNumber: number): Promise<TripCorrections | null> {
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("get_scorecard_corrections", { p_profile: profileId, p_trip: tripId, p_round_number: roundNumber });
+  if (error) { console.error("get_scorecard_corrections failed:", error.message); return null; }
+  return correctionsFromJson(data);
+}
+
+/** The golfer asks to correct their own submitted card. */
+export async function requestScorecardCorrection(profileId: string, groupId: string, golferProfileId: string, holes: number[], reason: string) {
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("request_scorecard_correction",
+    { p_profile: profileId, p_group: groupId, p_golfer: golferProfileId, p_holes: holes, p_reason: reason });
+  if (error) return { ok: false as const, ...scoringFailure(error) };
+  return { ok: true as const, status: (data as { status?: string })?.status ?? "requested" };
+}
+
+/** The trip organizer approves (reopens that golfer's card) or denies. */
+export async function decideScorecardCorrection(profileId: string, requestId: string, approve: boolean, note: string | null) {
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("decide_scorecard_correction",
+    { p_profile: profileId, p_request: requestId, p_approve: approve, p_note: note });
+  if (error) return { ok: false as const, ...scoringFailure(error) };
+  return { ok: true as const, status: (data as { status?: string })?.status ?? "decided" };
 }

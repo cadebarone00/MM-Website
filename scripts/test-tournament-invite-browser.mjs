@@ -122,6 +122,50 @@ try {
   assert.equal((await call(g, `${api}/players/${cy.id}/invite`, "POST")).status, 404);
   assert.equal((await call(g, `${api}/players/invites`, "GET")).status, 404);
 
+  // 6. Recurring players: remove Cy from 2027, then bring him back with "Add existing player" — same player, no new row.
+  const playerCount = async () => (await fake.db.query("select count(*)::int n from tournament_players where tournament_id = (select id from tournaments where slug = 'texas-cup')")).rows[0].n;
+  const removeAndSave = async (p, name) => {
+    await p.goto(`${app}/tournaments/texas-cup/2027`);
+    await p.getByRole("button", { name: "Edit players" }).click();
+    const rows = p.locator("form").locator("input[maxlength='80']");
+    const count = await rows.count();
+    for (let i = 0; i < count; i++) if ((await rows.nth(i).inputValue()) === name) { await p.getByRole("button", { name: `Remove player ${i + 1}` }).click(); break; }
+    await p.getByRole("button", { name: "Save", exact: true }).click();
+    await p.getByText("Players saved.").waitFor();
+  };
+  await removeAndSave(org, "Cy Park");
+  assert.equal(await playerCount(), 2, "removing from the roster keeps the player");
+  await org.goto(`${app}/tournaments/texas-cup/2027`);
+  await org.getByRole("button", { name: "Edit players" }).click();
+  await org.getByRole("button", { name: "+ Add existing player" }).click();
+  const existing = org.getByRole("group", { name: "Existing players" });
+  assert.match(await existing.innerText(), /Cy Park[\s\S]*Not joined yet/);
+  assert.equal((await existing.innerText()).includes("last played"), false, "removed from every year: no season to show");
+  assert.equal((await existing.innerText()).includes("Ann Lee"), false, "players already on this year aren't offered");
+  await existing.getByRole("button", { name: "Add Cy Park" }).click();
+  await org.getByRole("button", { name: "Save", exact: true }).click();
+  await org.getByText("Players saved.").waitFor();
+  assert.equal(await playerCount(), 2, "bringing a player back creates no new player");
+  assert.equal((await fake.db.query("select count(*)::int n from edition_roster where tournament_player_id = $1", [cy.id])).rows[0].n, 1);
+
+  // 7. Next year (2028): the joined golfer comes back as the same tournament player with a fresh roster row.
+  const t = (await fake.db.query("select id from tournaments where slug = 'texas-cup'")).rows[0].id;
+  const e2027 = (await fake.db.query("select id from tournament_editions where tournament_id = $1 and season_year = 2027", [t])).rows[0].id;
+  const e2028 = (await fake.db.query("insert into tournament_editions (tournament_id, season_year, label) values ($1, 2028, 'Texas Cup 2028') returning id", [t])).rows[0].id;
+  await fake.db.query("insert into edition_settings (edition_id, scoring, plan) select $1, scoring, plan from edition_settings where edition_id = $2", [e2028, e2027]);
+  await org.goto(`${app}/tournaments/texas-cup/2028`);
+  await org.getByRole("button", { name: "Edit players" }).click();
+  await org.getByRole("button", { name: "+ Add existing player" }).click();
+  const pool2028 = org.getByRole("group", { name: "Existing players" });
+  assert.match(await pool2028.innerText(), /Ann Lee[\s\S]*Joined[\s\S]*Cy Park/);
+  assert.equal((await org.content()).includes(golfer.id), false, "no profile ids reach the page");
+  await pool2028.getByRole("button", { name: "Add Ann Lee" }).click();
+  await org.getByRole("button", { name: "Save", exact: true }).click();
+  await org.getByText("Players saved.").waitFor();
+  assert.equal(await playerCount(), 2, "same golfer next year: still one tournament player");
+  const annRows = (await fake.db.query("select e.season_year from edition_roster r join tournament_editions e on e.id = r.edition_id where r.tournament_player_id = (select id from tournament_players where profile_id = $1) order by 1", [golfer.id])).rows;
+  assert.deepEqual(annRows.map((r) => r.season_year), [2027, 2028]);
+
   assert.deepEqual(fake.unsupported, []);
   console.log("tournament invite browser check: PASS");
 } catch (error) {

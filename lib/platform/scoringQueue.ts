@@ -21,12 +21,12 @@ export interface QueuedOp extends QueueScope {
   /** My earlier ops for this hole the server may already have (a lost answer): finding one of them isn't a conflict. */
   supersedes: string[];
   clientUpdatedAt: string;
-  /** rejected = the card was submitted (locked) before this reached the server: kept on the phone, never resent. */
+  /** rejected = the card was submitted (locked), or the hole isn't part of an approved correction, before this reached the server: kept on the phone, never resent. */
   status: "pending" | "conflict" | "rejected";
   /** On conflict: what the server has now. */
   server?: { version: number; entry: HoleEntryInput };
 }
-export interface OpResult { opId: string; status: "applied" | "duplicate" | "conflict"; version: number; server?: HoleEntryInput }
+export interface OpResult { opId: string; status: "applied" | "duplicate" | "conflict" | "locked"; version: number; server?: HoleEntryInput }
 export type QueueChange = QueueScope & { groupId: string; scoredProfileId: string; kind: "own" | "attest"; entry: HoleEntryInput };
 
 export const opKey = (o: { profileId: string; groupId: string; scoredProfileId: string; entry: { hole: number } }) => `${o.profileId}|${o.groupId}|${o.scoredProfileId}|${o.entry.hole}`;
@@ -34,7 +34,8 @@ export const opKey = (o: { profileId: string; groupId: string; scoredProfileId: 
 /** Queue a change. A second change to the same hole replaces the first (new op id, same base version). */
 export function enqueue(ops: QueuedOp[], change: QueueChange, serverVersion: number, newId: () => string, now: string): QueuedOp[] {
   const key = opKey(change);
-  const prev = ops.find((o) => o.key === key);
+  // A change refused because the card was locked doesn't carry over: after a reopen, start from the server's version.
+  const prev = ops.find((o) => o.key === key && o.status !== "rejected");
   const next: QueuedOp = {
     ...change, key, opId: newId(), clientUpdatedAt: now,
     baseVersion: prev ? prev.baseVersion : serverVersion,
@@ -53,6 +54,7 @@ export function applyResults(ops: QueuedOp[], results: OpResult[]): QueuedOp[] {
     if (!op) continue; // already replaced by a newer edit, which stays queued
     out = r.status === "conflict"
       ? out.map((o) => o.opId === r.opId ? { ...o, status: "conflict" as const, server: { version: r.version, entry: r.server ?? { hole: o.entry.hole, strokes: null } } } : o)
+      : r.status === "locked" ? markRejected(out, [r.opId]) // the hole isn't part of an approved correction
       : out.filter((o) => o.opId !== r.opId);
   }
   return out;

@@ -74,6 +74,11 @@ interface FeatureSeed {
 
 const seeds: FeatureSeed[] = [
   {
+    id: "trip-round-momentum", name: "Round momentum and closed-app push alerts",
+    scope: "Member-only durable trip feed, explicit device/trip Web Push opt-in, attested aces and gross birdie streaks at 2/3/4, owner-approved response buckets and linked official matches won before hole 16. Actual organizer-set round pars lock at first score; no guessed par, net birdies or generic match winner inference. Encrypted push outbox with bounded leases/retries, suppression, expired-endpoint cleanup and device sign-out cleanup. Findings, setup and unresolved legal/retention/provider review: docs/trip-momentum-review.md. Implemented locally; no production migration, secrets, scheduler or device delivery verified.",
+    attentionCategories: ["privacy", "personal-data", "user-accounts", "ugc", "security", "retention", "account-deletion", "intellectual-property", "third-party-golf-content", "organizer-responsibility", "minors", "platform-rules", "audit-logging", "legal-review"],
+  },
+  {
     id: "golf-trip-chat-layout", name: "Golf Trip chat layout",
     scope: "Memory-only inbox, pinned Trip Chat, search over supplied match participants and local text composition. No message transport, persistence, notifications, attachments, calls or encryption claims. Findings and follow-ups: docs/golf-trip-chat-review.md.",
     attentionCategories: ["privacy", "personal-data", "ugc", "security", "retention", "account-deletion", "intellectual-property", "organizer-responsibility", "platform-rules", "legal-review"],
@@ -179,8 +184,8 @@ const seeds: FeatureSeed[] = [
     attentionCategories: ["affiliate-links", "advertising", "privacy", "personal-data", "retention", "taxes", "platform-rules", "legal-review"],
   },
   {
-    id: "notifications", name: "Notifications",
-    scope: "Review email, SMS and push separately: service/marketing purpose, recipient authority, preferences, opt-out/suppression, lock-screen exposure and vendor retention.",
+    id: "notifications", name: "Notifications", scopeRevision: 2,
+    scope: "Trip Web Push implementation and unresolved findings: docs/trip-momentum-review.md. Review email, SMS and push separately: service/marketing purpose, recipient authority, preferences, opt-out/suppression, lock-screen exposure and vendor retention.",
     attentionCategories: ["privacy", "personal-data", "advertising", "security", "retention", "minors", "platform-rules", "legal-review"],
   },
   {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { inviteStatusesFromJson, type PlayerInviteStatus } from "@/lib/platform/tournamentPlayerInvitations";
+import { inviteStatusesFromJson, playerPoolFromJson, type PlayerInviteStatus, type PoolPlayer } from "@/lib/platform/tournamentPlayerInvitations";
 import { PlayerInvite } from "./PlayerInvite";
 import base from "@/components/tournament-draft/TournamentDraftWorkspace.module.css";
 import styles from "../TournamentDashboard.module.css";
@@ -27,6 +27,21 @@ export function PlayersEditor({ setup, saving, onSave, onCancel, apiBase }: Edit
     });
     return () => { live = false; };
   }, [apiBase, statusVersion]);
+  // Recurring tournaments: this tournament's players not on this edition yet. Picking one reuses that player (same
+  // identity, same invite / profile link) with a fresh row for this edition: no team, handicap or captaincy carried over.
+  const [pool, setPool] = useState<PoolPlayer[] | null>(null);
+  const [picking, setPicking] = useState(false);
+  useEffect(() => {
+    if (!apiBase) return;
+    let live = true;
+    loadPool(apiBase).then((result) => { if (live) setPool(result); });
+    return () => { live = false; };
+  }, [apiBase]);
+  const available = (pool ?? []).filter((candidate) => !players.some((row) => row.id === candidate.id));
+  const bringBack = (candidate: PoolPlayer) => {
+    setPlayers((rows) => [...rows, { id: candidate.id, name: candidate.name, email: candidate.email ?? "", handicap: "", teamKey: "" }]);
+    if (available.length <= 1) setPicking(false);
+  };
   const submit = () => onSave({
     expectedPlayerCount: expected,
     players: players.map((player) => ({ id: player.id, name: player.name, email: player.email, handicap: player.handicap, teamKey: player.teamKey || null })),
@@ -46,10 +61,21 @@ export function PlayersEditor({ setup, saving, onSave, onCancel, apiBase }: Edit
           {apiBase && player.id && !invitesOff && <PlayerInvite apiBase={apiBase} playerId={player.id} name={player.name} status={statuses?.[player.id]} onInvited={() => setStatusVersion((v) => v + 1)} />}
         </div>)}
       </div>
-      {players.length < 64 && <button type="button" className={base.textButton} onClick={() => setPlayers((rows) => [...rows, { id: null, name: "", email: "", handicap: "", teamKey: "" }])}>+ Add a player</button>}
+      {players.length < 64 && <div className={base.actions} style={{ justifyContent: "flex-start", gap: 16 }}>
+        <button type="button" className={base.textButton} onClick={() => setPlayers((rows) => [...rows, { id: null, name: "", email: "", handicap: "", teamKey: "" }])}>+ Add new player</button>
+        {available.length > 0 && <button type="button" className={base.textButton} aria-expanded={picking} onClick={() => setPicking((open) => !open)}>+ Add existing player</button>}
+      </div>}
+      {picking && available.length > 0 && <div className={styles.rows} role="group" aria-label="Existing players">
+        <p className={base.muted} style={{ margin: 0 }}>Players already in this tournament. Adding one keeps the same player (and their invite or joined profile); set their team for this year.</p>
+        {available.map((candidate) => <div key={candidate.id} className={styles.row} style={{ gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center" }}>
+          <span><strong>{candidate.name}</strong><br /><span className={base.muted}>{[candidate.joined ? "Joined" : "Not joined yet", candidate.lastSeason ? `last played ${candidate.lastSeason}` : null].filter(Boolean).join(" · ")}</span></span>
+          <button type="button" className={base.secondary} onClick={() => bringBack(candidate)} disabled={players.length >= 64} aria-label={`Add ${candidate.name}`}>Add</button>
+        </div>)}
+      </div>}
       <p className={base.muted}>{invitesOff
         ? "Adding a player sends nothing. Player invitations aren't switched on yet."
-        : "Adding a player sends nothing. Save new players first, then make each one an invite link: when they open it while signed in, their own Maroon profile joins this player."}</p>
+        : "Adding a player sends nothing. Save new players first, then make each one an invite link: when they open it while signed in, their own Maroon profile joins this player."}
+        {" "}A golfer who played before should be added with Add existing player, not typed again — a typed name is always a new person.</p>
     </div>
     <EditorActions saving={saving} onCancel={onCancel} />
   </form>;
@@ -61,6 +87,17 @@ async function loadInviteStatuses(apiBase: string): Promise<Record<string, Playe
     const response = await fetch(`${apiBase}/players/invites`, { cache: "no-store" });
     const reply = await response.json().catch(() => null) as { ok?: boolean; statuses?: unknown } | null;
     return response.ok && reply?.ok ? inviteStatusesFromJson(reply.statuses) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** This tournament's players not on this edition yet, or null when unavailable. */
+async function loadPool(apiBase: string): Promise<PoolPlayer[] | null> {
+  try {
+    const response = await fetch(`${apiBase}/players/pool`, { cache: "no-store" });
+    const reply = await response.json().catch(() => null) as { ok?: boolean; players?: unknown } | null;
+    return response.ok && reply?.ok ? playerPoolFromJson(reply.players) : null;
   } catch {
     return null;
   }

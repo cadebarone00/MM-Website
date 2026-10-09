@@ -2,8 +2,8 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/profile/currentProfile";
-import { inviteStatusesFromJson, isPlayerId, playerAcceptResultFromJson, playerDeclineResultFromJson, playerInvitationFromJson, type PlayerAcceptResult,
-  type PlayerDeclineResult, type PlayerInviteStatus, type TournamentPlayerInvitation } from "./tournamentPlayerInvitations.ts";
+import { inviteStatusesFromJson, isPlayerId, playerAcceptResultFromJson, playerDeclineResultFromJson, playerInvitationFromJson, playerPoolFromJson, type PlayerAcceptResult,
+  type PlayerDeclineResult, type PlayerInviteStatus, type PoolPlayer, type TournamentPlayerInvitation } from "./tournamentPlayerInvitations.ts";
 import type { ManagedEdition } from "./dashboardServer.ts";
 
 /**
@@ -66,4 +66,14 @@ export async function getEditionInviteStatuses(edition: ManagedEdition): Promise
     return null;
   }
   return data === null ? null : inviteStatusesFromJson(data);
+}
+
+/** Organizer "Add existing player": this tournament's players not on this edition yet. Null when unavailable. */
+export async function getTournamentPlayerPool(edition: ManagedEdition): Promise<PoolPlayer[] | null> {
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("list_tournament_player_pool", { p_profile: edition.profileId, p_edition: edition.editionId });
+  if (error) {
+    if (error.code !== "PGRST202" && error.code !== "42883") console.error("list_tournament_player_pool failed:", error.message);
+    return null;
+  }
+  return data === null ? null : playerPoolFromJson(data);
 }

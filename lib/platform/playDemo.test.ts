@@ -76,10 +76,10 @@ function files(dir: string): string[] {
 
 test("the real /play loader still requires a signed-in user before loading anything, and knows nothing of the demo", () => {
   const source = read("lib/platform/tournamentHomeServer.ts");
-  const guard = source.indexOf('if (!user) redirect("/login");');
+  const guard = source.indexOf('if (current.status === "signed-out") redirect("/login");');
   assert.ok(guard > 0, "redirects signed-out visitors to /login");
   assert.ok(guard < source.indexOf("loadPublicTournament(slug"), "the auth check comes before any tournament data is loaded");
-  assert.ok(source.indexOf(".auth.getUser()") < guard, "the user comes from the session");
+  assert.ok(source.indexOf("await getCurrentProfile()") < guard && source.indexOf("await getCurrentProfile()") > 0, "the profile comes from the session (getCurrentProfile)");
   for (const word of ["playDemo", "DEV_PLAY_DEMO", "NODE_ENV", "Fixture", "demo: true"]) assert.ok(!source.includes(word), `real loader must not mention ${word}`);
   assert.match(source, /demo: false/);
   assert.match(source, /yourMatch: null/);

@@ -6,3 +6,7 @@
 .categoryTitle{margin:0;font:700 20px/1.2 var(--font-spectral),Georgia,serif;color:#fff}
 .row{display:flex;align-items:center;justify-content:space-between;gap:20px}
 .label{color:#dcc495;font-size:14px;font-weight:750;letter-spacing:1.2px;text-transform:uppercase}
+
+.notifications p{margin:0;font-size:14px;line-height:1.5;color:#eadbc4}.action{border:1px solid #dcc495;border-radius:24px;background:transparent;padding:12px 18px;color:#dcc495;font:700 15px var(--font-barlow),sans-serif;cursor:pointer}.action:disabled{opacity:.5;cursor:default}.action:focus-visible{outline:2px solid white;outline-offset:4px}
+
+.parGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.parGrid label{font-size:11px;color:#dcc495}.parGrid input{width:100%;padding:6px;border:1px solid #dcc495;border-radius:4px;background:#34080f;color:white}.notifications select{background:#34080f;color:#fff;padding:8px;border:1px solid #dcc495;border-radius:5px}

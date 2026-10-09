@@ -7,6 +7,7 @@ import type { SheetCard } from "@/lib/platform/liveCards";
 import { queueStatus, type QueuedOp } from "@/lib/platform/scoringQueue";
 import { idbQueueStorage } from "@/lib/platform/scoringQueueIdb";
 import { createScoringSync, memoryQueueStorage, type SendBatch } from "@/lib/platform/scoringSync";
+import { correctionView, correctionsFromJson, type TripCorrections } from "@/lib/platform/tripCorrections";
 import { cardVersion, submissionCheck, submitBodyFrom, submitRefusal, submitResultFromJson } from "@/lib/platform/tripSubmission";
 import type { ScoredCard } from "@/lib/platform/playerRounds";
 import { cardFromEntries, changedEntries, latestGate, mergeSent, myScoringSeat, opResultsFromJson, scoresVerified, type HoleEntryInput, type TripRoundScoring } from "@/lib/platform/tripScoring";
@@ -32,8 +33,10 @@ const show = (e?: HoleEntryInput) => e?.strokes == null ? "—" : String(e.strok
  * the round, newest answer wins. Verified (green / red, Submit) only while nothing is pending or in conflict and the
  * connection is live. The sheet looks as before, plus one status line and conflict rows on the Card.
  */
-export function SavedGolfTripHome({ scoring, ...home }: ComponentProps<typeof GolfTripHome> & { scoring?: { tripId: string; profileId: string; scoring: TripRoundScoring } }) {
+export function SavedGolfTripHome({ scoring, ...home }: ComponentProps<typeof GolfTripHome> & { scoring?: { tripId: string; profileId: string; scoring: TripRoundScoring; corrections?: TripCorrections | null } }) {
   const [live, setLive] = useState(scoring?.scoring ?? null);
+  // Step 6: correction requests + submission history (null until golf_trip_scoring_corrections.sql is installed).
+  const [corrections, setCorrections] = useState(scoring?.corrections ?? null);
   const seat = live && scoring ? myScoringSeat(live, scoring.profileId) : null;
   const seatRef = useRef(seat);
   useEffect(() => { seatRef.current = seat; });
@@ -75,7 +78,18 @@ export function SavedGolfTripHome({ scoring, ...home }: ComponentProps<typeof Go
   const sendRef = useRef(send);
   useEffect(() => { sendRef.current = send; });
 
+  async function refreshCorrections() {
+    if (!scoring || !live) return;
+    try {
+      const response = await fetch(`/api/golf-trips/${scoring.tripId}/scoring/corrections?round=${live.roundNumber}`, { cache: "no-store" });
+      const body = await response.json().catch(() => ({})) as Record<string, unknown>;
+      const parsed = response.ok && body.ok ? correctionsFromJson(body.corrections) : null;
+      if (parsed) setCorrections(parsed);
+    } catch { /* offline: keep what's on screen */ }
+  }
+
   async function refresh() {
+    void refreshCorrections();
     try {
       const { n, response, body } = await request();
       if (!response.ok || !body.ok || !body.scoring) throw new Error(String(body.error ?? `HTTP ${response.status}`));
@@ -123,6 +137,8 @@ export function SavedGolfTripHome({ scoring, ...home }: ComponentProps<typeof Go
     const channel = supabase?.channel(`trip-scoring-${groupId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "hole_score_entries", filter: `group_id=eq.${groupId}` }, reload)
       .on("postgres_changes", { event: "*", schema: "public", table: "scoring_group_players", filter: `group_id=eq.${groupId}` }, reload)
+      // Correction requests and decisions anywhere on this trip (the organizer decides for every group).
+      .on("postgres_changes", { event: "*", schema: "public", table: "scorecard_correction_requests", filter: `golf_trip_id=eq.${scoring.tripId}` }, reload)
       .subscribe((status) => {
         if (status === "SUBSCRIBED") { setConnected(true); void sync.current.catchUp(); }
         else setConnected(false); // not live, so nothing counts as verified
@@ -200,6 +216,20 @@ export function SavedGolfTripHome({ scoring, ...home }: ComponentProps<typeof Go
     }
   }
 
+  // Step 6: ask to correct my submitted card / decide a request (organizer). The database enforces who may do what.
+  async function correctionAction(body: Record<string, unknown>): Promise<{ ok: boolean; message?: string }> {
+    if (!scoring) return { ok: false };
+    try {
+      const response = await fetch(`/api/golf-trips/${scoring.tripId}/scoring/corrections`, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...body, expectedProfileId: scoring.profileId }) });
+      const answer = await response.json().catch(() => ({})) as Record<string, unknown>;
+      await sync.current.refresh(); // the card may have reopened; reload scores and corrections
+      return response.ok && answer.ok ? { ok: true } : { ok: false, message: String(answer.error ?? "Couldn't save that. Try again.") };
+    } catch {
+      return { ok: false, message: "You're offline. Try again when you're back online." };
+    }
+  }
+
   if (!scoring || !seat) return <GolfTripHome {...home} />;
   if (!startCard || !ops) return <GolfTripHome {...home} />; // the stored queue is loading (a moment)
   const status = queueStatus(ops);
@@ -215,6 +245,9 @@ export function SavedGolfTripHome({ scoring, ...home }: ComponentProps<typeof Go
     conflicts={ops.filter((o) => o.status === "conflict").map((o) => ({ key: o.key, label: `${nameOf(seat, o.scoredProfileId)}, hole ${o.entry.hole}`, mine: show(o.entry), saved: show(o.server?.entry) }))}
     onResolveConflict={resolve} resetScoringCard={reset}
     onScoringSubmit={submit} submittedCard={locked.card}
+    corrections={corrections ? correctionView(corrections, scoring.profileId, (id) => live?.groups.flatMap((g) => g.players).find((p) => p.profileId === id)?.displayName ?? "Player") : undefined}
+    onRequestCorrection={corrections ? (holes, reason) => correctionAction({ action: "request", groupId: seat.groupId, golferProfileId: scoring.profileId, holes, reason }) : undefined}
+    onDecideCorrection={corrections?.requests.some((r) => r.canDecide) ? (requestId, approve) => correctionAction({ action: "decide", requestId, approve }) : undefined}
     savedScoringCard={startCard}
     onScoringCardChange={(card) => queue("own", card.strokes.map((h, i) => card.entered?.[i] === false ? null : h), card)}
     onAttestChange={(strokes, entered) => queue("attest", strokes.map((h, i) => entered[i] ? h : null))} />;

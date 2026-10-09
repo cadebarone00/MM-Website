@@ -6,6 +6,9 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-10-09 — Round momentum and closed-app push alerts (implemented locally; deployment not verified).** Before, the trip bell offered local settings without delivery or a momentum feed. After, saved trips show a durable member-only Home feed and explicit per-device push opt-in. Big-play alerts use owner-approved headline/cause buckets for attested holes in one, 2/3/4 consecutive gross birdies using real round pars, and linked official matches won before hole 16. Organizer pars lock when scoring starts. Added retry/suppression/sign-out handling and a push-only service worker. SQL installation, secrets, hosting scheduler and real device delivery remain unverified. Updated sections 9, 11, 22 and 23, Mermaid paths and rendered workflow mapping. Review: docs/trip-momentum-review.md.
+
+
 **2026-10-06 - Maroon signup simplified (implemented locally; deployment not verified).** Before, signup used a cream panel and requested email/password followed by name/username. After, it uses full dark maroon with THE MAROON at 15% height, an Email / Mobile selector, email then password and gold-outline controls. Ordinary signup generates a Golfer profile and random unique username; invitation player matching remains. Mobile remains unavailable. Updated section 1 and Mermaid annotation; workflow paths and overview mappings are unchanged. Review: docs/signup-review.md.
 
 **2026-10-06 - Welcome title position corrected (presentation implemented locally; deployment not verified).** Before, The Maroon title was centered at 85% of page height. After, its center sits 15% from the top. Account actions remain centered with gold outlines and lettering on the Trips dark maroon. Updated section 1 and Mermaid annotation; workflow paths and overview mappings are unchanged.
@@ -177,6 +180,16 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 ```mermaid
   %% Maroon U fictional preview uses its own settings and return links.
 flowchart TD
+  PS[Saved trip score entries] --> PA[Matching golfer and designated attester]
+  PA --> PM[Attested ace or 2/3/4 birdie run using actual pars]
+  OR[Published official win before hole 16] --> MF
+  OR --> PO
+  PM --> MF[Member-only Home momentum feed: approved headline and cause]
+  PM --> PO[Transactional push outbox for opted-in devices]
+  PO --> PW[Scheduled leased delivery: membership and preference checks]
+  PW --> PN[Closed-app notification: approved headline and cause]
+  PN --> MF
+  PB[Trip bell: permission and per-device preferences] --> PO
   %% Bottom scrolling canvas follows the broad lower page surface, excluding floating navigation and overlays.
   %% Shared mobile presentation: top surfaces fill to the screen edge; lettering clears the device top safe area by 1svh; overlays share that clearance.
   %% Profile header: cream matching Overview with maroon text/icons; Rounds fills the profile backdrop maroon through bottom padding.
@@ -193,7 +206,7 @@ flowchart TD
   %% Card stays white filled with maroon text; GPS stays red filled with white text; center Scoring heading is a maroon pill with white text.
   %% Golf-trip Card (formerly Scorecard) and GPS pills: 118.8px wide and 40.6px tall in sheet and full-screen views; full-height divider 30% from right, labels centered in left 70%, mutually exclusive default-view lock buttons centered in right 30%; reopening scoring restores the locked page.
   %% Trip Home shows Upcoming, Add Round and planned rounds below its account/promo area; Venue retains the map and summary.
-  %% Active trip header: left-aligned 26.6px title; right-side chat > notifications > settings. Notifications renders a document-body popup with a 380ms slide from fully offscreen, attached flush to the viewport top, sliding down from above the screen with existing popup styling; empty state only, no notification feed.
+  %% Active trip header retains its popup; saved trips connect Round alerts and Home Momentum, while draft/dev trips cannot subscribe.
   TC[Active trip chat control] --> TI[Maroon trip-name header above Chats: Trip Chat always pinned]
   TI --> TS[Search supplied group participants]
   TS --> TD[Open a direct conversation]
@@ -203,7 +216,7 @@ flowchart TD
   TM --> TL[Component memory only: no delivery or receiving]
   %% /dev storyboard: Groups > Pages > selected branch columns > exact-page Conditionals > phone; registry maps route and tab reports in both directions.
   %% Maroon U Active mirrors Golf Trip Active using fictional teams at development-only home/settings routes; no database writes.
-  %% Active trip header: left-aligned 26.6px title; right-side chat > notifications > settings. Chat/notifications remain placeholders.
+  %% Active trip header: left-aligned 26.6px title; right-side chat > notifications > settings. Chat remains memory-only; saved-trip notifications now use opt-in Web Push.
   %% /dev Public / Marketing includes Explore / Home, Golf Trips, Profile, Tourneys and Pick?ems; existing route access checks remain authoritative.
   %% /dev storyboard: Groups > Pages > supported Conditionals > phone; registry maps route and tab reports in both directions.
   %% Saved and draft Golf Trip General settings show six category boxes; Organizer retains permission-gated Delete Trip. Category boxes are placeholders.
@@ -558,6 +571,9 @@ Starting the round also attempts a broadcast event, but broadcasting and scoring
 
 ## 9. Live hole entry and local drafts
 
+Saved-trip scoring triggers atomically record momentum events and queue opted-in push recipients. Hole-in-one and 2/3/4-birdie alerts require agreement between the golfer and their designated attester; stats-only edits and duplicate scoring retries do not repeat score events. These activity records do not alter official scoring or submission rules.
+
+
 The phone shows hole/par/yards, running totals, the horizontal hole selector, the scorer's score slider, the assigned opposing player's score slider, and applicable personal statistics. Team-colored rows put the scorer's side first. Par-three fairway is N/A. Putts retains the requested 4+ choice.
 
 In Singles/Fourball, a player records their own score and the assigned opposing player's score. Fourball scoring pairs are position-based within the two sides. Putts, fairway, and green refer to the scorer's own ball. Foursome uses shared side scores and omits individual-ball shot statistics.
@@ -590,6 +606,9 @@ Network/server failures retain the queue and retry while the page is open, on re
 **Writes:** `live_hole_submissions`, `live_hole_scores`, `live_submission_receipts`, audit records, and triggered archive updates. Full 18-hole confirmation also updates round-submission tracking. **Code:** `lib/live/useHoleQueue.ts`, `app/api/portal/scoring/hole/route.ts`, `supabase/live_hole_submissions.sql`, `supabase/scoring_reliability.sql`.
 
 ## 11. Match results, standings, and published odds
+
+Published native official state can add That was quick! to a linked trip’s momentum feed when a side wins mathematically on hole 15 or earlier. A tie or hole-16 decision does not qualify. The trigger uses the official result and a real tournament/edition/round/date link, never preview standings.
+
 
 The shared native snapshot paginates every source, including confirmed hole scores, so a full field cannot silently lose scores beyond the database's 1,000-row response limit. Player profiles, native match scorecards, standings, broadcast and publication use this snapshot. Source query failures surface as errors rather than an apparently empty tournament. Upcoming public player profiles no longer use the legacy sheet feed.
 
@@ -790,7 +809,7 @@ Copy Snapshot and Download Snapshot locally render the current same-origin ifram
 
 **Players settings removal:** Organizer Players displays a trash icon beside each joined name. Selecting it removes only that entry from component memory, compacts remaining joined names and leaves the expected player count unchanged with an open spot. The minus control can then reduce the count to the remaining joined count (minimum one). Empty slots have no delete control. Removals survive leaving/reopening the local Players sheet and reset on refresh/unmount; no saved membership, account or scoring data is deleted.
 
-**Active golf trip header:** Saved trips, the draft trip and the shared development trip preview use a left-aligned 26.6px trip title (70% of the previous 38px). The right-hand controls appear as chat, notifications, then settings. Notifications now lives in the shared header across trip tabs rather than inside Home. Chat opens the inbox and conversation layout described below; notifications opens a document-body popup with a 380ms slide from fully offscreen, attached flush to the viewport top, sliding down from above the screen using the existing popup panel and typography. The panel spans the phone width, is centered up to 560px on larger screens, has square top corners and rounded bottom corners, and includes top safe-area padding. It remains with an empty state and no connected feed. Close it through the close button, bell, Escape, outside click or focus leaving the panel. No notification data is collected, stored or delivered; service compliance remains review_required before adding a feed or delivery. The settings link keeps its existing trip-specific destination.
+**Active golf trip header and momentum:** Saved trips, draft trips and shared development preview retain the chat, notifications and settings controls. The bell opens the existing viewport-top popup, with Round alerts settings. Saved-trip Home now shows a member-only Momentum card with All updates and Big moments filters, actual event times, loading/error states and an Alerts shortcut. New saved own-score updates and submitted cards enter a durable feed; big-play events require matching designated attester scores. Push headline buckets are All it takes is 1!, Another one!, Heating Up!, Catching fire!, and That was quick!, with a cause subheading such as 3 birdies in a row for Cam. Birdies use actual gross pars entered by the organizer for all 18 holes before scoring starts; no fallback par is used. Early wins require published official state on hole 15 or earlier from a linked tournament/edition/round/date. Standalone trips have no authoritative match source. Push is explicit per-device/per-trip opt-in; milestones default on and every-score updates off, with names disclosed on the lock screen. Disabling and device sign-out remove subscriptions; membership and preferences suppress pending delivery. Corrected scores retract invalid moments and suppress queued alerts; delivered alerts cannot be recalled. The existing popup close behaviors remain. Draft/dev trips cannot subscribe and show an empty feed. Native push/email/SMS, new wording, 5+ birdie headlines, shotgun wraparound order, and generic match inference are not implemented. Follow docs/trip-momentum-review.md for migration/secrets/scheduler setup, verification and unresolved review_required findings. No production activation or device delivery was verified.
 
 **Trip chat layout:** The shared chat control opens a modal with a full-width maroon header showing the tournament/trip name and controls in white. A separate row beneath shows **Chats** or the selected conversation name. The inbox is styled as leaderboard rows, with **Trip Chat** always pinned first. Individual conversations appear only once they contain a message; searching existing supplied match participants opens a new direct conversation. The directory deduplicates names and excludes the existing scoring viewer. Trips without supplied match participants currently have no searchable directory. The conversation uses a cream original golf-pattern background, date separators, white incoming/green outgoing bubble styling and a plain-text composer. No incoming messages are fabricated or received: the current UI composes local outgoing text only, without transport, delivery/read receipts, encryption, calls, attachments or notifications. Messages and per-conversation drafts survive closing the dialog but disappear on refresh or component unmount. No message storage, API, database schema or recipient authorization is added. This is an implemented local interaction, not a shared messaging service. See `components/platform/GolfTripChat.tsx` and `docs/golf-trip-chat-review.md`; unresolved compliance review remains `review_required`.
 
@@ -835,6 +854,9 @@ Fantasy, Merchandise, Vault, Settings, My Team, and Sponsorship currently render
 **Code:** `components/portal/PlayerScoringPanel.tsx`, `app/api/portal/score`, `lib/scorekeeper`, `lib/data/fetchLiveTournament.ts`, `components/portal/HoleActionBar.tsx`, the corresponding placeholder page files.
 
 ## 23. Hosting, storage, and release workflow
+
+Closed-app trip alerts require the momentum SQL migration, matching VAPID keys/contact, CRON_SECRET and an authorized scheduler. vercel.json requests a minute schedule; hosting-plan support and production activation remain unverified. The worker leases/retries a durable outbox with endpoint allowlisting, encrypted payloads, TTL and expired-subscription cleanup. Real-device background delivery, capacity, rights handling and approved retention remain release follow-ups.
+
 
 Operator recovery is documented in [Backup & Recovery](../BACKUP_RECOVERY_SPEC.md) and [the isolated restore drill](restore-drill.md). Existing `backup:production` exports REST-visible rows without a database-wide snapshot. The optional `backup:database` command requires an explicit production connection environment variable and compatible `pg_dump`, writing a custom-format dump and checksum manifest locally. It has not been run against production. Provider backups/PITR, Auth recovery and independent media copies remain unverified; secrets require separate protected recovery. The backup-health model uses fixtures only, with no admin UI or provider connection. No automated restore or retention deletion exists.
 

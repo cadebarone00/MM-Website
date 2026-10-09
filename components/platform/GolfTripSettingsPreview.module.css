@@ -259,5 +259,13 @@ span.typeChoice{cursor:default}
 .teamSelection{display:grid;gap:10px;margin-bottom:16px}
 .teamSelectionChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .teamSelectionChoices .typeChoice{min-height:38px}
-/* Format: this page's players / team builder above the round boxes. */
-.formatBuilder{margin-bottom:20px}
+/* Team Selection → Random: the randomizer button above the teams. */
+.randomizeButton{width:100%;min-height:42px;margin-bottom:16px}
+/* Team Selection → Draft: empty team lists until the draft, then the draft's date, time and type. */
+.draftNote{color:rgba(255,255,255,.5);font:500 13px/1.2 var(--font-barlow),sans-serif;font-style:italic}
+.draftSettings{display:grid;gap:12px;margin-top:20px}
+.draftSettings .totalPlayers{margin-bottom:0}
+.draftInput{min-height:38px;padding:0 12px;border:2px solid rgba(220,196,149,.3);border-radius:999px;background:rgba(255,255,255,.05);color:#fbf8f1;font:600 14px/1 var(--font-barlow),sans-serif;color-scheme:dark}
+.draftInput:focus{outline:none;border-color:#dcc495}
+.draftTypes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.draftTypes .typeChoice{min-height:38px}
