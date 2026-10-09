@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/profile/currentProfile";
 import { isGolfTripId } from "@/lib/platform/golfTripCreate";
 import { correctionDecisionFromBody, correctionRequestFromBody } from "@/lib/platform/tripCorrections";
-import { decideScorecardCorrection, getScorecardCorrections, requestScorecardCorrection } from "@/lib/platform/tripScoringServer";
+import { decideScorecardCorrection, getScorecardCorrections, listTripCorrections, requestScorecardCorrection } from "@/lib/platform/tripScoringServer";
 
 /**
  * Scorecard corrections (Player & Attest Step 6). GET ?round=<n>: requests + submission history for the round.
+ * GET ?scope=trip: every round and every request I may see (Trip Settings → Corrections, any day).
  * POST {action: "request"}: the golfer asks to correct their own submitted card. POST {action: "decide"}: the trip
  * organizer approves or denies. Who is acting comes from the session; the database enforces every rule.
  */
@@ -13,7 +14,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ trip
   const current = await getCurrentProfile();
   if (current.status !== "ok") return NextResponse.json({ ok: false, error: "Log in to see corrections." }, { status: 401 });
   const { tripId } = await params;
-  const round = Number(new URL(request.url).searchParams.get("round"));
+  const query = new URL(request.url).searchParams;
+  if (query.get("scope") === "trip") {
+    if (!isGolfTripId(tripId)) return NextResponse.json({ ok: false, error: "Trip not found." }, { status: 404 });
+    const list = await listTripCorrections(current.profile.profileId, tripId);
+    if (!list) return NextResponse.json({ ok: false, error: "Corrections aren't available." }, { status: 404 });
+    return NextResponse.json({ ok: true, corrections: list }, { headers: { "Cache-Control": "no-store" } });
+  }
+  const round = Number(query.get("round"));
   if (!isGolfTripId(tripId) || !Number.isInteger(round) || round < 1 || round > 62) return NextResponse.json({ ok: false, error: "Round not found." }, { status: 404 });
   const corrections = await getScorecardCorrections(current.profile.profileId, tripId, round);
   if (!corrections) return NextResponse.json({ ok: false, error: "Corrections aren't available." }, { status: 404 });

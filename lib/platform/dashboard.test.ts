@@ -92,7 +92,8 @@ test("only the tournament's organizers can see or change it; players, strangers 
     const edition = await createTournament(db, owner);
     const otherEdition = await createTournament(db, other, { ...quick, name: "Other Cup", slug: "other-cup" });
     const tournament = (await db.query<{ t: string }>("select tournament_id t from tournament_editions where id = $1", [edition])).rows[0].t;
-    await db.query("insert into tournament_members(tournament_id, profile_id, role) values ($1,$2,'player'), ($1,$3,'organizer')", [tournament, player, cohost]);
+    await db.query("insert into tournament_members(tournament_id, profile_id, role) values ($1,$2,'organizer')", [tournament, cohost]);
+    await db.query("insert into tournament_players(tournament_id, display_name, profile_id) values ($1, 'Player', $2)", [tournament, player]);
 
     const attempt = (who: string, ed = edition) => db.query("select save_tournament_section($1, $2, 'branding', '{\"primary\":\"#000000\",\"secondary\":\"#ffffff\",\"accent\":\"#cccccc\"}'::jsonb)", [who, ed]);
     for (const [who, label] of [[stranger, "stranger"], [player, "player"], [other, "another tournament's owner"]] as const) {

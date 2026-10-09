@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cardVersion, submissionCheck, submitResultFromJson, submitBodyFrom } from "./tripSubmission.ts";
+import { cardVersion, submissionCheck, submitRefusal, submitResultFromJson, submitBodyFrom } from "./tripSubmission.ts";
 import type { HoleScoreEntry, TripRoundScoring } from "./tripScoring.ts";
 
 const ME = "11111111-1111-4111-8111-111111111111", ATT = "22222222-2222-4222-8222-222222222222", G = "33333333-3333-4333-8333-333333333333";
@@ -32,6 +32,20 @@ test("incomplete: a missing score or stat on any hole names the holes", () => {
 test("mismatched: my strokes vs my attester's, or a hole the attester hasn't entered", () => {
   const entries = full().map((e) => e.enteredByProfileId === ATT && e.hole === 5 ? { ...e, strokes: 5 } : e).filter((e) => !(e.enteredByProfileId === ATT && e.hole === 9));
   assert.deepEqual(submissionCheck(scoring(entries), ME, ME), { ok: false, reason: "mismatch", holes: [5, 9] });
+});
+
+test("Step 6: a reopened card says when the attester hasn't re-attested a corrected hole, separately from a real mismatch", () => {
+  // Approval cleared the attester's hole 3 and 7; hole 7 has been re-attested, hole 3 hasn't.
+  const entries = [...holes.map((h) => own(h, 4)), ...holes.map((h) => att(h, h === 3 ? null : 4))];
+  assert.deepEqual(submissionCheck(scoring(entries), ME, ME, [3, 7]), { ok: false, reason: "unattested", holes: [3] });
+  // Re-attested with a different number: that's a real mismatch, with the existing message.
+  const differs = [...holes.map((h) => own(h, 4)), ...holes.map((h) => att(h, h === 3 ? 5 : 4))];
+  assert.deepEqual(submissionCheck(scoring(differs), ME, ME, [3, 7]), { ok: false, reason: "mismatch", holes: [3] });
+  // Outside a correction an empty attester hole stays a mismatch, as before.
+  assert.deepEqual(submissionCheck(scoring(entries), ME, ME), { ok: false, reason: "mismatch", holes: [3] });
+  assert.match(submitRefusal({ status: "rejected", reason: "unattested", holes: [3], scoring: null }), /hasn't re-attested hole 3 for this correction/);
+  assert.match(submitRefusal({ status: "rejected", reason: "mismatch", holes: [3], scoring: null }), /doesn't match yours on hole 3/);
+  assert.equal(submitResultFromJson({ status: "rejected", reason: "unattested", holes: [3, 7], scoring: null })?.status, "rejected", "the server's new reason is accepted");
 });
 
 test("already submitted is not an error to re-check (the server answers it idempotently)", () => {

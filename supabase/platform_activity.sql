@@ -76,7 +76,9 @@ begin
 
   v_admin := coalesce((select platform_role = 'admin' from profiles where id = p_viewer), false);
   select role into v_role from tournament_members where tournament_id = v_t.id and profile_id = p_viewer;
-  v_members := v_admin or coalesce(v_role in ('player', 'organizer', 'owner'), false);
+  -- Players come from tournament_players (who plays), never from a membership role.
+  v_members := v_admin or coalesce(v_role in ('organizer', 'owner'), false)
+    or exists (select 1 from tournament_players where tournament_id = v_t.id and profile_id = p_viewer);
 
   return jsonb_build_object(
     'published', v_e.published_at is not null,

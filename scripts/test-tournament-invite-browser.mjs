@@ -97,7 +97,7 @@ try {
   await g.waitForURL(`${app}/tournaments/mine`, { timeout: 20000 });
   assert.equal((await player("Ann Lee")).profile_id, golfer.id);
   assert.equal((await fake.db.query("select count(*)::int n from tournament_players where display_name = 'Ann Lee'")).rows[0].n, 1, "no new player row");
-  assert.equal((await fake.db.query("select role from tournament_members where profile_id = $1", [golfer.id])).rows[0]?.role, "player");
+  assert.equal((await fake.db.query("select count(*)::int n from tournament_members where profile_id = $1", [golfer.id])).rows[0].n, 0, "playing isn't a membership role");
   await g.goto(annLink);
   assert.match(await g.locator("main").innerText(), /You're already playing in this tournament/);
   assert.match(await badge(org, "Ann Lee"), /Joined/);

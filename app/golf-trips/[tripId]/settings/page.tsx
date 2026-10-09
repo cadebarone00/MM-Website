@@ -18,5 +18,5 @@ export default async function SavedGolfTripSettingsPage({ params }: { params: Pr
   if (view.status === "not-found") notFound();
 
   return <GolfTripSettings backHref={golfTripUrl(tripId)} isOrganizer={view.viewer.isOrganizer} tripId={tripId}
-    members={view.trip.members} viewerMemberId={view.viewer.memberId} />;
+    members={view.trip.members} viewerMemberId={view.viewer.memberId} profileId={view.viewer.profileId} />;
 }

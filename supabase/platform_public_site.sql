@@ -25,7 +25,9 @@ returns boolean language sql stable security definer set search_path = public as
   select case t.visibility
     when 'private' then p_viewer is not null and (
       exists (select 1 from profiles where id = p_viewer and platform_role = 'admin')
-      or exists (select 1 from tournament_members where tournament_id = t.id and profile_id = p_viewer))
+      -- tournament_members = access (owner / organizer / viewer); tournament_players = the golfers who play here.
+      or exists (select 1 from tournament_members where tournament_id = t.id and profile_id = p_viewer)
+      or exists (select 1 from tournament_players where tournament_id = t.id and profile_id = p_viewer))
     else true
   end
   from tournaments t where t.id = p_tournament and not t.is_legacy;

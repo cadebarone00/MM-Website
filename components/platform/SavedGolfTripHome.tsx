@@ -7,7 +7,7 @@ import type { SheetCard } from "@/lib/platform/liveCards";
 import { queueStatus, type QueuedOp } from "@/lib/platform/scoringQueue";
 import { idbQueueStorage } from "@/lib/platform/scoringQueueIdb";
 import { createScoringSync, memoryQueueStorage, type SendBatch } from "@/lib/platform/scoringSync";
-import { correctionView, correctionsFromJson, type TripCorrections } from "@/lib/platform/tripCorrections";
+import { correctionView, correctionsFromJson, openCorrectionHoles, type TripCorrections } from "@/lib/platform/tripCorrections";
 import { cardVersion, submissionCheck, submitBodyFrom, submitRefusal, submitResultFromJson } from "@/lib/platform/tripSubmission";
 import type { ScoredCard } from "@/lib/platform/playerRounds";
 import { cardFromEntries, changedEntries, latestGate, mergeSent, myScoringSeat, opResultsFromJson, scoresVerified, type HoleEntryInput, type TripRoundScoring } from "@/lib/platform/tripScoring";
@@ -57,19 +57,32 @@ export function SavedGolfTripHome({ scoring, ...home }: ComponentProps<typeof Go
     return { n, response, body: await response.json().catch(() => ({})) as Record<string, unknown> };
   }
 
+  // Put the server's saved values back on the card (plus my changes still waiting to send), dropping `refused` ops.
+  function snapBack(server: TripRoundScoring, refused: string[]) {
+    const current = scoring ? myScoringSeat(server, scoring.profileId) : null, run = engine.current;
+    if (!current || !run) return;
+    const waiting = (kind: "own" | "attest") => run.ops().filter((o) => o.kind === kind && o.status !== "rejected" && !refused.includes(o.opId)).map((o) => o.entry);
+    known.current = { own: mergeSent(current.sentOwn, waiting("own")), attest: mergeSent(current.sentAttest, waiting("attest")) };
+    setReset((r) => ({ token: (r?.token ?? 0) + 1, card: cardFromEntries(known.current.own, known.current.attest) }));
+  }
+
   // The network side of the queue: one POST per (group, golfer scored). Who queued it must still be who's signed in.
   const send: SendBatch = async (batch) => {
     if (typeof navigator !== "undefined" && !navigator.onLine) return { ok: false, reason: "offline" };
     try {
       const { n, response, body } = await request({ method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
         groupId: batch.groupId, scoredProfileId: batch.scoredProfileId, expectedProfileId: scoring?.profileId,
-        ops: batch.ops.map((o) => ({ opId: o.opId, baseVersion: o.baseVersion, supersedes: o.supersedes, clientUpdatedAt: o.clientUpdatedAt, entry: o.entry })) }) });
+        ops: batch.ops.map((o) => ({ opId: o.opId, baseVersion: o.baseVersion, supersedes: o.supersedes, clientUpdatedAt: o.clientUpdatedAt, entry: o.entry,
+          ...(o.correctionRequestId ? { correctionRequestId: o.correctionRequestId } : {}) })) }) });
       if (response.status === 401) return { ok: false, reason: "signed-out" };
       if (response.status === 409 && body.reason === "wrong-account") return { ok: false, reason: "wrong-account" };
       if (response.status === 403 && body.reason === "locked") return { ok: false, reason: "locked" };
       const answer = response.ok && body.ok ? opResultsFromJson(body) : null;
       if (!answer) return { ok: false, reason: "error" };
       if (answer.scoring && gate.current.accept(n)) setLive(answer.scoring);
+      // Step 6: a change the server refused (a locked hole, or not a fresh attestation) never stays on screen as if saved.
+      const refused = answer.results.filter((r) => r.status === "locked").map((r) => r.opId);
+      if (refused.length && answer.scoring) snapBack(answer.scoring, refused);
       return { ok: true, results: answer.results, scoring: null };
     } catch {
       return { ok: false, reason: "offline" };
@@ -78,22 +91,33 @@ export function SavedGolfTripHome({ scoring, ...home }: ComponentProps<typeof Go
   const sendRef = useRef(send);
   useEffect(() => { sendRef.current = send; });
 
-  async function refreshCorrections() {
-    if (!scoring || !live) return;
+  async function refreshCorrections(): Promise<TripCorrections | null> {
+    if (!scoring || !live) return null;
     try {
       const response = await fetch(`/api/golf-trips/${scoring.tripId}/scoring/corrections?round=${live.roundNumber}`, { cache: "no-store" });
       const body = await response.json().catch(() => ({})) as Record<string, unknown>;
       const parsed = response.ok && body.ok ? correctionsFromJson(body.corrections) : null;
       if (parsed) setCorrections(parsed);
-    } catch { /* offline: keep what's on screen */ }
+      return parsed;
+    } catch { return null; /* offline: keep what's on screen */ }
   }
 
+  // Step 6: the approved corrections on screen (mine, or the golfer I attest). A new one reopened holes and cleared the
+  // old attestation, so the card is rebuilt from the server once both have reloaded.
+  const approvedKey = (c: TripCorrections | null) => (c?.requests ?? []).filter((r) => r.status === "approved").map((r) => r.id).sort().join(",");
+  const shownApprovals = useRef(approvedKey(scoring?.corrections ?? null));
+
   async function refresh() {
-    void refreshCorrections();
+    const corrected = refreshCorrections();
     try {
       const { n, response, body } = await request();
       if (!response.ok || !body.ok || !body.scoring) throw new Error(String(body.error ?? `HTTP ${response.status}`));
       if (gate.current.accept(n)) setLive(body.scoring as TripRoundScoring);
+      const latest = await corrected;
+      if (latest && approvedKey(latest) !== shownApprovals.current) {
+        shownApprovals.current = approvedKey(latest);
+        snapBack(body.scoring as TripRoundScoring, []);
+      }
       if (!REALTIME) setConnected(true);
     } catch (error) {
       setConnected(false);
@@ -172,8 +196,11 @@ export function SavedGolfTripHome({ scoring, ...home }: ComponentProps<typeof Go
     if (!changes.length) return;
     known.current[kind] = mergeSent(known.current[kind], changes);
     const version = (hole: number) => live.entries.find((e) => e.scoredProfileId === scoredProfileId && e.enteredByProfileId === scoring.profileId && e.hole === hole)?.version ?? 0;
+    // Step 6: re-attesting a reopened golfer. Only an entry made now, for their approved correction, carries its id.
+    const open = openCorrectionHoles(corrections, scoring.profileId, current.attesteeId);
+    const madeFor = (hole: number) => kind === "attest" && open.attestRequestId && open.attest?.includes(hole) ? { correctionRequestId: open.attestRequestId } : {};
     void (async () => {
-      for (const entry of changes) await run.edit({ profileId: scoring.profileId, tripId: scoring.tripId, roundNumber: live.roundNumber, groupId: current.groupId, scoredProfileId, kind, entry }, version(entry.hole));
+      for (const entry of changes) await run.edit({ profileId: scoring.profileId, tripId: scoring.tripId, roundNumber: live.roundNumber, groupId: current.groupId, scoredProfileId, kind, entry, ...madeFor(entry.hole) }, version(entry.hole));
       syncSoon();
     })();
   }
@@ -199,7 +226,7 @@ export function SavedGolfTripHome({ scoring, ...home }: ComponentProps<typeof Go
     const current = latest ?? live;
     if (!current) return { ok: false, message: "Couldn't load your card. Try again." };
     if (latest) setLive(latest);
-    const check = submissionCheck(current, scoring.profileId, scoring.profileId);
+    const check = submissionCheck(current, scoring.profileId, scoring.profileId, openCorrectionHoles(corrections, scoring.profileId, null).own ?? []);
     if (!check.ok) return { ok: false, message: "holes" in check ? submitRefusal({ status: "rejected", reason: check.reason, holes: check.holes, scoring: null }) : "You can only submit your own card." };
     const group = myScoringSeat(current, scoring.profileId)?.groupId;
     if (!group) return { ok: false, message: "Couldn't find your group." };
@@ -245,9 +272,10 @@ export function SavedGolfTripHome({ scoring, ...home }: ComponentProps<typeof Go
     conflicts={ops.filter((o) => o.status === "conflict").map((o) => ({ key: o.key, label: `${nameOf(seat, o.scoredProfileId)}, hole ${o.entry.hole}`, mine: show(o.entry), saved: show(o.server?.entry) }))}
     onResolveConflict={resolve} resetScoringCard={reset}
     onScoringSubmit={submit} submittedCard={locked.card}
-    corrections={corrections ? correctionView(corrections, scoring.profileId, (id) => live?.groups.flatMap((g) => g.players).find((p) => p.profileId === id)?.displayName ?? "Player") : undefined}
+    corrections={corrections ? correctionView(corrections, scoring.profileId) : undefined}
+    correctionOpen={openCorrectionHoles(corrections, scoring.profileId, seat.attesteeId)}
     onRequestCorrection={corrections ? (holes, reason) => correctionAction({ action: "request", groupId: seat.groupId, golferProfileId: scoring.profileId, holes, reason }) : undefined}
-    onDecideCorrection={corrections?.requests.some((r) => r.canDecide) ? (requestId, approve) => correctionAction({ action: "decide", requestId, approve }) : undefined}
+    onDecideCorrection={corrections?.requests.some((r) => r.canDecide) ? (requestId, approve, note) => correctionAction({ action: "decide", requestId, approve, note }) : undefined}
     savedScoringCard={startCard}
     onScoringCardChange={(card) => queue("own", card.strokes.map((h, i) => card.entered?.[i] === false ? null : h), card)}
     onAttestChange={(strokes, entered) => queue("attest", strokes.map((h, i) => entered[i] ? h : null))} />;

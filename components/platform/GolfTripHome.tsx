@@ -2,6 +2,7 @@
 
 import { Suspense, use, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentProps, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
+import { GolfTripTitle } from "./GolfTripTitle";
 import { createPortal } from "react-dom";
 import { AlertTriangle, ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronLeft, ChevronRight, Clock, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Droplets, ExternalLink, FileText, Flag, LockKeyhole, MapPin, MessageCircle, Plane, Plus, Settings, Share2, ShieldCheck, ShoppingBag, Sun, Thermometer, Trash2, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
@@ -29,7 +30,9 @@ import { ItineraryDetailSheet } from "./ItineraryDetailSheet";
 import { shortPlace } from "@/lib/platform/placeLabel";
 import { MomSection } from "./MomSection";
 import type { MomRound } from "@/lib/platform/momNotifications";
-import { TripMomentumFeed } from "./TripMomentumFeed";
+import { TeamDraftNotice, TripMomentum } from "./TripMomentum";
+import type { MomentumEvent } from "@/lib/platform/tripPush";
+import type { TeamDraft } from "@/lib/platform/teamDraft";
 import { useTripMomentum, type TripAlertScope } from "./useTripMomentum";
 import { GolfTripNotifications } from "./GolfTripNotifications";
 import { getPlayerDisplayName } from "@/lib/data/players";
@@ -67,12 +70,16 @@ const subscribeNever = () => () => {};
  * `navigation` optionally requests a shared tab/section; in-app navigation remains local between requests.
  * `onNavigationChange` optionally observes the actual tab/section; the dev wrapper supplies it only when embedded.
  */
-export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, now: tripNow, competitionKey, savedCompetitionType, savedTeamColors, onTravelChange, roundLive = false, opponentCardMatches, scoringPrefill, onScoringSubmit, submittedCard, scoringOwner, tripStats, scoreChanges, attesteeName, scoringEdits, onScoringCardChange, attestedStrokes, onAttestChange, scoringPlayerName, savedScoringCard, attesteeStrokes, scoresVerified, syncStatus, conflicts, onResolveConflict, resetScoringCard, corrections, onRequestCorrection, onDecideCorrection, alertScope }:
+export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, now: tripNow, competitionKey, savedCompetitionType, savedTeamColors, savedTeamDraft, organizer, onTravelChange, roundLive = false, opponentCardMatches, scoringPrefill, onScoringSubmit, submittedCard, scoringOwner, tripStats, scoreChanges, attesteeName, scoringEdits, onScoringCardChange, attestedStrokes, onAttestChange, scoringPlayerName, savedScoringCard, attesteeStrokes, scoresVerified, syncStatus, conflicts, onResolveConflict, resetScoringCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, alertScope }:
   { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview; weather?: Promise<TripWeather>; flights?: TripFlights;
     /** Everyone's travel (My Info, the Itinerary and the Home "what's next" cards). Only the dev mock trip has it for now. */
     travel?: TripTravel; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void; now?: string; competitionKey?: string;
     /** Each team's color (TEAM_COLORS ids, Team A first) saved with the trip, until Settings picks them in this session. */
     savedTeamColors?: (string | null)[];
+    /** The team draft saved with the trip (Home's Draftboard), until Settings changes it in this session. */
+    savedTeamDraft?: TeamDraft;
+    /** Dev: whether the signed-in preview account is the organizer (the default account is). */
+    organizer?: boolean;
     /** Dev Just created trip: its saved Individual / Team picks (used until Settings is opened this session). */
     savedCompetitionType?: { individual: string | null; team: string | null };
     /** Told about every change to my travel (dev Just created trip saves it). */
@@ -102,7 +109,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
     onResolveConflict?: ComponentProps<typeof GolfTripScoring>["onResolveConflict"]; resetScoringCard?: ComponentProps<typeof GolfTripScoring>["resetCard"];
     /** Corrections (saved trips, Step 6). */
     corrections?: ComponentProps<typeof GolfTripScoring>["corrections"]; onRequestCorrection?: ComponentProps<typeof GolfTripScoring>["onRequestCorrection"];
-    onDecideCorrection?: ComponentProps<typeof GolfTripScoring>["onDecideCorrection"] }) {
+    onDecideCorrection?: ComponentProps<typeof GolfTripScoring>["onDecideCorrection"]; correctionOpen?: ComponentProps<typeof GolfTripScoring>["correctionOpen"] }) {
   const raw = useSyncExternalStore(subscribeNever, golfTripDraftSnapshot, () => "");
   const stored = useMemo(() => parseGolfTripDraft(raw), [raw]);
   const draft = preview ?? stored;
@@ -124,6 +131,8 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   // Play / Sit out: saved per trip (the dev data choice) under my name.
   const rsvpKey = competitionKey ?? "default";
   const myName = travel?.members.find(member => member.id === travel.meId)?.name || draft.yourName || "You";
+  // Organizer-only controls (Team Draft's Edit): a saved trip says so; the dev preview by its signed-in account, else my role.
+  const isOrganizer = alertScope?.isOrganizer ?? organizer ?? travel?.members.find(member => member.id === travel.meId)?.role === "organizer";
   const changeMyTravel = (change: MyTravelChange) => setTravelState((current) => {
     if (!current.travel) return current;
     const next = change.type === "add" ? addMyItem(current.travel, change.item)
@@ -144,6 +153,8 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   // Team colors (Settings → Competition → Team Color): the match box and match list draw each team in its color — the
   // "UP" highlight, the win % and its bar. Left = Team A, right = Team B; unpicked teams keep the gold / rose defaults.
   const teamColorIds = sharedCompetition?.teamColors[competitionKey ?? "default"] ?? savedTeamColors ?? [];
+  // Momentum's Draftboard (before a team draft): Team Competition's draft settings.
+  const teamDraft = competitive ? sharedCompetition?.teamDrafts[competitionKey ?? "default"] ?? savedTeamDraft : undefined;
   const teamColorVars = Object.fromEntries((["left", "right"] as const).flatMap((side, team) => {
     const color = teamColor(teamColorIds[team]);
     return color ? [[`--team-${side}`, color.base], [`--team-${side}-text`, color.text], [`--team-${side}-on-dark`, color.onDark]] : [];
@@ -198,19 +209,20 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
             if (!event.currentTarget.contains(event.relatedTarget) && event.relatedTarget !== notificationButtonRef.current) setNotificationsOpen(false);
           }} id="trip-notifications" role="region" aria-label="Notifications" className={`${styles.addSheet} ${styles.notificationsDropdown}`}>
             <button ref={notificationCloseRef} type="button" className={styles.sheetClose} aria-label="Close notifications" onClick={() => { setNotificationsOpen(false); notificationButtonRef.current?.focus(); }}><X size={18} strokeWidth={2.25} aria-hidden /></button>
+            <TeamDraftNotice draft={teamDraft} tripKey={competitionKey ?? "default"} startAt={tripNow} />
             <GolfTripNotifications scope={alertScope} />
           </div>, document.body)}
         </div>
         <Link href={settingsHref} className={styles.iconButton} aria-label="Trip settings"><Settings size={24} strokeWidth={1.75} aria-hidden /></Link>
       </div>
-      <h1 className={styles.title}>{draft.tripName || "Your Golf Trip"}</h1>
+      <GolfTripTitle name={draft.tripName || "Your Golf Trip"} />
       <div className={`${styles.tabs} ${styles.tripTabs}`} role="tablist" aria-label="Trip sections">
         {TABS.map((name) => <button key={name} type="button" role="tab" aria-selected={tab === name}
           className={`${styles.tab} ${tab === name ? styles.tabActive : ""}`} onClick={() => setTab(name)}>{name}</button>)}
       </div>
     </header>
     <div className={styles.body} role="tabpanel" aria-label={tab}>
-      {tab === "Home" ? <><TripMomentumFeed events={momentum.events} loading={momentum.loading} error={momentum.error} onAlerts={() => setNotificationsOpen(true)} /><InfoAccount draft={draft} settingsHref={settingsHref} flights={flights} weather={weather} itinerary={itinerary} travel={travel} tripNow={tripNow} onOpenItinerary={openItinerary}
+      {tab === "Home" ? <><InfoAccount draft={draft} teamDraft={teamDraft} isOrganizer={isOrganizer} momentumEvents={momentum.events} settingsHref={settingsHref} flights={flights} weather={weather} itinerary={itinerary} travel={travel} tripNow={tripNow} onOpenItinerary={openItinerary}
         rounds={plannedRounds(draft).map(round => ({ number: round.number, date: round.date, course: draft[`round${round.number}Course`] || "Course TBD", format: draft[`round${round.number}Format`] || (previewMatch && round.number === previewMatch.round ? previewMatch.formatDef?.label : undefined) }))}
         afterRound={previewMatch ? (roundLive || previewMatch.leaderboard.some(row => row.holes.every(strokes => strokes !== null)) ? previewMatch.round : previewMatch.round - 1) : 0}
         liveRound={roundLive && previewMatch ? { id: `round-${previewMatch.round}`, kind: "teeTime", title: `Round ${previewMatch.round} · ${previewMatch.course}`, startsAt: (tripNow ?? "").slice(0, 16) } : undefined} /></>
@@ -230,7 +242,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
         </>
         : <Card title={tab}><Empty>Coming soon</Empty></Card>}
     </div>
-    {roundLive && <GolfTripScoring key={`${scoringOwner ?? "me"}-${scoringPrefill ? `prefilled-${scoringPrefill.otherCardDiff ? "mismatch" : "match"}` : "blank"}`} prefill={scoringPrefill} onSubmit={onScoringSubmit} submittedCard={submittedCard} par={previewMatch?.par} initialHoles={yourHoles} courseName={previewMatch?.course} playerName={scoringPlayerName ?? (you ? getPlayerDisplayName(you) : draft.yourName || "You")} opponentCardMatches={opponentCardMatches}  attesteeName={attesteeName} edits={scoringEdits} onCardChange={onScoringCardChange} attestedStrokes={attestedStrokes} onAttestChange={onAttestChange} savedCard={savedScoringCard} attesteeStrokes={attesteeStrokes} scoresVerified={scoresVerified} syncStatus={syncStatus} conflicts={conflicts} onResolveConflict={onResolveConflict} resetCard={resetScoringCard} corrections={corrections} onRequestCorrection={onRequestCorrection} onDecideCorrection={onDecideCorrection} />}
+    {roundLive && <GolfTripScoring key={`${scoringOwner ?? "me"}-${scoringPrefill ? `prefilled-${scoringPrefill.otherCardDiff ? "mismatch" : "match"}` : "blank"}`} prefill={scoringPrefill} onSubmit={onScoringSubmit} submittedCard={submittedCard} par={previewMatch?.par} initialHoles={yourHoles} courseName={previewMatch?.course} playerName={scoringPlayerName ?? (you ? getPlayerDisplayName(you) : draft.yourName || "You")} opponentCardMatches={opponentCardMatches}  attesteeName={attesteeName} edits={scoringEdits} onCardChange={onScoringCardChange} attestedStrokes={attestedStrokes} onAttestChange={onAttestChange} savedCard={savedScoringCard} attesteeStrokes={attesteeStrokes} scoresVerified={scoresVerified} syncStatus={syncStatus} conflicts={conflicts} onResolveConflict={onResolveConflict} resetCard={resetScoringCard} corrections={corrections} onRequestCorrection={onRequestCorrection} onDecideCorrection={onDecideCorrection} correctionOpen={correctionOpen} />}
     <GolfTripChat open={chatOpen} onClose={() => setChatOpen(false)} tripName={draft.tripName || "Your Golf Trip"}
       members={[...new Set(previewMatch?.matches.flatMap(match => [match.left, match.right].flatMap(side => side ? normalizeCompetitor(side).golfers.map(golfer => getPlayerDisplayName(golfer.name)) : [])) ?? [])].filter(name => name !== getPlayerDisplayName(you ?? draft.yourName ?? ""))} />
   </main>;
@@ -786,8 +798,12 @@ function FlightsCard({ flights }: { flights?: TripFlights }) {
  * Info tab, banking-app style (layout only, made-up numbers): a maroon top saying "Your trip to {destination}", a swipeable
  * row of two cards with a dot for each (the filled dot follows the swipe), then the upcoming trip and planned rounds. It runs edge to edge and down to the bottom of the screen.
  */
-function InfoAccount({ draft, settingsHref, flights, weather, itinerary, travel, tripNow, liveRound, rounds, afterRound, onOpenItinerary }: {
-  draft: GolfTripDraft; settingsHref: string; flights?: TripFlights; weather?: Promise<TripWeather>; itinerary?: ItineraryItem[]; travel?: TripTravel; tripNow?: string;
+function InfoAccount({ draft, teamDraft, isOrganizer, momentumEvents, settingsHref, flights, weather, itinerary, travel, tripNow, liveRound, rounds, afterRound, onOpenItinerary }: {
+  draft: GolfTripDraft; settingsHref: string;
+  /** Momentum: the team draft (its Draftboard) and the round highlights, for this trip. */
+  teamDraft?: TeamDraft; momentumEvents: MomentumEvent[];
+  /** The organizer gets Edit on Team Draft. */
+  isOrganizer: boolean; flights?: TripFlights; weather?: Promise<TripWeather>; itinerary?: ItineraryItem[]; travel?: TripTravel; tripNow?: string;
   /** The golf round being played right now (its Scoring sheet is up): the only thing marked LIVE. */
   liveRound?: ItineraryItem; onOpenItinerary: () => void;
   /** For the Mom section's next-round reminder. */
@@ -815,8 +831,12 @@ function InfoAccount({ draft, settingsHref, flights, weather, itinerary, travel,
         <QuickWeather weather={weather} />
       </Suspense>}
     </div>
-    {/* Mom: my live notifications, or a countdown to arrival day when there are none (between the heading and the boxes). */}
-    <div className={styles.momSlot}><MomSection travel={travel} arrivalDay={draft.startDate} plans={itinerary ?? []} startAt={tripNow} rounds={rounds} afterRound={afterRound} /></div>
+    {/* Momentum (between the heading and the boxes): the Draftboard before a team draft, round highlights during the trip,
+        otherwise Mom — my live notifications, a countdown to arrival day, or the next round. */}
+    <div className={styles.momSlot}>
+      <TripMomentum draft={teamDraft} startAt={tripNow} editHref={isOrganizer ? settingsHref : undefined} events={momentumEvents}
+        fallback={<MomSection travel={travel} arrivalDay={draft.startDate} plans={itinerary ?? []} startAt={tripNow} rounds={rounds} afterRound={afterRound} />} />
+    </div>
     </div>
     {/* Two boxes, one over the other, 5% in from each side: LIVE / NOW then NEXT, or NEXT then UPCOMING (status top right).
         Tap one to open Info → Itinerary. Trips without an itinerary keep the Flights card. */}

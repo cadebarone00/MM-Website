@@ -8,6 +8,8 @@ import { tripScoringFromJson, type TripRoundScoring } from "./tripScoring";
  *   * every hole 1–18 has their strokes, putts, fairway and green (trip courses have no pars yet, so every hole asks
  *     for a fairway, exactly as the Scoring sheet does);
  *   * their attester's strokes match theirs on every hole;
+ *   * on a card reopened for a correction, the attester has entered every corrected hole again ("unattested" until then;
+ *     the server also checks each is a new attestation for that correction);
  *   * nothing changed since the phone last loaded the card (cardVersion), and nothing is still waiting to sync.
  * Once submitted, the card is locked: the database refuses any change to it, including late offline writes.
  */
@@ -17,9 +19,10 @@ const HOLES = Array.from({ length: 18 }, (_, i) => i + 1);
 export type SubmissionCheck =
   | { ok: true; alreadySubmitted?: true }
   | { ok: false; reason: "not-yours" | "no-attester" }
-  | { ok: false; reason: "incomplete" | "mismatch"; holes: number[] };
+  | { ok: false; reason: "incomplete" | "mismatch" | "unattested"; holes: number[] };
 
-export function submissionCheck(scoring: TripRoundScoring, actorId: string, golferId: string): SubmissionCheck {
+/** `correctionHoles`: the holes of my approved correction while my card is reopened (their old attestation was cleared). */
+export function submissionCheck(scoring: TripRoundScoring, actorId: string, golferId: string, correctionHoles: number[] = []): SubmissionCheck {
   if (actorId !== golferId) return { ok: false, reason: "not-yours" };
   const me = scoring.groups.flatMap((g) => g.players).find((p) => p.profileId === golferId);
   if (!me) return { ok: false, reason: "not-yours" };
@@ -28,6 +31,8 @@ export function submissionCheck(scoring: TripRoundScoring, actorId: string, golf
   const row = (by: string, hole: number) => scoring.entries.find((e) => e.scoredProfileId === golferId && e.enteredByProfileId === by && e.hole === hole);
   const incomplete = HOLES.filter((h) => { const e = row(golferId, h); return !e || e.strokes === null || e.putts === null || e.fairway === null || e.green === null; });
   if (incomplete.length) return { ok: false, reason: "incomplete", holes: incomplete };
+  const unattested = correctionHoles.filter((h) => (row(me.attesterProfileId as string, h)?.strokes ?? null) === null);
+  if (unattested.length) return { ok: false, reason: "unattested", holes: unattested };
   const mismatch = HOLES.filter((h) => row(me.attesterProfileId as string, h)?.strokes !== row(golferId, h)?.strokes);
   if (mismatch.length) return { ok: false, reason: "mismatch", holes: mismatch };
   return { ok: true };
@@ -45,7 +50,7 @@ export const submitBodyFrom = (groupId: string, golferProfileId: string, version
 
 export type SubmitResult =
   | { status: "submitted" | "already-submitted"; submittedAt: string; scoring: TripRoundScoring | null }
-  | { status: "rejected"; reason: "incomplete" | "mismatch" | "stale" | "no-attester"; holes: number[]; scoring: TripRoundScoring | null };
+  | { status: "rejected"; reason: "incomplete" | "mismatch" | "unattested" | "stale" | "no-attester"; holes: number[]; scoring: TripRoundScoring | null };
 
 /** submit_trip_scorecard's answer, checked; null for anything unexpected. */
 export function submitResultFromJson(value: unknown): SubmitResult | null {
@@ -53,7 +58,7 @@ export function submitResultFromJson(value: unknown): SubmitResult | null {
   const v = value as Record<string, unknown>;
   const scoring = v.scoring === null || v.scoring === undefined ? null : tripScoringFromJson(v.scoring);
   if ((v.status === "submitted" || v.status === "already-submitted") && typeof v.submittedAt === "string") return { status: v.status, submittedAt: v.submittedAt, scoring };
-  if (v.status === "rejected" && ["incomplete", "mismatch", "stale", "no-attester"].includes(String(v.reason)) && Array.isArray(v.holes) && v.holes.every((h) => Number.isInteger(h)))
+  if (v.status === "rejected" && ["incomplete", "mismatch", "unattested", "stale", "no-attester"].includes(String(v.reason)) && Array.isArray(v.holes) && v.holes.every((h) => Number.isInteger(h)))
     return { status: "rejected", reason: v.reason as "incomplete", holes: v.holes as number[], scoring };
   return null;
 }
@@ -62,6 +67,7 @@ export function submitResultFromJson(value: unknown): SubmitResult | null {
 export function submitRefusal(result: Extract<SubmitResult, { status: "rejected" }>): string {
   if (result.reason === "incomplete") return `Finish hole ${result.holes.join(", ")} before submitting.`;
   if (result.reason === "mismatch") return `Your attester's score doesn't match yours on hole ${result.holes.join(", ")}.`;
+  if (result.reason === "unattested") return `Your attester hasn't re-attested hole ${result.holes.join(", ")} for this correction yet. They need to enter ${result.holes.length === 1 ? "it" : "them"} again before you can resubmit.`;
   if (result.reason === "stale") return "Scores changed while you were submitting. Check the card and submit again.";
   return "This card has no attester, so it can't be submitted.";
 }

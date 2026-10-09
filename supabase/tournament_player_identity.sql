@@ -17,6 +17,15 @@
 -- organizer re-opens it with a new link. Organizers (and platform admins) see each player as joined / invited /
 -- declined / none through list_edition_player_invites.
 --
+-- Access vs playing — kept in separate tables, each meaning one thing:
+--   tournament_members  = what this profile may DO here: owner, organizer or viewer (plus platform admins everywhere).
+--   tournament_players  = who PLAYS here (claimed: profile_id). A player needs no member row; seeing their private
+--                         tournament and players-only activity comes from this row. An organizer who also plays has
+--                         one row in each table; an organizer or admin who doesn't play has no player row.
+-- So 'player' is no longer a membership role: existing 'player' member rows are removed when that profile is a
+-- tournament player there (it said the same thing twice), or kept as 'viewer' when it isn't (same access, no claim
+-- to be a player). Nothing else about memberships changes.
+--
 -- Guarantees:
 --   * one profile is at most one player per tournament (tournament_players_tournament_profile_key, also in
 --     profile_identity.sql — repeated here so the order the files run in doesn't matter);
@@ -51,6 +60,13 @@ begin
     raise exception 'A profile is more than one player in the same tournament. Fix tournament_players.profile_id first.';
   end if;
 end $$;
+
+-- Membership is access only (see the top of this file). Existing 'player' rows first, then the rule.
+delete from public.tournament_members m
+where m.role = 'player' and exists (select 1 from public.tournament_players p where p.tournament_id = m.tournament_id and p.profile_id = m.profile_id);
+update public.tournament_members set role = 'viewer' where role = 'player';
+alter table public.tournament_members drop constraint if exists tournament_members_role_check;
+alter table public.tournament_members add constraint tournament_members_role_check check (role in ('owner', 'organizer', 'viewer'));
 
 create unique index if not exists tournament_players_tournament_profile_key on public.tournament_players (tournament_id, profile_id) where profile_id is not null;
 create unique index if not exists tournament_players_invite_token_key on public.tournament_players (invite_token_hash) where invite_token_hash is not null;
@@ -223,8 +239,6 @@ begin
   exception when unique_violation then
     return jsonb_build_object('status', 'already_player', 'tournamentId', v_player.tournament_id);
   end;
-  insert into tournament_members (tournament_id, profile_id, role) values (v_player.tournament_id, p_profile, 'player')
-  on conflict (tournament_id, profile_id) do nothing;
   return jsonb_build_object('status', 'accepted', 'tournamentId', v_player.tournament_id);
 end;
 $$;
@@ -257,5 +271,7 @@ commit;
 --   drop trigger if exists keep_tournament_player_profile on public.tournament_players;
 --   drop function if exists public.keep_tournament_player_profile();
 --   drop index if exists public.tournament_players_invite_token_key;
+--   alter table public.tournament_members drop constraint if exists tournament_members_role_check;
+--   alter table public.tournament_members add constraint tournament_members_role_check check (role in ('owner', 'organizer', 'player', 'viewer'));
 --   alter table public.tournament_players drop column if exists declined_at, drop column if exists claimed_at, drop column if exists invited_by,
 --     drop column if exists invite_token_hash;

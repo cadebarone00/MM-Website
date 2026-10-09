@@ -85,6 +85,9 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
     <GolfTripHome key={justCreated ? `just-created-${savedVersion}` : config.source} {...data} now={tripNow} competitionKey={config.source}
       savedCompetitionType={justCreated ? readJustCreated("localCompetitionType") : undefined}
       savedTeamColors={justCreated ? readJustCreated("teamColors") : undefined}
+      organizer={viewAs === DEFAULT_DEV_ACCOUNT}
+      savedTeamDraft={justCreated ? { teamType: readJustCreated<{ team: string | null }>("localCompetitionType")?.team ?? null, selection: readJustCreated("teamSelection") ?? null,
+        date: readJustCreated("draftDate") ?? "", time: readJustCreated("draftTime") ?? "", type: readJustCreated("draftType") ?? "Snake" } : undefined}
       onTravelChange={justCreated ? travel => writeJustCreated("travel", travel) : undefined} weather={weather} previewMatch={scoring.shownMatch} tripStats={scoring.tripStats} scoreChanges={scoring.scoreChanges} attesteeName={scoring.attesteeName} attestedStrokes={scoring.myLiveCard?.holes.map((h) => h.attestStrokes)} onAttestChange={onAttestChange} scoringEdits={saved?.edits} onScoringCardChange={onScoringCardChange} roundLive={roundLive} opponentCardMatches={config.state.opponentCard !== "mismatch"} scoringPrefill={scoringPrefill} onScoringSubmit={onScoringSubmit} submittedCard={submittedCard} scoringOwner={viewAs} navigation={simulator?.navigation} onNavigationChange={reportNavigation} settingsHref={settingsHref} backHref="/golf-trips" />
     {!simulator && !embedded && !fictional && view === "maroon" && <details style={{ maxWidth: 920, margin: "24px auto", padding: 12, background: "#fff8ef", borderRadius: 8 }}>
       <summary style={{ fontWeight: 600 }}>DEV: Unmapped Tournament Data (click to view)</summary>

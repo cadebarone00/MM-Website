@@ -5,9 +5,9 @@
 /* Room at the bottom for the Scoring sheet's handle, which sits just above the bottom menu (desktop: at the bottom). */
 .pageWithScoring{padding-bottom:calc(24px + 64px + 5.75rem + env(safe-area-inset-bottom))}
 @media (min-width:1024px){.pageWithScoring{padding-bottom:96px}}
-.header{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.header{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:20px;row-gap:8px;text-align:center}
 /* Chat, notifications and settings share the right side of the trip title row. */
-.headerActions{position:absolute;top:-8px;right:-8px;display:flex}
+.headerActions{grid-column:2;grid-row:1;display:flex;justify-self:end;margin-right:-8px}
 .iconButton{display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;
   background:transparent;color:#fbf8f1;cursor:pointer;transition:background .15s ease}
 .iconButton:hover{background:rgba(255,255,255,.08)}
@@ -20,7 +20,7 @@
   .desktopBack:hover{color:#fbf8f1}
   .desktopBack:focus-visible{outline:2px solid #dcc495;outline-offset:4px;border-radius:4px}
 }
-.title{align-self:stretch;min-height:28px;margin:0;padding:0 132px 0 0;text-align:left;font:500 26.6px/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.02em;color:#fff;overflow-wrap:anywhere}
+.title{grid-column:1;grid-row:1;min-width:0;min-height:28px;margin:0;padding:0;text-align:left;font:500 26.6px/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.02em;color:#fff;overflow-wrap:anywhere}
 /* The selector: just the words. The chosen one lights up (cream with a soft glow) and gets a gold line under it. */
 .tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;width:100%;margin-top:8px}
 .tab{position:relative;min-height:44px;padding:0 4px;border:0;background:transparent;color:rgba(255,255,255,.55);cursor:pointer;
@@ -247,7 +247,7 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 /* Info: My Info / Itinerary selector sits higher, closer to the trip header (32px gap → 8px). */
 .tabs.infoTabs{margin-top:-16px}
 /* Main trip tabs (Home … Info): a faint line runs edge to edge under them; the chosen tab's whole share of it lights up gold. */
-.tripTabs{position:relative}
+.tripTabs{position:relative;grid-column:1 / -1;margin-top:0}
 .tripTabs::before{content:"";position:absolute;left:-16px;right:-16px;bottom:0;height:2px;background:rgba(251,248,241,.18);pointer-events:none}
 .tripTabs .tab::after{left:0;right:0;border-radius:0;z-index:1}
 /* Itinerary day change: the day slides out (50 ms) toward the side you're leaving, the next slides in from the other side (50 ms). */
@@ -308,3 +308,5 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 /* Golf sections (Leaderboard / Games / Stats…): equal gaps between the words, not equal boxes. */
 .tabs.sectionTabs{display:flex;justify-content:space-evenly;padding:0 8px;box-sizing:border-box}
 .sectionTabs .tab{padding:0 8px}
+
+.titleLine{display:block;white-space:nowrap}

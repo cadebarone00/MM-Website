@@ -132,6 +132,11 @@ test("queued ops in the API body are checked: uuid op ids, versions, earlier ops
   assert.equal(bad({ supersedes: ["nope"] }), false);
   assert.equal(bad({ entry: { hole: 19, strokes: 4 } }), false);
   assert.equal(holeOpsFromBody(opsBody([{ opId: O1, baseVersion: 0, supersedes: [], clientUpdatedAt: "2027-04-11T15:00:00.000Z", entry: { hole: 3, strokes: 4 } }], { expectedProfileId: "x" })).ok, false);
+  // Step 6: an attester's entry made for an open correction carries its request id (a uuid), passed on to the database.
+  const withId = holeOpsFromBody(opsBody([{ opId: O1, baseVersion: 0, supersedes: [], clientUpdatedAt: "2027-04-11T15:00:00.000Z", entry: { hole: 3, strokes: 4 }, correctionRequestId: O2 }]));
+  assert.equal(withId.ok && withId.ops[0].correctionRequestId, O2);
+  assert.equal(ok.ok && "correctionRequestId" in ok.ops[0], false, "absent unless sent");
+  assert.equal(bad({ correctionRequestId: "nope" }), false);
 });
 
 test("the server's op results are checked; anything malformed is rejected", async () => {

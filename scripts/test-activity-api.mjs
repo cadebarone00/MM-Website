@@ -34,7 +34,8 @@ const hidden = await seed({ slug: "private-cup", name: "Private Cup", visibility
 const player = await fake.addUser({ name: "player" });
 const stranger = await fake.addUser({ name: "stranger" });
 const admin = await fake.addUser({ name: "platformadmin", platformRole: "admin" });
-for (const t of [texas, hidden]) await fake.db.query("insert into tournament_members(tournament_id, profile_id, role) values ($1, $2, 'player')", [t.tournamentId, player.id]);
+// A player = a claimed tournament player (playing isn't a membership role).
+for (const t of [texas, hidden]) await fake.db.query("insert into tournament_players(tournament_id, display_name, profile_id) values ($1, 'Player', $2)", [t.tournamentId, player.id]);
 
 const server = spawn(process.platform === "win32" ? `npx.cmd next start -p ${APP_PORT}` : "npx", process.platform === "win32" ? [] : ["next", "start", "-p", String(APP_PORT)], {
   env: { ...process.env, SUPABASE_URL: fake.url, SUPABASE_ANON_KEY: "test-anon", SUPABASE_SERVICE_ROLE_KEY: "test-service" },

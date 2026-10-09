@@ -203,6 +203,11 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const [draftDate, setDraftDate] = usePersistedState(persist, "draftDate", "");
   const [draftTime, setDraftTime] = usePersistedState(persist, "draftTime", "");
   const [draftType, setDraftType] = usePersistedState<DraftType>(persist, "draftType", "Snake");
+  // Home's Draftboard follows these (team type, how teams are picked, the draft's date, time and order).
+  const shareTeamDraft = sharedCompetition?.setTeamDraft;
+  useEffect(() => {
+    shareTeamDraft?.(dataKey, { teamType: competitionType.team, selection: teamSelection, date: draftDate, time: draftTime, type: draftType });
+  }, [shareTeamDraft, dataKey, competitionType.team, teamSelection, draftDate, draftTime, draftType]);
   const teamStep = groupSize ?? 2;
   const teamTotalMax = playerTotal - (playerTotal % teamStep);
   const highestTeam = Math.max(-1, ...rosterSlots.map(index => teamPicks[index] ?? -1));

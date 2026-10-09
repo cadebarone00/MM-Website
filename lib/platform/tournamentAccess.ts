@@ -5,10 +5,13 @@ import { getCurrentProfile } from "@/lib/profile/currentProfile";
  * Who may manage a tournament (THE_MAROON_PRODUCT_SPEC.md §4). Checked on
  * the server for every tournament page and route; hiding buttons is never
  * the protection.
+ *
+ * These are ACCESS roles (tournament_members). Playing is separate: a golfer plays when their profile is on a
+ * tournament_players row (supabase/tournament_player_identity.sql), so "player" is not a role here.
  */
-export type TournamentRole = "viewer" | "player" | "organizer" | "owner";
+export type TournamentRole = "viewer" | "organizer" | "owner";
 
-const RANK: Record<TournamentRole, number> = { viewer: 0, player: 1, organizer: 2, owner: 3 };
+const RANK: Record<TournamentRole, number> = { viewer: 0, organizer: 1, owner: 2 };
 
 export function roleAtLeast(role: TournamentRole | null, minimum: TournamentRole): boolean {
   return role !== null && RANK[role] >= RANK[minimum];

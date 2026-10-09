@@ -48,8 +48,9 @@ test("an organizer-added golfer is a tournament player with no profile until the
   assert.equal(row.profile_id, annProfile);
   assert.ok(row.claimed_at);
   assert.equal((await db.query<{ n: number }>("select count(*)::int n from tournament_players where tournament_id = $1", [tournament])).rows[0].n, 2, "no new player row");
-  assert.equal(await one(db, "select role as r from tournament_members where tournament_id = $1 and profile_id = $2", [tournament, annProfile]), "player",
-    "the claimed golfer can now see their (private) tournament");
+  assert.equal(await one(db, "select count(*)::int as r from tournament_members where tournament_id = $1 and profile_id = $2", [tournament, annProfile]), 0,
+    "playing isn't a membership role: no member row is written");
+  assert.equal(await one(db, "select can_view_tournament($1, $2) as r", [tournament, annProfile]), true, "the claimed golfer can see their (private) tournament");
   // Safe to repeat; nobody else can take it; the link can't be reused for another player.
   assert.deepEqual(await accept(db, annProfile), { status: "already_player", tournamentId: tournament });
   assert.deepEqual(await accept(db, await profile(db, "intruder")), { status: "claimed" });
@@ -178,7 +179,7 @@ test("platform admins may make invite links too (same rule as the dashboard); pl
   const cup = await texasCup(db, owner);
   assert.equal(await invite(db, await profile(db, "admin", { admin: true }), cup.ann), true);
   const member = await profile(db, "member");
-  await db.query("insert into tournament_members (tournament_id, profile_id, role) values ($1, $2, 'player')", [cup.tournament, member]);
+  await db.query("insert into tournament_members (tournament_id, profile_id, role) values ($1, $2, 'viewer')", [cup.tournament, member]);
   assert.equal(await invite(db, member, cup.cy, "member-try-0123456789abcdefghijklmnop"), false);
 });
 

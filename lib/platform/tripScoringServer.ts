@@ -2,7 +2,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/profile/currentProfile";
 import type { SavedGolfTrip } from "./golfTripCreate.ts";
 import { submitResultFromJson } from "./tripSubmission.ts";
-import { correctionsFromJson, type TripCorrections } from "./tripCorrections.ts";
+import { correctionsFromJson, tripCorrectionListFromJson, type TripCorrectionList, type TripCorrections } from "./tripCorrections.ts";
 import { liveTripRound, opResultsFromJson, tripGroupsPayload, tripScoringFromJson, type HoleEntryInput, type HoleOpInput, type TripRoundScoring } from "./tripScoring.ts";
 
 /**
@@ -36,6 +36,24 @@ export async function loadLiveTripScoring(trip: SavedGolfTrip, today = new Date(
     console.error("save_trip_scoring_groups failed:", error?.message ?? "unexpected answer");
     return { status: "unavailable" };
   }
+  return { status: "ok", tripId: trip.trip.id, profileId: current.profile.profileId, scoring };
+}
+
+/**
+ * A round that was already played (Step 6: corrections on any later day, completed trips included), opened from Trip
+ * Settings → Corrections as /golf-trips/<id>?round=<n>. Read-only load: it never saves or changes playing groups, so
+ * nothing is created and no score moves to today's round; the round keeps its own date. Today's round goes through
+ * loadLiveTripScoring as before; a round that hasn't come yet shows nothing. Never throws.
+ */
+export async function loadPlayedTripRound(trip: SavedGolfTrip, roundNumber: number, today = new Date().toISOString().slice(0, 10)): Promise<TripScoringLoad> {
+  const round = trip.rounds.find((r) => r.roundNumber === roundNumber);
+  if (!round?.playDate || round.playDate > today) return { status: "none" };
+  if (round.playDate === today) return loadLiveTripScoring(trip, today);
+  const current = await getCurrentProfile();
+  if (current.status !== "ok") return { status: "none" };
+  const scoring = await getTripRoundScoring(current.profile.profileId, trip.trip.id, roundNumber);
+  if (scoring === "failed") return { status: "unavailable" };
+  if (!scoring || scoring.groups.length === 0) return { status: "none" };
   return { status: "ok", tripId: trip.trip.id, profileId: current.profile.profileId, scoring };
 }
 
@@ -98,6 +116,13 @@ export async function getScorecardCorrections(profileId: string, tripId: string,
   return correctionsFromJson(data);
 }
 
+/** Trip Settings → Corrections: every round and every request this golfer may see, on any day. Null when not installed / not on the trip. */
+export async function listTripCorrections(profileId: string, tripId: string): Promise<TripCorrectionList | null> {
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("list_trip_corrections", { p_profile: profileId, p_trip: tripId });
+  if (error) { console.error("list_trip_corrections failed:", error.message); return null; }
+  return tripCorrectionListFromJson(data);
+}
+
 /** The golfer asks to correct their own submitted card. */
 export async function requestScorecardCorrection(profileId: string, groupId: string, golferProfileId: string, holes: number[], reason: string) {
   const { data, error } = await createSupabaseServiceRoleClient().rpc("request_scorecard_correction",
@@ -106,7 +131,7 @@ export async function requestScorecardCorrection(profileId: string, groupId: str
   return { ok: true as const, status: (data as { status?: string })?.status ?? "requested" };
 }
 
-/** The trip organizer approves (reopens that golfer's card) or denies. */
+/** The trip organizer (or, for the organizer's own card, their attester) approves (reopens that card) or denies (with a reason). */
 export async function decideScorecardCorrection(profileId: string, requestId: string, approve: boolean, note: string | null) {
   const { data, error } = await createSupabaseServiceRoleClient().rpc("decide_scorecard_correction",
     { p_profile: profileId, p_request: requestId, p_approve: approve, p_note: note });

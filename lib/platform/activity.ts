@@ -36,8 +36,9 @@ export interface TournamentActivityItem {
 
 export interface ActivityViewer {
   signedIn: boolean;
-  /** The viewer's membership role in this tournament, if any (owner/organizer = commissioner). */
-  role: "owner" | "organizer" | "player" | "viewer" | null;
+  /** The viewer's ACCESS role in this tournament, if any (owner/organizer = commissioner). Playing isn't a role:
+   *  a tournament's own golfers get canSeePlayersOnly from their player record. */
+  role: "owner" | "organizer" | "viewer" | null;
   isPlatformAdmin: boolean;
   canPostAnnouncement: boolean;
   canSeePlayersOnly: boolean;
@@ -83,7 +84,7 @@ export function parseActivityFeed(raw: unknown): TournamentActivityFeed | null {
   if (raw === null || typeof raw !== "object") return null;
   const root = raw as Record<string, unknown>;
   const v = (root.viewer ?? {}) as Record<string, unknown>;
-  const role = v.role === "owner" || v.role === "organizer" || v.role === "player" || v.role === "viewer" ? v.role : null;
+  const role = v.role === "owner" || v.role === "organizer" || v.role === "viewer" ? v.role : null;
   const activity = (Array.isArray(root.activity) ? root.activity : []).flatMap((row): TournamentActivityItem[] => {
     const r = (row ?? {}) as Record<string, unknown>;
     if (!isType(r.type) || typeof r.ref !== "string") return [];

@@ -31,7 +31,7 @@ test("next session: first round today or later, then undated, else complete or n
 test("feed split keeps backend order and never adds items", () => {
   const item = (ref: string, type: TournamentActivityFeed["activity"][number]["type"]) =>
     ({ ref, type, visibility: "everyone" as const, title: null, body: null, metadata: {}, createdAt: "2027-01-01T00:00:00Z", authorName: null, summary: null });
-  const feed: TournamentActivityFeed = { published: true, viewer: { signedIn: true, role: "player", isPlatformAdmin: false, canPostAnnouncement: false, canSeePlayersOnly: true },
+  const feed: TournamentActivityFeed = { published: true, viewer: { signedIn: true, role: null, isPlatformAdmin: false, canPostAnnouncement: false, canSeePlayersOnly: true },
     activity: [item("a1", "players_updated"), item("a2", "commissioner_announcement"), item("a3", "tournament_published"), item("a4", "commissioner_announcement")] };
   const { announcements, events } = splitFeed(feed);
   assert.deepEqual(announcements.map((a) => a.ref), ["a2", "a4"]);

@@ -50,6 +50,14 @@ test("results: a hole outside an approved correction is answered locked → kept
   assert.equal(queueStatus(ops), "synced");
 });
 
+test("Step 6: an attest entry made for an open correction carries its request id; a later edit without one doesn't inherit it", () => {
+  let ops = enqueue([], { ...change(3, 5, "attest"), correctionRequestId: "req-1" }, 2, newId, now());
+  assert.equal(ops[0].correctionRequestId, "req-1");
+  ops = enqueue(ops, change(3, 6, "attest"), 2, newId, now());
+  assert.equal(ops.length, 1);
+  assert.equal("correctionRequestId" in ops[0], false, "only an entry made for the correction says so");
+});
+
 test("a result for an op I've since replaced doesn't drop the newer edit", () => {
   let ops = enqueue([], change(1, 5), 0, newId, now());
   const old = ops[0].opId;

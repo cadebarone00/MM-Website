@@ -25,9 +25,11 @@ export interface QueuedOp extends QueueScope {
   status: "pending" | "conflict" | "rejected";
   /** On conflict: what the server has now. */
   server?: { version: number; entry: HoleEntryInput };
+  /** Step 6: an attester's entry made for this open (approved) correction request: the explicit new attestation. */
+  correctionRequestId?: string;
 }
 export interface OpResult { opId: string; status: "applied" | "duplicate" | "conflict" | "locked"; version: number; server?: HoleEntryInput }
-export type QueueChange = QueueScope & { groupId: string; scoredProfileId: string; kind: "own" | "attest"; entry: HoleEntryInput };
+export type QueueChange = QueueScope & { groupId: string; scoredProfileId: string; kind: "own" | "attest"; entry: HoleEntryInput; correctionRequestId?: string };
 
 export const opKey = (o: { profileId: string; groupId: string; scoredProfileId: string; entry: { hole: number } }) => `${o.profileId}|${o.groupId}|${o.scoredProfileId}|${o.entry.hole}`;
 

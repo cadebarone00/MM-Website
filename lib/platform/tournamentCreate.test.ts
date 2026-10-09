@@ -192,12 +192,12 @@ test("round trip: what the organizer entered is what the saved dashboard loads",
   }
 });
 
-test("roles rank viewer < player < organizer < owner, and save failures read plainly", async () => {
+test("access roles rank viewer < organizer < owner, and save failures read plainly", async () => {
   const { roleAtLeast } = await import("./tournamentAccess.ts");
   const { createFailure } = await import("./tournamentCreate.ts");
   assert.equal(roleAtLeast("owner", "organizer"), true);
   assert.equal(roleAtLeast("organizer", "organizer"), true);
-  assert.equal(roleAtLeast("player", "organizer"), false);
+  assert.equal(roleAtLeast("viewer", "organizer"), false);
   assert.equal(roleAtLeast(null, "viewer"), false);
   assert.deepEqual([createFailure({ code: "42501" }).status, createFailure({ code: "23505" }).status, createFailure({ code: "PGRST202" }).status, createFailure({ code: "XX000" }).status], [403, 409, 503, 500]);
 });

@@ -23,8 +23,10 @@ async function saveAndRecord(db: PGlite, who: string, edition: string, section: 
   for (const change of setupActivityChanges(before, after)) await record(db, who, edition, change.type, change.metadata);
   return after;
 }
-const addMember = async (db: PGlite, edition: string, who: string, role: string) => db.query(
-  "insert into tournament_members(tournament_id, profile_id, role) select tournament_id, $2, $3 from tournament_editions where id = $1", [edition, who, role]);
+/** Access roles go in tournament_members; "player" means a claimed tournament player (playing isn't a role). */
+const addMember = async (db: PGlite, edition: string, who: string, role: string) => role === "player"
+  ? db.query("insert into tournament_players(tournament_id, display_name, profile_id) select tournament_id, 'Player', $2 from tournament_editions where id = $1", [edition, who])
+  : db.query("insert into tournament_members(tournament_id, profile_id, role) select tournament_id, $2, $3 from tournament_editions where id = $1", [edition, who, role]);
 
 /** Texas Cup 2027: two teams, two players, one round; optionally published with the given visibility. */
 async function texasCup(db: PGlite, options: { visibility?: Visibility; publish?: boolean } = {}) {
@@ -89,7 +91,7 @@ test("only commissioners (owner, organizer) and platform admins can post; viewin
     assert.deepEqual(await capabilities(owner), ["owner", true, true, false]);
     assert.deepEqual(await capabilities(organizer), ["organizer", true, true, false]);
     assert.deepEqual(await capabilities(admin), [null, true, true, true], "platform admin: may post and see players-only everywhere");
-    assert.deepEqual(await capabilities(player), ["player", false, true, false]);
+    assert.deepEqual(await capabilities(player), [null, false, true, false]);
     assert.deepEqual(await capabilities(viewer), ["viewer", false, false, false]);
     assert.deepEqual(await capabilities(stranger), [null, false, false, false]);
     assert.deepEqual(await capabilities(null), [null, false, false, false]);

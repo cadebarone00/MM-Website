@@ -84,7 +84,7 @@ test("private: members and admins only; everyone else gets exactly what a missin
     const player = await profile(db, "player");
     const admin = await profile(db, "admin", { admin: true });
     const tid = (await db.query<{ id: string }>("select id from tournaments where slug = 'texas-cup'")).rows[0].id;
-    await db.query("insert into tournament_members(tournament_id, profile_id, role) values ($1, $2, 'player')", [tid, player]);
+    await db.query("insert into tournament_players(tournament_id, display_name, profile_id) values ($1, 'Player', $2)", [tid, player]); // a claimed tournament player
     assert.equal(await site(db, "texas-cup", 2027), null);
     assert.equal(await site(db, "texas-cup", 2027, stranger), null);
     assert.equal(await site(db, "no-such-cup", 2027, stranger), null, "same answer as a tournament that doesn't exist");

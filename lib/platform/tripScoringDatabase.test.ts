@@ -155,9 +155,15 @@ const history = (db: PGlite, who: string, trip: string) =>
 const queued = (hole: number, strokes: number, base: number, stats = true) => ({ opId: randomUUID(), baseVersion: base, supersedes: [], clientUpdatedAt: new Date().toISOString(),
   entry: stats ? { hole, strokes, putts: 2, fairway: "center", green: "center" } : { hole, strokes } });
 
-/** Jake and Mike attest each other; Jake's card is complete, matching and submitted (revision 1). Cade organizes. */
+/** An attester's entry made for an open correction (what the phone sends once the correction is approved). */
+const fresh = (requestId: string, hole: number, strokes: number, base: number) => ({ ...queued(hole, strokes, base, false), correctionRequestId: requestId });
+/** The fixture trip is dated in the future; corrections are only for rounds already played. */
+const playedYesterday = (db: PGlite, trip: string) => db.query("update golf_trip_rounds set play_date = current_date - 1 where golf_trip_id = $1", [trip]);
+
+/** Jake and Mike attest each other; Jake's card is complete, matching and submitted (revision 1). Cade organizes. Played yesterday. */
 async function submittedCard(db: PGlite) {
   const t = await tripWithPlayers(db);
+  await playedYesterday(db, t.trip);
   const group = (await startScoring(db, t.cade, t.trip, [pair(t.jake, t.mike)])).groups[0].id;
   const version = await fullMatchingCard(db, group, t.jake, t.mike);
   assert.equal((await submit(db, t.jake, group, t.jake, version)).status, "submitted");
@@ -222,10 +228,10 @@ test("Step 6: approval reopens only that golfer; stale offline changes conflict;
   assert.equal((await ops(db, jake, group, jake, [queuedBeforeLock])).results[0].status, "conflict");
   // The correction: Jake changes hole 3 to 5; his attester first says 6 (mismatch), then 5.
   assert.equal((await ops(db, jake, group, jake, [queued(3, 5, 2)])).results[0].status, "applied");
-  let s = (await ops(db, mike, group, jake, [queued(3, 6, 2, false)])).scoring;
+  let s = (await ops(db, mike, group, jake, [fresh(req.id, 3, 6, 2)])).scoring;
   const mismatch = await submit(db, jake, group, jake, versionOf(s, jake, mike));
   assert.deepEqual([mismatch.status, mismatch.reason, mismatch.holes], ["rejected", "mismatch", [3]], "full re-verification against the attester");
-  s = (await ops(db, mike, group, jake, [queued(3, 5, 3, false)])).scoring;
+  s = (await ops(db, mike, group, jake, [fresh(req.id, 3, 5, 3)])).scoring;
   assert.equal((await submit(db, jake, group, jake, versionOf(s, jake, mike) - 1)).reason, "stale");
   assert.equal((await submit(db, jake, group, jake, versionOf(s, jake, mike))).status, "submitted");
   const log = await history(db, cade, trip);
@@ -275,17 +281,17 @@ test("Step 6 fix 1: approval clears the old attestation on the approved holes; r
   let s = await call<Scoring>(db, "get_trip_round_scoring", jake, trip, 1);
   assert.deepEqual([entry(s, jake, mike, 3)?.strokes, entry(s, jake, mike, 7)?.strokes, entry(s, jake, mike, 8)?.strokes], [null, null, 4], "approved holes cleared; unaffected holes keep their verified value");
   const now1 = await submit(db, jake, group, jake, versionOf(s, jake, mike));
-  assert.deepEqual([now1.status, now1.reason, now1.holes], ["rejected", "mismatch", [3, 7]], "can't resubmit straight away");
-  // The attester's stale offline change from before the lock can't count as the new attestation.
-  assert.equal((await ops(db, mike, group, jake, [attesterQueuedBeforeLock])).results[0].status, "conflict");
+  assert.deepEqual([now1.status, now1.reason, now1.holes], ["rejected", "unattested", [3, 7]], "can't resubmit straight away");
+  // The attester's stale offline change from before the lock can't count as the new attestation: refused, not a conflict.
+  assert.equal((await ops(db, mike, group, jake, [attesterQueuedBeforeLock])).results[0].status, "locked");
   assert.equal((await ops(db, jake, group, jake, [queued(3, 5, 2)])).results[0].status, "applied");
-  s = (await ops(db, mike, group, jake, [queued(3, 5, 2, false)])).scoring;
+  s = (await ops(db, mike, group, jake, [fresh(req.id, 3, 5, 2)])).scoring;
   assert.equal(await stampOf(db, jake, mike, 3), req.id, "the attester's new entry is recorded for this request");
   assert.equal(await stampOf(db, jake, jake, 3), null, "the golfer's own entry is never an attestation");
   const still = await submit(db, jake, group, jake, versionOf(s, jake, mike));
-  assert.deepEqual([still.reason, still.holes], ["mismatch", [7]], "hole 7 still needs the attester");
+  assert.deepEqual([still.reason, still.holes], ["unattested", [7]], "hole 7 still needs the attester");
   // Re-entering the SAME number (4) on hole 7 is a new attestation event for this request: it counts.
-  s = (await ops(db, mike, group, jake, [queued(7, 4, 2, false)])).scoring;
+  s = (await ops(db, mike, group, jake, [fresh(req.id, 7, 4, 2)])).scoring;
   assert.equal(await stampOf(db, jake, mike, 7), req.id);
   assert.equal((await submit(db, jake, group, jake, versionOf(s, jake, mike))).status, "submitted");
   // After resubmission the stamp can't be cleared or moved by a direct write.
@@ -306,7 +312,7 @@ test("Step 6 fix 1: a matching number left over without a new attestation event 
   await db.query("alter table hole_score_entries enable trigger hole_score_entries_correction_guard");
   const s = await call<Scoring>(db, "get_trip_round_scoring", jake, trip, 1);
   const r = await submit(db, jake, group, jake, versionOf(s, jake, mike));
-  assert.deepEqual([r.status, r.reason, r.holes], ["rejected", "mismatch", [7]], "the numbers match, but no fresh attestation was recorded");
+  assert.deepEqual([r.status, r.reason, r.holes], ["rejected", "unattested", [7]], "the numbers match, but no fresh attestation was recorded");
 });
 
 test("Step 6 fix 2: only the approved holes can change, for the golfer and the attester, on every save path", async () => {
@@ -330,7 +336,7 @@ test("Step 6 fix 2: only the approved holes can change, for the golfer and the a
   // Other golfers' cards aren't affected: Jake still attests Mike's (unsubmitted) card on any hole.
   assert.equal((await ops(db, jake, group, mike, [queued(5, 3, 0, false)])).results[0].status, "applied");
   // Finish: the locked holes are exactly as submitted in the new revision.
-  const s = (await ops(db, mike, group, jake, [queued(3, 5, 2, false)])).scoring;
+  const s = (await ops(db, mike, group, jake, [fresh(req.id, 3, 5, 2)])).scoring;
   assert.equal((await submit(db, jake, group, jake, versionOf(s, jake, mike))).status, "submitted");
   const card = (await db.query<{ c: { hole: number; strokes: number }[] }>("select card c from scorecard_submissions where golfer_profile_id = $1", [jake])).rows[0].c;
   assert.deepEqual(card.map((h) => h.strokes), [4, 4, 5, ...Array(15).fill(4)]);
@@ -358,6 +364,7 @@ test("Step 6 fix 3: nobody approves their own request; an organizer's card is de
   const db = await scoringDatabase();
   const { trip, cade, jake, mike, stranger } = await tripWithPlayers(db);
   const group = (await startScoring(db, cade, trip, [pair(cade, jake)])).groups[0].id;
+  await playedYesterday(db, trip);
   assert.equal((await submit(db, cade, group, cade, await fullMatchingCard(db, group, cade, jake))).status, "submitted");
   assert.equal((await submit(db, jake, group, jake, await fullMatchingCard(db, group, jake, cade))).status, "submitted");
   const own = (await request(db, cade, group, cade, [2], "Hole 2 was a 5")).request;
@@ -365,7 +372,8 @@ test("Step 6 fix 3: nobody approves their own request; an organizer's card is de
   await refused(decide(db, mike, own.id, true), /Only the trip organizer/);
   await refused(decide(db, stranger, own.id, true), /Only the trip organizer/);
   const canDecide = async (who: string) => (await call<{ requests: { id: string; canDecide: boolean }[] }>(db, "get_scorecard_corrections", who, trip, 1)).requests.find((r) => r.id === own.id)?.canDecide;
-  assert.deepEqual([await canDecide(cade), await canDecide(jake), await canDecide(mike)], [false, true, false], "the screen offers Approve / Deny only to who may decide");
+  assert.deepEqual([await canDecide(cade), await canDecide(jake)], [false, true], "the screen offers Approve / Deny only to who may decide");
+  assert.equal(await canDecide(mike), undefined, "a member who isn't the golfer, their attester or the organizer doesn't see the request at all");
   assert.equal((await decide(db, jake, own.id, true)).status, "approved", "the organizer's designated attester approves");
   assert.equal((await decide(db, jake, own.id, false)).status, "already-decided");
   assert.equal(await canDecide(jake), false, "nothing left to decide");
@@ -379,9 +387,201 @@ test("Step 6 fix 3: an attester who is no longer on the trip can't decide the or
   const db = await scoringDatabase();
   const { trip, cade, jake } = await tripWithPlayers(db);
   const group = (await startScoring(db, cade, trip, [pair(cade, jake)])).groups[0].id;
+  await playedYesterday(db, trip);
   assert.equal((await submit(db, cade, group, cade, await fullMatchingCard(db, group, cade, jake))).status, "submitted");
   const req = (await request(db, cade, group, cade, [2], "Hole 2")).request;
   await db.query("delete from golf_trip_members where golf_trip_id = $1 and profile_id = $2", [trip, jake]);
   await refused(decide(db, jake, req.id, true), /Only the trip organizer/);
   await refused(decide(db, cade, req.id, true), /decide your own/);
+});
+
+// --- Step 6 finish: history on any day, organizer management, denial reasons, snapshots, Keep mine ---
+
+type TripList = { isOrganizer: boolean; rounds: { roundNumber: number; playDate: string; played: boolean; mySubmitted: boolean; myReopened: boolean }[];
+  requests: { id: string; status: string; canDecide: boolean; golferName: string; roundNumber: number; decisionNote: string | null; decidedByName: string | null }[] };
+type Revisions = { requests: { id: string; status: string; decisionNote: string | null; decidedByName: string | null }[];
+  revisions: { golferProfileId: string; revision: number; isCurrent: boolean; reason: string | null; card: { hole: number; strokes: number; attestStrokes: number }[] }[] };
+const tripList = (db: PGlite, who: string, trip: string) => call<TripList | null>(db, "list_trip_corrections", who, trip);
+const roundHistory = (db: PGlite, who: string, trip: string) => call<Revisions | null>(db, "get_scorecard_corrections", who, trip, 1);
+const count = async (db: PGlite, sql: string, params: unknown[] = []) => (await db.query<{ n: number }>(`select count(*)::int n from ${sql}`, params)).rows[0].n;
+
+/** One full correction of Jake's hole 3 (4 → 5), approved by Cade, re-attested by Mike, resubmitted. */
+async function correctedOnce(db: PGlite, t: { trip: string; cade: string; jake: string; mike: string; group: string }) {
+  const req = (await request(db, t.jake, t.group, t.jake, [3], "Hole 3 was a 5")).request;
+  await decide(db, t.cade, req.id, true);
+  await ops(db, t.jake, t.group, t.jake, [queued(3, 5, 2)]);
+  const s = (await ops(db, t.mike, t.group, t.jake, [fresh(req.id, 3, 5, 2)])).scoring;
+  assert.equal((await submit(db, t.jake, t.group, t.jake, versionOf(s, t.jake, t.mike))).status, "submitted");
+  return req;
+}
+
+test("Gap 4: a round played days ago is corrected later; it keeps its own date, nothing is created, nothing moves to today", async () => {
+  const db = await scoringDatabase();
+  const t = await submittedCard(db);
+  await db.query("update golf_trip_rounds set play_date = current_date - 10 where golf_trip_id = $1", [t.trip]);
+  const before = { rounds: await count(db, "golf_trip_rounds"), groups: await count(db, "scoring_groups"), date: (await db.query<{ d: string }>("select play_date::text d from golf_trip_rounds where golf_trip_id = $1", [t.trip])).rows[0].d };
+  await correctedOnce(db, t);
+  assert.equal(await count(db, "golf_trip_rounds"), before.rounds, "no new round");
+  assert.equal(await count(db, "scoring_groups"), before.groups, "no new group");
+  assert.equal((await db.query<{ d: string }>("select play_date::text d from golf_trip_rounds where golf_trip_id = $1", [t.trip])).rows[0].d, before.date, "the round keeps its own date");
+  assert.equal(await count(db, "scorecard_submission_revisions r join scoring_groups g on g.id = r.group_id join golf_trip_rounds t on t.id = g.golf_trip_round_id where t.round_number = 1 and r.golfer_profile_id = $1", [t.jake]), 2,
+    "both revisions belong to round 1");
+});
+
+test("Gap 4: a round that hasn't been played (future or undated) can't be corrected", async () => {
+  const db = await scoringDatabase();
+  const t = await submittedCard(db);
+  await db.query("update golf_trip_rounds set play_date = current_date + 3 where golf_trip_id = $1", [t.trip]);
+  await refused(request(db, t.jake, t.group, t.jake, [3], "Hole 3"), /hasn.t been played/);
+  await db.query("update golf_trip_rounds set play_date = null where golf_trip_id = $1", [t.trip]);
+  await refused(request(db, t.jake, t.group, t.jake, [3], "Hole 3"), /hasn.t been played/);
+  const list = await tripList(db, t.jake, t.trip);
+  assert.deepEqual(list?.rounds.map((r) => [r.played, r.mySubmitted]), [[false, true]]);
+  await db.query("update golf_trip_rounds set play_date = current_date where golf_trip_id = $1", [t.trip]);
+  assert.equal((await request(db, t.jake, t.group, t.jake, [3], "Hole 3")).status, "requested", "today counts as played");
+});
+
+test("Gap 4: a completed trip's scorecard can still be corrected end to end", async () => {
+  const db = await scoringDatabase();
+  const t = await submittedCard(db);
+  await db.query("update golf_trips set start_date = current_date - 40, end_date = current_date - 35 where id = $1", [t.trip]);
+  await db.query("update golf_trip_rounds set play_date = current_date - 38 where golf_trip_id = $1", [t.trip]);
+  const req = await correctedOnce(db, t);
+  const list = await tripList(db, t.jake, t.trip);
+  assert.deepEqual(list?.rounds.map((r) => [r.roundNumber, r.played, r.mySubmitted, r.myReopened]), [[1, true, true, false]]);
+  assert.equal(list?.requests.find((r) => r.id === req.id)?.status, "resubmitted");
+});
+
+test("Gap 5: an organizer who isn't playing sees and decides requests across the trip", async () => {
+  const db = await scoringDatabase();
+  const t = await submittedCard(db); // Cade organizes; Jake and Mike play
+  const req = (await request(db, t.jake, t.group, t.jake, [3], "Hole 3 was a 5")).request;
+  const list = await tripList(db, t.cade, t.trip);
+  assert.equal(list?.isOrganizer, true);
+  assert.deepEqual(list?.requests.map((r) => [r.id, r.golferName, r.roundNumber, r.canDecide]), [[req.id, "Jake", 1, true]]);
+  assert.deepEqual(list?.rounds.map((r) => r.mySubmitted), [false], "he has no card of his own");
+  assert.equal((await decide(db, t.cade, req.id, true)).status, "approved");
+  assert.equal((await tripList(db, t.cade, t.trip))?.requests[0].canDecide, false, "nothing left to decide");
+  // Jake (the requester) sees his own request but may not decide it.
+  assert.deepEqual((await tripList(db, t.jake, t.trip))?.requests.map((r) => [r.status, r.canDecide]), [["approved", false]]);
+});
+
+test("Gap 5: management data stays private: strangers get nothing; other members see no reasons, snapshots or direct rows", async () => {
+  const db = await scoringDatabase();
+  const t = await submittedCard(db);
+  const ann = await profile(db, "ann");
+  await db.query("insert into golf_trip_members (golf_trip_id, profile_id, display_name, role, invitation_status) values ($1, $2, 'Ann', 'member', 'accepted')", [t.trip, ann]);
+  const req = (await request(db, t.jake, t.group, t.jake, [3], "Private reason")).request;
+  assert.equal(await tripList(db, t.stranger, t.trip), null);
+  assert.equal(await roundHistory(db, t.stranger, t.trip), null);
+  const annList = await tripList(db, ann, t.trip);
+  assert.deepEqual([annList?.isOrganizer, annList?.requests.length], [false, 0], "a member who isn't involved sees no requests");
+  assert.deepEqual([(await roundHistory(db, ann, t.trip))?.requests.length, (await roundHistory(db, ann, t.trip))?.revisions.length], [0, 0]);
+  await refused(decide(db, ann, req.id, true), /Only the trip organizer/);
+  await refused(decide(db, t.stranger, req.id, false, "No"), /Only the trip organizer/);
+  // Direct reads (Supabase client / Realtime) follow the same rule.
+  const as = async (who: string, sql: string) => {
+    await db.query(`select set_config('request.jwt.claim.sub', $1, false)`, [who]);
+    await db.query("set role authenticated");
+    try { return (await db.query(sql)).rows.length; } finally { await db.query("reset role"); }
+  };
+  assert.deepEqual([await as(ann, "select id from scorecard_correction_requests"), await as(ann, "select id from scorecard_submission_revisions")], [0, 0]);
+  assert.deepEqual([await as(t.stranger, "select id from scorecard_correction_requests"), await as(t.stranger, "select id from scorecard_submission_revisions")], [0, 0]);
+  for (const who of [t.jake, t.mike, t.cade]) assert.deepEqual([await as(who, "select id from scorecard_correction_requests"), await as(who, "select id from scorecard_submission_revisions")], [1, 1], "the golfer, attester and organizer do");
+  await assert.rejects(as(t.cade, "update scorecard_correction_requests set status = 'approved'"), "nobody writes requests directly");
+});
+
+test("Gap 6: denying needs a reason; who, when and why are kept and shown to the golfer; denied never unlocks", async () => {
+  const db = await scoringDatabase();
+  const t = await submittedCard(db);
+  const req = (await request(db, t.jake, t.group, t.jake, [3], "Hole 3")).request;
+  await refused(decide(db, t.cade, req.id, false), /Say why/);
+  await refused(decide(db, t.cade, req.id, false, "   "), /Say why/);
+  await refused(db.query("update scorecard_correction_requests set status = 'denied' where id = $1", [req.id]), /denial_reason/);
+  assert.equal((await decide(db, t.cade, req.id, false, "The card was right")).status, "denied");
+  const row = (await db.query<{ by: string; at: string | null; note: string }>("select decided_by by, decided_at at, decision_note note from scorecard_correction_requests where id = $1", [req.id])).rows[0];
+  assert.deepEqual([row.by, Boolean(row.at), row.note], [t.cade, true, "The card was right"]);
+  const mine = (await roundHistory(db, t.jake, t.trip))?.requests.find((r) => r.id === req.id);
+  assert.deepEqual([mine?.status, mine?.decisionNote, mine?.decidedByName], ["denied", "The card was right", "Cade"], "the golfer sees why, and who");
+  await refused(ops(db, t.jake, t.group, t.jake, [queued(3, 5, 1)]), /already submitted/);
+  await refused(ops(db, t.mike, t.group, t.jake, [fresh(req.id, 3, 5, 1)]), /already submitted/);
+  const again = (await request(db, t.jake, t.group, t.jake, [3], "Asking again")).request;
+  const list = await tripList(db, t.cade, t.trip);
+  assert.deepEqual(list?.requests.map((r) => [r.id, r.status]), [[again.id, "pending"], [req.id, "denied"]], "the denied request stays in the history");
+});
+
+test("Gap 7: every revision keeps its stored snapshot; the current one is marked; history is read-only", async () => {
+  const db = await scoringDatabase();
+  const t = await submittedCard(db);
+  const req = (await request(db, t.jake, t.group, t.jake, [3], "Hole 3 was a 5")).request;
+  await decide(db, t.cade, req.id, true);
+  const reopened = (await roundHistory(db, t.jake, t.trip))?.revisions.filter((r) => r.golferProfileId === t.jake);
+  assert.deepEqual(reopened?.map((r) => [r.revision, r.isCurrent]), [[1, true]], "while reopened, revision 1 is still the official card");
+  await ops(db, t.jake, t.group, t.jake, [queued(3, 5, 2)]);
+  const s = (await ops(db, t.mike, t.group, t.jake, [fresh(req.id, 3, 5, 2)])).scoring;
+  await submit(db, t.jake, t.group, t.jake, versionOf(s, t.jake, t.mike));
+  for (const viewer of [t.jake, t.mike, t.cade]) {
+    const revs = (await roundHistory(db, viewer, t.trip))?.revisions.filter((r) => r.golferProfileId === t.jake) ?? [];
+    assert.deepEqual(revs.map((r) => [r.revision, r.isCurrent, r.reason]), [[1, false, null], [2, true, "Hole 3 was a 5"]]);
+    assert.deepEqual(revs.map((r) => [r.card.length, r.card[2].strokes, r.card[2].attestStrokes]), [[18, 4, 4], [18, 5, 5]], "hole-by-hole, exactly as submitted");
+  }
+  await refused(db.query("update scorecard_submission_revisions set card = '[]'::jsonb where revision = 1"), /can.t be changed/);
+  await refused(db.query("delete from scorecard_submission_revisions where revision = 1"), /can.t be changed/);
+});
+
+test("Part 5A: an old attestation never becomes the fresh one through Keep mine; normal Keep mine still works", async () => {
+  const db = await scoringDatabase();
+  const t = await submittedCard(db);
+  // Normal Keep mine, outside any correction (Mike's own card isn't submitted): conflict, then resend on the saved version.
+  assert.equal((await ops(db, t.mike, t.group, t.mike, [queued(1, 4, 0)])).results[0].status, "applied");
+  const stale = queued(1, 6, 0); // based on "nothing saved yet": stale now
+  const conflict = (await ops(db, t.mike, t.group, t.mike, [stale])).results[0];
+  assert.equal(conflict.status, "conflict");
+  assert.equal((await ops(db, t.mike, t.group, t.mike, [{ ...stale, opId: randomUUID(), baseVersion: conflict.version }])).results[0].status, "applied");
+  // A correction: Mike's attestation queued before the approval…
+  const before = queued(3, 4, 1, false);
+  const req = (await request(db, t.jake, t.group, t.jake, [3], "Hole 3")).request;
+  await decide(db, t.cade, req.id, true);
+  assert.equal((await ops(db, t.mike, t.group, t.jake, [before])).results[0].status, "locked", "…is refused outright (no conflict to keep)");
+  // …and resending it as Keep mine would (new op id, the current version, same number) is refused too.
+  const s = await call<Scoring>(db, "get_trip_round_scoring", t.jake, t.trip, 1);
+  const keepMine = { ...before, opId: randomUUID(), baseVersion: entry(s, t.jake, t.mike, 3)!.version };
+  assert.equal((await ops(db, t.mike, t.group, t.jake, [keepMine])).results[0].status, "locked");
+  assert.equal(entry((await call<Scoring>(db, "get_trip_round_scoring", t.jake, t.trip, 1)), t.jake, t.mike, 3)?.strokes, null, "nothing was written");
+  // The golfer's own Keep mine on a reopened hole is unchanged.
+  const own = queued(3, 6, 1);
+  const ownConflict = (await ops(db, t.jake, t.group, t.jake, [own])).results[0];
+  assert.equal(ownConflict.status, "conflict");
+  assert.equal((await ops(db, t.jake, t.group, t.jake, [{ ...own, opId: randomUUID(), baseVersion: ownConflict.version }])).results[0].status, "applied");
+  // Only an explicit new attestation made for this correction counts, recorded in the database.
+  const unattested = await submit(db, t.jake, t.group, t.jake, versionOf(await call<Scoring>(db, "get_trip_round_scoring", t.jake, t.trip, 1), t.jake, t.mike));
+  assert.deepEqual([unattested.reason, unattested.holes], ["unattested", [3]]);
+  assert.equal((await ops(db, t.mike, t.group, t.jake, [fresh(req.id, 3, 6, keepMine.baseVersion)])).results[0].status, "applied");
+  assert.equal(await stampOf(db, t.jake, t.mike, 3), req.id);
+});
+
+test("the corrections file is authoritative: after earlier scoring files are re-run, running it again restores every rule", async () => {
+  const db = await scoringDatabase();
+  const t = await submittedCard(db);
+  for (const file of ["golf_trip_scoring.sql", "golf_trip_scoring_fix_groups.sql", "golf_trip_scoring_offline.sql", "golf_trip_scoring_submission.sql", "golf_trip_scoring_corrections.sql"]) await db.exec(sqlFile(file));
+  const req = (await request(db, t.jake, t.group, t.jake, [3], "Hole 3")).request;
+  await decide(db, t.cade, req.id, true);
+  assert.deepEqual((await ops(db, t.jake, t.group, t.jake, [queued(5, 3, 1)])).results.map((r) => r.status), ["locked"]);
+  assert.deepEqual((await ops(db, t.mike, t.group, t.jake, [queued(3, 4, 2, false)])).results.map((r) => r.status), ["locked"]);
+  await refused(call(db, "save_hole_scores", t.jake, t.group, t.jake, now(), [{ hole: 3, strokes: 6 }]), /being corrected/);
+  const s = await call<Scoring>(db, "get_trip_round_scoring", t.jake, t.trip, 1);
+  assert.equal((await submit(db, t.jake, t.group, t.jake, versionOf(s, t.jake, t.mike))).reason, "unattested");
+});
+
+test("Part 5A: an id from an earlier correction doesn't count for the next one", async () => {
+  const db = await scoringDatabase();
+  const t = await submittedCard(db);
+  const first = await correctedOnce(db, t);
+  const second = (await request(db, t.jake, t.group, t.jake, [3], "Hole 3 again")).request;
+  await decide(db, t.cade, second.id, true);
+  const s = await call<Scoring>(db, "get_trip_round_scoring", t.jake, t.trip, 1);
+  const base = entry(s, t.jake, t.mike, 3)!.version;
+  assert.equal((await ops(db, t.mike, t.group, t.jake, [fresh(first.id, 3, 5, base)])).results[0].status, "locked");
+  assert.equal((await ops(db, t.mike, t.group, t.jake, [fresh(second.id, 3, 5, base)])).results[0].status, "applied");
+  assert.equal(await stampOf(db, t.jake, t.mike, 3), second.id);
 });

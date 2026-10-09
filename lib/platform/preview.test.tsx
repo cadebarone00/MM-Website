@@ -58,7 +58,7 @@ test("strangers, players and other tournaments' owners can't preview; The Maroon
     const otherOwner = await profile(db, "other", { approved: true });
     await createTournament(db, otherOwner, { ...quick, name: "Other Cup", slug: "other-cup" });
     const tid = (await db.query<{ id: string }>("select tournament_id id from tournament_editions where id = $1", [edition])).rows[0].id;
-    await db.query("insert into tournament_members(tournament_id, profile_id, role) values ($1, $2, 'player')", [tid, player]);
+    await db.query("insert into tournament_players(tournament_id, display_name, profile_id) values ($1, 'Player', $2)", [tid, player]); // a claimed tournament player
     for (const who of [stranger, player, otherOwner]) {
       await assert.rejects(preview(db, who, edition), (e: { code?: string }) => e.code === "42501");
     }

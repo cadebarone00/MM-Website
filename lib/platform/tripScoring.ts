@@ -154,7 +154,9 @@ export function latestGate() {
 export const scoresVerified = ({ connected, unsaved, saving }: { connected: boolean; unsaved: boolean; saving: number }) => connected && !unsaved && saving === 0;
 
 /** One queued op as the API receives it (Step 4 offline scoring). */
-export interface HoleOpInput { opId: string; baseVersion: number; supersedes: string[]; clientUpdatedAt: string; entry: HoleEntryInput }
+export interface HoleOpInput { opId: string; baseVersion: number; supersedes: string[]; clientUpdatedAt: string; entry: HoleEntryInput;
+  /** Step 6: an attester's entry made for this open correction request (the server checks it). */
+  correctionRequestId?: string }
 
 /**
  * POST body with queued ops → checked. `expectedProfileId` is who the phone queued them as: the route refuses them when
@@ -168,12 +170,14 @@ export function holeOpsFromBody(body: unknown):
     if (!isObject(o) || typeof o.opId !== "string" || !UUID.test(o.opId) || !intIn(o.baseVersion, 0, 1_000_000)) return { ok: false, error: "Invalid scoring request." };
     if (!Array.isArray(o.supersedes) || o.supersedes.length > 20 || o.supersedes.some((id) => typeof id !== "string" || !UUID.test(id))) return { ok: false, error: "Invalid scoring request." };
     if (typeof o.clientUpdatedAt !== "string" || Number.isNaN(Date.parse(o.clientUpdatedAt))) return { ok: false, error: "Invalid scoring request." };
+    if (o.correctionRequestId !== undefined && (typeof o.correctionRequestId !== "string" || !UUID.test(o.correctionRequestId))) return { ok: false, error: "Invalid scoring request." };
   }
   // The entries go through the same checks as a direct save.
   const entries = holeEntriesFromBody({ groupId: body.groupId, scoredProfileId: body.scoredProfileId, clientUpdatedAt: new Date(0).toISOString(), entries: ops.map((o) => (o as Record<string, unknown>).entry) });
   if (!entries.ok) return entries;
   return { ok: true, groupId: entries.groupId, scoredProfileId: entries.scoredProfileId, expectedProfileId: body.expectedProfileId,
-    ops: ops.map((o, i) => { const op = o as Record<string, unknown>; return { opId: op.opId as string, baseVersion: op.baseVersion as number, supersedes: op.supersedes as string[], clientUpdatedAt: op.clientUpdatedAt as string, entry: entries.entries[i] }; }) };
+    ops: ops.map((o, i) => { const op = o as Record<string, unknown>; return { opId: op.opId as string, baseVersion: op.baseVersion as number, supersedes: op.supersedes as string[], clientUpdatedAt: op.clientUpdatedAt as string, entry: entries.entries[i],
+      ...(typeof op.correctionRequestId === "string" ? { correctionRequestId: op.correctionRequestId } : {}) }; }) };
 }
 
 export interface OpResultJson { opId: string; status: "applied" | "duplicate" | "conflict" | "locked"; version: number; server?: HoleEntryInput }

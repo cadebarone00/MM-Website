@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { SavedGolfTripHome } from "@/components/platform/SavedGolfTripHome";
 import { golfTripUrl, savedTripAsDraft } from "@/lib/platform/golfTripCreate";
 import { getGolfTrip, getMyGolfTripFlights } from "@/lib/platform/golfTripsServer";
-import { getScorecardCorrections, loadLiveTripScoring } from "@/lib/platform/tripScoringServer";
+import { getScorecardCorrections, loadLiveTripScoring, loadPlayedTripRound } from "@/lib/platform/tripScoringServer";
 import { flightSummary } from "@/lib/platform/golfTripFlights";
 import { getTripWeather } from "@/lib/platform/weather/weatherService";
 import type { TripWeather } from "@/lib/platform/weather/types";
@@ -16,8 +16,10 @@ export const metadata: Metadata = { title: "Golf Trip | The Maroon" };
  * Members only: a stranger sees the same "not found" as a trip that doesn't exist.
  * `view.viewer` says whether the signed-in person is the organizer or a member, for UI that needs it.
  */
-export default async function SavedGolfTripPage({ params }: { params: Promise<{ tripId: string }> }) {
+export default async function SavedGolfTripPage({ params, searchParams }: { params: Promise<{ tripId: string }>; searchParams: Promise<{ round?: string }> }) {
   const { tripId } = await params;
+  // ?round=<n>: a round already played (opened from Trip Settings → Corrections), read-only unless a correction reopens it.
+  const askedRound = Number((await searchParams).round);
   const view = await getGolfTrip(tripId);
   if (view.status === "signed-out") redirect("/login");
   if (view.status === "not-found") notFound();
@@ -34,7 +36,7 @@ export default async function SavedGolfTripPage({ params }: { params: Promise<{ 
 
   // Scoring: today's round, its playing groups and this golfer's saved scores (none when no round is today or
   // golf_trip_scoring.sql isn't installed yet; the page loads either way).
-  const live = await loadLiveTripScoring(view.trip);
+  const live = Number.isInteger(askedRound) && askedRound >= 1 ? await loadPlayedTripRound(view.trip, askedRound) : await loadLiveTripScoring(view.trip);
   // Corrections + submission history for the same round (none until golf_trip_scoring_corrections.sql is installed).
   const corrections = live.status === "ok" ? await getScorecardCorrections(live.profileId, tripId, live.scoring.roundNumber) : null;
   const scoring = live.status === "ok" ? { tripId, profileId: live.profileId, scoring: live.scoring, corrections } : undefined;

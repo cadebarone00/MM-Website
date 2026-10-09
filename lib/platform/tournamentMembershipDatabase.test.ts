@@ -22,7 +22,7 @@ async function cup(db: PGlite, owner: string, visibility: "public" | "private" =
 /** What claiming does (the invite flow): the golfer's profile on their tournament player. */
 const claim = (db: PGlite, player: string, who: string) => db.query("update tournament_players set profile_id = $2, claimed_at = now() where id = $1", [player, who]);
 const canView = (db: PGlite, tournament: string, who: string | null) => one<boolean>(db, "select can_view_tournament($1, $2) as r", [tournament, who]);
-const managed = async (db: PGlite, who: string) => ((await one<{ slug: string }[]>(db, "select list_managed_editions($1) as r", [who])) ?? []).map((t) => t.slug);
+const managed = async (db: PGlite, who: string) => ((await one<{ setup: { tournament: { slug: string } } }[]>(db, "select list_managed_editions($1) as r", [who])) ?? []).map((t) => t.setup.tournament.slug);
 const playing = async (db: PGlite, who: string) => ((await one<{ slug: string }[]>(db, "select list_my_active_editions($1) as r", [who])) ?? []).map((t) => t.slug);
 const feed = (db: PGlite, who: string | null) => one<{ viewer: { canSeePlayersOnly: boolean; role: string | null } }>(db, "select get_tournament_activity('texas-cup', 2027, $1, 30) as r", [who]);
 
@@ -115,4 +115,22 @@ test("the public site still shows no profile ids, emails or account ids", async 
   const site = JSON.stringify(await one(db, "select get_public_tournament_site('texas-cup', 2027, null) as r"));
   assert.match(site, /Ann Lee/);
   for (const secret of ["ann@secret.example", golfer, owner, c.ann]) assert.equal(site.includes(secret), false, secret);
+});
+
+test("existing 'player' memberships are tidied: redundant ones go, the rest become viewers; nothing else changes", async () => {
+  const db = await database();
+  const owner = await profile(db, "owner", { approved: true });
+  const c = await cup(db, owner);
+  const [golfer, fan] = [await profile(db, "golfer"), await profile(db, "fan")];
+  await claim(db, c.ann, golfer);
+  // A database from before: 'player' was allowed, and the invite flow wrote it.
+  await db.exec("alter table tournament_members drop constraint tournament_members_role_check");
+  await db.query("insert into tournament_members (tournament_id, profile_id, role) values ($1, $2, 'player'), ($1, $3, 'player')", [c.tournament, golfer, fan]);
+  const { sqlFile } = await import("./testDatabase.ts");
+  await db.exec(sqlFile("tournament_player_identity.sql"));
+  const roles = Object.fromEntries((await db.query<{ profile_id: string; role: string }>("select profile_id, role from tournament_members where tournament_id = $1", [c.tournament])).rows.map((r) => [r.profile_id, r.role]));
+  assert.deepEqual(roles, { [owner]: "owner", [fan]: "viewer" }, "golfer's row was redundant (they're a player); fan keeps access as a viewer");
+  assert.equal(await canView(db, c.tournament, golfer), true);
+  assert.equal(await canView(db, c.tournament, fan), true);
+  assert.equal(await one(db, "select profile_id as r from tournament_players where id = $1", [c.ann]), golfer);
 });

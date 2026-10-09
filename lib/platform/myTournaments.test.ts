@@ -14,8 +14,10 @@ async function raw(db: PGlite, who: string) {
 const myTournaments = async (db: PGlite, who: string) => summarizeManagedEditions(await raw(db, who));
 const tournamentId = async (db: PGlite, edition: string) =>
   (await db.query<{ id: string }>("select tournament_id id from tournament_editions where id = $1", [edition])).rows[0].id;
-const addMember = async (db: PGlite, edition: string, who: string, role: string) =>
-  db.query("insert into tournament_members(tournament_id, profile_id, role) values ($1, $2, $3)", [await tournamentId(db, edition), who, role]);
+/** Access roles go in tournament_members; "player" means a claimed tournament player (playing isn't a role). */
+const addMember = async (db: PGlite, edition: string, who: string, role: string) => role === "player"
+  ? db.query("insert into tournament_players(tournament_id, display_name, profile_id) values ($1, 'Player', $2)", [await tournamentId(db, edition), who])
+  : db.query("insert into tournament_members(tournament_id, profile_id, role) values ($1, $2, $3)", [await tournamentId(db, edition), who, role]);
 
 test("owners and organizers see exactly the tournaments they manage; players and strangers see none", async () => {
   const db = await database();

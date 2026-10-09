@@ -1,0 +1,32 @@
+/* Momentum: an 80px strip, edge to edge in the maroon head, no box. Always 80px, whatever it shows. */
+.momentum{box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;width:100%;height:80px;padding:0 16px;color:#fbf8f1;text-align:left;scroll-margin-top:24px}
+.momentum > *{margin:0}
+
+/* Team Draft: title row, then the countdown with Draft Room. */
+.draft{display:grid;gap:8px}
+.draftTop{display:flex;align-items:center;gap:7px;min-width:0;height:18px}
+.draftTitle{flex:none;font:700 15px/1 var(--font-spectral),Georgia,serif;color:#fff}
+.draftWhen{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:rgba(251,248,241,.7);font:500 12px/1 var(--font-barlow),sans-serif}
+.edit{flex:none;color:#dcc495;font:700 12px/1 var(--font-barlow),sans-serif;text-decoration:none}
+.edit:focus-visible,.room:focus-visible{outline:2px solid #fbf8f1;outline-offset:2px}
+
+.draftBottom{display:flex;align-items:center;gap:8px;height:42px}
+.countdown{flex:1;display:flex;align-items:flex-start;min-width:0}
+.unitWrap{display:flex;align-items:flex-start}
+.unit{display:grid;justify-items:center;gap:3px;min-width:30px}
+.digits{color:#dcc495;font:700 22px/1 var(--font-barlow),sans-serif;font-variant-numeric:tabular-nums}
+.label{color:rgba(251,248,241,.55);font:600 8px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.colon{padding:0 2px;color:rgba(220,196,149,.55);font:700 19px/1 var(--font-barlow),sans-serif}
+.room{flex:none;height:34px;padding:0 18px;border:1.5px solid #dcc495;border-radius:999px;background:rgba(220,196,149,.12);color:#dcc495;font:700 12px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+
+/* Highlights: headline over its line, one at a time; several rotate every 10 s (fade in, hold, fade out). */
+.highlight{display:grid;gap:5px}
+.highlightTitle{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:700 20px/1.1 var(--font-spectral),Georgia,serif;color:#fff}
+.highlightDetail{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#dcc495;font:600 14px/1.2 var(--font-barlow),sans-serif}
+.rotating{animation:momentumTurn 10s linear both}
+@keyframes momentumTurn{0%{opacity:0}5%{opacity:1}95%{opacity:1}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.rotating{animation:none}}
+
+@media(max-width:374px){.momentum{padding:0 12px}.unit{min-width:26px}.digits{font-size:19px}.colon{font-size:16px}.room{padding:0 12px}}
+/* Notifications panel: the Team Draft item above the round alerts, with a rule under it. */
+.notice{gap:12px;padding-bottom:20px;margin-bottom:8px;border-bottom:1px solid rgba(220,196,149,.3)}

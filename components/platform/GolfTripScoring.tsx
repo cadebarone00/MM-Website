@@ -7,6 +7,7 @@ import { LockKeyhole, LockKeyholeOpen, Minus, Plus } from "lucide-react";
 import { useScoringView } from "@/lib/platform/scoringViewPreference";
 import type { ScoreEdit, ScoredCard, ShotResult } from "@/lib/platform/playerRounds";
 import { sheetCardFromScoring, type SheetCard } from "@/lib/platform/liveCards";
+import { holeEditable, type RevisionHole } from "@/lib/platform/tripCorrections";
 import { GolfGpsScreen } from "./gps/GolfGpsScreen";
 import { SubmitCelebration } from "./SubmitCelebration";
 import styles from "./GolfTripScoring.module.css";
@@ -29,7 +30,7 @@ const HOLD_SLOP = 10;
  * submitting locks the card until the page reloads. Submit & Save calls `onSubmit` with the card (the dev preview saves it
  * as the player's round); `submittedCard` reopens a saved round locked.
  */
-export function GolfTripScoring({ par, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard, attesteeStrokes, scoresVerified = true, syncStatus, conflicts, onResolveConflict, resetCard, corrections, onRequestCorrection, onDecideCorrection }: {
+export function GolfTripScoring({ par, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard, attesteeStrokes, scoresVerified = true, syncStatus, conflicts, onResolveConflict, resetCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen }: {
   par?: number[]; initialHoles?: (number | null)[]; playerName?: string; opponentCardMatches?: boolean; courseName?: string;
   /** Dev preview only: a finished card (opponent scores, putts, fairways, greens) to start from. */
   prefill?: { opponentHoles: (number | null)[]; putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[];
@@ -62,10 +63,15 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   /** A new token puts this card on screen (e.g. after choosing the saved score in a conflict). */
   resetCard?: { token: number; card: { holes: (number | null)[]; opponentHoles: (number | null)[]; putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[]; penalties: { fairway: boolean; green: boolean }[] } };
   /** Saved trips (Step 6): my latest correction request, my submission history, and (organizer) pending requests to decide. */
-  corrections?: { myRequest: { status: "pending" | "approved" | "denied" | "resubmitted"; holes: number[]; decisionNote: string | null } | null;
-    revisions: { revision: number; submittedAt: string; submittedByName: string }[]; pending: { id: string; name: string; holes: number[]; reason: string }[] };
+  corrections?: { myRequest: { status: "pending" | "approved" | "denied" | "resubmitted"; holes: number[]; decisionNote: string | null; decidedByName: string | null } | null;
+    revisions: { revision: number; submittedAt: string; submittedByName: string; reason: string | null; isCurrent: boolean; card: RevisionHole[] }[];
+    pending: { id: string; name: string; holes: number[]; reason: string }[] };
   onRequestCorrection?: (holes: number[], reason: string) => Promise<{ ok: boolean; message?: string }>;
-  onDecideCorrection?: (requestId: string, approve: boolean) => Promise<{ ok: boolean; message?: string }>;
+  /** Approve, or deny with a reason (required). */
+  onDecideCorrection?: (requestId: string, approve: boolean, note: string | null) => Promise<{ ok: boolean; message?: string }>;
+  /** Saved trips (Step 6): holes reopened by an approved correction. own = my card (only these can change); attest = the
+   *  golfer I attest (only these of my column can change, even after I've submitted my own card). Null = none. */
+  correctionOpen?: { own: number[] | null; attest: number[] | null };
   savedCard?: { holes: (number | null)[]; opponentHoles: (number | null)[]; putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[]; penalties: { fairway: boolean; green: boolean }[] };
 }) {
   const [open, updateOpen] = useState(false);
@@ -272,7 +278,11 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   const thru = played.length;
   const toPar = par ? played.reduce((sum, x) => sum + x.h - (x.p ?? 0), 0) : null;
 
+  // Step 6: with an open correction only its holes can change (the database refuses the rest too).
+  const ownEditable = holeEditable(correctionOpen?.own, submitted, current + 1);
+  const attestEditable = holeEditable(correctionOpen?.attest, submitted, current + 1);
   function step(delta: number) {
+   if (!ownEditable) return;
    setHoles((current_) => current_.map((h, i) => {
      if (i !== current) return h;
      const start = h ?? holePar ?? 4; // untouched scores display par until edited or submitted
@@ -281,6 +291,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   }
 
   function stepCompetitor(delta: number) {
+   if (!attestEditable) return;
    setHolesCompetitor((current_) => current_.map((h, i) => {
      if (i !== current) return h;
      const start = h ?? holePar ?? 4;
@@ -314,7 +325,9 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   const meMatches = fromAttester ? sameAs(submittedHoles, fromAttester) : otherCard ? sameAs(submittedHoles, otherCard.me) : opponentCardMatches;
   const opponentMatches = attesteeStrokes ? sameAs(submittedOpponentHoles, parFilled(attesteeStrokes)) : otherCard ? sameAs(submittedOpponentHoles, otherCard.opponent) : opponentCardMatches;
   // Only my own score has to match my attester's (owner decision): the column I keep for someone else is shown, never blocks me.
-  const readyToSubmit = complete && meMatches && scoresVerified && (syncStatus === undefined || syncStatus === "synced");
+  // Step 6: corrected holes whose old attestation was cleared and my attester hasn't entered again yet.
+  const awaitingAttest = (correctionOpen?.own ?? []).filter((h) => (attestedStrokes?.[h - 1] ?? null) === null);
+  const readyToSubmit = complete && meMatches && awaitingAttest.length === 0 && scoresVerified && (syncStatus === undefined || syncStatus === "synced");
   // Saved trips: one status line. Verified only when everything of mine is synced and my attester agrees on all 18.
   const statusLabel = syncStatus === undefined ? null : submitted ? "Submitted" : syncStatus === "conflict" ? "Conflict"
     : syncStatus === "pending" ? "Saved locally · Pending sync" : complete && meMatches && scoresVerified ? "Verified" : "Synced";
@@ -326,7 +339,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   useEffect(() => { reportCard.current = onCardChange; }, [onCardChange]);
   useEffect(() => { if (liveKey) reportCard.current?.(JSON.parse(liveKey) as SheetCard); }, [liveKey]);
   // The second phone: once I've entered anything for the player I attest, my column (untouched holes = par) goes to their card.
-  const attestKey = !submitted && holesCompetitor.some((h) => h !== null) ? JSON.stringify({ strokes: submittedOpponentHoles, entered: holesCompetitor.map((h) => h !== null) }) : null;
+  const attestKey = (!submitted || correctionOpen?.attest) && holesCompetitor.some((h) => h !== null) ? JSON.stringify({ strokes: submittedOpponentHoles, entered: holesCompetitor.map((h) => h !== null) }) : null;
   const reportAttest = useRef(onAttestChange);
   useEffect(() => { reportAttest.current = onAttestChange; }, [onAttestChange]);
   useEffect(() => { if (!attestKey) return; const sent = JSON.parse(attestKey) as { strokes: (number | null)[]; entered: boolean[] }; reportAttest.current?.(sent.strokes, sent.entered); }, [attestKey]);
@@ -394,6 +407,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
           </div>}
           {statusLabel && <p className={styles.syncStatus} data-state={statusLabel.split(" ")[0].toLowerCase()} role="status">{statusLabel === "Submitted" && <LockKeyhole size={11} aria-hidden="true" />} {statusLabel}</p>}
           {submitError && <p className={styles.syncStatus} data-state="conflict" role="alert">{submitError}</p>}
+          <CorrectionNotes open={correctionOpen} awaiting={awaitingAttest} attesteeName={opponentName} />
           {corrections && <CorrectionsPanel corrections={corrections} submitted={submitted} requesting={requesting} busy={correctionBusy} error={correctionError}
             holes={correctionHoles} reason={correctionReason} canRequest={Boolean(onRequestCorrection)} onDecide={onDecideCorrection}
             onOpen={() => { setRequesting(true); setCorrectionError(null); }} onCancel={() => setRequesting(false)} onSend={() => void sendCorrection()}
@@ -414,19 +428,22 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
       </div>
 
       <div ref={chipsRef} className={styles.holes} role="group" aria-label="Holes">
-        {holes.map((h, i) => <button key={i} type="button" aria-pressed={i === current} aria-label={`Hole ${i + 1}${h !== null ? `, ${h} strokes` : ""}`}
+        {holes.map((h, i) => { const correctable = Boolean(correctionOpen?.own?.includes(i + 1) || correctionOpen?.attest?.includes(i + 1));
+          return <button key={i} type="button" aria-pressed={i === current} aria-label={`Hole ${i + 1}${h !== null ? `, ${h} strokes` : ""}${correctable ? ", can be corrected" : ""}`}
+          data-correctable={correctable || undefined}
           className={`${styles.holeChip} ${h !== null ? styles.holeChipFilled : ""} ${i === current ? styles.holeChipActive : ""}`} onClick={() => setCurrent(i)}>
           <span className={styles.holeChipNumber}>{i + 1}</span>
-        </button>)}
+        </button>; })}
       </div>
+      <CorrectionNotes open={correctionOpen} awaiting={awaitingAttest} attesteeName={opponentName} />
 
       </div>
 
       <div className={styles.stepperWrap}>
 
         <div className={styles.scoreSplit}>
-          <ScoreCard label="My Score" strokes={strokes} holePar={holePar} step={step} disabled={submitted} compact />
-          <ScoreCard label={`${opponentName} Score`} strokes={holesCompetitor[current]} holePar={holePar} step={stepCompetitor} disabled={submitted} compact />
+          <ScoreCard label="My Score" strokes={strokes} holePar={holePar} step={step} disabled={!ownEditable} compact />
+          <ScoreCard label={`${opponentName} Score`} strokes={holesCompetitor[current]} holePar={holePar} step={stepCompetitor} disabled={!attestEditable} compact />
         </div>
       </div>
 
@@ -434,24 +451,24 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
       <div className={styles.puttsWrap} aria-label="Putts">
         <span className={styles.puttsLabel}>Putts</span>
         <div className={styles.putts} role="group" aria-label="Putts selector">
-          {[0, 1, 2, 3, 4].map((value) => <button key={value} type="button" className={styles.puttOption} aria-pressed={putts[current] === value} disabled={submitted}
+          {[0, 1, 2, 3, 4].map((value) => <button key={value} type="button" className={styles.puttOption} aria-pressed={putts[current] === value} disabled={!ownEditable}
             onClick={() => setForHole(setPutts, value)}>{value === 4 ? "4+" : value}</button>)}
         </div>
       </div>
 
       <div className={styles.compassRow} aria-label="Shot direction">
         {/* No fairway to hit on a par 3. */}
-        <Compass label="FWY" value={fairways[current]} onChange={(value) => setForHole(setFairways, value)} disabled={submitted || holePar === 3} />
+        <Compass label="FWY" value={fairways[current]} onChange={(value) => setForHole(setFairways, value)} disabled={!ownEditable || holePar === 3} />
         <div className={styles.penaltyColumn} role="group" aria-label="Penalties">
           <span className={styles.compassLabel}>PEN</span>
           <div className={styles.penaltyButtons}>
             {([['fairway', 'FWY'], ['green', 'GRN']] as const).map(([key, label]) => <button key={key} type="button"
               className={`${styles.compassCenter} ${styles.penaltyButton}`} aria-label={`${label} penalty`} aria-pressed={penalties[current][key]}
-              disabled={submitted || (key === "fairway" && holePar === 3)}
+              disabled={!ownEditable || (key === "fairway" && holePar === 3)}
               onClick={() => setPenalties((values) => values.map((value, i) => i === current ? { ...value, [key]: !value[key] } : value))}>{label}</button>)}
           </div>
         </div>
-        <Compass label="GIR" value={greens[current]} onChange={(value) => setForHole(setGreens, value)} disabled={submitted} />
+        <Compass label="GIR" value={greens[current]} onChange={(value) => setForHole(setGreens, value)} disabled={!ownEditable} />
       </div>
       </>}
 
@@ -495,16 +512,24 @@ const when = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "sh
  */
 function CorrectionsPanel({ corrections, submitted, requesting, busy, error, holes, reason, canRequest, onDecide, onOpen, onCancel, onSend, onToggleHole, onReason }: {
   corrections: NonNullable<Parameters<typeof GolfTripScoring>[0]["corrections"]>; submitted: boolean; requesting: boolean; busy: boolean; error: string | null;
-  holes: number[]; reason: string; canRequest: boolean; onDecide?: (id: string, approve: boolean) => Promise<{ ok: boolean; message?: string }>;
+  holes: number[]; reason: string; canRequest: boolean; onDecide?: (id: string, approve: boolean, note: string | null) => Promise<{ ok: boolean; message?: string }>;
   onOpen: () => void; onCancel: () => void; onSend: () => void; onToggleHole: (hole: number) => void; onReason: (reason: string) => void;
 }) {
   const [deciding, setDeciding] = useState<string | null>(null);
   const [decideError, setDecideError] = useState<string | null>(null);
   const mine = corrections.myRequest;
   const open = mine?.status === "pending" || mine?.status === "approved";
+  async function decide(id: string, approve: boolean, note: string | null) {
+    if (!onDecide) return false;
+    setDeciding(id); setDecideError(null);
+    const answer = await onDecide(id, approve, note).catch(() => ({ ok: false, message: "Couldn't save the decision." }));
+    setDeciding(null);
+    if (!answer.ok) setDecideError(answer.message ?? "Couldn't save the decision.");
+    return answer.ok;
+  }
   return <div className={styles.corrections}>
     {mine && <p className={styles.syncStatus} data-state={mine.status === "denied" ? "conflict" : mine.status === "pending" ? "saved" : "verified"} role="status">
-      {CORRECTION_LABEL[mine.status]} · hole {mine.holes.join(", ")}{mine.status === "denied" && mine.decisionNote ? ` · ${mine.decisionNote}` : ""}</p>}
+      {CORRECTION_LABEL[mine.status]} · hole {mine.holes.join(", ")}{mine.status === "denied" && mine.decisionNote ? ` · ${mine.decidedByName ? `${mine.decidedByName}: ` : ""}${mine.decisionNote}` : ""}</p>}
     {submitted && canRequest && !open && !requesting && <button type="button" className={styles.correctionButton} onClick={onOpen}>Request Correction</button>}
     {requesting && <div className={styles.correctionForm} role="group" aria-label="Request a correction">
       <span className={styles.correctionLabel}>Holes to correct</span>
@@ -519,18 +544,70 @@ function CorrectionsPanel({ corrections, submitted, requesting, busy, error, hol
     </div>}
     {corrections.pending.length > 0 && onDecide && <div className={styles.correctionForm} role="group" aria-label="Correction requests">
       <span className={styles.correctionLabel}>Correction requests</span>
-      {corrections.pending.map((p) => <div key={p.id} className={styles.conflictRow}>
-        <span>{p.name} · hole {p.holes.join(", ")} · {p.reason}</span>
-        {(["Approve", "Deny"] as const).map((label) => <button key={label} type="button" disabled={deciding === p.id}
-          onClick={async () => { setDeciding(p.id); setDecideError(null); const answer = await onDecide(p.id, label === "Approve").catch(() => ({ ok: false, message: "Couldn't save the decision." })); setDeciding(null); if (!answer.ok) setDecideError(answer.message ?? "Couldn't save the decision."); }}>{label}</button>)}
-      </div>)}
+      {corrections.pending.map((p) => <DecideRow key={p.id} label={`${p.name} · hole ${p.holes.join(", ")} · ${p.reason}`} busy={deciding === p.id}
+        onApprove={() => decide(p.id, true, null)} onDeny={(note) => decide(p.id, false, note)} />)}
       {decideError && <p className={styles.syncStatus} data-state="conflict" role="alert">{decideError}</p>}
     </div>}
-    {corrections.revisions.length > 0 && <details className={styles.history}>
-      <summary>Submission history</summary>
-      <ol>{corrections.revisions.map((r) => <li key={r.revision}>Revision {r.revision} · {r.submittedByName} · {when(r.submittedAt)}</li>)}</ol>
-    </details>}
+    {corrections.revisions.length > 0 && <RevisionHistory revisions={corrections.revisions} />}
   </div>;
+}
+
+/** One request to decide: Approve, or Deny, which first asks why (a reason is required, here and in the database). */
+export function DecideRow({ label, busy, onApprove, onDeny }: { label: string; busy: boolean; onApprove: () => Promise<boolean | undefined>; onDeny: (note: string) => Promise<boolean | undefined> }) {
+  const [denying, setDenying] = useState(false);
+  const [note, setNote] = useState("");
+  return <div className={styles.decideRow}>
+    <div className={styles.conflictRow}>
+      <span>{label}</span>
+      <button type="button" disabled={busy} onClick={() => void onApprove()}>Approve</button>
+      <button type="button" disabled={busy} aria-expanded={denying} onClick={() => setDenying((v) => !v)}>Deny</button>
+    </div>
+    {denying && <div className={styles.correctionForm} role="group" aria-label="Deny the request">
+      <textarea aria-label="Why the request is denied" placeholder="Why is it denied? (required, shown to the golfer)" maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} />
+      <div className={styles.correctionActions}>
+        <button type="button" onClick={() => { setDenying(false); setNote(""); }}>Cancel</button>
+        <button type="button" disabled={busy || note.trim().length === 0} onClick={async () => { if (await onDeny(note.trim())) { setDenying(false); setNote(""); } }}>{busy ? "Saving…" : "Deny request"}</button>
+      </div>
+    </div>}
+  </div>;
+}
+
+/** Read-only submission history: each revision with its stored hole-by-hole snapshot (never recalculated). */
+export function RevisionHistory({ revisions }: { revisions: { revision: number; submittedAt: string; submittedByName: string; reason: string | null; isCurrent: boolean; card: RevisionHole[] }[] }) {
+  return <details className={styles.history}>
+    <summary>Submission history</summary>
+    <ol>{[...revisions].sort((a, b) => b.revision - a.revision).map((r) => <li key={r.revision} data-current={r.isCurrent || undefined}>
+      <details>
+        <summary>Submission {r.revision} · {r.isCurrent ? "Current official" : "Superseded"} · {r.submittedByName} · {when(r.submittedAt)}{r.reason ? ` · Correction: ${r.reason}` : ""}</summary>
+        <RevisionSnapshot card={r.card} />
+      </details>
+    </li>)}</ol>
+  </details>;
+}
+
+function RevisionSnapshot({ card }: { card: RevisionHole[] }) {
+  const mark = (value: string | null) => value && value in DIRECTION_MARK ? DIRECTION_MARK[value as Direction] : "—";
+  const rows = [...card].sort((a, b) => a.hole - b.hole);
+  const total = (pick: (h: RevisionHole) => number | null) => sumOf(rows.map(pick));
+  return <table className={`${styles.scorecardTable} ${styles.snapshotTable}`} aria-label="Submitted scores">
+    <thead><tr>{["Hole", "Score", "PUT", "FWY", "GRN", "Attest"].map((h) => <th key={h} scope="col" className={styles.section}>{h}</th>)}</tr></thead>
+    <tbody>
+      {rows.map((h) => <tr key={h.hole}><th scope="row" className={styles.section}>{h.hole}</th><td className={`${styles.section} ${styles.myScore}`}>{h.strokes ?? "—"}</td>
+        <td className={styles.section}>{h.putts ?? "—"}</td><td className={styles.section}>{mark(h.fairway)}</td><td className={styles.section}>{mark(h.green)}</td>
+        <td className={styles.section}>{h.attestStrokes ?? "—"}</td></tr>)}
+      <tr className={styles.totalRow}><th scope="row" className={styles.section}>Total</th><td className={`${styles.section} ${styles.myScore}`}>{total((h) => h.strokes)}</td>
+        <td className={styles.section}>{total((h) => h.putts)}</td><td className={styles.section} /><td className={styles.section} /><td className={styles.section}>{total((h) => h.attestStrokes)}</td></tr>
+    </tbody>
+  </table>;
+}
+
+/** Step 6: which holes an approved correction reopened, and what the golfer is still waiting for. */
+function CorrectionNotes({ open, awaiting, attesteeName }: { open?: { own: number[] | null; attest: number[] | null }; awaiting: number[]; attesteeName: string }) {
+  if (!open?.own && !open?.attest) return null;
+  return <>
+    {open.own && <p className={styles.syncStatus} data-state="saved" role="status">Correction open · only hole {open.own.join(", ")} can change{awaiting.length ? ` · waiting for your attester to re-attest hole ${awaiting.join(", ")}` : ""}</p>}
+    {open.attest && <p className={styles.syncStatus} data-state="saved" role="status">Re-attest {attesteeName}: enter hole {open.attest.join(", ")} again</p>}
+  </>;
 }
 
 type Direction = ShotResult;
