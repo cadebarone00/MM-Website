@@ -23,7 +23,7 @@ export const MIGRATIONS = [
   "session_count_lock.sql", "session_tee_times.sql", "team_winner_future.sql", "total_birdies_future.sql", "tournament_timezone.sql",
   "website_section_settings.sql", "team_winner_auto_pricing.sql", "platform_foundation.sql", "platform_editions.sql",
   "platform_create_tournament.sql", "platform_dashboard.sql", "platform_public_site.sql", "platform_access_requests.sql", "platform_past_editions.sql", "platform_active_editions.sql", "platform_activity.sql",
-  "golf_trips.sql", "golf_trip_flights.sql", "profile_identity.sql", "player_rounds.sql", "golf_trip_invitations.sql", "tournament_player_identity.sql",
+  "golf_trips.sql", "golf_trip_flights.sql", "profile_identity.sql", "player_rounds.sql", "golf_trip_invitations.sql", "tournament_player_identity.sql", "platform_next_edition.sql",
 ];
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;

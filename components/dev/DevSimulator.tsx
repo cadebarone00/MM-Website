@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, MonitorSmartphone, RotateCcw, Shuffle, SlidersHorizontal } from "lucide-react";
-import { DEFAULT_SIMULATOR_STATE, parseGpsState, parseSimulatorLocation, simulatorPageForLocation, SIMULATOR_CHANNEL, SIMULATOR_DEVICES, type SimulatorConfig, type SimulatorGpsCommand, type SimulatorGpsState, type SimulatorPage, type SimulatorSource, type SimulatorState } from "@/lib/dev/simulator";
+import { COMPETITION_SETUPS, type CompetitionSetup, DEFAULT_SIMULATOR_STATE, parseGpsState, parseSimulatorLocation, simulatorPageForLocation, SIMULATOR_CHANNEL, SIMULATOR_DEVICES, type SimulatorConfig, type SimulatorGpsCommand, type SimulatorGpsState, type SimulatorPage, type SimulatorSource, type SimulatorState } from "@/lib/dev/simulator";
 import { applySimulatorSafeAreas } from "./simulatorSafeAreas";
 import { resetJustCreated } from "@/lib/dev/justCreatedStore";
 import { HapticsVisualizer } from "./HapticsVisualizer";
@@ -222,7 +222,15 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
         <div className={styles.panelHeading}>Conditionals</div>
         <div className={styles.cards}>{selectedPage.conditions?.length ? selectedPage.conditions.map(condition => condition.playerCount ? <section key={condition.id} className={styles.controlSection}><label>{condition.label}<input type="number" aria-label={condition.label} min={1} max={64} placeholder="From data source" value={state.playerCount ?? ""} onChange={event => updateState("playerCount", event.target.value)} /></label></section> : <Fragment key={condition.id}><button className={styles.card} type="button" aria-pressed={condition.source ? source === condition.source : Object.entries(condition.state ?? {}).every(([key, value]) => state[key as keyof SimulatorState] === value)} onClick={() => { if (condition.source) setSource(condition.source); if (condition.state) setState(current => ({ ...current, ...condition.state })); }}>{condition.label}</button>
           {/* Just created: wipe everything set up on it and go back to the fresh, just-onboarded trip. */}
-          {condition.source === "empty" && <button type="button" className={styles.resetJustCreated} onClick={() => { resetJustCreated(); setSource("empty"); }}><RotateCcw size={13} /> Reset Just created</button>}</Fragment>) : <p>No conditional states</p>}</div>
+          {condition.source === "empty" && <button type="button" className={styles.resetJustCreated} onClick={() => { resetJustCreated(); setSource("empty"); }}><RotateCcw size={13} /> Reset Just created</button>}
+          {/* Busy data: how many golfers, and which competitions the trip has. */}
+          {condition.source === "busy" && source === "busy" && <section className={`${styles.controlSection} ${styles.busyControls}`} aria-label="Busy data controls">
+            <label>Players<input type="number" aria-label="Busy players" min={1} max={64} placeholder="32" value={state.playerCount ?? ""} onChange={event => updateState("playerCount", event.target.value)} /></label>
+            <label>Competition<select aria-label="Busy competition" value={state.competitionSetup ?? ""} onChange={event => setState(current => ({ ...current, competitionSetup: (event.target.value || undefined) as CompetitionSetup | undefined }))}>
+              <option value="">From data source</option>
+              {COMPETITION_SETUPS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+            </select></label>
+          </section>}</Fragment>) : <p>No conditional states</p>}</div>
         {/* Mock data only: a whole new made-up trip that reads like a real one (people, place, dates, courses, formats, scores,
             tee times, dinners, travel, rules) from a new seed. */}
         {source === "mock" && !!selectedPage.conditions?.length && <button type="button" onClick={() => setState(current => ({ ...current, seed: 1 + Math.floor(Math.random() * 2 ** 31) }))}><Shuffle size={13} /> Randomize data</button>}

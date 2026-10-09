@@ -192,3 +192,18 @@ test("live / between round states give every round its matches: past ones final,
   }
   assert.deepEqual(at("live"), live);
 });
+
+test("busy data: full made-up names that never repeat, and the competition setups' types", async () => {
+  const { busyNames } = await import("./golfTripSimulatorData");
+  const { competitionSetupTypes, parseSimulatorConfig, DEFAULT_SIMULATOR_STATE } = await import("./simulator");
+  const names = busyNames(64);
+  assert.equal(new Set(names).size, 64);
+  assert.ok(names.every(name => /^[A-Z][a-z]+ [A-Z][a-z]+$/.test(name)));
+  assert.deepEqual(busyNames(3), busyNames(3), "the same every time");
+  assert.deepEqual(competitionSetupTypes("none"), { individual: null, team: null });
+  assert.deepEqual(competitionSetupTypes("individual"), { individual: "Stroke Play", team: null });
+  assert.deepEqual(competitionSetupTypes("team"), { individual: null, team: "2 Teams" });
+  assert.deepEqual(competitionSetupTypes("both"), { individual: "Stroke Play", team: "2 Teams" });
+  assert.ok(parseSimulatorConfig({ source: "busy", state: { ...DEFAULT_SIMULATOR_STATE, competitionSetup: "team" } }));
+  assert.equal(parseSimulatorConfig({ source: "busy", state: { ...DEFAULT_SIMULATOR_STATE, competitionSetup: "bogus" } }), null);
+});

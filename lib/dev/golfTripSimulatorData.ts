@@ -233,6 +233,14 @@ const FIRST = ["Alex", "Jordan", "Taylor", "Casey", "Riley", "Morgan", "Jamie", 
 const LAST = ["Brooks", "Carter", "Diaz", "Ellis", "Foster", "Grant", "Hayes", "Irwin", "Jensen", "Keller", "Lopez", "Monroe", "Nash", "Ortiz", "Price", "Quinn", "Reyes", "Shaw", "Turner", "Vance"];
 
 const pickFrom = <T,>(random: () => number, list: readonly T[]) => list[Math.floor(random() * list.length)];
+
+/** Busy data's golfers: made-up full names, the same every time and never repeated (up to 400). */
+export function busyNames(count: number): string[] {
+  return Array.from({ length: count }, (_, index) => {
+    const round = Math.floor(index / FIRST.length);
+    return `${FIRST[index % FIRST.length]} ${LAST[(index + 3 * round) % LAST.length]}`;
+  });
+}
 /** A clock time between `from` and `to` ("HH:MM", inclusive) on a `step`-minute grid. */
 const timeBetween = (random: () => number, from: string, to: string, step = 10) => {
   const minutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
@@ -342,8 +350,10 @@ export function simulatorTripData(mock: SimulatorTripData, maroon: SimulatorTrip
     };
   }
   if (source === "mock" && state.seed) base = randomMockTrip(mock, state.seed, state.playerCount);
-  if (source === "busy") base = { ...mock, preview: defaultBusyDraft(), previewMatch: populatedMatch(mock.previewMatch ?? GOLF_MATCH_PREVIEW, state.playerCount ?? 32) };
+  if (source === "busy") base = { ...mock, preview: defaultBusyDraft(), previewMatch: populatedMatch(mock.previewMatch ?? GOLF_MATCH_PREVIEW, state.playerCount ?? 32, busyNames(state.playerCount ?? 32)) };
   const preview = { ...base.preview };
+  // Busy data with a competition setup picked: a competitive trip (the setup decides which competitions it has).
+  if (source === "busy" && state.competitionSetup) preview.includesTournament = "yes";
   if (state.competition !== "source") preview.includesTournament = state.competition;
   if (state.playerCount !== null) preview.playerCount = String(state.playerCount);
   let previewMatch = base.previewMatch;

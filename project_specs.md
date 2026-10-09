@@ -2375,3 +2375,17 @@ Builds **on top of** the Player rounds plan above. Nothing above changes: `Playe
 - **Migration** (`tournament_player_identity.sql`): existing 'player' member rows are deleted when that profile is a tournament player there (redundant), otherwise changed to 'viewer' (same access). Then the role check is tightened.
 - **App:** `TournamentRole` is `viewer | organizer | owner`. Tests that faked players with member rows now use claimed tournament players.
 - **SQL to re-run (owner, dev first):** `platform_public_site.sql`, `platform_activity.sql` (changed in place), then `profile_identity.sql` → `tournament_player_identity.sql`.
+
+### Round: Start next year — new edition of a recurring platform tournament (2026-10-09, built; `platform_next_edition.sql` not run)
+
+- **Entry point:** the Studio tournament bar has **Start next year** (organizer pages only; hidden for The Maroon, whose years come from the Admin Center). It opens `/tournaments/<t>/<year>/next`:
+  - year (suggested = latest + 1; a year that exists is flagged and the button disabled), optional start / end dates;
+  - **Keep the team names** (default on when the year has teams: empty teams, no captains);
+  - **Returning players** checklist with **nobody ticked**. **Select <year>'s roster** ticks this year's golfers, and **Clear** unticks all.
+  - **Start <year>** lands on the new edition's dashboard, where new golfers are added with Add new player.
+- **SQL `supabase/platform_next_edition.sql`:**
+  - `get_next_edition_draft` and `create_next_edition` (owners / organizers / platform admins; not legacy).
+  - The new edition copies settings (scoring and plan), round numbers / days / labels / formats, destination and timezone. It never copies courses, dates, start times, roster teams, handicaps or captains.
+  - Roster rows are only for the picked tournament players (must belong to this tournament).
+  - Duplicate years are refused ("This tournament already has 2028"). The source edition is only read. All or nothing.
+- **Code:** `lib/platform/nextEdition.ts` (input checks, draft reader), `dashboardServer.ts` (`getNextEditionDraft`, `createNextEdition`), `POST …/next-edition`, `components/tournament-dashboard/NextEditionForm.tsx`.

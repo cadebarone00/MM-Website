@@ -7,7 +7,7 @@ import { useSimulator, useSimulatorNavigationReporter } from "@/components/dev/S
 import { readJustCreated, readJustCreatedAll, useJustCreatedReady, useJustCreatedVersion, writeJustCreated } from "@/lib/dev/justCreatedStore";
 import { applyJustCreatedSetup, type JustCreatedSetup } from "@/lib/dev/justCreatedTrip";
 import { simulatorNow, simulatorRoundLive, simulatorScorecard, simulatorTripData, type SimulatorTripData as TripData } from "@/lib/dev/golfTripSimulatorData";
-import { DEFAULT_SIMULATOR_STATE } from "@/lib/dev/simulator";
+import { DEFAULT_SIMULATOR_STATE, competitionSetupTypes } from "@/lib/dev/simulator";
 import { dispatchDevRounds, useDevPlayerRounds } from "@/components/dev/useDevPlayerRounds";
 import { DEFAULT_DEV_ACCOUNT } from "@/lib/dev/devAccounts";
 import { DEV_TRIP_ID, devRoundMeta, devTripRound, devTripRoundId } from "@/lib/dev/devPlayerRounds";
@@ -47,6 +47,8 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
   }, [mock, maroon, configKey, justCreated, ready, savedVersion]);
   // Player rounds (dev): Submit & Save saves this round once to the signed-in mock account; reopening shows it locked.
   const viewAs = config.state.viewAs ?? DEFAULT_DEV_ACCOUNT;
+  // Busy data: the competition setup picked under its card in the simulator.
+  const busySetup = config.source === "busy" ? config.state.competitionSetup : undefined;
   const devRounds = useDevPlayerRounds();
   const match = data.previewMatch;
   const saved = match ? devRounds.rounds.find((r) => r.id === playerRoundId("trip", DEV_TRIP_ID, devTripRoundId(match), viewAs)) : undefined;
@@ -83,7 +85,7 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
       <div aria-live="polite" style={{ marginTop: 4, opacity: 0.7 }}>{view === "mock" || fictional ? "Mock Data" : "Real Tournament Data"}</div>
     </div>}
     <GolfTripHome key={justCreated ? `just-created-${savedVersion}` : config.source} {...data} now={tripNow} competitionKey={config.source}
-      savedCompetitionType={justCreated ? readJustCreated("localCompetitionType") : undefined}
+      savedCompetitionType={justCreated ? readJustCreated("localCompetitionType") : busySetup ? competitionSetupTypes(busySetup) : undefined}
       savedTeamColors={justCreated ? readJustCreated("teamColors") : undefined}
       organizer={viewAs === DEFAULT_DEV_ACCOUNT}
       savedTeamDraft={justCreated ? { teamType: readJustCreated<{ team: string | null }>("localCompetitionType")?.team ?? null, selection: readJustCreated("teamSelection") ?? null,

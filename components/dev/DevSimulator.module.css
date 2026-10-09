@@ -57,3 +57,6 @@
 /* Small reset link under the "Just created" card. */
 .resetJustCreated{display:inline-flex;align-items:center;gap:5px;align-self:flex-start;margin:-2px 0 6px 4px;padding:4px 6px;border:0;background:transparent;color:#7b1e2e;font:600 12px/1.2 inherit;cursor:pointer}
 .resetJustCreated:hover{text-decoration:underline}
+/* Busy data's own controls, tucked under its card. */
+.busyControls{margin:-2px 0 6px 4px;padding-bottom:12px}
+.busyControls label:first-child{margin-top:0}

@@ -4,7 +4,7 @@ import { useSimulator } from "@/components/dev/SimulatorBridge";
 import { ALLOWED_PRESET, GolfTripSettingsPreview } from "@/components/platform/GolfTripSettingsPreview";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import { simulatorRoundLive, simulatorTripData, type SimulatorTripData } from "@/lib/dev/golfTripSimulatorData";
-import { DEFAULT_SIMULATOR_STATE } from "@/lib/dev/simulator";
+import { competitionSetupTypes, DEFAULT_SIMULATOR_STATE } from "@/lib/dev/simulator";
 import { useJustCreatedVersion } from "@/lib/dev/justCreatedStore";
 import { adaptTournamentToPastTrip } from "@/lib/platform/tournamentToGolfTrip";
 import { pinehurst2024 } from "@/lib/data/2024-pinehurst";
@@ -45,11 +45,12 @@ export function SettingsDataPreview({ mock, maroon }: { mock: SimulatorTripData;
   // The real trip's competition as it actually was (old tournament data): an individual stroke-play leaderboard and two
   // teams, Maroon and White, by roster (players list = Maroon roster, then White), already submitted.
   const maroonCount = (preview?.rosterMaroon ?? "").split(",").filter(slug => slug.trim()).length;
+  const busySetup = source === "busy" ? config.state.competitionSetup : undefined;
   const competitionSetup = source === "maroon" && roster.length ? {
     types: { individual: "Stroke Play", team: "2 Teams" }, teamNames: ["Maroon", "White"],
     teams: [roster.slice(0, maroonCount).map((_, index) => index), roster.slice(maroonCount).map((_, index) => maroonCount + index)],
-  } : undefined;
+  } : busySetup ? { types: competitionSetupTypes(busySetup), teamNames: [], teams: [] } : undefined;
   // A different data choice starts the settings fresh (its days, rounds and players).
-  return <GolfTripSettingsPreview key={`${source}-${seed ?? 0}-${source === "empty" ? savedVersion : 0}`} dataKey={source} tripName={preview?.tripName || "Your Golf Trip"} playerCount={Number(preview?.playerCount) || 0}
+  return <GolfTripSettingsPreview key={`${source}-${seed ?? 0}-${source === "empty" ? savedVersion : 0}-${busySetup ?? ""}-${config.state.playerCount ?? ""}`} dataKey={source} tripName={preview?.tripName || "Your Golf Trip"} playerCount={Number(preview?.playerCount) || 0}
     players={players} tripRounds={tripRounds} pastTrips={pastTrips} houseRules={houseRules} competitionSetup={competitionSetup} />;
 }

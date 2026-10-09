@@ -166,6 +166,40 @@ try {
   const annRows = (await fake.db.query("select e.season_year from edition_roster r join tournament_editions e on e.id = r.edition_id where r.tournament_player_id = (select id from tournament_players where profile_id = $1) order by 1", [golfer.id])).rows;
   assert.deepEqual(annRows.map((r) => r.season_year), [2027, 2028]);
 
+  // 8. Start next year from 2027: suggested 2029 (2028 exists), nobody ticked, "Select 2027's roster", untick Cy → only Ann.
+  const before2027 = (await fake.db.query("select tournament_player_id, team_id, handicap from edition_roster where edition_id = $1 order by 1", [e2027])).rows;
+  await org.goto(`${app}/tournaments/texas-cup/2027`);
+  await org.getByRole("link", { name: "Start next year" }).click();
+  await org.waitForURL(`${app}/tournaments/texas-cup/2027/next`);
+  const form = org.getByRole("form", { name: "Start next year" });
+  assert.equal(await form.getByLabel("Year").inputValue(), "2029");
+  assert.equal(await form.getByRole("checkbox", { checked: true }).count(), 0, "nobody is enrolled automatically");
+  await form.getByLabel("Year").fill("2028");
+  await form.getByText("This tournament already has 2028").waitFor();
+  assert.equal(await form.getByRole("button", { name: /^Start 2028/ }).isDisabled(), true);
+  assert.equal((await call(org, `${api}/next-edition`, "POST", { seasonYear: 2028, playerIds: [] })).status, 409, "the database refuses a duplicate year");
+  await form.getByLabel("Year").fill("2029");
+  await form.getByRole("button", { name: "Select 2027's roster" }).click();
+  await form.getByRole("checkbox", { name: "Cy Park" }).uncheck();
+  assert.ok((await org.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) <= 0, "no sideways scroll at phone width");
+  await form.getByRole("button", { name: "Start 2029" }).click();
+  await org.waitForURL(`${app}/tournaments/texas-cup/2029`, { timeout: 20000 });
+  const e2029 = (await fake.db.query("select id from tournament_editions where tournament_id = $1 and season_year = 2029", [t])).rows[0].id;
+  const r2029 = (await fake.db.query("select p.display_name, r.team_id, r.handicap from edition_roster r join tournament_players p on p.id = r.tournament_player_id where r.edition_id = $1", [e2029])).rows;
+  assert.deepEqual(r2029, [{ display_name: "Ann Lee", team_id: null, handicap: null }], "only the picked golfer, with a fresh row");
+  assert.equal(await playerCount(), 2, "returning players are the same tournament players");
+  assert.deepEqual((await fake.db.query("select tournament_player_id, team_id, handicap from edition_roster where edition_id = $1 order by 1", [e2027])).rows, before2027, "2027 unchanged");
+  // New golfers are added on the new year's dashboard as usual.
+  await org.getByRole("button", { name: "Edit players" }).click();
+  await org.getByRole("button", { name: "+ Add new player" }).click();
+  await org.locator("form").locator("input[maxlength='80']").last().fill("Eve Ward");
+  await org.getByRole("button", { name: "Save", exact: true }).click();
+  await org.getByText("Players saved.").waitFor();
+  assert.equal(await playerCount(), 3);
+  // Players can't start a year.
+  assert.equal((await g.goto(`${app}/tournaments/texas-cup/2027/next`)).status(), 404);
+  assert.equal((await call(g, `${api}/next-edition`, "POST", { seasonYear: 2030, playerIds: [] })).status, 404);
+
   assert.deepEqual(fake.unsupported, []);
   console.log("tournament invite browser check: PASS");
 } catch (error) {

@@ -1,6 +1,8 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { requireTournamentRole } from "./tournamentAccess.ts";
 import { parseSetup, type TournamentSetup } from "./setup.ts";
+import { dashboardFailure } from "./dashboardApi.ts";
+import { nextEditionDraftFromJson, type NextEditionDraft, type NextEditionInput } from "./nextEdition.ts";
 
 /**
  * Server-only access to one tournament edition's setup. Every call first
@@ -46,4 +48,31 @@ export function saveSection(edition: ManagedEdition, section: string, data: Reco
 
 export function setPublished(edition: ManagedEdition, publish: boolean) {
   return rpc("set_edition_published", { p_profile: edition.profileId, p_edition: edition.editionId, p_publish: publish });
+}
+
+// --- Start next year (supabase/platform_next_edition.sql) ------------------------------------------------------
+
+/** The Start next year page's data for the edition it starts from. Null when unavailable (or The Maroon). */
+export async function getNextEditionDraft(edition: ManagedEdition): Promise<NextEditionDraft | null> {
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("get_next_edition_draft", { p_profile: edition.profileId, p_from_edition: edition.editionId });
+  if (error) {
+    if (error.code !== "PGRST202" && error.code !== "42883") console.error("get_next_edition_draft failed:", error.message);
+    return null;
+  }
+  return nextEditionDraftFromJson(data);
+}
+
+/** Creates the new edition (same tournament, chosen returning players). The database checks everything again. */
+export async function createNextEdition(edition: ManagedEdition, input: NextEditionInput):
+  Promise<{ ok: true; seasonYear: number; tournamentSlug: string } | { ok: false; status: number; error: string }> {
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("create_next_edition", { p_profile: edition.profileId, p_from_edition: edition.editionId, p_input: input });
+  if (error) {
+    // "This tournament already has 2028" is worth showing as written.
+    if (error.code === "23505") return { ok: false, status: 409, error: error.message || "That year already exists." };
+    return { ok: false, ...dashboardFailure(error) };
+  }
+  const reply = data as { seasonYear?: unknown; tournamentSlug?: unknown } | null;
+  return typeof reply?.seasonYear === "number" && typeof reply.tournamentSlug === "string"
+    ? { ok: true, seasonYear: reply.seasonYear, tournamentSlug: reply.tournamentSlug }
+    : { ok: false, status: 500, error: "Could not start the new year. Try again." };
 }

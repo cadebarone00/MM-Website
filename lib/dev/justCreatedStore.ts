@@ -1,5 +1,7 @@
 "use client";
 
+import { readDevSetup, writeDevSetup } from "./tripSetupStore";
+
 import { useState, useSyncExternalStore, type Dispatch, type SetStateAction } from "react";
 
 /**
@@ -86,14 +88,15 @@ export function resetJustCreated(): void {
  * useState that, when `persist` is on (the Just created trip), starts from the saved value and saves every change.
  * Off: exactly useState.
  */
-export function usePersistedState<T>(persist: boolean, field: string, initial: T | (() => T)): [T, Dispatch<SetStateAction<T>>] {
+export function usePersistedState<T>(persist: boolean | string, field: string, initial: T | (() => T)): [T, Dispatch<SetStateAction<T>>] {
   const [value, setValue] = useState<T>(() => {
-    const saved = persist ? readJustCreated<T>(field) : undefined;
+    const saved = typeof persist === "string" ? readDevSetup(persist)[field] as T | undefined : persist ? readJustCreated<T>(field) : undefined;
     return saved !== undefined ? saved : typeof initial === "function" ? (initial as () => T)() : initial;
   });
   const set: Dispatch<SetStateAction<T>> = update => setValue(current => {
     const next = typeof update === "function" ? (update as (current: T) => T)(current) : update;
-    if (persist) writeJustCreated(field, next);
+    if (typeof persist === "string") writeDevSetup(persist, field, next);
+    else if (persist) writeJustCreated(field, next);
     return next;
   });
   return [value, set];

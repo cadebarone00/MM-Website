@@ -16,7 +16,7 @@ export interface StudioTournament {
   previewable: boolean;
 }
 
-type StudioPage = "home" | "create" | "setup" | "preview" | "request" | "admin";
+type StudioPage = "home" | "create" | "setup" | "preview" | "next" | "request" | "admin";
 
 /**
  * The neutral organizer studio for commercial tournament management
@@ -42,7 +42,7 @@ export function OrganizerStudioShell({ page, tournament, children }: { page: Stu
   </div>;
 }
 
-/** Current tournament + its studio navigation: Setup, Preview Website, Public Site (once published). */
+/** Current tournament + its studio navigation: Setup, Preview Website, Start next year, Public Site (once published). */
 export function StudioTournamentBar({ page, tournament }: { page: StudioPage; tournament: StudioTournament }) {
   const base = `/tournaments/${encodeURIComponent(tournament.slug)}/${tournament.year}`;
   const current = (name: StudioPage) => (page === name ? "page" : undefined);
@@ -54,6 +54,8 @@ export function StudioTournamentBar({ page, tournament }: { page: StudioPage; to
     <nav className={styles.tabs} aria-label="Tournament studio">
       <Link href={base} aria-current={current("setup")}>Setup</Link>
       {tournament.previewable && <Link href={`${base}/preview`} aria-current={current("preview")}>Preview Website</Link>}
+      {/* A new edition of this same tournament (The Maroon creates its years in the Admin Center). */}
+      {tournament.previewable && <Link href={`${base}/next`} aria-current={current("next")}>Start next year</Link>}
       {tournament.previewable && tournament.published && <a href={publicBasePath(tournament.slug, tournament.year)} target="_blank" rel="noopener">Public Site</a>}
     </nav>
   </div>;
