@@ -5,6 +5,7 @@ import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, MonitorSmartphone, RotateCcw
 import { COMPETITION_SETUPS, type CompetitionSetup, DEFAULT_SIMULATOR_STATE, parseGpsState, parseSimulatorLocation, simulatorPageForLocation, SIMULATOR_CHANNEL, SIMULATOR_DEVICES, type SimulatorConfig, type SimulatorGpsCommand, type SimulatorGpsState, type SimulatorPage, type SimulatorSource, type SimulatorState } from "@/lib/dev/simulator";
 import { applySimulatorSafeAreas } from "./simulatorSafeAreas";
 import { resetJustCreated } from "@/lib/dev/justCreatedStore";
+import { devTripScope, resetDevSetup } from "@/lib/dev/tripSetupStore";
 import { HapticsVisualizer } from "./HapticsVisualizer";
 import { DesignReview } from "./DesignReview";
 import { lightTap } from "@/lib/haptics";
@@ -223,6 +224,12 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
         <div className={styles.cards}>{selectedPage.conditions?.length ? selectedPage.conditions.map(condition => condition.playerCount ? <section key={condition.id} className={styles.controlSection}><label>{condition.label}<input type="number" aria-label={condition.label} min={1} max={64} placeholder="From data source" value={state.playerCount ?? ""} onChange={event => updateState("playerCount", event.target.value)} /></label></section> : <Fragment key={condition.id}><button className={styles.card} type="button" aria-pressed={condition.source ? source === condition.source : Object.entries(condition.state ?? {}).every(([key, value]) => state[key as keyof SimulatorState] === value)} onClick={() => { if (condition.source) setSource(condition.source); if (condition.state) setState(current => ({ ...current, ...condition.state })); }}>{condition.label}</button>
           {/* Just created: wipe everything set up on it and go back to the fresh, just-onboarded trip. */}
           {condition.source === "empty" && <button type="button" className={styles.resetJustCreated} onClick={() => { resetJustCreated(); setSource("empty"); }}><RotateCcw size={13} /> Reset Just created</button>}
+          {/* The Maroon Masters: wipe everything set up on it and start the official trip over (the app frame reloads fresh). */}
+          {condition.source === "masters" && <button type="button" className={styles.resetJustCreated} onClick={() => {
+            resetDevSetup(devTripScope({ source: "masters", state }));
+            setSource("masters");
+            try { iframe.current?.contentWindow?.location.reload(); } catch { /* the frame reloads on its next navigation */ }
+          }}><RotateCcw size={13} /> Reset The Maroon Masters</button>}
           {/* Busy data: how many golfers, and which competitions the trip has. */}
           {condition.source === "busy" && source === "busy" && <section className={`${styles.controlSection} ${styles.busyControls}`} aria-label="Busy data controls">
             <label>Players<input type="number" aria-label="Busy players" min={1} max={64} placeholder="32" value={state.playerCount ?? ""} onChange={event => updateState("playerCount", event.target.value)} /></label>

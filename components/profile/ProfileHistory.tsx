@@ -15,7 +15,7 @@ export function ProfileHistory({ trips, tournaments, teamHistory }: Pick<Profile
   const legacyYears = teamHistory.filter((entry) => entry.source === "legacy");
   return <>
     <section aria-label="Tournaments">
-      <h2 className={heading}>Tournaments</h2>
+      <h3 className={heading}>Tournaments</h3>
       {tournaments.status === "unavailable" && !legacyYears.length ? <p className={muted}>Tournaments can&apos;t be loaded right now.</p>
         : tournaments.status === "ok" && !tournaments.value.length && !legacyYears.length ? <p className={muted}>Tournaments you play in will show here.</p>
         : <ol className="mt-2">
@@ -34,7 +34,7 @@ export function ProfileHistory({ trips, tournaments, teamHistory }: Pick<Profile
         </ol>}
     </section>
     <section aria-label="Golf trips">
-      <h2 className={heading}>Golf trips</h2>
+      <h3 className={heading}>Golf trips</h3>
       {trips.status === "unavailable" ? <p className={muted}>Golf trips can&apos;t be loaded right now.</p>
         : trips.status === "ok" && !trips.value.current.length && !trips.value.past.length ? <p className={muted}>Golf trips you join will show here.</p>
         : trips.status === "ok" && <ol className="mt-2">{[...trips.value.current, ...trips.value.past].map((trip) => <TripRow key={trip.href} trip={trip} past={trips.value.past.includes(trip)} />)}</ol>}

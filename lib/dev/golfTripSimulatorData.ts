@@ -193,6 +193,25 @@ export const JUST_CREATED_DRAFT: GolfTripDraft = {
   round1Course: "Caledonia Golf & Fish Club", round2Course: "True Blue Golf Club", round3Course: "Tidewater Golf Club", round4Course: "The Dunes Golf & Beach Club",
 };
 
+/**
+ * "The Maroon Masters (official)": the real trip, starting over from scratch like any new trip (owner, 2026-10-09).
+ * The 2027 event's own details (lib/data/2027-upcoming.ts: Mission Hills CC, Palm Springs, Jan 6–9 2027) and Cade Barone
+ * as organizer; everything else — players, rounds, courses, teams, travel — gets set up in the app. Past years come in
+ * later through the Trip History CSV import, not from the old app.
+ */
+export const MAROON_MASTERS_DRAFT: GolfTripDraft = {
+  yourName: "Cade Barone", yourEmail: "", tripName: "The Maroon Masters",
+  destination: "Palm Springs, CA, USA", destinationLatitude: "33.8303", destinationLongitude: "-116.5453",
+  startDate: "2027-01-06", endDate: "2027-01-09", playerCount: "", golfDays: "4", includesTournament: "yes",
+  knowsFlights: "no", knowsLodging: "no", knowsTransportation: "no",
+  day1Date: "2027-01-06", day1Rounds: "1", day2Date: "2027-01-07", day2Rounds: "1", day3Date: "2027-01-08", day3Rounds: "1", day4Date: "2027-01-09", day4Rounds: "1",
+};
+
+/** The Maroon Masters' travel: only the organizer, nothing booked. One shared object, so it reads as "unchanged". */
+export const MAROON_MASTERS_TRAVEL: NonNullable<SimulatorTripData["travel"]> = {
+  meId: "organizer", members: [{ id: "organizer", name: MAROON_MASTERS_DRAFT.yourName, role: "organizer" }], items: [], participants: [],
+};
+
 /** Adds days to "YYYY-MM-DD". */
 const shiftDay = (day: string, days: number) => {
   const date = new Date(`${day}T12:00:00Z`);
@@ -350,6 +369,17 @@ export function simulatorTripData(mock: SimulatorTripData, maroon: SimulatorTrip
       travel: JUST_CREATED_TRAVEL,
     };
   }
+  if (source === "masters") {
+    // The official trip from scratch: no scores, matches or players yet (only Cade), no rounds' courses picked.
+    const side = { winPct: 0, fairwayPct: "—", greenPct: "—", putts: "—", score: "—" };
+    const draft = MAROON_MASTERS_DRAFT;
+    base = {
+      preview: { ...draft },
+      previewMatch: { ...(mock.previewMatch ?? GOLF_MATCH_PREVIEW), course: "Course TBD", roundDate: draft.day1Date, matches: [], leaderboard: [], round: 1, roundCount: 4, sides: [{ ...side, name: "Team A" }, { ...side, name: "Team B" }] },
+      flights: { summary: flightSummary([], draft.startDate), href: null },
+      travel: MAROON_MASTERS_TRAVEL,
+    };
+  }
   if (source === "mock" && state.seed) base = randomMockTrip(mock, state.seed, state.playerCount);
   if (source === "busy") base = { ...mock, preview: defaultBusyDraft(), previewMatch: populatedMatch(mock.previewMatch ?? GOLF_MATCH_PREVIEW, state.playerCount ?? 32, busyNames(state.playerCount ?? 32)) };
   const preview = { ...base.preview };
@@ -428,12 +458,12 @@ function roundSlot(preview: GolfTripDraft, round: number): { date: string; slot:
  * Upcoming boxes, Mom notes and Itinerary agree with the Scoring sheet. Morning rounds 8 AM–12:30, afternoon 1–5:30.
  * Pre-tournament: 6 PM the night before arrival. Live: mid-round. End of round: just after it ends. Between rounds: 15 minutes
  * after round 3 ends. Complete: noon the day after the trip. "From data source": mid-round when a round is live; otherwise
- * (and for the real Maroon / empty data) undefined = the device's real clock.
+ * (and for the real Maroon / empty / Maroon Masters data) undefined = the device's real clock.
  */
 export function simulatorNow(config: SimulatorConfig, data: SimulatorTripData, roundLive: boolean): string | undefined {
   const preview = data.preview ?? {};
   const status = config.state.roundStatus;
-  if (status === "source" && (!roundLive || config.source === "maroon" || config.source === "empty")) return undefined;
+  if (status === "source" && (!roundLive || config.source === "maroon" || config.source === "empty" || config.source === "masters")) return undefined;
   if (status === "scheduled") return preview.startDate ? `${shiftDay(preview.startDate, -1)}T18:00:00` : undefined;
   if (status === "complete") return preview.endDate ? `${shiftDay(preview.endDate, 1)}T12:00:00` : undefined;
   const round = status === "between" ? 3 : data.previewMatch?.round ?? 1;

@@ -56,7 +56,7 @@ try {
   // login, so the login API reply is stubbed; the session cookie stands in for the one it would set.
   const login = await phone(player);
   await login.route("**/api/auth/login", (route) => route.fulfill({ json: { ok: true } }));
-  await login.goto(`${app}/login`);
+  await login.goto(`${app}/login/email`);
   await login.locator("#login-identity").fill("cadeuser@example.test");
   await login.locator("#login-password").fill("not-checked");
   await login.locator('button[type="submit"]').click();
@@ -66,7 +66,8 @@ try {
   const p = await phone(player);
   await p.goto(`${app}/profile`);
   await p.getByRole("heading", { level: 2 }).waitFor();
-  assert.equal(await p.getByRole("heading", { level: 1 }).innerText(), "Profile");
+  // The site top bar (with the "Profile" title) is hidden at phone width; it is still on the page.
+  assert.deepEqual(await p.locator("h1").allTextContents(), ["Profile"]);
   assert.match(await p.getByRole("heading", { level: 2 }).innerText(), /Cade Barone/);
   assert.match(await p.locator("body").innerText(), /Member since/i);
   assert.equal(await p.getByRole("link", { name: "Edit my bio" }).getAttribute("href"), "/portal/profile");

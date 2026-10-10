@@ -21,6 +21,12 @@ export function writeDevSetup(scope:string,field:string,value:unknown) {
  // Subscribers read the new immutable snapshot after the current React event/update.
  queueMicrotask(()=>listeners.get(scope)?.forEach(listener=>listener()));
 }
+/** Wipes everything saved for one dev trip (e.g. Reset The Maroon Masters). */
+export function resetDevSetup(scope:string) {
+ cache.set(scope,{});
+ try{localStorage.removeItem(PREFIX+scope);}catch{/* nothing saved to clear */}
+ queueMicrotask(()=>listeners.get(scope)?.forEach(listener=>listener()));
+}
 export function useDevSetup(scope:string) {
  return useSyncExternalStore(listener=>{
   const set=listeners.get(scope)??new Set();listeners.set(scope,set);set.add(listener);

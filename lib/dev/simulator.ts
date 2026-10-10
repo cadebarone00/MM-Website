@@ -21,6 +21,7 @@ export const SIMULATOR_SOURCES = [
   { id: "mock", label: "Mock golf trip data" },
   { id: "empty", label: "Just created (onboarding finished)" },
   { id: "busy", label: "Populated / busy-state data" },
+  { id: "masters", label: "The Maroon Masters (official)" },
 ] as const;
 export type SimulatorSource = (typeof SIMULATOR_SOURCES)[number]["id"];
 export type SimulatorConditional = { id: string; label: string; source?: SimulatorSource; state?: Partial<SimulatorState>; playerCount?: boolean };

@@ -2504,3 +2504,18 @@ Builds **on top of** the Player rounds plan above. Nothing above changes: `Playe
 **Not in this change:** push notifications, invite links, guests, invites on Profile.
 
 **Done means:** host invites 2 accounts, starts; one joins late and enters their own scores on their phone; host sees them live and can fix a score; the other declines and disappears from the round; each joined player submits their own card and it shows in their Rounds; tests for the database rules (who can read / write what); TypeScript, lint and tests pass.
+
+### Round: Profile read model — one viewer + subject loader for /profile (2026-10-09, built; `profile_read_model.sql` not run)
+
+- **What:** `/profile` loads one typed read model for a **subject** profile as seen by a **viewer** (the same person on `/profile` today). It's data and architecture only: no redesign, no public profile routes.
+- **Sections** (`lib/profile/profileReadModel.ts`, pure; `profileReadModelServer.ts` wires Supabase; `myProfileServer.ts` = session → viewer = subject):
+  - **identity:** name, username, initials, member since, photo / bio (legacy players), can-edit-bio, Rounds privacy. No email, no ids, no team.
+  - **rounds:** `list_profile_rounds` (every modern source, privacy in the database).
+  - **trips:** accepted, profile-backed `golf_trip_members` only (pending / declined aren't history), split current / past.
+  - **tournaments:** `tournament_players` → `edition_roster` only, with that edition's team and captaincy. Access roles (`tournament_members`) aren't playing history; an organizer who also plays counts. Rows for legacy-adapter tournaments are left to the legacy section.
+  - **teamHistory:** per year, derived from editions plus legacy Maroon archive years. No `profile.team`.
+  - **legacy:** LEGACY COMPATIBILITY via `profiles.player_slug` (bio / photo, archive years with team, handicap history, latest scorecard). Loaded only for the owner when a slug exists; never the identity; a failure leaves it null.
+- **SQL `supabase/profile_read_model.sql`:** `get_profile_history(p_viewer, p_subject)` (service role). Only the subject gets trips / tournaments for now; anyone else gets `restricted`. Display fields only.
+- **Cleanup:** the 4 unused tournament-list lookups and the unused career stats / teams loading are gone; `maroonYearsPlayed`, `teamsPlayed` and `mergeCompleted` were removed (superseded). `careerStats` is kept, unloaded, for the coming Stats design.
+- **States:** each section is `ok` / `unavailable` (e.g. SQL not run) / `hidden` (not for this viewer). A brand-new golfer sees "will show here" lines; a login without a profile row sees "Finish setting up your profile".
+- **Done =** read-model unit + DB tests, the updated `/profile` browser test, TypeScript, lint and the full suite.

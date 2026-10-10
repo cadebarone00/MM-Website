@@ -43,10 +43,10 @@ export function SettingsDataPreview({ mock, maroon }: { mock: SimulatorTripData;
   })) : [];
   // History and house rules from the chosen trip: the real trip's past Maroon tournaments (old code) and no house rules
   // (the old data has none); a just-created trip has neither; the mock / busy trips keep their samples.
-  const pastTrips = source === "maroon" ? [danzante2025, pinehurst2024].map(adaptTournamentToPastTrip) : source === "empty" ? [] : undefined;
+  const pastTrips = source === "maroon" ? [danzante2025, pinehurst2024].map(adaptTournamentToPastTrip) : source === "empty" || source === "masters" ? [] : undefined;
   // Randomized mock data also shuffles which house rules the trip has (same seed → same rules).
   const seed = config.state.seed;
-  const houseRules = source === "maroon" || source === "empty" ? [] : source === "mock" && seed ? ALLOWED_PRESET.filter((_, index) => ((seed >>> index) & 1) === 1) : undefined;
+  const houseRules = source === "maroon" || source === "empty" || source === "masters" ? [] : source === "mock" && seed ? ALLOWED_PRESET.filter((_, index) => ((seed >>> index) & 1) === 1) : undefined;
   // The real trip's competition as it actually was (old tournament data): an individual stroke-play leaderboard and two
   // teams, Maroon and White, by roster (players list = Maroon roster, then White), already submitted.
   const maroonCount = (preview?.rosterMaroon ?? "").split(",").filter(slug => slug.trim()).length;
