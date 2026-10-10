@@ -3,7 +3,8 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import type { ProfileId } from "@/lib/profile/profileIdentity";
 import type { PlayerRound } from "./playerRounds.ts";
 import { DEFAULT_ROUNDS_VISIBILITY, type RoundsVisibility } from "./playerRoundsPrivacy.ts";
-import { playerRoundPayload, playerRoundsFromJson } from "./playerRoundsRows.ts";
+import { getCurrentProfile } from "@/lib/profile/currentProfile";
+import { playerRoundPayload, playerRoundsFromJson, profileHistoryFromJson, type ProfileHistoryRound } from "./playerRoundsRows.ts";
 
 /**
  * Server-side player rounds (supabase/player_rounds.sql). Rounds belong to the golfer's PROFILE (player_rounds.profile_id
@@ -20,6 +21,24 @@ export async function getMyPlayerRounds(profileId: ProfileId): Promise<MyPlayerR
     return { status: "unavailable" };
   }
   return { status: "ok", rounds: playerRoundsFromJson(data) };
+}
+
+export type ProfileHistory = { status: "ok"; isOwner: boolean; rounds: ProfileHistoryRound[] } | { status: "unavailable" };
+
+/**
+ * Profile → Rounds for any golfer: every modern finished round (trip, tournament, personal, past trip) as the person
+ * looking may see it. The viewer always comes from the session (signed out = a visitor). Privacy is decided in the
+ * database (list_profile_rounds); the rounds never carry a profile id.
+ */
+export async function getProfileRounds(ownerId: ProfileId): Promise<ProfileHistory> {
+  const current = await getCurrentProfile();
+  const viewerId = current.status === "ok" ? current.profile.profileId : null;
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("list_profile_rounds", { p_viewer: viewerId, p_owner: ownerId });
+  if (error) {
+    console.error("list_profile_rounds failed:", error.message);
+    return { status: "unavailable" };
+  }
+  return { status: "ok", isOwner: viewerId === ownerId, rounds: profileHistoryFromJson(data) };
 }
 
 /** Saves once; a second save of the same round returns the one already saved. Throws if the database refuses it. */

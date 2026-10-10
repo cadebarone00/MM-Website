@@ -2389,3 +2389,22 @@ Builds **on top of** the Player rounds plan above. Nothing above changes: `Playe
   - Roster rows are only for the picked tournament players (must belong to this tournament).
   - Duplicate years are refused ("This tournament already has 2028"). The source edition is only read. All or nothing.
 - **Code:** `lib/platform/nextEdition.ts` (input checks, draft reader), `dashboardServer.ts` (`getNextEditionDraft`, `createNextEdition`), `POST …/next-edition`, `components/tournament-dashboard/NextEditionForm.tsx`.
+
+### Round: Rounds follow profile identity — source identity + one history query (2026-10-09, built; `player_rounds.sql` changes not run)
+
+- **`player_rounds` stays the canonical finished-round history per golfer profile.** It isn't renamed or replaced, and it isn't the live-scoring engine.
+- **Source identity** (`supabase/player_rounds.sql`, additive, safe to re-run):
+  - nullable context columns `golf_trip_id`, `golf_trip_round_id`, `edition_id`, `edition_round_id`, `tournament_player_id`, `personal_round_id`, `scorecard_submission_id`, `submission_revision`, `visibility` (personal only), `removed_from_profile`, `updated_at`.
+  - **No foreign keys** on them, so history survives trip, tournament or scorecard deletion and there's no migration-order dependency on scoring files.
+  - The check `player_rounds_source_identity` ties `source_key` to the ids (`trip:<trip>:<round>`, `tournament:<edition>:<round>`, `personal:<id>`) and keeps each source to its own ids.
+  - `scorecard_submission_id` is unique where set. Course + date is never identity.
+- **`publish_player_round(profile, round + context)`:** the door the scoring side calls (service_role).
+  - It builds the key from the context and uses the same rules as `save_player_round` (shared `assert_player_round`).
+  - Results: `created` / `updated` (a higher revision rewrites the same row) / `unchanged` (a replay or older revision). If the round is refused, it raises.
+- **`list_profile_rounds(viewer, owner)` + `getProfileRounds(ownerId)`:** every modern round for a profile, privacy decided in the database.
+  - Owner: all but hidden.
+  - Others: only when the owner's Rounds is Public, and a personal round must be Public itself.
+  - A public trip or tournament never makes a round public.
+  - Others never get profile or scoring ids.
+- **Contract:** `docs/player-rounds-scoring-contract.md`. No scoring files changed. Legacy `handicap_rounds` / live / archives aren't touched.
+- **Done =** the 5 new DB tests pass (sources, duplicates, same course and day, revisions, mixed query + privacy, legacy untouched), plus TS and lint.

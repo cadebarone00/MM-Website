@@ -27,6 +27,15 @@ export interface PlayerRound {
   tripId?: string;
   tripRoundId?: string;
   historyTripId?: string;
+  /** Tournament rounds: the edition, its round and the golfer's tournament player (supabase/player_rounds.sql). */
+  editionId?: string;
+  editionRoundId?: string;
+  tournamentPlayerId?: string;
+  /** Personal ("just playing") rounds: the stable id made when the golfer started it. */
+  personalRoundId?: string;
+  /** The official card this was published from and its revision (2+ = an approved correction). */
+  scorecardSubmissionId?: string;
+  submissionRevision?: number;
   /** Where it came from, as words (e.g. the trip's name) — kept even if the trip is deleted later. */
   sourceLabel?: string;
   datePlayed: string;
@@ -60,6 +69,14 @@ export interface ScoredCard { strokes: number[]; putts: (number | null)[]; fairw
 
 /** Deterministic ids: the same profile + round always gets the same id, so a round can only be saved once. */
 export const playerRoundId = (...parts: string[]) => parts.join(":");
+
+/**
+ * The database's source keys (supabase/player_rounds.sql, player_rounds_source_identity): one real round = one key,
+ * unique per profile. Never built from course + date, so the same course twice in a day is two rounds.
+ */
+export const tripRoundSourceKey = (tripId: string, tripRoundId: string) => `trip:${tripId}:${tripRoundId}`;
+export const tournamentRoundSourceKey = (editionId: string, editionRoundId: string) => `tournament:${editionId}:${editionRoundId}`;
+export const personalRoundSourceKey = (personalRoundId: string) => `personal:${personalRoundId}`;
 
 /** Not own ball the whole way → never counts. Four-ball / best ball is own ball and does count. */
 const TEAM_FORMAT = /scramble|alternate[- ]?shot|alt[- ]?shot|foursome|shamble|greensome|chapman|pinehurst|gruesome/i;

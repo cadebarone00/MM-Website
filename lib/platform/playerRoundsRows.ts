@@ -26,15 +26,35 @@ function fromRow(row: unknown): PlayerRound | null {
   if (!id || !profileId || !datePlayed || !name || !format || total === null || !source || (row.holesPlayed !== 9 && row.holesPlayed !== 18)) return null;
   const tee = isObject(row.tee) && text(row.tee.name) ? { name: text(row.tee.name) as string, rating: num(row.tee.rating), slope: num(row.tee.slope) } : null;
   const label = text(row.sourceLabel);
+  const ids = Object.fromEntries((["tripId", "tripRoundId", "editionId", "editionRoundId", "tournamentPlayerId", "personalRoundId", "scorecardSubmissionId"] as const)
+    .flatMap((key) => text(row[key]) ? [[key, text(row[key]) as string]] : []));
+  const revision = num(row.submissionRevision);
+  const visibility = row.visibility === "public" || row.visibility === "private" ? row.visibility : null;
   return {
-    id, profileId, source, ...(label && { sourceLabel: label }), datePlayed,
+    id, profileId, source, ...ids, ...(label && { sourceLabel: label }), datePlayed,
     course: { ref: text(row.course.ref), name, place: text(row.course.place) ?? "" }, tee,
     holesPlayed: row.holesPlayed, format, holes: row.holes as PlayerRoundHole[], total,
     countsForHandicap: row.countsForHandicap === true, notCountedReason: text(row.notCountedReason), differential: num(row.differential),
     enteredBy: row.enteredBy === "organizer" ? "organizer" : "player", status: "submitted",
+    ...(revision !== null && { submissionRevision: revision }), ...(visibility && { visibility }), ...(row.removedFromProfile === true && { removedFromProfile: true }),
   };
 }
 
 export function playerRoundsFromJson(value: unknown): PlayerRound[] {
   return Array.isArray(value) ? value.map(fromRow).filter((round): round is PlayerRound => round !== null) : [];
+}
+
+/** A round as Profile → Rounds shows it: no profile id and no scoring-side ids, whoever is looking. */
+export type ProfileHistoryRound = Omit<PlayerRound, "profileId" | "scorecardSubmissionId" | "tournamentPlayerId" | "removedFromProfile">;
+
+/** list_profile_rounds rows (other viewers' rows come without a profile id, so one is filled in only to check the row). */
+export function profileHistoryFromJson(value: unknown): ProfileHistoryRound[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((row): ProfileHistoryRound[] => {
+    const round = isObject(row) ? fromRow({ ...row, profileId: "shown" }) : null;
+    if (!round) return [];
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { profileId, scorecardSubmissionId, tournamentPlayerId, removedFromProfile, ...shown } = round;
+    return [shown];
+  });
 }
