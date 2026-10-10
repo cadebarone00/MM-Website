@@ -23,10 +23,11 @@ export function OrganizerScores({ roundNumbers, organizerId, scheduledToday = fa
   const store = useDevPlayerRounds();
   const [error, setError] = useState<string | null>(null);
   const run = (action: DevRoundsAction) => { try { dispatchDevRounds(action); setError(null); return true; } catch (e) { setError(message(e)); return false; } };
-  const nameOf = (id: string) => store.groups.flatMap((g) => Object.entries(g.names)).find(([key]) => key === id)?.[1] ?? DEV_ACCOUNTS.find((a) => a.id === id)?.name ?? id;
+  const nameOf = (id: string) => store.groups.filter(g=>g.tripId===tripId).flatMap((g) => Object.entries(g.names)).find(([key]) => key === id)?.[1] ?? DEV_ACCOUNTS.find((a) => a.id === id)?.name ?? id;
   const now = () => new Date().toISOString();
   const submitted = store.rounds.filter((r) => r.source === "trip" && r.tripId === tripId);
   const groups=store.groups.filter(g=>g.tripId===tripId);
+  const allowPushThrough=tripId===DEV_TRIP_ID?store.allowPushThrough:store.allowPushThroughByTrip?.[tripId]??false;
   const stuck = store.liveCards.filter((c) => groups.some(g=>g.id===c.groupId) && cardComplete(c, c.meta.par) && mismatchedHoles(c).length > 0);
 
   return <>
@@ -62,13 +63,13 @@ export function OrganizerScores({ roundNumbers, organizerId, scheduledToday = fa
       <h2 className={notificationStyles.categoryTitle}>Cards that can&rsquo;t be submitted</h2>
       <div className={notificationStyles.row}>
         <span className={notificationStyles.label}>Allow push-through</span>
-        <button type="button" role="switch" aria-checked={store.allowPushThrough} aria-label="Allow push-through" className={toggleStyles.toggle}
-          onClick={() => run({ type: "setAllowPushThrough", on: !store.allowPushThrough })}>
-          <span className={toggleStyles.track} data-on={store.allowPushThrough}><span className={toggleStyles.thumb} /></span><span>{store.allowPushThrough ? "On" : "Off"}</span>
+        <button type="button" role="switch" aria-checked={allowPushThrough} aria-label="Allow push-through" className={toggleStyles.toggle}
+          onClick={() => run({ type: "setAllowPushThrough", tripId:tripId===DEV_TRIP_ID?undefined:tripId, on: !allowPushThrough })}>
+          <span className={toggleStyles.track} data-on={allowPushThrough}><span className={toggleStyles.thumb} /></span><span>{allowPushThrough ? "On" : "Off"}</span>
         </button>
       </div>
       {stuck.length === 0 ? <p className={notificationStyles.label}>No stuck cards.</p>
-        : stuck.map((card) => <PushThroughCard key={`${card.groupId}|${card.profileId}`} card={card} name={nameOf(card.profileId)} allowed={store.allowPushThrough}
+        : stuck.map((card) => <PushThroughCard key={`${card.groupId}|${card.profileId}`} card={card} name={nameOf(card.profileId)} allowed={allowPushThrough}
           onPush={(choices, reason) => run({ type: "pushThrough", groupId: card.groupId, profileId: card.profileId, choices, byProfileId: organizerId, at: now(), reason })} />)}
     </section>
 

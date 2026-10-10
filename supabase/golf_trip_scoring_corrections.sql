@@ -39,16 +39,31 @@
 --     list_trip_corrections (Trip Settings → Corrections: every round with its date, every visible request).
 --   * Every function takes the same group lock as score writes and submissions (select … for update on scoring_groups).
 --
+--   * Profile history (docs/player-rounds-scoring-contract.md): every official submission (the first one, and each
+--     resubmission after an approved correction) is published to player_rounds with publish_player_round, in the SAME
+--     transaction as the submit. One row per golfer + trip round (key trip:<trip>:<round>); a resubmission rewrites that
+--     same row (higher submissionRevision); a replay is "unchanged"; anything refused rolls the whole submit back. A
+--     reopened card is never published (history keeps the last official revision). scorecard_submission_revisions stays
+--     the permanent audit history; player_rounds is the current official result.
+--
 -- This file replaces save_hole_scores (golf_trip_scoring.sql), save_hole_score_ops (golf_trip_scoring_offline.sql) and
 -- submit_trip_scorecard (golf_trip_scoring_submission.sql). If one of those files is ever run again, run this one again
 -- after it. (The trigger keeps unapproved holes locked either way.)
 --
 -- Prerequisites: golf_trip_scoring.sql (+ golf_trip_scoring_fix_groups.sql), golf_trip_scoring_offline.sql,
--- golf_trip_scoring_submission.sql. Additive: new tables, two new columns, new functions; submit_trip_scorecard is
+-- golf_trip_scoring_submission.sql, and player_rounds.sql (publish_player_round; this file refuses to run without it). Additive: new tables, two new columns, new functions; submit_trip_scorecard is
 -- replaced by a version that also handles reopened cards (first submissions behave exactly as before). Existing
 -- submissions are copied into the history as revision 1. Safe to run more than once.
 
 begin;
+
+-- Profile history is part of an official submission: refuse to install without it, rather than silently skip it.
+do $$
+begin
+  if to_regprocedure('public.publish_player_round(uuid, jsonb)') is null then
+    raise exception 'Run supabase/player_rounds.sql first: submissions publish to player_rounds (publish_player_round).';
+  end if;
+end $$;
 
 alter table public.scorecard_submissions add column if not exists revision integer not null default 1;
 alter table public.scorecard_submissions add column if not exists reopened_at timestamptz;
@@ -349,6 +364,58 @@ begin
 end;
 $$;
 
+-- An official trip submission as a finished round (docs/player-rounds-scoring-contract.md): the stored card snapshot,
+-- never recalculated. Trip courses have no tee rating or pars yet, so it never counts toward handicap (the same reason
+-- lib/platform/playerRounds.ts gives) and each hole's par is null. The golfer is the submission's golfer profile.
+create or replace function public.trip_submission_round(s public.scorecard_submissions)
+returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object(
+    'source', 'trip',
+    'sourceLabel', left(t.name, 120),
+    'datePlayed', coalesce(r.play_date, (s.submitted_at at time zone 'utc')::date),
+    'course', jsonb_build_object('ref', null, 'name', left(coalesce(nullif(trim(r.course_name), ''), t.destination), 200), 'place', left(t.destination, 200)),
+    'tee', null,
+    'holesPlayed', 18,
+    'format', 'Stroke play',
+    'holes', (select jsonb_agg(jsonb_build_object('number', (h->>'hole')::integer, 'par', null, 'strokes', (h->>'strokes')::integer,
+        'putts', (h->>'putts')::integer, 'fairway', h->>'fairway', 'green', h->>'green',
+        'penalties', jsonb_build_object('fairway', coalesce((h->>'penaltyFairway')::boolean, false), 'green', coalesce((h->>'penaltyGreen')::boolean, false)))
+        order by (h->>'hole')::integer) from jsonb_array_elements(s.card) h),
+    'total', (select sum((h->>'strokes')::integer) from jsonb_array_elements(s.card) h),
+    'countsForHandicap', false,
+    'notCountedReason', 'No course rating for this tee',
+    'differential', null,
+    'enteredBy', 'player',
+    'context', jsonb_build_object('golfTripId', s.golf_trip_id, 'golfTripRoundId', s.golf_trip_round_id,
+      'scorecardSubmissionId', s.id, 'submissionRevision', s.revision))
+  from golf_trip_rounds r join golf_trips t on t.id = r.golf_trip_id
+  where r.id = s.golf_trip_round_id;
+$$;
+
+-- Publish one official submission to the golfer's profile history. created / updated / unchanged; raises if refused.
+create or replace function public.publish_trip_submission(s public.scorecard_submissions)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_round jsonb := trip_submission_round(s);
+begin
+  if v_round is null then raise exception 'This card''s trip round no longer exists.' using errcode = 'P0002'; end if;
+  return publish_player_round(s.golfer_profile_id, v_round);
+end;
+$$;
+
+-- Cards submitted before this existed: publish their last official revision once (re-running changes nothing). A card
+-- reopened for a correction still holds its last official snapshot, which is what history keeps.
+do $$
+declare
+  v_submission public.scorecard_submissions;
+begin
+  for v_submission in select * from public.scorecard_submissions where golf_trip_round_id is not null order by submitted_at loop
+    perform public.publish_trip_submission(v_submission);
+  end loop;
+end $$;
+
 -- submit_trip_scorecard, Step 6: the same checks as Step 5; a reopened card can be submitted again (new revision).
 create or replace function public.submit_trip_scorecard(p_profile uuid, p_group uuid, p_golfer uuid, p_card_version integer)
 returns jsonb
@@ -375,6 +442,8 @@ begin
 
   select * into v_existing from scorecard_submissions where group_id = p_group and golfer_profile_id = p_golfer;
   if v_existing.id is not null and v_existing.reopened_at is null then
+    -- A replay: publishing the same revision again is "unchanged" (or restores a missing history row).
+    perform publish_trip_submission(v_existing);
     return jsonb_build_object('status', 'already-submitted', 'submittedAt', v_existing.submitted_at,
       'scoring', get_trip_round_scoring(p_profile, v_group.golf_trip_id, v_round_number));
   end if;
@@ -447,6 +516,9 @@ begin
   insert into scorecard_submission_revisions (group_id, golfer_profile_id, revision, submitted_at, submitted_by, card_version, card, correction_request_id)
   values (p_group, p_golfer, v_revision, v_existing.submitted_at, p_profile, v_version, v_card, v_request);
   update scoring_group_players set submitted_at = v_existing.submitted_at where group_id = p_group and profile_id = p_golfer;
+  -- Profile history, same transaction: revision 1 creates the golfer's round, a resubmission updates that same row. If
+  -- it's refused, this raises and the whole submit rolls back.
+  perform publish_trip_submission(v_existing);
   return jsonb_build_object('status', 'submitted', 'submittedAt', v_existing.submitted_at, 'revision', v_revision,
     'scoring', get_trip_round_scoring(p_profile, v_group.golf_trip_id, v_round_number));
 end;
@@ -620,6 +692,8 @@ revoke all on function public.hole_score_entries_correction_guard() from public,
 revoke all on function public.correction_request_view(uuid, public.scorecard_correction_requests) from public, anon, authenticated;
 revoke all on function public.submission_revision_view(public.scorecard_submission_revisions, uuid) from public, anon, authenticated;
 revoke all on function public.list_trip_corrections(uuid, uuid) from public, anon, authenticated;
+revoke all on function public.trip_submission_round(public.scorecard_submissions) from public, anon, authenticated;
+revoke all on function public.publish_trip_submission(public.scorecard_submissions) from public, anon, authenticated;
 grant execute on function public.list_trip_corrections(uuid, uuid) to service_role;
 grant execute on function public.save_hole_score_ops(uuid, uuid, uuid, jsonb) to service_role;
 grant execute on function public.save_hole_scores(uuid, uuid, uuid, timestamptz, jsonb) to service_role;

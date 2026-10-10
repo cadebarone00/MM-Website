@@ -1,15 +1,13 @@
-import type { PastTournament } from "../platform/pastTournaments";
-import type { ArchivedHandicapRound, HandicapSummary } from "../handicap/types";
-import type { PlayerRound } from "../platform/playerRounds";
-import type { PlayerProfile, PlayerScorecard, Team, Tournament } from "../data/types";
+import type { Team, Tournament } from "../data/types";
+import type { LegacyMaroonYear } from "./profileReadModel";
 import type { PlayerYearStats } from "../data/stats";
 import { CAREER_STAT_COLUMNS } from "../data/stats/careerColumns";
 import { pastTournaments } from "../data";
 import { getPlayerSlug } from "../data/players";
 
 /**
- * My Profile page (/profile): every rule for what the page shows, kept free
- * of Supabase so it can be unit-tested. myProfileServer.ts gathers the data.
+ * My Profile page (/profile) helpers, kept free of Supabase so they can be unit-tested. The page's data is the
+ * profile read model (profileReadModel.ts); myProfileServer.ts loads it for the signed-in person.
  */
 export interface CareerStats {
   /** Stat labels, after the Year and Event columns. */
@@ -20,28 +18,6 @@ export interface CareerStats {
   /** The raw years played, for the "Performance at a glance" chart. */
   played: { year: number; stats: PlayerYearStats }[];
 }
-
-export interface MyProfile {
-  playerPage?: { tournament: Tournament; scorecard: PlayerScorecard; team: Team; shotVideos: Record<number, Record<number, Record<number, string>>> } | null;
-  playerBio?: PlayerProfile | null;
-  roundHistory?: { playerSlug: string; summary: HandicapSummary; archivedRounds: ArchivedHandicapRound[] } | null;
-  /** My saved golf rounds (supabase/player_rounds.sql), newest first; null when they can't be loaded (e.g. SQL not run yet). */
-  playerRounds?: PlayerRound[] | null;
-  name: string;
-  initials: string;
-  avatarSrc: string | null;
-  memberSince: string | null;
-  /** Players can edit their bio (admin approves); fans can't. */
-  canEditBio: boolean;
-  teams: Team[];
-  active: PastTournament[];
-  completed: PastTournament[];
-  stats: CareerStats | null;
-  bio: string | null;
-}
-
-/** Where summarizePastEditions sends the founding tournament. */
-export const LEGACY_SITE_HREF = "/website";
 
 const filled = (value: string | null | undefined) => (value && value.trim() ? value.trim() : null);
 
@@ -68,35 +44,12 @@ export function memberSinceLabel(createdAt: string | null | undefined): string |
 
 const onRoster = (names: string[], playerSlug: string) => names.some((name) => getPlayerSlug(name) === playerSlug);
 
-/** The Maroon 2024–26 years this player played, from the static rosters. */
-export function maroonYearsPlayed(playerSlug: string | null, tournaments: Tournament[] = pastTournaments): PastTournament[] {
-  if (!playerSlug) return [];
-  return tournaments
-    .filter((t) => onRoster(t.roster.maroon, playerSlug) || onRoster(t.roster.white, playerSlug))
-    .sort((a, b) => b.year - a.year)
-    .map((t) => ({
-      name: "The Maroon Tournament", year: t.year, destination: t.location || null,
-      startDate: t.startDate || null, endDate: t.endDate || null, href: `/leaderboard/${t.slug}`,
-    }));
-}
-
-export function teamsPlayed(playerSlug: string | null, tournaments: Tournament[] = pastTournaments): Team[] {
-  if (!playerSlug) return [];
-  const teams: Team[] = [];
-  if (tournaments.some((t) => onRoster(t.roster.maroon, playerSlug))) teams.push("maroon");
-  if (tournaments.some((t) => onRoster(t.roster.white, playerSlug))) teams.push("white");
-  return teams;
-}
-
-/**
- * Finished years from both sources. A Maroon year the static rosters already
- * cover is dropped from the platform list, so it shows once (with the static
- * row's leaderboard link).
- */
-export function mergeCompleted(maroonYears: PastTournament[], platformPast: PastTournament[]): PastTournament[] {
-  const covered = new Set(maroonYears.map((t) => t.year));
-  const rest = platformPast.filter((t) => !(t.href === LEGACY_SITE_HREF && covered.has(t.year)));
-  return [...maroonYears, ...rest].sort((a, b) => b.year - a.year || (b.endDate ?? "").localeCompare(a.endDate ?? "") || a.name.localeCompare(b.name));
+/** LEGACY: the static Maroon years (2024–26 archive) this player was rostered, with that year's team; newest first. */
+export function legacyMaroonYears(playerSlug: string, tournaments: Tournament[] = pastTournaments): LegacyMaroonYear[] {
+  return tournaments.flatMap((t): LegacyMaroonYear[] => {
+    const team: Team | null = onRoster(t.roster.maroon, playerSlug) ? "maroon" : onRoster(t.roster.white, playerSlug) ? "white" : null;
+    return team ? [{ year: t.year, team, destination: t.location || null, href: `/leaderboard/${t.slug}` }] : [];
+  }).sort((a, b) => b.year - a.year);
 }
 
 /** Every stat-tracked event so far is The Maroon Tournament. */

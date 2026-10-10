@@ -19,7 +19,7 @@ test("database rows for adapter-served tournaments are dropped (the adapter supp
 test("shared loaders and the /play screens never single out The Maroon", () => {
   const shared = [
     "lib/platform/tournamentHomeServer.ts", "lib/platform/tournamentHome.ts", "lib/platform/pastTournaments.ts", "lib/platform/pastTournamentsServer.ts",
-    "lib/profile/myProfileServer.ts", "components/platform/JoinTournamentPage.tsx",
+    "lib/profile/myProfileServer.ts", "lib/profile/profileReadModel.ts", "lib/profile/profileReadModelServer.ts", "components/platform/JoinTournamentPage.tsx",
     "components/platform/MyPlayingTournamentsPage.tsx", "components/platform/play/PlayShell.tsx", "components/platform/play/PlayTabs.tsx",
     "components/platform/play/TournamentHomeScreen.tsx", "components/platform/play/MatchCard.tsx",
   ];

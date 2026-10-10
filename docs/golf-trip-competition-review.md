@@ -41,3 +41,10 @@ Golf Competition restores fictional match-play versus cards/pairings and adds lo
 ## 2026-10-04 competition overview scope review
 
 Overview summarizes existing fictional round formats, flags, schedule and status. Missing competition type and point/handicap/tiebreak rules explicitly remain Not configured. No new collection, personal data, UGC, assets, vendors, permissions, storage, retention destinations, payments, subscriptions, advertising or sponsorship. Existing privacy, IP, security, retention, organizer authority, platform/provider and professional legal-review findings and owner-assignment follow-ups remain `review_required`. No release or deployment verified. Evidence: components/platform/GolfTripSettingsPreview.tsx.
+
+
+## 2026-10-09 — Development setup parity amendment
+
+Scope revision 2; locally implemented, not deployed. Real/mock/busy development Settings now persist schedule and competition setup in source-scoped localStorage, connecting dates/courses/formats, assigned tee times, players and draft choices to shared trip surfaces. Imported tournament standings and untouched match outcomes remain intact. The older provider-backed round editor remains memory-only. No production database, permissions, live push identity or official scoring change. This supersedes blanket no-persistence statements for the source-scoped Settings path.
+
+All unresolved findings remain review_required. Browser-local names, travel and configuration require privacy/personal-data/UGC, device retention/deletion and access review; same-origin localStorage is not an account boundary. Existing course/source rights, security, minors, organizer responsibility, platform and professional review remain open. No new payments, subscriptions, advertising, sponsorship, affiliate, media or transmission provider is introduced. Owners, due dates and reviewer remain unassigned. See docs/dev-simulator-review.md revision 3 for the data map, source isolation, limitations and follow-ups.

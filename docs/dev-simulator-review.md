@@ -1,8 +1,16 @@
 # Development app simulator review
 
-Date: 2026-10-02. Scope revision: 2. Local implementation; deployment not verified. Release decision: pending. Unresolved legal findings remain `review_required`; reviewer/owner unassigned.
+Date: 2026-10-02. Scope revision: 3. Local implementation; deployment not verified. Release decision: pending. Unresolved legal findings remain `review_required`; reviewer/owner unassigned.
 
 Read LEGAL_COMPLIANCE_SPEC.md, FEATURE_COMPLIANCE_CHECKLIST.md and lib/compliance/featureRegistry.ts before implementation. This review covers the development environment, not a redesign or release of the production app.
+
+## Development trip parity — 2026-10-09
+
+Scope revision 3, implemented locally; not deployed. Real Maroon, mock and busy development trips now share browser-local setup persistence for travel, dates, courses, tee times, player assignments, competition choices and draft configuration. Each source/fixture configuration has a separate storage key. Direct navigation to Settings retains the selected real/mock source. Just created keeps its existing storage and Reset behavior. Changes apply to shared Home/Golf/Venue/Itinerary adapters; imported standings and untouched match results remain source data. Actual tournament Morning/Afternoon sessions are separate numbered rounds. Missing archived hole scores and tee times remain missing; no actual course ratings or official scoring are created. A zero-round day produces no itinerary round.
+
+Scoring trip IDs, round-state keys, groups, submitted cards, stats, attester choices and push-through permission are scoped to the development source. Legacy unscoped dev records remain readable by legacy callers but are not assigned to a new source. Local setup is stored under maroon-dev-trip-setup-v1 keys; it survives refresh and has no server sync or production destination. Clearing those browser storage keys removes the new setup; automatic expiry is not implemented. Imported tournament fixtures are never written. Real Maroon's existing submitted teams, history and locking remain intentionally distinct from unconfigured busy data. Live push continues to require a saved-trip identity; no development identity is subscribed.
+
+Applicable findings remain review_required: privacy/personal-data/UGC (names, travel plans and setup now persist on the developer's device); security/user-accounts (same-origin localStorage is not an account authorization boundary; development guard remains required); retention/account-deletion (browser-local data has no automatic expiry or account-deletion integration, and requires a reviewed reset/retention policy before any production reuse); intellectual-property/third-party-golf-content (existing tournament/course sources retain their review obligations); platform-rules/audit-logging/legal-review (local storage and source separation need review; no production consent, rights or audit policy is established). Business ownership, contractor ownership, open-source, media rights, payments, subscriptions, taxes, advertising, sponsorship, affiliate links, course reviews, organizer responsibility and minors have no newly introduced flows here; their existing unresolved review_required findings remain open. Owners, due dates and professional review are unassigned. Structure validation and local tests do not authorize release.
 
 ## Scope and data flow
 

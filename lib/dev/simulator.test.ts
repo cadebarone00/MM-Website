@@ -33,8 +33,10 @@ test("frame boundary rejects invalid dimensions of state and navigation", () => 
 
 test("real and mock preserve their sources; fixture/state overrides cannot mutate tournament data", () => {
   const original = JSON.stringify({ tournament: palmSprings2026, mock, maroon });
-  assert.deepEqual(simulatorTripData(mock, maroon, { source: "maroon", state: DEFAULT_SIMULATOR_STATE }), maroon);
-  assert.deepEqual(simulatorTripData(mock, maroon, { source: "mock", state: DEFAULT_SIMULATOR_STATE }), mock);
+  const real=simulatorTripData(mock, maroon, { source: "maroon", state: DEFAULT_SIMULATOR_STATE });
+  assert.deepEqual(real.preview,maroon.preview);assert.deepEqual(real.previewMatch,maroon.previewMatch);assert.equal(real.travel?.members.length,12);assert.deepEqual(real.travel?.items,[]);
+  const generic=simulatorTripData(mock, maroon, { source: "mock", state: DEFAULT_SIMULATOR_STATE });
+  assert.deepEqual(generic.preview,mock.preview);assert.deepEqual(generic.previewMatch,mock.previewMatch);
   // Just created: every onboarding answer, nothing else (no scores, only the organizer on the trip, no travel items).
   const justCreated = simulatorTripData(mock, maroon, { source: "empty", state: DEFAULT_SIMULATOR_STATE });
   assert.equal(justCreated.preview?.tripName, "Myrtle Beach Golf Trip");

@@ -18,7 +18,7 @@ export interface DevLiveCard extends LiveCard { meta: DevRoundMeta }
 export interface DevRoundsState {
   rounds: PlayerRound[]; visibility: Record<string, RoundsVisibility>; linkRequests: HistoryLinkRequest[];
   /** Player & Attest add-on: in-progress cards, the preview's groups, Start / End round, the organizer's push-through setting, attester swaps ("groupId|profileId" → attester). */
-  liveCards: DevLiveCard[]; groups: DevGroup[]; tripRounds: Record<string, TripRoundState>; allowPushThrough: boolean; attesters: Record<string, string>;
+  liveCards: DevLiveCard[]; groups: DevGroup[]; tripRounds: Record<string, TripRoundState>; allowPushThrough: boolean; allowPushThroughByTrip?: Record<string,boolean>; attesters: Record<string, string>;
 }
 export type DevRoundsAction =
   | { type: "saveRound"; round: PlayerRound }
@@ -30,7 +30,7 @@ export type DevRoundsAction =
   /** The attester's phone: their strokes for the player they keep score for, written onto that player's card. */
   | { type: "saveAttestStrokes"; groupId: string; profileId: string; strokes: (number | null)[]; meta: DevRoundMeta }
   | { type: "setTripRound"; tripRoundId: string; state: "open" | "closed"; at: string }
-  | { type: "setAllowPushThrough"; on: boolean }
+  | { type: "setAllowPushThrough"; on: boolean; tripId?:string }
   | { type: "swapAttester"; groupId: string; profileId: string; attesterProfileId: string }
   | { type: "overrideHole"; roundId: string; input: OverrideInput }
   | { type: "pushThrough"; groupId: string; profileId: string; choices: Record<number, PushChoice>; byProfileId: string; at: string; reason: string }
@@ -118,11 +118,12 @@ export function devRoundsReducer(state: DevRoundsState, action: DevRoundsAction)
       const entry: TripRoundState = action.state === "open" ? { ...before, state: "open", openedAt: action.at } : { ...before, state: "closed", closedAt: action.at };
       return { ...state, tripRounds: { ...state.tripRounds, [action.tripRoundId]: entry } };
     }
-    case "setAllowPushThrough": return { ...state, allowPushThrough: action.on };
+    case "setAllowPushThrough": return action.tripId ? {...state,allowPushThroughByTrip:{...state.allowPushThroughByTrip,[action.tripId]:action.on}} : { ...state, allowPushThrough: action.on };
     case "swapAttester": return { ...state, attesters: { ...state.attesters, [`${action.groupId}|${action.profileId}`]: action.attesterProfileId } };
     case "overrideHole": return { ...state, rounds: state.rounds.map((r) => r.id === action.roundId ? overrideHole(r, action.input) : r) };
     case "pushThrough": {
-      if (!state.allowPushThrough) throw new Error("Allow push-through is off in Organizer settings.");
+      const tripId=state.groups.find(group=>group.id===action.groupId)?.tripId??DEV_TRIP_ID;
+      if (!(tripId===DEV_TRIP_ID?state.allowPushThrough:state.allowPushThroughByTrip?.[tripId])) throw new Error("Allow push-through is off in Organizer settings.");
       const card = state.liveCards.find((c) => c.groupId === action.groupId && c.profileId === action.profileId);
       if (!card) throw new Error("No card to push through.");
       const { strokes, edits } = pushThrough(card, action.choices, action.byProfileId, action.at, action.reason);

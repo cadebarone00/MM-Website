@@ -6,9 +6,10 @@ import { useState } from "react";
 import { Pencil, Settings } from "lucide-react";
 import { HandicapHome } from "@/components/portal/handicap/HandicapHome";
 import { PlayerRoundsList } from "@/components/profile/PlayerRoundsList";
+import { ProfileHistory } from "@/components/profile/ProfileHistory";
 import { PlayerBioSection } from "@/components/scorecard/PlayerBioSection";
 import { PlayerScorecardView } from "@/components/scorecard/PlayerScorecardView";
-import type { MyProfile } from "@/lib/profile/myProfile";
+import type { ProfileReadModel } from "@/lib/profile/profileReadModel";
 
 type Tab = "overview" | "rounds" | "stats";
 const TABS: { key: Tab; label: string }[] = [
@@ -17,9 +18,10 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "stats", label: "Stats" },
 ];
 
-/** The signed-in person's own profile, laid out like a fantasy-app account screen. */
-export function ProfileView({ profile }: { profile: MyProfile }) {
+/** The signed-in person's own profile (the profile read model), laid out like a fantasy-app account screen. */
+export function ProfileView({ profile }: { profile: ProfileReadModel }) {
   const [tab, setTab] = useState<Tab>("overview");
+  const { identity, legacy } = profile;
   return (
     // Extend the profile background through the bottom-menu padding.
     <div className={`flex min-h-screen min-w-0 flex-col text-maroon-900 mb-[calc(-5.75rem-env(safe-area-inset-bottom))] lg:mb-0 ${tab === "rounds" ? "bg-maroon-900" : "bg-cream-50"}`}>
@@ -30,11 +32,11 @@ export function ProfileView({ profile }: { profile: MyProfile }) {
         <div className="mx-auto flex w-full max-w-[640px] items-center gap-5 pl-[10%]">
           <div className="relative shrink-0">
             <span className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-cream-50 font-condensed text-3xl font-bold text-maroon-900 shadow-[0_0_0_3px_#380001]">
-              {profile.avatarSrc
-                ? <Image src={profile.avatarSrc} alt="" width={96} height={96} className="h-full w-full object-cover" />
-                : profile.initials}
+              {identity.avatarSrc
+                ? <Image src={identity.avatarSrc} alt="" width={96} height={96} className="h-full w-full object-cover" />
+                : identity.initials}
             </span>
-            {profile.canEditBio && (
+            {identity.canEditBio && (
               <Link href="/portal/profile" aria-label="Edit my bio"
                 className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-maroon-900 bg-cream-50 text-maroon-900">
                 <Pencil size={16} aria-hidden="true" />
@@ -42,8 +44,8 @@ export function ProfileView({ profile }: { profile: MyProfile }) {
             )}
           </div>
           <div className="min-w-0">
-            <h2 className="break-words font-serif text-2xl font-bold leading-tight">{profile.name}</h2>
-            {profile.memberSince && <p className="mt-1 text-sm text-maroon-900/70">Member since {profile.memberSince}</p>}
+            <h2 className="break-words font-serif text-2xl font-bold leading-tight">{identity.displayName}</h2>
+            {identity.memberSince && <p className="mt-1 text-sm text-maroon-900/70">Member since {identity.memberSince}</p>}
           </div>
         </div>
         <nav className="mx-auto mt-4 flex min-h-14 w-full max-w-[640px] justify-around" aria-label="Profile sections">
@@ -59,29 +61,30 @@ export function ProfileView({ profile }: { profile: MyProfile }) {
       <main className={`relative mx-auto -mt-6 w-full max-w-[640px] flex-1 px-4 pb-32 pt-12 ${tab === "rounds" ? "bg-maroon-900" : "bg-cream-50"}`}>
         {tab === "rounds" && (
           <section aria-label="Rounds" className="-mx-4 -mt-6 bg-maroon-900 text-cream-50">
-            {profile.roundHistory ? (
-              <HandicapHome playerName={profile.name} playerSlug={profile.roundHistory.playerSlug}
-                summary={profile.roundHistory.summary} archivedRounds={profile.roundHistory.archivedRounds}
+            {legacy?.handicap ? (
+              <HandicapHome playerName={identity.displayName} playerSlug={legacy.playerSlug}
+                summary={legacy.handicap.summary} archivedRounds={legacy.handicap.archivedRounds}
                 team={null} initialTab="overall" readOnly appearance="leaderboard" />
-            ) : profile.canEditBio && <p className="px-4 py-5 text-center text-cream-50/70">Round history is unavailable right now.</p>}
+            ) : legacy && <p className="px-4 py-5 text-center text-cream-50/70">Round history is unavailable right now.</p>}
             {/* Saved golf rounds (one per round played) — under the handicap view, or on their own for everyone else. */}
-            <PlayerRoundsList rounds={profile.playerRounds ?? []} />
+            <PlayerRoundsList rounds={profile.rounds.status === "ok" ? profile.rounds.value : []} />
           </section>
         )}
         {tab === "stats" && (
           <section aria-label="Stats">
-            {profile.playerPage ? <div className="-mx-4 px-7">
-              <p className="mb-4 font-condensed text-xs font-semibold uppercase tracking-wide text-maroon-700">{profile.playerPage.tournament.editionLabel}</p>
-              <PlayerScorecardView scorecard={profile.playerPage.scorecard} tournament={profile.playerPage.tournament}
-                shotVideos={profile.playerPage.shotVideos} profile={profile.playerBio ?? undefined} />
-            </div> : profile.playerBio ? <><p className="text-sm text-maroon-900/60">No scorecard is available yet.</p><PlayerBioSection profile={profile.playerBio} /></>
+            {legacy?.latestScorecard ? <div className="-mx-4 px-7">
+              <p className="mb-4 font-condensed text-xs font-semibold uppercase tracking-wide text-maroon-700">{legacy.latestScorecard.tournament.editionLabel}</p>
+              <PlayerScorecardView scorecard={legacy.latestScorecard.scorecard} tournament={legacy.latestScorecard.tournament}
+                shotVideos={legacy.latestScorecard.shotVideos} profile={legacy.bio ?? undefined} />
+            </div> : legacy?.bio ? <><p className="text-sm text-maroon-900/60">No scorecard is available yet.</p><PlayerBioSection profile={legacy.bio} /></>
               : <p className="px-4 py-5 text-center text-maroon-900/60">No player bio yet.</p>}
           </section>
         )}
         {tab === "overview" && (
           <section aria-label="Overview">
-            {profile.bio ? <p className="whitespace-pre-line leading-relaxed text-maroon-900/90">{profile.bio}</p>
+            {identity.bio ? <p className="whitespace-pre-line leading-relaxed text-maroon-900/90">{identity.bio}</p>
               : <p className="px-4 py-5 text-center text-maroon-900/60">No bio yet.</p>}
+            <ProfileHistory trips={profile.trips} tournaments={profile.tournaments} teamHistory={profile.teamHistory} />
           </section>
         )}
       </main>

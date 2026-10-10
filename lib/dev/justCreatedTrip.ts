@@ -64,7 +64,7 @@ export function applyJustCreatedSetup(base: SimulatorTripData, saved: JustCreate
     const perDay = Math.min(2, roundsPerDay[day] ?? 1);
     const date = tripDay(day + golfStart);
     draft[`day${day + 1}Date`] = date;
-    draft[`day${day + 1}Rounds`] = String(Math.max(1, perDay));
+    draft[`day${day + 1}Rounds`] = String(perDay);
     for (let slot = 0; slot < perDay; slot++) {
       const key = `${day}-${slot}`, number = slots.length + 1;
       // Same order as Settings: a picked course, a name carried by a moved round, then the onboarding course for that slot.
@@ -72,6 +72,7 @@ export function applyJustCreatedSetup(base: SimulatorTripData, saved: JustCreate
       const course = saved.pickedCourses?.[key]?.name ?? saved.slotCourseNames?.[key] ?? (onboarding ? original[`round${onboarding.number}Course`] : undefined) ?? "Course TBD";
       draft[`round${number}Course`] = course;
       const comp = saved.compRounds?.[key] === false ? undefined : saved.compFormats?.[key];
+      if (!comp?.format && onboarding && original[`round${onboarding.number}Format`]) draft[`round${number}Format`]=original[`round${onboarding.number}Format`];
       if (comp?.format) draft[`round${number}Format`] = comp.format;
       if (comp?.scoring) draft[`round${number}Scoring`] = comp.scoring;
       slots.push({ key, date, number, course });

@@ -10,7 +10,7 @@ import { database, profile, sqlFile } from "./testDatabase.ts";
 // submit then a late write) are covered. Supabase Realtime and the HTTP layer are not part of these tests.
 
 const SCORING_CHAIN = ["golf_trips.sql", "golf_trip_invitations.sql", "golf_trip_flights.sql", "golf_trip_scoring.sql", "golf_trip_scoring_fix_groups.sql",
-  "golf_trip_scoring_realtime.sql", "golf_trip_scoring_offline.sql", "golf_trip_scoring_submission.sql", "golf_trip_scoring_corrections.sql"];
+  "golf_trip_scoring_realtime.sql", "golf_trip_scoring_offline.sql", "golf_trip_scoring_submission.sql", "player_rounds.sql", "golf_trip_scoring_corrections.sql"];
 
 export async function scoringDatabase(extra: string[] = []) {
   const db = await database();
@@ -584,4 +584,127 @@ test("Part 5A: an id from an earlier correction doesn't count for the next one",
   assert.equal((await ops(db, t.mike, t.group, t.jake, [fresh(first.id, 3, 5, base)])).results[0].status, "locked");
   assert.equal((await ops(db, t.mike, t.group, t.jake, [fresh(second.id, 3, 5, base)])).results[0].status, "applied");
   assert.equal(await stampOf(db, t.jake, t.mike, 3), second.id);
+});
+
+// --- Profile history: official submissions publish to player_rounds (docs/player-rounds-scoring-contract.md) ---
+
+type HistoryRow = { id: string; profile_id: string; source: string; source_key: string; source_label: string; date_played: string; course_name: string;
+  holes_played: number; format: string; holes: { number: number; par: number | null; strokes: number; putts: number; fairway: string }[]; total: number;
+  counts_for_handicap: boolean; not_counted_reason: string; entered_by: string; golf_trip_id: string; golf_trip_round_id: string;
+  scorecard_submission_id: string; submission_revision: number; created_at: string; updated_at: string | null };
+const historyOf = async (db: PGlite, who: string) => (await db.query<HistoryRow>(
+  "select *, date_played::text date_played, created_at::text created_at, updated_at::text updated_at from player_rounds where profile_id = $1", [who])).rows;
+const submissionOf = async (db: PGlite, who: string) =>
+  (await db.query<{ id: string; golf_trip_round_id: string; revision: number }>("select id, golf_trip_round_id, revision from scorecard_submissions where golfer_profile_id = $1", [who])).rows[0];
+
+test("History: the first official submission creates exactly one round for that golfer's profile and trip round", async () => {
+  const db = await scoringDatabase();
+  const t = await submittedCard(db);
+  const [row, ...more] = await historyOf(db, t.jake);
+  assert.equal(more.length, 0);
+  const sub = await submissionOf(db, t.jake);
+  const date = (await db.query<{ d: string }>("select play_date::text d from golf_trip_rounds where id = $1", [sub.golf_trip_round_id])).rows[0].d;
+  assert.deepEqual([row.profile_id, row.source, row.source_key, row.golf_trip_id, row.golf_trip_round_id], [t.jake, "trip", `trip:${t.trip}:${sub.golf_trip_round_id}`, t.trip, sub.golf_trip_round_id],
+    "keyed by the real trip round, owned by the golfer's profile id");
+  assert.deepEqual([row.scorecard_submission_id, row.submission_revision, row.date_played, row.source_label, row.course_name], [sub.id, 1, date, "Pinehurst", "Pinehurst, NC"]);
+  assert.deepEqual([row.holes_played, row.format, row.total, row.entered_by, row.counts_for_handicap, row.not_counted_reason], [18, "Stroke play", 72, "player", false, "No course rating for this tee"]);
+  assert.deepEqual(row.holes.map((h) => [h.number, h.par, h.strokes, h.putts, h.fairway]).slice(0, 2), [[1, null, 4, 2, "center"], [2, null, 4, 2, "center"]], "the stored card, hole by hole");
+  assert.equal((await historyOf(db, t.mike)).length, 0, "Mike hasn't submitted: no round");
+  assert.equal((await historyOf(db, t.cade)).length, 0, "the organizer doesn't get anyone else's round");
+});
+
+test("History: replays, retries and re-running the SQL never duplicate the round", async () => {
+  const db = await scoringDatabase();
+  const t = await submittedCard(db);
+  const [before] = await historyOf(db, t.jake);
+  const s = await call<Scoring>(db, "get_trip_round_scoring", t.jake, t.trip, 1);
+  assert.equal((await submit(db, t.jake, t.group, t.jake, versionOf(s, t.jake, t.mike))).status, "already-submitted");
+  await db.exec(sqlFile("golf_trip_scoring_corrections.sql")); // its backfill publishes existing cards again
+  const direct = await db.query<{ r: { result: string } }>("select publish_trip_submission(s) r from scorecard_submissions s where golfer_profile_id = $1", [t.jake]);
+  assert.equal(direct.rows[0].r.result, "unchanged");
+  const after = await historyOf(db, t.jake);
+  assert.equal(after.length, 1);
+  assert.deepEqual([after[0].id, after[0].created_at, after[0].updated_at], [before.id, before.created_at, null], "the same row, never rewritten");
+});
+
+test("History: a refused submission writes no round, and a history failure rolls the whole submission back", async () => {
+  const db = await scoringDatabase();
+  const t = await tripWithPlayers(db);
+  await playedYesterday(db, t.trip);
+  const group = (await startScoring(db, t.cade, t.trip, [pair(t.jake, t.mike)])).groups[0].id;
+  await ops(db, t.jake, group, t.jake, Array.from({ length: 17 }, (_, i) => op(i + 1, 4)));
+  assert.equal((await submit(db, t.jake, group, t.jake, 0)).reason, "incomplete");
+  const version = await fullMatchingCard(db, group, t.jake, t.mike);
+  assert.equal((await submit(db, t.jake, group, t.jake, version - 1)).reason, "stale");
+  assert.equal((await historyOf(db, t.jake)).length, 0, "refused: nothing published");
+  // If publishing is refused, the submit fails as a whole: no submission, no revision, card not locked.
+  await db.exec(`create or replace function public.publish_player_round(p_profile uuid, p_round jsonb) returns jsonb language plpgsql as $$
+    begin raise exception 'history refused'; end $$;`);
+  await refused(submit(db, t.jake, group, t.jake, version), /history refused/);
+  assert.deepEqual([await count(db, "scorecard_submissions"), await count(db, "scorecard_submission_revisions"), (await historyOf(db, t.jake)).length], [0, 0, 0]);
+  assert.equal((await call<Scoring>(db, "get_trip_round_scoring", t.jake, t.trip, 1)).groups[0].players.find((p) => p.profileId === t.jake)?.submittedAt, null);
+  await db.exec(sqlFile("player_rounds.sql")); // the real one again
+  assert.equal((await submit(db, t.jake, group, t.jake, version)).status, "submitted");
+  assert.equal((await historyOf(db, t.jake)).length, 1);
+});
+
+test("History: an approved correction + resubmission updates the SAME round with the latest official card; audit history stays", async () => {
+  const db = await scoringDatabase();
+  const t = await submittedCard(db);
+  const [original] = await historyOf(db, t.jake);
+  const req = (await request(db, t.jake, t.group, t.jake, [3], "Hole 3 was a 5")).request;
+  assert.deepEqual((await historyOf(db, t.jake)).map((r) => [r.submission_revision, r.total]), [[1, 72]], "pending: unchanged");
+  await decide(db, t.cade, req.id, true);
+  await ops(db, t.jake, t.group, t.jake, [queued(3, 5, 2)]);
+  assert.deepEqual((await historyOf(db, t.jake)).map((r) => [r.submission_revision, r.total]), [[1, 72]], "reopened: history keeps the last official card");
+  const s = (await ops(db, t.mike, t.group, t.jake, [fresh(req.id, 3, 5, 2)])).scoring;
+  assert.equal((await submit(db, t.jake, t.group, t.jake, versionOf(s, t.jake, t.mike))).status, "submitted");
+  const rows = await historyOf(db, t.jake);
+  assert.equal(rows.length, 1, "still one round");
+  const [row] = rows;
+  assert.deepEqual([row.id, row.created_at, row.source_key], [original.id, original.created_at, original.source_key], "the same row");
+  assert.deepEqual([row.submission_revision, row.total, row.holes[2].strokes, Boolean(row.updated_at)], [2, 73, 5, true], "the latest official card replaced the old one");
+  assert.equal(row.scorecard_submission_id, (await submissionOf(db, t.jake)).id);
+  // The scoring side keeps every revision.
+  const revs = (await db.query<{ revision: number; s: number }>("select revision, (card->2->>'strokes')::int s from scorecard_submission_revisions where golfer_profile_id = $1 order by revision", [t.jake])).rows;
+  assert.deepEqual(revs.map((r) => [r.revision, r.s]), [[1, 4], [2, 5]]);
+  // A late retry of revision 1 can't undo the correction.
+  const stale = (await db.query<{ r: { result: string } }>(`select publish_player_round($1, trip_submission_round(s) || jsonb_build_object('context',
+    trip_submission_round(s)->'context' || '{"submissionRevision": 1}'::jsonb)) r from scorecard_submissions s where golfer_profile_id = $1`, [t.jake])).rows[0].r;
+  assert.equal(stale.result, "unchanged");
+  assert.deepEqual((await historyOf(db, t.jake)).map((r) => [r.submission_revision, r.total]), [[2, 73]]);
+});
+
+test("History: the corrections file won't install without player_rounds.sql; a published trip round reads back on the profile", async () => {
+  const db = await database();
+  for (const file of SCORING_CHAIN.filter((f) => f !== "player_rounds.sql" && f !== "golf_trip_scoring_corrections.sql")) await db.exec(sqlFile(file));
+  await assert.rejects(db.exec(sqlFile("golf_trip_scoring_corrections.sql")), /Run supabase\/player_rounds.sql first/);
+  await db.exec("rollback"); // the refused file's transaction
+  assert.equal((await db.query<{ r: string | null }>("select to_regclass('public.scorecard_correction_requests')::text r")).rows[0].r, null, "nothing half-installed");
+  // With everything installed, Profile → Rounds reads the trip round through its own checks.
+  const full = await scoringDatabase();
+  const t = await submittedCard(full);
+  const { profileHistoryFromJson } = await import("./playerRoundsRows.ts");
+  const seen = profileHistoryFromJson(await call(full, "list_profile_rounds", t.jake, t.jake));
+  assert.deepEqual(seen.map((r) => [r.source, r.total, r.holes.length, r.countsForHandicap]), [["trip", 72, 18, false]]);
+});
+
+test("History: leaving the trip or deleting it keeps the golfer's round, once; each golfer's round is their own profile's", async () => {
+  const db = await scoringDatabase();
+  const t = await submittedCard(db);
+  const mikeVersion = await fullMatchingCard(db, t.group, t.mike, t.jake);
+  assert.equal((await submit(db, t.mike, t.group, t.mike, mikeVersion)).status, "submitted");
+  const key = (await historyOf(db, t.jake))[0].source_key;
+  assert.deepEqual([(await historyOf(db, t.mike))[0].source_key, (await historyOf(db, t.mike))[0].profile_id], [key, t.mike], "same trip round, separate rows by profile");
+  assert.equal(await count(db, "player_rounds"), 2);
+  // Jake leaves (his membership row goes): his finished round stays; re-running the SQL backfill doesn't add another.
+  await db.query("delete from golf_trip_members where golf_trip_id = $1 and profile_id = $2", [t.trip, t.jake]);
+  await db.exec(sqlFile("golf_trip_scoring_corrections.sql"));
+  assert.deepEqual((await historyOf(db, t.jake)).map((r) => [r.source_key, r.submission_revision]), [[key, 1]]);
+  // The whole trip is deleted: scoring cascades away, both golfers keep their rounds (trip name kept as the label).
+  await db.query("delete from golf_trips where id = $1", [t.trip]);
+  assert.deepEqual([await count(db, "scorecard_submissions"), await count(db, "scoring_groups")], [0, 0]);
+  assert.deepEqual((await db.query<{ p: string; l: string }>("select profile_id p, source_label l from player_rounds order by profile_id")).rows.map((r) => r.l), ["Pinehurst", "Pinehurst"]);
+  const mine = await call<{ profileId: string }[]>(db, "list_my_player_rounds", t.jake);
+  assert.deepEqual(mine.map((r) => r.profileId), [t.jake], "a golfer's history is only their own");
 });

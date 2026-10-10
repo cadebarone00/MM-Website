@@ -17,6 +17,13 @@ const LONG_NAME = "fan" + "x".repeat(45);
 await fake.db.query("update profiles set display_name = $2 where id = $1", [fan.id, LONG_NAME]);
 const player = await fake.addUser({ name: "cadeuser" });
 await fake.db.query("update profiles set player_slug = 'cade-barone' where id = $1", [player.id]);
+// Profile read model: one golf trip the player organizes, one they were only invited to (pending: not history).
+const trip = (await fake.db.query(`insert into golf_trips (name, destination, start_date, end_date, created_by, client_request_id)
+  values ('Pinehurst Weekend', 'Pinehurst, NC', '2026-04-22', '2026-04-26', $1, gen_random_uuid()) returning id`, [player.id])).rows[0].id;
+await fake.db.query("insert into golf_trip_members (golf_trip_id, profile_id, display_name, role, invitation_status) values ($1, $2, 'Cade', 'organizer', 'accepted')", [trip, player.id]);
+const invitedTrip = (await fake.db.query(`insert into golf_trips (name, destination, start_date, end_date, created_by, client_request_id)
+  values ('Bandon Invite', 'Bandon, OR', '2027-09-10', '2027-09-14', $1, gen_random_uuid()) returning id`, [fan.id])).rows[0].id;
+await fake.db.query("insert into golf_trip_members (golf_trip_id, display_name, email, role, invitation_status) values ($1, 'Cade', 'cadeuser@example.test', 'member', 'pending')", [invitedTrip]);
 
 const server = spawn(process.platform === "win32" ? "npx.cmd next start -p " + APP_PORT : "npx", process.platform === "win32" ? [] : ["next", "start", "-p", String(APP_PORT)], {
   env: { ...process.env, SUPABASE_URL: fake.url, SUPABASE_ANON_KEY: "test-anon", SUPABASE_SERVICE_ROLE_KEY: "test-service" },
@@ -64,32 +71,38 @@ try {
   assert.match(await p.locator("body").innerText(), /Member since/i);
   assert.equal(await p.getByRole("link", { name: "Edit my bio" }).getAttribute("href"), "/portal/profile");
   assert.equal(await p.getByRole("link", { name: "Settings" }).getAttribute("href"), "/settings");
-  assert.match(await p.getByRole("list", { name: "Teams" }).innerText(), /Team White/i);
-  assert.match(await p.locator("main").innerText(), /No active tournaments/i);
-  await p.getByRole("button", { name: "Completed" }).click();
-  assert.match(await p.locator("main").innerText(), /The Maroon Tournament 2024/i);
+  // Overview: tournament years with that year's team (legacy Maroon archive) and the trip they actually joined.
+  const tournaments = await p.getByRole("region", { name: "Tournaments" }).innerText();
+  assert.match(tournaments, /2024 · The Maroon Tournament\s+Team White/i);
+  const trips = await p.getByRole("region", { name: "Golf trips" }).innerText();
+  assert.match(trips, /Pinehurst Weekend/);
+  assert.doesNotMatch(trips, /Bandon Invite/, "a pending invitation is not trip history");
+  assert.equal(await p.getByRole("link", { name: /Pinehurst Weekend/ }).getAttribute("href"), `/golf-trips/${trip}`);
+  await p.getByRole("button", { name: "Rounds" }).click();
+  await p.getByRole("region", { name: "Golf rounds" }).waitFor();
   await p.getByRole("button", { name: "Stats" }).click();
-  assert.match(await p.locator("main").innerText(), /Scoring Average/i);
-  await p.getByRole("button", { name: "About" }).click();
   assert.ok((await p.locator("main").innerText()).trim().length > 0);
+  const html = await p.content();
+  for (const secret of [player.id, "cadeuser@example.test"]) assert.equal(html.includes(secret), false, `page leaks ${secret}`);
   assert.equal(await p.locator('[data-site-bottom-nav] a[aria-current="page"]').innerText().then((t) => t.trim().toLowerCase()), "profile");
   assert.ok((await overflow(p)) <= 0, "player: no sideways scroll at 390px");
 
-  // Fan, at 360px, with the active-tournaments SQL missing (not yet run in production).
-  await fake.db.query("drop function public.list_my_active_editions(uuid)");
+  // Fan, at 360px.
   const f = await phone(fan, 360);
   await f.goto(`${app}/profile`);
   await f.getByRole("heading", { level: 2 }).waitFor();
   assert.equal((await f.getByRole("heading", { level: 2 }).innerText()).trim(), LONG_NAME);
   assert.equal(await f.getByRole("link", { name: "Edit my bio" }).count(), 0, "fans get no pencil");
-  assert.match(await f.locator("main").innerText(), /No active tournaments/i);
-  assert.equal(await f.getByRole("link", { name: /Join a Tournament/i }).getAttribute("href"), "/tournaments/join");
-  await f.getByRole("button", { name: "Completed" }).click();
-  assert.match(await f.locator("main").innerText(), /No completed tournaments yet/i);
+  // A brand-new golfer: no slug, no rounds, no tournaments — calm "will show here" lines, not errors.
+  const main = await f.locator("main").innerText();
+  assert.match(main, /No bio yet\./);
+  assert.match(main, /Tournaments you play in will show here\./);
+  assert.match(main, /Golf trips you join will show here\./);
+  assert.doesNotMatch(main, /can.t be loaded/i);
+  await f.getByRole("button", { name: "Rounds" }).click();
+  assert.match(await f.locator("main").innerText(), /Rounds you finish will show here\./);
   await f.getByRole("button", { name: "Stats" }).click();
-  assert.match(await f.locator("main").innerText(), /No stats yet\./);
-  await f.getByRole("button", { name: "About" }).click();
-  assert.match(await f.locator("main").innerText(), /No bio yet\./);
+  assert.match(await f.locator("main").innerText(), /No player bio yet\./);
   assert.ok((await overflow(f)) <= 0, "fan: no sideways scroll at 360px");
 
   console.log("profile browser check: PASS");

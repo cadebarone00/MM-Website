@@ -63,7 +63,7 @@ export function plannedRounds(draft: GolfTripDraft): PlannedRound[] {
   const golfDays = Math.min(Math.max(Math.trunc(Number(draft.golfDays)) || 0, 0), MAX_TRIP_DAYS);
   const rounds: PlannedRound[] = [];
   for (let dayNumber = 1; dayNumber <= golfDays; dayNumber++) {
-    const count = draft[`day${dayNumber}Rounds`] === "2" ? 2 : 1;
+    const count = draft[`day${dayNumber}Rounds`] === "0" ? 0 : draft[`day${dayNumber}Rounds`] === "2" ? 2 : 1;
     for (let i = 0; i < count; i++) rounds.push({ number: rounds.length + 1, dayNumber, date: draft[`day${dayNumber}Date`] ?? "" });
   }
   return rounds;

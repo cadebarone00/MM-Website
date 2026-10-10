@@ -89,8 +89,8 @@ const seeds: FeatureSeed[] = [
     attentionCategories: ["security", "open-source", "intellectual-property", "platform-rules", "legal-review"],
   },
   {
-    id: "development-app-simulator", name: "Development app viewport simulator", scopeRevision: 2,
-    scope: "Development-only /dev control center frames existing routes; local viewport/inset/page controls, real tournament adapter or generic/empty/busy fixtures and validated memory-only presentation state. Right-hand canvas review tools retain bounded memory-only stroke history; user-requested local 2x PNG clipboard/download captures the same-origin visible screen and annotations with optional frame; no upload or capture service. Existing page permissions/session remain effective; no auth simulation, source mutation, database or scoring-engine changes. Findings, limitations and follow-ups: docs/dev-simulator-review.md.",
+    id: "development-app-simulator", name: "Development app viewport simulator", scopeRevision: 3,
+    scope: "Development-only /dev control center frames existing routes; source-scoped browser-local setup links real/mock/busy Settings to Home/Golf/Venue/Itinerary, including editable empty travel, actual tournament session mapping and isolated dev scoring/round state. Imported standings and untouched results are preserved; localStorage persistence/retention remain review_required. local viewport/inset/page controls, real tournament adapter or generic/empty/busy fixtures and validated memory-only presentation state. Right-hand canvas review tools retain bounded memory-only stroke history; user-requested local 2x PNG clipboard/download captures the same-origin visible screen and annotations with optional frame; no upload or capture service. Existing page permissions/session remain effective; no auth simulation, source mutation, database or scoring-engine changes. Findings, limitations and follow-ups: docs/dev-simulator-review.md.",
     attentionCategories: ["privacy", "personal-data", "security", "retention", "ugc", "intellectual-property", "media-rights", "open-source", "third-party-golf-content", "organizer-responsibility", "platform-rules", "legal-review"],
   },
   {
@@ -99,8 +99,8 @@ const seeds: FeatureSeed[] = [
     attentionCategories: ["privacy", "personal-data", "ugc", "security", "retention", "intellectual-property", "organizer-responsibility", "legal-review"],
   },
   {
-    id: "golf-trip-competition-preview", name: "Golf Trip competition settings preview",
-    scope: "Local fictional round configuration shared by organizer settings and player preview; UI locking only, no persistence, auth or scoring. Findings and follow-ups: docs/golf-trip-competition-review.md.",
+    id: "golf-trip-competition-preview", name: "Golf Trip competition settings preview", scopeRevision: 2,
+    scope: "Development-only real/mock/busy competition and schedule setup persists in source-scoped browser localStorage and reaches shared Home/Golf/Venue/Itinerary; imported standings and untouched results are preserved. Legacy provider-backed round arrays remain memory-only. UI locking only, no production authorization or official scoring. Local persistence/retention and source rights remain review_required. Findings: docs/golf-trip-competition-review.md and docs/dev-simulator-review.md.",
     attentionCategories: ["privacy", "personal-data", "security", "retention", "intellectual-property", "organizer-responsibility", "legal-review"],
   },
   {

@@ -92,7 +92,7 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
       <div aria-live="polite" style={{ marginTop: 4, opacity: 0.7 }}>{view === "mock" || fictional ? "Mock Data" : "Real Tournament Data"}</div>
     </div>}
     <GolfTripHome key={justCreated ? `just-created-${savedVersion}` : scope} {...data} now={tripNow} competitionKey={scope}
-      savedCompetitionType={justCreated ? readJustCreated("localCompetitionType") : busySetup ? competitionSetupTypes(busySetup) : config.source === "maroon" ? {individual:"Stroke Play",team:"2 Teams"} : setup.localCompetitionType as {individual:string|null;team:string|null}|undefined}
+      savedCompetitionType={justCreated ? readJustCreated("localCompetitionType") : (setup.localCompetitionType as {individual:string|null;team:string|null}|undefined) ?? (busySetup ? competitionSetupTypes(busySetup) : config.source === "maroon" ? {individual:"Stroke Play",team:"2 Teams"} : undefined)}
       savedTeamColors={justCreated ? readJustCreated("teamColors") : setup.teamColors as (string|null)[]|undefined}
       organizer={viewAs === DEFAULT_DEV_ACCOUNT}
       savedTeamDraft={justCreated ? { teamType: readJustCreated<{ team: string | null }>("localCompetitionType")?.team ?? null, selection: readJustCreated("teamSelection") ?? null,

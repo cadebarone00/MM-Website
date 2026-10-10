@@ -366,7 +366,8 @@ export function simulatorTripData(mock: SimulatorTripData, maroon: SimulatorTrip
   if (previewMatch && state.roundStatus !== "source") previewMatch = withRoundState(previewMatch, state.roundStatus, source !== "maroon", source === "mock" ? state.seed ?? 0 : 0);
   const roster=[preview.rosterMaroon,preview.rosterWhite].flatMap(value=>(value??'').split(',')).map(value=>value.trim()).filter(Boolean).map(getPlayerDisplayName);
   const names=roster.length?roster:previewMatch?.leaderboard.map(row=>row.golfer.name)??[];
-  const travel=base.travel??{meId:'dev-organizer',members:names.map((name,index)=>({id:index===0?'dev-organizer':'dev-member-'+index,name,role:index===0?'organizer' as const:'player' as const})),items:[],participants:[],notifications:[]};
+  const sourceTravel=base.travel;
+  const travel=source === "busy" && sourceTravel ? {...sourceTravel,members:names.map((name,index)=>({...sourceTravel.members[index]??{id:"busy-member-"+index,role:"player" as const},name}))} : sourceTravel??{meId:'dev-organizer',members:names.map((name,index)=>({id:index===0?'dev-organizer':'dev-member-'+index,name,role:index===0?'organizer' as const:'player' as const})),items:[],participants:[],};
   return { ...base, preview, previewMatch, travel };
 }
 

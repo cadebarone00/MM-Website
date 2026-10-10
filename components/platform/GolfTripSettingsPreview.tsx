@@ -331,11 +331,16 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     const place = picked?.place ?? "";
     return { key, number, course, place, groupTimes, label: `Round ${number} · ${golfDate(day)}` };
   };
+  const sourceRoundComp=(key:string):RoundCompSettings=>{
+    const [day,slot]=key.split('-').map(Number);
+    const format=rounds.filter(round=>round.date===days[day])[slot]?.format;
+    return {...defaultRoundComp(playerTotal),...(format?{format:(format==='Best Ball'?'Fourball':format) as RoundCompSettings['format']}: {})};
+  };
   // The open Format round: its slot, number and settings (defaults until changed: every trip player, Singles match play, 1 point, gross).
   const compRound = compRoundSlot ? (() => {
     const slot = scheduleSlot(compRoundSlot.day, compRoundSlot.slot);
     const date = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${golfIso(compRoundSlot.day)}T12:00:00Z`));
-    return { id: slot.key, number: slot.number, course: slot.course, date, settings: compFormats[slot.key] ?? defaultRoundComp(playerTotal) };
+    return { id: slot.key, number: slot.number, course: slot.course, date, settings: compFormats[slot.key] ?? sourceRoundComp(slot.key) };
   })() : undefined;
   // Summary: a rundown of what's actually happening in this competition — the type, who's playing (individual) or the
   // teams (team), each competition round's format and points, and whether it's saved.
@@ -344,7 +349,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     if (!type) return [["Competition", "None"], ...(key === "individual" && !competitionType.team || key === "team" && !competitionType.individual ? [["Score in the app", inAppScoring ? "On" : "Off"] as [string, ReactNode]] : [])];
     const slots = Array.from({ length: golfDayCount }, (_, day) => Array.from({ length: roundsPerDay[day] ?? 1 }, (_, slot) => scheduleSlot(day, slot))).flat();
     const compSlots = slots.filter(slot => compRounds[slot.key] ?? true);
-    const points = compSlots.reduce((sum, slot) => sum + roundPointsAvailable(compFormats[slot.key] ?? defaultRoundComp(playerTotal)), 0);
+    const points = compSlots.reduce((sum, slot) => sum + roundPointsAvailable(compFormats[slot.key] ?? sourceRoundComp(slot.key)), 0);
     const rows: [string, ReactNode][] = [["Competition", type]];
     if (key === "individual") {
       const playing = [...typePlayers.individual].sort((x, y) => x - y);
@@ -357,7 +362,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     }
     rows.push(["Rounds", `${compSlots.length} of ${slots.length} count`]);
     for (const slot of compSlots) {
-      const comp = compFormats[slot.key] ?? defaultRoundComp(playerTotal);
+      const comp = compFormats[slot.key] ?? sourceRoundComp(slot.key);
       rows.push([`Round ${slot.number}`, `${slot.course} · ${comp.format}${key === "team" ? ` · ${roundPointsAvailable(comp)} points` : ""}`]);
     }
     if (key === "team" && points) rows.push(["Points", `${points} available · ${points / 2 + 0.5} to win`]);
@@ -667,7 +672,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                       <span className={styles.roundCardPlace}>{golfDate(day)}</span>
                       <span className={tripStyles.eventHost}>Round {round.number}</span>
                       <span className={tripStyles.eventTitle}>{round.course}</span>
-                      {inComp && <span className={styles.roundCardPlace}>{(compFormats[round.key] ?? defaultRoundComp(playerTotal)).format} · {(compFormats[round.key] ?? defaultRoundComp(playerTotal)).matchType}</span>}
+                      {inComp && <span className={styles.roundCardPlace}>{(compFormats[round.key] ?? sourceRoundComp(round.key)).format} · {(compFormats[round.key] ?? sourceRoundComp(round.key)).matchType}</span>}
                     </span>
                   </button>
                   <button type="button" role="switch" aria-checked={inComp} aria-label={`Round ${round.number} is a competition round`} className={styles.formatSwitch} onClick={() => inComp ? setConfirmCompOff(round.key) : setCompRounds(current => ({ ...current, [round.key]: true }))}>
@@ -783,7 +788,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
         });
         // Matches: a 2 Teams competition on a comp match-play round. The round's format sets the matches (players ÷ both
         // sides) and how many fit a tee time (two 1 v 1 or one 2 v 2), so the tee times are worked out, not added.
-        const comp = compRounds[round.key] !== false ? compFormats[round.key] ?? defaultRoundComp(playerTotal) : null;
+        const comp = compRounds[round.key] !== false ? compFormats[round.key] ?? sourceRoundComp(round.key) : null;
         const matchesMode = competitionType.team === "2 Teams" && comp !== null && comp.matchType === "Match Play" && roundMatches(comp) > 0;
         const perSide = comp ? playersPerSide(comp.format) : 1;
         const perGroup = comp ? matchesPerTeeTime(comp.format) : 1;

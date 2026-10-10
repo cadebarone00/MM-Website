@@ -3,10 +3,9 @@ import { getPlayerDisplayName } from "../data/players";
 import type { GolfTripDraft } from "./golfTripDraft";
 import type { PastTrip } from "./golfTripHistory";
 import { shortPlace } from "./placeLabel.ts";
-import { FORMATS } from "./formats";
-import type { GolfMatchPreview, GolfMatchCompetitor, GolfLeaderboardEntry } from "./golfTripPreviewFixture";
+import { resolveGolfFormat } from "./formats";
+import type { GolfMatchPreview, GolfMatchCompetitor, GolfLeaderboardEntry, GolfMatchSide, GolfMatchPairing, GolfMatchStanding } from "./golfTripPreviewFixture";
 const formatName=(name:string)=>name==='Alt Shot'?'Alternate Shot':name;
-const formatKey=(name:string)=>({'Fourball':'fourball','Alternate Shot':'foursome','Singles':'singles','Stroke Play':'singlesstroke','Scramble':'scramble','Shamble':'shamble','Chapman':'chapman','Stableford':'stableford'} as Record<string,string>)[formatName(name)];
 export function tournamentSessions(tournament:Tournament){
  const days=[...new Set([...Object.keys(tournament.dayDates??{}).map(Number),...tournament.matches.map(match=>match.day)])].sort((a,b)=>a-b);
  return days.flatMap(day=>{
@@ -139,7 +138,7 @@ export function adaptTournamentToPreviewMatch(tournament: Tournament): GolfMatch
   const sessions=tournamentSessions(tournament);
   const roundCount=Math.max(1,sessions.length);
   const current=sessions[0];
-  const sides: [any, any] = [
+  const sides: [GolfMatchSide, GolfMatchSide] = [
     { name: "Maroon", winPct: 0, fairwayPct: "", greenPct: "", putts: "", score: "" },
     { name: "White", winPct: 0, fairwayPct: "", greenPct: "", putts: "", score: "" },
   ];
@@ -150,17 +149,17 @@ export function adaptTournamentToPreviewMatch(tournament: Tournament): GolfMatch
   sides[0].winPct = Math.round((maroonPts / total) * 100);
   sides[1].winPct = Math.round((whitePts / total) * 100);
 
-  const matches = (tournament.matches || []).map((m: RealMatch) => {
-    const left: GolfMatchCompetitor = { golfers: (m.maroonPlayers || []).map((p) => ({ name: getPlayerDisplayName(p), hcp: 0, thru: "", score: "", teeTime: m.teeTimeCst??"", course: tournament.venue })), points: undefined, totalScore: undefined, thru: undefined, teeTime: undefined, course: tournament.venue } as any;
-    const right: GolfMatchCompetitor | undefined = m.whitePlayers && m.whitePlayers.length > 0 ? { golfers: (m.whitePlayers || []).map((p) => ({ name: getPlayerDisplayName(p), hcp: 0, thru: "", score: "", teeTime: "", course: tournament.venue })), points: undefined, totalScore: undefined, thru: undefined, teeTime: undefined, course: tournament.venue } as any : undefined;
+  const matches: GolfMatchPairing[] = (tournament.matches || []).map((m: RealMatch) => {
+    const left: GolfMatchCompetitor = { golfers: (m.maroonPlayers || []).map((p) => ({ name: getPlayerDisplayName(p), hcp: 0, thru: "", score: "", teeTime: m.teeTimeCst??"", course: tournament.venue })), points: undefined, totalScore: undefined, thru: undefined, teeTime: undefined, course: tournament.venue };
+    const right: GolfMatchCompetitor | undefined = m.whitePlayers && m.whitePlayers.length > 0 ? { golfers: (m.whitePlayers || []).map((p) => ({ name: getPlayerDisplayName(p), hcp: 0, thru: "", score: "", teeTime: "", course: tournament.venue })), points: undefined, totalScore: undefined, thru: undefined, teeTime: undefined, course: tournament.venue } : undefined;
     // Who's ahead: the match's own leader, or for a finished match without one, whoever took more points.
     const leader = m.leader ?? (m.maroonPts > m.whitePts ? "maroon" : m.whitePts > m.maroonPts ? "white" : m.status === "live" || m.status === "scheduled" ? undefined : "tie");
-    const gross = leader === undefined ? null : (leader === "maroon" ? { leader: "left", up: Math.abs(m.margin ?? 0) } : leader === "white" ? { leader: "right", up: Math.abs(m.margin ?? 0) } : { leader: null, up: 0 });
+    const gross:GolfMatchStanding = leader === undefined ? null : (leader === "maroon" ? { leader: "left", up: Math.abs(m.margin ?? 0) } : leader === "white" ? { leader: "right", up: Math.abs(m.margin ?? 0) } : { leader: null, up: 0 });
     const net = gross;
     // Finished matches: their final result as golfers say it.
     const result = m.margin && m.holesRemaining ? `${m.margin}&${m.holesRemaining}` : m.margin ? `${m.margin} UP`
       : m.status !== "live" && m.status !== "scheduled" && m.maroonPts === m.whitePts ? "AS" : undefined;
-    return { left, right, gross, net, round: sessions.find(session=>session.day===m.day&&session.session===m.session)?.round??m.day, result } as any;
+    return { left, right, gross, net, round: sessions.find(session=>session.day===m.day&&session.session===m.session)?.round??m.day, result };
   });
 
   const leaderboard: GolfLeaderboardEntry[] = (tournament.individualLeaderboard || []).map((s, i) => ({
@@ -179,12 +178,12 @@ export function adaptTournamentToPreviewMatch(tournament: Tournament): GolfMatch
     roundCount,
     course: tournament.venue || "",
     roundDate: current?.date||tournament.startDate||"",
-    format: "Tournament",
-    formatDef: undefined,
+    format: current?.format||"Tournament",
+    formatDef: current?.format?resolveGolfFormat(current.format):undefined,
     handicap: false,
     par,
     sides: [sides[0], sides[1]],
-    matches: matches as any,
+    matches,
     leaderboard,
   };
 
