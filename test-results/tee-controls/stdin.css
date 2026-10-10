@@ -1,0 +1,482 @@
+/* components/platform/GolfTripCompetition.module.css */
+.GolfTripCompetition_card {
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, .05);
+  color: #fbf8f1;
+  font: 500 14px/1.35 var(--font-barlow), sans-serif;
+}
+.GolfTripCompetition_title {
+  margin: 0 0 16px;
+  font:
+    500 22px/1.2 var(--font-spectral),
+    Georgia,
+    serif;
+  color: #fff;
+}
+.GolfTripCompetition_bulk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-bottom: 10px;
+}
+.GolfTripCompetition_bulkControl {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+}
+.GolfTripCompetition_note {
+  margin: 0;
+  color: rgba(220, 196, 149, .8);
+}
+.GolfTripCompetition_header,
+.GolfTripCompetition_row {
+  display: grid;
+  grid-template-columns: 60px 40px minmax(90px, 1.4fr) minmax(120px, 1.5fr) 64px 64px;
+  gap: 8px;
+  align-items: center;
+}
+.GolfTripCompetition_header {
+  margin-top: 18px;
+  padding-bottom: 8px;
+  color: #dcc495;
+  font-size: 12px;
+  font-weight: 700;
+}
+.GolfTripCompetition_rounds {
+  display: flex;
+  flex-direction: column;
+}
+.GolfTripCompetition_row {
+  padding: 12px 0;
+  border-top: 1px solid rgba(255, 255, 255, .12);
+}
+.GolfTripCompetition_cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.GolfTripCompetition_label {
+  display: none;
+  color: #dcc495;
+  font-size: 12px;
+  font-weight: 700;
+}
+.GolfTripCompetition_cell select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 6px;
+  border: 1px solid rgba(220, 196, 149, .5);
+  border-radius: 8px;
+  background: var(--color-maroon-900);
+  color: #fbf8f1;
+  font: inherit;
+}
+.GolfTripCompetition_toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #fbf8f1;
+  font: 600 12px/1 var(--font-barlow), sans-serif;
+  cursor: pointer;
+}
+.GolfTripCompetition_track {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 22px;
+  padding: 2px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .22);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);
+}
+.GolfTripCompetition_track[data-on=true] {
+  justify-content: flex-end;
+  background: #dcc495;
+  box-shadow: inset 0 0 0 1px rgba(220, 196, 149, .5);
+}
+.GolfTripCompetition_thumb {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #f9f5ef;
+  color: var(--color-maroon-900);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+}
+.GolfTripCompetition_toggle:disabled,
+.GolfTripCompetition_cell select:disabled {
+  opacity: .7;
+  cursor: default;
+}
+.GolfTripCompetition_toggle:focus-visible,
+.GolfTripCompetition_cell select:focus-visible {
+  outline: 2px solid #dcc495;
+  outline-offset: 3px;
+}
+.GolfTripCompetition_enabled {
+  color: #dcc495;
+  font-weight: 700;
+}
+.GolfTripCompetition_status {
+  grid-column: 1/-1;
+  margin: 0;
+  color: rgba(220, 196, 149, .8);
+  font-size: 12px;
+}
+@media (max-width: 700px) {
+  .GolfTripCompetition_header {
+    display: none;
+  }
+  .GolfTripCompetition_row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 14px;
+  }
+  .GolfTripCompetition_label {
+    display: block;
+  }
+  .GolfTripCompetition_rounds {
+    margin-top: 16px;
+  }
+}
+.GolfTripCompetition_settings {
+  padding: 24px 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--color-maroon-900,#240001);
+  color: #fff;
+  font-family: var(--font-barlow), sans-serif;
+}
+.GolfTripCompetition_settings .GolfTripCompetition_title {
+  margin: 0 0 36px;
+  text-align: center;
+  color: #fff;
+  font:
+    700 clamp(24px, 5vw, 32px)/1.2 var(--font-spectral),
+    Georgia,
+    serif;
+}
+.GolfTripCompetition_settings .GolfTripCompetition_bulk {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  margin-bottom: 20px;
+}
+.GolfTripCompetition_settings .GolfTripCompetition_bulkControl {
+  justify-content: space-between;
+  gap: 20px;
+  color: #dcc495;
+  font-size: 15px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+.GolfTripCompetition_settings .GolfTripCompetition_note,
+.GolfTripCompetition_settings .GolfTripCompetition_status {
+  color: #dcc495;
+}
+.GolfTripCompetition_settings .GolfTripCompetition_header {
+  display: none;
+}
+.GolfTripCompetition_settings .GolfTripCompetition_rounds {
+  margin-top: 36px;
+  gap: 40px;
+}
+.GolfTripCompetition_settings .GolfTripCompetition_row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 30px;
+  padding: 28px 0 0;
+  border-top: 1px solid rgba(220, 196, 149, .3);
+}
+.GolfTripCompetition_settings .GolfTripCompetition_cell {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  overflow-wrap: anywhere;
+}
+.GolfTripCompetition_settings .GolfTripCompetition_label {
+  display: block;
+  color: #dcc495;
+  font-size: 15px;
+  font-weight: 750;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+.GolfTripCompetition_settings .GolfTripCompetition_cell:nth-child(4) {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 18px;
+}
+.GolfTripCompetition_settings .GolfTripCompetition_cell:nth-child(3) > span:last-child {
+  text-align: right;
+}
+.GolfTripCompetition_settings .GolfTripCompetition_choices {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 4px 3px 12px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(220, 196, 149, .3) var(--color-maroon-900,#240001);
+}
+.GolfTripCompetition_settings .GolfTripCompetition_choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 76px;
+  height: 44px;
+  padding: 0 18px;
+  border: 2px solid rgba(220, 196, 149, .3);
+  border-radius: 999px;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, .05);
+  color: #fff;
+  font: 700 13px/1.2 var(--font-barlow), sans-serif;
+  cursor: pointer;
+}
+.GolfTripCompetition_settings .GolfTripCompetition_choice[aria-pressed=true] {
+  border-color: #dcc495;
+  background: rgba(220, 196, 149, .2);
+}
+.GolfTripCompetition_settings .GolfTripCompetition_toggle {
+  position: relative;
+  min-height: 44px;
+  gap: 8px;
+  font-size: 12px;
+}
+.GolfTripCompetition_settings .GolfTripCompetition_toggle > span:last-child {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  color: #dcc495;
+  font-size: 10px;
+}
+.GolfTripCompetition_settings .GolfTripCompetition_track {
+  width: 66px;
+  height: 30px;
+  padding: 2px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, .22);
+}
+.GolfTripCompetition_settings .GolfTripCompetition_track[data-on=true] {
+  background: #dcc495;
+}
+.GolfTripCompetition_settings .GolfTripCompetition_thumb {
+  width: 38px;
+  height: 26px;
+  border-radius: 20px;
+  background: #fff;
+  color: var(--color-maroon-900,#240001);
+}
+.GolfTripCompetition_settings .GolfTripCompetition_choice:disabled,
+.GolfTripCompetition_settings .GolfTripCompetition_toggle:disabled {
+  opacity: .6;
+  cursor: default;
+}
+.GolfTripCompetition_settings .GolfTripCompetition_choice:focus-visible,
+.GolfTripCompetition_settings .GolfTripCompetition_toggle:focus-visible {
+  outline: 2px solid #dcc495;
+  outline-offset: 4px;
+}
+.GolfTripCompetition_settings .GolfTripCompetition_status {
+  font-size: 13px;
+}
+.GolfTripCompetition_settings .GolfTripCompetition_toggle {
+  font-family: inherit;
+}
+
+/* components/platform/RoundTeeBoxes.module.css */
+.RoundTeeBoxes_tees {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+  color: #fbf8f1;
+  font-family: var(--font-barlow), sans-serif;
+}
+.RoundTeeBoxes_heading {
+  color: rgba(247, 240, 223, .7);
+  font: 700 12px/1 var(--font-barlow), sans-serif;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.RoundTeeBoxes_group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.RoundTeeBoxes_roundSelect {
+  max-width: 65%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #dcc49570;
+  border-radius: 8px;
+  background: #2a0a10;
+  color: #fbf8f1;
+  font: 600 13px var(--font-barlow), sans-serif;
+}
+.RoundTeeBoxes_roundSelect:focus-visible {
+  outline: 2px solid #dcc495;
+  outline-offset: 2px;
+}
+.RoundTeeBoxes_choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+  min-height: 44px;
+}
+.RoundTeeBoxes_choice {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 6px 8px;
+  border: 2px solid rgba(220, 196, 149, .3);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .05);
+  color: #fbf8f1;
+  font: 700 13px/1.15 var(--font-barlow), sans-serif;
+  cursor: pointer;
+}
+.RoundTeeBoxes_choice small {
+  color: rgba(251, 248, 241, .6);
+  font-size: 11px;
+  font-weight: 600;
+}
+.RoundTeeBoxes_choice[aria-pressed=true] {
+  border-color: #dcc495;
+  background: rgba(220, 196, 149, .2);
+}
+.RoundTeeBoxes_choice:focus-visible {
+  outline: 2px solid #dcc495;
+  outline-offset: 2px;
+}
+.RoundTeeBoxes_loading {
+  align-self: center;
+  color: rgba(251, 248, 241, .6);
+  font-size: 13px;
+}
+.RoundTeeBoxes_perHole {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.RoundTeeBoxes_card {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.RoundTeeBoxes_card th,
+.RoundTeeBoxes_card td {
+  padding: 7px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  text-align: left;
+  font: 600 14px/1.2 var(--font-barlow), sans-serif;
+}
+.RoundTeeBoxes_card thead th {
+  color: #dcc495;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  border-bottom-color: rgba(214, 184, 121, .35);
+}
+.RoundTeeBoxes_card tbody th {
+  width: 44px;
+  color: #fbf8f1;
+}
+.RoundTeeBoxes_card .RoundTeeBoxes_par {
+  width: 40px;
+  text-align: left;
+}
+.RoundTeeBoxes_card .RoundTeeBoxes_spacer {
+  width: auto;
+  border-bottom-color: rgba(255, 255, 255, .08);
+}
+.RoundTeeBoxes_card .RoundTeeBoxes_tee {
+  text-align: right;
+  color: rgba(251, 248, 241, .8);
+  white-space: nowrap;
+}
+.RoundTeeBoxes_card .RoundTeeBoxes_yards {
+  width: 60px;
+  text-align: right;
+}
+.RoundTeeBoxes_card tr.RoundTeeBoxes_total th,
+.RoundTeeBoxes_card tr.RoundTeeBoxes_total td {
+  color: #dcc495;
+  font-weight: 800;
+  border-bottom-color: rgba(214, 184, 121, .35);
+}
+.RoundTeeBoxes_card select {
+  max-width: 150px;
+  padding: 3px 6px;
+  border: 1.5px solid rgba(220, 196, 149, .45);
+  border-radius: 8px;
+  background: #2a0a10;
+  color: #fbf8f1;
+  font: 600 13px/1.2 var(--font-barlow), sans-serif;
+}
+.RoundTeeBoxes_card select:focus {
+  outline: none;
+  border-color: #dcc495;
+}
+.RoundTeeBoxes_note {
+  margin: 16px 0 0;
+  color: rgba(251, 248, 241, .6);
+  font: 500 13px/1.35 var(--font-barlow), sans-serif;
+}
+.RoundTeeBoxes_credit {
+  margin: 0;
+  color: rgba(251, 248, 241, .45);
+  font: 500 11px/1.4 var(--font-barlow), sans-serif;
+}
+.RoundTeeBoxes_save {
+  justify-self: end;
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid #dcc495;
+  border-radius: 8px;
+  background: #dcc495;
+  color: #240001;
+  font: 700 13px var(--font-barlow), sans-serif;
+  cursor: pointer;
+}
+.RoundTeeBoxes_save:focus-visible {
+  outline: 2px solid #dcc495;
+  outline-offset: 3px;
+}
+.RoundTeeBoxes_save:disabled {
+  opacity: .45;
+  cursor: default;
+}
+.RoundTeeBoxes_tees select:disabled {
+  background: #403b3c;
+  border-color: #777;
+  color: #aaa;
+  opacity: .7;
+  cursor: default;
+}
+.RoundTeeBoxes_perHole button:disabled {
+  filter: grayscale(1);
+  opacity: .5;
+  cursor: default;
+}

@@ -5,7 +5,7 @@ import toggleStyles from "./GolfTripCompetition.module.css";
 import styles from "./RoundTeeBoxes.module.css";
 
 /** A round's tees: one tee box for every hole, or (Set per hole) a tee chosen hole by hole. */
-export type RoundTees = { tee: string | null; perHole: boolean; holeTees: Record<number, string> };
+export type RoundTees = { tee: string | null; perHole: boolean; holeTees: Record<number, string>; locked?: boolean; savedCourseRef?: string };
 export const NO_ROUND_TEES: RoundTees = { tee: null, perHole: false, holeTees: {} };
 
 type ScorecardHole = { number: number; par: number; strokeIndex?: number; yards: Record<string, number> };
@@ -16,8 +16,7 @@ const BACK = [10, 11, 12, 13, 14, 15, 16, 17, 18];
 
 /**
  * Golf Schedule → a round's page, under its format line: the course's tee boxes, then its scorecard.
- * Tee box: pick one for the whole round. Set per hole: on = choose the tee on each hole right in the scorecard; off = every
- * hole shows the tee box above (locked). Scorecard: Hole and Par on the left, the hole's tee and its yardage on the right;
+ * Tee box: pick one for the whole round. Set per hole: on = choose the tee on each hole right in the scorecard; off = hide the per-hole scorecard and use the round tee. Scorecard: Hole and Par on the left, the hole's tee and its yardage on the right;
  * holes 1–9, OUT, 10–18, IN, TOTAL. Always the same size while it loads ("—"), so nothing jumps.
  */
 export function RoundTeeBoxes({ courseRef, value, onChange }: { courseRef?: string; value: RoundTees; onChange: (next: RoundTees) => void }) {
@@ -36,6 +35,7 @@ export function RoundTeeBoxes({ courseRef, value, onChange }: { courseRef?: stri
   const data = detail?.ref === courseRef ? detail.data : null; // null = loading
   if (data === "unavailable") return <p className={styles.note}>Tee boxes and yardages aren&apos;t available for this course right now.</p>;
 
+  const locked = Boolean(value.locked && value.savedCourseRef === courseRef);
   const tees = data?.teeSets.map(set => set.name) ?? [];
   const roundTee = value.tee && tees.includes(value.tee) ? value.tee : tees[0] ?? null;
   const holes = new Map((data?.scorecard ?? []).map(hole => [hole.number, hole]));
@@ -47,7 +47,15 @@ export function RoundTeeBoxes({ courseRef, value, onChange }: { courseRef?: stri
   };
   const parOf = (number: number) => holes.get(number)?.par;
   const hasBack = !data || BACK.some(number => holes.has(number));
+  const playedHoles = (data?.scorecard ?? []).map(hole => hole.number);
+  const mixed = value.perHole && new Set(playedHoles.map(teeFor).filter(Boolean)).size > 1;
+  const selectedYards = playedHoles.map(yardsOn);
+  const mixedYards = selectedYards.length && selectedYards.every(yards => typeof yards === "number")
+    ? selectedYards.reduce<number>((total, yards) => total + (yards ?? 0), 0) : null;
   const shown = (v: number | undefined) => v === undefined ? "—" : v.toLocaleString("en-US");
+
+  const saveOrUndo = () => onChange({ ...value, tee: roundTee, locked: !locked, savedCourseRef: courseRef });
+  const saveButton = <button type="button" className={styles.save} disabled={!locked && (!data || !roundTee)} onClick={saveOrUndo}>{locked ? "Undo & Change" : "Save Yardages"}</button>;
 
   const holeRow = (number: number) => {
     const hole = holes.get(number);
@@ -58,7 +66,7 @@ export function RoundTeeBoxes({ courseRef, value, onChange }: { courseRef?: stri
       <td className={styles.par}>{shown(parOf(number))}</td>
       <td className={styles.spacer} />
       <td className={styles.tee}>{value.perHole && choices.length > 0
-        ? <select aria-label={`Hole ${number} tee`} value={tee ?? ""} onChange={event => onChange({ ...value, holeTees: { ...value.holeTees, [number]: event.target.value } })}>
+        ? <select disabled={locked} aria-label={`Hole ${number} tee`} value={tee ?? ""} onChange={event => onChange({ ...value, holeTees: { ...value.holeTees, [number]: event.target.value } })}>
           {choices.map(name => <option key={name} value={name}>{name}</option>)}
         </select>
         : tee ?? "—"}</td>
@@ -76,19 +84,21 @@ export function RoundTeeBoxes({ courseRef, value, onChange }: { courseRef?: stri
   return <section className={styles.tees} aria-label="Tee boxes">
     <div className={styles.group} role="group" aria-label="Tee box">
       <span className={styles.heading}>Tee box</span>
-      <div className={styles.choices}>
-        {data ? data.teeSets.map(set => <button key={set.name} type="button" className={styles.choice} aria-pressed={roundTee === set.name}
-          onClick={() => onChange({ ...value, tee: set.name })}>{set.name}{set.totalYards && <small>{set.totalYards.toLocaleString("en-US")} yds</small>}</button>)
-          : <span className={styles.loading} role="status">Loading tee boxes…</span>}
-      </div>
+      {data ? <select className={styles.roundSelect} aria-label="Round tee box" value={mixed ? "__mixed__" : roundTee ?? ""} disabled={locked || !tees.length}
+        onChange={event => onChange({ ...value, tee: event.target.value })}>
+        {mixed && <option value="__mixed__" disabled>Mixed{mixedYards === null ? "" : ` (${mixedYards.toLocaleString("en-US")} yds)`}</option>}
+        {!tees.length && <option value="">No tee boxes available</option>}
+        {data.teeSets.map(set => <option key={set.name} value={set.name}>{set.name}{set.totalYards ? ` (${set.totalYards.toLocaleString("en-US")} yds)` : ""}</option>)}
+      </select> : <span className={styles.loading} role="status">Loading tee boxes...</span>}
     </div>
+    {saveButton}
     <div className={styles.perHole}>
       <span className={styles.heading}>Set per hole</span>
-      <button type="button" role="switch" aria-checked={value.perHole} aria-label="Set tee box per hole" className={toggleStyles.toggle} onClick={() => onChange({ ...value, perHole: !value.perHole })}>
+      <button type="button" role="switch" disabled={locked} aria-checked={value.perHole} aria-label="Set tee box per hole" className={toggleStyles.toggle} onClick={() => onChange({ ...value, perHole: !value.perHole })}>
         <span className={toggleStyles.track} data-on={value.perHole}><span className={toggleStyles.thumb} /></span><span>{value.perHole ? "On" : "Off"}</span>
       </button>
     </div>
-    <table className={styles.card}>
+    {value.perHole && <table className={styles.card} aria-label="Per-hole tee scorecard">
       <thead><tr><th scope="col">Hole</th><th scope="col" className={styles.par}>Par</th><td className={styles.spacer} /><th scope="col" className={styles.tee}>Tee</th><th scope="col" className={styles.yards}>Yds</th></tr></thead>
       <tbody>
         {FRONT.map(holeRow)}
@@ -96,7 +106,8 @@ export function RoundTeeBoxes({ courseRef, value, onChange }: { courseRef?: stri
         {hasBack && <Fragment>{BACK.map(holeRow)}{totalRow("In", BACK)}</Fragment>}
         {totalRow("Total", hasBack ? [...FRONT, ...BACK] : FRONT)}
       </tbody>
-    </table>
+    </table>}
+    {value.perHole && saveButton}
     {data?.attribution && <p className={styles.credit}>{data.attribution}</p>}
   </section>;
 }

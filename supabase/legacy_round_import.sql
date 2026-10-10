@@ -1,4 +1,6 @@
 -- supabase/legacy_round_import.sql
+-- FROZEN PROOF OF CONCEPT (owner, 2026-10-10): superseded by supabase/historical_import.sql. Do not expand it and
+-- do not run it in production; old accounts / slugs are not migrated. Kept only for reference until it's deleted.
 -- Legacy Maroon rounds → player_rounds (project_specs.md, "Legacy Maroon rounds → modern profile history").
 -- Migration TOOLING: installing this file changes no data. Nothing is imported until someone runs, by hand:
 --

@@ -87,9 +87,16 @@ async function latestLegacyScorecard(playerSlug: string): Promise<LegacyMaroonPr
 const SOURCES: ProfileSources = {
   subject,
   history: (viewerId, subjectId) => rpc("get_profile_history", { p_viewer: viewerId, p_subject: subjectId }),
+  // Modern rounds plus historical rounds read through linked participants (supabase/historical_import.sql) — never
+  // copies. Until historical_import.sql is run there are simply no historical rounds.
   rounds: async (viewerId, subjectId) => {
-    const data = await rpc("list_profile_rounds", { p_viewer: viewerId, p_owner: subjectId });
-    return Array.isArray(data) ? profileHistoryFromJson(data) : null;
+    const [data, historical] = await Promise.all([
+      rpc("list_profile_rounds", { p_viewer: viewerId, p_owner: subjectId }),
+      rpc("list_profile_historical_rounds", { p_viewer: viewerId, p_owner: subjectId }),
+    ]);
+    if (!Array.isArray(data)) return null;
+    return [...profileHistoryFromJson(data), ...profileHistoryFromJson(Array.isArray(historical) ? historical : [])]
+      .sort((a, b) => b.datePlayed.localeCompare(a.datePlayed) || a.id.localeCompare(b.id));
   },
   legacy,
   isLegacyTournament: (slug) => legacyAdapterFor(slug) !== null,
