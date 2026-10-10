@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { inviteStatusesFromJson, playerPoolFromJson, type PlayerInviteStatus, type PoolPlayer } from "@/lib/platform/tournamentPlayerInvitations";
+import { editionPlayerProfilesFromJson, inviteStatusesFromJson, playerPoolFromJson, type PlayerInviteStatus, type PoolPlayer } from "@/lib/platform/tournamentPlayerInvitations";
 import { PlayerInvite } from "./PlayerInvite";
 import base from "@/components/tournament-draft/TournamentDraftWorkspace.module.css";
 import styles from "../TournamentDashboard.module.css";
@@ -16,6 +16,7 @@ export function PlayersEditor({ setup, saving, onSave, onCancel, apiBase }: Edit
   const teams = setup.competitionType === "teams" ? setup.teams : [];
   // Invitations (saved players only): joined / invited / declined / not invited, from the organizer-only status route.
   const [statuses, setStatuses] = useState<Record<string, PlayerInviteStatus> | null>(null);
+  const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [invitesOff, setInvitesOff] = useState(false);
   const [statusVersion, setStatusVersion] = useState(0);
   useEffect(() => {
@@ -23,7 +24,7 @@ export function PlayersEditor({ setup, saving, onSave, onCancel, apiBase }: Edit
     let live = true;
     loadInviteStatuses(apiBase).then((result) => {
       if (!live) return;
-      if (result) setStatuses(result); else setInvitesOff(true);
+      if (result) { setStatuses(result.statuses); setProfiles(result.profiles); } else setInvitesOff(true);
     });
     return () => { live = false; };
   }, [apiBase, statusVersion]);
@@ -58,7 +59,7 @@ export function PlayersEditor({ setup, saving, onSave, onCancel, apiBase }: Edit
             ? <Field label="Team"><select value={player.teamKey} onChange={(event) => update(index, { teamKey: event.target.value })}><option value="">Unassigned</option>{teams.map((team) => <option key={team.key} value={team.key}>{team.name}</option>)}</select></Field>
             : <span className={base.muted}>No teams</span>}
           <button type="button" className={styles.removeButton} onClick={() => setPlayers((rows) => rows.filter((_, i) => i !== index))} aria-label={`Remove player ${index + 1}`}>Remove</button>
-          {apiBase && player.id && !invitesOff && <PlayerInvite apiBase={apiBase} playerId={player.id} name={player.name} status={statuses?.[player.id]} onInvited={() => setStatusVersion((v) => v + 1)} />}
+          {apiBase && player.id && !invitesOff && <PlayerInvite apiBase={apiBase} playerId={player.id} name={player.name} status={statuses?.[player.id]} username={profiles[player.id] ?? null} onInvited={() => setStatusVersion((v) => v + 1)} />}
         </div>)}
       </div>
       {players.length < 64 && <div className={base.actions} style={{ justifyContent: "flex-start", gap: 16 }}>
@@ -81,12 +82,12 @@ export function PlayersEditor({ setup, saving, onSave, onCancel, apiBase }: Edit
   </form>;
 }
 
-/** The organizer-only invite statuses for this edition, or null when invitations aren't available. */
-async function loadInviteStatuses(apiBase: string): Promise<Record<string, PlayerInviteStatus> | null> {
+/** The organizer-only invite statuses (and joined players' usernames) for this edition, or null when invitations aren't available. */
+async function loadInviteStatuses(apiBase: string): Promise<{ statuses: Record<string, PlayerInviteStatus>; profiles: Record<string, string> } | null> {
   try {
     const response = await fetch(`${apiBase}/players/invites`, { cache: "no-store" });
-    const reply = await response.json().catch(() => null) as { ok?: boolean; statuses?: unknown } | null;
-    return response.ok && reply?.ok ? inviteStatusesFromJson(reply.statuses) : null;
+    const reply = await response.json().catch(() => null) as { ok?: boolean; statuses?: unknown; profiles?: unknown } | null;
+    return response.ok && reply?.ok ? { statuses: inviteStatusesFromJson(reply.statuses), profiles: editionPlayerProfilesFromJson(reply.profiles) } : null;
   } catch {
     return null;
   }

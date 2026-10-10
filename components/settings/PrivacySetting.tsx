@@ -5,11 +5,11 @@ import type { RoundsVisibility } from "@/lib/platform/playerRoundsPrivacy";
 
 const OPTIONS: { value: RoundsVisibility; label: string }[] = [{ value: "public", label: "Public" }, { value: "private", label: "Private" }];
 const EXPLAIN: Record<RoundsVisibility, string> = {
-  public: "Anyone signed in can see your rounds and handicap.",
-  private: "Only you see your rounds. People you play with still see your handicap index.",
+  public: "Anyone can see your profile: your bio, rounds and public tournaments. Your golf trips stay private.",
+  private: "Only you see your profile; others see just your name. People you play with still see your handicap index.",
 };
 
-/** Settings → Privacy: Public / Private for my Rounds. Saves on tap; goes back to the old choice if saving fails. */
+/** Settings → Privacy: Public / Private for my profile and Rounds (Profile V1 rules, lib/profile/profileReadModel.ts). Saves on tap; goes back to the old choice if saving fails. */
 export function PrivacySetting({ initial }: { initial: RoundsVisibility }) {
   const [visibility, setVisibility] = useState(initial);
   const [saving, setSaving] = useState(false);
@@ -35,7 +35,7 @@ export function PrivacySetting({ initial }: { initial: RoundsVisibility }) {
 
   return <>
     <p className="mt-2 font-sans text-base text-ink-600">{EXPLAIN[visibility]}</p>
-    <div role="group" aria-label="Rounds privacy" className="mt-4 flex gap-2">
+    <div role="group" aria-label="Profile privacy" className="mt-4 flex gap-2">
       {OPTIONS.map((option) => <button key={option.value} type="button" aria-pressed={visibility === option.value} disabled={saving} onClick={() => choose(option.value)}
         className={`min-h-11 flex-1 rounded-pill border px-4 font-condensed text-sm font-semibold uppercase tracking-wide disabled:opacity-60 ${visibility === option.value ? "border-maroon-900 bg-maroon-900 text-cream-50" : "border-ink-200 bg-white text-ink-900 hover:border-maroon-700"}`}>
         {option.label}</button>)}

@@ -1,15 +1,14 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { getPlayerProfileBySlug, getPlayerSlug } from "@/lib/data/players";
+import { getPlayerSlug } from "@/lib/data/players";
 import { getCatalogTournament, getSeasonCatalog } from "@/lib/data/seasonCatalog";
 import { getPlayerScorecard } from "@/lib/data";
-import { getProfileOverrides, mergeProfile } from "@/lib/data/players/overrides";
 import { getHandicapSummaryForPlayer } from "@/lib/handicap/data";
 import { getArchivedHandicapRounds, getScorecardsForTournament, getShotVideoUrls } from "@/lib/data/archivedScorecards";
 import { combinedHandicapIndexes } from "@/lib/handicap/archiveIndex";
 import { legacyAdapterFor } from "@/lib/platform/legacyTournaments";
 import { profileHistoryFromJson } from "@/lib/platform/playerRoundsRows";
 import type { ProfileId } from "./profileIdentity";
-import { legacyMaroonYears, playerFullName } from "./myProfile";
+import { legacyMaroonYears } from "./myProfile";
 import { assembleProfileReadModel, type LegacyMaroonProfile, type ProfileReadModel, type ProfileSources, type ProfileSubjectRow } from "./profileReadModel";
 
 /**
@@ -23,15 +22,19 @@ const SUBJECT_COLUMNS = "id, display_name, username, created_at, player_slug";
 
 async function subject(subjectId: ProfileId): Promise<ProfileSubjectRow | null> {
   const db = createSupabaseServiceRoleClient();
-  // rounds_visibility comes with player_rounds.sql; until it's run, read the row without it.
-  let { data, error } = await db.from("profiles").select(`${SUBJECT_COLUMNS}, rounds_visibility`).eq("id", subjectId).maybeSingle();
-  if (error) ({ data, error } = await db.from("profiles").select(SUBJECT_COLUMNS).eq("id", subjectId).maybeSingle());
-  if (error || !data) return null;
+  // bio comes with profile_v1.sql and rounds_visibility with player_rounds.sql; until they're run, read without them.
+  let data: unknown = null;
+  for (const columns of [`${SUBJECT_COLUMNS}, rounds_visibility, bio`, `${SUBJECT_COLUMNS}, rounds_visibility`, SUBJECT_COLUMNS]) {
+    const reply = await db.from("profiles").select(columns).eq("id", subjectId).maybeSingle();
+    if (!reply.error) { data = reply.data; break; }
+  }
+  if (!data) return null;
   const row = data as Record<string, unknown>;
   const text = (v: unknown) => typeof v === "string" ? v : "";
   return {
     id: text(row.id), displayName: text(row.display_name), username: text(row.username), createdAt: text(row.created_at) || null,
     legacyMaroonPlayerSlug: text(row.player_slug) || null, roundsVisibility: row.rounds_visibility === "public" ? "public" : "private",
+    bio: text(row.bio) || null,
   };
 }
 
@@ -45,22 +48,20 @@ async function rpc(fn: string, args: Record<string, unknown>): Promise<unknown> 
 }
 
 /**
- * LEGACY COMPATIBILITY: pre-platform Maroon data found through the old player slot (bio / photo, archived years with
- * their team, handicap history, latest scorecard). Read-only; only ever called for a profile that has a slug.
+ * LEGACY HISTORY: original Maroon golf data found through the old player slot (archived years with their team,
+ * handicap history, latest scorecard). Read-only; only ever called for a profile that has a slug. The old profile
+ * (name, bio, photo, player details) is retired and never read. "public" (someone else viewing a Public profile) is
+ * the archive years only.
  */
-async function legacy(playerSlug: string): Promise<LegacyMaroonProfile> {
-  const { data: slot } = await createSupabaseServiceRoleClient().from("player_slots").select("full_name").eq("player_slug", playerSlug).maybeSingle();
-  const staticProfile = getPlayerProfileBySlug(playerSlug);
-  const fullName = playerFullName(slot?.full_name, staticProfile?.fullName);
-  const base = staticProfile ?? { id: playerSlug, slug: playerSlug, fullName: fullName ?? playerSlug, avatarSrc: null, bio: "", history: [] };
-  const [bio, handicap, latestScorecard] = await Promise.all([
-    getProfileOverrides(playerSlug).then((overrides) => mergeProfile(base, overrides)),
-    Promise.all([getHandicapSummaryForPlayer(playerSlug), getArchivedHandicapRounds(playerSlug)])
+async function legacy(playerSlug: string, detail: "full" | "public"): Promise<LegacyMaroonProfile> {
+  const full = detail === "full";
+  const [handicap, latestScorecard] = await Promise.all([
+    !full ? null : Promise.all([getHandicapSummaryForPlayer(playerSlug), getArchivedHandicapRounds(playerSlug)])
       .then(([summary, archivedRounds]) => ({ summary: { ...summary, ...combinedHandicapIndexes(summary.rounds, archivedRounds) }, archivedRounds }))
       .catch(() => { console.error("Profile round history could not be loaded."); return null; }),
-    latestLegacyScorecard(playerSlug).catch(() => { console.error("Profile player page could not be loaded."); return null; }),
+    !full ? null : latestLegacyScorecard(playerSlug).catch(() => { console.error("Profile player page could not be loaded."); return null; }),
   ]);
-  return { playerSlug, fullName, avatarSrc: staticProfile?.avatarSrc ?? null, bio, years: legacyMaroonYears(playerSlug), handicap, latestScorecard };
+  return { playerSlug, years: legacyMaroonYears(playerSlug), handicap, latestScorecard };
 }
 
 /** The newest Maroon edition this player has a scorecard in. */
@@ -93,6 +94,12 @@ const SOURCES: ProfileSources = {
   legacy,
   isLegacyTournament: (slug) => legacyAdapterFor(slug) !== null,
 };
+
+/** username → profile id (ignoring case), on the server only; null when there's no such profile. */
+export async function profileIdForUsername(username: string): Promise<ProfileId | null> {
+  const data = await rpc("profile_id_for_username", { p_username: username });
+  return typeof data === "string" ? data : null;
+}
 
 /** The subject's profile as this viewer may see it, or null when the subject has no profile. */
 export function loadProfileReadModel(viewerId: ProfileId | null, subjectId: ProfileId): Promise<ProfileReadModel | null> {

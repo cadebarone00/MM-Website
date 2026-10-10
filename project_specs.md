@@ -2519,3 +2519,47 @@ Builds **on top of** the Player rounds plan above. Nothing above changes: `Playe
 - **Cleanup:** the 4 unused tournament-list lookups and the unused career stats / teams loading are gone; `maroonYearsPlayed`, `teamsPlayed` and `mergeCompleted` were removed (superseded). `careerStats` is kept, unloaded, for the coming Stats design.
 - **States:** each section is `ok` / `unavailable` (e.g. SQL not run) / `hidden` (not for this viewer). A brand-new golfer sees "will show here" lines; a login without a profile row sees "Finish setting up your profile".
 - **Done =** read-model unit + DB tests, the updated `/profile` browser test, TypeScript, lint and the full suite.
+
+### Round: Profile V1 — setup, editing, modern bio, public / private profiles (2026-10-10, built; `profile_v1.sql` not run)
+
+- **Finish profile setup:** a signed-in login with no `profiles` row sees a Finish Profile Setup form on `/profile` (display name and username). `create_my_profile` creates exactly one row with `profiles.id = the login's id`. It's idempotent: a second call returns the existing row, and the primary key makes duplicates impossible. The email stored is the session's own; nothing is looked up by email.
+- **Edit profile (`/profile/edit`, everyone):** display name, username and bio, via `update_my_profile`. ID, member since, history, teams, results and the legacy slug are not editable.
+- **Username rules:** 3–30 characters, letters / numbers / `_` / `.`, starting with a letter or number. Unique ignoring case. Route words (`edit`, `setup`, `settings`, `me`, `new`, `admin`) are reserved, and so is the old Maroon player-code pattern (`MM` + up to 6 letters) unless it's already yours.
+- **Bio:** `profiles.bio` (≤ 1000 characters) is the source of truth for everyone. For legacy Maroon players, the modern bio wins and the old approved bio is the fallback. Display name: the modern one wins, except the signup placeholder "Golfer", which falls back to the legacy full name.
+- **Photo:** there's no profile upload system, so it's initials, or the old Maroon photo for legacy players. Upload is a gap.
+- **Public profile `/profile/<username>`:** looked up ignoring case on the server; no ids or emails in the URL or the page. Viewing your own username redirects to `/profile`.
+- **V1 privacy rules** (the existing Settings → Privacy switch, `profiles.rounds_visibility`, is the profile's setting):
+  - **Owner:** everything.
+  - **Others, Private:** name, username and initials only, plus "This profile is private".
+  - **Others, Public:** name, username, initials, member since, bio, legacy photo / bio fallback and archive years; rounds by their own rules (`list_profile_rounds`); tournaments only for public tournaments' published, non-test editions. **Golf trips are never shown to others.** No legacy handicap / scorecard.
+  - Never: emails, auth / profile ids, invite data.
+- **Links (claimed profiles only):** accepted Golf Trip members with a profile (trip members list), and joined tournament players (organizer Players editor). Never pending invites, unclaimed players or dev fixtures.
+- **Tabs:**
+  - Overview: bio plus trip / tournament previews with empty states.
+  - Rounds: `player_rounds` only, legacy handicap kept separate.
+  - Stats: modern stats from visible rounds (rounds played, 18-hole average, best 18, handicap index when there are counting rounds), else an empty state; the legacy Maroon archive is a separate section.
+- **SQL:** `supabase/profile_v1.sql` (new), and `profile_read_model.sql` / `golf_trips.sql` changed in place.
+
+### Round: Legacy Maroon rounds → modern profile history; legacy profile retired (2026-10-10, built; nothing imported, SQL not run)
+
+- **One profile system.** The modern profile is the only profile.
+  - The old Maroon name, bio, photo and Player Portal details no longer feed it. A legacy-linked golfer looks like any new profile: empty bio = the normal empty state.
+  - What stays visible is golf history only (archive years with that year's team, the old handicap history kept separately, the latest scorecard).
+  - `profiles.player_slug` is a **migration bridge only** (slug → profile), not identity. Nothing is deleted.
+- **Historical round sources (audit):**
+
+  | Source | Golfer | Round identity | Date | Course / tee / rating / slope | Holes | Stats? | Handicap? |
+  |---|---|---|---|---|---|---|---|
+  | `handicap_rounds` + `handicap_round_holes` | `player_slug` | row id | `date_played` | `live_courses` name; `tee_set_name`, `rating`, `slope` stored | par / score / putts / fir / gir per hole | yes | yes (18 holes, rating stored) |
+  | `archived_scorecard_rounds` + `archived_scorecard_holes` (2024–26 Maroon Tournament) | `player_slug` | (tournament_slug, player, round) | `round_format_setups.played_on`, else `played_on` | course text; tee from `round_format_setups.tee_setup`, else `handicap_setup` | par / yards / score / putts / fir / gir | yes | only with a verified single tee, own-ball format, 18 holes |
+  | `career_archive_rounds` + `career_archive_live_holes` (2027+ Maroon Tournament) | `player_slug` | (season, round, player) | `played_on` / setup | course text; tee as above | score / putts / fir / gir (no par) | only `submitted` / `final`; not 2034 rehearsal | as above |
+  | `live_hole_scores` | `player_slug` | (player, round, hole) for the active season | — | — | yes | **not imported**: the in-progress season; mirrored into `career_archive_live_holes` | — |
+  | `career_stat_holes` / `career_stat_matches` / `career_match_participants` (workbook imports) | player **name** text | workbook rows | match `played_on` | course text, par / yards | per hole | **not imported**: no slug, so mapping would be guessing; match results aren't rounds | no |
+  | static `lib/data/*` rosters | names → slug | edition | edition dates | — | — | team per year only (used for team history) | no |
+- **Canonical imported round = an ordinary `player_rounds` row:** `source = 'legacy'`, `provenance` jsonb (`system`, `recordId`, `playerSlug`, `seasonYear`, `round`, `tournamentSlug`, old course / tee ids), `imported_at`, `source_label` ("2025 Maroon Tournament · Round 2" / "Logged round"). The check `player_rounds_legacy_provenance` means only the import can write them. Others never see the provenance.
+- **Source keys (duplicate prevention):** `legacy:maroon:<year>:r<round>` (the same key in both archives, so a round held twice imports once; the 2024–26 archive wins) and `legacy:handicap:<id>`. Unique per profile, so re-running is a no-op. Never date / course / score.
+- **Player mapping:** maps only when exactly one profile carries the slug and the slot isn't claimed by someone else. Unmapped and ambiguous players are refused and reported.
+- **Handicap:** counts only with an own-ball format, 18 scored holes, and one verified tee with rating and slope. Everything else imports for history / stats with a reason (team format, no rating, mixed tees, 9 holes, no hole card). `handicap_rounds` and the old archive handicap view stay until the modern index is confirmed to match.
+- **Stats:** one engine (`modernStats`) over all canonical rounds. Rounds played, 18-hole average, best 18 and handicap index come from `player_rounds`. Match results, team points, skins, money, putts / GIR / FIR % and per-hole-type splits are **not** reproduced.
+- **Tooling:** `supabase/legacy_round_import.sql`: `import_legacy_rounds(dry_run, player_slug?)` → report (players / counts / skipped with reasons). Nothing imports until it's run with `false` by hand.
+- **Player Portal deprecation:** the profile no longer links to `/portal/profile`; the classification and the delete-later list are in the 2026-10-10 report.

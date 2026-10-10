@@ -50,6 +50,13 @@ export function inviteStatusesFromJson(value: unknown): Record<string, PlayerInv
     .filter((entry): entry is [string, PlayerInviteStatus] => entry[1] === "joined" || entry[1] === "invited" || entry[1] === "declined" || entry[1] === "none"));
 }
 
+/** { <player id>: username } for joined players (list_edition_player_profiles); anything malformed is dropped. */
+export function editionPlayerProfilesFromJson(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value as Record<string, unknown>)
+    .filter((entry): entry is [string, string] => isPlayerId(entry[0]) && typeof entry[1] === "string" && entry[1].trim() !== ""));
+}
+
 /** The page a tournament invite link opens. */
 export const tournamentPlayerInvitePath = (token: string) => `/tournaments/invite/${token}`;
 

@@ -1,0 +1,26 @@
+/* Golf Schedule → a round: tee box picker, Set per hole, and the scorecard (hole / par left, tee / yards right). */
+.tees{display:grid;gap:14px;margin-top:16px;color:#fbf8f1;font-family:var(--font-barlow),sans-serif}
+.heading{color:rgba(247,240,223,.7);font:700 12px/1 var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase}
+.group{display:grid;gap:10px}
+.choices{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;min-height:44px}
+.choice{display:grid;justify-items:center;gap:2px;min-height:44px;padding:6px 8px;border:2px solid rgba(220,196,149,.3);border-radius:14px;background:rgba(255,255,255,.05);color:#fbf8f1;font:700 13px/1.15 var(--font-barlow),sans-serif;cursor:pointer}
+.choice small{color:rgba(251,248,241,.6);font-size:11px;font-weight:600}
+.choice[aria-pressed=true]{border-color:#dcc495;background:rgba(220,196,149,.2)}
+.choice:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.loading{align-self:center;color:rgba(251,248,241,.6);font-size:13px}
+.perHole{display:flex;align-items:center;justify-content:space-between;gap:12px}
+
+.card{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.card th,.card td{padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;font:600 14px/1.2 var(--font-barlow),sans-serif}
+.card thead th{color:#dcc495;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border-bottom-color:rgba(214,184,121,.35)}
+.card tbody th{width:44px;color:#fbf8f1}
+.card .par{width:40px;text-align:left}
+.card .spacer{width:auto;border-bottom-color:rgba(255,255,255,.08)}
+.card .tee{text-align:right;color:rgba(251,248,241,.8);white-space:nowrap}
+.card .yards{width:60px;text-align:right}
+.card tr.total th,.card tr.total td{color:#dcc495;font-weight:800;border-bottom-color:rgba(214,184,121,.35)}
+.card select{max-width:150px;padding:3px 6px;border:1.5px solid rgba(220,196,149,.45);border-radius:8px;background:#2a0a10;color:#fbf8f1;font:600 13px/1.2 var(--font-barlow),sans-serif}
+.card select:focus{outline:none;border-color:#dcc495}
+
+.note{margin:16px 0 0;color:rgba(251,248,241,.6);font:500 13px/1.35 var(--font-barlow),sans-serif}
+.credit{margin:0;color:rgba(251,248,241,.45);font:500 11px/1.4 var(--font-barlow),sans-serif}

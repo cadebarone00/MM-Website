@@ -11,14 +11,14 @@ import { createTournament, database, load, profile, quick, save, sqlFile } from 
 
 async function setup(): Promise<PGlite> {
   const db = await database();
-  for (const file of ["golf_trips.sql", "golf_trip_invitations.sql", "platform_next_edition.sql", "profile_read_model.sql", "profile_read_model.sql"]) {
+  for (const file of ["golf_trips.sql", "golf_trip_invitations.sql", "platform_next_edition.sql", "player_rounds.sql", "profile_read_model.sql", "profile_read_model.sql"]) {
     await db.exec(sqlFile(file));
   }
   return db;
 }
 type Trip = { id: string; name: string; role: string; playerCount: number };
 type Edition = { slug: string; name: string; year: number; team: { name: string; color: string } | null; isCaptain: boolean };
-type History = { restricted: boolean; trips: Trip[]; tournaments: Edition[] };
+type History = { restricted: boolean; scope?: string; trips: Trip[]; tournaments: Edition[] };
 const one = async <T>(db: PGlite, sql: string, params: unknown[]) => (await db.query<{ r: T }>(sql, params)).rows[0].r;
 const history = (db: PGlite, viewer: string | null, subject: string) => one<History>(db, "select get_profile_history($1, $2) as r", [viewer, subject]);
 
@@ -38,7 +38,7 @@ const TOKEN = (n: number) => `invite-secret-${n}-0123456789abcdefghijklmn`;
 test("a brand-new golfer has a whole, empty history — not an error", async () => {
   const db = await setup();
   const newbie = await profile(db, "newbie");
-  assert.deepEqual(await history(db, newbie, newbie), { restricted: false, trips: [], tournaments: [] });
+  assert.deepEqual(await history(db, newbie, newbie), { restricted: false, scope: "owner", trips: [], tournaments: [] });
 });
 
 test("golf trips: the organizer and accepted members count; pending and declined invitations don't", async () => {
@@ -100,13 +100,30 @@ test("tournaments: every edition played, each with that year's team and captainc
   for (const secret of ["@", ann, owner, players["Ann Lee"]]) assert.equal(shown.includes(secret), false, `leaked ${secret}`);
 });
 
-test("only the golfer themselves gets their history for now; nobody can call it directly", async () => {
+test("others: a Private profile gives nothing; a Public one gives public tournaments' published years and never trips", async () => {
   const db = await setup();
   const [cade, jake] = [await profile(db, "cade"), await profile(db, "jake")];
   await makeTrip(db, cade);
   assert.deepEqual(await history(db, jake, cade), { restricted: true, trips: [], tournaments: [] });
   assert.deepEqual(await history(db, null, cade), { restricted: true, trips: [], tournaments: [] });
   assert.deepEqual(await history(db, cade, randomUUID()), { restricted: true, trips: [], tournaments: [] });
+  // Public: trips still never shown; only public tournaments' published, non-test years.
+  await db.query("update profiles set rounds_visibility = 'public' where id = $1", [cade]);
+  const owner = await profile(db, "owner", { approved: true });
+  const shown = await createTournament(db, owner, { ...quick, name: "Open Cup", slug: "open-cup", visibility: "public" });
+  const unpublished = await createTournament(db, owner, { ...quick, name: "Draft Cup", slug: "draft-cup", visibility: "public" });
+  const privateCup = await createTournament(db, owner, { ...quick, name: "Club Cup", slug: "club-cup", visibility: "private" });
+  for (const edition of [shown, unpublished, privateCup]) {
+    await save(db, owner, edition, "players", { players: [{ name: "Cade" }] });
+    await db.query("update tournament_players set profile_id = $1 where id = $2", [cade, (await load(db, owner, edition)).players[0].id]);
+  }
+  await db.query("update tournament_editions set published_at = now() where id = any($1)", [[shown, privateCup]]);
+  const asJake = await history(db, jake, cade);
+  assert.deepEqual([asJake.restricted, asJake.scope, asJake.trips], [false, "public", []]);
+  assert.deepEqual(asJake.tournaments.map((t) => t.name), ["Open Cup"]);
+  assert.deepEqual((await history(db, null, cade)).tournaments.map((t) => t.name), ["Open Cup"], "signed out: the same public view");
+  assert.equal((await history(db, cade, cade)).trips.length, 1, "the owner still sees their trip");
+  assert.deepEqual((await history(db, cade, cade)).tournaments.map((t) => t.name).sort(), ["Club Cup", "Draft Cup", "Open Cup"]);
   await db.exec("set role authenticated");
   await assert.rejects(db.query("select get_profile_history($1, $2)", [cade, cade]));
   await db.exec("reset role");

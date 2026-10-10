@@ -17,6 +17,9 @@ export interface CoursePreview {
   state?: string;
   holeCount?: number;
   teeSets: { name: string; totalYards?: number }[];
+  /** The scorecard, hole by hole: par, handicap (stroke index) when known, and each tee's yardage by tee name. Left out
+   *  when the course has no holes listed. */
+  scorecard?: { number: number; par: number; strokeIndex?: number; yards: Record<string, number> }[];
   library: {
     saved: boolean;
     /** Only for opening the saved course (GPS / profile); never shown as text. */
@@ -45,6 +48,10 @@ function preview(course: GolfCourse, library: CoursePreview["library"]): CourseP
     ...(course.address.state && { state: course.address.state }),
     ...(course.holeCount > 0 && { holeCount: course.holeCount }),
     teeSets: course.teeSets.map((tee) => ({ name: tee.name, ...(tee.totalYards && { totalYards: tee.totalYards }) })),
+    ...(course.holes.length > 0 && { scorecard: [...course.holes].sort((a, b) => a.number - b.number).map((hole) => ({
+      number: hole.number, par: hole.par, ...(hole.strokeIndex && { strokeIndex: hole.strokeIndex }),
+      yards: Object.fromEntries(hole.tees.filter((tee) => tee.yardage).map((tee) => [tee.name, tee.yardage!])),
+    })) }),
     library,
     attribution: credits(course),
   };

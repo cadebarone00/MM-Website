@@ -202,9 +202,11 @@ returns jsonb
 language sql stable security definer set search_path = public as $$
   select case when public.is_golf_trip_member(t.id, p_profile) then jsonb_build_object(
     'trip', to_jsonb(t) - 'client_request_id',
+    -- username: only for members who accepted with a real profile (links to /profile/<username>); null for invitations.
     'members', coalesce((select jsonb_agg(jsonb_build_object('id', m.id, 'profileId', m.profile_id, 'displayName', m.display_name,
-        'email', m.email, 'role', m.role, 'invitationStatus', m.invitation_status) order by m.created_at)
-      from golf_trip_members m where m.golf_trip_id = t.id), '[]'::jsonb),
+        'email', m.email, 'role', m.role, 'invitationStatus', m.invitation_status,
+        'username', case when m.invitation_status = 'accepted' then p.username end) order by m.created_at)
+      from golf_trip_members m left join profiles p on p.id = m.profile_id where m.golf_trip_id = t.id), '[]'::jsonb),
     'rounds', coalesce((select jsonb_agg(jsonb_build_object('roundNumber', r.round_number, 'dayNumber', r.day_number,
         'playDate', r.play_date, 'courseName', r.course_name) order by r.round_number)
       from golf_trip_rounds r where r.golf_trip_id = t.id), '[]'::jsonb)

@@ -34,6 +34,7 @@ test("unsaved course: OpenGolf detail for this course only, tee names, and no GP
   assert.deepEqual(preview, {
     name: "Tobacco Road Golf Club", city: "Sanford", state: "NC", holeCount: 2,
     teeSets: [{ name: "Ripper", totalYards: 6557 }, { name: "Plow", totalYards: 5886 }],
+    scorecard: [{ number: 1, par: 5, yards: { Ripper: 558 } }, { number: 2, par: 3, yards: { Ripper: 152 } }],
     library: { saved: false, gpsAvailable: false, mapAvailable: false, canPrepareGps: true },
     attribution: "© OpenStreetMap contributors (ODbL 1.0) via OpenGolfAPI",
   });
@@ -59,7 +60,7 @@ test("library unavailable (e.g. storage not set up): falls back to OpenGolf, sho
 
 test("the preview carries display fields only — no raw records, provider ids, coverage or geometry", async () => {
   const preview = await getCoursePreview(OG, { findSaved: async () => entry(savedMapped()), getDetail: neverCalled });
-  assert.deepEqual(Object.keys(preview!).sort(), ["attribution", "city", "holeCount", "library", "name", "state", "teeSets"]);
+  assert.deepEqual(Object.keys(preview!).sort(), ["attribution", "city", "holeCount", "library", "name", "scorecard", "state", "teeSets"]);
   const text = JSON.stringify(preview);
   for (const forbidden of [OG, "way/", "externalIds", "coverage", "coordinates", "providerRecordId", "open_golf"]) assert.ok(!text.includes(forbidden), forbidden);
 });

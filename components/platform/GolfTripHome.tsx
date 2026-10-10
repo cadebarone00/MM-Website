@@ -222,7 +222,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
       </div>
     </header>
     <div className={styles.body} role="tabpanel" aria-label={tab}>
-      {tab === "Home" ? <><InfoAccount draft={draft} teamDraft={teamDraft} isOrganizer={isOrganizer} momentumEvents={momentum.events} settingsHref={settingsHref} flights={flights} weather={weather} itinerary={itinerary} travel={travel} tripNow={tripNow} onOpenItinerary={openItinerary}
+      {tab === "Home" ? <><InfoAccount draft={draft} draftPlayers={previewMatch?.leaderboard.map(row => ({ name: getPlayerDisplayName(row.golfer.name), handicap: row.golfer.hcp })) ?? travel?.members.map(member => ({ name: member.name })) ?? []} teamDraft={teamDraft} isOrganizer={isOrganizer} momentumEvents={momentum.events} settingsHref={settingsHref} flights={flights} weather={weather} itinerary={itinerary} travel={travel} tripNow={tripNow} onOpenItinerary={openItinerary}
         rounds={plannedRounds(draft).map(round => ({ number: round.number, date: round.date, course: draft[`round${round.number}Course`] || "Course TBD", format: draft[`round${round.number}Format`] || (previewMatch && round.number === previewMatch.round ? previewMatch.formatDef?.label : undefined) }))}
         afterRound={previewMatch ? (roundLive || previewMatch.leaderboard.some(row => row.holes.every(strokes => strokes !== null)) ? previewMatch.round : previewMatch.round - 1) : 0}
         liveRound={roundLive && previewMatch ? { id: `round-${previewMatch.round}`, kind: "teeTime", title: `Round ${previewMatch.round} · ${previewMatch.course}`, startsAt: (tripNow ?? "").slice(0, 16) } : undefined} /></>
@@ -798,8 +798,8 @@ function FlightsCard({ flights }: { flights?: TripFlights }) {
  * Info tab, banking-app style (layout only, made-up numbers): a maroon top saying "Your trip to {destination}", a swipeable
  * row of two cards with a dot for each (the filled dot follows the swipe), then the upcoming trip and planned rounds. It runs edge to edge and down to the bottom of the screen.
  */
-function InfoAccount({ draft, teamDraft, isOrganizer, momentumEvents, settingsHref, flights, weather, itinerary, travel, tripNow, liveRound, rounds, afterRound, onOpenItinerary }: {
-  draft: GolfTripDraft; settingsHref: string;
+function InfoAccount({ draft, draftPlayers, teamDraft, isOrganizer, momentumEvents, settingsHref, flights, weather, itinerary, travel, tripNow, liveRound, rounds, afterRound, onOpenItinerary }: {
+  draft: GolfTripDraft; settingsHref: string; draftPlayers: import("./TripDraftRoom").DraftRoomPlayer[];
   /** Momentum: the team draft (its Draftboard) and the round highlights, for this trip. */
   teamDraft?: TeamDraft; momentumEvents: MomentumEvent[];
   /** The organizer gets Edit on Team Draft. */
@@ -834,7 +834,7 @@ function InfoAccount({ draft, teamDraft, isOrganizer, momentumEvents, settingsHr
     {/* Momentum (between the heading and the boxes): the Draftboard before a team draft, round highlights during the trip,
         otherwise Mom — my live notifications, a countdown to arrival day, or the next round. */}
     <div className={styles.momSlot}>
-      <TripMomentum draft={teamDraft} startAt={tripNow} editHref={isOrganizer ? settingsHref : undefined} events={momentumEvents}
+      <TripMomentum players={draftPlayers} draft={teamDraft} startAt={tripNow} editHref={isOrganizer ? settingsHref : undefined} events={momentumEvents}
         fallback={<MomSection travel={travel} arrivalDay={draft.startDate} plans={itinerary ?? []} startAt={tripNow} rounds={rounds} afterRound={afterRound} />} />
     </div>
     </div>

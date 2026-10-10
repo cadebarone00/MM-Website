@@ -11,11 +11,14 @@
 -- Teams come from each edition's roster, never from the profile (a golfer can be on different teams in different years).
 -- Returns display fields only: no emails, profile ids, auth ids, invite data or other members' details.
 --
--- Privacy: only the subject sees this for now (p_viewer = p_subject). Anyone else gets { restricted: true } with empty
--- lists, until public profiles are designed. Rounds have their own reader (list_profile_rounds, player_rounds.sql).
+-- Privacy (Profile V1, project_specs.md): the subject sees everything. Anyone else (p_viewer null = signed out):
+--   subject's profile Private (profiles.rounds_visibility)  → { restricted: true } with empty lists
+--   subject's profile Public  → { restricted: false, scope: 'public' }: NO trips, ever; tournaments only for public
+--                               tournaments' published editions (the ones with a public site already)
+-- Rounds have their own reader (list_profile_rounds, player_rounds.sql).
 --
 -- Called only by the server (service role): lib/profile/profileReadModelServer.ts.
--- Prerequisites: platform_foundation.sql, golf_trips.sql. Safe to run more than once.
+-- Prerequisites: platform_foundation.sql, golf_trips.sql, player_rounds.sql (rounds_visibility). Safe to run more than once.
 -- Undo: drop function if exists public.get_profile_history(uuid, uuid);
 
 begin;
@@ -23,11 +26,15 @@ begin;
 create or replace function public.get_profile_history(p_viewer uuid, p_subject uuid)
 returns jsonb
 language sql stable security definer set search_path = public as $$
-  select case when p_viewer is null or p_viewer <> p_subject or not exists (select 1 from profiles where id = p_subject)
+  with subject as (
+    select id, p_viewer is not null and p_viewer = id as is_owner, rounds_visibility = 'public' as is_public from profiles where id = p_subject
+  )
+  select case when s.id is null or not (s.is_owner or s.is_public)
     then jsonb_build_object('restricted', true, 'trips', '[]'::jsonb, 'tournaments', '[]'::jsonb)
   else jsonb_build_object(
     'restricted', false,
-    'trips', coalesce((
+    'scope', case when s.is_owner then 'owner' else 'public' end,
+    'trips', case when not s.is_owner then '[]'::jsonb else coalesce((
       select jsonb_agg(jsonb_build_object(
           'id', t.id, 'name', t.name, 'destination', t.destination, 'startDate', t.start_date, 'endDate', t.end_date,
           'role', m.role,
@@ -35,7 +42,7 @@ language sql stable security definer set search_path = public as $$
                           where x.golf_trip_id = t.id and x.profile_id is not null and x.invitation_status = 'accepted'))
         order by t.start_date desc nulls first, t.created_at desc)
       from golf_trip_members m join golf_trips t on t.id = m.golf_trip_id
-      where m.profile_id = p_subject and m.invitation_status = 'accepted'), '[]'::jsonb),
+      where m.profile_id = p_subject and m.invitation_status = 'accepted'), '[]'::jsonb) end,
     'tournaments', coalesce((
       select jsonb_agg(jsonb_build_object(
           'slug', t.slug, 'name', t.name, 'year', e.season_year, 'label', e.label, 'destination', e.destination,
@@ -48,8 +55,10 @@ language sql stable security definer set search_path = public as $$
       join tournament_editions e on e.id = r.edition_id
       join tournaments t on t.id = e.tournament_id
       left join edition_teams tm on tm.id = r.team_id
-      where p.profile_id = p_subject and not e.is_test), '[]'::jsonb)
-  ) end;
+      where p.profile_id = p_subject and not e.is_test
+        and (s.is_owner or (t.visibility = 'public' and e.published_at is not null))), '[]'::jsonb)
+  ) end
+  from (select 1) one left join subject s on true;
 $$;
 
 revoke all on function public.get_profile_history(uuid, uuid) from public, anon, authenticated;

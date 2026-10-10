@@ -269,3 +269,19 @@ span.typeChoice{cursor:default}
 .draftInput:focus{outline:none;border-color:#dcc495}
 .draftTypes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .draftTypes .typeChoice{min-height:38px}
+/* A round's page: the course name centered; a gold Edit sits at the screen's right edge, just above the line. */
+/* The course name stays inside the middle 70% of the screen and never runs past 2 lines: longer names get a smaller size
+   (data-length), and anything still too long ends in "…". */
+/* Always two lines tall (short names centered in it), so the line and everything under it never move between courses. */
+.roundCourseLine{display:flex;align-items:center;justify-content:center;width:70vw;max-width:100%;min-height:46px}
+.roundCourseLine h2{min-width:0;max-width:100%;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow-wrap:anywhere}
+.roundCourseLine h2[data-length=long]{font-size:18px}
+.roundCourseLine h2[data-length=longer]{font-size:16px}
+.roundDayHeader:has(.editCourse){position:relative}
+.editCourse{position:absolute;right:0;bottom:8px;padding:5px 12px;border:1.5px solid #dcc495;border-radius:999px;background:transparent;color:#dcc495;font:700 13px/1 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.editCourse:focus-visible{outline:2px solid #fbf8f1;outline-offset:2px}
+/* Match Selection → a round: the match selector under the course / date line. */
+.matchSelector{display:grid;gap:12px;margin-top:16px}
+.matchSelector .teamSelection{margin-bottom:0}
+.matchSelector .draftSettings{margin-top:4px}
+.matchSelector .teamSelectionChoices .typeChoice{font-size:13px}

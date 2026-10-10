@@ -9,7 +9,8 @@ import type { RoundsVisibility } from "./playerRoundsPrivacy";
 
 /** Where a shot finished (the Scoring sheet's arrows). "center" = fairway / green hit. */
 export type ShotResult = "up" | "left" | "center" | "right" | "down";
-export type RoundSource = "trip" | "tournament" | "personal" | "history";
+/** legacy = imported from the original Maroon system (supabase/legacy_round_import.sql). */
+export type RoundSource = "trip" | "tournament" | "personal" | "history" | "legacy";
 /** Penalty taps on the Scoring sheet (fairway / green). */
 export interface HolePenalties { fairway: boolean; green: boolean }
 /** Organizer change log (Player & Attest add-on, decisions 9–10). */
@@ -36,6 +37,8 @@ export interface PlayerRound {
   /** The official card this was published from and its revision (2+ = an approved correction). */
   scorecardSubmissionId?: string;
   submissionRevision?: number;
+  /** Imported rounds only: which old record it came from (owner view only — it names the old player slot). */
+  provenance?: RoundProvenance;
   /** Where it came from, as words (e.g. the trip's name) — kept even if the trip is deleted later. */
   sourceLabel?: string;
   datePlayed: string;
@@ -61,6 +64,8 @@ export interface PlayerRound {
   /** Organizer overrides / push-throughs, oldest first. */
   edits?: ScoreEdit[];
 }
+
+export interface RoundProvenance { system: string; seasonYear?: number; round?: number; tournamentSlug?: string }
 
 export type PlayerRoundInput = Omit<PlayerRound, "total" | "countsForHandicap" | "notCountedReason" | "differential" | "status"> & { total?: number };
 

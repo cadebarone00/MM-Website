@@ -31,7 +31,7 @@ export default async function SettingsPage() {
         </>}
       </section>
       {privacy && <section aria-labelledby="settings-privacy" className="mt-4 rounded-md border border-ink-200 bg-white p-5">
-        <h2 id="settings-privacy" className="m-0 font-condensed text-sm font-semibold uppercase tracking-wide text-ink-500">Privacy · Rounds</h2>
+        <h2 id="settings-privacy" className="m-0 font-condensed text-sm font-semibold uppercase tracking-wide text-ink-500">Privacy · Profile</h2>
         <PrivacySetting initial={privacy.visibility} />
       </section>}
     </div>

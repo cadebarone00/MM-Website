@@ -1,7 +1,7 @@
 import type { PlayerRound } from "@/lib/platform/playerRounds";
 import type { ProfileHistoryRound } from "@/lib/platform/playerRoundsRows";
 
-const SOURCE: Record<PlayerRound["source"], string> = { trip: "Golf trip", tournament: "Tournament", personal: "Logged myself", history: "Past trip" };
+const SOURCE: Record<PlayerRound["source"], string> = { trip: "Golf trip", tournament: "Tournament", personal: "Logged myself", history: "Past trip", legacy: "The Maroon (imported)" };
 const day = (iso: string) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${iso}T12:00:00Z`));
 
 /** Profile → Rounds: my saved golf rounds (supabase/player_rounds.sql), newest first, with whether each counts toward handicap. */

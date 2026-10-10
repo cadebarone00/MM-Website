@@ -1,0 +1,312 @@
+/* components/platform/TripDraftRoom.module.css */
+.TripDraftRoom_room {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: #240001;
+  color: #fbf8f1;
+  font-family:
+    var(--font-spectral),
+    Georgia,
+    serif;
+  overflow: hidden;
+}
+.TripDraftRoom_room::backdrop {
+  background: #240001;
+}
+.TripDraftRoom_header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 20px 22px;
+  border-bottom: 1px solid #dcc49540;
+}
+.TripDraftRoom_header > div {
+  flex: 1;
+  text-align: center;
+}
+.TripDraftRoom_header p {
+  margin: 0 0 6px;
+  color: #dcc495;
+  font: 600 10px var(--font-barlow), sans-serif;
+  letter-spacing: .13em;
+}
+.TripDraftRoom_header h1 {
+  margin: 0;
+  font-size: 27px;
+}
+.TripDraftRoom_close {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #dcc49555;
+  border-radius: 50%;
+  background: transparent;
+  color: #fbf8f1;
+  cursor: pointer;
+}
+.TripDraftRoom_count {
+  display: grid;
+  text-align: center;
+  font-size: 23px;
+  color: #dcc495;
+}
+.TripDraftRoom_count small {
+  font: 600 8px var(--font-barlow), sans-serif;
+  letter-spacing: .1em;
+}
+.TripDraftRoom_board {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 900px;
+  margin: auto;
+  padding: 0 16px 100px;
+  height: calc(100% - 108px);
+  overflow: auto;
+  align-content: start;
+  gap: 0 14px;
+}
+.TripDraftRoom_teamHead {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  padding: 20px 0 16px;
+  background: #240001;
+  border-bottom: 2px solid #dcc495;
+  z-index: 1;
+}
+.TripDraftRoom_teamHead > span {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  background: #dcc495;
+  color: #500001;
+  border-radius: 50%;
+  font-weight: 700;
+}
+.TripDraftRoom_teamHead:nth-child(2) {
+  border-color: #fbf8f1;
+}
+.TripDraftRoom_teamHead:nth-child(2) > span {
+  background: #fbf8f1;
+}
+.TripDraftRoom_teamHead h2 {
+  margin: 0;
+  font-size: 19px;
+}
+.TripDraftRoom_teamHead small {
+  width: 100%;
+  padding-left: 41px;
+  color: #dcc495;
+  font-size: 11px;
+}
+.TripDraftRoom_slot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 75px;
+  padding: 12px 0;
+  border-bottom: 1px solid #dcc49535;
+  min-width: 0;
+}
+.TripDraftRoom_number {
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  flex: none;
+  border-radius: 4px;
+  background: #fbf8f1;
+  color: #500001;
+  font-size: 13px;
+  font-weight: 700;
+}
+.TripDraftRoom_slot > div {
+  min-width: 0;
+}
+.TripDraftRoom_slot strong {
+  display: block;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.TripDraftRoom_slot small {
+  display: block;
+  color: #dcc495;
+  font-size: 11px;
+  margin-top: 4px;
+}
+.TripDraftRoom_slot:not([data-filled=true]) .TripDraftRoom_number {
+  background: #dcc49512;
+  color: #dcc49580;
+  border: 1px solid #dcc49530;
+}
+.TripDraftRoom_empty {
+  color: #dcc49570;
+  font-size: 12px;
+}
+.TripDraftRoom_sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 78%;
+  border: 1px solid #dcc49570;
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
+  background: #350001;
+  box-shadow: 0 -12px 40px #0005;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.TripDraftRoom_handle {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: none;
+  width: 100%;
+  padding: 26px 22px 18px;
+  background: transparent;
+  color: #fbf8f1;
+  border: 0;
+  cursor: pointer;
+  font:
+    700 18px var(--font-spectral),
+    Georgia,
+    serif;
+}
+.TripDraftRoom_handle small {
+  margin-left: 12px;
+  color: #dcc495;
+  font-size: 12px;
+  font-weight: 400;
+}
+.TripDraftRoom_grabber {
+  position: absolute;
+  top: 9px;
+  left: calc(50% - 20px);
+  height: 4px;
+  width: 40px;
+  border-radius: 4px;
+  background: #dcc49580;
+}
+.TripDraftRoom_panel {
+  overflow: auto;
+  padding: 0 20px 24px;
+}
+.TripDraftRoom_panel[hidden] {
+  display: none;
+}
+.TripDraftRoom_tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.TripDraftRoom_tabs button {
+  flex: 1;
+  padding: 10px 4px;
+  border: 1px solid #dcc49570;
+  border-radius: 999px;
+  background: transparent;
+  color: #dcc495;
+  font:
+    600 13px var(--font-spectral),
+    Georgia,
+    serif;
+  cursor: pointer;
+}
+.TripDraftRoom_tabs button[aria-pressed=true] {
+  background: #dcc495;
+  color: #350001;
+}
+.TripDraftRoom_search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-bottom: 1px solid #dcc49560;
+  padding: 10px 0;
+  color: #dcc495;
+}
+.TripDraftRoom_search input {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  color: #fbf8f1;
+  font:
+    14px var(--font-spectral),
+    Georgia,
+    serif;
+}
+.TripDraftRoom_search input::placeholder {
+  color: #dcc49599;
+}
+.TripDraftRoom_listHead {
+  display: flex;
+  justify-content: space-between;
+  padding: 18px 0 9px;
+  font: 600 10px var(--font-barlow), sans-serif;
+  color: #dcc495;
+  letter-spacing: .1em;
+}
+.TripDraftRoom_player {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid #dcc49530;
+  padding: 13px 0;
+  font-size: 14px;
+}
+.TripDraftRoom_player strong {
+  flex: 1;
+}
+.TripDraftRoom_player > span:last-child {
+  color: #dcc495;
+}
+.TripDraftRoom_message {
+  padding: 20px 0;
+  color: #dcc495;
+  font-size: 14px;
+}
+.TripDraftRoom_room button:focus-visible,
+.TripDraftRoom_room input:focus-visible {
+  outline: 2px solid #dcc495;
+  outline-offset: 3px;
+}
+@media (min-width: 768px) {
+  .TripDraftRoom_sheet {
+    left: calc(50% - 360px);
+    right: calc(50% - 360px);
+  }
+  .TripDraftRoom_header {
+    padding-left: calc((100% - 860px)/2);
+    padding-right: calc((100% - 860px)/2);
+  }
+  .TripDraftRoom_slot {
+    min-height: 86px;
+  }
+}
+.TripDraftRoom_pick {
+  padding: 7px 10px;
+  background: #dcc495;
+  color: #350001;
+  border: 0;
+  border-radius: 999px;
+  font:
+    700 11px var(--font-spectral),
+    Georgia,
+    serif;
+  cursor: pointer;
+}

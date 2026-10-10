@@ -163,7 +163,8 @@ export interface SavedGolfTrip {
     /** Missing on a database that hasn't run the location columns in golf_trips.sql yet. */
     latitude?: number | null; longitude?: number | null; external_place_id?: string | null;
   };
-  members: { id: string; profileId: string | null; displayName: string; email: string | null; role: GolfTripRole; invitationStatus: string }[];
+  /** username: only for members who accepted with a real profile (their /profile link); absent / null otherwise. */
+  members: { id: string; profileId: string | null; displayName: string; email: string | null; role: GolfTripRole; invitationStatus: string; username?: string | null }[];
   rounds: { roundNumber: number; dayNumber: number; playDate: string | null; courseName: string | null }[];
 }
 

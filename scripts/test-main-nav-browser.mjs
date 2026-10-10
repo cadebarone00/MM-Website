@@ -109,9 +109,10 @@ try {
   assert.equal(here(out), "/website");
   assert.ok((await out.locator("body").innerText()).trim().length > 0);
   await p.goto(app + "/profile");
-  assert.equal(await p.getByRole("link", { name: "Edit my bio" }).getAttribute("href"), "/portal/profile");
-  await p.getByRole("link", { name: "Edit my bio" }).click();
-  await p.waitForURL(`${app}/portal/profile`);
+  // The profile's pencil edits the modern profile. The old Player Portal bio page is no longer linked from the
+  // profile, but still exists until it's removed (typed directly).
+  assert.equal(await p.getByRole("link", { name: "Edit profile" }).getAttribute("href"), "/profile/edit");
+  await p.goto(app + "/portal/profile");
   await p.getByRole("heading", { name: "Edit My Bio" }).waitFor();
 
   console.log("main nav browser check: PASS");

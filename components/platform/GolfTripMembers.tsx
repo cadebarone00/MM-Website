@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "./GolfTripHome";
 import type { SavedGolfTrip } from "@/lib/platform/golfTripCreate";
 import { golfTripInvitePath } from "@/lib/platform/golfTripInvitations";
 import { acceptedMembers, memberState, type MemberState } from "@/lib/platform/golfTripMembers";
+import { profileHref } from "@/lib/profile/profileEdit";
 import home from "./GolfTripHome.module.css";
 import fields from "./CreateTournament.module.css";
 import styles from "./GolfTripMembers.module.css";
@@ -72,9 +74,11 @@ export function GolfTripMembers({ tripId, members, viewerMemberId, manage }: { t
         const state = memberState(member);
         const isYou = member.id === viewerMemberId;
         const unaccepted = state === "pending" || state === "declined";
+        // Only a member who accepted with a real profile links to it — never an invitation.
+        const href = !unaccepted ? profileHref(member.username) : null;
         return <li key={member.id} className={styles.member}>
           <div className={styles.who}>
-            <span className={styles.name}>{member.displayName}</span>
+            {href ? <Link href={href} className={styles.name}>{member.displayName}</Link> : <span className={styles.name}>{member.displayName}</span>}
             <span className={`${styles.badge} ${styles[state]}`}>{BADGE[state]}</span>
             {isYou && <span className={styles.you}>You</span>}
           </div>

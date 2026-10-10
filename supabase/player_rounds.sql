@@ -25,6 +25,8 @@
 --   tournament  'tournament:<edition_id>:<edition_round_id>'   (+ tournament_player_id, the player in that tournament)
 --   personal    'personal:<personal_round_id>'                 (a stable id made when the golfer starts the round)
 --   history     free-form (organizer-entered past trips, lib/platform/historyLinks.ts)
+--   legacy      imported from the original Maroon system (supabase/legacy_round_import.sql): 'legacy:maroon:<year>:r<round>'
+--               or 'legacy:handicap:<handicap_rounds.id>', with provenance (which old record) and imported_at
 -- The context ids are plain uuids with NO foreign keys on purpose: a finished round is the golfer's history and must
 -- survive the trip, round, tournament or scorecard being deleted (those tables cascade), and this file never has to
 -- run after the scoring files. publish_player_round is the one door the scoring side uses: revision 1 creates the row,
@@ -100,6 +102,17 @@ alter table public.player_rounds add constraint player_rounds_source_identity ch
 -- One official card feeds at most one history row.
 create unique index if not exists player_rounds_submission_idx on public.player_rounds (scorecard_submission_id) where scorecard_submission_id is not null;
 
+-- Historical rounds imported from the original Maroon system are ordinary rows with source 'legacy' and a record of
+-- where each came from (provenance: { system, recordId, playerSlug, seasonYear, round, ... }). Only the import tool
+-- writes them; see supabase/legacy_round_import.sql.
+alter table public.player_rounds drop constraint if exists player_rounds_source_check;
+alter table public.player_rounds add constraint player_rounds_source_check check (source in ('trip', 'tournament', 'personal', 'history', 'legacy'));
+alter table public.player_rounds add column if not exists provenance jsonb;
+alter table public.player_rounds add column if not exists imported_at timestamptz;
+alter table public.player_rounds drop constraint if exists player_rounds_legacy_provenance;
+alter table public.player_rounds add constraint player_rounds_legacy_provenance check (
+  source <> 'legacy' or (source_key like 'legacy:%' and jsonb_typeof(provenance) = 'object' and provenance ? 'system' and imported_at is not null));
+
 -- Settings → Privacy. Private: only you see your Rounds (people you play with still see your handicap index, once
 -- other players' profiles can be viewed). New profiles start private.
 alter table public.profiles add column if not exists rounds_visibility text not null default 'private';
@@ -124,7 +137,7 @@ language sql immutable set search_path = public as $$
     'tripId', r.golf_trip_id, 'tripRoundId', r.golf_trip_round_id, 'editionId', r.edition_id, 'editionRoundId', r.edition_round_id,
     'tournamentPlayerId', r.tournament_player_id, 'personalRoundId', r.personal_round_id,
     'scorecardSubmissionId', r.scorecard_submission_id, 'submissionRevision', r.submission_revision,
-    'visibility', r.visibility, 'updatedAt', r.updated_at));
+    'visibility', r.visibility, 'updatedAt', r.updated_at, 'provenance', r.provenance, 'importedAt', r.imported_at));
 $$;
 
 -- The round rules both doors share. Raises if p_round breaks one.
@@ -282,14 +295,14 @@ $$;
 -- Every modern finished round of one golfer (trip, tournament, personal, history), newest first, as p_viewer may see
 -- it (p_viewer null = signed out). Hidden rounds never show. The owner sees the rest. Anyone else needs the owner's
 -- Rounds set to Public, and a personal round must be Public itself (null = the profile's setting). A round being part
--- of a public tournament or trip never makes it public here. Other viewers never get the owner's profile id or the
--- scoring-side ids.
+-- of a public tournament or trip never makes it public here. Other viewers never get the owner's profile id, the
+-- scoring-side ids or an imported round's provenance (it names the old player slot).
 create or replace function public.list_profile_rounds(p_viewer uuid, p_owner uuid)
 returns jsonb
 language sql stable security definer set search_path = public as $$
   select coalesce(jsonb_agg(
       case when p_viewer = p_owner then player_round_json(r)
-        else player_round_json(r) - 'profileId' - 'scorecardSubmissionId' - 'tournamentPlayerId' - 'removedFromProfile' end
+        else player_round_json(r) - 'profileId' - 'scorecardSubmissionId' - 'tournamentPlayerId' - 'removedFromProfile' - 'provenance' end
       order by r.date_played desc, r.created_at desc), '[]'::jsonb)
   from player_rounds r join profiles p on p.id = r.profile_id
   where r.profile_id = p_owner and not r.removed_from_profile
@@ -334,6 +347,10 @@ grant execute on function public.set_rounds_visibility(uuid, text) to service_ro
 commit;
 
 -- Undo (only if nothing depends on it yet — this deletes every saved round):
+--   Legacy import columns only (first delete imported rows: delete from public.player_rounds where source = 'legacy';):
+--     alter table public.player_rounds drop constraint if exists player_rounds_legacy_provenance;
+--     alter table public.player_rounds drop constraint if exists player_rounds_source_check;
+--     alter table public.player_rounds add constraint player_rounds_source_check check (source in ('trip', 'tournament', 'personal', 'history'));
 --   Source identity only (keeps every round):
 --     drop function if exists public.list_profile_rounds(uuid, uuid), public.publish_player_round(uuid, jsonb);
 --     drop index if exists public.player_rounds_submission_idx;

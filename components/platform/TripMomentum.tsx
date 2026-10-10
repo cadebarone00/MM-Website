@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import toggleStyles from "./GolfTripCompetition.module.css";
 import notificationStyles from "./GolfTripNotifications.module.css";
@@ -8,6 +8,7 @@ import { countdownParts } from "@/lib/platform/momNotifications";
 import { draftBoard, type TeamDraft } from "@/lib/platform/teamDraft";
 import type { MomentumEvent } from "@/lib/platform/tripPush";
 import styles from "./TripMomentum.module.css";
+import { TripDraftRoom, type DraftRoomPlayer } from "./TripDraftRoom";
 
 // A one-second clock; the server has no clock (null), so nothing time-based flashes a placeholder while loading.
 const subscribe = (tick: () => void) => { const id = window.setInterval(tick, 1000); return () => window.clearInterval(id); };
@@ -36,8 +37,9 @@ const subscribeReminders = (change: () => void) => {
  * Before a team draft: Team Draft. During the trip: the latest golf highlights, one at a time (10 s each).
  * Otherwise: the Mom section (`fallback`: my notifications, the countdown to the trip, the next round).
  */
-export function TripMomentum({ draft, startAt, editHref, events, fallback }: {
+export function TripMomentum({ draft, startAt, editHref, events, fallback, players = [] }: {
   draft?: TeamDraft;
+  players?: DraftRoomPlayer[];
   /** Dev trip clock "YYYY-MM-DDTHH:mm[:ss]": time starts there when the page loads and ticks on from it. */
   startAt?: string;
   /** The organizer's link to the draft settings (only pass it for the organizer); no link = no Edit. */
@@ -50,29 +52,22 @@ export function TripMomentum({ draft, startAt, editHref, events, fallback }: {
   const [loadedAt] = useState(nowSeconds);
   const now = seconds === null ? null : startAt ? shiftStamp(startAt, seconds - loadedAt) : localStamp(seconds);
   const board = draftBoard(draft, now);
-  const content = board ? <DraftStrip draft={draft!} board={board} now={now} editHref={editHref} />
+  const content = board ? <DraftStrip draft={draft!} board={board} now={now} editHref={editHref} players={players} />
     : events.length ? <HighlightStrip events={events} turn={seconds === null ? 0 : Math.floor(seconds / 10)} />
     : fallback;
   return <section id="momentum" className={styles.momentum} aria-label="Momentum">{content}</section>;
 }
 
 /** Before the draft: Team Draft · day and time (Edit for the organizer), then the countdown with Draft Room. */
-function DraftStrip({ draft, board, now, editHref }: { draft: TeamDraft; board: { when: string | null; target: string | null }; now: string | null; editHref?: string }) {
+function DraftStrip({ draft, board, now, editHref, players }: { players: DraftRoomPlayer[]; draft: TeamDraft; board: { when: string | null; target: string | null }; now: string | null; editHref?: string }) {
   const zone = useSyncExternalStore(subscribe, zoneName, () => "");
-  const [soon, setSoon] = useState<string | null>(null);
-  // The "coming soon" note shows for 3 seconds, then the draft's day and time come back.
-  useEffect(() => {
-    if (!soon) return;
-    const id = window.setTimeout(() => setSoon(null), 3000);
-    return () => window.clearTimeout(id);
-  }, [soon]);
+  const [roomOpen, setRoomOpen] = useState(false);
   const parts = board.target && now ? countdownParts(board.target, now.length === 16 ? `${now}:00` : now) : null;
   const units = [["Days", parts?.days], ["Hrs", parts?.hours], ["Mins", parts?.minutes], ["Secs", parts?.seconds]] as const;
   return <div className={styles.draft}>
     <div className={styles.draftTop}>
       <span className={styles.draftTitle}>Team Draft</span>
-      {/* "The draft room opens soon" briefly takes the date's place, so the strip never grows. */}
-      <span className={styles.draftWhen} role="status">{soon ?? draftWhen(draft, board, zone)}</span>
+      <span className={styles.draftWhen} role="status">{draftWhen(draft, board, zone)}</span>
       {editHref && <Link href={editHref} className={styles.edit}>Edit</Link>}
     </div>
     <div className={styles.draftBottom}>
@@ -85,8 +80,9 @@ function DraftStrip({ draft, board, now, editHref }: { draft: TeamDraft; board: 
           </span>
         </div>)}
       </div>
-      <button type="button" className={styles.room} onClick={() => setSoon("The draft room opens soon")}>Draft Room</button>
+      <button type="button" className={styles.room} onClick={() => setRoomOpen(true)}>Draft Room</button>
     </div>
+    {roomOpen && <TripDraftRoom players={players} draftType={draft.type} onClose={() => setRoomOpen(false)} />}
   </div>;
 }
 

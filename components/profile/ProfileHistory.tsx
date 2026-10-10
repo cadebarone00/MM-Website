@@ -8,16 +8,17 @@ const row = "flex items-start justify-between gap-3 border-t border-maroon-900/1
 
 /**
  * Profile → Overview: tournaments played (with that year's team) and golf trips joined, from the profile read model.
- * A brand-new golfer sees short "will show here" lines, never an error.
+ * A brand-new golfer sees short "will show here" lines, never an error. A hidden section (golf trips, for anyone but
+ * the owner) isn't shown at all.
  */
-export function ProfileHistory({ trips, tournaments, teamHistory }: Pick<ProfileReadModel, "trips" | "tournaments" | "teamHistory">) {
+export function ProfileHistory({ trips, tournaments, teamHistory, isOwner }: Pick<ProfileReadModel, "trips" | "tournaments" | "teamHistory" | "isOwner">) {
   if (trips.status === "hidden" && tournaments.status === "hidden") return null;
   const legacyYears = teamHistory.filter((entry) => entry.source === "legacy");
   return <>
-    <section aria-label="Tournaments">
+    {tournaments.status !== "hidden" && <section aria-label="Tournaments">
       <h3 className={heading}>Tournaments</h3>
       {tournaments.status === "unavailable" && !legacyYears.length ? <p className={muted}>Tournaments can&apos;t be loaded right now.</p>
-        : tournaments.status === "ok" && !tournaments.value.length && !legacyYears.length ? <p className={muted}>Tournaments you play in will show here.</p>
+        : tournaments.status === "ok" && !tournaments.value.length && !legacyYears.length ? <p className={muted}>{isOwner ? "Tournaments you play in will show here." : "No public tournaments yet."}</p>
         : <ol className="mt-2">
           {tournaments.status === "ok" && tournaments.value.map((t) => <li key={t.href} className={row}>
             <Link href={t.href} className="min-w-0">
@@ -32,13 +33,13 @@ export function ProfileHistory({ trips, tournaments, teamHistory }: Pick<Profile
             </div>
           </li>)}
         </ol>}
-    </section>
-    <section aria-label="Golf trips">
+    </section>}
+    {trips.status !== "hidden" && <section aria-label="Golf trips">
       <h3 className={heading}>Golf trips</h3>
       {trips.status === "unavailable" ? <p className={muted}>Golf trips can&apos;t be loaded right now.</p>
         : trips.status === "ok" && !trips.value.current.length && !trips.value.past.length ? <p className={muted}>Golf trips you join will show here.</p>
         : trips.status === "ok" && <ol className="mt-2">{[...trips.value.current, ...trips.value.past].map((trip) => <TripRow key={trip.href} trip={trip} past={trips.value.past.includes(trip)} />)}</ol>}
-    </section>
+    </section>}
   </>;
 }
 

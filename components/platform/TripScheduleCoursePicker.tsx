@@ -24,6 +24,61 @@ type Search = { status: "idle" } | { status: "loading" } | { status: "done"; cou
 const DEBOUNCE_MS = 350;
 const placeOf = (course: Pick<CourseResult, "city" | "state">) => cityState(course.city, course.state);
 
+/** The app's course search (/api/courses/search) for what's typed: a moment after typing stops; a newer query cancels an
+ *  older request so a stale reply never shows. Under two letters: idle. */
+function useCourseSearch(query: string): Search {
+  const [result, setResult] = useState<Search>({ status: "idle" });
+  useEffect(() => {
+    const text = query.trim();
+    if (text.length < 2) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setResult({ status: "loading" });
+      try {
+        const response = await fetch(`/api/courses/search?q=${encodeURIComponent(text)}`, { signal: controller.signal });
+        const body = await response.json() as { ok: boolean; courses?: CourseResult[]; attribution?: string; code?: string };
+        if (!body.ok || !body.courses) setResult({ status: "error", message: body.code === "busy" ? "Course search is busy right now. Try again in a few minutes." : "Course search isn't available right now." });
+        else setResult({ status: "done", courses: body.courses, attribution: body.attribution ?? "" });
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") setResult({ status: "error", message: "Couldn't reach course search. Check your connection." });
+      }
+    }, DEBOUNCE_MS);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [query]);
+  return query.trim().length < 2 ? { status: "idle" } : result;
+}
+
+/**
+ * A golf course search bar: type a course, club or city and tap a result. `floating`: the results open over the page below
+ * (nothing moves); otherwise they list right under the bar (inside the Edit course pop-up). Closes once one is picked.
+ */
+export function CourseSearchBar({ roundLabel, onPick, floating = true, autoFocus = false }: { roundLabel: string; onPick: (course: PickedCourse) => void; floating?: boolean; autoFocus?: boolean }) {
+  const [query, setQuery] = useState("");
+  const search = useCourseSearch(query);
+  const open = query.trim().length >= 2;
+  return <div className={floating ? styles.searchBar : styles.searchBarInline}>
+    <label className={styles.searchBox}>
+      <Search size={18} aria-hidden="true" />
+      <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search golf courses…"
+        aria-label={`Search golf courses for ${roundLabel}`} autoComplete="off" enterKeyHint="search" maxLength={100} autoFocus={autoFocus} />
+      {search.status === "loading" && <LoaderCircle size={18} className={styles.spinner} aria-label="Searching" />}
+    </label>
+    {open && <div className={floating ? styles.searchResults : styles.searchResultsInline} role="region" aria-label="Course results">
+      {search.status === "loading" && <p className={gameStyles.sheetHint} role="status">Searching…</p>}
+      {search.status === "error" && <p className={gameStyles.sheetHint} role="alert">{search.message}</p>}
+      {search.status === "done" && (search.courses.length === 0
+        ? <p className={gameStyles.sheetHint}>No courses found for “{query.trim()}”. Try the club name or the city.</p>
+        : <>
+          {search.courses.map((course) => <button type="button" key={course.ref} className={gameStyles.sheetGame}
+            onClick={() => { onPick({ ref: course.ref, name: course.name, place: placeOf(course), par: course.par }); setQuery(""); }}>
+            <strong>{course.name}</strong><span>{[placeOf(course), course.par !== null ? `Par ${course.par}` : null].filter(Boolean).join(" · ") || "Location unavailable"}</span>
+          </button>)}
+          {search.attribution && <p className={styles.credit}>{search.attribution}</p>}
+        </>)}
+    </div>}
+  </div>;
+}
+
 /**
  * Trip Schedule → tap a round's course: the same pop-up as Games → New game. 1) Search golf courses (the app's course
  * search, /api/courses/search) and tap one. 2) Choose course settings now or later. 3) Now: tee box (from the course's
@@ -44,29 +99,9 @@ export function TripScheduleCoursePicker({ roundLabel, current, onPick, onClose,
     return { top: Math.max(16, tabs?.top ?? 16), bottom: (nav && nav.height > 0 ? window.innerHeight - nav.top : 0) + window.innerHeight * 0.05 };
   });
   const [query, setQuery] = useState("");
-  const [result, setResult] = useState<Search>({ status: "idle" });
   const [chosen, setChosen] = useState<CourseResult | null>(null);
   const [settingUp, setSettingUp] = useState(false);
-  const search: Search = query.trim().length < 2 ? { status: "idle" } : result;
-
-  // Search a moment after typing stops; a newer query cancels the older request so a stale reply never shows.
-  useEffect(() => {
-    const text = query.trim();
-    if (text.length < 2) return;
-    const controller = new AbortController();
-    const timer = window.setTimeout(async () => {
-      setResult({ status: "loading" });
-      try {
-        const response = await fetch(`/api/courses/search?q=${encodeURIComponent(text)}`, { signal: controller.signal });
-        const body = await response.json() as { ok: boolean; courses?: CourseResult[]; attribution?: string; code?: string };
-        if (!body.ok || !body.courses) setResult({ status: "error", message: body.code === "busy" ? "Course search is busy right now. Try again in a few minutes." : "Course search isn't available right now." });
-        else setResult({ status: "done", courses: body.courses, attribution: body.attribution ?? "" });
-      } catch (error) {
-        if ((error as Error).name !== "AbortError") setResult({ status: "error", message: "Couldn't reach course search. Check your connection." });
-      }
-    }, DEBOUNCE_MS);
-    return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [query]);
+  const search = useCourseSearch(query);
 
   const pick = (settings?: PickedCourse["settings"]) => {
     if (!chosen) return;
@@ -148,4 +183,24 @@ function CourseSettings({ course, initial, onBack, onSave }: {
     <button type="button" className={gameStyles.sheetPrimary} disabled={!teeTime} onClick={() => onSave({ tees, teeTime, handicap })}>Save course</button>
     {typeof detail === "object" && detail.attribution && <p className={styles.credit}>{detail.attribution}</p>}
   </div>;
+}
+
+/**
+ * Golf Schedule → a round's page → Edit (next to the course): a pop-up with the course search bar. Tapping a result makes
+ * it the round's course and closes the pop-up.
+ */
+/** `title`: "Select course" for a round just added (+ Add Round), "Edit course" otherwise. */
+export function CourseEditSheet({ roundLabel, current, onPick, onClose, title = "Edit course" }: { roundLabel: string; current: string; onPick: (course: PickedCourse) => void; onClose: () => void; title?: "Edit course" | "Select course" }) {
+  // Top 16px below the phone's notch / status bar; bottom 5% of the screen above the bottom nav.
+  const [sheetBox] = useState(() => {
+    const nav = document.querySelector("[data-site-bottom-nav]")?.getBoundingClientRect();
+    return { top: "calc(16px + var(--app-safe-top, 0px))", bottom: (nav && nav.height > 0 ? window.innerHeight - nav.top : 0) + window.innerHeight * 0.05 };
+  });
+  return <GolfTripActionSheet label={`${title} for ${roundLabel}`} onClose={onClose} className={gameStyles.gameSheet} style={sheetBox}>
+    <div className={gameStyles.sheetBody}>
+      <h3 className={gameStyles.sheetTitle}>{title}</h3>
+      <p className={styles.subtitle}>{roundLabel} · Now: {current}</p>
+      <CourseSearchBar roundLabel={roundLabel} onPick={onPick} floating={false} autoFocus />
+    </div>
+  </GolfTripActionSheet>;
 }

@@ -2,7 +2,7 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/profile/currentProfile";
-import { inviteStatusesFromJson, isPlayerId, playerAcceptResultFromJson, playerDeclineResultFromJson, playerInvitationFromJson, playerPoolFromJson, type PlayerAcceptResult,
+import { editionPlayerProfilesFromJson, inviteStatusesFromJson, isPlayerId, playerAcceptResultFromJson, playerDeclineResultFromJson, playerInvitationFromJson, playerPoolFromJson, type PlayerAcceptResult,
   type PlayerDeclineResult, type PlayerInviteStatus, type PoolPlayer, type TournamentPlayerInvitation } from "./tournamentPlayerInvitations.ts";
 import type { ManagedEdition } from "./dashboardServer.ts";
 
@@ -66,6 +66,19 @@ export async function getEditionInviteStatuses(edition: ManagedEdition): Promise
     return null;
   }
   return data === null ? null : inviteStatusesFromJson(data);
+}
+
+/**
+ * Organizer view: usernames of this edition's JOINED players ({ <player id>: username }), for profile links. Unclaimed
+ * and invited players are never in it. Empty when unavailable (profile_v1.sql not run yet) — the editor just shows no links.
+ */
+export async function getEditionPlayerProfiles(edition: ManagedEdition): Promise<Record<string, string>> {
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("list_edition_player_profiles", { p_profile: edition.profileId, p_edition: edition.editionId });
+  if (error) {
+    if (error.code !== "PGRST202" && error.code !== "42883") console.error("list_edition_player_profiles failed:", error.message);
+    return {};
+  }
+  return editionPlayerProfilesFromJson(data);
 }
 
 /** Organizer "Add existing player": this tournament's players not on this edition yet. Null when unavailable. */
