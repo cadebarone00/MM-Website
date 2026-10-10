@@ -4,7 +4,7 @@ Review date: 2026-10-10. Scope revision 1. Internal decision: pending; all unres
 
 ## Scope and flows
 
-Previously Home offered a temporary coming-soon message. Now its existing pre-draft button opens a two-team board and a slide-up Available/Team A/Team B roster panel. Existing loaded leaderboard names and handicaps, or travel member names, pass through existing Home props into a native modal. Search and Snake/Straight picks run in React memory. Closing unmounts the room and discards picks. No API, database, localStorage, analytics, export, new vendor, chat, invitations, official assignment or scoring destination is added. No timer or multiplayer draft is represented as implemented. Existing parent access and draft visibility are retained; local draft controls do not authorize official mutations.
+Previously Home offered a temporary coming-soon message. Now its existing pre-draft button opens a two-team board and a slide-up Available/Team A/Team B roster panel. Existing loaded leaderboard names and handicaps, or travel member names, pass through existing Home props into a native modal. Search and Snake/Straight picks run in React memory. Closing unmounts the room and discards picks. No API, database, localStorage, analytics, export, new vendor, chat, invitations, official assignment or scoring destination is added. No per-pick timer or multiplayer draft is represented as implemented. Existing parent access and draft visibility are retained; local draft controls do not authorize official mutations.
 
 | Data class | Source / purpose | Visibility / destination | Retention / deletion |
 | --- | --- | --- | --- |
@@ -37,3 +37,7 @@ Attorney/CPA owner (unassigned): assess applicable professional triggers with bu
 ## Local verification evidence
 
 TypeScript and scoped ESLint passed. Browser component harness verified Snake A/B/B pick order, board and team lists, search, Escape, Close and reopen reset, with mobile/desktop screenshots in ignored test-results/draft-room. The harness uses sample names and does not establish saved-trip integration or multi-user authorization. Generated workflow HTML was opened in Chromium; its change panel, search and section-22 navigation passed. Compliance structure and workflow regeneration/check passed; none of these establishes legal compliance or deployment approval.
+
+## 2026-10-10 header/countdown follow-up
+
+Presentation change: header row lowered 28px and scheduled-start countdown added below it. Countdown values come from the existing Home draft target and ticking trip clock; no additional data, vendor, persistence, authorization or money flow. It does not implement a per-pick deadline. Existing unresolved review_required findings remain unchanged.

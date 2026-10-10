@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Clock, Search, X } from "lucide-react";
 import styles from "./TripDraftRoom.module.css";
 
 export type DraftRoomPlayer = { name: string; handicap?: number; team?: "A" | "B" };
 
-export function TripDraftRoom({ players, draftType, onClose }: { players: DraftRoomPlayer[]; draftType: string; onClose: () => void }) {
+export function TripDraftRoom({ players, draftType, countdown, onClose }: { players: DraftRoomPlayer[]; draftType: string; countdown?: { days: number; hours: number; minutes: number; seconds: number } | null; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [tab, setTab] = useState<"available" | "A" | "B">("available");
@@ -32,6 +32,10 @@ export function TripDraftRoom({ players, draftType, onClose }: { players: DraftR
       <button type="button" className={styles.close} onClick={onClose} aria-label="Close draft room"><X size={22} /></button>
       <div><p>TEAM DRAFT · {draftType.toUpperCase()}</p><h1 id="draft-room-title">Draft Room</h1></div>
       <span className={styles.count}>{roster.length}<small>PLAYERS</small></span>
+      <div className={styles.timer} role="timer" aria-label={countdown ? `${countdown.days} days, ${countdown.hours} hours, ${countdown.minutes} minutes, ${countdown.seconds} seconds until the draft` : "Draft time not set"}>
+        <Clock size={16} aria-hidden="true" />
+        <span>{countdown ? `${countdown.days ? `${countdown.days}d ` : ""}${countdown.days || countdown.hours ? `${String(countdown.hours).padStart(2, "0")}:` : ""}${String(countdown.minutes).padStart(2, "0")}:${String(countdown.seconds).padStart(2, "0")}` : "?:?"}</span>
+      </div>
     </header>
     <div className={styles.board} aria-label="Team draft board">
       <div className={styles.teamHead}><span>A</span><h2>Team A</h2><small>{teams.A.length} {teams.A.length === 1 ? "player" : "players"}</small></div>

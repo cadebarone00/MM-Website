@@ -21842,24 +21842,32 @@
   var __iconNode2 = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
   var ChevronUp = createLucideIcon("chevron-up", __iconNode2);
 
-  // node_modules/lucide-react/dist/esm/icons/search.mjs
+  // node_modules/lucide-react/dist/esm/icons/clock.mjs
   var __iconNode3 = [
+    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+    ["path", { d: "M12 6v6l4 2", key: "mmk7yg" }]
+  ];
+  var Clock = createLucideIcon("clock", __iconNode3);
+
+  // node_modules/lucide-react/dist/esm/icons/search.mjs
+  var __iconNode4 = [
     ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
     ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
   ];
-  var Search = createLucideIcon("search", __iconNode3);
+  var Search = createLucideIcon("search", __iconNode4);
 
   // node_modules/lucide-react/dist/esm/icons/x.mjs
-  var __iconNode4 = [
+  var __iconNode5 = [
     ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
     ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
   ];
-  var X = createLucideIcon("x", __iconNode4);
+  var X = createLucideIcon("x", __iconNode5);
 
   // components/platform/TripDraftRoom.module.css
   var TripDraftRoom_default = {
     room: "TripDraftRoom_room",
     header: "TripDraftRoom_header",
+    timer: "TripDraftRoom_timer",
     close: "TripDraftRoom_close",
     count: "TripDraftRoom_count",
     board: "TripDraftRoom_board",
@@ -21876,12 +21884,13 @@
     listHead: "TripDraftRoom_listHead",
     player: "TripDraftRoom_player",
     message: "TripDraftRoom_message",
-    pick: "TripDraftRoom_pick"
+    pick: "TripDraftRoom_pick",
+    playersUp: "TripDraftRoom_playersUp"
   };
 
   // components/platform/TripDraftRoom.tsx
   var import_jsx_runtime = __toESM(require_jsx_runtime());
-  function TripDraftRoom({ players, draftType, onClose }) {
+  function TripDraftRoom({ players, draftType, countdown, onClose }) {
     const dialog = (0, import_react4.useRef)(null);
     const [expanded, setExpanded] = (0, import_react4.useState)(false);
     const [tab, setTab] = (0, import_react4.useState)("available");
@@ -21917,6 +21926,10 @@
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: TripDraftRoom_default.count, children: [
           roster.length,
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("small", { children: "PLAYERS" })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: TripDraftRoom_default.timer, role: "timer", "aria-label": countdown ? `${countdown.days} days, ${countdown.hours} hours, ${countdown.minutes} minutes, ${countdown.seconds} seconds until the draft` : "Draft time not set", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Clock, { size: 16, "aria-hidden": "true" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: countdown ? `${countdown.days ? `${countdown.days}d ` : ""}${countdown.days || countdown.hours ? `${String(countdown.hours).padStart(2, "0")}:` : ""}${String(countdown.minutes).padStart(2, "0")}:${String(countdown.seconds).padStart(2, "0")}` : "?:?" })
         ] })
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: TripDraftRoom_default.board, "aria-label": "Team draft board", children: [
@@ -21925,7 +21938,8 @@
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", { children: "Team A" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("small", { children: [
             teams.A.length,
-            " players"
+            " ",
+            teams.A.length === 1 ? "player" : "players"
           ] })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: TripDraftRoom_default.teamHead, children: [
@@ -21933,7 +21947,8 @@
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", { children: "Team B" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("small", { children: [
             teams.B.length,
-            " players"
+            " ",
+            teams.B.length === 1 ? "player" : "players"
           ] })
         ] }),
         Array.from({ length: rows }, (_, index) => ["A", "B"].map((team) => {
@@ -21986,11 +22001,13 @@
   // <stdin>
   var import_jsx_runtime2 = __toESM(require_jsx_runtime());
   function App() {
-    const [open, setOpen] = import_react5.default.useState(false);
-    return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: () => setOpen(true), children: "Open room" }),
-      open && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(TripDraftRoom, { draftType: "Snake", players: [{ name: "Alex Morgan", handicap: 8 }, { name: "Sam Carter", handicap: 12 }, { name: "Jordan Lee", handicap: 4 }], onClose: () => setOpen(false) })
-    ] });
+    const [seconds, setSeconds] = import_react5.default.useState(57);
+    import_react5.default.useEffect(() => {
+      const id = setInterval(() => setSeconds((s) => s - 1), 1e3);
+      return () => clearInterval(id);
+    }, []);
+    return /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(TripDraftRoom, { players: [{ name: "Alex", handicap: 8 }], draftType: "Snake", countdown: { days: 0, hours: 0, minutes: 0, seconds }, onClose: () => {
+    } });
   }
   (0, import_client.createRoot)(document.getElementById("root")).render(/* @__PURE__ */ (0, import_jsx_runtime2.jsx)(App, {}));
 })();
@@ -22062,6 +22079,7 @@ lucide-react/dist/esm/Icon.mjs:
 lucide-react/dist/esm/createLucideIcon.mjs:
 lucide-react/dist/esm/icons/chevron-down.mjs:
 lucide-react/dist/esm/icons/chevron-up.mjs:
+lucide-react/dist/esm/icons/clock.mjs:
 lucide-react/dist/esm/icons/search.mjs:
 lucide-react/dist/esm/icons/x.mjs:
 lucide-react/dist/esm/lucide-react.mjs:

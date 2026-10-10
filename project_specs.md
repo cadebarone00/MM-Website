@@ -2563,3 +2563,119 @@ Builds **on top of** the Player rounds plan above. Nothing above changes: `Playe
 - **Stats:** one engine (`modernStats`) over all canonical rounds. Rounds played, 18-hole average, best 18 and handicap index come from `player_rounds`. Match results, team points, skins, money, putts / GIR / FIR % and per-hole-type splits are **not** reproduced.
 - **Tooling:** `supabase/legacy_round_import.sql`: `import_legacy_rounds(dry_run, player_slug?)` → report (players / counts / skipped with reasons). Nothing imports until it's run with `false` by hand.
 - **Player Portal deprecation:** the profile no longer links to `/portal/profile`; the classification and the delete-later list are in the 2026-10-10 report.
+
+### Round: Historical Trip Import — generic architecture (2026-10-10, DESIGN ONLY — awaiting approval; no code, no SQL)
+
+**Owner decision (2026-10-10):** the old Maroon account / profile system is dead. Everyone makes a brand-new normal account. The Maroon 2024–2026 data is treated exactly like any customer's past trips: a **generic Historical Trip Import**, with The Maroon as the first fixture. Nothing old is deleted until the replacement is verified (sequence in §13).
+
+**What it does / who uses it:** an organizer (later any customer) says "we've run this trip for five years, import our history". The history exists before those golfers have accounts. Later, real profiles claim their part of it, and their Rounds / Stats / tournament history fill in. Users: trip organizers, platform admin, golfers claiming history.
+
+**Supersedes** the "Legacy Maroon rounds → modern profile history" round above (rounds attached straight to old mapped profiles via `player_slug`). Not expanded further; see §11.
+
+#### 1. Current old-system dependencies (audit)
+
+| Old piece | Holds | Keyed by | Reliable? | Role from now |
+|---|---|---|---|---|
+| `lib/data/2024-pinehurst.ts`, `2025-danzante.ts`, `2026-palm-springs.ts` | edition, dates, venue, rosters + teams, matches (day / session / format / pairings / points / margin), team totals, individual leaderboard, champion, notes on unplayed matches | slug | yes (hand-confirmed with owner 2026-09-15) | export source: editions, teams, matches, results |
+| `lib/data/scorecards-2024/25/26.ts` | per player per round: course, format, hole par / yards / score / putts / FIR / GIR | slug + true round number | yes | export source: hole scores (cross-checked with DB) |
+| `archived_scorecard_rounds` + `archived_scorecard_holes` (DB) | same cards; may hold Admin `host_edited` corrections; repaired 2026-09-22 (duplicates / renumbering) | slug + (tournament, round) | yes after repair | wins over the TS file **only where host-edited**; every difference reported |
+| `round_format_setups` (DB) | per year + round: verified course, date played, tee setup (rating / slope / per-hole tees) | year + round | yes | export source: round date, tee |
+| `career_stat_team_holes` / `career_stat_matches` / `career_match_participants` (workbook import) | alt-shot / team cards, match rows | player NAME text | partly | team-format hole scores; otherwise verification oracle only |
+| `docs/source-data/*_Player_Round_Map*.csv` + root `*.xlsx` workbooks | original cell maps / originals | names | original truth | provenance (file + cell) and verification |
+| `career_archive_rounds` / live tables (2027+, 2034 rehearsal) | not a past trip | slug | n/a | **excluded** (Jan 2027 runs fresh on the new trip) |
+| `handicap_rounds` (+ holes) | players' own logged rounds in the old portal | slug | yes | **not trip history** → backup only; owner decides later (D3) |
+| `player_slots`, `profiles.player_slug`, `live_roster`, overrides, Player Portal (`/portal/*`, ~200 files reference it), MM usernames, `requirePlayer` (24 files) | old identity / app | slug | n/a | untouched now; deleted only at the end |
+| wagers, MM coin, fantasy, odds, broadcast, shot videos | app features, not golf history | slug | n/a | not imported (videos flagged for a later media decision) |
+
+#### 2. Proposed historical import model
+
+```
+historical_trip ("The Maroon Masters", optional → golf_trips.id)
+  ├─ historical_participants   (people; profile_id NULL until linked)
+  ├─ historical_imports        (one per committed package; provenance)
+  └─ historical_editions       (2024, 2025, 2026 …)
+       ├─ historical_teams                   (per edition only)
+       ├─ historical_edition_participants    (who played that year, team, handicap)
+       ├─ historical_edition_rounds          (schedule: round #, date, course, tee, format, scoring)
+       │    └─ historical_matches → historical_match_players, historical_team_cards
+       └─ results (team points, winner, individual champion)
+player_rounds  (canonical individual rounds; owner = historical_participant_id until linked)
+```
+
+Reused modern pieces: `profiles.id` (only identity), `player_rounds` (only round record, one stats engine), `golf_trips` (the history's home), course library refs. **Not** reused: `golf_trip_members`, `golf_trip_rounds`, scoring groups — live-play tables built around real profiles and attestation; forcing NULL-profile people into them would break their rules.
+
+#### 3. Historical participant
+
+`historical_participants`: `id` (stable uuid), `historical_trip_id`, `display_name` (as imported), `original_email` / `original_contact jsonb` (optional, **never** used to match), `profile_id` NULL → profiles, `link_status` (`unlinked` | `pending` | `linked`), `linked_at`, `linked_by`, plus provenance (§8). Scoped to the historical trip, so one link covers every year. Can stay unlinked forever. No fake profiles. Unique `(historical_trip_id, source_key)`; unique `(historical_trip_id, profile_id)` when linked (one person = one participant per trip; duplicate spellings are merged in the package before import, never at link time).
+
+#### 4. Profile link / claim
+
+- Two-party: **organizer proposes → golfer accepts** (same rule as the 2026-10-06 History links), or **golfer requests → organizer approves**. Platform admin may link directly for bootstrapping; logged the same way.
+- Never automatic: no name or email matching. The UI may *show* a hint, never act on it.
+- A linked participant can't switch profiles silently: only an explicit, logged admin unlink, then a new link.
+- Ambiguous people stay `unlinked`.
+- `historical_participant_links`: append-only log (`requested`, `accepted`, `declined`, `approved`, `unlinked`; actor, time, note).
+
+#### 5. Historical round ownership
+
+- `player_rounds` gets `historical_participant_id` (nullable); `profile_id` becomes nullable. Rule: `source = 'historical'` ⇔ `historical_participant_id` set **and** `profile_id` NULL; every other source still requires `profile_id`.
+- Linking writes nothing to rounds. Readers resolve ownership through the link: my rounds = `profile_id = me` **∪** rounds of participants linked to me. Unlinking hides them again. One real round = one row, never copied.
+- Only individual own-ball cards (Singles, Fourball, Stroke Play) become `player_rounds`. Team cards (Alt Shot, Scramble, Play 4 Take 3) live once on the match, not copied onto each partner.
+- Imported rounds: `entered_by = 'organizer'`, `counts_for_handicap = false`, reason "Imported history" (D1).
+- Existing readers filter `profile_id = …`, so historical rows stay invisible until `list_my_player_rounds` / `list_profile_rounds` gain the union — safe by default.
+
+#### 6. Trip / tournament representation
+
+Editions: year, label, destination, start / end dates, notes. Edition rounds: round #, day, session, play date, course name + library ref, tee snapshot (rating / slope / holes), par + stroke index, format, scoring (match / stroke), net / gross, points per match, `status` (`played` | `not_played`, e.g. 2024 Talamore scramble). Matches: match #, sides (team + participants), result text, margin, holes remaining, points per side. Teams exist only inside an edition (no permanent team identity, never on a profile). Results: team points per team, winning team, individual champion; individual leaderboard **recomputed** and compared with the source.
+
+#### 7. Stats
+
+One engine over canonical rounds: modern + linked historical `player_rounds`. Match record (W-L-H, points) computed from `historical_matches`. Old summaries (`career_stat_*`, generated career archive) are **never** copied as truth — test oracles only. Claiming a participant makes stats appear with no extra step.
+
+#### 8. Import provenance
+
+Every imported row: `import_id`, `source_file`, `source_ref` (original record, e.g. `scorecards-2024.ts#cam-latto/r1`, `archived_scorecard_rounds:<id>`, `2024_…Map.csv!F14:W14`), `source_key` (stable natural key, unique per trip per table). `historical_imports`: format version, source name, source files with sha256 + row counts, package sha256, imported_by, imported_at, summary report. Idempotent: same package → nothing new (on conflict do nothing by `source_key`); a changed value under an existing key is **reported as a conflict, never silently overwritten**. Claimed? = participant `link_status` + link log. History round key: `hist:<historical_trip_id>:<edition key>:<round #>:<participant key>`, unique where `source = 'historical'`.
+
+#### 9. Generic import format
+
+- **Canonical:** versioned JSON package (`maroon.history-import/v1`): `trip`, `editions[]`, `participants[]` (key, name, optional email), per edition `teams[]`, `roster[]` (participant, team, handicap), `rounds[]` (schedule + course / tee / par / stroke index), `scores[]` (participant × round × holes; putts / FIR / GIR optional), `teamCards[]`, `matches[]` (optional, derivable), `results` (optional; checked, not trusted), `provenance` per record.
+- **Customer-facing:** the existing XLSX / CSV template (`public/templates/trip-history-*`: Tournament Setup + Player Rounds, one file per year) converts into the package; results recomputed and compared (agreed 2026-10-09).
+- The Maroon exporter writes the same package. No Maroon-only code in the importer.
+
+#### 10. Maroon 2024–2026 export plan
+
+A read-only script builds `out/history/the-maroon-masters-2024-2026.json` + a plain-English report:
+- People: 15 names across 3 years (8 / 8 / 12), keyed by package key; old slug only in provenance.
+- Editions: Pinehurst 2024 (Maroon 13.5 – White 19.5), Danzante Bay 2025 (32.5 – 31.5), Mission Hills 2026 (17 – 16); champions Cade / Cade / Nate.
+- Dates / tees from `round_format_setups`; holes from scorecard files with DB host-edits winning and every diff listed; team cards from `career_stat_team_holes`.
+- Flagged, not guessed: 2024 Talamore scramble (`not_played`); 2024 g19 Collin solo card (round yes, match no); 2024 Cradle Play 4 Take 3 (9-hole team format, match result only); rounds without a verified tee; mixed tees; any card missing holes; course handicaps not in the source (left empty, net results taken from the recorded match result); Luke's missing 2024 round 7.
+- Verification: recomputed team points, match results and individual to-par must equal the season files; per-round totals must equal the archive.
+
+#### 11. What `legacy_round_import` becomes
+
+Frozen proof that score conversion works. Not run in production, not extended. Its DEV rows (`source = 'legacy'`) are test data; the owner removes them in DEV later with its documented undo line. Its hole-shaping / tee rules move into the exporter. `source = 'legacy'` stays allowed until DEV is clean, then is removed. The dev-only `historyLinks.ts` (copies rounds on accept) is replaced by the participant link model.
+
+#### 12. Database changes (new `supabase/historical_import.sql`, additive, NOT run)
+
+New tables (RLS on, no policies, service-role functions only): `historical_trips`, `historical_imports`, `historical_participants`, `historical_participant_links`, `historical_editions`, `historical_teams`, `historical_edition_participants`, `historical_edition_rounds`, `historical_matches`, `historical_match_players`, `historical_team_cards`. `player_rounds`: `profile_id` drop NOT NULL; add `historical_participant_id`, `historical_edition_round_id`, `historical_import_id`; source `'historical'`; owner check; partial unique index. Functions: `commit_historical_import(package, dry_run)`, link request / answer / admin link / unlink, extended readers. Rollback: delete one import's rows by `import_id` (rounds first).
+
+#### 13. Migration / deletion sequence
+
+1. Approve this spec. 2. Foundation: package schema + validator + dry-run CLI + SQL file (not run) + tests. 3. Maroon export → owner reviews report. 4. Owner runs SQL in DEV; import; verify vs known 2024–2026 data. 5. Link / claim flow + readers; verify a profile claims history. 6. Rounds / Stats / trip History display verified. 7. Back up / archive old tables, workbooks, TS files. 8. Production run. 9. Delete old pieces one at a time, owner approval each.
+
+#### 14. Tests required
+
+Validator (good package, each invalid kind, duplicate keys, unknown references); dry run writes nothing; idempotent re-import (0 new); changed-value conflict; team format not copied per partner; round owner check; link: no auto-match, accept / decline, no silent switch, unlink hides rounds, one profile per trip; reader union returns linked rounds once; stats include them; Maroon fixture totals / points / champions match the season files; SQL tested in the same DB harness as `legacyRoundImportDatabase.test.ts`.
+
+#### 15. Temporary vs eventually deleted
+
+Stays until step 9: all old identity / app pieces in §1, `legacy_round_import.sql` + tests, the archive tables (the exporter reads them), `handicap_rounds` (pending D3). Eventually deleted: old accounts' Maroon links, MM usernames, `player_slots` claiming, `profiles.player_slug`, Player Portal, overrides, legacy bio editor, special old-player profile code, `legacy_round_import`, `source = 'legacy'`, and the old archive tables once the backup exists.
+
+#### Open owner decisions
+
+- **D1** Imported history counts toward handicap? Recommend **no** (2026-10-06 rule: organizer-entered history never counts).
+- **D2** Claim paths: organizer proposes + golfer accepts, golfer requests + organizer approves, admin direct link. Recommend **all three**, all logged.
+- **D3** Old personal `handicap_rounds`: back up only, or a separate personal import later? Recommend **back up only for now**.
+- **D4** Attach the Maroon history to the "The Maroon Masters" golf trip (`golf_trip_id`)? Recommend **yes, optional link**.
+
+**Done for the next task (foundation, after approval):** `supabase/historical_import.sql` written (not run); `lib/history/import/` package types + validator + dry-run planner; dry-run CLI that writes nothing; tests above passing (unit + DB harness); `tsc` clean. No UI, no deletions, no scoring changes, no commit unless asked.

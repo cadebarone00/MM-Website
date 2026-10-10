@@ -54,9 +54,9 @@ const DRAFT_TYPES = ["Snake", "Straight"] as const;
 type DraftType = (typeof DRAFT_TYPES)[number];
 const MAX_DAYS = 14;
 // Match Selection (Organizer): how a round's matches are made — the organizer enters them (Manual) or a Match Draft makes
-// them (Response, Random or Number Assignment) at a set time.
+// them (Response, Ranks or Randomized) at a set time. Set for every round at once, or (Select per round) round by round.
 const MATCH_METHODS = ["Manual", "Match Draft"] as const;
-const MATCH_DRAFT_TYPES = ["Response", "Random", "Number Assignment"] as const;
+const MATCH_DRAFT_TYPES = ["Response", "Ranks", "Randomized"] as const;
 type MatchSelection = { method: (typeof MATCH_METHODS)[number] | null; draftType: (typeof MATCH_DRAFT_TYPES)[number] | null; date: string; time: string };
 const NO_MATCH_SELECTION: MatchSelection = { method: null, draftType: null, date: "", time: "" };
 /** The items in a random order (Fisher–Yates). */
@@ -292,6 +292,10 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const [matchesOpen, setMatchesOpen] = useState(false);
   const [matchRound, setMatchRound] = useState<{ day: number; slot: number } | null>(null);
   const [matchSelections, setMatchSelections] = usePersistedState<Record<string, MatchSelection>>(persist, "matchSelections", {});
+  // Match Selection Type (all rounds at once): Select per round off = every round follows `allRounds`; on = each round's own.
+  const [matchPerRound, setMatchPerRound] = usePersistedState(persist, "matchPerRound", false);
+  const [allRoundsMatch, setAllRoundsMatch] = usePersistedState<MatchSelection>(persist, "allRoundsMatch", NO_MATCH_SELECTION);
+  const roundMatchSelection = (key: string) => matchPerRound ? matchSelections[key] : allRoundsMatch;
   // Round settings → Players: up to 4 roster slots per tee time group, kept per round slot. A player can be in one group per round.
   const [teePlayers, setTeePlayers] = usePersistedState<Record<string, Record<number, number[]>>>(persist, "teePlayers", {});
   const [teePlayersGroup, setTeePlayersGroup] = useState<number | null>(null);
@@ -936,6 +940,38 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
       {/* Match Selection: every round, laid out like Golf Schedule (Day N + date, a cream box per round); tap one to choose
           how its matches are made. */}
       {matchesOpen && !matchRound && <div className={styles.competition}>
+        {/* Match Selection Type: every round at once. Select per round on greys this out (each round is set on its own page);
+            off, Manual selection or Match Draft (and its type) here sets them all. Match drafts can be changed later in the
+            Match Draft room. */}
+        <section className={`${tripStyles.infoSection} ${styles.matchType}`} aria-label="Match Selection Type">
+          <h3 className={styles.matchTypeTitle}>Match Selection Type</h3>
+          <div className={styles.totalPlayers}>
+            <span className={styles.typeHeading}>Select per round</span>
+            <button type="button" role="switch" aria-checked={matchPerRound} aria-label="Select per round" className={toggleStyles.toggle} onClick={() => setMatchPerRound(!matchPerRound)}>
+              <span className={toggleStyles.track} data-on={matchPerRound}><span className={toggleStyles.thumb} /></span><span>{matchPerRound ? "On" : "Off"}</span>
+            </button>
+          </div>
+          <fieldset className={styles.compLock} disabled={matchPerRound} aria-label="All rounds">
+            {([["Manual selection", "Manual"], ["Match Draft", "Match Draft"]] as const).map(([label, method]) => {
+              const on = allRoundsMatch.method === method;
+              return <div key={method} className={styles.totalPlayers}>
+                <span className={styles.typeHeading}>{label}</span>
+                <button type="button" role="switch" aria-checked={on} aria-label={label} className={toggleStyles.toggle}
+                  onClick={() => setAllRoundsMatch(current => ({ ...current, method: on ? null : method }))}>
+                  <span className={toggleStyles.track} data-on={on}><span className={toggleStyles.thumb} /></span><span>{on ? "Yes" : "No"}</span>
+                </button>
+              </div>;
+            })}
+            {allRoundsMatch.method === "Match Draft" && <div className={styles.teamSelection} role="group" aria-label="Match draft type">
+              <span className={styles.typeHeading}>Draft type</span>
+              <div className={styles.teamSelectionChoices}>
+                {MATCH_DRAFT_TYPES.map(option => <button key={option} type="button" className={styles.typeChoice} aria-pressed={allRoundsMatch.draftType === option}
+                  onClick={() => setAllRoundsMatch(current => ({ ...current, draftType: option }))}>{option}</button>)}
+              </div>
+              <p className={styles.statNote}>Select Match Drafts in each round.</p>
+            </div>}
+          </fieldset>
+        </section>
         <div className={tripStyles.events}>
           {Array.from({ length: golfDayCount }, (_, index) => {
             const date = golfIso(index);
@@ -946,7 +982,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
               </div>
               {Array.from({ length: roundsPerDay[index] ?? 1 }, (_, slot) => {
                 const round = scheduleSlot(index, slot);
-                const choice = matchSelections[round.key];
+                const choice = roundMatchSelection(round.key);
                 return <div key={slot} className={`${styles.compRoundRow} ${styles.scheduleRoundCard}`}>
                   <button type="button" className={styles.roundCardButton} aria-label={`${round.label}: ${round.course}. Match selection`} onClick={() => setMatchRound({ day: index, slot })}>
                     <span className={tripStyles.eventInfo}>
@@ -966,7 +1002,9 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
       {matchesOpen && matchRound && (() => {
         const round = scheduleSlot(matchRound.day, matchRound.slot);
         const date = golfIso(matchRound.day);
-        const choice = matchSelections[round.key] ?? NO_MATCH_SELECTION;
+        const choice = roundMatchSelection(round.key) ?? NO_MATCH_SELECTION;
+        // The round's own draft date and time (editable even when the method and type come from all rounds).
+        const own = matchSelections[round.key] ?? NO_MATCH_SELECTION;
         const choose = (change: Partial<MatchSelection>) => setMatchSelections(current => ({ ...current, [round.key]: { ...(current[round.key] ?? NO_MATCH_SELECTION), ...change } }));
         return <div className={styles.competition}>
           <div className={styles.roundDayHeader}>
@@ -975,9 +1013,17 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
             </div>
             <time dateTime={date}>{new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`))} · Round {round.number}</time>
           </div>
+          {/* The round's tee times (Golf Schedule), above the match selector. */}
+          <section className={styles.matchTeeTimes} aria-label="Tee times">
+            <span className={styles.typeHeading}>Tee times</span>
+            {round.groupTimes.some(Boolean)
+              ? <ul>{round.groupTimes.map((time, group) => time && <li key={group}><span>Group {group + 1}</span><span>{teeTimeLabel(time)}</span></li>)}</ul>
+              : <p className={styles.statNote}>No tee times yet. Add them on this round in Golf Schedule.</p>}
+          </section>
           {/* Match selector: Manual (the organizer enters the matches) or Match Draft (made at a set time, by Response,
-              Random or Number Assignment). */}
-          <section className={styles.matchSelector} aria-label="Match selection">
+              Ranks or Randomized). The method and type are locked to all rounds unless Select per round is on; a draft's
+              date and time are always this round's own. */}
+          <fieldset className={`${styles.compLock} ${styles.matchSelector}`} disabled={!matchPerRound} aria-label="Match selection">
             <div className={styles.teamSelection} role="group" aria-label="How matches are made">
               <span className={styles.typeHeading}>Match Selection</span>
               <div className={styles.draftTypes}>
@@ -990,16 +1036,18 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
               <div className={styles.teamSelectionChoices} role="group" aria-label="Match draft type">
                 {MATCH_DRAFT_TYPES.map(option => <button key={option} type="button" className={styles.typeChoice} aria-pressed={choice.draftType === option} onClick={() => choose({ draftType: option })}>{option}</button>)}
               </div>
-              <div className={styles.totalPlayers}>
-                <span className={styles.typeHeading}>Draft date</span>
-                <input type="date" className={styles.draftInput} aria-label="Match draft date" value={choice.date} onChange={event => choose({ date: event.target.value })} />
-              </div>
-              <div className={styles.totalPlayers}>
-                <span className={styles.typeHeading}>Draft time</span>
-                <input type="time" className={styles.draftInput} aria-label="Match draft time" value={choice.time} onChange={event => choose({ time: event.target.value })} />
-              </div>
             </div>}
-          </section>
+          </fieldset>
+          {choice.method === "Match Draft" && <div className={`${styles.draftSettings} ${styles.matchDraftWhen}`} role="group" aria-label="Match draft date and time">
+            <div className={styles.totalPlayers}>
+              <span className={styles.typeHeading}>Draft date</span>
+              <input type="date" className={styles.draftInput} aria-label="Match draft date" value={own.date} onChange={event => choose({ date: event.target.value })} />
+            </div>
+            <div className={styles.totalPlayers}>
+              <span className={styles.typeHeading}>Draft time</span>
+              <input type="time" className={styles.draftInput} aria-label="Match draft time" value={own.time} onChange={event => choose({ time: event.target.value })} />
+            </div>
+          </div>}
         </div>;
       })()}
       {roundsOpen && !scheduleRound && <div className={styles.competition}>

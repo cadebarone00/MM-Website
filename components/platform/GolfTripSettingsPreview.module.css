@@ -285,3 +285,16 @@ span.typeChoice{cursor:default}
 .matchSelector .teamSelection{margin-bottom:0}
 .matchSelector .draftSettings{margin-top:4px}
 .matchSelector .teamSelectionChoices .typeChoice{font-size:13px}
+/* Match Selection Type: the all-rounds settings above Day 1. */
+.matchType{display:grid;gap:12px;margin-bottom:8px;padding-bottom:16px;border-bottom:1px solid rgba(214,184,121,.35)}
+.matchTypeTitle{margin:0;text-align:center;color:#fbf8f1;font:600 20px/1.15 var(--font-spectral),Georgia,serif}
+.matchType .totalPlayers{margin-bottom:0}
+.matchType fieldset{display:grid;gap:12px;margin:0;padding:0;border:0;min-width:0}
+fieldset.matchSelector{border:0;padding:0;min-width:0}
+/* Match Selection → a round: its tee times above the selector, and the draft's date / time under it. */
+.matchTeeTimes{display:grid;gap:8px;margin-top:16px}
+.matchTeeTimes ul{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.matchTeeTimes li{display:flex;justify-content:space-between;color:#fbf8f1;font:600 14px/1.3 var(--font-barlow),sans-serif}
+.matchTeeTimes li span:first-child{color:rgba(251,248,241,.7)}
+.matchTeeTimes .statNote{margin:0}
+.matchDraftWhen{margin-top:12px}
