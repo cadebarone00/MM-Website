@@ -8,7 +8,9 @@ export type TeamDraft = {
   selection: "Manual" | "Draft" | "Random" | null;
   date: string;
   time: string;
+  /** Pick order; retained under type for compatibility with existing saved setup. */
   type: "Snake" | "Straight";
+  method?: "Captain's Picks" | "Duck Race";
 };
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

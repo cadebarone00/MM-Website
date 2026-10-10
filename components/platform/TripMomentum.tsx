@@ -82,7 +82,7 @@ function DraftStrip({ draft, board, now, editHref, players }: { players: DraftRo
       </div>
       <button type="button" className={styles.room} onClick={() => setRoomOpen(true)}>Draft Room</button>
     </div>
-    {roomOpen && <TripDraftRoom players={players} draftType={draft.type} countdown={parts} onClose={() => setRoomOpen(false)} />}
+    {roomOpen && <TripDraftRoom players={players} draftType={draft.method ?? "Captain's Picks"} draftOrder={draft.type} countdown={parts} when={draftWhen(draft, board, zone).replace(` · ${draft.type}`, "")} onClose={() => setRoomOpen(false)} />}
   </div>;
 }
 

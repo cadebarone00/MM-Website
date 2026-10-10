@@ -38,7 +38,11 @@ import { useRoundRsvps } from "@/lib/platform/roundRsvp";
 
 const GENERAL_CARDS = ["Scorecard View", ...Array.from({ length: 5 }, () => "Place holder")];
 // Individual and Team competition are separate boxes; each opens the competition page for just that type.
-const ORGANIZER_CARDS = ["Players", "Golf Schedule", "Match Selection", "Individual Competition", "Team Competition", "Games", "Allowed", "Player Scoring", "History"];
+const ORGANIZER_SECTIONS = [
+  { title: "Overview", cards: ["Players", "Golf Schedule", "Games", "Player Scoring", "Allowed"] },
+  { title: "Competition", cards: ["Individual Competition", "Team Competition", "Match Selection"] },
+  { title: "History", cards: ["History"] },
+];
 const GAME_GROUPS = {
   Individual: [{ id: "skins", name: "Skins", description: "Play for the lowest net score on the hole or the round.", players: "1-4 players" }],
   Matches: SIDE_GAME_REGISTRY.filter(game => game.id !== "skins").map(game => ({ id: game.id, name: game.name, description: game.description, players: `${game.supportedGroupSizes.join(" / ")} players` })),
@@ -50,8 +54,10 @@ const COMPETITION_TYPES = [
 // Team Selection (Competition → Team): the ways players get put on teams.
 const TEAM_SELECTIONS = ["Manual", "Draft", "Random"] as const;
 type TeamSelection = (typeof TEAM_SELECTIONS)[number];
-const DRAFT_TYPES = ["Snake", "Straight"] as const;
-type DraftType = (typeof DRAFT_TYPES)[number];
+const DRAFT_ORDERS = ["Snake", "Straight"] as const;
+type DraftOrder = (typeof DRAFT_ORDERS)[number];
+const DRAFT_METHODS = ["Captain's Picks", "Duck Race"] as const;
+type DraftMethod = (typeof DRAFT_METHODS)[number];
 const MAX_DAYS = 14;
 // Match Selection (Organizer): how a round's matches are made — the organizer enters them (Manual) or a Match Draft makes
 // them (Response, Ranks or Randomized) at a set time. Set for every round at once, or (Select per round) round by round.
@@ -210,12 +216,13 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   // Draft: when it happens and its order (Snake reverses each round; Straight keeps the same order).
   const [draftDate, setDraftDate] = usePersistedState(persist, "draftDate", "");
   const [draftTime, setDraftTime] = usePersistedState(persist, "draftTime", "");
-  const [draftType, setDraftType] = usePersistedState<DraftType>(persist, "draftType", "Snake");
+  const [draftOrder, setDraftOrder] = usePersistedState<DraftOrder>(persist, "draftType", "Snake");
+  const [draftMethod, setDraftMethod] = usePersistedState<DraftMethod>(persist, "draftMethod", "Captain's Picks");
   // Home's Draftboard follows these (team type, how teams are picked, the draft's date, time and order).
   const shareTeamDraft = sharedCompetition?.setTeamDraft;
   useEffect(() => {
-    shareTeamDraft?.(dataKey, { teamType: competitionType.team, selection: teamSelection, date: draftDate, time: draftTime, type: draftType });
-  }, [shareTeamDraft, dataKey, competitionType.team, teamSelection, draftDate, draftTime, draftType]);
+    shareTeamDraft?.(dataKey, { teamType: competitionType.team, selection: teamSelection, date: draftDate, time: draftTime, type: draftOrder, method: draftMethod });
+  }, [shareTeamDraft, dataKey, competitionType.team, teamSelection, draftDate, draftTime, draftOrder, draftMethod]);
   const teamStep = groupSize ?? 2;
   const teamTotalMax = playerTotal - (playerTotal % teamStep);
   const highestTeam = Math.max(-1, ...rosterSlots.map(index => teamPicks[index] ?? -1));
@@ -376,7 +383,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
       rows.push(["Players", playing.length ? `${playing.length} of ${playerTotal} · ${playing.map(playerName).join(", ")}` : "None picked yet"]);
     } else {
       rows.push(["Team selection", teamSelection ?? "Not chosen"]);
-      if (teamSelection === "Draft") rows.push(["Draft", `${draftType} · ${draftDate ? golfDateLabel(draftDate) : "Date not set"}${draftTime ? ` · ${clockLabel(draftTime)}` : " · Time not set"}`]);
+      if (teamSelection === "Draft") rows.push(["Draft type", draftMethod], ...(draftMethod === "Captain's Picks" ? [["Draft order", draftOrder] as [string, string]] : []), ["Draft", `${draftMethod} · ${draftDate ? golfDateLabel(draftDate) : "Date not set"}${draftTime ? ` · ${clockLabel(draftTime)}` : " · Time not set"}`]);
       const teams = submittedTeams ?? teamSplit;
       teams.forEach((team, index) => rows.push([teamLabels[index], `${teamColor(teamColors[index])?.name ?? "No color"} · ${team.length ? team.map(playerName).join(", ") : "No players yet"}${submittedTeams ? "" : " (not submitted)"}`]));
     }
@@ -463,7 +470,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     const settingsView = historyOpen ? "history" : scorecardViewOpen ? "scorecard-view" : playerScoringOpen ? "player-scoring" : allowedOpen ? "allowed" : playersOpen ? "players" : roundsOpen ? "schedule" : competitionOpen ? selectedRoundId ? `round-${selectedRoundId}` : competitionSection === "Format" ? "competition-rounds" : "competition" : gamesOpen ? expandedGameId ? `game-${expandedGameId}` : "games" : placeholder ? `placeholder-${placeholder}` : section === "General" ? "player" : "organizer";
     reportNavigation({ tab: "Home", settingsView }, rounds.map(({ id, number }) => ({ id, number })));
   }, [reportNavigation, historyOpen, scorecardViewOpen, playerScoringOpen, allowedOpen, playersOpen, roundsOpen, competitionOpen, competitionSection, gamesOpen, expandedGameId, placeholder, section, selectedRoundId, rounds]);
-  const cards = section === "Organizer" ? ORGANIZER_CARDS : GENERAL_CARDS;
+  const cardSections = section === "Organizer" ? ORGANIZER_SECTIONS : [{ title: null, cards: GENERAL_CARDS }];
   // Back arrow and SAVE both step back one level; preview changes are already kept as you make them.
   const goBack = () => {
     if (selectedRound) setSelectedRoundId(null);
@@ -626,9 +633,15 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                       </div>
                       <span className={styles.typeHeading}>Draft type</span>
                       <div className={styles.draftTypes} role="group" aria-label="Draft type">
-                        {DRAFT_TYPES.map(option => <button key={option} type="button" className={styles.typeChoice} aria-pressed={draftType === option} onClick={() => setDraftType(option)}>{option}</button>)}
+                        {DRAFT_METHODS.map(option => <button key={option} type="button" className={styles.typeChoice} aria-pressed={draftMethod === option} onClick={() => setDraftMethod(option)}>{option}</button>)}
                       </div>
-                      <p className={styles.statNote}>{draftType === "Snake" ? "Snake: the pick order flips every round (A, B, then B, A…), so no team always picks first." : "Straight: the same pick order every round (A, B, then A, B…)."}</p>
+                      {draftMethod === "Captain's Picks" && <>
+                        <span className={styles.typeHeading}>Draft order</span>
+                        <div className={styles.draftTypes} role="group" aria-label="Draft order">
+                          {DRAFT_ORDERS.map(option => <button key={option} type="button" className={styles.typeChoice} aria-pressed={draftOrder === option} onClick={() => setDraftOrder(option)}>{option}</button>)}
+                        </div>
+                        <p className={styles.statNote}>{draftOrder === "Snake" ? "Snake: the pick order flips every round (A, B, then B, A...), so no team always picks first." : "Straight: the same pick order every round (A, B, then A, B...)."}</p>
+                      </>}
                     </div>}
                     {/* Submit teams lights up once every player is on a team; after submitting it becomes Undo & Change. Draft: the draft sets the teams. */}
                     {teamSelection === "Draft" ? null : submittedTeams ? <button type="button" className={`${styles.typeChoice} ${styles.selectTeams}`} onClick={() => setSubmittedTeams(null)}>Undo &amp; Change</button>
@@ -1250,8 +1263,11 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
         </div>}
       </div>}
 
-      {!placeholder && !competitionOpen && !gamesOpen && !roundsOpen && !playersOpen && !allowedOpen && !playerScoringOpen && !scorecardViewOpen && !historyOpen && !matchesOpen && <div className={styles.grid}>
-        {cards.map((title, index) => {
+      {!placeholder && !competitionOpen && !gamesOpen && !roundsOpen && !playersOpen && !allowedOpen && !playerScoringOpen && !scorecardViewOpen && !historyOpen && !matchesOpen && <div className={styles.settingsSections}>
+        {cardSections.map(group => <section key={group.title ?? "General"} aria-label={group.title ?? "General settings"}>
+          {group.title && <h2 className={styles.settingsSectionHeading}>{group.title}</h2>}
+          <div className={styles.grid}>
+        {group.cards.map((title, index) => {
           if (title === "Individual Competition" || title === "Team Competition") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`}
             onClick={() => { setOverviewType(title === "Team Competition" ? "team" : "individual"); setCompetitionSection("Overview"); setCompetitionOpen(true); }}>
             <h2>{title}</h2>
@@ -1284,6 +1300,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
             <h2>{title}</h2>
           </button>;
         })}
+          </div>
+        </section>)}
       </div>}
     </div>
   </main>;

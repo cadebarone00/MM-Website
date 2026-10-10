@@ -1,6 +1,6 @@
 # Trip Draft Room feature review
 
-Review date: 2026-10-10. Scope revision 1. Internal decision: pending; all unresolved legal findings remain `review_required`. Accountable release owner, policy reviewer, jurisdictions, audience ages, next review date and professional reviewers remain unassigned. Web implementation only; no deployment verified.
+Review date: 2026-10-10. Scope revision 3. Internal decision: pending; all unresolved legal findings remain `review_required`. Accountable release owner, policy reviewer, jurisdictions, audience ages, next review date and professional reviewers remain unassigned. Web implementation only; no deployment verified.
 
 ## Scope and flows
 
@@ -41,3 +41,13 @@ TypeScript and scoped ESLint passed. Browser component harness verified Snake A/
 ## 2026-10-10 header/countdown follow-up
 
 Presentation change: header row lowered 28px and scheduled-start countdown added below it. Countdown values come from the existing Home draft target and ticking trip clock; no additional data, vendor, persistence, authorization or money flow. It does not implement a per-pick deadline. Existing unresolved review_required findings remain unchanged.
+
+## 2026-10-10 draft type selector (scope revision 2)
+
+Owner requested the selector only. Captain's Picks, Randomized and Duck Race sit between the header and board. Captain's Picks is the initial label; choices change only component-memory selection and reset on close. No randomization, animation/race outcome, automated allocation, scoring, money or prize flow is introduced. Existing manual picks retain Snake/Straight order. No new vendor, storage, personal data or permission flow. All prior category findings and human-review actions remain review_required; selector availability does not establish production or legal approval.
+
+## 2026-10-10 overview configuration (scope revision 3)
+
+Draft Type is now configured under Team Competition Overview > Draft: Captain's Picks or Duck Race. Snake/Straight is a secondary Draft Order for Captain's Picks. Room type/order rows are read-only. Random continues through the existing overview random-team assignment action, not a draft type. Duck Race remains an unavailable engine; manual room pick controls show only for Captain's Picks.
+
+New configuration field draftMethod stores the chosen label in existing source-scoped development browser setup (or the legacy provider's memory path). The existing draftType field retains the saved Snake/Straight order; an absent method defaults to Captain's Picks. Home adapters and shared state carry both values to the room. This adds a preference to existing browser persistence, with existing reset/removal behavior; retention/deletion and configuration scope review remain review_required. No new personal data, API/database save, vendor, permissions, race outcomes, payouts, messaging or scoring changes. All category findings remain unresolved pending accountable reviewers. Engineering follow-up: verify method/order carry-over, reload, random-without-draft and legacy-order compatibility; separately review any future race engine and official draft authority.
