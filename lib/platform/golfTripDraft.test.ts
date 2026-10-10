@@ -60,8 +60,6 @@ test("reviewRows lists every answer top to bottom", () => {
     { label: "Destination", value: "Pinehurst, North Carolina" },
     { label: "Dates", value: "Thu, Apr 22 – Mon, Apr 26" },
     { label: "Players", value: "8" },
-    { label: "Your Name", value: "Cade" },
-    { label: "Your Email", value: "cade@example.com" },
     { label: "Golf Days", value: "2" },
     { label: "Rounds", value: "3" },
     { label: "Round 1", value: "Fri, Apr 23 · Pinehurst No. 2" },
@@ -76,7 +74,7 @@ test("reviewRows lists every answer top to bottom", () => {
 
 test("reviewRows shows Not set for anything skipped", () => {
   const rows = reviewRows({});
-  assert.equal(rows.length, 12);
+  assert.equal(rows.length, 10);
   assert.ok(rows.every((row) => row.value === "Not set"));
   assert.equal(reviewRows({ startDate: "2027-04-22", endDate: "2027-04-22" })[2].value, "Thu, Apr 22");
 });

@@ -119,3 +119,6 @@
 .back{align-self:center;font:600 14px/1.3 var(--font-barlow),sans-serif;color:#dcc495;text-decoration:underline;text-underline-offset:3px}
 @media(max-width:400px){.creamTitle{font-size:34px}}
 @media(min-width:1024px){.split,.review{margin-bottom:0}.picker,.review{padding-bottom:48px}}
+
+/* Trip Basics (name, destination, dates and players): a taller sheet so every field shows without scrolling. */
+.picker.pickerTall{height:74svh}

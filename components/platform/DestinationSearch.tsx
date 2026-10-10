@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
+import { golfTripDraftSnapshot, parseGolfTripDraft } from "@/lib/platform/golfTripDraft";
 import type { PlaceLocation, PlaceSuggestion } from "@/lib/platform/location/types";
 import styles from "./CreateTournament.module.css";
+
+/** The draft only changes when a step's Next is tapped, so there is nothing to listen for here. */
+const subscribeNever = () => () => {};
 
 const MIN_LETTERS = 3;
 const PAUSE_MS = 250;
@@ -19,6 +23,11 @@ const newSessionToken = () => crypto.randomUUID?.() ?? `${Date.now().toString(36
 export function DestinationSearch() {
   const id = useId();
   const [text, setText] = useState("");
+  // A saved destination (a started trip, or coming Back) goes in once; it isn't searched until it's changed.
+  const draftRaw = useSyncExternalStore(subscribeNever, golfTripDraftSnapshot, () => "");
+  const saved = parseGolfTripDraft(draftRaw).destination ?? "";
+  const [seeded, setSeeded] = useState("");
+  if (saved && !seeded) { setSeeded(saved); setText(saved); }
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [active, setActive] = useState(-1);
   const [picked, setPicked] = useState<PlaceLocation | null>(null);
@@ -29,7 +38,7 @@ export function DestinationSearch() {
   // Ask for suggestions after a short pause in typing. Nothing is asked once a suggestion is picked.
   useEffect(() => {
     const query = text.trim();
-    if (picked || off.current || query.length < MIN_LETTERS) return;
+    if (picked || off.current || query.length < MIN_LETTERS || query === seeded.trim()) return;
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       session.current ||= newSessionToken();
@@ -44,7 +53,7 @@ export function DestinationSearch() {
       }
     }, PAUSE_MS);
     return () => { clearTimeout(timer); controller.abort(); };
-  }, [text, picked]);
+  }, [text, picked, seeded]);
 
   function type(value: string) {
     textRef.current = value;

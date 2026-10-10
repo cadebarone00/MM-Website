@@ -19,7 +19,9 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ ok: false, error: "Invalid request." }, { status: 400 });
   }
-  const parsed = golfTripPayloadFromBody(body);
+  // Everyone in the app is signed in, so the organizer's name and email come from their profile, never the form.
+  const organizer = { yourName: current.profile.displayName, yourEmail: current.profile.email || current.account.email || "" };
+  const parsed = golfTripPayloadFromBody(body && typeof body === "object" && !Array.isArray(body) ? { ...body, ...organizer } : body);
   if (!parsed.ok) {
     return NextResponse.json({ ok: false, error: parsed.errors[0]?.message ?? "Check your answers.", errors: parsed.errors }, { status: 400 });
   }
