@@ -51,6 +51,14 @@ export function ProfileView({ profile }: { profile: ProfileReadModel }) {
           <div className="min-w-0">
             <h2 className="break-words font-serif text-2xl font-bold leading-tight">{identity.displayName}</h2>
             <p className="mt-0.5 break-all text-sm text-maroon-900/70">@{identity.username}</p>
+            {/* Handicap index by the name: one number from every counting round (legacy Maroon, trips, Play a round). */}
+            {profile.modernStats && (profile.modernStats.handicapIndex !== null || isOwner) && (
+              <p className="mt-2 inline-flex items-baseline gap-2 rounded-full bg-maroon-900 px-3 py-1 text-cream-50" aria-label={profile.modernStats.handicapIndex === null ? "Handicap index not set yet" : `Handicap index ${profile.modernStats.handicapIndex}`}>
+                <span className="font-condensed text-xs uppercase tracking-wider text-gold-300">Handicap</span>
+                <span className="font-serif text-lg font-bold leading-none">{profile.modernStats.handicapIndex ?? "—"}</span>
+                {profile.modernStats.handicapIndex === null && <span className="text-xs text-cream-50/70">needs 3 counting rounds</span>}
+              </p>
+            )}
             {identity.memberSince && <p className="mt-1 text-sm text-maroon-900/70">Member since {identity.memberSince}</p>}
           </div>
         </div>
