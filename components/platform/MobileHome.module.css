@@ -1,5 +1,5 @@
 .home{--app-maroon:#1d0b11;--app-cream:#f4efe6;background:var(--app-maroon);color:var(--app-cream);min-height:calc(100svh - 72px)}
-.upper{max-width:1160px;margin:auto;padding:12px 0 0}
+.upper{max-width:1160px;margin:auto;padding:4px 0 0}
 .tagline{margin:0;padding:0 24px 22px;font:500 10px/1.5 var(--font-barlow),sans-serif;text-transform:uppercase;letter-spacing:.15em;color:#d6c5ca}
 .cards{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:24px;padding:0 24px 8px;scrollbar-width:none}.cards::-webkit-scrollbar{display:none}
 .tripCard{flex:0 0 100%;min-width:0;overflow:hidden;border:1px solid #b99c6b;border-bottom:0;border-radius:14px;scroll-snap-align:start;background:var(--app-cream)}
@@ -23,3 +23,22 @@
 .cardActions{display:grid;grid-template-columns:1fr}
 .cardActions>*+*{border-top:1px solid #b99c6b55}
 @media(min-width:601px){.cardActions{grid-template-columns:1fr 1fr}.cardActions>*+*{border-top:0;border-left:1px solid #b99c6b55}.soloCard .tripPhoto{height:260px}}
+/* Play page: the "Play a round" card on top, then Tournament + Golf Trip side by side. */
+.roundCard{display:block;margin:0 24px;border-bottom:1px solid #b99c6b}.roundCard .tripPhoto{height:170px}.roundCard .cardActions{grid-template-columns:1fr}
+/* Leaves room for the sticky top bar when "Pick a course" scrolls here. */
+.discover{scroll-margin-top:72px}
+button.cardAction{width:100%;border:0;background:transparent;font-family:inherit;text-align:left;cursor:pointer}
+.playCards{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px 24px 8px}
+.playCard{display:flex;align-items:center;gap:8px;min-width:0;min-height:54px;padding:10px 16px;border:1px solid #b99c6b;border-radius:14px;background:var(--app-cream);color:var(--app-maroon);font:500 19px/1.15 var(--font-spectral),Georgia,serif}.playCard>svg:last-child{margin-left:auto}
+@media(max-width:600px){.roundCard{margin:0 18px}.playCards{padding:12px 18px 6px;gap:10px}.playCard{font-size:17px;padding:10px 14px}}
+@media(max-width:340px){.playCards{grid-template-columns:1fr}}
+@media(min-width:601px){.roundCard .tripPhoto{height:220px}}
+/* Play page: invites to rounds with friends, above the Play a round card. */
+.invites{display:grid;gap:10px;margin:0 24px 12px}
+.invite{display:grid;gap:10px;padding:14px 16px;border:1px solid #b99c6b;border-radius:14px;background:#2b1219}
+.invite p{margin:0;font-size:14px;line-height:1.45}
+.invite div{display:flex;gap:8px}
+.invite button{min-height:42px;padding:0 18px;border:1px solid #b99c6b;border-radius:10px;background:transparent;color:var(--app-cream);font:600 14px var(--font-barlow),sans-serif;cursor:pointer}
+.invite button:first-child{background:var(--app-cream);color:var(--app-maroon);border-color:var(--app-cream)}
+.inviteError{margin:0;font-size:13px;color:#ffd9d9}
+@media(max-width:600px){.invites{margin:0 18px 10px}}

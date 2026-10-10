@@ -31,6 +31,7 @@ const MAX_LIMIT = 50;
  */
 export const OPEN_GOLF_PATHS = {
   search: "/v1/courses/search",
+  byState: (code: string) => `/v1/courses/state/${code}`,
   courseDetail: (id: string) => `/api/v1/courses/${encodeURIComponent(id)}`,
 };
 const UUID =/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -41,6 +42,8 @@ export interface OpenGolfClient {
   search(text: string, options?: { state?: string; limit?: number }): Promise<OpenGolfSearchReply>;
   /** Null when OpenGolf has no course with this id. */
   courseDetail(id: string): Promise<OpenGolfCourseDetail | null>;
+  /** One page (up to 500) of a state's courses, with map points: for "courses near me". */
+  byState(state: string, offset?: number): Promise<OpenGolfSearchReply>;
 }
 
 export function createOpenGolfClient({ fetchImpl = fetch, baseUrl = OPEN_GOLF_BASE_URL, timeoutMs = TIMEOUT_MS }: { fetchImpl?: Fetch; baseUrl?: string; timeoutMs?: number } = {}): OpenGolfClient {
@@ -79,6 +82,13 @@ export function createOpenGolfClient({ fetchImpl = fetch, baseUrl = OPEN_GOLF_BA
       if (state) params.set("state", state.toUpperCase());
       const reply = parseSearchReply(await get(`${OPEN_GOLF_PATHS.search}?${params}`,SEARCH_CACHE_SECONDS));
       if (!reply) throw fail("malformed", "OpenGolf's search reply had no course list");
+      return reply;
+    },
+    async byState(state, offset = 0) {
+      if (!/^[A-Za-z]{2}$/.test(state)) throw fail("bad_request", "State must be a two-letter code");
+      const params = new URLSearchParams({ limit: "500", offset: String(Math.max(0, Math.floor(offset))) });
+      const reply = parseSearchReply(await get(`${OPEN_GOLF_PATHS.byState(state.toUpperCase())}?${params}`, DETAIL_CACHE_SECONDS));
+      if (!reply) throw fail("malformed", "OpenGolf's state reply had no course list");
       return reply;
     },
     async courseDetail(id) {

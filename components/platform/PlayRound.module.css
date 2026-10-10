@@ -1,0 +1,78 @@
+/* Play a round (/rounds/new): same maroon + cream look as the Play page (MobileHome.module.css). */
+.page{--app-maroon:#1d0b11;--app-cream:#f4efe6;min-height:calc(100svh - 72px);background:var(--app-maroon);color:var(--app-cream);padding:4px 0 140px}
+.header{display:flex;align-items:center;gap:12px;max-width:640px;margin:0 auto;padding:10px 20px}
+.back{display:grid;place-items:center;width:40px;height:40px;border:1px solid #b99c6b77;border-radius:50%;background:transparent;color:var(--app-cream);cursor:pointer}
+.kicker{margin:0;font:500 11px/1.5 var(--font-barlow),sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#d6c5ca}
+.search{max-width:640px;margin:0 auto;padding:0 18px}.search>section{border-radius:20px;overflow:hidden;background:var(--app-cream);min-height:0}
+.panel{max-width:640px;margin:0 auto;padding:6px 20px 0}
+.title{margin:0;font:400 clamp(28px,8vw,40px)/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.03em}
+.place{margin:6px 0 18px;font-size:13px;color:#d6c5ca}
+.note{font-size:14px;line-height:1.5;color:#d6c5ca}
+.error{padding:12px 14px;border:1px solid #e0a3a3;border-radius:12px;background:#3a1218;font-size:14px;line-height:1.5;color:#ffd9d9}
+.form{display:grid;gap:14px;padding:16px;border:1px solid #b99c6b;border-radius:16px;background:var(--app-cream);color:var(--app-maroon)}
+.field{display:grid;gap:8px;margin:0;padding:0;border:0;font-size:13px;font-weight:600}
+.field legend{padding:0;margin-bottom:8px}
+.field select,.field input:not([type=checkbox]){min-height:46px;padding:0 12px;border:1px solid #b99c6b;border-radius:10px;background:#fffdf8;color:var(--app-maroon);font:500 15px var(--font-barlow),sans-serif}
+.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.choices button{min-height:44px;border:1px solid #b99c6b;border-radius:10px;background:#fffdf8;color:var(--app-maroon);font:600 14px var(--font-barlow),sans-serif;cursor:pointer}
+.choices button[aria-pressed=true]{background:var(--app-maroon);border-color:var(--app-maroon);color:var(--app-cream)}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding-top:12px;border-top:1px solid #b99c6b55;font-size:15px;font-weight:600;cursor:pointer}
+.toggle small{display:block;margin-top:2px;font-size:12px;font-weight:400;color:#6b5a5f}
+.toggle input{width:44px;height:26px;accent-color:var(--app-maroon);flex:none}
+.primary{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:0 20px;border:0;border-radius:14px;background:var(--app-maroon);color:var(--app-cream);font:600 16px var(--font-barlow),sans-serif;cursor:pointer}
+.saved .primary{background:var(--app-cream);color:var(--app-maroon)}
+.secondary{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 18px;border:1px solid #b99c6b;border-radius:14px;background:transparent;color:var(--app-cream);font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
+.discard{display:block;margin-top:24px;padding:10px 0;border:0;background:none;color:#d6c5ca;font-size:13px;text-decoration:underline;cursor:pointer}
+.saved{display:grid;gap:12px;padding:20px;border:1px solid #b99c6b;border-radius:16px;text-align:center}
+.savedTotal{margin:0;font:400 64px/1 var(--font-spectral),Georgia,serif}
+.page a:focus-visible,.page button:focus-visible,.page input:focus-visible,.page select:focus-visible{outline:3px solid #b99c6b;outline-offset:2px}
+/* Setup: who's playing, game, teams. */
+.players{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.players li{display:flex;align-items:center;gap:8px;min-height:44px;padding:4px 10px;border:1px solid #b99c6b55;border-radius:10px;background:#fffdf8;font-size:15px}
+.players li>span{flex:1;min-width:0}.players small{display:block;font-size:11px;font-weight:400;color:#6b5a5f}
+.handicap{width:64px;min-height:36px!important;padding:0 8px!important;text-align:center}
+.remove{display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:50%;background:transparent;color:var(--app-maroon);cursor:pointer}
+.addPlayer{display:grid;gap:6px}
+.addPlayer input{min-height:46px;padding:0 12px;border:1px solid #b99c6b;border-radius:10px;background:#fffdf8;color:var(--app-maroon);font:500 15px var(--font-barlow),sans-serif}
+.results{display:grid;gap:4px;margin:0;padding:0;list-style:none}
+.results button,.guest{width:100%;min-height:42px;padding:0 12px;border:1px solid #b99c6b55;border-radius:10px;background:#fffdf8;color:var(--app-maroon);font:600 14px var(--font-barlow),sans-serif;text-align:left;cursor:pointer}
+.results small{font-weight:400;color:#6b5a5f}
+.guest{border-style:dashed}
+.blurb{margin:0;font-size:13px;font-weight:400;line-height:1.5;color:#6b5a5f}
+.teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px}
+.teams button{display:flex;justify-content:space-between;gap:6px;min-height:42px;padding:0 10px;align-items:center;border:1px solid #b99c6b;border-radius:10px;background:#fffdf8;color:var(--app-maroon);font:600 14px var(--font-barlow),sans-serif;cursor:pointer}
+.teams button[aria-pressed=true]{background:var(--app-maroon);color:var(--app-cream)}
+.teams b{font-size:11px;font-weight:600;opacity:.75}
+.toggleOff{opacity:.5;cursor:not-allowed}
+/* Play: the game strip under score entry (inside the light scoring sheet), and standings. */
+.game{display:grid;gap:8px;margin:10px 0 4px;padding:10px 12px;border:1px solid #b99c6b77;border-radius:12px;color:#2f0c0e}
+.pickRow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12px;font-weight:600}
+.pickRow>span{flex-basis:100%;text-transform:uppercase;letter-spacing:.06em;opacity:.7}
+.pickRow button{min-height:36px;padding:0 12px;border:1px solid #b99c6b;border-radius:999px;background:#fffdf8;color:#2f0c0e;font:600 13px var(--font-barlow),sans-serif;cursor:pointer}
+.pickRow button[aria-pressed=true]{background:#2f0c0e;border-color:#2f0c0e;color:#fffdf8}
+.standings{text-align:left}
+.standings ol{display:grid;gap:2px;margin:6px 0 0;padding:0;list-style:none}
+.standings li{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px solid #b99c6b44;font-size:15px}
+.standings li:first-child{border-top:0}
+.standingsTitle{margin:0;font:600 11px/1.4 var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;opacity:.75}
+.standingsNote{margin:6px 0 0;font-size:12px;opacity:.8}
+.standingsCompact li{padding:3px 0;font-size:13px}
+/* Game picker button (opens the trip's "New game"-style sheet). */
+.gamePick{display:flex;align-items:center;gap:8px}
+.gameButton{flex:1;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;padding:0 14px;border:1px solid #b99c6b;border-radius:10px;background:#fffdf8;color:var(--app-maroon);font:600 15px var(--font-barlow),sans-serif;text-align:left;cursor:pointer}
+.gameButton small{font-size:12px;font-weight:500;color:#6b5a5f}
+.needs{margin:0;padding:8px 10px;border-radius:8px;background:#f6e7c8;font-size:13px;font-weight:600;line-height:1.4}
+.primary:disabled{opacity:.45;cursor:not-allowed}
+/* Rounds with friends: rejoin banner, roster, host menu. */
+.banner{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;padding:12px 14px;border:1px solid #b99c6b;border-radius:12px;font-size:14px}
+.banner b{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.roster{display:grid;gap:6px;margin:0 0 12px;padding:0;list-style:none}
+.roster li{display:flex;align-items:center;gap:8px;min-height:44px;padding:4px 12px;border:1px solid #b99c6b55;border-radius:10px;font-size:15px}
+.roster li>span{flex:1;min-width:0}.roster small{margin-left:8px;font-size:11px;color:#d6c5ca}
+.roster b{font-size:12px;font-weight:600;color:#b9e0b0}.roster b[data-status=invited]{color:#f6d68b}
+.roster .remove{color:var(--app-cream)}
+.hostMenu{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.hostMenu .secondary{min-height:42px;padding:0 14px;font-size:14px}
+.results button{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.results b{font-size:13px}
+.ratingRow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ratingRow label{display:grid;gap:6px;font-size:12px;font-weight:600}

@@ -254,3 +254,4 @@
 .history li[data-current] > details > summary{font-weight:800}
 .history li details summary{text-align:left;font-weight:600;letter-spacing:0}
 .snapshotTable{margin-top:6px}
+.holeParEdit{padding:4px 10px;border:1px dashed rgba(47,12,14,.45);border-radius:999px;background:transparent;cursor:pointer}

@@ -2408,3 +2408,99 @@ Builds **on top of** the Player rounds plan above. Nothing above changes: `Playe
   - Others never get profile or scoring ids.
 - **Contract:** `docs/player-rounds-scoring-contract.md`. No scoring files changed. Legacy `handicap_rounds` / live / archives aren't touched.
 - **Done =** the 5 new DB tests pass (sources, duplicates, same course and day, revisions, mixed query + privacy, legacy untouched), plus TS and lint.
+
+### Round: Explore becomes "Play" (spec 2026-10-07, approved and built 2026-10-07)
+
+**What it does / who uses it.** Everyone who opens the home page (`/`). The home page turns into a "Play" page that starts with ways to play golf. The Maroon's articles (the ribbon and everything under it) stay below.
+
+**Bottom menu.**
+- The **Explore** button is renamed **Play** and gets a **golf flag** icon (flag in the hole, `LandPlot` from the icon set the app already uses). It still opens `/`, and still lights up on `/` and the `/the-maroon/...` sub-pages.
+- The other buttons don't change.
+
+**Top of the home page (top to bottom).**
+1. **Play a round card** (big photo card, full width, replaces today's "Your next tradition" card). Headline about playing a normal round. One button, **Pick a course →**. It switches the ribbon below to **Courses** and scrolls down to the course search that's already there. No scoring yet.
+2. **Two smaller cards side by side** (they stack on narrow phones):
+   - **Tournament:** **Join Tournament →** opens `/tournaments/join`. **Create Tournament →** opens `/tournaments/create` (sign-in required, same as today).
+   - **Golf Trip:** **Join a Trip →** opens `/golf-trips`, where the existing "Join a Trip" box is. **Create a Trip →** opens `/tournaments/create/golf-trip` (sign-in required, same as the Golf Trips page).
+3. The "Already part of the club? Log In" line stays for signed-out visitors.
+
+**Ribbon (filter row) underneath.**
+- The leftmost item, **Discover**, becomes **Explore**, using the Explore icon (the one currently in the bottom menu) with "Explore" under it. It shows the same "There's more to the game" feature that Discover shows today.
+- Courses, Equipment, Teaching and News stay exactly the same.
+
+**Everything below the ribbon** ("Beyond the scorecard", the category cards and sections) doesn't change.
+
+**Tech / data.** Only changes the look: `components/platform/PlatformHome.tsx`, its `MobileHome.module.css`, and `components/nav/SiteBottomNav.tsx`. No database, API or new pages.
+
+**Not in this round:** a real "play a round" / scoring flow, any new pages, or changes to the Golf Trips, Tourneys or Explore article pages.
+
+**Done means:** the bottom menu shows Play with a flag; the home page shows the round card, then the Tournament and Golf Trip cards, then the ribbon starting with Explore; every button goes where listed above; Pick a course opens course search; TypeScript, lint and tests pass; checked at phone width in the dev simulator with no errors.
+
+### Round: Play a round — personal rounds (spec 2026-10-07, approved 2026-10-07; building in 4 steps: solo, friends, games, import; Steps 1 (solo), 2 (friends) and 3 (games, Play a round only) built 2026-10-07, not committed; trip round settings games + Step 4 import not built yet)
+
+**What it does / who uses it.** A signed-in player plays a normal round on their own (no trip or tournament). The finished round is saved to their account (`player_rounds`, source `personal`), shows in **Profile → Rounds**, and counts toward their handicap when it qualifies (same rules as trip rounds).
+
+**Flow (one new page, `/rounds/new`, in steps):**
+1. **Play page → "Play a round"** (the card button is renamed from "Pick a course"). Not signed in → asked to sign in first.
+2. **What course?** Search box (the same course search used on the Play page), pick a course.
+3. **Round setup** (a few quick questions, sensible defaults):
+   - **Tee box** (from the course's tees, which give rating + slope). Without a tee the round still saves but shows "not counted".
+   - **Holes:** 18 · Front 9 · Back 9.
+   - **Keep stats?** On: putts, fairways, greens. Off: strokes only.
+   - **Count toward my handicap?** On by default. Off = practice round (saved, marked "not counted").
+   - **Date:** today (can change it, for logging a round played earlier).
+   - **Who's playing?** Just me, or **add friends** (up to 5 players in the group, for Wolf and Daytona): search Maroon accounts by name, or add a **guest by name** (no account).
+   - **Format / game** (optional, only with friends). One shared game list (below), also used by trip rounds. Picking a **team format** (Scramble, Shamble, Alternate Shot, Chapman) keeps it selectable but **greys out "Count toward my handicap"** with the note "Team formats can't count toward a handicap."
+4. **Play:** the **same scoring / scorecard screen as the trip** (`GolfTripScoring`), with GPS when the course has GPS data. Whoever starts the round is the **scorekeeper** and enters every player's strokes (each player keeps their own stats only if they score on their own phone in a later version). A live **game** strip shows who's winning (match status / skins won / Nassau standings). Progress is kept on the phone, so closing the app or refreshing mid-round doesn't lose it.
+5. **Submit & Save** → saves the scorekeeper's round (locked after submit, like trip rounds) → a "Round saved" screen with totals, the **game result**, whether it counted, and a link to Profile → Rounds.
+6. **Friends with accounts** get a request: "Cam played Pebble Beach with you — add this round (82) to your profile?" → **Accept** saves it to their account (counts toward their handicap if it qualifies, attested by the scorekeeper) / **Decline** saves nothing. Guests' scores stay on that round only and are never saved to a profile.
+
+**Tech / data.**
+- Reuses `GolfTripScoring`, the course search, `buildPlayerRound` (handicap rules), the trip's game formats (`lib/platform/roundCompetition.ts`), and `saveMyPlayerRound` (`lib/platform/playerRoundsServer.ts`). New: the `/rounds/new` page, Skins + Nassau scoring (plain tested functions), an API route to save the round, and the friend accept / decline request.
+- **New SQL (owner runs it):** a small `personal_round_shares` table for the friend requests (round, friend's account, scores, status pending / accepted / declined), with the same security style as `player_rounds` (nobody reads it directly; server functions check the signed-in user). **Needs `supabase/player_rounds.sql` run in Supabase** (written earlier, not run yet). Until it's run, Submit shows "Rounds can't be saved yet" instead of breaking.
+- The handicap number updates from saved rounds when the trip handicap merge (Step 2B) lands. Until then the round shows as "counts" in Rounds, but the index number isn't recalculated yet.
+
+**Shared game list (personal rounds + trip round settings):**
+- Already in the trip: Stroke Play, Stableford, Match Play (gross / net / both), Scramble, Shamble, Alternate Shot, Chapman.
+- New: **Best Ball**, **Skins**, **Nassau** (front / back / overall), **Wolf** (rotating Wolf picks a partner or goes Lone Wolf, 4 or 5 players), **Vegas** (2v2, team scores combined into a 2-digit number, 4 players), **Daytona** (5 players, owner's rules: on each tee the 2 players on the left are a team, the 2 on the right are a team, the middle player is alone. Left vs right play best ball against each other. The middle player can't lose, but if they win the hole they win points from everyone. Scorekeeper picks who's left / middle / right on every tee. Middle wins = outright lowest score of all 5 → 1 point from each of the other 4. Otherwise the lower best ball wins → each winner gets 1 point from each loser; tied best balls = no points; if the middle wins, the left / right result doesn't also score.), **Bingo Bango Bongo** (first on, closest once on, first in), **Nines / 5-3-1** (3 players), **Sixes / Round Robin** (4 players, partners change every 6 holes), **Snake** (last 3-putt holds the snake).
+- **"Birdies double points"** toggle (off by default) on every points game: Stableford, Skins, Wolf, Vegas, Daytona, Bingo Bango Bongo, Nines / 5-3-1, Sixes. When the winning score on a hole is a birdie or better, that hole's points are doubled (Stableford: a player's own birdie-or-better hole is doubled). Not on hole-based games (Match Play, Nassau, Stroke Play, team formats) or Snake (a penalty, not points).
+- Each game shows only when the player count fits (e.g. Vegas and Sixes need 4, Wolf needs 4 or 5, Daytona needs 5). Points / standings only, no money tracking. Each game's scoring is a plain tested function. Bingo Bango Bongo and Snake need a quick extra tap per hole (who got the point / who 3-putted).
+- Trip rounds: the new games are added to the trip's round settings (`RoundCompetitionSettings`) and its live leaderboard.
+
+**Profile → Import rounds.** A new **Import rounds** button on Profile → Rounds:
+- **Add a round by hand:** date, course (search, or type the name), tee, holes (9 / 18), total score (hole-by-hole optional).
+- **Upload a file:** a CSV / Excel of past rounds (e.g. copied from GHIN's score history or another app), previewed as rows before saving, with any bad rows flagged.
+- Imported rounds show as **"Imported"** in Rounds and **don't count** toward the Maroon index (they can't be verified). Saved with source `history` in `player_rounds` (no new table).
+- Optional field: **"My GHIN Handicap Index"**, used for net games when the player has no Maroon index yet.
+
+**Not in this round:** each friend scoring on their own phone at the same time (live sync), betting / money tracking on games, editing a submitted round, any GHIN connection (see the GHIN note below).
+
+**GHIN note (owner question 2026-10-07, not being built).** GHIN (run by the USGA) has no public API. Reading or posting scores needs approval as a USGA licensed partner. Unofficial access is against their terms. Until then: typing in a GHIN index and importing rounds by hand or file (both built above, in Profile → Import rounds). Our number must be labelled as an estimate (e.g. "Maroon index"), not an official Handicap Index®.
+
+**Done means:** Play a round → course → setup → score holes → Submit saves the round and it appears in Profile → Rounds marked counted / not counted correctly; a refresh mid-round keeps the scores; signed-out users are sent to sign in; TypeScript and tests pass; checked at phone width.
+
+#### Change: invite-only shared rounds (spec 2026-10-07, approved and built 2026-10-07, not committed; needs `shared_rounds.sql` run)
+
+**What changes.** Play a round with friends becomes **invite only** and **live on every player's phone**. Replaces guests and the after-round "add this round" request (`personal_round_shares.sql` is dropped; it was never run).
+
+**Owner decisions (2026-10-07):** start any time, invitees can join late; each player enters their own score and the **host** can also enter for anyone; invites show as a **card on the Play page**; only the **host** can invite / remove players, change the game or end the round after it starts.
+
+**Flow.**
+1. **Setup (host):** course, tee, holes, game as now. **Who's playing?** = search Maroon accounts → **Invite** (up to 4). No guests. An **Invites** list shows each person: Invited · Joined · Declined, with Cancel.
+2. **Start round:** creates the shared round in the database (any time, even with invites still pending).
+3. **Invited player:** a card at the top of **Play**: "Cam invited you to play Pebble Beach · Wolf" → **Join** opens the round on their phone, **Decline** removes it.
+4. **Playing:** the same scoring screen on every phone. **My Score** is mine; other players' boxes are view-only for players, editable for the host. Scores and the game's per-hole picks (Wolf partner, Daytona spots, etc.) sync every few seconds. Players who haven't joined yet show as "Invited"; the host can keep their score.
+5. **Host menu during the round:** invite more, remove a player, change the game, end the round.
+6. **Finish:** each player taps **Submit & Save** for their own card → saved to their own Profile → Rounds (counts toward their handicap when it qualifies; stats are theirs, kept only if they scored on their own phone). The host's card submits the same way. Game result shows for everyone.
+
+**Data (new SQL, owner runs it): `supabase/shared_rounds.sql`** (prereq `player_rounds.sql`)
+- `shared_rounds`: id, host, course / tee / holes / game setup (JSON), status (live / ended), started / ended times.
+- `shared_round_players`: round, profile, status (invited / joined / declined / removed), order in the group.
+- `shared_round_holes`: round, profile, hole, strokes, putts, fairway, green, entered_by, updated_at (one row per player per hole).
+- `shared_round_picks`: round, hole, the game's per-hole pick (JSON).
+- Security as before: no direct table access; server functions check the signed-in user is the host or a joined player, players can only write their own scores, the host can write anyone's.
+- Local phone storage stays as a backup so a dropped connection never loses a score.
+
+**Not in this change:** push notifications, invite links, guests, invites on Profile.
+
+**Done means:** host invites 2 accounts, starts; one joins late and enters their own scores on their phone; host sees them live and can fix a score; the other declines and disappears from the round; each joined player submits their own card and it shows in their Rounds; tests for the database rules (who can read / write what); TypeScript, lint and tests pass.

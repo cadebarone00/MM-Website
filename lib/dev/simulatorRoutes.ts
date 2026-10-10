@@ -29,7 +29,7 @@ export function simulatorPages(): SimulatorPage[] {
       ...GOLF_TRIP_SECTIONS.filter(section => section !== "Overview").map(section => ({ ...home, id: `trip-${section}`, label: `Golf Trip · ${section}`, navigation: { tab: "Golf" as const, golfSection: section } })),
     );
   }
-  for (const [path, label] of [["/new-user", "New User"], ["/signup", "Create an Account"], ["/", "Explore / Home"], ["/golf-trips", "Golf Trips"], ["/profile", "Profile"], ["/tournaments/join", "Tourneys"], ["/pickems", "Pick?ems"], ["/golf-trips/new", "Create Golf Trip"], ["/golf-trips/trip/settings", "Golf Trip · App settings"], ["/login", "Log In welcome"], ["/login/email", "Email sign in"]]) {
+  for (const [path, label] of [["/new-user", "New User"], ["/signup", "Create an Account"], ["/", "Play / Home"], ["/golf-trips", "Golf Trips"], ["/profile", "Profile"], ["/tournaments/join", "Tourneys"], ["/pickems", "Pick?ems"], ["/golf-trips/new", "Create Golf Trip"], ["/golf-trips/trip/settings", "Golf Trip · App settings"], ["/login", "Log In welcome"], ["/login/email", "Email sign in"]]) {
     if (existsSync(join(process.cwd(), "app", path, "page.tsx"))) pages.push({ id: path, path, label, fixtures: false });
   }
   // Dynamic setup route has a real, fixed Golf Trip branch.
