@@ -91,6 +91,8 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
   if (pathname === "/golf-trips/new" || pathname.startsWith("/golf-trips/new/")) return <>{children}</>;
   // Golf Trip Home (draft and saved trips), Trip Settings and their local dev preview have no top nav either.
   if (pathname.startsWith("/golf-trips/") || pathname === "/dev/tournament" || pathname.startsWith("/dev/tournament/")) return <>{children}</>;
+  // Play a round is app-only too: no website top nav.
+  if (pathname.startsWith("/rounds/")) return <>{children}</>;
 
   if (inPortal) {
     return (

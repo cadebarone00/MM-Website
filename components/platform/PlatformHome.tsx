@@ -1,14 +1,14 @@
 "use client";
-import { useRef, useState, type ComponentType } from "react";
+import { useState, type ComponentType } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, ArrowUpRight, Flag, FlagTriangleRight, GraduationCap, Newspaper, Plane, Trophy } from "lucide-react";
 import { ExploreIcon } from "@/components/nav/ImageIcons";
 import { maroonCategories } from "@/lib/data/theMaroon";
 import { MaroonSection } from "@/components/maroon/MaroonSection";
-import { SignInRequiredLink } from "./SignInRequiredLink";
 import { GolfBagIcon } from "./GolfBagIcon";
 import { ExploreCourseSearch } from "./ExploreCourseSearch";
+import { RoundInvites } from "./RoundInvites";
 import styles from "./MobileHome.module.css";
 import { motion } from "motion/react";
 import { useAppMotion } from "@/components/motion/useAppMotion";
@@ -28,11 +28,9 @@ export function PlatformHome({ signedIn = false }: { signedIn?: boolean }) {
   const [section, setSection] = useState<(typeof sections)[number]>("Explore");
   // Explore has no category of its own, so it borrows the Courses photo.
   const category = maroonCategories.find(item => item.slug === (section === "Explore" ? "courses" : section.toLowerCase()))!;
-  // "Pick a course" opens the Courses filter and brings its course search into view.
-  const discoverRef = useRef<HTMLElement>(null);
-  const pickCourse = () => { setSection("Courses"); discoverRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); };
   return <main className={styles.home}>
     <section className={styles.upper} aria-label="Play">
+      {signedIn && <RoundInvites />}
       {/* Play a normal round: the big card on top. */}
       <motion.article className={`${styles.tripCard} ${styles.soloCard} ${styles.roundCard}`} {...cardInteraction} whileTap={buttonPress.whileTap} transition={buttonPress.transition}>
         <div className={styles.tripPhoto}>
@@ -40,25 +38,17 @@ export function PlatformHome({ signedIn = false }: { signedIn?: boolean }) {
           <div className={styles.tripOverlay}><span className={styles.kicker}><Flag size={13} aria-hidden="true" /> Play a round</span><p>Tee it up.<br />Any course, any day.</p></div>
         </div>
         <div className={styles.cardActions}>
-          <button type="button" className={styles.cardAction} onClick={pickCourse}>Pick a course <span><ArrowRight size={16} aria-hidden="true" /></span></button>
+          <Link href="/rounds/new" className={styles.cardAction}>Play a round <span><ArrowRight size={16} aria-hidden="true" /></span></Link>
         </div>
       </motion.article>
-      {/* Tournaments and golf trips side by side, each with a join and a create. */}
+      {/* Tournaments and golf trips side by side, each opening its page. */}
       <div className={styles.playCards}>
-        <article className={styles.playCard} aria-labelledby="play-tournament">
-          <h2 id="play-tournament"><Trophy size={18} aria-hidden="true" /> Tournament</h2>
-          <Link href="/tournaments/join" className={styles.playAction} onNavigate={beginJoinTournamentTransition}>Join<span className="sr-only"> Tournament</span> <ArrowRight size={15} aria-hidden="true" /></Link>
-          <SignInRequiredLink href="/tournaments/create" className={styles.playAction} message="Sign in to create a tournament">Create<span className="sr-only"> Tournament</span> <ArrowRight size={15} aria-hidden="true" /></SignInRequiredLink>
-        </article>
-        <article className={styles.playCard} aria-labelledby="play-trip">
-          <h2 id="play-trip"><Plane size={18} aria-hidden="true" /> Golf Trip</h2>
-          <Link href="/golf-trips" className={styles.playAction}>Join<span className="sr-only"> a Trip</span> <ArrowRight size={15} aria-hidden="true" /></Link>
-          <SignInRequiredLink href="/tournaments/create/golf-trip" className={styles.playAction} message="Sign in to create a golf trip">Create<span className="sr-only"> a Trip</span> <ArrowRight size={15} aria-hidden="true" /></SignInRequiredLink>
-        </article>
+        <Link href="/tournaments/join" className={styles.playCard} onNavigate={beginJoinTournamentTransition}><Trophy size={18} aria-hidden="true" /> Tournament <ArrowRight size={15} aria-hidden="true" /></Link>
+        <Link href="/golf-trips" className={styles.playCard}><Plane size={18} aria-hidden="true" /> Golf Trip <ArrowRight size={15} aria-hidden="true" /></Link>
       </div>
       {!signedIn && <div className={styles.accountRow}><p>Already part of the club?</p><Link href="/login">Log In <ArrowRight size={14} aria-hidden="true" /></Link></div>}
     </section>
-    <section ref={discoverRef} className={styles.discover} aria-label="Explore The Maroon">
+    <section className={styles.discover} aria-label="Explore The Maroon">
       <div className={styles.filters} role="group" aria-label="Explore categories">
         {sections.map(item => {
           const Icon = sectionIcons[item];
