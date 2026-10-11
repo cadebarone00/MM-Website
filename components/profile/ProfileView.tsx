@@ -6,9 +6,9 @@ import { useState } from "react";
 import { Pencil, Settings } from "lucide-react";
 import { HandicapHome } from "@/components/portal/handicap/HandicapHome";
 import { PlayerRoundsList } from "@/components/profile/PlayerRoundsList";
+import { ProfileStats } from "@/components/profile/ProfileStats";
 import { ProfileHistory } from "@/components/profile/ProfileHistory";
-import { PlayerScorecardView } from "@/components/scorecard/PlayerScorecardView";
-import type { ModernStats, ProfileReadModel } from "@/lib/profile/profileReadModel";
+import type { ProfileReadModel } from "@/lib/profile/profileReadModel";
 
 type Tab = "overview" | "rounds" | "stats";
 const TABS: { key: Tab; label: string }[] = [
@@ -17,13 +17,13 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "stats", label: "Stats" },
 ];
 const empty = "px-4 py-5 text-center text-maroon-900/60";
-const label = "m-0 font-condensed text-sm font-semibold uppercase tracking-wide text-maroon-700";
 
 /**
  * A profile (the profile read model), laid out like a fantasy-app account screen: your own on /profile, or someone
  * else's on /profile/<username>. Only the owner gets Settings and Edit; a Private profile shows other people its name only.
  */
-export function ProfileView({ profile }: { profile: ProfileReadModel }) {
+/** `friendsCount`: people they've been on a golf trip with (lib/profile/friendsServer.ts); null = unknown. */
+export function ProfileView({ profile, friendsCount = null }: { profile: ProfileReadModel; friendsCount?: number | null }) {
   const [tab, setTab] = useState<Tab>("overview");
   const { identity, legacy, isOwner } = profile;
   const isPrivate = profile.access === "private";
@@ -34,33 +34,35 @@ export function ProfileView({ profile }: { profile: ProfileReadModel }) {
         {isOwner && <Link href="/settings" aria-label="Settings" className="absolute right-4 top-6 flex h-11 w-11 items-center justify-center rounded-full text-maroon-900 hover:text-maroon-700">
           <Settings size={28} aria-hidden="true" />
         </Link>}
-        <div className="mx-auto flex w-full max-w-[640px] items-center gap-5 pl-[10%]">
-          <div className="relative shrink-0">
-            <span className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-cream-50 font-condensed text-3xl font-bold text-maroon-900 shadow-[0_0_0_3px_#380001]">
-              {identity.avatarSrc
-                ? <Image src={identity.avatarSrc} alt="" width={96} height={96} className="h-full w-full object-cover" />
-                : identity.initials}
-            </span>
-            {identity.canEditBio && (
-              <Link href="/profile/edit" aria-label="Edit profile"
-                className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-maroon-900 bg-cream-50 text-maroon-900">
-                <Pencil size={16} aria-hidden="true" />
-              </Link>
-            )}
+        <div className="mx-auto w-full max-w-[640px]">
+          <h2 className="break-words pr-12 font-serif text-2xl font-bold leading-tight">{identity.displayName}</h2>
+          {/* Photo on the left; Rounds · Friends · Handicap level with it on the right (every round on the profile, friends
+              coming soon, and the handicap index from all counting rounds). */}
+          <div className="mt-3 flex items-center gap-4">
+            <div className="relative shrink-0">
+              <span className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-cream-50 font-condensed text-3xl font-bold text-maroon-900 shadow-[0_0_0_3px_#380001]">
+                {identity.avatarSrc
+                  ? <Image src={identity.avatarSrc} alt="" width={96} height={96} unoptimized className="h-full w-full object-cover" />
+                  : identity.initials}
+              </span>
+              {identity.canEditBio && (
+                <Link href="/settings" aria-label="Edit profile in Settings"
+                  className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-maroon-900 bg-cream-50 text-maroon-900">
+                  <Pencil size={16} aria-hidden="true" />
+                </Link>
+              )}
+            </div>
+            {!isPrivate && <dl className="grid min-w-0 flex-1 grid-cols-3 text-center" aria-label="Profile numbers">
+              {([["Rounds", String(profile.modernStats?.roundsPlayed ?? 0)], ["Friends", friendsCount === null ? "—" : String(friendsCount)], ["Handicap", profile.modernStats?.handicapIndex == null ? "—" : String(profile.modernStats.handicapIndex)]] as const).map(([label, value]) =>
+                <div key={label} className="flex flex-col-reverse items-center gap-1">
+                  <dt className="font-condensed text-sm text-maroon-900/70">{label}</dt>
+                  <dd className="m-0 font-serif text-2xl font-bold leading-none">{value}</dd>
+                </div>)}
+            </dl>}
           </div>
-          <div className="min-w-0">
-            <h2 className="break-words font-serif text-2xl font-bold leading-tight">{identity.displayName}</h2>
-            <p className="mt-0.5 break-all text-sm text-maroon-900/70">@{identity.username}</p>
-            {/* Handicap index by the name: one number from every counting round (legacy Maroon, trips, Play a round). */}
-            {profile.modernStats && (profile.modernStats.handicapIndex !== null || isOwner) && (
-              <p className="mt-2 inline-flex items-baseline gap-2 rounded-full bg-maroon-900 px-3 py-1 text-cream-50" aria-label={profile.modernStats.handicapIndex === null ? "Handicap index not set yet" : `Handicap index ${profile.modernStats.handicapIndex}`}>
-                <span className="font-condensed text-xs uppercase tracking-wider text-gold-300">Handicap</span>
-                <span className="font-serif text-lg font-bold leading-none">{profile.modernStats.handicapIndex ?? "—"}</span>
-                {profile.modernStats.handicapIndex === null && <span className="text-xs text-cream-50/70">needs 3 counting rounds</span>}
-              </p>
-            )}
-            {identity.memberSince && <p className="mt-1 text-sm text-maroon-900/70">Member since {identity.memberSince}</p>}
-          </div>
+          {/* Under the photo: username, then the bio (small). */}
+          <p className="mt-3 break-all text-sm font-semibold text-maroon-900/80">@{identity.username}</p>
+          {identity.bio && <p className="mt-1 whitespace-pre-line text-[13px] leading-snug text-maroon-900/85">{identity.bio}</p>}
         </div>
         {!isPrivate && <nav className="mx-auto mt-4 flex min-h-14 w-full max-w-[640px] justify-around" aria-label="Profile sections">
           {TABS.map((t) => (
@@ -89,22 +91,11 @@ export function ProfileView({ profile }: { profile: ProfileReadModel }) {
           )}
           {tab === "stats" && (
             <section aria-label="Stats">
-              <StatsCard stats={profile.modernStats} isOwner={isOwner} />
-              {/* LEGACY HISTORY: the latest original Maroon scorecard — golf data only, in its own archive section. */}
-              {legacy?.latestScorecard && <section aria-label="The Maroon Tournament archive" className="mt-10">
-                <h3 className={label}>The Maroon Tournament archive</h3>
-                <div className="-mx-4 mt-3 px-7">
-                  <p className="mb-4 font-condensed text-xs font-semibold uppercase tracking-wide text-maroon-700">{legacy.latestScorecard.tournament.editionLabel}</p>
-                  <PlayerScorecardView scorecard={legacy.latestScorecard.scorecard} tournament={legacy.latestScorecard.tournament}
-                    shotVideos={legacy.latestScorecard.shotVideos} />
-                </div>
-              </section>}
+              <ProfileStats rounds={profile.rounds.status === "ok" ? profile.rounds.value : []} isOwner={isOwner} />
             </section>
           )}
           {tab === "overview" && (
             <section aria-label="Overview">
-              {identity.bio ? <p className="whitespace-pre-line leading-relaxed text-maroon-900/90">{identity.bio}</p>
-                : <p className={empty}>{isOwner ? <>No bio yet. <Link href="/profile/edit" className="underline underline-offset-4">Add one</Link>.</> : "No bio yet."}</p>}
               <ProfileHistory trips={profile.trips} tournaments={profile.tournaments} teamHistory={profile.teamHistory} isOwner={isOwner} />
             </section>
           )}
@@ -114,23 +105,3 @@ export function ProfileView({ profile }: { profile: ProfileReadModel }) {
   );
 }
 
-/** Modern stats from finished rounds — only what the rounds really support; a calm empty state otherwise. */
-function StatsCard({ stats, isOwner }: { stats: ModernStats | null; isOwner: boolean }) {
-  if (!stats) return <p className={empty}>{isOwner ? "Stats will show here once you finish rounds." : "No stats to show yet."}</p>;
-  const items: [string, string][] = [
-    ["Rounds", String(stats.roundsPlayed)],
-    ["18-hole average", stats.average18 === null ? "—" : String(stats.average18)],
-    ["Best 18", stats.best18 === null ? "—" : String(stats.best18)],
-    ["Handicap index", stats.handicapIndex === null ? "—" : String(stats.handicapIndex)],
-  ];
-  return <section aria-label="Round stats">
-    <h3 className={label}>Round stats</h3>
-    <dl className="mt-3 grid grid-cols-2 gap-3">
-      {items.map(([name, value]) => <div key={name} className="rounded-md border border-maroon-900/15 bg-white px-4 py-3">
-        <dt className="text-sm text-maroon-900/65">{name}</dt>
-        <dd className="m-0 font-serif text-2xl font-bold">{value}</dd>
-      </div>)}
-    </dl>
-    {stats.handicapIndex === null && <p className="mt-2 text-sm text-maroon-900/60">A handicap index needs at least 3 rounds that count ({stats.countingRounds} so far).</p>}
-  </section>;
-}

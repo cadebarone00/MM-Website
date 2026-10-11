@@ -1,3 +1,4 @@
+import { profilePhotoUrl } from "./profilePhoto";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getPlayerSlug } from "@/lib/data/players";
 import { getCatalogTournament, getSeasonCatalog } from "@/lib/data/seasonCatalog";
@@ -22,9 +23,10 @@ const SUBJECT_COLUMNS = "id, display_name, username, created_at, player_slug";
 
 async function subject(subjectId: ProfileId): Promise<ProfileSubjectRow | null> {
   const db = createSupabaseServiceRoleClient();
-  // bio comes with profile_v1.sql and rounds_visibility with player_rounds.sql; until they're run, read without them.
+  // bio comes with profile_v1.sql, rounds_visibility with player_rounds.sql and avatar_path with profile_photos.sql;
+  // until they're run, read without them.
   let data: unknown = null;
-  for (const columns of [`${SUBJECT_COLUMNS}, rounds_visibility, bio`, `${SUBJECT_COLUMNS}, rounds_visibility`, SUBJECT_COLUMNS]) {
+  for (const columns of [`${SUBJECT_COLUMNS}, rounds_visibility, bio, avatar_path`, `${SUBJECT_COLUMNS}, rounds_visibility, bio`, `${SUBJECT_COLUMNS}, rounds_visibility`, SUBJECT_COLUMNS]) {
     const reply = await db.from("profiles").select(columns).eq("id", subjectId).maybeSingle();
     if (!reply.error) { data = reply.data; break; }
   }
@@ -34,7 +36,7 @@ async function subject(subjectId: ProfileId): Promise<ProfileSubjectRow | null> 
   return {
     id: text(row.id), displayName: text(row.display_name), username: text(row.username), createdAt: text(row.created_at) || null,
     legacyMaroonPlayerSlug: text(row.player_slug) || null, roundsVisibility: row.rounds_visibility === "public" ? "public" : "private",
-    bio: text(row.bio) || null,
+    bio: text(row.bio) || null, avatarUrl: profilePhotoUrl(text(row.avatar_path) || null),
   };
 }
 
