@@ -38,6 +38,15 @@ export function saveGolfTripDraft(values: GolfTripDraft): void {
   }
 }
 
+/** Starts a new draft with these answers (replacing any earlier draft), e.g. Play → Featured trip → Plan this trip. */
+export function startGolfTripDraft(values: GolfTripDraft): void {
+  try {
+    sessionStorage.setItem(KEY, JSON.stringify({ ...values, requestId: "" }));
+  } catch {
+    // Storage blocked: the questionnaire opens empty.
+  }
+}
+
 /** Every date from start to end ("YYYY-MM-DD", inclusive). Empty if either is missing or end is before start. */
 export function tripDates(start: string | undefined, end: string | undefined): string[] {
   const from = parseDay(start);
@@ -87,8 +96,6 @@ export function reviewRows(draft: GolfTripDraft): ReviewRow[] {
     { label: "Destination", value: text(draft.destination) },
     { label: "Dates", value: start && end ? (start === end ? start : `${start} – ${end}`) : NOT_SET },
     { label: "Players", value: text(draft.playerCount) },
-    { label: "Your Name", value: text(draft.yourName) },
-    { label: "Your Email", value: text(draft.yourEmail) },
     { label: "Golf Days", value: rounds.length ? String(rounds[rounds.length - 1].dayNumber) : NOT_SET },
     { label: "Rounds", value: rounds.length ? String(rounds.length) : NOT_SET },
     ...rounds.map((round) => ({

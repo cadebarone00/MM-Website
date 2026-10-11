@@ -1,0 +1,37 @@
+/* Play page → Explore filter: the Featured trip card and its itinerary sheet (maroon / cream / gold). */
+.wrap{padding:8px 18px 24px;color:#1d0b11}
+.heading{margin:0 0 10px;font:400 24px/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.03em}
+.card{position:relative;display:block;width:100%;aspect-ratio:16/9;max-height:320px;overflow:hidden;padding:0;border:1px solid #d9cdb8;border-radius:18px;background:#1d0b11;cursor:pointer;isolation:isolate;box-shadow:0 4px 14px #1d0b1118}
+.card>img{object-fit:cover;z-index:-2;transition:transform .4s}
+.card:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#1d0b1100 35%,#1d0b11cc 100%)}
+.card:hover>img{transform:scale(1.03)}
+.city{position:absolute;left:18px;bottom:14px;color:#fffdf8;font:400 clamp(30px,8vw,44px)/1 var(--font-spectral),Georgia,serif;letter-spacing:-.03em}
+.open{position:absolute;right:14px;bottom:16px;display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:999px;background:#fffdf8e6;color:#1d0b11;font:700 12px/1 var(--font-barlow),sans-serif}
+.card:focus-visible{outline:3px solid #b99c6b;outline-offset:3px}
+/* Itinerary sheet (inside the shared action-sheet frame). */
+div.sheet{position:fixed;left:50%;width:min(92vw,420px);max-height:none;transform:translateX(-50%);box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;padding:12px 14px 16px;color:#1d0b11}
+.backButton{display:inline-flex;align-items:center;gap:6px;min-height:36px;margin:0 0 8px;padding:0 12px 0 8px;border:1px solid #d9cdb8;border-radius:999px;background:#fffdf8;color:#1d0b11;font:700 13px var(--font-barlow),sans-serif;cursor:pointer}
+.backButton:focus-visible{outline:3px solid #b99c6b;outline-offset:2px}
+.sheetPhoto{position:relative;height:104px;margin:0 0 10px;overflow:hidden;border-radius:16px}
+.sheetPhoto>img{object-fit:cover}
+.sheetTitle{margin:0;padding-right:36px;font:400 26px/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.03em}
+.sheetMeta{margin:2px 0 10px;font:500 13px var(--font-barlow),sans-serif;color:#5d4f47}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:4px;border-radius:14px;background:#efe7da}
+.tiers button{display:grid;gap:2px;min-height:46px;border:0;border-radius:11px;background:transparent;color:#1d0b11;font:600 13px var(--font-barlow),sans-serif;cursor:pointer}
+.tiers button b{font-size:12px;font-weight:600;color:#6b5a50}
+.tiers button[aria-checked=true]{background:#1d0b11;color:#fffdf8}
+.tiers button[aria-checked=true] b{color:#e4c98f}
+.price{margin:10px 0 6px;font:500 13px var(--font-barlow),sans-serif;color:#5d4f47}
+.price b{font:400 24px var(--font-spectral),Georgia,serif;color:#1d0b11}
+.days{display:grid;gap:5px;margin:0;padding:0;list-style:none}
+.days li{display:flex;gap:10px;padding:7px 10px;border-radius:10px;background:#f6f0e6;font:500 14px/1.4 var(--font-barlow),sans-serif}
+.days b{flex:none;width:32px;color:#7a1b2e}
+.stay{display:flex;align-items:center;gap:6px;margin:10px 0 6px;font:600 13px var(--font-barlow),sans-serif}
+.includes{display:grid;gap:2px;margin:0 0 12px;padding:0;list-style:none;font:500 13px var(--font-barlow),sans-serif;color:#5d4f47}
+.includes li{display:flex;align-items:center;gap:6px}
+.includes svg{color:#1f6b3d}
+.plan{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:50px;border:0;border-radius:14px;cursor:pointer;background:#1d0b11;color:#fffdf8;font:700 15px var(--font-barlow),sans-serif}
+.fine{margin:10px 0 0;font-size:11px;line-height:1.4;color:#8c7d72}
+.tiers button:focus-visible,.plan:focus-visible{outline:3px solid #b99c6b;outline-offset:2px}
+@media(min-width:601px){.wrap{padding:12px 24px 28px}}
+@media(prefers-reduced-motion:reduce){.card>img{transition:none}}
