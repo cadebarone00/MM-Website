@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Search, X } from "lucide-react";
-import type { RoundStats } from "@/lib/profile/roundStats";
+import { roundStats, type RoundStats } from "@/lib/profile/roundStats";
+import { sampleProfileRounds } from "@/lib/dev/sampleProfileRounds";
+import { useSimulator } from "@/components/dev/SimulatorBridge";
 
 /**
  * Profile → Stats → Compare (owner only): a ring per stat, my arc (outer, maroon) and a friend's (inner, amber) on the
@@ -24,11 +26,14 @@ const METRICS: Metric[] = [
   { key: "doubles", label: "Double or worse", lowerIsBetter: true, value: (s) => s.scoring?.doublePct ?? null },
 ];
 const DEFAULT = ["fairways", "gir", "birdie", "scrambling"];
+/** DEV ONLY: only offered when the app simulator's Profile condition "Sample stats data" is on. */
+const SAMPLE: Person = { username: "__sample__", name: "Sample golfer" };
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
 type Loaded = { status: "idle" | "loading" } | { status: "ok"; person: Person; stats: RoundStats | null } | { status: "private" | "not_found" | "error"; person?: Person };
 
 export function CompareRings({ mine }: { mine: RoundStats }) {
   const [picked, setPicked] = useState<string[]>(DEFAULT);
+  const sampleOn = useSimulator()?.state.sampleStats === true;
   const [people, setPeople] = useState<Person[]>([]);
   const [loaded, setLoaded] = useState<Loaded>({ status: "idle" });
   const [query, setQuery] = useState("");
@@ -51,6 +56,8 @@ export function CompareRings({ mine }: { mine: RoundStats }) {
 
   async function compare(person: Person) {
     setQuery(""); setFound([]);
+    // DEV ONLY (simulator condition): a made-up golfer to compare against, without anyone's real data.
+    if (person.username === SAMPLE.username) { setLoaded({ status: "ok", person, stats: roundStats(sampleProfileRounds(20, 2, 31)) }); return; }
     setLoaded({ status: "loading" });
     try {
       const body = await fetch(`/api/profile/compare?u=${encodeURIComponent(person.username)}`, { cache: "no-store" }).then((r) => r.json()) as { result?: { status: string; person?: Person; stats?: RoundStats | null } };
@@ -69,7 +76,7 @@ export function CompareRings({ mine }: { mine: RoundStats }) {
     <h3 className="m-0 font-condensed text-xs font-semibold uppercase tracking-[0.14em] text-maroon-700">Compare</h3>
 
     <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Compare with">
-      {people.map((p) => <button key={p.username} type="button" aria-pressed={activeName === p.username} onClick={() => compare(p)}
+      {(sampleOn ? [...people, SAMPLE] : people).map((p) => <button key={p.username} type="button" aria-pressed={activeName === p.username} onClick={() => compare(p)}
         className={`min-h-9 rounded-full border px-3 text-sm font-semibold ${activeName === p.username ? "border-maroon-900 bg-maroon-900 text-cream-50" : "border-maroon-900/20 bg-cream-50 text-maroon-900"}`}
         aria-label={`${p.name}${p.friend ? " (friend)" : ""}`}>{firstName(p.name)}{p.friend && <span aria-hidden="true" className="ml-1 text-[10px] opacity-70">★</span>}</button>)}
       {them && <button type="button" onClick={() => setLoaded({ status: "idle" })} className="inline-flex min-h-9 items-center gap-1 rounded-full px-2 text-sm text-maroon-900/60" aria-label="Stop comparing"><X size={14} aria-hidden="true" /> Clear</button>}

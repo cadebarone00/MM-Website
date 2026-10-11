@@ -92,6 +92,12 @@ export function simulatorPages(): SimulatorPage[] {
     add("competition-rounds", "Rounds", "settings-competition");
     for (const game of [{ id: "skins", name: "Skins" }, ...SIDE_GAME_REGISTRY.filter(game => game.id !== "skins")]) add(`game-${game.id}`, game.name, "settings-games");
   }
+  // The real Profile (signed-in account): real data, or made-up rounds to preview the Stats tab and Compare.
+  const realProfile = pages.find(page => page.path === "/profile");
+  if (realProfile) realProfile.conditions = [
+    { id: "profile-real-data", label: "My real rounds", state: { sampleStats: false } },
+    { id: "profile-sample-data", label: "Sample stats data (25 made-up rounds + a sample golfer to compare)", state: { sampleStats: true } },
+  ];
   const profile = pages.find(page => page.path === "/dev/profile");
   if (profile) {
     profile.label = "Profile (player rounds)";

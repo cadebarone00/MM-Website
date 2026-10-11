@@ -7,6 +7,9 @@ import { Pencil, Settings } from "lucide-react";
 import { HandicapHome } from "@/components/portal/handicap/HandicapHome";
 import { PlayerRoundsList } from "@/components/profile/PlayerRoundsList";
 import { ProfileStats } from "@/components/profile/ProfileStats";
+import { useSimulator } from "@/components/dev/SimulatorBridge";
+import { sampleProfileRounds } from "@/lib/dev/sampleProfileRounds";
+import { modernStats } from "@/lib/profile/profileReadModel";
 import { ProfileHistory } from "@/components/profile/ProfileHistory";
 import type { ProfileReadModel } from "@/lib/profile/profileReadModel";
 
@@ -23,8 +26,11 @@ const empty = "px-4 py-5 text-center text-maroon-900/60";
  * else's on /profile/<username>. Only the owner gets Settings and Edit; a Private profile shows other people its name only.
  */
 /** `friendsCount`: people they've been on a golf trip with (lib/profile/friendsServer.ts); null = unknown. */
-export function ProfileView({ profile, friendsCount = null }: { profile: ProfileReadModel; friendsCount?: number | null }) {
+export function ProfileView({ profile: real, friendsCount = null }: { profile: ProfileReadModel; friendsCount?: number | null }) {
   const [tab, setTab] = useState<Tab>("overview");
+  // App simulator (dev only) → Profile → "Sample stats data": my own profile shows made-up rounds instead of my real ones.
+  const sample = useSimulator()?.state.sampleStats === true && real.isOwner;
+  const profile = sample ? withSampleRounds(real) : real;
   const { identity, legacy, isOwner } = profile;
   const isPrivate = profile.access === "private";
   return (
@@ -105,3 +111,9 @@ export function ProfileView({ profile, friendsCount = null }: { profile: Profile
   );
 }
 
+
+/** DEV ONLY (simulator condition): the same profile with 25 made-up rounds, so Stats and Compare can be previewed. */
+function withSampleRounds(profile: ProfileReadModel): ProfileReadModel {
+  const rounds = sampleProfileRounds(25, 0, 7);
+  return { ...profile, rounds: { status: "ok", value: rounds }, modernStats: modernStats(rounds) };
+}

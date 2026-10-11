@@ -2679,3 +2679,48 @@ Stays until step 9: all old identity / app pieces in §1, `legacy_round_import.s
 - **D4** Attach the Maroon history to the "The Maroon Masters" golf trip (`golf_trip_id`)? Recommend **yes, optional link**.
 
 **Done for the next task (foundation, after approval):** `supabase/historical_import.sql` written (not run); `lib/history/import/` package types + validator + dry-run planner; dry-run CLI that writes nothing; tests above passing (unit + DB harness); `tsc` clean. No UI, no deletions, no scoring changes, no commit unless asked.
+
+### Round: Golf Trip → Golf → Predict (prediction market) (spec 2026-10-11, decisions approved 2026-10-11; bet list to come from the owner)
+
+**What it does / who uses it.** Trip members predict outcomes of the trip (who wins, low round, birdies…) in a prediction-market tab. The organizer turns the market on / off and picks which bets are offered.
+
+**Owner decisions (2026-10-11):** odds from the model and live scores (not betting volume); settled automatically from scores where the scores can answer it, the rest by the organizer; players can back themselves to win but never bet against themselves; currency = **Maroon Coins**: a separate in-game balance per trip, play only.
+
+**Currency (decided 2026-10-11): Maroon Coins.** Each trip member gets the same starting Maroon Coins for that trip. No money changes hands: coins can't be bought, sold, carried to another trip or cashed out, and there are no prizes. Separate from the Maroon Tournament's MM coins.
+
+**Legal / currency note (kept for the record).** LEGAL_COMPLIANCE_SPEC.md and THE_MAROON_PRODUCT_SPEC.md limit wagers / MM coins to the Maroon Tournament and say any expansion, coins included, needs a fresh professional review. MM coins are one global balance per Maroon player (`mm_coins_balance`), so using them on every golf trip is that expansion. Options: (a) get the review, then use MM coins; or (b) **trip coins**: the same look and feel, but a separate balance per trip that starts equal for everyone, can't be bought, carried over or cashed out (recommended to ship now).
+
+**Golf tab.** A new **Predict** section after Stats (Leaderboard / Matches · Games · Stats · **Predict**), shown only when the organizer has the market on.
+- Top: my coin balance, my open positions and profit / loss, and a **Top predictors** mini-leaderboard.
+- Market cards (one per bet the organizer turned on), Kalshi / Polymarket style: the question, each outcome with its **% chance** (price) and a small price-history line, volume, closes-at time. Tap an outcome → buy shares (amount slider, shows cost, payout if right, and new price). My position shows with **Sell** to cash out early at the current price.
+- Settled cards show the result, and what I won or lost.
+
+**Organizer settings → Predict card.**
+- **Prediction market: On / Off** (Off hides the Golf → Predict section for everyone; open positions are kept, not refunded, until it's turned back on, or refunded if the organizer chooses Close & refund).
+- Under it, the **bet list**: each bet with an on / off toggle (bets list to be provided by the owner).
+- Per bet: when it closes (e.g. at that round's first tee time), and **Settle** for anything the scores can't answer.
+
+**Pricing (changed 2026-10-11): odds come only from the model, never from betting volume.** Every price is the Monte Carlo model's chance (lib/platform/predictModel.ts + predictBets.ts): from players' history before the trip, then re-run with the live scores locked in (played holes / finished rounds are real, only the rest is simulated), so odds move with play. Buying locks in the current price: shares = coins ÷ price (kept between 1% and 99%), each share pays 1 Maroon Coin if it comes true. Selling cashes out at the model's current price. Decided bets go to 100% / 0%.
+
+**Data (new SQL, owner runs it).** `trip_prediction_markets` (trip, bet type, options, status open / closed / settled, result), `trip_prediction_trades` (who, market, outcome, shares, coins), balances per the currency decision, organizer settings on the trip. Server functions check: member of the trip, market open, enough coins, the can't-bet-against-yourself rule.
+
+**Not in this round:** real money, prizes, buying coins, markets created by players, parlays.
+
+**Done means:** organizer turns Predict on and picks bets; members see the tab, buy / sell, prices move; auto-settle pays out from final scores; organizer settles the rest; the self-bet rule is enforced in the database; tests for pricing, payouts and the rules.
+
+#### Predict: bet list and tabs (owner list 2026-10-11)
+
+Three tabs in Predict, each bet a card; *(team)* = only for trips with a team competition (greyed out in organizer settings for individual-only trips).
+
+| Winners | Scoring | Props |
+|---|---|---|
+| Team winner *(team)* | Lowest total to par: who | Most / Least birdies (Most · Least switch on the card) |
+| Team winner spread *(team)*: slider for alternate spreads | Lowest one-round score: ladder (under 75, 72, 70…) | Most / Least doubles or worse (switch) |
+| Individual winner (lowest total strokes) | Highest total to par: ladder (over +40, +50…) | Hole in one (anyone, any round) |
+| Highest point earner *(team)* | Highest one-round score to par: ladder | Largest match margin *(team)*: ladder (3&2+, 4&3+, 5&4+) |
+| Lowest point earner *(team)* | | |
+
+- Every bet's opening odds come from the Monte Carlo model (lib/platform/predictModel.ts): players' real hole-by-hole history, good / bad days, course difficulty; team matches are simulated hole by hole (singles = each player; four-ball = best ball; scramble / alternate shot / shamble / Chapman approximated as best ball).
+- Hole in one: 1 in 12,500 per par-3 tee shot for an amateur, × every par 3 every player plays on the trip.
+- Player over / unders (added 2026-10-11): **score** (strokes) per round (Today) and for the trip (Scoring); **greens hit / fairways hit / putts** per round (Today) and for the trip (Props), one card each with a Greens · Fairways · Putts switch. Stat rates come from each player's own holes (legacy blank = miss), blended with typical numbers for their handicap; holes already played count as real. Bets that list every player show the top 3 with **Show all** opening a scrolling list.
+- Ladders (Kalshi style): one yes / no market per line. Spreads: one market per line, the card's slider moves between lines.
