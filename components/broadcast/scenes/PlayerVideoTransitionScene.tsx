@@ -16,10 +16,19 @@ export function PlayerVideoTransitionScene({ video, startedAt, preview = false }
   const [ready, setReady] = useState(preview);
   const [leaving, setLeaving] = useState(false);
 
+  // A new clip starts the cover over: not ready, not leaving.
+  const clipKey = `${preview}|${video.id}|${video.videoUrl}`;
+  const [shownClipKey, setShownClipKey] = useState(clipKey);
+  if (shownClipKey !== clipKey) {
+    setShownClipKey(clipKey);
+    if (!preview) {
+      setReady(false);
+      setLeaving(false);
+    }
+  }
+
   useEffect(() => {
     if (preview) return;
-    setReady(false);
-    setLeaving(false);
     const preloader = document.createElement("video");
     preloader.preload = "auto";
     preloader.muted = true;

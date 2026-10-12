@@ -158,6 +158,10 @@ export function MobileScorecardGrid({ round, selectedHole, onHoleClick, initialH
             height="h-8"
             selected={selectedHole === h.hole}
             onClick={() => onHoleClick(h.hole)}
+            // React calls this only as a ref callback when the cell mounts/unmounts, never
+            // during render, so writing to holeRefs here is safe. The rule can't see that
+            // because ValueCell forwards it to its element's ref.
+            // eslint-disable-next-line react-hooks/refs
             registerRef={(el) => registerHoleRef(h.hole, el)}
             hasVideo={holesWithVideo?.has(h.hole)}
           />

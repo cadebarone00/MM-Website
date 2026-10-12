@@ -18,6 +18,8 @@ const eslintConfig = defineConfig([
     // Tool output, not app source: Vercel deployment copies (git-ignored)
     // and the brainstorming/planning workspace.
     ".vercel/**",
+    // Playwright screenshots and bundled capture scripts, not app source.
+    "test-results/**",
     ".superpowers/**",
   ]),
   // CommonJS scripts can only import with require().

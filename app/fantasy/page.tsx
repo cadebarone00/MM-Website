@@ -99,6 +99,9 @@ export default function FantasyPage() {
   useEffect(() => {
     if (!tournament.slug) return;
     if (hasDraftInProgress(safeSessionStorage, tournament.slug)) {
+      // sessionStorage only exists in the browser, so this must run after mount
+      // (reading it during render would mismatch the server HTML). Runs once per slug.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPicks(readDraftPicks(safeSessionStorage, tournament.slug));
       setTeamName(readDraftTeamName(safeSessionStorage, tournament.slug));
       setDrafting(true);

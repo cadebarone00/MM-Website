@@ -115,15 +115,19 @@ export default async function BroadcastPage({
         leaderboardAnimation: { birdieEnabled: params.mockBirdieEnabled !== "0", birdieDelayMs: mockBirdieDelayMs, rowMoveMs: mockRowMoveMs },
       }
     : null;
+  // Server component: renders once per request and never re-renders, so reading
+  // the clock here is safe (the purity rule targets client re-renders).
+  // eslint-disable-next-line react-hooks/purity
+  const requestTime = Date.now();
   const animationTest = preview && (params.animationTest === "birdie" || params.animationTest === "eagle" || params.animationTest === "bogey")
     ? {
         kind: params.animationTest as "birdie" | "eagle" | "bogey",
-        startedAt: Number(params.animationTestStart) || Date.now(),
+        startedAt: Number(params.animationTestStart) || requestTime,
         seed: Number.isFinite(Number(params.animationTestSeed)) ? Number(params.animationTestSeed) : 1,
       }
     : null;
   const initialMockPosition = mockRun
-    ? getMockRunPosition(mockRun.offsetMs + (mockRun.startedAt ? Math.max(0, Date.now() - mockRun.startedAt) : 0), mockRun.videoDurationMs)
+    ? getMockRunPosition(mockRun.offsetMs + (mockRun.startedAt ? Math.max(0, requestTime - mockRun.startedAt) : 0), mockRun.videoDurationMs)
     : null;
 
   const [broadcast, { standings, final: leaderboardFinal }, matchPlay, nextTournament] = await Promise.all([

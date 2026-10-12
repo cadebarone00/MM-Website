@@ -42,7 +42,7 @@ export function BroadcastStage({
   mockRun?: { startedAt: number | null; offsetMs: number; videoDurationMs: number; seed: number; leaderboardAnimation: { birdieEnabled: boolean; birdieDelayMs: number; rowMoveMs: number } } | null;
   animationTest?: { kind: "birdie" | "eagle" | "bogey"; startedAt: number; seed: number } | null;
 }) {
-  const [mockClock, setMockClock] = useState(Date.now());
+  const [mockClock, setMockClock] = useState(() => Date.now());
   useEffect(() => {
     if (!mockRun?.startedAt) return;
     const timer = window.setInterval(() => setMockClock(Date.now()), 250);
