@@ -53,6 +53,8 @@ export type SimulatorState = {
   seed?: number;
   /** Busy data: which competitions the trip has (no competition, individual only, match / team only, or both). Unset = from the data. */
   competitionSetup?: CompetitionSetup;
+  /** Profile: show made-up rounds (lib/dev/sampleProfileRounds.ts) on my own profile, plus a sample golfer in Compare. */
+  sampleStats?: boolean;
 };
 export const COMPETITION_SETUPS = [["none", "No competition"], ["individual", "Individual only"], ["team", "Match only"], ["both", "Individual + match"]] as const;
 export type CompetitionSetup = (typeof COMPETITION_SETUPS)[number][0];

@@ -23,6 +23,14 @@ export function GolfTripGolfStep() {
   const draft = useSyncExternalStore(subscribeNever, golfTripDraftSnapshot, () => "");
   const dates = useMemo(() => { const { startDate, endDate } = parseGolfTripDraft(draft); return tripDates(startDate, endDate); }, [draft]);
   const [days, setDays] = useState<GolfDay[]>([]);
+  // A started trip (or coming Back): its golf days and rounds go in once the draft is readable.
+  const savedDays = useMemo(() => {
+    const saved = parseGolfTripDraft(draft);
+    const count = Math.min(Math.max(Math.trunc(Number(saved.golfDays)) || 0, 0), dates.length || FALLBACK_MAX_DAYS);
+    return Array.from({ length: count }, (_, i): GolfDay => ({ date: saved[`day${i + 1}Date`] || dates[i] || "", rounds: saved[`day${i + 1}Rounds`] === "2" ? 2 : 1 }));
+  }, [draft, dates]);
+  const [seeded, setSeeded] = useState(false);
+  if (!seeded && savedDays.length) { setSeeded(true); setDays(savedDays); }
 
   const maxDays = dates.length || FALLBACK_MAX_DAYS;
   const addDay = () => setDays((current) => current.length >= maxDays ? current
@@ -31,7 +39,7 @@ export function GolfTripGolfStep() {
   const updateDay = (index: number, change: Partial<GolfDay>) =>
     setDays((current) => current.map((day, i) => i === index ? { ...day, ...change } : day));
 
-  return <SetupStepForm nextHref="/golf-trips/new/courses" backHref="/golf-trips/new/players" complete={days.length > 0}>
+  return <SetupStepForm nextHref="/golf-trips/new/courses" backHref="/golf-trips/new" complete={days.length > 0}>
     <div className={styles.fields}>
       <div className={styles.counter}>
         <span className={styles.fieldLabel} id="golf-days-label">How many golf days?</span>

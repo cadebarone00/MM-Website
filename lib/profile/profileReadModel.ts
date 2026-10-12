@@ -72,7 +72,7 @@ export interface ProfileReadModel {
 }
 
 /** The subject's own profiles row, as the server reads it (never the email). */
-export interface ProfileSubjectRow { id: ProfileId; displayName: string; username: string; createdAt: string | null; legacyMaroonPlayerSlug: string | null; roundsVisibility: RoundsVisibility; bio: string | null }
+export interface ProfileSubjectRow { id: ProfileId; displayName: string; username: string; createdAt: string | null; legacyMaroonPlayerSlug: string | null; roundsVisibility: RoundsVisibility; bio: string | null; /** Settings → Profile photo (profile_photos.sql). */ avatarUrl?: string | null }
 
 export interface ProfileSources {
   subject(subjectId: ProfileId): Promise<ProfileSubjectRow | null>;
@@ -184,7 +184,7 @@ export async function assembleProfileReadModel(viewerId: ProfileId | null, subje
     isOwner, access,
     identity: {
       displayName: name, username: subject.username, initials: initialsFor(name), memberSince: memberSinceLabel(subject.createdAt),
-      avatarSrc: null, bio: subject.bio?.trim() || null, canEditBio: isOwner,
+      avatarSrc: subject.avatarUrl ?? null, bio: subject.bio?.trim() || null, canEditBio: isOwner,
       roundsVisibility: subject.roundsVisibility ?? DEFAULT_ROUNDS_VISIBILITY,
     },
     rounds: rounds ? { status: "ok", value: rounds } : { status: "unavailable" },

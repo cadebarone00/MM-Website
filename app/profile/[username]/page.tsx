@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { ProfileView } from "@/components/profile/ProfileView";
 import { getCurrentProfile } from "@/lib/profile/currentProfile";
 import { loadProfileReadModel, profileIdForUsername } from "@/lib/profile/profileReadModelServer";
+import { friendCount } from "@/lib/profile/friendsServer";
 import styles from "../page.module.css";
 
 export const metadata: Metadata = { title: "Profile | The Maroon", robots: { index: false } };
@@ -22,5 +23,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   if (viewerId === subjectId) redirect("/profile");
   const profile = await loadProfileReadModel(viewerId, subjectId);
   if (!profile) notFound();
-  return <div className={styles.page}><ProfileView profile={profile} /></div>;
+  const friends = await friendCount(subjectId).catch(() => null);
+  return <div className={styles.page}><ProfileView profile={profile} friendsCount={friends} /></div>;
 }

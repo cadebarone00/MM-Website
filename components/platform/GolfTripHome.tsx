@@ -37,6 +37,9 @@ import { useTripMomentum, type TripAlertScope } from "./useTripMomentum";
 import { GolfTripNotifications } from "./GolfTripNotifications";
 import { getPlayerDisplayName } from "@/lib/data/players";
 import styles from "./GolfTripHome.module.css";
+import { GolfTripPredict } from "./GolfTripPredict";
+import { usePredictSettings } from "@/lib/platform/predictSetting";
+import { tripSetupFromPreview } from "@/lib/platform/predictFromPreview";
 
 import { GOLF_TRIP_TABS as TABS, golfSections, type CompetitionStructure, type GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
 import { useGolfTripCompetitionPreview } from "./GolfTripCompetitionPreviewProvider";
@@ -397,7 +400,12 @@ function GolfSlides({ previewMatch, structure, rsvpKey = "default", navigation, 
   // No competition: Overview · Games. Individual: Leaderboard · Games. Team: Matches · Games. Both: Leaderboard · Matches · Games.
   // Player Stats on (Organizer → Player Scoring) adds Stats after Games.
   const playerStats = usePlayerStats();
-  const sections = golfSections(structure, playerStats);
+  // Organizer → Predict on: the prediction market's tab comes last. The app simulator's Predict card (dev only) opens it
+  // even while the organizer has it off, so it can be previewed.
+  const predict = usePredictSettings();
+  const previewPredict = process.env.NODE_ENV === "development" && navigation?.golfSection === "Predict";
+  const sections = golfSections(structure, playerStats, (predict.on || previewPredict) && Boolean(previewMatch));
+  const predictSetup = useMemo(() => previewMatch ? tripSetupFromPreview(previewMatch, structure) : null, [previewMatch, structure]);
   // No competition: the Overview box is the day's round (course, tee times, who's playing — not those sitting out).
   const noComp = !structure.individual && !structure.team;
   // Individual only: the same box, split — the round on the left, the leaderboard's top 5 on the right.
@@ -416,9 +424,10 @@ function GolfSlides({ previewMatch, structure, rsvpKey = "default", navigation, 
   const active = selection.navigation === navigation ? selection.active : requested;
   const setActive = (active: number) => setSelection({ navigation, active });
   // Games and Stats sit outside the swipe strip (like Games always has); the strip holds Leaderboard / Matches.
-  const offStrip = (id: string | undefined) => id === "Games" || id === "Stats";
+  const offStrip = (id: string | undefined) => id === "Games" || id === "Stats" || id === "Predict";
   const gamesActive = offStrip(availableSlides[active]);
   const statsActive = availableSlides[active] === "Stats";
+  const predictActive = availableSlides[active] === "Predict";
   const golfSection = availableSlides[active] ?? "Overview";
   useEffect(() => {
     onNavigationChange?.({ tab: "Golf", golfSection });
@@ -455,7 +464,7 @@ function GolfSlides({ previewMatch, structure, rsvpKey = "default", navigation, 
     {previewMatch && <div className={styles.golfTop}>
       {(["Overview", "Competition", "Games"] as const).map(section => {
         // Stats shows the tournament summary box, like Overview.
-        const current = availableSlides[active] === "Stats" ? "Overview" : availableSlides[active] ?? "Overview";
+        const current = availableSlides[active] === "Stats" || availableSlides[active] === "Predict" ? "Overview" : availableSlides[active] ?? "Overview";
         const shown = current === section;
         // Overview's box sets the size; Competition and Games fill exactly that box.
         return <div key={section} className={`${section === "Overview" ? styles.golfTopSize : styles.golfTopFill} ${shown ? "" : styles.golfTopHidden}`} inert={!shown}>
@@ -479,12 +488,16 @@ function GolfSlides({ previewMatch, structure, rsvpKey = "default", navigation, 
           : previewMatch && roundMatch ? <GolfTripCompetitionMatchPreview key={previewMatch.round} initialMatch={previewMatch} /> : <Card title="Competition"><Empty>Your matchups will show here</Empty></Card>}
       </div>)}
     </div>
-    <div role="tabpanel" aria-label="Games" hidden={!gamesActive || statsActive}>
+    <div role="tabpanel" aria-label="Games" hidden={!gamesActive || statsActive || predictActive}>
       {previewMatch ? <GolfTripGames /> : <Card title="Games"><Empty>Golf games are coming soon</Empty></Card>}
     </div>
     {/* Stats (only while Player Stats is on): the trip's stats from the scorecards players have recorded. */}
     {sections.some(({ id }) => id === "Stats") && <div role="tabpanel" aria-label="Stats" hidden={!statsActive}>
       {tripStats ? <Card title="Trip stats"><GolfTripStats stats={tripStats} changes={scoreChanges} /></Card> : <Card title="Stats"><Empty>Stats will show here once players record rounds</Empty></Card>}
+    </div>}
+    {/* Predict (only while the organizer has it on): the trip's prediction market in Maroon Coins. */}
+    {predictSetup && sections.some(({ id }) => id === "Predict") && <div role="tabpanel" aria-label="Predict" hidden={!predictActive}>
+      {predictActive && <GolfTripPredict setup={predictSetup} />}
     </div>}
   </>;
 }
