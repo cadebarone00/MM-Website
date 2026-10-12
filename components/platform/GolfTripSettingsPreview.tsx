@@ -15,6 +15,8 @@ import { GolfTripDatePicker } from "./GolfTripDatePicker";
 import { CourseEditSheet, TripScheduleCoursePicker, type PickedCourse } from "./TripScheduleCoursePicker";
 import { NO_ROUND_TEES, RoundTeeBoxes, type RoundTees } from "./RoundTeeBoxes";
 import { TeeTimePicker } from "./TeeTimePicker";
+import { scopedRoundId, DEV_TRIP_ID } from "@/lib/dev/devPlayerRounds";
+import { roundHasStarted, groupHasStarted, type GroupStarts } from "@/lib/platform/scheduleLocks";
 import { RoundCompetitionSettings } from "./RoundCompetitionSettings";
 import { defaultRoundComp, roundPointsAvailable, type RoundCompSettings } from "@/lib/platform/roundCompetition";
 import { GolfTripHistory, type HistoryLinking } from "./GolfTripHistory";
@@ -174,6 +176,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const [overviewType, setOverviewType] = useState<"individual" | "team">("individual");
   // Submit & Save Individual / Team Competition locks that side (greyed, no edits) until Undo and Change.
   const [lockedComp, setLockedComp] = usePersistedState<{ individual: boolean; team: boolean }>(persist, "lockedComp", { individual: false, team: false });
+  // Team Competition → Save Teams: locks the team type (2 Teams … None) and Team Selection until Undo Save.
+  const [teamChoiceSaved, setTeamChoiceSaved] = usePersistedState(persist, "teamChoiceSaved", false);
   // Players ticked under each competition type (by roster slot). Preview only; resets on reload.
   // A trip with an individual competition already set up counts everyone on it.
   const [typePlayers, setTypePlayers] = usePersistedState<Record<"individual" | "team", Set<number>>>(persist, "typePlayers", () => ({
@@ -278,6 +282,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   // Golf Schedule: tap a round's course → the course pop-up (like New game). Picks are kept per day/round slot.
   const [pickedCourses, setPickedCourses] = usePersistedState<Record<string, PickedCourse>>(persist, "pickedCourses", {});
   // Each Golf Schedule round's tees (by round key): one tee box, or a tee per hole.
+  const [groupStarts, setGroupStarts] = usePersistedState<Record<string, GroupStarts>>(persist, "groupStarts", {});
+  const [yardageCorrections, setYardageCorrections] = usePersistedState<Record<string, { at: string; reason: string; before: RoundTees; after: RoundTees; affectedCards: string[] }[]>>(persist, "yardageCorrections", {});
   const [roundTees, setRoundTees] = usePersistedState<Record<string, RoundTees>>(persist, "roundTees", {});
   // Competition → Format: which Golf Schedule round slots count toward the competition (on unless switched off).
   const [compRounds, setCompRounds] = usePersistedState<Record<string, boolean>>(persist, "compRounds", {});
@@ -336,6 +342,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const golfDate = (index: number) => dayDate(index + golfStart);
   // The trip dates popup sets both ends at once; the Day rows follow (1 to MAX_DAYS days).
   const setTripDates = (arrival: string, departure: string) => {
+    if (anyPlayStarted) return;
     setArrivalShift(daysBetween(baseDate, arrival));
     setDayCount(daysBetween(arrival, departure) + 1);
     setDatePickerOpen(false);
@@ -358,6 +365,13 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     const place = picked?.place ?? "";
     return { key, number, course, place, groupTimes, label: `Round ${number} · ${golfDate(day)}` };
   };
+  const playState = (key: string, number: number) => {
+    const entry = devRounds.tripRounds[scopedRoundId(scoringTripId ?? DEV_TRIP_ID, number)];
+    const sourceStarted = rounds.find(round => round.number === number)?.status === "started";
+    const groups = groupStarts[key] ?? {};
+    return { started: roundHasStarted(groups, entry, sourceStarted), groupStarted: (group: number) => groupHasStarted(group, groups, entry, sourceStarted) };
+  };
+  const anyPlayStarted = Array.from({ length: golfDayCount }, (_, day) => Array.from({ length: roundsPerDay[day] ?? 1 }, (_, slot) => { const round = scheduleSlot(day, slot); return playState(round.key, round.number).started; }).some(Boolean)).some(Boolean) || Object.values(groupStarts).some(groups => Object.keys(groups).length > 0);
   const sourceRoundComp=(key:string):RoundCompSettings=>{
     const [day,slot]=key.split('-').map(Number);
     const format=rounds.filter(round=>round.date===days[day])[slot]?.format;
@@ -398,6 +412,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   };
   // Moves a round to another place (max 2 a day). Same day: it keeps its settings. Another day: course, tee times, players and Comp go back to default.
   const moveRound = (from: { day: number; slot: number }, to: { day: number; index: number }) => {
+    if (anyPlayStarted) return;
     type Slot = { picked?: PickedCourse; tees?: string[]; comp?: boolean; format?: RoundCompSettings; players?: Record<number, number[]>; matches?: Record<number, { a: (number | null)[]; b: (number | null)[] }>; name: string };
     const lists: Slot[][] = Array.from({ length: golfDayCount }, (_, day) => Array.from({ length: roundsPerDay[day] ?? 1 }, (_, slot) => {
       const key = `${day}-${slot}`;
@@ -516,15 +531,17 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
             onClick={() => setCompetitionSection(name)}>{name}</button>)}
         </div>}
         {selectedRound ? <GolfTripCompetition rounds={[selectedRound]} onChange={change => competition.change(change, selectedRound.id)} showBulk={false} />
-          : compRound ? <RoundCompetitionSettings key={compRound.id} course={compRound.course} date={compRound.date} round={compRound.number} settings={compRound.settings} maxPlayers={playerTotal}
-            onSubmit={next => { setCompFormats(current => ({ ...current, [compRound.id]: next })); setCompRoundSlot(null); }} />
+          : compRound ? <fieldset className={styles.compLock} disabled={playState(compRound.id, compRound.number).started}><RoundCompetitionSettings key={compRound.id} course={compRound.course} date={compRound.date} round={compRound.number} settings={compRound.settings} maxPlayers={playerTotal}
+            onSubmit={next => { if (playState(compRound.id, compRound.number).started) return; setCompFormats(current => ({ ...current, [compRound.id]: next })); setCompRoundSlot(null); }} /></fieldset>
           : <div className={tripStyles.events}>
             {competitionSection === "Overview" && <section className={tripStyles.infoSection} aria-label="Overview">
               <div className={styles.typePicker}>
                 {COMPETITION_TYPES.filter(group => group.key === overviewType).map(group => <div key={group.key} className={styles.typeGroup} role="group" aria-label={group.title}>
                   <h4 className={styles.typeHeading}>{group.title}</h4>
-                  <fieldset className={styles.compLock} disabled={lockedComp[group.key]}>
-                  <div className={`${styles.typeChoices} ${styles.typeChoicesRow}`}>
+                  <fieldset className={styles.compLock} disabled={lockedComp[group.key] || anyPlayStarted}>
+                  {/* Team: the team type and its players (how many, uneven / subs), saved together by the small gold Save under them. */}
+                  <fieldset className={styles.compLock} disabled={group.key === "team" && teamChoiceSaved} aria-label={group.key === "team" ? "Team type and players" : undefined}>
+                  <div className={`${styles.typeChoices} ${styles.typeChoicesRow} ${group.key === "individual" ? styles.typeChoicesThree : ""}`}>
                     {[...group.options, null].map(option => <button key={option ?? "none"} type="button" className={styles.typeChoice} aria-pressed={competitionType[group.key] === option}
                       onClick={() => {
                         // A different team type has different team sizes, so it starts from empty teams.
@@ -533,9 +550,39 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                       }}>{option ?? "None"}</button>)}
                   </div>
                   {/* Submitted & saved: a small "Saved" under the chosen pill (stays bright while the rest is greyed). */}
-                  {lockedComp[group.key] && <div className={`${styles.typeChoicesRow} ${styles.savedRow}`} aria-live="polite">
+                  {lockedComp[group.key] && <div className={`${styles.typeChoicesRow} ${styles.savedRow} ${group.key === "individual" ? styles.typeChoicesThree : ""}`} aria-live="polite">
                     {[...group.options, null].map(option => <span key={option ?? "none"} className={styles.savedTag}>{competitionType[group.key] === option ? "Saved" : ""}</span>)}
                   </div>}
+                  {group.key === "team" && competitionType.team && <div className={`${styles.typePlayers} ${styles.teamSize}`}>
+                {/* Add Sub/Uneven Teams off: one even Total players stepper. On: a size stepper per team instead. */}
+                {uneven ? ([0, 1] as const).map(team => <div key={team} className={styles.totalPlayers} role="group" aria-label={`${teamLabels[team]} players`}>
+                  <span className={styles.typeHeading}>{teamLabels[team]}</span>
+                  <div className={`${styles.typeChoice} ${styles.stepper}`}>
+                    <button type="button" aria-label={`Fewer ${teamLabels[team]} players`} disabled={!!submittedTeams || teamSizes[team] <= sizeMin[team]} onClick={() => stepTeamSize(team, -1)}><Minus size={14} strokeWidth={2.5} aria-hidden /></button>
+                    <span aria-live="polite">{teamSizes[team]}</span>
+                    <button type="button" aria-label={`More ${teamLabels[team]} players`} disabled={!!submittedTeams || teamTotal >= playerTotal} onClick={() => stepTeamSize(team, 1)}><Plus size={14} strokeWidth={2.5} aria-hidden /></button>
+                  </div>
+                </div>) : <div className={styles.totalPlayers} role="group" aria-label="Total players">
+                  <span className={styles.typeHeading}>Total players</span>
+                  <div className={`${styles.typeChoice} ${styles.stepper}`}>
+                    <button type="button" aria-label="Fewer players" disabled={!!submittedTeams || evenTotal <= totalMin} onClick={() => setTeamTotalChoice(evenTotal - teamStep)}><Minus size={14} strokeWidth={2.5} aria-hidden /></button>
+                    <span aria-live="polite">{evenTotal}</span>
+                    <button type="button" aria-label="More players" disabled={!!submittedTeams || evenTotal >= teamTotalMax} onClick={() => setTeamTotalChoice(evenTotal + teamStep)}><Plus size={14} strokeWidth={2.5} aria-hidden /></button>
+                  </div>
+                </div>}
+                {!groupSize && <div className={styles.totalPlayers}>
+                  <span className={styles.typeHeading}>Add Sub/Uneven Teams</span>
+                  <button type="button" role="switch" aria-checked={unevenTeams} aria-label="Add Sub/Uneven Teams" className={toggleStyles.toggle} disabled={!!submittedTeams} onClick={() => { if (!unevenTeams) setUnevenSizes([teamSizes[0], teamSizes[1]]); setUnevenTeams(on => !on); }}>
+                    <span className={toggleStyles.track} data-on={unevenTeams}><span className={toggleStyles.thumb} /></span><span>{unevenTeams ? "On" : "Off"}</span>
+                  </button>
+                </div>}
+                  </div>}
+                  </fieldset>
+                  {/* Save → Undo: the team type and players, saved or opened back up. Team Selection and everything under it
+                      have their own save (the button at the bottom). */}
+                  {group.key === "team" && <button type="button" className={styles.goldSave} onClick={() => setTeamChoiceSaved(!teamChoiceSaved)}>
+                    {teamChoiceSaved ? "Undo" : "Save Team Size"}
+                  </button>}
                   {group.key === "team" && competitionType.team && <>
                   {/* Team Selection: how players get onto teams — picked by the organizer, a draft, or at random. */}
                   <div className={styles.teamSelection} role="group" aria-label="Team Selection">
@@ -550,28 +597,6 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                   {competitionType[group.key] && (group.key !== "team" || teamSelection) && <>
                   {/* The trip's players under each type as checkboxes in two columns, filled down the left first (left gets the extra); Select all heads the list. */}
                   {group.key === "team" ? <div className={styles.typePlayers}>
-                    {/* Add Sub/Uneven Teams off: one even Total players stepper. On: a size stepper per team instead. */}
-                    {uneven ? ([0, 1] as const).map(team => <div key={team} className={styles.totalPlayers} role="group" aria-label={`${teamLabels[team]} players`}>
-                      <span className={styles.typeHeading}>{teamLabels[team]}</span>
-                      <div className={`${styles.typeChoice} ${styles.stepper}`}>
-                        <button type="button" aria-label={`Fewer ${teamLabels[team]} players`} disabled={!!submittedTeams || teamSizes[team] <= sizeMin[team]} onClick={() => stepTeamSize(team, -1)}><Minus size={14} strokeWidth={2.5} aria-hidden /></button>
-                        <span aria-live="polite">{teamSizes[team]}</span>
-                        <button type="button" aria-label={`More ${teamLabels[team]} players`} disabled={!!submittedTeams || teamTotal >= playerTotal} onClick={() => stepTeamSize(team, 1)}><Plus size={14} strokeWidth={2.5} aria-hidden /></button>
-                      </div>
-                    </div>) : <div className={styles.totalPlayers} role="group" aria-label="Total players">
-                      <span className={styles.typeHeading}>Total players</span>
-                      <div className={`${styles.typeChoice} ${styles.stepper}`}>
-                        <button type="button" aria-label="Fewer players" disabled={!!submittedTeams || evenTotal <= totalMin} onClick={() => setTeamTotalChoice(evenTotal - teamStep)}><Minus size={14} strokeWidth={2.5} aria-hidden /></button>
-                        <span aria-live="polite">{evenTotal}</span>
-                        <button type="button" aria-label="More players" disabled={!!submittedTeams || evenTotal >= teamTotalMax} onClick={() => setTeamTotalChoice(evenTotal + teamStep)}><Plus size={14} strokeWidth={2.5} aria-hidden /></button>
-                      </div>
-                    </div>}
-                    {!groupSize && <div className={styles.totalPlayers}>
-                      <span className={styles.typeHeading}>Add Sub/Uneven Teams</span>
-                      <button type="button" role="switch" aria-checked={unevenTeams} aria-label="Add Sub/Uneven Teams" className={toggleStyles.toggle} disabled={!!submittedTeams} onClick={() => { if (!unevenTeams) setUnevenSizes([teamSizes[0], teamSizes[1]]); setUnevenTeams(on => !on); }}>
-                        <span className={toggleStyles.track} data-on={unevenTeams}><span className={toggleStyles.thumb} /></span><span>{unevenTeams ? "On" : "Off"}</span>
-                      </button>
-                    </div>}
                     {/* Random: deal everyone onto teams; tap again for a new shuffle (until the teams are submitted). */}
                     {teamSelection === "Random" && !submittedTeams && <button type="button" className={`${styles.typeChoice} ${styles.randomizeButton}`} onClick={randomizeTeams}>
                       <Shuffle size={15} strokeWidth={2.25} aria-hidden /> {teamAssigned ? "Randomize again" : "Randomize teams"}
@@ -676,7 +701,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                   <button type="button" className={`${styles.typeChoice} ${styles.selectTeams} ${styles.compLockButton}`}
                     disabled={!lockedComp[group.key] && group.key === "team" && !!competitionType.team && (!teamSelection || (teamSelection !== "Draft" && !submittedTeams))}
                     onClick={() => setLockedComp(current => ({ ...current, [group.key]: !current[group.key] }))}>
-                    {lockedComp[group.key] ? "Undo and Change" : `Submit & Save ${group.title} Competition`}
+                    {lockedComp[group.key] ? "Undo and Change" : "Submit & Save"}
                   </button>
                 </div>)}
               </div>
@@ -710,7 +735,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                       {inComp && <span className={styles.roundCardPlace}>{(compFormats[round.key] ?? sourceRoundComp(round.key)).format} · {(compFormats[round.key] ?? sourceRoundComp(round.key)).matchType}</span>}
                     </span>
                   </button>
-                  <button type="button" role="switch" aria-checked={inComp} aria-label={`Round ${round.number} is a competition round`} className={styles.formatSwitch} onClick={() => inComp ? setConfirmCompOff(round.key) : setCompRounds(current => ({ ...current, [round.key]: true }))}>
+                  <button type="button" role="switch" aria-checked={inComp} aria-label={`Round ${round.number} is a competition round`} disabled={playState(round.key, round.number).started} className={styles.formatSwitch} onClick={() => inComp ? setConfirmCompOff(round.key) : setCompRounds(current => ({ ...current, [round.key]: true }))}>
                     <span className={styles.formatThumb} />
                   </button>
                 </div>;
@@ -804,7 +829,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
       </div>}
 
       {teeTimePicker && <TeeTimePicker key={`${teeTimePicker.key}-${teeTimePicker.startGroup ?? 0}`} fixedGroups={teeTimePicker.fixedGroups} startGroup={teeTimePicker.startGroup} course={teeTimePicker.course} date={teeTimePicker.date} round={teeTimePicker.round} value={teeTimes[teeTimePicker.key] ?? (pickedCourses[teeTimePicker.key]?.settings?.teeTime ? [pickedCourses[teeTimePicker.key]!.settings!.teeTime] : undefined)}
-        onClose={() => setTeeTimePicker(null)} onSave={times => { setTeeTimes(current => ({ ...current, [teeTimePicker.key]: times })); setTeeTimePicker(null); }} />}
+        onClose={() => setTeeTimePicker(null)} onSave={times => { const roundNumber = teeTimePicker.round; const play = playState(teeTimePicker.key, roundNumber); const previous = teeTimes[teeTimePicker.key] ?? []; if (previous.some((_, group) => play.groupStarted(group) && !times[group])) return; setTeeTimes(current => ({ ...current, [teeTimePicker.key]: times })); setTeeTimePicker(null); }} />}
       {/* Edit course pop-up: picking one makes that round's course (its tee times / settings stay). */}
       {roundsOpen && editCourse && (() => {
         const round = scheduleSlot(editCourse.day, editCourse.slot);
@@ -820,20 +845,21 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
         // Round settings page: course + date header, then Tee Times | Players (tap a group's players to assign up to 4). + Add Tee Time opens the tee time sheet.
         const round = scheduleSlot(scheduleRound.day, scheduleRound.slot);
         const date = golfIso(scheduleRound.day);
+        const play = playState(round.key, round.number);
         const groups = teePlayers[round.key] ?? {};
         const groupOf = (player: number) => Object.entries(groups).find(([, list]) => list.includes(player))?.[0];
-        const togglePlayer = (group: number, player: number) => setTeePlayers(current => {
+        const togglePlayer = (group: number, player: number) => { if (play.groupStarted(group)) return; setTeePlayers(current => {
           const list = current[round.key]?.[group] ?? [];
           const next = list.includes(player) ? list.filter(value => value !== player) : list.length < 4 ? [...list, player] : list;
           return { ...current, [round.key]: { ...current[round.key], [group]: next } };
-        });
+        }); };
         const comp = compRounds[round.key] !== false ? compFormats[round.key] ?? sourceRoundComp(round.key) : null;
         return <div className={styles.competition}>
           <div className={styles.roundDayHeader}>
             {/* The course, with Edit to its right: a pop-up with the course search bar. */}
             <div className={styles.roundCourseLine}>
               <h2 title={round.course} data-length={round.course.length > 44 ? "longer" : round.course.length > 28 ? "long" : undefined}>{round.course}</h2>
-              <button type="button" className={styles.editCourse} aria-haspopup="dialog" aria-label={`Edit course for ${round.label}`} onClick={() => setEditCourse(scheduleRound)}>Edit</button>
+              <button type="button" className={styles.editCourse} disabled={play.started} aria-haspopup="dialog" aria-label={`Edit course for ${round.label}`} onClick={() => setEditCourse(scheduleRound)}>Edit</button>
             </div>
             <time dateTime={date}>{new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`))} · Round {round.number}</time>
           </div>
@@ -844,7 +870,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
           <div className={styles.scheduleTabs} role="group" aria-label="Round schedule view">
             {(["Tee times", "Course Yardage"] as const).map(tab => <button key={tab} type="button" aria-pressed={scheduleTab === tab} onClick={() => setScheduleTab(tab)}>{tab}</button>)}
           </div>
-          <p className={styles.scheduleLockNote}>{scheduleTab === "Tee times" ? "Tee times will lock after round begins" : "Yardages lock after the first match begins"}</p>
+          <p className={styles.scheduleLockNote}>{scheduleTab === "Tee times" ? "Started groupings lock. Tee times remain editable." : "Tees and yardages lock when the first group starts."}</p>
           {scheduleTab === "Tee times" && <section className={styles.teeTable} aria-label={comp ? "Competition tee times" : "Tee times and players"}>
             <div className={styles.teeTableHeader} aria-hidden="true"><span>Tee Times</span>{!comp && <span>Players</span>}</div>
             {comp && <p className={styles.roundSettingsEmpty}>Create matchups in Matchup Selection settings</p>}
@@ -855,18 +881,33 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                   onClick={() => setTeeTimePicker({ key: round.key, course: round.course, date: golfDate(scheduleRound.day), round: round.number })}>
                   <small>Group {group + 1}</small>{teeTimeLabel(time)}
                 </button> : <span className={styles.teeTableTime}><small>Group {group + 1}</small>{teeTimeLabel(time)}</span>}
-                {!comp && <button type="button" className={styles.teeTablePlayers} aria-haspopup="dialog" aria-label={`Group ${group + 1} players: ${names.length ? names.map(playerName).join(", ") : "none"}`} onClick={() => setTeePlayersGroup(group)}>
+                {!comp && <button type="button" className={styles.teeTablePlayers} disabled={play.groupStarted(group)} aria-haspopup="dialog" aria-label={`Group ${group + 1} players: ${names.length ? names.map(playerName).join(", ") : "none"}`} onClick={() => setTeePlayersGroup(group)}>
                   {names.length ? names.map(player => <ShortName key={player} name={playerName(player)} />) : <span className={styles.teeTableAdd}><Plus size={13} strokeWidth={2.5} aria-hidden /> Add Players</span>}
                 </button>}
+                <button type="button" className={styles.startGroup} disabled={play.groupStarted(group)} onClick={() => {
+                  if (play.groupStarted(group)) return;
+                  const at = new Date().toISOString();
+                  setGroupStarts(current => ({ ...current, [round.key]: { ...current[round.key], [group]: at } }));
+                  if (!play.started) dispatchDevRounds({ type: "setTripRound", tripRoundId: scopedRoundId(scoringTripId ?? DEV_TRIP_ID, round.number), state: "open", at });
+                }}>{play.groupStarted(group) ? "Started" : comp ? "Start match group" : "Start group"}</button>
               </div>;
             }) : <p className={styles.roundSettingsEmpty}>No tee times yet.</p>}
             <button type="button" className={styles.addRound} aria-haspopup="dialog" onClick={() => setTeeTimePicker({ key: round.key, course: round.course, date: golfDate(scheduleRound.day), round: round.number })}><Plus size={14} strokeWidth={2.5} aria-hidden /> Add Tee Time</button>
           </section>}
           {/* Tee box (one for the round, or Set per hole), then the scorecard: hole / par, tee / yardage. */}
-          {scheduleTab === "Course Yardage" && <RoundTeeBoxes key={`${round.key}-${pickedCourses[round.key]?.ref ?? ""}`} courseRef={pickedCourses[round.key]?.ref} value={roundTees[round.key] ?? NO_ROUND_TEES}
-            onChange={next => setRoundTees(current => ({ ...current, [round.key]: next }))} />}
+          {scheduleTab === "Course Yardage" && <RoundTeeBoxes key={`${round.key}-${pickedCourses[round.key]?.ref ?? ""}`} courseRef={pickedCourses[round.key]?.ref} value={roundTees[round.key] ?? NO_ROUND_TEES} playLocked={play.started}
+            affectedCards={devRounds.rounds.filter(card => card.tripRoundId === scopedRoundId(scoringTripId ?? DEV_TRIP_ID, round.number)).length}
+            onChange={(next, reason) => {
+              if (play.started && !reason) return;
+              if (reason) setYardageCorrections(current => ({ ...current, [round.key]: [...(current[round.key] ?? []), { at: new Date().toISOString(), reason, before: roundTees[round.key] ?? NO_ROUND_TEES, after: next, affectedCards: devRounds.rounds.filter(card => card.tripRoundId === scopedRoundId(scoringTripId ?? DEV_TRIP_ID, round.number)).map(card => card.id) }] }));
+              setRoundTees(current => ({ ...current, [round.key]: next }));
+            }} />}
+          {scheduleTab === "Course Yardage" && (yardageCorrections[round.key] ?? []).length > 0 && <div className={styles.scheduleLockNote}>
+            <strong>Course corrections</strong>
+            {(yardageCorrections[round.key] ?? []).map((entry, index) => <p key={index}>{new Date(entry.at).toLocaleString()} {entry.reason} ({entry.affectedCards.length} player cards to review)</p>)}
+          </div>}
           {/* Players drop-down for one group: tick up to 4; anyone already in another group this round is shown with that group and can't be picked. */}
-          {!comp && teePlayersGroup !== null && <div className={`${styles.teamsDropdown} ${styles.addPlayerDropdown}`} role="dialog" aria-modal="false" aria-label={`Group ${teePlayersGroup + 1} players`}>
+          {!comp && teePlayersGroup !== null && !play.groupStarted(teePlayersGroup) && <div className={`${styles.teamsDropdown} ${styles.addPlayerDropdown}`} role="dialog" aria-modal="false" aria-label={`Group ${teePlayersGroup + 1} players`}>
             <button type="button" className={tripStyles.sheetClose} aria-label="Close players" onClick={() => setTeePlayersGroup(null)}><X size={18} strokeWidth={2.25} aria-hidden /></button>
             <h3 className={gamesStyles.sheetTitle}>Group {teePlayersGroup + 1}{round.groupTimes[teePlayersGroup] ? ` · ${teeTimeLabel(round.groupTimes[teePlayersGroup])}` : ""}</h3>
             <p className={gamesStyles.sheetHint}>{(groups[teePlayersGroup] ?? []).length} of 4 players</p>
@@ -904,11 +945,11 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
           <h3 className={styles.matchTypeTitle}>Match Selection Type</h3>
           <div className={styles.totalPlayers}>
             <span className={styles.typeHeading}>Select per round</span>
-            <button type="button" role="switch" aria-checked={matchPerRound} aria-label="Select per round" className={toggleStyles.toggle} onClick={() => setMatchPerRound(!matchPerRound)}>
+            <button type="button" role="switch" aria-checked={matchPerRound} aria-label="Select per round" disabled={anyPlayStarted} className={toggleStyles.toggle} onClick={() => setMatchPerRound(!matchPerRound)}>
               <span className={toggleStyles.track} data-on={matchPerRound}><span className={toggleStyles.thumb} /></span><span>{matchPerRound ? "On" : "Off"}</span>
             </button>
           </div>
-          <fieldset className={styles.compLock} disabled={matchPerRound} aria-label="All rounds">
+          <fieldset className={styles.compLock} disabled={matchPerRound || anyPlayStarted} aria-label="All rounds">
             {([["Manual selection", "Manual"], ["Match Draft", "Match Draft"]] as const).map(([label, method]) => {
               const on = allRoundsMatch.method === method;
               return <div key={method} className={styles.totalPlayers}>
@@ -962,7 +1003,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
         const choice = roundMatchSelection(round.key) ?? NO_MATCH_SELECTION;
         // The round's own draft date and time (editable even when the method and type come from all rounds).
         const own = matchSelections[round.key] ?? NO_MATCH_SELECTION;
-        const choose = (change: Partial<MatchSelection>) => setMatchSelections(current => ({ ...current, [round.key]: { ...(current[round.key] ?? NO_MATCH_SELECTION), ...change } }));
+        const choose = (change: Partial<MatchSelection>) => { if (playState(round.key, round.number).started) return; setMatchSelections(current => ({ ...current, [round.key]: { ...(current[round.key] ?? NO_MATCH_SELECTION), ...change } })); };
         return <div className={styles.competition}>
           <div className={styles.roundDayHeader}>
             <div className={styles.roundCourseLine}>
@@ -980,7 +1021,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
           {/* Match selector: Manual (the organizer enters the matches) or Match Draft (made at a set time, by Response,
               Ranks or Randomized). The method and type are locked to all rounds unless Select per round is on; a draft's
               date and time are always this round's own. */}
-          <fieldset className={`${styles.compLock} ${styles.matchSelector}`} disabled={!matchPerRound} aria-label="Match selection">
+          <fieldset className={`${styles.compLock} ${styles.matchSelector}`} disabled={!matchPerRound || playState(round.key, round.number).started} aria-label="Match selection">
             <div className={styles.teamSelection} role="group" aria-label="How matches are made">
               <span className={styles.typeHeading}>Match Selection</span>
               <div className={styles.draftTypes}>
@@ -998,11 +1039,11 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
           {choice.method === "Match Draft" && <div className={`${styles.draftSettings} ${styles.matchDraftWhen}`} role="group" aria-label="Match draft date and time">
             <div className={styles.totalPlayers}>
               <span className={styles.typeHeading}>Draft date</span>
-              <input type="date" className={styles.draftInput} aria-label="Match draft date" value={own.date} onChange={event => choose({ date: event.target.value })} />
+              <input type="date" className={styles.draftInput} aria-label="Match draft date" disabled={playState(round.key, round.number).started} value={own.date} onChange={event => choose({ date: event.target.value })} />
             </div>
             <div className={styles.totalPlayers}>
               <span className={styles.typeHeading}>Draft time</span>
-              <input type="time" className={styles.draftInput} aria-label="Match draft time" value={own.time} onChange={event => choose({ time: event.target.value })} />
+              <input type="time" className={styles.draftInput} aria-label="Match draft time" disabled={playState(round.key, round.number).started} value={own.time} onChange={event => choose({ time: event.target.value })} />
             </div>
           </div>}
         </div>;
@@ -1013,11 +1054,11 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
             <div className={styles.arrivalDeparture}>
               <div className={styles.typeGroup} role="group" aria-label="Arrival">
                 <h4 className={styles.typeHeading}>Arrival</h4>
-                <button type="button" className={styles.typeChoice} aria-haspopup="dialog" onClick={() => setDatePickerOpen(true)}>{dayDate(0)}</button>
+                <button type="button" className={styles.typeChoice} aria-haspopup="dialog" disabled={anyPlayStarted} onClick={() => setDatePickerOpen(true)}>{dayDate(0)}</button>
               </div>
               <div className={styles.typeGroup} role="group" aria-label="Departure">
                 <h4 className={styles.typeHeading}>Departure</h4>
-                <button type="button" className={styles.typeChoice} aria-haspopup="dialog" onClick={() => setDatePickerOpen(true)}>{dayDate(dayCount - 1)}</button>
+                <button type="button" className={styles.typeChoice} aria-haspopup="dialog" disabled={anyPlayStarted} onClick={() => setDatePickerOpen(true)}>{dayDate(dayCount - 1)}</button>
               </div>
             </div>
             <div className={styles.golfDaySettings}>
@@ -1050,7 +1091,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                   <div className={`${styles.compRoundRow} ${styles.scheduleRoundCard} ${dragging ? styles.roundDragging : ""}`} data-drop-day={index} data-drop-slot={slot}
                     style={dragging ? { transform: `translateY(${roundDrag.dy}px)` } : undefined}>
                     <span className={styles.roundGrip} aria-hidden
-                      onPointerDown={event => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); setRoundDrag({ day: index, slot, startY: event.clientY, dy: 0 }); setRoundDrop(null); }}
+                      onPointerDown={event => { if (anyPlayStarted) return; event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); setRoundDrag({ day: index, slot, startY: event.clientY, dy: 0 }); setRoundDrop(null); }}
                       onPointerMove={event => { if (!dragging) return; setRoundDrag({ ...roundDrag, dy: event.clientY - roundDrag.startY }); setRoundDrop(findRoundDrop(event.clientX, event.clientY, roundDrag)); }}
                       onPointerUp={() => {
                         if (dragging && roundDrop) {
@@ -1079,7 +1120,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
               })}
               {dropLine(perDay)}
               {/* + Add Round under the day's last round (or right under the day when it has none); up to 2 rounds a day. */}
-              {perDay < 2 && <button type="button" className={styles.addRound} aria-haspopup="dialog" onClick={() => { setRoundsPerDay(current => ({ ...current, [index]: (perDay + 1) as 1 | 2 })); setEditCourse({ day: index, slot: perDay, adding: true }); }}><Plus size={14} strokeWidth={2.5} aria-hidden /> Add Round</button>}
+              {perDay < 2 && !anyPlayStarted && <button type="button" className={styles.addRound} aria-haspopup="dialog" onClick={() => { setRoundsPerDay(current => ({ ...current, [index]: (perDay + 1) as 1 | 2 })); setEditCourse({ day: index, slot: perDay, adding: true }); }}><Plus size={14} strokeWidth={2.5} aria-hidden /> Add Round</button>}
             </section>;
           })}
         </div>

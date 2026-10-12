@@ -104,9 +104,9 @@ const seeds: FeatureSeed[] = [
     attentionCategories: ["privacy", "personal-data", "ugc", "security", "retention", "intellectual-property", "organizer-responsibility", "legal-review"],
   },
   {
-    id: "golf-trip-competition-preview", name: "Golf Trip competition settings preview", scopeRevision: 2,
-    scope: "Development-only real/mock/busy competition and schedule setup persists in source-scoped browser localStorage and reaches shared Home/Golf/Venue/Itinerary; imported standings and untouched results are preserved. Legacy provider-backed round arrays remain memory-only. UI locking only, no production authorization or official scoring. Local persistence/retention and source rights remain review_required. Findings: docs/golf-trip-competition-review.md and docs/dev-simulator-review.md.",
-    attentionCategories: ["privacy", "personal-data", "security", "retention", "intellectual-property", "organizer-responsibility", "legal-review"],
+    id: "golf-trip-competition-preview", name: "Golf Trip competition settings preview", scopeRevision: 3,
+    scope: "Development-only real/mock/busy competition and schedule setup persists in source-scoped browser localStorage and reaches shared Home/Golf/Venue/Itinerary; imported standings and untouched results are preserved. Legacy provider-backed round arrays remain memory-only. Explicit-start UI locks and browser-local reason-required course correction logs flag affected cards for manual review; no production authorization or official score recalculation. Local persistence/retention and source rights remain review_required. Findings: docs/golf-trip-competition-review.md and docs/dev-simulator-review.md.",
+    attentionCategories: ["privacy", "personal-data", "ugc", "security", "retention", "intellectual-property", "organizer-responsibility", "legal-review"],
   },
   {
     id: "backup-recovery", name: "Backup and recovery operations",

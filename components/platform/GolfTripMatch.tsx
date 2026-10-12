@@ -121,7 +121,7 @@ export function GolfTripLeaderboard({ match, byToday = false }: { match: GolfMat
     });
   }
 
-  return <div className={styles.match}>
+  return <div className={`${styles.match} ${styles.leaderboard}`}>
     <SlideHeader title={match.course} detail={`${roundDay(match.roundDate)} • Round ${match.round} • ${formatDef.label}`}>
       <ScoringControl scoring={scoring} net={net} onNet={setNet} />
     </SlideHeader>
@@ -234,7 +234,8 @@ export function GolfMatchup({ match, compact = false, below, swipe, featured = 0
 function SlideHeader({ title, detail, children }: { title: string; detail: string; children?: ReactNode }) {
   return <div className={styles.lineupHeader}>
     <div className={styles.headerText}>
-      <h3 className={styles.headerTitle}>{title}</h3>
+      {/* Never more than 2 lines: longer names a little smaller, anything still too long ends in "…". */}
+      <h3 className={styles.headerTitle} title={title} data-length={title.length > 40 ? "longer" : title.length > 26 ? "long" : undefined}>{title}</h3>
       <p className={styles.headerDetail}>{detail}</p>
     </div>
     {children}

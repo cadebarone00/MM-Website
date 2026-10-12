@@ -2679,3 +2679,33 @@ Stays until step 9: all old identity / app pieces in §1, `legacy_round_import.s
 - **D4** Attach the Maroon history to the "The Maroon Masters" golf trip (`golf_trip_id`)? Recommend **yes, optional link**.
 
 **Done for the next task (foundation, after approval):** `supabase/historical_import.sql` written (not run); `lib/history/import/` package types + validator + dry-run planner; dry-run CLI that writes nothing; tests above passing (unit + DB harness); `tsc` clean. No UI, no deletions, no scoring changes, no commit unless asked.
+
+### Round: Historical Trip Import — foundation (2026-10-10, built; `historical_import.sql` not run, nothing imported)
+
+- **Product rule (owner):** everyone makes a brand-new account and profile; no old Maroon accounts, MM usernames, Player Portal identities or profile records are migrated. Historical data is a standard feature for every group; The Maroon 2024–2026 is its first dataset. `legacy_round_import.sql` is frozen proof-of-concept only (never run in production).
+- **Decisions:**
+  - D1: historical rounds don't count toward handicap (V1).
+  - D2: three ways to link — organizer proposes → golfer accepts, golfer requests → organizer approves, admin links directly — all audited.
+  - D3: personal `handicap_rounds` stay out (preserve / back up only).
+  - D4: 2024 / 2025 / 2026 are editions of one event, The Maroon.
+- **Schema (`supabase/historical_import.sql`), only what has no modern home:**
+  - `historical_imports` (provenance: dataset key + checksum)
+  - `historical_events` (organizer, optional `golf_trip_id`)
+  - `historical_participants` (`profile_id` NULL forever if never linked)
+  - `historical_editions` (teams per year as data, recorded results)
+  - `historical_roster`
+  - `historical_rounds` (schedule, course snapshot, format, individual / team card)
+  - `historical_scores`
+  - `historical_matches`
+  - `historical_link_requests`
+  - `historical_link_events` (append-only audit)
+- **Reused:** `profiles`, `golf_trips` (optional link), `profiles.rounds_visibility` privacy, the `player_round_json` round shape, Profile → Rounds / Stats (`list_profile_historical_rounds` is merged into the profile read model's rounds), `modernStats`.
+- **No copying:** a profile reads its participants' rounds through the link; linking / unlinking changes only `historical_participants.profile_id`.
+- **Idempotent:** a dataset applies once; the same checksum again = "already imported"; different content = refused. Rows are unique by package key within their parent.
+- **Package format v1** (`lib/history/historicalPackage.ts`): dataset, event, participants, courses, editions (teams, roster, rounds with cards, matches, recorded results), flags. Stable keys; no emails / account ids anywhere; unknown = null plus a flag. Checked by `validateHistoricalPackage`.
+- **Dry run:** `planHistoricalImport` and `scripts/historical-import-dry-run.ts` write nothing; the database's `import_historical_package(actor, package, true)` runs the import in a rolled-back block.
+- **Maroon exporter:** `lib/history/maroonHistoryExport.ts` / `scripts/export-maroon-history.ts` builds `out/history/the-maroon-2024-2026.v1.json` from the checked repository archive. Round numbers come from the archive's own rules.
+- **Generic audit (2026-10-10, before any SQL run):** nothing outside `maroonHistoryExport.ts` / `export-maroon-history.ts` knows about the Maroon (no slugs, MM usernames, Player Portal, years, Maroon / White teams, or name / email matching in the package, planner, SQL or profile reader). Three fixes:
+  - Event keys are shared by every group: a package whose event key already belongs to a differently named event is refused (it used to merge silently into that event). A later dataset may add NEW years to the same event (same key + name, by its organizer / an admin); a year already there is refused, not silently skipped. The result reports `event: new | existing` and `participantsReused`.
+  - The database refuses the same account fields as the app (`auth_id`, `accountid`, `account_id`, `password`, `e-mail` were missing).
+  - Profile → Rounds hides superseded `source = 'legacy'` copies once linked history exists, so one real round never shows twice.

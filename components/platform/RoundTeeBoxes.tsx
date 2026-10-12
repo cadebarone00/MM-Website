@@ -19,7 +19,11 @@ const BACK = [10, 11, 12, 13, 14, 15, 16, 17, 18];
  * Tee box: pick one for the whole round. Set per hole: on = choose the tee on each hole right in the scorecard; off = hide the per-hole scorecard and use the round tee. Scorecard: Hole and Par on the left, the hole's tee and its yardage on the right;
  * holes 1–9, OUT, 10–18, IN, TOTAL. Always the same size while it loads ("—"), so nothing jumps.
  */
-export function RoundTeeBoxes({ courseRef, value, onChange }: { courseRef?: string; value: RoundTees; onChange: (next: RoundTees) => void }) {
+export function RoundTeeBoxes({ courseRef, value: savedValue, onChange: commit, playLocked = false, affectedCards = 0 }: { courseRef?: string; value: RoundTees; onChange: (next: RoundTees, reason?: string) => void; playLocked?: boolean; affectedCards?: number }) {
+  const [correction, setCorrection] = useState<RoundTees | null>(null);
+  const [reason, setReason] = useState("");
+  const value = correction ?? savedValue;
+  const onChange = (next: RoundTees) => { if (correction) setCorrection(next); else if (!playLocked) commit(next); };
   const [detail, setDetail] = useState<{ ref: string; data: Detail | "unavailable" } | null>(null);
   useEffect(() => {
     if (!courseRef) return;
@@ -35,7 +39,7 @@ export function RoundTeeBoxes({ courseRef, value, onChange }: { courseRef?: stri
   const data = detail?.ref === courseRef ? detail.data : null; // null = loading
   if (data === "unavailable") return <p className={styles.note}>Tee boxes and yardages aren&apos;t available for this course right now.</p>;
 
-  const locked = Boolean(value.locked && value.savedCourseRef === courseRef);
+  const locked = !correction && (playLocked || Boolean(value.locked && value.savedCourseRef === courseRef));
   const tees = data?.teeSets.map(set => set.name) ?? [];
   const roundTee = value.tee && tees.includes(value.tee) ? value.tee : tees[0] ?? null;
   const holes = new Map((data?.scorecard ?? []).map(hole => [hole.number, hole]));
@@ -54,8 +58,13 @@ export function RoundTeeBoxes({ courseRef, value, onChange }: { courseRef?: stri
     ? selectedYards.reduce<number>((total, yards) => total + (yards ?? 0), 0) : null;
   const shown = (v: number | undefined) => v === undefined ? "—" : v.toLocaleString("en-US");
 
-  const saveOrUndo = () => onChange({ ...value, tee: roundTee, locked: !locked, savedCourseRef: courseRef });
-  const saveButton = <button type="button" className={styles.save} disabled={!locked && (!data || !roundTee)} onClick={saveOrUndo}>{locked ? "Undo & Change" : "Save Yardages"}</button>;
+  const saveOrUndo = () => {
+    if (playLocked && !correction) { setCorrection({ ...savedValue, locked: false }); return; }
+    const next = { ...value, tee: roundTee, locked: correction ? true : !locked, savedCourseRef: courseRef };
+    if (correction) { if (!reason.trim()) return; commit(next, reason.trim()); setCorrection(null); setReason(""); }
+    else onChange(next);
+  };
+  const saveButton = <button type="button" className={styles.save} disabled={(!locked && (!data || !roundTee)) || Boolean(correction && !reason.trim())} onClick={saveOrUndo}>{correction ? "Save Correction" : playLocked ? "Correct course setup" : locked ? "Undo & Change" : "Save Yardages"}</button>;
 
   const holeRow = (number: number) => {
     const hole = holes.get(number);
@@ -92,6 +101,11 @@ export function RoundTeeBoxes({ courseRef, value, onChange }: { courseRef?: stri
       </select> : <span className={styles.loading} role="status">Loading tee boxes...</span>}
     </div>
     {saveButton}
+    {correction && <div className={styles.note}>
+      <label>Reason for correction<textarea aria-label="Reason for course correction" value={reason} onChange={event => setReason(event.target.value)} maxLength={500} /></label>
+      <p>{affectedCards} saved player cards need review after this correction. Scores are not recalculated.</p>
+      <button type="button" onClick={() => { setCorrection(null); setReason(""); }}>Cancel correction</button>
+    </div>}
     <div className={styles.perHole}>
       <span className={styles.heading}>Set per hole</span>
       <button type="button" role="switch" disabled={locked} aria-checked={value.perHole} aria-label="Set tee box per hole" className={toggleStyles.toggle} onClick={() => onChange({ ...value, perHole: !value.perHole })}>

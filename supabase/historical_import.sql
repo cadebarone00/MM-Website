@@ -25,7 +25,8 @@
 -- itself: import_historical_package(actor, package, dry_run => true) is the dry run (it rolls back and reports).
 --
 -- All functions are service-role only; the server passes the signed-in profile from the session.
--- Prerequisites: schema.sql (profiles), platform_foundation.sql (platform_role), golf_trips.sql. Safe to run more than once.
+-- Prerequisites: schema.sql (profiles), platform_foundation.sql (platform_role), golf_trips.sql, player_rounds.sql
+-- (profiles.rounds_visibility, read by list_profile_historical_rounds). Safe to run more than once.
 -- Undo (drops all imported history): drop the functions below, then
 --   drop table if exists public.historical_link_events, public.historical_link_requests, public.historical_matches,
 --     public.historical_scores, public.historical_rounds, public.historical_roster, public.historical_editions,
@@ -197,8 +198,10 @@ declare
   v_checksum text := encode(sha256(convert_to(p_package::text, 'UTF8')), 'hex');
   v_dataset text := p_package->'dataset'->>'key';
   v_existing public.historical_imports;
+  v_known public.historical_events;
   v_import uuid;
   v_event uuid;
+  v_reused integer := 0;
   v_counts jsonb;
   e jsonb; r jsonb; s jsonb; m jsonb;
   v_edition uuid; v_round uuid;
@@ -207,7 +210,8 @@ begin
   if p_package->>'format' is distinct from 'historical-trip-package' or (p_package->>'version')::int is distinct from 1 then
     raise exception 'This isn''t a version 1 historical trip package.' using errcode = '22023';
   end if;
-  if p_package::text ~* '"(email|profileid|profile_id|userid|user_id|authid)"\s*:' then
+  -- Same field list as lib/history/historicalPackage.ts (FORBIDDEN_FIELD).
+  if p_package::text ~* '"(email|e-mail|profileid|profile_id|userid|user_id|authid|auth_id|accountid|account_id|password)"\s*:' then
     raise exception 'Packages never carry emails or account ids — people are linked to profiles afterwards.' using errcode = '22023';
   end if;
   select * into v_existing from historical_imports where dataset_key = v_dataset;
@@ -216,6 +220,22 @@ begin
       return jsonb_build_object('status', 'already-imported', 'checksum', v_checksum, 'counts', v_existing.summary);
     end if;
     raise exception 'Dataset % was already imported with different content. Corrections are a separate step.', v_dataset using errcode = '22023';
+  end if;
+  -- A later dataset may add NEW years to an event already imported (same key AND same name, by someone who manages
+  -- it). Event keys are shared by every group, so a clash with another group's event is refused, never merged, and a
+  -- year that's already there is refused, never silently skipped.
+  select * into v_known from historical_events where source_key = p_package->'event'->>'key';
+  if found then
+    if v_known.name is distinct from trim(p_package->'event'->>'name') then
+      raise exception 'Event key % already belongs to "%". Use a different event key.', v_known.source_key, v_known.name using errcode = '22023';
+    end if;
+    if not can_manage_historical_event(p_actor, v_known.id) then
+      raise exception 'Only the organizer of "%" can add years to it.', v_known.name using errcode = '42501';
+    end if;
+    if exists (select 1 from historical_editions he join jsonb_array_elements(p_package->'editions') x on x->>'key' = he.source_key where he.event_id = v_known.id) then
+      raise exception 'A year in this package is already imported for "%". Corrections are a separate step.', v_known.name using errcode = '22023';
+    end if;
+    select count(*) into v_reused from historical_participants hp join jsonb_array_elements(p_package->'participants') x on x->>'key' = hp.source_key where hp.event_id = v_known.id;
   end if;
 
   begin
@@ -278,9 +298,11 @@ begin
     if p_dry_run then raise exception 'historical-dry-run' using errcode = 'P0001'; end if;
   exception when sqlstate 'P0001' then
     if sqlerrm <> 'historical-dry-run' then raise; end if;
-    return jsonb_build_object('status', 'dry-run', 'checksum', v_checksum, 'counts', v_counts);
+    return jsonb_build_object('status', 'dry-run', 'checksum', v_checksum, 'counts', v_counts,
+      'event', case when v_known.id is null then 'new' else 'existing' end, 'participantsReused', v_reused);
   end;
-  return jsonb_build_object('status', 'imported', 'checksum', v_checksum, 'counts', v_counts);
+  return jsonb_build_object('status', 'imported', 'checksum', v_checksum, 'counts', v_counts,
+    'event', case when v_known.id is null then 'new' else 'existing' end, 'participantsReused', v_reused);
 end;
 $$;
 

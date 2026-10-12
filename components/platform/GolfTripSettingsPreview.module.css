@@ -306,3 +306,20 @@ fieldset.matchSelector{border:0;padding:0;min-width:0}
 .scheduleTabs{display:flex;gap:10px}.scheduleTabs button{flex:1;min-height:42px;padding:8px 12px;border:1px solid #dcc49570;border-radius:999px;background:transparent;color:#dcc495;font:600 14px var(--font-spectral),Georgia,serif;cursor:pointer}.scheduleTabs button[aria-pressed=true]{background:#dcc495;color:#240001}.scheduleTabs button:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 
 .scheduleLockNote{margin:0;padding-top:10px;border-top:1px solid #dcc49559;color:#dcc495;font:500 12px/1.4 var(--font-barlow),sans-serif;text-align:center}
+/* Team Competition: Save Teams / Undo Save under Team Selection. */
+.selectTeams.saveTeams{margin:4px auto 10px}
+/* Team Competition: the small gold Save / Undo for the team type and players, on the left. */
+.goldSave{justify-self:start;align-self:start;width:auto;min-height:32px;margin:2px 0 6px;padding:6px 16px;border:1px solid #dcc495;border-radius:8px;background:#dcc495;color:#240001;font:700 13px/1 var(--font-barlow),sans-serif;cursor:pointer}
+.goldSave:focus-visible{outline:2px solid #fbf8f1;outline-offset:3px}
+
+.startGroup { border: 1px solid var(--maroon, #560b18); border-radius: 6px; padding: 6px 10px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.startGroup:disabled { opacity: .5; cursor: default; }
+
+.teeTableRow:has(.teeTablePlayers) .startGroup { grid-column: 1 / -1; justify-self: end; }
+.teeTablePlayers:disabled { opacity: .5; cursor: default; }
+/* Team size (team type → players → Save Team Size): Add Sub/Uneven a hair closer to Total players (16 → 12px), and the
+   Save half as far below them (28 → 14px). */
+.teamSize > .totalPlayers{margin-bottom:12px}
+.teamSize > .totalPlayers:last-child{margin-bottom:2px}
+/* Individual: Stroke Play · Points Based · None as three even pills across the screen. */
+.typeChoicesRow.typeChoicesRow.typeChoicesThree{grid-template-columns:repeat(3,minmax(0,1fr))}

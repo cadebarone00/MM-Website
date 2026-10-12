@@ -95,7 +95,11 @@ const SOURCES: ProfileSources = {
       rpc("list_profile_historical_rounds", { p_viewer: viewerId, p_owner: subjectId }),
     ]);
     if (!Array.isArray(data)) return null;
-    return [...profileHistoryFromJson(data), ...profileHistoryFromJson(Array.isArray(historical) ? historical : [])]
+    const linked = profileHistoryFromJson(Array.isArray(historical) ? historical : []);
+    // The superseded legacy import (source 'legacy', DEV test data) holds copies of the same real rounds; once linked
+    // history exists it is the record, so the old copies never show twice.
+    const own = profileHistoryFromJson(data).filter((round) => !linked.length || round.source !== "legacy");
+    return [...own, ...linked]
       .sort((a, b) => b.datePlayed.localeCompare(a.datePlayed) || a.id.localeCompare(b.id));
   },
   legacy,
