@@ -3,7 +3,6 @@ import { SIDE_GAME_REGISTRY } from "@/lib/platform/golfTripGames";
 import { readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS } from "@/lib/platform/golfTripNavigation";
-import { isPlayDemoEnabled } from "@/lib/platform/playDemo";
 import { SIMULATOR_SOURCES, type SimulatorPage } from "./simulator";
 import { DEV_ACCOUNTS } from "./devAccounts";
 import { GOLF_MATCH_PREVIEWS } from "@/lib/platform/golfTripPreviewFixture";
@@ -13,7 +12,9 @@ export function simulatorPages(): SimulatorPage[] {
   const pages: SimulatorPage[] = [];
   function walk(directory: string, path: string) {
     if (existsSync(join(directory, "page.tsx")) && path !== "/dev") {
-      if (path.startsWith("/dev/play") && !isPlayDemoEnabled()) return;
+      // Same condition as isPlayDemoEnabled() in lib/platform/playDemo.ts, checked here because only /dev/play may import
+      // the demo module (playDemo.test.ts). This only hides list entries; the /dev/play pages enforce the real gate.
+      if (path.startsWith("/dev/play") && !(process.env.NODE_ENV === "development" && process.env.DEV_PLAY_DEMO === "true")) return;
       pages.push({ id: path, path, label: path === "/dev/tournament" ? "Golf Trip · Home" : path === "/dev/tournament/settings" ? "Golf Trip · Settings preview" : path.replace("/dev/play", "Tournament app").replaceAll("/", " · "), fixtures: path.startsWith("/dev/tournament") });
     }
     for (const entry of readdirSync(directory, { withFileTypes: true })) {

@@ -32,9 +32,9 @@ function completedMetadata(): FeatureComplianceRecord {
   return record;
 }
 
-test("all 20 features including Golf Trip Games and Competition previews are explicit, independent, JSON-serializable and unreviewed", () => {
-  assert.equal(featureRegistry.features.length, 20);
-  assert.equal(new Set(featureRegistry.features.map(feature => feature.id)).size, 20);
+test("all 25 features including Golf Trip Games and Competition previews are explicit, independent, JSON-serializable and unreviewed", () => {
+  assert.equal(featureRegistry.features.length, 25);
+  assert.equal(new Set(featureRegistry.features.map(feature => feature.id)).size, 25);
   assert.equal(featureRegistry.features.find(feature => feature.id === "golf-trip-games-preview")?.scopeRevision, 2);
   assert.ok(featureRegistry.features.some(feature => feature.id === "golf-trip-competition-preview"));
   assert.deepEqual(JSON.parse(JSON.stringify(featureRegistry)), featureRegistry);
