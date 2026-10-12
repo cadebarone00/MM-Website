@@ -1,7 +1,8 @@
 "use client";
+import { DateTimePicker } from "./DateTimePicker";
 
 import { useState, type ReactNode } from "react";
-import { BedDouble, CalendarDays, Car, Clock, MapPin, Plane, Plus, Trash2 } from "lucide-react";
+import { BedDouble, CalendarDays, Car, Check, ChevronLeft, Clock, MapPin, Plane, Plus, Trash2 } from "lucide-react";
 import { ITINERARY_KIND_LABEL, itineraryDay, itineraryTime } from "@/lib/platform/golfTripItinerary";
 import { checkTravelInput, cleanDetails, myItems, travelTitle, type TravelDetails, type TravelItem, type TravelKind, type TripTravel } from "@/lib/platform/tripTravel";
 import { GolfTripActionSheet } from "./GolfTripActionSheet";
@@ -20,7 +21,11 @@ const ADDABLE: { kind: TravelKind; label: string; icon: typeof Plane }[] = [
 export type MyTravelChange =
   | { type: "add"; item: Omit<TravelItem, "createdBy" | "source" | "optOutAllowed"> }
   | { type: "update"; id: string; changes: Pick<TravelItem, "details" | "startsAt" | "endsAt" | "joinPolicy"> }
-  | { type: "remove"; id: string };
+  | { type: "remove"; id: string }
+  /** Save & Invite: invite these members to one of my own bookings. */
+  | { type: "invite"; id: string; memberIds: string[] }
+  /** My answer on something another member invited me to. */
+  | { type: "respond"; id: string; answer: "accept" | "decline" };
 
 /**
  * Info → My Info → My travel: your own flights, rides, lodging and plans. Add, tap one to edit, or delete it (asks
@@ -31,6 +36,7 @@ export function GolfTripMyTravel({ travel, onChange }: { travel: TripTravel; onC
   const [choosing, setChoosing] = useState(false);
   const [editing, setEditing] = useState<{ kind: TravelKind; item?: TravelItem } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<TravelItem | null>(null);
+  const [inviting, setInviting] = useState<string | null>(null);
 
   return <section className={homeStyles.infoSection} aria-label="My travel">
     <div className={homeStyles.infoHeaderRow}><h2 className={homeStyles.eventsHeading}>My travel</h2></div>
@@ -54,11 +60,17 @@ export function GolfTripMyTravel({ travel, onChange }: { travel: TripTravel; onC
       onAction={(label) => { const pick = ADDABLE.find((option) => option.label === label); setChoosing(false); if (pick) setEditing({ kind: pick.kind }); }} />}
 
     {editing && <TravelForm kind={editing.kind} item={editing.item} onCancel={() => setEditing(null)}
-      onSave={(details, startsAt, endsAt) => {
-        if (editing.item) onChange({ type: "update", id: editing.item.id, changes: { details, startsAt, endsAt, joinPolicy: editing.item.joinPolicy } });
-        else onChange({ type: "add", item: { id: `tr-${crypto.randomUUID()}`, kind: editing.kind, details, startsAt, endsAt, joinPolicy: "none" } });
+      onBack={editing.item ? undefined : () => { setEditing(null); setChoosing(true); }}
+      onSave={(details, startsAt, endsAt, invite) => {
+        const id = editing.item?.id ?? `tr-${crypto.randomUUID()}`;
+        if (editing.item) onChange({ type: "update", id, changes: { details, startsAt, endsAt, joinPolicy: editing.item.joinPolicy } });
+        else onChange({ type: "add", item: { id, kind: editing.kind, details, startsAt, endsAt, joinPolicy: "none" } });
         setEditing(null);
+        if (invite) setInviting(id);
       }} />}
+
+    {inviting && <InvitePeople travel={travel} itemId={inviting} onClose={() => setInviting(null)}
+      onSend={(memberIds) => { onChange({ type: "invite", id: inviting, memberIds }); setInviting(null); }} />}
 
     {confirmDelete && <div className={homeStyles.deleteOverlay} role="dialog" aria-modal="true" aria-label="Delete confirmation">
       <div className={homeStyles.deleteDialog}>
@@ -95,25 +107,33 @@ type FormFields = { airline: string; flightNumber: string; from: string; to: str
  * Itinerary tab → "+ Add": the same pop-ups as My Info's Add — pick flight / ride or rental car / lodging / other plans,
  * then fill it in. Saving puts it on your itinerary (and Home's boxes).
  */
-export function GolfTripAddTravel({ onChange, className }: { onChange: (change: MyTravelChange) => void; className?: string }) {
+export function GolfTripAddTravel({ travel, onChange, className }: { travel: TripTravel; onChange: (change: MyTravelChange) => void; className?: string }) {
   const [choosing, setChoosing] = useState(false);
   const [adding, setAdding] = useState<TravelKind | null>(null);
+  const [inviting, setInviting] = useState<string | null>(null);
   return <>
     <button type="button" className={className ?? homeStyles.addItemButton} aria-haspopup="dialog" onClick={() => setChoosing(true)}><Plus size={16} strokeWidth={2.5} aria-hidden />Add</button>
     {choosing && <GolfTripActionSheet label="Add to my travel" onClose={() => setChoosing(false)}
       actions={ADDABLE.map(({ label, icon }) => ({ label, icon }))}
       onAction={(label) => { const pick = ADDABLE.find((option) => option.label === label); setChoosing(false); if (pick) setAdding(pick.kind); }} />}
-    {adding && <TravelForm kind={adding} onCancel={() => setAdding(null)}
-      onSave={(details, startsAt, endsAt) => {
-        onChange({ type: "add", item: { id: `tr-${crypto.randomUUID()}`, kind: adding, details, startsAt, endsAt, joinPolicy: "none" } });
+    {adding && <TravelForm kind={adding} onCancel={() => setAdding(null)} onBack={() => { setAdding(null); setChoosing(true); }}
+      onSave={(details, startsAt, endsAt, invite) => {
+        const id = `tr-${crypto.randomUUID()}`;
+        onChange({ type: "add", item: { id, kind: adding, details, startsAt, endsAt, joinPolicy: "none" } });
         setAdding(null);
+        if (invite) setInviting(id);
       }} />}
+    {inviting && <InvitePeople travel={travel} itemId={inviting} onClose={() => setInviting(null)}
+      onSend={(memberIds) => { onChange({ type: "invite", id: inviting, memberIds }); setInviting(null); }} />}
   </>;
 }
 
-/** Add / edit sheet. Fields change with the kind; problems show under each field when you tap Save. */
-function TravelForm({ kind, item, onSave, onCancel }: {
-  kind: TravelKind; item?: TravelItem; onSave: (details: TravelDetails, startsAt: string, endsAt?: string) => void; onCancel: () => void;
+/**
+ * Add / edit sheet. Fields change with the kind; problems show under each field when you tap a save button. X closes
+ * without saving; adding also has < back to the choices. Save = just me; Save & Invite = save, then pick who to invite.
+ */
+function TravelForm({ kind, item, onSave, onCancel, onBack }: {
+  kind: TravelKind; item?: TravelItem; onSave: (details: TravelDetails, startsAt: string, endsAt: string | undefined, invite: boolean) => void; onCancel: () => void; onBack?: () => void;
 }) {
   const d = item?.details ?? {};
   const [fields, setFields] = useState<FormFields>({
@@ -125,18 +145,21 @@ function TravelForm({ kind, item, onSave, onCancel }: {
   const set = (key: keyof FormFields) => (value: string) => setFields((current) => ({ ...current, [key]: value }));
   const rental = kind === "ride" && fields.rideType === "rental";
 
-  function save() {
+  function save(invite: boolean) {
     const raw: TravelDetails = { airline: fields.airline, flightNumber: fields.flightNumber, from: fields.from, to: fields.to, rideType: fields.rideType,
       place: fields.place, seats: fields.seats.trim() === "" ? undefined : Number(fields.seats), name: fields.name, note: fields.note };
     const endsAt = fields.endsAt || undefined;
     const found = checkTravelInput(kind, raw, fields.startsAt, endsAt);
     setProblems(found);
-    if (Object.keys(found).length === 0) onSave(cleanDetails(kind, raw), fields.startsAt, endsAt);
+    if (Object.keys(found).length === 0) onSave(cleanDetails(kind, raw), fields.startsAt, endsAt, invite);
   }
 
   const title = `${item ? "Edit" : "Add"} ${kind === "ride" ? "ride" : ITINERARY_KIND_LABEL[kind].toLowerCase()}`;
   return <GolfTripActionSheet label={title} onClose={onCancel} className={styles.sheet}>
-    <h2 className={styles.title}>{title}</h2>
+    <div className={styles.titleRow}>
+      {onBack && <button type="button" className={styles.back} aria-label="Back to add choices" onClick={onBack}><ChevronLeft size={22} strokeWidth={2.25} aria-hidden /></button>}
+      <h2 className={styles.title}>{title}</h2>
+    </div>
     <div className={styles.fields}>
       {kind === "flight" && <>
         <Field label="Airline" value={fields.airline} onChange={set("airline")} placeholder="American Airlines" />
@@ -177,20 +200,51 @@ function TravelForm({ kind, item, onSave, onCancel }: {
       </>}
     </div>
     <div className={styles.actions}>
-      <button type="button" className={styles.cancel} onClick={onCancel}>Cancel</button>
-      <button type="button" className={styles.save} onClick={save}>Save</button>
+      <button type="button" className={styles.cancel} onClick={() => save(false)}>Save</button>
+      <button type="button" className={styles.save} onClick={() => save(true)}>Save &amp; Invite</button>
     </div>
   </GolfTripActionSheet>;
 }
+
+/**
+ * After Save & Invite: the trip's other members with a tick box each → Send invites. Anyone already invited or going is
+ * ticked and locked. X keeps the saved item, just with no new invites.
+ */
+function InvitePeople({ travel, itemId, onSend, onClose }: { travel: TripTravel; itemId: string; onSend: (memberIds: string[]) => void; onClose: () => void }) {
+  const [picked, setPicked] = useState<string[]>([]);
+  const others = travel.members.filter((member) => member.id !== travel.meId);
+  const statusOf = (memberId: string) => travel.participants.find((p) => p.itemId === itemId && p.memberId === memberId)?.status;
+  const toggle = (memberId: string) => setPicked((current) => current.includes(memberId) ? current.filter((id) => id !== memberId) : [...current, memberId]);
+  return <GolfTripActionSheet label="Invite people" onClose={onClose} className={styles.sheet}>
+    <h2 className={styles.title}>Invite people</h2>
+    {others.length === 0 && <p className={styles.inviteEmpty}>No one else is on this trip yet.</p>}
+    <div className={styles.inviteList} role="group" aria-label="Trip members">
+      {others.map((member) => {
+        const status = statusOf(member.id), already = status === "invited" || status === "going", on = already || picked.includes(member.id);
+        return <button key={member.id} type="button" className={styles.inviteRow} aria-pressed={on} disabled={already} onClick={() => toggle(member.id)}>
+          <span className={styles.inviteAvatar} aria-hidden>{initials(member.name)}</span>
+          <span className={styles.inviteName}>{member.name}{already && <small>{status === "going" ? "Going" : "Invited"}</small>}</span>
+          <span className={styles.inviteCheck} aria-hidden>{on && <Check size={16} strokeWidth={3} />}</span>
+        </button>;
+      })}
+    </div>
+    <div className={`${styles.actions} ${styles.actionsOne}`}>
+      <button type="button" className={styles.save} disabled={picked.length === 0} onClick={() => onSend(picked)}>
+        {picked.length > 1 ? `Send ${picked.length} invites` : "Send invite"}</button>
+    </div>
+  </GolfTripActionSheet>;
+}
+
+const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0].toUpperCase()).join("") || "?";
 
 function Field({ label, value, onChange, type = "text", placeholder, problem, upper = false }: {
   label: string; value: string; onChange: (value: string) => void; type?: "text" | "number" | "datetime-local"; placeholder?: string; problem?: string; upper?: boolean;
 }): ReactNode {
   return <label className={styles.field}>
     <span className={styles.label}>{label}</span>
-    <input className={styles.input} type={type} value={value} placeholder={placeholder} aria-invalid={problem ? true : undefined}
+    {type === "datetime-local" ? <DateTimePicker label={label} className={styles.input} value={value} onChange={onChange} invalid={problem ? true : undefined} /> : <input className={styles.input} type={type} value={value} placeholder={placeholder} aria-invalid={problem ? true : undefined}
       inputMode={type === "number" ? "numeric" : undefined} min={type === "number" ? 0 : undefined} max={type === "number" ? 12 : undefined}
-      style={upper ? { textTransform: "uppercase" } : undefined} onChange={(event) => onChange(event.target.value)} />
+      style={upper ? { textTransform: "uppercase" } : undefined} onChange={(event) => onChange(event.target.value)} />}
     {problem && <span className={styles.problem} role="alert">{problem}</span>}
   </label>;
 }

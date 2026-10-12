@@ -1,6 +1,10 @@
 "use client";
 
+import { DatePicker } from "@/components/platform/DatePicker";
+
+
 import { useState } from "react";
+import { TimePicker } from "@/components/platform/TimePicker";
 import base from "@/components/tournament-draft/TournamentDraftWorkspace.module.css";
 import styles from "../TournamentDashboard.module.css";
 import { EditorActions, Field, type EditorProps } from "../editorKit";
@@ -16,7 +20,7 @@ export function ScheduleEditor({ setup, saving, onSave, onCancel }: EditorProps)
       {!startDate && <p className={base.callout}>Set the tournament&apos;s dates in Basics first; round dates must fall inside them.</p>}
       <div className={styles.rows}>{rows.map((row, index) =>
         <div className={`${styles.row} ${styles.row3}`} key={row.number}>
-          <Field label={`Round ${row.number} date`}><input type="date" min={startDate ?? undefined} max={endDate ?? undefined} value={row.playDate} onChange={(event) => update(index, { playDate: event.target.value })} /></Field>
+          <Field label={`Round ${row.number} date`}><DatePicker min={startDate ?? undefined} max={endDate ?? undefined} value={row.playDate} onChange={(event) => update(index, { playDate: event.target.value })} /></Field>
           <Field label="Start">
             <select value={row.startType} onChange={(event) => update(index, { startType: event.target.value })}>
               <option value="">Decide later</option>
@@ -24,7 +28,7 @@ export function ScheduleEditor({ setup, saving, onSave, onCancel }: EditorProps)
               <option value="shotgun">Shotgun start</option>
             </select>
           </Field>
-          <Field label={row.startType === "shotgun" ? "Shotgun time" : "First tee time"}><input type="time" value={row.startTime} onChange={(event) => update(index, { startTime: event.target.value })} /></Field>
+          <Field label={row.startType === "shotgun" ? "Shotgun time" : "First tee time"}><TimePicker label={row.startType === "shotgun" ? "Shotgun time" : "First tee time"} value={row.startTime} onChange={startTime => update(index, { startTime })} /></Field>
           <span />
         </div>)}
       </div>

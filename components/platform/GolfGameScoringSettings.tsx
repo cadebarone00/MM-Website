@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DEFAULT_SCORING, editGameSettings, initialGameSettings, ninePointWarnings, startGameSettings, type ScoringGameId, type ScoringSettings } from "@/lib/platform/game-engine";
-import { GAME_PREVIEW_PLAYERS } from "@/lib/platform/golfTripGames";
-import { GolfGameScoringPreview } from "./GolfGameScoringPreview";
+import { DEFAULT_SCORING, editGameSettings, initialGameSettings, ninePointWarnings, type ScoringGameId, type ScoringSettings } from "@/lib/platform/game-engine";
 import styles from "./GolfTripSettingsPreview.module.css";
 
 const LABELS: Record<string, string> = {
@@ -21,14 +19,12 @@ function labelFor(key: string): string {
 /** Local state only, deliberately independent of Competition and persistence. */
 export function GolfGameScoringSettings({ game }: { game: ScoringGameId }) {
   const [state, setState] = useState(() => initialGameSettings(game));
-  const locked = state.status === "started";
   const config = state.scoring.values;
   const change = (key: string, value: number | boolean | string) => setState(current => editGameSettings(current, "custom", { ...current.scoring, values: { ...current.scoring.values, [key]: value } } as ScoringSettings));
-  const count = game === "9-point" ? 3 : game === "match-play" ? 2 : 4;
   const warnings = state.scoring.game === "9-point" ? ninePointWarnings(state.scoring.values) : [];
 
   return <>
-    <fieldset className={styles.scoringFields} disabled={locked} aria-label={`${game} scoring settings`}>
+    <fieldset className={styles.scoringFields} aria-label={`${game} scoring settings`}>
       <div className={styles.compactOptions}>
         {(["standard", "custom"] as const).map(preset => <button key={preset} type="button" aria-pressed={state.preset === preset} className={`${styles.compactOption} ${state.preset === preset ? styles.compactOptionActive : ""}`} onClick={() => setState(current => editGameSettings(current, preset))}>{preset === "standard" ? "Standard preset" : "Custom preset"}</button>)}
         <button type="button" className={styles.compactOption} onClick={() => setState(current => editGameSettings(current, "standard"))}>Reset to Standard</button>
@@ -43,7 +39,5 @@ export function GolfGameScoringSettings({ game }: { game: ScoringGameId }) {
       })}
     </fieldset>
     {state.preset === "custom" && warnings.length > 0 && <p className={styles.previewNote} role="status">Warning: {warnings.join(" ")} Custom allocations are allowed.</p>}
-    <div className={styles.compactStatus}>{locked ? "Started · Locked" : "Scheduled"}</div>
-    <GolfGameScoringPreview setup={{ id: game, scope: "round", participants: GAME_PREVIEW_PLAYERS.slice(0, count).map(player => player.id), handicap: config.handicap, scoring: state.scoring, rounds: [{ id: "settings-preview", holes: 18 }] }} onStart={() => setState(current => startGameSettings(current))} />
   </>;
 }

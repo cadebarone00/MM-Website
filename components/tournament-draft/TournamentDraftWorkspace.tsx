@@ -1,5 +1,8 @@
 "use client";
 
+import { DatePicker } from "@/components/platform/DatePicker";
+
+
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Check, Flag } from "lucide-react";
 import { FORMATS, FORMAT_KEYS } from "@/lib/platform/formats";
@@ -104,7 +107,7 @@ export function TournamentDraftWorkspace() {
           <Field label="Web address"><input autoComplete="off" maxLength={60} value={input.slug} onChange={event => { setSlugEdited(true); update("slug", event.target.value.toLowerCase()); }} placeholder="the-autumn-invitational" required /></Field>
           <p className={styles.muted}>Your site will live at themaroon.com/t/{input.slug || "your-tournament"}/{input.seasonYear || thisYear} once you publish.</p>
           <Field label="Year"><select value={input.seasonYear} onChange={event => update("seasonYear", Number(event.target.value))}>{Array.from({ length: 7 }, (_, index) => thisYear - 1 + index).map(year => <option key={year} value={year}>{year}</option>)}</select></Field>
-          <div className={styles.columns}><Field label="Start date"><input type="date" value={input.startDate} onChange={event => update("startDate", event.target.value)} /></Field><Field label="End date"><input type="date" min={input.startDate} value={input.endDate} onChange={event => update("endDate", event.target.value)} /></Field></div>
+          <div className={styles.columns}><Field label="Start date"><DatePicker value={input.startDate} onChange={event => update("startDate", event.target.value)} /></Field><Field label="End date"><DatePicker min={input.startDate} value={input.endDate} onChange={event => update("endDate", event.target.value)} /></Field></div>
           <p className={styles.muted}>Dates are optional for now. Add them whenever you know them.</p>
           <Field label="Timezone"><input list="draft-timezones" value={input.timezone} onChange={event => update("timezone", event.target.value)} required /><datalist id="draft-timezones">{["America/Chicago", "America/New_York", "America/Denver", "America/Los_Angeles", "Europe/London", "Asia/Bangkok", "Australia/Sydney", "UTC"].map(zone => <option key={zone} value={zone} />)}</datalist></Field>
           <Field label="Privacy when published"><select value={input.visibility} onChange={event => update("visibility", event.target.value as DraftInput["visibility"])}><option value="private">Private — invited participants</option><option value="unlisted">Unlisted — anyone with the link</option><option value="public">Public — discoverable by everyone</option></select></Field>

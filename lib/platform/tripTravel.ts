@@ -85,6 +85,29 @@ export function removeMyItem(travel: TripTravel, id: string): TripTravel {
   return { ...travel, items: travel.items.filter((candidate) => candidate.id !== id), participants: travel.participants.filter((p) => p.itemId !== id) };
 }
 
+/**
+ * Invites other members to one of my own bookings (Save & Invite). Skips me, anyone not on the trip, and anyone already
+ * invited or going; someone who declined is invited again. Anything that isn't mine is left alone.
+ */
+export function inviteToItem(travel: TripTravel, itemId: string, memberIds: string[]): TripTravel {
+  const item = travel.items.find((candidate) => candidate.id === itemId);
+  if (!item || !isMine(travel, item)) return travel;
+  const statusOf = (memberId: string) => travel.participants.find((p) => p.itemId === itemId && p.memberId === memberId)?.status;
+  const invitees = [...new Set(memberIds)].filter((id) => id !== travel.meId && travel.members.some((m) => m.id === id) && statusOf(id) !== "invited" && statusOf(id) !== "going");
+  if (!invitees.length) return travel;
+  const others = travel.participants.filter((p) => !(p.itemId === itemId && invitees.includes(p.memberId)));
+  return { ...travel, participants: [...others, ...invitees.map((memberId) => ({ itemId, memberId, status: "invited" as const }))] };
+}
+
+/** My Accept / Decline on something I was invited to (can change my mind either way). Nothing happens if I wasn't invited. */
+export function respondToInvite(travel: TripTravel, itemId: string, answer: "accept" | "decline"): TripTravel {
+  const invited = (p: TravelParticipant) => p.itemId === itemId && p.memberId === travel.meId && (p.status === "invited" || p.status === "going" || p.status === "declined");
+  const item = travel.items.find((candidate) => candidate.id === itemId);
+  if (!item || item.source !== "mine" || item.createdBy === travel.meId || !travel.participants.some(invited)) return travel;
+  const status = answer === "accept" ? "going" as const : "declined" as const;
+  return { ...travel, participants: travel.participants.map((p) => invited(p) ? { ...p, status } : p) };
+}
+
 /** My own bookings (not organizer items), in time order. */
 export function myItems(travel: TripTravel): TravelItem[] {
   return travel.items.filter((item) => isMine(travel, item)).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
@@ -103,14 +126,20 @@ export function travelTitle(item: TravelItem): string {
 }
 
 /**
- * Itinerary entries for one member: every item they're going on. Lodging and rental cars with an end time become two
- * entries (check-in / check-out, pickup / return); a flight shows when it lands.
+ * Itinerary entries for one member: every item they're going on, plus anything another member invited them to (going,
+ * still deciding, or declined), marked with `invite` so the box can show Decline / Accept. Lodging and rental cars with an
+ * end time become two entries (check-in / check-out, pickup / return); a flight shows when it lands.
  */
 export function itineraryFor(travel: TripTravel, memberId = travel.meId): ItineraryItem[] {
-  const going = new Set(travel.participants.filter((p) => p.memberId === memberId && p.status === "going").map((p) => p.itemId));
+  const statusOf = new Map(travel.participants.filter((p) => p.memberId === memberId && (p.status === "going" || p.status === "invited" || p.status === "declined")).map((p) => [p.itemId, p.status]));
   const entries: ItineraryItem[] = [];
   for (const item of travel.items) {
-    if (!going.has(item.id)) continue;
+    const status = statusOf.get(item.id);
+    if (!status) continue;
+    // Someone else's own booking I'm on = an invite (organizer items are assignments, not invites).
+    const invitedBy = item.source === "mine" && item.createdBy !== memberId ? travel.members.find((m) => m.id === item.createdBy)?.name ?? "" : undefined;
+    if (invitedBy === undefined && status !== "going") continue;
+    const start = entries.length;
     const d = item.details, title = travelTitle(item);
     if (item.kind === "flight") {
       entries.push({ id: item.id, kind: "flight", title, startsAt: item.startsAt, ...(item.endsAt ? { endsAt: item.endsAt } : {}), detail: [d.airline, item.endsAt && `Lands ${timeOf(item.endsAt)}`].filter(Boolean).join(" · ") || undefined });
@@ -125,9 +154,13 @@ export function itineraryFor(travel: TripTravel, memberId = travel.meId): Itiner
     } else {
       entries.push({ id: item.id, kind: item.kind, title, startsAt: item.startsAt, detail: [d.place, d.note].filter(Boolean).join(" · ") || undefined });
     }
+    if (invitedBy !== undefined) for (let i = start; i < entries.length; i++) entries[i] = { ...entries[i], invite: { itemId: item.id, from: invitedBy, status: status as "going" | "invited" | "declined" } };
   }
   return sortItinerary(entries);
 }
+
+/** Only what I'm actually going on (drops invites I haven't accepted) — for Home's boxes, Venue and reminders. */
+export const goingOnly = (items: ItineraryItem[]): ItineraryItem[] => items.filter((item) => !item.invite || item.invite.status === "going");
 
 // ---------- Form checks ----------
 

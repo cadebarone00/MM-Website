@@ -1,5 +1,8 @@
 "use client";
 
+import { DatePicker } from "@/components/platform/DatePicker";
+
+
 import { useState } from "react";
 import Link from "next/link";
 import type { TournamentSettings } from "@/lib/live/types";
@@ -49,7 +52,7 @@ export function MasterSettingsPanel({ year, initialSettings, isActiveYear }: { y
 
     <section className="mt-6 rounded-lg border-2 border-stone-300 p-4">
       <div className="flex items-center justify-between"><h2 className="font-serif text-lg font-bold text-ink-900">Tournament Dates</h2><button type="button" disabled={!datesLocked && (!beginDate || !endDate)} onClick={() => setDatesLocked((value) => !value)} className="font-condensed text-2xs font-semibold uppercase tracking-wide text-maroon-700 underline disabled:opacity-50">{datesLocked ? "Unlock" : "Lock"}</button></div>
-      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="flex flex-col gap-1 font-sans text-xs text-ink-700">Begin Date<input type="date" value={beginDate} disabled={datesLocked} onChange={(event) => setBeginDate(event.target.value)} className="rounded-lg border-2 border-stone-300 px-2 py-2 text-sm" /></label><label className="flex flex-col gap-1 font-sans text-xs text-ink-700">End Date<input type="date" value={endDate} disabled={datesLocked} onChange={(event) => setEndDate(event.target.value)} className="rounded-lg border-2 border-stone-300 px-2 py-2 text-sm" /></label></div>
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="flex flex-col gap-1 font-sans text-xs text-ink-700">Begin Date<DatePicker value={beginDate} disabled={datesLocked} onChange={(event) => setBeginDate(event.target.value)} className="rounded-lg border-2 border-stone-300 px-2 py-2 text-sm" /></label><label className="flex flex-col gap-1 font-sans text-xs text-ink-700">End Date<DatePicker value={endDate} disabled={datesLocked} onChange={(event) => setEndDate(event.target.value)} className="rounded-lg border-2 border-stone-300 px-2 py-2 text-sm" /></label></div>
     </section>
 
     <section className="mt-4 rounded-lg border-2 border-stone-300 p-4">

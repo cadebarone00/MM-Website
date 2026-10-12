@@ -1,5 +1,9 @@
 // components/portal/admin/CoursesFormatPanel.tsx
 "use client";
+
+import { DatePicker } from "@/components/platform/DatePicker";
+
+import { TimePicker } from "@/components/platform/TimePicker";
 import { availableTeeSets } from "@/lib/live/teeSets";
 
 import { SessionDestinations, type DestinationContext } from "./SessionDestinations";
@@ -71,7 +75,7 @@ export function CoursesFormatPanel({
 
   async function updateSession(session: number, patch: { date?: string; courseId?: string; format?: MatchFormat; courseSetup?: { teeSetId: string; holeTeeSetIds: Record<string, string> }; matchTeeTimes?: (string | null)[] }) {
     setError(null);
-    // An empty string from a cleared <input type="date"> means "no date
+    // An empty string from a cleared <DatePicker> means "no date
     // set" — normalize it to null so it matches how a blank date is
     // represented elsewhere in LiveSessionState, instead of sending "" to a
     // Postgres `date` column (which would 500).
@@ -271,8 +275,7 @@ export function CoursesFormatPanel({
 
             <p className="mt-2 text-xs text-ink-500">{session.courseLocked ? "Locked: chosen details are published. Blank fields stay pending. Unlock to edit." : "Draft: lock whenever you are ready, even with blank fields."}</p>
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <input
-                type="date"
+              <DatePicker
                 value={session.date ?? ""}
                 disabled={session.courseLocked}
                 onChange={(e) => updateSession(session.session, { date: e.target.value })}
@@ -315,11 +318,11 @@ export function CoursesFormatPanel({
                 {matchTeeTimeLabels(session.format).map((label, slot) => (
                   <label key={slot} className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">
                     {label}
-                    <input
-                      type="time"
+                    <TimePicker
+                      label={label}
                       value={session.matchTeeTimes[slot] ?? ""}
                       disabled={session.courseLocked}
-                      onChange={(e) => updateTeeTimeSlot(session, slot, e.target.value)}
+                      onChange={time => updateTeeTimeSlot(session, slot, time)}
                       className={`mt-1 block w-full font-sans normal-case ${fieldClass(session.courseLocked && Boolean(session.matchTeeTimes[slot]))}`}
                     />
                   </label>

@@ -646,10 +646,10 @@ function CorrectionNotes({ open, awaiting, attesteeName }: { open?: { own: numbe
 }
 
 type Direction = ShotResult;
-const DIRECTION_MARK: Record<Direction, string> = { up: "↑", left: "←", center: "✓", right: "→", down: "↓" };
+export const DIRECTION_MARK: Record<Direction, string> = { up: "↑", left: "←", center: "✓", right: "→", down: "↓" };
 
 /** A score total, or "—" until any hole has a number. */
-function sumOf(values: (number | null | undefined)[]): number | "—" {
+export function sumOf(values: (number | null | undefined)[]): number | "—" {
   return values.some((v) => v != null) ? values.reduce<number>((total, v) => total + (v ?? 0), 0) : "—";
 }
 
@@ -676,7 +676,7 @@ function GpsSection({ hole, holePar }: { hole: number; holePar: number | undefin
  */
 /** Scorecard shapes, as on the leaderboard card: birdie circle, eagle-or-better double circle, bogey box,
  *  double-bogey-or-worse double box; par has none. */
-function scoreShape(toPar: number): string {
+export function scoreShape(toPar: number): string {
   const shape = toPar <= -2 ? `${styles.shapeCircle} ${styles.shapeDouble}` : toPar === -1 ? styles.shapeCircle
     : toPar === 1 ? styles.shapeBox : toPar >= 2 ? `${styles.shapeBox} ${styles.shapeDouble}` : "";
   return `${styles.shape} ${shape}`;

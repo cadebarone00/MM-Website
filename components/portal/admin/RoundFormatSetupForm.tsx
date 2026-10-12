@@ -1,5 +1,8 @@
 "use client";
 
+import { DatePicker } from "@/components/platform/DatePicker";
+
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { HandicapCourseOption } from "@/lib/handicap/types";
@@ -63,7 +66,7 @@ export function RoundFormatSetupForm({ seasonYear, round, courses }: { seasonYea
         <option value="">Choose tees played</option>
         {selectedCourse?.teeSets.map((tee) => <option key={tee.id} value={tee.id}>{tee.name} · Rating {tee.rating} · Slope {tee.slope}</option>)}
       </select>
-      <input required type="date" disabled={busy} value={datePlayed} onChange={(event) => setDatePlayed(event.target.value)} className="rounded border border-stone-300 bg-white px-2 py-1.5 text-sm" />
+      <DatePicker required disabled={busy} value={datePlayed} onChange={(event) => setDatePlayed(event.target.value)} className="rounded border border-stone-300 bg-white px-2 py-1.5 text-sm" />
       <div className="flex gap-3">
         <button type="submit" disabled={busy} className="rounded bg-maroon-700 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-40">{busy ? "Saving…" : "Save"}</button>
         <button type="button" disabled={busy} onClick={() => setEditing(false)} className="text-xs underline">Cancel</button>

@@ -1,5 +1,8 @@
 "use client";
 
+import { DatePicker } from "@/components/platform/DatePicker";
+
+
 import { useState } from "react";
 import base from "@/components/tournament-draft/TournamentDraftWorkspace.module.css";
 import styles from "../TournamentDashboard.module.css";
@@ -24,8 +27,8 @@ export function BasicsEditor({ setup, saving, onSave, onCancel }: EditorProps) {
       <Field label="Destination"><input value={form.destination} onChange={set("destination")} placeholder="e.g. Horseshoe Bay, TX" maxLength={120} /></Field>
       <Field label="Description"><textarea className={styles.textarea} value={form.description} onChange={set("description")} maxLength={2000} /></Field>
       <div className={base.columns}>
-        <Field label="Start date"><input type="date" value={form.startDate} onChange={set("startDate")} /></Field>
-        <Field label="End date"><input type="date" value={form.endDate} min={form.startDate} onChange={set("endDate")} /></Field>
+        <Field label="Start date"><DatePicker value={form.startDate} onChange={set("startDate")} /></Field>
+        <Field label="End date"><DatePicker value={form.endDate} min={form.startDate} onChange={set("endDate")} /></Field>
       </div>
       <div className={base.columns}>
         <Field label="Timezone"><input list="dashboard-timezones" value={form.timezone} onChange={set("timezone")} /><datalist id="dashboard-timezones">{ZONES.map((zone) => <option key={zone} value={zone} />)}</datalist></Field>

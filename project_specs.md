@@ -2082,6 +2082,28 @@ Replaces the photo drop-down panel from earlier the same day. Modeled on the own
 
 **Done means (per step):** the flow works end to end in the dev preview as the organizer and as at least two mock players; logic has unit tests (join rules, seats, opt-out incl. tee-time lock, itinerary order, notifications); TypeScript, lint and tests pass; checked at phone width in the /dev simulator.
 
+### Round: Golf Trip — Add sheet buttons + Save & Invite (owner request 2026-10-12, approved + built 2026-10-12 — dev preview, uncommitted)
+
+**What it does / who uses it.** Trip members adding their own flight / ride / lodging / other plans can invite other trip members to it. Invited members see it on their itinerary and choose Decline or Accept, the same way rounds use Sit out / Play.
+
+**Add / edit sheet (stays a pop-up sheet, same fields — used by Itinerary → Add and My Info → My travel):**
+- Top row: **X** (top right) closes the sheet without saving. When adding, a **<** sits left of the title ("< Add flight") and goes back to the "Add to my travel" choices. When editing, there is no < (only X).
+- Bottom buttons: **Save** (left, where Cancel was) saves it for me only. **Save & Invite** (right, where Save was) saves it, then opens **Invite people**.
+- **Invite people:** the trip's other members (avatar + name) with checkboxes → **Send invites**. Skipping (X) still keeps the saved item, just with no invites. People already invited / going show as checked and can't be unticked here.
+- Edit has the same two buttons, so I can invite more people later.
+
+**Invited member's itinerary:**
+- The item shows with an **"Invited by <name>"** label and **Decline** (red) / **Accept** (green) side by side in the box's top row, like Sit out / Play.
+- **Accept** → normal itinerary item (shows "Going").
+- **Decline** → stays on the itinerary, shrunk to its top row (like a sat-out round), and they can still tap Accept later. Decline asks "Decline this?" first.
+- If the creator deletes the item, it disappears for everyone.
+
+**Data (dev only, page memory, no database — same as the rest of trip travel).** Uses the existing `TravelParticipant` statuses: invites = `invited`, Accept = `going`, Decline = `declined`. New plain functions in `lib/platform/tripTravel.ts` with unit tests: `inviteToItem(travel, itemId, memberIds)`, `respondToInvite(travel, itemId, "accept" | "decline")`. `itineraryFor` also returns my `invited` and `declined` items, marked so the box can show the buttons. Only the creator can invite; you can't invite yourself or someone already on it.
+
+**Not in this round:** bell notifications for invites, inviting from organizer items or tee times, a database / real trips, uninviting.
+
+**Done means:** in the dev simulator, add a flight → Save & Invite → pick two mock players → view as one of them → item shows Invited with Decline / Accept → Decline shrinks it, Accept restores it; < goes back to the choices, X closes; Save alone invites no one; unit tests for invite / respond / itinerary pass; TypeScript, lint and tests pass; checked at phone width.
+
 ### Round: Golf course architecture cleanup — OpenGolf API as the one source of course data (spec 2026-10-06, awaiting approval)
 
 **What it does / who uses it.** No new screens. Players and organizers using Explore → Courses, Trip Schedule, Competition, Itinerary and GPS get course info from one place (the OpenGolf API), and a round remembers *which* course by the API's id instead of a typed name.

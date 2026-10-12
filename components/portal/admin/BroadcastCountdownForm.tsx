@@ -1,7 +1,11 @@
 "use client";
 
+import { DatePicker } from "@/components/platform/DatePicker";
+
+
 import { useEffect, useState, type FormEvent } from "react";
 import { TIMEZONES } from "@/lib/data/timezones";
+import { TimePicker } from "@/components/platform/TimePicker";
 import type { WatchCountdownSettings } from "@/lib/countdown";
 
 export function BroadcastCountdownForm() {
@@ -46,8 +50,8 @@ export function BroadcastCountdownForm() {
     <form onSubmit={save} className="mt-3">
       <fieldset disabled={loading || busy} className="grid gap-3 sm:grid-cols-2 disabled:opacity-50">
         <label className="text-xs text-ink-700 sm:col-span-2">Event name<input required maxLength={120} value={draft.title} onChange={(e) => { setDraft({ ...draft, title: e.target.value }); setSaved(false); }} className={inputClass} placeholder="Maroon Tournament On The Range" /></label>
-        <label className="text-xs text-ink-700">Date<input required type="date" value={draft.date} onChange={(e) => { setDraft({ ...draft, date: e.target.value }); setSaved(false); }} className={inputClass} /></label>
-        <label className="text-xs text-ink-700">Time<input required type="time" value={draft.time} onChange={(e) => { setDraft({ ...draft, time: e.target.value }); setSaved(false); }} className={inputClass} /></label>
+        <label className="text-xs text-ink-700">Date<DatePicker required value={draft.date} onChange={(e) => { setDraft({ ...draft, date: e.target.value }); setSaved(false); }} className={inputClass} /></label>
+        <label className="text-xs text-ink-700">Time<TimePicker required value={draft.time} onChange={time => { setDraft({ ...draft, time }); setSaved(false); }} className={inputClass} /></label>
         <label className="text-xs text-ink-700">Time zone<select value={draft.timezone} onChange={(e) => { setDraft({ ...draft, timezone: e.target.value }); setSaved(false); }} className={inputClass}>{TIMEZONES.map((zone) => <option key={zone.id} value={zone.id}>{zone.label}</option>)}</select></label>
         <div className="flex items-end"><button type="submit" className="rounded-lg bg-maroon-700 px-4 py-2 text-sm font-semibold text-white">{busy ? "Saving..." : "Save countdown"}</button></div>
       </fieldset>

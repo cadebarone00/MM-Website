@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { TimePicker } from "./TimePicker";
 import { LoaderCircle, Search } from "lucide-react";
 import { GolfTripActionSheet } from "./GolfTripActionSheet";
 import gameStyles from "./GolfTripGames.module.css";
@@ -175,7 +176,7 @@ function CourseSettings({ course, initial, onBack, onSave }: {
       </div>}
     </div>
     <label className={gameStyles.sheetSetting}><span>Tee time</span>
-      <input type="time" className={styles.timeInput} value={teeTime} onChange={(event) => setTeeTime(event.target.value)} />
+      <TimePicker label="Tee time" className={styles.timeInput} value={teeTime} onChange={setTeeTime} />
     </label>
     <div className={gameStyles.sheetSetting}><span>Handicap</span><div className={gameStyles.sheetChoices}>
       {[false, true].map((value) => <button type="button" key={String(value)} aria-pressed={handicap === value} onClick={() => setHandicap(value)}>{value ? "On" : "Off"}</button>)}

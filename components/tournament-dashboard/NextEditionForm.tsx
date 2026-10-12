@@ -1,5 +1,8 @@
 "use client";
 
+import { DatePicker } from "@/components/platform/DatePicker";
+
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import base from "@/components/tournament-draft/TournamentDraftWorkspace.module.css";
@@ -50,8 +53,8 @@ export function NextEditionForm({ draft, apiBase }: { draft: NextEditionDraft; a
     <div className={base.fields}>
       <div className={`${styles.row} ${styles.row3}`}>
         <Field label="Year"><input type="number" min={2000} max={2200} value={year} onChange={(event) => setYear(event.target.value)} required /></Field>
-        <Field label="Start date (optional)"><input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></Field>
-        <Field label="End date (optional)"><input type="date" value={endDate} min={startDate || undefined} onChange={(event) => setEndDate(event.target.value)} /></Field>
+        <Field label="Start date (optional)"><DatePicker value={startDate} onChange={(event) => setStartDate(event.target.value)} /></Field>
+        <Field label="End date (optional)"><DatePicker value={endDate} min={startDate || undefined} onChange={(event) => setEndDate(event.target.value)} /></Field>
       </div>
       {taken && <p className={base.callout}>This tournament already has {year}. Pick another year.</p>}
       <p className={base.muted}>Starting from {draft.fromYear}: its settings and round formats carry over; courses, dates, teams&apos; players, captains and handicaps don&apos;t.</p>

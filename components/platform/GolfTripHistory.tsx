@@ -1,5 +1,8 @@
 "use client";
 
+import { DatePicker } from "@/components/platform/DatePicker";
+
+
 import { useState } from "react";
 import { Calendar, ChevronLeft, MapPin, Plus, Trash2, Trophy } from "lucide-react";
 import {
@@ -123,9 +126,9 @@ function AddPastTrip({ tripPlayers, onCancel, onSave }: {
     <h2 className={tripStyles.eventsHeading}>Add past trip</h2>
     <label className={styles.field}>Trip name<input className={styles.input} value={name} maxLength={100} placeholder="e.g. Desert Classic" onChange={(event) => setName(event.target.value)} /></label>
     <div className={styles.dateFields}>
-      <label className={styles.field}>Arrival<input type="date" className={styles.input} value={arrival} max={today}
+      <label className={styles.field}>Arrival<DatePicker className={styles.input} value={arrival} max={today}
         onChange={(event) => { setArrival(event.target.value); if (!departure || departure < event.target.value) setDeparture(event.target.value); }} /></label>
-      <label className={styles.field}>Departure<input type="date" className={styles.input} value={departure} min={arrival || undefined} onChange={(event) => setDeparture(event.target.value)} /></label>
+      <label className={styles.field}>Departure<DatePicker className={styles.input} value={departure} min={arrival || undefined} onChange={(event) => setDeparture(event.target.value)} /></label>
     </div>
     <label className={styles.field}>Where<input className={styles.input} value={place} maxLength={100} placeholder="City, state" onChange={(event) => setPlace(event.target.value)} /></label>
     {tripPlayers.length > 0 && <div className={styles.field}>Players
@@ -260,7 +263,7 @@ function PastRoundScores({ trip, roundId, onChange, onBack }: { trip: PastTrip; 
       <p className={tripStyles.eventMeta}>{[round.course.place, round.course.par !== null ? `Par ${round.course.par}` : null].filter(Boolean).join(" · ") || "Course details not set"}</p>
     </div>
     <label className={styles.field}>Date played
-      <input type="date" className={styles.input} value={round.date ?? ""} min={trip.arrival} max={trip.departure}
+      <DatePicker className={styles.input} value={round.date ?? ""} min={trip.arrival} max={trip.departure}
         onChange={(event) => onChange({ ...trip, rounds: trip.rounds.map((item) => item.id === round.id ? { ...item, date: event.target.value || null } : item) })} />
     </label>
     <section aria-label="Scores">

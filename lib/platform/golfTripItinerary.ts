@@ -20,6 +20,8 @@ export interface ItineraryItem {
   round?: number;
   /** No tee time yet: the time only places it in the day (morning / afternoon) and shows as "Tee time TBD". */
   timeTbd?: boolean;
+  /** Another member's booking I was invited to: who invited me, and my answer so far (invited = not answered yet). */
+  invite?: { itemId: string; from: string; status: "invited" | "going" | "declined" };
 }
 
 export const ITINERARY_KIND_LABEL: Record<ItineraryKind, string> = {

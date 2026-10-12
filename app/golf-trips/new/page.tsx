@@ -1,3 +1,4 @@
+import { DatePicker } from "@/components/platform/DatePicker";
 import type { Metadata } from "next";
 import { SetupSheet } from "@/components/platform/SetupSheet";
 import { SetupStepForm } from "@/components/platform/SetupStepForm";
@@ -20,11 +21,11 @@ export default function NewGolfTripPage() {
         <div className={styles.fieldRow}>
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Start Date</span>
-            <input className={styles.input} type="date" name="startDate" required />
+            <DatePicker className={styles.input} name="startDate" required />
           </label>
           <label className={styles.field}>
             <span className={styles.fieldLabel}>End Date</span>
-            <input className={styles.input} type="date" name="endDate" required />
+            <DatePicker className={styles.input} name="endDate" required />
           </label>
         </div>
         <PlayerCountSlider />

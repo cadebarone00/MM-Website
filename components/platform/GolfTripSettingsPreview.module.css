@@ -28,7 +28,7 @@
 .competitionPage{background:var(--color-maroon-900,#240001)}.competitionPage .sectionBack{color:#dcc495}.competitionPage .heading h1{font-family:var(--font-spectral),Georgia,serif !important}.competitionPage .heading p{color:#dcc495}.competitionPage .tab{color:#dcc495}
 
 
-.competitionHeader{display:grid;grid-template-columns:36px minmax(0,1fr) 48px;align-items:center;gap:8px;margin-bottom:32px}.competitionHeader h1{margin:0;text-align:center;font:700 clamp(20px,5vw,30px)/1.2 var(--font-spectral),Georgia,serif !important}.competitionHeader .close{padding:0;border:0;background:transparent;cursor:pointer}.save{padding:0;min-height:44px;border:0;background:transparent;color:#dcc495;font:750 15px/1 var(--font-barlow),sans-serif;cursor:pointer}.save:focus-visible{outline:2px solid #dcc495;outline-offset:4px}.previewNote{margin:0;color:#dcc495;font-size:12px}.competitionPage .competition>section>h2{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.competitionHeader{display:grid;grid-template-columns:36px minmax(0,1fr) 48px;align-items:center;gap:8px;margin-bottom:32px}.competitionHeader h1{margin:0;text-align:center;font:700 clamp(20px,5vw,30px)/1.2 var(--font-spectral),Georgia,serif !important}.competitionHeader .close{padding:0;border:0;background:transparent;cursor:pointer}.save{padding:0;min-height:44px;border:0;background:transparent;color:#dcc495;font:750 15px/1 var(--font-barlow),sans-serif;cursor:pointer}.save:focus-visible{outline:2px solid #dcc495;outline-offset:4px}.save:disabled{color:rgba(251,248,241,.32);cursor:default}.previewNote{margin:0;color:#dcc495;font-size:12px}.competitionPage .competition>section>h2{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 
 
 .cardSummary{display:flex;flex-direction:column;gap:10px;margin-top:12px;color:var(--color-maroon-900,#240001);font-size:13px;line-height:1.4}.cardSummary span{display:block}.cardSummary strong{display:block;font-weight:700}
@@ -69,7 +69,7 @@ span.typeChoice{cursor:default}
 .roundSlot+.roundSlot{border-top:1px solid rgba(255,255,255,.12)}
 .arrivalDeparture .typeChoice{width:128px}
 .playerListRow span[class*="columnPlayer"]{grid-column:2}
-.allowedEntry{cursor:default}.allowedEntry:hover{background:transparent}
+
 .alwaysOn{color:rgba(255,255,255,.6);font-size:12px;font-weight:600}
 .scorecardViewNote{margin:4px 0 0;max-width:320px;color:rgba(247,240,223,.75);font-size:14px;line-height:1.4}
 
@@ -278,7 +278,10 @@ span.typeChoice{cursor:default}
 .roundCourseLine h2[data-length=long]{font-size:18px}
 .roundCourseLine h2[data-length=longer]{font-size:16px}
 .roundDayHeader:has(.editCourse){position:relative}
-.editCourse{position:absolute;right:0;bottom:8px;padding:5px 12px;border:1.5px solid #dcc495;border-radius:999px;background:transparent;color:#dcc495;font:700 13px/1 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.roundCourseActions{display:flex;justify-content:center;gap:12px;margin-bottom:12px}
+.editCourse{padding:5px 12px;border:1.5px solid #dcc495;border-radius:999px;background:transparent;color:#dcc495;font:700 13px/1 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.deleteRound{color:#ff7373;border-color:#ff7373}
+.editCourse:disabled{opacity:.45;cursor:default}
 .editCourse:focus-visible{outline:2px solid #fbf8f1;outline-offset:2px}
 /* Match Selection → a round: the match selector under the course / date line. */
 .matchSelector{display:grid;gap:12px;margin-top:16px}
@@ -323,3 +326,6 @@ fieldset.matchSelector{border:0;padding:0;min-width:0}
 .teamSize > .totalPlayers:last-child{margin-bottom:2px}
 /* Individual: Stroke Play · Points Based · None as three even pills across the screen. */
 .typeChoicesRow.typeChoicesRow.typeChoicesThree{grid-template-columns:repeat(3,minmax(0,1fr))}
+.scorecardPlayerButton{padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+/* Settings switches: On / Off sits left of the switch, so the switches line up evenly down the page. */
+.page [role=switch]>[data-on]{order:1}

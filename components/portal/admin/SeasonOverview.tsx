@@ -1,5 +1,8 @@
 "use client";
 
+import { DatePicker } from "@/components/platform/DatePicker";
+
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getPlayerDisplayName } from "@/lib/data/players";
@@ -56,8 +59,8 @@ function YearOverview({ row, activeYear, upcomingYear, available, refresh, now }
     <div className="flex flex-wrap items-center justify-between gap-2 p-4"><span className="font-serif text-xl font-bold">{row.year}</span><span className={"rounded border px-2 py-1 text-xs font-semibold " + (status === "Active" || status === "Upcoming" ? green : neutral)}>{status}</span><span className="text-xs text-ink-500">{row.count ?? "No"} sessions{row.countLocked ? " - count locked" : ""} - {row.locked ? "Dates locked" : "Dates not armed"}</span></div>
     <div className="border-t border-gold-200 p-4">
       <div className="grid items-end gap-3 sm:grid-cols-[1fr_1fr_auto]">
-        <label className="text-xs font-semibold">Active<input type="date" aria-label={row.year + " Active date"} value={activeOn} onChange={event => setActiveOn(event.target.value)} disabled={activeLocked || busy || row.test || !available} className={"mt-1 block w-full rounded-md border-2 p-2 text-sm disabled:opacity-100 " + (activeLocked && activeOn ? green : neutral)} /></label>
-        <label className="text-xs font-semibold">Pass on<input type="date" aria-label={row.year + " Pass on date"} value={passOn} onChange={event => setPassOn(event.target.value)} disabled={passLocked || busy || row.test || !available} className={"mt-1 block w-full rounded-md border-2 p-2 text-sm disabled:opacity-100 " + (passLocked && passOn ? green : neutral)} /></label>
+        <label className="text-xs font-semibold">Active<DatePicker aria-label={row.year + " Active date"} value={activeOn} onChange={event => setActiveOn(event.target.value)} disabled={activeLocked || busy || row.test || !available} className={"mt-1 block w-full rounded-md border-2 p-2 text-sm disabled:opacity-100 " + (activeLocked && activeOn ? green : neutral)} /></label>
+        <label className="text-xs font-semibold">Pass on<DatePicker aria-label={row.year + " Pass on date"} value={passOn} onChange={event => setPassOn(event.target.value)} disabled={passLocked || busy || row.test || !available} className={"mt-1 block w-full rounded-md border-2 p-2 text-sm disabled:opacity-100 " + (passLocked && passOn ? green : neutral)} /></label>
         <div className="flex gap-3 py-2"><button type="button" onClick={() => save(!row.locked)} disabled={busy || row.test || !available} className="text-sm font-semibold text-maroon-700 underline disabled:opacity-50">{busy ? "Saving..." : row.locked ? "Unlock dates" : "Lock dates"}</button>{!row.locked && <button type="button" onClick={() => save(false)} disabled={busy || row.test || !available} className="text-sm text-ink-600 underline disabled:opacity-50">Save draft</button>}</div>
       </div>
       <p className="mt-2 text-xs leading-relaxed text-ink-500">{row.test ? "2034 is reserved for disposable rehearsal and cannot take over the public website automatically." : "Locked dates take effect at midnight Central Time. Pass on is the next year's Active date. Scores are preserved as recorded; handoff does not finish matches."}</p>

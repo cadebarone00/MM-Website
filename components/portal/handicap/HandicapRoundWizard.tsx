@@ -1,7 +1,11 @@
 "use client";
 
+import { DatePicker } from "@/components/platform/DatePicker";
+
+
 import { usePersistentState } from "@/lib/usePersistentState";
 import { useState } from "react";
+import { TimePicker } from "@/components/platform/TimePicker";
 import { useRouter } from "next/navigation";
 import type { HandicapCourseOption, HandicapCourseTeeSet, HandicapHoleInput } from "@/lib/handicap/types";
 import { formatCourseLocation } from "@/lib/data/courseLocation";
@@ -127,12 +131,12 @@ export function HandicapRoundWizard({ courses, recentCourseIds, playerName, play
 
         <label className="flex flex-col gap-1">
           <span className="font-condensed text-xs font-semibold uppercase tracking-wide text-ink-500">Date played</span>
-          <input type="date" value={datePlayed} onChange={(e) => setDatePlayed(e.target.value)} className="rounded-sm border border-ink-200 px-3 py-2 font-sans text-sm" />
+          <DatePicker value={datePlayed} onChange={(e) => setDatePlayed(e.target.value)} className="rounded-sm border border-ink-200 px-3 py-2 font-sans text-sm" />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="font-condensed text-xs font-semibold uppercase tracking-wide text-ink-500">Tee time (optional)</span>
-          <input type="time" value={teeTime} onChange={(e) => setTeeTime(e.target.value)} className="rounded-sm border border-ink-200 px-3 py-2 font-sans text-sm" />
+          <TimePicker label="Tee time" value={teeTime} onChange={setTeeTime} className="rounded-sm border border-ink-200 px-3 py-2 font-sans text-sm" />
         </label>
 
         <button

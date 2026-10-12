@@ -51,11 +51,12 @@ function Wheel({ label, values, index, onIndex }: { label: string; values: strin
  * the top (Group 1, 2, ...) with an Add Group box at the end. The wheels pick a time; Set gives it to the selected group and stays
  * open; SAVE (top right) saves every group's time and closes. Times are "HH:MM" (24-hour); a new group has none until set.
  */
-export function TeeTimePicker({ course, date, round, value, onSave, onClose, fixedGroups, startGroup = 0 }: {
+export function TeeTimePicker({ course, date, round, value, onSave, onClose, fixedGroups, startGroup = 0, singleTime = false }: {
   course: string; date: string; round: number; value?: string[]; onSave: (times: string[]) => void; onClose: () => void;
   /** Matches rounds: exactly this many groups (one per set of matches), no Add Group; SAVE keeps unset ones as "" so each
    *  group stays in its place. `startGroup` opens on that group. */
   fixedGroups?: number; startGroup?: number;
+  singleTime?: boolean;
 }) {
   const [groups, setGroups] = useState<(string | null)[]>(() => fixedGroups
     ? Array.from({ length: fixedGroups }, (_, index) => value?.[index] || null)
@@ -76,16 +77,16 @@ export function TeeTimePicker({ course, date, round, value, onSave, onClose, fix
   const setTime = () => setGroups(current => current.map((time, index) => index === selected ? toTime(parts) : time));
   const addGroup = () => { const next = [...groups, null]; setGroups(next); choose(next.length - 1, next); };
   // SAVE keeps every group that has a set time (fixed groups keep their places, unset ones as "").
-  const save = () => onSave(fixedGroups ? groups.map(time => time ?? "") : groups.filter((time): time is string => !!time));
-  return <div className={styles.overlay} onClick={onClose}>
-    <div className={`${styles.sheet} ${leaving ? styles.leaving : ""}`} role="dialog" aria-modal="true" aria-label="Tee time" onClick={event => event.stopPropagation()}
+  const save = () => onSave(singleTime ? [toTime(parts)] : fixedGroups ? groups.map(time => time ?? "") : groups.filter((time): time is string => !!time));
+  return <div className={styles.overlay} style={singleTime ? { zIndex: 1000 } : undefined} onClick={onClose}>
+    <div className={`${styles.sheet} ${leaving ? styles.leaving : ""}`} role="dialog" aria-modal="true" aria-label={singleTime ? course : "Tee time"} onClick={event => event.stopPropagation()}
       onAnimationEnd={() => { if (leaving) onClose(); }}>
-      <button type="button" className={styles.closeX} aria-label="Close tee time" onClick={() => setLeaving(true)}><X size={20} strokeWidth={2.25} aria-hidden /></button>
+      <button type="button" className={styles.closeX} aria-label={singleTime ? `Close ${course}` : "Close tee time"} onClick={() => setLeaving(true)}><X size={20} strokeWidth={2.25} aria-hidden /></button>
       <button type="button" className={styles.saveAll} onClick={save}>SAVE</button>
       <h2 className={styles.title}>{course}</h2>
-      <p className={styles.detail}>{date}</p>
-      <p className={styles.detail}>Round {round}</p>
-      <div className={styles.groups} role="group" aria-label="Groups">
+      {!singleTime && <><p className={styles.detail}>{date}</p>
+      <p className={styles.detail}>Round {round}</p></>}
+      {!singleTime && <div className={styles.groups} role="group" aria-label="Groups">
         {groups.map((time, index) => <div key={index} className={styles.groupSlot}>
           <span className={styles.groupLabel}>Group {index + 1}</span>
           <button type="button" className={styles.groupBox} aria-pressed={index === selected} aria-label={`Group ${index + 1}: ${time ? timeLabel(time) : "no time set"}`} onClick={() => choose(index)}>
@@ -96,7 +97,7 @@ export function TeeTimePicker({ course, date, round, value, onSave, onClose, fix
           <span className={styles.groupLabel}>Add Group</span>
           <button type="button" className={`${styles.groupBox} ${styles.addGroup}`} aria-label="Add group" onClick={addGroup}><Plus size={18} strokeWidth={2.5} aria-hidden /></button>
         </div>}
-      </div>
+      </div>}
       <div className={styles.wheels}>
         <span className={styles.band} aria-hidden />
         {/* Keyed by group so the wheels jump to the chosen group's time. */}
@@ -104,7 +105,7 @@ export function TeeTimePicker({ course, date, round, value, onSave, onClose, fix
         <Wheel key={`m-${selected}`} label="Minute" values={MINUTES} index={parts.minute} onIndex={next => change("minute", next)} />
         <Wheel key={`p-${selected}`} label="AM or PM" values={PERIODS} index={parts.period} onIndex={next => change("period", next)} />
       </div>
-      <button type="button" className={styles.save} onClick={setTime}>Set</button>
+      <button type="button" className={styles.save} onClick={singleTime ? save : setTime}>Set</button>
     </div>
   </div>;
 }

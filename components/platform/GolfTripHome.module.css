@@ -303,6 +303,7 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 .itineraryBox[data-rsvp=out] .itineraryBoxTop.itineraryBoxTop{padding-bottom:0;margin-bottom:0;border-bottom:0}
 /* Play / Sit out and "Playing" in the box's own font (Spectral, like the tee time and course); locked once tee times start. */
 .rsvpPlay.rsvpPlay,.rsvpSit.rsvpSit{font:700 13px/1 var(--font-spectral),Georgia,serif}
+.itineraryInvitedBy{color:#8a6b3a;font:600 12px/1.3 var(--font-barlow),sans-serif;letter-spacing:.04em}
 .itineraryPlaying.itineraryPlaying{font:700 13px/1 var(--font-spectral),Georgia,serif;letter-spacing:.04em;text-transform:none}
 .rsvpPlay:disabled,.rsvpSit:disabled{opacity:.5;cursor:default}
 /* Golf sections (Leaderboard / Games / Stats…): equal gaps between the words, not equal boxes. */

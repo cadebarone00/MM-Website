@@ -1,4 +1,5 @@
 "use client";
+import { DateTimePicker } from "./DateTimePicker";
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
@@ -155,7 +156,7 @@ function Field({ label, name, type = "text", defaultValue, placeholder, maxLengt
   { label: string; name: string; type?: string; defaultValue?: string; placeholder?: string; maxLength?: number; caps?: boolean; required?: boolean }) {
   return <label className={fields.field}>
     <span className={fields.fieldLabel}>{label}</span>
-    <input className={fields.input} type={type} name={name} defaultValue={defaultValue} placeholder={placeholder} maxLength={maxLength}
-      required={required} autoComplete="off" autoCapitalize={caps ? "characters" : undefined} />
+    {type === "datetime-local" ? <DateTimePicker label={label} className={fields.input} name={name} defaultValue={defaultValue} required={required} /> : <input className={fields.input} type={type} name={name} defaultValue={defaultValue} placeholder={placeholder} maxLength={maxLength}
+      required={required} autoComplete="off" autoCapitalize={caps ? "characters" : undefined} />}
   </label>;
 }

@@ -1,4 +1,7 @@
 "use client";
+
+import { DatePicker } from "@/components/platform/DatePicker";
+
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
@@ -234,7 +237,7 @@ function SetupStep({ picked, onBack, onStart }: { picked: CourseResult; onBack: 
         <label className={styles.toggle}><span>Keep stats<small>Your putts, fairways and greens</small></span><input type="checkbox" role="switch" checked={stats} onChange={(event) => setStats(event.target.checked)} /></label>
         <label className={`${styles.toggle} ${teamFormat ? styles.toggleOff : ""}`}><span>Count toward my handicap<small>{handicapNote}</small></span>
           <input type="checkbox" role="switch" checked={countForHandicap && !teamFormat} disabled={teamFormat} onChange={(event) => setCount(event.target.checked)} /></label>
-        <label className={styles.field}><span>Date played</span><input type="date" value={datePlayed} max={today()} onChange={(event) => setDate(event.target.value || today())} /></label>
+        <label className={styles.field}><span>Date played</span><DatePicker value={datePlayed} max={today()} onChange={(event) => setDate(event.target.value || today())} /></label>
         {startError && <p className={styles.error} role="alert">{startError}</p>}
         <button type="submit" className={styles.primary} disabled={!fits || starting}>{starting ? "Starting…" : players.length ? "Start & send invites" : "Start round"} <ArrowRight size={16} aria-hidden="true" /></button>
       </form>}

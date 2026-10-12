@@ -1,6 +1,9 @@
 // components/portal/admin/ArchiveTeeAssigner.tsx
 "use client";
 
+import { DatePicker } from "@/components/platform/DatePicker";
+
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { HandicapCourseOption } from "@/lib/handicap/types";
@@ -90,7 +93,7 @@ export function ArchiveTeeAssigner({ tournamentSlug, rounds, courses }: { tourna
 
         <label className="flex flex-col gap-1">
           <span className="font-condensed text-2xs font-bold uppercase tracking-wide text-ink-500">Date played</span>
-          <input type="date" value={datePlayed} onChange={(e) => setDatePlayed(e.target.value)} className="rounded-lg border-2 border-stone-300 px-2 py-2 font-sans text-sm" />
+          <DatePicker value={datePlayed} onChange={(e) => setDatePlayed(e.target.value)} className="rounded-lg border-2 border-stone-300 px-2 py-2 font-sans text-sm" />
         </label>
 
         <label className="flex flex-col gap-1">

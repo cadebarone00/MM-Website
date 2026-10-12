@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { GOLF_TRIP_MOCK_TRAVEL } from "./golfTripPreviewFixture";
-import { addMyItem, checkTravelInput, cleanDetails, itineraryFor, myItems, removeMyItem, travelTitle, updateMyItem, type TripTravel } from "./tripTravel";
+import { addMyItem, checkTravelInput, cleanDetails, goingOnly, inviteToItem, itineraryFor, myItems, removeMyItem, respondToInvite, travelTitle, updateMyItem, type TripTravel } from "./tripTravel";
 
 const empty: TripTravel = { meId: "me", members: [{ id: "me", name: "Me", role: "player" }, { id: "you", name: "You", role: "player" }], items: [], participants: [] };
 
@@ -52,4 +52,34 @@ test("form checks: flight codes, times in order, required names, seats", () => {
   assert.equal(checkTravelInput("ride", { rideType: "driving", from: "" }, "2027-04-22T11:00").from, "Where are you driving from?");
   assert.deepEqual(cleanDetails("flight", { airline: " American ", flightNumber: "aa 1234", from: "rdu", to: "phx" }), { airline: "American", flightNumber: "AA1234", from: "RDU", to: "PHX" });
   assert.equal(travelTitle({ ...GOLF_TRIP_MOCK_TRAVEL.items.find((i) => i.id === "tr-chen-drive")! }), "Driving from Tucson");
+});
+
+test("Save & Invite: invited members see it marked as an invite; only my own bookings, never me or people already on it", () => {
+  const three: TripTravel = { ...empty, members: [...empty.members, { id: "them", name: "Them", role: "player" }] };
+  const mine = addMyItem(three, { id: "h", kind: "lodging", details: { name: "Villas" }, startsAt: "2027-04-22T15:00", endsAt: "2027-04-25T10:00", joinPolicy: "none" });
+  const invited = inviteToItem(mine, "h", ["you", "me", "you", "nobody"]);
+  assert.deepEqual(invited.participants.filter((p) => p.itemId === "h").map((p) => `${p.memberId}:${p.status}`), ["me:going", "you:invited"]);
+  assert.equal(inviteToItem(invited, "h", ["you"]), invited, "already invited → no change");
+  assert.deepEqual(itineraryFor(invited, "you").map((e) => [e.id, e.invite]), [
+    ["h:in", { itemId: "h", from: "Me", status: "invited" }], ["h:out", { itemId: "h", from: "Me", status: "invited" }]]);
+  assert.equal(itineraryFor(invited)[0].invite, undefined, "my own booking isn't an invite to me");
+  assert.deepEqual(itineraryFor(invited, "them"), [], "not invited → not on their itinerary");
+  assert.equal(inviteToItem(GOLF_TRIP_MOCK_TRAVEL, "tr-dinner-1", ["member-jordan"]), GOLF_TRIP_MOCK_TRAVEL, "organizer items can't be invited to");
+  assert.equal(inviteToItem(GOLF_TRIP_MOCK_TRAVEL, "tr-parker-flight", ["member-riley"]), GOLF_TRIP_MOCK_TRAVEL, "someone else's booking can't be invited to");
+});
+
+test("Accept / Decline: declined stays on my itinerary (marked) and I can change my mind; Home only gets what I'm going on", () => {
+  const mock = GOLF_TRIP_MOCK_TRAVEL;
+  assert.deepEqual(itineraryFor(mock).find((e) => e.id === "tr-topgolf")?.invite, { itemId: "tr-topgolf", from: "Riley Diaz", status: "invited" });
+  assert.ok(!goingOnly(itineraryFor(mock)).some((e) => e.id === "tr-topgolf"), "not on Home until accepted");
+  const declined = respondToInvite(mock, "tr-topgolf", "decline");
+  assert.equal(itineraryFor(declined).find((e) => e.id === "tr-topgolf")?.invite?.status, "declined");
+  const accepted = respondToInvite(declined, "tr-topgolf", "accept");
+  assert.equal(itineraryFor(accepted).find((e) => e.id === "tr-topgolf")?.invite?.status, "going");
+  assert.ok(goingOnly(itineraryFor(accepted)).some((e) => e.id === "tr-topgolf"));
+  assert.equal(respondToInvite(mock, "tr-dinner-1", "decline"), mock, "organizer items aren't invites");
+  assert.equal(respondToInvite(mock, "tr-diaz-flight", "accept"), mock, "can't accept something I wasn't invited to");
+  // The inviter re-invites someone who declined.
+  const asRiley = { ...declined, meId: "member-riley" };
+  assert.equal(inviteToItem(asRiley, "tr-topgolf", ["member-alex"]).participants.find((p) => p.itemId === "tr-topgolf" && p.memberId === "member-alex")?.status, "invited");
 });

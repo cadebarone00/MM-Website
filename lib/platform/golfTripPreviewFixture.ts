@@ -498,10 +498,13 @@ export const GOLF_TRIP_MOCK_TRAVEL: TripTravel = {
     mine("tr-parker-flight", "flight", { airline: "American Airlines", flightNumber: "AA2210", from: "DFW", to: "PHX" }, "2027-04-22T09:15", "2027-04-22T10:05", PARKER),
     mine("tr-chen-drive", "ride", { rideType: "driving", from: "Tucson", to: "Scottsdale", seats: 2 }, "2027-04-22T11:00", undefined, CHEN),
     mine("tr-diaz-flight", "flight", { airline: "Southwest", flightNumber: "WN1456", from: "DEN", to: "PHX" }, "2027-04-22T12:20", "2027-04-22T13:35", DIAZ),
+    // Riley invited me (Save & Invite) — shows on my itinerary with Decline / Accept.
+    mine("tr-topgolf", "other", { name: "Topgolf Scottsdale", place: "Scottsdale", note: "Bays booked for 4" }, "2027-04-24T20:00", undefined, DIAZ),
   ],
   participants: [
     ...going("tr-flight-out-1", ME), ...going("tr-flight-out-2", ME), ...going("tr-car", ME), ...going("tr-hotel", ME), ...going("tr-flight-home", ME),
     ...going("tr-dinner-1", ...ALL), ...going("tr-tee-1", ...ALL), ...going("tr-dinner-2", ...ALL), ...going("tr-tee-2", ...ALL),
     ...going("tr-parker-flight", PARKER), ...going("tr-chen-drive", CHEN), ...going("tr-diaz-flight", DIAZ),
+    ...going("tr-topgolf", DIAZ), { itemId: "tr-topgolf", memberId: ME, status: "invited" },
   ],
 };

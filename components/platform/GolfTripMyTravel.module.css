@@ -8,6 +8,10 @@
 
 /* Add / edit sheet (white). Scrolls when the fields are taller than the sheet. */
 .sheet{overflow-y:auto !important;max-height:min(84vh,640px) !important}
+.titleRow{display:flex;align-items:center;gap:2px;margin-right:40px}
+.titleRow .title{margin-right:0}
+.back{display:grid;place-items:center;flex:none;width:32px;height:32px;margin:0 0 10px -4px;padding:0;border:0;border-radius:50%;background:transparent;color:#1d1416;cursor:pointer}
+.back:focus-visible{outline:2px solid #c49b54;outline-offset:2px}
 .title{margin:4px 40px 14px 4px;font:700 22px/1.2 var(--font-spectral),Georgia,serif;color:#1d1416}
 .fields{display:flex;flex-direction:column;gap:12px;padding:0 4px}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -25,3 +29,18 @@
 .cancel{border:1px solid #ddd3d0;background:#fff;color:#1d1416}
 .save{border:0;background:#6b161a;color:#fff}
 .cancel:focus-visible,.save:focus-visible,.choice button:focus-visible{outline:2px solid #c49b54;outline-offset:2px}
+.save:disabled{opacity:.45;cursor:default}
+.actionsOne{grid-template-columns:1fr}
+
+/* Invite people (after Save & Invite): a row per trip member — initials, name, tick box. */
+.inviteEmpty{margin:0 4px;font:500 14px/1.4 var(--font-barlow),sans-serif;color:#6d6266}
+.inviteList{display:flex;flex-direction:column;gap:6px;padding:0 4px}
+.inviteRow{display:flex;align-items:center;gap:12px;width:100%;padding:8px 10px;border:1px solid #ddd3d0;border-radius:12px;background:#fbf8f5;color:#1d1416;text-align:left;font:inherit;cursor:pointer}
+.inviteRow[aria-pressed=true]{border-color:#6b161a}
+.inviteRow:disabled{cursor:default;opacity:.7}
+.inviteRow:focus-visible{outline:2px solid #c49b54;outline-offset:2px}
+.inviteAvatar{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:50%;background:#6b161a;color:#fff;font:700 13px/1 var(--font-barlow),sans-serif}
+.inviteName{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;font:600 15px/1.2 var(--font-barlow),sans-serif}
+.inviteName small{font:600 12px/1 var(--font-barlow),sans-serif;color:#6d6266}
+.inviteCheck{display:grid;place-items:center;flex:none;width:22px;height:22px;border:1.5px solid #ddd3d0;border-radius:6px;color:#fff}
+.inviteRow[aria-pressed=true] .inviteCheck{border-color:#6b161a;background:#6b161a}
