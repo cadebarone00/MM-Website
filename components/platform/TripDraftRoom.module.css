@@ -9,3 +9,6 @@
 .when{margin:9px 0 0;color:#dcc495;font:500 12px/1.4 var(--font-barlow),sans-serif;text-align:center}
 
 .draftTypes{flex:none;box-sizing:border-box;width:100%;max-width:900px;margin:0 auto;padding:14px 20px 4px;color:#dcc495;font:500 13px/1.4 var(--font-spectral),Georgia,serif}.draftTypes>div{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:6px 0}.draftTypes dt{margin:0}.draftTypes dd{margin:0;text-align:right;color:#fbf8f1;font-weight:600}
+.matchRound{display:grid;gap:8px;padding:12px 20px;color:#dcc495;font:600 12px var(--font-barlow),sans-serif}
+.matchRound select{width:100%;padding:10px;border:1px solid #dcc49570;border-radius:10px;background:#350001;color:#fbf8f1;font:14px var(--font-spectral),Georgia,serif}
+.matchRoom .sheet{z-index:2}

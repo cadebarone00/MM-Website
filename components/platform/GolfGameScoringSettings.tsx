@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Minus, Plus } from "lucide-react";
 import { DEFAULT_SCORING, editGameSettings, initialGameSettings, ninePointWarnings, type ScoringGameId, type ScoringSettings } from "@/lib/platform/game-engine";
 import styles from "./GolfTripSettingsPreview.module.css";
 
@@ -16,7 +17,13 @@ function labelFor(key: string): string {
   return LABELS[key] ?? key;
 }
 
-/** Local state only, deliberately independent of Competition and persistence. */
+// Point steppers move in halves (some standard values are 0.5), between 0 and 10000.
+const POINT_STEP = 0.5;
+const POINT_MAX = 10000;
+
+/** Local state only, deliberately independent of Competition and persistence. Standard / Custom / Reset sit on top and the
+ *  settings always show under them: greyed out and locked on Standard, editable on Custom. Reset puts the standard values
+ *  back and stays on Custom. */
 export function GolfGameScoringSettings({ game }: { game: ScoringGameId }) {
   const [state, setState] = useState(() => initialGameSettings(game));
   const config = state.scoring.values;
@@ -26,17 +33,23 @@ export function GolfGameScoringSettings({ game }: { game: ScoringGameId }) {
   return <>
     <fieldset className={styles.scoringFields} aria-label={`${game} scoring settings`}>
       <div className={styles.compactOptions}>
-        {(["standard", "custom"] as const).map(preset => <button key={preset} type="button" aria-pressed={state.preset === preset} className={`${styles.compactOption} ${state.preset === preset ? styles.compactOptionActive : ""}`} onClick={() => setState(current => editGameSettings(current, preset))}>{preset === "standard" ? "Standard preset" : "Custom preset"}</button>)}
-        <button type="button" className={styles.compactOption} onClick={() => setState(current => editGameSettings(current, "standard"))}>Reset to Standard</button>
+        {(["standard", "custom"] as const).map(preset => <button key={preset} type="button" aria-pressed={state.preset === preset} className={`${styles.compactOption} ${state.preset === preset ? styles.compactOptionActive : ""}`} onClick={() => setState(current => editGameSettings(current, preset))}>{preset === "standard" ? "Standard" : "Custom"}</button>)}
+        <button type="button" className={styles.compactOption} disabled={state.preset === "standard"} onClick={() => setState(current => editGameSettings(current, "custom", initialGameSettings(game).scoring))}>Reset</button>
       </div>
-      {state.preset === "custom" && Object.keys(DEFAULT_SCORING[game]).filter(key => game !== "9-point" || key !== "handicap").map(key => {
+      <fieldset className={styles.scoringFields} disabled={state.preset === "standard"} aria-label={state.preset === "standard" ? "Standard settings (locked)" : "Custom settings"}>
+      {Object.keys(DEFAULT_SCORING[game]).filter(key => game !== "9-point" || key !== "handicap").map(key => {
         const value = (config as Record<string, number | boolean | string>)[key];
-        return <label key={key} className={styles.scoringRow}><span>{labelFor(key)}</span>
+        return <div key={key} className={styles.scoringRow}><span>{labelFor(key)}</span>
           {typeof value === "boolean" ? <button type="button" className={styles.compactToggle} aria-label={labelFor(key)} aria-pressed={value} onClick={() => change(key, !value)}><span className={styles.compactToggleTrack} /></button>
-            : typeof value === "number" ? <input aria-label={labelFor(key)} type="number" min={0} max={10000} step="any" value={value} onChange={event => { const next = event.target.valueAsNumber; if (Number.isFinite(next) && next >= 0 && next <= 10000) change(key, next); }} />
+            : typeof value === "number" ? <div className={`${styles.typeChoice} ${styles.stepper}`} role="group" aria-label={labelFor(key)}>
+              <button type="button" aria-label={`Less ${labelFor(key)}`} disabled={value <= 0} onClick={() => change(key, Math.max(0, value - POINT_STEP))}><Minus size={14} strokeWidth={2.5} aria-hidden /></button>
+              <span aria-live="polite">{value}</span>
+              <button type="button" aria-label={`More ${labelFor(key)}`} disabled={value >= POINT_MAX} onClick={() => change(key, Math.min(POINT_MAX, value + POINT_STEP))}><Plus size={14} strokeWidth={2.5} aria-hidden /></button>
+            </div>
               : <select aria-label={labelFor(key)} value={value} onChange={event => change(key, event.target.value)}><option value="none">No points</option><option value="carryover">Carryover</option></select>}
-        </label>;
+        </div>;
       })}
+      </fieldset>
     </fieldset>
     {state.preset === "custom" && warnings.length > 0 && <p className={styles.previewNote} role="status">Warning: {warnings.join(" ")} Custom allocations are allowed.</p>}
   </>;

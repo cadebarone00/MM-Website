@@ -37,6 +37,17 @@
 .roundEntry{width:100%;min-height:60px;padding-right:0;border-right:0;border-bottom:0;border-left:0;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer}
 .roundEntry:hover{background:rgba(255,255,255,.04)}
 .overview{margin:0}.overviewRow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:16px;padding:10px 0;border-bottom:1px solid rgba(214,184,121,.25);font-size:14px;line-height:1.4}.overviewRow dt{color:#dcc495;font-weight:600}.overviewRow dd{margin:0;text-align:right;color:#f7f0df;overflow-wrap:anywhere}
+.teamSummaryChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 24px;text-align:left}
+.tieChoices{display:flex;gap:8px}.tieChoices button{flex:1;min-width:0;padding:10px 8px}
+.teamSummaryChoices dt{color:#dcc495;font-weight:600;font-size:14px}.teamSummaryChoices dd{margin:6px 0 0;color:#f7f0df;font-size:14px}
+.teamSummaryTableWrap{max-width:100%;overflow-x:auto;margin-bottom:20px}
+.teamSummaryTable{width:100%;border-collapse:collapse;color:#f7f0df;font-size:12px;text-align:left}
+.teamSummaryTable th,.teamSummaryTable td{padding:10px 4px;vertical-align:top;border-bottom:1px solid rgba(214,184,121,.25)}
+.teamSummaryTable thead th{color:#dcc495;font-weight:600;border-bottom:1px solid #dcc495}
+.teamSummaryTable th:first-child{padding-left:0}.teamSummaryTable th:last-child,.teamSummaryTable td:last-child{padding-right:0}
+.teamSummaryTable th:nth-child(n+3),.teamSummaryTable td:nth-child(n+3){text-align:right}
+.teamSummaryTable small{display:block;margin-top:4px;max-width:110px;color:rgba(247,240,223,.65);font-size:10px;font-weight:400;overflow-wrap:anywhere}
+.teamSummaryTable tfoot th,.teamSummaryTable tfoot td{border-top:1px solid #dcc495;border-bottom:0;font-weight:700;color:#dcc495}
 .roundEntry:focus-visible{outline:2px solid #dcc495;outline-offset:4px;border-radius:4px}
 .roundRow{position:relative}
 .roundRow .roundEntry{padding-right:40px}
@@ -329,3 +340,4 @@ fieldset.matchSelector{border:0;padding:0;min-width:0}
 .scorecardPlayerButton{padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
 /* Settings switches: On / Off sits left of the switch, so the switches line up evenly down the page. */
 .page [role=switch]>[data-on]{order:1}
+.compactOption:disabled{opacity:.4;cursor:default}

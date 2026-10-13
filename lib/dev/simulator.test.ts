@@ -7,6 +7,13 @@ import { palmSprings2026 } from "@/lib/data/2026-palm-springs";
 import { adaptTournamentToDraft, adaptTournamentToPreviewMatch } from "@/lib/platform/tournamentToGolfTrip";
 
 const mock = { preview: GOLF_TRIP_MOCK_DRAFT, previewMatch: GOLF_MATCH_PREVIEW };
+
+test("match selection settings and room navigation survive simulator validation", () => {
+  for (const settingsView of ["match-selection", "match-draft-room"]) {
+    const location = parseSimulatorLocation({ path: "/dev/tournament/settings", navigation: { tab: "Home", settingsView } });
+    assert.equal(location?.navigation?.settingsView, settingsView);
+  }
+});
 const maroon = { preview: adaptTournamentToDraft(palmSprings2026).draft, previewMatch: adaptTournamentToPreviewMatch(palmSprings2026) ?? undefined };
 
 test("one page mapping resolves route, tab and subview reports without replaying navigation", () => {

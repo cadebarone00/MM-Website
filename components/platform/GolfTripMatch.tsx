@@ -247,7 +247,7 @@ function SlideHeader({ title, detail, children }: { title: string; detail: strin
  * Top box on Overview: the whole tournament at a glance — both teams with their overall score, where the event is
  * (round N of M), the win % bar and team stats. Same box as the round matchup card on Competition.
  */
-export function GolfTournamentSummary({ match }: { match: GolfMatchPreview }) {
+export function GolfTournamentSummary({ match, onPredict }: { match: GolfMatchPreview; onPredict?: () => void }) {
   const [left, right] = match.sides;
   return <div className={styles.matchup}>
     <section className={styles.versus} aria-label="Tournament standings">
@@ -260,8 +260,7 @@ export function GolfTournamentSummary({ match }: { match: GolfMatchPreview }) {
       </div>
       <div className={styles.stats}>
         <WinBar left={left.winPct} right={right.winPct} />
-        <RoundStats side={left} align="left" />
-        <RoundStats side={right} align="right" />
+        {onPredict ? <button type="button" className={styles.predictPill} onClick={onPredict}>Predict</button> : <><RoundStats side={left} align="left" /><RoundStats side={right} align="right" /></>}
       </div>
     </section>
   </div>;

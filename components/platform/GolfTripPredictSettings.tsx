@@ -18,10 +18,6 @@ export function GolfTripPredictSettings({ teamEvent }: { teamEvent: boolean }) {
   return <div className={styles.settings}>
     <section className={notificationStyles.category} aria-label="Prediction market">
       <h2 className={notificationStyles.categoryTitle}>Prediction market</h2>
-      <div className={notificationStyles.row}>
-        <span className={notificationStyles.label}>Show Predict to players</span>
-        {toggle(settings.on, "Prediction market", () => savePredictSettings({ ...settings, on: !settings.on }))}
-      </div>
       <p className={styles.settingsNote}>Players predict with Maroon Coins: a play-only balance for this trip. No money changes hands, and coins can&apos;t be bought or cashed out.</p>
     </section>
     {BET_CATEGORIES.map((category) => <section key={category} className={`${notificationStyles.category} ${settings.on ? "" : styles.settingsDimmed}`} aria-label={`${category} bets`}>

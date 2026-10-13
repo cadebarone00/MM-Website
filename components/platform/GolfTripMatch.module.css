@@ -260,3 +260,5 @@
 .leaderboard .lineupHeader > .scoring{flex:none;box-sizing:border-box;width:118px}
 .leaderboard .lineupHeader > .scoring button{flex:1;padding:0;font-size:11px}
 .leaderboard .lineupHeader > .scoringLabel{flex:none;width:118px;justify-content:center}
+.predictPill{grid-column:1/-1;justify-self:center;margin-top:12px;padding:9px 28px;border:1px solid #dcc495;border-radius:999px;background:transparent;color:#dcc495;font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
+.predictPill:focus-visible{outline:2px solid #dcc495;outline-offset:3px}

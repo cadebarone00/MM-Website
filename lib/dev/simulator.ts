@@ -106,7 +106,7 @@ export function parseSimulatorLocation(value: unknown): SimulatorLocation | null
   if (!isSimulatorPath(record.path)) return null;
   const navigation = record.navigation as GolfTripNavigation | undefined;
   if (navigation !== undefined && (!navigation || !GOLF_TRIP_TABS.includes(navigation.tab) || (navigation.golfSection !== undefined && !GOLF_TRIP_SECTIONS.includes(navigation.golfSection)))) return null;
-  if (navigation?.settingsView !== undefined && !/^(player|organizer|players|schedule|competition|competition-rounds|game-[a-z0-9-]+|games|history|placeholder-[1-8]|round-[a-z0-9-]+)$/.test(navigation.settingsView)) return null;
+  if (navigation?.settingsView !== undefined && !/^(player|organizer|players|schedule|match-selection|match-draft-room|competition|competition-rounds|game-[a-z0-9-]+|games|history|placeholder-[1-8]|round-[a-z0-9-]+)$/.test(navigation.settingsView)) return null;
   return { path: record.path, navigation };
 }
 

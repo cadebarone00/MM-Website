@@ -11,7 +11,7 @@ import type { BetId } from "./predictBets";
 export interface PredictSettings { on: boolean; /** Bets switched off by the organizer (everything else the trip allows is on). */ off: BetId[] }
 const KEY = "golfTripPredict";
 const EVENT = "golf-trip-predict";
-const DEFAULT = '{"on":false,"off":[]}';
+const DEFAULT = '{"on":true,"off":[]}';
 
 function snapshot(): string {
   try { return window.localStorage.getItem(KEY) ?? DEFAULT; } catch { return DEFAULT; }
@@ -19,8 +19,8 @@ function snapshot(): string {
 function parse(text: string): PredictSettings {
   try {
     const value = JSON.parse(text) as Partial<PredictSettings>;
-    return { on: value.on === true, off: Array.isArray(value.off) ? value.off : [] };
-  } catch { return { on: false, off: [] }; }
+    return { on: true, off: Array.isArray(value.off) ? value.off : [] };
+  } catch { return { on: true, off: [] }; }
 }
 function subscribe(onChange: () => void) {
   window.addEventListener("storage", onChange);

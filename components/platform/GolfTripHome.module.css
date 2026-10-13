@@ -311,3 +311,4 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 .sectionTabs .tab{padding:0 8px}
 
 .titleLine{display:block;white-space:nowrap}
+.predictEntry{display:block;margin:12px auto;padding:9px 28px;border:1px solid #dcc495;border-radius:999px;background:transparent;color:#dcc495;font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
