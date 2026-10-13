@@ -93,7 +93,7 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
     </div>}
     <GolfTripHome key={justCreated ? `just-created-${savedVersion}` : scope} {...data} now={tripNow} competitionKey={scope}
       savedCompetitionType={justCreated ? readJustCreated("localCompetitionType") : (setup.localCompetitionType as {individual:string|null;team:string|null}|undefined) ?? (busySetup ? competitionSetupTypes(busySetup) : config.source === "maroon" ? {individual:"Stroke Play",team:"2 Teams"} : config.source === "masters" ? {individual:null,team:null} : undefined)}
-      savedTeamColors={justCreated ? readJustCreated("teamColors") : setup.teamColors as (string|null)[]|undefined}
+      savedTeamColors={justCreated ? readJustCreated("teamColors") : (setup.teamColors as (string|null)[]|undefined) ?? (config.source === "maroon" ? ["maroon", "white"] : undefined)}
       organizer={viewAs === DEFAULT_DEV_ACCOUNT}
       savedTeamDraft={justCreated ? { teamType: readJustCreated<{ team: string | null }>("localCompetitionType")?.team ?? null, selection: readJustCreated("teamSelection") ?? null,
         date: readJustCreated("draftDate") ?? "", time: readJustCreated("draftTime") ?? "", type: readJustCreated("draftType") ?? "Snake", method: readJustCreated("draftMethod") ?? "Captain's Picks" } : setup.teamSelection ? {teamType:(setup.localCompetitionType as {team:string|null}|undefined)?.team??(config.source==="maroon"?"2 Teams":null),selection:setup.teamSelection as TeamDraft["selection"],date:(setup.draftDate as string)??"",time:(setup.draftTime as string)??"",type:(setup.draftType as TeamDraft["type"])??"Snake",method:(setup.draftMethod as TeamDraft["method"])??"Captain's Picks"} : undefined}

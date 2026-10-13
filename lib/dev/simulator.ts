@@ -55,6 +55,7 @@ export type SimulatorState = {
   competitionSetup?: CompetitionSetup;
   /** Profile: show made-up rounds (lib/dev/sampleProfileRounds.ts) on my own profile, plus a sample golfer in Compare. */
   sampleStats?: boolean;
+  dualDraftMomentum?: boolean;
 };
 export const COMPETITION_SETUPS = [["none", "No competition"], ["individual", "Individual only"], ["team", "Match only"], ["both", "Individual + match"]] as const;
 export type CompetitionSetup = (typeof COMPETITION_SETUPS)[number][0];
@@ -138,6 +139,7 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (typeof state.format !== "string" || state.format.length > 32) return null;
   if (state.seed !== undefined && (typeof state.seed !== "number" || !Number.isSafeInteger(state.seed) || state.seed < 1 || state.seed > 2 ** 31)) return null;
   if (state.competitionSetup !== undefined && !COMPETITION_SETUPS.some(([id]) => id === state.competitionSetup)) return null;
+  if (state.dualDraftMomentum !== undefined && typeof state.dualDraftMomentum !== "boolean") return null;
   if (state.playerCount !== null && (typeof state.playerCount !== "number" || !Number.isInteger(state.playerCount) || state.playerCount < 1 || state.playerCount > 64)) return null;
   const navigation = record.navigation as GolfTripNavigation | undefined;
   if (navigation && (!GOLF_TRIP_TABS.includes(navigation.tab) || (navigation.golfSection && !GOLF_TRIP_SECTIONS.includes(navigation.golfSection)) || (navigation.command !== undefined && !Number.isSafeInteger(navigation.command)))) return null;

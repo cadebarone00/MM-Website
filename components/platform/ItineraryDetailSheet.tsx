@@ -14,8 +14,9 @@ const initials = (text: string) => text.split(/[\s,]+/).filter(Boolean).slice(0,
  * with the plan in a chip, who's going with the day and time, Map and type tiles, then the details. It covers the bottom nav
  * (drawn on the page body, above the nav); X, a tap outside or Escape slides it away in 100 ms and the nav is back.
  */
-export function ItineraryDetailSheet({ item, going, onClose }: { item: ItineraryItem; going: string[]; onClose: () => void }) {
+export function ItineraryDetailSheet({ item, going, onClose, onDelete }: { item: ItineraryItem; going: string[]; onClose: () => void; onDelete?: () => void }) {
   const [leaving, setLeaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   useEffect(() => {
     const close = (event: KeyboardEvent) => { if (event.key === "Escape") setLeaving(true); };
     window.addEventListener("keydown", close);
@@ -28,9 +29,15 @@ export function ItineraryDetailSheet({ item, going, onClose }: { item: Itinerary
     <div className={`${styles.sheet} ${leaving ? styles.leaving : ""}`} role="dialog" aria-modal="true" aria-label={`${category}: ${item.title}`}
       onClick={event => event.stopPropagation()} onAnimationEnd={() => { if (leaving) onClose(); }}>
       <span className={styles.grabber} aria-hidden />
+      <button type="button" className={styles.deletePlan} disabled={!onDelete} onClick={() => setConfirmDelete(true)}>Delete Plan</button>
       <button type="button" className={styles.close} aria-label="Close" onClick={() => setLeaving(true)}><X size={20} strokeWidth={2.25} aria-hidden /></button>
       <h2 className={styles.title}>{item.title}</h2>
       <p className={styles.subtitle}>{category} · {itineraryTime(item.startsAt)}</p>
+      {confirmDelete && <div className={styles.confirmDelete} role="alertdialog" aria-label="Delete plan confirmation">
+        <p>Are you sure you want to delete this plan?</p>
+        <button type="button" onClick={() => { onDelete?.(); onClose(); }}>Confirm</button>
+        <button type="button" onClick={() => setConfirmDelete(false)}>Keep plan</button>
+      </div>}
 
       <div className={styles.body}>
         <div className={venue.hero} role="img" aria-label={`${item.title} photo placeholder`}>

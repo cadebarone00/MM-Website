@@ -2,6 +2,7 @@
 
 import { useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
+import { useSimulator } from "@/components/dev/SimulatorBridge";
 import toggleStyles from "./GolfTripCompetition.module.css";
 import notificationStyles from "./GolfTripNotifications.module.css";
 import { countdownParts } from "@/lib/platform/momNotifications";
@@ -49,9 +50,26 @@ export function TripMomentum({ draft, startAt, editHref, events, fallback, playe
   fallback: ReactNode;
 }) {
   const seconds = useSyncExternalStore(subscribe, nowSeconds, () => null);
+  const simulator = useSimulator();
   const [loadedAt] = useState(nowSeconds);
   const now = seconds === null ? null : startAt ? shiftStamp(startAt, seconds - loadedAt) : localStamp(seconds);
   const board = draftBoard(draft, now);
+  const [fixtureBase] = useState(nowSeconds);
+  if (process.env.NODE_ENV === "development" && simulator?.state.dualDraftMomentum && now) {
+    const base = startAt ?? localStamp(fixtureBase);
+    const future = (by: number): TeamDraft => {
+      const target = shiftStamp(base, by);
+      return { teamType: "2 Teams", selection: "Draft", date: target.slice(0, 10), time: target.slice(11, 16), type: "Snake", method: "Captain's Picks" };
+    };
+    const team = future(86400);
+    const nextMatch = [future(-3600), future(172800), future(259200), future(345600)]
+      .map((item, index) => ({ item, round: index + 1, board: draftBoard(item, now) })).find(item => item.board);
+    const teamBoard = draftBoard(team, now);
+    if (teamBoard && nextMatch?.board) return <section id="momentum" className={`${styles.momentum} ${styles.dualDraft}`} aria-label="Momentum">
+      <DraftStrip draft={team} board={teamBoard} now={now} editHref={editHref} players={players} />
+      <DraftStrip draft={nextMatch.item} board={nextMatch.board} now={now} players={players} matchRound={nextMatch.round} />
+    </section>;
+  }
   const content = board ? <DraftStrip draft={draft!} board={board} now={now} editHref={editHref} players={players} />
     : events.length ? <HighlightStrip events={events} turn={seconds === null ? 0 : Math.floor(seconds / 10)} />
     : fallback;
@@ -59,15 +77,15 @@ export function TripMomentum({ draft, startAt, editHref, events, fallback, playe
 }
 
 /** Before the draft: Team Draft · day and time (Edit for the organizer), then the countdown with Draft Room. */
-function DraftStrip({ draft, board, now, editHref, players }: { players: DraftRoomPlayer[]; draft: TeamDraft; board: { when: string | null; target: string | null }; now: string | null; editHref?: string }) {
+function DraftStrip({ draft, board, now, editHref, players, matchRound }: { players: DraftRoomPlayer[]; draft: TeamDraft; board: { when: string | null; target: string | null }; now: string | null; editHref?: string; matchRound?: number }) {
   const zone = useSyncExternalStore(subscribe, zoneName, () => "");
   const [roomOpen, setRoomOpen] = useState(false);
   const parts = board.target && now ? countdownParts(board.target, now.length === 16 ? `${now}:00` : now) : null;
   const units = [["Days", parts?.days], ["Hrs", parts?.hours], ["Mins", parts?.minutes], ["Secs", parts?.seconds]] as const;
   return <div className={styles.draft}>
     <div className={styles.draftTop}>
-      <span className={styles.draftTitle}>Team Draft</span>
-      <span className={styles.draftWhen} role="status">{draftWhen(draft, board, zone)}</span>
+      <span className={styles.draftTitle}>{matchRound ? `Match Draft · Round ${matchRound}` : "Team Draft"}</span>
+      <span className={styles.draftWhen} role="status">{matchRound ? board.when : draftWhen(draft, board, zone)}</span>
       {editHref && <Link href={editHref} className={styles.edit}>Edit</Link>}
     </div>
     <div className={styles.draftBottom}>
@@ -80,7 +98,7 @@ function DraftStrip({ draft, board, now, editHref, players }: { players: DraftRo
           </span>
         </div>)}
       </div>
-      <button type="button" className={styles.room} onClick={() => setRoomOpen(true)}>Draft Room</button>
+      {!matchRound && <button type="button" className={styles.room} onClick={() => setRoomOpen(true)}>Draft Room</button>}
     </div>
     {roomOpen && <TripDraftRoom players={players} draftType={draft.method ?? "Captain's Picks"} draftOrder={draft.type} countdown={parts} when={draftWhen(draft, board, zone).replace(` · ${draft.type}`, "")} onClose={() => setRoomOpen(false)} />}
   </div>;

@@ -136,7 +136,9 @@
 .status small{font:700 8px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em}
 /* Match box version: no box, just cream text at the top center. */
 .statusPlain{width:auto;height:auto;background:none;color:#fbf8f1;font:800 18px/1 var(--font-spectral),Georgia,serif}
-.statusPlain small{font-size:9px}
+.statusPlain small{font-size:9px;white-space:nowrap}
+/* Before a match: the tee time under TEE TIME, smaller so "10:30 AM" fits the middle column. */
+.statusTime{font-size:13px;white-space:nowrap}
 .number{font:600 15px/1 var(--font-spectral),Georgia,serif;color:#fff;text-align:center}
 .golfer{display:flex;flex-direction:column;gap:3px;min-width:0}
 .golferName{font:700 16px/1.2 var(--font-spectral),Georgia,serif;color:#fff;overflow-wrap:anywhere}
@@ -144,14 +146,19 @@
 .hcp{color:#dcc495}
 .tee{font:500 12px/1.3 var(--font-spectral),Georgia,serif;color:rgba(255,255,255,.6)}
 .course{color:rgba(220,196,149,.8)}
-/* Match row halves: standing on the outside, name toward the status box. The leader's half fills with their team
+/* Match row halves: names on the outside, the match score toward the middle. The leader's half fills with their team
    color (gold left, rose right) from their edge of the screen (--bleed reaches past the page gutter on phones, where
    the Golf slides run edge to edge) and rounds off just past the name. */
 .pairing{--bleed:0px}
 .pairSide{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;min-height:56px;padding:8px 10px}
 .pairSide.right{flex-direction:row-reverse}
-.pairSide.left.leading{margin-left:calc(-1 * var(--bleed));padding-left:calc(10px + var(--bleed));border-radius:0 16px 16px 0;background:var(--team-left,#dcc495)}
-.pairSide.right.leading{margin-right:calc(-1 * var(--bleed));padding-right:calc(10px + var(--bleed));border-radius:16px 0 0 16px;background:var(--team-right,#e89a9a)}
+.pairSide.left.leading{border-radius:0 16px 16px 0;background:var(--team-left,#dcc495)}
+.pairSide.right.leading{border-radius:16px 0 0 16px;background:var(--team-right,#e89a9a)}
+/* Names 10px from their side of the screen (every row, lead fill or not); the fill stops a little short of the middle. */
+.pairSide.left{margin-left:calc(-1 * var(--bleed));padding-left:10px}
+.pairSide.right{margin-right:calc(-1 * var(--bleed));padding-right:10px}
+.pairSide.left.leading{margin-right:0}
+.pairSide.right.leading{margin-left:0}
 .left.leading .golferName,.left.leading .standing{color:var(--team-left-text,var(--color-maroon-900))}
 .right.leading .golferName,.right.leading .standing{color:var(--team-right-text,var(--color-maroon-900))}
 .leading .tee,.leading .course{color:rgba(36,0,1,.7)}
@@ -166,21 +173,40 @@
 .number[data-par="over"]{color:#fff}
 /* Golf tab summary boxes (Overview: tournament; Games: placeholder), in the matchup card's box. */
 .summaryLabel{margin:0;padding:12px 14px 0;font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#dcc495}
-.summaryTeams{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:10px 14px 12px}
-.summaryRight{text-align:right}
+.summaryTeams{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;padding:10px 14px 12px}
+.summaryRight{grid-column:3;text-align:right}
+.summaryToWin{grid-column:2;grid-row:1;align-self:start}
 .summaryScore{margin:6px 0 0;font:700 30px/1 var(--font-spectral),Georgia,serif;color:#fff}
 .summaryPlaceholder{padding-bottom:16px}
 .summaryPlaceholder .teamName{padding:8px 14px 0}
 .summaryNote{margin:6px 0 0;padding:0 14px;font:500 13px/1.4 var(--font-barlow),sans-serif;color:rgba(251,248,241,.7)}
 /* Compact matchup (Golf tab top box): fits the tournament summary's height — smaller initials, two-line names, less padding. */
-.matchupCompact .teams{padding:8px 14px 4px}
-.matchupCompact .side{gap:3px;padding:6px 10px}
-.matchupCompact .avatar{width:30px;height:30px;font-size:12px}
-.matchupCompact .boxStanding{min-height:14px;font-size:15px}
-.matchupCompact .teamName{margin:2px 0 0;font-size:15px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+/* A little cushion between the top of the board and the lead fill (the leader's team-color block). */
+.matchupCompact .teams{gap:6px;padding:8px 14px 0}
+/* Board: no initials circle. Each side is a row: the names 6px from the box's edge, centered top to bottom, and the
+   match score ("2 UP", "4&3", "AS") at the inner middle of the side (its lead fill). */
+.matchupCompact .avatar{display:none}
+.matchupCompact .side{flex-direction:row;align-items:center;justify-content:flex-start;gap:6px}
+.matchupCompact .side.left{margin-left:-14px;padding:2px 10px 2px 6px}
+.matchupCompact .side.right{margin-right:-14px;flex-direction:row-reverse;padding:2px 6px 2px 10px}
+.matchupCompact .side.left.sideLeading{padding-left:6px;margin-right:-5px}
+.matchupCompact .side.right.sideLeading{padding-right:6px;margin-left:-5px}
+.matchupCompact .sideNames{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.matchupCompact .right .sideNames{align-items:flex-end;text-align:right}
+.matchupCompact .boxStanding{flex:none;order:2;min-height:0;font-size:16.2px}
+/* THRU / F in the middle: the same spot as TO WIN on Leaderboard's box (11px from the box's outer top). */
+.matchupCompact .boxStatus{margin-top:2px}
+.matchupCompact .teamName{margin:0;font-size:14.6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+/* Two players a side: one line each (long names end in "…") so the board keeps its size. */
+.matchupCompact .teamName:has(+ .teamName),.matchupCompact .teamName + .teamName{display:block;white-space:nowrap;text-overflow:ellipsis}
 .matchupCompact .teamMeta{margin:-2px 0 0;font-size:12px}
-.matchupCompact .stats{padding-bottom:10px}
-.matchupCompact .win{margin-bottom:8px}
+.matchupCompact .win{margin-bottom:6px}
+.matchupCompact .roundStat{gap:12px}
+/* Board boxes (Leaderboard's tournament box and the Matches box): the win bar and stats always sit in the same spot,
+   a fixed-height block at the bottom; the teams above get the rest. */
+.boardBox{display:flex;flex-direction:column}
+.boardBox>:not(.stats){flex:1 1 auto;min-height:0}
+.boardBox>.stats{flex:none;box-sizing:border-box;height:84px;margin-top:auto;padding:2px 0 0;align-content:start}
 /* Net-only rounds: a plain label where the GROSS / NET switch would be. */
 .scoringLabel{display:inline-flex;align-items:center;min-height:34px;padding:0 4px;color:#dcc495;font:700 12px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
 /* Two-team matches: the team names once, above the match rows, one at each side. */
@@ -190,7 +216,6 @@
    ("2 UP" / "AS") sits toward the middle. */
 .pairSide.left{flex-direction:row-reverse}
 .pairSide.right.right{flex-direction:row}
-.statusFinal.statusFinal{font-size:15px;white-space:nowrap}
 /* Match row middle: "MATCH n" in small gold over the status. */
 .matchCenter{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
 .matchNumber{color:#dcc495;font:700 9px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
@@ -201,8 +226,12 @@
 .pairing.pairing{grid-template-columns:minmax(0,1fr) 64px minmax(0,1fr)}
 /* Each player name stays on one line in a match row ("…" if it is too long for its half). */
 .pairSide .golferName{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pairing.pairing.pairing{grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr);gap:6px}
-.pairSide .golferName.golferName{font-size:15px}
+.pairing.pairing.pairing{grid-template-columns:minmax(0,1fr) 52px minmax(0,1fr);gap:6px}
+/* Smaller than the old 15px, with names up to 4px from the score and a narrower middle, so full names fit their half. */
+.pairSide .golferName.golferName{font-size:14.6px}
+.pairing .pairSide{gap:4px}
+.pairSide.left{padding-right:6px}
+.pairSide.right{padding-left:6px}
 /* "MATCH n" sits just under the line above its row (same spot on every row, the top one included); the status stays in
    the middle. */
 .pairing.pairing{position:relative}
@@ -213,7 +242,6 @@
 .roundNav button:disabled{opacity:.3;cursor:default}
 .roundNav button:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
 .roundNav button:first-child{margin-left:-8px}
-.noMatches{margin:10px 0 0;color:rgba(251,248,241,.6);font:500 14px/1.35 var(--font-barlow),sans-serif}
 /* The round picker under the big match box: centered, in the old match-ovals spot. */
 .matchup .roundNav{position:absolute;top:100%;left:0;right:0;z-index:2;justify-content:center;height:20px;margin:0;font-size:12px}
 .matchup .roundNav button{width:22px;height:20px}
@@ -225,29 +253,32 @@
 .teamNames .roundNav button:first-child{margin-left:0}
 .teamNames > span{flex:1;min-width:0}
 /* The match list is swipeable all the way down the screen, not just where the rows are. */
-.swipeArea{min-height:45vh}
+.swipeArea{min-height:45vh;flex:1 0 auto}
+.match:has(> .swipeArea){flex:1 0 auto}
 .teamNames > span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* No competition: the Overview box is the day's round — course, then tee times with who's playing (scrolls if long). */
-.roundInfo{padding-bottom:12px}
+.roundInfo{padding-bottom:12px;display:flex;flex-direction:column}
 .roundInfoCourse{margin:6px 0 0;padding:0 14px;font:700 20px/1.15 var(--font-spectral),Georgia,serif;color:#fff}
-.roundInfoTimes{list-style:none;margin:10px 0 0;padding:0 14px;display:grid;gap:6px;max-height:180px;overflow-y:auto}
+.roundInfoTimes{list-style:none;margin:10px 0 0;padding:0 14px;display:grid;align-content:start;gap:6px;flex:1 1 0;min-height:0;overflow-y:auto}
 .roundInfoTimes li{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:baseline}
 .roundInfoTime{font:700 13px/1.3 var(--font-barlow),sans-serif;color:#dcc495}
 .roundInfoPlayers{font:500 14px/1.3 var(--font-barlow),sans-serif;color:rgba(251,248,241,.9)}
 /* Individual only: the round box splits in half — the round (condensed) left, the top 5 right, a line down the middle. */
-.roundInfoSplit{display:grid;grid-template-columns:1fr 1fr}
-.roundInfoHalf{min-width:0}
+.roundInfoSplit{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1fr)}
+.roundInfoHalf{min-width:0;min-height:0;display:flex;flex-direction:column}
 .roundInfoHalf+.roundInfoHalf{border-left:1px solid rgba(220,196,149,.28)}
-.roundInfoSplit .roundInfoCourse{font-size:17px}
-.roundInfoSplit .roundInfoTimes{gap:5px}
+.roundInfoSplit{padding-bottom:6px}
+.roundInfoSplit .roundInfoCourse{margin-top:4px;font-size:16px}
+.roundInfoSplit .roundInfoTimes{margin-top:6px;gap:5px}
 .roundInfoSplit .roundInfoTimes li{grid-template-columns:1fr;gap:1px}
 .roundInfoSplit .roundInfoTime{font-size:12px}
 .roundInfoSplit .roundInfoPlayers{font-size:12.5px}
-.topFive{list-style:none;margin:10px 0 0;padding:0 12px;display:grid;gap:8px}
+.topFive{list-style:none;margin:6px 0 0;padding:0 12px;display:grid;align-content:start;gap:2px;flex:1 1 0;min-height:0;overflow-y:auto}
 .topFive li{display:grid;grid-template-columns:22px 1fr auto;gap:6px;align-items:baseline}
 .topFivePlace{font:700 12px/1.3 var(--font-barlow),sans-serif;color:#dcc495}
 .topFiveName{font:600 13px/1.3 var(--font-barlow),sans-serif;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.roundInfoSplit .summaryLabel{line-height:1.4}
+.roundInfoSplit .summaryLabel{padding-top:8px;line-height:1.4}
+.roundInfoSplit .topFivePlace,.roundInfoSplit .topFiveName,.roundInfoSplit .topFive .number{font-size:12.5px;line-height:1.2}
 /* Team only, under Overview: the tee sheet — tee time on the left, its players stacked on the right. */
 .teeSheetRow{display:grid;grid-template-columns:78px 1fr;gap:12px;padding:14px 0;border-top:1px solid rgba(255,255,255,.08)}
 .teeSheetTime{font:700 14px/1.4 var(--font-barlow),sans-serif;color:#dcc495}
@@ -260,5 +291,34 @@
 .leaderboard .lineupHeader > .scoring{flex:none;box-sizing:border-box;width:118px}
 .leaderboard .lineupHeader > .scoring button{flex:1;padding:0;font-size:11px}
 .leaderboard .lineupHeader > .scoringLabel{flex:none;width:118px;justify-content:center}
-.predictPill{grid-column:1/-1;justify-self:center;margin-top:12px;padding:9px 28px;border:1px solid #dcc495;border-radius:999px;background:transparent;color:#dcc495;font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
+/* Tournament box: the win bar sits right over the Predict pill, with PPG · FWY · GIR on each side of it. */
+/* A gold line right under the win bar; the stats + Predict row drop to the board's bottom, each side's three stats boxed. */
+.win:has(+ .predictRow){margin-bottom:0}
+.win:has(+ .predictRow)::after{content:"";align-self:stretch;border-top:1px solid #dcc495}
+.stats:has(> .predictRow){grid-template-rows:auto 1fr}
+.boardBox>.stats:has(> .predictRow){padding-top:0}
+.boardBox:has(.predictRow){border-color:#dcc495}
+/* Tournament box: each team in its own color, filled from the board's edge (pulled out over the 14px padding) in
+   toward TO WIN, rounding off there — the lead fill's look, on both teams all the time. */
+/* The fills match the Matches box's lead fill: 8px under the box's top, 72px tall, 5px past the column gap. */
+/* Inside each fill: the name across the top from the outer corner (one line as large as fits, up to 20px, or two
+   14px lines when even a small single line can't hold it — set by FitName), the points in the inner bottom corner. */
+.summaryTeams:has(.summaryFill){gap:8px;padding:8px 14px 0}
+.summaryFill{display:flex;flex-direction:column;box-sizing:border-box;min-width:0;height:72px;padding:5px 14px 4px 10px}
+.summaryFillLeft{margin-left:-14px;margin-right:-5px;border-radius:0 18px 18px 0;background:var(--team-left,#dcc495)}
+.summaryFillRight{margin-right:-14px;margin-left:-5px;padding:5px 10px 4px 14px;border-radius:18px 0 0 18px;background:var(--team-right,#e89a9a)}
+.summaryFill .teamName{margin:0;font-size:14px;line-height:1.05;white-space:nowrap;overflow:hidden}
+.summaryFill .teamName[data-fit=wrap]{white-space:normal;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2}
+.summaryFill .summaryScore{margin:auto 0 0;font-size:26px}
+.summaryFillLeft .summaryScore{align-self:flex-end}
+.summaryFillRight .summaryScore{align-self:flex-start}
+.summaryFillLeft .teamName,.summaryFillLeft .summaryScore{color:var(--team-left-text,var(--color-maroon-900))}
+.summaryFillRight .teamName,.summaryFillRight .summaryScore{color:var(--team-right-text,var(--color-maroon-900))}
+.predictRow{grid-column:1/-1;align-self:end;margin-bottom:8px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:5px}
+/* Predict: a rectangle the same height as the stat boxes beside it. */
+.predictRow .predictPill{align-self:stretch;padding:0 16px;border-radius:8px}
+.summaryStats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:0;padding:5px 2px;border:1px solid rgba(220,196,149,.28);border-radius:8px}
+.summaryStats .roundStat{gap:6px}
+.predictPill{justify-self:center;padding:9px 28px;border:1px solid #dcc495;border-radius:999px;background:transparent;color:#dcc495;font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
 .predictPill:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
+.leaderboard{padding-bottom:5px}

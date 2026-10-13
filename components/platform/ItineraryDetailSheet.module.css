@@ -12,3 +12,7 @@
 .subtitle{margin:4px 0 12px;text-align:center;color:#dcc495;font:600 12px/1.2 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
 .body{display:grid;gap:12px;overflow-y:auto;padding:2px 2px 4px}
 .wide{grid-column:1 / -1}
+.deletePlan{position:absolute;top:16px;right:16px;padding:7px 10px;border:1px solid #ff7373;border-radius:999px;background:transparent;color:#ff7373;font:600 12px var(--font-barlow),sans-serif;cursor:pointer}
+.deletePlan:disabled{opacity:.4;cursor:default}
+.confirmDelete{padding:12px;border:1px solid #dcc49555;border-radius:12px;text-align:center}.confirmDelete button{margin:4px;padding:8px 12px;border:0;border-radius:999px;background:#c62828;color:white;cursor:pointer}.confirmDelete button:last-child{background:transparent;border:1px solid #dcc495;color:#dcc495}
+.sheet:has(.deletePlan) .title{margin-top:40px}

@@ -31,6 +31,8 @@
 .tabActive,.tabActive:hover{color:#fbf8f1;text-shadow:0 0 12px rgba(251,248,241,.55)}
 .tabActive::after{opacity:1}
 .body{flex:1;display:flex;flex-direction:column;gap:12px;margin-top:24px}
+/* Golf tab: the board sits closer to the Home–Itinerary tabs (24px less 60%). */
+.body:has(.golfTop){margin-top:9.6px}
 .card{display:flex;flex-direction:column;gap:10px;padding:18px 18px 16px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12)}
 .cardTitle{margin:0;font:500 22px/1.2 var(--font-spectral),Georgia,serif;letter-spacing:-.01em;color:#fff}
 .text{margin:0;font:600 16px/1.4 var(--font-barlow),sans-serif;color:#fff}
@@ -52,12 +54,15 @@
 .slide{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always}
 /* Box above the Golf tabs: the team card and Overview's course weather share one spot (stacked), so the box keeps
    the taller one's height and the tabs never move; only the current one shows. */
-/* Golf top box: every section's summary is exactly the size of Overview's tournament box (it sets the size; the others
-   fill it). Hidden ones stay laid out so the tabs below never move. */
-.golfTop{position:relative}
-.golfTopSize{min-width:0}
-.golfTopFill{position:absolute;inset:0;min-width:0}
-.golfTopFill>*,.golfTopFill section{height:100%;box-sizing:border-box}
+/* Golf top box (the Board): one fixed size for every section and every competition setup — the height of the Both
+   setup's Leaderboard box. Each board fills it exactly and its contents fit inside. Hidden ones stay laid out so the
+   tabs below never move. */
+.golfTop{--golf-board-height:166px;position:relative;height:var(--golf-board-height)}
+.golfTopSize,.golfTopFill{position:absolute;inset:0;min-width:0;display:flex;flex-direction:column}
+.golfTopSize>*,.golfTopFill>*{flex:1 1 0;min-height:0;box-sizing:border-box}
+.golfTopSize section,.golfTopFill section{height:100%;box-sizing:border-box}
+/* Individual / team only: the Predict pill sits under the round box, inside the board. */
+.golfTopSize>.predictEntry{flex:none;margin:6px auto 0;padding:6px 22px;font-size:13px}
 .golfTopHidden{visibility:hidden}
 .overview{display:flex;flex-direction:column;gap:12px}
 /* Phones: the strip runs to the screen edges (content stays put via the slide padding), so the Match slide's team
@@ -247,7 +252,7 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 /* Info: My Info / Itinerary selector sits higher, closer to the trip header (32px gap → 8px). */
 .tabs.infoTabs{margin-top:-16px}
 /* Main trip tabs (Home … Info): a faint line runs edge to edge under them; the chosen tab's whole share of it lights up gold. */
-.tripTabs{position:relative;grid-column:1 / -1;margin-top:0}
+.tabs.tripTabs{position:relative;grid-column:1 / -1;margin-top:-4px}
 .tripTabs::before{content:"";position:absolute;left:-16px;right:-16px;bottom:0;height:2px;background:rgba(251,248,241,.18);pointer-events:none}
 .tripTabs .tab::after{left:0;right:0;border-radius:0;z-index:1}
 /* Itinerary day change: the day slides out (50 ms) toward the side you're leaving, the next slides in from the other side (50 ms). */
@@ -283,8 +288,8 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
    Home / Golf / Venue / Info tabs sit in the same spot for one- and two-line names. Longer names stop at two lines with "…". */
 .title.title{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;box-sizing:content-box;min-height:0;height:calc(2 * 1.1em);font-size:23px;align-content:center}
 /* Itinerary tab: "+ Add" pill centered right under the Itinerary tab (the 4th of the main tabs). */
-.itineraryAddRow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:-12px}
-.itineraryAddPill{grid-column:4;justify-self:center;display:inline-flex;align-items:center;gap:4px;padding:7px 14px;border:1.5px solid #dcc495;border-radius:999px;background:transparent;color:#dcc495;font:700 13px/1 var(--font-barlow),sans-serif;cursor:pointer}
+.itineraryAddRow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:-14px;margin-bottom:-14px}
+.itineraryAddPill{grid-column:4;justify-self:center;display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border:1.5px solid #dcc495;border-radius:999px;background:transparent;color:#dcc495;font:700 12px/1 var(--font-barlow),sans-serif;cursor:pointer}
 .itineraryAddPill:focus-visible{outline:2px solid #fbf8f1;outline-offset:2px}
 /* Itinerary golf rounds: Sit out then Play (green) side by side in the header row, level with the tee time and inside
    the box above its line; the chosen one is filled. */
@@ -307,8 +312,21 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 .itineraryPlaying.itineraryPlaying{font:700 13px/1 var(--font-spectral),Georgia,serif;letter-spacing:.04em;text-transform:none}
 .rsvpPlay:disabled,.rsvpSit:disabled{opacity:.5;cursor:default}
 /* Golf sections (Leaderboard / Games / Stats…): equal gaps between the words, not equal boxes. */
-.tabs.sectionTabs{display:flex;justify-content:space-evenly;padding:0 8px;box-sizing:border-box}
-.sectionTabs .tab{padding:0 8px}
+.tabs.sectionTabs{display:flex;justify-content:flex-start;gap:10px;padding:4px 0;box-sizing:border-box;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain;touch-action:pan-y;user-select:none}
+.sectionTabs::-webkit-scrollbar{display:none}
+.sectionTabs::before{content:"";flex:0 0 max(0px,calc(50% - var(--first-pill-half,0px) - 10px))}
+.sectionTabs::after{content:"";flex:0 0 max(0px,calc(50% - var(--last-pill-half,0px) - 10px))}
+.sectionTabs .tab{flex:none;min-height:38px;padding:0 18px;border:1px solid rgba(220,196,149,.55);border-radius:999px;color:#dcc495;white-space:nowrap;text-shadow:none;transition:background .18s,color .18s,border-color .18s}
+.sectionTabs .tab::after{display:none}
+.sectionTabs .tab[aria-selected=true]{background:#dcc495;border-color:#dcc495;color:#240001;text-shadow:none}
 
 .titleLine{display:block;white-space:nowrap}
 .predictEntry{display:block;margin:12px auto;padding:9px 28px;border:1px solid #dcc495;border-radius:999px;background:transparent;color:#dcc495;font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
+.itineraryBox.itineraryBox[data-golf=true]{height:90px;box-sizing:border-box;align-content:start;overflow:hidden;row-gap:2px;padding:6px 10px}
+.itineraryBox.itineraryBox[data-golf=true] .itineraryBoxTitle,.itineraryBox.itineraryBox[data-golf=true] > .itineraryBoxTime{max-width:60%}
+.itineraryBox.itineraryBox[data-golf=true] .itineraryBoxTop{padding-right:40%;box-sizing:border-box}
+.itineraryBox.itineraryBox[data-golf=true] .itineraryBoxTitle{font-size:14px;line-height:1.1}
+.itineraryBox.itineraryBox[data-golf=true] .itineraryBoxTop{min-height:16px;padding-bottom:3px;margin-bottom:2px}
+.itineraryBox.itineraryBox[data-golf=true] .itineraryBoxTime{font-size:11px;line-height:1.1}
+.itineraryBox[data-golf=true] .itineraryBoxTitle{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+.itineraryBox[data-golf=true] > .itineraryBoxTime{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;margin:0}

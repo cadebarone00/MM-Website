@@ -30,3 +30,4 @@
 @media(max-width:374px){.momentum{padding:0 12px}.unit{min-width:26px}.digits{font-size:19px}.colon{font-size:16px}.room{padding:0 12px}}
 /* Notifications panel: the Team Draft item above the round alerts, with a rule under it. */
 .notice{gap:12px;padding-bottom:20px;margin-bottom:8px;border-bottom:1px solid rgba(220,196,149,.3)}
+.momentum.dualDraft{height:160px;flex-shrink:0;justify-content:space-around}

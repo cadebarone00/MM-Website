@@ -129,7 +129,7 @@ function withRoundState(match: GolfMatchPreview, roundState: Exclude<SimulatorCo
   if (roundState === "scheduled" && mixed) return { ...withRoundState(match, "scheduled", false, seed), matches: roundByRoundMatches({ ...match, round: 1 }, 1, "pre", seed) };
   if (roundState === "scheduled") {
     return { ...match, round: 1,
-      matches: match.matches.map(pairing => ({ ...pairing, gross: null, net: null,
+      matches: match.matches.map(pairing => ({ ...pairing, gross: null, net: null, result: undefined,
         left: { ...normalizeCompetitor(pairing.left), golfers: normalizeCompetitor(pairing.left).golfers.map(resetGolfer) },
         right: pairing.right ? { ...normalizeCompetitor(pairing.right), golfers: normalizeCompetitor(pairing.right).golfers.map(resetGolfer) } : undefined,
       })),
@@ -172,7 +172,8 @@ function withRoundState(match: GolfMatchPreview, roundState: Exclude<SimulatorCo
   if (mixed) return { ...match, round, roundCount, leaderboard,
     matches: roundByRoundMatches({ ...match, roundCount }, round, roundState === "live" ? "live" : "final", seed) };
   return { ...match, round, roundCount, leaderboard,
-    matches: match.matches.map(pairing => ({ ...pairing,
+    // A round still being played has no final result yet (the data's result is for the finished match).
+    matches: match.matches.map(pairing => ({ ...pairing, result: holesPlayed < 18 ? undefined : pairing.result,
       left: { ...normalizeCompetitor(pairing.left), golfers: normalizeCompetitor(pairing.left).golfers.map(golferThru) },
       right: pairing.right ? { ...normalizeCompetitor(pairing.right), golfers: normalizeCompetitor(pairing.right).golfers.map(golferThru) } : undefined,
     })),

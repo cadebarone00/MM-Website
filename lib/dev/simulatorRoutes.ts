@@ -48,6 +48,7 @@ export function simulatorPages(): SimulatorPage[] {
     page.conditions = [];
     if (!page.path.startsWith("/dev/tournament")) continue;
     page.conditions = SIMULATOR_SOURCES.map(item => ({ id: "source-" + item.id, label: item.label, source: item.id }));
+    if (page.navigation?.tab === "Home") page.conditions.push({ id: "dual-draft-momentum", label: "Upcoming Team Draft + Match Draft", state: { dualDraftMomentum: true } });
     if (page.navigation?.tab === "Home" || page.navigation?.tab === "Golf") page.conditions.push(
       { id: "competition-source", label: "Competition from data source", state: { competition: "source" } },
       { id: "competitive", label: "Competitive", state: { competition: "yes" } },

@@ -1473,7 +1473,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
             <div className={leaderboardStyles.lineupHeader} role="group" aria-label="Number of players">
               <h2 className={leaderboardStyles.headerTitle}>Players</h2>
               <div className={`${styles.typeChoice} ${styles.stepper}`}>
-                <button type="button" aria-label="Fewer players" disabled={playerTotal <= Math.max(1, joinedPlayers.length)} onClick={() => setPlayerTotal(count => count - 1)}><Minus size={14} strokeWidth={2.5} aria-hidden /></button>
+                <button type="button" aria-label="Fewer players" disabled={playerTotal <= Math.max(1, joinedPlayers.length)} onClick={() => setPlayerTotal(count => Math.max(1, joinedPlayers.length, count - 1))}><Minus size={14} strokeWidth={2.5} aria-hidden /></button>
                 <span aria-live="polite">{playerTotal}</span>
                 <button type="button" aria-label="More players" disabled={playerTotal >= MAX_PLAYERS} onClick={() => setPlayerTotal(count => count + 1)}><Plus size={14} strokeWidth={2.5} aria-hidden /></button>
               </div>
@@ -1492,11 +1492,6 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                   {joinedPlayers[index] && <button type="button" className={styles.playerDelete} aria-label={`Delete ${joinedPlayers[index].name}`} onClick={() => setRemovedPlayers(previous => new Set([...previous, joinedPlayers[index].key]))}><Trash2 size={18} aria-hidden /></button>}
                 </li>)}
               </ol>
-              <button type="button" className={`${leaderboardStyles.single} ${styles.playerRow} ${styles.addPlayer}`} disabled={playerTotal >= MAX_PLAYERS} onClick={() => setPlayerTotal(count => count + 1)}>
-                <span className={leaderboardStyles.rank}><Plus size={16} aria-hidden="true" /></span>
-                <span className={leaderboardStyles.cardButton} aria-hidden="true">ADD</span>
-                <span className={leaderboardStyles.golferName}>Add player</span>
-              </button>
             </div>
         </section>
       </div>}
@@ -1555,7 +1550,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
       {!placeholder && !competitionOpen && !gamesOpen && !roundsOpen && !playersOpen && !playerScoringOpen && !scorecardViewOpen && !historyOpen && !predictOpen && !matchesOpen && !scorecardOpen && <div className={styles.settingsSections}>
         {/* Scorecards: every round from Golf Schedule, by day (same Day N + date header and cream round box). Tap a round
             to open its players page. */}
-        {section === "Scorecards" ? <div className={tripStyles.events}>
+        {section === "Scorecards" ? <div className={`${tripStyles.events} ${styles.scorecardDays}`}>
           {Array.from({ length: golfDayCount }, (_, day) => {
             const date = golfIso(day);
             return <section key={day} className={tripStyles.infoSection} aria-label={`Day ${day + 1}`}>
@@ -1572,7 +1567,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                         <span className={tripStyles.eventTitle}>{round.course}</span>
                         {round.place && <span className={styles.roundCardPlace}>{round.place}</span>}
                       </span>
-                      <span className={styles.scheduleTeeList}>{roundStatus(round.key, round.number)}</span>
+                      <span className={styles.roundCardState}>{roundStatus(round.key, round.number)}</span>
                     </button>
                   </div>;
               })}

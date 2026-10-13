@@ -139,8 +139,9 @@ export function matchWinPct(standing: GolfMatchStanding, holesPlayed: number, fi
  * The middle of a match row: its status. Before it starts, the tee time; while it's going, THRU and holes played; once
  * it's over — 18 played, or one side up by more holes than are left — the final result: "4&2" (won with 2 to play),
  * "1 UP" (won on the last), or "AS" (halved). `result` from the data wins when there is one.
+ * `started` (the organizer began the round): THRU even before a hole is done (0 holes = shown blank).
  */
-export function matchStatus(input: { thru?: string; teeTime?: string; standing: GolfMatchStanding; result?: string }):
+export function matchStatus(input: { thru?: string; teeTime?: string; standing: GolfMatchStanding; result?: string; started?: boolean }):
   { kind: "final"; text: string } | { kind: "thru"; holes: number } | { kind: "tee"; time: string } {
   if (input.result) return { kind: "final", text: input.result };
   const thru = input.thru ?? "";
@@ -152,7 +153,7 @@ export function matchStatus(input: { thru?: string; teeTime?: string; standing: 
     if (!standing || standing.leader === null) return { kind: "final", text: "AS" };
     return { kind: "final", text: left > 0 ? `${standing.up}&${left}` : `${standing.up} UP` };
   }
-  if (holes > 0) return { kind: "thru", holes };
+  if (holes > 0 || input.started) return { kind: "thru", holes };
   return { kind: "tee", time: input.teeTime ?? "" };
 }
 

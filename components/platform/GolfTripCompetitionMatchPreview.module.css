@@ -1,1 +1,4 @@
 .preview,.sample{display:flex;flex-direction:column;gap:16px;min-width:0;font-family:var(--font-spectral),Georgia,serif}
+/* The match list fills its slide to the bottom, so a sideways swipe anywhere under the round picker changes the round. */
+.preview{height:100%}
+.sample{flex:1 0 auto}
