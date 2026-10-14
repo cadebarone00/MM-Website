@@ -21,3 +21,10 @@ After motion approval, connect this renderer to the chosen native/web launch lif
 ## Scope review
 
 This isolated brand studio adds no personal data, storage, accounts, permissions, UGC, vendors, payments, prizes, advertisements, subscriptions or audio. User supplied sketches and in-session approved artwork are the design source. Brand ownership/trademark clearance and distribution rights remain review_required before commercial release; visual approval is not legal clearance. No legal compliance certification or native-store approval is claimed. No compliance registry metadata was changed.
+
+
+## Simulator integration
+
+The existing `/dev` storyboard has App Launch → Logo entrance. Conditions select Gold shimmer or Clean handwriting, plus Drawing entrance, Finished logo or Reduced motion. Replay and drawing-time controls live outside the iframe phone. Duration/style/replay updates remount playback once; they do not depend on unrelated trip state. System reduced motion always displays the static completed white logo, even if Replay is clicked. A gold highlight is clipped to the same revealed silhouettes and travels left to right; its final 450ms settles back to white. App Launch → Logo studio keeps the original separate tuning page.
+
+The new route is protected by the existing dev layout; the shared SiteChrome omits navigation for both brand routes. The simulator bridge validates new style/stage/duration/replay fields. No runtime startup overlay, native launch configuration or new data flow is added. Gold and motion are code-rendered from approved artwork; prior rights review follow-ups still apply.
