@@ -6,6 +6,8 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-10-14 - Full center-loop trace and subtle logo weight (implemented locally; deployment not verified).** The center loop now has its own narrow reveal and dedicated drawing interval, replacing the broad combined stem/loop mask that exposed the loop too early. Added 0.8 SVG units of outline weight across standalone, icon and phone artwork. Section 22 and Mermaid annotation updated; mappings unchanged.
+
 **2026-10-14 - Signature M logo and handwriting studio (implemented locally; deployment not verified).** Added standalone maroon/white SVGs, app-icon artwork, phone-intro artwork and `/dev/brand` with replay, 0.6–2.4 second duration and stroke inspection. Independent silhouette pieces reveal the approved M in writing order at its crossings. Reduced motion shows the finished mark. Section 22 and Mermaid annotation updated; mappings unchanged. Existing startup, installed icons and production branding are not changed.
 
 **2026-10-13 - Elastic leaderboard and bottom clearance (implemented locally; deployment not verified).** The lower leaderboard now stretches with resistance during touch scrolling past its scroll container's top/bottom and springs back on release, with immediate return for reduced motion. Normal scrolling and scorecard controls remain. Added 5px padding below the last player. Section 22 and Mermaid annotation updated; mappings unchanged.
@@ -329,6 +331,7 @@ flowchart TD
   TD --> TM[Patterned conversation and local text composer]
   TG --> TM
   TM --> TL[Component memory only: no delivery or receiving]
+  %% Signature M: dedicated narrow loop trace before the next upstroke; subtle outline weight across variants.
   %% /dev/brand: isolated handwriting studio, static reduced-motion fallback; existing app startup unchanged.
   %% /dev storyboard: Groups > Pages > selected branch columns > exact-page Conditionals > phone; registry maps route and tab reports in both directions.
   %% Maroon U Active mirrors Golf Trip Active using fictional teams at development-only home/settings routes; no database writes.
@@ -918,7 +921,7 @@ The separate test-season controls operate on a designated database season. This 
 
 ## 22. Legacy integrations and unfinished pages
 
-**Signature M studio:** `/dev/brand` is development-only through the existing `/dev` layout. It renders the approved rounded-tip signature with 1.2 second default drawing time, replay and stroke scrubbing; controls are memory-only and reduced motion shows a static finished mark. Logo SVGs live in `public/brand`; app-icon SVG is square artwork with system masking left to the platform. The intro geometry is centered on the approved 393×852 Figma layout. No startup overlay, audio, native icon configuration, persistence, analytics or external services are activated. See `docs/brand-motion.md` for usage and pending integration.
+**Signature M studio:** `/dev/brand` is development-only through the existing `/dev` layout. It renders the approved rounded-tip signature with 1.2 second default drawing time, replay and stroke scrubbing. A dedicated narrow center-loop reveal follows the downstroke before the next upstroke; all variants have a subtle 0.8-unit outline weight; controls are memory-only and reduced motion shows a static finished mark. Logo SVGs live in `public/brand`; app-icon SVG is square artwork with system masking left to the platform. The intro geometry is centered on the approved 393×852 Figma layout. No startup overlay, audio, native icon configuration, persistence, analytics or external services are activated. See `docs/brand-motion.md` for usage and pending integration.
 
 **Leaderboard elastic scrolling:** Touch drags beyond the active scroll container's bounds stretch the lower leaderboard up to 60px and spring back on release/cancel; reduced motion removes the return animation. Native scrolling within bounds and scorecard controls remain intact. The leaderboard has an additional 5px bottom buffer above existing page/nav clearance.
 
