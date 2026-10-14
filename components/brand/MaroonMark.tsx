@@ -1,7 +1,7 @@
 "use client";
 
 import { useId } from "react";
-import { HANDWRITING_SECTIONS, INTRO_OUTLINE, STANDALONE_OUTLINE } from "./geometry";
+import { HANDWRITING_SECTIONS, INTRO_OUTLINE, STANDALONE_OUTLINE, OUTLINE_WEIGHT } from "./geometry";
 
 type Props = {
   variant?: "standalone" | "icon" | "intro";
@@ -10,7 +10,7 @@ type Props = {
   className?: string;
 };
 
-/** The approved silhouette is unchanged. Independent stroke pieces keep crossings in handwriting order. */
+/** Approved silhouette with a subtle weight increase. The loop has its own narrow reveal. */
 export function MaroonMark({ variant = "standalone", progress = 1, color = "currentColor", className }: Props) {
   const id = useId().replace(/:/g, "");
   const amount = Number.isFinite(progress) ? Math.min(1, Math.max(0, progress)) : 1;
@@ -18,14 +18,14 @@ export function MaroonMark({ variant = "standalone", progress = 1, color = "curr
   const transform = variant === "intro" ? "translate(-.5 341.5)" : variant === "icon" ? "translate(-135.513 -99.5) scale(1.5012723 1.5)" : undefined;
   return (
     <svg viewBox={viewBox} className={className} role="img" aria-label="The Maroon" style={{ display: "block", width: "100%", height: "100%" }}>
-      <g transform={transform} fill={color}>
+      <g transform={transform} fill={color} stroke={color} strokeWidth={OUTLINE_WEIGHT} strokeLinejoin="round">
         {variant === "standalone" ? <path d={STANDALONE_OUTLINE} /> : amount >= 1 ? <path d={INTRO_OUTLINE} /> : (
           <>
             <defs>
               {HANDWRITING_SECTIONS.map((section, index) => {
                 const local = Math.min(1, Math.max(0, (amount - section.start) / (section.end - section.start)));
                 return <mask key={index} id={`${id}-${index}`} maskUnits="userSpaceOnUse" x="-30" y="-30" width="480" height="290">
-                  <path d={section.guide} fill="none" stroke="white" strokeWidth="42" strokeLinecap="round" strokeLinejoin="round" pathLength="1" strokeDasharray="1 1" strokeDashoffset={1 - local} opacity={local > 0 ? 1 : 0} />
+                  <path d={section.guide} fill="none" stroke="white" strokeWidth={section.width} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={`${section.length} ${section.length}`} strokeDashoffset={section.length * (1 - local)} opacity={local > 0 ? 1 : 0} />
                 </mask>;
               })}
             </defs>
