@@ -1,5 +1,6 @@
 "use client";
 
+import { useSavedTripSetup } from "./SavedTripSetupProvider";
 import { DatePicker } from "@/components/platform/DatePicker";
 
 
@@ -43,17 +44,17 @@ import { useGolfTripCompetitionPreview } from "./GolfTripCompetitionPreviewProvi
 import { useSimulator, useSimulatorNavigationReporter } from "@/components/dev/SimulatorBridge";
 import { usePersistedState } from "@/lib/dev/justCreatedStore";
 import { TEAM_COLORS, teamColor } from "@/lib/platform/teamColors";
-import { setMyStatsOptIn, setPlayerStats, useMyStatsOptIn, usePlayerStats } from "@/lib/platform/playerStatsSetting";
-import { setInAppScoring, useInAppScoring } from "@/lib/platform/inAppScoringSetting";
+import { setMyStatsOptIn, setPlayerStats as setDevicePlayerStats, useMyStatsOptIn, usePlayerStats } from "@/lib/platform/playerStatsSetting";
+import { setInAppScoring as setDeviceInAppScoring, useInAppScoring } from "@/lib/platform/inAppScoringSetting";
 import { useRoundRsvps } from "@/lib/platform/roundRsvp";
-import { savePredictSettings, usePredictSettings } from "@/lib/platform/predictSetting";
+import { savePredictSettings as saveDevicePredictSettings, usePredictSettings, type PredictSettings } from "@/lib/platform/predictSetting";
 
 const GENERAL_CARDS = ["Scorecard View", ...Array.from({ length: 5 }, () => "Place holder")];
 // Individual and Team competition are separate boxes; each opens the competition page for just that type.
 const ORGANIZER_SECTIONS = [
   { title: "Overview", cards: ["Players", "Golf Schedule", "Games", "Player Scoring"] },
   { title: "Competition", cards: ["Individual Competition", "Team Competition", "Match Selection", "Predict"] },
-  { title: "History", cards: ["History"] },
+  { title: "History", cards: ["History", "Delete Trip"] },
 ];
 const GAME_GROUPS = {
   Individual: [{ id: "skins", name: "Skins", description: "Play for the lowest net score on the hole or the round.", players: "1-4 players" }],
@@ -101,7 +102,9 @@ const PLAYER_SCORING_FIELDS = ["Opponent's score", "Putts", "Fairway", "Greens i
 const GAME_LOOKUP = [...GAME_GROUPS.Individual, ...GAME_GROUPS.Matches];
 
 /** Reference layout with local game scoring settings in the site's maroon palette. */
-export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament", playerCount = 0, players = [], tripRounds, pastTrips: tripHistory, dataKey = "default", persistenceScope, scoringTripId, competitionSetup }: {
+export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament", playerCount = 0, players = [], tripRounds, pastTrips: tripHistory, dataKey = "default", persistenceScope, scoringTripId, competitionSetup, livePanels, scheduleBaseDate }: {
+  scheduleBaseDate?: string;
+  livePanels?: { members: ReactNode; scorecards: ReactNode; scoring: ReactNode; isOrganizer: boolean; deleteHref: string };
   tripName: string; backHref?: string; playerCount?: number; players?: string[];
   /** The chosen trip's past trips; without them, the samples. */
   pastTrips?: PastTrip[];
@@ -116,6 +119,10 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
 }) {
   // Dev "Just created" trip: everything set up here is saved as you go (lib/dev/justCreatedStore) until Reset.
   const persist = persistenceScope ?? (dataKey === "empty");
+  const savedSetup = useSavedTripSetup();
+  const setPlayerStats = (on: boolean) => savedSetup ? savedSetup.write("playerStats", on) : setDevicePlayerStats(on);
+  const setInAppScoring = (on: boolean) => savedSetup ? savedSetup.write("inAppScoring", on) : setDeviceInAppScoring(on);
+  const savePredictSettings = (settings: PredictSettings) => savedSetup ? savedSetup.write("predictSettings", settings) : saveDevicePredictSettings(settings);
   const [section, setSection] = useState("General");
   const [competitionOpen, setCompetitionOpen] = useState(false);
   const [competitionSection, setCompetitionSection] = useState("Overview");
@@ -332,7 +339,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   // A drop onto another day waits for this confirm (it resets the round's settings).
   const [pendingMove, setPendingMove] = useState<{ from: { day: number; slot: number }; to: { day: number; index: number } } | null>(null);
   const [today] = useState(() => new Date().toISOString().slice(0, 10));
-  const baseDate = days[0] ?? today;
+  const baseDate = scheduleBaseDate ?? days[0] ?? today;
   const isoForDay = (index: number) => {
     const date = new Date(`${baseDate}T12:00:00Z`);
     date.setUTCDate(date.getUTCDate() + arrivalShift + index);
@@ -384,8 +391,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   // Day N's date follows on from Arrival; "Date" until the trip has one.
   // Trip day N as "April 22, 2027" (Arrival / Departure pills, round labels).
   const dayDate = (index: number) => {
-    if (!days[0]) return "Date";
-    const date = new Date(`${days[0]}T12:00:00Z`);
+    if (!days[0] && !scheduleBaseDate) return "Date";
+    const date = new Date(`${baseDate}T12:00:00Z`);
     date.setUTCDate(date.getUTCDate() + arrivalShift + index);
     return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(date);
   };
@@ -558,7 +565,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     const settingsView = matchDraftRoomOpen ? "match-draft-room" : matchesOpen ? "match-selection" : predictOpen ? "predict" : historyOpen ? "history" : scorecardViewOpen ? "scorecard-view" : playerScoringOpen ? "player-scoring" : playersOpen ? "players" : roundsOpen ? "schedule" : competitionOpen ? selectedRoundId ? `round-${selectedRoundId}` : competitionSection === "Format" ? "competition-rounds" : "competition" : gamesOpen ? expandedGameId ? `game-${expandedGameId}` : "games" : placeholder ? `placeholder-${placeholder}` : section === "General" ? "player" : "organizer";
     reportNavigation({ tab: "Home", settingsView }, rounds.map(({ id, number }) => ({ id, number })));
   }, [reportNavigation, matchDraftRoomOpen, matchesOpen, predictOpen, historyOpen, scorecardViewOpen, playerScoringOpen, playersOpen, roundsOpen, competitionOpen, competitionSection, gamesOpen, expandedGameId, placeholder, section, selectedRoundId, rounds]);
-  const cardSections = section === "Organizer" ? ORGANIZER_SECTIONS : [{ title: null, cards: GENERAL_CARDS }];
+  const cardSections = section === "Organizer" ? ORGANIZER_SECTIONS : [{ title: null, cards: livePanels ? ["Scorecard View"] : GENERAL_CARDS }];
   // Steps back one level (the back arrow goes through tryGoBack below).
   const goBack = () => {
     if (scorecardPlayer !== null) setScorecardPlayer(null);
@@ -676,7 +683,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
       </header>}
 
       {!competitionOpen && !gamesOpen && !roundsOpen && !playersOpen && !playerScoringOpen && !scorecardViewOpen && !historyOpen && !predictOpen && !matchesOpen && !scorecardOpen && <div className={`${tripStyles.tabs} ${styles.tabs}`} aria-label="Settings sections preview">
-        {["General", "Organizer", "Scorecards"].map((name) => <button key={name} type="button" aria-pressed={section === name}
+        {["General", ...(livePanels && !livePanels.isOrganizer ? [] : ["Organizer"]), "Scorecards"].map((name) => <button key={name} type="button" aria-pressed={section === name}
           className={`${tripStyles.tab} ${section === name ? tripStyles.tabActive : ""} ${styles.tab}`}
           onClick={() => { setSection(name); setPlaceholder(null); setCompetitionOpen(false); setGamesOpen(false); setRoundsOpen(false); setPlayersOpen(false); }}>{name}</button>)}
       </div>}
@@ -1130,7 +1137,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                 {!comp && <button type="button" className={styles.teeTablePlayers} disabled={play.groupStarted(group)} aria-haspopup="dialog" aria-label={`Group ${group + 1} players: ${names.length ? names.map(playerName).join(", ") : "none"}`} onClick={() => setTeePlayersGroup(group)}>
                   {names.length ? names.map(player => <ShortName key={player} name={playerName(player)} />) : <span className={styles.teeTableAdd}><Plus size={13} strokeWidth={2.5} aria-hidden /> Add Players</span>}
                 </button>}
-                <button type="button" className={styles.startGroup} disabled={play.groupStarted(group)} onClick={() => {
+                <button type="button" className={styles.startGroup} disabled={!!livePanels || play.groupStarted(group)} onClick={() => {
                   if (play.groupStarted(group)) return;
                   const at = new Date().toISOString();
                   setGroupStarts(current => ({ ...current, [round.key]: { ...current[round.key], [group]: at } }));
@@ -1478,7 +1485,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                 <button type="button" aria-label="More players" disabled={playerTotal >= MAX_PLAYERS} onClick={() => setPlayerTotal(count => count + 1)}><Plus size={14} strokeWidth={2.5} aria-hidden /></button>
               </div>
             </div>
-            <div>
+            {livePanels ? livePanels.members : <div>
               <div className={`${leaderboardStyles.single} ${leaderboardStyles.columns} ${styles.playerRow} ${styles.playerListRow}`} aria-hidden="true">
                 <span className={leaderboardStyles.columnPlayer}>Player</span>
               </div>
@@ -1492,12 +1499,12 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                   {joinedPlayers[index] && <button type="button" className={styles.playerDelete} aria-label={`Delete ${joinedPlayers[index].name}`} onClick={() => setRemovedPlayers(previous => new Set([...previous, joinedPlayers[index].key]))}><Trash2 size={18} aria-hidden /></button>}
                 </li>)}
               </ol>
-            </div>
+            </div>}
         </section>
       </div>}
 
       {predictOpen && <div className={styles.competition}><GolfTripPredictSettings teamEvent={Boolean(competitionType.team)} /></div>}
-      {historyOpen && <div className={styles.competition}><GolfTripHistory trips={pastTrips} onChange={setPastTrips} tripPlayers={joinedPlayers.map(player => player.name)} linking={historyLinking} /></div>}
+      {historyOpen && <div className={styles.competition}><GolfTripHistory trips={pastTrips} onChange={setPastTrips} tripPlayers={joinedPlayers.map(player => player.name)} linking={livePanels ? undefined : historyLinking} /></div>}
 
       {placeholder && <section className={styles.card}><button type="button" onClick={() => setPlaceholder(null)}>Back to settings</button><h2>Place holder {placeholder <= 6 ? placeholder : placeholder - 6}</h2></section>}
       {scorecardViewOpen && <div className={styles.competition}>
@@ -1543,14 +1550,14 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
             </Fragment>;
           })}
         </section>
-        <OrganizerScores tripId={scoringTripId} roundNumbers={rounds.map(round => round.number)} organizerId={simulator?.state.viewAs ?? DEFAULT_DEV_ACCOUNT}
-          scheduledToday={simulator?.state.roundStatus === "live" || simulator?.state.roundStatus === "roundEnd"} />
+        {livePanels ? livePanels.scoring : <OrganizerScores tripId={scoringTripId} roundNumbers={rounds.map(round => round.number)} organizerId={simulator?.state.viewAs ?? DEFAULT_DEV_ACCOUNT}
+          scheduledToday={simulator?.state.roundStatus === "live" || simulator?.state.roundStatus === "roundEnd"} />}
       </div>}
 
       {!placeholder && !competitionOpen && !gamesOpen && !roundsOpen && !playersOpen && !playerScoringOpen && !scorecardViewOpen && !historyOpen && !predictOpen && !matchesOpen && !scorecardOpen && <div className={styles.settingsSections}>
         {/* Scorecards: every round from Golf Schedule, by day (same Day N + date header and cream round box). Tap a round
             to open its players page. */}
-        {section === "Scorecards" ? <div className={`${tripStyles.events} ${styles.scorecardDays}`}>
+        {section === "Scorecards" ? livePanels?.scorecards ?? <div className={`${tripStyles.events} ${styles.scorecardDays}`}>
           {Array.from({ length: golfDayCount }, (_, day) => {
             const date = golfIso(day);
             return <section key={day} className={tripStyles.infoSection} aria-label={`Day ${day + 1}`}>
@@ -1576,7 +1583,9 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
         </div> : cardSections.map(group => <section key={group.title ?? "General"} aria-label={group.title ?? "General settings"}>
           {group.title && <h2 className={styles.settingsSectionHeading}>{group.title}</h2>}
           <div className={styles.grid}>
+        {section === "General" && livePanels && livePanels.members}
         {group.cards.map((title, index) => {
+          if (title === "Delete Trip") return <Link key={index} href={livePanels?.deleteHref ?? "/dev/tournament/delete-trip"} className={`${styles.card} ${styles.cardButton}`}><h2>Delete Trip</h2></Link>;
           if (title === "Individual Competition" || title === "Team Competition") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`}
             onClick={() => { setOverviewType(title === "Team Competition" ? "team" : "individual"); setCompetitionSection("Overview"); setCompetitionOpen(true); }}>
             <h2>{title.replace("Competition", "Comp")}</h2>

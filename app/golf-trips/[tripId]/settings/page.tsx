@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { GolfTripSettings } from "@/components/platform/GolfTripSettings";
+import { SavedTripSettingsWorkspace } from "@/components/platform/SavedTripSettingsWorkspace";
+import { loadSavedTripSetup } from "@/lib/platform/savedTripSetupServer";
 import { golfTripUrl } from "@/lib/platform/golfTripCreate";
 import { getGolfTrip } from "@/lib/platform/golfTripsServer";
 
@@ -17,6 +18,5 @@ export default async function SavedGolfTripSettingsPage({ params }: { params: Pr
   if (view.status === "signed-out") redirect("/login");
   if (view.status === "not-found") notFound();
 
-  return <GolfTripSettings backHref={golfTripUrl(tripId)} isOrganizer={view.viewer.isOrganizer} tripId={tripId}
-    members={view.trip.members} viewerMemberId={view.viewer.memberId} profileId={view.viewer.profileId} />;
+  return <SavedTripSettingsWorkspace trip={view.trip} viewer={view.viewer} snapshot={await loadSavedTripSetup(view.trip)} />;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { useSavedTripSetup } from "@/components/platform/SavedTripSetupProvider";
 
 /**
  * Organizer → Competition → Overview, with no competition (Individual and Team both None): whether players score their
@@ -25,7 +26,9 @@ function subscribe(onChange: () => void) {
 }
 
 export function useInAppScoring(): boolean {
-  return useSyncExternalStore(subscribe, read, () => true);
+  const saved = useSavedTripSetup();
+  const device = useSyncExternalStore(subscribe, read, () => true);
+  return saved ? saved.values.inAppScoring !== false : device;
 }
 
 export function setInAppScoring(on: boolean) {

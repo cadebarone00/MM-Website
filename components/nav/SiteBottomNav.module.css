@@ -2,8 +2,9 @@
 .nav {
   position: fixed;
   left: 50%;
-  bottom: calc(12px + env(safe-area-inset-bottom));
-  transform: translateX(-50%);
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  transform: translateX(-50%) scale(0.9);
+  transform-origin: center bottom;
   z-index: 100;
   display: grid;
   grid-template-columns: repeat(5, 1fr);

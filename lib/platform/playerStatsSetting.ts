@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { useSavedTripSetup } from "@/components/platform/SavedTripSetupProvider";
 
 /**
  * Organizer → Player Scoring → Player Stats: whether players record stats (putts, fairways, greens in regulation).
@@ -26,7 +27,9 @@ function subscribe(onChange: () => void) {
 }
 
 export function usePlayerStats(): boolean {
-  return useSyncExternalStore(subscribe, read, () => true);
+  const saved = useSavedTripSetup();
+  const device = useSyncExternalStore(subscribe, read, () => true);
+  return saved ? saved.values.playerStats !== false : device;
 }
 
 export function setPlayerStats(on: boolean) {

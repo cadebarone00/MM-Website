@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { PGlite } from '@electric-sql/pglite';
+const db = new PGlite();
+try {
+  await db.exec(`create role anon; create role authenticated; create role service_role;
+    create table profiles(id uuid primary key);
+    create table golf_trips(id uuid primary key,name text,start_date date,end_date date,expected_traveler_count integer,planned_rounds integer,golf_days integer,includes_tournament text);
+    create table golf_trip_members(id uuid default gen_random_uuid(),golf_trip_id uuid references golf_trips(id) on delete cascade,profile_id uuid,role text,invitation_status text);
+    create table golf_trip_rounds(id uuid primary key default gen_random_uuid(),golf_trip_id uuid references golf_trips(id) on delete cascade,round_number integer,day_number integer,play_date date,course_name text,unique(golf_trip_id,round_number));
+    create table scoring_groups(golf_trip_id uuid);`);
+  const migration = readFileSync(new URL('../supabase/golf_trip_setup.sql',import.meta.url),'utf8');
+  await db.exec(migration); await db.exec(migration);
+  const owner=randomUUID(), member=randomUUID(), trip=randomUUID();
+  await db.query("insert into golf_trips values($1,'Test','2027-01-22','2027-01-25',4,0,0,'yes')",[trip]);
+  await db.query("insert into golf_trip_members(golf_trip_id,profile_id,role,invitation_status) values($1,$2,'organizer','accepted'),($1,$3,'member','accepted')",[trip,owner,member]);
+  const rounds=[{roundNumber:1,dayNumber:2,playDate:'2027-01-23',courseName:'Course A'}];
+  const write=randomUUID();
+  const save=(who,revision,id=write,rs=rounds,capacity=4)=>db.query('select save_golf_trip_setup($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) result',[who,trip,revision,id,'{}',JSON.stringify({startDate:'2027-01-22',rounds:[]}), '2027-01-22','2027-01-25',capacity,JSON.stringify(rs)]);
+  await assert.rejects(save(member,0),/Trip not found/);
+  assert.equal((await save(owner,0)).rows[0].result.revision,1);
+  assert.equal((await save(owner,0)).rows[0].result.revision,1);
+  await assert.rejects(save(owner,0,randomUUID()),/another device/);
+  await assert.rejects(save(owner,1,randomUUID(),rounds,1),/Remove a joined/);
+  await db.query('insert into scoring_groups values($1)',[trip]);
+  await assert.rejects(save(owner,1,randomUUID(),[]),/scoring groups/);
+  assert.equal((await save(owner,1,randomUUID())).rows[0].result.revision,2);
+  assert.equal((await db.query('select count(*)::int n from golf_trip_rounds')).rows[0].n,1);
+  await db.query('delete from golf_trips where id=$1',[trip]);
+  assert.equal((await db.query('select count(*)::int n from golf_trip_setup')).rows[0].n,0);
+  console.log('PASS: migration rerun, organizer authorization, idempotency, cross-device conflict, roster minimum, score locks, atomic round persistence and cascade deletion');
+} finally { await db.close(); }

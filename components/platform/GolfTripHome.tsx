@@ -542,7 +542,7 @@ function GolfSlides({ previewMatch, structure, rsvpKey = "default", navigation, 
           ? noComp && !inAppScoring ? null
           : teamOnly && previewMatch ? <GolfTeeSheet match={previewMatch} sittingOut={sittingOut} />
           : previewMatch ? <GolfTripLeaderboard match={previewMatch} byToday={noComp} /> : <Card title="Score Overview"><Empty>Your leaderboard and round scores will show here</Empty></Card>
-          : previewMatch && roundMatch ? <GolfTripCompetitionMatchPreview key={previewMatch.round} initialMatch={previewMatch} roundStarted={roundStarted} /> : <Card title="Competition"><Empty>Your matchups will show here</Empty></Card>}
+          : previewMatch && roundMatch ? <GolfTripCompetitionMatchPreview key={previewMatch.round} initialMatch={previewMatch} roundStarted={roundStarted} draftScope={rsvpKey} /> : <Card title="Competition"><Empty>Your matchups will show here</Empty></Card>}
       </div>)}
     </div>
     <div role="tabpanel" aria-label="Games" hidden={!gamesActive || statsActive || predictActive}>

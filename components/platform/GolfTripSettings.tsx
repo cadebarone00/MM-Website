@@ -59,7 +59,7 @@ export function GolfTripSettings({ backHref, isOrganizer, tripId, members, viewe
 }
 
 /** Delete Trip: one tap opens a simple "are you sure", and Delete removes the whole trip, then goes to Golf Trips. */
-function DeleteTrip({ tripId }: { tripId: string | null }) {
+export function DeleteTrip({ tripId }: { tripId: string | null }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -67,7 +67,6 @@ function DeleteTrip({ tripId }: { tripId: string | null }) {
 
   async function deleteTrip() {
     if (tripId === null) {
-      setMessage("Preview only: nothing was deleted.");
       setConfirming(false);
       return;
     }
@@ -96,7 +95,7 @@ function DeleteTrip({ tripId }: { tripId: string | null }) {
         <p className={styles.text}>Delete this trip? This can&apos;t be undone.</p>
         <div className={styles.confirmActions}>
           <button type="button" className={styles.cancelButton} onClick={() => setConfirming(false)} disabled={busy}>Cancel</button>
-          <button type="button" className={styles.deleteButton} onClick={deleteTrip} disabled={busy}>{busy ? "Deleting…" : "Delete"}</button>
+          <button type="button" className={styles.deleteButton} onClick={deleteTrip} disabled={busy || tripId === null}>{busy ? "Deleting…" : "Delete"}</button>
         </div>
       </div>
       : <button type="button" className={styles.dangerButton} onClick={() => { setConfirming(true); setMessage(""); }}>Delete Trip</button>}

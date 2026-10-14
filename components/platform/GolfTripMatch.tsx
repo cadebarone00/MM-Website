@@ -17,6 +17,7 @@ import {
   type GolfMatchStanding,
 } from "@/lib/platform/golfTripPreviewFixture";
 import styles from "./GolfTripMatch.module.css";
+import { MatchDraftStatus } from "./MatchDraftStatus";
 
 /**
  * Golf tab, Sleeper's fantasy Match screen translated to golf, on the trip's maroon.
@@ -25,7 +26,7 @@ import styles from "./GolfTripMatch.module.css";
  * the Match and Leaderboard slides below them each show their own header control and rows.
  */
 /** `roundStarted`: the organizer has begun the current round (its matches show THRU rather than tee times). */
-export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundStarted = false }: { match: GolfMatchPreview; viewRound?: number; roundStarted?: boolean }) {
+export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundStarted = false, draftScope }: { match: GolfMatchPreview; viewRound?: number; roundStarted?: boolean; draftScope?: string }) {
   const [net, setNet] = useState(false);
   // Which round's matches: `viewRound` from the round picker under the big box (Golf tab), else this list's own picker.
   // Matches without a round count as the current round's.
@@ -46,7 +47,7 @@ export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundSt
   const teamNames = !match.matches.length ? (match.sides?.[0]?.name && match.sides[1]?.name ? [match.sides[0].name, match.sides[1].name] as const : null) : sameSides ? [sideNames[0][0], sideNames[0][1]] as const
     : match.sides?.[0]?.name && match.sides[1]?.name ? [match.sides[0].name, match.sides[1].name] as const : null;
 
-  return <div className={styles.match}>
+  return <div className={`${styles.match} ${styles.matchesList}`}>
     <SlideHeader title={match.course} detail={`Round ${match.round} of ${match.roundCount} • ${formatDef.label}`}>
       <ScoringControl scoring={scoring} net={net} onNet={setNet} />
     </SlideHeader>
@@ -76,23 +77,8 @@ export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundSt
         </li>;
       })}
       {/* No matches set for this round yet: the same row, with placeholders. */}
-      {!match.matches.length && <li className={styles.pairing}>
-        <PlaceholderSide side="left" />
-        <span className={styles.matchCenter}>
-          <span className={styles.matchNumber}>Match 1</span>
-          <span className={`${styles.status} ${styles.statusPlain}`} aria-label="Not set yet">—</span>
-        </span>
-        <PlaceholderSide side="right" />
-      </li>}
+      {!match.matches.length && <MatchDraftStatus scope={draftScope} round={viewRound} />}
     </ul>
-  </div>;
-}
-
-/** A match row's side before the match is set: "TBD" where the players go. */
-function PlaceholderSide({ side }: { side: "left" | "right" }) {
-  return <div className={`${styles.pairSide} ${styles[side]}`}>
-    <span className={styles.standing} />
-    <div className={`${styles.golfer} ${styles[side]}`}><span className={styles.golferName}>TBD</span></div>
   </div>;
 }
 
@@ -211,11 +197,11 @@ export function GolfTripLeaderboard({ match, byToday = false }: { match: GolfMat
     </SlideHeader>
     <div>
       <div className={`${styles.single} ${showNet ? styles.singleNet : ""} ${styles.columns}`} aria-hidden>
-        <span className={styles.columnPlayer}>{formatDef.teamStructure === "team" ? "Team / Player" : "Player"}</span>
+        <span className={styles.columnPlayer} />
         {showNet && <span>HCP</span>}
-        <span>{isStableford ? "PTS" : "TOT"}</span>
-        <span>THRU</span>
-        <span>TDY</span>
+        <span className={styles.columnLabel}>{isStableford ? "PTS" : "TOT"}</span>
+        <span className={styles.columnLabel}>THRU</span>
+        <span className={styles.columnLabel}>TDY</span>
       </div>
       <ul className={styles.lineup}>
         {rows.map(({ position, golfer, total, thru, today, netTotal, netToday, pointsTotal, pointsToday, holes }) => {

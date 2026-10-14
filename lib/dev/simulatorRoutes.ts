@@ -22,6 +22,18 @@ export function simulatorPages(): SimulatorPage[] {
     }
   }
   walk(join(process.cwd(), "app/dev"), "/dev");
+  const brandStudio = pages.find(page => page.path === "/dev/brand");
+  if (brandStudio) Object.assign(brandStudio, { group: "App Launch", label: "Logo studio", conditions: [] });
+  const brandIntro = pages.find(page => page.path === "/dev/brand/intro");
+  if (brandIntro) Object.assign(brandIntro, {
+    group: "App Launch", label: "Logo entrance", conditions: [
+      { id: "brand-gold", label: "Gold shimmer", state: { brandStyle: "gold" } },
+      { id: "brand-clean", label: "Clean handwriting", state: { brandStyle: "clean" } },
+      { id: "brand-drawing", label: "Drawing entrance", state: { brandStage: "drawing" } },
+      { id: "brand-finished", label: "Finished logo", state: { brandStage: "finished" } },
+      { id: "brand-reduced", label: "Reduced motion", state: { brandStage: "reduced" } },
+    ],
+  });
   const home = pages.find(page => page.path === "/dev/tournament");
   if (home) {
     home.navigation = { tab: "Home" };

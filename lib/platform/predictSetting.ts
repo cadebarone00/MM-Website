@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { useSavedTripSetup } from "@/components/platform/SavedTripSetupProvider";
 import type { BetId } from "./predictBets";
 
 /**
@@ -29,7 +30,9 @@ function subscribe(onChange: () => void) {
 }
 
 export function usePredictSettings(): PredictSettings {
-  return parse(useSyncExternalStore(subscribe, snapshot, () => DEFAULT));
+  const saved = useSavedTripSetup();
+  const device = useSyncExternalStore(subscribe, snapshot, () => DEFAULT);
+  return parse(saved ? JSON.stringify(saved.values.predictSettings ?? { on: true, off: [] }) : device);
 }
 
 export function savePredictSettings(next: PredictSettings) {

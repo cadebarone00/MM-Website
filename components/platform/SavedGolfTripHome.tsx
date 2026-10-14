@@ -2,6 +2,10 @@
 
 import { useEffect, useRef, useState, type ComponentProps } from "react";
 import { GolfTripHome } from "./GolfTripHome";
+import type { SavedGolfTrip } from "@/lib/platform/golfTripCreate";
+import { savedTripPresentation } from "@/lib/platform/savedTripPresentation";
+import type { TripSetupSnapshot } from "@/lib/platform/savedTripSetup";
+import { SavedTripSetupProvider, useSavedTripSetup } from "./SavedTripSetupProvider";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { SheetCard } from "@/lib/platform/liveCards";
 import { queueStatus, type QueuedOp } from "@/lib/platform/scoringQueue";
@@ -33,7 +37,12 @@ const show = (e?: HoleEntryInput) => e?.strokes == null ? "—" : String(e.strok
  * the round, newest answer wins. Verified (green / red, Submit) only while nothing is pending or in conflict and the
  * connection is live. The sheet looks as before, plus one status line and conflict rows on the Card.
  */
-export function SavedGolfTripHome({ scoring, ...home }: ComponentProps<typeof GolfTripHome> & { scoring?: { tripId: string; profileId: string; scoring: TripRoundScoring; corrections?: TripCorrections | null } }) {
+type SavedHomeProps = ComponentProps<typeof GolfTripHome> & { savedTrip?: SavedGolfTrip; setupSnapshot?: TripSetupSnapshot; scoring?: { tripId: string; profileId: string; scoring: TripRoundScoring; corrections?: TripCorrections | null } };
+export function SavedGolfTripHome(props: SavedHomeProps) {
+  return props.savedTrip && props.setupSnapshot ? <SavedTripSetupProvider tripId={props.savedTrip.trip.id} snapshot={props.setupSnapshot} editable={false}><SavedGolfTripHomeInner {...props} /></SavedTripSetupProvider> : <SavedGolfTripHomeInner {...props} />;
+}
+function SavedGolfTripHomeInner({ scoring, savedTrip, setupSnapshot: _setupSnapshot, ...home }: SavedHomeProps) {
+  const setup = useSavedTripSetup();
   const [live, setLive] = useState(scoring?.scoring ?? null);
   // Step 6: correction requests + submission history (null until golf_trip_scoring_corrections.sql is installed).
   const [corrections, setCorrections] = useState(scoring?.corrections ?? null);
@@ -257,15 +266,21 @@ export function SavedGolfTripHome({ scoring, ...home }: ComponentProps<typeof Go
     }
   }
 
-  if (!scoring || !seat) return <GolfTripHome {...home} />;
-  if (!startCard || !ops) return <GolfTripHome {...home} />; // the stored queue is loading (a moment)
+  const types = setup?.values.localCompetitionType as { individual: string | null; team: string | null } | undefined;
+  const selected = setup?.values;
+  const shownHome: ComponentProps<typeof GolfTripHome> = savedTrip ? { ...home, previewMatch: savedTripPresentation(savedTrip, live), competitionKey: savedTrip.trip.id,
+    savedCompetitionType: types, savedTeamColors: selected?.teamColors as (string | null)[] | undefined,
+    savedTeamDraft: selected ? { teamType: types?.team ?? null, selection: (selected.teamSelection as "Manual" | "Draft" | "Random" | null) ?? null,
+      date: String(selected.draftDate ?? ""), time: String(selected.draftTime ?? ""), type: selected.draftType === "Straight" ? "Straight" : "Snake", method: selected.draftMethod === "Duck Race" ? "Duck Race" : "Captain's Picks" } : undefined } : home;
+  if (!scoring || !seat) return <GolfTripHome {...shownHome} />;
+  if (!startCard || !ops) return <GolfTripHome {...shownHome} />; // the stored queue is loading (a moment)
   const status = queueStatus(ops);
   // The server says this card is submitted (after a refresh, sign-in, reconnect or a live update): show it locked.
   const lockedKey = seat.submitted ? JSON.stringify(seat.card) : null;
   if (lockedKey !== locked.key) setLocked({ key: lockedKey, card: lockedKey
     ? { strokes: seat.card.holes.map((h) => h ?? 0), putts: seat.card.putts, fairways: seat.card.fairways, greens: seat.card.greens, penalties: seat.card.penalties } : undefined });
   const nameOf = (s: Seat, id: string) => id === scoring.profileId ? "Your score" : `${s.attesteeName ?? "Their"} score`;
-  return <GolfTripHome {...home} roundLive scoringOwner={scoring.profileId} scoringPlayerName={seat.myName} attesteeName={seat.attesteeName ?? undefined}
+  return <GolfTripHome {...shownHome} roundLive scoringOwner={scoring.profileId} scoringPlayerName={seat.myName} attesteeName={seat.attesteeName ?? undefined}
     attestedStrokes={seat.attestedForMe} attesteeStrokes={seat.attesteeId ? seat.attesteeOwn : undefined}
     scoresVerified={scoresVerified({ connected, unsaved: status !== "synced", saving: 0 })}
     syncStatus={status}

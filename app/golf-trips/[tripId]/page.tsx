@@ -1,3 +1,4 @@
+import { loadSavedTripSetup } from "@/lib/platform/savedTripSetupServer";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { SavedGolfTripHome } from "@/components/platform/SavedGolfTripHome";
@@ -5,8 +6,6 @@ import { golfTripUrl, savedTripAsDraft } from "@/lib/platform/golfTripCreate";
 import { getGolfTrip, getMyGolfTripFlights } from "@/lib/platform/golfTripsServer";
 import { getScorecardCorrections, loadLiveTripScoring, loadPlayedTripRound } from "@/lib/platform/tripScoringServer";
 import { flightSummary } from "@/lib/platform/golfTripFlights";
-import { getTripWeather } from "@/lib/platform/weather/weatherService";
-import type { TripWeather } from "@/lib/platform/weather/types";
 
 export const metadata: Metadata = { title: "Golf Trip | The Maroon" };
 
@@ -24,11 +23,9 @@ export default async function SavedGolfTripPage({ params, searchParams }: { para
   if (view.status === "signed-out") redirect("/login");
   if (view.status === "not-found") notFound();
 
-  // Weather from the trip's saved coordinates (cached per location), started here but NOT awaited: the page streams
-  // right away and the Weather card fills in when this settles. getTripWeather never throws; the catch is a last
-  // guard so the promise can never reject.
-  const weather: Promise<TripWeather> = getTripWeather(view.trip.trip.latitude, view.trip.trip.longitude)
-    .catch((): TripWeather => ({ status: "unavailable" }));
+  // Weather is turned off: the app will use the phone's own weather (e.g. Apple Weather on iOS) instead of the
+  // National Weather Service. Without a `weather` prop, Home shows no Weather card and no quick weather.
+  // The weather code in lib/platform/weather is kept, just not called.
 
   // Info tab's Flights card: your own flights (empty if flights aren't installed yet; the page never fails over them).
   const mine = await getMyGolfTripFlights(tripId);
@@ -42,5 +39,5 @@ export default async function SavedGolfTripPage({ params, searchParams }: { para
   const scoring = live.status === "ok" ? { tripId, profileId: live.profileId, scoring: live.scoring, corrections } : undefined;
 
   // GolfTripHome reads questionnaire-shaped answers; the saved trip is passed in that shape.
-  return <SavedGolfTripHome preview={savedTripAsDraft(view.trip)} settingsHref={`${golfTripUrl(tripId)}/settings`} backHref="/golf-trips" alertScope={{ tripId, profileId: view.viewer.profileId, isOrganizer: view.viewer.isOrganizer }} weather={weather} flights={flights} scoring={scoring} />;
+  return <SavedGolfTripHome setupSnapshot={await loadSavedTripSetup(view.trip)} savedTrip={view.trip} preview={savedTripAsDraft(view.trip)} settingsHref={`${golfTripUrl(tripId)}/settings`} backHref="/golf-trips" alertScope={{ tripId, profileId: view.viewer.profileId, isOrganizer: view.viewer.isOrganizer }} flights={flights} scoring={scoring} />;
 }

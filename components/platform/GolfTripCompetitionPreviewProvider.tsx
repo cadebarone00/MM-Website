@@ -26,8 +26,8 @@ const CompetitionContext = createContext<{
 } | null>(null);
 
 /** Shared only by development preview routes; resets on reload, never writes to storage. */
-export function GolfTripCompetitionPreviewProvider({ children }: { children: ReactNode }) {
-  const [rounds, setRounds] = useState(() => GOLF_TRIP_COMPETITION_PREVIEW.map(round => ({ ...round })));
+export function GolfTripCompetitionPreviewProvider({ children, initialRounds }: { children: ReactNode; initialRounds?: CompetitionRound[] }) {
+  const [rounds, setRounds] = useState(() => (initialRounds ?? GOLF_TRIP_COMPETITION_PREVIEW).map(round => ({ ...round })));
   const [competitionTypes, setTypes] = useState<Record<string, CompetitionTypeChoice>>({});
   const setCompetitionType = (key: string): Dispatch<SetStateAction<CompetitionTypeChoice>> => update =>
     setTypes(current => ({ ...current, [key]: typeof update === "function" ? update(current[key] ?? NO_TYPES) : update }));

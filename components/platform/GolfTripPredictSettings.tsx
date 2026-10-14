@@ -1,6 +1,7 @@
 "use client";
 import { BETS, BET_CATEGORIES, betAllowed } from "@/lib/platform/predictBets";
-import { savePredictSettings, usePredictSettings } from "@/lib/platform/predictSetting";
+import { savePredictSettings as saveDevicePredictSettings, usePredictSettings, type PredictSettings } from "@/lib/platform/predictSetting";
+import { useSavedTripSetup } from "./SavedTripSetupProvider";
 import notificationStyles from "./GolfTripNotifications.module.css";
 import toggleStyles from "./GolfTripCompetition.module.css";
 import styles from "./GolfTripPredict.module.css";
@@ -11,6 +12,8 @@ import styles from "./GolfTripPredict.module.css";
  */
 export function GolfTripPredictSettings({ teamEvent }: { teamEvent: boolean }) {
   const settings = usePredictSettings();
+  const savedSetup = useSavedTripSetup();
+  const savePredictSettings = (next: PredictSettings) => savedSetup ? savedSetup.write("predictSettings", next) : saveDevicePredictSettings(next);
   const toggle = (on: boolean, label: string, onClick: () => void, disabled = false) =>
     <button type="button" role="switch" aria-checked={on} aria-label={label} disabled={disabled} className={toggleStyles.toggle} onClick={onClick}>
       <span className={toggleStyles.track} data-on={on}><span className={toggleStyles.thumb} /></span><span>{on ? "On" : "Off"}</span>

@@ -1,6 +1,7 @@
 "use client";
 
 import { readDevSetup, writeDevSetup } from "./tripSetupStore";
+import { useSavedTripSetup } from "@/components/platform/SavedTripSetupProvider";
 
 import { useState, useSyncExternalStore, type Dispatch, type SetStateAction } from "react";
 
@@ -89,15 +90,25 @@ export function resetJustCreated(): void {
  * Off: exactly useState.
  */
 export function usePersistedState<T>(persist: boolean | string, field: string, initial: T | (() => T)): [T, Dispatch<SetStateAction<T>>] {
+  const savedTrip = useSavedTripSetup();
   const [value, setValue] = useState<T>(() => {
-    const saved = typeof persist === "string" ? readDevSetup(persist)[field] as T | undefined : persist ? readJustCreated<T>(field) : undefined;
+    const saved = savedTrip ? savedTrip.values[field] as T | undefined : typeof persist === "string" ? readDevSetup(persist)[field] as T | undefined : persist ? readJustCreated<T>(field) : undefined;
     return saved !== undefined ? saved : typeof initial === "function" ? (initial as () => T)() : initial;
   });
-  const set: Dispatch<SetStateAction<T>> = update => setValue(current => {
+  const set: Dispatch<SetStateAction<T>> = update => {
+    if (savedTrip) {
+      if (savedTrip.readOnly || !savedTrip.available) return;
+      const next = typeof update === "function" ? (update as (current: T) => T)(value) : update;
+      setValue(next);
+      if (!["groupStarts", "tripScoreEdits", "removedPlayers"].includes(field)) savedTrip.write(field, next);
+      return;
+    }
+    setValue(current => {
     const next = typeof update === "function" ? (update as (current: T) => T)(current) : update;
     if (typeof persist === "string") writeDevSetup(persist, field, next);
     else if (persist) writeJustCreated(field, next);
     return next;
-  });
+    });
+  };
   return [value, set];
 }
