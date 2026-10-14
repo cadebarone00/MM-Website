@@ -216,3 +216,14 @@ test("busy data: full made-up names that never repeat, and the competition setup
   assert.ok(parseSimulatorConfig({ source: "busy", state: { ...DEFAULT_SIMULATOR_STATE, competitionSetup: "team" } }));
   assert.equal(parseSimulatorConfig({ source: "busy", state: { ...DEFAULT_SIMULATOR_STATE, competitionSetup: "bogus" } }), null);
 });
+
+
+test("brand conditions survive the frame boundary and reject malformed playback inputs", () => {
+  const state = { ...DEFAULT_SIMULATOR_STATE, brandStyle: "gold", brandStage: "drawing", brandDuration: 1200, brandReplay: 1 };
+  assert.deepEqual(parseSimulatorConfig({ source: "maroon", state })?.state, state);
+  for (const invalid of [{ brandStyle: "green" }, { brandStage: "loop-forever" }, { brandDuration: 0 }, { brandDuration: Infinity }, { brandDuration: 3000 }, { brandReplay: -1 }, { brandReplay: 1.5 }]) {
+    assert.equal(parseSimulatorConfig({ source: "maroon", state: { ...state, ...invalid } }), null);
+  }
+  const page: SimulatorPage = { id: "intro", path: "/dev/brand/intro", label: "Logo entrance", group: "App Launch", fixtures: false };
+  assert.equal(simulatorPageForLocation([page], { path: "/dev/brand/intro" })?.id, "intro");
+});
