@@ -44,6 +44,7 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
   const bridgeReady = useRef(false);
   const config = useMemo<SimulatorConfig>(() => ({ source, state, navigation }), [source, state, navigation]);
   const selectedPage = pages.find(page => page.id === pageId) ?? { ...initialPage, label: `Current route · ${currentPath}` };
+  const isBrandIntro = currentPath === "/dev/brand/intro";
   const supportsFixtures = currentPath.startsWith("/dev/tournament");
   const groups = Array.from(new Set(pages.map(page => page.group ?? "Other")));
   const selectedGroup = selectedPage.group ?? "Other";
@@ -221,7 +222,7 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
       </aside>)}
       <aside ref={conditionalColumn} className={styles.controls} aria-label="Conditionals">
         <div className={styles.panelHeading}>Conditionals</div>
-        <div className={styles.cards}>{selectedPage.conditions?.length ? selectedPage.conditions.map(condition => condition.playerCount ? <section key={condition.id} className={styles.controlSection}><label>{condition.label}<input type="number" aria-label={condition.label} min={1} max={64} placeholder="From data source" value={state.playerCount ?? ""} onChange={event => updateState("playerCount", event.target.value)} /></label></section> : <Fragment key={condition.id}><button className={styles.card} type="button" aria-pressed={condition.source ? source === condition.source : Object.entries(condition.state ?? {}).every(([key, value]) => state[key as keyof SimulatorState] === value)} onClick={() => { if (condition.source) setSource(condition.source); if (condition.state) setState(current => ({ ...current, ...condition.state })); }}>{condition.label}</button>
+        <div className={styles.cards}>{selectedPage.conditions?.length ? selectedPage.conditions.map(condition => condition.playerCount ? <section key={condition.id} className={styles.controlSection}><label>{condition.label}<input type="number" aria-label={condition.label} min={1} max={64} placeholder="From data source" value={state.playerCount ?? ""} onChange={event => updateState("playerCount", event.target.value)} /></label></section> : <Fragment key={condition.id}><button className={styles.card} type="button" aria-pressed={condition.source ? source === condition.source : Object.entries(condition.state ?? {}).every(([key, value]) => (state[key as keyof SimulatorState] ?? (key === "brandStyle" ? "gold" : key === "brandStage" ? "drawing" : undefined)) === value)} onClick={() => { if (condition.source) setSource(condition.source); if (condition.state) setState(current => ({ ...current, ...condition.state })); }}>{condition.label}</button>
           {/* Just created: wipe everything set up on it and go back to the fresh, just-onboarded trip. */}
           {condition.source === "empty" && <button type="button" className={styles.resetJustCreated} onClick={() => { resetJustCreated(); setSource("empty"); }}><RotateCcw size={13} /> Reset Just created</button>}
           {/* The Maroon Masters: wipe everything set up on it and start the official trip over (the app frame reloads fresh). */}
@@ -238,9 +239,15 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
               {COMPETITION_SETUPS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
             </select></label>
           </section>}</Fragment>) : <p>No conditional states</p>}</div>
+        {isBrandIntro && <section className={styles.controlSection} aria-label="Logo animation controls">
+          <button type="button" onClick={() => setState(current => ({ ...current, brandStage: "drawing", brandReplay: (current.brandReplay ?? 0) + 1 }))}><RotateCcw size={13} /> Replay entrance</button>
+          <label>Drawing time: {((state.brandDuration ?? 1200) / 1000).toFixed(1)} s
+            <input type="range" aria-label="Logo drawing time" min={600} max={2400} step={100} value={state.brandDuration ?? 1200} onChange={event => setState(current => ({ ...current, brandDuration: Number(event.target.value) }))} />
+          </label>
+        </section>}
         {/* Mock data only: a whole new made-up trip that reads like a real one (people, place, dates, courses, formats, scores,
             tee times, dinners, travel, rules) from a new seed. */}
-        {source === "mock" && !!selectedPage.conditions?.length && <button type="button" onClick={() => setState(current => ({ ...current, seed: 1 + Math.floor(Math.random() * 2 ** 31) }))}><Shuffle size={13} /> Randomize data</button>}
+        {!isBrandIntro && source === "mock" && !!selectedPage.conditions?.length && <button type="button" onClick={() => setState(current => ({ ...current, seed: 1 + Math.floor(Math.random() * 2 ** 31) }))}><Shuffle size={13} /> Randomize data</button>}
         {!!selectedPage.conditions?.length && <button type="button" onClick={() => { setState(DEFAULT_SIMULATOR_STATE); setSource("maroon"); }}><RotateCcw size={13} /> Reset conditionals</button>}
       </aside>
       <div className={styles.previewColumn}>
