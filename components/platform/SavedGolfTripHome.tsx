@@ -6,6 +6,8 @@ import type { SavedGolfTrip } from "@/lib/platform/golfTripCreate";
 import { savedTripPresentation } from "@/lib/platform/savedTripPresentation";
 import type { TripSetupSnapshot } from "@/lib/platform/savedTripSetup";
 import { SavedTripSetupProvider, useSavedTripSetup } from "./SavedTripSetupProvider";
+import type { SavedTravelSnapshot } from "@/lib/platform/savedTripTravel";
+import type { TripTravel } from "@/lib/platform/tripTravel";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { SheetCard } from "@/lib/platform/liveCards";
 import { queueStatus, type QueuedOp } from "@/lib/platform/scoringQueue";
@@ -37,11 +39,31 @@ const show = (e?: HoleEntryInput) => e?.strokes == null ? "—" : String(e.strok
  * the round, newest answer wins. Verified (green / red, Submit) only while nothing is pending or in conflict and the
  * connection is live. The sheet looks as before, plus one status line and conflict rows on the Card.
  */
-type SavedHomeProps = ComponentProps<typeof GolfTripHome> & { savedTrip?: SavedGolfTrip; setupSnapshot?: TripSetupSnapshot; scoring?: { tripId: string; profileId: string; scoring: TripRoundScoring; corrections?: TripCorrections | null } };
+type SavedHomeProps = ComponentProps<typeof GolfTripHome> & { savedTrip?: SavedGolfTrip; setupSnapshot?: TripSetupSnapshot; planSnapshot?: SavedTravelSnapshot; scoring?: { tripId: string; profileId: string; scoring: TripRoundScoring; corrections?: TripCorrections | null } };
 export function SavedGolfTripHome(props: SavedHomeProps) {
-  return props.savedTrip && props.setupSnapshot ? <SavedTripSetupProvider tripId={props.savedTrip.trip.id} snapshot={props.setupSnapshot} editable={false}><SavedGolfTripHomeInner {...props} /></SavedTripSetupProvider> : <SavedGolfTripHomeInner {...props} />;
+  const [planStatus, setPlanStatus] = useState("");
+  const planRevision = useRef(props.planSnapshot?.revision ?? 0), planQueue = useRef(Promise.resolve());
+  const planFailed = useRef(false);
+  const savePlans = (travel: TripTravel) => {
+    const tripId = props.savedTrip?.trip.id;
+    if (!tripId || !props.planSnapshot?.available || planFailed.current) return;
+    const writeId = crypto.randomUUID();
+    planQueue.current = planQueue.current.then(async () => {
+      if (planFailed.current) return;
+      setPlanStatus("Saving plan…");
+      try {
+        const response = await fetch(`/api/golf-trips/${tripId}/plans`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ travel, revision: planRevision.current, writeId }), keepalive: true });
+        const result = await response.json();
+        if (!response.ok || !result.ok) throw new Error(result.error || "Couldn't save plan.");
+        planRevision.current = result.revision;
+        setPlanStatus("Plan saved");
+      } catch (error) { planFailed.current = true; setPlanStatus(error instanceof Error ? error.message : "Couldn't save plan."); }
+    });
+  };
+  const home = <><div role={planFailed.current ? "alert" : "status"}>{planStatus}</div><SavedGolfTripHomeInner {...props} travel={props.planSnapshot?.available ? props.planSnapshot.travel : props.travel} onTravelChange={props.planSnapshot?.available ? savePlans : props.onTravelChange} /></>;
+  return props.savedTrip && props.setupSnapshot ? <SavedTripSetupProvider tripId={props.savedTrip.trip.id} snapshot={props.setupSnapshot} editable={false}>{home}</SavedTripSetupProvider> : home;
 }
-function SavedGolfTripHomeInner({ scoring, savedTrip, setupSnapshot: _setupSnapshot, ...home }: SavedHomeProps) {
+function SavedGolfTripHomeInner({ scoring, savedTrip, setupSnapshot: _setupSnapshot, planSnapshot: _planSnapshot, ...home }: SavedHomeProps) {
   const setup = useSavedTripSetup();
   const [live, setLive] = useState(scoring?.scoring ?? null);
   // Step 6: correction requests + submission history (null until golf_trip_scoring_corrections.sql is installed).

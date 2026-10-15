@@ -13,25 +13,31 @@ export function SavedTripSetupProvider({ tripId, snapshot, editable, children }:
   const queue = useRef(Promise.resolve());
   const blocked = useRef(false);
   const pending = useRef(0);
+  const scheduled = useRef(false);
   const write = useCallback((field: string, value: unknown) => {
     if (!editable || !snapshot.available || blocked.current) { setStatus("Settings were not saved. Reload and try again."); return; }
     const next = { ...current.current, [field]: value };
     current.current = next;
     setValues(next);
+    if (scheduled.current) return;
+    scheduled.current = true;
     pending.current++;
     setStatus("Saving…");
     const writeId = crypto.randomUUID();
+    queueMicrotask(() => {
+    scheduled.current = false;
     queue.current = queue.current.then(async () => {
       if (blocked.current) return;
       try {
-        const response = await fetch(`/api/golf-trips/${tripId}/setup`, { method: "PUT", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ values: next, revision: revision.current, writeId }, setupEncode), keepalive: true });
+        const body = JSON.stringify({ values: current.current, revision: revision.current, writeId }, setupEncode);
+        const response = await fetch(`/api/golf-trips/${tripId}/setup`, { method: "PUT", headers: { "Content-Type": "application/json" }, body, keepalive: body.length < 60000 });
         const result = await response.json();
         if (!response.ok || !result.ok) throw new Error(result.error || "Couldn't save settings.");
         revision.current = result.revision;
         pending.current--;
         if (!pending.current) setStatus("Saved");
       } catch (error) { blocked.current = true; setStatus(error instanceof Error ? error.message : "Couldn't save settings."); }
+    });
     });
   }, [editable, snapshot.available, tripId]);
   useEffect(() => {

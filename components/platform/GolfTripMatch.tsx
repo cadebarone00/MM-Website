@@ -192,9 +192,10 @@ export function GolfTripLeaderboard({ match, byToday = false }: { match: GolfMat
   }
 
   return <div ref={leaderboardRef} className={`${styles.match} ${styles.leaderboard}`}>
-    <SlideHeader title={match.course} detail={`${roundDay(match.roundDate)} • Round ${match.round} • ${formatDef.label}`}>
+    {/* The course / round line sits at the top of the Golf tab (GolfRoundHeader); here only the Gross / Net control. */}
+    {scoring !== "Gross" && <div className={`${styles.lineupHeader} ${styles.scoringRow}`}>
       <ScoringControl scoring={scoring} net={net} onNet={setNet} />
-    </SlideHeader>
+    </div>}
     <div>
       <div className={`${styles.single} ${showNet ? styles.singleNet : ""} ${styles.columns}`} aria-hidden>
         <span className={styles.columnPlayer} />
@@ -320,6 +321,14 @@ function SlideHeader({ title, detail, children }: { title: string; detail: strin
       <p className={styles.headerDetail}>{detail}</p>
     </div>
     {children}
+  </div>;
+}
+
+/** Top of the Golf tab: the course, with the round's day, number and format under it. */
+export function GolfRoundHeader({ match }: { match: GolfMatchPreview }) {
+  const formatDef = resolveGolfFormat(match.formatDef?.key ?? match.format);
+  return <div className={styles.leaderboard}>
+    <SlideHeader title={match.course} detail={`${roundDay(match.roundDate)} • Round ${match.round} • ${formatDef.label}`} />
   </div>;
 }
 

@@ -16,7 +16,7 @@ import { flightCounts, flightTime, type FlightSummary } from "@/lib/platform/gol
 
 /** The Info tab's Flights card: the viewer's flight summary, and the Flights page it opens (null = not a link). */
 export interface TripFlights { summary: FlightSummary; href: string | null }
-import { MatchNav, GolfGamesSummary, GolfMatchup, GolfRoundInfo, GolfTeeSheet, GolfTournamentSummary, GolfTripLeaderboard } from "./GolfTripMatch";
+import { MatchNav, GolfGamesSummary, GolfMatchup, GolfRoundHeader, GolfRoundInfo, GolfTeeSheet, GolfTournamentSummary, GolfTripLeaderboard } from "./GolfTripMatch";
 import { GolfTripScoring } from "./GolfTripScoring";
 import { GolfTripStats, type ScoreChangeLine, type TripStatsView } from "./GolfTripStats";
 import type { ScoreEdit } from "@/lib/platform/playerRounds";
@@ -495,11 +495,8 @@ function GolfSlides({ previewMatch, structure, rsvpKey = "default", navigation, 
     if (!gamesActive && track && track.clientWidth > 0) setActive(Math.round(track.scrollLeft / track.clientWidth));
   };
 
-  return <>
-    {/* Top box: a summary leaderboard for the section — the whole tournament on Overview, the round being played on
-        Competition, games (placeholder) on Games. All three share one grid cell so the tabs don't move when it switches.
-        The weather lives on Home. */}
-    {previewMatch && <div className={styles.golfTop}>
+  // Order: the course / round line, then the section pills, then the board, then the section itself.
+  const board = previewMatch && <div className={styles.golfTop}>
       {(["Overview", "Competition", "Games"] as const).map(section => {
         // Stats shows the tournament summary box, like Overview.
         const current = availableSlides[active] === "Stats" || availableSlides[active] === "Predict" ? "Overview" : availableSlides[active] ?? "Overview";
@@ -511,7 +508,10 @@ function GolfSlides({ previewMatch, structure, rsvpKey = "default", navigation, 
               below={<MatchNav match={featured + 1} count={matchCount} onMatch={match => setBoxMatch(view => ({ ...view, index: match - 1 }))} />} /> : <GolfGamesSummary />}
         </div>;
       })}
-    </div>}
+    </div>;
+
+  return <>
+    {previewMatch && <GolfRoundHeader match={previewMatch} />}
     {/* Golf sections: the words themselves evenly spaced (equal gaps between them and at both ends), since their lengths differ. */}
     <div ref={sectionTabsRef} className={`${styles.tabs} ${styles.sectionTabs}`} role="tablist" aria-label="Golf sections"
       onPointerDown={event => {
@@ -536,6 +536,9 @@ function GolfSlides({ previewMatch, structure, rsvpKey = "default", navigation, 
       {sections.map(({ id, label }, i) => <button key={id} type="button" role="tab" aria-selected={active === i}
         className={`${styles.tab} ${active === i ? styles.tabActive : ""}`} onClick={() => goTo(i)}>{label}</button>)}
     </div>
+    {/* The board: a summary for the section — the whole tournament on Overview, the round being played on Competition,
+        games (placeholder) on Games. All three share one grid cell so nothing below moves when it switches. */}
+    {board}
     <div ref={trackRef} className={styles.slides} style={gamesActive ? { display: "none" } : undefined} onScroll={onScroll}>
       {sections.filter(({ id }) => !offStrip(id)).map(({ id: name, label }, i) => <div key={name} className={styles.slide} role="tabpanel" aria-label={label} inert={active !== i}>
         {name === "Overview"

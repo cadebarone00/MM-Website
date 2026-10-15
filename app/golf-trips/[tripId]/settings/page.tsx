@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { SavedTripSettingsWorkspace } from "@/components/platform/SavedTripSettingsWorkspace";
 import { loadSavedTripSetup } from "@/lib/platform/savedTripSetupServer";
-import { golfTripUrl } from "@/lib/platform/golfTripCreate";
+import { setupForViewer } from "@/lib/platform/savedTripSetup";
 import { getGolfTrip } from "@/lib/platform/golfTripsServer";
 
 export const metadata: Metadata = { title: "Trip Settings | The Maroon" };
@@ -18,5 +18,5 @@ export default async function SavedGolfTripSettingsPage({ params }: { params: Pr
   if (view.status === "signed-out") redirect("/login");
   if (view.status === "not-found") notFound();
 
-  return <SavedTripSettingsWorkspace trip={view.trip} viewer={view.viewer} snapshot={await loadSavedTripSetup(view.trip)} />;
+  return <SavedTripSettingsWorkspace trip={view.trip} viewer={view.viewer} snapshot={setupForViewer(await loadSavedTripSetup(view.trip), view.viewer.isOrganizer)} />;
 }

@@ -3,6 +3,11 @@ import type { SavedGolfTrip } from "./golfTripCreate";
 export type SetupValues = Record<string, unknown>;
 export type SetupBasis = { startDate: string; endDate: string; rounds: SavedGolfTrip["rounds"] };
 export type TripSetupSnapshot = { values: SetupValues; revision: number; basis: SetupBasis; available: boolean };
+export function setupForViewer(snapshot: TripSetupSnapshot, organizer: boolean): TripSetupSnapshot {
+  if (organizer) return snapshot;
+  const values = Object.fromEntries(Object.entries(snapshot.values).filter(([key]) => !["pastTrips", "yardageCorrections"].includes(key)));
+  return { ...snapshot, values };
+}
 export const setupEncode = (_key: string, value: unknown) => value instanceof Set ? { $set: [...value] } : value;
 export const setupDecode = (_key: string, value: unknown) => value && typeof value === "object" && Array.isArray((value as { $set?: unknown }).$set) ? new Set((value as { $set: unknown[] }).$set) : value;
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value);
@@ -14,6 +19,37 @@ const arrays = new Set("pastTrips teamNames teamColors unevenSizes".split(" "));
 const records = new Set("scoringFieldsOff typePlayers teamPicks lockedComp roundsPerDay pickedCourses yardageCorrections roundTees compRounds skinsRounds skinsPlayers compFormats teeTimes matchSelections allRoundsMatch teePlayers teeMatches slotCourseNames gameSettings predictSettings".split(" "));
 const enums: Record<string, readonly unknown[]> = {
   teamTie: ["Retain", "Teams Tie", "Playoff"], teamSelection: [null, "Manual", "Draft", "Random"], draftType: ["Snake", "Straight"], draftMethod: ["Captain's Picks", "Duck Race"],
+};
+const text = (value: unknown, max = 200): value is string => typeof value === "string" && value.length <= max;
+const int = (value: unknown, min = 0, max = 64): value is number => typeof value === "number" && Number.isInteger(value) && value >= min && value <= max;
+const mapOf = (value: unknown, check: (value: unknown) => boolean) => object(value) && Object.values(value).every(check);
+const setOf = (value: unknown, check: (value: unknown) => boolean) => object(value) && Array.isArray(value.$set) && value.$set.every(check);
+const formatNames = ["Singles", "Fourball", "Alternate Shot", "Chapman", "Scramble", "Shamble", "Stroke Play", "Stableford"];
+const matchChoice = (value: unknown) => object(value) && [null, "Manual", "Match Draft"].includes(value.method as never) && [null, "Response", "Ranks", "Randomized"].includes(value.draftType as never) && text(value.date, 10) && text(value.time, 5);
+const roundFormat = (value: unknown) => object(value) && int(value.players) && typeof value.pointsPerMatch === "number" && value.pointsPerMatch >= 0 && value.pointsPerMatch <= 1000 && ["Match Play", "Stroke Play"].includes(String(value.matchType)) && typeof value.nassau === "boolean" && ["Gross", "Net", "Both"].includes(String(value.scoring)) && formatNames.includes(String(value.format));
+const tees = (value: unknown) => object(value) && (value.tee === null || text(value.tee)) && typeof value.perHole === "boolean" && mapOf(value.holeTees, entry => text(entry));
+const nestedChecks: Record<string, (value: unknown) => boolean> = {
+  teamNames: value => Array.isArray(value) && value.every(item => text(item, 120)),
+  teamColors: value => Array.isArray(value) && value.every(item => item === null || text(item, 80)),
+  unevenSizes: value => Array.isArray(value) && value.length === 2 && value.every(item => int(item, 1)),
+  scoringFieldsOff: value => setOf(value, item => ["Opponent's score", "Putts", "Fairway", "Greens in regulation"].includes(String(item))),
+  typePlayers: value => object(value) && setOf(value.individual, item => int(item, 0, 63)) && setOf(value.team, item => int(item, 0, 63)),
+  lockedComp: value => object(value) && typeof value.individual === "boolean" && typeof value.team === "boolean",
+  teamPicks: value => mapOf(value, item => int(item, 0, 63)),
+  teeTimes: value => mapOf(value, item => Array.isArray(item) && item.every(time => time === "" || typeof time === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(time))),
+  slotCourseNames: value => mapOf(value, item => text(item)),
+  compRounds: value => mapOf(value, item => typeof item === "boolean"),
+  skinsRounds: value => mapOf(value, item => typeof item === "boolean"),
+  skinsPlayers: value => mapOf(value, item => setOf(item, player => int(player, 0, 63))),
+  compFormats: value => mapOf(value, roundFormat),
+  matchSelections: value => mapOf(value, matchChoice), allRoundsMatch: matchChoice,
+  roundTees: value => mapOf(value, tees),
+  pickedCourses: value => mapOf(value, item => object(item) && text(item.name) && (item.ref === undefined || text(item.ref, 300)) && (item.place === undefined || text(item.place))),
+  teePlayers: value => mapOf(value, groups => mapOf(groups, players => Array.isArray(players) && players.length <= 4 && players.every(player => int(player, 0, 63)))),
+  teeMatches: value => mapOf(value, groups => mapOf(groups, match => object(match) && [match.a, match.b].every(side => Array.isArray(side) && side.length <= 4 && side.every(player => player === null || int(player, 0, 63))))),
+  pastTrips: value => Array.isArray(value) && value.every(trip => object(trip) && text(trip.id) && text(trip.name) && text(trip.place) && text(trip.arrival, 10) && text(trip.departure, 10) && Array.isArray(trip.players) && trip.players.every(player => text(player, 120)) && Array.isArray(trip.rounds) && trip.rounds.every(round => object(round) && text(round.id) && int(round.number, 1, 62) && (round.date === null || text(round.date, 10)) && object(round.course) && text(round.course.name) && text(round.course.place) && mapOf(round.scores, score => int(score, 1, 500)))),
+  yardageCorrections: value => mapOf(value, entries => Array.isArray(entries) && entries.every(entry => object(entry) && text(entry.at) && text(entry.reason, 2000) && tees(entry.before) && tees(entry.after) && Array.isArray(entry.affectedCards) && entry.affectedCards.every(card => text(card)))),
+  predictSettings: value => object(value) && typeof value.on === "boolean" && Array.isArray(value.off) && value.off.every(item => text(item, 80)),
 };
 function safeJson(value: unknown, depth = 0): boolean {
   if (depth > 12) return false;
@@ -27,6 +63,7 @@ function safeJson(value: unknown, depth = 0): boolean {
 export function validSetup(value: unknown): value is SetupValues {
   if (!object(value) || JSON.stringify(value).length > 262144 || !safeJson(value)) return false;
   for (const [key, item] of Object.entries(value)) {
+    if (nestedChecks[key] && !nestedChecks[key](item)) return false;
     if (!fields.has(key) || (bools.has(key) && typeof item !== "boolean") || (arrays.has(key) && !Array.isArray(item)) || (records.has(key) && !object(item))) return false;
     if (key in enums && !enums[key].includes(item)) return false;
     if (["draftDate", "draftTime"].includes(key) && typeof item !== "string") return false;

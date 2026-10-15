@@ -293,6 +293,7 @@
 .leaderboard .lineupHeader > .scoring{flex:none;box-sizing:border-box;width:118px}
 .leaderboard .lineupHeader > .scoring button{flex:1;padding:0;font-size:11px}
 .leaderboard .lineupHeader > .scoringLabel{flex:none;width:118px;justify-content:center}
+.leaderboard .scoringRow{justify-content:flex-end}
 /* Tournament box: the win bar sits right over the Predict pill, with PPG · FWY · GIR on each side of it. */
 /* A gold line right under the win bar; the stats + Predict row drop to the board's bottom, each side's three stats boxed. */
 .win:has(+ .predictRow){margin-bottom:0}

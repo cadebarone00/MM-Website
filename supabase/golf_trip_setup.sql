@@ -66,4 +66,31 @@ end;
 $$;
 revoke all on function public.save_golf_trip_setup(uuid,uuid,integer,uuid,jsonb,jsonb,date,date,integer,jsonb) from public,anon,authenticated;
 grant execute on function public.save_golf_trip_setup(uuid,uuid,integer,uuid,jsonb,jsonb,date,date,integer,jsonb) to service_role;
+create table if not exists public.golf_trip_personal_plans (
+  golf_trip_id uuid references public.golf_trips(id) on delete cascade,
+  profile_id uuid references public.profiles(id) on delete cascade,
+  payload jsonb not null check (jsonb_typeof(payload)='object' and octet_length(payload::text)<=262144),
+  revision integer not null default 1, last_write_id uuid not null,
+  primary key(golf_trip_id,profile_id)
+);
+alter table public.golf_trip_personal_plans enable row level security;
+revoke all on public.golf_trip_personal_plans from public,anon,authenticated;
+grant all on public.golf_trip_personal_plans to service_role;
+create or replace function public.save_golf_trip_personal_plans(p_profile uuid,p_trip uuid,p_revision integer,p_write uuid,p_payload jsonb)
+returns jsonb language plpgsql security definer set search_path=public as $$
+declare v_saved golf_trip_personal_plans; v_revision integer;
+begin
+  perform id from golf_trips where id=p_trip for update;
+  if not found or not exists(select 1 from golf_trip_members where golf_trip_id=p_trip and profile_id=p_profile and invitation_status='accepted') then raise exception 'Trip not found.' using errcode='42501'; end if;
+  select * into v_saved from golf_trip_personal_plans where golf_trip_id=p_trip and profile_id=p_profile;
+  if v_saved.last_write_id=p_write then return jsonb_build_object('revision',v_saved.revision); end if;
+  if coalesce(v_saved.revision,0)<>p_revision then raise exception 'Plans changed on another device.' using errcode='40001'; end if;
+  v_revision:=coalesce(v_saved.revision,0)+1;
+  insert into golf_trip_personal_plans(golf_trip_id,profile_id,payload,revision,last_write_id) values(p_trip,p_profile,p_payload,v_revision,p_write)
+    on conflict(golf_trip_id,profile_id) do update set payload=excluded.payload,revision=excluded.revision,last_write_id=excluded.last_write_id;
+  return jsonb_build_object('revision',v_revision);
+end;
+$$;
+revoke all on function public.save_golf_trip_personal_plans(uuid,uuid,integer,uuid,jsonb) from public,anon,authenticated;
+grant execute on function public.save_golf_trip_personal_plans(uuid,uuid,integer,uuid,jsonb) to service_role;
 commit;

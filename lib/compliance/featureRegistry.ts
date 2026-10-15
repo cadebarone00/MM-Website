@@ -74,6 +74,11 @@ interface FeatureSeed {
 
 const seeds: FeatureSeed[] = [
   {
+    id: "saved-trip-workspace", name: "Saved trip shared workspace", scopeRevision: 1,
+    scope: "Shared phone/settings layout connected to actual saved-trip members and scorecards; organizer-only versioned Supabase setup with atomic canonical date/capacity/round updates and scoring-group locks. Private per-profile itinerary plans with validated ownership, no group invitations. Existing real scoring/corrections/member/deletion paths preserved; no fabricated sample standings or new match/draft engines. Implementation and tests local; production migration/deployment unverified. Findings and unresolved privacy/retention/IP/provider/legal follow-ups: docs/saved-trip-workspace-review.md.",
+    attentionCategories: ["privacy", "personal-data", "security", "retention", "account-deletion", "ugc", "third-party-golf-content", "organizer-responsibility", "platform-rules", "legal-review"],
+  },
+  {
     id: "trip-draft-room", name: "Trip draft room", scopeRevision: 4,
     scope: "Match Selector presentation foundation reuses draft-room styling with configured Match Draft rounds, Response/Ranks/Randomized labels, open match slots and searchable existing team rosters. Dev page selector and organizer round entry only; no match assignment, automated ranking/randomization or official writes. See docs/match-selector-review.md. Two-team room-local Snake/Straight drafting with existing loaded player names and handicaps, searchable available and team rosters. Team Competition Overview configures Captain's Picks or Duck Race and secondary Snake/Straight Draft Order for Captain's Picks; existing development browser setup persists the method/order, legacy provider paths remain memory-only. Draft room renders read-only choices; manual picks only for Captain's Picks. Random is the existing immediate overview team-selection path, not a draft. No duck-race engine implemented. No server writes, official assignment, new vendor, messaging, payment or multiplayer synchronization. Picks discarded on close. Findings and follow-ups: docs/trip-draft-room-review.md.",
     attentionCategories: ["privacy", "personal-data", "security", "retention", "intellectual-property", "ugc", "organizer-responsibility", "legal-review"],

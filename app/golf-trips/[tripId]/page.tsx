@@ -1,3 +1,5 @@
+import { setupForViewer } from "@/lib/platform/savedTripSetup";
+import { loadSavedTripTravel } from "@/lib/platform/savedTripTravelServer";
 import { loadSavedTripSetup } from "@/lib/platform/savedTripSetupServer";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
@@ -39,5 +41,5 @@ export default async function SavedGolfTripPage({ params, searchParams }: { para
   const scoring = live.status === "ok" ? { tripId, profileId: live.profileId, scoring: live.scoring, corrections } : undefined;
 
   // GolfTripHome reads questionnaire-shaped answers; the saved trip is passed in that shape.
-  return <SavedGolfTripHome setupSnapshot={await loadSavedTripSetup(view.trip)} savedTrip={view.trip} preview={savedTripAsDraft(view.trip)} settingsHref={`${golfTripUrl(tripId)}/settings`} backHref="/golf-trips" alertScope={{ tripId, profileId: view.viewer.profileId, isOrganizer: view.viewer.isOrganizer }} flights={flights} scoring={scoring} />;
+  return <SavedGolfTripHome planSnapshot={await loadSavedTripTravel(view.trip, view.viewer)} setupSnapshot={setupForViewer(await loadSavedTripSetup(view.trip), view.viewer.isOrganizer)} savedTrip={view.trip} preview={savedTripAsDraft(view.trip)} settingsHref={`${golfTripUrl(tripId)}/settings`} backHref="/golf-trips" alertScope={{ tripId, profileId: view.viewer.profileId, isOrganizer: view.viewer.isOrganizer }} flights={flights} scoring={scoring} />;
 }
