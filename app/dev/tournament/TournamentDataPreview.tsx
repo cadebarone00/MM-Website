@@ -64,8 +64,10 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
   // keep, the leaderboard with saved rounds, trip stats and the organizer's own changes.
   const scoring = devTripScoring(devRounds, match, viewAs);
   const group = scoring.group;
-  // Golf → Stats preview: the simulator's "Sample trip stats" swaps in a made-up trip's rounds for this trip's players.
-  const sampleStats = useMemo(() => config.state.sampleTripStats && match ? sampleTripStatsView(match.leaderboard.map((row) => ({ id: row.golfer.name, name: row.golfer.name, hcp: row.golfer.hcp }))) : undefined, [config.state.sampleTripStats, match]);
+  // Golf → Stats preview: a made-up trip's rounds for this trip's players — whenever no cards have been submitted yet (so the
+  // tab always has something to show in dev), or always with the simulator's "Sample trip stats". "From saved cards" turns it off.
+  const useSample = config.state.sampleTripStats ?? !scoring.tripStats.trip;
+  const sampleStats = useMemo(() => useSample && match ? sampleTripStatsView(match.leaderboard.map((row) => ({ id: row.golfer.name, name: row.golfer.name, hcp: row.golfer.hcp }))) : undefined, [useSample, match]);
   const groupKey = group ? JSON.stringify(group) : null;
   useEffect(() => { if (groupKey) dispatchDevRounds({ type: "saveGroup", group: JSON.parse(groupKey) }); }, [groupKey]);
   // Live round: Start / End round in Organizer settings wins; otherwise the simulator's round state stands in for "today is
