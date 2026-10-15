@@ -13,7 +13,8 @@ const LABELS: Record<Field, string> = { displayName: "Name", username: "Username
  * Each saves on its own through PATCH /api/account/profile with just that field. `email` shows first, read only (it comes
  * from the login).
  */
-export function ProfileFieldsSetting({ initial, bioAvailable, email }: { initial: Record<Field, string>; bioAvailable: boolean; email?: string | null }) {
+/** `onSave` (dev profile preview only) saves somewhere else instead of the account; it throws to show an error. */
+export function ProfileFieldsSetting({ initial, bioAvailable, email, onSave }: { initial: Record<Field, string>; bioAvailable: boolean; email?: string | null; onSave?: (field: Field, value: string) => Promise<void> }) {
   const router = useRouter();
   const [values, setValues] = useState(initial);
   const [editing, setEditing] = useState<Field | null>(null);
@@ -25,9 +26,12 @@ export function ProfileFieldsSetting({ initial, bioAvailable, email }: { initial
   async function save(field: Field) {
     setSaving(true); setError(null);
     try {
-      const response = await fetch("/api/account/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ [field]: draft }) });
-      const body = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
-      if (!response.ok || !body?.ok) throw new Error(body?.error ?? "Couldn't save that. Try again.");
+      if (onSave) await onSave(field, draft);
+      else {
+        const response = await fetch("/api/account/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ [field]: draft }) });
+        const body = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
+        if (!response.ok || !body?.ok) throw new Error(body?.error ?? "Couldn't save that. Try again.");
+      }
       setValues((all) => ({ ...all, [field]: draft.trim() }));
       setEditing(null);
       router.refresh();

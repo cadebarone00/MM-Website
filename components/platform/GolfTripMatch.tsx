@@ -1,5 +1,6 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { createPortal } from "react-dom";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useSwipe } from "./useSwipe";
 import { resolveGolfFormat } from "@/lib/platform/formats";
 import { rankLeaderboard } from "@/lib/platform/golfLeaderboardOrder";
@@ -39,7 +40,6 @@ export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundSt
   // Gross only: gross, no control. Net only: net, "Net Scoring". Both: the GROSS / NET switch.
   const scoring = matchScoring(match);
   const showNet = scoring === "Net" || (scoring === "Both" && net);
-  const formatDef = resolveGolfFormat(match.formatDef?.key ?? match.format);
   const sideNames = match.matches.map(m => [normalizeCompetitor(m.left).name, m.right ? normalizeCompetitor(m.right).name : undefined]);
   // The two teams: the matches' own side names when every match is the same two, else (or with no matches set yet) the
   // competition's two sides.
@@ -48,9 +48,9 @@ export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundSt
     : match.sides?.[0]?.name && match.sides[1]?.name ? [match.sides[0].name, match.sides[1].name] as const : null;
 
   return <div className={`${styles.match} ${styles.matchesList}`}>
-    <SlideHeader title={match.course} detail={`Round ${match.round} of ${match.roundCount} • ${formatDef.label}`}>
+    {scoring !== "Gross" && <div className={styles.matchScoringControl}>
       <ScoringControl scoring={scoring} net={net} onNet={setNet} />
-    </SlideHeader>
+    </div>}
     {/* The two teams' names once, above the matches, with this list's own round picker between them (it moves only the
         matches below; the picker under the big box moves only the box). */}
     {teamNames ? <div className={styles.teamNames}>
@@ -175,7 +175,7 @@ export function GolfTripLeaderboard({ match, byToday = false }: { match: GolfMat
     };
   }, []);
   const [net, setNet] = useState(false);
-  const [openCards, setOpenCards] = useState<ReadonlySet<string>>(new Set());
+  const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
   const formatDef = resolveGolfFormat(match.formatDef?.key ?? match.format);
   const isStableford = formatDef.scoringMethod === "stableford";
   const scoring = matchScoring(match);
@@ -183,13 +183,7 @@ export function GolfTripLeaderboard({ match, byToday = false }: { match: GolfMat
   // Always best → worst (alphabetical by last name before anyone has a score), for Gross and Net alike.
   const rows = rankLeaderboard(match.leaderboard, { net: showNet, stableford: isStableford, today: byToday });
 
-  function toggleCard(name: string) {
-    setOpenCards((current) => {
-      const next = new Set(current);
-      if (!next.delete(name)) next.add(name);
-      return next;
-    });
-  }
+  const selectedCard = rows.find(row => row.golfer.name === selectedPlayer);
 
   return <div ref={leaderboardRef} className={`${styles.match} ${styles.leaderboard}`}>
     {/* The course / round line sits at the top of the Golf tab (GolfRoundHeader); here only the Gross / Net control. */}
@@ -205,26 +199,76 @@ export function GolfTripLeaderboard({ match, byToday = false }: { match: GolfMat
         <span className={styles.columnLabel}>TDY</span>
       </div>
       <ul className={styles.lineup}>
-        {rows.map(({ position, golfer, total, thru, today, netTotal, netToday, pointsTotal, pointsToday, holes }) => {
-          const open = openCards.has(golfer.name);
-          const cardId = `scorecard-${golfer.name.replace(/\W+/g, "-")}`;
+        {rows.map(({ position, golfer, total, thru, today, netTotal, netToday, pointsTotal, pointsToday }) => {
+
+
           const totDisplay = isStableford ? (pointsTotal !== undefined ? `${pointsTotal} PTS` : total) : parLabel(showNet ? netTotal : total);
           const tdyDisplay = isStableford ? (pointsToday !== undefined ? `${pointsToday} PTS` : today) : parLabel(showNet ? netToday : today);
-          return <li key={golfer.name} className={`${styles.single} ${showNet ? styles.singleNet : ""} ${open ? styles.singleOpen : ""}`}>
+          return <li key={golfer.name} className={`${styles.single} ${showNet ? styles.singleNet : ""}`}>
             <span className={styles.rank}>{position}</span>
-            <button type="button" className={`${styles.cardButton} ${open ? styles.cardButtonOpen : ""}`} onClick={() => toggleCard(golfer.name)}
-              aria-expanded={open} aria-controls={open ? cardId : undefined} aria-label={`${golfer.name} scorecard`}>CARD</button>
-            <Golfer golfer={golfer} align="left" showThru={false} showHcp={false} />
+            <button type="button" className={styles.playerCardTrigger} onClick={() => setSelectedPlayer(golfer.name)} aria-haspopup="dialog" aria-label={golfer.name + " public trip profile"}>
+              <Golfer golfer={golfer} align="left" showThru={false} showHcp={false} />
+            </button>
             {showNet && <span className={styles.number} aria-label={`Handicap ${golfer.hcp}`}>{golfer.hcp}</span>}
             <span className={styles.number} data-par={isStableford ? undefined : parColor(totDisplay)} aria-label={`Total ${totDisplay}`}>{totDisplay}</span>
             <span className={styles.number} aria-label={`Thru ${thru}`}>{thru}</span>
             <span className={styles.number} data-par={isStableford ? undefined : parColor(tdyDisplay)} aria-label={`Today ${tdyDisplay}`}>{tdyDisplay}</span>
-            {open && <Scorecard id={cardId} par={match.par} holes={holes} name={golfer.name} />}
+
           </li>;
         })}
       </ul>
     </div>
+    {selectedCard && <PlayerPublicTripProfile key={match.round + selectedCard.golfer.name} name={selectedCard.golfer.name} round={match.round} roundCount={match.roundCount} par={match.par} holes={selectedCard.holes} snapshot={{ position: selectedCard.position, total: parLabel(showNet ? selectedCard.netTotal : selectedCard.total), roundScore: parLabel(showNet ? selectedCard.netToday : selectedCard.today), thru: selectedCard.thru }} onClose={() => setSelectedPlayer(null)} />}
   </div>;
+}
+
+function PlayerPublicTripProfile({ name, round, roundCount, par, holes, snapshot, onClose }: { name: string; round: number; roundCount: number; par: number[]; holes: (number | null)[]; snapshot: { position: string; total: string; roundScore: string; thru: string }; onClose: () => void }) {
+  const [selectedRound, setSelectedRound] = useState(round);
+  const roundTabsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const strip = roundTabsRef.current;
+    const active = strip?.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (strip && active) strip.scrollTo({ left: active.offsetLeft - strip.offsetLeft - (strip.clientWidth - active.offsetWidth) / 2, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+  }, [selectedRound]);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    dialog.showModal();
+    return () => dialog.close();
+  }, []);
+  return createPortal(<dialog ref={dialogRef} className={styles.leaderboardScoreSheet} aria-label={name + " public trip profile"} onCancel={onClose} onClick={event => { if (event.target === event.currentTarget) { const r = event.currentTarget.getBoundingClientRect(); if (event.clientY < r.top || event.clientX < r.left || event.clientX > r.right) onClose(); } }}>
+    <div className={styles.playerTripProfileHeader}>
+      <div className={styles.scoreSheetHandle} aria-hidden />
+      <div className={styles.scoreSheetHeading}><div><p className={styles.playerTripProfileLabel}>Player public trip profile</p><h2>{name}</h2></div><button type="button" onClick={onClose} autoFocus aria-label="Close player profile"><X size={18} strokeWidth={2.25} aria-hidden /></button></div>
+    </div>
+    <div ref={roundTabsRef} className={styles.profileRoundTabs} role="tablist" aria-label="Player rounds">
+      {Array.from({ length: Math.max(roundCount, round) }, (_, index) => index + 1).map(number => <button key={number} type="button" role="tab" id={"profile-round-tab-" + number} aria-controls="profile-round-panel" aria-selected={selectedRound === number} onClick={() => setSelectedRound(number)}>Round {number}</button>)}
+    </div>
+    <section id="profile-round-panel" className={styles.playerTripProfileScorecard} role="tabpanel" aria-labelledby={"profile-round-tab-" + selectedRound}>
+      <Scorecard id="leaderboard-player-scorecard" par={selectedRound === round ? par : []} holes={selectedRound === round ? holes : Array<null>(18).fill(null)} name={name} />
+      {selectedRound !== round && <p className={styles.profileRoundEmpty}>Scores for this round are not available.</p>}
+    </section>
+    <section className={styles.profileRoundSnapshot} aria-label="Round snapshot">
+      <div className={styles.snapshotSections}>
+        <div className={styles.snapshotColumn} role="group" aria-label={"Round " + selectedRound + " snapshot"}>
+          <h4>Round {selectedRound}</h4>
+          <dl className={styles.snapshotPill}>
+            <div><dt>+/&minus;</dt><dd>{selectedRound === round ? snapshot.roundScore || "\u2014" : "\u2014"}</dd></div>
+            <div><dt>Thru</dt><dd>{selectedRound === round ? snapshot.thru || "\u2014" : "\u2014"}</dd></div>
+          </dl>
+        </div>
+        <span className={styles.snapshotDivider} aria-hidden />
+        <div className={styles.snapshotColumn} role="group" aria-label="Overall snapshot">
+          <h4>Overall</h4>
+          <dl className={styles.snapshotPill}>
+            <div><dt>Position</dt><dd>{snapshot.position || "\u2014"}</dd></div>
+            <div><dt>+/&minus;</dt><dd>{snapshot.total || "\u2014"}</dd></div>
+          </dl>
+        </div>
+      </div>
+    </section>
+  </dialog>, document.body);
 }
 
 function parLabel(score: string): string {
@@ -325,11 +369,24 @@ function SlideHeader({ title, detail, children }: { title: string; detail: strin
 }
 
 /** Top of the Golf tab: the course, with the round's day, number and format under it. */
-export function GolfRoundHeader({ match }: { match: GolfMatchPreview }) {
+export function GolfRoundHeader({ match, competitive = true, today, day, previousDisabled, nextDisabled, onPrevious, onNext }: {
+  match: GolfMatchPreview; competitive?: boolean; today?: string; day?: number;
+  previousDisabled?: boolean; nextDisabled?: boolean; onPrevious?: () => void; onNext?: () => void;
+}) {
   const formatDef = resolveGolfFormat(match.formatDef?.key ?? match.format);
-  return <div className={styles.leaderboard}>
-    <SlideHeader title={match.course} detail={`${roundDay(match.roundDate)} • Round ${match.round} • ${formatDef.label}`} />
-  </div>;
+  const [localToday] = useState(() => {
+    const date = new Date();
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  });
+  return <header className={styles.golfRoundHeader}>
+    <button type="button" className={styles.golfCourseArrow} aria-label="Previous golf round" disabled={previousDisabled || !onPrevious} onClick={onPrevious}><ChevronLeft size={22} aria-hidden /></button>
+    <div className={styles.golfCourseText}>
+      <p className={styles.headerDetail}>{match.roundDate === (today ?? localToday) && <span>(Today) </span>}{roundDay(match.roundDate)}</p>
+      <h3 className={styles.headerTitle} title={match.course}><span className={styles.courseNameMeasure}>{match.course}</span></h3>
+      <p className={styles.headerDetail}>{day !== undefined && <>Day {day}{competitive && " \u00b7 "}</>}{competitive && <>Round {match.round} &middot; {formatDef.label}</>}</p>
+    </div>
+    <button type="button" className={styles.golfCourseArrow} aria-label="Next golf round" disabled={nextDisabled || !onNext} onClick={onNext}><ChevronRight size={22} aria-hidden /></button>
+  </header>;
 }
 
 /** "2027-04-23" → "Fri, Apr 23" (read as a calendar date, so no time zone can shift it). */

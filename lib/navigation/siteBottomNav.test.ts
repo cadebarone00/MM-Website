@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isSiteBottomNavHidden, siteBottomNavTabActive } from "./siteBottomNav";
+import { chromePathname, isSiteBottomNavHidden, siteBottomNavTabActive, siteBottomNavTabHref } from "./siteBottomNav";
 
 test("isSiteBottomNavHidden hides immersive routes", () => {
   assert.equal(isSiteBottomNavHidden("/broadcast/live"), true);
@@ -22,6 +22,17 @@ test("isSiteBottomNavHidden shows main site routes", () => {
   assert.equal(isSiteBottomNavHidden("/golf-trips"), false);
 });
 
+test("dev profile preview pages wear the real screens' chrome", () => {
+  assert.equal(chromePathname("/dev/profile"), "/profile");
+  assert.equal(chromePathname("/dev/profile/settings"), "/settings");
+  assert.equal(chromePathname("/dev/profile/edit"), "/profile/edit");
+  assert.equal(chromePathname("/dev/profile/requests"), "/dev/profile/requests");
+  assert.equal(chromePathname("/profile"), "/profile");
+  assert.equal(siteBottomNavTabHref("/dev/profile/settings", "/profile"), "/dev/profile");
+  assert.equal(siteBottomNavTabHref("/dev/profile/settings", "/golf-trips"), "/golf-trips");
+  assert.equal(siteBottomNavTabHref("/settings", "/profile"), "/profile");
+});
+
 test("siteBottomNavTabActive", () => {
   assert.equal(siteBottomNavTabActive("/tournaments/join", "/tournaments/join"), true);
   assert.equal(siteBottomNavTabActive("/tournaments/mine", "/tournaments/join"), true);
@@ -30,6 +41,12 @@ test("siteBottomNavTabActive", () => {
   assert.equal(siteBottomNavTabActive("/profile", "/profile"), true);
   assert.equal(siteBottomNavTabActive("/account/choose", "/profile"), true);
   assert.equal(siteBottomNavTabActive("/profiles", "/profile"), false);
+  for (const path of ["/profile/jakeparker", "/profile/edit", "/settings", "/dev/profile", "/dev/profile/settings", "/dev/profile/edit", "/dev/profile/requests"]) {
+    assert.equal(siteBottomNavTabActive(path, "/profile"), true, path);
+    assert.equal(siteBottomNavTabActive(path, "/"), false, path);
+    assert.equal(siteBottomNavTabActive(path, "/golf-trips"), false, path);
+  }
+  assert.equal(siteBottomNavTabActive("/dev/profiles", "/profile"), false);
   assert.equal(siteBottomNavTabActive("/profile", "/"), false);
   assert.equal(siteBottomNavTabActive("/", "/"), true);
   assert.equal(siteBottomNavTabActive("/the-maroon/news", "/"), true);

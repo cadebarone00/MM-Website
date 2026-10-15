@@ -108,18 +108,30 @@ export function simulatorPages(): SimulatorPage[] {
     add("competition-rounds", "Rounds", "settings-competition");
     for (const game of [{ id: "skins", name: "Skins" }, ...SIDE_GAME_REGISTRY.filter(game => game.id !== "skins")]) add(`game-${game.id}`, game.name, "settings-games");
   }
+  // Profile group. First (the default): the real profile screens on a sample profile, no sign-in needed.
+  const profile = pages.find(page => page.path === "/dev/profile");
+  if (profile) Object.assign(profile, { label: "Profile (sample)", group: "Profile", conditions: [
+    { id: "profile-preview-sample", label: "My profile · sample stats (25 rounds)", state: { profilePreview: "sample", sampleStats: true } },
+    { id: "profile-preview-few", label: "My profile · not enough rounds for a handicap (2 rounds)", state: { profilePreview: "few", sampleStats: false } },
+    { id: "profile-preview-none", label: "My profile · no rounds yet", state: { profilePreview: "none", sampleStats: false } },
+    { id: "profile-preview-public", label: "Someone else's Public profile", state: { profilePreview: "public", sampleStats: false } },
+    { id: "profile-preview-private", label: "Someone else's Private profile", state: { profilePreview: "private", sampleStats: false } },
+  ] });
+  for (const [path, label] of [["/dev/profile/settings", "Settings (sample)"], ["/dev/profile/edit", "Edit profile (sample)"]]) {
+    const page = pages.find(item => item.path === path);
+    if (page) Object.assign(page, { label, group: "Profile", parentId: profile?.id, conditions: [] });
+  }
   // The real Profile (signed-in account): real data, or made-up rounds to preview the Stats tab and Compare.
   const realProfile = pages.find(page => page.path === "/profile");
-  if (realProfile) realProfile.conditions = [
+  if (realProfile) Object.assign(realProfile, { label: "My profile (live account)", group: "Profile", conditions: [
     { id: "profile-real-data", label: "My real rounds", state: { sampleStats: false } },
     { id: "profile-sample-data", label: "Sample stats data (25 made-up rounds + a sample golfer to compare)", state: { sampleStats: true } },
-  ];
-  const profile = pages.find(page => page.path === "/dev/profile");
-  if (profile) {
-    profile.label = "Profile (player rounds)";
-    profile.group = "Profile";
-    profile.conditions = signedInAs();
-  }
+  ] });
+  // The player-rounds store (moved from /dev/profile): History link requests, removing rounds, Public / Private.
+  const requests = pages.find(page => page.path === "/dev/profile/requests");
+  if (requests) Object.assign(requests, { label: "Link requests (dev)", group: "Profile", conditions: signedInAs() });
+  // Keep the sample profile first in its group, then the live account, then link requests.
+  for (const page of [realProfile, requests]) if (page) pages.push(...pages.splice(pages.indexOf(page), 1));
   const maroonUPath = "/dev/tournament/maroon-u";
   for (let index = pages.length - 1; index >= 0; index--) {
     if (pages[index].path.startsWith(maroonUPath)) pages.splice(index, 1);

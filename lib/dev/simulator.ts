@@ -1,6 +1,7 @@
 import type { GpsMode } from "@/lib/platform/golfGps/types";
 import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS, type GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
 import { DEFAULT_DEV_ACCOUNT, DEV_ACCOUNTS } from "./devAccounts";
+import { PROFILE_PREVIEWS, type ProfilePreview } from "./sampleProfile";
 
 // Portrait CSS pixels, not panel pixels. Safe insets are editable test inputs.
 // Dimensions/provenance and browser-emulation limits: docs/dev-simulator-review.md.
@@ -55,6 +56,8 @@ export type SimulatorState = {
   competitionSetup?: CompetitionSetup;
   /** Profile: show made-up rounds (lib/dev/sampleProfileRounds.ts) on my own profile, plus a sample golfer in Compare. */
   sampleStats?: boolean;
+  /** Profile preview (/dev/profile): whose sample profile shows and with how many rounds. Unset = "sample". */
+  profilePreview?: ProfilePreview;
   dualDraftMomentum?: boolean;
   brandStyle?: "clean" | "gold";
   brandStage?: "drawing" | "finished" | "reduced";
@@ -143,6 +146,7 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (typeof state.format !== "string" || state.format.length > 32) return null;
   if (state.seed !== undefined && (typeof state.seed !== "number" || !Number.isSafeInteger(state.seed) || state.seed < 1 || state.seed > 2 ** 31)) return null;
   if (state.competitionSetup !== undefined && !COMPETITION_SETUPS.some(([id]) => id === state.competitionSetup)) return null;
+  if (state.profilePreview !== undefined && !PROFILE_PREVIEWS.includes(state.profilePreview as ProfilePreview)) return null;
   if (state.dualDraftMomentum !== undefined && typeof state.dualDraftMomentum !== "boolean") return null;
   if (state.brandStyle !== undefined && !["clean", "gold"].includes(String(state.brandStyle))) return null;
   if (state.brandStage !== undefined && !["drawing", "finished", "reduced"].includes(String(state.brandStage))) return null;

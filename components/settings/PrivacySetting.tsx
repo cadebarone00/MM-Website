@@ -16,7 +16,8 @@ const EXPLAIN: Record<RoundsVisibility, string> = {
  * lib/profile/profileReadModel.ts), with an (i) in the corner that explains both. Saves on tap; goes back to the old
  * choice if saving fails.
  */
-export function PrivacySetting({ initial }: { initial: RoundsVisibility }) {
+/** `onSave` (dev profile preview only) saves somewhere else instead of the account. */
+export function PrivacySetting({ initial, onSave }: { initial: RoundsVisibility; onSave?: (visibility: RoundsVisibility) => Promise<void> }) {
   const [visibility, setVisibility] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +30,7 @@ export function PrivacySetting({ initial }: { initial: RoundsVisibility }) {
     setSaving(true);
     setError(null);
     try {
+      if (onSave) { await onSave(next); return; }
       const response = await fetch("/api/account/privacy", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ visibility: next }) });
       const body = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
       if (!response.ok || !body?.ok) throw new Error(body?.error ?? "We couldn't save that. Try again.");

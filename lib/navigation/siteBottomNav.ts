@@ -20,14 +20,26 @@ export function isSiteBottomNavHidden(pathname: string): boolean {
   return false;
 }
 
+/** The dev profile preview's screens wear the same chrome (header, background) as the real screens they preview. */
+const DEV_PROFILE_PREVIEW: Record<string, string> = { "/dev/profile": "/profile", "/dev/profile/settings": "/settings", "/dev/profile/edit": "/profile/edit" };
+export function chromePathname(pathname: string): string {
+  return DEV_PROFILE_PREVIEW[pathname] ?? pathname;
+}
+
+/** Where a bottom-menu tab goes: inside the dev profile preview, Profile stays in the preview instead of the live account. */
+export function siteBottomNavTabHref(pathname: string, href: string): string {
+  return href === "/profile" && (pathname === "/dev/profile" || pathname.startsWith("/dev/profile/")) ? "/dev/profile" : href;
+}
+
 export function siteBottomNavTabActive(pathname: string, href: string): boolean {
   // Tourneys stays lit on its My Tournaments list and the Create Tournament page too.
   if (href === "/tournaments/join") {
     return pathname === "/tournaments/join" || pathname.startsWith("/tournaments/join/") || pathname === "/tournaments/mine" || pathname === "/tournaments/create";
   }
-  // Profile stays lit on the account screens (e.g. the post-login /account/choose).
+  // Profile stays lit on the account screens (e.g. the post-login /account/choose), Settings, and the local dev profile preview.
   if (href === "/profile") {
-    return pathname === "/profile" || pathname.startsWith("/profile/") || pathname.startsWith("/account");
+    return pathname === "/profile" || pathname.startsWith("/profile/") || pathname.startsWith("/account") || pathname === "/settings"
+      || pathname === "/dev/profile" || pathname.startsWith("/dev/profile/");
   }
   // Play is the home page; it stays lit on The Maroon's category sub-pages too.
   if (href === "/") {

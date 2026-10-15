@@ -11,7 +11,7 @@ import { PortalHeader } from "@/components/nav/PortalHeader";
 import { PlayerAreaNav } from "@/components/nav/PlayerAreaNav";
 import { SiteBottomNav } from "@/components/nav/SiteBottomNav";
 import type { NextTournamentOverride } from "@/lib/data/types";
-import { isSiteBottomNavHidden, SITE_BOTTOM_NAV_CONTENT_CLASS } from "@/lib/navigation/siteBottomNav";
+import { chromePathname, isSiteBottomNavHidden, SITE_BOTTOM_NAV_CONTENT_CLASS } from "@/lib/navigation/siteBottomNav";
 import { AreaNavigation } from "./AreaNavigation";
 import { RoundExitProvider } from "./RoundExit";
 import { WebsiteFrameBridge } from "@/components/portal/admin/WebsiteFrameBridge";
@@ -61,7 +61,7 @@ function SiteChromeBody({ children, nextTournamentOverride }: { children: ReactN
 }
 
 function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode; nextTournamentOverride: NextTournamentOverride }) {
-  const pathname = usePathname();
+  const pathname = chromePathname(usePathname());
   const inPortal = pathname.startsWith("/portal");
   const inBroadcast = pathname.startsWith("/broadcast");
   // Customer tournament sites (/t/...) bring their own header, nav and footer

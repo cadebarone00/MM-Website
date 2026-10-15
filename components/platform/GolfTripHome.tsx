@@ -25,7 +25,7 @@ import { GolfTripCompetitionMatchPreview } from "./GolfTripCompetitionMatchPrevi
 import { GolfTripActionSheet } from "./GolfTripActionSheet";
 import { GolfTripGames } from "./GolfTripGames";
 import { GolfTripChat } from "./GolfTripChat";
-import { GolfTripItinerary, GolfTripVenue } from "./GolfTripVenue";
+import { GolfTripVenue } from "./GolfTripVenue";
 import { ItineraryDetailSheet } from "./ItineraryDetailSheet";
 import { shortPlace } from "@/lib/platform/placeLabel";
 import { MomSection } from "./MomSection";
@@ -241,7 +241,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
         liveRound={roundLive && previewMatch ? { id: `round-${previewMatch.round}`, kind: "teeTime", title: `Round ${previewMatch.round} · ${previewMatch.course}`, startsAt: (tripNow ?? "").slice(0, 16) } : undefined} /></>
         : tab === "Golf" ? <>
           <div style={{ display: "contents", ...teamColorVars }}>
-            <GolfSlides key={`${structure.individual}-${structure.team}`} previewMatch={previewMatch} structure={structure} rsvpKey={rsvpKey} navigation={navigation} onNavigationChange={onNavigationChange} tripStats={tripStats} scoreChanges={scoreChanges} roundStarted={roundLive} />
+            <GolfSlides schedule={preview} now={tripNow} key={`${structure.individual}-${structure.team}`} previewMatch={previewMatch} structure={structure} rsvpKey={rsvpKey} navigation={navigation} onNavigationChange={onNavigationChange} tripStats={tripStats} scoreChanges={scoreChanges} roundStarted={roundLive} />
           </div>
         </>
         : tab === "Venue" ? <GolfTripVenue draft={draft} settingsHref={settingsHref} today={tripNow?.slice(0, 10)}
@@ -398,7 +398,18 @@ function WeatherRow({ place, weather }: { place?: string; weather: Promise<TripW
 
 /** Golf sections share the existing responsive scroll-snap strip and tab styling. */
 /** `roundStarted`: the organizer has begun the current round — its matches show THRU instead of tee times. */
-function GolfSlides({ previewMatch, structure, rsvpKey = "default", navigation, onNavigationChange, tripStats, scoreChanges, roundStarted = false }: { previewMatch?: GolfMatchPreview; structure: CompetitionStructure; rsvpKey?: string; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void; tripStats?: TripStatsView; scoreChanges?: ScoreChangeLine[]; roundStarted?: boolean }) {
+function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpKey = "default", navigation, onNavigationChange, tripStats, scoreChanges, roundStarted = false }: { previewMatch?: GolfMatchPreview; schedule?: GolfTripDraft; now?: string; structure: CompetitionStructure; rsvpKey?: string; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void; tripStats?: TripStatsView; scoreChanges?: ScoreChangeLine[]; roundStarted?: boolean }) {
+  const rounds = useMemo(() => schedule ? plannedRounds(schedule) : [], [schedule]);
+  const [chosenRound, setChosenRound] = useState<number | null>(null);
+  const selected = rounds.find(round => round.number === chosenRound) ?? rounds.find(round => round.number === sourceMatch?.round);
+  const previewMatch = useMemo(() => {
+    if (!sourceMatch || !selected || selected.number === sourceMatch.round) return sourceMatch;
+    return { ...sourceMatch, round: selected.number, roundDate: selected.date,
+      course: schedule?.['round' + selected.number + 'Course'] || 'Course TBD',
+      format: schedule?.['round' + selected.number + 'Format'] || 'Format not set', formatDef: undefined,
+      matches: sourceMatch.matches.filter(pairing => pairing.round === selected.number), leaderboard: [],
+    };
+  }, [sourceMatch, selected, schedule]);
   // Competition is about the round being played: only that round's matches (matches without a round count as current).
   // The big box (Matches) shows the current round's matches one at a time: ‹ Match N › under it, or swipe the box
   // (left = next match, right = previous). Starts on match 1 again whenever the round changes.
@@ -511,7 +522,11 @@ function GolfSlides({ previewMatch, structure, rsvpKey = "default", navigation, 
     </div>;
 
   return <>
-    {previewMatch && <GolfRoundHeader match={previewMatch} />}
+    {previewMatch && <GolfRoundHeader match={previewMatch} competitive={!noComp} today={now?.slice(0, 10)}
+      day={selected?.dayNumber} previousDisabled={rounds.findIndex(round => round.number === previewMatch.round) <= 0}
+      nextDisabled={rounds.findIndex(round => round.number === previewMatch.round) < 0 || rounds.findIndex(round => round.number === previewMatch.round) >= rounds.length - 1}
+      onPrevious={() => { const index = rounds.findIndex(round => round.number === previewMatch.round); if (index > 0) setChosenRound(rounds[index - 1].number); }}
+      onNext={() => { const index = rounds.findIndex(round => round.number === previewMatch.round); if (index >= 0 && index < rounds.length - 1) setChosenRound(rounds[index + 1].number); }} />}
     {/* Golf sections: the words themselves evenly spaced (equal gaps between them and at both ends), since their lengths differ. */}
     <div ref={sectionTabsRef} className={`${styles.tabs} ${styles.sectionTabs}`} role="tablist" aria-label="Golf sections"
       onPointerDown={event => {
@@ -545,7 +560,7 @@ function GolfSlides({ previewMatch, structure, rsvpKey = "default", navigation, 
           ? noComp && !inAppScoring ? null
           : teamOnly && previewMatch ? <GolfTeeSheet match={previewMatch} sittingOut={sittingOut} />
           : previewMatch ? <GolfTripLeaderboard match={previewMatch} byToday={noComp} /> : <Card title="Score Overview"><Empty>Your leaderboard and round scores will show here</Empty></Card>
-          : previewMatch && roundMatch ? <GolfTripCompetitionMatchPreview key={previewMatch.round} initialMatch={previewMatch} roundStarted={roundStarted} draftScope={rsvpKey} /> : <Card title="Competition"><Empty>Your matchups will show here</Empty></Card>}
+          : previewMatch && roundMatch ? <GolfTripCompetitionMatchPreview key={previewMatch.round} initialMatch={previewMatch} viewRound={previewMatch.round} roundStarted={roundStarted && previewMatch.round === sourceMatch?.round} draftScope={rsvpKey} /> : <Card title="Competition"><Empty>Your matchups will show here</Empty></Card>}
       </div>)}
     </div>
     <div role="tabpanel" aria-label="Games" hidden={!gamesActive || statsActive || predictActive}>
@@ -945,7 +960,9 @@ function InfoAccount({ draft, draftPlayers, teamDraft, isOrganizer, momentumEven
           </button>
         : <FlightsCard flights={flights} />}
     </div>
-    <GolfTripItinerary draft={draft} settingsHref={settingsHref} />
+    <section className={styles.homeFeed} aria-labelledby="home-feed-heading">
+      <h2 id="home-feed-heading" className={styles.accountHeading}>Feed</h2>
+    </section>
   </div>;
 }
 

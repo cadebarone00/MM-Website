@@ -26,7 +26,8 @@ const empty = "px-4 py-5 text-center text-maroon-900/60";
  * else's on /profile/<username>. Only the owner gets Settings and Edit; a Private profile shows other people its name only.
  */
 /** `friendsCount`: people they've been on a golf trip with (lib/profile/friendsServer.ts); null = unknown. */
-export function ProfileView({ profile: real, friendsCount = null }: { profile: ProfileReadModel; friendsCount?: number | null }) {
+/** `links`: where the gear and the photo's pencil go (the dev profile preview points them at its sample screens). */
+export function ProfileView({ profile: real, friendsCount = null, links = { settings: "/settings", edit: "/settings" } }: { profile: ProfileReadModel; friendsCount?: number | null; links?: { settings: string; edit: string } }) {
   const [tab, setTab] = useState<Tab>("overview");
   // App simulator (dev only) → Profile → "Sample stats data": my own profile shows made-up rounds instead of my real ones.
   const sample = useSimulator()?.state.sampleStats === true && real.isOwner;
@@ -37,7 +38,7 @@ export function ProfileView({ profile: real, friendsCount = null }: { profile: P
     // Extend the profile background through the bottom-menu padding.
     <div className={`flex min-h-screen min-w-0 flex-col text-maroon-900 mb-[calc(-5.75rem-env(safe-area-inset-bottom))] lg:mb-0 ${tab === "rounds" && !isPrivate ? "bg-maroon-900" : "bg-cream-50"}`}>
       <header className="relative z-10 flex min-h-[228px] flex-col rounded-b-3xl bg-cream-50 text-maroon-900 px-5 pb-3 pt-16">
-        {isOwner && <Link href="/settings" aria-label="Settings" className="absolute right-4 top-6 flex h-11 w-11 items-center justify-center rounded-full text-maroon-900 hover:text-maroon-700">
+        {isOwner && <Link href={links.settings} aria-label="Settings" className="absolute right-4 top-6 flex h-11 w-11 items-center justify-center rounded-full text-maroon-900 hover:text-maroon-700">
           <Settings size={28} aria-hidden="true" />
         </Link>}
         <div className="mx-auto w-full max-w-[640px]">
@@ -52,7 +53,7 @@ export function ProfileView({ profile: real, friendsCount = null }: { profile: P
                   : identity.initials}
               </span>
               {identity.canEditBio && (
-                <Link href="/settings" aria-label="Edit profile in Settings"
+                <Link href={links.edit} aria-label="Edit profile in Settings"
                   className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-maroon-900 bg-cream-50 text-maroon-900">
                   <Pencil size={16} aria-hidden="true" />
                 </Link>

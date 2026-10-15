@@ -150,6 +150,12 @@ export function modernStats(rounds: ProfileHistoryRound[]): ModernStats | null {
   };
 }
 
+/** What the sources returned for one subject; null = that source couldn't be read. */
+export interface ProfileData { history: unknown; rounds: ProfileHistoryRound[] | null; legacy: LegacyMaroonProfile | null }
+
+const accessFor = (viewerId: ProfileId | null, subject: ProfileSubjectRow): ProfileReadModel["access"] =>
+  viewerId === subject.id ? "owner" : subject.roundsVisibility === "public" ? "public" : "private";
+
 /**
  * Assembles the subject's profile for this viewer, or null when the subject has no profile. Sources run in parallel;
  * a source that fails leaves its section "unavailable" — a profile with nothing in it is still a whole profile.
@@ -157,8 +163,24 @@ export function modernStats(rounds: ProfileHistoryRound[]): ModernStats | null {
 export async function assembleProfileReadModel(viewerId: ProfileId | null, subjectId: ProfileId, sources: ProfileSources, today: string): Promise<ProfileReadModel | null> {
   const subject = await sources.subject(subjectId);
   if (!subject) return null;
+  // Someone else, Private profile: no lookups beyond the profile row.
+  if (accessFor(viewerId, subject) === "private") return buildProfileReadModel(viewerId, subject, { history: null, rounds: null, legacy: null }, sources.isLegacyTournament, today);
+  const slug = subject.legacyMaroonPlayerSlug;
+  const [history, rounds, legacy] = await Promise.all([
+    sources.history(viewerId, subject.id).catch(() => null),
+    sources.rounds(viewerId, subject.id).catch(() => null),
+    slug ? sources.legacy(slug, viewerId === subject.id ? "full" : "public").catch(() => null) : Promise.resolve(null),
+  ]);
+  return buildProfileReadModel(viewerId, subject, { history, rounds, legacy }, sources.isLegacyTournament, today);
+}
+
+/**
+ * The profile read model from already-loaded data (the privacy rules live here). assembleProfileReadModel feeds it
+ * from Supabase; the dev profile preview (lib/dev/sampleProfile.ts) feeds it sample data, so both follow the same rules.
+ */
+export function buildProfileReadModel(viewerId: ProfileId | null, subject: ProfileSubjectRow, data: ProfileData, isLegacyTournament: (slug: string) => boolean, today: string): ProfileReadModel {
   const isOwner = viewerId === subject.id;
-  const access: ProfileReadModel["access"] = isOwner ? "owner" : subject.roundsVisibility === "public" ? "public" : "private";
+  const access = accessFor(viewerId, subject);
   if (access === "private") {
     // Someone else, Private profile: who it is, and nothing else. No lookups beyond the profile row.
     const name = profileDisplayName({ displayName: subject.displayName, username: subject.username });
@@ -168,15 +190,9 @@ export async function assembleProfileReadModel(viewerId: ProfileId | null, subje
       rounds: { status: "hidden" }, trips: { status: "hidden" }, tournaments: { status: "hidden" }, teamHistory: [], modernStats: null, legacy: null,
     };
   }
-  const slug = subject.legacyMaroonPlayerSlug;
-  const [history, rounds, legacy] = await Promise.all([
-    sources.history(viewerId, subject.id).catch(() => null),
-    sources.rounds(viewerId, subject.id).catch(() => null),
-    slug ? sources.legacy(slug, isOwner ? "full" : "public").catch(() => null) : Promise.resolve(null),
-  ]);
-
+  const { history, rounds, legacy } = data;
   const historyOk = isObject(history) && history.restricted === false;
-  const tournaments = historyOk ? profileTournamentsFromJson(history.tournaments, sources.isLegacyTournament) : [];
+  const tournaments = historyOk ? profileTournamentsFromJson(history.tournaments, isLegacyTournament) : [];
   // The profile is only what the golfer sets now — nothing from the old Maroon player page.
   const name = profileDisplayName({ displayName: subject.displayName, username: subject.username });
   const section = <T,>(value: T): ProfileSection<T> => historyOk ? { status: "ok", value } : { status: "unavailable" };

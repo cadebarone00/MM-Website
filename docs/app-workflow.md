@@ -6,6 +6,82 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-10-15 - Snapshot labels above pills (presentation implemented locally; deployment not verified).** Moved Round number and Overall labels outside their outlined pills, aligned left with a 6px label-to-pill gap. The labels occupy the space beneath the scorecard line, moving the pill bodies down about 20px. Adjusted the central divider to span the pill bodies. Values and selection behavior remain unchanged. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Snapshot pills directly below scorecard (presentation implemented locally; deployment not verified).** Removed the visible Round snapshot heading and reduced the scorecard bottom margin from 24px to 6px, bringing the round/overall pills immediately beneath its lower divider. Accessible section labeling and snapshot values remain unchanged. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Split round and overall snapshot pills (implemented locally; deployment not verified).** Replaced the three-column player snapshot with two outlined pills separated by a vertical line. Left shows selected Round number, its plus/minus score and Thru; right shows overall position and overall plus/minus. Uses existing daily/overall gross or net leaderboard fields, rather than Stableford point totals for plus/minus. Unloaded rounds show dashes for round metrics while overall stays visible. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Player profile round snapshot (implemented locally; deployment not verified).** Added Round snapshot below the scorecard bottom divider, showing overall position, total score and Thru from the selected player leaderboard row. Total follows the active gross/net/Stableford view; overall position and total stay visible when changing round pills, while unloaded rounds show a dash for Thru. No standings calculations or data fetching changed. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Player profile round pills and scorecard lines (implemented locally; deployment not verified).** Added horizontally scrolling Round pills above the player profile scorecard, matching the Golf section pill sizing and selected colors. Opens on the displayed leaderboard round. Added matching grey lines immediately above and below the scorecard area. Only the supplied round has loaded score data; other round selections show a blank card and unavailable message instead of borrowing scores. No historical score fetching or new data access added. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Player public trip profile layout (presentation implemented locally; deployment not verified).** Renamed the leaderboard slide-up presentation Player public trip profile. Its upper section contains the player name and existing X, ending with a grey divider about 20% down the 80dvh panel (16dvh). The existing read-only round scorecard sits below. This is a layout/name change only: no public URL, new profile fields, visibility expansion or new data access was added. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Scorecard sheet X close control (presentation implemented locally; deployment not verified).** Replaced the outlined Close text pill with the app-style 32px transparent X icon button. The accessible Close scorecard label, initial focus and dismissal behavior remain. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Scorecard sheet uses 80% screen height (implemented locally; deployment not verified).** Changed the leaderboard scorecard slide-up from a navigation-anchored top edge to a fixed 80dvh height, leaving the upper 20% of the viewport above it. It remains bottom aligned regardless of navigation position or scrolling. Existing modal close and reduced-motion behavior remain. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Leaderboard scorecard slide-up (implemented locally; deployment not verified).** Removed CARD buttons and inline scorecard expansion from Golf leaderboard rows. Tapping a player name opens the same round scorecard in a modal slide-up whose top edge is 6px above Home-through-Itinerary navigation. The name column uses the freed width. Close, Escape and outside clicks dismiss it; native dialog focus handling and reduced-motion support apply. No scoring data, permissions or writes changed. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Blank Home Feed replaces lower trip summary (implemented locally; deployment not verified).** Removed the lower Home Upcoming/Add Round/day-count/round-list section and replaced it with a Feed heading and blank space. The trip heading, weather, Momentum and first white itinerary/flight cards remain. The separate Itinerary tab remains available. Feed has no items or data source yet. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Smaller Golf section pills (presentation implemented locally; deployment not verified).** Reduced Leaderboard-through-Stats pill minimum height from 38px to 32.3px, horizontal padding from 18px to 15.3px and text from 15px to 12.75px (15% smaller). Centering, elastic dragging, colors and surrounding spacing remain unchanged. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Course text extends within 6px of arrows (presentation implemented locally; deployment not verified).** Reduced the shared Golf arrow columns to their 22px icon width and the column gaps to 6px, giving course names more room before ellipsis. Arrows remain 6px from phone edges; font size and vertical centering remain unchanged. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Course standard reduced by 20% (presentation implemented locally; deployment not verified).** Reduced the shared Golf course title from 18px to 14.4px. Detail text, arrow positions, single-line overflow and centered layout remain unchanged. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Home maroon extends behind first card (presentation implemented locally; deployment not verified).** Extended the Home header maroon background downward by 25px using a solid shadow, so the first white card overlaps the maroon-to-white transition. Card positions and the 10px Momentum outer gaps remain unchanged. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Momentum outer gaps increased to 10px (presentation implemented locally; deployment not verified).** Increased the space above the Home Momentum top divider and below its bottom divider from 5px to 10px. Weather/date alignment, divider styling and Momentum content remain unchanged. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Fixed Arnold Palmer course size and edge arrows (presentation implemented locally; deployment not verified).** Standardized course titles at 18px, matching the approximately 18px fitted Mission Hills CC Arnold Palmer title measured in the phone layout. Removed per-name resizing; overflow retains single-line ellipsis. Expanded the header by 10px on each side and aligned arrow icons to its edges, placing them 6px from a mobile viewport edge. Divider width and vertical centering remain unchanged. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Home Momentum dividers and weather alignment (presentation implemented locally; deployment not verified).** Home Momentum now has matching 2px grey lines above and below, starting 5px beneath the trip date/weather baseline and ending 5px before the first white card. Bottom-aligned the weather and trip heading/date columns. Replaced the fixed-height header and overlapping cards with natural content height, preserving expansion for dual drafts. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Fit full course names to header width (presentation implemented locally; deployment not verified).** Replaced fixed-size course truncation with measured font fitting: names start at 20.8px and shrink proportionally as needed to fit the space between the arrows on one line. Fitting updates on course changes, container resizing and font readiness; short names return to full size. This supersedes the fixed 2:1 font ratio for long names. Date/day details and centering remain unchanged. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Gold trip-tab indicator above grey divider (presentation implemented locally; deployment not verified).** Moved the selected Home-through-Itinerary gold underline 2px upward so it sits directly above the continuous 2px grey divider instead of covering it. Navigation and spacing remain unchanged. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Course text twice the detail size (presentation implemented locally; deployment not verified).** Changed the shared Golf course title to 20.8px, exactly twice the 10.4px date and day/format rows. Removed automatic shrinking to preserve that ratio; long names remain on one line with ellipsis and the full title attribute. Centering between grey lines remains. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Golf header centered between dividers (presentation implemented locally; deployment not verified).** Reordered the shared header to date, course, then day/round/format. The text stack and independent left/right arrows now share a centered grid between the existing upper and lower grey lines. Removed earlier accumulated top/row offsets; asymmetric 11px/13px padding accounts for the 2px divider positions to align their centers exactly. Pills remain 9px below the lower divider center. Font sizes, one-line fitting and navigation behavior remain unchanged. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Centered grey Golf divider (presentation implemented locally; deployment not verified).** Added a decorative 2px grey line centered in the existing 18px gap between the day/round/format row and Golf section pills. It matches the Home-through-Itinerary divider color and width, with 8px clear space on either side. Existing spacing and interactions remain unchanged. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Tripled detail-to-pill clearance (presentation implemented locally; deployment not verified).** Increased the gap between the Golf day/round/format row and the Leaderboard-through-Stats pills from 6px to 18px. The existing pills-to-board gap remains unchanged. Section 22 and Mermaid annotation updated; overview mappings and behavior unchanged.
+
+**2026-10-15 - Course title reduced another 10% (presentation implemented locally; deployment not verified).** Reduced the shared Golf course title from 14.08px to 12.672px. Reduced its fitting floor by the same 10%, from 13px to 11.7px, so the new requested size can apply. Detail rows remain 10.4px and one-line ellipsis remains. This supersedes the earlier 125% minimum size ratio. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Further course font reduction (presentation implemented locally; deployment not verified).** Reduced only the shared Golf course title another 20%, from 17.6px to 14.08px. Detail rows remain 10.4px; the existing 13px minimum for long names and ellipsis remain. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Smaller shared Golf header text (presentation implemented locally; deployment not verified).** Reduced course text from 22px to 17.6px and both date and day/round/format detail rows from 13px to 10.4px (20% smaller). Long course names retain one-line fitting and ellipsis, now with a 13px minimum, preserving the 125% detail-font floor. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Larger match selector and doubled board clearance (presentation implemented locally; deployment not verified).** Increased the featured Match selector text from 12px to 14.4px and its chevrons from 16px to 19.2px. Added a 5.2px offset so the visible label begins 8px below the large board instead of 4px, accounting for its centered 20px row. Round selectors and match-selection behavior remain unchanged. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Halved spacing beneath Golf course (presentation implemented locally; deployment not verified).** Reduced the standard course-to-date clearance from about 6.35px to 3.175px and the date-to-day/round gap from 2px to 1px. Course position and the existing section-pill clearances remain unchanged. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Trip navigation to course spacing (presentation implemented locally; deployment not verified).** Adjusted the Golf body top offset so the standard 22px course title begins 12px below the Home-through-Itinerary navigation row, accounting for existing header padding, offset and arrow-row centering. The gaps around Golf section pills remain unchanged. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Golf pills to board gap increased to 9px (presentation implemented locally; deployment not verified).** Increased the gap below the Golf section pills from 6px to 9px. The gap above them remains 6px. Section 22 and Mermaid annotation updated; overview mappings and behavior unchanged.
+
+**2026-10-15 - Golf pills to board gap set to 6px (presentation implemented locally; deployment not verified).** Removed section-strip bottom padding and reduced the following board offset so the large board begins 6px below the pill borders. The 6px gap above the pills remains. Section 22 and Mermaid annotation updated; overview mappings and behavior unchanged.
+
+**2026-10-15 - Golf section gap increased to 6px (presentation implemented locally; deployment not verified).** Increased the clearance between the shared day/round/format line and the Golf section pills from 3px to 6px. Section 22 and Mermaid annotation updated; overview mappings and behavior unchanged.
+
+**2026-10-15 - Golf section pills 3px below details (presentation implemented locally; deployment not verified).** Removed the shared header bottom padding and section-strip top padding, and compensated for the parent layout gap so the pill borders start 3px below the day/round/format line. Header typography, course navigation and section behavior remain unchanged. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Remove repeated Matches heading (presentation implemented locally; deployment not verified).** Removed the course name, round and format repeated in the match list below the large match box. The shared Golf header remains. Gross/net controls still appear when applicable, aligned right, without an empty heading row for Gross-only scoring. Team names, match rows and draft status remain unchanged. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Single-line course names and higher Golf header (presentation implemented locally; deployment not verified).** Previously long course names could wrap to two lines. The shared Golf title now shrinks from 22px to a minimum of 125% of the detail font (16.25px with current 13px details), then truncates with an ellipsis. Full names remain in the title attribute. Fitting refreshes on course changes, container resizing and font readiness. Moved the header up another 5px while preserving its compact spacing. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Tighter Golf header spacing (presentation implemented locally; deployment not verified).** Moved the course row up 5px by reducing header top padding from 8px to 3px. Reduced stacked gaps from 5px to 2px, tightened detail line height and pulled the date 3px closer to the course row. Selection and navigation behavior remain unchanged. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
+**2026-10-15 - Golf course navigation arrows (implemented locally; deployment not verified).** Replaced the shared Golf day/round dropdown with previous/next arrows beside the centered course. Navigation stops at the first and last loaded round. Day number now appears before Round in the bottom detail row; noncompetitive trips show Day alone. Date and Today placement and shared section selection remain. Section 22 and Mermaid annotation updated; workflow paths and mappings unchanged.
+
+**2026-10-15 - Shared Golf course and day header (implemented locally; deployment not verified).** Previously the Golf header was left aligned with date, round and format on one line, and Matches selected its round independently. The centered shared header now contains the loaded schedule day/round selector, course, date with (Today) on its left when applicable, and a separate round/format line for competitive trips. Switching Golf sections retains the selected round; Matches uses that selection. Other rounds show only explicitly associated matches and no borrowed leaderboard scores. Round format uses supplied match presentation metadata for the source round and any explicit draft format for other rounds (otherwise Format not set); no additional score/stat fetching or per-round format backend was added. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
 **2026-10-14 - History section Delete Trip box (implemented locally; deployment not verified).** The newer Organizer History section now includes a Delete Trip box beside History. It opens a dedicated development settings screen reusing existing trip-deletion warnings and confirmation. Development trips have no saved-trip ID, so final Delete is disabled and no Supabase request is sent. Existing saved-trip Organizer deletion still calls the organizer-authorized Supabase delete_golf_trip function and remains unchanged. Section 22 and Mermaid annotation updated; overview paths/mappings unchanged. No trip was deleted by this change.
 
 **2026-10-14 - Empty Matches draft status (implemented locally; deployment not verified).** Previously rounds without matches showed a placeholder Match 1/TBD row. Below team names and the round selector, they now show the configured Match Draft date/time and ticking countdown; without a complete Match Draft schedule they show No Match Draft has been set. and Ask Your Organizer. The viewed round resolves global/per-round method and its own scheduled date/time from existing development setup. Existing matches remain unchanged. Section 22 and Mermaid annotation updated; mappings unchanged. No production draft API or match generation added.
@@ -278,6 +354,36 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 ```mermaid
   %% Maroon U fictional preview uses its own settings and return links.
 flowchart TD
+  %% Player snapshot Round number and Overall labels sit outside and above their pills, aligned left.
+  %% Player profile scorecard lower line -> 6px gap -> round and overall pills, without visible snapshot heading.
+  %% Player snapshot: selected-round plus/minus and Thru pill | divider | overall position and plus/minus pill.
+  %% Player profile scorecard lower divider -> Round snapshot: overall position, leaderboard total and selected-round Thru.
+  %% Player public trip profile -> Round pills -> grey-framed scorecard; unloaded rounds show unavailable scores.
+  %% Leaderboard player -> Player public trip profile panel -> divider 20 percent down -> existing round scorecard; access unchanged.
+  %% Leaderboard scorecard sheet dismisses with app-style X button, Escape or outside click.
+  %% Golf leaderboard player name -> bottom-aligned modal scorecard slide-up filling 80 percent of viewport; no CARD button or inline expansion.
+  %% Home lower trip summary/round list replaced by Feed heading and blank space; dedicated Itinerary remains.
+  %% Golf section pills: 15 percent smaller height, padding and font; centered selection and elastic dragging retained.
+  %% Shared Golf course text area extends to 6px from each previous/next arrow icon.
+  %% Home maroon background extends 25px below header, behind first white card without moving content.
+  %% Golf course title fixed at 14.4px; previous/next icon edges 6px from phone sides.
+  %% Home trip date and weather bottoms align -> 10px -> grey-framed Momentum -> 10px -> first white card.
+  %% Shared Golf course name measures its text and shrinks from 20.8px to fit between arrows without truncating normal long names.
+  %% Selected Home-through-Itinerary gold underline sits above continuous grey divider without covering it.
+  %% Centered Golf header: course 20.8px, exactly twice 10.4px date/day-format text; single-line ellipsis.
+  %% Grey dividers surround centered date/course/day-format stack and centered independent previous/next arrows.
+  %% Golf day/round/format -> 8px space -> matching 2px grey divider -> 8px space -> section pills.
+  %% Shared Golf header text: course 12.672px with 11.7px fitting floor; date and day/round/format 10.4px.
+  %% Featured Match selector: 14.4px text, 19.2px chevrons, 8px visible label clearance below large board.
+  %% Golf course -> date and day/round details: half previous spacing.
+  %% Trip Home-through-Itinerary navigation -> 12px to standard Golf course title.
+  %% Golf section pill borders -> 9px clearance -> large summary board.
+  %% Shared Golf header detail line -> 18px clearance -> Leaderboard through Stats section pills.
+  %% Matches below large box: no repeated course/round/format heading; retain applicable scoring control and match content.
+  %% Shared Golf course title: one line, shrink to 125 percent of details then ellipsis; header another 5px higher.
+  %% Golf shared header presentation: course row 5px higher; tighter date and day/round detail spacing.
+  %% Shared Golf header: previous/next course arrows step loaded rounds; bottom row Day then competitive Round and format.
+  %% Golf shared day/round selection -> centered course/date header across sections; competitive round/format underneath; Matches follows shared selection.
   %% Organizer History group -> Delete Trip box -> existing warning/confirmation UI; dev confirmation disabled without a saved trip ID; saved deletion remains organizer-authorized Supabase RPC.
   %% Empty Matches round -> configured draft schedule/countdown, otherwise No Match Draft has been set / Ask Your Organizer.
   %% Lower leaderboard supports touch elastic overscroll and 5px extra clearance below the final player.
@@ -929,6 +1035,26 @@ The separate test-season controls operate on a designated database season. This 
 **Code:** `components/portal/admin/LiveScoringPreview.tsx`, `components/portal/admin/ScoringPreviewPhone.tsx`, `components/portal/admin/TestSeasonPanel.tsx`, `lib/live/testSeason.ts`.
 
 ## 22. Legacy integrations and unfinished pages
+
+Round/Overall snapshot labels sit above their respective pills, aligned left, with 6px between each label and pill. The central vertical divider spans the pill bodies.
+
+Player public trip profiles show two outlined pills 6px beneath the scorecard lower divider, without a visible snapshot heading, with a vertical divider: selected-round plus/minus and Thru on the left, overall position and plus/minus on the right. Scores use the existing daily/overall gross or net leaderboard fields. Unloaded rounds do not borrow the loaded round progress.
+
+The player public trip profile has horizontally scrolling Round pills matching the Golf section pills and grey lines above/below the scorecard area. It starts on the leaderboard round. Other round data is not fetched by this presentation: unloaded rounds show a blank card and unavailable message.
+
+Golf leaderboard player names open a Player public trip profile modal with the read-only round scorecard below a divider 20% down the panel, filling the bottom 80% of the dynamic viewport, independent of navigation position. CARD buttons and inline expansion are removed. The sheet uses the app-style X icon button for closing. The existing round scores/par are reused; missing data remains missing. Close, Escape and outside clicks dismiss the sheet.
+
+Below its white itinerary/flight cards, Home now shows a Feed heading with blank space. The old lower Upcoming/Add Round/day-count/round summary is removed from Home. Feed has no data source or publishing behavior; the dedicated Itinerary tab remains.
+
+Golf section pills use 32.3px minimum height, 15.3px horizontal padding and 12.75px text after a 15% size reduction. Their centered selection and elastic scrolling remain.
+
+Home aligns the bottom of quick weather with the trip date. Momentum sits inside matching 2px grey top/bottom dividers, 10px after that shared baseline and 10px before the first white card. The Home header grows with Momentum content, including dual drafts. Its maroon background extends 25px beyond the header behind the first white card, without changing card positions.
+
+The selected Home-through-Itinerary tab has a gold underline directly above its continuous grey divider; both lines remain visible.
+
+The standard-size Golf course title begins 12px below the Home-through-Itinerary navigation row. The Golf section pills begin 18px below the shared day/round/format detail line, with a matching 2px grey divider centered in that gap, with 9px between their bottom borders and the large board. The featured Match selector below the large board uses 14.4px text, 19.2px chevrons and 8px of visible label clearance. The Matches list below the large match box omits its repeated course/round/format heading; those details remain in the shared Golf header. Applicable gross/net controls remain right aligned.
+
+Golf uses a shared header across sections: date above course, with day/round/format below. The text stack and independent previous/next arrows center between two matching grey dividers. Course titles use a fixed 14.4px font with one-line ellipsis; details remain 10.4px. Arrow icons sit 6px from the phone sides, and course text can extend within 6px of each icon. Earlier spacing entries describe superseded intermediate layouts.
 
 **Delete Trip box:** The newer Organizer History group offers History and Delete Trip. Delete Trip opens `/dev/tournament/delete-trip`, which reuses the existing warning and confirmation component. The development route has no saved-trip ID and disables final deletion without adding a preview disclaimer to the UI. Saved trips continue using their existing Organizer Delete Trip action: the API calls delete_golf_trip, removes the organizer-owned database trip with its dependent round/member rows, retains player accounts and returns to Golf Trips only on success. A missing RPC yields an error, not a successful deletion. The dev navigation addition is not deployed or connected to the newer saved-trip settings layout.
 

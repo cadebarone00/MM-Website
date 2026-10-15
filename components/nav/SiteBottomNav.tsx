@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LandPlot, Plane, UserRound } from "lucide-react";
-import { siteBottomNavTabActive } from "@/lib/navigation/siteBottomNav";
+import { siteBottomNavTabActive, siteBottomNavTabHref } from "@/lib/navigation/siteBottomNav";
 import { PickemsIcon } from "./ImageIcons";
 import { LeaderboardIcon } from "./LeaderboardIcon";
 import styles from "./SiteBottomNav.module.css";
@@ -30,7 +30,7 @@ export function SiteBottomNav() {
         return (
           <Link
             key={tab.href}
-            href={tab.href}
+            href={siteBottomNavTabHref(pathname, tab.href)}
             className={styles.item}
             aria-current={active ? "page" : undefined}
           >

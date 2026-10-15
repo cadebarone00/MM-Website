@@ -12,7 +12,8 @@ const input = "min-h-12 w-full rounded-md border border-maroon-900/25 bg-white p
  * Finish profile setup (mode "setup": name + username, creates the profile) and Edit profile (mode "edit": name,
  * username, bio). Only those fields exist here — history, teams, results and the legacy link aren't editable.
  */
-export function ProfileForm({ mode, initial }: { mode: "setup" | "edit"; initial: { displayName: string; username: string; bio: string; bioAvailable?: boolean } }) {
+/** `onSave` + `doneHref` (dev profile preview only): save somewhere else instead of the account (throws to show an error), then go there. */
+export function ProfileForm({ mode, initial, onSave, doneHref = "/profile" }: { mode: "setup" | "edit"; initial: { displayName: string; username: string; bio: string; bioAvailable?: boolean }; onSave?: (body: { displayName: string; username?: string; bio?: string }) => Promise<void>; doneHref?: string }) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState(initial.displayName);
   const [username, setUsername] = useState(initial.username);
@@ -30,10 +31,15 @@ export function ProfileForm({ mode, initial }: { mode: "setup" | "edit"; initial
     const body = mode === "setup" ? { displayName, username: username.trim() }
       : { displayName, ...(usernameChanged && { username: username.trim() }), ...(initial.bioAvailable !== false && { bio }) };
     try {
+      if (onSave) {
+        try { await onSave(body); } catch (problem) { setError(problem instanceof Error ? problem.message : "Couldn't save your profile."); setSaving(false); return; }
+        router.push(doneHref);
+        return;
+      }
       const response = await fetch("/api/account/profile", { method: mode === "setup" ? "POST" : "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const reply = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
       if (response.ok && reply?.ok) {
-        router.push("/profile");
+        router.push(doneHref);
         router.refresh();
         return;
       }

@@ -31,8 +31,8 @@
 .tabActive,.tabActive:hover{color:#fbf8f1;text-shadow:0 0 12px rgba(251,248,241,.55)}
 .tabActive::after{opacity:1}
 .body{flex:1;display:flex;flex-direction:column;gap:12px;margin-top:24px}
-/* Golf tab: the board sits closer to the Home–Itinerary tabs (24px less 60%). */
-.body:has(.golfTop){margin-top:9.6px}
+/* Golf tab: allow 12px from the trip tabs to the standard course title. */
+.body:has(.golfTop){margin-top:0}
 .card{display:flex;flex-direction:column;gap:10px;padding:18px 18px 16px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12)}
 .cardTitle{margin:0;font:500 22px/1.2 var(--font-spectral),Georgia,serif;letter-spacing:-.01em;color:#fff}
 .text{margin:0;font:600 16px/1.4 var(--font-barlow),sans-serif;color:#fff}
@@ -57,7 +57,7 @@
 /* Golf top box (the Board): one fixed size for every section and every competition setup — the height of the Both
    setup's Leaderboard box. Each board fills it exactly and its contents fit inside. Hidden ones stay laid out so the
    tabs below never move. */
-.golfTop{--golf-board-height:166px;position:relative;height:var(--golf-board-height)}
+.golfTop{--golf-board-height:166px;margin-top:-3px;position:relative;height:var(--golf-board-height)}
 .golfTopSize,.golfTopFill{position:absolute;inset:0;min-width:0;display:flex;flex-direction:column}
 .golfTopSize>*,.golfTopFill>*{flex:1 1 0;min-height:0;box-sizing:border-box}
 .golfTopSize section,.golfTopFill section{height:100%;box-sizing:border-box}
@@ -162,7 +162,7 @@
 .account p{margin:0}
 .account button{font-family:inherit;cursor:pointer}
 /* Same height as when it held the old pill row, so the cards below don't move. */
-.accountTop{position:relative;display:flex;align-items:flex-start;padding:12px 16px 0;color:#fff}
+.accountTop{position:relative;display:flex;align-items:flex-end;padding:12px 16px 0;color:#fff}
 /* Left 65%: the trip heading; right 35%: quick weather. */
 .accountTitleBlock{flex:0 0 65%;min-width:0}
 /* Sized so "Your trip to" and a typical "City, ST" fit in the left 65% (long names wrap). */
@@ -251,10 +251,10 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 .itineraryType{margin:6px 0 0;padding-bottom:6px;border-bottom:1px solid rgba(251,248,241,.35);color:#fbf8f1;font:700 18px/1.15 var(--font-spectral),Georgia,serif;text-align:left}
 /* Info: My Info / Itinerary selector sits higher, closer to the trip header (32px gap → 8px). */
 .tabs.infoTabs{margin-top:-16px}
-/* Main trip tabs (Home … Info): a faint line runs edge to edge under them; the chosen tab's whole share of it lights up gold. */
+/* Main trip tabs (Home … Info): a faint line runs edge to edge under them; the selected gold indicator sits directly above the continuous grey line. */
 .tabs.tripTabs{position:relative;grid-column:1 / -1;margin-top:-4px}
 .tripTabs::before{content:"";position:absolute;left:-16px;right:-16px;bottom:0;height:2px;background:rgba(251,248,241,.18);pointer-events:none}
-.tripTabs .tab::after{left:0;right:0;border-radius:0;z-index:1}
+.tripTabs .tab::after{left:0;right:0;bottom:2px;border-radius:0;z-index:1}
 /* Itinerary day change: the day slides out (50 ms) toward the side you're leaving, the next slides in from the other side (50 ms). */
 .itineraryDayBody{display:grid;gap:12px;min-width:0}
 .dayOutLeft{animation:dayOutLeft 50ms ease-in forwards}
@@ -277,13 +277,13 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 .statusTag[data-live=true]::before{content:"";width:7px;height:7px;border-radius:50%;background:#c62828;box-shadow:0 0 0 3px rgba(198,40,40,.2)}
 /* Home head: always the same height on every trip (no jumping): the heading at the top, then a fixed slot for the Mom
    section (a notification line, the countdown, or empty) near the bottom; the Live / Upcoming boxes overlap its bottom 31px. */
-.accountHead{box-sizing:border-box;display:flex;flex-direction:column;height:calc(212px + 5vh);padding-bottom:31px;overflow:hidden;background:var(--color-maroon-900)}
+.accountHead{box-sizing:border-box;display:flex;flex-direction:column;height:auto;padding-bottom:10px;background:var(--color-maroon-900);box-shadow:0 25px 0 var(--color-maroon-900)}
 .accountHead .accountTop{flex:none}
-/* The Mom box: everything between the heading/weather and the top of the white box below, edge to edge; its content
+/* Momentum sits between matching grey dividers, 10px from the heading and following cards; its content
    is always centered across and up-and-down. */
-.momSlot{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;align-items:stretch;text-align:center}
+.momSlot{box-sizing:border-box;flex:none;min-height:84px;display:flex;flex-direction:column;justify-content:center;align-items:stretch;margin-top:10px;border-top:2px solid rgba(251,248,241,.18);border-bottom:2px solid rgba(251,248,241,.18);text-align:center}
 .momSlot > *{margin-top:0;margin-bottom:0}
-.liveBoxes.liveBoxes{margin-top:-31px}
+.liveBoxes.liveBoxes{margin-top:0}
 /* Trip name: a little smaller so more names fit on one line, in a box always two lines tall (centered up-and-down), so the
    Home / Golf / Venue / Info tabs sit in the same spot for one- and two-line names. Longer names stop at two lines with "…". */
 .title.title{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;box-sizing:content-box;min-height:0;height:calc(2 * 1.1em);font-size:23px;align-content:center}
@@ -312,11 +312,11 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 .itineraryPlaying.itineraryPlaying{font:700 13px/1 var(--font-spectral),Georgia,serif;letter-spacing:.04em;text-transform:none}
 .rsvpPlay:disabled,.rsvpSit:disabled{opacity:.5;cursor:default}
 /* Golf sections (Leaderboard / Games / Stats…): equal gaps between the words, not equal boxes. */
-.tabs.sectionTabs{display:flex;justify-content:flex-start;gap:10px;padding:4px 0;box-sizing:border-box;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain;touch-action:pan-y;user-select:none}
+.tabs.sectionTabs{display:flex;justify-content:flex-start;gap:10px;margin-top:-4px;padding:0;box-sizing:border-box;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain;touch-action:pan-y;user-select:none}
 .sectionTabs::-webkit-scrollbar{display:none}
 .sectionTabs::before{content:"";flex:0 0 max(0px,calc(50% - var(--first-pill-half,0px) - 10px))}
 .sectionTabs::after{content:"";flex:0 0 max(0px,calc(50% - var(--last-pill-half,0px) - 10px))}
-.sectionTabs .tab{flex:none;min-height:38px;padding:0 18px;border:1px solid rgba(220,196,149,.55);border-radius:999px;color:#dcc495;white-space:nowrap;text-shadow:none;transition:background .18s,color .18s,border-color .18s}
+.sectionTabs .tab{flex:none;min-height:32.3px;padding:0 15.3px;font-size:12.75px;border:1px solid rgba(220,196,149,.55);border-radius:999px;color:#dcc495;white-space:nowrap;text-shadow:none;transition:background .18s,color .18s,border-color .18s}
 .sectionTabs .tab::after{display:none}
 .sectionTabs .tab[aria-selected=true]{background:#dcc495;border-color:#dcc495;color:#240001;text-shadow:none}
 
@@ -330,3 +330,6 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 .itineraryBox.itineraryBox[data-golf=true] .itineraryBoxTime{font-size:11px;line-height:1.1}
 .itineraryBox[data-golf=true] .itineraryBoxTitle{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
 .itineraryBox[data-golf=true] > .itineraryBoxTime{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;margin:0}
+
+
+.homeFeed{flex:1;min-height:160px}
