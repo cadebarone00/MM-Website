@@ -16,7 +16,7 @@ import { flightCounts, flightTime, type FlightSummary } from "@/lib/platform/gol
 
 /** The Info tab's Flights card: the viewer's flight summary, and the Flights page it opens (null = not a link). */
 export interface TripFlights { summary: FlightSummary; href: string | null }
-import { MatchNav, GolfGamesSummary, GolfMatchup, GolfRoundHeader, GolfRoundInfo, GolfTeeSheet, GolfTournamentSummary, GolfTripLeaderboard } from "./GolfTripMatch";
+import { GolfGamesSummary, GolfRoundHeader, GolfRoundInfo, GolfTeeSheet, GolfTournamentSummary, GolfTripLeaderboard } from "./GolfTripMatch";
 import { GolfTripScoring } from "./GolfTripScoring";
 import { GolfTripStats, type ScoreChangeLine, type TripStatsView } from "./GolfTripStats";
 import type { ScoreEdit } from "@/lib/platform/playerRounds";
@@ -42,7 +42,6 @@ import { tripSetupFromPreview } from "@/lib/platform/predictFromPreview";
 
 import { GOLF_TRIP_TABS as TABS, golfSections, type CompetitionStructure, type GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
 import { useGolfTripCompetitionPreview } from "./GolfTripCompetitionPreviewProvider";
-import { useSwipe } from "./useSwipe";
 import { usePlayerStats } from "@/lib/platform/playerStatsSetting";
 import { setRoundRsvp, useRoundRsvps } from "@/lib/platform/roundRsvp";
 import { useInAppScoring } from "@/lib/platform/inAppScoringSetting";
@@ -411,16 +410,7 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
     };
   }, [sourceMatch, selected, schedule]);
   // Competition is about the round being played: only that round's matches (matches without a round count as current).
-  // The big box (Matches) shows the current round's matches one at a time: ‹ Match N › under it, or swipe the box
-  // (left = next match, right = previous). Starts on match 1 again whenever the round changes.
   const roundMatch = useMemo(() => previewMatch && { ...previewMatch, matches: previewMatch.matches.filter(pairing => (pairing.round ?? previewMatch.round) === previewMatch.round) }, [previewMatch]);
-  const matchCount = Math.max(1, roundMatch?.matches.length ?? 1);
-  const [boxMatch, setBoxMatch] = useState({ round: previewMatch?.round ?? 1, index: 0 });
-  if (previewMatch && boxMatch.round !== previewMatch.round) setBoxMatch({ round: previewMatch.round, index: 0 });
-  const featured = Math.min(boxMatch.index, matchCount - 1);
-  const boxSwipe = useSwipe(
-    () => setBoxMatch(view => ({ ...view, index: Math.min(matchCount - 1, view.index + 1) })),
-    () => setBoxMatch(view => ({ ...view, index: Math.max(0, view.index - 1) })));
   const trackRef = useRef<HTMLDivElement>(null);
   const sectionTabsRef = useRef<HTMLDivElement>(null);
   const pillDrag = useRef<{ pointer: number; x: number; y: number; scroll: number; moved: boolean } | null>(null);
@@ -521,8 +511,8 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
         // Overview's box sets the size; Competition and Games fill exactly that box.
         return <div key={section} className={`${section === "Overview" ? styles.golfTopSize : styles.golfTopFill} ${shown ? "" : styles.golfTopHidden}`} inert={!shown}>
           {section === "Overview" ? noComp || individualOnly || teamOnly ? <><GolfRoundInfo match={previewMatch} sittingOut={sittingOut} topFive={individualOnly} />{!noComp && predictSetup && <button type="button" className={styles.predictEntry} onClick={() => goTo(availableSlides.indexOf("Predict"))}>Predict</button>}</> : <GolfTournamentSummary match={previewMatch} onPredict={() => goTo(availableSlides.indexOf("Predict"))} />
-            : section === "Competition" ? <GolfMatchup match={roundMatch ?? previewMatch} compact swipe={boxSwipe} featured={featured} roundStarted={roundStarted}
-              below={<MatchNav match={featured + 1} count={matchCount} onMatch={match => setBoxMatch(view => ({ ...view, index: match - 1 }))} />} /> : <GolfGamesSummary />}
+            // Matches tab: the same tournament card as the Leaderboard, with the round's matches below (owner request 2026-10-15).
+            : section === "Competition" ? <GolfTournamentSummary match={previewMatch} onPredict={predictSetup && !noComp ? () => goTo(availableSlides.indexOf("Predict")) : undefined} /> : <GolfGamesSummary />}
         </div>;
       })}
     </div>;

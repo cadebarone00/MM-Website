@@ -2776,3 +2776,22 @@ Three tabs in Predict, each bet a card; *(team)* = only for trips with a team co
 - Hole in one: 1 in 12,500 per par-3 tee shot for an amateur, × every par 3 every player plays on the trip.
 - Player over / unders (added 2026-10-11): **score** (strokes) per round (Today) and for the trip (Scoring); **greens hit / fairways hit / putts** per round (Today) and for the trip (Props), one card each with a Greens · Fairways · Putts switch. Stat rates come from each player's own holes (legacy blank = miss), blended with typical numbers for their handicap; holes already played count as real. Bets that list every player show the top 3 with **Show all** opening a scrolling list.
 - Ladders (Kalshi style): one yes / no market per line. Spreads: one market per line, the card's slider moves between lines.
+
+### Round: Golf → Matches tab "match center" (spec 2026-10-15, awaiting approval)
+
+**What it does / who uses it.** Anyone on the trip, especially people not in a match, can follow every match of a round: the team totals at the top, every match listed below, and one tap opens everything about a match.
+
+**Pages and flow (Golf tab → Matches).**
+1. **Top card:** the same Maroon / White tournament card as the Leaderboard (team totals, TO WIN, win %, stats row, Predict button; tap to extend each team's box with its players' points). It replaces the current featured-match card and its match picker on the Matches tab.
+2. **Below it:** that round's matches (the existing list, round picked with the round header's < >).
+3. **Tap a match → match detail** (a full-screen sheet over the tab, closed with a back arrow or ×):
+   - **Header:** both sides' players and the status, e.g. "Maroon 1 UP thru 1" or "Maroon won 3&2".
+   - **Match-play scorecard:** holes 1–18 (front / back nine), par, every player's strokes (handicap strokes marked with a dot when the match is net), each side's score for the hole (best ball for pairs), who won the hole, and the running status after each hole ("1 UP", "AS", "2 DN" from Maroon's side).
+   - **Win chance graph:** a line from hole 0 (before the first tee shot) to the last hole played, showing Maroon's chance of winning the match after each hole, with a 50% midline, shaded toward whichever side is ahead, plus the current Maroon / halve / White chances. Same method as Predict: each player's model from their history and handicap (lib/platform/predictModel.ts), the holes already played locked in, the rest of the match simulated thousands of times. So before hole 1 the stronger side is favored, and each won or lost hole moves the line.
+   - **Team stats under the names:** fairways hit %, greens in regulation %, average putts per hole for each side, from the holes played so far ("—" until there's data).
+
+**Data.** No new tables. Everything comes from data the Golf tab already has: players' hole scores (leaderboard holes), the match pairings, par / stroke index, players' handicaps and history. The match status is worked out from the players' hole scores so the scorecard, the status and the graph always agree. **Test trip (app simulator):** its match results are currently made up separately from the players' hole scores; they will be computed from the hole scores instead. Per-hole fairway / green / putts aren't in the test data, so the simulator's existing per-match stats are used there.
+
+**Files.** components/platform/GolfTripMatch.tsx (list rows tap to open; new MatchDetail sheet with scorecard / graph / stats), GolfTripHome.tsx (Matches tab top card), new lib/platform/matchCenter.ts (hole-by-hole results + win-chance-by-hole from the Predict model) with tests, lib/dev/golfTripSimulatorData.ts (test-trip match results from hole scores).
+
+**Done means:** the Matches tab shows the tournament card with the round's matches below; tapping a match opens the sheet with a scorecard that adds up, a win-chance graph that starts from team strength and moves hole by hole, and both sides' stats; tests for hole results, running status and the win curve (stronger side favored at hole 0, 100% once a match is won); checked in the app simulator.

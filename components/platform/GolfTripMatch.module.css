@@ -396,3 +396,48 @@
 .teamPoints b{flex:none;font-weight:800}
 .summaryFillLeft .teamPoints{color:var(--team-left-text,var(--color-maroon-900))}
 .summaryFillRight .teamPoints{color:var(--team-right-text,var(--color-maroon-900))}
+/* Matches tab → a match: the match center sheet. */
+.pairingTap{cursor:pointer;border-radius:10px}
+.pairingTap:hover,.pairingTap:focus-visible{background:rgba(255,255,255,.04);outline:none}
+.matchSheet{inset:6dvh 0 0;height:94dvh;padding:0 16px 28px}
+.matchSheetTop{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;margin:0 -16px;padding:12px 16px 8px;background:#240001}
+.matchSheetTop p{margin:0;font:700 12px var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#dcc495}
+.matchSheetBack{display:grid;place-items:center;width:36px;height:36px;padding:0;border:1px solid rgba(220,196,149,.35);border-radius:50%;background:rgba(255,255,255,.05);color:#dcc495;cursor:pointer}
+.matchSheetHead{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;padding:10px 0 14px;border-bottom:1px solid rgba(255,255,255,.12)}
+.matchSheetHead>div{display:grid;gap:2px;min-width:0;font:600 13px var(--font-barlow),sans-serif;color:rgba(255,255,255,.75)}
+.matchSheetHead>div[data-side=right]{text-align:right}
+.matchSheetHead b{font:600 18px var(--font-spectral),Georgia,serif;color:#fff}
+.matchSheetHead span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.matchSheetStatus{max-width:120px;margin:0;padding:6px 10px;border-radius:12px;background:rgba(255,255,255,.08);font:700 13px/1.25 var(--font-barlow),sans-serif;text-align:center;color:#fff}
+.matchSheetStatus[data-lead=left]{background:var(--team-left,#7a1f2b);color:var(--team-left-text,#fff)}
+.matchSheetStatus[data-lead=right]{background:var(--team-right,#f3ece0);color:var(--team-right-text,#2a0d16)}
+.matchSheetTitle{margin:18px 0 8px;font:700 12px var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#dcc495}
+.matchSheetNote{margin:6px 0 0;font:500 12px/1.4 var(--font-barlow),sans-serif;color:rgba(255,255,255,.55)}
+.matchTable{width:100%;margin-bottom:8px}
+.matchTable th{background:#240001}
+.matchTable td{position:relative;min-width:26px}
+.matchTable tr[data-side] th{font:600 13px var(--font-barlow),sans-serif}
+.strokeDot{position:absolute;top:3px;right:2px;width:4px;height:4px;border-radius:50%;background:#dcc495}
+.matchResultRow th,.matchResultRow td{border-top:1px solid rgba(255,255,255,.2);padding-top:8px}
+.leadChip{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 3px;border-radius:6px;background:rgba(255,255,255,.1);font:800 11px var(--font-barlow),sans-serif;color:rgba(255,255,255,.8)}
+.leadChip[data-side=left]{background:var(--team-left,#7a1f2b);color:var(--team-left-text,#fff)}
+.leadChip[data-side=right]{background:var(--team-right,#f3ece0);color:var(--team-right-text,#2a0d16)}
+.winChart{display:block;width:100%;height:auto;overflow:visible}
+.winGrid{stroke:rgba(255,255,255,.08);stroke-width:1}
+.winMid{stroke:rgba(255,255,255,.35);stroke-width:1;stroke-dasharray:4 4}
+.winAreaLeft{fill:var(--team-left,#7a1f2b);opacity:.55}
+.winAreaRight{fill:var(--team-right,#f3ece0);opacity:.35}
+.winLine{fill:none;stroke:#dcc495;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.winDot{fill:#dcc495;stroke:#240001;stroke-width:2}
+.winLabel{font:600 9px var(--font-barlow),sans-serif;fill:rgba(255,255,255,.5)}
+.matchChances{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;margin:10px 0 0}
+.matchChances div{display:grid;gap:2px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.05);text-align:center}
+.matchChances dt{font:600 11px var(--font-barlow),sans-serif;color:rgba(255,255,255,.6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.matchChances dd{margin:0;font:800 18px var(--font-barlow),sans-serif;color:#fff}
+.matchChances div[data-side=left]{box-shadow:inset 3px 0 0 var(--team-left,#7a1f2b)}
+.matchChances div[data-side=right]{box-shadow:inset -3px 0 0 var(--team-right,#f3ece0)}
+.matchStatsGrid{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;row-gap:8px;column-gap:12px}
+.matchStatsGrid b{font:600 15px var(--font-spectral),Georgia,serif}
+.matchStatsGrid b[data-side=right],.matchStatsGrid>span:nth-child(3n){text-align:right}
+.matchStatsGrid>span{font:800 18px var(--font-barlow),sans-serif;color:#fff}
+.matchStatsGrid small{font:600 11px var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.55);text-align:center}
