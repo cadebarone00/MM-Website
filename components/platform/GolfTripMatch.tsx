@@ -396,9 +396,13 @@ export function GolfRoundHeader({ match, competitive = true, today, day, previou
  */
 export function GolfTournamentSummary({ match, onPredict }: { match: GolfMatchPreview; onPredict?: () => void }) {
   const [left, right] = match.sides;
-  return <div className={styles.matchup}>
+  // Tapping the team boxes drops down every player's match points, best first (owner request 2026-10-15).
+  const [pointsOpen, setPointsOpen] = useState(false);
+  const ranking = pointsOpen ? playerPoints(match) : [];
+  return <div className={`${styles.matchup} ${styles.pointsAnchor}`}>
     <section className={`${styles.versus} ${styles.boardBox}`} aria-label="Tournament standings">
-      <div className={styles.summaryTeams}>
+      <div className={`${styles.summaryTeams} ${styles.summaryTap}`} role="button" tabIndex={0} aria-expanded={pointsOpen} aria-label="Points by player"
+        onClick={() => setPointsOpen(!pointsOpen)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setPointsOpen(!pointsOpen); } }}>
         {/* Each team sits in its own color fill (like a lead fill, but always there) from its edge in toward TO WIN. */}
         {[left, right].map((side, i) => <div key={side.name} className={`${styles.summaryFill} ${i ? `${styles.summaryRight} ${styles.summaryFillRight}` : styles.summaryFillLeft}`}>
           <FitName name={side.name} />
@@ -418,7 +422,42 @@ export function GolfTournamentSummary({ match, onPredict }: { match: GolfMatchPr
         </div> : <><RoundStats side={left} align="left" /><RoundStats side={right} align="right" /></>}
       </div>
     </section>
+    {pointsOpen && <ol className={styles.pointsList} aria-label="Points by player">
+      {ranking.length === 0 && <li className={styles.pointsEmpty}>No points yet</li>}
+      {ranking.map((row, i) => <li key={row.name}>
+        <span className={styles.pointsRank}>{i > 0 && ranking[i - 1].points === row.points ? "" : i + 1}</span>
+        <span className={styles.pointsDot} data-side={row.side} aria-label={match.sides[row.side === "left" ? 0 : 1].name} />
+        <span className={styles.pointsName}>{row.name}</span>
+        <b>{row.points}</b>
+      </li>)}
+    </ol>}
   </div>;
+}
+
+/**
+ * Each player's match points across the trip's matches, best first: the points the data gives a side, otherwise a
+ * finished match is worth 1 to each winner and ½ each when halved (net standing when the round is net only).
+ */
+function playerPoints(match: GolfMatchPreview): { name: string; side: "left" | "right"; points: number }[] {
+  const totals = new Map<string, { name: string; side: "left" | "right"; points: number }>();
+  const net = matchScoring(match) === "Net";
+  for (const pairing of match.matches) {
+    const sides = [normalizeCompetitor(pairing.left), pairing.right ? normalizeCompetitor(pairing.right) : null] as const;
+    const standing = net ? pairing.net : pairing.gross;
+    const status = matchStatus({ thru: sides[0].thru ?? sides[0].golfers[0]?.thru, standing, result: pairing.result });
+    sides.forEach((side, i) => {
+      if (!side) return;
+      const key = i ? "right" : "left";
+      const earned = side.points ?? side.golfers[0]?.points ?? (status.kind !== "final" ? 0
+        : standing?.leader == null ? 0.5 : standing.leader === key ? 1 : 0);
+      for (const golfer of side.golfers) {
+        const row = totals.get(golfer.name) ?? { name: golfer.name, side: key, points: 0 };
+        row.points += earned;
+        totals.set(golfer.name, row);
+      }
+    });
+  }
+  return [...totals.values()].sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
 }
 
 /**
