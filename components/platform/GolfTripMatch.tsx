@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useSwipe } from "./useSwipe";
 import { resolveGolfFormat } from "@/lib/platform/formats";
@@ -849,21 +849,39 @@ function WinChart({ curve, holes, teamNames }: { curve: WinPoint[]; holes: numbe
   const y = (p: number) => padY + (1 - p) * (H - padY * 2);
   const line = curve.map((pt, i) => `${i ? "L" : "M"}${x(pt.hole).toFixed(1)},${y(pt.left).toFixed(1)}`).join(" ");
   const area = `${line} L${x(curve.at(-1)!.hole).toFixed(1)},${y(0.5)} L${x(0)},${y(0.5)} Z`;
-  return <svg className={styles.winChart} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${teamNames[0]} chance to win by hole: ${curve.map(pt => `after ${pt.hole}, ${Math.round(pt.left * 100)}%`).join("; ")}`}>
-    <defs>
-      <clipPath id="winTop"><rect x="0" y="0" width={W} height={y(0.5)} /></clipPath>
-      <clipPath id="winBottom"><rect x="0" y={y(0.5)} width={W} height={H} /></clipPath>
-    </defs>
-    {[0, 9, 18].filter(h => h <= holes).map(h => <line key={h} x1={x(h)} x2={x(h)} y1={padY} y2={H - padY} className={styles.winGrid} />)}
-    <path d={area} clipPath="url(#winTop)" className={styles.winAreaLeft} />
-    <path d={area} clipPath="url(#winBottom)" className={styles.winAreaRight} />
-    <line x1={padX} x2={W - padX} y1={y(0.5)} y2={y(0.5)} className={styles.winMid} />
-    <path d={line} className={styles.winLine} />
-    {curve.map(pt => <circle key={pt.hole} cx={x(pt.hole)} cy={y(pt.left)} r={pt === curve.at(-1) ? 4.5 : 2.5} className={styles.winDot}>
-      <title>{pt.hole === 0 ? "Before the first hole" : `After hole ${pt.hole}`}: {teamNames[0]} {Math.round(pt.left * 100)}% · Halved {Math.round(pt.halved * 100)}% · {teamNames[1]} {Math.round(pt.right * 100)}%</title>
-    </circle>)}
-    <text x={padX} y={padY - 4} className={styles.winLabel}>{teamNames[0]} wins</text>
-    <text x={padX} y={H - 2} className={styles.winLabel}>{teamNames[1]} wins</text>
-    <text x={W - padX} y={H - 2} textAnchor="end" className={styles.winLabel}>Hole {holes}</text>
-  </svg>;
+  // Press and hold (or drag) on the graph: a mini window with the odds after the nearest hole (owner request 2026-10-15).
+  const [held, setHeld] = useState<WinPoint | null>(null);
+  const pick = (event: PointerEvent<SVGSVGElement>) => {
+    const box = event.currentTarget.getBoundingClientRect();
+    const hole = Math.round(((event.clientX - box.left) / box.width * W - padX) / (W - padX * 2) * holes);
+    setHeld(curve[Math.max(0, Math.min(curve.length - 1, hole))]);
+  };
+  const label = (pt: WinPoint) => pt.hole === 0 ? "Before hole 1" : `After hole ${pt.hole}`;
+  return <div className={styles.winChartWrap}>
+    <svg className={styles.winChart} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${teamNames[0]} chance to win by hole: ${curve.map(pt => `after ${pt.hole}, ${Math.round(pt.left * 100)}%`).join("; ")}`}
+      onPointerDown={event => { event.currentTarget.setPointerCapture(event.pointerId); pick(event); }}
+      onPointerMove={event => { if (held) pick(event); }}
+      onPointerUp={() => setHeld(null)} onPointerCancel={() => setHeld(null)} onLostPointerCapture={() => setHeld(null)}>
+      <defs>
+        <clipPath id="winTop"><rect x="0" y="0" width={W} height={y(0.5)} /></clipPath>
+        <clipPath id="winBottom"><rect x="0" y={y(0.5)} width={W} height={H} /></clipPath>
+      </defs>
+      {[0, 9, 18].filter(h => h <= holes).map(h => <line key={h} x1={x(h)} x2={x(h)} y1={padY} y2={H - padY} className={styles.winGrid} />)}
+      <path d={area} clipPath="url(#winTop)" className={styles.winAreaLeft} />
+      <path d={area} clipPath="url(#winBottom)" className={styles.winAreaRight} />
+      <line x1={padX} x2={W - padX} y1={y(0.5)} y2={y(0.5)} className={styles.winMid} />
+      <path d={line} className={styles.winLine} />
+      {held && <line x1={x(held.hole)} x2={x(held.hole)} y1={padY} y2={H - padY} className={styles.winCursor} />}
+      {curve.map(pt => <circle key={pt.hole} cx={x(pt.hole)} cy={y(pt.left)} r={pt === held ? 6 : pt === curve.at(-1) ? 4.5 : 2.5} className={styles.winDot} />)}
+      <text x={padX} y={padY - 4} className={styles.winLabel}>{teamNames[0]} wins</text>
+      <text x={padX} y={H - 2} className={styles.winLabel}>{teamNames[1]} wins</text>
+      <text x={W - padX} y={H - 2} textAnchor="end" className={styles.winLabel}>Hole {holes}</text>
+    </svg>
+    {held && <div className={styles.winTip} role="status" style={{ left: `${Math.min(78, Math.max(22, x(held.hole) / W * 100))}%` }}>
+      <b>{label(held)}</b>
+      <span data-side="left">{teamNames[0]} <strong>{Math.round(held.left * 100)}%</strong></span>
+      <span>Halved <strong>{Math.round(held.halved * 100)}%</strong></span>
+      <span data-side="right">{teamNames[1]} <strong>{Math.round(held.right * 100)}%</strong></span>
+    </div>}
+  </div>;
 }

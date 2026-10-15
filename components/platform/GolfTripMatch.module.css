@@ -443,3 +443,14 @@
 .matchStatsGrid small{font:600 11px var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.55);text-align:center}
 .matchResultRow th,.matchResultRow td{padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2)}
 .matchResultRow + tr th,.matchResultRow + tr td{padding-top:8px}
+/* Win graph: press and hold for the odds after a hole. */
+.winChartWrap{position:relative}
+.winChart{touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none}
+.winCursor{stroke:#dcc495;stroke-width:1;stroke-dasharray:2 3}
+.winTip{position:absolute;top:-8px;transform:translate(-50%,-100%);display:grid;gap:2px;min-width:130px;padding:8px 10px;border:1px solid rgba(220,196,149,.5);border-radius:10px;background:#3a0a12;box-shadow:0 8px 20px rgba(0,0,0,.5);font:600 12px var(--font-barlow),sans-serif;color:rgba(255,255,255,.75);pointer-events:none;z-index:3}
+.winTip b{color:#dcc495;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.winTip span{display:flex;justify-content:space-between;gap:12px}
+.winTip strong{color:#fff}
+.winTip span[data-side=left]{box-shadow:inset 3px 0 0 var(--team-left,#7a1f2b);padding-left:6px}
+.winTip span[data-side=right]{box-shadow:inset 3px 0 0 var(--team-right,#f3ece0);padding-left:6px}
+.winTip span:not([data-side]){padding-left:6px}
