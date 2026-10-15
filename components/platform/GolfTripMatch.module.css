@@ -387,13 +387,12 @@
 /* Tournament box: tap the teams to drop down each player's points. */
 .summaryTap{cursor:pointer}
 .summaryTap:focus-visible{outline:2px solid #dcc495;outline-offset:-2px}
-.pointsAnchor{position:relative;overflow:visible}
-.pointsList{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:30;display:grid;gap:2px;max-height:300px;margin:0;padding:6px;overflow-y:auto;list-style:none;border:1px solid rgba(220,196,149,.45);border-radius:16px;background:#2a0d16;box-shadow:0 12px 28px rgba(0,0,0,.55)}
-.pointsList li{display:grid;grid-template-columns:22px 10px minmax(0,1fr) auto;align-items:center;gap:8px;min-height:30px;padding:0 6px;border-radius:8px;font:600 14px var(--font-barlow),sans-serif;color:#fff}
-.pointsList li:nth-child(odd){background:rgba(255,255,255,.04)}
-.pointsList b{font:700 15px var(--font-barlow),sans-serif;color:#dcc495}
-.pointsRank{color:rgba(255,255,255,.55);text-align:right}
-.pointsDot{width:10px;height:10px;border-radius:50%;background:var(--team-left,#dcc495)}
-.pointsDot[data-side=right]{background:var(--team-right,#e89a9a)}
-.pointsName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pointsEmpty{grid-template-columns:1fr!important;color:rgba(255,255,255,.6)!important}
+/* Open: each team box grows down with its players. */
+[data-points-open] .summaryFill{height:auto;min-height:72px;padding-bottom:10px}
+.teamPoints{display:grid;gap:4px;margin:10px 0 0;padding:8px 0 0;list-style:none;border-top:1px solid currentColor;border-top-color:color-mix(in srgb,currentColor 25%,transparent)}
+.teamPoints li{display:flex;justify-content:space-between;gap:8px;min-width:0;font:600 13px/1.3 var(--font-barlow),sans-serif}
+.summaryFillRight .teamPoints li{flex-direction:row-reverse}
+.teamPoints span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.teamPoints b{flex:none;font-weight:800}
+.summaryFillLeft .teamPoints{color:var(--team-left-text,var(--color-maroon-900))}
+.summaryFillRight .teamPoints{color:var(--team-right-text,var(--color-maroon-900))}

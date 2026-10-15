@@ -399,7 +399,7 @@ export function GolfTournamentSummary({ match, onPredict }: { match: GolfMatchPr
   // Tapping the team boxes drops down every player's match points, best first (owner request 2026-10-15).
   const [pointsOpen, setPointsOpen] = useState(false);
   const ranking = pointsOpen ? playerPoints(match) : [];
-  return <div className={`${styles.matchup} ${styles.pointsAnchor}`}>
+  return <div className={styles.matchup} data-points-open={pointsOpen || undefined}>
     <section className={`${styles.versus} ${styles.boardBox}`} aria-label="Tournament standings">
       <div className={`${styles.summaryTeams} ${styles.summaryTap}`} role="button" tabIndex={0} aria-expanded={pointsOpen} aria-label="Points by player"
         onClick={() => setPointsOpen(!pointsOpen)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setPointsOpen(!pointsOpen); } }}>
@@ -407,6 +407,10 @@ export function GolfTournamentSummary({ match, onPredict }: { match: GolfMatchPr
         {[left, right].map((side, i) => <div key={side.name} className={`${styles.summaryFill} ${i ? `${styles.summaryRight} ${styles.summaryFillRight}` : styles.summaryFillLeft}`}>
           <FitName name={side.name} />
           <p className={styles.summaryScore}>{side.score || "—"}</p>
+          {/* Open: the box extends down with this team's players, most points first. */}
+          {pointsOpen && <ol className={styles.teamPoints} aria-label={`${side.name} points by player`}>
+            {ranking.filter((row) => row.side === (i ? "right" : "left")).map((row) => <li key={row.name}><span>{row.name}</span><b>{row.points}</b></li>)}
+          </ol>}
         </div>)}
         {/* Between the teams, like THRU on the Matches box: the points needed to win (not wired up yet). */}
         <span className={`${styles.status} ${styles.statusPlain} ${styles.summaryToWin}`} aria-label="Points to win">
@@ -422,15 +426,6 @@ export function GolfTournamentSummary({ match, onPredict }: { match: GolfMatchPr
         </div> : <><RoundStats side={left} align="left" /><RoundStats side={right} align="right" /></>}
       </div>
     </section>
-    {pointsOpen && <ol className={styles.pointsList} aria-label="Points by player">
-      {ranking.length === 0 && <li className={styles.pointsEmpty}>No points yet</li>}
-      {ranking.map((row, i) => <li key={row.name}>
-        <span className={styles.pointsRank}>{i > 0 && ranking[i - 1].points === row.points ? "" : i + 1}</span>
-        <span className={styles.pointsDot} data-side={row.side} aria-label={match.sides[row.side === "left" ? 0 : 1].name} />
-        <span className={styles.pointsName}>{row.name}</span>
-        <b>{row.points}</b>
-      </li>)}
-    </ol>}
   </div>;
 }
 
