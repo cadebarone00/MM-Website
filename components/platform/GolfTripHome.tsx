@@ -496,7 +496,7 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
   // Opening Predict glides the page up so Predict starts at the top, past the leaderboard (owner request 2026-10-15).
   const predictRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (predictActive) predictRef.current?.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+    if (predictActive) predictRef.current?.scrollIntoView({ block: "start", behavior: "instant" });
   }, [predictActive]);
 
   const goTo = (index: number) => {
@@ -528,13 +528,13 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
     </div>;
 
   return <>
-    {previewMatch && <GolfRoundHeader match={previewMatch} competitive={!noComp} today={now?.slice(0, 10)}
+    {previewMatch && !predictActive && <GolfRoundHeader match={previewMatch} competitive={!noComp} today={now?.slice(0, 10)}
       day={selected?.dayNumber} previousDisabled={rounds.findIndex(round => round.number === previewMatch.round) <= 0}
       nextDisabled={rounds.findIndex(round => round.number === previewMatch.round) < 0 || rounds.findIndex(round => round.number === previewMatch.round) >= rounds.length - 1}
       onPrevious={() => { const index = rounds.findIndex(round => round.number === previewMatch.round); if (index > 0) setChosenRound(rounds[index - 1].number); }}
       onNext={() => { const index = rounds.findIndex(round => round.number === previewMatch.round); if (index >= 0 && index < rounds.length - 1) setChosenRound(rounds[index + 1].number); }} />}
     {/* Golf sections: the words themselves evenly spaced (equal gaps between them and at both ends), since their lengths differ. */}
-    <div ref={sectionTabsRef} className={`${styles.tabs} ${styles.sectionTabs}`} role="tablist" aria-label="Golf sections"
+    <div ref={sectionTabsRef} className={`${styles.tabs} ${styles.sectionTabs}`} role="tablist" aria-label="Golf sections" hidden={predictActive}
       onPointerDown={event => {
         if (event.button !== 0) return;
         pillDrag.current = { pointer: event.pointerId, x: event.clientX, y: event.clientY, scroll: event.currentTarget.scrollLeft, moved: false };
@@ -559,7 +559,7 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
     </div>
     {/* The board: a summary for the section — the whole tournament on Overview, the round being played on Competition,
         games (placeholder) on Games. All three share one grid cell so nothing below moves when it switches. */}
-    {board}
+    {!predictActive && board}
     <div ref={trackRef} className={styles.slides} style={gamesActive ? { display: "none" } : undefined} onScroll={onScroll}>
       {sections.filter(({ id }) => !offStrip(id)).map(({ id: name, label }, i) => <div key={name} className={styles.slide} role="tabpanel" aria-label={label} inert={active !== i}>
         {name === "Overview"
@@ -578,7 +578,8 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
     </div>}
     {/* Predict (only while the organizer has it on): the trip's prediction market in Maroon Coins. */}
     {predictSetup && !noComp && <div ref={predictRef} role="tabpanel" aria-label="Predict" hidden={!predictActive} style={{ scrollMarginTop: "calc(env(safe-area-inset-top, 0px) + 56px)" }}>
-      {predictActive && <button type="button" className={styles.predictEntry} onClick={() => goTo(0)}>Back to {sections[0]?.label ?? "Leaderboard"}</button>}
+      {/* Predict has the screen to itself: just a small back arrow to the leaderboard (owner request 2026-10-15). */}
+      {predictActive && <button type="button" className={styles.predictBack} onClick={() => { goTo(0); requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "instant" })); }} aria-label={`Back to ${sections[0]?.label ?? "Leaderboard"}`}><ChevronLeft size={22} aria-hidden="true" /></button>}
       {predictActive && <GolfTripPredict setup={predictSetup} />}
     </div>}
   </>;

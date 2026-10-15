@@ -333,3 +333,4 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 
 
 .homeFeed{flex:1;min-height:160px}
+.predictBack{display:grid;place-items:center;width:36px;height:36px;margin:0 0 8px;padding:0;border:1px solid rgba(220,196,149,.35);border-radius:50%;background:rgba(255,255,255,.05);color:#dcc495;cursor:pointer}
