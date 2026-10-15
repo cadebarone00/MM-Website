@@ -441,3 +441,5 @@
 .matchStatsGrid b[data-side=right],.matchStatsGrid>span:nth-child(3n){text-align:right}
 .matchStatsGrid>span{font:800 18px var(--font-barlow),sans-serif;color:#fff}
 .matchStatsGrid small{font:600 11px var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.55);text-align:center}
+.matchResultRow th,.matchResultRow td{padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2)}
+.matchResultRow + tr th,.matchResultRow + tr td{padding-top:8px}

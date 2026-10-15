@@ -816,19 +816,22 @@ function MatchDetail({ match, pairing, number, round, net, teamNames, onClose }:
 function MatchNine({ card, start, net }: { card: MatchCard; start: number; net: boolean }) {
   const holes = card.holes.slice(start, start + 9);
   const rows = [...card.left.map(p => ({ p, side: "left" })), ...card.right.map(p => ({ p, side: "right" }))];
+  const playerRow = ({ p, side }: (typeof rows)[number]) => <tr key={p.name} data-side={side}><th scope="row">{p.name.split(/\s+/)[0]}</th>{holes.map(h => {
+    const strokes = p.holes[h.hole - 1];
+    return <td key={h.hole}>{strokes == null ? "" : <span className={scoreMark(strokes - h.par)}>{strokes}</span>}{net && p.strokes[h.hole - 1] > 0 && <i className={styles.strokeDot} aria-label="handicap stroke" />}</td>;
+  })}</tr>;
   return <div className={styles.scorecard} role="region" aria-label={start ? "Back nine" : "Front nine"} tabIndex={0}>
     <table className={`${styles.scorecardTable} ${styles.matchTable}`}>
       <tbody>
         <tr><th scope="row">Hole</th>{holes.map(h => <td key={h.hole}>{h.hole}</td>)}</tr>
         <tr><th scope="row">Par</th>{holes.map(h => <td key={h.hole}>{h.par}</td>)}</tr>
-        {rows.map(({ p, side }) => <tr key={p.name} data-side={side}><th scope="row">{p.name.split(/\s+/)[0]}</th>{holes.map(h => {
-          const strokes = p.holes[h.hole - 1];
-          return <td key={h.hole}>{strokes == null ? "" : <span className={scoreMark(strokes - h.par)}>{strokes}</span>}{net && p.strokes[h.hole - 1] > 0 && <i className={styles.strokeDot} aria-label="handicap stroke" />}</td>;
-        })}</tr>)}
-        <tr className={styles.matchResultRow}><th scope="row">Status</th>{holes.map(h => <td key={h.hole}>
+        {/* Left team's players, then where the match stands, then the right team's players. */}
+        {rows.filter(({ side }) => side === "left").map(playerRow)}
+        <tr className={styles.matchResultRow}><th scope="row">Match</th>{holes.map(h => <td key={h.hole}>
           {h.lead === null ? "" : <span className={styles.leadChip} data-side={h.lead > 0 ? "left" : h.lead < 0 ? "right" : undefined}
             title={h.winner === "halved" ? "Hole halved" : `Hole won by ${h.winner === "left" ? "left" : "right"} side`}>{h.lead === 0 ? "AS" : Math.abs(h.lead)}</span>}
         </td>)}</tr>
+        {rows.filter(({ side }) => side === "right").map(playerRow)}
       </tbody>
     </table>
   </div>;
