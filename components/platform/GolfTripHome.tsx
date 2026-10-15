@@ -493,6 +493,12 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
     return () => observer.disconnect();
   }, [active, gamesActive]);
 
+  // Opening Predict glides the page up so Predict starts at the top, past the leaderboard (owner request 2026-10-15).
+  const predictRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (predictActive) predictRef.current?.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+  }, [predictActive]);
+
   const goTo = (index: number) => {
     setActive(index);
     // Keep the interactive Games panel outside the swipe strip.
@@ -571,7 +577,7 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
       {tripStats ? <Card title="Trip stats"><GolfTripStats stats={tripStats} changes={scoreChanges} /></Card> : <Card title="Stats"><Empty>Stats will show here once players record rounds</Empty></Card>}
     </div>}
     {/* Predict (only while the organizer has it on): the trip's prediction market in Maroon Coins. */}
-    {predictSetup && !noComp && <div role="tabpanel" aria-label="Predict" hidden={!predictActive}>
+    {predictSetup && !noComp && <div ref={predictRef} role="tabpanel" aria-label="Predict" hidden={!predictActive} style={{ scrollMarginTop: "calc(env(safe-area-inset-top, 0px) + 56px)" }}>
       {predictActive && <button type="button" className={styles.predictEntry} onClick={() => goTo(0)}>Back to {sections[0]?.label ?? "Leaderboard"}</button>}
       {predictActive && <GolfTripPredict setup={predictSetup} />}
     </div>}
