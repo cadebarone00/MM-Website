@@ -2795,3 +2795,9 @@ Three tabs in Predict, each bet a card; *(team)* = only for trips with a team co
 **Files.** components/platform/GolfTripMatch.tsx (list rows tap to open; new MatchDetail sheet with scorecard / graph / stats), GolfTripHome.tsx (Matches tab top card), new lib/platform/matchCenter.ts (hole-by-hole results + win-chance-by-hole from the Predict model) with tests, lib/dev/golfTripSimulatorData.ts (test-trip match results from hole scores).
 
 **Done means:** the Matches tab shows the tournament card with the round's matches below; tapping a match opens the sheet with a scorecard that adds up, a win-chance graph that starts from team strength and moves hole by hole, and both sides' stats; tests for hole results, running status and the win curve (stronger side favored at hole 0, 100% once a match is won); checked in the app simulator.
+
+### Round: Golf → Stats tab, Course / Individual views (built 2026-10-15)
+
+- **Course:** every course played on the trip ranked hardest → easiest (average to par per 18-hole round), hardest / easiest hole, most birdied / most bogeyed hole (share of plays), hardest / easiest 3-hole stretch, best / toughest round, scoring by par 3 / 4 / 5, and the mix of every hole (eagles … doubles+).
+- **Individual:** best and worst player (tap for everyone ranked) for scoring average, par 3s / 4s / 5s, bounce back (birdie+ after bogey+), fall off (bogey+ after birdie+), fairways, GIR, putts per round, 3-putts per round, scrambling, birdies per round, par-or-better %; then the existing all-players table. Minimum chances so one hole can't top a list.
+- Data: the trip's saved rounds (lib/platform/tripInsights.ts). Simulator: Golf Trip Active → Stats → "Sample trip stats" (lib/dev/sampleTripRounds.ts).
