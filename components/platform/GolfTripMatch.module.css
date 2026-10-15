@@ -413,7 +413,7 @@
 .matchSheetStatus[data-lead=right]{background:var(--team-right,#f3ece0);color:var(--team-right-text,#2a0d16)}
 .matchSheetTitle{margin:18px 0 8px;font:700 12px var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#dcc495}
 .matchSheetNote{margin:6px 0 0;font:500 12px/1.4 var(--font-barlow),sans-serif;color:rgba(255,255,255,.55)}
-.matchTable{width:100%;margin-bottom:8px}
+.matchTable{min-width:100%;margin-bottom:8px}
 .matchTable th{background:#240001}
 .matchTable td{position:relative;min-width:26px}
 .matchTable tr[data-side] th{font:600 13px var(--font-barlow),sans-serif}

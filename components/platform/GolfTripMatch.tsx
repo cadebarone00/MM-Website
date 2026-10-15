@@ -784,7 +784,7 @@ function MatchDetail({ match, pairing, number, round, net, teamNames, onClose }:
 
     <section aria-label="Match scorecard">
       <h3 className={styles.matchSheetTitle}>Scorecard</h3>
-      {[0, 9].map(start => <MatchNine key={start} card={card} start={start} net={net} />)}
+      <MatchScorecard card={card} net={net} />
       {!scored ? <p className={styles.matchSheetNote}>Hole-by-hole scores for this round aren&apos;t available yet.</p>
         : card.played === 0 && <p className={styles.matchSheetNote}>Scores show here hole by hole once the match starts.</p>}
     </section>
@@ -812,15 +812,20 @@ function MatchDetail({ match, pairing, number, round, net, teamNames, onClose }:
   </dialog>;
 }
 
-/** One nine of the match-play scorecard: par, every player's score (• = handicap stroke), the running status (colored by who won the hole). */
-function MatchNine({ card, start, net }: { card: MatchCard; start: number; net: boolean }) {
-  const holes = card.holes.slice(start, start + 9);
+/** The match-play scorecard, all holes in one table (swipe sideways; opens on the hole being played): par, every player's score (• = handicap stroke), the running status (colored by who won the hole). */
+function MatchScorecard({ card, net }: { card: MatchCard; net: boolean }) {
+  const holes = card.holes;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const box = scrollRef.current, cell = box?.querySelector<HTMLElement>(`td:nth-of-type(${Math.max(1, card.played)})`);
+    if (box && cell) box.scrollLeft = Math.max(0, cell.offsetLeft - box.clientWidth / 2);
+  }, [card.played]);
   const rows = [...card.left.map(p => ({ p, side: "left" })), ...card.right.map(p => ({ p, side: "right" }))];
   const playerRow = ({ p, side }: (typeof rows)[number]) => <tr key={p.name} data-side={side}><th scope="row">{p.name.split(/\s+/)[0]}</th>{holes.map(h => {
     const strokes = p.holes[h.hole - 1];
     return <td key={h.hole}>{strokes == null ? "" : <span className={scoreMark(strokes - h.par)}>{strokes}</span>}{net && p.strokes[h.hole - 1] > 0 && <i className={styles.strokeDot} aria-label="handicap stroke" />}</td>;
   })}</tr>;
-  return <div className={styles.scorecard} role="region" aria-label={start ? "Back nine" : "Front nine"} tabIndex={0}>
+  return <div ref={scrollRef} className={styles.scorecard} role="region" aria-label="Match scorecard" tabIndex={0}>
     <table className={`${styles.scorecardTable} ${styles.matchTable}`}>
       <tbody>
         <tr><th scope="row">Hole</th>{holes.map(h => <td key={h.hole}>{h.hole}</td>)}</tr>
