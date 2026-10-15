@@ -25,7 +25,8 @@ function players(match: GolfMatchPreview, pairing: GolfMatchPairing, side: "left
     const hcp = knownHcp(golfer.hcp ?? row?.golfer.hcp);
     const range: [number, number] = [0, match.par.length];
     return { name: golfer.name, hcp, holes: row?.holes ?? Array(match.par.length).fill(null),
-      strokes: net && hcp !== null ? strokesReceived(courseHandicap(hcp, course(match), range), course(match), range) : Array(match.par.length).fill(0) };
+      // Unknown handicap: strokes for 18, the same index the model assumes, so net stays fair.
+      strokes: net ? strokesReceived(courseHandicap(hcp ?? 18, course(match), range), course(match), range) : Array(match.par.length).fill(0) };
   });
 }
 

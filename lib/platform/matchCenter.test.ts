@@ -49,3 +49,14 @@ test("net: handicap strokes come off on the hardest holes", () => {
   assert.equal(matchCard(m, m.matches[0], true).holes[0].winner, "halved");
   assert.equal(matchCard(m, m.matches[0], false).holes[0].winner, "left");
 });
+
+test("net match: handicap strokes even it out, so it starts near 50/50 even for a 2 vs a 24 (and an unknown handicap)", () => {
+  const m = { ...preview(played([]), played([]), [2, 24]), handicap: true };
+  const gross = winCurve(m, matchCard(m, m.matches[0], false), 3000)[0];
+  const net = winCurve(m, matchCard(m, m.matches[0], true), 3000)[0];
+  assert.ok(gross.left > 0.75, `gross favors the 2: ${gross.left}`);
+  assert.ok(Math.abs(net.left - net.right) < 0.12, `net near even: ${net.left} vs ${net.right}`);
+  const unknown = { ...preview(played([]), played([]), [18, 0]), handicap: true };
+  const u = winCurve(unknown, matchCard(unknown, unknown.matches[0], true), 3000)[0];
+  assert.ok(Math.abs(u.left - u.right) < 0.12, `unknown handicap treated as 18: ${u.left} vs ${u.right}`);
+});
