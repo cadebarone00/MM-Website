@@ -549,7 +549,8 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
     </div>
     {/* The board: a summary for the section — the whole tournament on Overview, the round being played on Competition,
         games (placeholder) on Games. All three share one grid cell so nothing below moves when it switches. */}
-    {!predictActive && board}
+    {/* Stats and Predict have the space to themselves: no round box on top (owner request 2026-10-15). */}
+    {!predictActive && !statsActive && board}
     <div ref={trackRef} className={styles.slides} style={gamesActive ? { display: "none" } : undefined} onScroll={onScroll}>
       {sections.filter(({ id }) => !offStrip(id)).map(({ id: name, label }, i) => <div key={name} className={styles.slide} role="tabpanel" aria-label={label} inert={active !== i}>
         {name === "Overview"
