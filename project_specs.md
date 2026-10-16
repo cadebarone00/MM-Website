@@ -2840,3 +2840,33 @@ Three tabs in Predict, each bet a card; *(team)* = only for trips with a team co
 **Not in this round.** No database tables or migrations, no Google credentials or network, no admin UI or API routes, no detectors, no change to scoring, momentum, push or production. No Apple notifications.
 
 **Done means.** All new tests pass, the full existing test suite still passes, TypeScript type-checks the new files, and nothing outside `lib/highlights/` and this spec changes.
+
+## Notifications — native App Store app (proposed 2026-10-16, awaiting owner approval)
+
+**What it does / who uses it.** Players and organizers get alerts about their trips and tournaments in three places: (1) **phone notifications** on the lock screen and as banners when the phone is unlocked, (2) a **Live Activity** on the iPhone lock screen and Dynamic Island while a round is live, (3) **in-app notifications**: a bell with a list, plus a short banner at the top while the app is open. The Maroon is becoming a real App Store app (Capacitor wrapper, Xcode already set up by the owner), so everything is built native-ready: the web code, the Swift files and the bridge are all in the repo, ready to drop into Xcode.
+
+**Owner decisions so far.** Native App Store app via Capacitor (`@capacitor/core` already installed). Live Activities are real (ActivityKit), not a web imitation. New dev simulator group: **Notifications**.
+
+**Signed in vs signed out (needs confirm).** Proposed: a signed-in user gets everything for their trips. A signed-out phone keeps its device registered but only gets general alerts (e.g. "Sign in to see your trip's update"). No names, scores or trip details are sent to a signed-out phone. Signing out unlinks the device from the account.
+
+**Tech stack.** Next.js (existing), Supabase (existing), Capacitor 8 + `@capacitor/push-notifications` (new), Apple Push Notification service (APNs, new), Swift ActivityKit widget extension (new, in Xcode). The existing web push (`trip_push_subscriptions`, `public/trip-push-sw.js`, momentum outbox) keeps working for website users. Native push is added beside it, not instead of it.
+
+**One shared notification shape** (`lib/notifications/`, pure TypeScript, tested): `AppNotification` = id, kind, title, body, link (in-app path), tripId?, createdAt, read. The same object feeds the push payload, the bell list and the top banner. `LiveRoundActivity` = trip, round, course, my score to par, thru, position, match status (e.g. "2 UP thru 12"), updatedAt. This matches what the Swift widget shows.
+
+**Kinds (first set).** Momentum highlights (existing copy), round starting / tee time soon, opponent submitted / card mismatch, round final, join request / accept / decline, invite, link-history request. The wording follows the existing approved-copy rules: no new copy goes live without owner approval.
+
+**Data (SQL prepared, not run).** `app_notifications` (the bell list, per profile, read flag) and `device_push_tokens` (profile_id nullable when signed out, APNs token, platform, live-activity push token). Service-role only, same pattern as the momentum tables.
+
+**Phases (each one separately approved, one commit each).**
+1. **Dev Notifications group:** preview screens with mock data, no real sending. Lock-screen notification, unlocked banner, notification while the app is open, signed-out version, Live Activity (lock screen, Dynamic Island compact / expanded / minimal, round-end state), bell list (empty / unread / read) and top banner. Shared types + tests.
+2. **In-app for real:** `app_notifications` SQL + bell + top banner reading it.
+3. **Native push:** Capacitor push plugin, ask permission, save device token, server sender to APNs, tap → opens the right screen, sign-out unlinks.
+4. **Live Activity:** Swift widget extension files + a small Capacitor bridge plugin (start / update / end), APNs live-activity updates from live scoring.
+
+**Needs from the owner later (phase 3–4).** Apple Developer → Keys → an APNs key (.p8) + Key ID + Team ID, stored only in server env vars. In Xcode: turn on Push Notifications + Background Modes, and add the Widget Extension target.
+
+**Folder question.** The Swift files need a home. Proposed: a new top-level `ios-native/` folder (CLAUDE.md requires asking first), or wherever your Xcode project lives.
+
+**Not in this plan.** Android, email or SMS, marketing blasts, notification settings beyond on/off per kind, new notification wording without approval.
+
+**Done means (Phase 1).** The /dev simulator has a Notifications group showing every surface and state listed above at phone width. Shared types/logic have unit tests. TypeScript, lint and the full test suite pass. Nothing real is sent and no SQL is run.
