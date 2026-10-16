@@ -2808,3 +2808,35 @@ Three tabs in Predict, each bet a card; *(team)* = only for trips with a team co
 - **Course:** every course played on the trip ranked hardest → easiest (average to par per 18-hole round), hardest / easiest hole, most birdied / most bogeyed hole (share of plays), hardest / easiest 3-hole stretch, best / toughest round, scoring by par 3 / 4 / 5, and the mix of every hole (eagles … doubles+).
 - **Individual:** best and worst player (tap for everyone ranked) for scoring average, par 3s / 4s / 5s, bounce back (birdie+ after bogey+), fall off (bogey+ after birdie+), fairways, GIR, putts per round, 3-putts per round, scrambling, birdies per round, par-or-better %; then the existing all-players table. Minimum chances so one hole can't top a list.
 - Data: the trip's saved rounds (lib/platform/tripInsights.ts). Simulator: Golf Trip Active → Stats → "Sample trip stats" (lib/dev/sampleTripRounds.ts).
+
+## Highlights Engine — Google Sheet rulebook → published configuration (decisions 2026-10-16)
+
+**What it does / who uses it.** Organizers/developers (platform admins) edit highlight rules and notification copy in the Google Sheet "The_Maroon_Highlights_Source_of_Truth" and publish them to The Maroon without a code change or app release. Players only ever see published, approved copy.
+
+**Owner decisions (2026-10-16).**
+1. Detection moves from SQL triggers (`supabase/golf_trip_momentum.sql`) to TypeScript **gradually**. The existing momentum pipeline (triggers, `trip_momentum_events`, push outbox, `lib/platform/momentumCopy.ts`) stays exactly as is until a separately approved cutover.
+2. The **six category tabs** are the only source: Individual performance, Match play drama, Team competition, Individual leaderboard, Trip and tournament milestones, Fun and social highlights. START HERE / Parent Rules / Conditionals are legacy and ignored. The six-tab layout is preserved (columns: Rule ID · Row type · Rule / conditional · Tier · Headline · Notification text · Status · Detection notes).
+3. Every conditional has a **permanent ID** `HL-001-C03`, typed into the Rule ID column of its CONDITIONAL row (that column is blank today). Never derived from row position. The parent part must match the rule above it. Rule IDs are `HL-001`.
+4. Statuses are **Draft, Approved, Disabled**. A conditional goes live only when it **and** its parent rule are Approved. Anything else ("Needs copy", "TBD") is rejected by the validator.
+5. Publishing / rollback permission = `profiles.platform_role = 'admin'`, enforced on the server (route + SQL function), never trusted from the client.
+6. Birdie streak (HL-001) fires from **3** consecutive birdies, tiers **3–10**.
+7. Detection is separate from push delivery: post-commit detection, idempotent (same source key → one event), with a reconciliation pass that can re-run detection and withdraw/repair events. Scoring saves never wait on or fail because of highlights.
+8. Reuse existing scoring engines (`lib/platform/game-engine`, `lib/live/scoring.ts`), correction/withdrawal logic, `trip_momentum_events` and the web-push outbox.
+
+**Copy vs behavior.** Headline / Notification text = *copy*. Rule or conditional added/removed from the live set, status change, Tier = *behavior*. Rule name, condition label, category, notes = *metadata* (no live effect). Changes are measured on what would actually go live (Approved only). A publish containing any behavior change needs a second explicit confirm (later phase).
+
+**Templates.** Plain text with `{variable}` placeholders, e.g. `{player}'s heating up! 🔥`. Supported variables: `{player}`, `{team}`, `{opponent}`, `{count}`, `{hole}`, `{round}`, `{course}`, `{margin}`. Rules with a TypeScript detector declare which variables they provide; using one it can't provide is an error. Real names typed into copy (e.g. "Cam") must be replaced with `{player}` before approval.
+
+**Validation.** Structural problems (missing tab/header, bad or duplicate IDs, missing conditional ID, ID not matching its parent, conditional with no parent, unknown row type or status) are always errors. Content problems (empty copy, bad/unknown variables, tier the detector can't handle, duplicate tiers) are errors on rows that would go live, warnings on Draft/Disabled rows. Warnings: rule with no TypeScript detector yet (stored, never fires), " / " looking like two messages in one cell, Approved conditional under a non-Approved rule. Publish is allowed only with zero errors.
+
+**Architecture (later phases need separate approval).** Pure code in `lib/highlights/`; server-only Google read via a read-only service account (`spreadsheets.readonly`, sheet shared as Viewer, keys in server-only env vars), read only when an admin clicks Import; drafts previewed in the Admin Center; Publish creates an immutable `highlight_config_versions` row; an active-version pointer allows rollback; tables service-role only. The engine reads the active published version from Supabase, never Google, during scoring.
+
+**Phases.** (1) Pure TypeScript foundation — this round. (2) Google service-account connection verified read-only. (3) `supabase/highlights_config.sql` (drafts, immutable versions, active pointer, audit), tested on PGlite only. (4) Admin import → preview → diff → publish → rollback. (5) TypeScript detectors (HL-001–HL-004 first) run side by side with the SQL ones. (6) Approved cutover. Apple/native notifications: not planned yet.
+
+### Round: Highlights Engine Phase 1 — pure TypeScript foundation (owner request 2026-10-16)
+
+**Files.** `lib/highlights/`: `types.ts` (config types, statuses, tabs, headers), `sheetRows.ts` (raw sheet cells → typed rows, header-matched, blank separators), `importer.ts` (rows → config + structural issues), `catalog.ts` (what each TypeScript detector supports; HL-001 only for now), `template.ts` (find/check/render `{variables}`), `validator.ts` (full report + `publishableConfig`), `changes.ts` (copy / behavior / metadata classifier), tests next to each, plus `sheetFixture.ts` test data in the six-tab layout.
+
+**Not in this round.** No database tables or migrations, no Google credentials or network, no admin UI or API routes, no detectors, no change to scoring, momentum, push or production. No Apple notifications.
+
+**Done means.** All new tests pass, the full existing test suite still passes, TypeScript type-checks the new files, and nothing outside `lib/highlights/` and this spec changes.

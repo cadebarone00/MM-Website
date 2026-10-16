@@ -2,13 +2,17 @@
 -- READ-ONLY database inspection for The Maroon (accounts, profiles, trips, rounds, tournament identity).
 -- Generated 2026-10-16 from 34 repository files, 295 expected objects.
 --
--- What it does: ONE select statement that only reads the database's own catalog (the list of tables, columns,
--- functions, policies, triggers, indexes) plus a few COUNTS. It creates, changes and deletes nothing, and it
--- never selects emails, names, password hashes, tokens or any other column of any person's row.
+-- What it does: the first line switches this run to READ ONLY (the database itself then refuses any write, including
+-- from the few counts that run as nested queries). After that comes ONE select that only reads the database's own
+-- catalog (tables, columns, functions, policies, triggers, indexes) plus a few COUNTS. It never selects emails,
+-- names, password hashes, tokens or any other column of any person's row, and never prints function or policy text.
 --
 -- How to run: Supabase dashboard -> SQL Editor -> New query -> paste this whole file -> Run.
--- Then use the results panel's export / download (CSV) and send the file back. If the editor only shows part of
--- the rows, the CSV still has all of them.
+-- Then use the results panel's export / download (CSV) and send the file back.
+-- Completeness check: row 1 ("0. Read me first") says how many rows the result has, and every row has a row_no.
+-- If the CSV has fewer rows than that, or row_no skips a number, the export was cut short.
+-- If Supabase answers with an error about SET TRANSACTION (for example "must be called before any query"), delete
+-- the "set transaction read only;" line and run again: the rest is still a single read-only select.
 --
 -- How to read "status":
 --   Functions are FINGERPRINTED: the database keeps each function's exact text, so a match with a repository file is
@@ -16,9 +20,24 @@
 --     exact            = installed text is identical to this file's version
 --     other file       = identical to a DIFFERENT repository file's version (that file ran later / instead)
 --     unknown version  = a function with this name exists but matches no repository file (older or hand-edited)
---   Tables, columns, indexes, constraints, policies, triggers and buckets can only be checked for EXISTENCE.
---   Existing proves the object is there, NOT which file created it (several files may create the same object).
+--   Tables, columns, indexes, constraints, policies, triggers and buckets can only be checked for EXISTENCE (by name).
+--   Existing proves the object is there, NOT which file created it (several files may create the same object), and
+--   NOT that its contents (policy rule, constraint check, column type) match the file.
 --   "missing" may also mean a later file deliberately dropped it.
+--   NOTHING here can prove a file's data steps (backfills, seed rows) or its GRANT / REVOKE lines ran.
+--   Section F shows who can actually call each function today, which covers the grants that matter most.
+--
+-- File verdicts (section A), strongest to weakest:
+--   FUNCTIONS MATCH THIS FILE       every function in the file is installed with this file's exact text, and every
+--                                   other object exists by name. Strong evidence the current version ran (or the
+--                                   same text arrived another way). Not proof of its data or grant steps.
+--   FUNCTIONS MATCH (some via other files)  the same, but some functions carry another file's text (replaced later).
+--   PRESENT, DIFFERENT VERSION      everything exists, but some functions match no repository file.
+--   PRESENT (existence only)        the file has no functions; its objects exist by name. Weak evidence.
+--   PARTIAL                         some objects exist, some don't.
+--   NOT FOUND                       none of its objects exist.
+
+set transaction read only;
 
 with expected(file, kind, parent, name, fp_lf, fp_raw) as (
   values
@@ -58,9 +77,9 @@ with expected(file, kind, parent, name, fp_lf, fp_raw) as (
     ('platform_foundation.sql', 'index', 'public.tournament_members', 'tournament_members_profile_idx', null, null),
     ('platform_foundation.sql', 'index', 'public.edition_roster', 'edition_roster_team_idx', null, null),
     ('platform_editions.sql', 'constraint', 'public.tournament_editions', 'tournament_editions_id_season_year_key', null, null),
-    ('platform_editions.sql', 'column', 'public.public', 'edition_id', null, null),
+    ('platform_editions.sql', 'column', 'public.*', 'edition_id', null, null),
     ('platform_editions.sql', 'index', 'public.tournaments', 'tournaments_single_legacy_idx', null, null),
-    ('platform_editions.sql', 'trigger', 'public.public', 'set_edition_id', null, null),
+    ('platform_editions.sql', 'trigger', 'public.*', 'set_edition_id', null, null),
     ('platform_editions.sql', 'function', 'public', 'legacy_edition_id', 'fb82bdeac93d7890770ea36a53dcafa0', 'fb82bdeac93d7890770ea36a53dcafa0'),
     ('platform_editions.sql', 'function', 'public', 'set_legacy_edition_id', '1c473b180693a4822ce0816e3548ebd9', '1c473b180693a4822ce0816e3548ebd9'),
     ('platform_create_tournament.sql', 'function', 'public', 'create_tournament_shell', 'ddf0275dc7656baf8e2d686554b4ba45', 'ddf0275dc7656baf8e2d686554b4ba45'),
@@ -319,7 +338,8 @@ with expected(file, kind, parent, name, fp_lf, fp_raw) as (
     ('legacy_round_import.sql', 'function', 'public', 'import_legacy_rounds', '091f1aa667a31c02f89a2e8744d68bd4', '92444e0da511a3f4f21880eb6d5223bf')
 ),
 fn as (
-  select n.nspname as schema, p.proname as name, md5(p.prosrc) as fp
+  select n.nspname as schema, p.proname as name, md5(p.prosrc) as fp,
+    p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' as signature
   from pg_proc p join pg_namespace n on n.oid = p.pronamespace
   where n.nspname not in ('pg_catalog', 'information_schema')
 ),
@@ -328,13 +348,16 @@ checked as (
     case e.kind
       when 'table' then to_regclass(e.name) is not null
       when 'column' then exists (select 1 from information_schema.columns c
-        where c.table_schema = split_part(e.parent, '.', 1) and c.table_name = split_part(e.parent, '.', 2) and c.column_name = e.name)
+        where c.table_schema = split_part(e.parent, '.', 1) and c.column_name = e.name
+          and (split_part(e.parent, '.', 2) = '*' or c.table_name = split_part(e.parent, '.', 2)))
       when 'index' then exists (select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
         where c.relkind in ('i', 'I') and c.relname = e.name and n.nspname = split_part(e.parent, '.', 1))
       when 'constraint' then exists (select 1 from pg_constraint con join pg_class r on r.oid = con.conrelid join pg_namespace n on n.oid = r.relnamespace
-        where con.conname = e.name and r.relname = split_part(e.parent, '.', 2) and n.nspname = split_part(e.parent, '.', 1))
+        where con.conname = e.name and n.nspname = split_part(e.parent, '.', 1)
+          and (split_part(e.parent, '.', 2) = '*' or r.relname = split_part(e.parent, '.', 2)))
       when 'trigger' then exists (select 1 from pg_trigger t join pg_class r on r.oid = t.tgrelid join pg_namespace n on n.oid = r.relnamespace
-        where not t.tgisinternal and t.tgname = e.name and r.relname = split_part(e.parent, '.', 2) and n.nspname = split_part(e.parent, '.', 1))
+        where not t.tgisinternal and t.tgname = e.name and n.nspname = split_part(e.parent, '.', 1)
+          and (split_part(e.parent, '.', 2) = '*' or r.relname = split_part(e.parent, '.', 2)))
       when 'policy' then exists (select 1 from pg_policies p
         where p.schemaname = split_part(e.parent, '.', 1) and p.tablename = split_part(e.parent, '.', 2) and p.policyname = e.name)
       when 'bucket' then exists (select 1 from storage.buckets b where b.id = e.name)
@@ -349,7 +372,11 @@ checked as (
     case when e.kind = 'function' then (
       select string_agg(distinct o.file, ', ' order by o.file) from expected o
       where o.kind = 'function' and o.parent = e.parent and o.name = e.name and o.file <> e.file
-    ) end as also_defined_in
+    ) end as also_defined_in,
+    case when e.kind = 'function' then (select count(*) from fn where fn.schema = e.parent and fn.name = e.name) end as overloads,
+    case when e.kind = 'function' then (
+      select string_agg(fn.signature, ' | ' order by fn.signature) from fn where fn.schema = e.parent and fn.name = e.name
+    ) end as signatures
   from expected e
 ),
 detail_rows as (
@@ -364,7 +391,9 @@ detail_rows as (
     end as status,
     concat_ws('; ',
       case when kind = 'function' and matches_other is not null then 'installed text matches: ' || matches_other end,
-      case when kind = 'function' and also_defined_in is not null then 'also defined in: ' || also_defined_in end) as detail
+      case when kind = 'function' and also_defined_in is not null then 'also defined in: ' || also_defined_in end,
+      case when kind = 'function' and overloads > 1 then overloads || ' installed versions with different arguments (an old one may be left over): ' || signatures end,
+      case when split_part(parent, '.', 2) = '*' then 'created in a loop on several tables: checked on ANY table in the schema (weak)' end) as detail
   from checked
 ),
 file_summary as (
@@ -375,21 +404,23 @@ file_summary as (
     count(*) filter (where kind = 'function' and present and exact) as fn_exact,
     count(*) filter (where kind = 'function' and present and not exact and matches_other is not null) as fn_other,
     count(*) filter (where kind = 'function' and present and not exact and matches_other is null) as fn_unknown,
-    count(*) filter (where not present) as missing
+    count(*) filter (where not present) as missing,
+    count(*) filter (where kind = 'function' and overloads > 1) as extra_overloads
   from checked group by file
 ),
 summary_rows as (
   select 1 as section_order, 'A. File verdict' as section, file, 'file' as kind, file as object,
     case
-      when present = 0 then 'NOT INSTALLED'
+      when present = 0 then 'NOT FOUND'
       when missing > 0 then 'PARTIAL'
       when fn_unknown > 0 then 'PRESENT, DIFFERENT VERSION'
-      when fns > 0 and fn_exact = fns then 'PROVEN (current version)'
-      when fns > 0 and fn_exact + fn_other = fns then 'PRESENT (some functions replaced by other files)'
-      else 'PRESENT (existence only, not proof)'
+      when fns > 0 and fn_exact = fns then 'FUNCTIONS MATCH THIS FILE'
+      when fns > 0 and fn_exact + fn_other = fns then 'FUNCTIONS MATCH (some via other files)'
+      else 'PRESENT (existence only)'
     end as status,
-    format('%s/%s objects present; functions: %s exact, %s other file, %s unknown version; %s missing',
-      present, objects, fn_exact, fn_other, fn_unknown, missing) as detail
+    format('%s/%s objects present; functions: %s exact, %s other file, %s unknown version; %s missing%s',
+      present, objects, fn_exact, fn_other, fn_unknown, missing,
+      case when extra_overloads > 0 then format('; %s function(s) also have another installed version with different arguments', extra_overloads) else '' end) as detail
   from file_summary
 ),
 migration_log as (
@@ -476,8 +507,8 @@ count_rows as (
     ('saved player rounds', to_regclass('public.player_rounds') is not null, 'select count(*) as c from public.player_rounds', ''),
     ('tournament players', to_regclass('public.tournament_players') is not null, 'select count(*) as c from public.tournament_players', '')
   ) as t(label, ready, sql, note)
-)
-select section, file, kind, object, status, detail from (
+),
+all_rows as (
   select * from summary_rows
   union all select * from detail_rows
   union all select * from migration_log
@@ -487,5 +518,14 @@ select section, file, kind, object, status, detail from (
   union all select * from trigger_rows
   union all select * from bucket_rows
   union all select * from count_rows
+)
+select row_number() over (order by section_order, file nulls first, kind, object) as row_no,
+  section, file, kind, object, status, detail
+from (
+  select 0 as section_order, '0. Read me first' as section, null::text as file, 'check' as kind,
+    'total rows in this result (this row included)' as object,
+    ((select count(*) from all_rows) + 1)::text as status,
+    'If your export has fewer rows, or row_no skips a number, it was cut short.' as detail
+  union all select * from all_rows
 ) everything
-order by section_order, file nulls first, kind, object;
+order by row_no;
