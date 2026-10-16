@@ -1,6 +1,8 @@
 /* DEV ONLY: Notifications group previews. iPhone surfaces copy Apple's look; in-app surfaces use the trip's maroon + cream. */
-.phone{position:relative;box-sizing:border-box;min-height:100vh;min-height:100svh;overflow:hidden;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",var(--font-barlow),sans-serif;color:#fff}
-.phone img{display:block}
+.phone{position:relative;box-sizing:border-box;min-height:100vh;min-height:100svh;overflow:hidden;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",var(--font-barlow),sans-serif;color:#fff}
+/* Beats the app's global top clearance (globals.css .app-camera-buffer); these screens place the camera spacing themselves. */
+main.phone.phone.phone{padding-top:env(safe-area-inset-top)}
+main.phone.phone img{display:block}
 .wallpaper{background:radial-gradient(120% 70% at 20% 0%,#872a2e 0%,transparent 60%),radial-gradient(90% 60% at 100% 100%,#806331 0%,transparent 70%),linear-gradient(170deg,#500001 0%,#240001 70%)}
 
 /* Lock screen */
@@ -73,13 +75,14 @@
 .islandExpandedBottom b{color:#fff}
 
 /* In-app */
+.phone.appScreen{padding-top:0}
 .appScreen{background:var(--color-cream-100,#f5efe2);color:#240001;font-family:var(--font-barlow),sans-serif}
-.appBar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px 14px;background:var(--color-maroon-900,#240001);color:#fff;font:700 20px/1 var(--font-barlow-condensed),sans-serif;letter-spacing:.02em}
+.appBar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px 14px;padding-top:calc(12px + env(safe-area-inset-top));background:var(--color-maroon-900,#240001);color:#fff;font:700 20px/1 var(--font-barlow-condensed),sans-serif;letter-spacing:.02em}
 .bell{position:relative;display:inline-flex}
 .bell b{position:absolute;top:-6px;right:-8px;min-width:18px;height:18px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:#b8945a;color:#240001;font:700 11px/18px var(--font-barlow),sans-serif;text-align:center}
 .appPlaceholder{display:flex;flex-direction:column;gap:12px;padding:18px}
 .appPlaceholder i{height:110px;border-radius:18px;background:#fff;box-shadow:0 1px 3px rgba(36,0,1,.08)}
-.sheet{position:absolute;inset:env(safe-area-inset-top) 0 auto;height:70%;overflow-y:auto;padding:16px 16px 20px;border-radius:0 0 28px 28px;background:var(--color-maroon-900,#240001);color:#fff;box-shadow:0 12px 30px rgba(36,0,1,.35)}
+.sheet{position:absolute;inset:0 0 auto;box-sizing:border-box;height:70%;overflow-y:auto;padding:16px 16px 20px;padding-top:calc(16px + env(safe-area-inset-top));border-radius:0 0 28px 28px;background:var(--color-maroon-900,#240001);color:#fff;box-shadow:0 12px 30px rgba(36,0,1,.35)}
 .list h2{margin:0;font:700 22px/1 var(--font-barlow-condensed),sans-serif;letter-spacing:.02em}
 .listHeader{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .listHeader span{font-size:13px;font-weight:600;color:#dcc495}
@@ -92,11 +95,11 @@
 .listMeta{margin:4px 0 0;font-size:12px;color:rgba(255,255,255,.5)}
 .dot{position:absolute;top:18px;right:10px;width:8px;height:8px;border-radius:50%;background:#b8945a}
 .listEmpty{margin:24px 8px;font-size:15px;line-height:1.4;color:rgba(255,255,255,.65);text-align:center}
-.topBanner{position:absolute;z-index:3;top:calc(env(safe-area-inset-top) + 6px);left:10px;right:10px;display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:18px;background:var(--color-maroon-900,#240001);color:#fff;box-shadow:0 10px 26px rgba(36,0,1,.35);animation:bannerIn .45s cubic-bezier(.22,1,.36,1) both}
+.topBanner{position:absolute;z-index:3;top:calc(env(safe-area-inset-top) + 6px);left:10px;right:10px;display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:18px;background:var(--color-maroon-800,#380001);color:#fff;border:1px solid rgba(220,196,149,.3);box-shadow:0 10px 26px rgba(0,0,0,.45);animation:bannerIn .45s cubic-bezier(.22,1,.36,1) both}
 .topBannerBody{margin:2px 0 0;font-size:14px;color:rgba(255,255,255,.78)}
 
 /* Signed out → sign in first */
-.signIn{display:flex;flex-direction:column;align-items:center;padding:56px 28px 0;text-align:center}
+.signIn{display:flex;flex-direction:column;align-items:center;padding:56px 28px 0;padding-top:calc(56px + env(safe-area-inset-top));text-align:center}
 .signInIcon{width:72px;height:72px;border-radius:17px;margin-bottom:18px}
 .signInEyebrow{margin:0;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#806331}
 .signIn h1{margin:6px 0 0;font:700 28px/1.1 var(--font-barlow-condensed),sans-serif}

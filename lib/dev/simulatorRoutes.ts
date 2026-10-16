@@ -115,7 +115,10 @@ export function simulatorPages(): SimulatorPage[] {
   // Notifications group: phone notifications, Live Activity and in-app, each with its preview screens (spec: Notifications).
   for (const [path, label, surface] of [["/dev/notifications/phone", "Phone notifications", "phone"], ["/dev/notifications/live-activity", "Live Activity", "live"], ["/dev/notifications/in-app", "In-app notifications", "inApp"]] as const) {
     const page = pages.find(item => item.path === path);
-    if (page) Object.assign(page, { label, group: "Notifications", conditions: NOTIFICATION_PREVIEWS[surface].map(id => ({ id: "notify-" + id, label: NOTIFICATION_PREVIEW_LABELS[id], state: { notificationPreview: id } })) });
+    if (page) {
+      Object.assign(page, { label, group: "Notifications", conditions: NOTIFICATION_PREVIEWS[surface].map(id => ({ id: "notify-" + id, label: NOTIFICATION_PREVIEW_LABELS[id], state: { notificationPreview: id } })) });
+      pages.push(...pages.splice(pages.indexOf(page), 1)); // keep this order: phone, Live Activity, in-app
+    }
   }
   // Profile group. First (the default): the real profile screens on a sample profile, no sign-in needed.
   const profile = pages.find(page => page.path === "/dev/profile");

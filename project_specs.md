@@ -2870,3 +2870,120 @@ Three tabs in Predict, each bet a card; *(team)* = only for trips with a team co
 **Not in this plan.** Android, email or SMS, marketing blasts, notification settings beyond on/off per kind, new notification wording without approval.
 
 **Done means (Phase 1).** The /dev simulator has a Notifications group showing every surface and state listed above at phone width. Shared types/logic have unit tests. TypeScript, lint and the full test suite pass. Nothing real is sent and no SQL is run.
+
+## Accounts Step 2 — Signup & profile initialization reliability (approved plan 2026-10-16; spec only, nothing built)
+
+**Why.** The 2026-10-16 audit (`docs/account-architecture-audit-2026-10-16.md`) and the live read-only inspection
+(578 rows: 16 accounts, 14 profiles, 2 accounts with no profile, 6 never verified, no migration history) found:
+- Signup makes the login and the profile in two separate steps (`app/api/auth/signup/route.ts`). If the profile
+  step fails, it deletes the account id Supabase returned (line 54). When the same not-yet-verified email signs up again,
+  Supabase may return the **existing** account, so that cleanup can delete a real pending account. This is suspected and
+  will be reproduced locally in Step 2c.
+- `MM…` player codes are predictable, and today typing one at signup claims that old Maroon player's records.
+- All 6 live functions from `profile_v1.sql` (including `create_my_profile`) are an unknown version, so they can't be
+  relied on as written in the repo.
+
+### Owner requirements (2026-10-16)
+1. Authentication and profile creation are **separate**. No signup endpoint may delete an existing account during
+   cleanup.
+2. Profile initialization is **idempotent** and goes through **one central authenticated pathway**, not only the web
+   login route. It must work for the future iOS app and other sign-in providers (Apple, Google, magic link).
+3. A **missing** profile and an **initialized but incomplete** profile are different states. No fake public
+   usernames (no more `golfer_<random>` / "Golfer").
+4. Historical player-code claims are verified securely. A predictable identifier alone can never claim someone's
+   records.
+5. The admin-invite cleanup is tested for ownership safety. It may only remove an account that same request created.
+6. All existing account ids, profile records, legacy player links and golf history are preserved.
+7. **No production changes** (SQL or deploy) until the work is tested locally and reviewed by the owner.
+
+### Profile states
+| State | Meaning | What the app does |
+|---|---|---|
+| **no account** | signed out | sign-in / sign-up |
+| **unconfirmed** | account exists, email (or provider) not confirmed | cannot sign in; no profile is ever created |
+| **missing** | confirmed account, no `profiles` row | call the initialization pathway (below), then setup |
+| **incomplete** | `profiles` row exists, but no username or no display name | Finish setup form; no trips, tournaments, rounds or public page until complete |
+| **complete** | username and display name set | everything |
+
+- `getCurrentProfile()` reports `signed-out`, `no-profile`, `incomplete` or `ok`. Every feature that needs a golfer
+  keeps requiring `ok`, as today. `incomplete` is new; until a page handles it, it behaves like `no-profile`.
+- "Complete" is **derived** (username and display name both set). No new status column, and nothing to backfill.
+  All 14 existing profiles have both, so they are complete as they are.
+- `profiles.username` and `profiles.display_name` become **nullable**, only so an incomplete profile can exist without
+  an invented name. Case-insensitive uniqueness stays (several NULLs are allowed). An incomplete profile has no
+  public page and is never shown by username.
+
+### The pathway (one function, many callers)
+- **Database:** `initialize_my_profile(p_account uuid)` (new file `supabase/profile_initialization.sql`):
+  - refuses unless `auth.users` has that id and it is **confirmed** (`confirmed_at` is not null; covers email,
+    phone and OAuth providers);
+  - `insert … on conflict (id) do nothing`, so it is safe to call any number of times, concurrently;
+  - copies the account email into `profiles.email` as today (needed by username login) and never touches an
+    existing profile's fields;
+  - returns `{ state: 'incomplete' | 'complete', created: boolean }`.
+  - `complete_my_profile(p_profile uuid, p_input jsonb)` sets display name + username (same rules as today's
+    `profile_username_problem`) only while incomplete; later edits stay in `update_my_profile`.
+  - Both are `security definer`, pinned `search_path`, `revoke … from public, anon, authenticated`, granted to
+    `service_role` only. The account id always comes from the **server session**, never from a request body.
+- **Server:** `lib/profile/profileInitialization.ts` → `initializeCurrentProfile()` reads the session
+  (`auth.getUser()`), calls the function, and returns the new `getCurrentProfile()` state.
+- **HTTP:** `POST /api/account/initialize`. It accepts the web cookie session **or** `Authorization: Bearer <access
+  token>` (for the iOS app and other clients), validated with Supabase `auth.getUser(token)`. It has no request body,
+  so it cannot be pointed at another account.
+- **Callers:** the web login route after a successful sign-in, `/auth/callback` (future OAuth / magic links), the
+  Finish setup form before it saves, and the iOS app after any sign-in. Each is just a caller; none is required.
+- **No trigger on `auth.users`** (requirement 1). A broken trigger there would stop all signups.
+
+### Signup endpoint (after the change)
+- Only `auth.signUp({ email, password })`. **No profile insert, no service-role client, no `deleteUser`.**
+- The same response for a new email, an existing verified email and an existing unverified email: "Check your email".
+  This also stops the endpoint revealing which emails have accounts.
+- Input checks stay (email format, password length). The signup UI is unchanged. An `MM…` code typed at signup no
+  longer claims anything (see below).
+
+### Historical player claims (old Maroon `player_slots`)
+- **Never** claimable by the code alone.
+- **Automatic claim** only when the confirmed account email exactly matches (ignoring case) the `player_slots.email`
+  the admin sent that player's invite to, and the slot is unclaimed. It happens inside `initialize_my_profile` in
+  the same transaction, using the existing uniqueness rules (`profile_identity.sql`): one slot per profile, one
+  profile per slot.
+- **Otherwise:** no claim. The player asks, and an admin approves, using the audited link-request model already
+  designed for historical records. Its UI is a later step and is not part of Step 2.
+- The 13 slots already claimed stay exactly as they are.
+
+### Admin invite (`app/api/portal/admin/invite/route.ts`)
+- No behavior change planned. A test must prove that cleanup only ever deletes the account that same request just
+  created (Supabase refuses to invite an existing email, so an existing account is never deleted), and that a
+  failure after the profile insert leaves no half-made account.
+
+### Legacy trigger on `auth.users`
+- `sync_player_slot_password_created` runs **after a password update** only, not on signup. Its live text is an
+  unknown version. Step 2b reads it, and Step 2c checks locally that password set/reset and signup still work with it
+  installed. Revoking browser access to it and its pair is a separate later item.
+
+### Preserved (requirement 6)
+- No existing account, profile, legacy link or golf row is rewritten or deleted.
+- The only schema change is dropping `NOT NULL` on two `profiles` columns, plus new functions.
+- The 2 accounts with no profile get one the next time they sign in (initialize → incomplete → Finish setup).
+
+### Steps (each needs owner approval before it starts)
+- **2a** this spec. **2b** read-only live diagnostic `docs/database-inspection-signup.sql` (owner runs it).
+- **2c** local Supabase in Docker (email confirmation on, locally only); reproduce the duplicate-signup deletion on
+  today's code.
+- **2d** `supabase/profile_initialization.sql` plus database tests. Not run on live.
+- **2e** signup / login / initialize route changes plus `getCurrentProfile` `incomplete` state.
+- **2f** regression tests: route tests, database tests, and local-Supabase end-to-end tests (signup, duplicate
+  email, repeated and concurrent requests, confirmation, failed initialization and recovery, login, admin-invite
+  cleanup ownership, legacy trigger, a signup that skips the website, body can't choose the account).
+- **Going live (later, separate approval):** the owner runs the SQL, then the code is deployed, in that order.
+
+### Open owner decisions (do not block 2b/2c)
+- How legacy players were given their `MM…` codes: by admin invite email (then email-match auto-claim covers them),
+  or some other way.
+- Whether an incomplete profile may accept a trip invite (current plan: no, finish setup first; the invite link keeps
+  working afterwards).
+
+### Done means (Step 2 as a whole)
+Every test above passes locally. The duplicate-signup deletion is shown on the old code and gone on the new. No code
+path in signup can delete an account. Initialization is idempotent and works with a cookie or a bearer token.
+TypeScript, lint and the full test suite pass. Nothing is run on production.
