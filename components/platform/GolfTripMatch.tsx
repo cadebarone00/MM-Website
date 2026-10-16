@@ -1,3 +1,4 @@
+import { competitionMatchOffset } from "@/lib/platform/competitionMatchNumber";
 import { createPortal } from "react-dom";
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
@@ -18,6 +19,8 @@ import {
   type GolfMatchStanding,
 } from "@/lib/platform/golfTripPreviewFixture";
 import styles from "./GolfTripMatch.module.css";
+import homeStyles from "./GolfTripHome.module.css";
+import type { TripStatsView } from "./GolfTripStats";
 import { MatchDraftStatus } from "./MatchDraftStatus";
 import { matchCard, winCurve, withHoleStandings, type MatchCard, type WinPoint } from "@/lib/platform/matchCenter";
 
@@ -28,12 +31,13 @@ import { matchCard, winCurve, withHoleStandings, type MatchCard, type WinPoint }
  * the Match and Leaderboard slides below them each show their own header control and rows.
  */
 /** `roundStarted`: the organizer has begun the current round (its matches show THRU rather than tee times). */
-export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundStarted = false, draftScope }: { match: GolfMatchPreview; viewRound?: number; roundStarted?: boolean; draftScope?: string }) {
+export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundStarted = false, draftScope, matchOffset }: { match: GolfMatchPreview; viewRound?: number; roundStarted?: boolean; draftScope?: string; matchOffset?: number }) {
   const [net, setNet] = useState(false);
   // Which round's matches: `viewRound` from the round picker under the big box (Golf tab), else this list's own picker.
   // Matches without a round count as the current round's.
   const [ownRound, setViewRound] = useState(fullMatch.round);
   const viewRound = shownRound ?? ownRound;
+  const numberOffset = matchOffset ?? competitionMatchOffset(fullMatch, viewRound);
   // Swiping anywhere on the matches steps the round like the picker's arrows (left = next, right = previous).
   const swipe = useSwipe(() => setViewRound(round => Math.min(fullMatch.roundCount, round + 1)), () => setViewRound(round => Math.max(1, round - 1)));
   // This round's matches, with status worked out from the players' hole scores where the leaderboard has them.
@@ -71,12 +75,12 @@ export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundSt
         const status = pairingStatus(leftComp, rightComp, standing, m.result, roundStarted && viewRound === fullMatch.round);
         // Before the match starts, no lead fill.
         const shown = status.kind === "tee" ? null : standing;
-        return <li key={i} className={`${styles.pairing} ${styles.pairingTap}`} role="button" tabIndex={0} aria-label={`Open match ${i + 1}`}
+        return <li key={i} className={`${styles.pairing} ${styles.pairingTap}`} role="button" tabIndex={0} aria-label={`Open match ${numberOffset + i + 1}`}
           onClick={() => setOpened(i)} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setOpened(i); } }}>
           <MatchSide competitor={leftComp} side="left" standing={shown} score={sideScore(status, shown, "left")} />
           {/* The middle: the match number in gold over its status (TEE TIME, THRU), no box. */}
           <span className={styles.matchCenter}>
-            <span className={styles.matchNumber}>Match {i + 1}</span>
+            <span className={styles.matchNumber}>Match {numberOffset + i + 1}</span>
             <MatchStatus status={status} plain />
           </span>
           {rightComp && <MatchSide competitor={rightComp} side="right" standing={shown} score={sideScore(status, shown, "right")} />}
@@ -85,7 +89,7 @@ export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundSt
       {/* No matches set for this round yet: the same row, with placeholders. */}
       {!match.matches.length && <MatchDraftStatus scope={draftScope} round={viewRound} />}
     </ul>
-    {opened !== null && match.matches[opened] && <MatchDetail match={fullMatch} pairing={original[opened]} number={opened + 1} round={viewRound}
+    {opened !== null && match.matches[opened] && <MatchDetail match={fullMatch} pairing={original[opened]} number={numberOffset + opened + 1} round={viewRound}
       net={showNet} teamNames={[teamNames?.[0] ?? match.sides[0].name, teamNames?.[1] ?? match.sides[1].name]}
       onClose={() => setOpened(null)} />}
   </div>;
@@ -370,8 +374,8 @@ export function RoundNav({ round, current, count, onRound }: { round: number; cu
 }
 
 /** < Match N >: steps through the round's matches (1-based). */
-export function MatchNav({ match, count, onMatch }: { match: number; count: number; onMatch: (match: number) => void }) {
-  return <StepNav name="Match" label={`Match ${match}`} value={match} count={count} onValue={onMatch} />;
+export function MatchNav({ match, count, onMatch, offset = 0 }: { match: number; count: number; onMatch: (match: number) => void; offset?: number }) {
+  return <StepNav name="Match" label={`Match ${offset + match}`} value={match} count={count} onValue={onMatch} />;
 }
 
 export function GolfMatchup({ match, compact = false, below, swipe, featured = 0, roundStarted = false }: {
@@ -435,9 +439,9 @@ function SlideHeader({ title, detail, children }: { title: string; detail: strin
   </div>;
 }
 
-/** Top of the Golf tab: the course, with the round's day, number and format under it. */
-export function GolfRoundHeader({ match, competitive = true, today, day, previousDisabled, nextDisabled, onPrevious, onNext }: {
-  match: GolfMatchPreview; competitive?: boolean; today?: string; day?: number;
+/** Top of the Golf tab: the course, with the round number and format under it. */
+export function GolfRoundHeader({ match, competitive = true, today, previousDisabled, nextDisabled, onPrevious, onNext }: {
+  match: GolfMatchPreview; competitive?: boolean; today?: string;
   previousDisabled?: boolean; nextDisabled?: boolean; onPrevious?: () => void; onNext?: () => void;
 }) {
   const formatDef = resolveGolfFormat(match.formatDef?.key ?? match.format);
@@ -450,7 +454,7 @@ export function GolfRoundHeader({ match, competitive = true, today, day, previou
     <div className={styles.golfCourseText}>
       <p className={styles.headerDetail}>{match.roundDate === (today ?? localToday) && <span>(Today) </span>}{roundDay(match.roundDate)}</p>
       <h3 className={styles.headerTitle} title={match.course}><span className={styles.courseNameMeasure}>{match.course}</span></h3>
-      <p className={styles.headerDetail}>{day !== undefined && <>Day {day}{competitive && " \u00b7 "}</>}{competitive && <>Round {match.round} &middot; {formatDef.label}</>}</p>
+      <p className={styles.headerDetail}>{competitive && <>Round {match.round} &middot; {formatDef.label}</>}</p>
     </div>
     <button type="button" className={styles.golfCourseArrow} aria-label="Next golf round" disabled={nextDisabled || !onNext} onClick={onNext}><ChevronRight size={22} aria-hidden /></button>
   </header>;
@@ -461,10 +465,11 @@ export function GolfRoundHeader({ match, competitive = true, today, day, previou
  * Top box on Overview: the whole tournament at a glance — both teams with their overall score (names in the top
  * corners), the win % bar and team stats. Same box as the round matchup card on Competition.
  */
-export function GolfTournamentSummary({ match, onPredict }: { match: GolfMatchPreview; onPredict?: () => void }) {
+export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: GolfMatchPreview; onPredict?: () => void; tripStats?: TripStatsView }) {
   const [left, right] = match.sides;
   // Tapping the team boxes drops down every player's match points, best first (owner request 2026-10-15).
   const [pointsOpen, setPointsOpen] = useState(false);
+  const [statsTeam, setStatsTeam] = useState<0 | 1 | null>(null);
   const ranking = pointsOpen ? playerPoints(withHoleStandings(match)) : [];
   return <div className={styles.matchup} data-points-open={pointsOpen || undefined}>
     <section className={`${styles.versus} ${styles.boardBox}`} aria-label="Tournament standings">
@@ -487,12 +492,13 @@ export function GolfTournamentSummary({ match, onPredict }: { match: GolfMatchPr
       <div className={styles.stats}>
         <WinBar left={left.winPct} right={right.winPct} />
         {onPredict ? <div className={styles.predictRow}>
-          <SummaryStats align="left" />
+          <SummaryStats align="left" team={left.name} onOpen={() => setStatsTeam(0)} />
           <button type="button" className={styles.predictPill} onClick={onPredict}>Predict</button>
-          <SummaryStats align="right" />
+          <SummaryStats align="right" team={right.name} onOpen={() => setStatsTeam(1)} />
         </div> : <><RoundStats side={left} align="left" /><RoundStats side={right} align="right" /></>}
       </div>
     </section>
+    {statsTeam !== null && <TeamStatsSheet match={match} initialTeam={statsTeam} stats={tripStats} onClose={() => setStatsTeam(null)} />}
   </div>;
 }
 
@@ -651,7 +657,7 @@ function MatchStatus({ status, plain = false }: { status: ReturnType<typeof matc
     <small>TEE TIME</small><span className={styles.statusTime}>{status.time || "—"}</span>
   </span>;
   return <span className={className} aria-label={status.kind === "final" ? `Final ${status.text}` : status.holes ? `Thru ${status.holes}` : "Started, no hole finished yet"}>
-    <small>THRU</small>{status.kind === "final" ? "F" : status.holes || "\u00a0"}
+    <small>THRU</small><span className={styles.statusValue}>{status.kind === "final" ? "F" : status.holes || "\u00a0"}</span>
   </span>;
 }
 
@@ -766,14 +772,56 @@ function RoundStats({ side, align }: { side: GolfMatchSide; align: "left" | "rig
   </dl>;
 }
 
-/** Beside the Predict pill on the tournament box: PPG · FWY · GIR (mirrored on the right), values not wired up yet. */
-function SummaryStats({ align }: { align: "left" | "right" }) {
+/** Team stat entry beside Predict. PPG is a decimal, never a percentage. */
+function SummaryStats({ align, team, onOpen }: { align: "left" | "right"; team: string; onOpen: () => void }) {
   const labels = ["PPG", "FWY", "GIR"];
-  return <dl className={styles.summaryStats}>
-    {(align === "right" ? [...labels].reverse() : labels).map(label => <div key={label} className={styles.roundStat}>
-      <dt>{label}</dt><dd>—%</dd>
-    </div>)}
-  </dl>;
+  return <button type="button" className={styles.summaryStatsTrigger} onClick={onOpen} aria-label={team + " player stats"} aria-haspopup="dialog">
+    <dl className={styles.summaryStats}>{(align === "right" ? [...labels].reverse() : labels).map(label => <div key={label} className={styles.roundStat}>
+      <dt>{label}</dt><dd>{label === "PPG" ? "?" : "?%"}</dd>
+    </div>)}</dl>
+  </button>;
+}
+
+function TeamStatsSheet({ match, initialTeam, stats, onClose }: { match: GolfMatchPreview; initialTeam: 0 | 1; stats?: TripStatsView; onClose: () => void }) {
+  const [team, setTeam] = useState(initialTeam);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    dialog.showModal();
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { dialog.close(); document.body.style.overflow = overflow; };
+  }, []);
+  const names = [...new Set(match.matches.flatMap(pair => {
+    const competitor = team === 0 ? pair.left : pair.right;
+    return competitor ? normalizeCompetitor(competitor).golfers.map(g => g.name) : [];
+  }))];
+  const pct = (n: number | null | undefined) => n == null ? "?" : n + "%";
+  return createPortal(<dialog ref={dialogRef} className={styles.teamStatsSheet} aria-label="Team player stats" onCancel={onClose} onClick={event => {
+    if (event.target !== event.currentTarget) return;
+    const r = event.currentTarget.getBoundingClientRect();
+    if (event.clientY < r.top || event.clientY > r.bottom || event.clientX < r.left || event.clientX > r.right) onClose();
+  }}>
+    <header className={styles.teamStatsHeader}><span>Player stats</span><button type="button" onClick={onClose} aria-label="Close player stats" autoFocus><X size={22} aria-hidden="true" /></button></header>
+    <div className={homeStyles.tabs} role="tablist" aria-label="Stats team">{match.sides.map((side, i) => <button key={i} id={"team-stats-tab-" + i} type="button" role="tab" aria-selected={team === i} aria-controls="team-stats-panel" className={homeStyles.tab + " " + (team === i ? homeStyles.tabActive : "")} onClick={() => setTeam(i as 0 | 1)} onKeyDown={event => {
+      if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+        event.preventDefault();
+        const next = event.key === "Home" ? 0 : event.key === "End" ? 1 : team === 0 ? 1 : 0;
+        setTeam(next); dialogRef.current?.querySelector<HTMLButtonElement>("#team-stats-tab-" + next)?.focus();
+      }
+    }}>{side.name}</button>)}</div>
+    <div id="team-stats-panel" role="tabpanel" aria-labelledby={"team-stats-tab-" + team} className={styles.teamStatsBody}>
+      <table className={styles.teamStatsTable}><caption>PPG ? Putts Per Green</caption><thead><tr><th scope="col">Player</th><th scope="col">PPG</th><th scope="col">FWY %</th><th scope="col">GIR %</th></tr></thead>
+      <tbody>{names.map(name => {
+        const player = stats?.players.find(p => p.name === name);
+        const holes = player ? stats?.rounds?.filter(r => r.profileId === player.profileId).flatMap(r => r.holes).filter(h => h.putts !== null) ?? [] : [];
+        const ppg = holes.length ? (holes.reduce((sum, h) => sum + (h.putts ?? 0), 0) / holes.length).toFixed(2) : "?";
+        return <tr key={name}><th scope="row">{name}</th><td>{ppg}</td><td>{pct(player?.fairwayPct)}</td><td>{pct(player?.greenPct)}</td></tr>;
+      })}</tbody></table>
+      {names.length === 0 && <p>No players assigned to this team.</p>}
+    </div>
+  </dialog>, document.body);
 }
 
 function Golfer({ golfer, align, showThru = true, showHcp = true, showTee = true }:

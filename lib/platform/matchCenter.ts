@@ -68,9 +68,12 @@ export function hasHoleScores(match: GolfMatchPreview, pairing: GolfMatchPairing
  */
 export function withHoleStandings(match: GolfMatchPreview): GolfMatchPreview {
   return { ...match, matches: match.matches.map((pairing) => {
+    if (match.roundStandings && pairing.result) return pairing;
     if (!hasHoleScores(match, pairing)) return pairing;
     const gross = matchCard(match, pairing, false), net = matchCard(match, pairing, true);
     const shown = (match.scoring ?? (match.handicap ? "Both" : "Gross")) === "Net" ? net : gross;
+    // An empty scorecard cannot replace supplied match progress or a final result.
+    if (shown.played === 0) return pairing;
     const thru = shown.played === 0 ? undefined : shown.played === match.par.length || shown.finished ? "F" : `Thru ${shown.played}`;
     const stamp = (side: GolfMatchPairing["left"] | undefined) => {
       if (!side || thru === undefined) return side;

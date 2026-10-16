@@ -16,7 +16,10 @@ import { flightCounts, flightTime, type FlightSummary } from "@/lib/platform/gol
 
 /** The Info tab's Flights card: the viewer's flight summary, and the Flights page it opens (null = not a link). */
 export interface TripFlights { summary: FlightSummary; href: string | null }
-import { GolfGamesSummary, GolfRoundHeader, GolfRoundInfo, GolfTeeSheet, GolfTournamentSummary, GolfTripLeaderboard } from "./GolfTripMatch";
+import { MatchNav, GolfMatchup, GolfGamesSummary, GolfRoundHeader, GolfRoundInfo, GolfTeeSheet, GolfTournamentSummary, GolfTripLeaderboard } from "./GolfTripMatch";
+import { standingsFormat as describeStandingsFormat } from "@/lib/platform/historicalTripStandings";
+import { competitionMatchOffset } from "@/lib/platform/competitionMatchNumber";
+import { useSwipe } from "./useSwipe";
 import { GolfTripScoring } from "./GolfTripScoring";
 import { GolfTripStats, type ScoreChangeLine, type TripStatsView } from "./GolfTripStats";
 import type { ScoreEdit } from "@/lib/platform/playerRounds";
@@ -233,7 +236,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
           }}>{name}</button>)}
       </div>
     </header>
-    <div className={styles.body} role="tabpanel" aria-label={tab}>
+    <div className={`${styles.body} ${tab === "Golf" ? styles.golfBody : ""}`} role="tabpanel" aria-label={tab}>
       {tab === "Home" ? <><InfoAccount draft={draft} draftPlayers={previewMatch?.leaderboard.map(row => ({ name: getPlayerDisplayName(row.golfer.name), handicap: row.golfer.hcp })) ?? travel?.members.map(member => ({ name: member.name })) ?? []} teamDraft={teamDraft} isOrganizer={isOrganizer} momentumEvents={momentum.events} settingsHref={settingsHref} flights={flights} weather={weather} itinerary={goingItinerary} travel={travel} tripNow={tripNow} onOpenItinerary={openItinerary}
         rounds={plannedRounds(draft).map(round => ({ number: round.number, date: round.date, course: draft[`round${round.number}Course`] || "Course TBD", format: draft[`round${round.number}Format`] || (previewMatch && round.number === previewMatch.round ? previewMatch.formatDef?.label : undefined) }))}
         afterRound={previewMatch ? (roundLive || previewMatch.leaderboard.some(row => row.holes.every(strokes => strokes !== null)) ? previewMatch.round : previewMatch.round - 1) : 0}
@@ -403,14 +406,30 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
   const selected = rounds.find(round => round.number === chosenRound) ?? rounds.find(round => round.number === sourceMatch?.round);
   const previewMatch = useMemo(() => {
     if (!sourceMatch || !selected || selected.number === sourceMatch.round) return sourceMatch;
+    const snapshot = sourceMatch.roundStandings?.find(row => row.round === selected.number);
     return { ...sourceMatch, round: selected.number, roundDate: selected.date,
       course: schedule?.['round' + selected.number + 'Course'] || 'Course TBD',
       format: schedule?.['round' + selected.number + 'Format'] || 'Format not set', formatDef: undefined,
-      matches: sourceMatch.matches.filter(pairing => pairing.round === selected.number), leaderboard: [],
+      matches: sourceMatch.matches.filter(pairing => pairing.round === selected.number), leaderboard: snapshot?.leaderboard ?? [], par: snapshot?.par ?? sourceMatch.par,
     };
   }, [sourceMatch, selected, schedule]);
   // Competition is about the round being played: only that round's matches (matches without a round count as current).
   const roundMatch = useMemo(() => previewMatch && { ...previewMatch, matches: previewMatch.matches.filter(pairing => (pairing.round ?? previewMatch.round) === previewMatch.round) }, [previewMatch]);
+  const latestRound = sourceMatch?.roundStandings?.at(-1)?.round ?? sourceMatch?.round ?? 1;
+  const viewingPast = !!previewMatch && previewMatch.round < latestRound;
+  const { label: standingsFormat, sharedBall } = describeStandingsFormat(previewMatch?.format);
+  const standingsRound = sourceMatch?.roundStandings?.find(row => row.round === previewMatch?.round)?.standingsRound ?? previewMatch?.round;
+  const leaderboardMatch = previewMatch && sharedBall && standingsRound !== undefined && standingsRound !== previewMatch.round
+    ? { ...previewMatch, round: standingsRound, format: schedule?.["round" + standingsRound + "Format"] ?? previewMatch.format, formatDef: undefined }
+    : previewMatch;
+  const matchOffset = sourceMatch && previewMatch ? competitionMatchOffset(sourceMatch, previewMatch.round) : 0;
+  const matchCount = Math.max(1, roundMatch?.matches.length ?? 0);
+  const [boxMatch, setBoxMatch] = useState({ round: previewMatch?.round ?? 1, index: 0 });
+  if (previewMatch && boxMatch.round !== previewMatch.round) setBoxMatch({ round: previewMatch.round, index: 0 });
+  const featured = Math.min(boxMatch.index, matchCount - 1);
+  const boxSwipe = useSwipe(
+    () => setBoxMatch(view => ({ ...view, index: Math.min(matchCount - 1, view.index + 1) })),
+    () => setBoxMatch(view => ({ ...view, index: Math.max(0, view.index - 1) })));
   const trackRef = useRef<HTMLDivElement>(null);
   const sectionTabsRef = useRef<HTMLDivElement>(null);
   const pillDrag = useRef<{ pointer: number; x: number; y: number; scroll: number; moved: boolean } | null>(null);
@@ -442,14 +461,15 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
   const requested = Math.max(0, availableSlides.findIndex(section => section === navigation?.golfSection));
   const [selection, setSelection] = useState({ navigation, active: requested });
   if (selection.navigation !== navigation) setSelection({ navigation, active: requested });
-  const active = selection.navigation === navigation ? selection.active : requested;
+  const selectedActive = selection.navigation === navigation ? selection.active : requested;
+  const predictActive = availableSlides[selectedActive] === "Predict";
+  const active = predictActive ? 0 : selectedActive;
   const setActive = (active: number) => setSelection({ navigation, active });
   // Games and Stats sit outside the swipe strip (like Games always has); the strip holds Leaderboard / Matches.
   const offStrip = (id: string | undefined) => id === "Games" || id === "Stats" || id === "Predict";
   const gamesActive = offStrip(availableSlides[active]);
   const statsActive = availableSlides[active] === "Stats";
-  const predictActive = availableSlides[active] === "Predict";
-  const golfSection = availableSlides[active] ?? "Overview";
+  const golfSection = predictActive ? "Predict" : availableSlides[active] ?? "Overview";
   useEffect(() => {
     const strip = sectionTabsRef.current;
     if (!strip) return;
@@ -483,12 +503,6 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
     return () => observer.disconnect();
   }, [active, gamesActive]);
 
-  // Opening Predict glides the page up so Predict starts at the top, past the leaderboard (owner request 2026-10-15).
-  const predictRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (predictActive) predictRef.current?.scrollIntoView({ block: "start", behavior: "instant" });
-  }, [predictActive]);
-
   const goTo = (index: number) => {
     setActive(index);
     // Keep the interactive Games panel outside the swipe strip.
@@ -499,7 +513,7 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
   };
   const onScroll = () => {
     const track = trackRef.current;
-    if (!gamesActive && track && track.clientWidth > 0) setActive(Math.round(track.scrollLeft / track.clientWidth));
+    if (!predictActive && !gamesActive && track && track.clientWidth > 0) setActive(Math.round(track.scrollLeft / track.clientWidth));
   };
 
   // Order: the course / round line, then the section pills, then the board, then the section itself.
@@ -510,21 +524,22 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
         const shown = current === section;
         // Overview's box sets the size; Competition and Games fill exactly that box.
         return <div key={section} className={`${section === "Overview" ? styles.golfTopSize : styles.golfTopFill} ${shown ? "" : styles.golfTopHidden}`} inert={!shown}>
-          {section === "Overview" ? noComp || individualOnly || teamOnly ? <><GolfRoundInfo match={previewMatch} sittingOut={sittingOut} topFive={individualOnly} />{!noComp && predictSetup && <button type="button" className={styles.predictEntry} onClick={() => goTo(availableSlides.indexOf("Predict"))}>Predict</button>}</> : <GolfTournamentSummary match={previewMatch} onPredict={() => goTo(availableSlides.indexOf("Predict"))} />
-            // Matches tab: the same tournament card as the Leaderboard, with the round's matches below (owner request 2026-10-15).
-            : section === "Competition" ? <GolfTournamentSummary match={previewMatch} onPredict={predictSetup && !noComp ? () => goTo(availableSlides.indexOf("Predict")) : undefined} /> : <GolfGamesSummary />}
+          {section === "Overview" ? noComp || individualOnly || teamOnly ? <><GolfRoundInfo match={previewMatch} sittingOut={sittingOut} topFive={individualOnly} />{!noComp && predictSetup && <button type="button" className={styles.predictEntry} onClick={() => goTo(availableSlides.indexOf("Predict"))}>Predict</button>}</> : <GolfTournamentSummary match={previewMatch} tripStats={tripStats} onPredict={() => goTo(availableSlides.indexOf("Predict"))} />
+            // Matches keeps its featured matchup board and match selector.
+            : section === "Competition" ? <GolfMatchup match={roundMatch ?? previewMatch} compact swipe={boxSwipe} featured={featured} roundStarted={roundStarted && previewMatch.round === sourceMatch?.round}
+              below={<MatchNav match={featured + 1} count={matchCount} offset={matchOffset} onMatch={match => setBoxMatch(view => ({ ...view, index: match - 1 }))} />} /> : <GolfGamesSummary />}
         </div>;
       })}
     </div>;
 
   return <>
-    {previewMatch && !predictActive && <GolfRoundHeader match={previewMatch} competitive={!noComp} today={now?.slice(0, 10)}
-      day={selected?.dayNumber} previousDisabled={rounds.findIndex(round => round.number === previewMatch.round) <= 0}
+    {previewMatch && <GolfRoundHeader match={previewMatch} competitive={!noComp} today={now?.slice(0, 10)}
+      previousDisabled={rounds.findIndex(round => round.number === previewMatch.round) <= 0}
       nextDisabled={rounds.findIndex(round => round.number === previewMatch.round) < 0 || rounds.findIndex(round => round.number === previewMatch.round) >= rounds.length - 1}
       onPrevious={() => { const index = rounds.findIndex(round => round.number === previewMatch.round); if (index > 0) setChosenRound(rounds[index - 1].number); }}
       onNext={() => { const index = rounds.findIndex(round => round.number === previewMatch.round); if (index >= 0 && index < rounds.length - 1) setChosenRound(rounds[index + 1].number); }} />}
     {/* Golf sections: the words themselves evenly spaced (equal gaps between them and at both ends), since their lengths differ. */}
-    <div ref={sectionTabsRef} className={`${styles.tabs} ${styles.sectionTabs}`} role="tablist" aria-label="Golf sections" hidden={predictActive}
+    <div ref={sectionTabsRef} className={`${styles.tabs} ${styles.sectionTabs}`} role="tablist" aria-label="Golf sections"
       onPointerDown={event => {
         if (event.button !== 0) return;
         pillDrag.current = { pointer: event.pointerId, x: event.clientX, y: event.clientY, scroll: event.currentTarget.scrollLeft, moved: false };
@@ -549,15 +564,19 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
     </div>
     {/* The board: a summary for the section — the whole tournament on Overview, the round being played on Competition,
         games (placeholder) on Games. All three share one grid cell so nothing below moves when it switches. */}
-    {/* Stats and Predict have the space to themselves: no round box on top (owner request 2026-10-15). */}
-    {!predictActive && !statsActive && board}
+    {/* Stats has the space to itself; Predict overlays the leaderboard. */}
+    {!gamesActive && board}
+    {!gamesActive && active === 0 && previewMatch && !noComp && (viewingPast || sharedBall) && <div className={styles.standingsNotice} role="status">
+      <div><strong>Standings after Round {standingsRound}</strong>{sharedBall && <p>{standingsFormat} being played in Round {previewMatch.round}</p>}</div>
+      {viewingPast && <button type="button" onClick={() => setChosenRound(latestRound)}>View current</button>}
+    </div>}
     <div ref={trackRef} className={styles.slides} style={gamesActive ? { display: "none" } : undefined} onScroll={onScroll}>
       {sections.filter(({ id }) => !offStrip(id)).map(({ id: name, label }, i) => <div key={name} className={styles.slide} role="tabpanel" aria-label={label} inert={active !== i}>
         {name === "Overview"
           ? noComp && !inAppScoring ? null
           : teamOnly && previewMatch ? <GolfTeeSheet match={previewMatch} sittingOut={sittingOut} />
-          : previewMatch ? <GolfTripLeaderboard match={previewMatch} byToday={noComp} /> : <Card title="Score Overview"><Empty>Your leaderboard and round scores will show here</Empty></Card>
-          : previewMatch && roundMatch ? <GolfTripCompetitionMatchPreview key={previewMatch.round} initialMatch={previewMatch} viewRound={previewMatch.round} roundStarted={roundStarted && previewMatch.round === sourceMatch?.round} draftScope={rsvpKey} /> : <Card title="Competition"><Empty>Your matchups will show here</Empty></Card>}
+          : previewMatch ? <GolfTripLeaderboard match={leaderboardMatch ?? previewMatch} byToday={noComp} /> : <Card title="Score Overview"><Empty>Your leaderboard and round scores will show here</Empty></Card>
+          : previewMatch && roundMatch ? <GolfTripCompetitionMatchPreview key={previewMatch.round} initialMatch={previewMatch} matchOffset={matchOffset} viewRound={previewMatch.round} roundStarted={roundStarted && previewMatch.round === sourceMatch?.round} draftScope={rsvpKey} /> : <Card title="Competition"><Empty>Your matchups will show here</Empty></Card>}
       </div>)}
     </div>
     <div role="tabpanel" aria-label="Games" hidden={!gamesActive || statsActive || predictActive}>
@@ -567,13 +586,29 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
     {sections.some(({ id }) => id === "Stats") && <div role="tabpanel" aria-label="Stats" hidden={!statsActive}>
       {tripStats ? <Card title="Trip stats"><GolfTripStats stats={tripStats} changes={scoreChanges} /></Card> : <Card title="Stats"><Empty>Stats will show here once players record rounds</Empty></Card>}
     </div>}
-    {/* Predict (only while the organizer has it on): the trip's prediction market in Maroon Coins. */}
-    {predictSetup && !noComp && <div ref={predictRef} role="tabpanel" aria-label="Predict" hidden={!predictActive} style={{ scrollMarginTop: "calc(env(safe-area-inset-top, 0px) + 56px)" }}>
-      {/* Predict has the screen to itself: just a small back arrow to the leaderboard (owner request 2026-10-15). */}
-      {predictActive && <button type="button" className={styles.predictBack} onClick={() => { goTo(0); requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "instant" })); }} aria-label={`Back to ${sections[0]?.label ?? "Leaderboard"}`}><ChevronLeft size={22} aria-hidden="true" /></button>}
-      {predictActive && <GolfTripPredict setup={predictSetup} />}
-    </div>}
+    {predictSetup && !noComp && predictActive && <PredictSheet onClose={() => goTo(0)}><GolfTripPredict setup={predictSetup} /></PredictSheet>}
   </>;
+}
+
+function PredictSheet({ children, onClose }: { children: ReactNode; onClose: () => void }) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    dialog.showModal();
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { dialog.close(); document.body.style.overflow = overflow; };
+  }, []);
+  return createPortal(<dialog ref={dialogRef} className={styles.predictSheet} aria-label="Predict" onCancel={onClose}
+    onClick={event => {
+      if (event.target !== event.currentTarget) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      if (event.clientY < rect.top || event.clientY > rect.bottom || event.clientX < rect.left || event.clientX > rect.right) onClose();
+    }}>
+    <header className={styles.predictSheetHeader}><span>Predict</span><button type="button" onClick={onClose} aria-label="Close Predict" autoFocus><X size={22} aria-hidden="true" /></button></header>
+    {children}
+  </dialog>, document.body);
 }
 
 type EventLine = { icon: LucideIcon; text: string };

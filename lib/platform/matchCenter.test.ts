@@ -60,3 +60,12 @@ test("net match: handicap strokes even it out, so it starts near 50/50 even for 
   const u = winCurve(unknown, matchCard(unknown, unknown.matches[0], true), 3000)[0];
   assert.ok(Math.abs(u.left - u.right) < 0.12, `unknown handicap treated as 18: ${u.left} vs ${u.right}`);
 });
+
+ test("empty scorecards preserve supplied final result and progress for match status", () => {
+  const m = preview(played([]), played([]));
+  m.matches[0] = { ...m.matches[0], result: "4&2", gross: { leader: "left", up: 4 } };
+  assert.deepEqual(withHoleStandings(m).matches[0], m.matches[0]);
+  const live = { ...m.matches[0], result: undefined, left: { ...golfer("Ace", 5), thru: "Thru 12" }, right: { ...golfer("Bo", 5), thru: "Thru 12" } };
+  m.matches[0] = live;
+  assert.deepEqual(withHoleStandings(m).matches[0], live);
+});

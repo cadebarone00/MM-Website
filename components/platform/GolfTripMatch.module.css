@@ -139,8 +139,11 @@
 /* Match box version: no box, just cream text at the top center. */
 .statusPlain{width:auto;height:auto;background:none;color:#fbf8f1;font:800 18px/1 var(--font-spectral),Georgia,serif}
 .statusPlain small{font-size:9px;white-space:nowrap}
+.statusValue,.statusTime{font:700 15px/1 var(--font-spectral),Georgia,serif;letter-spacing:normal}
+.matchupCompact .statusValue,.matchupCompact .statusTime{font-size:16.2px}
+@media(max-width:359px){.pairing .statusValue,.pairing .statusTime{font-size:13px}}
 /* Before a match: the tee time under TEE TIME, smaller so "10:30 AM" fits the middle column. */
-.statusTime{font-size:13px;white-space:nowrap}
+.statusTime{white-space:nowrap}
 .number{font:600 15px/1 var(--font-spectral),Georgia,serif;color:#fff;text-align:center}
 .golfer{display:flex;flex-direction:column;gap:3px;min-width:0}
 .golferName{font:700 16px/1.2 var(--font-spectral),Georgia,serif;color:#fff;overflow-wrap:anywhere}
@@ -206,7 +209,7 @@
 .matchupCompact .roundStat{gap:12px}
 /* Board boxes (Leaderboard's tournament box and the Matches box): the win bar and stats always sit in the same spot,
    a fixed-height block at the bottom; the teams above get the rest. */
-.boardBox{display:flex;flex-direction:column}
+.boardBox{display:flex;flex-direction:column;border-color:#dcc495}
 .boardBox>:not(.stats){flex:1 1 auto;min-height:0}
 .boardBox>.stats{flex:none;box-sizing:border-box;height:84px;margin-top:auto;padding:2px 0 0;align-content:start}
 /* Net-only rounds: a plain label where the GROSS / NET switch would be. */
@@ -328,9 +331,9 @@
 .matchDraftStatus{display:grid;gap:8px;padding:24px 0;text-align:center;border-top:1px solid #dcc49555;color:#dcc495;font:14px var(--font-barlow),sans-serif;list-style:none}.matchDraftStatus strong{color:#fbf8f1;font:700 18px var(--font-spectral),Georgia,serif}
 
 .golfRoundHeader{position:relative;display:grid;grid-template-columns:22px minmax(0,1fr) 22px;align-items:center;gap:6px;text-align:center;padding:11px 0 13px;margin:0 -10px}
-.golfRoundHeader .headerTitle{font-size:14.4px;min-width:0;max-width:100%;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;text-align:center}
-.golfRoundHeader .headerDetail{font-size:10.4px;line-height:1.15}
-.golfCourseText{display:flex;flex-direction:column;justify-content:center;gap:1px;min-width:0}
+.golfRoundHeader .headerTitle{font-size:16.4px;min-width:0;max-width:100%;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;text-align:center}
+.golfRoundHeader .headerDetail{font-size:12.4px;line-height:1.15}
+.golfCourseText{display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:0}
 
 .golfCourseRow{display:grid;grid-template-columns:36px minmax(0,1fr) 36px;align-items:center;gap:8px;width:100%}
 .golfCourseArrow{display:grid;place-items:center;min-height:40px;padding:0;border:0;background:transparent;color:#dcc495;cursor:pointer}
@@ -340,8 +343,8 @@
 .matchScoringControl{display:flex;justify-content:flex-end;align-items:center}
 
 /* Match selector: 20% larger type and twice the visible clearance below the board. */
-.matchup .roundNav[aria-label="Match"]{top:calc(100% + 5.2px);font-size:14.4px}
-.matchup .roundNav[aria-label="Match"] svg{width:19.2px;height:19.2px}
+.matchup .roundNav[aria-label="Match"]{top:calc(100% + 5.2px);font-size:12.264px}
+.matchup .roundNav[aria-label="Match"] svg{width:12.264px;height:12.264px}
 
 /* The header spans the space between matching navigation dividers. */
 .golfRoundHeader::after{content:"";position:absolute;left:-6px;right:-6px;bottom:0;height:2px;background:rgba(251,248,241,.18);pointer-events:none}
@@ -464,3 +467,34 @@
 .winTip span[data-side=left]{box-shadow:inset 3px 0 0 var(--team-left,#7a1f2b);padding-left:6px}
 .winTip span[data-side=right]{box-shadow:inset 3px 0 0 var(--team-right,#f3ece0);padding-left:6px}
 .winTip span:not([data-side]){padding-left:6px}
+
+.summaryStatsTrigger{min-width:0;padding:0;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer}
+.summaryStatsTrigger:focus-visible{outline:2px solid #dcc495;outline-offset:3px;border-radius:8px}
+.teamStatsSheet{position:fixed;inset:40dvh 0 0;height:60dvh;width:100%;max-width:560px;max-height:none;box-sizing:border-box;margin:0 auto;padding:16px;border:1px solid rgba(220,196,149,.25);border-bottom:0;border-radius:20px 20px 0 0;background:#240001;color:#fbf8f1;overflow:hidden;display:flex;flex-direction:column;animation:scoreSheetUp .25s ease-out}
+.teamStatsSheet::backdrop{background:rgba(0,0,0,.45)}
+.teamStatsHeader{display:flex;align-items:center;justify-content:space-between;color:#dcc495;font-weight:700}
+.teamStatsHeader button{display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;background:transparent;color:inherit;cursor:pointer}
+.teamStatsBody{min-height:0;overflow:auto;margin-top:12px}
+.teamStatsTable{width:100%;border-collapse:collapse;font:14px var(--font-barlow),sans-serif}
+.teamStatsTable caption{text-align:left;color:#dcc495;font-size:12px;padding-bottom:10px}
+.teamStatsTable th,.teamStatsTable td{padding:10px 5px;border-bottom:1px solid #dcc49533;text-align:right}
+.teamStatsTable th:first-child{text-align:left}
+@media(prefers-reduced-motion:reduce){.teamStatsSheet{animation:none}}
+
+/* Center the status value on the lead-fill score; its label sits above without shifting it. */
+.pairing .statusPlain{position:relative;gap:0}
+.pairing .statusPlain small{position:absolute;bottom:calc(100% + 2px);left:50%;transform:translateX(-50%)}
+.matchupCompact .boxStatus{align-self:start;margin-top:2px}
+
+/* The team divider is the first match row divider; keep its label gap equal to later rows. */
+.matchesList .teamNames + .lineup{margin-top:-16px}
+.matchesList .teamNames + .lineup > .pairing:first-child{border-top:0}
+.matchesList .teamNames + .lineup > .pairing:first-child .matchNumber{top:7px}
+
+/* Add buffer above the team names, moving their divider and match rows together. */
+.matchesList .teamNames{margin-top:8px}
+
+/* Compact Gross/Net control centered below the featured Match selector. */
+.matchScoringControl:has(.scoring){height:40px;justify-content:center;align-items:flex-end}
+.matchScoringControl .scoring{padding:1px}
+.matchScoringControl .scoring button{min-height:16px;padding:0 8px;font-size:9px}

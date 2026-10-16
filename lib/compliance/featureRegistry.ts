@@ -74,6 +74,16 @@ interface FeatureSeed {
 
 const seeds: FeatureSeed[] = [
   {
+    id: "historical-trip-standings", name: "Historical trip standings",
+    scope: "Read-only development 2026 round snapshots from original individual cards mapped to eight sessions; published final standings retained at round 8, shared-ball carry-forward, past-round notice and View latest. No new collection, storage or recipients. Findings: docs/historical-trip-standings-review.md. Implemented locally; deployment not verified.",
+    attentionCategories: ["privacy", "personal-data", "user-accounts", "security", "retention", "intellectual-property", "third-party-golf-content", "organizer-responsibility", "platform-rules", "legal-review"],
+  },
+  {
+    id: "team-player-stats-sheet", name: "Team player stats sheet",
+    scope: "Read-only 60dvh team selector and player stats from existing supplied match participants and saved trip stats. PPG decimal, FWY/GIR percentages; missing values unavailable. No added persistence or fetches. Findings: docs/team-player-stats-review.md. Implemented locally; deployment not verified.",
+    attentionCategories: ["privacy", "personal-data", "user-accounts", "security", "retention", "intellectual-property", "third-party-golf-content", "organizer-responsibility", "platform-rules", "legal-review"],
+  },
+  {
     id: "saved-trip-workspace", name: "Saved trip shared workspace", scopeRevision: 1,
     scope: "Shared phone/settings layout connected to actual saved-trip members and scorecards; organizer-only versioned Supabase setup with atomic canonical date/capacity/round updates and scoring-group locks. Private per-profile itinerary plans with validated ownership, no group invitations. Existing real scoring/corrections/member/deletion paths preserved; no fabricated sample standings or new match/draft engines. Implementation and tests local; production migration/deployment unverified. Findings and unresolved privacy/retention/IP/provider/legal follow-ups: docs/saved-trip-workspace-review.md.",
     attentionCategories: ["privacy", "personal-data", "security", "retention", "account-deletion", "ugc", "third-party-golf-content", "organizer-responsibility", "platform-rules", "legal-review"],

@@ -4,7 +4,9 @@ import { TournamentDataPreview } from "./TournamentDataPreview";
 import { GOLF_MATCH_PREVIEW, GOLF_MATCH_PREVIEWS, GOLF_TRIP_MOCK_DRAFT, GOLF_TRIP_MOCK_TRAVEL, GOLF_TRIP_PREVIEW_FLIGHTS } from "@/lib/platform/golfTripPreviewFixture";
 import { flightSummary } from "@/lib/platform/golfTripFlights";
 import { palmSprings2026 } from "@/lib/data/2026-palm-springs";
-import { adaptTournamentToDraft, adaptTournamentToPreviewMatch } from "@/lib/platform/tournamentToGolfTrip";
+import { scorecards2026 } from "@/lib/data/scorecards-2026";
+import { historicalTripStandings } from "@/lib/platform/historicalTripStandings";
+import { adaptTournamentToDraft, adaptTournamentToPreviewMatch, tournamentSessions } from "@/lib/platform/tournamentToGolfTrip";
 
 export const metadata: Metadata = { title: "Golf Trip preview | The Maroon", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -21,6 +23,18 @@ export default async function GolfTripPreviewPage({ searchParams }: { searchPara
   // Prefer a tournament-derived preview when possible so the Golf tab shows real matches/leaderboard;
   // fall back to the format fixtures where the tournament is missing match/leaderboard data.
   const tournamentPreview = adaptTournamentToPreviewMatch(palmSprings2026);
+  const sessions = tournamentSessions(palmSprings2026);
+  const snapshots = historicalTripStandings(palmSprings2026, scorecards2026, sessions);
+  const latest = snapshots.at(-1);
+  if (latest) {
+    tournamentPreview.roundStandings = snapshots;
+    tournamentPreview.round = latest.round;
+    tournamentPreview.roundDate = sessions.at(-1)?.date ?? tournamentPreview.roundDate;
+    tournamentPreview.format = sessions.at(-1)?.format ?? tournamentPreview.format;
+    tournamentPreview.formatDef = undefined;
+    tournamentPreview.leaderboard = latest.leaderboard;
+    tournamentPreview.par = latest.par ?? tournamentPreview.par;
+  }
   const previewMatch = (tournamentPreview && tournamentPreview.leaderboard && tournamentPreview.matches && tournamentPreview.matches.length > 0)
     ? tournamentPreview
     : (GOLF_MATCH_PREVIEWS[formatKey] ?? GOLF_MATCH_PREVIEW);

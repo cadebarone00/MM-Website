@@ -1,5 +1,7 @@
 "use client";
 
+import { Plus } from "lucide-react";
+import homeStyles from "./GolfTripHome.module.css";
 import { useState } from "react";
 import { GolfTripActionSheet } from "./GolfTripActionSheet";
 import { GAME_PREVIEW_PLAYERS as players, GAME_PREVIEW_ROUNDS as rounds, GAME_PREVIEW_ROUNDS_PLAYED as roundsPlayed, SIDE_GAME_REGISTRY, type GameId, type SideGameDefinition } from "@/lib/platform/golfTripGames";
@@ -77,7 +79,7 @@ export function GolfTripGames() {
   return <section className={styles.root} aria-label="Side games preview">
     <header className={styles.gamesHeader}>
       <h2 className={styles.activeGamesTitle}>Active Games</h2>
-      <button type="button" className={styles.newGameButton} aria-haspopup="dialog" onClick={openPopup}>New game</button>
+      <button type="button" className={homeStyles.itineraryAddPill} aria-haspopup="dialog" onClick={openPopup}><Plus size={16} strokeWidth={2.5} aria-hidden />New game</button>
     </header>
 
     {activeGames.length === 0 && <p className={styles.emptyGames}>No active games yet. Tap New game to start one.</p>}

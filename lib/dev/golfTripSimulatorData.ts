@@ -125,6 +125,7 @@ function roundByRoundMatches(match: GolfMatchPreview, current: number, currentSt
 }
 
 function withRoundState(match: GolfMatchPreview, roundState: Exclude<SimulatorConfig["state"]["roundStatus"], "source">, mixed = false, seed = 0): GolfMatchPreview {
+  match = { ...match, roundStandings: undefined };
   const resetGolfer = (golfer: ReturnType<typeof normalizeCompetitor>["golfers"][number]) => ({ ...golfer, thru: "—", score: "—", points: 0 });
   if (roundState === "scheduled" && mixed) return { ...withRoundState(match, "scheduled", false, seed), matches: roundByRoundMatches({ ...match, round: 1 }, 1, "pre", seed) };
   if (roundState === "scheduled") {

@@ -32,7 +32,7 @@
 .tabActive::after{opacity:1}
 .body{flex:1;display:flex;flex-direction:column;gap:12px;margin-top:24px}
 /* Golf tab: allow 12px from the trip tabs to the standard course title. */
-.body:has(.golfTop){margin-top:0}
+.golfBody{margin-top:0}
 .card{display:flex;flex-direction:column;gap:10px;padding:18px 18px 16px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12)}
 .cardTitle{margin:0;font:500 22px/1.2 var(--font-spectral),Georgia,serif;letter-spacing:-.01em;color:#fff}
 .text{margin:0;font:600 16px/1.4 var(--font-barlow),sans-serif;color:#fff}
@@ -339,3 +339,16 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 .golfTop:has([data-points-open]) .golfTopSize{position:relative;inset:auto}
 .golfTopSize:has([data-points-open])>*{flex:none}
 .golfTopSize:has([data-points-open]) section{height:auto}
+
+.predictSheet{position:fixed;inset:20dvh 0 0;height:80dvh;width:100%;max-width:560px;max-height:none;box-sizing:border-box;margin:0 auto;padding:16px;border:1px solid rgba(220,196,149,.25);border-bottom:0;border-radius:20px 20px 0 0;background:#240001;color:#fbf8f1;overflow:auto;animation:predictSheetUp .25s ease-out}
+.predictSheet::backdrop{background:rgba(0,0,0,.45)}
+.predictSheetHeader{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;color:#dcc495;font-weight:700}
+.predictSheetHeader button{display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;background:transparent;color:inherit;cursor:pointer}
+@keyframes predictSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.predictSheet{animation:none}}
+
+.standingsNotice{display:flex;align-items:center;justify-content:space-between;gap:12px;box-sizing:border-box;height:50px;margin:10px -16px;padding:8px 16px;border-block:1px solid #dcc49566;color:#dcc495;font:500 13px/1.35 var(--font-barlow),sans-serif}
+.standingsNotice strong{font-weight:700}
+.standingsNotice > div{min-width:0}
+.standingsNotice p{margin:1px 0 0;font-size:11px;line-height:13px}
+.standingsNotice button{flex:none;padding:6px 10px;border:1px solid #dcc495;border-radius:999px;background:transparent;color:inherit;font:700 12px var(--font-barlow),sans-serif;cursor:pointer}
