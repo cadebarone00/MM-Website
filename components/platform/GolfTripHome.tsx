@@ -16,7 +16,7 @@ import { flightCounts, flightTime, type FlightSummary } from "@/lib/platform/gol
 
 /** The Info tab's Flights card: the viewer's flight summary, and the Flights page it opens (null = not a link). */
 export interface TripFlights { summary: FlightSummary; href: string | null }
-import { MatchNav, GolfGamesSummary, GolfMatchup, GolfRoundHeader, GolfRoundInfo, GolfTeeSheet, GolfTournamentSummary, GolfTripLeaderboard } from "./GolfTripMatch";
+import { GolfGamesSummary, GolfRoundHeader, GolfRoundInfo, GolfTeeSheet, GolfTournamentSummary, GolfTripLeaderboard } from "./GolfTripMatch";
 import { GolfTripScoring } from "./GolfTripScoring";
 import { GolfTripStats, type ScoreChangeLine, type TripStatsView } from "./GolfTripStats";
 import type { ScoreEdit } from "@/lib/platform/playerRounds";
@@ -42,7 +42,6 @@ import { tripSetupFromPreview } from "@/lib/platform/predictFromPreview";
 
 import { GOLF_TRIP_TABS as TABS, golfSections, type CompetitionStructure, type GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
 import { useGolfTripCompetitionPreview } from "./GolfTripCompetitionPreviewProvider";
-import { useSwipe } from "./useSwipe";
 import { usePlayerStats } from "@/lib/platform/playerStatsSetting";
 import { setRoundRsvp, useRoundRsvps } from "@/lib/platform/roundRsvp";
 import { useInAppScoring } from "@/lib/platform/inAppScoringSetting";
@@ -411,16 +410,7 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
     };
   }, [sourceMatch, selected, schedule]);
   // Competition is about the round being played: only that round's matches (matches without a round count as current).
-  // The big box (Matches) shows the current round's matches one at a time: ‹ Match N › under it, or swipe the box
-  // (left = next match, right = previous). Starts on match 1 again whenever the round changes.
   const roundMatch = useMemo(() => previewMatch && { ...previewMatch, matches: previewMatch.matches.filter(pairing => (pairing.round ?? previewMatch.round) === previewMatch.round) }, [previewMatch]);
-  const matchCount = Math.max(1, roundMatch?.matches.length ?? 1);
-  const [boxMatch, setBoxMatch] = useState({ round: previewMatch?.round ?? 1, index: 0 });
-  if (previewMatch && boxMatch.round !== previewMatch.round) setBoxMatch({ round: previewMatch.round, index: 0 });
-  const featured = Math.min(boxMatch.index, matchCount - 1);
-  const boxSwipe = useSwipe(
-    () => setBoxMatch(view => ({ ...view, index: Math.min(matchCount - 1, view.index + 1) })),
-    () => setBoxMatch(view => ({ ...view, index: Math.max(0, view.index - 1) })));
   const trackRef = useRef<HTMLDivElement>(null);
   const sectionTabsRef = useRef<HTMLDivElement>(null);
   const pillDrag = useRef<{ pointer: number; x: number; y: number; scroll: number; moved: boolean } | null>(null);
@@ -493,6 +483,12 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
     return () => observer.disconnect();
   }, [active, gamesActive]);
 
+  // Opening Predict glides the page up so Predict starts at the top, past the leaderboard (owner request 2026-10-15).
+  const predictRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (predictActive) predictRef.current?.scrollIntoView({ block: "start", behavior: "instant" });
+  }, [predictActive]);
+
   const goTo = (index: number) => {
     setActive(index);
     // Keep the interactive Games panel outside the swipe strip.
@@ -515,20 +511,20 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
         // Overview's box sets the size; Competition and Games fill exactly that box.
         return <div key={section} className={`${section === "Overview" ? styles.golfTopSize : styles.golfTopFill} ${shown ? "" : styles.golfTopHidden}`} inert={!shown}>
           {section === "Overview" ? noComp || individualOnly || teamOnly ? <><GolfRoundInfo match={previewMatch} sittingOut={sittingOut} topFive={individualOnly} />{!noComp && predictSetup && <button type="button" className={styles.predictEntry} onClick={() => goTo(availableSlides.indexOf("Predict"))}>Predict</button>}</> : <GolfTournamentSummary match={previewMatch} onPredict={() => goTo(availableSlides.indexOf("Predict"))} />
-            : section === "Competition" ? <GolfMatchup match={roundMatch ?? previewMatch} compact swipe={boxSwipe} featured={featured} roundStarted={roundStarted}
-              below={<MatchNav match={featured + 1} count={matchCount} onMatch={match => setBoxMatch(view => ({ ...view, index: match - 1 }))} />} /> : <GolfGamesSummary />}
+            // Matches tab: the same tournament card as the Leaderboard, with the round's matches below (owner request 2026-10-15).
+            : section === "Competition" ? <GolfTournamentSummary match={previewMatch} onPredict={predictSetup && !noComp ? () => goTo(availableSlides.indexOf("Predict")) : undefined} /> : <GolfGamesSummary />}
         </div>;
       })}
     </div>;
 
   return <>
-    {previewMatch && <GolfRoundHeader match={previewMatch} competitive={!noComp} today={now?.slice(0, 10)}
+    {previewMatch && !predictActive && <GolfRoundHeader match={previewMatch} competitive={!noComp} today={now?.slice(0, 10)}
       day={selected?.dayNumber} previousDisabled={rounds.findIndex(round => round.number === previewMatch.round) <= 0}
       nextDisabled={rounds.findIndex(round => round.number === previewMatch.round) < 0 || rounds.findIndex(round => round.number === previewMatch.round) >= rounds.length - 1}
       onPrevious={() => { const index = rounds.findIndex(round => round.number === previewMatch.round); if (index > 0) setChosenRound(rounds[index - 1].number); }}
       onNext={() => { const index = rounds.findIndex(round => round.number === previewMatch.round); if (index >= 0 && index < rounds.length - 1) setChosenRound(rounds[index + 1].number); }} />}
     {/* Golf sections: the words themselves evenly spaced (equal gaps between them and at both ends), since their lengths differ. */}
-    <div ref={sectionTabsRef} className={`${styles.tabs} ${styles.sectionTabs}`} role="tablist" aria-label="Golf sections"
+    <div ref={sectionTabsRef} className={`${styles.tabs} ${styles.sectionTabs}`} role="tablist" aria-label="Golf sections" hidden={predictActive}
       onPointerDown={event => {
         if (event.button !== 0) return;
         pillDrag.current = { pointer: event.pointerId, x: event.clientX, y: event.clientY, scroll: event.currentTarget.scrollLeft, moved: false };
@@ -553,7 +549,8 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
     </div>
     {/* The board: a summary for the section — the whole tournament on Overview, the round being played on Competition,
         games (placeholder) on Games. All three share one grid cell so nothing below moves when it switches. */}
-    {board}
+    {/* Stats and Predict have the space to themselves: no round box on top (owner request 2026-10-15). */}
+    {!predictActive && !statsActive && board}
     <div ref={trackRef} className={styles.slides} style={gamesActive ? { display: "none" } : undefined} onScroll={onScroll}>
       {sections.filter(({ id }) => !offStrip(id)).map(({ id: name, label }, i) => <div key={name} className={styles.slide} role="tabpanel" aria-label={label} inert={active !== i}>
         {name === "Overview"
@@ -571,8 +568,9 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
       {tripStats ? <Card title="Trip stats"><GolfTripStats stats={tripStats} changes={scoreChanges} /></Card> : <Card title="Stats"><Empty>Stats will show here once players record rounds</Empty></Card>}
     </div>}
     {/* Predict (only while the organizer has it on): the trip's prediction market in Maroon Coins. */}
-    {predictSetup && !noComp && <div role="tabpanel" aria-label="Predict" hidden={!predictActive}>
-      {predictActive && <button type="button" className={styles.predictEntry} onClick={() => goTo(0)}>Back to {sections[0]?.label ?? "Leaderboard"}</button>}
+    {predictSetup && !noComp && <div ref={predictRef} role="tabpanel" aria-label="Predict" hidden={!predictActive} style={{ scrollMarginTop: "calc(env(safe-area-inset-top, 0px) + 56px)" }}>
+      {/* Predict has the screen to itself: just a small back arrow to the leaderboard (owner request 2026-10-15). */}
+      {predictActive && <button type="button" className={styles.predictBack} onClick={() => { goTo(0); requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "instant" })); }} aria-label={`Back to ${sections[0]?.label ?? "Leaderboard"}`}><ChevronLeft size={22} aria-hidden="true" /></button>}
       {predictActive && <GolfTripPredict setup={predictSetup} />}
     </div>}
   </>;

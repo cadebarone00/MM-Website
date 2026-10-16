@@ -56,6 +56,8 @@ export type SimulatorState = {
   competitionSetup?: CompetitionSetup;
   /** Profile: show made-up rounds (lib/dev/sampleProfileRounds.ts) on my own profile, plus a sample golfer in Compare. */
   sampleStats?: boolean;
+  /** Golf → Stats: a made-up trip's rounds (lib/dev/sampleTripRounds.ts) instead of the saved cards. */
+  sampleTripStats?: boolean;
   /** Profile preview (/dev/profile): whose sample profile shows and with how many rounds. Unset = "sample". */
   profilePreview?: ProfilePreview;
   dualDraftMomentum?: boolean;

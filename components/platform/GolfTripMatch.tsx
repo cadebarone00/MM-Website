@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useSwipe } from "./useSwipe";
 import { resolveGolfFormat } from "@/lib/platform/formats";
@@ -19,6 +19,7 @@ import {
 } from "@/lib/platform/golfTripPreviewFixture";
 import styles from "./GolfTripMatch.module.css";
 import { MatchDraftStatus } from "./MatchDraftStatus";
+import { matchCard, winCurve, withHoleStandings, type MatchCard, type WinPoint } from "@/lib/platform/matchCenter";
 
 /**
  * Golf tab, Sleeper's fantasy Match screen translated to golf, on the trip's maroon.
@@ -35,8 +36,12 @@ export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundSt
   const viewRound = shownRound ?? ownRound;
   // Swiping anywhere on the matches steps the round like the picker's arrows (left = next, right = previous).
   const swipe = useSwipe(() => setViewRound(round => Math.min(fullMatch.roundCount, round + 1)), () => setViewRound(round => Math.max(1, round - 1)));
-  const match = { ...fullMatch, round: viewRound,
-    matches: fullMatch.matches.filter(pairing => (pairing.round ?? fullMatch.round) === viewRound) };
+  // This round's matches, with status worked out from the players' hole scores where the leaderboard has them.
+  const scored = withHoleStandings(fullMatch);
+  const match = { ...scored, round: viewRound,
+    matches: scored.matches.filter(pairing => (pairing.round ?? fullMatch.round) === viewRound) };
+  const original = fullMatch.matches.filter(pairing => (pairing.round ?? fullMatch.round) === viewRound);
+  const [opened, setOpened] = useState<number | null>(null);
   // Gross only: gross, no control. Net only: net, "Net Scoring". Both: the GROSS / NET switch.
   const scoring = matchScoring(match);
   const showNet = scoring === "Net" || (scoring === "Both" && net);
@@ -66,7 +71,8 @@ export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundSt
         const status = pairingStatus(leftComp, rightComp, standing, m.result, roundStarted && viewRound === fullMatch.round);
         // Before the match starts, no lead fill.
         const shown = status.kind === "tee" ? null : standing;
-        return <li key={i} className={styles.pairing}>
+        return <li key={i} className={`${styles.pairing} ${styles.pairingTap}`} role="button" tabIndex={0} aria-label={`Open match ${i + 1}`}
+          onClick={() => setOpened(i)} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setOpened(i); } }}>
           <MatchSide competitor={leftComp} side="left" standing={shown} score={sideScore(status, shown, "left")} />
           {/* The middle: the match number in gold over its status (TEE TIME, THRU), no box. */}
           <span className={styles.matchCenter}>
@@ -79,6 +85,9 @@ export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundSt
       {/* No matches set for this round yet: the same row, with placeholders. */}
       {!match.matches.length && <MatchDraftStatus scope={draftScope} round={viewRound} />}
     </ul>
+    {opened !== null && match.matches[opened] && <MatchDetail match={fullMatch} pairing={original[opened]} number={opened + 1} round={viewRound}
+      net={showNet} teamNames={[teamNames?.[0] ?? match.sides[0].name, teamNames?.[1] ?? match.sides[1].name]}
+      onClose={() => setOpened(null)} />}
   </div>;
 }
 
@@ -454,13 +463,21 @@ export function GolfRoundHeader({ match, competitive = true, today, day, previou
  */
 export function GolfTournamentSummary({ match, onPredict }: { match: GolfMatchPreview; onPredict?: () => void }) {
   const [left, right] = match.sides;
-  return <div className={styles.matchup}>
+  // Tapping the team boxes drops down every player's match points, best first (owner request 2026-10-15).
+  const [pointsOpen, setPointsOpen] = useState(false);
+  const ranking = pointsOpen ? playerPoints(withHoleStandings(match)) : [];
+  return <div className={styles.matchup} data-points-open={pointsOpen || undefined}>
     <section className={`${styles.versus} ${styles.boardBox}`} aria-label="Tournament standings">
-      <div className={styles.summaryTeams}>
+      <div className={`${styles.summaryTeams} ${styles.summaryTap}`} role="button" tabIndex={0} aria-expanded={pointsOpen} aria-label="Points by player"
+        onClick={() => setPointsOpen(!pointsOpen)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setPointsOpen(!pointsOpen); } }}>
         {/* Each team sits in its own color fill (like a lead fill, but always there) from its edge in toward TO WIN. */}
         {[left, right].map((side, i) => <div key={side.name} className={`${styles.summaryFill} ${i ? `${styles.summaryRight} ${styles.summaryFillRight}` : styles.summaryFillLeft}`}>
           <FitName name={side.name} />
           <p className={styles.summaryScore}>{side.score || "—"}</p>
+          {/* Open: the box extends down with this team's players, most points first. */}
+          {pointsOpen && <ol className={styles.teamPoints} aria-label={`${side.name} points by player`}>
+            {ranking.filter((row) => row.side === (i ? "right" : "left")).map((row) => <li key={row.name}><span>{row.name}</span><b>{row.points}</b></li>)}
+          </ol>}
         </div>)}
         {/* Between the teams, like THRU on the Matches box: the points needed to win (not wired up yet). */}
         <span className={`${styles.status} ${styles.statusPlain} ${styles.summaryToWin}`} aria-label="Points to win">
@@ -477,6 +494,32 @@ export function GolfTournamentSummary({ match, onPredict }: { match: GolfMatchPr
       </div>
     </section>
   </div>;
+}
+
+/**
+ * Each player's match points across the trip's matches, best first: the points the data gives a side, otherwise a
+ * finished match is worth 1 to each winner and ½ each when halved (net standing when the round is net only).
+ */
+function playerPoints(match: GolfMatchPreview): { name: string; side: "left" | "right"; points: number }[] {
+  const totals = new Map<string, { name: string; side: "left" | "right"; points: number }>();
+  const net = matchScoring(match) === "Net";
+  for (const pairing of match.matches) {
+    const sides = [normalizeCompetitor(pairing.left), pairing.right ? normalizeCompetitor(pairing.right) : null] as const;
+    const standing = net ? pairing.net : pairing.gross;
+    const status = matchStatus({ thru: sides[0].thru ?? sides[0].golfers[0]?.thru, standing, result: pairing.result });
+    sides.forEach((side, i) => {
+      if (!side) return;
+      const key = i ? "right" : "left";
+      const earned = side.points ?? side.golfers[0]?.points ?? (status.kind !== "final" ? 0
+        : standing?.leader == null ? 0.5 : standing.leader === key ? 1 : 0);
+      for (const golfer of side.golfers) {
+        const row = totals.get(golfer.name) ?? { name: golfer.name, side: key, points: 0 };
+        row.points += earned;
+        totals.set(golfer.name, row);
+      }
+    });
+  }
+  return [...totals.values()].sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
 }
 
 /**
@@ -750,4 +793,153 @@ function scoreMark(toPar: number): string {
   if (toPar === 1) return `${styles.mark} ${styles.box}`;
   if (toPar >= 2) return `${styles.mark} ${styles.box} ${styles.double}`;
   return styles.mark;
+}
+
+/**
+ * Golf → Matches → a match (owner request 2026-10-15): everything about one match for someone not in it — who's
+ * playing and where it stands, the match-play scorecard, the chance of winning after every hole (Predict's model), and
+ * both sides' stats. Hole scores are this round's leaderboard; other rounds show the data's result only.
+ */
+function MatchDetail({ match, pairing, number, round, net, teamNames, onClose }: { match: GolfMatchPreview; pairing: GolfMatchPairing; number: number; round: number; net: boolean; teamNames: [string, string]; onClose: () => void }) {
+  const scored = (pairing.round ?? match.round) === match.round;
+  const card = useMemo(() => matchCard(scored ? match : { ...match, leaderboard: [] }, pairing, net), [match, pairing, net, scored]);
+  const curve = useMemo(() => winCurve(match, card), [match, card]);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    dialog.showModal();
+    return () => dialog.close();
+  }, []);
+  const lead = card.played ? card.holes[card.played - 1].lead ?? 0 : 0;
+  const leader = lead > 0 ? teamNames[0] : teamNames[1];
+  const names = (side: "left" | "right") => (side === "left" ? normalizeCompetitor(pairing.left) : pairing.right ? normalizeCompetitor(pairing.right) : null)?.golfers.map(g => g.name) ?? [];
+  // Another round (no hole scores here): the data's own result.
+  const dataStanding = net ? pairing.net : pairing.gross;
+  const status = !scored ? (pairing.result ? (dataStanding?.leader ? `${dataStanding.leader === "left" ? teamNames[0] : teamNames[1]} won ${pairing.result}` : "Halved") : "Not started")
+    : card.played === 0 ? "Not started" : card.finished ? (lead === 0 ? "Halved" : `${leader} won ${card.result}`)
+    : `${lead === 0 ? "All square" : `${leader} ${Math.abs(lead)} UP`} thru ${card.played}`;
+  const statusLead = scored ? (card.played === 0 || lead === 0 ? undefined : lead > 0 ? "left" : "right") : dataStanding?.leader ?? undefined;
+  // Stats from the data's per-match numbers (fairways / greens hit %, putts over the holes they cover).
+  const statsFor = (i: 0 | 1) => {
+    const side = pairing.sides?.[i];
+    const comp = i === 0 ? normalizeCompetitor(pairing.left) : pairing.right ? normalizeCompetitor(pairing.right) : null;
+    const holes = holesDone(comp?.thru ?? comp?.golfers[0]?.thru);
+    const putts = Number(side?.putts);
+    return [["Fairways", side?.fairwayPct || "—"], ["Greens", side?.greenPct || "—"], ["Putts / hole", holes && Number.isFinite(putts) && putts > 0 ? (putts / holes).toFixed(1) : "—"]] as const;
+  };
+  const now = curve.at(-1);
+  return <dialog ref={dialogRef} className={`${styles.leaderboardScoreSheet} ${styles.matchSheet}`} aria-label={`Match ${number}`} onCancel={onClose}>
+    <div className={styles.matchSheetTop}>
+      <button type="button" className={styles.matchSheetBack} onClick={onClose} aria-label="Back to matches" autoFocus><ChevronLeft size={22} aria-hidden /></button>
+      <p>Match {number} · Round {round}{net ? " · Net" : ""}</p>
+    </div>
+    <header className={styles.matchSheetHead}>
+      <div data-side="left"><b>{teamNames[0]}</b>{names("left").map(name => <span key={name}>{name}</span>)}</div>
+      <p className={styles.matchSheetStatus} data-lead={statusLead}>{status}</p>
+      <div data-side="right"><b>{teamNames[1]}</b>{names("right").map(name => <span key={name}>{name}</span>)}</div>
+    </header>
+
+    <section aria-label="Match scorecard">
+      <h3 className={styles.matchSheetTitle}>Scorecard</h3>
+      <MatchScorecard card={card} net={net} />
+      {!scored ? <p className={styles.matchSheetNote}>Hole-by-hole scores for this round aren&apos;t available yet.</p>
+        : card.played === 0 && <p className={styles.matchSheetNote}>Scores show here hole by hole once the match starts.</p>}
+    </section>
+
+    <section aria-label="Chance to win">
+      <h3 className={styles.matchSheetTitle}>Chance to win</h3>
+      {scored && curve.length > 0 && now ? <>
+        <WinChart curve={curve} holes={match.par.length} teamNames={teamNames} />
+        <dl className={styles.matchChances}>
+          <div data-side="left"><dt>{teamNames[0]}</dt><dd>{Math.round(now.left * 100)}%</dd></div>
+          <div><dt>Halved</dt><dd>{Math.round(now.halved * 100)}%</dd></div>
+          <div data-side="right"><dt>{teamNames[1]}</dt><dd>{Math.round(now.right * 100)}%</dd></div>
+        </dl>
+        <p className={styles.matchSheetNote}>From each player&apos;s history and handicap, with the holes played so far locked in (same model as Predict).</p>
+      </> : <p className={styles.matchSheetNote}>Odds show for the round being played.</p>}
+    </section>
+
+    <section aria-label="Team stats">
+      <h3 className={styles.matchSheetTitle}>Stats</h3>
+      <div className={styles.matchStatsGrid}>
+        <b data-side="left">{teamNames[0]}</b><span /><b data-side="right">{teamNames[1]}</b>
+        {statsFor(0).map(([label, value], i) => <Fragment key={label}><span>{value}</span><small>{label}</small><span>{statsFor(1)[i][1]}</span></Fragment>)}
+      </div>
+    </section>
+  </dialog>;
+}
+
+/** The match-play scorecard, all holes in one table (swipe sideways; opens on the hole being played): par, every player's score (• = handicap stroke), the running status (colored by who won the hole). */
+function MatchScorecard({ card, net }: { card: MatchCard; net: boolean }) {
+  const holes = card.holes;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const box = scrollRef.current, cell = box?.querySelector<HTMLElement>(`td:nth-of-type(${Math.max(1, card.played)})`);
+    if (box && cell) box.scrollLeft = Math.max(0, cell.offsetLeft - box.clientWidth / 2);
+  }, [card.played]);
+  const rows = [...card.left.map(p => ({ p, side: "left" })), ...card.right.map(p => ({ p, side: "right" }))];
+  const playerRow = ({ p, side }: (typeof rows)[number]) => <tr key={p.name} data-side={side}><th scope="row">{p.name.split(/\s+/)[0]}</th>{holes.map(h => {
+    const strokes = p.holes[h.hole - 1];
+    return <td key={h.hole}>{strokes == null ? "" : <span className={scoreMark(strokes - h.par)}>{strokes}</span>}{net && p.strokes[h.hole - 1] > 0 && <i className={styles.strokeDot} aria-label="handicap stroke" />}</td>;
+  })}</tr>;
+  return <div ref={scrollRef} className={styles.scorecard} role="region" aria-label="Match scorecard" tabIndex={0}>
+    <table className={`${styles.scorecardTable} ${styles.matchTable}`}>
+      <tbody>
+        <tr><th scope="row">Hole</th>{holes.map(h => <td key={h.hole}>{h.hole}</td>)}</tr>
+        <tr><th scope="row">Par</th>{holes.map(h => <td key={h.hole}>{h.par}</td>)}</tr>
+        {/* Left team's players, then where the match stands, then the right team's players. */}
+        {rows.filter(({ side }) => side === "left").map(playerRow)}
+        <tr className={styles.matchResultRow}><th scope="row">Match</th>{holes.map(h => <td key={h.hole}>
+          {h.lead === null ? "" : <span className={styles.leadChip} data-side={h.lead > 0 ? "left" : h.lead < 0 ? "right" : undefined}
+            title={h.winner === "halved" ? "Hole halved" : `Hole won by ${h.winner === "left" ? "left" : "right"} side`}>{h.lead === 0 ? "AS" : Math.abs(h.lead)}</span>}
+        </td>)}</tr>
+        {rows.filter(({ side }) => side === "right").map(playerRow)}
+      </tbody>
+    </table>
+  </div>;
+}
+
+/** The left team's chance of winning after each hole: a line over a 50% midline, filled toward whoever's favored. */
+function WinChart({ curve, holes, teamNames }: { curve: WinPoint[]; holes: number; teamNames: [string, string] }) {
+  const W = 320, H = 140, padX = 10, padY = 14;
+  const x = (hole: number) => padX + (hole / holes) * (W - padX * 2);
+  const y = (p: number) => padY + (1 - p) * (H - padY * 2);
+  const line = curve.map((pt, i) => `${i ? "L" : "M"}${x(pt.hole).toFixed(1)},${y(pt.left).toFixed(1)}`).join(" ");
+  const area = `${line} L${x(curve.at(-1)!.hole).toFixed(1)},${y(0.5)} L${x(0)},${y(0.5)} Z`;
+  // Press and hold (or drag) on the graph: a mini window with the odds after the nearest hole (owner request 2026-10-15).
+  const [held, setHeld] = useState<WinPoint | null>(null);
+  const pick = (event: ReactPointerEvent<SVGSVGElement>) => {
+    const box = event.currentTarget.getBoundingClientRect();
+    const hole = Math.round(((event.clientX - box.left) / box.width * W - padX) / (W - padX * 2) * holes);
+    setHeld(curve[Math.max(0, Math.min(curve.length - 1, hole))]);
+  };
+  const label = (pt: WinPoint) => pt.hole === 0 ? "Before hole 1" : `After hole ${pt.hole}`;
+  return <div className={styles.winChartWrap}>
+    <svg className={styles.winChart} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${teamNames[0]} chance to win by hole: ${curve.map(pt => `after ${pt.hole}, ${Math.round(pt.left * 100)}%`).join("; ")}`}
+      onPointerDown={event => { event.currentTarget.setPointerCapture(event.pointerId); pick(event); }}
+      onPointerMove={event => { if (held) pick(event); }}
+      onPointerUp={() => setHeld(null)} onPointerCancel={() => setHeld(null)} onLostPointerCapture={() => setHeld(null)}>
+      <defs>
+        <clipPath id="winTop"><rect x="0" y="0" width={W} height={y(0.5)} /></clipPath>
+        <clipPath id="winBottom"><rect x="0" y={y(0.5)} width={W} height={H} /></clipPath>
+      </defs>
+      {[0, 9, 18].filter(h => h <= holes).map(h => <line key={h} x1={x(h)} x2={x(h)} y1={padY} y2={H - padY} className={styles.winGrid} />)}
+      <path d={area} clipPath="url(#winTop)" className={styles.winAreaLeft} />
+      <path d={area} clipPath="url(#winBottom)" className={styles.winAreaRight} />
+      <line x1={padX} x2={W - padX} y1={y(0.5)} y2={y(0.5)} className={styles.winMid} />
+      <path d={line} className={styles.winLine} />
+      {held && <line x1={x(held.hole)} x2={x(held.hole)} y1={padY} y2={H - padY} className={styles.winCursor} />}
+      {curve.map(pt => <circle key={pt.hole} cx={x(pt.hole)} cy={y(pt.left)} r={pt === held ? 6 : pt === curve.at(-1) ? 4.5 : 2.5} className={styles.winDot} />)}
+      <text x={padX} y={padY - 4} className={styles.winLabel}>{teamNames[0]} wins</text>
+      <text x={padX} y={H - 2} className={styles.winLabel}>{teamNames[1]} wins</text>
+      <text x={W - padX} y={H - 2} textAnchor="end" className={styles.winLabel}>Hole {holes}</text>
+    </svg>
+    {held && <div className={styles.winTip} role="status" style={{ left: `${Math.min(78, Math.max(22, x(held.hole) / W * 100))}%` }}>
+      <b>{label(held)}</b>
+      <span data-side="left">{teamNames[0]} <strong>{Math.round(held.left * 100)}%</strong></span>
+      <span>Halved <strong>{Math.round(held.halved * 100)}%</strong></span>
+      <span data-side="right">{teamNames[1]} <strong>{Math.round(held.right * 100)}%</strong></span>
+    </div>}
+  </div>;
 }

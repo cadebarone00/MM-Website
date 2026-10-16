@@ -74,7 +74,7 @@ export function devTripScoring(store: DevRoundsState, match: GolfMatchPreview | 
     shownMatch: match && group ? withSavedRounds(match, group, tripRounds) : match,
     attesteeId: attestee,
     attesteeName: attestee ? nameOf(attestee) : undefined,
-    tripStats: { players: stats.players.map((p) => ({ ...p, name: nameOf(p.profileId) })), trip: stats.trip },
+    tripStats: { players: stats.players.map((p) => ({ ...p, name: nameOf(p.profileId) })), trip: stats.trip, rounds: tripRounds },
     scoreChanges: organizerOwnEdits(tripRounds).map(({ round, edit }) => ({ name: nameOf(round.profileId), edit })),
   };
 }

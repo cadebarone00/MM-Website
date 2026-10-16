@@ -1,5 +1,6 @@
 "use client";
 
+import { sampleTripStatsView } from "@/lib/dev/sampleTripRounds";
 import { useEffect, useMemo, useState } from "react";
 import { GolfTripHome } from "@/components/platform/GolfTripHome";
 import { CELEBRATION_MS } from "@/components/platform/SubmitCelebration";
@@ -63,6 +64,10 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
   // keep, the leaderboard with saved rounds, trip stats and the organizer's own changes.
   const scoring = devTripScoring(devRounds, match, viewAs);
   const group = scoring.group;
+  // Golf → Stats preview: a made-up trip's rounds for this trip's players — whenever no cards have been submitted yet (so the
+  // tab always has something to show in dev), or always with the simulator's "Sample trip stats". "From saved cards" turns it off.
+  const useSample = config.state.sampleTripStats ?? !scoring.tripStats.trip;
+  const sampleStats = useMemo(() => useSample && match ? sampleTripStatsView(match.leaderboard.map((row) => ({ id: row.golfer.name, name: row.golfer.name, hcp: row.golfer.hcp }))) : undefined, [useSample, match]);
   const groupKey = group ? JSON.stringify(group) : null;
   useEffect(() => { if (groupKey) dispatchDevRounds({ type: "saveGroup", group: JSON.parse(groupKey) }); }, [groupKey]);
   // Live round: Start / End round in Organizer settings wins; otherwise the simulator's round state stands in for "today is
@@ -97,7 +102,7 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
       organizer={viewAs === DEFAULT_DEV_ACCOUNT}
       savedTeamDraft={justCreated ? { teamType: readJustCreated<{ team: string | null }>("localCompetitionType")?.team ?? null, selection: readJustCreated("teamSelection") ?? null,
         date: readJustCreated("draftDate") ?? "", time: readJustCreated("draftTime") ?? "", type: readJustCreated("draftType") ?? "Snake", method: readJustCreated("draftMethod") ?? "Captain's Picks" } : setup.teamSelection ? {teamType:(setup.localCompetitionType as {team:string|null}|undefined)?.team??(config.source==="maroon"?"2 Teams":null),selection:setup.teamSelection as TeamDraft["selection"],date:(setup.draftDate as string)??"",time:(setup.draftTime as string)??"",type:(setup.draftType as TeamDraft["type"])??"Snake",method:(setup.draftMethod as TeamDraft["method"])??"Captain's Picks"} : undefined}
-      onTravelChange={travel => justCreated ? writeJustCreated("travel", travel) : writeDevSetup(scope,"travel",travel)} weather={weather} previewMatch={scoring.shownMatch} tripStats={scoring.tripStats} scoreChanges={scoring.scoreChanges} attesteeName={scoring.attesteeName} attestedStrokes={scoring.myLiveCard?.holes.map((h) => h.attestStrokes)} onAttestChange={onAttestChange} scoringEdits={saved?.edits} onScoringCardChange={onScoringCardChange} roundLive={roundLive} opponentCardMatches={config.state.opponentCard !== "mismatch"} scoringPrefill={scoringPrefill} onScoringSubmit={onScoringSubmit} submittedCard={submittedCard} scoringOwner={viewAs} navigation={simulator?.navigation} onNavigationChange={reportNavigation} settingsHref={settingsHref} backHref="/golf-trips" />
+      onTravelChange={travel => justCreated ? writeJustCreated("travel", travel) : writeDevSetup(scope,"travel",travel)} weather={weather} previewMatch={scoring.shownMatch} tripStats={sampleStats ?? scoring.tripStats} scoreChanges={scoring.scoreChanges} attesteeName={scoring.attesteeName} attestedStrokes={scoring.myLiveCard?.holes.map((h) => h.attestStrokes)} onAttestChange={onAttestChange} scoringEdits={saved?.edits} onScoringCardChange={onScoringCardChange} roundLive={roundLive} opponentCardMatches={config.state.opponentCard !== "mismatch"} scoringPrefill={scoringPrefill} onScoringSubmit={onScoringSubmit} submittedCard={submittedCard} scoringOwner={viewAs} navigation={simulator?.navigation} onNavigationChange={reportNavigation} settingsHref={settingsHref} backHref="/golf-trips" />
     {!simulator && !embedded && !fictional && view === "maroon" && <details style={{ maxWidth: 920, margin: "24px auto", padding: 12, background: "#fff8ef", borderRadius: 8 }}>
       <summary style={{ fontWeight: 600 }}>DEV: Unmapped Tournament Data (click to view)</summary>
       <pre style={{ whiteSpace: "pre-wrap", marginTop: 8 }}>{JSON.stringify(unmapped, null, 2)}</pre>
