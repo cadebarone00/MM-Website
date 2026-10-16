@@ -498,3 +498,18 @@
 .matchScoringControl:has(.scoring){height:40px;justify-content:center;align-items:flex-end}
 .matchScoringControl .scoring{padding:1px}
 .matchScoringControl .scoring button{min-height:16px;padding:0 8px;font-size:9px}
+/* Player sheet (owner request 2026-10-16): photo fully inside the header, scorecard nines stacked, their game stats. */
+.playerTripProfileHeader{padding-left:calc(16dvh + 8px)}
+.playerTripProfileAvatar{top:50%;left:16px;translate:0 -50%;width:calc(16dvh - 28px);height:calc(16dvh - 28px);font-size:4.2dvh}
+.scorecardStacked{display:grid;gap:12px;overflow:visible}
+.scorecardStacked .scorecardTable{width:100%;table-layout:fixed}
+.scorecardStacked .scorecardTable th{width:52px;padding-right:6px}
+.scorecardStacked .scorecardTable td{min-width:0;padding:6px 0}
+.scorecardStacked .scorecardTable .totalCell{min-width:0}
+.profileGameStats{margin:6px 16px 24px}
+.profileGameStats h4{margin:0 0 8px;font:700 13px var(--font-barlow),sans-serif;color:#dcc495}
+.profileGameStats dl{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0}
+.profileGameStats dl div{display:grid;gap:4px;padding:10px 4px;border:1px solid rgba(251,248,241,.18);border-radius:14px;text-align:center}
+.profileGameStats dt{font:600 11px var(--font-barlow),sans-serif;color:rgba(251,248,241,.65)}
+.profileGameStats dd{margin:0;font:700 20px/1 var(--font-spectral),Georgia,serif;color:#fbf8f1}
+.profileGameStats p{margin:8px 0 0;font:500 11px var(--font-barlow),sans-serif;color:rgba(251,248,241,.5)}
