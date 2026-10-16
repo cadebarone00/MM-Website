@@ -2776,3 +2776,10 @@ Three tabs in Predict, each bet a card; *(team)* = only for trips with a team co
 - Hole in one: 1 in 12,500 per par-3 tee shot for an amateur, × every par 3 every player plays on the trip.
 - Player over / unders (added 2026-10-11): **score** (strokes) per round (Today) and for the trip (Scoring); **greens hit / fairways hit / putts** per round (Today) and for the trip (Props), one card each with a Greens · Fairways · Putts switch. Stat rates come from each player's own holes (legacy blank = miss), blended with typical numbers for their handicap; holes already played count as real. Bets that list every player show the top 3 with **Show all** opening a scrolling list.
 - Ladders (Kalshi style): one yes / no market per line. Spreads: one market per line, the card's slider moves between lines.
+
+## Player public trip profile — profile photo (2026-10-15)
+
+- The pop-up you get by tapping a player on a trip leaderboard shows their **profile photo** on the left of the header (above the line), with "Player public trip profile" + their name to its right. No photo → their initials in the same circle.
+- Photos come from Settings → Profile photo (`profiles.avatar_path`, `supabase/profile_photos.sql`). Same privacy rule as the profile page: you always see your own; someone else's only if their profile is Public.
+- Real saved trips only; sample/dev trips show initials. Until `profile_photos.sql` (and `player_rounds.sql`) are run, everyone shows initials.
+- Not included: forcing a face in the photo (dropped by the owner 2026-10-15).

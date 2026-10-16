@@ -18,6 +18,12 @@ export interface RoundStats {
   eighteens: number;
   nines: number;
   average18: number | null;
+  /**
+   * Handicap-style 18-hole average: every hole capped at double bogey (par + 2) before adding up, so one blow-up hole
+   * doesn't drag it. Only 18-hole rounds with a full hole-by-hole card count. (The official WHS cap is net double bogey,
+   * which needs hole stroke indexes the rounds don't store.)
+   */
+  adjustedAverage18: number | null;
   best18: { total: number; course: string; date: string } | null;
   average9: number | null;
   handicapIndex: number | null;
@@ -49,6 +55,8 @@ export function roundStats(rounds: ProfileHistoryRound[]): RoundStats | null {
   const eighteens = newestFirst.filter((r) => r.holesPlayed === 18);
   const nines = newestFirst.filter((r) => r.holesPlayed === 9);
   const counting = newestFirst.filter((r) => r.countsForHandicap && r.differential !== null).map((r) => r.differential as number);
+  const fullCards = eighteens.filter((r) => r.holes.length === 18 && r.holes.every((h) => Number.isInteger(h.par) && Number.isInteger(h.strokes)));
+  const capped = fullCards.map((r) => r.holes.reduce((s, h) => s + Math.min(h.strokes, h.par + 2), 0));
   const best = eighteens.reduce<ProfileHistoryRound | null>((low, r) => !low || r.total < low.total ? r : low, null);
   type Shot = "center" | "left" | "right" | "up" | "down" | "miss" | null;
   const holes = newestFirst.flatMap((r) => {
@@ -93,6 +101,7 @@ export function roundStats(rounds: ProfileHistoryRound[]): RoundStats | null {
   return {
     rounds: rounds.length, eighteens: eighteens.length, nines: nines.length,
     average18: eighteens.length ? round1(eighteens.reduce((s, r) => s + r.total, 0) / eighteens.length) : null,
+    adjustedAverage18: capped.length ? round1(capped.reduce((s, n) => s + n, 0) / capped.length) : null,
     best18: best ? { total: best.total, course: best.course.name, date: best.datePlayed } : null,
     average9: nines.length ? round1(nines.reduce((s, r) => s + r.total, 0) / nines.length) : null,
     handicapIndex: calculateHandicapIndex(counting.slice(0, 20)),

@@ -18,7 +18,7 @@ export function savedTripPresentation(trip: SavedGolfTrip, scoring?: TripRoundSc
       const holes = Array.from({ length: 18 }, (_, index) => scoring?.entries.find(entry => entry.scoredProfileId === member.profileId && entry.enteredByProfileId === member.profileId && entry.hole === index + 1)?.strokes ?? null);
       const completed = holes.filter(value => value !== null).length;
       const thru = completed === 18 ? "F" : completed ? `Thru ${completed}` : "";
-      return { position: "—", golfer: { name: member.displayName, hcp: 0, thru, score: "—", teeTime: "", course },
+      return { position: "—", golfer: { name: member.displayName, hcp: 0, thru, score: "—", teeTime: "", course, avatarUrl: member.avatarUrl ?? null, username: member.username ?? null },
         total: "—", today: "—", netTotal: "—", netToday: "—", thru, holes };
     }),
   };

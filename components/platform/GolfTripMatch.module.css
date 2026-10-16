@@ -356,15 +356,25 @@
 .leaderboardScoreSheet{position:fixed;inset:20dvh 0 0;height:80dvh;width:100%;max-width:560px;max-height:none;box-sizing:border-box;margin:0 auto;padding:0;border:1px solid rgba(220,196,149,.25);border-bottom:0;border-radius:20px 20px 0 0;background:#240001;color:#fbf8f1;overflow:auto;animation:scoreSheetUp .25s ease-out}
 .leaderboardScoreSheet::backdrop{background:rgba(0,0,0,.45)}
 .scoreSheetHandle{width:40px;height:4px;margin:0 auto 16px;border-radius:4px;background:rgba(251,248,241,.4)}
-.scoreSheetHeading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
-.scoreSheetHeading h2{margin:0;font:700 20px var(--font-spectral),Georgia,serif}
-.scoreSheetHeading button{display:grid;place-items:center;flex:none;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:transparent;color:#fff;cursor:pointer}
-.scoreSheetHeading button:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
 @keyframes scoreSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.leaderboardScoreSheet{animation:none}}
 
-.playerTripProfileHeader{box-sizing:border-box;height:16dvh;padding:12px 16px 0;border-bottom:2px solid rgba(251,248,241,.18)}
-.playerTripProfileLabel{margin:0 0 5px;font:600 11px/1.2 var(--font-barlow),sans-serif;color:#dcc495}
+.playerTripProfileHeader{position:relative;display:flex;align-items:center;box-sizing:border-box;height:16dvh;padding:0 16px 0 calc(16dvh + 20px);overflow:hidden;border-bottom:2px solid rgba(251,248,241,.18);touch-action:none;user-select:none;cursor:grab}
+.playerTripProfileIdentity{flex:1;min-width:0;margin-top:2px}
+/* Each stat only as wide as its label, close together: Handicap starts right under the name's first letter. */
+.playerTripProfileStats{display:grid;grid-template-columns:repeat(3,auto);justify-content:start;column-gap:22px;margin:8px 0 0;text-align:center}
+.playerTripProfileStats div{display:flex;flex-direction:column-reverse;align-items:center;gap:3px;min-width:0}
+.playerTripProfileStats dt{font:600 11px/1.2 var(--font-barlow),sans-serif;color:#dcc495;white-space:nowrap}
+.playerTripProfileStats dd{margin:0;font:700 20px/1 var(--font-spectral),Georgia,serif;color:#fbf8f1}
+.playerTripProfileHeader h2{min-width:0;margin:0;padding-right:28px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 18px var(--font-spectral),Georgia,serif}
+/* The line at the top: a bigger invisible tap area around it (tap = close). */
+.playerTripProfileHandle{position:absolute;top:0;left:50%;translate:-50% 0;padding:12px 20px;cursor:pointer}
+.playerTripProfileHandle .scoreSheetHandle{display:block;margin:0}
+/* The photo pokes 4px past the top, the left edge and the line (clipped): 16dvh header - 2px line + 8px. */
+.playerTripProfileAvatar{position:absolute;top:-4px;left:-4px;display:flex;align-items:center;justify-content:center;width:calc(16dvh + 6px);height:calc(16dvh + 6px);overflow:hidden;border-radius:50%;background:#fbf8f1;color:#240001;font:700 5.4dvh var(--font-barlow),sans-serif;box-shadow:0 0 0 2px #dcc495}
+.playerTripProfileAvatar img{width:100%;height:100%;object-fit:cover}
+.playerTripProfileClose{position:absolute;top:10px;right:10px;display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:transparent;color:#fff;cursor:pointer}
+.playerTripProfileClose:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
 .playerTripProfileScorecard{padding:16px 0;margin:0 16px 6px;border-top:2px solid rgba(251,248,241,.18);border-bottom:2px solid rgba(251,248,241,.18)}
 
 .profileRoundTabs{display:flex;position:relative;gap:10px;padding:12px 16px;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain}

@@ -6,6 +6,7 @@ import { acceptResultFromJson, declineResultFromJson, invitationPreviewFromJson,
 import { membersForViewer } from "./golfTripMembers.ts";
 import { golfTripSummaries, golfTripViewer, isGolfTripId, type GolfTripSummary, type GolfTripViewer, type SavedGolfTrip } from "./golfTripCreate.ts";
 import { flightsFromRows, type GolfTripFlight } from "./golfTripFlights.ts";
+import { profilePhotoUrl } from "@/lib/profile/profilePhoto";
 
 /**
  * Server-side Golf Trips (supabase/golf_trips.sql, golf_trip_invitations.sql). The golfer is the signed-in
@@ -31,10 +32,27 @@ export const getGolfTrip = cache(async (tripId: string): Promise<GolfTripLoad> =
   if (error) throw new Error(`get_golf_trip failed: ${error.message}`);
   const saved = data as SavedGolfTrip | null;
   // Privacy at the server boundary: only the organizer gets other members' emails (lib/platform/golfTripMembers.ts).
-  const trip = saved ? { ...saved, members: membersForViewer(saved.members, profileId) } : null;
+  const trip = saved ? { ...saved, members: await withMemberPhotos(membersForViewer(saved.members, profileId), profileId) } : null;
   const viewer = trip ? golfTripViewer(trip, profileId) : null;
   return trip && viewer ? { status: "ok", trip, viewer } : { status: "not-found" };
 });
+
+/**
+ * Adds each accepted member's profile photo (profile_photos.sql). Same rule as the profile page: you always see your
+ * own; someone else's shows only if their profile is Public. Until profile_photos.sql / player_rounds.sql are run
+ * the read fails and everyone just shows initials.
+ */
+async function withMemberPhotos(members: SavedGolfTrip["members"], viewerId: string): Promise<SavedGolfTrip["members"]> {
+  const ids = members.filter((m) => m.invitationStatus === "accepted" && m.profileId).map((m) => m.profileId as string);
+  if (!ids.length) return members;
+  const { data, error } = await createSupabaseServiceRoleClient().from("profiles").select("id, avatar_path, rounds_visibility").in("id", ids);
+  if (error || !data) return members;
+  const photos = new Map<string, string | null>();
+  for (const row of data as { id: string; avatar_path: string | null; rounds_visibility: string | null }[]) {
+    photos.set(row.id, row.id === viewerId || row.rounds_visibility === "public" ? profilePhotoUrl(row.avatar_path) : null);
+  }
+  return members.map((m) => (m.profileId && photos.get(m.profileId) ? { ...m, avatarUrl: photos.get(m.profileId) } : m));
+}
 
 export type MyGolfTripFlights =
   | { status: "ok"; flights: GolfTripFlight[] }

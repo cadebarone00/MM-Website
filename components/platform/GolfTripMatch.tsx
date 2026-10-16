@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useSwipe } from "./useSwipe";
 import { resolveGolfFormat } from "@/lib/platform/formats";
@@ -218,11 +218,11 @@ export function GolfTripLeaderboard({ match, byToday = false }: { match: GolfMat
         })}
       </ul>
     </div>
-    {selectedCard && <PlayerPublicTripProfile key={match.round + selectedCard.golfer.name} name={selectedCard.golfer.name} round={match.round} roundCount={match.roundCount} par={match.par} holes={selectedCard.holes} snapshot={{ position: selectedCard.position, total: parLabel(showNet ? selectedCard.netTotal : selectedCard.total), roundScore: parLabel(showNet ? selectedCard.netToday : selectedCard.today), thru: selectedCard.thru }} onClose={() => setSelectedPlayer(null)} />}
+    {selectedCard && <PlayerPublicTripProfile key={match.round + selectedCard.golfer.name} name={selectedCard.golfer.name} avatarUrl={selectedCard.golfer.avatarUrl ?? null} username={selectedCard.golfer.username ?? null} round={match.round} roundCount={match.roundCount} par={match.par} holes={selectedCard.holes} snapshot={{ position: selectedCard.position, total: parLabel(showNet ? selectedCard.netTotal : selectedCard.total), roundScore: parLabel(showNet ? selectedCard.netToday : selectedCard.today), thru: selectedCard.thru }} onClose={() => setSelectedPlayer(null)} />}
   </div>;
 }
 
-function PlayerPublicTripProfile({ name, round, roundCount, par, holes, snapshot, onClose }: { name: string; round: number; roundCount: number; par: number[]; holes: (number | null)[]; snapshot: { position: string; total: string; roundScore: string; thru: string }; onClose: () => void }) {
+function PlayerPublicTripProfile({ name, avatarUrl, username, round, roundCount, par, holes, snapshot, onClose }: { name: string; avatarUrl: string | null; username: string | null; round: number; roundCount: number; par: number[]; holes: (number | null)[]; snapshot: { position: string; total: string; roundScore: string; thru: string }; onClose: () => void }) {
   const [selectedRound, setSelectedRound] = useState(round);
   const roundTabsRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -230,6 +230,17 @@ function PlayerPublicTripProfile({ name, round, roundCount, par, holes, snapshot
     const active = strip?.querySelector<HTMLElement>('[aria-selected="true"]');
     if (strip && active) strip.scrollTo({ left: active.offsetLeft - strip.offsetLeft - (strip.clientWidth - active.offsetWidth) / 2, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
   }, [selectedRound]);
+  // Handicap · Sc. Avg. (scoring average) · Career Low, from their profile rounds (a tripmate's always come through). "—" until loaded,
+  // when there's no data, and on sample trips (no username).
+  const [stats, setStats] = useState<{ handicapIndex: number | null; average18: number | null; best18: { total: number } | null } | null>(null);
+  useEffect(() => {
+    if (!username) return;
+    let live = true;
+    fetch("/api/profile/compare?u=" + encodeURIComponent(username)).then(response => response.json())
+      .then(body => { if (live && body?.ok && body.result?.status === "ok" && body.result.stats) setStats(body.result.stats); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [username]);
   const dialogRef = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -237,10 +248,57 @@ function PlayerPublicTripProfile({ name, round, roundCount, par, holes, snapshot
     dialog.showModal();
     return () => dialog.close();
   }, []);
+  // Put it away: slide the sheet down, then close. Same for the X, a tap on the line at the top, and a drag down.
+  const dismiss = () => {
+    const dialog = dialogRef.current;
+    if (!dialog || window.matchMedia("(prefers-reduced-motion: reduce)").matches) { onClose(); return; }
+    dialog.style.transition = "translate 200ms ease-in";
+    dialog.style.translate = "0 100%";
+    window.setTimeout(onClose, 200);
+  };
+  // Drag the header down: the sheet follows the finger; let go past 90px (or with a quick flick) and it goes away,
+  // otherwise it springs back. A press on the line that doesn't move is a tap. Presses on the X are left to the X.
+  const drag = useRef<{ startY: number; startTime: number; dy: number; onHandle: boolean } | null>(null);
+  const onDragStart = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+    if (target.closest("button")) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    drag.current = { startY: event.clientY, startTime: event.timeStamp, dy: 0, onHandle: !!target.closest("[data-handle]") };
+    if (dialogRef.current) dialogRef.current.style.transition = "none";
+  };
+  const onDragMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const gesture = drag.current;
+    if (!gesture || !dialogRef.current) return;
+    gesture.dy = Math.max(0, event.clientY - gesture.startY);
+    dialogRef.current.style.translate = `0 ${gesture.dy}px`;
+  };
+  const onDragEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const gesture = drag.current;
+    drag.current = null;
+    const dialog = dialogRef.current;
+    if (!gesture || !dialog) return;
+    const flick = gesture.dy / Math.max(1, event.timeStamp - gesture.startTime) > 0.5;
+    if (gesture.dy > 90 || (gesture.dy > 20 && flick) || (gesture.dy < 6 && gesture.onHandle)) { dismiss(); return; }
+    dialog.style.transition = "translate 200ms ease-out";
+    dialog.style.translate = "0 0";
+  };
   return createPortal(<dialog ref={dialogRef} className={styles.leaderboardScoreSheet} aria-label={name + " public trip profile"} onCancel={onClose} onClick={event => { if (event.target === event.currentTarget) { const r = event.currentTarget.getBoundingClientRect(); if (event.clientY < r.top || event.clientX < r.left || event.clientX > r.right) onClose(); } }}>
-    <div className={styles.playerTripProfileHeader}>
-      <div className={styles.scoreSheetHandle} aria-hidden />
-      <div className={styles.scoreSheetHeading}><div><p className={styles.playerTripProfileLabel}>Player public trip profile</p><h2>{name}</h2></div><button type="button" onClick={onClose} autoFocus aria-label="Close player profile"><X size={18} strokeWidth={2.25} aria-hidden /></button></div>
+    <div className={styles.playerTripProfileHeader} onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}>
+      <span className={styles.playerTripProfileHandle} data-handle aria-hidden><span className={styles.scoreSheetHandle} /></span>
+      {/* Photo on the left (initials when there's none), a hair cut off by the top, the left edge and the line below; name to its right. */}
+      <span className={styles.playerTripProfileAvatar} aria-hidden>
+        {/* eslint-disable-next-line @next/next/no-img-element -- a stored photo URL, shown as-is */}
+        {avatarUrl ? <img src={avatarUrl} alt="" /> : initials(name)}
+      </span>
+      {/* Name, then the numbers under it (like the profile page's top). */}
+      <div className={styles.playerTripProfileIdentity}>
+        <h2>{name}</h2>
+        <dl className={styles.playerTripProfileStats} aria-label="Player numbers">
+          {([["Handicap", stats?.handicapIndex], ["Sc. Avg.", stats?.average18], ["Career Low", stats?.best18?.total]] as const).map(([label, value]) =>
+            <div key={label}><dt>{label}</dt><dd>{value == null ? "—" : String(value)}</dd></div>)}
+        </dl>
+      </div>
+      <button type="button" className={styles.playerTripProfileClose} onClick={dismiss} autoFocus aria-label="Close player profile"><X size={18} strokeWidth={2.25} aria-hidden /></button>
     </div>
     <div ref={roundTabsRef} className={styles.profileRoundTabs} role="tablist" aria-label="Player rounds">
       {Array.from({ length: Math.max(roundCount, round) }, (_, index) => index + 1).map(number => <button key={number} type="button" role="tab" id={"profile-round-tab-" + number} aria-controls="profile-round-panel" aria-selected={selectedRound === number} onClick={() => setSelectedRound(number)}>Round {number}</button>)}

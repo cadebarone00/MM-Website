@@ -1,6 +1,7 @@
 "use client";
+import { useState } from "react";
 import type { ProfileHistoryRound } from "@/lib/platform/playerRoundsRows";
-import { roundStats, type RoundStats } from "@/lib/profile/roundStats";
+import { roundStats } from "@/lib/profile/roundStats";
 import { CompareRings } from "./CompareRings";
 
 /**
@@ -8,29 +9,30 @@ import { CompareRings } from "./CompareRings";
  * single-colour bars and meters. Sections without data (e.g. putting when no round kept stats) are left out.
  */
 
-const tile = "rounded-2xl border border-maroon-900/12 p-4 shadow-[0_1px_2px_rgba(29,11,17,.05)]";
-const card = `${tile} bg-white`;
+const card = "rounded-2xl border border-maroon-900/12 bg-white p-4 shadow-[0_1px_2px_rgba(29,11,17,.05)]";
 const heading = "m-0 font-condensed text-xs font-semibold uppercase tracking-[0.14em] text-maroon-700";
-const fmtDate = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-const signed = (n: number) => n === 0 ? "E" : n > 0 ? `+${n.toFixed(2)}` : n.toFixed(2);
 
 export function ProfileStats({ rounds, isOwner }: { rounds: ProfileHistoryRound[]; isOwner: boolean }) {
   const stats = roundStats(rounds);
-  if (!stats) return <p className="px-4 py-5 text-center text-maroon-900/60">{isOwner ? "Stats will show here once you finish rounds." : "No stats to show yet."}</p>;
+  if (!stats) return <p className="px-4 py-5 text-center text-cream-50/70">{isOwner ? "Stats will show here once you finish rounds." : "No stats to show yet."}</p>;
   const showsHoleStats = stats.putting || stats.driving || stats.approach || stats.scrambling;
   return <section aria-label="Round stats" className="grid gap-3">
-    <Headline stats={stats} />
+    <div>
+      <StatRow label="Headline stats" items={[
+        ["Handicap", stats.handicapIndex === null ? "—" : stats.handicapIndex.toFixed(1)],
+        ["Scoring Avg.", stats.average18 === null ? "—" : stats.average18.toFixed(1)],
+        ["Scoring Avg adj", stats.adjustedAverage18 === null ? "—" : stats.adjustedAverage18.toFixed(1)],
+        ["Low Score", stats.best18 ? String(stats.best18.total) : "—"],
+      ]} />
+      <hr className="m-0 border-0 border-t border-cream-50/15" />
+      {/* Average strokes on each par; "—" when no hole of that par has a score yet. */}
+      <StatRow label="Scoring by par" items={([3, 4, 5] as const).map((par) => {
+        const p = stats.byPar.find((entry) => entry.par === par);
+        return [`Par ${par}s`, p ? p.average.toFixed(2) : "—"];
+      })} />
+      <StrokesGained />
+    </div>
     {isOwner && <CompareRings mine={stats} />}
-    {stats.byPar.length > 0 && <div className={card}>
-      <h3 className={heading}>Scoring by par</h3>
-      <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
-        {stats.byPar.map((p) => <div key={p.par} className="rounded-xl bg-cream-50 px-2 py-3">
-          <dt className="font-condensed text-xs uppercase tracking-wider text-maroon-900/60">Par {p.par}s</dt>
-          <dd className="m-0 font-serif text-2xl font-bold leading-tight">{p.average.toFixed(2)}</dd>
-          <dd className="m-0 text-xs text-maroon-900/65">{signed(p.overPar)} · {p.holes} holes</dd>
-        </div>)}
-      </dl>
-    </div>}
     {showsHoleStats && <div className={card}>
       <h3 className={heading}>Tee to green</h3>
       <div className="mt-3 grid gap-3">
@@ -56,18 +58,35 @@ export function ProfileStats({ rounds, isOwner }: { rounds: ProfileHistoryRound[
   </section>;
 }
 
-function Headline({ stats }: { stats: RoundStats }) {
-  const tiles: { label: string; value: string; note: string }[] = [
-    { label: "Handicap", value: stats.handicapIndex === null ? "—" : stats.handicapIndex.toFixed(1), note: stats.handicapIndex === null ? `${stats.countingRounds} of 3 counting rounds` : stats.lowIndex !== null ? `Low ${stats.lowIndex.toFixed(1)}` : `${stats.countingRounds} counting rounds` },
-    { label: "Rounds", value: String(stats.rounds), note: [stats.eighteens && `${stats.eighteens} × 18`, stats.nines && `${stats.nines} × 9`].filter(Boolean).join(" · ") },
-    { label: "18-hole avg", value: stats.average18 === null ? "—" : String(stats.average18), note: stats.average9 !== null ? `9-hole avg ${stats.average9}` : "Strokes" },
-    { label: "Best 18", value: stats.best18 ? String(stats.best18.total) : "—", note: stats.best18 ? `${stats.best18.course} · ${fmtDate(stats.best18.date)}` : "No 18-hole rounds yet" },
-  ];
-  return <dl className="grid grid-cols-2 gap-3">
-    {tiles.map((t, i) => <div key={t.label} className={`${tile} ${i === 0 ? "bg-maroon-900 text-cream-50" : "bg-white"}`}>
-      <dt className={`font-condensed text-xs uppercase tracking-[0.14em] ${i === 0 ? "text-gold-300" : "text-maroon-900/60"}`}>{t.label}</dt>
-      <dd className="m-0 mt-1 font-serif text-[32px] font-bold leading-none">{t.value}</dd>
-      <dd className={`m-0 mt-1.5 truncate text-xs ${i === 0 ? "text-cream-50/75" : "text-maroon-900/60"}`}>{t.note}</dd>
+const SG_AREAS = ["SG Approach", "SG Tee", "SG Putting", "SG Short game"] as const;
+
+/**
+ * Strokes gained, by area: a selector in the same look as the Golf Trip's Home · Golf · Venue · Itinerary tabs
+ * (GolfTripHome.module.css .tripTabs). True strokes gained needs each shot's distance to the hole, which rounds don't
+ * record yet, so each area says so instead of showing a made-up number.
+ */
+function StrokesGained() {
+  const [area, setArea] = useState<(typeof SG_AREAS)[number]>(SG_AREAS[0]);
+  return <section aria-label="Strokes gained" className="mt-2">
+    <div role="tablist" aria-label="Strokes gained areas"
+      className="relative grid w-full auto-cols-fr grid-flow-col before:pointer-events-none before:absolute before:inset-x-0 before:bottom-0 before:h-[2px] before:bg-[rgba(251,248,241,.18)]">
+      {SG_AREAS.map((name) => <button key={name} type="button" role="tab" aria-selected={area === name} onClick={() => setArea(name)}
+        className={`relative min-h-11 whitespace-nowrap px-0.5 font-sans text-[13px] font-bold leading-tight tracking-[.01em] transition-[color,text-shadow] duration-150 after:absolute after:inset-x-0 after:bottom-[2px] after:z-[1] after:h-[2px] after:bg-[#dcc495] after:transition-opacity focus-visible:rounded focus-visible:outline-2 focus-visible:outline-[#dcc495] ${area === name ? "text-[#fbf8f1] [text-shadow:0_0_12px_rgba(251,248,241,.55)] after:opacity-100" : "text-white/55 after:opacity-0 hover:text-white/85"}`}>
+        {name}
+      </button>)}
+    </div>
+    <p role="tabpanel" aria-label={area} className="m-0 px-4 py-5 text-center text-sm text-cream-50/70">
+      {area} needs each shot&apos;s distance to the hole. It&apos;s coming once scoring tracks shot distances.
+    </p>
+  </section>;
+}
+
+/** A row of stats: the words on one line, each number under its word (no boxes). "—" = not enough rounds yet. */
+function StatRow({ label, items }: { label: string; items: [string, string][] }) {
+  return <dl className={`grid gap-2 py-3 text-center text-cream-50 ${items.length === 4 ? "grid-cols-4" : "grid-cols-3"}`} aria-label={label}>
+    {items.map(([label, value]) => <div key={label} className="flex min-w-0 flex-col items-center gap-1">
+      <dt className="whitespace-nowrap font-condensed text-xs text-cream-50/70">{label}</dt>
+      <dd className="m-0 font-serif text-xl font-bold leading-none">{value}</dd>
     </div>)}
   </dl>;
 }

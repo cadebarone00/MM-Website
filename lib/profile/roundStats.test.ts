@@ -27,6 +27,15 @@ test("averages, best, handicap and trend order", () => {
   assert.notEqual(stats.handicapIndex, null);
 });
 
+test("adjusted average caps each hole at double bogey; only full 18-hole cards count", () => {
+  // a: a 9 on a par 4 counts as 6 → 74 (raw 77); b: 71 (nothing to cap).
+  const nine = { ...round("n", "2026-10-02"), holesPlayed: 9 as const, holes: round("n", "2026-10-02").holes.slice(0, 9), total: 36 };
+  const partial = { ...round("p", "2026-10-04", { 0: 9 }), holes: round("p", "2026-10-04").holes.slice(0, 17) };
+  const stats = roundStats([round("a", "2026-10-01", { 0: 9 }), round("b", "2026-10-05", { 1: 4 }), nine, partial])!;
+  assert.equal(stats.adjustedAverage18, 72.5);
+  assert.equal(roundStats([nine])!.adjustedAverage18, null);
+});
+
 test("scoring mix, par types, putting, driving, approach and scrambling", () => {
   const stats = roundStats([round("a", "2026-10-01", { 0: 6, 1: 4, 2: 3 })])!;
   assert.deepEqual(stats.scoring, { holes: 18, eagles: 0, birdies: 1, pars: 16, bogeys: 0, doubles: 1, birdiePct: 6, parOrBetterPct: 94, doublePct: 6 });

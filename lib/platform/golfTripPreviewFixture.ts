@@ -71,6 +71,10 @@ export type GolfMatchGolfer = {
   teeTime: string;
   course: string;
   points?: number;
+  /** Settings → Profile photo; real saved trips only (null = show initials). */
+  avatarUrl?: string | null;
+  /** Their profile username (real saved trips only), for the pop-up's Handicap / Scoring Avg / Career Low. */
+  username?: string | null;
 };
 
 /**

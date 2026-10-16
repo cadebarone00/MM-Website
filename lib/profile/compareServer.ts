@@ -44,7 +44,8 @@ export async function compareWith(viewer: ProfileId, username: string): Promise<
   if (!row) return { status: "not_found" };
   const friend = await areFriends(viewer, row.id);
   const person = { username: row.username, name: row.display_name || row.username, friend };
-  if (friend) {
+  // Your own numbers always come through too (the trip player pop-up asks for yours like anyone else's).
+  if (friend || row.id === viewer) {
     const all = await getMyPlayerRounds(row.id);
     if (all.status !== "ok") return { status: "ok", person, stats: null };
     const shown: ProfileHistoryRound[] = all.rounds.filter((round) => !round.removedFromProfile);

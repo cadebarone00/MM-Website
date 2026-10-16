@@ -28,6 +28,10 @@ const METRICS: Metric[] = [
 const DEFAULT = ["fairways", "gir", "birdie", "scrambling"];
 /** DEV ONLY: only offered when the app simulator's Profile condition "Sample stats data" is on. */
 const SAMPLE: Person = { username: "__sample__", name: "Sample golfer" };
+/** The Golf Trip's pill look (GolfTripMatch.module.css .profileRoundTabs): gold outline, filled gold when picked. */
+const pill = (on: boolean) => `min-h-[32.3px] flex-none whitespace-nowrap rounded-full border px-[15.3px] font-sans text-[12.75px] font-bold leading-none tracking-[.02em] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#dcc495] ${on ? "border-[#dcc495] bg-[#dcc495] text-[#240001]" : "border-[rgba(220,196,149,.55)] bg-transparent text-[#dcc495]"}`;
+/** One row of pills that scrolls sideways (runs to the screen edges; no scrollbar). */
+const pillRow = "-mx-4 flex gap-2 overflow-x-auto overscroll-x-contain px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
 type Loaded = { status: "idle" | "loading" } | { status: "ok"; person: Person; stats: RoundStats | null } | { status: "private" | "not_found" | "error"; person?: Person };
 
@@ -72,44 +76,45 @@ export function CompareRings({ mine }: { mine: RoundStats }) {
   const toggle = (key: string) => setPicked((all) => all.includes(key) ? all.filter((k) => k !== key) : [...all, key]);
   const activeName = "person" in loaded ? loaded.person?.username : undefined;
 
-  return <div className="rounded-2xl border border-maroon-900/12 bg-white p-4 shadow-[0_1px_2px_rgba(29,11,17,.05)]">
-    <h3 className="m-0 font-condensed text-xs font-semibold uppercase tracking-[0.14em] text-maroon-700">Compare</h3>
+  // On the profile's maroon background (no box): gold pills that scroll sideways, light text.
+  return <section aria-label="Compare" className="mt-2 min-w-0 text-cream-50">
+    <h3 className="m-0 font-condensed text-xs font-semibold uppercase tracking-[0.14em] text-gold-300">Compare</h3>
 
-    <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Compare with">
+    <div className={`mt-3 ${pillRow}`} role="group" aria-label="Compare with">
       {(sampleOn ? [...people, SAMPLE] : people).map((p) => <button key={p.username} type="button" aria-pressed={activeName === p.username} onClick={() => compare(p)}
-        className={`min-h-9 rounded-full border px-3 text-sm font-semibold ${activeName === p.username ? "border-maroon-900 bg-maroon-900 text-cream-50" : "border-maroon-900/20 bg-cream-50 text-maroon-900"}`}
+        className={pill(activeName === p.username)}
         aria-label={`${p.name}${p.friend ? " (friend)" : ""}`}>{firstName(p.name)}{p.friend && <span aria-hidden="true" className="ml-1 text-[10px] opacity-70">★</span>}</button>)}
-      {them && <button type="button" onClick={() => setLoaded({ status: "idle" })} className="inline-flex min-h-9 items-center gap-1 rounded-full px-2 text-sm text-maroon-900/60" aria-label="Stop comparing"><X size={14} aria-hidden="true" /> Clear</button>}
+      {them && <button type="button" onClick={() => setLoaded({ status: "idle" })} className="inline-flex min-h-[32.3px] flex-none items-center gap-1 rounded-full px-2 text-sm text-cream-50/70" aria-label="Stop comparing"><X size={14} aria-hidden="true" /> Clear</button>}
     </div>
-    <label className="mt-2 flex min-h-11 items-center gap-2 rounded-xl border border-maroon-900/20 bg-cream-50 px-3 text-maroon-900">
-      <Search size={16} aria-hidden="true" className="text-maroon-900/50" />
+    <label className="mt-2 flex min-h-11 items-center gap-2 rounded-full border border-[rgba(220,196,149,.55)] px-4 text-cream-50">
+      <Search size={16} aria-hidden="true" className="text-[#dcc495]" />
       <span className="sr-only">Find a player to compare with</span>
-      <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={people.length ? "Or search any player" : "Search a player to compare with"} className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
+      <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={people.length ? "Or search any player" : "Search a player to compare with"} className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-cream-50/50" />
     </label>
     {text.length >= 2 && found.length > 0 && <ul className="mt-1 grid gap-1">
-      {found.slice(0, 5).map((p) => <li key={p.username}><button type="button" onClick={() => compare(p)} className="flex min-h-10 w-full items-center justify-between rounded-lg px-3 text-left text-sm hover:bg-cream-50">
-        <span className="font-semibold">{p.name}</span><span className="text-maroon-900/50">@{p.username}</span></button></li>)}
+      {found.slice(0, 5).map((p) => <li key={p.username}><button type="button" onClick={() => compare(p)} className="flex min-h-10 w-full items-center justify-between rounded-lg px-3 text-left text-sm hover:bg-cream-50/10">
+        <span className="font-semibold">{p.name}</span><span className="text-cream-50/55">@{p.username}</span></button></li>)}
     </ul>}
 
-    {loaded.status === "loading" && <p className="mt-3 text-sm text-maroon-900/60">Loading their stats…</p>}
-    {(loaded.status === "private" || loaded.status === "not_found" || loaded.status === "error") && <p className="mt-3 text-sm text-maroon-900/70">
+    {loaded.status === "loading" && <p className="mt-3 text-sm text-cream-50/70">Loading their stats…</p>}
+    {(loaded.status === "private" || loaded.status === "not_found" || loaded.status === "error") && <p className="mt-3 text-sm text-cream-50/75">
       {loaded.status === "private" ? `${loaded.person?.name ?? "That player"}'s profile is private, so their stats can't be compared.` : loaded.status === "not_found" ? "Couldn't find that player." : "Couldn't load their stats. Try again."}</p>}
-    {them && !them.stats && <p className="mt-3 text-sm text-maroon-900/70">{them.person.name} hasn&apos;t finished any rounds yet.</p>}
+    {them && !them.stats && <p className="mt-3 text-sm text-cream-50/75">{them.person.name} hasn&apos;t finished any rounds yet.</p>}
 
-    <div className="mt-4 flex flex-wrap gap-1.5" role="group" aria-label="Stats to show">
+    <div className={`mt-3 ${pillRow}`} role="group" aria-label="Stats to show">
       {METRICS.map((m) => <button key={m.key} type="button" aria-pressed={picked.includes(m.key)} onClick={() => toggle(m.key)}
-        className={`min-h-8 rounded-full border px-2.5 text-xs font-semibold ${picked.includes(m.key) ? "border-maroon-700 bg-maroon-700/10 text-maroon-900" : "border-maroon-900/15 text-maroon-900/55"}`}>{m.label}</button>)}
+        className={pill(picked.includes(m.key))}>{m.label}</button>)}
     </div>
 
-    {them?.stats && <p className="mt-3 flex items-center gap-4 text-xs text-maroon-900/75" aria-label="Legend">
+    {them?.stats && <p className="mt-3 flex items-center gap-4 text-xs text-cream-50/80" aria-label="Legend">
       <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: ME }} /> You (outer)</span>
       <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: THEM }} /> {firstName(them.person.name)} (inner)</span>
     </p>}
-    {shown.length === 0 ? <p className="mt-3 text-sm text-maroon-900/60">Pick a stat above.</p>
+    {shown.length === 0 ? <p className="mt-3 text-sm text-cream-50/70">Pick a stat above.</p>
       : <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {shown.map((m) => <Ring key={m.key} metric={m} me={m.value(mine)} them={them?.stats ? m.value(them.stats) : undefined} theirName={them ? firstName(them.person.name) : null} />)}
       </ul>}
-  </div>;
+  </section>;
 }
 
 /** One stat: outer arc = me, inner arc = them (if comparing). Numbers written below; "lower is better" noted. */
