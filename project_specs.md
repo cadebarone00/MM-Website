@@ -2841,13 +2841,13 @@ Three tabs in Predict, each bet a card; *(team)* = only for trips with a team co
 
 **Done means.** All new tests pass, the full existing test suite still passes, TypeScript type-checks the new files, and nothing outside `lib/highlights/` and this spec changes.
 
-## Notifications — native App Store app (proposed 2026-10-16, awaiting owner approval)
+## Notifications — native App Store app (proposed 2026-10-16; Phase 1 approved 2026-10-16)
 
 **What it does / who uses it.** Players and organizers get alerts about their trips and tournaments in three places: (1) **phone notifications** on the lock screen and as banners when the phone is unlocked, (2) a **Live Activity** on the iPhone lock screen and Dynamic Island while a round is live, (3) **in-app notifications**: a bell with a list, plus a short banner at the top while the app is open. The Maroon is becoming a real App Store app (Capacitor wrapper, Xcode already set up by the owner), so everything is built native-ready: the web code, the Swift files and the bridge are all in the repo, ready to drop into Xcode.
 
 **Owner decisions so far.** Native App Store app via Capacitor (`@capacitor/core` already installed). Live Activities are real (ActivityKit), not a web imitation. New dev simulator group: **Notifications**.
 
-**Signed in vs signed out (needs confirm).** Proposed: a signed-in user gets everything for their trips. A signed-out phone keeps its device registered but only gets general alerts (e.g. "Sign in to see your trip's update"). No names, scores or trip details are sent to a signed-out phone. Signing out unlinks the device from the account.
+**Signed in vs signed out (owner decision 2026-10-16).** Like Sleeper: a phone keeps getting the **real** notifications for its groups (names, scores, trip details) even when the person is signed out or the app is closed. The phone stays linked to the last account that turned alerts on. It stops only when the person turns alerts off on that phone, or a different account signs in on it. Opening a notification while signed out shows the sign-in screen first, then the linked screen.
 
 **Tech stack.** Next.js (existing), Supabase (existing), Capacitor 8 + `@capacitor/push-notifications` (new), Apple Push Notification service (APNs, new), Swift ActivityKit widget extension (new, in Xcode). The existing web push (`trip_push_subscriptions`, `public/trip-push-sw.js`, momentum outbox) keeps working for website users. Native push is added beside it, not instead of it.
 
@@ -2865,7 +2865,7 @@ Three tabs in Predict, each bet a card; *(team)* = only for trips with a team co
 
 **Needs from the owner later (phase 3–4).** Apple Developer → Keys → an APNs key (.p8) + Key ID + Team ID, stored only in server env vars. In Xcode: turn on Push Notifications + Background Modes, and add the Widget Extension target.
 
-**Folder question.** The Swift files need a home. Proposed: a new top-level `ios-native/` folder (CLAUDE.md requires asking first), or wherever your Xcode project lives.
+**Folder question (Phase 4).** No Xcode project yet (owner builds on Windows first, Mac later). Swift files will need a home. Ask before Phase 4: a new top-level `ios-native/` folder.
 
 **Not in this plan.** Android, email or SMS, marketing blasts, notification settings beyond on/off per kind, new notification wording without approval.
 

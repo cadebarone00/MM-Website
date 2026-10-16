@@ -227,3 +227,9 @@ test("brand conditions survive the frame boundary and reject malformed playback 
   const page: SimulatorPage = { id: "intro", path: "/dev/brand/intro", label: "Logo entrance", group: "App Launch", fixtures: false };
   assert.equal(simulatorPageForLocation([page], { path: "/dev/brand/intro" })?.id, "intro");
 });
+
+test("notification preview condition survives the frame boundary; unknown screens are rejected", () => {
+  const state = { ...DEFAULT_SIMULATOR_STATE, notificationPreview: "island-expanded" as const };
+  assert.deepEqual(parseSimulatorConfig({ source: "maroon", state })?.state, state);
+  for (const invalid of ["island-huge", "", 3]) assert.equal(parseSimulatorConfig({ source: "maroon", state: { ...state, notificationPreview: invalid } }), null);
+});

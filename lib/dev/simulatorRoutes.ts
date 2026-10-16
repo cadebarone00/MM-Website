@@ -6,6 +6,7 @@ import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS } from "@/lib/platform/golfTripNavig
 import { SIMULATOR_SOURCES, type SimulatorPage } from "./simulator";
 import { DEV_ACCOUNTS } from "./devAccounts";
 import { GOLF_MATCH_PREVIEWS } from "@/lib/platform/golfTripPreviewFixture";
+import { NOTIFICATION_PREVIEWS, NOTIFICATION_PREVIEW_LABELS } from "./sampleNotifications";
 
 /** Discover existing static dev routes. No duplicate page implementation or dynamic ids. */
 export function simulatorPages(): SimulatorPage[] {
@@ -110,6 +111,11 @@ export function simulatorPages(): SimulatorPage[] {
     for (const [view, label] of [["players", "Players"], ["schedule", "Golf Schedule"], ["competition", "Competition"], ["games", "Games"], ["history", "History"], ["placeholder-7", "Place holder 1"], ["placeholder-8", "Place holder 2"]]) add(view, label, settings.id, "Organizer");
     add("competition-rounds", "Rounds", "settings-competition");
     for (const game of [{ id: "skins", name: "Skins" }, ...SIDE_GAME_REGISTRY.filter(game => game.id !== "skins")]) add(`game-${game.id}`, game.name, "settings-games");
+  }
+  // Notifications group: phone notifications, Live Activity and in-app, each with its preview screens (spec: Notifications).
+  for (const [path, label, surface] of [["/dev/notifications/phone", "Phone notifications", "phone"], ["/dev/notifications/live-activity", "Live Activity", "live"], ["/dev/notifications/in-app", "In-app notifications", "inApp"]] as const) {
+    const page = pages.find(item => item.path === path);
+    if (page) Object.assign(page, { label, group: "Notifications", conditions: NOTIFICATION_PREVIEWS[surface].map(id => ({ id: "notify-" + id, label: NOTIFICATION_PREVIEW_LABELS[id], state: { notificationPreview: id } })) });
   }
   // Profile group. First (the default): the real profile screens on a sample profile, no sign-in needed.
   const profile = pages.find(page => page.path === "/dev/profile");
