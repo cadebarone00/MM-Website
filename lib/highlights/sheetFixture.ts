@@ -51,7 +51,7 @@ export function sheetAsFoundOn20261016(): RawTab[] {
     ["", "CONDITIONAL", "3 consecutive birdies", "3", "Cam’s heating up! 🔥", "3 birdies in a row.", "Approved", "Birdie tier; extend through 10."],
     ["", "CONDITIONAL", "7 consecutive birdies", "7", "Cam is ACTUALLY COOKING!🔥", "7 birdies in a row", "Needs copy", "Same detector"],
   ] };
-  tabs[2] = { name: HIGHLIGHT_TABS[2], values: [HEADER,
+  tabs[5] = { name: HIGHLIGHT_TABS[2], values: [HEADER,
     ["HL-022", "PARENT", "Team takes/retakes overall lead", "", "", "", "Draft", ""],
     ["", "CONDITIONAL", "Team takes/retakes overall lead", "", "Maroon takes control! / The tide has turned 🌊", "Team Maroon moves into the lead.", "Draft", ""],
   ] };
