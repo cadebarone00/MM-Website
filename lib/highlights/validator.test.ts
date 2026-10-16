@@ -30,13 +30,14 @@ test("IDs: missing, malformed, wrong parent and duplicates are always errors, ev
   const { report } = load((config) => {
     const eagle = rule(config, "HL-002");
     eagle.conditionals.push({ ...eagle.conditionals[0], id: "" }, { ...eagle.conditionals[0], id: "HL-2-C1" }, { ...eagle.conditionals[0], id: "HL-001-C09" });
-    rule(config, "HL-011").conditionals[0].id = "HL-001-C01";
+    rule(config, "HL-011").conditionals[0].id = "HL-099-C01";
     rule(config, "HL-023").id = "HL-031";
     rule(config, "HL-040").id = "hl-040";
   });
+  // Renaming a rule also orphans its conditionals' IDs (HL-023-C01, HL-040-C01) — both are reported.
   assert.deepEqual(list(report.errors).sort(), [
-    "bad-conditional-id:HL-2-C1", "bad-rule-id:hl-040", "duplicate-id:HL-031", "duplicate-id:HL-031",
-    "missing-conditional-id:-", "parent-mismatch:HL-001-C01", "parent-mismatch:HL-001-C09", "parent-mismatch:HL-023-C01",
+    "bad-conditional-id:HL-2-C1", "bad-rule-id:hl-040", "duplicate-id:HL-031", "duplicate-id:HL-031", "missing-conditional-id:-",
+    "parent-mismatch:HL-001-C09", "parent-mismatch:HL-023-C01", "parent-mismatch:HL-040-C01", "parent-mismatch:HL-099-C01",
   ]);
 });
 
