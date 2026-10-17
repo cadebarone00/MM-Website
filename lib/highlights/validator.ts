@@ -2,25 +2,39 @@ import { detectorFor } from "./catalog.ts";
 import { BODY_LIMIT, TITLE_LIMIT } from "../notifications/format.ts";
 import { checkTemplate, LONG_SAMPLE_VALUES, renderTemplate } from "./template.ts";
 import {
-  CONDITIONAL_ID_PATTERN, RULE_ID_PATTERN,
-  type HighlightConditional, type HighlightConfig, type HighlightIssue, type HighlightRule, type IssueSeverity, type ValidationReport,
+  CONDITIONAL_ID_PATTERN, LEGACY_VARIATION_SUFFIX, RULE_ID_PATTERN, VARIATION_ID_PATTERN,
+  type HighlightConditional, type HighlightConfig, type HighlightIssue, type HighlightRule, type HighlightVariation,
+  type IssueSeverity, type ValidationReport,
 } from "./types.ts";
 
 /**
  * Step 3 of an import: checks a config before it can be previewed or published. Pure.
- * Structural problems (IDs, duplicates) are always errors. Content problems are errors on rows that would go live
- * (rule AND conditional Approved) and warnings on Draft rows; Disabled rows skip content checks. Publish needs ok.
+ * Structural problems (IDs, duplicates) are always errors. Content problems are errors on items that would go live and
+ * warnings on Draft items; Disabled items skip content checks. Publish needs ok.
+ *
+ * Live = rule, conditional and message all Approved. A conditional fires only if it has at least one live message.
  */
 
-/** A conditional goes live only when it and its parent rule are both Approved. */
-export const isLive = (rule: HighlightRule, conditional: HighlightConditional) => rule.status === "Approved" && conditional.status === "Approved";
+/** Rule and conditional both Approved (the trigger is switched on). */
+export const isApprovedTrigger = (rule: HighlightRule, conditional: HighlightConditional) => rule.status === "Approved" && conditional.status === "Approved";
+/** This message can be picked: rule, conditional and variation all Approved. */
+export const isLiveVariation = (rule: HighlightRule, conditional: HighlightConditional, variation: HighlightVariation) =>
+  isApprovedTrigger(rule, conditional) && variation.status === "Approved";
+/** The conditional can fire: an Approved trigger with at least one message to pick from. */
+export const isLive = (rule: HighlightRule, conditional: HighlightConditional) =>
+  conditional.variations.some((variation) => isLiveVariation(rule, conditional, variation));
 
-/** Only what would actually go live: Approved rules with their Approved conditionals. */
+/** Only what would actually go live: live conditionals with only their live variations, under Approved rules. */
 export function publishableConfig(config: HighlightConfig): HighlightConfig {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     rules: config.rules
-      .map((rule) => ({ ...rule, conditionals: rule.conditionals.filter((conditional) => isLive(rule, conditional)) }))
+      .map((rule) => ({
+        ...rule,
+        conditionals: rule.conditionals
+          .filter((conditional) => isLive(rule, conditional))
+          .map((conditional) => ({ ...conditional, variations: conditional.variations.filter((v) => isLiveVariation(rule, conditional, v)) })),
+      }))
       .filter((rule) => rule.conditionals.length > 0),
   };
 }
@@ -30,17 +44,21 @@ export function validateHighlightConfig(config: HighlightConfig, importIssues: H
   const add = (severity: IssueSeverity, code: string, message: string, item: { id: string; source?: HighlightIssue["source"] }) =>
     issues.push({ severity, code, message, id: item.id || undefined, source: item.source });
 
-  const ruleIds = new Map<string, number>();
-  const conditionalIds = new Map<string, number>();
+  const counts = new Map<string, number>();
+  const count = (id: string) => { if (id) counts.set(id, (counts.get(id) ?? 0) + 1); };
   for (const rule of config.rules) {
-    if (rule.id) ruleIds.set(rule.id, (ruleIds.get(rule.id) ?? 0) + 1);
-    for (const conditional of rule.conditionals) if (conditional.id) conditionalIds.set(conditional.id, (conditionalIds.get(conditional.id) ?? 0) + 1);
+    count(rule.id);
+    for (const conditional of rule.conditionals) {
+      count(conditional.id);
+      for (const variation of conditional.variations) count(variation.id);
+    }
   }
+  const duplicated = (id: string) => (counts.get(id) ?? 0) > 1;
 
   for (const rule of config.rules) {
     if (!rule.id) add("error", "missing-rule-id", "This PARENT row has no Rule ID. Type a permanent ID like HL-001.", rule);
     else if (!RULE_ID_PATTERN.test(rule.id)) add("error", "bad-rule-id", `"${rule.id}" is not a Rule ID. Use the form HL-001.`, rule);
-    else if (ruleIds.get(rule.id)! > 1) add("error", "duplicate-id", `Rule ID ${rule.id} is used more than once.`, rule);
+    else if (duplicated(rule.id)) add("error", "duplicate-id", `Rule ID ${rule.id} is used more than once.`, rule);
     if (!rule.name) add("warning", "missing-rule-name", "This rule has no name in the Rule / conditional column.", rule);
     if (rule.conditionals.length === 0) add("warning", "no-conditionals", `Rule ${rule.id || "(no ID)"} has no CONDITIONAL rows, so it can never send anything.`, rule);
     const detector = rule.id ? detectorFor(rule.id) : null;
@@ -54,43 +72,79 @@ export function validateHighlightConfig(config: HighlightConfig, importIssues: H
       if (!conditional.id) add("error", "missing-conditional-id", `This CONDITIONAL row has no ID. Type a permanent ID like ${RULE_ID_PATTERN.test(rule.id) ? rule.id : "HL-001"}-C01 in the Rule ID column.`, conditional);
       else if (!idMatch) add("error", "bad-conditional-id", `"${conditional.id}" is not a conditional ID. Use the form HL-001-C01.`, conditional);
       else if (idMatch[1] !== rule.id) add("error", "parent-mismatch", `${conditional.id} sits under rule ${rule.id || "(no ID)"}; its ID must start with that rule's ID.`, conditional);
-      else if (conditionalIds.get(conditional.id)! > 1) add("error", "duplicate-id", `Conditional ID ${conditional.id} is used more than once.`, conditional);
+      else if (duplicated(conditional.id)) add("error", "duplicate-id", `Conditional ID ${conditional.id} is used more than once.`, conditional);
+
+      for (const variation of conditional.variations) {
+        if (variation.legacy) continue; // V00's ID comes from the conditional's, checked above
+        const match = VARIATION_ID_PATTERN.exec(variation.id);
+        const example = `${CONDITIONAL_ID_PATTERN.test(conditional.id) ? conditional.id : "HL-001-C01"}-V01`;
+        if (!variation.id) add("error", "missing-variation-id", `This VARIATION row has no ID. Type a permanent ID like ${example} in the Rule ID column.`, variation);
+        else if (!match) add("error", "bad-variation-id", `"${variation.id}" is not a variation ID. Use the form HL-001-C01-V01.`, variation);
+        else if (variation.id.endsWith(LEGACY_VARIATION_SUFFIX)) add("error", "reserved-variation-id", `${variation.id}: V00 is reserved for a CONDITIONAL row's own message. Start VARIATION rows at V01.`, variation);
+        else if (match[1] !== conditional.id) add("error", "parent-mismatch", `${variation.id} sits under ${conditional.id || "a conditional with no ID"}; its ID must start with that conditional's ID.`, variation);
+        else if (duplicated(variation.id)) add("error", "duplicate-id", `Variation ID ${variation.id} is used more than once.`, variation);
+      }
 
       if (conditional.status === "Disabled" || rule.status === "Disabled") continue;
+      const trigger = isApprovedTrigger(rule, conditional);
+      const triggerSeverity: IssueSeverity = trigger ? "error" : "warning";
       if (conditional.status === "Approved" && rule.status !== "Approved") {
         add("warning", "parent-not-approved", `${conditional.id} is Approved but its rule ${rule.id} is ${rule.status}, so it won't go live.`, conditional);
       }
 
-      // --- Content: errors when live, warnings while still Draft.
-      const severity: IssueSeverity = isLive(rule, conditional) ? "error" : "warning";
-      for (const [field, text] of [["Headline", conditional.headline], ["Notification text", conditional.body]] as const) {
-        if (!text) { add(severity, "missing-copy", `${conditional.id || "This conditional"} has no ${field}.`, conditional); continue; }
-        const check = checkTemplate(text);
-        for (const problem of check.problems) add(severity, "bad-template", `${field}: ${problem}`, conditional);
-        for (const name of check.unknown) add(severity, "unknown-variable", `${field}: {${name}} is not a supported variable.`, conditional);
-        if (detector) for (const name of check.variables) {
-          if (!check.unknown.includes(name) && !(detector.variables as string[]).includes(name)) {
-            add(severity, "variable-not-provided", `${field}: the ${detector.name} detector can't fill in {${name}}.`, conditional);
+      // --- Messages.
+      const legacy = conditional.variations.find((v) => v.legacy);
+      if (legacy && conditional.variations.length > 1) {
+        add(triggerSeverity, "legacy-and-variations", `${conditional.id || "This conditional"} has its own Headline / Notification text AND VARIATION rows. Move its own message into a VARIATION row (e.g. ${conditional.id || "HL-001-C01"}-V01) and clear it from the CONDITIONAL row.`, conditional);
+      }
+      if (conditional.variations.length === 0) {
+        add(triggerSeverity, "no-messages", `${conditional.id || "This conditional"} has no message. Add VARIATION rows under it, or type a Headline and Notification text on it.`, conditional);
+      } else if (trigger && !isLive(rule, conditional)) {
+        add("warning", "no-approved-variation", `${conditional.id} is Approved but none of its messages are, so it won't fire yet.`, conditional);
+      }
+
+      const seen = new Map<string, string>();
+      for (const variation of conditional.variations) {
+        if (variation.status === "Disabled") continue;
+        if (!variation.legacy && variation.status === "Approved" && !trigger) {
+          add("warning", "parent-not-approved", `${variation.id} is Approved but ${conditional.id} or its rule isn't, so it won't go live.`, variation);
+        }
+        const severity: IssueSeverity = isLiveVariation(rule, conditional, variation) ? "error" : "warning";
+        const name = variation.id || "This message";
+        for (const [field, text] of [["Headline", variation.headline], ["Notification text", variation.body]] as const) {
+          if (!text) { add(severity, "missing-copy", `${name} has no ${field}.`, variation); continue; }
+          const check = checkTemplate(text);
+          for (const problem of check.problems) add(severity, "bad-template", `${field}: ${problem}`, variation);
+          for (const unknown of check.unknown) add(severity, "unknown-variable", `${field}: {${unknown}} is not a supported variable.`, variation);
+          if (detector) for (const used of check.variables) {
+            if (!check.unknown.includes(used) && !(detector.variables as string[]).includes(used)) {
+              add(severity, "variable-not-provided", `${field}: the ${detector.name} detector can't fill in {${used}}.`, variation);
+            }
+          }
+          if (text.includes(" / ")) add("warning", "multiple-messages", `${field} looks like two messages separated by " / ". Give each its own row: a VARIATION if it's another wording for the same moment, a CONDITIONAL if it's a different moment.`, variation);
+          // Phones cut longer text with "…" (lib/notifications/format.ts). Measured the same way: text.length.
+          const limit = field === "Headline" ? TITLE_LIMIT : BODY_LIMIT;
+          const longest = renderTemplate(text, LONG_SAMPLE_VALUES);
+          if (longest.ok && longest.text.length > limit) {
+            add("warning", "may-be-too-long", `${field} can reach ${longest.text.length} characters with long names; phones show ${limit} and cut the rest with "…".`, variation);
           }
         }
-        if (text.includes(" / ")) add("warning", "multiple-messages", `${field} looks like two messages separated by " / ". Give each its own CONDITIONAL row.`, conditional);
-        // Phones cut longer text with "…" (lib/notifications/format.ts). Measured the same way: text.length.
-        const limit = field === "Headline" ? TITLE_LIMIT : BODY_LIMIT;
-        const longest = renderTemplate(text, LONG_SAMPLE_VALUES);
-        if (longest.ok && longest.text.length > limit) {
-          add("warning", "may-be-too-long", `${field} can reach ${longest.text.length} characters with long names; phones show ${limit} and cut the rest with "…".`, conditional);
-        }
+        const wording = `${variation.headline}\n${variation.body}`;
+        if (seen.has(wording)) add("warning", "duplicate-variation", `${name} has the same wording as ${seen.get(wording)}.`, variation);
+        else seen.set(wording, name);
       }
+
+      // --- Tier: checked against what the detector can do.
       if (detector) {
         const tiers = detector.tiers;
-        if (tiers.kind === "none" && conditional.tier !== null) add(severity, "unsupported-tier", `${detector.name} has no tiers; leave Tier blank.`, conditional);
+        if (tiers.kind === "none" && conditional.tier !== null) add(triggerSeverity, "unsupported-tier", `${detector.name} has no tiers; leave Tier blank.`, conditional);
         if (tiers.kind === "integer" && !(typeof conditional.tier === "number" && conditional.tier >= tiers.min && conditional.tier <= tiers.max)) {
-          add(severity, "unsupported-tier", `${detector.name} needs a whole-number Tier from ${tiers.min} to ${tiers.max}${conditional.tier === null ? "" : `, not "${conditional.tier}"`}.`, conditional);
+          add(triggerSeverity, "unsupported-tier", `${detector.name} needs a whole-number Tier from ${tiers.min} to ${tiers.max}${conditional.tier === null ? "" : `, not "${conditional.tier}"`}.`, conditional);
         }
       }
     }
 
-    // Two rows with the same tier would make it ambiguous which message fires.
+    // Two triggers with the same tier would make it ambiguous which one fires.
     const byTier = new Map<string, HighlightConditional[]>();
     for (const conditional of rule.conditionals) {
       if (conditional.tier === null || conditional.status === "Disabled") continue;
@@ -99,7 +153,7 @@ export function validateHighlightConfig(config: HighlightConfig, importIssues: H
     }
     for (const group of byTier.values()) {
       if (group.length < 2) continue;
-      const severity = group.filter((conditional) => isLive(rule, conditional)).length > 1 ? "error" : "warning";
+      const severity = group.filter((conditional) => isApprovedTrigger(rule, conditional)).length > 1 ? "error" : "warning";
       add(severity, "duplicate-tier", `Tier "${group[0].tier}" is used by ${group.map((c) => c.id || "(no ID)").join(", ")} in rule ${rule.id}.`, group[1]);
     }
   }

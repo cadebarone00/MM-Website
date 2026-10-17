@@ -3,7 +3,7 @@ import { classifyChanges, type ChangeSummary } from "./changes.ts";
 import { importHighlightSheet } from "./importer.ts";
 import { renderTemplate, SAMPLE_VALUES } from "./template.ts";
 import type { HighlightConfig, ValidationReport } from "./types.ts";
-import { isLive, publishableConfig, validateHighlightConfig } from "./validator.ts";
+import { publishableConfig, validateHighlightConfig } from "./validator.ts";
 import { readHighlightWorkbook, type XlsxRejection } from "./xlsxSource.ts";
 
 /**
@@ -14,9 +14,11 @@ import { readHighlightWorkbook, type XlsxRejection } from "./xlsxSource.ts";
 
 export interface PublishedVersion { version: number; config: HighlightConfig }
 
+/** One line per live message variation. */
 export interface DraftPreviewLine {
-  conditionalId: string;
   ruleId: string;
+  conditionalId: string;
+  variationId: string;
   /** Rendered with SAMPLE_VALUES so organizers see real-looking text. */
   headline: string;
   body: string;
@@ -36,7 +38,7 @@ export interface HighlightDraft {
   canPublish: boolean;
   /** Behavior changes (what fires, at which tier) need a second confirm at publish. */
   needsBehaviorConfirm: boolean;
-  counts: { rules: number; conditionals: number; liveRules: number; liveConditionals: number };
+  counts: { rules: number; conditionals: number; variations: number; liveRules: number; liveConditionals: number; liveVariations: number };
   preview: DraftPreviewLine[];
 }
 
@@ -53,11 +55,12 @@ export function buildHighlightDraft(input: { bytes: Uint8Array; fileName: string
   const live = publishableConfig(config);
 
   const preview: DraftPreviewLine[] = [];
-  for (const rule of live.rules) for (const conditional of rule.conditionals) {
-    const headline = renderTemplate(conditional.headline, SAMPLE_VALUES), body = renderTemplate(conditional.body, SAMPLE_VALUES);
-    preview.push({ conditionalId: conditional.id, ruleId: rule.id,
-      headline: headline.ok ? headline.text : conditional.headline, body: body.ok ? body.text : conditional.body });
+  for (const rule of live.rules) for (const conditional of rule.conditionals) for (const variation of conditional.variations) {
+    const headline = renderTemplate(variation.headline, SAMPLE_VALUES), body = renderTemplate(variation.body, SAMPLE_VALUES);
+    preview.push({ ruleId: rule.id, conditionalId: conditional.id, variationId: variation.id,
+      headline: headline.ok ? headline.text : variation.headline, body: body.ok ? body.text : variation.body });
   }
+  const conditionals = config.rules.flatMap((rule) => rule.conditionals);
 
   return {
     ok: true,
@@ -69,9 +72,11 @@ export function buildHighlightDraft(input: { bytes: Uint8Array; fileName: string
       needsBehaviorConfirm: changes.kind === "behavior",
       counts: {
         rules: config.rules.length,
-        conditionals: config.rules.reduce((n, rule) => n + rule.conditionals.length, 0),
+        conditionals: conditionals.length,
+        variations: conditionals.reduce((n, conditional) => n + conditional.variations.length, 0),
         liveRules: live.rules.length,
-        liveConditionals: config.rules.reduce((n, rule) => n + rule.conditionals.filter((c) => isLive(rule, c)).length, 0),
+        liveConditionals: live.rules.reduce((n, rule) => n + rule.conditionals.length, 0),
+        liveVariations: preview.length,
       },
       preview,
     },

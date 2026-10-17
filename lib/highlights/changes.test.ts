@@ -18,16 +18,16 @@ test("no edits → none", () => {
 });
 
 test("headline or body wording → copy, with before/after", () => {
-  const draft = draftWith((c) => { birdies(c).conditionals[0].headline = "{player} is cooking! 🔥"; birdies(c).conditionals[1].body = "Four straight."; });
-  assert.deepEqual(summary(draft), { kind: "copy", changes: ["copy:HL-001-C01:headline", "copy:HL-001-C02:body"] });
-  assert.deepEqual(classifyChanges(published(), draft).changes[0], { kind: "copy", id: "HL-001-C01", field: "headline", before: "{player}'s heating up! 🔥", after: "{player} is cooking! 🔥" });
+  const draft = draftWith((c) => { birdies(c).conditionals[0].variations[0].headline = "{player} is cooking! 🔥"; birdies(c).conditionals[1].variations[0].body = "Four straight."; });
+  assert.deepEqual(summary(draft), { kind: "copy", changes: ["copy:HL-001-C01-V00:headline", "copy:HL-001-C02-V00:body"] });
+  assert.deepEqual(classifyChanges(published(), draft).changes[0], { kind: "copy", id: "HL-001-C01-V00", field: "headline", before: "{player}'s heating up! 🔥", after: "{player} is cooking! 🔥" });
 });
 
 test("tier change, disabling or approving → behavior", () => {
   assert.deepEqual(summary(draftWith((c) => { birdies(c).conditionals[7].tier = 9; })), { kind: "behavior", changes: ["behavior:HL-001-C08:tier"] });
   assert.deepEqual(summary(draftWith((c) => { birdies(c).conditionals[7].status = "Disabled"; })), { kind: "behavior", changes: ["behavior:HL-001-C08:removed"] });
   assert.deepEqual(summary(draftWith((c) => { birdies(c).status = "Draft"; })).changes.length, 9); // the rule + its 8 conditionals stop going live
-  const approve = draftWith((c) => { const eagle = c.rules.find((r) => r.id === "HL-002")!; eagle.status = "Approved"; eagle.conditionals[0].status = "Approved"; });
+  const approve = draftWith((c) => { const eagle = c.rules.find((r) => r.id === "HL-002")!; eagle.status = "Approved"; eagle.conditionals[0].status = "Approved"; eagle.conditionals[0].variations[0].status = "Approved"; });
   assert.deepEqual(summary(approve), { kind: "behavior", changes: ["behavior:HL-002:added", "behavior:HL-002-C01:added"] });
 });
 
@@ -38,7 +38,7 @@ test("names, condition labels and notes → metadata", () => {
 
 test("edits to Draft rows and moving rows around change nothing that's live", () => {
   const draft = draftWith((c) => {
-    c.rules.find((r) => r.id === "HL-002")!.conditionals[0].headline = "Totally new";
+    c.rules.find((r) => r.id === "HL-002")!.conditionals[0].variations[0].headline = "Totally new";
     birdies(c).conditionals.reverse();
     for (const rule of c.rules) rule.source = { tab: rule.category, row: (rule.source?.row ?? 0) + 40 };
   });
@@ -46,7 +46,7 @@ test("edits to Draft rows and moving rows around change nothing that's live", ()
 });
 
 test("the most serious kind wins when changes are mixed", () => {
-  const draft = draftWith((c) => { birdies(c).notes = "x"; birdies(c).conditionals[0].body = "y"; birdies(c).conditionals[1].tier = 99; });
+  const draft = draftWith((c) => { birdies(c).notes = "x"; birdies(c).conditionals[0].variations[0].body = "y"; birdies(c).conditionals[1].tier = 99; });
   assert.equal(summary(draft).kind, "behavior");
 });
 

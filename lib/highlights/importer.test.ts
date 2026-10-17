@@ -7,14 +7,14 @@ import { HIGHLIGHT_TABS } from "./types.ts";
 test("groups CONDITIONAL rows under the PARENT above them", () => {
   const { config, issues } = importHighlightSheet(validSheet());
   assert.deepEqual(issues, []);
-  assert.equal(config.schemaVersion, 1);
+  assert.equal(config.schemaVersion, 2);
   assert.deepEqual(config.rules.map((r) => r.id), ["HL-001", "HL-002", "HL-011", "HL-023", "HL-031", "HL-040", "HL-046"]);
   const birdies = config.rules[0];
   assert.equal(birdies.category, "Individual performance");
   assert.equal(birdies.status, "Approved");
   assert.deepEqual(birdies.conditionals.map((c) => c.tier), [3, 4, 5, 6, 7, 8, 9, 10]);
   assert.equal(birdies.conditionals[0].id, "HL-001-C01");
-  assert.equal(birdies.conditionals[0].body, "{count} birdies in a row.");
+  assert.equal(birdies.conditionals[0].variations[0].body, "{count} birdies in a row.");
   assert.equal(config.rules[1].conditionals[0].tier, null);
 });
 

@@ -24,8 +24,8 @@ test("emoji, curly quotes, accents and other scripts survive byte for byte", () 
   const result = read(toXlsx(tabs));
   assert.ok(result.ok);
   const c = importHighlightSheet(result.tabs).config.rules[0].conditionals[0];
-  assert.equal(c.headline, text[0]);
-  assert.equal(c.body, text[1]);
+  assert.equal(c.variations[0].headline, text[0]);
+  assert.equal(c.variations[0].body, text[1]);
 });
 
 test("blank separator rows are kept so error rows match the sheet, even above the used range", () => {
@@ -57,7 +57,7 @@ test("numbers and formula cells are read as their displayed text; formulas are n
   assert.ok(result.ok);
   const c = importHighlightSheet(result.tabs).config.rules[0].conditionals[0];
   assert.equal(c.tier, 3);
-  assert.equal(c.headline, "Cached text 🔥");
+  assert.equal(c.variations[0].headline, "Cached text 🔥");
 });
 
 test("missing category tabs are left for the importer to report", () => {

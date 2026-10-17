@@ -69,3 +69,27 @@ export function toXlsx(tabs: RawTab[], decorate?: (sheet: XLSX.WorkSheet, name: 
   }
   return new Uint8Array(XLSX.write(book, { type: "buffer", bookType: "xlsx" }));
 }
+
+/**
+ * The 2026-10-17 variations layout: HL-001-C01 has three VARIATION rows (owner's example wording), C02 stays a legacy
+ * single-message conditional, C03 has one Draft and one Disabled variation. Other tabs as in validSheet().
+ */
+export function variationSheet(): RawTab[] {
+  const tabs = validSheet();
+  tabs[3] = { name: HIGHLIGHT_TABS[0], values: [HEADER,
+    ["HL-001", "PARENT", "Birdie streak", "", "", "", "Approved", ""],
+    ["HL-001-C01", "CONDITIONAL", "3 consecutive birdies", "3", "", "", "Approved", ""],
+    ["HL-001-C01-V01", "VARIATION", "Heating up", "", "{player}'s heating up! 🔥", "{count} birdies in a row.", "Approved", ""],
+    ["HL-001-C01-V02", "VARIATION", "Check the clubs", "", "Somebody check those clubs! 👀", "{player} has {count} straight birdies.", "Approved", ""],
+    ["HL-001-C01-V03", "VARIATION", "", "", "Three's a party! 🐦", "{player} birdies {count} in a row.", "Approved", ""],
+    ["HL-001-C02", "CONDITIONAL", "4 consecutive birdies", "4", "Somebody stop {player}! 🔥", "4 straight birdies.", "Approved", ""],
+    ["HL-001-C03", "CONDITIONAL", "5 consecutive birdies", "5", "", "", "Approved", ""],
+    ["HL-001-C03-V01", "VARIATION", "", "", "{player} is actually on fire! 🔥", "5 birdies in a row", "Approved", ""],
+    ["HL-001-C03-V02", "VARIATION", "", "", "Still being written", "{player} keeps going", "Draft", ""],
+    ["HL-001-C03-V03", "VARIATION", "", "", "Retired {line", "", "Disabled", ""],
+    [],
+    ["HL-002", "PARENT", "Eagle", "", "", "", "Draft", ""],
+    ["HL-002-C01", "CONDITIONAL", "Eagle", "", "An eagle has landed! 🦅", "{player} makes eagle on No. {hole}.", "Draft", ""],
+  ] };
+  return structuredClone(tabs);
+}

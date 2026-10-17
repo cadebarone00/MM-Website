@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
-import type { HighlightConditional, HighlightConfig, HighlightRule } from "./types.ts";
+import type { HighlightConditional, HighlightConfig, HighlightRule, HighlightVariation } from "./types.ts";
 
 /**
  * The stored form of a config and its fingerprint. Pure.
- * Canonical = rules and conditionals sorted by ID, fields in a fixed order, no sheet row numbers. So moving rows,
+ * Canonical = rules, conditionals and variations sorted by ID, fields in a fixed order, no sheet row numbers. So moving rows,
  * adding blank rows or changing fonts / colors / column widths gives the same fingerprint; any change to wording,
  * emoji, status, tier, name, category or notes gives a different one. Text is kept exactly as imported (the importer
  * already trims cell edges) — never rewritten, so approved wording and emoji are stored byte for byte.
@@ -11,8 +11,12 @@ import type { HighlightConditional, HighlightConfig, HighlightRule } from "./typ
 
 const byId = <T extends { id: string }>(a: T, b: T) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
+function canonicalVariation(v: HighlightVariation): HighlightVariation {
+  return { id: v.id, label: v.label, headline: v.headline, body: v.body, status: v.status, notes: v.notes, legacy: v.legacy };
+}
+
 function canonicalConditional(c: HighlightConditional): HighlightConditional {
-  return { id: c.id, condition: c.condition, tier: c.tier, headline: c.headline, body: c.body, status: c.status, notes: c.notes };
+  return { id: c.id, condition: c.condition, tier: c.tier, status: c.status, notes: c.notes, variations: c.variations.map(canonicalVariation).sort(byId) };
 }
 
 function canonicalRule(rule: HighlightRule): HighlightRule {
@@ -23,7 +27,7 @@ function canonicalRule(rule: HighlightRule): HighlightRule {
 }
 
 export function canonicalConfig(config: HighlightConfig): HighlightConfig {
-  return { schemaVersion: 1, rules: config.rules.map(canonicalRule).sort(byId) };
+  return { schemaVersion: 2, rules: config.rules.map(canonicalRule).sort(byId) };
 }
 
 /** Stable JSON: same config → same string, whatever the sheet's row order. */
