@@ -24,6 +24,7 @@ import { TeeTimePicker } from "./TeeTimePicker";
 import { MatchDraftTimingFields, type MatchDraftTiming } from "./MatchDraftTimingFields";
 import { draftScheduleError } from "@/lib/platform/draftSchedule";
 import { matchDraftPreviewData } from "@/lib/dev/matchDraftPreview";
+import { TripPlayerRoles } from "./TripPlayerRoles";
 import { TripMatchDraftRoom } from "./TripMatchDraftRoom";
 import { TimePicker } from "./TimePicker";
 import { scopedRoundId, DEV_TRIP_ID } from "@/lib/dev/devPlayerRounds";
@@ -105,8 +106,8 @@ const PLAYER_SCORING_FIELDS = ["Opponent's score", "Putts", "Fairway", "Greens i
 const GAME_LOOKUP = [...GAME_GROUPS.Individual, ...GAME_GROUPS.Matches];
 
 /** Reference layout with local game scoring settings in the site's maroon palette. */
-export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament", playerCount = 0, players = [], tripRounds, pastTrips: tripHistory, dataKey = "default", persistenceScope, scoringTripId, competitionSetup, livePanels, scheduleBaseDate }: {
-  scheduleBaseDate?: string;
+export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament", playerCount = 0, players = [], tripRounds, pastTrips: tripHistory, dataKey = "default", persistenceScope, scoringTripId, competitionSetup, livePanels, scheduleBaseDate, organizerName = devAccount(DEFAULT_DEV_ACCOUNT).name }: {
+  scheduleBaseDate?: string; organizerName?: string;
   livePanels?: { members: ReactNode; scorecards: ReactNode; scoring: ReactNode; isOrganizer: boolean; deleteHref: string };
   tripName: string; backHref?: string; playerCount?: number; players?: string[];
   /** The chosen trip's past trips; without them, the samples. */
@@ -1502,21 +1503,12 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                 <button type="button" aria-label="More players" disabled={playerTotal >= MAX_PLAYERS} onClick={() => setPlayerTotal(count => count + 1)}><Plus size={14} strokeWidth={2.5} aria-hidden /></button>
               </div>
             </div>
-            {livePanels ? livePanels.members : <div>
-              <div className={`${leaderboardStyles.single} ${leaderboardStyles.columns} ${styles.playerRow} ${styles.playerListRow}`} aria-hidden="true">
-                <span className={leaderboardStyles.columnPlayer}>Player</span>
-              </div>
-              <ol className={leaderboardStyles.lineup}>
-                {Array.from({ length: playerTotal }, (_, index) => <li key={index} className={`${leaderboardStyles.single} ${styles.playerRow} ${styles.playerListRow}`}>
-                  <span className={leaderboardStyles.rank}>{index + 1}</span>
-                  <div className={leaderboardStyles.golfer}>
-                    <span className={leaderboardStyles.golferName}>{joinedPlayers[index]?.name ?? `Player ${index + 1}`}</span>
-                    {!joinedPlayers[index] && <span className={leaderboardStyles.tee}>Open spot</span>}
-                  </div>
-                  {joinedPlayers[index] && <button type="button" className={styles.playerDelete} aria-label={`Delete ${joinedPlayers[index].name}`} onClick={() => setRemovedPlayers(previous => new Set([...previous, joinedPlayers[index].key]))}><Trash2 size={18} aria-hidden /></button>}
-                </li>)}
-              </ol>
-            </div>}
+            {livePanels ? livePanels.members : <TripPlayerRoles key={simulator?.state.playerRoleViewer ?? simulator?.state.viewAs ?? "default"}
+              players={joinedPlayers.map((player,index)=>({key:player.key,name:player.name,team:teamPicks[index]}))} total={playerTotal} persist={persist}
+              organizerName={organizerName} viewerName={simulator?.state.viewAs && simulator.state.viewAs!==DEFAULT_DEV_ACCOUNT ? devAccount(simulator.state.viewAs).name : organizerName}
+              viewer={process.env.NODE_ENV==="development"?simulator?.state.playerRoleViewer:undefined}
+              teamNames={teamNames} teamCount={Math.max(2,teamCount)} onRemove={key=>setRemovedPlayers(previous=>new Set([...previous,key]))}/>}
+
         </section>
       </div>}
 

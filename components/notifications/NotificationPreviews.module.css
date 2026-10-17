@@ -5,7 +5,15 @@
 .phone:not(.appScreen):not(#_){padding-top:env(safe-area-inset-top)}
 .appScreen:not(#_){padding-top:0}
 .phone img{display:block}
-.wallpaper{background:radial-gradient(120% 70% at 20% 0%,#872a2e 0%,transparent 60%),radial-gradient(90% 60% at 100% 100%,#806331 0%,transparent 70%),linear-gradient(170deg,#500001 0%,#240001 70%)}
+/* Wallpapers: default (brighter maroon + gold), darker (near black), lighter (cream + gold). */
+.wallpaper{background:radial-gradient(120% 70% at 20% 0%,#c25a5f 0%,transparent 60%),radial-gradient(90% 60% at 100% 100%,#c9a86e 0%,transparent 70%),linear-gradient(170deg,#872a2e 0%,#500001 75%)}
+.wallpaperDark{background:radial-gradient(110% 60% at 20% 0%,#2a0a0c 0%,transparent 60%),linear-gradient(170deg,#120203 0%,#050101 75%)}
+.wallpaperLight{background:radial-gradient(120% 70% at 20% 0%,#ffffff 0%,transparent 60%),radial-gradient(90% 60% at 100% 100%,#eadcc0 0%,transparent 70%),linear-gradient(170deg,#fbf8f1 0%,#dfd3ba 80%);color:#240001}
+.wallpaperLight .lockButtons span{background:rgba(255,255,255,.55);color:#240001}
+.wallpaperLight .homeApp i,.wallpaperLight .homeApp small:empty,.wallpaperLight .dock i{background:rgba(36,0,1,.1)}
+.wallpaperLight .homeApp small{color:#240001}
+.wallpaperLight .dock{background:rgba(255,255,255,.45)}
+.wallpaperLight .stackCount,.wallpaperLight .androidStatus{color:#240001}
 
 /* Lock screen */
 .lockTop{display:flex;flex-direction:column;align-items:center;padding-top:14px;text-align:center}
@@ -56,43 +64,52 @@
 .islandExpanded{box-sizing:border-box;width:calc(100% - 20px);max-width:372px;padding:50px 16px 16px;border-radius:44px}
 
 /* Android: status bar sits beside the Pixel's center punch-hole camera (24px safe top). */
-.androidScreen{background:radial-gradient(110% 70% at 80% 0%,#872a2e 0%,transparent 60%),linear-gradient(170deg,#380001 0%,#240001 70%)}
 .phone.androidScreen:not(#_){padding-top:0}
 .androidStatus{display:flex;align-items:center;gap:8px;height:30px;padding:0 18px;margin-top:2px;font:500 14px/1 var(--font-barlow),sans-serif;color:#fff}
 .androidClock{font-weight:600}
 .androidIcons{margin-left:auto;font-size:11px;letter-spacing:4px;opacity:.85}
-.androidChip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px 0 3px;border-radius:12px;background:#6b161a;color:#fff;font:700 13px/1 var(--font-barlow),sans-serif}
+.androidChip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px 0 3px;border-radius:12px;background:var(--color-maroon-900,#240001);color:#fff;font:700 13px/1 var(--font-barlow),sans-serif;box-shadow:0 0 0 1px rgba(220,196,149,.35)}
 .androidChip img{width:18px;height:18px;border-radius:50%}
 .homeApp .androidIcon{border-radius:50%}
 .androidScreen .homeGrid{padding-top:40px}
 
 /* "Both" Live Activity — Golf tab board look, sized for Apple's 160pt lock-screen limit. */
-.both{box-sizing:border-box;max-height:160px;padding:9px 10px 9px;border-radius:22px;background:rgba(36,0,1,.94);color:#fff;font-family:var(--font-barlow),sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.25);overflow:hidden}
+.both{box-sizing:border-box;max-height:160px;padding:9px 10px 9px;border-radius:22px;background:var(--color-maroon-900,#240001);color:#fff;font-family:var(--font-barlow),sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.25);overflow:hidden}
 .bothIsland{max-height:none;padding:0;border-radius:0;background:none;box-shadow:none}
 .bothTeams{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .bothTeam{display:flex;align-items:center;justify-content:space-between;gap:6px;height:30px;padding:0 10px;box-sizing:border-box;font-family:var(--font-spectral),Georgia,serif}
-.bothTeam[data-text=light]{color:#fff}
-.bothTeam[data-text=dark]{color:var(--color-maroon-900,#240001)}
 .bothTeam span{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bothTeam b{font-size:19px;font-weight:700}
-.bothTeamLeft{border-radius:4px 14px 14px 4px}
-.bothTeamRight{flex-direction:row-reverse;border-radius:14px 4px 4px 14px}
-.bothBoard{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
+/* No lead fill: each team is written in its own color; a hairline splits the two. */
+.bothTeams{position:relative}
+.bothTeams::after{content:"";position:absolute;left:50%;top:6px;bottom:6px;border-left:1px solid rgba(220,196,149,.3)}
+.bothTeamLeft{padding-left:2px}
+.bothTeamRight{flex-direction:row-reverse;padding-right:2px}
+/* Team only: the team boxes take the leaderboard's room, closer to the Golf board's size. */
+.bothTeamsBig .bothTeam{height:50px}
+.bothTeamsBig .bothTeam b{font-size:26px}
+.bothTeamsBig .bothTeam span{font-size:15px}
+/* No competition: the round line (logo, trip, round · course). */
+.roundLine{display:flex;align-items:center;gap:8px;margin:0;height:30px;font-size:13px;color:rgba(255,255,255,.7);white-space:nowrap;overflow:hidden}
+.roundLine img{width:24px;height:24px;border-radius:6px}
+.roundLine b{font:700 15px/1 var(--font-spectral),Georgia,serif;color:#fff}
+/* My spot on the island: my badge is black (as on the leaderboard), with the gold edge so it shows on black. */
+.bothRank.islandRank{width:26px;height:22px;font-size:11px;background:#000;color:#fff;box-shadow:0 0 0 1px rgba(220,196,149,.75)}
+.islandLogo{width:22px;height:22px;border-radius:6px}
+.bothBoard{list-style:none;margin:3px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
 .bothBoard li{display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:8px;height:20px}
-/* Row 3 always reserves the line's space, so the card is one size whether or not I'm in the top 3. */
-.bothBoard li:nth-child(3){margin-top:3px;padding-top:3px;border-top:1px solid transparent}
-.bothBoard li.bothSplit{border-top-color:rgba(220,196,149,.35)}
 .bothRank{display:grid;place-items:center;width:22px;height:18px;border-radius:5px;background:#fbf8f1;color:var(--color-maroon-900,#240001);font:800 10px/1 var(--font-spectral),Georgia,serif}
 .bothMe .bothRank{background:#000;color:#fff;box-shadow:0 0 0 1px rgba(220,196,149,.55)}
-.bothName{font:700 13px/1 var(--font-spectral),Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bothName{font:700 12px/1 var(--font-spectral),Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bothBoard b{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
 .both [data-par=under]{color:#ef4444}
 .both [data-par=even]{color:#dcc495}
 .both [data-par=over]{color:#fff}
-.bothStatus{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 0;height:24px;padding:0 10px;border-radius:12px;background:#000;border:1px solid rgba(220,196,149,.45);font-size:12px;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden}
-.bothStatus>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.bothStatus{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 0;height:32px;padding:0 12px;border-radius:16px;background:#000;border:1px solid rgba(220,196,149,.45);font-size:14px;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden}
+/* The match side keeps its full width (e.g. "W 3&2 vs Sherrell & Ross"); the right side (course) shortens first. */
+.bothStatus>span:first-child{flex:none;max-width:64%;overflow:hidden;text-overflow:ellipsis}
 .bothStatus b{color:#fff}
-.bothStatusRight{flex:none;overflow:hidden;text-overflow:ellipsis;max-width:55%}
+.bothStatusRight{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .bothStatus .matchArrow{color:#dcc495}
 
 /* In-app */

@@ -55,5 +55,5 @@ export function SettingsDataPreview({ mock, maroon }: { mock: SimulatorTripData;
   } : busySetup ? { types: competitionSetupTypes(busySetup), teamNames: [], teams: [] } : undefined;
   // A different data choice starts the settings fresh (its days, rounds and players).
   return ready ? <GolfTripSettingsPreview key={`${source}-${seed ?? 0}-${source === "empty" ? savedVersion : 0}-${busySetup ?? ""}-${config.state.playerCount ?? ""}`} dataKey={source === "empty" ? source : scope} persistenceScope={source === "empty" ? undefined : scope} scoringTripId={scope} tripName={preview?.tripName || "Your Golf Trip"} playerCount={Number(preview?.playerCount) || 0}
-    players={players} tripRounds={tripRounds} pastTrips={pastTrips} competitionSetup={competitionSetup} /> : null;
+    organizerName={preview?.yourName || "Cade Barone"} players={players} tripRounds={tripRounds} pastTrips={pastTrips} competitionSetup={competitionSetup} /> : null;
 }

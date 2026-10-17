@@ -1,3 +1,17 @@
+# Timed match draft review - 2026-10-17
+
+Scope revision 7 adds organizer-configured rank, put-forward and response windows (1-120 minutes, defaults 10) to existing global/per-round setup JSON. Ranks locks explicit singles/pairings at its shared deadline. Response locks submitted complete groups, resets at each stage and auto-fills expired turns from same-team unused players, preserving valid pending players. Deadlines catch up across throttled tabs without extending time. All active groups/clocks remain component memory; close/unmount discards them. No server timer, background job, shared captain authorization, cross-device synchronization or scoring publication is added. Implemented locally; deployment unverified.
+
+Privacy/personal data, security and retention: reuses existing loaded roster IDs/names/team membership and existing organizer settings storage. No new recipients, vendor, account fields or draft-state storage. Mutation guards reject expired, wrong-team, duplicate, over-capacity and started-round changes. Follow-up before shared use: authoritative server clocks/state, authenticated captain/team actions, replay and concurrent-write controls, privacy-preserving persistence and retention/deletion evidence. Owner unassigned; due before any shared/official launch; review_required.
+
+Automated selection/organizer responsibility: user requested random auto-fill on Response expiry; partial groups are preserved and no cross-team player is selected. Insufficient rosters stop with an organizer-action message. Ranks retains incomplete spots at expiry. Follow-up: resolve participant notice, fairness, correction/dispute process, audit evidence and approved timeout policy before official publication. Owner unassigned; due before production; review_required.
+
+IP/UGC, provider/platform rules and professional legal review retain review_required findings. Existing assets and roster labels only; no new media, payments, subscriptions, prizes, advertising or sponsorship flows. No existing category is assumed compliant. Structural registry validation is not release authorization.
+
+Validation: focused engine tests cover rank-pair locks, complete group submission, independent timer resets, partial-pair timeout preservation, original-deadline catch-up, roster constraints and settings bounds. Browser checks exercise the local room and settings. These do not establish legal compliance.
+
+## Prior reviews
+
 Timing follow-up (2026-10-17): Home shows Team Draft or Match Draft exclusively, requiring assigned two-team rosters before match entry. Organizer edits and saved setup validation enforce a 10-minute minimum between complete team/match schedules; incomplete forms remain editable. Dev method previews represent already formed teams; Upcoming Team Draft is separate. No new storage, recipients or collection; unresolved legal/security/retention reviews remain review_required.
 
 # Match Draft grouping review - 2026-10-17

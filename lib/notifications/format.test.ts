@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { apnsPayload, BODY_LIMIT, formatPoints, formatToPar, liveLeaderboard, matchMark, minutesUntil, pillStatus, readableOnBlack, teeClock, textOnFill, liveActivityContent, newestFirst, safeAppLink, thruLabel, timeAgo, TITLE_LIMIT, unreadCount } from "./format.ts";
+import { apnsPayload, BODY_LIMIT, formatPoints, formatToPar, liveLeaderboard, liveTeamText, opponentLabel, matchMark, minutesUntil, pillStatus, resultMargin, teeClock, liveActivityContent, newestFirst, safeAppLink, thruLabel, timeAgo, TITLE_LIMIT, unreadCount } from "./format.ts";
 import type { AppNotification, LiveRoundActivity } from "./types.ts";
 
 const note = (over: Partial<AppNotification> = {}): AppNotification => ({
@@ -9,7 +9,7 @@ const note = (over: Partial<AppNotification> = {}): AppNotification => ({
 });
 const live = (over: Partial<LiveRoundActivity> = {}): LiveRoundActivity => ({
   groupId: "trip-1", groupName: "Desert Classic", round: 2, course: "PGA West", playerName: "Cade", toPar: -2, thru: 12, holes: 18,
-  position: "T2", match: { status: "2 UP", opponent: "Jake" }, state: "live", teeTime: null, result: null, updatedAt: "2026-10-16T15:00:00.000Z", ...over,
+  position: "T2", match: { status: "2 UP", opponents: ["Jake"] }, state: "live", teeTime: null, result: null, updatedAt: "2026-10-16T15:00:00.000Z", ...over,
 });
 
 test("score to par", () => {
@@ -102,15 +102,15 @@ test("pill status follows the Live Activity lifecycle", () => {
   // Popped up: owner's example, 2:24 tee time at 2:11.
   assert.deepEqual(pillStatus(live({ state: "pre", teeTime: "2026-10-16T14:24" }), "2026-10-16T14:11"), { kind: "countdown", minutes: "13m", clock: "2:24", tiny: "13m" });
   // Live: round score, match arrow, thru.
-  assert.deepEqual(pillStatus(live({ toPar: 2, thru: 15, match: { status: "3 UP", opponent: "Collin" } }), "x"), { kind: "live", toPar: "+2", mark: { direction: "up", holes: 3 }, thru: 15, tiny: "▲3" });
-  assert.equal(pillStatus(live({ match: { status: "1 DN", opponent: "C" } }), "x").tiny, "▼1");
-  assert.equal(pillStatus(live({ match: { status: "AS", opponent: "C" } }), "x").tiny, "AS");
+  assert.deepEqual(pillStatus(live({ toPar: 2, thru: 15, match: { status: "3 UP", opponents: ["Collin"] } }), "x"), { kind: "live", toPar: "+2", mark: { direction: "up", holes: 3 }, thru: 15, tiny: "3▲" });
+  assert.equal(pillStatus(live({ match: { status: "1 DN", opponents: ["C"] } }), "x").tiny, "1▼");
+  assert.equal(pillStatus(live({ match: { status: "AS", opponents: ["C"] } }), "x").tiny, "AS");
   assert.equal(pillStatus(live({ match: null, toPar: -3 }), "x").tiny, "-3");
   // Round over, next round coming: next tee time.
   assert.deepEqual(pillStatus(live({ state: "over", teeTime: "2026-10-16T14:00", result: "W 3&2" }), "x"), { kind: "next", clock: "2:00", tiny: "2:00" });
   // Round over with no next round, and after the last round: the result.
-  assert.deepEqual(pillStatus(live({ state: "over", result: "W 3&2" }), "x"), { kind: "result", result: "W 3&2", tiny: "W" });
-  assert.equal(pillStatus(live({ state: "final", result: "L 2&1" }), "x").tiny, "L");
+  assert.deepEqual(pillStatus(live({ state: "over", result: "W 3&2" }), "x"), { kind: "result", result: "W 3&2", tiny: "3&2" });
+  assert.equal(pillStatus(live({ state: "final", result: "L 2&1" }), "x").tiny, "2&1");
   // Popped up but no tee time set: falls back to the live layout.
   assert.equal(pillStatus(live({ state: "pre" }), "x").kind, "live");
 });
@@ -139,10 +139,26 @@ test("leaderboard rows: top 3 with me in place, or top 2 + a line + me", () => {
   assert.deepEqual(liveLeaderboard(tied).rows.map(row => row.position), ["1", "T2", "6"]);
 });
 
-test("team colors stay readable", () => {
-  assert.equal(readableOnBlack("#ffffff"), "#ffffff");
-  assert.notEqual(readableOnBlack("#6b161a"), "#6b161a"); // dark maroon is lightened on black
-  assert.equal(readableOnBlack("not a color"), "#ffffff");
-  assert.equal(textOnFill("#fbf8f1"), "dark");
-  assert.equal(textOnFill("#6b161a"), "light");
+
+test("opponent label: one player in full, a pair by last names", () => {
+  assert.equal(opponentLabel(["Collin Ross"]), "Collin Ross");
+  assert.equal(opponentLabel(["Luke Sherrell", "Collin Ross"]), "Sherrell & Ross");
+  assert.equal(opponentLabel(["Luke  Van Sherrell ", "Ross"]), "Sherrell & Ross");
+  assert.equal(opponentLabel([]), "");
+  assert.equal(opponentLabel(["", " "]), "");
+});
+
+test("Live Activity team text is the on-dark color a hair brighter", () => {
+  assert.equal(liveTeamText("#000000"), "#1f1f1f");
+  assert.equal(liveTeamText("#ffffff"), "#ffffff");
+  assert.equal(liveTeamText("bad"), "bad");
+});
+
+test("finished match margin for the tiny circle / Android chip", () => {
+  assert.equal(resultMargin("W 3&2"), "3&2");
+  assert.equal(resultMargin("L 2 & 1"), "2&1");
+  assert.equal(resultMargin("W 2 UP"), "2▲");
+  assert.equal(resultMargin("L 1 DN"), "1▼");
+  assert.equal(resultMargin("Halved"), "AS");
+  assert.equal(resultMargin("AS"), "AS");
 });

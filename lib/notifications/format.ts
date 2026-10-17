@@ -67,7 +67,7 @@ export function liveActivityContent(activity: LiveRoundActivity) {
     progress: Math.min(1, Math.max(0, activity.thru / activity.holes)),
     position: activity.position ?? "",
     matchStatus: activity.match?.status ?? "",
-    opponent: activity.match?.opponent ?? "",
+    opponent: activity.match ? opponentLabel(activity.match.opponents) : "",
     final: activity.state === "over" || activity.state === "final" || activity.thru >= activity.holes,
   };
 }
@@ -104,8 +104,22 @@ export function minutesUntil(teeTime: string, nowLocal: string): number {
 
 /**
  * The right side of the Dynamic Island pill and its tiny circle, following the Live Activity lifecycle:
- * pre → "13m 2:24"; live → round score, match arrow, thru; over → next tee time; final (or over with no next round) → result.
+ * pre → "13m 2:24"; live → round score, match (holes then triangle, "3▲"), thru; over → next tee time; final (or over with no next round) → result.
  */
+/**
+ * A finished match squeezed for the tiny circle / Android chip: the margin, not just W/L (owner 2026-10-17).
+ * "W 3&2" → "3&2"; "W 2 UP" → "2▲"; "L 1 DN" → "1▼"; "Halved" / "AS" → "AS".
+ */
+export function resultMargin(result: string): string {
+  const text = result.trim().toUpperCase();
+  if (/^(HALVED|AS|A\/S|TIED)$/.test(text)) return "AS";
+  const closed = /(\d+\s*&\s*\d+)/.exec(text);
+  if (closed) return closed[1].replace(/\s+/g, "");
+  const holes = /(\d+)\s*(UP|DN|DOWN)/.exec(text);
+  if (holes) return `${holes[1]}${holes[2] === "UP" ? "▲" : "▼"}`;
+  return text.slice(0, 3);
+}
+
 export type PillStatus =
   | { kind: "countdown"; minutes: string; clock: string; tiny: string }
   | { kind: "live"; toPar: string; mark: ReturnType<typeof matchMark>; thru: number; tiny: string }
@@ -122,11 +136,11 @@ export function pillStatus(activity: LiveRoundActivity, nowLocal: string): PillS
     return { kind: "next", clock, tiny: clock };
   }
   if ((activity.state === "over" || activity.state === "final") && activity.result) {
-    return { kind: "result", result: activity.result, tiny: activity.result.charAt(0).toUpperCase() };
+    return { kind: "result", result: activity.result, tiny: resultMargin(activity.result) };
   }
   const mark = activity.match ? matchMark(activity.match.status) : null;
   const toPar = formatToPar(activity.toPar);
-  const tiny = !mark ? toPar : mark.direction === "even" ? "AS" : `${mark.direction === "up" ? "▲" : "▼"}${mark.holes}`;
+  const tiny = !mark ? toPar : mark.direction === "even" ? "AS" : `${mark.holes}${mark.direction === "up" ? "▲" : "▼"}`;
   return { kind: "live", toPar, mark, thru: activity.thru, tiny };
 }
 
@@ -140,21 +154,17 @@ export function liveLeaderboard(rows: LeaderboardRow[]): { rows: LeaderboardRow[
   return { rows: [rows[0], rows[1], rows[mine]], split: true };
 }
 
-/** A team color as text on the black Dynamic Island: dark colors are lightened so they stay readable. */
-export function readableOnBlack(color: string): string {
-  const hex = /^#([0-9a-f]{6})$/i.exec(color)?.[1];
-  if (!hex) return "#ffffff";
-  const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16));
-  const light = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-  if (light >= 0.35) return color.toLowerCase();
-  const lift = (value: number) => Math.round(value + (255 - value) * 0.45).toString(16).padStart(2, "0");
-  return `#${lift(r)}${lift(g)}${lift(b)}`;
+
+/** The other side of my match: one player → full name ("Collin Ross"); a pair (fourball etc.) → last names ("Sherrell & Ross"). */
+export function opponentLabel(names: string[]): string {
+  const clean = names.map(name => name.trim()).filter(Boolean);
+  if (clean.length <= 1) return clean[0] ?? "";
+  return clean.map(name => name.split(/\s+/).at(-1)).join(" & ");
 }
 
-/** Text color on a team's fill: dark text on light fills, white on dark ones. */
-export function textOnFill(color: string): "dark" | "light" {
-  const hex = /^#([0-9a-f]{6})$/i.exec(color)?.[1];
-  if (!hex) return "dark";
-  const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16));
-  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.6 ? "dark" : "light";
+/** Team text on the Live Activity: the team's app on-dark color, a hair brighter (owner 2026-10-17). */
+export function liveTeamText(onDark: string): string {
+  const hex = /^#([0-9a-f]{6})$/i.exec(onDark)?.[1];
+  if (!hex) return onDark;
+  return `#${[0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16)).map(c => Math.round(c + (255 - c) * 0.12).toString(16).padStart(2, "0")).join("")}`;
 }

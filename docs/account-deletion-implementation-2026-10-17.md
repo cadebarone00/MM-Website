@@ -103,7 +103,8 @@ continue from there.
 | `lib/account/reauth.test.ts` | **2 / 2** |
 | `scripts/auth-local/deletion-regression.mts` (isolated Supabase, 185 requests, all 127.0.0.1) | **39 / 39** |
 | `scripts/auth-local/regression.mts` (Step 2, re-run with Step 3 installed) | **55 / 55** |
-| Full `npm test`, `tsc`, eslint | see the Step 3c report |
+| Full `npm test` | **1,392 / 1,392** |
+| `tsc`, eslint | clean |
 
 **Failure injection covered:**
 - an error mid-database-step (full rollback, then retry);

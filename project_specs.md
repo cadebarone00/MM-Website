@@ -2898,6 +2898,14 @@ Three tabs in Predict, each bet a card; *(team)* = only for trips with a team co
 
 **Later, manual (not part of this round).** After approval: run `highlights_config.sql` in a staging project first, then production, in the Supabase SQL editor; it needs `platform_foundation.sql` (already in production) and at least one profile with `platform_role = 'admin'`.
 
+### Round: Highlights Engine Phase H4 — Highlights Admin (approved 2026-10-17; built, tested on the practice database only)
+
+**Page.** `/portal/admin/highlights` (linked from Admin Center → Global Tools). Platform admins only: signed out → /login, anyone else → home. Sections: **Live now** (version or "nothing published"); **1. Check a new file** (choose .xlsx → Check file → errors / warnings with tab + row, what changes for players labeled Behavior / Wording / Notes only, every live message rendered with sample names → **Save as draft**, only when there are no errors and something changes); **2. Drafts waiting to publish** (changes, messages, "out of date" if another version went live, a required "I understand this changes which highlights fire" checkbox for behavior changes, optional note, **Publish** / **Discard**); **3. Version history** (every version, live one marked, **Make live again** with an inline confirm = rollback).
+
+**API (`app/api/portal/admin/highlights`).** `GET /` state; `POST /drafts` (multipart file + action `preview` | `save`; save must re-send the same file — its fingerprint must match the previewed one); `POST /publish`, `/rollback`, `/discard`. Every write: same-origin only → session platform-admin check (`lib/portal/requirePlatformAdmin.ts`, user id from the session, never the request) → admin-checked database function. Database refusals map to 400 / 403 / 404 / 409 with their plain-English messages; anything unexpected is a generic 500, logged server-side only; 503 when the SQL isn't installed. Logic lives in `lib/highlights/adminApi.ts` (dependencies injected; tested with fakes and against the real SQL); `lib/highlights/adminServer.ts` wires the service-role client (server only).
+
+**Not in this round.** No migration run anywhere, no deploy, no detectors (H5), no change to scoring, momentum or push.
+
 ## Notifications — native App Store app (proposed 2026-10-16; Phase 1 approved and built 2026-10-16)
 
 **What it does / who uses it.** Players and organizers get alerts about their trips and tournaments in three places: (1) **phone notifications** on the lock screen and as banners when the phone is unlocked, (2) a **Live Activity** on the iPhone lock screen and Dynamic Island while a round is live, (3) **in-app notifications**: a bell with a list, plus a short banner at the top while the app is open. The Maroon is becoming a real App Store app (Capacitor wrapper, Xcode already set up by the owner), so everything is built native-ready: the web code, the Swift files and the bridge are all in the repo, ready to drop into Xcode.
@@ -3089,19 +3097,28 @@ Full write-up: `docs/accounts-v2-architecture-2026-10-17.md`. Changes from the p
 | Step | Right side | Tiny circle (another app's Live Activity also running) |
 |---|---|---|
 | Pops up | Countdown + tee time: `13m 2:24` (at 2:11 for a 2:24 tee) | `13m` |
-| Live | Round score, match arrow, thru: `+2 ▲3 15` (▼ when down, `AS` when even) | `▲3` |
+| Live | Round score, match arrow, thru: `+2 3▲ 15` (holes then a filled triangle on the right, ▼ when down, no UP/DN word; `AS` when even) | `3▲` |
 | Round over, next round coming | `Next 2:00` | `2:00` |
-| Round over with no next round / after the last round | Match result: `W 3&2` | `W` |
+| Round over with no next round / after the last round | Match result: `W 3&2` | The margin: `3&2`, `2▲` / `1▼` (won / lost on the last hole), `AS` (halved) |
 
 Code: `pillStatus()` / `teeClock()` / `minutesUntil()` / `formatPoints()` / `matchMark()` in `lib/notifications/format.ts` (tested). Previews: `/dev` → Notifications → Live Activity → "Pill · …".
 
 **Lock screen / expanded / Android pinned layout (owner 2026-10-17, built as previews):** looks like the Golf tab board.
-1. The two teams side by side in their team-color fills (like the board), name + points, my team on the left.
-2. Three leaderboard rows: cream rank badges like the leaderboard, **mine in black**; when I'm not top 3, a thin line sits above my row (the space is always reserved so the card never changes size).
-3. A black match status pill: popped up `Tee 2:24 vs Collin Ross · 13m`; live `▲3 UP vs Collin Ross · +2 · Thru 15`; round over `W 3&2 vs Collin Ross · Next 2:00 · PGA West Nicklaus`; after the last round `W 3&2 vs Collin Ross · Final`.
-Fixed 151px tall in every state (Apple's lock-screen limit is 160pt). Code: `liveLeaderboard()`, `textOnFill()`, `readableOnBlack()` in `lib/notifications/format.ts` (tested). Previews: `/dev` → Notifications → Live Activity → "Lock screen · …" and "Dynamic Island · expanded".
+1. The two teams side by side, my team on the left, **no lead fill** (owner 2026-10-17): each team's name + points are written in its team color, split by a thin line. Text uses the team's app-wide on-dark color (`TeamColor.onDark` in `lib/platform/teamColors.ts`, the same one the Golf board's win % uses: the team color itself, lightened only as far as needed to read on dark maroon). On the Live Activity it is a hair brighter (`liveTeamText()`, +12% toward white; the Golf board is unchanged). Card background = the app background (maroon-900).
+2. Three leaderboard rows: cream rank badges like the leaderboard, **mine in black**; no line or gap before my row (owner 2026-10-17). Names 12px.
+3. A black match status pill: popped up `Tee 2:24 vs Collin Ross · 13m`; live `3▲ vs Collin Ross · +2 · Thru 15`; round over `W 3&2 vs Collin Ross · Next 2:00 · PGA West Nicklaus`; after the last round `W 3&2 vs Collin Ross · Final`.
+Fixed 151px tall in every state (Apple's lock-screen limit is 160pt). Code: `liveLeaderboard()` in `lib/notifications/format.ts` (tested). **Pairs formats (fourball etc.):** the other side shows as last names, `W 3&2 vs Sherrell & Ross` (`opponentLabel()`); one opponent shows in full. The match side never gets cut off; the course name on the right shortens first. The status pill gets the room saved above (32px tall, 14px text). Previews: `/dev` → Notifications → Live Activity → "Lock screen · …" and "Dynamic Island · expanded".
 
-**Still to design:** the None, Individual-only and Team-only versions.
+**Other competition types (proposal 2026-10-17, previews built, awaiting owner review)** — same pieces, minus what the trip doesn't have; same lifecycle and pill rules:
+
+| Type | Lock screen / pinned notification | Pill: left of the camera | Pill: right |
+|---|---|---|---|
+| Both | Teams + 3 leaderboard rows + status pill | Team points | Status |
+| Individual only | 3 leaderboard rows + status pill (left side: `Round 2 · course`) | My leaderboard spot in my black badge (`6`) | Status (no match arrow) |
+| Team only | Bigger team boxes + status pill (with match) | Team points | Status |
+| No competition | Logo + trip name + status pill (`Round 2 · course`, score, thru) | Logo | Status (score, thru) |
+
+Previews: `/dev` → Notifications → Live Activity → "Individual only · …", "Team only · …", "No competition · …". Every phone / Live Activity preview has **Wallpaper · default / darker / lighter** conditions to check contrast.
 
 ### Android (owner decision 2026-10-17: build Android alongside iPhone)
 
@@ -3109,7 +3126,7 @@ Same Capacitor app ships to Google Play. Android has no Live Activities or Dynam
 
 | iPhone | Android |
 |---|---|
-| Dynamic Island pill / tiny circle | **Status bar chip** next to the clock: logo + the same short status as the tiny circle (`13m`, `▲3`, `2:00`, `W`) |
+| Dynamic Island pill / tiny circle | **Status bar chip** next to the clock: logo + the same short status as the tiny circle (`13m`, `3▲`, `2:00`, `3&2`) on the app's dark maroon background |
 | Lock screen Live Activity (3 sections) | **Pinned notification** on the lock screen and pull-down menu, same 3 sections, updates live, can't be swiped away while the round is live |
 | Phone notifications (APNs) | Phone notifications via **Firebase Cloud Messaging (FCM)**, Google's push service (new third-party service; needs a free Firebase project + a server key in env vars) |
 

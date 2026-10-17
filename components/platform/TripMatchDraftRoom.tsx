@@ -28,8 +28,11 @@ export function TripMatchDraftRoom({ rounds, players, initialRound, onClose, mod
  const now=useSyncExternalStore(subscribeClock,clockNow,()=>null);
  const roster=useMemo(()=>players.filter((player,index)=>players.findIndex(other=>matchDraftPlayerId(player)===matchDraftPlayerId(other))===index),[players]);
  useEffect(()=>{if(!modal)return;const element=dialog.current;element?.showModal();return()=>element?.close();},[modal]);
+ const timerInputs=useRef({rounds,roster});
+ useEffect(()=>{timerInputs.current={rounds,roster};},[rounds,roster]);
  useEffect(()=>{
   const tick=()=>setSessions(current=>{
+   const {rounds,roster}=timerInputs.current;
    const now=clockNow();
    let next=current;
    for(const round of rounds){const session=current[round.key];if(!session || round.type!=="Response" || session.deadline>now || session.blockedReason || !responseDraftTurn(round,session.placements))continue;
@@ -40,7 +43,7 @@ export function TripMatchDraftRoom({ rounds, players, initialRound, onClose, mod
   });
   const timer=window.setInterval(tick,250);
   return ()=>window.clearInterval(timer);
- },[rounds,roster]);
+ },[]);
  const round=rounds.find(item=>item.key===selected)??rounds[0];
  const session=round?sessions[round.key]:undefined;
  const timed=round?.type==="Ranks"||round?.type==="Response";
@@ -86,7 +89,7 @@ export function TripMatchDraftRoom({ rounds, players, initialRound, onClose, mod
   <div className={styles.board} aria-label="Match draft board">
    {(["A","B"] as const).map(team=><div key={team} className={styles.teamHead}><span>{team}</span><h2>{label(team)}</h2><small>{placements.filter(p=>p.team===team).length} / {(round?.matches??0)*size} selected</small></div>)}
    {round&&Array.from({length:round.matches},(_,match)=>(["A","B"] as const).map(team=><div key={team+match} className={styles.matchGroup}>
-    <div className={styles.rankGroupHeading}><h3>{ranks?"Rank ":"Match "}{match+1}</h3>{ranks&&session&&<span className={styles.rankActions}><button type="button" className={styles.rankMove} aria-label={"Move "+label(team)+" rank "+(match+1)+" higher"} disabled={!editable||!active||match===0} onClick={()=>updateSession(swapRankGroups(round,session,team,match,match-1,Date.now()))}><ArrowUp size={13}/></button><button type="button" className={styles.rankMove} aria-label={"Move "+label(team)+" rank "+(match+1)+" lower"} disabled={!editable||!active||match===round.matches-1} onClick={()=>updateSession(swapRankGroups(round,session,team,match,match+1,Date.now()))}><ArrowDown size={13}/></button></span>}</div>
+    <div className={styles.rankGroupHeading}><h3>{ranks?"Rank ":"Match "}{match+1}</h3>{ranks&&session&&<span className={styles.rankActions}><button type="button" className={styles.rankMove} aria-label={"Move "+label(team)+" rank "+(match+1)+" higher"} disabled={!editable||!active||match===0} onClick={()=>{updateSession(swapRankGroups(round,session,team,match,match-1,Date.now()));setTarget(null);}}><ArrowUp size={13}/></button><button type="button" className={styles.rankMove} aria-label={"Move "+label(team)+" rank "+(match+1)+" lower"} disabled={!editable||!active||match===round.matches-1} onClick={()=>{updateSession(swapRankGroups(round,session,team,match,match+1,Date.now()));setTarget(null);}}><ArrowDown size={13}/></button></span>}</div>
     {Array.from({length:size},(_,slot)=>{
      const pending=response&&turn?.match===match&&turn.team===team?session?.pending[slot]:undefined;
      const id=placements.find(p=>p.match===match&&p.team===team&&p.slot===slot)?.player??pending;
