@@ -103,7 +103,7 @@ function PreRound({ game, onChange, onStart, onRemove }: { game: TripGame; onCha
         <p className={styles.summary}>Round {game.round} · Before you tee off</p></div>
       <button type="button" className={styles.back} onClick={onRemove}>Remove</button>
     </div>
-    {info && <p className={styles.gameBlurbDark}>{def.blurb}</p>}
+    {info && <InfoCard title={def.name} text={def.blurb} onClose={() => setInfo(false)} />}
     <div className={styles.preRound}>
       <div className={styles.sheetSetting}><span>Scoring</span><div className={styles.sheetChoices}>
         {[false, true].map((value) => <button type="button" key={String(value)} aria-pressed={config.net === value} onClick={() => set({ net: value })}>{value ? "Net (handicaps)" : "Gross"}</button>)}
@@ -155,13 +155,29 @@ function NewGame({ box, group, rounds, current, onClose, onCreate }: { box: { to
           {choices.map((g) => <div key={g.id} className={styles.gameOption}>
             <button type="button" className={styles.sheetGame} aria-pressed={id === g.id} onClick={() => setId(g.id)}><strong>{g.name}</strong></button>
             <button type="button" className={styles.gameInfo} aria-label={`About ${g.name}`} aria-expanded={info === g.id} onClick={() => setInfo(info === g.id ? null : g.id)}>i</button>
-            {info === g.id && <p className={styles.gameBlurb}>{g.blurb}</p>}
           </div>)}
         </div>
       </div>
     </div>
+    {info && <InfoCard title={gameDef(info).name} text={gameDef(info).blurb} onClose={() => setInfo(null)} />}
     <div className={styles.sheetFooter}>
       <button type="button" className={styles.sheetPrimary} disabled={!id} onClick={create}>{id ? `Create ${gameDef(id).name}` : "Pick a game"}</button>
     </div>
   </GolfTripActionSheet>;
+}
+
+/** A game's description in a small light card over the screen; tap anywhere outside it (or Done) to close. */
+function InfoCard({ title, text, onClose }: { title: string; text: string; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return <div className={styles.infoLayer} onClick={onClose}>
+    <div className={styles.infoCard} role="dialog" aria-label={`About ${title}`} onClick={(event) => event.stopPropagation()}>
+      <h4>{title}</h4>
+      <p>{text}</p>
+      <button type="button" onClick={onClose} autoFocus>Done</button>
+    </div>
+  </div>;
 }
