@@ -173,6 +173,8 @@ export type GolfLeaderboardEntry = {
   pointsTotal?: number;
   pointsToday?: number;
   holes: (number | null)[];
+  /** Putts per hole from the scorecard, when entered (Games → Snake finds the last 3-putt from these). */
+  putts?: (number | null)[];
 };
 
 export type GolfMatchPreview = {

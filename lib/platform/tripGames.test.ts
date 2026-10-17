@@ -52,3 +52,14 @@ test("same rules as Play: a trip game's standings are exactly Play's scoreGame o
   const value = (name: string) => result.standings.find((s) => s.label === name)?.value;
   assert.deepEqual([value("Cam"), value("Drew"), value("Cade"), value("Luke")], ["0", "+4", "0", "-4"]);
 });
+
+test("Snake from the scorecard: whoever 3-putted holds it; a hole with no 3-putt leaves it where it was", async () => {
+  const { snakeFromPutts } = await import("./tripGames");
+  const m = trip(true);
+  m.leaderboard = m.leaderboard.map((row) => ({ ...row, putts: row.golfer.name === "Drew" ? [3, 2, 2] : row.golfer.name === "Luke" ? [2, 3, 2] : [2, 2, 2] }));
+  const inputs = snakeFromPutts(m, { round: 2, players: ["Cam", "Drew", "Cade", "Luke"] });
+  assert.deepEqual(inputs.slice(0, 3), [{ snake: 1 }, { snake: 3 }, {}]);
+  const result = scoreGame({ id: "snake", net: false, birdiesDouble: false }, gamePlayers(m, ["Cam", "Drew", "Cade", "Luke"]), gameCourse(m), [0, 18],
+    gameStrokes(m, { round: 2, players: ["Cam", "Drew", "Cade", "Luke"] }), inputs);
+  assert.equal(result.note, "Luke has the snake");
+});

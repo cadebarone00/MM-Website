@@ -122,3 +122,25 @@ div.gameSheet{bottom:0;width:min(100%,560px);max-height:none;padding-bottom:0;bo
 /* Create button: solid maroon, no gradient or glow. */
 .createButton{background:#591c2e;box-shadow:none}
 .createButton:active{box-shadow:none}
+/* Wolf: the Wolf on top with Go Lone Wolf; partners underneath. */
+.wolf{display:grid;gap:8px}
+.wolfTop{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:10px;background:rgba(220,196,149,.12)}
+.wolfTop span{display:grid;gap:0}
+.wolfTop small,.wolfPartners small{font:700 10px var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+.wolfTop b{font:700 17px var(--font-barlow),sans-serif;color:#fff}
+.loneWolf{min-height:34px;padding:4px 14px;border:1px solid #dcc495;border-radius:99px;background:transparent;color:#dcc495;font:700 13px var(--font-barlow),sans-serif;cursor:pointer}
+.loneWolf[aria-pressed=true]{background:#dcc495;color:#2a0d16}
+.wolfPartners{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.wolfPartners small{flex-basis:100%}
+.wolfPartners button{flex:1 1 0;min-height:34px;padding:4px 8px;border:1px solid rgba(255,255,255,.22);border-radius:10px;background:rgba(255,255,255,.06);color:#fff;font:700 13px var(--font-barlow),sans-serif;cursor:pointer}
+.wolfPartners button[aria-pressed=true]{background:#dcc495;border-color:#dcc495;color:#2a0d16}
+/* Arrow rows: Daytona (← · →) and team pickers (← name →). */
+.daytona{display:grid;gap:4px}
+.arrowRow{display:grid;grid-template-columns:36px minmax(0,1fr) auto auto;align-items:center;gap:6px;min-height:36px}
+.arrowRow:has(> button:nth-of-type(3)){grid-template-columns:36px minmax(0,1fr) 36px 36px}
+.arrowRow:not(:has(> button:nth-of-type(3))){grid-template-columns:36px minmax(0,1fr) 36px}
+.arrowRow span{font:600 14px var(--font-barlow),sans-serif;color:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.arrowRow button{display:grid;place-items:center;width:36px;height:32px;padding:0;border:1px solid rgba(255,255,255,.22);border-radius:9px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer}
+.arrowRow button[aria-pressed=true]{background:#dcc495;border-color:#dcc495;color:#2a0d16}
+.daytonaHint{font:600 11px var(--font-barlow),sans-serif;color:rgba(255,255,255,.6)}
+.daytona .arrowRow.spotRow.spotRow{grid-template-columns:minmax(0,1fr) 36px 36px 36px}

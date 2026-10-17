@@ -56,3 +56,21 @@ export function currentHole(strokes: (number | null)[][], holes: number): number
 export const holesThru = (strokes: (number | null)[][], holes: number) => Array.from({ length: holes }, (_, h) => h).filter((h) => strokes.every((row) => row[h] != null)).length;
 
 export const gameCourse = (match: GolfMatchPreview): GameCourse => ({ par: match.par, rating: null, slope: null });
+
+/**
+ * Snake from the scorecard: on each hole, who 3-putted (most putts wins a tie; then the later player in the game).
+ * Holes nobody 3-putted are left empty, so the snake stays where it was.
+ */
+export function snakeFromPutts(match: GolfMatchPreview, game: Pick<TripGame, "round" | "players">): HoleInput[] {
+  if (match.round !== game.round) return [];
+  const putts = game.players.map((name) => match.leaderboard.find((row) => row.golfer.name === name)?.putts ?? []);
+  return match.par.map((_, h) => {
+    let holder: number | undefined, most = 2;
+    putts.forEach((row, p) => { const n = row[h]; if (n != null && n >= 3 && n >= most) { holder = p; most = n; } });
+    return holder === undefined ? {} : { snake: holder };
+  });
+}
+
+/** Par of the holes everyone in the game has finished (to show a team total against par). */
+export const parThru = (match: GolfMatchPreview, strokes: (number | null)[][]) =>
+  match.par.reduce((sum, par, h) => strokes.every((row) => row[h] != null) ? sum + par : sum, 0);

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Dot, Plus } from "lucide-react";
 import homeStyles from "./GolfTripHome.module.css";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -9,8 +9,8 @@ import { useSimulator } from "@/components/dev/SimulatorBridge";
 import { sampleTripGames } from "@/lib/dev/sampleTripGames";
 import { HolePicks, Standings } from "./PlayRound";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
-import { gameDef, gamesFor, scoreGame, type GameConfig, type GameId, type HoleInput } from "@/lib/platform/roundGames";
-import { currentHole, gameCourse, gamePlayers, gameStrokes, groupOf, holesThru, meOn, type TripGame } from "@/lib/platform/tripGames";
+import { gameDef, gamesFor, scoreGame, wolfFor, type GameConfig, type GameId, type GameResult, type HoleInput } from "@/lib/platform/roundGames";
+import { currentHole, gameCourse, gamePlayers, gameStrokes, groupOf, holesThru, meOn, parThru, snakeFromPutts, type TripGame } from "@/lib/platform/tripGames";
 import styles from "./GolfTripGames.module.css";
 
 /**
@@ -73,24 +73,30 @@ function GameCard({ game, match, onInput, onRemove }: { game: TripGame; match: G
   const [shown, setShown] = useState<number | null>(null);
   const hole = shown ?? now;
   const players = gamePlayers(match, game.players);
-  const result = live ? scoreGame(game.config, players, gameCourse(match), range, strokes, game.inputs) : null;
+  // Snake reads the scorecard's putts (no buttons); every other game uses the picks made on the card.
+  const inputs = def.holeInput === "snake" ? snakeFromPutts(match, game) : game.inputs;
+  const result = live ? tidy(scoreGame(game.config, players, gameCourse(match), range, strokes, inputs), game.config.id, parThru(match, strokes)) : null;
   const thru = holesThru(strokes, holes);
+  const names = game.players.map(firstName);
   return <article className={styles.section} aria-label={def.name}>
     <div className={styles.activeGameHead}>
       <div><h3>{def.name}</h3><p className={styles.summary}>Round {game.round} · {game.config.net ? "Net" : "Gross"}{game.config.birdiesDouble ? " · Birdies double" : ""}{live ? ` · Thru ${thru}` : ""}</p></div>
       <button type="button" className={styles.back} onClick={onRemove}>Remove</button>
     </div>
-    <p className={styles.summary}>{game.config.teams && def.teams
+    {/* Team games list their sides in the standings, so the names aren't repeated up here. */}
+    {!(live && def.teams) && <p className={styles.summary}>{game.config.teams && def.teams
       ? [0, 1].map((t) => game.players.filter((_, i) => game.config.teams![i] === t).map(firstName).join(" & ")).join("  vs  ")
-      : game.players.map(firstName).join(" · ")}</p>
+      : names.join(" · ")}</p>}
     {!live ? <p className={styles.emptyGames}>Scores show here during Round {game.round}.</p> : <>
-      {def.holeInput && <div className={styles.holePick}>
+      {def.holeInput && def.holeInput !== "snake" && <div className={styles.holePick}>
         <div className={styles.holeStep}>
           <button type="button" aria-label="Previous hole" disabled={hole <= 0} onClick={() => setShown(Math.max(0, hole - 1))}><ChevronLeft size={18} aria-hidden /></button>
           <b>Hole {hole + 1}{hole === now && thru < holes ? " · now" : ""}</b>
           <button type="button" aria-label="Next hole" disabled={hole >= holes - 1} onClick={() => setShown(Math.min(holes - 1, hole + 1))}><ChevronRight size={18} aria-hidden /></button>
         </div>
-        <HolePicks game={game.config} hole={hole} range={range} names={game.players.map(firstName)} input={game.inputs[hole] ?? {}} onChange={(part) => onInput(hole, part)} />
+        {def.holeInput === "wolf" ? <WolfPicks wolf={wolfFor(hole, range, names.length)} names={names} input={game.inputs[hole] ?? {}} onChange={(part) => onInput(hole, part)} />
+          : def.holeInput === "daytona" ? <DaytonaPicks key={hole} names={names} input={game.inputs[hole] ?? {}} onChange={(part) => onInput(hole, part)} />
+          : <HolePicks game={game.config} hole={hole} range={range} names={names} input={game.inputs[hole] ?? {}} onChange={(part) => onInput(hole, part)} />}
       </div>}
       {result && <Standings result={result} compact />}
     </>}
@@ -119,9 +125,11 @@ function PreRound({ game, onChange, onStart, onRemove }: { game: TripGame; onCha
         {[false, true].map((value) => <button type="button" key={String(value)} aria-pressed={config.birdiesDouble === value} onClick={() => set({ birdiesDouble: value })}>{value ? "On" : "Off"}</button>)}
       </div></div>}
       {def.teams && <div className={styles.sheetSetting}><span>Teams</span>
-        {game.players.map((name, i) => <div key={name} className={styles.teamRow}><span>{name}</span><div className={styles.sheetChoices}>
-          {[0, 1].map((t) => <button type="button" key={t} aria-pressed={teams[i] === t} onClick={() => set({ teams: Object.assign([...teams], { [i]: t }) })}>Team {t + 1}</button>)}
-        </div></div>)}
+        {game.players.map((name, i) => <div key={name} className={styles.arrowRow}>
+          <button type="button" aria-label={`${name} on the left team`} aria-pressed={teams[i] === 0} onClick={() => set({ teams: Object.assign([...teams], { [i]: 0 }) })}><ArrowLeft size={16} aria-hidden /></button>
+          <span>{name}</span>
+          <button type="button" aria-label={`${name} on the right team`} aria-pressed={teams[i] === 1} onClick={() => set({ teams: Object.assign([...teams], { [i]: 1 }) })}><ArrowRight size={16} aria-hidden /></button>
+        </div>)}
         {!teamsOk && <p className={styles.sheetHint}>Put at least one player on each team.</p>}
       </div>}
       {def.holeInput === "wolf" && <p className={styles.summary}>Wolf order: {game.players.map(firstName).join(" → ")}, then it repeats.</p>}
@@ -201,4 +209,59 @@ function InfoCard({ title, text, onClose }: { title: string; text: string; onClo
       <p>{text}</p>
     </div>
   </div>, document.body);
+}
+
+/**
+ * Small tidy-ups to Play's standings for the trip card: Match Play's extra line repeats the leader (dropped), and team
+ * stroke totals (Best Ball and the team formats) show to par, like Stroke Play.
+ */
+function tidy(result: GameResult, id: GameId, parSoFar: number): GameResult {
+  const repeats = (id === "match" || id === "nassau") && result.note && result.standings.some((s) => s.label && result.note!.startsWith(s.label));
+  const teamTotal = id === "bestball" || id === "scramble" || id === "shamble" || id === "alternate" || id === "chapman";
+  const toPar = (n: number) => n === parSoFar ? "E" : n > parSoFar ? `+${n - parSoFar}` : String(n - parSoFar);
+  return { ...result, note: repeats ? undefined : result.note,
+    standings: teamTotal ? result.standings.map((s) => /^\d+$/.test(s.value) ? { ...s, value: `${s.value} (${toPar(Number(s.value))})` } : s) : result.standings };
+}
+
+/** Wolf: the Wolf on top with Go Lone Wolf beside them; the others underneath to pick as partner. Same picks as Play. */
+function WolfPicks({ wolf, names, input, onChange }: { wolf: number; names: string[]; input: HoleInput; onChange: (part: HoleInput) => void }) {
+  const lone = input.wolfPartner === null;
+  return <div className={styles.wolf}>
+    <div className={styles.wolfTop}>
+      <span><small>Wolf</small><b>{names[wolf]}</b></span>
+      <button type="button" className={styles.loneWolf} aria-pressed={lone} onClick={() => onChange({ wolfPartner: lone ? undefined : null })}>{lone ? "Lone Wolf ✓" : "Go Lone Wolf"}</button>
+    </div>
+    <div className={styles.wolfPartners} role="group" aria-label="Partner">
+      <small>{lone ? "Playing alone for double" : "Partner"}</small>
+      {names.map((name, i) => i === wolf ? null : <button key={i} type="button" disabled={lone} aria-pressed={input.wolfPartner === i}
+        onClick={() => onChange({ wolfPartner: input.wolfPartner === i ? undefined : i })}>{name}</button>)}
+    </div>
+  </div>;
+}
+
+type Spot = "left" | "middle" | "right";
+/**
+ * Daytona: each player picks ← (left pair), middle, or → (right pair). It counts once there are 2 left, 1 middle and
+ * 2 right (the same tee positions Play records).
+ */
+function DaytonaPicks({ names, input, onChange }: { names: string[]; input: HoleInput; onChange: (part: HoleInput) => void }) {
+  const saved = input.daytona;
+  const [spots, setSpots] = useState<(Spot | null)[]>(() => names.map((_, i) => !saved ? null : saved.middle === i ? "middle" : saved.left.includes(i) ? "left" : saved.right.includes(i) ? "right" : null));
+  const pick = (i: number, spot: Spot) => {
+    const next = Object.assign([...spots], { [i]: spots[i] === spot ? null : spot });
+    setSpots(next);
+    const at = (s: Spot) => next.map((v, p) => v === s ? p : -1).filter((p) => p >= 0);
+    const [left, middle, right] = [at("left"), at("middle"), at("right")];
+    onChange({ daytona: left.length === 2 && middle.length === 1 && right.length === 2 ? { left: [left[0], left[1]], middle: middle[0], right: [right[0], right[1]] } : undefined });
+  };
+  const ready = Boolean(input.daytona);
+  return <div className={styles.daytona}>
+    {names.map((name, i) => <div key={i} className={`${styles.arrowRow} ${styles.spotRow}`}>
+      <span>{name}</span>
+      <button type="button" aria-label={`${name} left pair`} aria-pressed={spots[i] === "left"} onClick={() => pick(i, "left")}><ArrowLeft size={16} aria-hidden /></button>
+      <button type="button" aria-label={`${name} in the middle`} aria-pressed={spots[i] === "middle"} onClick={() => pick(i, "middle")}><Dot size={22} aria-hidden /></button>
+      <button type="button" aria-label={`${name} right pair`} aria-pressed={spots[i] === "right"} onClick={() => pick(i, "right")}><ArrowRight size={16} aria-hidden /></button>
+    </div>)}
+    {!ready && <small className={styles.daytonaHint}>Set 2 left, 1 middle and 2 right</small>}
+  </div>;
 }

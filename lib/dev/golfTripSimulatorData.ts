@@ -154,7 +154,8 @@ function withRoundState(match: GolfMatchPreview, roundState: Exclude<SimulatorCo
     const total = today + (generated?.before ?? 0);
     const hcp = row.golfer.hcp ?? 0;
     const label = toParLabel(total);
-    return { ...row, holes, thru, today: toParLabel(today), total: label,
+    const putts = holes.map((strokes, hole) => strokes === null ? null : strokes < (par[hole] ?? 4) ? 1 : strokes > (par[hole] ?? 4) && (index + hole) % 4 === 0 ? 3 : 2);
+    return { ...row, holes, putts, thru, today: toParLabel(today), total: label,
       netToday: toParLabel(today - Math.round(hcp * holesPlayed / 18)),
       netTotal: toParLabel(total - Math.round(hcp * ((generated ? roundsBefore : 0) + holesPlayed / 18))),
       golfer: { ...row.golfer, thru: thru === "F" ? "F" : `Thru ${thru}`, score: label } };
