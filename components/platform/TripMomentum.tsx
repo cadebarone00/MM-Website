@@ -2,6 +2,9 @@
 
 import { useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
+import { useDevSetup } from "@/lib/dev/tripSetupStore";
+import { readJustCreatedAll, useJustCreatedVersion } from "@/lib/dev/justCreatedStore";
+import { useSavedTripSetup } from "./SavedTripSetupProvider";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
 import toggleStyles from "./GolfTripCompetition.module.css";
 import notificationStyles from "./GolfTripNotifications.module.css";
@@ -35,19 +38,18 @@ const subscribeReminders = (change: () => void) => {
 
 /**
  * Momentum: Home's billboard, an 80px strip edge to edge in the maroon head (where the Mom section was), no box.
- * Before a team draft: Team Draft. During the trip: the latest golf highlights, one at a time (10 s each).
+ * During the trip: the latest golf highlights, one at a time (10 s each).
  * Otherwise: the Mom section (`fallback`: my notifications, the countdown to the trip, the next round).
  */
-export function TripMomentum({ draft, startAt, editHref, events, fallback, players = [] }: {
+export function TripDraftWidget({ draft, startAt, editHref, players = [], scope = "default", roundCount = 0 }: {
+  scope?: string; roundCount?: number;
   draft?: TeamDraft;
   players?: DraftRoomPlayer[];
   /** Dev trip clock "YYYY-MM-DDTHH:mm[:ss]": time starts there when the page loads and ticks on from it. */
   startAt?: string;
   /** The organizer's link to the draft settings (only pass it for the organizer); no link = no Edit. */
   editHref?: string;
-  /** Round highlights (big plays), newest first. */
-  events: MomentumEvent[];
-  fallback: ReactNode;
+
 }) {
   const seconds = useSyncExternalStore(subscribe, nowSeconds, () => null);
   const simulator = useSimulator();
@@ -55,6 +57,27 @@ export function TripMomentum({ draft, startAt, editHref, events, fallback, playe
   const now = seconds === null ? null : startAt ? shiftStamp(startAt, seconds - loadedAt) : localStamp(seconds);
   const board = draftBoard(draft, now);
   const [fixtureBase] = useState(nowSeconds);
+  const dev = useDevSetup(scope);
+  const real = useSavedTripSetup();
+  const version = useJustCreatedVersion();
+  const setup = real?.values ?? (scope === "empty" ? readJustCreatedAll(version) : dev);
+  type Choice = { method?: string; date?: string; time?: string };
+  const counts = setup.roundsPerDay as Record<string, number> | undefined;
+  const choices = setup.matchSelections as Record<string, Choice> | undefined;
+  const matches: { draft: TeamDraft; round: number; board: NonNullable<ReturnType<typeof draftBoard>> }[] = [];
+  let day = 0, slot = 0;
+  for (let round = 1; round <= roundCount; round++) {
+    while (day < 64 && slot >= (counts?.[day] ?? 1)) { day++; slot = 0; }
+    const own = choices?.[`${day}-${slot}`];
+    const choice = setup.matchPerRound ? own : setup.allRoundsMatch as Choice | undefined;
+    if (choice?.method === "Match Draft") {
+      const match: TeamDraft = { teamType: "2 Teams", selection: "Draft", date: own?.date || choice.date || "", time: own?.time || choice.time || "", type: "Snake" };
+      const matchBoard = draftBoard(match, now);
+      if (matchBoard) matches.push({ draft: match, round, board: matchBoard });
+    }
+    slot++;
+  }
+  const nextMatch = matches.sort((a,b) => (a.board.target ?? "9999").localeCompare(b.board.target ?? "9999"))[0];
   if (process.env.NODE_ENV === "development" && simulator?.state.dualDraftMomentum && now) {
     const base = startAt ?? localStamp(fixtureBase);
     const future = (by: number): TeamDraft => {
@@ -65,15 +88,17 @@ export function TripMomentum({ draft, startAt, editHref, events, fallback, playe
     const nextMatch = [future(-3600), future(172800), future(259200), future(345600)]
       .map((item, index) => ({ item, round: index + 1, board: draftBoard(item, now) })).find(item => item.board);
     const teamBoard = draftBoard(team, now);
-    if (teamBoard && nextMatch?.board) return <section id="momentum" className={`${styles.momentum} ${styles.dualDraft}`} aria-label="Momentum">
+    if (teamBoard && nextMatch?.board) return <section className={styles.draftWidget} aria-label="Upcoming drafts">
       <DraftStrip draft={team} board={teamBoard} now={now} editHref={editHref} players={players} />
       <DraftStrip draft={nextMatch.item} board={nextMatch.board} now={now} players={players} matchRound={nextMatch.round} />
     </section>;
   }
-  const content = board ? <DraftStrip draft={draft!} board={board} now={now} editHref={editHref} players={players} />
-    : events.length ? <HighlightStrip events={events} turn={seconds === null ? 0 : Math.floor(seconds / 10)} />
-    : fallback;
-  return <section id="momentum" className={styles.momentum} aria-label="Momentum">{content}</section>;
+  return board || nextMatch ? <section className={styles.draftWidget} aria-label="Upcoming drafts">{board && <DraftStrip draft={draft!} board={board} now={now} editHref={editHref} players={players} />}{nextMatch && <DraftStrip draft={nextMatch.draft} board={nextMatch.board} now={now} editHref={editHref} players={players} matchRound={nextMatch.round} />}</section> : null;
+}
+
+export function TripMomentum({ events, fallback }: { events: MomentumEvent[]; fallback: ReactNode }) {
+  const seconds = useSyncExternalStore(subscribe, nowSeconds, () => null);
+  return <section id="momentum" className={styles.momentum} aria-label="Momentum">{events.length ? <HighlightStrip events={events} turn={seconds === null ? 0 : Math.floor(seconds / 10)} /> : fallback}</section>;
 }
 
 /** Before the draft: Team Draft · day and time (Edit for the organizer), then the countdown with Draft Room. */

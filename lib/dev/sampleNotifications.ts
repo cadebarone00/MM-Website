@@ -8,7 +8,7 @@ import type { AppNotification, LiveRoundActivity } from "@/lib/notifications/typ
 /** Every preview screen in the group. The first id of each surface is its default. */
 export const NOTIFICATION_PREVIEWS = {
   phone: ["lock", "lock-stack", "banner", "signed-out-lock", "signed-out-tap"],
-  live: ["live-lock", "live-lock-match", "island-compact", "island-expanded", "island-minimal", "live-final"],
+  live: ["live-lock", "live-lock-match", "island-compact", "island-compact-team", "island-expanded", "island-minimal", "island-minimal-team", "live-final"],
   inApp: ["bell-unread", "bell-read", "bell-empty", "top-banner"],
 } as const;
 export type NotificationSurface = keyof typeof NOTIFICATION_PREVIEWS;
@@ -22,8 +22,10 @@ export const NOTIFICATION_PREVIEW_LABELS: Record<NotificationPreview, string> = 
   "live-lock": "Lock screen · live round",
   "live-lock-match": "Lock screen · live round in a match",
   "island-compact": "Dynamic Island · compact",
+  "island-compact-team": "Dynamic Island · compact, team + match (owner idea)",
   "island-expanded": "Dynamic Island · expanded (long press)",
   "island-minimal": "Dynamic Island · minimal (another app's activity too)",
+  "island-minimal-team": "Dynamic Island · tiny circle, what fits (owner idea)",
   "live-final": "Lock screen · round final",
   "bell-unread": "Bell · new notifications",
   "bell-read": "Bell · all read",
@@ -52,3 +54,9 @@ export const SAMPLE_LIVE_ROUND: LiveRoundActivity = {
 };
 export const SAMPLE_LIVE_MATCH: LiveRoundActivity = { ...SAMPLE_LIVE_ROUND, match: { status: "2 UP", opponent: "Jake Parker" } };
 export const SAMPLE_FINAL_ROUND: LiveRoundActivity = { ...SAMPLE_LIVE_ROUND, toPar: -1, thru: 18, position: "2", match: { status: "Won 3&2", opponent: "Jake Parker" }, state: "final" };
+
+/** Owner's example (2026-10-17): Cam on Maroon, +2 for the round, 3 UP thru 15, Maroon leads 3½ to 1½. */
+export const SAMPLE_LIVE_TEAM: LiveRoundActivity = {
+  ...SAMPLE_LIVE_ROUND, playerName: "Cam Latto", toPar: 2, thru: 15, match: { status: "3 UP", opponent: "Collin Ross" },
+  teams: { mine: { name: "Maroon", color: "#c2474f", points: 3.5 }, other: { name: "White", color: "#ffffff", points: 1.5 } },
+};

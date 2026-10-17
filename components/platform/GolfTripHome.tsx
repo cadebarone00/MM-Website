@@ -33,7 +33,7 @@ import { ItineraryDetailSheet } from "./ItineraryDetailSheet";
 import { shortPlace } from "@/lib/platform/placeLabel";
 import { MomSection } from "./MomSection";
 import type { MomRound } from "@/lib/platform/momNotifications";
-import { TeamDraftNotice, TripMomentum } from "./TripMomentum";
+import { TeamDraftNotice, TripMomentum, TripDraftWidget } from "./TripMomentum";
 import type { MomentumEvent } from "@/lib/platform/tripPush";
 import type { TeamDraft } from "@/lib/platform/teamDraft";
 import { useTripMomentum, type TripAlertScope } from "./useTripMomentum";
@@ -237,7 +237,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
       </div>
     </header>
     <div className={`${styles.body} ${tab === "Golf" ? styles.golfBody : ""}`} role="tabpanel" aria-label={tab}>
-      {tab === "Home" ? <><InfoAccount draft={draft} draftPlayers={previewMatch?.leaderboard.map(row => ({ name: getPlayerDisplayName(row.golfer.name), handicap: row.golfer.hcp })) ?? travel?.members.map(member => ({ name: member.name })) ?? []} teamDraft={teamDraft} isOrganizer={isOrganizer} momentumEvents={momentum.events} settingsHref={settingsHref} flights={flights} weather={weather} itinerary={goingItinerary} travel={travel} tripNow={tripNow} onOpenItinerary={openItinerary}
+      {tab === "Home" ? <><InfoAccount draftScope={competitionKey ?? "default"} draft={draft} draftPlayers={previewMatch?.leaderboard.map(row => ({ name: getPlayerDisplayName(row.golfer.name), handicap: row.golfer.hcp })) ?? travel?.members.map(member => ({ name: member.name })) ?? []} teamDraft={teamDraft} isOrganizer={isOrganizer} momentumEvents={momentum.events} settingsHref={settingsHref} flights={flights} weather={weather} itinerary={goingItinerary} travel={travel} tripNow={tripNow} onOpenItinerary={openItinerary}
         rounds={plannedRounds(draft).map(round => ({ number: round.number, date: round.date, course: draft[`round${round.number}Course`] || "Course TBD", format: draft[`round${round.number}Format`] || (previewMatch && round.number === previewMatch.round ? previewMatch.formatDef?.label : undefined) }))}
         afterRound={previewMatch ? (roundLive || previewMatch.leaderboard.some(row => row.holes.every(strokes => strokes !== null)) ? previewMatch.round : previewMatch.round - 1) : 0}
         liveRound={roundLive && previewMatch ? { id: `round-${previewMatch.round}`, kind: "teeTime", title: `Round ${previewMatch.round} · ${previewMatch.course}`, startsAt: (tripNow ?? "").slice(0, 16) } : undefined} /></>
@@ -940,8 +940,8 @@ function FlightsCard({ flights }: { flights?: TripFlights }) {
  * Info tab, banking-app style (layout only, made-up numbers): a maroon top saying "Your trip to {destination}", a swipeable
  * row of two cards with a dot for each (the filled dot follows the swipe), then the upcoming trip and planned rounds. It runs edge to edge and down to the bottom of the screen.
  */
-function InfoAccount({ draft, draftPlayers, teamDraft, isOrganizer, momentumEvents, settingsHref, flights, weather, itinerary, travel, tripNow, liveRound, rounds, afterRound, onOpenItinerary }: {
-  draft: GolfTripDraft; settingsHref: string; draftPlayers: import("./TripDraftRoom").DraftRoomPlayer[];
+function InfoAccount({ draftScope, draft, draftPlayers, teamDraft, isOrganizer, momentumEvents, settingsHref, flights, weather, itinerary, travel, tripNow, liveRound, rounds, afterRound, onOpenItinerary }: {
+  draftScope: string; draft: GolfTripDraft; settingsHref: string; draftPlayers: import("./TripDraftRoom").DraftRoomPlayer[];
   /** Momentum: the team draft (its Draftboard) and the round highlights, for this trip. */
   teamDraft?: TeamDraft; momentumEvents: MomentumEvent[];
   /** The organizer gets Edit on Team Draft. */
@@ -973,16 +973,17 @@ function InfoAccount({ draft, draftPlayers, teamDraft, isOrganizer, momentumEven
         <QuickWeather weather={weather} />
       </Suspense>}
     </div>
-    {/* Momentum (between the heading and the boxes): the Draftboard before a team draft, round highlights during the trip,
+    {/* Momentum (between the heading and the boxes): round highlights during the trip,
         otherwise Mom — my live notifications, a countdown to arrival day, or the next round. */}
     <div className={styles.momSlot}>
-      <TripMomentum players={draftPlayers} draft={teamDraft} startAt={tripNow} editHref={isOrganizer ? settingsHref : undefined} events={momentumEvents}
+      <TripMomentum events={momentumEvents}
         fallback={<MomSection travel={travel} arrivalDay={draft.startDate} plans={itinerary ?? []} startAt={tripNow} rounds={rounds} afterRound={afterRound} />} />
     </div>
     </div>
     {/* Two boxes, one over the other, 5% in from each side: LIVE / NOW then NEXT, or NEXT then UPCOMING (status top right).
         Tap one to open Info → Itinerary. Trips without an itinerary keep the Flights card. */}
     <div className={styles.liveBoxes}>
+      <TripDraftWidget scope={draftScope} roundCount={draft.includesTournament === "yes" ? rounds?.length ?? 0 : 0} players={draftPlayers} draft={teamDraft} startAt={tripNow} editHref={isOrganizer ? settingsHref : undefined} />
       {itinerary
         ? boxes.length
           ? boxes.map(({ status, item }) => <ItineraryCard key={item.id} status={status} item={item} onOpen={onOpenItinerary} />)

@@ -1,4 +1,5 @@
 import { SeasonCatalogProvider } from "@/components/SeasonCatalogProvider";
+import { ModalScrollLock } from "@/components/ModalScrollLock";
 import { getSeasonCatalog } from "@/lib/data/seasonCatalog";
 import type { Metadata, Viewport } from "next";
 import { Spectral, Barlow, Barlow_Semi_Condensed } from "next/font/google";
@@ -56,6 +57,7 @@ export default async function RootLayout({
       className={`${spectral.variable} ${barlow.variable} ${barlowCondensed.variable}`}
     >
       <body className="min-h-screen bg-cream-50 font-sans text-ink-900 antialiased">
+        <ModalScrollLock />
         <SeasonCatalogProvider initial={catalog}><SiteChrome nextTournamentOverride={nextTournamentOverride}>{children}</SiteChrome></SeasonCatalogProvider>
       </body>
     </html>

@@ -2857,6 +2857,37 @@ Three tabs in Predict, each bet a card; *(team)* = only for trips with a team co
 
 **Done means.** New and existing highlights tests pass, TypeScript and targeted lint are clean, the check script reports correctly on a real export, and nothing outside `lib/highlights/`, the script and this section changes.
 
+### Round: Highlights Engine Phase H2.1 — message variations (owner request 2026-10-17)
+
+**Hierarchy.** Parent Rule (`HL-001`) → Conditional Trigger (`HL-001-C01`, owns the Tier) → Message Variations (`HL-001-C01-V01`, `-V02` …). A conditional can have any number of variations. Detection only looks at rule + tier; variations only change what the notification says.
+
+**Sheet rows (same six tabs, same eight columns — no new column).**
+
+| Rule ID | Row type | Rule / conditional | Tier | Headline | Notification text | Status |
+|---|---|---|---|---|---|---|
+| HL-001 | PARENT | Birdie streak | | | | Approved |
+| HL-001-C01 | CONDITIONAL | 3 consecutive birdies | 3 | *(blank)* | *(blank)* | Approved |
+| HL-001-C01-V01 | VARIATION | *(optional short name)* | *(blank)* | {player}'s heating up! 🔥 | {count} birdies in a row. | Approved |
+| HL-001-C01-V02 | VARIATION | | | Somebody check those clubs! 👀 | … | Approved |
+| HL-001-C01-V03 | VARIATION | | | Three's a party! 🐦 | … | Draft |
+
+- VARIATION rows belong to the nearest CONDITIONAL above them under the same PARENT; one with no CONDITIONAL above it is an error. Row type is matched in any case.
+- Variation IDs are typed (`<conditional ID>-V01`, two digits, unique, never from row position). `V00` is reserved (see legacy). A Tier on a VARIATION row is ignored with a warning.
+- **Statuses:** Draft / Approved / Disabled on every row. A message can be picked only when the variation, its conditional and its rule are all Approved. A conditional fires only if it has at least one such message.
+
+**Legacy single-message conditionals (backward compatible).** A CONDITIONAL row with its own Headline / Notification text and no VARIATION rows still works: that copy becomes its one built-in variation `<conditional ID>-V00`, sharing the conditional's status cell. Today's sheet (61 conditionals) imports as 61 × V00 unchanged. Moving that copy into a `-V01` row later is a copy change (V00 removed, V01 added), not a behavior change. A conditional with BOTH its own copy and VARIATION rows is an error once Approved (warning in Draft): move the copy into a VARIATION row.
+
+**Validation added.** Missing / malformed / reserved / duplicate variation IDs and IDs not matching their conditional (always errors); orphan VARIATION rows; Approved trigger with no message at all (error) or none Approved (warning — it won't fire); copy, template, variable, detector-variable and length checks per variation (errors only on live ones; Disabled ones skipped); identical wording in two variations (warning); Approved variation under a non-Approved conditional (warning).
+
+**Change classification.** Adding, removing, rewording or approving a variation = **copy** (no behavior confirm). A conditional starting or stopping to fire — including when its last live variation is turned off — or its Tier changing = **behavior**. Variation label / notes = metadata. Fingerprints ignore variation row order; any variation wording or status change gives a new one. Stored config `schemaVersion` is now 2.
+
+**Selection (designed now, built in H5 with the detectors — not in this round).**
+- **Once per event:** when a highlight event is first created, one variation is picked and rendered; the event stores the exact headline, body, rule ID, conditional ID, variation ID and config version. Re-processing, reconciliation, corrections that withdraw/restore it, template edits and rollbacks never re-pick or re-render a stored event. Every recipient sees the same text.
+- **Random with anti-repetition, scoped per group + conditional:** eligible = the live variations of that conditional in the active version. Exclude the ⌊n/2⌋ most recently used variations for that same conditional in that same trip / tournament edition (read from its stored events — no extra state); pick uniformly at random from the rest with a server-side random source (injected in tests).
+- **Edge cases:** n = 1 → always that one (no protection possible); n = 2 → alternates; n = 3 → never the previous one; n = 6 → never one of the last 3. Recently used IDs that are no longer live are ignored. No live variation → the conditional doesn't fire (the validator warns).
+
+**Files.** Changed in `lib/highlights/`: `types.ts` (HighlightVariation, VARIATION_ID_PATTERN, schemaVersion 2), `sheetRows.ts` (VARIATION row type), `importer.ts` (variations + legacy V00), `validator.ts` (variation checks, `isApprovedTrigger` / `isLiveVariation`), `changes.ts` (variation-level copy changes), `canonical.ts` (variations in the fingerprint), `draft.ts` (one preview line per live variation, variation counts), `scripts/check-highlights-xlsx.ts`, tests + `variationSheet()` fixture. No SQL, routes, UI, scoring or notification changes; the Google Sheet is not edited.
+
 ## Notifications — native App Store app (proposed 2026-10-16; Phase 1 approved and built 2026-10-16)
 
 **What it does / who uses it.** Players and organizers get alerts about their trips and tournaments in three places: (1) **phone notifications** on the lock screen and as banners when the phone is unlocked, (2) a **Live Activity** on the iPhone lock screen and Dynamic Island while a round is live, (3) **in-app notifications**: a bell with a list, plus a short banner at the top while the app is open. The Maroon is becoming a real App Store app (Capacitor wrapper, Xcode already set up by the owner), so everything is built native-ready: the web code, the Swift files and the bridge are all in the repo, ready to drop into Xcode.

@@ -31,3 +31,15 @@
 /* Notifications panel: the Team Draft item above the round alerts, with a rule under it. */
 .notice{gap:12px;padding-bottom:20px;margin-bottom:8px;border-bottom:1px solid rgba(220,196,149,.3)}
 .momentum.dualDraft{height:160px;flex-shrink:0;justify-content:space-around}
+
+/* Upcoming draft card uses the same white surface and inset as the itinerary cards. */
+.draftWidget{box-sizing:border-box;width:100%;padding:16px 14px;border-radius:12px;background:#fff;box-shadow:0 3px 14px rgba(36,0,1,.08)}
+.draftWidget .draft + .draft{margin-top:14px;padding-top:14px;border-top:1px solid #e9e2d8}
+.draftWidget .draftTop{height:auto;flex-wrap:wrap;row-gap:5px}
+.draftWidget .draftTitle,.draftWidget .digits{color:var(--color-maroon-900)}
+.draftWidget .draftWhen{flex-basis:100%;order:3;white-space:normal;line-height:1.4;color:#73675f}
+.draftWidget .edit{margin-left:auto;color:#7b253b}
+.draftWidget .label{color:#73675f}
+.draftWidget .colon{color:#ab9470}
+.draftWidget .room{border-color:#7b253b;color:#7b253b;background:#faf5ee}
+.draftWidget :is(.edit,.room):focus-visible{outline-color:#7b253b}

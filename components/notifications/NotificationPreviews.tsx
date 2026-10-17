@@ -3,9 +3,9 @@
 import { AlertTriangle, Bell, CalendarClock, Camera, Check, ClipboardCheck, Flame, Flashlight, Link2, LockKeyhole, Mail, Trophy, UserPlus, X, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
-import { liveActivityContent, newestFirst, timeAgo, unreadCount } from "@/lib/notifications/format";
+import { formatPoints, liveActivityContent, matchMark, newestFirst, timeAgo, unreadCount } from "@/lib/notifications/format";
 import type { AppNotification, LiveRoundActivity, NotificationKind } from "@/lib/notifications/types";
-import { NOTIFICATION_PREVIEWS, SAMPLE_FINAL_ROUND, SAMPLE_LIVE_MATCH, SAMPLE_LIVE_ROUND, SAMPLE_NOTIFICATIONS, SAMPLE_NOW, type NotificationPreview, type NotificationSurface } from "@/lib/dev/sampleNotifications";
+import { NOTIFICATION_PREVIEWS, SAMPLE_FINAL_ROUND, SAMPLE_LIVE_MATCH, SAMPLE_LIVE_ROUND, SAMPLE_LIVE_TEAM, SAMPLE_NOTIFICATIONS, SAMPLE_NOW, type NotificationPreview, type NotificationSurface } from "@/lib/dev/sampleNotifications";
 import styles from "./NotificationPreviews.module.css";
 
 const APP_ICON = "/icons/mm-192.png";
@@ -25,6 +25,8 @@ export function NotificationPreviewScreen({ surface }: { surface: NotificationSu
     case "live-lock-match": return <LockScreen><LiveActivityLock activity={SAMPLE_LIVE_MATCH} /></LockScreen>;
     case "live-final": return <LockScreen><LiveActivityLock activity={SAMPLE_FINAL_ROUND} /></LockScreen>;
     case "island-compact": return <HomeScreen island={<IslandCompact activity={SAMPLE_LIVE_MATCH} />} />;
+    case "island-compact-team": return <HomeScreen island={<IslandCompactTeam activity={SAMPLE_LIVE_TEAM} />} />;
+    case "island-minimal-team": return <HomeScreen island={<IslandMinimalTeam activity={SAMPLE_LIVE_TEAM} />} />;
     case "island-expanded": return <HomeScreen island={<IslandExpanded activity={SAMPLE_LIVE_MATCH} />} />;
     case "island-minimal": return <HomeScreen island={<IslandMinimal activity={SAMPLE_LIVE_MATCH} />} />;
     case "bell-unread": return <AppScreen><NotificationList notes={SAMPLE_NOTIFICATIONS} now={SAMPLE_NOW} /></AppScreen>;
@@ -124,6 +126,39 @@ function IslandCompact({ activity }: { activity: LiveRoundActivity }) {
   return <div className={`${styles.island} ${styles.islandCompact}`} aria-label="Dynamic Island, compact">
     <span className={styles.islandLeading}><img src={APP_ICON} alt="" />{content.toPar}</span>
     <span className={styles.islandTrailing}>{content.matchStatus || content.thru}</span>
+  </div>;
+}
+
+/** Owner idea: left of the camera = team points (each in its team's color); right = my round score, match arrow, thru. */
+function IslandCompactTeam({ activity }: { activity: LiveRoundActivity }) {
+  const content = liveActivityContent(activity);
+  const mark = activity.match ? matchMark(activity.match.status) : null;
+  return <div className={`${styles.island} ${styles.islandCompact} ${styles.islandCompactWide}`} aria-label="Dynamic Island, compact (team)">
+    <span className={styles.islandTeams}>
+      {activity.teams && <><b style={{ color: activity.teams.mine.color }}>{formatPoints(activity.teams.mine.points)}</b><b style={{ color: activity.teams.other.color }}>{formatPoints(activity.teams.other.points)}</b></>}
+    </span>
+    <span className={styles.islandMine}>
+      <b>{content.toPar}</b>
+      {mark && <MatchArrow mark={mark} />}
+      <small>{activity.thru}</small>
+    </span>
+  </div>;
+}
+
+/** Filled triangle with the holes: ▲3 = 3 up, ▼2 = 2 down; all square = "AS". */
+function MatchArrow({ mark }: { mark: NonNullable<ReturnType<typeof matchMark>> }) {
+  if (mark.direction === "even") return <span className={styles.matchArrow}>AS</span>;
+  return <span className={styles.matchArrow} aria-label={`${mark.holes} ${mark.direction === "up" ? "up" : "down"}`}>
+    <svg viewBox="0 0 10 10" width="9" height="9" aria-hidden><path d={mark.direction === "up" ? "M5 1 L9.5 9 H0.5 Z" : "M5 9 L9.5 1 H0.5 Z"} fill="currentColor" /></svg>{mark.holes}
+  </span>;
+}
+
+/** The tiny circle fits about 3 characters: my match arrow. */
+function IslandMinimalTeam({ activity }: { activity: LiveRoundActivity }) {
+  const mark = activity.match ? matchMark(activity.match.status) : null;
+  return <div className={styles.islandMinimalRow} aria-label="Dynamic Island, minimal (team)">
+    <div className={`${styles.island} ${styles.islandMinimalMain}`} />
+    <div className={`${styles.island} ${styles.islandMinimal}`}>{mark ? <MatchArrow mark={mark} /> : formatPoints(activity.teams?.mine.points ?? 0)}</div>
   </div>;
 }
 

@@ -39,7 +39,11 @@ export type LiveRoundActivity = {
   position: string | null;
   /** Match play: status from my side ("2 UP", "AS", "1 DN") and the opponent. Null when not in a match. */
   match: { status: string; opponent: string } | null;
+  /** Team competition: my team first. Color is the team's color (text color in the Dynamic Island). Null = no teams. */
+  teams?: { mine: TeamScore; other: TeamScore } | null;
   state: "live" | "final";
   /** ISO time of the last score. */
   updatedAt: string;
 };
+
+export type TeamScore = { name: string; color: string; points: number };

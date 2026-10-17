@@ -63,6 +63,11 @@
 .islandLeading{display:flex;align-items:center;gap:6px;color:#dcc495}
 .islandLeading img{width:22px;height:22px;border-radius:6px}
 .islandTrailing{color:#fff;font-size:13px}
+.islandCompactWide{width:300px;padding:0 14px}
+.islandTeams{display:flex;gap:7px;font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
+.islandMine{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
+.islandMine small{font-size:13px;font-weight:600;color:rgba(255,255,255,.65)}
+.matchArrow{display:inline-flex;align-items:center;gap:2px;color:#dcc495;font-weight:800}
 .islandMinimalRow{position:absolute;inset:0 0 auto;height:60px}
 .islandMinimalMain{width:126px;height:37px;border-radius:20px}
 .islandMinimal{display:grid;place-items:center;width:37px;height:37px;border-radius:50%;left:calc(50% + 71px);transform:none;font-size:13px;font-weight:800;color:#dcc495}

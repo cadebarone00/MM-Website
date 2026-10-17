@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { apnsPayload, BODY_LIMIT, formatToPar, liveActivityContent, newestFirst, safeAppLink, thruLabel, timeAgo, TITLE_LIMIT, unreadCount } from "./format.ts";
+import { apnsPayload, BODY_LIMIT, formatPoints, formatToPar, matchMark, liveActivityContent, newestFirst, safeAppLink, thruLabel, timeAgo, TITLE_LIMIT, unreadCount } from "./format.ts";
 import type { AppNotification, LiveRoundActivity } from "./types.ts";
 
 const note = (over: Partial<AppNotification> = {}): AppNotification => ({
@@ -70,4 +70,20 @@ test("Live Activity content for the Swift widget", () => {
   const done = liveActivityContent(live({ thru: 18, toPar: 0, position: null, match: null }));
   assert.deepEqual(done, { toPar: "E", thru: "F", progress: 1, position: "", matchStatus: "", opponent: "", final: true });
   assert.equal(liveActivityContent(live({ thru: 30 })).progress, 1);
+});
+
+test("team points with halves", () => {
+  assert.equal(formatPoints(3.5), "3½");
+  assert.equal(formatPoints(1.5), "1½");
+  assert.equal(formatPoints(4), "4");
+  assert.equal(formatPoints(0.5), "½");
+  assert.equal(formatPoints(0), "0");
+});
+
+test("match status arrow", () => {
+  assert.deepEqual(matchMark("3 UP"), { direction: "up", holes: 3 });
+  assert.deepEqual(matchMark("2 dn"), { direction: "down", holes: 2 });
+  assert.deepEqual(matchMark("AS"), { direction: "even", holes: 0 });
+  assert.equal(matchMark("Won 3&2"), null);
+  assert.equal(matchMark(""), null);
 });

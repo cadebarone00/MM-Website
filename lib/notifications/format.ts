@@ -71,3 +71,18 @@ export function liveActivityContent(activity: LiveRoundActivity) {
     final: activity.state === "final" || activity.thru >= activity.holes,
   };
 }
+
+/** Team points with halves: 3.5 → "3½", 4 → "4", 0.5 → "½". */
+export function formatPoints(points: number): string {
+  const whole = Math.floor(points);
+  const half = points - whole >= 0.5;
+  return half ? `${whole === 0 ? "" : whole}½` : `${whole}`;
+}
+
+/** Match status for a small arrow: "3 UP" → up 3, "2 DN" → down 2, "AS" → even. Anything else (e.g. "Won 3&2") → null. */
+export function matchMark(status: string): { direction: "up" | "down" | "even"; holes: number } | null {
+  const text = status.trim().toUpperCase();
+  if (text === "AS") return { direction: "even", holes: 0 };
+  const found = /^(\d+)\s*(UP|DN|DOWN)$/.exec(text);
+  return found ? { direction: found[2] === "UP" ? "up" : "down", holes: Number(found[1]) } : null;
+}

@@ -6,6 +6,10 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-10-17 - Dedicated Home draft widget (implemented locally; deployment not verified).** Team and match draft countdowns now occupy their own white rounded card below MOM, overlapping the maroon-to-white transition like the itinerary cards. Previously draft content replaced MOM. MOM now keeps highlights or its normal notifications/countdown. The widget reads existing trip-scoped team and match settings, shows the next upcoming match draft, and hides when no draft remains. Team Draft Room and organizer Edit remain available. Section 22 and Mermaid annotation updated; overview mappings unchanged. Review: docs/home-draft-widget-review.md.
+
+**2026-10-17 - Pull-up background scroll lock (implemented locally; deployment not verified).** Open dialogs and pull-ups now lock page scrolling while allowing scrolling within the active panel. Wheel/touch gestures outside the panel and at its scroll boundaries cannot move the background. Nested panels keep the lock until all are closed; the scoring drawer participates while expanded. Applies centrally to native dialogs and ARIA dialogs, including match details, profiles, Predict, team stats, action sheets and itinerary details. Section 22 and Mermaid annotation updated; overview mappings unchanged.
+
 **2026-10-16 - Compact match Gross/Net control (presentation implemented locally; deployment not verified).** In Both scoring mode, centered the Gross/Net switch directly below the featured Match selector and reduced its height from 36px to 20px with 9px labels. Its reserved layout space increases by 4px, pushing the team names, divider and match rows down together. Gross-only and Net-only presentation remains unchanged. Section 22 and Mermaid annotation updated; overview mappings unchanged.
 
 **2026-10-16 - View current button label (presentation implemented locally; deployment not verified).** Renamed View latest to View current in the historical standings notice. The button still returns to the source?s current/latest available round. Section 22 and Mermaid annotation updated; overview mappings unchanged.
@@ -409,7 +413,7 @@ flowchart TD
   %% Shared Golf course text area extends to 6px from each previous/next arrow icon.
   %% Home maroon background extends 25px below header, behind first white card without moving content.
   %% Golf course title fixed at 14.4px; previous/next icon edges 6px from phone sides.
-  %% Home trip date and weather bottoms align -> 10px -> grey-framed Momentum -> 10px -> first white card.
+  %% Home trip date and weather -> grey-framed MOM highlights/reminders -> white upcoming-drafts widget at maroon/white crease -> itinerary cards.
   %% Shared Golf course name measures its text and shrinks from 20.8px to fit between arrows without truncating normal long names.
   %% Selected Home-through-Itinerary gold underline sits above continuous grey divider without covering it.
   %% Centered Golf header: course 20.8px, exactly twice 10.4px date/day-format text; single-line ellipsis.
@@ -441,6 +445,7 @@ flowchart TD
   %% Lower match-row values align with lead-fill scores; top board restores top-aligned status stack (2px margin).
   %% THRU/TEE TIME labels retain original size; F/holes/time values match lead-fill status size (16.2px board, 15px list, 13px narrow list).
   %% Match status: empty scorecards preserve supplied result/progress; pre-round tee time -> THRU holes -> THRU F when finished.
+  %% Any visible pull-up/dialog -> lock background scrolling -> scroll active panel only -> unlock after final panel closes.
   %% Standings notice keeps a fixed 50px height between horizontal lines; shared-ball format text fits inside without shifting the list.
   %% Shared-ball selection -> last preceding own-ball leaderboard and scorecards -> notice between full-width lines: standings round + Format being played in Round N.
   %% Individual leaderboard -> latest source round by default -> selected round snapshot -> past-round notice between board/list -> View current; shared-ball format note and carried standings.
@@ -1104,7 +1109,7 @@ Below its white itinerary/flight cards, Home now shows a Feed heading with blank
 
 Golf section pills use 32.3px minimum height, 15.3px horizontal padding and 12.75px text after a 15% size reduction. Their centered selection and elastic scrolling remain.
 
-Home aligns the bottom of quick weather with the trip date. Momentum sits inside matching 2px grey top/bottom dividers, 10px after that shared baseline and 10px before the first white card. The Home header grows with Momentum content, including dual drafts. Its maroon background extends 25px beyond the header behind the first white card, without changing card positions.
+Home aligns the bottom of quick weather with the trip date. Momentum sits inside matching 2px grey top/bottom dividers, 10px after that shared baseline and 10px before the first white card. MOM retains its 80px strip; upcoming drafts occupy a separate white card below it. Its maroon background extends 25px beyond the header behind the first white card, without changing card positions.
 
 The selected Home-through-Itinerary tab has a gold underline directly above its continuous grey divider; both lines remain visible.
 
@@ -1130,11 +1135,13 @@ Golf uses a shared header across sections: date above course, with competitive r
 
 **Historical individual standings:** The real 2026 development source opens at Round 8. Eight snapshots map original individual cards to sessions 1, 3, 4, 5, 7 and 8; alternate-shot sessions 2 and 6 carry the full latest preceding own-ball leaderboard forward, including that round?s scores, Thru and holes. Player scorecards open on the carried round. Earlier totals accumulate supplied cards; Round 8 uses published final individual standings, which exclude the last card, while still displaying its round-only scores. Imported final match results remain authoritative. A selected past leaderboard shows Standings after Round # and View current between the big board and player list; shared-ball formats identify the last own-ball standings round and additionally show {Format} being played in Round {selected round} (Chapman, Scramble and Alternate Shot). The notice sits between full-width horizontal divider lines, with no rounded container, and stays 50px tall. Shared-ball format text fits within that fixed space at 11px with compact line spacing. The source?s latest round is the return target, not a future scheduled round. Non-source simulator states disable archive snapshots and retain their generated behavior. Other sources still need supplied snapshots; missing history remains unavailable. No new data fetches or writes. Unresolved data-rights/privacy/retention review is documented in docs/historical-trip-standings-review.md.
 
+**Pull-up scrolling:** A shared document-level lock prevents background page scrolling while a visible native/ARIA dialog or expanded scoring panel is open. Wheel and single-touch scrolling stays inside the active panel and cannot chain to the page at its boundaries. Nested dialogs retain the lock until closed; ordinary page scrolling resumes after the final panel closes. Existing close controls and panel drag gestures remain.
+
 **Golf course header alignment:** The Golf panel uses the same zero top margin across Leaderboard/Overview, Matches, Games and Stats, independent of summary-board visibility, so switching to Stats keeps the shared course header and section pills at the same position.
 
 **Golf section pills:** Leaderboard/Overview, Matches, Games and Stats use a horizontally scrollable outlined pill strip. The selected pill fills gold and centers in the strip on selection or viewport resizing; edge spacers allow first/last pills to center too. Reduced-motion preference uses immediate scrolling. Existing section availability, content and Predict pill behavior are preserved.
 
-**Dual draft Momentum conditional:** Dev Home exposes Upcoming Team Draft + Match Draft. Its fixtures create a team draft one day ahead, a past Round 1 match draft and upcoming Round 2–4 drafts. Momentum doubles to 160px only while both the team draft and a future match draft exist, with team countdown above the earliest future match countdown. The fixture is stable during mounted clock ticks and does not write organizer settings. Live organizer-match-draft countdown integration remains unimplemented; default Momentum remains 80px.
+**Upcoming draft widget:** Home places a rounded white card first in the inset itinerary-card stack, overlapping the maroon-to-white transition. It shows the configured upcoming team draft and earliest upcoming match draft from the existing saved-trip setup provider or scoped development/just-created settings, mapped by rounds per day. A single applicable draft also shows; no applicable drafts hides the widget. Missing dates show an unset schedule. Timed drafts disappear at their scheduled start, without asserting completion. Organizer-only Edit links use existing settings; Team Draft Room retains its existing local-only picks. Match drafts show a countdown only. The development Upcoming Team Draft + Match Draft fixture now renders inside this widget, skipping its past Round 1. MOM independently keeps highlights or its normal fallback. No new storage, fetches, notifications or official draft execution.
 
 **Itinerary Delete Plan:** A top-right button in the plan detail sheet offers Confirm/Keep plan for owned personal travel bookings, using the existing My Travel deletion callback and persistence. Removing a booking also removes participant entries and all generated check-in/out or pickup/return entries. Non-owned plans and scheduled golf rounds display a disabled button. No server deletion API, permissions expansion or new retention policy is added.
 
