@@ -7,11 +7,15 @@ import type { GameConfig, GameCourse, GamePlayer, HoleInput } from "./roundGames
  * scorecard (the leaderboard's hole scores).
  */
 
-/** A trip game as saved: which round, the game and its options, the players (by name) and each hole's extra pick. */
-export interface TripGame { key: string; round: number; config: GameConfig; players: string[]; inputs: HoleInput[] }
+/** A trip game as saved: which round, the game and its options, the players (by name), each hole's extra pick, and
+ *  whether the pre-round options are done (`started`). */
+export interface TripGame { key: string; round: number; config: GameConfig; players: string[]; inputs: HoleInput[]; started?: boolean }
 
-/** Who I am on the trip: the first player of the first match (the same rule the Golf tab uses for "you"). */
-export function meOn(match: GolfMatchPreview): string | undefined {
+/** Who I am on the trip: the signed-in player (matched by name), else the first player of the first match. */
+export function meOn(match: GolfMatchPreview, signedInName?: string | null): string | undefined {
+  const want = signedInName?.trim().toLowerCase();
+  const mine = want ? match.leaderboard.find((row) => row.golfer.name.trim().toLowerCase() === want)?.golfer.name : undefined;
+  if (mine) return mine;
   const first = match.matches[0];
   return (first ? normalizeCompetitor(first.left).golfers[0]?.name : undefined) ?? match.leaderboard[0]?.golfer.name;
 }

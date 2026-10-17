@@ -12,7 +12,7 @@ import { applyJustCreatedSetup, type JustCreatedSetup } from "@/lib/dev/justCrea
 import { simulatorNow, simulatorRoundLive, simulatorScorecard, simulatorTripData, type SimulatorTripData as TripData } from "@/lib/dev/golfTripSimulatorData";
 import { DEFAULT_SIMULATOR_STATE, competitionSetupTypes } from "@/lib/dev/simulator";
 import { dispatchDevRounds, useDevPlayerRounds } from "@/components/dev/useDevPlayerRounds";
-import { DEFAULT_DEV_ACCOUNT } from "@/lib/dev/devAccounts";
+import { DEFAULT_DEV_ACCOUNT, devAccount } from "@/lib/dev/devAccounts";
 import { devRoundMeta, devTripRound, devTripRoundId } from "@/lib/dev/devPlayerRounds";
 import { devTripScoring } from "@/lib/dev/devTripScores";
 import { liveCardFromSheet, type SheetCard } from "@/lib/platform/liveCards";
@@ -24,7 +24,9 @@ import type { TripWeather } from "@/lib/platform/weather/types";
 
 
 /** Data selection belongs to the dev route, never to the shared trip UI. */
-export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false, fictional = false, settingsHref = "/dev/tournament/settings" }: {
+export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false, fictional = false, settingsHref = "/dev/tournament/settings", signedInName = null }: {
+  /** The real signed-in account's name: who "you" are on the Golf tab (falls back to the simulator's signed-in account). */
+  signedInName?: string | null;
   mock: TripData;
   maroon: TripData;
   unmapped: Record<string, unknown>;
@@ -102,7 +104,7 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
       organizer={viewAs === DEFAULT_DEV_ACCOUNT}
       savedTeamDraft={justCreated ? { teamType: readJustCreated<{ team: string | null }>("localCompetitionType")?.team ?? null, selection: readJustCreated("teamSelection") ?? null,
         date: readJustCreated("draftDate") ?? "", time: readJustCreated("draftTime") ?? "", type: readJustCreated("draftType") ?? "Snake", method: readJustCreated("draftMethod") ?? "Captain's Picks" } : setup.teamSelection ? {teamType:(setup.localCompetitionType as {team:string|null}|undefined)?.team??(config.source==="maroon"?"2 Teams":null),selection:setup.teamSelection as TeamDraft["selection"],date:(setup.draftDate as string)??"",time:(setup.draftTime as string)??"",type:(setup.draftType as TeamDraft["type"])??"Snake",method:(setup.draftMethod as TeamDraft["method"])??"Captain's Picks"} : undefined}
-      onTravelChange={travel => justCreated ? writeJustCreated("travel", travel) : writeDevSetup(scope,"travel",travel)} weather={weather} previewMatch={scoring.shownMatch} tripStats={sampleStats ?? scoring.tripStats} scoreChanges={scoring.scoreChanges} attesteeName={scoring.attesteeName} attestedStrokes={scoring.myLiveCard?.holes.map((h) => h.attestStrokes)} onAttestChange={onAttestChange} scoringEdits={saved?.edits} onScoringCardChange={onScoringCardChange} roundLive={roundLive} opponentCardMatches={config.state.opponentCard !== "mismatch"} scoringPrefill={scoringPrefill} onScoringSubmit={onScoringSubmit} submittedCard={submittedCard} scoringOwner={viewAs} navigation={simulator?.navigation} onNavigationChange={reportNavigation} settingsHref={settingsHref} backHref="/golf-trips" />
+      onTravelChange={travel => justCreated ? writeJustCreated("travel", travel) : writeDevSetup(scope,"travel",travel)} weather={weather} previewMatch={scoring.shownMatch} tripStats={sampleStats ?? scoring.tripStats} scoreChanges={scoring.scoreChanges} attesteeName={scoring.attesteeName} attestedStrokes={scoring.myLiveCard?.holes.map((h) => h.attestStrokes)} onAttestChange={onAttestChange} scoringEdits={saved?.edits} onScoringCardChange={onScoringCardChange} roundLive={roundLive} opponentCardMatches={config.state.opponentCard !== "mismatch"} scoringPrefill={scoringPrefill} onScoringSubmit={onScoringSubmit} submittedCard={submittedCard} scoringOwner={viewAs} signedInName={signedInName ?? devAccount(viewAs).name} navigation={simulator?.navigation} onNavigationChange={reportNavigation} settingsHref={settingsHref} backHref="/golf-trips" />
     {!simulator && !embedded && !fictional && view === "maroon" && <details style={{ maxWidth: 920, margin: "24px auto", padding: 12, background: "#fff8ef", borderRadius: 8 }}>
       <summary style={{ fontWeight: 600 }}>DEV: Unmapped Tournament Data (click to view)</summary>
       <pre style={{ whiteSpace: "pre-wrap", marginTop: 8 }}>{JSON.stringify(unmapped, null, 2)}</pre>

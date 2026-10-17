@@ -24,6 +24,9 @@ function trip(teeTimes: boolean): GolfMatchPreview {
 
 test("my group: my tee time, me first; without tee times, the players in my match", () => {
   assert.equal(meOn(trip(true)), "Cam");
+  assert.equal(meOn(trip(true), "Someone Else"), "Cam", "a name that isn't on the trip falls back");
+  assert.equal(meOn(trip(true), " Luke "), "Luke", "the signed-in player, matched by name");
+  assert.deepEqual(groupOf(trip(true), "Luke"), ["Luke", "Cam", "Drew", "Cade"]);
   assert.deepEqual(groupOf(trip(true), "Cam"), ["Cam", "Drew", "Cade", "Luke"]);
   assert.deepEqual(groupOf(trip(false), "Pete"), ["Pete", "Hugo", "Kyle", "Quez"]);
 });

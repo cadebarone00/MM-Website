@@ -67,3 +67,7 @@ div.gameSheet{position:fixed;left:50%;width:min(92vw,420px);max-height:none;tran
 .holeStep button:disabled{opacity:.35;cursor:default}
 .teamRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0}
 .sheetGame[aria-pressed=true]{border-color:#dcc495;background:rgba(220,196,149,.14)}
+/* New game: Create stays in view at the bottom of the sheet. Pre-round options sit on the game card. */
+.sheetFooter{position:sticky;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,var(--color-maroon-900,#240001) 70%,transparent)}
+.sheetFooter .sheetPrimary{width:100%;margin:0}
+.preRound{display:grid;gap:12px;margin-top:8px}
