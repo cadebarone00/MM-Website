@@ -93,15 +93,17 @@ function GameCard({ game, match, onInput, onRemove }: { game: TripGame; match: G
 /** Before the round: the game's options, then Start (owner request 2026-10-17). */
 function PreRound({ game, onChange, onStart, onRemove }: { game: TripGame; onChange: (config: GameConfig) => void; onStart: () => void; onRemove: () => void }) {
   const def = gameDef(game.config.id), config = game.config;
+  const [info, setInfo] = useState(false);
   const teams = config.teams ?? game.players.map((_, i) => i < game.players.length / 2 ? 0 : 1);
   const teamsOk = !def.teams || (teams.includes(0) && teams.includes(1));
   const set = (part: Partial<GameConfig>) => onChange({ ...config, ...(def.teams ? { teams } : {}), ...part });
   return <article className={styles.section} aria-label={`${def.name} setup`}>
     <div className={styles.activeGameHead}>
-      <div><h3>{def.name}</h3><p className={styles.summary}>Round {game.round} · Before you tee off</p></div>
+      <div><h3>{def.name} <button type="button" className={styles.gameInfo} aria-label={`About ${def.name}`} aria-expanded={info} onClick={() => setInfo(!info)}>i</button></h3>
+        <p className={styles.summary}>Round {game.round} · Before you tee off</p></div>
       <button type="button" className={styles.back} onClick={onRemove}>Remove</button>
     </div>
-    <p className={styles.summary}>{def.blurb}</p>
+    {info && <p className={styles.gameBlurbDark}>{def.blurb}</p>}
     <div className={styles.preRound}>
       <div className={styles.sheetSetting}><span>Scoring</span><div className={styles.sheetChoices}>
         {[false, true].map((value) => <button type="button" key={String(value)} aria-pressed={config.net === value} onClick={() => set({ net: value })}>{value ? "Net (handicaps)" : "Gross"}</button>)}
@@ -126,6 +128,7 @@ function NewGame({ box, group, rounds, current, onClose, onCreate }: { box: { to
   const [round, setRound] = useState(rounds.includes(current) ? current : rounds[0]);
   const [players, setPlayers] = useState<string[]>(group);
   const [id, setId] = useState<GameId | null>(null);
+  const [info, setInfo] = useState<GameId | null>(null);
   const choices = gamesFor(players.length);
   const toggle = (name: string) => { setId(null); setPlayers((list) => list.includes(name) ? list.filter((n) => n !== name) : group.filter((n) => list.includes(n) || n === name)); };
   const create = () => {
@@ -148,9 +151,13 @@ function NewGame({ box, group, rounds, current, onClose, onCreate }: { box: { to
       </div>
       <div className={styles.sheetSetting}><span>Game · {players.length} players</span>
         {choices.length === 0 && <p className={styles.sheetHint}>No games fit {players.length} player{players.length === 1 ? "" : "s"}. Add someone from your group.</p>}
-        {choices.map((g) => <button type="button" key={g.id} className={styles.sheetGame} aria-pressed={id === g.id} onClick={() => setId(g.id)}>
-          <strong>{g.name}</strong><span>{g.blurb}</span>
-        </button>)}
+        <div className={styles.gameGrid}>
+          {choices.map((g) => <div key={g.id} className={styles.gameOption}>
+            <button type="button" className={styles.sheetGame} aria-pressed={id === g.id} onClick={() => setId(g.id)}><strong>{g.name}</strong></button>
+            <button type="button" className={styles.gameInfo} aria-label={`About ${g.name}`} aria-expanded={info === g.id} onClick={() => setInfo(info === g.id ? null : g.id)}>i</button>
+            {info === g.id && <p className={styles.gameBlurb}>{g.blurb}</p>}
+          </div>)}
+        </div>
       </div>
     </div>
     <div className={styles.sheetFooter}>

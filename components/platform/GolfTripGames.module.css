@@ -71,3 +71,29 @@ div.gameSheet{position:fixed;left:50%;width:min(92vw,420px);max-height:none;tran
 .sheetFooter{position:sticky;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,var(--color-maroon-900,#240001) 70%,transparent)}
 .sheetFooter .sheetPrimary{width:100%;margin:0}
 .preRound{display:grid;gap:12px;margin-top:8px}
+/* Compact pass (owner request 2026-10-17): smaller cards, game descriptions behind an "i". */
+.root{gap:10px;padding-bottom:20px;font-size:13px}
+.root h3{font-size:16px}
+.activeGamesTitle{font-size:22px}
+.section{gap:8px;padding:10px 12px;border-radius:14px}
+.sheetBody{gap:10px}
+.sheetSetting{gap:6px}
+.sheetChoices{gap:6px}
+.sheetChoices button{flex:1 1 90px;min-height:34px;padding:5px 8px;border-radius:10px;font-size:13px}
+.sheetPlayer{min-height:38px;padding:5px 10px;gap:10px}
+.gameGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.gameOption{position:relative;display:grid;align-content:start}
+.gameOption .sheetGame{min-height:44px;padding:8px 26px 8px 10px;border-radius:10px}
+.gameOption .sheetGame strong{font-size:13px;line-height:1.2}
+.gameInfo{display:inline-grid;place-items:center;width:18px;height:18px;padding:0;border:1px solid rgba(160,123,51,.6);border-radius:50%;background:transparent;color:#a07b33;font:italic 700 11px/1 Georgia,serif;vertical-align:middle;cursor:pointer}
+.gameOption .gameInfo{position:absolute;top:6px;right:6px}
+.section .gameInfo{border-color:rgba(220,196,149,.55);color:#dcc495;margin-left:4px}
+.gameBlurb{grid-column:1/-1;margin:4px 2px 0;font-size:12px;line-height:1.35;color:#555}
+.gameBlurbDark{font-size:12px;line-height:1.35;color:rgba(255,255,255,.7)}
+/* On the dark game card, the picked option is gold (not dark on dark). */
+.section .sheetChoices button{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#fff}
+.section .sheetChoices button[aria-pressed=true]{background:#dcc495;border-color:#dcc495;color:#2a0d16}
+.section .sheetSetting>span{font-size:12px;color:rgba(255,255,255,.75)}
+.preRound{gap:8px;margin-top:2px}
+.holePick{gap:6px;margin:4px 0;padding:8px}
+.gameOption .sheetGame[aria-pressed=true]{border:2px solid #591c2e;background:#f3e6c9}

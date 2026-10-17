@@ -60,3 +60,34 @@
 .bestWorst small{font:700 10px var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(251,248,241,.55)}
 .bestWorst span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 13px var(--font-barlow),sans-serif;color:#fbf8f1}
 .bestWorst b{font:800 16px var(--font-barlow),sans-serif;color:#dcc495}
+/* Compact pass (owner request 2026-10-17): smaller cards, fewer words. */
+.switch{margin-bottom:10px}
+.switch button{min-height:30px;font-size:12px}
+.heading{margin:12px 0 6px;font-size:10px}
+.ranked li{min-height:28px;font-size:13px}
+.tiles{gap:6px;margin-top:10px}
+.tile{gap:1px;padding:7px 9px;border-radius:10px}
+.tileLabel{font-size:9px}
+.tileMain{font-size:16px}
+.tileSub{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.parRow{gap:6px}
+.parRow div{padding:6px}
+.parRow b{font-size:15px}
+.leaders{gap:4px}
+.leader{padding:6px 8px;border-radius:10px}
+.leaderRow{display:flex;align-items:center;gap:6px}
+.leaderHead{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr);align-items:center;gap:6px;flex:1;min-width:0}
+.leaderHead b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bw{display:flex;justify-content:space-between;gap:4px;min-width:0;padding:2px 6px;border-radius:6px;background:rgba(0,0,0,.18);border-left:2px solid;font:600 12px var(--font-barlow),sans-serif;color:#fbf8f1;white-space:nowrap;overflow:hidden}
+.bw[data-tone=easy]{border-left-color:#8fd0a5}
+.bw[data-tone=hard]{border-left-color:#e08a8a}
+.bw em{font-style:normal;font-weight:800;color:#dcc495}
+.info{flex:none;display:grid;place-items:center;width:18px;height:18px;padding:0;border:1px solid rgba(220,196,149,.5);border-radius:50%;background:transparent;color:#dcc495;font:700 11px/1 Georgia,serif;font-style:italic;cursor:pointer}
+.infoText{margin:4px 0 0;font:500 11px/1.35 var(--font-barlow),sans-serif;color:rgba(251,248,241,.65)}
+.leader .ranked{margin-top:6px}
+.table th,.table td{padding:6px 5px}
+.playerButton{padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;text-decoration:underline;text-decoration-color:rgba(220,196,149,.5);text-underline-offset:3px;cursor:pointer}
+.roundsRow td{padding:0 0 6px;border-bottom:1px solid rgba(251,248,241,.12)}
+.roundsTable{width:100%;border-collapse:collapse;font:500 12px var(--font-barlow),sans-serif;color:rgba(251,248,241,.8)}
+.roundsTable th,.roundsTable td{padding:4px 5px;border:0;text-align:right}
+.roundsTable th{text-align:left;font-weight:600;padding-left:14px;color:rgba(251,248,241,.65)}

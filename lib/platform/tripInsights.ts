@@ -127,7 +127,7 @@ export function playerStats(rounds: TripRound[], nameOf: (id: string) => string)
     { id: "bounceBack", label: "Bounce back", detail: "Birdie or better after a bogey or worse", unit: "pct", higher: true },
     { id: "fallOff", label: "Fall off", detail: "Bogey or worse after a birdie or better", unit: "pct", higher: false },
     { id: "fairways", label: "Fairways hit", detail: "Par 4s and 5s", unit: "pct", higher: true },
-    { id: "gir", label: "Greens in regulation", detail: "Every hole", unit: "pct", higher: true },
+    { id: "gir", label: "GIR", detail: "Greens in regulation", unit: "pct", higher: true },
     { id: "putts", label: "Putts per round", detail: "Per 18 holes", unit: "num", higher: false },
     { id: "threePutts", label: "3-putts per round", detail: "Per 18 holes", unit: "num", higher: false },
     { id: "scrambling", label: "Scrambling", detail: "Par or better after missing the green", unit: "pct", higher: true },

@@ -21,13 +21,29 @@ const value = (unit: PlayerStat["unit"], n: number) => unit === "pct" ? `${n}%` 
  */
 export function GolfTripStats({ stats, changes = [] }: { stats: TripStatsView; changes?: ScoreChangeLine[] }) {
   const [view, setView] = useState<"course" | "individual">("course");
+  const [openPlayer, setOpenPlayer] = useState<string | null>(null);
   if (!stats.trip) return <p className={styles.empty}>Trip stats show once the first card is submitted.</p>;
   const names = new Map(stats.players.map((p) => [p.profileId, p.name]));
   const nameOf = (id: string) => names.get(id) ?? id;
   const rounds = stats.rounds ?? [];
+  const one = (n: number | null) => n === null ? "—" : n.toFixed(1);
   const row = (key: string, name: string, s: TripStatsTotals, total = false) => <tr key={key} className={total ? styles.total : undefined}>
-    <th scope="row">{name}</th><td>{s.rounds}</td><td>{s.scoringAvg}</td><td>{show(s.puttsAvg)}</td><td>{show(s.fairwayPct, "%")}</td><td>{show(s.greenPct, "%")}</td>
+    <th scope="row">{total ? name : <button type="button" className={styles.playerButton} aria-expanded={openPlayer === key} onClick={() => setOpenPlayer(openPlayer === key ? null : key)}>{name}</button>}</th>
+    <td>{s.rounds}</td><td>{one(s.scoringAvg)}</td><td>{one(s.puttsAvg)}</td><td>{show(s.fairwayPct, "%")}</td><td>{show(s.greenPct, "%")}</td>
   </tr>;
+  // A player's rounds, one line each (owner request 2026-10-17).
+  const roundsOf = (id: string) => <tr key={id + ":rounds"} className={styles.roundsRow}><td colSpan={6}>
+    <table className={styles.roundsTable}><tbody>
+      {rounds.filter((r) => r.profileId === id).map((r, i) => {
+        const toParN = r.holes.reduce((a, h) => a + h.strokes - h.par, 0);
+        const putts = r.holes.every((h) => h.putts !== null) && r.holes.length ? r.holes.reduce((a, h) => a + (h.putts ?? 0), 0) : null;
+        const fw = r.holes.filter((h) => h.par !== 3 && h.fairway), gir = r.holes.filter((h) => h.green);
+        const pctOf = (list: typeof r.holes, hit: (h: (typeof r.holes)[number]) => boolean) => list.length ? `${Math.round(list.filter(hit).length / list.length * 100)}%` : "—";
+        return <tr key={i}><th scope="row">{shortCourse(r.course.name)}</th><td>{r.total}</td><td>{toPar(toParN, 0)}</td><td>{putts ?? "—"}</td>
+          <td>{pctOf(fw, (h) => h.fairway === "center")}</td><td>{pctOf(gir, (h) => h.green === "center")}</td></tr>;
+      })}
+    </tbody></table>
+  </td></tr>;
   return <>
     <div className={styles.switch} role="tablist" aria-label="Stats view">
       {(["course", "individual"] as const).map((v) => <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => setView(v)}>{v === "course" ? "Course" : "Individual"}</button>)}
@@ -37,7 +53,7 @@ export function GolfTripStats({ stats, changes = [] }: { stats: TripStatsView; c
       <h3 className={styles.heading}>All players</h3>
       <div className={styles.scroll}><table className={styles.table}>
         <thead><tr><th scope="col">Player</th><th scope="col">Rds</th><th scope="col">Avg</th><th scope="col">Putts</th><th scope="col">FWY</th><th scope="col">GIR</th></tr></thead>
-        <tbody>{stats.players.map((p) => row(p.profileId, p.name, p))}{row("trip", "Trip", stats.trip, true)}</tbody>
+        <tbody>{stats.players.flatMap((p) => [row(p.profileId, p.name, p), ...(openPlayer === p.profileId ? [roundsOf(p.profileId)] : [])])}{row("trip", "Trip", stats.trip, true)}</tbody>
       </table></div>
     </>}
     {changes.length > 0 && <section className={styles.changes} aria-label="Organizer's own score changes">
@@ -47,33 +63,35 @@ export function GolfTripStats({ stats, changes = [] }: { stats: TripStatsView; c
   </>;
 }
 
-const holeLine = (h: HoleStat) => `${h.course} · Hole ${h.hole} (par ${h.par})`;
-const stretchLine = (s: StretchStat) => `${s.course} · Holes ${s.from}–${s.to}`;
+/** "PGA West Stadium" → "PGA West": the first two words, enough to tell the trip's courses apart. */
+const shortCourse = (name: string) => name.split(/\s+/).slice(0, 2).join(" ");
+const first = (name: string) => name.split(/\s+/)[0];
+const holeLine = (h: HoleStat) => `${shortCourse(h.course)} #${h.hole}`;
+const stretchLine = (s: StretchStat) => `${shortCourse(s.course)} #${s.from}–${s.to}`;
 
 function CourseView({ rounds, nameOf }: { rounds: TripRound[]; nameOf: (id: string) => string }) {
   const c = courseInsights(rounds, nameOf);
   const tiles: { label: string; main: string; sub: string; tone?: "hard" | "easy" }[] = [
     ...(c.hardestHole ? [{ label: "Hardest hole", main: toPar(c.hardestHole.avgToPar), sub: holeLine(c.hardestHole), tone: "hard" as const }] : []),
     ...(c.easiestHole ? [{ label: "Easiest hole", main: toPar(c.easiestHole.avgToPar), sub: holeLine(c.easiestHole), tone: "easy" as const }] : []),
-    ...(c.mostBirdied ? [{ label: "Most birdied hole", main: `${c.mostBirdied.birdies} of ${c.mostBirdied.plays}`, sub: holeLine(c.mostBirdied), tone: "easy" as const }] : []),
-    ...(c.mostBogeyed ? [{ label: "Most bogeyed hole", main: `${c.mostBogeyed.bogeys} of ${c.mostBogeyed.plays}`, sub: holeLine(c.mostBogeyed), tone: "hard" as const }] : []),
-    ...(c.hardestStretch ? [{ label: "Hardest 3-hole stretch", main: toPar(c.hardestStretch.avgToPar), sub: stretchLine(c.hardestStretch), tone: "hard" as const }] : []),
-    ...(c.easiestStretch ? [{ label: "Easiest 3-hole stretch", main: toPar(c.easiestStretch.avgToPar), sub: stretchLine(c.easiestStretch), tone: "easy" as const }] : []),
-    ...(c.bestRound ? [{ label: "Best round", main: `${c.bestRound.total} (${toPar(c.bestRound.toPar, 0)})`, sub: `${c.bestRound.name} · ${c.bestRound.course}`, tone: "easy" as const }] : []),
-    ...(c.worstRound ? [{ label: "Toughest round", main: `${c.worstRound.total} (${toPar(c.worstRound.toPar, 0)})`, sub: `${c.worstRound.name} · ${c.worstRound.course}`, tone: "hard" as const }] : []),
+    ...(c.mostBirdied ? [{ label: "Most birdies", main: `${c.mostBirdied.birdies} of ${c.mostBirdied.plays}`, sub: holeLine(c.mostBirdied), tone: "easy" as const }] : []),
+    ...(c.mostBogeyed ? [{ label: "Most bogeys", main: `${c.mostBogeyed.bogeys} of ${c.mostBogeyed.plays}`, sub: holeLine(c.mostBogeyed), tone: "hard" as const }] : []),
+    ...(c.hardestStretch ? [{ label: "Hardest stretch", main: toPar(c.hardestStretch.avgToPar), sub: stretchLine(c.hardestStretch), tone: "hard" as const }] : []),
+    ...(c.easiestStretch ? [{ label: "Easiest stretch", main: toPar(c.easiestStretch.avgToPar), sub: stretchLine(c.easiestStretch), tone: "easy" as const }] : []),
+    ...(c.bestRound ? [{ label: "Best round", main: `${c.bestRound.total} (${toPar(c.bestRound.toPar, 0)})`, sub: `${first(c.bestRound.name)} · ${shortCourse(c.bestRound.course)}`, tone: "easy" as const }] : []),
+    ...(c.worstRound ? [{ label: "Toughest round", main: `${c.worstRound.total} (${toPar(c.worstRound.toPar, 0)})`, sub: `${first(c.worstRound.name)} · ${shortCourse(c.worstRound.course)}`, tone: "hard" as const }] : []),
   ];
   const t = c.totals, totalHoles = t.eagles + t.birdies + t.pars + t.bogeys + t.doubles;
   return <>
     {c.courses.length > 0 && <section aria-label="Courses ranked">
-      <h3 className={styles.heading}>Courses, hardest first</h3>
+      <h3 className={styles.heading}>Courses · hardest first</h3>
       <ol className={styles.ranked}>
         {c.courses.map((course, i) => <li key={course.course}>
           <span className={styles.rank}>{i + 1}</span>
-          <span className={styles.rankName}>{course.course}<small>{course.rounds} rounds · avg {course.avgScore.toFixed(1)} · {course.birdies} birdies</small></span>
+          <span className={styles.rankName}>{course.course}</span>
           <b>{toPar(course.avgToPar, 1)}</b>
         </li>)}
       </ol>
-      {c.courses.length > 1 && <p className={styles.note}>Hardest: <b>{c.courses[0].course}</b> · Easiest: <b>{c.courses.at(-1)!.course}</b> (average to par per round)</p>}
     </section>}
     <div className={styles.tiles}>
       {tiles.map((tile) => <div key={tile.label} className={styles.tile} data-tone={tile.tone}>
@@ -82,12 +100,12 @@ function CourseView({ rounds, nameOf }: { rounds: TripRound[]; nameOf: (id: stri
         <span className={styles.tileSub}>{tile.sub}</span>
       </div>)}
     </div>
-    <h3 className={styles.heading}>Scoring by par</h3>
+    <h3 className={styles.heading}>By par</h3>
     <div className={styles.parRow}>
       {c.byPar.map((p) => <div key={p.par}><small>Par {p.par}s</small><b>{p.avgToPar === null ? "—" : toPar(p.avgToPar)}</b></div>)}
     </div>
     {totalHoles > 0 && <>
-      <h3 className={styles.heading}>Every hole on the trip ({totalHoles})</h3>
+      <h3 className={styles.heading}>Every hole</h3>
       <div className={styles.mix} role="img" aria-label={`Eagles ${t.eagles}, birdies ${t.birdies}, pars ${t.pars}, bogeys ${t.bogeys}, doubles or worse ${t.doubles}`}>
         {([["eagle", t.eagles], ["birdie", t.birdies], ["par", t.pars], ["bogey", t.bogeys], ["double", t.doubles]] as const).map(([k, n]) => n > 0 && <span key={k} data-kind={k} style={{ flexGrow: n }} />)}
       </div>
@@ -99,23 +117,29 @@ function CourseView({ rounds, nameOf }: { rounds: TripRound[]; nameOf: (id: stri
   </>;
 }
 
+/** Stats whose name doesn't explain itself get a small "i". */
+const EXPLAIN = new Set(["bounceBack", "fallOff", "scrambling"]);
+
 function IndividualView({ rounds, nameOf }: { rounds: TripRound[]; nameOf: (id: string) => string }) {
   const list = playerStats(rounds, nameOf);
   const [open, setOpen] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   if (!list.length) return <p className={styles.empty}>Individual stats show once players have a few holes recorded.</p>;
   return <div className={styles.leaders}>
     {list.map((s) => {
       const best = s.ranking[0], worst = s.ranking.at(-1)!;
       const expanded = open === s.id;
       return <section key={s.id} className={styles.leader} aria-label={s.label}>
-        <button type="button" className={styles.leaderHead} aria-expanded={expanded} onClick={() => setOpen(expanded ? null : s.id)}>
-          <span><b>{s.label}</b><small>{s.detail}</small></span>
-          <span className={styles.chev} aria-hidden>{expanded ? "−" : "+"}</span>
-        </button>
-        {!expanded ? <div className={styles.bestWorst}>
-          <div data-tone="easy"><small>Best</small><span>{best.name}</span><b>{value(s.unit, best.value)}</b></div>
-          {s.ranking.length > 1 && <div data-tone="hard"><small>Worst</small><span>{worst.name}</span><b>{value(s.unit, worst.value)}</b></div>}
-        </div> : <ol className={styles.ranked}>
+        <div className={styles.leaderRow}>
+          <button type="button" className={styles.leaderHead} aria-expanded={expanded} onClick={() => setOpen(expanded ? null : s.id)}>
+            <b>{s.label}</b>
+            {!expanded && <span className={styles.bw} data-tone="easy">{first(best.name)} <em>{value(s.unit, best.value)}</em></span>}
+            {!expanded && s.ranking.length > 1 && <span className={styles.bw} data-tone="hard">{first(worst.name)} <em>{value(s.unit, worst.value)}</em></span>}
+          </button>
+          {EXPLAIN.has(s.id) && <button type="button" className={styles.info} aria-label={`What is ${s.label}?`} aria-expanded={info === s.id} onClick={() => setInfo(info === s.id ? null : s.id)}>i</button>}
+        </div>
+        {info === s.id && <p className={styles.infoText}>{s.detail}.</p>}
+        {expanded && <ol className={styles.ranked}>
           {s.ranking.map((r, i) => <li key={r.name}><span className={styles.rank}>{i > 0 && s.ranking[i - 1].value === r.value ? "" : i + 1}</span><span className={styles.rankName}>{r.name}</span><b>{value(s.unit, r.value)}</b></li>)}
         </ol>}
       </section>;
