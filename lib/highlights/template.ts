@@ -3,9 +3,25 @@
  * No other syntax: a stray "{" or "}" is a problem, so a typo can never reach a player's lock screen.
  */
 
-export const TEMPLATE_VARIABLES = ["player", "team", "opponent", "count", "hole", "round", "course", "margin"] as const;
+/**
+ * {player}  one golfer, or a whole match side ("Cam & Cade").
+ * {players} a list of golfers ("Cam, Drew, and Cade"), formatted by the detector.
+ */
+export const TEMPLATE_VARIABLES = ["player", "players", "team", "opponent", "count", "hole", "round", "course", "margin"] as const;
 export type TemplateVariable = (typeof TEMPLATE_VARIABLES)[number];
 export type TemplateValues = Partial<Record<TemplateVariable, string | number>>;
+
+/** Typical values, for showing organizers what a message will look like. */
+export const SAMPLE_VALUES: Record<TemplateVariable, string> = {
+  player: "Alex", players: "Alex, Sam, and Jordan", team: "Team Maroon", opponent: "Team White",
+  count: "4", hole: "12", round: "2", course: "Mission Hills", margin: "3&2",
+};
+/** Realistic worst cases (a two-golfer side, four names, a long course), for length warnings. */
+export const LONG_SAMPLE_VALUES: Record<TemplateVariable, string> = {
+  player: "Christopher Williams & Alexander Thompson", players: "Christopher, Alexander, Jonathan, and Benjamin",
+  team: "The Weekend Warriors", opponent: "Christopher Williams & Alexander Thompson",
+  count: "10", hole: "18", round: "10", course: "Pinehurst Resort Course No. 2", margin: "10&8",
+};
 
 const PLACEHOLDER = /\{([^{}]*)\}/g;
 

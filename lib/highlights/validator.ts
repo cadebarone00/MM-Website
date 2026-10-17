@@ -1,5 +1,6 @@
 import { detectorFor } from "./catalog.ts";
-import { checkTemplate } from "./template.ts";
+import { BODY_LIMIT, TITLE_LIMIT } from "../notifications/format.ts";
+import { checkTemplate, LONG_SAMPLE_VALUES, renderTemplate } from "./template.ts";
 import {
   CONDITIONAL_ID_PATTERN, RULE_ID_PATTERN,
   type HighlightConditional, type HighlightConfig, type HighlightIssue, type HighlightRule, type IssueSeverity, type ValidationReport,
@@ -73,6 +74,12 @@ export function validateHighlightConfig(config: HighlightConfig, importIssues: H
           }
         }
         if (text.includes(" / ")) add("warning", "multiple-messages", `${field} looks like two messages separated by " / ". Give each its own CONDITIONAL row.`, conditional);
+        // Phones cut longer text with "…" (lib/notifications/format.ts). Measured the same way: text.length.
+        const limit = field === "Headline" ? TITLE_LIMIT : BODY_LIMIT;
+        const longest = renderTemplate(text, LONG_SAMPLE_VALUES);
+        if (longest.ok && longest.text.length > limit) {
+          add("warning", "may-be-too-long", `${field} can reach ${longest.text.length} characters with long names; phones show ${limit} and cut the rest with "…".`, conditional);
+        }
       }
       if (detector) {
         const tiers = detector.tiers;

@@ -1,7 +1,7 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { getCurrentProfile } from "@/lib/profile/currentProfile";
+import { getCurrentProfile, notGolfer } from "@/lib/profile/currentProfile";
 import { editionPlayerProfilesFromJson, inviteStatusesFromJson, isPlayerId, playerAcceptResultFromJson, playerDeclineResultFromJson, playerInvitationFromJson, playerPoolFromJson, type PlayerAcceptResult,
   type PlayerDeclineResult, type PlayerInviteStatus, type PoolPlayer, type TournamentPlayerInvitation } from "./tournamentPlayerInvitations.ts";
 import type { ManagedEdition } from "./dashboardServer.ts";
@@ -19,7 +19,7 @@ const failure = (fn: string, error: { message: string; code?: string }): Databas
  *  "forbidden" = not an owner / organizer of that tournament, already claimed, or not found (same answer). */
 export async function inviteTournamentPlayer(playerId: string): Promise<{ status: "ok"; inviteToken: string } | { status: "signed-out" | "no-profile" | "forbidden" }> {
   const current = await getCurrentProfile();
-  if (current.status !== "ok") return { status: current.status };
+  if (current.status !== "ok") return { status: notGolfer(current) }; // unfinished profiles finish setup before competing
   if (!isPlayerId(playerId)) return { status: "forbidden" };
   const inviteToken = randomBytes(24).toString("base64url");
   const { data, error } = await createSupabaseServiceRoleClient().rpc("invite_tournament_player", { p_profile: current.profile.profileId, p_player: playerId, p_token: inviteToken });
@@ -43,7 +43,7 @@ export async function getTournamentPlayerInvitation(token: string): Promise<Tour
 /** The signed-in golfer claims their place: their profile is attached to that tournament player. Safe to repeat. */
 export async function acceptTournamentPlayerInvitation(token: string): Promise<PlayerAcceptResult | { status: "signed-out" | "no-profile" }> {
   const current = await getCurrentProfile();
-  if (current.status !== "ok") return { status: current.status };
+  if (current.status !== "ok") return { status: notGolfer(current) }; // unfinished profiles finish setup before competing
   const { data, error } = await createSupabaseServiceRoleClient().rpc("accept_tournament_player_invitation", { p_profile: current.profile.profileId, p_token: token });
   if (error) throw failure("accept_tournament_player_invitation", error);
   return playerAcceptResultFromJson(data);
@@ -52,7 +52,7 @@ export async function acceptTournamentPlayerInvitation(token: string): Promise<P
 /** The signed-in person holding the link says no: the player stays unclaimed and the link stops working. */
 export async function declineTournamentPlayerInvitation(token: string): Promise<PlayerDeclineResult | "signed-out" | "no-profile"> {
   const current = await getCurrentProfile();
-  if (current.status !== "ok") return current.status;
+  if (current.status !== "ok") return notGolfer(current);
   const { data, error } = await createSupabaseServiceRoleClient().rpc("decline_tournament_player_invitation", { p_profile: current.profile.profileId, p_token: token });
   if (error) throw failure("decline_tournament_player_invitation", error);
   return playerDeclineResultFromJson(data);

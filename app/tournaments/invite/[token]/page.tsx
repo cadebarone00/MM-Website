@@ -18,6 +18,6 @@ export default async function TournamentInvitePage({ params }: { params: Promise
   const valid = isInviteToken(token);
   const [invitation, current] = await Promise.all([valid ? getTournamentPlayerInvitation(token) : null, getCurrentProfile()]);
   const back = valid ? tournamentPlayerInvitePath(token) : null;
-  return <TournamentInviteResponse token={valid ? token : null} invitation={invitation} viewer={current.status}
+  return <TournamentInviteResponse token={valid ? token : null} invitation={invitation} viewer={current.status === "incomplete" ? "no-profile" /* finish setup before competing */ : current.status}
     loginHref={withReturnTo("/login/email", back)} signupHref={withReturnTo("/signup", back)} />;
 }

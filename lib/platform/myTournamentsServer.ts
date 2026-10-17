@@ -17,7 +17,7 @@ export const loadMyTournaments = cache(async (): Promise<MyTournaments> => {
   const current = await getCurrentProfile();
   if (current.status === "signed-out") return { signedIn: false };
   // An account without a profile is no golfer in any tournament.
-  if (current.status === "no-profile") return { signedIn: true, ok: true, tournaments: [] };
+  if (current.status !== "ok") return { signedIn: true, ok: true, tournaments: [] };
   const profileId = current.profile.profileId;
   const { data, error } = await createSupabaseServiceRoleClient().rpc("list_managed_editions", { p_profile: profileId });
   if (error) {

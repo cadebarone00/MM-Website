@@ -7,7 +7,7 @@ import { setMyRoundsVisibility } from "@/lib/platform/playerRoundsServer";
 export async function PUT(request: Request) {
   const current = await getCurrentProfile();
   if (current.status === "signed-out") return NextResponse.json({ ok: false, error: "Log in to change your privacy." }, { status: 401 });
-  if (current.status === "no-profile") return NextResponse.json({ ok: false, error: "Finish setting up your profile first." }, { status: 409 });
+  if (current.status !== "ok") return NextResponse.json({ ok: false, error: "Finish setting up your profile first." }, { status: 409 });
 
   const visibility = roundsVisibilityFromBody(await request.json().catch(() => null));
   if (!visibility) return NextResponse.json({ ok: false, error: "Choose Public or Private." }, { status: 400 });

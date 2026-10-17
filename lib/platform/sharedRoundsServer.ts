@@ -49,7 +49,7 @@ export async function searchAccounts(meId: string, query: string): Promise<{ id:
   const text = query.trim().replace(/[%_,()]/g, "");
   if (text.length < 2) return [];
   const { data, error } = await db().from("profiles").select("id, display_name, username")
-    .or(`display_name.ilike.%${text}%,username.ilike.%${text}%`).neq("id", meId).limit(8);
+    .or(`display_name.ilike.%${text}%,username.ilike.%${text}%`).neq("id", meId).not("username", "is", null).limit(8);
   if (error) { console.error("Account search failed:", error.message); return []; }
   return (data ?? []).map((row) => ({ id: row.id as string, name: row.display_name as string, username: row.username as string }));
 }

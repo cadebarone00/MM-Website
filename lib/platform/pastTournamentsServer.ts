@@ -17,7 +17,7 @@ export async function loadMyPastTournaments(): Promise<MyPastTournaments> {
   const current = await getCurrentProfile();
   if (current.status === "signed-out") return { signedIn: false };
   // An account without a profile is no golfer in any tournament.
-  if (current.status === "no-profile") return { signedIn: true, ok: true, tournaments: [] };
+  if (current.status !== "ok") return { signedIn: true, ok: true, tournaments: [] };
   const profileId = current.profile.profileId;
   const [platform, legacy] = await Promise.all([
     createSupabaseServiceRoleClient().rpc("list_my_past_editions", { p_profile: profileId }),
@@ -47,7 +47,7 @@ export async function loadMyPlayingTournaments(): Promise<MyPastTournaments> {
   const current = await getCurrentProfile();
   if (current.status === "signed-out") return { signedIn: false };
   // An account without a profile is no golfer in any tournament.
-  if (current.status === "no-profile") return { signedIn: true, ok: true, tournaments: [] };
+  if (current.status !== "ok") return { signedIn: true, ok: true, tournaments: [] };
   const profileId = current.profile.profileId;
   const [platform, legacy] = await Promise.all([
     createSupabaseServiceRoleClient().rpc("list_my_active_editions", { p_profile: profileId }),

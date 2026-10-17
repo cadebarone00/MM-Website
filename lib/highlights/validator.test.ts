@@ -108,3 +108,26 @@ test("publishableConfig keeps only Approved rules with Approved conditionals", (
   assert.deepEqual(live.rules[0].conditionals.map((c) => c.tier), [3, 4, 5, 6, 7, 8, 9]);
   assert.equal(config.rules[0].conditionals.length, 8, "the original config is not changed");
 });
+
+test("{players} is accepted on a live rule", () => {
+  const { report } = load((config) => {
+    const hl = rule(config, "HL-046");
+    hl.status = "Approved";
+    hl.conditionals[0].status = "Approved";
+    hl.conditionals[0].body = "{players} birdie hole {hole}.";
+  });
+  assert.deepEqual(report.errors, []);
+  assert.deepEqual(list(report.warnings), ["no-detector:HL-046"]);
+});
+
+test("warns (never errors) when long names could push copy past the 80 / 180 phone limits", () => {
+  const { report } = load((config) => {
+    const [c1, c2, c3] = rule(config, "HL-001").conditionals;
+    c1.headline = "{player}, give everyone else a chance! Seriously now 🔥"; // fine with "Alex", too long with a two-golfer side
+    c2.body = "x".repeat(181);
+    c3.headline = "y".repeat(80); // exactly the limit is fine
+  });
+  assert.deepEqual(report.errors, []);
+  assert.deepEqual(list(report.warnings), ["may-be-too-long:HL-001-C01", "may-be-too-long:HL-001-C02"]);
+  assert.match(report.warnings[0].message, /Headline can reach \d+ characters/);
+});

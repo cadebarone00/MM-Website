@@ -138,9 +138,11 @@ function IslandExpanded({ activity }: { activity: LiveRoundActivity }) {
   const content = liveActivityContent(activity);
   return <div className={`${styles.island} ${styles.islandExpanded}`} aria-label="Dynamic Island, expanded">
     <div className={styles.islandExpandedTop}>
-      <span className={styles.islandLeading}><img src={APP_ICON} alt="" /><span><small>{activity.playerName}</small>{content.toPar}</span></span>
-      <span className={styles.islandExpandedRight}><small>{content.position && `Position ${content.position}`}</small>{content.thru}</span>
+      <span className={styles.islandLeading}><img src={APP_ICON} alt="" />{content.toPar}</span>
+      <span className={styles.islandExpandedRight}>{content.thru}<small>{content.position && `Position ${content.position}`}</small></span>
     </div>
+    {/* Apple's center region: below the camera, between the two top corners. */}
+    <p className={styles.islandExpandedCenter}>{activity.playerName}</p>
     <div className={styles.liveProgress}><span style={{ width: `${content.progress * 100}%` }} /></div>
     <p className={styles.islandExpandedBottom}>{content.matchStatus ? <><b>{content.matchStatus}</b> vs {content.opponent}</> : `${activity.groupName} · Round ${activity.round}`}</p>
   </div>;

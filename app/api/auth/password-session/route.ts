@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { initializeAfterSignIn } from "@/lib/profile/profileInitialization";
 
 function result(ok: boolean, account?: { username: string | null; email: string | null }) {
   return NextResponse.json({ ok, ...(account ? { account } : {}) }, { status: ok ? 200 : 401, headers: { "Cache-Control": "no-store" } });
@@ -30,5 +31,8 @@ export async function POST(request: Request) {
     refresh_token: body.refresh_token,
   });
   if (error || !data.session) return result(false);
+  // An accepted invite / recovery link is a verified session: make sure the profile exists and finish an admin
+  // player invitation bound to this account (Accounts V2). Idempotent.
+  await initializeAfterSignIn(data.session.user?.id);
   return GET();
 }

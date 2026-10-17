@@ -1,9 +1,9 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import type { ProfileId } from "./profileIdentity";
-import type { ProfileEditInput, ProfileSetupInput } from "./profileEdit";
+import type { ProfileEditInput } from "./profileEdit";
 
 /**
- * Profile V1 writes (supabase/profile_v1.sql), server only. The ids always come from the signed-in session, never the
+ * Profile V1 edits (supabase/profile_v1.sql), server only. Creating a profile is Accounts V2's job (profileInitialization.ts). The ids always come from the signed-in session, never the
  * request. "invalid" carries the database's own message (username taken / reserved, lengths), safe to show.
  */
 export type ProfileWrite = { status: "ok"; username: string; created?: boolean } | { status: "invalid"; error: string } | { status: "unavailable" } | { status: "failed" };
@@ -13,14 +13,6 @@ function failure(fn: string, error: { code?: string; message: string }): Profile
   if (error.code === "PGRST202" || error.code === "42883") return { status: "unavailable" };
   console.error(`${fn} failed:`, error.message);
   return { status: "failed" };
-}
-
-/** Finish profile setup for a login that has no profile row: creates the one profile whose id is that login's id. */
-export async function createMyProfile(accountId: string, accountEmail: string | null, input: ProfileSetupInput): Promise<ProfileWrite> {
-  const { data, error } = await createSupabaseServiceRoleClient().rpc("create_my_profile", { p_account: accountId, p_email: accountEmail ?? "", p_input: input });
-  if (error) return failure("create_my_profile", error);
-  const reply = data as { created?: boolean; username?: string } | null;
-  return typeof reply?.username === "string" ? { status: "ok", username: reply.username, created: reply.created === true } : { status: "failed" };
 }
 
 export async function updateMyProfile(profileId: ProfileId, input: ProfileEditInput): Promise<ProfileWrite> {

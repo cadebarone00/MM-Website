@@ -29,7 +29,8 @@ export async function playedWith(me: ProfileId): Promise<ComparePerson[]> {
   others.delete(me);
   const ids = [...friends, ...others].slice(0, 60);
   if (!ids.length) return [];
-  const { data } = await db.from("profiles").select("id, username, display_name").in("id", ids);
+  // Unfinished profiles (Accounts V2) have no username yet: nothing to link or compare until setup is done.
+  const { data } = await db.from("profiles").select("id, username, display_name").in("id", ids).not("username", "is", null);
   return (data ?? []).map((row) => ({ username: row.username as string, name: (row.display_name as string) || (row.username as string), friend: friends.has(row.id as string) }))
     .sort((a, b) => Number(b.friend) - Number(a.friend) || a.name.localeCompare(b.name));
 }

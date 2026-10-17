@@ -7,7 +7,7 @@ import { isGolfTripId } from "@/lib/platform/golfTripCreate";
 export async function DELETE(_request: Request, { params }: { params: Promise<{ tripId: string; flightId: string }> }) {
   const current = await getCurrentProfile();
   if (current.status === "signed-out") return NextResponse.json({ ok: false, error: "Log in to change your flights." }, { status: 401 });
-  if (current.status === "no-profile") return NextResponse.json({ ok: false, error: "Finish setting up your profile first." }, { status: 409 });
+  if (current.status !== "ok") return NextResponse.json({ ok: false, error: "Finish setting up your profile first." }, { status: 409 });
 
   const { tripId, flightId } = await params;
   if (!isGolfTripId(tripId) || !isGolfTripId(flightId)) return NextResponse.json({ ok: false, error: "Flight not found." }, { status: 404 });

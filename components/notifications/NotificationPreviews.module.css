@@ -1,8 +1,10 @@
-/* DEV ONLY: Notifications group previews. iPhone surfaces copy Apple's look; in-app surfaces use the trip's maroon + cream. */
-.phone{position:relative;box-sizing:border-box;min-height:100vh;min-height:100svh;overflow:hidden;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",var(--font-barlow),sans-serif;color:#fff}
+/* DEV ONLY: Notifications group previews. Our fonts (Barlow text, Spectral titles) wherever Apple lets the app pick:
+   Live Activity, Dynamic Island and in-app. Standard phone notifications and the lock-screen clock are drawn by iOS in its own font. */
+.phone{position:relative;box-sizing:border-box;min-height:100vh;min-height:100svh;overflow:hidden;padding-bottom:env(safe-area-inset-bottom);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",var(--font-barlow),sans-serif;color:#fff}
 /* Beats the app's global top clearance (globals.css .app-camera-buffer); these screens place the camera spacing themselves. */
-main.phone.phone.phone{padding-top:env(safe-area-inset-top)}
-main.phone.phone img{display:block}
+.phone:not(.appScreen):not(#_){padding-top:env(safe-area-inset-top)}
+.appScreen:not(#_){padding-top:0}
+.phone img{display:block}
 .wallpaper{background:radial-gradient(120% 70% at 20% 0%,#872a2e 0%,transparent 60%),radial-gradient(90% 60% at 100% 100%,#806331 0%,transparent 70%),linear-gradient(170deg,#500001 0%,#240001 70%)}
 
 /* Lock screen */
@@ -38,7 +40,7 @@ main.phone.phone img{display:block}
 .dock i{width:60px;height:60px;border-radius:15px;background:rgba(255,255,255,.2)}
 
 /* Live Activity (lock screen) */
-.liveCard{padding:14px 16px 14px;border-radius:24px;background:rgba(36,0,1,.92);color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.liveCard{padding:14px 16px 14px;font-family:var(--font-barlow),sans-serif;border-radius:24px;background:rgba(36,0,1,.92);color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .liveHeader{display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(255,255,255,.75)}
 .liveHeader img{width:22px;height:22px;border-radius:6px}
 .liveHeader span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -56,7 +58,7 @@ main.phone.phone img{display:block}
 .liveMatch b{color:#fff}
 
 /* Dynamic Island: centered over the simulator's 126 × 37 camera cutout (11px from the top). */
-.island{position:absolute;z-index:4;top:11px;left:50%;transform:translateX(-50%);background:#000;color:#fff}
+.island{position:absolute;z-index:4;font-family:var(--font-barlow),sans-serif;top:11px;left:50%;transform:translateX(-50%);background:#000;color:#fff}
 .islandCompact{display:flex;align-items:center;justify-content:space-between;box-sizing:border-box;width:250px;height:37px;padding:0 14px 0 8px;border-radius:20px;font-size:15px;font-weight:700}
 .islandLeading{display:flex;align-items:center;gap:6px;color:#dcc495}
 .islandLeading img{width:22px;height:22px;border-radius:6px}
@@ -68,8 +70,8 @@ main.phone.phone img{display:block}
 .islandExpandedTop{display:flex;align-items:flex-start;justify-content:space-between}
 .islandExpandedTop .islandLeading{align-items:center;font-size:30px;font-weight:800}
 .islandExpandedTop .islandLeading img{width:34px;height:34px;border-radius:9px}
-.islandExpandedTop .islandLeading span{display:flex;flex-direction:column;line-height:1}
-.islandExpandedTop small{font-size:12px;font-weight:600;color:rgba(255,255,255,.6);margin-bottom:4px}
+.islandExpandedTop small{white-space:nowrap;font-size:12px;font-weight:600;color:rgba(255,255,255,.6);margin-top:2px}
+.islandExpandedCenter{margin:4px 0 0;text-align:center;font-size:15px;font-weight:700}
 .islandExpandedRight{display:flex;flex-direction:column;align-items:flex-end;font-size:17px;font-weight:700}
 .islandExpandedBottom{margin:10px 0 0;font-size:14px;color:rgba(255,255,255,.8)}
 .islandExpandedBottom b{color:#fff}
@@ -77,13 +79,13 @@ main.phone.phone img{display:block}
 /* In-app */
 .phone.appScreen{padding-top:0}
 .appScreen{background:var(--color-cream-100,#f5efe2);color:#240001;font-family:var(--font-barlow),sans-serif}
-.appBar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px 14px;padding-top:calc(12px + env(safe-area-inset-top));background:var(--color-maroon-900,#240001);color:#fff;font:700 20px/1 var(--font-barlow-condensed),sans-serif;letter-spacing:.02em}
+.appBar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px 14px;padding-top:calc(12px + env(safe-area-inset-top));background:var(--color-maroon-900,#240001);color:#fff;font:700 20px/1 var(--font-spectral),Georgia,serif}
 .bell{position:relative;display:inline-flex}
 .bell b{position:absolute;top:-6px;right:-8px;min-width:18px;height:18px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:#b8945a;color:#240001;font:700 11px/18px var(--font-barlow),sans-serif;text-align:center}
 .appPlaceholder{display:flex;flex-direction:column;gap:12px;padding:18px}
 .appPlaceholder i{height:110px;border-radius:18px;background:#fff;box-shadow:0 1px 3px rgba(36,0,1,.08)}
 .sheet{position:absolute;inset:0 0 auto;box-sizing:border-box;height:70%;overflow-y:auto;padding:16px 16px 20px;padding-top:calc(16px + env(safe-area-inset-top));border-radius:0 0 28px 28px;background:var(--color-maroon-900,#240001);color:#fff;box-shadow:0 12px 30px rgba(36,0,1,.35)}
-.list h2{margin:0;font:700 22px/1 var(--font-barlow-condensed),sans-serif;letter-spacing:.02em}
+.list h2{margin:0;font:700 22px/1 var(--font-spectral),Georgia,serif}
 .listHeader{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .listHeader span{font-size:13px;font-weight:600;color:#dcc495}
 .list ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
@@ -102,7 +104,7 @@ main.phone.phone img{display:block}
 .signIn{display:flex;flex-direction:column;align-items:center;padding:56px 28px 0;padding-top:calc(56px + env(safe-area-inset-top));text-align:center}
 .signInIcon{width:72px;height:72px;border-radius:17px;margin-bottom:18px}
 .signInEyebrow{margin:0;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#806331}
-.signIn h1{margin:6px 0 0;font:700 28px/1.1 var(--font-barlow-condensed),sans-serif}
+.signIn h1{margin:6px 0 0;font:700 28px/1.1 var(--font-spectral),Georgia,serif}
 .signInBody{margin:8px 0 0;font-size:16px;line-height:1.4;color:rgba(36,0,1,.75)}
 .primaryButton{margin-top:28px;width:100%;max-width:320px;height:50px;border:0;border-radius:25px;background:var(--color-maroon-900,#240001);color:#fff;font:700 16px var(--font-barlow),sans-serif}
 .signInHint{margin:12px 0 0;font-size:13px;color:rgba(36,0,1,.55)}

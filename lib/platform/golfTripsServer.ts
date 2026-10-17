@@ -1,7 +1,8 @@
 import { cache } from "react";
 import { randomBytes } from "node:crypto";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { getCurrentProfile } from "@/lib/profile/currentProfile";
+import { getCurrentProfile, notGolfer, tripProfileId } from "@/lib/profile/currentProfile";
+import { initializeProfile } from "@/lib/profile/profileInitialization";
 import { acceptResultFromJson, declineResultFromJson, invitationPreviewFromJson, type AcceptInvitationResult, type DeclineInvitationResult, type InvitationPreview, type InviteInput } from "./golfTripInvitations.ts";
 import { membersForViewer } from "./golfTripMembers.ts";
 import { golfTripSummaries, golfTripViewer, isGolfTripId, type GolfTripSummary, type GolfTripViewer, type SavedGolfTrip } from "./golfTripCreate.ts";
@@ -24,9 +25,9 @@ export type GolfTripLoad =
 export const getGolfTrip = cache(async (tripId: string): Promise<GolfTripLoad> => {
   const current = await getCurrentProfile();
   if (current.status === "signed-out") return { status: "signed-out" };
-  // An account without a profile isn't a golfer on any trip.
-  if (current.status === "no-profile" || !isGolfTripId(tripId)) return { status: "not-found" };
-  const profileId = current.profile.profileId;
+  // An account without a profile isn't on any trip. An unfinished profile may view a trip it accepted (Accounts V2).
+  const profileId = tripProfileId(current);
+  if (!profileId || !isGolfTripId(tripId)) return { status: "not-found" };
 
   const { data, error } = await createSupabaseServiceRoleClient().rpc("get_golf_trip", { p_profile: profileId, p_trip: tripId });
   if (error) throw new Error(`get_golf_trip failed: ${error.message}`);
@@ -80,8 +81,9 @@ export type UserGolfTrips =
 export const getUserGolfTrips = cache(async (): Promise<UserGolfTrips> => {
   const current = await getCurrentProfile();
   if (current.status === "signed-out") return { status: "signed-out" };
-  if (current.status === "no-profile") return { status: "ok", trips: [] };
-  const { data, error } = await createSupabaseServiceRoleClient().rpc("list_my_golf_trips", { p_profile: current.profile.profileId });
+  const profileId = tripProfileId(current);
+  if (!profileId) return { status: "ok", trips: [] };
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("list_my_golf_trips", { p_profile: profileId });
   if (error) {
     console.error("list_my_golf_trips failed:", error.message);
     return { status: "error" };
@@ -100,7 +102,7 @@ const failure = (fn: string, error: { message: string; code?: string }): Databas
 export async function inviteGolfTripMember(tripId: string, input: InviteInput):
   Promise<{ status: "ok"; memberId: string; inviteToken: string } | { status: "signed-out" | "no-profile" | "forbidden" }> {
   const current = await getCurrentProfile();
-  if (current.status !== "ok") return { status: current.status };
+  if (current.status !== "ok") return { status: notGolfer(current) };
   if (!isGolfTripId(tripId)) return { status: "forbidden" };
   const inviteToken = randomBytes(24).toString("base64url");
   const { data, error } = await createSupabaseServiceRoleClient().rpc("invite_golf_trip_member", {
@@ -115,7 +117,7 @@ export async function inviteGolfTripMember(tripId: string, input: InviteInput):
 export async function getGolfTripInvitation(token: string): Promise<InvitationPreview | null> {
   const current = await getCurrentProfile();
   const { data, error } = await createSupabaseServiceRoleClient().rpc("get_golf_trip_invitation", {
-    p_profile: current.status === "ok" ? current.profile.profileId : null, p_token: token,
+    p_profile: tripProfileId(current), p_token: token,
   });
   if (error) {
     console.error("get_golf_trip_invitation failed:", error.message);
@@ -124,11 +126,18 @@ export async function getGolfTripInvitation(token: string): Promise<InvitationPr
   return invitationPreviewFromJson(data);
 }
 
-/** The signed-in golfer accepts: their profile is attached to the invited member row. Safe to repeat. */
+/** The signed-in person accepts: their profile is attached to the invited member row. Safe to repeat. An unfinished
+ *  profile may accept (Accounts V2); a verified account with no profile yet gets one first (initialize). */
 export async function acceptGolfTripInvitation(token: string): Promise<AcceptInvitationResult | { status: "signed-out" | "no-profile" }> {
   const current = await getCurrentProfile();
-  if (current.status !== "ok") return { status: current.status };
-  const { data, error } = await createSupabaseServiceRoleClient().rpc("accept_golf_trip_invitation", { p_profile: current.profile.profileId, p_token: token });
+  if (current.status === "signed-out") return { status: "signed-out" };
+  let profileId = tripProfileId(current);
+  if (!profileId) {
+    const initialized = await initializeProfile(current.account.id);
+    if (initialized.status !== "ok") return { status: "no-profile" };
+    profileId = current.account.id;
+  }
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("accept_golf_trip_invitation", { p_profile: profileId, p_token: token });
   if (error) throw failure("accept_golf_trip_invitation", error);
   return acceptResultFromJson(data);
 }
@@ -136,8 +145,10 @@ export async function acceptGolfTripInvitation(token: string): Promise<AcceptInv
 /** The signed-in person holding the link says no: the row stays as "declined" with no profile; the link dies. */
 export async function declineGolfTripInvitation(token: string): Promise<DeclineInvitationResult | "signed-out" | "no-profile"> {
   const current = await getCurrentProfile();
-  if (current.status !== "ok") return current.status;
-  const { data, error } = await createSupabaseServiceRoleClient().rpc("decline_golf_trip_invitation", { p_profile: current.profile.profileId, p_token: token });
+  if (current.status === "signed-out") return "signed-out";
+  const profileId = tripProfileId(current);
+  if (!profileId) return "no-profile";
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("decline_golf_trip_invitation", { p_profile: profileId, p_token: token });
   if (error) throw failure("decline_golf_trip_invitation", error);
   return declineResultFromJson(data);
 }

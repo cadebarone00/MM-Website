@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function EditProfilePage() {
   const current = await getCurrentProfile();
   if (current.status === "signed-out") redirect("/login");
-  if (current.status === "no-profile") redirect("/profile");
+  if (current.status !== "ok") redirect("/profile");
   const form = await getMyProfileForm(current.profile.profileId);
   if (!form) redirect("/profile");
   return <ProfileForm mode="edit" initial={form} />;

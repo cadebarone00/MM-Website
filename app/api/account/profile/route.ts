@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/profile/currentProfile";
 import { profileEditFromBody, profileSetupFromBody } from "@/lib/profile/profileEdit";
-import { createMyProfile, updateMyProfile, type ProfileWrite } from "@/lib/profile/profileEditServer";
+import { updateMyProfile, type ProfileWrite } from "@/lib/profile/profileEditServer";
+import { finishProfileSetup } from "@/lib/profile/profileInitialization";
 
 /**
- * POST  = Finish profile setup ({ displayName, username }) for a signed-in login with no profile yet. Calling it again
- *         once the profile exists just returns that profile's username (nothing is created twice).
+ * POST  = Finish profile setup ({ displayName, username }) for a signed-in, verified login whose profile is missing or
+ *         incomplete (Accounts V2: initialize, then set name + username). Calling it again once the profile is
+ *         complete just returns that profile's username (nothing is created or overwritten).
  * PATCH = Edit my profile ({ displayName?, username?, bio? }).
  * Who it is always comes from the session; nothing in the body can choose the profile.
  */
@@ -26,13 +28,16 @@ export async function POST(request: Request) {
   if (current.status === "ok") return NextResponse.json({ ok: true, username: current.profile.username, created: false });
   const parsed = profileSetupFromBody(await body(request));
   if (!parsed.ok) return NextResponse.json({ ok: false, field: parsed.field, error: parsed.error }, { status: 400 });
-  return reply(await createMyProfile(current.account.id, current.account.email ?? null, parsed.input));
+  const result = await finishProfileSetup(current.account.id, parsed.input);
+  if (result.status === "unverified") return NextResponse.json({ ok: false, error: "Verify your email first." }, { status: 403 });
+  if (result.status === "signed-out") return NextResponse.json({ ok: false, error: "Log in first." }, { status: 401 });
+  return reply(result);
 }
 
 export async function PATCH(request: Request) {
   const current = await getCurrentProfile();
   if (current.status === "signed-out") return NextResponse.json({ ok: false, error: "Log in first." }, { status: 401 });
-  if (current.status === "no-profile") return NextResponse.json({ ok: false, error: "Finish setting up your profile first." }, { status: 409 });
+  if (current.status !== "ok") return NextResponse.json({ ok: false, error: "Finish setting up your profile first." }, { status: 409 });
   const parsed = profileEditFromBody(await body(request));
   if (!parsed.ok) return NextResponse.json({ ok: false, field: parsed.field, error: parsed.error }, { status: 400 });
   return reply(await updateMyProfile(current.profile.profileId, parsed.input));

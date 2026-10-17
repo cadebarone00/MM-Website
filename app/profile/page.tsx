@@ -9,8 +9,8 @@ import styles from "./page.module.css";
 export default async function MyProfilePage() {
   const page = await loadMyProfile();
   if (page.status === "signed-out") redirect("/login");
-  // Signed in, but the profile row was never made (signup stopped half-way): finish it here.
-  if (page.status === "no-profile") return <div className={styles.page}><ProfileForm mode="setup" initial={{ displayName: "", username: "", bio: "" }} /></div>;
+  // Signed in, but setup isn't finished (no profile row yet, or no username / name): finish it here.
+  if (page.status === "no-profile") return <div className={styles.page}><ProfileForm mode="setup" initial={{ displayName: page.displayName, username: "", bio: "" }} /></div>;
   const current = await getCurrentProfile();
   const friends = current.status === "ok" ? await friendCount(current.profile.profileId).catch(() => null) : null;
   return <div className={styles.page}><ProfileView profile={page.profile} friendsCount={friends} /></div>;

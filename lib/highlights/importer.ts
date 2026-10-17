@@ -41,7 +41,7 @@ export function buildConfig(rows: SheetRow[]): ImportResult {
   };
 
   for (const row of rows) {
-    if (current && current.source.tab !== row.source.tab) current = null;
+    if (current && current.category !== row.category) current = null; // a new tab starts with no parent
     if (row.kind === "parent") {
       if (row.cells.tier || row.cells.headline || row.cells.body) {
         issues.push({ severity: "warning", code: "parent-has-copy", id: row.cells.id || undefined, source: row.source,

@@ -23,3 +23,8 @@ test("rejects unknown variables and stray braces", () => {
   assert.deepEqual(checkTemplate("Empty {}").problems, ["Has an empty {} placeholder."]);
   assert.deepEqual(checkTemplate("Empty {}").variables, []);
 });
+
+test("{players} is a supported variable for a list of golfers", () => {
+  assert.deepEqual(checkTemplate("{players} birdie hole {hole}.").unknown, []);
+  assert.deepEqual(renderTemplate("{players} birdie hole {hole}.", { players: "Cam, Drew, and Cade", hole: 13 }), { ok: true, text: "Cam, Drew, and Cade birdie hole 13." });
+});

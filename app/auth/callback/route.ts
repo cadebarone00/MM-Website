@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { initializeAfterSignIn } from "@/lib/profile/profileInitialization";
 
 // Password-reset codes are exchanged here. Invite tokens arrive in a URL
 // fragment (invisible to the server); the browser carries that fragment through
@@ -18,8 +19,10 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createSupabaseServerClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) destination.searchParams.set("error", "invalid_link");
+    // Accounts V2: a verified session makes sure the profile exists (idempotent, never blocks the redirect).
+    else await initializeAfterSignIn(data.user?.id);
   }
 
   return NextResponse.redirect(destination);

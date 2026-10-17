@@ -17,6 +17,6 @@ export default async function GolfTripInvitePage({ params }: { params: Promise<{
   const valid = isInviteToken(token);
   const [invitation, current] = await Promise.all([valid ? getGolfTripInvitation(token) : null, getCurrentProfile()]);
   const back = valid ? golfTripInvitePath(token) : null;
-  return <GolfTripInviteResponse token={valid ? token : null} invitation={invitation} viewer={current.status}
+  return <GolfTripInviteResponse token={valid ? token : null} invitation={invitation} viewer={current.status === "signed-out" ? "signed-out" : "ok" /* Accounts V2: any signed-in person can accept; a missing profile is initialized on accept */}
     loginHref={withReturnTo("/login/email", back)} signupHref={withReturnTo("/signup", back)} />;
 }

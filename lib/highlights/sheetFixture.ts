@@ -1,3 +1,4 @@
+import * as XLSX from "xlsx";
 import type { RawCell, RawTab } from "./sheetRows.ts";
 import { HIGHLIGHT_HEADERS, HIGHLIGHT_TABS } from "./types.ts";
 
@@ -56,4 +57,15 @@ export function sheetAsFoundOn20261016(): RawTab[] {
     ["", "CONDITIONAL", "Team takes/retakes overall lead", "", "Maroon takes control! / The tide has turned 🌊", "Team Maroon moves into the lead.", "Draft", ""],
   ] };
   return tabs;
+}
+
+/** Real .xlsx bytes for these tabs, built in memory like a Google Sheets download. `decorate` can add widths, styles… */
+export function toXlsx(tabs: RawTab[], decorate?: (sheet: XLSX.WorkSheet, name: string) => void): Uint8Array {
+  const book = XLSX.utils.book_new();
+  for (const tab of tabs) {
+    const sheet = XLSX.utils.aoa_to_sheet(tab.values);
+    decorate?.(sheet, tab.name);
+    XLSX.utils.book_append_sheet(book, sheet, tab.name);
+  }
+  return new Uint8Array(XLSX.write(book, { type: "buffer", bookType: "xlsx" }));
 }

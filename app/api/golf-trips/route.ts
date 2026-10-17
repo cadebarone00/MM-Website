@@ -11,7 +11,7 @@ import { golfTripCreateFailure, golfTripPayloadFromBody, golfTripUrl } from "@/l
 export async function POST(request: Request) {
   const current = await getCurrentProfile();
   if (current.status === "signed-out") return NextResponse.json({ ok: false, error: "Log in to create your trip. Your answers will still be here." }, { status: 401 });
-  if (current.status === "no-profile") return NextResponse.json({ ok: false, error: "Finish setting up your profile first." }, { status: 409 });
+  if (current.status !== "ok") return NextResponse.json({ ok: false, error: "Finish setting up your profile first." }, { status: 409 });
 
   let body: unknown;
   try {

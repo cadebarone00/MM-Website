@@ -19,7 +19,7 @@ export const loadTournamentHome = cache(async (slug: string, year: string): Prom
   const current = await getCurrentProfile();
   if (current.status === "signed-out") redirect("/login");
   // An account without a golfer profile isn't in any tournament.
-  if (current.status === "no-profile") notFound();
+  if (current.status !== "ok") notFound();
   const profileId = current.profile.profileId;
   // A tournament still on a legacy system is answered by its adapter (access included).
   const legacy = legacyAdapterFor(slug);

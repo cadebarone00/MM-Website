@@ -51,7 +51,8 @@ export interface HighlightConditional {
   body: string;
   status: HighlightStatus;
   notes: string;
-  source: SheetLocation;
+  /** Present on freshly imported configs; stripped from canonical/stored ones (see canonical.ts). */
+  source?: SheetLocation;
 }
 
 /** One detection concept, e.g. "Birdie streak". */
@@ -62,7 +63,8 @@ export interface HighlightRule {
   status: HighlightStatus;
   notes: string;
   conditionals: HighlightConditional[];
-  source: SheetLocation;
+  /** Present on freshly imported configs; stripped from canonical/stored ones. */
+  source?: SheetLocation;
 }
 
 export interface HighlightConfig {

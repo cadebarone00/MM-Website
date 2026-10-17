@@ -2809,7 +2809,7 @@ Three tabs in Predict, each bet a card; *(team)* = only for trips with a team co
 - **Individual:** best and worst player (tap for everyone ranked) for scoring average, par 3s / 4s / 5s, bounce back (birdie+ after bogey+), fall off (bogey+ after birdie+), fairways, GIR, putts per round, 3-putts per round, scrambling, birdies per round, par-or-better %; then the existing all-players table. Minimum chances so one hole can't top a list.
 - Data: the trip's saved rounds (lib/platform/tripInsights.ts). Simulator: Golf Trip Active → Stats → "Sample trip stats" (lib/dev/sampleTripRounds.ts).
 
-## Highlights Engine — Google Sheet rulebook → published configuration (decisions 2026-10-16)
+## Highlights Engine — Google Sheet rulebook → published configuration (decisions 2026-10-16, revised 2026-10-17)
 
 **What it does / who uses it.** Organizers/developers (platform admins) edit highlight rules and notification copy in the Google Sheet "The_Maroon_Highlights_Source_of_Truth" and publish them to The Maroon without a code change or app release. Players only ever see published, approved copy.
 
@@ -2825,13 +2825,21 @@ Three tabs in Predict, each bet a card; *(team)* = only for trips with a team co
 
 **Copy vs behavior.** Headline / Notification text = *copy*. Rule or conditional added/removed from the live set, status change, Tier = *behavior*. Rule name, condition label, category, notes = *metadata* (no live effect). Changes are measured on what would actually go live (Approved only). A publish containing any behavior change needs a second explicit confirm (later phase).
 
-**Templates.** Plain text with `{variable}` placeholders, e.g. `{player}'s heating up! 🔥`. Supported variables: `{player}`, `{team}`, `{opponent}`, `{count}`, `{hole}`, `{round}`, `{course}`, `{margin}`. Rules with a TypeScript detector declare which variables they provide; using one it can't provide is an error. Real names typed into copy (e.g. "Cam") must be replaced with `{player}` before approval.
+**Templates.** Plain text with `{variable}` placeholders, e.g. `{player}'s heating up! 🔥`. Supported variables: `{player}`, `{players}`, `{team}`, `{opponent}`, `{count}`, `{hole}`, `{round}`, `{course}`, `{margin}`. `{player}` is one golfer **or a whole match side** ("Cam & Cade"); `{players}` is a list of golfers ("Cam, Drew, and Cade"), built by the detector. Rules with a TypeScript detector declare which variables they provide; using one it can't provide is an error. Real names typed into copy (e.g. "Cam") must be replaced with `{player}` before approval. Notification length: a warning when a headline could pass 80 characters or a body 180 with long names (the push limits in `lib/notifications/format.ts`; longer text gets cut off with "…").
 
 **Validation.** Structural problems (missing tab/header, bad or duplicate IDs, missing conditional ID, ID not matching its parent, conditional with no parent, unknown row type or status) are always errors. Content problems (empty copy, bad/unknown variables, tier the detector can't handle, duplicate tiers) are errors on rows that would go live, warnings on Draft/Disabled rows. Warnings: rule with no TypeScript detector yet (stored, never fires), " / " looking like two messages in one cell, Approved conditional under a non-Approved rule. Publish is allowed only with zero errors.
 
-**Architecture (later phases need separate approval).** Pure code in `lib/highlights/`; server-only Google read via a read-only service account (`spreadsheets.readonly`, sheet shared as Viewer, keys in server-only env vars), read only when an admin clicks Import; drafts previewed in the Admin Center; Publish creates an immutable `highlight_config_versions` row; an active-version pointer allows rollback; tables service-role only. The engine reads the active published version from Supabase, never Google, during scoring.
+**Architecture (revised 2026-10-17 — no Google Cloud).** No Google Cloud project, service account, Sheets API or Firebase credentials. Flow: Google Sheet (editorial master) → organizer downloads **File → Download → Microsoft Excel (.xlsx)** → uploads it in the Admin Center → validate → **draft** → preview → explicit **Publish** → immutable version in Supabase → Highlights Engine → platform-specific delivery.
+- **Upload safety:** platform admins only, same-origin; max 2 MB; `.xlsx` only (zip signature checked; `.xls`, `.xlsm`, CSV rejected); only the six category tabs are parsed, max 2,000 rows each, formulas never evaluated (cached text only), nothing in the file executed. The original file is **never stored** — only its SHA-256, name and size.
+- **Fingerprint:** SHA-256 of the canonical config (rules and conditionals sorted by ID, no sheet row numbers, text as imported). Moving rows, blank rows, fonts, colors and column widths don't change it; any wording, emoji, status, tier or note change does.
+- **Draft → Publish:** a draft holds the canonical config, validation report, change list vs the live version and the live version it was compared with. Nothing is published automatically. Publish needs zero errors and at least one live change; behavior changes need a second confirm; publish is refused if another version went live after the draft was made (upload again).
+- **Versions and rollback:** each publish is a new immutable version; rollback moves the active-version pointer (logged), never edits or deletes a version.
+- **Events keep their words:** every published highlight event stores its rendered headline, body, rule ID, conditional ID and config version. Editing or rolling back templates never changes past notifications.
+- **Engine vs delivery:** the engine only decides what happened and what it says (a platform-neutral event). Delivery turns events into notifications per device. Detection and delivery failures never block scoring; missing/broken config = no highlights.
+- **Shadow mode:** TypeScript detectors run beside the existing SQL momentum detection, writing only to a shadow table; results are compared and differences resolved before an approved cutover.
+- **Delivery (phase H6+), coordinated with "Notifications — native App Store app":** reuse its `AppNotification` shape, its planned device-token table and preferences — no competing device-token tables, preferences or delivery pipeline. One channel interface: Web Push (existing sender), APNs alerts (later, owner's .p8 key in server env only), FCM (interface only, no credentials). Live Activity updates are a separate pipeline (latest state wins, APNs live-activity push type) and never go through the highlight outbox.
 
-**Phases.** (1) Pure TypeScript foundation — this round. (2) Google service-account connection verified read-only. (3) `supabase/highlights_config.sql` (drafts, immutable versions, active pointer, audit), tested on PGlite only. (4) Admin import → preview → diff → publish → rollback. (5) TypeScript detectors (HL-001–HL-004 first) run side by side with the SQL ones. (6) Approved cutover. Apple/native notifications: not planned yet.
+**Phases (each separately approved).** (1) Pure TypeScript foundation — built 2026-10-16. (H2) Pure XLSX foundation: read workbook, canonical fingerprint, draft builder, check script, `{players}`, length warnings — this round. (H3) `supabase/highlights_config.sql` (drafts, immutable versions, active pointer, audit, publish/rollback functions), tested on PGlite only. (H4) Admin Center upload → preview → publish → rollback (routes + page, `requirePlatformAdmin`). (H5) TypeScript detectors (HL-001–HL-004 first) in shadow mode. (H6) Delivery interface with the native-notifications work. (H7) APNs + separate Live Activity sender. (H8) Approved cutover.
 
 ### Round: Highlights Engine Phase 1 — pure TypeScript foundation (owner request 2026-10-16)
 
@@ -2841,7 +2849,15 @@ Three tabs in Predict, each bet a card; *(team)* = only for trips with a team co
 
 **Done means.** All new tests pass, the full existing test suite still passes, TypeScript type-checks the new files, and nothing outside `lib/highlights/` and this spec changes.
 
-## Notifications — native App Store app (proposed 2026-10-16; Phase 1 approved 2026-10-16)
+### Round: Highlights Engine Phase H2 — pure XLSX foundation (approved 2026-10-17)
+
+**Files.** New in `lib/highlights/`: `xlsxSource.ts` (file checks + read the six tabs from .xlsx bytes into the importer's input), `canonical.ts` (canonical config without row numbers + SHA-256 fingerprints), `draft.ts` (one upload → canonical config, report, changes vs live version, fingerprints, sample previews; never publishes), tests for each. Changed: `template.ts` (`{players}`), `validator.ts` (length warnings), `types.ts` (sheet row location optional, so stored configs carry none). New `scripts/check-highlights-xlsx.ts`: `npx tsx scripts/check-highlights-xlsx.ts <file.xlsx>` prints the report; reads the local file only, writes nothing, no network.
+
+**Not in this round.** No database, migrations, API routes, admin pages, detectors or delivery; no change to scoring, momentum or notifications; no Google credentials.
+
+**Done means.** New and existing highlights tests pass, TypeScript and targeted lint are clean, the check script reports correctly on a real export, and nothing outside `lib/highlights/`, the script and this section changes.
+
+## Notifications — native App Store app (proposed 2026-10-16; Phase 1 approved and built 2026-10-16)
 
 **What it does / who uses it.** Players and organizers get alerts about their trips and tournaments in three places: (1) **phone notifications** on the lock screen and as banners when the phone is unlocked, (2) a **Live Activity** on the iPhone lock screen and Dynamic Island while a round is live, (3) **in-app notifications**: a bell with a list, plus a short banner at the top while the app is open. The Maroon is becoming a real App Store app (Capacitor wrapper, Xcode already set up by the owner), so everything is built native-ready: the web code, the Swift files and the bridge are all in the repo, ready to drop into Xcode.
 
@@ -2987,3 +3003,5 @@ Three tabs in Predict, each bet a card; *(team)* = only for trips with a team co
 Every test above passes locally. The duplicate-signup deletion is shown on the old code and gone on the new. No code
 path in signup can delete an account. Initialization is idempotent and works with a cookie or a bearer token.
 TypeScript, lint and the full test suite pass. Nothing is run on production.
+
+**Phase 1 built (2026-10-16).** Files: `lib/notifications/types.ts` + `format.ts` (+ tests: to-par, thru, time ago, unread, safe links, Apple payload with `thread-id` = group, Live Activity content for Swift); `lib/dev/sampleNotifications.ts` (sample data + the 15 preview screens); `components/notifications/NotificationPreviews.tsx` (+ CSS); pages `/dev/notifications/phone`, `/live-activity`, `/in-app`; simulator state `notificationPreview`. Try it: `/dev` → Notifications group. Non-highlight wording is preview-only, not approved for sending.

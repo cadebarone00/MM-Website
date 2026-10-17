@@ -40,7 +40,7 @@ test("edits to Draft rows and moving rows around change nothing that's live", ()
   const draft = draftWith((c) => {
     c.rules.find((r) => r.id === "HL-002")!.conditionals[0].headline = "Totally new";
     birdies(c).conditionals.reverse();
-    for (const rule of c.rules) rule.source = { tab: rule.source.tab, row: rule.source.row + 40 };
+    for (const rule of c.rules) rule.source = { tab: rule.category, row: (rule.source?.row ?? 0) + 40 };
   });
   assert.deepEqual(summary(draft), { kind: "none", changes: [] });
 });
