@@ -34,8 +34,8 @@ declare
     'Individual leaderboard', 'Trip and tournament milestones', 'Fun and social highlights'];
 begin
   if jsonb_typeof(p_config) is distinct from 'object' then return array['Config must be a JSON object.']; end if;
-  if p_config->'schemaVersion' is distinct from '2'::jsonb then problems := problems || 'schemaVersion must be 2.'; end if;
-  if jsonb_typeof(p_config->'rules') is distinct from 'array' then return problems || 'rules must be an array.'; end if;
+  if p_config->'schemaVersion' is distinct from '2'::jsonb then problems := problems || 'schemaVersion must be 2.'::text; end if;
+  if jsonb_typeof(p_config->'rules') is distinct from 'array' then return problems || 'rules must be an array.'::text; end if;
 
   for r in select value from jsonb_array_elements(p_config->'rules') loop
     rid := r->>'id';
@@ -75,7 +75,8 @@ end; $$;
 
 -- --- Tables -----------------------------------------------------------------------------------------------------------
 create table if not exists public.highlight_config_versions (
-  version integer generated always as identity primary key,
+  -- Assigned by publish_highlight_draft as (highest + 1) under its lock: always 1, 2, 3 … with no gaps after a failed publish.
+  version integer primary key check (version > 0),
   config jsonb not null check (octet_length(config::text) <= 2000000),
   config_fingerprint text not null check (config_fingerprint ~ '^sha256:[0-9a-f]{64}$'),
   schema_version integer not null check (schema_version = 2),
@@ -166,6 +167,9 @@ begin
     execute format('alter table public.%I enable row level security', t);
     execute format('revoke all on public.%I from public, anon, authenticated, service_role', t);
     execute format('grant select on public.%I to service_role', t);
+    -- Explicit read policy for the server, rather than relying on service_role bypassing RLS.
+    execute format('drop policy if exists %I on public.%I', t || '_server_read', t);
+    execute format('create policy %I on public.%I for select to service_role using (true)', t || '_server_read', t);
   end loop;
 end $$;
 
@@ -244,11 +248,12 @@ begin
   end if;
   if p_note is not null and char_length(p_note) > 500 then raise exception 'Note is too long (500 characters max).' using errcode = '22023'; end if;
 
-  insert into highlight_config_versions (config, config_fingerprint, schema_version, change_kind, changes, from_draft_id,
+  -- Gapless numbering is safe here: the advisory lock above serializes every publish.
+  select coalesce(max(version), 0) + 1 into v_version from highlight_config_versions;
+  insert into highlight_config_versions (version, config, config_fingerprint, schema_version, change_kind, changes, from_draft_id,
     previous_version, file_name, file_fingerprint, note, published_by)
-  values (d.config, d.config_fingerprint, d.schema_version, d.change_kind, d.changes, d.id, v_current, d.file_name,
-    d.file_fingerprint, nullif(btrim(p_note), ''), p_actor)
-  returning version into v_version;
+  values (v_version, d.config, d.config_fingerprint, d.schema_version, d.change_kind, d.changes, d.id, v_current, d.file_name,
+    d.file_fingerprint, nullif(btrim(p_note), ''), p_actor);
   insert into highlight_config_active (singleton, version, reason, activated_by, activated_at)
   values (true, v_version, 'publish', p_actor, now())
   on conflict (singleton) do update set version = excluded.version, reason = excluded.reason,

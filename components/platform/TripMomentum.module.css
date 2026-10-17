@@ -48,3 +48,5 @@
 .draftWidget .room:hover{background:rgba(220,196,149,.2)}
 .draftWidget :is(.edit,.room):focus-visible{outline-color:#edcf91}
 @media(prefers-reduced-motion:reduce){.draftWidget::before{animation:none;opacity:0}}
+
+.matchLabel{margin:0;color:#dcc495;font:500 12px/1.4 var(--font-barlow),sans-serif;overflow-wrap:anywhere}

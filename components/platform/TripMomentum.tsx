@@ -6,9 +6,18 @@ import { useSimulator } from "@/components/dev/SimulatorBridge";
 import toggleStyles from "./GolfTripCompetition.module.css";
 import notificationStyles from "./GolfTripNotifications.module.css";
 import { countdownParts } from "@/lib/platform/momNotifications";
+import { draftWhenLabel } from "@/lib/platform/teamDraft";
+import { matchDraftTimeError } from "@/lib/platform/draftSchedule";
 import { draftBoard, type TeamDraft } from "@/lib/platform/teamDraft";
 import type { MomentumEvent } from "@/lib/platform/tripPush";
 import styles from "./TripMomentum.module.css";
+import { useDevSetup } from "@/lib/dev/tripSetupStore";
+import { readJustCreatedAll, useJustCreatedVersion } from "@/lib/dev/justCreatedStore";
+import { useSavedTripSetup } from "./SavedTripSetupProvider";
+import { matchDraftRounds, type MatchDraftPlayer } from "@/lib/platform/matchDraft";
+import type { MomRound } from "@/lib/platform/momNotifications";
+import { matchDraftPreviewData } from "@/lib/dev/matchDraftPreview";
+import { TripMatchDraftRoom } from "./TripMatchDraftRoom";
 import { TripDraftRoom, type DraftRoomPlayer } from "./TripDraftRoom";
 
 // A one-second clock; the server has no clock (null), so nothing time-based flashes a placeholder while loading.
@@ -33,38 +42,50 @@ const subscribeReminders = (change: () => void) => {
   return () => { window.removeEventListener("storage", change); window.removeEventListener(REMINDER_EVENT, change); };
 };
 
-/** Existing upcoming draft display, in its own Home widget below Momentum. */
-export function TripDraftWidget({ draft, startAt, editHref, players = [] }: {
-  draft?: TeamDraft;
-  players?: DraftRoomPlayer[];
-  /** Dev trip clock "YYYY-MM-DDTHH:mm[:ss]": time starts there when the page loads and ticks on from it. */
-  startAt?: string;
-  /** The organizer's link to the draft settings (only pass it for the organizer); no link = no Edit. */
-  editHref?: string;
-
+/** Existing team draft and next match draft occupy separate Home cards. */
+export function TripDraftWidget({ draft, startAt, editHref, players = [], scope = "default", rounds = [], playedThrough = 0, teamNames = ["Team A","Team B"] }: {
+  draft?: TeamDraft; startAt?: string; editHref?: string; players?: DraftRoomPlayer[]; scope?: string; rounds?: MomRound[]; playedThrough?: number; teamNames?: string[];
 }) {
   const seconds = useSyncExternalStore(subscribe, nowSeconds, () => null);
   const simulator = useSimulator();
   const [loadedAt] = useState(nowSeconds);
   const now = seconds === null ? null : startAt ? shiftStamp(startAt, seconds - loadedAt) : localStamp(seconds);
-  const board = draftBoard(draft, now);
-  const [fixtureBase] = useState(nowSeconds);
-  if (process.env.NODE_ENV === "development" && simulator?.state.dualDraftMomentum && now) {
-    const base = startAt ?? localStamp(fixtureBase);
+  const dev = useDevSetup(scope);
+  const saved = useSavedTripSetup();
+  const version = useJustCreatedVersion();
+  const setup = saved?.values ?? (scope === "empty" ? readJustCreatedAll(version) : dev);
+  const [openRound, setOpenRound] = useState<string | null>(null);
+  const assignments = setup.teamPicks as Record<number, number> | undefined;
+  const submitted = setup.submittedTeams as number[][] | undefined;
+  let matchPlayers: MatchDraftPlayer[] = players.flatMap((player,index) => {
+    const picked = submitted ? submitted.findIndex(team => team.includes(index)) : assignments ? assignments[index] : player.team === "A" ? 0 : player.team === "B" ? 1 : -1;
+    return picked === 0 || picked === 1 ? [{ ...player, id: String(index), team: picked === 0 ? "A" as const : "B" as const }] : [];
+  });
+  let team = draft;
+  let matchRounds = matchDraftRounds(setup,rounds,players.length,playedThrough);
+  if (process.env.NODE_ENV === "development" && simulator?.state.dualDraftMomentum) {
+    const base = startAt ?? localStamp(loadedAt);
     const future = (by: number): TeamDraft => {
-      const target = shiftStamp(base, by);
-      return { teamType: "2 Teams", selection: "Draft", date: target.slice(0, 10), time: target.slice(11, 16), type: "Snake", method: "Captain's Picks" };
+      const target = shiftStamp(base,by);
+      return {teamType:"2 Teams",selection:"Draft",date:target.slice(0,10),time:target.slice(11,16),type:"Snake",method:"Captain's Picks"};
     };
-    const team = future(86400);
-    const nextMatch = [future(-3600), future(172800), future(259200), future(345600)]
-      .map((item, index) => ({ item, round: index + 1, board: draftBoard(item, now) })).find(item => item.board);
-    const teamBoard = draftBoard(team, now);
-    if (teamBoard && nextMatch?.board) return <section className={styles.draftWidget} aria-label="Upcoming drafts">
-      <DraftStrip draft={team} board={teamBoard} now={now} editHref={editHref} players={players} />
-      <DraftStrip draft={nextMatch.item} board={nextMatch.board} now={now} players={players} matchRound={nextMatch.round} />
-    </section>;
+    team = future(simulator.state.matchDraftPreview && simulator.state.matchDraftPreview !== "off" ? -3600 : 86400);
+    const method = simulator.state.matchDraftPreview;
+    const fixture = matchDraftPreviewData(matchPlayers,rounds.map(round=>round.course),base,method && method !== "off" ? method : "Response");
+    matchPlayers = fixture.players;
+    matchRounds = fixture.rounds;
+
   }
-  return board ? <section className={styles.draftWidget} aria-label="Upcoming drafts"><DraftStrip draft={draft!} board={board} now={now} editHref={editHref} players={players} /></section> : null;
+  const fixtureTeamsReady = process.env.NODE_ENV === "development" && simulator?.state.dualDraftMomentum && simulator.state.matchDraftPreview && simulator.state.matchDraftPreview !== "off";
+  const teamsReady = (fixtureTeamsReady || matchPlayers.length === players.length && players.length > 1) && (["A","B"] as const).every(side=>matchPlayers.some(player=>player.team===side));
+  const board = draftBoard(team,now) ?? (team?.selection === "Draft" && (!teamsReady || !team.date || !team.time) ? {when:team.date ? draftWhenLabel(team.date,team.time) : null,target:team.date ? team.date+"T"+(team.time||"00:00") : null} : null);
+  const next = [...matchRounds].filter(round=>!round.locked && !matchDraftTimeError(team ?? {},round.date,round.time)).sort((a,b)=>(a.date ? a.date+"T"+(a.time||"00:00") : "9999").localeCompare(b.date ? b.date+"T"+(b.time||"00:00") : "9999"))[0];
+  const names = setup.teamNames as string[] | undefined ?? teamNames;
+  return <>
+    {board && team && <section className={styles.draftWidget} aria-label="Upcoming team draft"><DraftStrip draft={team} board={board} now={now} editHref={editHref} players={players}/></section>}
+    {!board && teamsReady && next && <section className={styles.draftWidget} aria-label="Upcoming match draft"><DraftStrip draft={{teamType:"2 Teams",selection:"Draft",date:next.date||"",time:next.time||"",type:"Snake"}} board={{when:next.when,target:next.date ? next.date+"T"+(next.time||"00:00") : null}} now={now} editHref={editHref} players={players} matchRound={next.number} matchLabel={next.course+" - "+next.format+" - "+next.type} onOpen={()=>setOpenRound(next.key)}/></section>}
+    {openRound && <TripMatchDraftRoom modal rounds={matchRounds} players={matchPlayers} initialRound={openRound} teamNames={names} canEdit={!!editHref && !saved?.readOnly && teamsReady && !board} onClose={()=>setOpenRound(null)}/>}
+  </>;
 }
 
 export function TripMomentum({ events, fallback }: { events: MomentumEvent[]; fallback: ReactNode }) {
@@ -73,10 +94,11 @@ export function TripMomentum({ events, fallback }: { events: MomentumEvent[]; fa
 }
 
 /** Before the draft: Team Draft · day and time (Edit for the organizer), then the countdown with Draft Room. */
-function DraftStrip({ draft, board, now, editHref, players, matchRound }: { players: DraftRoomPlayer[]; draft: TeamDraft; board: { when: string | null; target: string | null }; now: string | null; editHref?: string; matchRound?: number }) {
+function DraftStrip({ draft, board, now, editHref, players, matchRound, matchLabel, onOpen }: { players: DraftRoomPlayer[]; draft: TeamDraft; board: { when: string | null; target: string | null }; now: string | null; editHref?: string; matchRound?: number; matchLabel?: string; onOpen?: () => void }) {
   const zone = useSyncExternalStore(subscribe, zoneName, () => "");
   const [roomOpen, setRoomOpen] = useState(false);
-  const parts = board.target && now ? countdownParts(board.target, now.length === 16 ? `${now}:00` : now) : null;
+  const reached = !!(matchRound && board.target && now && now >= board.target);
+  const parts = reached ? {days:0,hours:0,minutes:0,seconds:0} : board.target && now ? countdownParts(board.target, now.length === 16 ? `${now}:00` : now) : null;
   const units = [["Days", parts?.days], ["Hrs", parts?.hours], ["Mins", parts?.minutes], ["Secs", parts?.seconds]] as const;
   return <div className={styles.draft}>
     <div className={styles.draftTop}>
@@ -84,6 +106,7 @@ function DraftStrip({ draft, board, now, editHref, players, matchRound }: { play
       <span className={styles.draftWhen} role="status">{matchRound ? board.when : draftWhen(draft, board, zone)}</span>
       {editHref && <Link href={editHref} className={styles.edit}>Edit</Link>}
     </div>
+    {matchLabel && <p className={styles.matchLabel}>{matchLabel}</p>}
     <div className={styles.draftBottom}>
       <div className={styles.countdown} role="timer" aria-label={parts ? `${parts.days} days, ${parts.hours} hours, ${parts.minutes} minutes until the draft` : "Countdown to the draft"}>
         {units.map(([label, value], index) => <div key={label} className={styles.unitWrap}>
@@ -94,7 +117,7 @@ function DraftStrip({ draft, board, now, editHref, players, matchRound }: { play
           </span>
         </div>)}
       </div>
-      {!matchRound && <button type="button" className={styles.room} onClick={() => setRoomOpen(true)}>Draft Room</button>}
+      <button type="button" className={styles.room} onClick={onOpen ?? (() => setRoomOpen(true))}>{matchRound ? "Match Room" : "Draft Room"}</button>
     </div>
     {roomOpen && <TripDraftRoom players={players} draftType={draft.method ?? "Captain's Picks"} draftOrder={draft.type} countdown={parts} when={draftWhen(draft, board, zone).replace(` · ${draft.type}`, "")} onClose={() => setRoomOpen(false)} />}
   </div>;

@@ -3,9 +3,9 @@
 import { AlertTriangle, Bell, CalendarClock, Camera, Check, ClipboardCheck, Flame, Flashlight, Link2, LockKeyhole, Mail, Trophy, UserPlus, X, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
-import { formatPoints, liveActivityContent, matchMark, newestFirst, timeAgo, unreadCount } from "@/lib/notifications/format";
+import { formatPoints, formatToPar, liveLeaderboard, matchMark, newestFirst, pillStatus, readableOnBlack, textOnFill, timeAgo, unreadCount, type PillStatus } from "@/lib/notifications/format";
 import type { AppNotification, LiveRoundActivity, NotificationKind } from "@/lib/notifications/types";
-import { NOTIFICATION_PREVIEWS, SAMPLE_FINAL_ROUND, SAMPLE_LIVE_MATCH, SAMPLE_LIVE_ROUND, SAMPLE_LIVE_TEAM, SAMPLE_NOTIFICATIONS, SAMPLE_NOW, type NotificationPreview, type NotificationSurface } from "@/lib/dev/sampleNotifications";
+import { NOTIFICATION_PREVIEWS, SAMPLE_LIVE_TOP3, SAMPLE_LOCAL_NOW, SAMPLE_NOTIFICATIONS, SAMPLE_TEAM_STEPS, SAMPLE_NOW, type NotificationPreview, type NotificationSurface } from "@/lib/dev/sampleNotifications";
 import styles from "./NotificationPreviews.module.css";
 
 const APP_ICON = "/icons/mm-192.png";
@@ -21,14 +21,16 @@ export function NotificationPreviewScreen({ surface }: { surface: NotificationSu
     case "lock-stack": return <LockScreen><PhoneNotificationStack notes={[latest, ...older.slice(0, 2)]} /></LockScreen>;
     case "banner": return <HomeScreen banner={<PhoneNotification note={latest} />} />;
     case "signed-out-tap": return <SignInFirst note={latest} />;
-    case "live-lock": return <LockScreen><LiveActivityLock activity={SAMPLE_LIVE_ROUND} /></LockScreen>;
-    case "live-lock-match": return <LockScreen><LiveActivityLock activity={SAMPLE_LIVE_MATCH} /></LockScreen>;
-    case "live-final": return <LockScreen><LiveActivityLock activity={SAMPLE_FINAL_ROUND} /></LockScreen>;
-    case "island-compact": return <HomeScreen island={<IslandCompact activity={SAMPLE_LIVE_MATCH} />} />;
-    case "island-compact-team": return <HomeScreen island={<IslandCompactTeam activity={SAMPLE_LIVE_TEAM} />} />;
-    case "island-minimal-team": return <HomeScreen island={<IslandMinimalTeam activity={SAMPLE_LIVE_TEAM} />} />;
-    case "island-expanded": return <HomeScreen island={<IslandExpanded activity={SAMPLE_LIVE_MATCH} />} />;
-    case "island-minimal": return <HomeScreen island={<IslandMinimal activity={SAMPLE_LIVE_MATCH} />} />;
+    case "both-live": return <LockScreen><BothLiveActivity activity={SAMPLE_TEAM_STEPS.live} /></LockScreen>;
+    case "both-live-top3": return <LockScreen><BothLiveActivity activity={SAMPLE_LIVE_TOP3} /></LockScreen>;
+    case "both-pre": case "both-over": case "both-final": return <LockScreen><BothLiveActivity activity={SAMPLE_TEAM_STEPS[screen.slice(5) as "pre" | "over" | "final"]} /></LockScreen>;
+    case "both-expanded": return <HomeScreen island={<div className={`${styles.island} ${styles.islandExpanded}`} aria-label="Dynamic Island, expanded"><BothLiveActivity activity={SAMPLE_TEAM_STEPS.live} island /></div>} />;
+    case "android-pre": case "android-live": case "android-over": case "android-final":
+      return <AndroidHome chip={<AndroidChip activity={SAMPLE_TEAM_STEPS[screen.slice(8) as keyof typeof SAMPLE_TEAM_STEPS]} />} />;
+    case "pill-pre": case "pill-live": case "pill-over": case "pill-final": {
+      const activity = SAMPLE_TEAM_STEPS[screen.slice(5) as keyof typeof SAMPLE_TEAM_STEPS];
+      return <HomeScreen island={<IslandCompactTeam activity={activity} />} below={<IslandMinimalTeam activity={activity} />} />;
+    }
     case "bell-unread": return <AppScreen><NotificationList notes={SAMPLE_NOTIFICATIONS} now={SAMPLE_NOW} /></AppScreen>;
     case "bell-read": return <AppScreen><NotificationList notes={SAMPLE_NOTIFICATIONS.map(note => ({ ...note, read: true }))} now={SAMPLE_NOW} /></AppScreen>;
     case "bell-empty": return <AppScreen><NotificationList notes={[]} now={SAMPLE_NOW} /></AppScreen>;
@@ -50,10 +52,11 @@ function LockScreen({ children }: { children: ReactNode }) {
   </main>;
 }
 
-function HomeScreen({ banner, island }: { banner?: ReactNode; island?: ReactNode }) {
+function HomeScreen({ banner, island, below }: { banner?: ReactNode; island?: ReactNode; below?: ReactNode }) {
   return <main className={`${styles.phone} ${styles.wallpaper}`} aria-label="iPhone home screen preview">
     {island}
     {banner && <div className={styles.homeBanner}>{banner}</div>}
+    {below && <div className={styles.tinyCompare}><p>Tiny circle (when another app&rsquo;s Live Activity is also running)</p><div className={styles.tinyCompareRow}>{below}</div></div>}
     <div className={styles.homeGrid} aria-hidden>
       {Array.from({ length: 20 }, (_, index) => index === 6
         ? <span key={index} className={styles.homeApp}><img src={APP_ICON} alt="" /><small>The Maroon</small></span>
@@ -100,47 +103,55 @@ function SignInFirst({ note }: { note: AppNotification }) {
 
 /* ---------- Live Activity ---------- */
 
-function LiveActivityLock({ activity }: { activity: LiveRoundActivity }) {
-  const content = liveActivityContent(activity);
-  return <article className={styles.liveCard} aria-label="Live Activity">
-    <header className={styles.liveHeader}>
-      <img src={APP_ICON} alt="" />
-      <span>{activity.groupName} · Round {activity.round}</span>
-      <b>{content.final ? "Final" : content.thru}</b>
-    </header>
-    <div className={styles.liveMain}>
-      <div>
-        <p className={styles.liveName}>{activity.playerName}</p>
-        <p className={styles.liveCourse}>{activity.course}</p>
-      </div>
-      <p className={styles.liveScore}>{content.toPar}</p>
-      {content.position && <p className={styles.livePosition}><small>{content.final ? "Finished" : "Position"}</small>{content.position}</p>}
-    </div>
-    <div className={styles.liveProgress} aria-label={`${activity.thru} of ${activity.holes} holes`}><span style={{ width: `${content.progress * 100}%` }} /></div>
-    {content.matchStatus && <p className={styles.liveMatch}><Trophy size={14} aria-hidden /><b>{content.matchStatus}</b> vs {content.opponent}</p>}
+/**
+ * "Both" Live Activity (team + individual), styled like the Golf tab board: (1) the two teams in their color fills with
+ * their points, (2) three leaderboard rows (cream rank badges, mine black; a line before me when I'm not top 3),
+ * (3) my match status pill for this step of the round. Lock screen, Android pinned notification and expanded island.
+ */
+function BothLiveActivity({ activity, island = false }: { activity: LiveRoundActivity; island?: boolean }) {
+  const board = liveLeaderboard(activity.leaderboard ?? []);
+  return <article className={`${styles.both} ${island ? styles.bothIsland : ""}`} aria-label="Live Activity">
+    {activity.teams && <div className={styles.bothTeams}>
+      {[activity.teams.mine, activity.teams.other].map((team, index) => <div key={team.name} className={`${styles.bothTeam} ${index ? styles.bothTeamRight : styles.bothTeamLeft}`}
+        style={{ background: team.color }} data-text={textOnFill(team.color)}>
+        <span>{team.name}</span><b>{formatPoints(team.points)}</b>
+      </div>)}
+    </div>}
+    {board.rows.length > 0 && <ol className={styles.bothBoard} aria-label="Leaderboard">
+      {board.rows.map((row, index) => <li key={row.name} className={`${row.me ? styles.bothMe : ""} ${board.split && index === 2 ? styles.bothSplit : ""}`}>
+        <span className={styles.bothRank}>{row.position}</span>
+        <span className={styles.bothName}>{row.name}</span>
+        <b data-par={row.toPar < 0 ? "under" : row.toPar === 0 ? "even" : "over"}>{formatToPar(row.toPar)}</b>
+      </li>)}
+    </ol>}
+    <MatchStatusPill activity={activity} status={pillStatus(activity, SAMPLE_LOCAL_NOW)} />
   </article>;
 }
 
-function IslandCompact({ activity }: { activity: LiveRoundActivity }) {
-  const content = liveActivityContent(activity);
-  return <div className={`${styles.island} ${styles.islandCompact}`} aria-label="Dynamic Island, compact">
-    <span className={styles.islandLeading}><img src={APP_ICON} alt="" />{content.toPar}</span>
-    <span className={styles.islandTrailing}>{content.matchStatus || content.thru}</span>
-  </div>;
+/** My round, by step: popped up → tee time + opponent; live → score, match, thru; over → result + next tee; final → result. */
+function MatchStatusPill({ activity, status }: { activity: LiveRoundActivity; status: PillStatus }) {
+  const opponent = activity.match?.opponent;
+  return <p className={styles.bothStatus}>
+    {status.kind === "countdown" && <><span>Tee <b>{status.clock}</b>{opponent && <> vs {opponent}</>}</span><b className={styles.bothStatusRight}>{status.minutes}</b></>}
+    {status.kind === "live" && <><span>{status.mark ? <MatchArrow mark={status.mark} /> : null}{status.mark && status.mark.direction !== "even" && <b>{status.mark.direction === "up" ? " UP" : " DN"}</b>}{opponent && <> vs {opponent}</>}</span>
+      <span className={styles.bothStatusRight}><b data-par={status.toPar.startsWith("-") ? "under" : status.toPar === "E" ? "even" : "over"}>{status.toPar}</b> · Thru {status.thru}</span></>}
+    {status.kind === "next" && <><span><b>{activity.result}</b>{opponent && <> vs {opponent}</>}</span><span className={styles.bothStatusRight}>Next <b>{status.clock}</b>{activity.nextCourse && <> · {activity.nextCourse}</>}</span></>}
+    {status.kind === "result" && <><span><b>{status.result}</b>{opponent && <> vs {opponent}</>}</span><span className={styles.bothStatusRight}>Final</span></>}
+  </p>;
 }
 
-/** Owner idea: left of the camera = team points (each in its team's color); right = my round score, match arrow, thru. */
+/** Left of the camera: team points, each in its team's color. Right: the player's status for this step of the lifecycle. */
 function IslandCompactTeam({ activity }: { activity: LiveRoundActivity }) {
-  const content = liveActivityContent(activity);
-  const mark = activity.match ? matchMark(activity.match.status) : null;
+  const status = pillStatus(activity, SAMPLE_LOCAL_NOW);
   return <div className={`${styles.island} ${styles.islandCompact} ${styles.islandCompactWide}`} aria-label="Dynamic Island, compact (team)">
     <span className={styles.islandTeams}>
-      {activity.teams && <><b style={{ color: activity.teams.mine.color }}>{formatPoints(activity.teams.mine.points)}</b><b style={{ color: activity.teams.other.color }}>{formatPoints(activity.teams.other.points)}</b></>}
+      {activity.teams && <><b style={{ color: readableOnBlack(activity.teams.mine.color) }}>{formatPoints(activity.teams.mine.points)}</b><b style={{ color: readableOnBlack(activity.teams.other.color) }}>{formatPoints(activity.teams.other.points)}</b></>}
     </span>
     <span className={styles.islandMine}>
-      <b>{content.toPar}</b>
-      {mark && <MatchArrow mark={mark} />}
-      <small>{activity.thru}</small>
+      {status.kind === "countdown" && <><b>{status.minutes}</b><small>{status.clock}</small></>}
+      {status.kind === "live" && <><b>{status.toPar}</b>{status.mark && <MatchArrow mark={status.mark} />}<small>{status.thru}</small></>}
+      {status.kind === "next" && <><small>Next</small><b>{status.clock}</b></>}
+      {status.kind === "result" && <b className={styles.matchArrow}>{status.result}</b>}
     </span>
   </div>;
 }
@@ -153,34 +164,28 @@ function MatchArrow({ mark }: { mark: NonNullable<ReturnType<typeof matchMark>> 
   </span>;
 }
 
-/** The tiny circle fits about 3 characters: my match arrow. */
+/** The tiny circle fits about 3 characters: the same status, squeezed. */
 function IslandMinimalTeam({ activity }: { activity: LiveRoundActivity }) {
-  const mark = activity.match ? matchMark(activity.match.status) : null;
-  return <div className={styles.islandMinimalRow} aria-label="Dynamic Island, minimal (team)">
-    <div className={`${styles.island} ${styles.islandMinimalMain}`} />
-    <div className={`${styles.island} ${styles.islandMinimal}`}>{mark ? <MatchArrow mark={mark} /> : formatPoints(activity.teams?.mine.points ?? 0)}</div>
-  </div>;
+  return <span className={styles.tinyCircle}>{pillStatus(activity, SAMPLE_LOCAL_NOW).tiny}</span>;
 }
 
-function IslandMinimal({ activity }: { activity: LiveRoundActivity }) {
-  return <div className={styles.islandMinimalRow} aria-label="Dynamic Island, minimal">
-    <div className={`${styles.island} ${styles.islandMinimalMain}`} />
-    <div className={`${styles.island} ${styles.islandMinimal}`}>{liveActivityContent(activity).toPar}</div>
-  </div>;
-}
+/* ---------- Android (Live Updates) ---------- */
 
-function IslandExpanded({ activity }: { activity: LiveRoundActivity }) {
-  const content = liveActivityContent(activity);
-  return <div className={`${styles.island} ${styles.islandExpanded}`} aria-label="Dynamic Island, expanded">
-    <div className={styles.islandExpandedTop}>
-      <span className={styles.islandLeading}><img src={APP_ICON} alt="" />{content.toPar}</span>
-      <span className={styles.islandExpandedRight}>{content.thru}<small>{content.position && `Position ${content.position}`}</small></span>
+/** Android home screen: status bar (clock + chip on the left, icons on the right) under the Pixel's center camera. */
+function AndroidHome({ chip }: { chip: ReactNode }) {
+  return <main className={`${styles.phone} ${styles.androidScreen}`} aria-label="Android home screen preview">
+    <div className={styles.androidStatus}><span className={styles.androidClock}>2:11</span>{chip}<span className={styles.androidIcons} aria-hidden>▲ ◢ ▮</span></div>
+    <div className={styles.homeGrid} aria-hidden>
+      {Array.from({ length: 16 }, (_, index) => index === 5
+        ? <span key={index} className={styles.homeApp}><img src={APP_ICON} alt="" className={styles.androidIcon} /><small>The Maroon</small></span>
+        : <span key={index} className={styles.homeApp}><i className={styles.androidIcon} /><small /></span>)}
     </div>
-    {/* Apple's center region: below the camera, between the two top corners. */}
-    <p className={styles.islandExpandedCenter}>{activity.playerName}</p>
-    <div className={styles.liveProgress}><span style={{ width: `${content.progress * 100}%` }} /></div>
-    <p className={styles.islandExpandedBottom}>{content.matchStatus ? <><b>{content.matchStatus}</b> vs {content.opponent}</> : `${activity.groupName} · Round ${activity.round}`}</p>
-  </div>;
+  </main>;
+}
+
+/** Android's status bar chip: our logo + the same short status as the iPhone tiny circle. */
+function AndroidChip({ activity }: { activity: LiveRoundActivity }) {
+  return <span className={styles.androidChip} aria-label="Live update"><img src={APP_ICON} alt="" />{pillStatus(activity, SAMPLE_LOCAL_NOW).tiny}</span>;
 }
 
 /* ---------- In-app ---------- */

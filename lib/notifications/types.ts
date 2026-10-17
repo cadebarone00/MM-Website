@@ -39,11 +39,24 @@ export type LiveRoundActivity = {
   position: string | null;
   /** Match play: status from my side ("2 UP", "AS", "1 DN") and the opponent. Null when not in a match. */
   match: { status: string; opponent: string } | null;
+  /** Individual leaderboard, in leaderboard order (`liveLeaderboard()` picks the 3 rows shown). Empty = no leaderboard. */
+  leaderboard?: LeaderboardRow[];
+  /** While over: the next round's course. */
+  nextCourse?: string | null;
   /** Team competition: my team first. Color is the team's color (text color in the Dynamic Island). Null = no teams. */
   teams?: { mine: TeamScore; other: TeamScore } | null;
-  state: "live" | "final";
+  /** Where the round is (spec: Live Activity lifecycle): pre = popped up 60 min before tee time; live = the organizer
+   *  started the round; over = everyone in the group submitted (next round still to come); final = after the last round. */
+  state: "pre" | "live" | "over" | "final";
+  /** Trip-local tee time "YYYY-MM-DDTHH:mm": this round's while pre, the next round's while over. Null = none set. */
+  teeTime: string | null;
+  /** My finished match, e.g. "W 3&2", "L 2&1", "Halved". Null until the match is over. */
+  result: string | null;
   /** ISO time of the last score. */
   updatedAt: string;
 };
 
 export type TeamScore = { name: string; color: string; points: number };
+
+/** One leaderboard line: position as the leaderboard shows it ("1", "T2"), whole-tournament score to par. */
+export type LeaderboardRow = { position: string; name: string; toPar: number; me: boolean };

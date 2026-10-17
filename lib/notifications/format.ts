@@ -1,4 +1,4 @@
-import type { AppNotification, LiveRoundActivity } from "./types.ts";
+import type { AppNotification, LeaderboardRow, LiveRoundActivity } from "./types.ts";
 
 /** Same limits as the web push worker (public/trip-push-sw.js). */
 export const TITLE_LIMIT = 80;
@@ -18,7 +18,7 @@ export function formatToPar(toPar: number): string {
 
 /** "Starting", "Thru 12", "F". */
 export function thruLabel(activity: Pick<LiveRoundActivity, "thru" | "holes" | "state">): string {
-  if (activity.state === "final" || activity.thru >= activity.holes) return "F";
+  if (activity.state === "over" || activity.state === "final" || activity.thru >= activity.holes) return "F";
   return activity.thru <= 0 ? "Starting" : `Thru ${activity.thru}`;
 }
 
@@ -68,7 +68,7 @@ export function liveActivityContent(activity: LiveRoundActivity) {
     position: activity.position ?? "",
     matchStatus: activity.match?.status ?? "",
     opponent: activity.match?.opponent ?? "",
-    final: activity.state === "final" || activity.thru >= activity.holes,
+    final: activity.state === "over" || activity.state === "final" || activity.thru >= activity.holes,
   };
 }
 
@@ -85,4 +85,76 @@ export function matchMark(status: string): { direction: "up" | "down" | "even"; 
   if (text === "AS") return { direction: "even", holes: 0 };
   const found = /^(\d+)\s*(UP|DN|DOWN)$/.exec(text);
   return found ? { direction: found[2] === "UP" ? "up" : "down", holes: Number(found[1]) } : null;
+}
+
+/** Trip-local wall times ("YYYY-MM-DDTHH:mm"), compared only with each other. */
+const wallMinutes = (local: string) => Date.parse(`${local.slice(0, 16)}:00Z`) / 60000;
+
+/** "2026-10-16T14:24" → "2:24". */
+export function teeClock(local: string): string {
+  const [hours, minutes] = local.slice(11, 16).split(":").map(Number);
+  return `${hours % 12 || 12}:${String(minutes).padStart(2, "0")}`;
+}
+
+/** Minutes until the tee time, never below 0 (the organizer may start a little late). */
+export function minutesUntil(teeTime: string, nowLocal: string): number {
+  const minutes = Math.ceil(wallMinutes(teeTime) - wallMinutes(nowLocal));
+  return Number.isFinite(minutes) ? Math.max(0, minutes) : 0;
+}
+
+/**
+ * The right side of the Dynamic Island pill and its tiny circle, following the Live Activity lifecycle:
+ * pre → "13m 2:24"; live → round score, match arrow, thru; over → next tee time; final (or over with no next round) → result.
+ */
+export type PillStatus =
+  | { kind: "countdown"; minutes: string; clock: string; tiny: string }
+  | { kind: "live"; toPar: string; mark: ReturnType<typeof matchMark>; thru: number; tiny: string }
+  | { kind: "next"; clock: string; tiny: string }
+  | { kind: "result"; result: string; tiny: string };
+
+export function pillStatus(activity: LiveRoundActivity, nowLocal: string): PillStatus {
+  if (activity.state === "pre" && activity.teeTime) {
+    const minutes = `${minutesUntil(activity.teeTime, nowLocal)}m`;
+    return { kind: "countdown", minutes, clock: teeClock(activity.teeTime), tiny: minutes };
+  }
+  if (activity.state === "over" && activity.teeTime) {
+    const clock = teeClock(activity.teeTime);
+    return { kind: "next", clock, tiny: clock };
+  }
+  if ((activity.state === "over" || activity.state === "final") && activity.result) {
+    return { kind: "result", result: activity.result, tiny: activity.result.charAt(0).toUpperCase() };
+  }
+  const mark = activity.match ? matchMark(activity.match.status) : null;
+  const toPar = formatToPar(activity.toPar);
+  const tiny = !mark ? toPar : mark.direction === "even" ? "AS" : `${mark.direction === "up" ? "▲" : "▼"}${mark.holes}`;
+  return { kind: "live", toPar, mark, thru: activity.thru, tiny };
+}
+
+/**
+ * The Live Activity's 3 leaderboard rows, straight from the leaderboard (owner rule 2026-10-17): me in the top 3 → the
+ * top 3 with me in place; otherwise rows 1 and 2, a line, then me. Not on the leaderboard → the top 3.
+ */
+export function liveLeaderboard(rows: LeaderboardRow[]): { rows: LeaderboardRow[]; split: boolean } {
+  const mine = rows.findIndex(row => row.me);
+  if (mine < 3) return { rows: rows.slice(0, 3), split: false };
+  return { rows: [rows[0], rows[1], rows[mine]], split: true };
+}
+
+/** A team color as text on the black Dynamic Island: dark colors are lightened so they stay readable. */
+export function readableOnBlack(color: string): string {
+  const hex = /^#([0-9a-f]{6})$/i.exec(color)?.[1];
+  if (!hex) return "#ffffff";
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16));
+  const light = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  if (light >= 0.35) return color.toLowerCase();
+  const lift = (value: number) => Math.round(value + (255 - value) * 0.45).toString(16).padStart(2, "0");
+  return `#${lift(r)}${lift(g)}${lift(b)}`;
+}
+
+/** Text color on a team's fill: dark text on light fills, white on dark ones. */
+export function textOnFill(color: string): "dark" | "light" {
+  const hex = /^#([0-9a-f]{6})$/i.exec(color)?.[1];
+  if (!hex) return "dark";
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16));
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.6 ? "dark" : "light";
 }

@@ -1,6 +1,6 @@
 import { cache } from "react";
 import type { User } from "@supabase/supabase-js";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { profileIdentityFromRow, type ProfileId, type ProfileIdentity } from "./profileIdentity";
 
 /**
@@ -22,6 +22,12 @@ export type CurrentProfile =
 
 const filled = (value: unknown) => typeof value === "string" && value.trim() !== "";
 
+/** Deletion requested or done for this account (supabase/account_deletion.sql)? False until that file is installed. */
+async function isClosedAccount(accountId: string): Promise<boolean> {
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("account_deletion_state", { p_account: accountId });
+  return !error && !!((data ?? {}) as { state?: string | null }).state;
+}
+
 export const getCurrentProfile = cache(async (): Promise<CurrentProfile> => {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -29,7 +35,9 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile> => {
   // Own row only (RLS profiles_select_own: auth.uid() = id).
   const { data: row } = await supabase.from("profiles").select("id, display_name, username, email, player_slug").eq("id", user.id).maybeSingle();
   const profile = profileIdentityFromRow(row);
-  if (!profile) return { status: "no-profile", account: user };
+  // A closed account (deletion requested or done; supabase/account_deletion.sql) can't read its own row any more:
+  // treat it as signed out, never as "finish your profile".
+  if (!profile) return (await isClosedAccount(user.id)) ? { status: "signed-out" } : { status: "no-profile", account: user };
   if (!filled(row?.username) || !filled(row?.display_name)) {
     return { status: "incomplete", account: user, profileId: profile.profileId, displayName: filled(row?.display_name) ? String(row?.display_name) : null };
   }

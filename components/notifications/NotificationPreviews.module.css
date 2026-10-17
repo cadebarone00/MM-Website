@@ -39,47 +39,61 @@
 .dock{position:absolute;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));display:flex;justify-content:space-around;padding:16px 10px;border-radius:32px;background:rgba(255,255,255,.18);backdrop-filter:blur(20px)}
 .dock i{width:60px;height:60px;border-radius:15px;background:rgba(255,255,255,.2)}
 
-/* Live Activity (lock screen) */
-.liveCard{padding:14px 16px 14px;font-family:var(--font-barlow),sans-serif;border-radius:24px;background:rgba(36,0,1,.92);color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.25)}
-.liveHeader{display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(255,255,255,.75)}
-.liveHeader img{width:22px;height:22px;border-radius:6px}
-.liveHeader span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.liveHeader b{color:#dcc495;font-weight:700}
-.liveMain{display:flex;align-items:center;gap:14px;margin-top:10px}
-.liveMain>div{flex:1;min-width:0}
-.liveName{margin:0;font-size:17px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.liveCourse{margin:2px 0 0;font-size:13px;color:rgba(255,255,255,.6)}
-.liveScore{margin:0;font-size:40px;line-height:1;font-weight:800;color:#dcc495;font-variant-numeric:tabular-nums}
-.livePosition{display:flex;flex-direction:column;align-items:center;margin:0;min-width:52px;font-size:20px;font-weight:700}
-.livePosition small{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.55)}
-.liveProgress{height:5px;margin-top:12px;border-radius:3px;background:rgba(255,255,255,.15);overflow:hidden}
-.liveProgress span{display:block;height:100%;border-radius:3px;background:#b8945a}
-.liveMatch{display:flex;align-items:center;gap:6px;margin:10px 0 0;font-size:14px;color:rgba(255,255,255,.8)}
-.liveMatch b{color:#fff}
-
 /* Dynamic Island: centered over the simulator's 126 × 37 camera cutout (11px from the top). */
 .island{position:absolute;z-index:4;font-family:var(--font-barlow),sans-serif;top:11px;left:50%;transform:translateX(-50%);background:#000;color:#fff}
 .islandCompact{display:flex;align-items:center;justify-content:space-between;box-sizing:border-box;width:250px;height:37px;padding:0 14px 0 8px;border-radius:20px;font-size:15px;font-weight:700}
-.islandLeading{display:flex;align-items:center;gap:6px;color:#dcc495}
-.islandLeading img{width:22px;height:22px;border-radius:6px}
-.islandTrailing{color:#fff;font-size:13px}
 .islandCompactWide{width:300px;padding:0 14px}
 .islandTeams{display:flex;gap:7px;font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
 .islandMine{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
 .islandMine small{font-size:13px;font-weight:600;color:rgba(255,255,255,.65)}
 .matchArrow{display:inline-flex;align-items:center;gap:2px;color:#dcc495;font-weight:800}
-.islandMinimalRow{position:absolute;inset:0 0 auto;height:60px}
-.islandMinimalMain{width:126px;height:37px;border-radius:20px}
-.islandMinimal{display:grid;place-items:center;width:37px;height:37px;border-radius:50%;left:calc(50% + 71px);transform:none;font-size:13px;font-weight:800;color:#dcc495}
-.islandExpanded{box-sizing:border-box;width:calc(100% - 20px);max-width:372px;padding:16px 20px 18px;border-radius:44px}
-.islandExpandedTop{display:flex;align-items:flex-start;justify-content:space-between}
-.islandExpandedTop .islandLeading{align-items:center;font-size:30px;font-weight:800}
-.islandExpandedTop .islandLeading img{width:34px;height:34px;border-radius:9px}
-.islandExpandedTop small{white-space:nowrap;font-size:12px;font-weight:600;color:rgba(255,255,255,.6);margin-top:2px}
-.islandExpandedCenter{margin:4px 0 0;text-align:center;font-size:15px;font-weight:700}
-.islandExpandedRight{display:flex;flex-direction:column;align-items:flex-end;font-size:17px;font-weight:700}
-.islandExpandedBottom{margin:10px 0 0;font-size:14px;color:rgba(255,255,255,.8)}
-.islandExpandedBottom b{color:#fff}
+/* Side-by-side comparison under the home screen grid (not a real iPhone surface). */
+.tinyCompare{position:absolute;z-index:3;left:12px;right:12px;bottom:calc(120px + env(safe-area-inset-bottom));padding:12px;border-radius:18px;background:rgba(0,0,0,.45);text-align:center}
+.tinyCompare p{margin:0 0 8px;font:600 12px/1.3 var(--font-barlow),sans-serif;color:rgba(255,255,255,.75)}
+.tinyCompareRow{display:flex;justify-content:center;align-items:center;gap:8px}
+.tinyCompareRow::before{content:"";width:126px;height:37px;border-radius:20px;background:#000}
+.tinyCircle{display:grid;place-items:center;width:37px;height:37px;border-radius:50%;background:#000;color:#dcc495;font:800 12px/1 var(--font-barlow),sans-serif;letter-spacing:-.02em}
+.islandExpanded{box-sizing:border-box;width:calc(100% - 20px);max-width:372px;padding:50px 16px 16px;border-radius:44px}
+
+/* Android: status bar sits beside the Pixel's center punch-hole camera (24px safe top). */
+.androidScreen{background:radial-gradient(110% 70% at 80% 0%,#872a2e 0%,transparent 60%),linear-gradient(170deg,#380001 0%,#240001 70%)}
+.phone.androidScreen:not(#_){padding-top:0}
+.androidStatus{display:flex;align-items:center;gap:8px;height:30px;padding:0 18px;margin-top:2px;font:500 14px/1 var(--font-barlow),sans-serif;color:#fff}
+.androidClock{font-weight:600}
+.androidIcons{margin-left:auto;font-size:11px;letter-spacing:4px;opacity:.85}
+.androidChip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px 0 3px;border-radius:12px;background:#6b161a;color:#fff;font:700 13px/1 var(--font-barlow),sans-serif}
+.androidChip img{width:18px;height:18px;border-radius:50%}
+.homeApp .androidIcon{border-radius:50%}
+.androidScreen .homeGrid{padding-top:40px}
+
+/* "Both" Live Activity — Golf tab board look, sized for Apple's 160pt lock-screen limit. */
+.both{box-sizing:border-box;max-height:160px;padding:9px 10px 9px;border-radius:22px;background:rgba(36,0,1,.94);color:#fff;font-family:var(--font-barlow),sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.25);overflow:hidden}
+.bothIsland{max-height:none;padding:0;border-radius:0;background:none;box-shadow:none}
+.bothTeams{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.bothTeam{display:flex;align-items:center;justify-content:space-between;gap:6px;height:30px;padding:0 10px;box-sizing:border-box;font-family:var(--font-spectral),Georgia,serif}
+.bothTeam[data-text=light]{color:#fff}
+.bothTeam[data-text=dark]{color:var(--color-maroon-900,#240001)}
+.bothTeam span{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bothTeam b{font-size:19px;font-weight:700}
+.bothTeamLeft{border-radius:4px 14px 14px 4px}
+.bothTeamRight{flex-direction:row-reverse;border-radius:14px 4px 4px 14px}
+.bothBoard{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
+.bothBoard li{display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:8px;height:20px}
+/* Row 3 always reserves the line's space, so the card is one size whether or not I'm in the top 3. */
+.bothBoard li:nth-child(3){margin-top:3px;padding-top:3px;border-top:1px solid transparent}
+.bothBoard li.bothSplit{border-top-color:rgba(220,196,149,.35)}
+.bothRank{display:grid;place-items:center;width:22px;height:18px;border-radius:5px;background:#fbf8f1;color:var(--color-maroon-900,#240001);font:800 10px/1 var(--font-spectral),Georgia,serif}
+.bothMe .bothRank{background:#000;color:#fff;box-shadow:0 0 0 1px rgba(220,196,149,.55)}
+.bothName{font:700 13px/1 var(--font-spectral),Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bothBoard b{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.both [data-par=under]{color:#ef4444}
+.both [data-par=even]{color:#dcc495}
+.both [data-par=over]{color:#fff}
+.bothStatus{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 0;height:24px;padding:0 10px;border-radius:12px;background:#000;border:1px solid rgba(220,196,149,.45);font-size:12px;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden}
+.bothStatus>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.bothStatus b{color:#fff}
+.bothStatusRight{flex:none;overflow:hidden;text-overflow:ellipsis;max-width:55%}
+.bothStatus .matchArrow{color:#dcc495}
 
 /* In-app */
 .phone.appScreen{padding-top:0}

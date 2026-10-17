@@ -61,7 +61,9 @@ export function simulatorPages(): SimulatorPage[] {
     page.conditions = [];
     if (!page.path.startsWith("/dev/tournament")) continue;
     page.conditions = SIMULATOR_SOURCES.map(item => ({ id: "source-" + item.id, label: item.label, source: item.id }));
-    if (page.navigation?.tab === "Home") page.conditions.push({ id: "dual-draft-momentum", label: "Upcoming Team Draft + Match Draft", state: { dualDraftMomentum: true } });
+    if (page.navigation?.tab === "Home") page.conditions.push({ id: "dual-draft-momentum", label: "Upcoming Team Draft", state: { dualDraftMomentum: true, matchDraftPreview: "off" } });
+    if (page.navigation?.tab === "Home") page.conditions.push(...(["Response", "Ranks", "Randomized"] as const).map(method=>({id:"home-match-draft-"+method.toLowerCase(),label:"Match Draft - "+method,state:{dualDraftMomentum:true,matchDraftPreview:method}})));
+    if (page.navigation?.tab === "Home") page.conditions.push({id:"home-draft-configured",label:"Use configured draft rounds",state:{dualDraftMomentum:false,matchDraftPreview:"off"}});
     if (page.navigation?.tab === "Home" || page.navigation?.tab === "Golf") page.conditions.push(
       { id: "competition-source", label: "Competition from data source", state: { competition: "source" } },
       { id: "competitive", label: "Competitive", state: { competition: "yes" } },
@@ -107,7 +109,7 @@ export function simulatorPages(): SimulatorPage[] {
     for (let index = 1; index <= 6; index++) add(`placeholder-${index}`, `Place holder ${index}`, settings.id, "Player");
     add("organizer", "Organizer settings", settings.id, "Organizer");
     add("match-selection", "Match Selection settings", settings.id, "Organizer");
-    pages.push({ ...settings, id: "trip-match-selector", label: "Match Selector", parentId: undefined, navigation: { tab: "Home", settingsView: "match-draft-room" } });
+    pages.push({ ...settings, id: "trip-match-selector", label: "Match Selector", parentId: undefined, navigation: { tab: "Home", settingsView: "match-draft-room" }, conditions: [...(settings.conditions ?? []), ...(["Response", "Ranks", "Randomized"] as const).map(method=>({id:"match-draft-"+method.toLowerCase(),label:method+" match draft",state:{matchDraftPreview:method}})), {id:"match-draft-configured",label:"Use configured draft rounds",state:{matchDraftPreview:"off" as const}}] });
     for (const [view, label] of [["players", "Players"], ["schedule", "Golf Schedule"], ["competition", "Competition"], ["games", "Games"], ["history", "History"], ["placeholder-7", "Place holder 1"], ["placeholder-8", "Place holder 2"]]) add(view, label, settings.id, "Organizer");
     add("competition-rounds", "Rounds", "settings-competition");
     for (const game of [{ id: "skins", name: "Skins" }, ...SIDE_GAME_REGISTRY.filter(game => game.id !== "skins")]) add(`game-${game.id}`, game.name, "settings-games");

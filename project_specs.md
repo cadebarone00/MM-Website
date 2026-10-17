@@ -2886,7 +2886,17 @@ Three tabs in Predict, each bet a card; *(team)* = only for trips with a team co
 - **Random with anti-repetition, scoped per group + conditional:** eligible = the live variations of that conditional in the active version. Exclude the ⌊n/2⌋ most recently used variations for that same conditional in that same trip / tournament edition (read from its stored events — no extra state); pick uniformly at random from the rest with a server-side random source (injected in tests).
 - **Edge cases:** n = 1 → always that one (no protection possible); n = 2 → alternates; n = 3 → never the previous one; n = 6 → never one of the last 3. Recently used IDs that are no longer live are ignored. No live variation → the conditional doesn't fire (the validator warns).
 
-**Files.** Changed in `lib/highlights/`: `types.ts` (HighlightVariation, VARIATION_ID_PATTERN, schemaVersion 2), `sheetRows.ts` (VARIATION row type), `importer.ts` (variations + legacy V00), `validator.ts` (variation checks, `isApprovedTrigger` / `isLiveVariation`), `changes.ts` (variation-level copy changes), `canonical.ts` (variations in the fingerprint), `draft.ts` (one preview line per live variation, variation counts), `scripts/check-highlights-xlsx.ts`, tests + `variationSheet()` fixture. No SQL, routes, UI, scoring or notification changes; the Google Sheet is not edited.
+**Files (H2.1).** Changed in `lib/highlights/`: `types.ts` (HighlightVariation, VARIATION_ID_PATTERN, schemaVersion 2), `sheetRows.ts` (VARIATION row type), `importer.ts` (variations + legacy V00), `validator.ts` (variation checks, `isApprovedTrigger` / `isLiveVariation`), `changes.ts` (variation-level copy changes), `canonical.ts` (variations in the fingerprint), `draft.ts` (one preview line per live variation, variation counts), `scripts/check-highlights-xlsx.ts`, tests + `variationSheet()` fixture. No SQL, routes, UI, scoring or notification changes; the Google Sheet is not edited.
+
+### Round: Highlights Engine Phase H3 — versioned configuration database (approved 2026-10-17; `supabase/highlights_config.sql` NOT run anywhere yet)
+
+**Tables (all RLS on, no browser access, server read-only; every write through admin-checked functions).** `highlight_config_drafts` (one upload: file name / size / SHA-256 — never the file — canonical config, report, changes, change kind, has-errors, base version, status pending / published / discarded, 7-day expiry); `highlight_config_versions` (immutable: config, fingerprint, schema 2, change kind + list, source draft, previous version, note, publisher; numbered 1, 2, 3 … with no gaps); `highlight_config_active` (one row: the live version, why, who, when); `highlight_config_audit` (append-only: upload / publish / rollback / discard). Triggers block update, delete and truncate on versions and audit, even for the table owner.
+
+**Functions (service_role only; each re-checks `profiles.platform_role = 'admin'`).** `save_highlight_draft(actor, payload)` — refuses a draft compared with a version that is no longer live; `publish_highlight_draft(actor, draft, confirm_behavior, note)` — one transaction: refuses non-pending, expired, has-errors, no-change, unconfirmed-behavior and stale drafts, re-runs the structural check, adds the version, moves the pointer, marks the draft, writes the audit; `rollback_highlight_config(actor, target, expected_current)` — moves the pointer to any other version, refused if the live version moved; `discard_highlight_draft`; `list_highlight_config_versions(actor)`; `get_active_highlight_config()` for the engine (server only). `highlight_config_problems(config)` re-checks shape, schema 2 and rule / conditional / variation IDs in the database. Stale = SQLSTATE `HL409`, not allowed = `42501`.
+
+**Files.** `supabase/highlights_config.sql`; `lib/highlights/configRows.ts` (payload for `save_highlight_draft`, parser for `get_active_highlight_config`) + tests; `lib/highlights/configDatabase.test.ts` (practice database: authorization, roles, immutability, stale drafts, rollback, atomic publish, structure, momentum messages untouched).
+
+**Later, manual (not part of this round).** After approval: run `highlights_config.sql` in a staging project first, then production, in the Supabase SQL editor; it needs `platform_foundation.sql` (already in production) and at least one profile with `platform_role = 'admin'`.
 
 ## Notifications — native App Store app (proposed 2026-10-16; Phase 1 approved and built 2026-10-16)
 
@@ -2914,7 +2924,7 @@ Three tabs in Predict, each bet a card; *(team)* = only for trips with a team co
 
 **Folder question (Phase 4).** No Xcode project yet (owner builds on Windows first, Mac later). Swift files will need a home. Ask before Phase 4: a new top-level `ios-native/` folder.
 
-**Not in this plan.** Android, email or SMS, marketing blasts, notification settings beyond on/off per kind, new notification wording without approval.
+**Not in this plan.** Email or SMS, marketing blasts, notification settings beyond on/off per kind, new notification wording without approval.
 
 **Done means (Phase 1).** The /dev simulator has a Notifications group showing every surface and state listed above at phone width. Shared types/logic have unit tests. TypeScript, lint and the full test suite pass. Nothing real is sent and no SQL is run.
 
@@ -3051,4 +3061,74 @@ Full write-up: `docs/accounts-v2-architecture-2026-10-17.md`. Changes from the p
 - Initialization is also called after `/api/auth/password-session` (invite / recovery links) and when accepting a trip
   invite.
 - **Going live** = run `supabase/profile_initialization.sql` (after a backup), then deploy the code. Separate approval.
+
+
+### Live Activity — rules and the "Both" competition type (owner decisions 2026-10-17)
+
+**One Live Activity per round** (Apple caps one at ~8 hours live + up to 4 hours on the lock screen after it ends).
+
+| Step | Trigger | Shows |
+|---|---|---|
+| Pops up (`pre`) | 60 min before the player's tee time | Tee time, group / opponent, course, team score, leaderboard |
+| Live (`live`) | The organizer starts the round for the player's group (or for all groups) | Updates as scores come in |
+| Round over (`over`) | Every player in the group / match has submitted their card | Final match result + next tee time and course (if another round is coming) |
+| Goes away | 60 min after round over, **or** when the next round's Live Activity pops up, whichever comes first | — |
+| After the last round (`final`) | Last group submits | Final match result, gone after 60 min |
+
+- Hand-off: the next round's Live Activity keeps the same look and carries the last match's result plus the new tee time and group. Example: tee times 8:00 and 2:00 → pops up 7:00, organizer starts 7:57, all cards in 12:49, round 1 ends 1:00 (next round 60 min away), round 2 pops up 1:00.
+- A gap with no Live Activity between rounds is fine (e.g. round ends 10:00, next tee 2:00 → shows 10:00–11:00, then 1:00 on).
+- Signed out: same behavior (real notifications decision).
+
+**"Both" (team + individual) — three sections on the lock screen / expanded view (to be designed next):**
+1. **Team score** — always shown, updates live (e.g. 3½ – 1½).
+2. **Individual leaderboard** — three rows straight from the leaderboard: user in the top 3 → the top 3 (with the user in place); otherwise rows 1, 2, then the user. Ties shown as `T2`.
+3. **The user's round status** — before round 1: tee time + opponent; live: round score, thru, match status; between rounds: final match result + next tee time + course; after the tournament: final match result.
+
+**Dynamic Island pill (compact)** — left of the camera: team points, my team first, each in its team's color (bright enough to read on black). Right of the camera: the status, following the steps above:
+
+| Step | Right side | Tiny circle (another app's Live Activity also running) |
+|---|---|---|
+| Pops up | Countdown + tee time: `13m 2:24` (at 2:11 for a 2:24 tee) | `13m` |
+| Live | Round score, match arrow, thru: `+2 ▲3 15` (▼ when down, `AS` when even) | `▲3` |
+| Round over, next round coming | `Next 2:00` | `2:00` |
+| Round over with no next round / after the last round | Match result: `W 3&2` | `W` |
+
+Code: `pillStatus()` / `teeClock()` / `minutesUntil()` / `formatPoints()` / `matchMark()` in `lib/notifications/format.ts` (tested). Previews: `/dev` → Notifications → Live Activity → "Pill · …".
+
+**Lock screen / expanded / Android pinned layout (owner 2026-10-17, built as previews):** looks like the Golf tab board.
+1. The two teams side by side in their team-color fills (like the board), name + points, my team on the left.
+2. Three leaderboard rows: cream rank badges like the leaderboard, **mine in black**; when I'm not top 3, a thin line sits above my row (the space is always reserved so the card never changes size).
+3. A black match status pill: popped up `Tee 2:24 vs Collin Ross · 13m`; live `▲3 UP vs Collin Ross · +2 · Thru 15`; round over `W 3&2 vs Collin Ross · Next 2:00 · PGA West Nicklaus`; after the last round `W 3&2 vs Collin Ross · Final`.
+Fixed 151px tall in every state (Apple's lock-screen limit is 160pt). Code: `liveLeaderboard()`, `textOnFill()`, `readableOnBlack()` in `lib/notifications/format.ts` (tested). Previews: `/dev` → Notifications → Live Activity → "Lock screen · …" and "Dynamic Island · expanded".
+
+**Still to design:** the None, Individual-only and Team-only versions.
+
+### Android (owner decision 2026-10-17: build Android alongside iPhone)
+
+Same Capacitor app ships to Google Play. Android has no Live Activities or Dynamic Island; its equivalent is **Live Updates** (newer Android) and a pinned ("ongoing") notification on older versions.
+
+| iPhone | Android |
+|---|---|
+| Dynamic Island pill / tiny circle | **Status bar chip** next to the clock: logo + the same short status as the tiny circle (`13m`, `▲3`, `2:00`, `W`) |
+| Lock screen Live Activity (3 sections) | **Pinned notification** on the lock screen and pull-down menu, same 3 sections, updates live, can't be swiped away while the round is live |
+| Phone notifications (APNs) | Phone notifications via **Firebase Cloud Messaging (FCM)**, Google's push service (new third-party service; needs a free Firebase project + a server key in env vars) |
+
+Same lifecycle rules as iPhone (pops up 60 min before tee time, live when the organizer starts, gone 60 min after / at hand-off), even though Android has no 8-hour cap, so both phones behave the same. Signed-out phones get real notifications on Android too. Previews: `/dev` → Notifications → Live Activity → "Android chip · …" (pick a Google Pixel device in the simulator).
+
+### Step 3 — Account deletion (decisions 2026-10-17; database layer built locally 2026-10-17, not deployed)
+Design `docs/account-deletion-design-2026-10-17.md`; hard vs soft test `docs/auth-deletion-test-2026-10-17.md`;
+implementation + tests `docs/account-deletion-implementation-2026-10-17.md`.
+- **Decisions:**
+  - D1: no grace period; access closes at once.
+  - D2: Supabase **hard** delete (soft delete left a revivable account).
+  - D3: trips transfer only to a member who **accepted** a hand-off; otherwise ended trips are archived and active ones
+    restricted; deletion is never blocked.
+  - D4: 30-day cleanup of abandoned unverified V2 accounts planned (V1 excluded), not built.
+  - D5: open MM Coins bets cancelled and balance removed; settled bets kept de-identified pending review.
+  - D6: 90-day operational log; minimal UUID ledger for restore protection.
+  - D7: legal review list.
+- **Built locally:** `supabase/account_deletion.sql` (tombstone profiles, detached from `auth.users`;
+  RESTRICT on trip creator / round host; restrictive `active_account_only` policies + PostgREST pre-request hook so old
+  JWTs stop working immediately; resumable ledger), `lib/account/accountDeletion.ts`, tests.
+- **Next (separate approval):** deletion UI + route, hand-off UI, sweeper cron, then a production migration plan.
 

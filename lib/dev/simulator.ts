@@ -62,6 +62,7 @@ export type SimulatorState = {
   /** Profile preview (/dev/profile): whose sample profile shows and with how many rounds. Unset = "sample". */
   profilePreview?: ProfilePreview;
   dualDraftMomentum?: boolean;
+  matchDraftPreview?: "off" | "Response" | "Ranks" | "Randomized";
   /** Notifications group: which preview screen shows (lib/dev/sampleNotifications.ts). Unset = the page's first one. */
   notificationPreview?: NotificationPreview;
   brandStyle?: "clean" | "gold";
@@ -152,6 +153,7 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.seed !== undefined && (typeof state.seed !== "number" || !Number.isSafeInteger(state.seed) || state.seed < 1 || state.seed > 2 ** 31)) return null;
   if (state.competitionSetup !== undefined && !COMPETITION_SETUPS.some(([id]) => id === state.competitionSetup)) return null;
   if (state.profilePreview !== undefined && !PROFILE_PREVIEWS.includes(state.profilePreview as ProfilePreview)) return null;
+  if (state.matchDraftPreview !== undefined && !["off", "Response", "Ranks", "Randomized"].includes(String(state.matchDraftPreview))) return null;
   if (state.dualDraftMomentum !== undefined && typeof state.dualDraftMomentum !== "boolean") return null;
   if (state.notificationPreview !== undefined && !ALL_NOTIFICATION_PREVIEWS.includes(String(state.notificationPreview))) return null;
   if (state.brandStyle !== undefined && !["clean", "gold"].includes(String(state.brandStyle))) return null;
