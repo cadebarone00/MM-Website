@@ -27,12 +27,11 @@ export function GolfTripGames({ match, rounds, signedInName }: { match: GolfMatc
   useEffect(() => { setGames(readGames()); }, []); // eslint-disable-line react-hooks/set-state-in-effect -- reads this device's saved games once
   const save = (next: TripGame[]) => { setGames(next); try { localStorage.setItem(STORE, JSON.stringify(next)); } catch { /* private mode */ } };
   const [creating, setCreating] = useState(false);
-  // The sheet's box: top just covers the trip tabs; bottom sits above the site's bottom nav (so Create is never hidden).
+  // The sheet's box: top just covers the trip tabs; it runs to the bottom of the screen, over the bottom nav.
   const [sheetBox, setSheetBox] = useState({ top: 16, bottom: 16 });
   const openNew = () => {
     const tabs = document.querySelector("[aria-label='Trip sections']")?.getBoundingClientRect();
-    const nav = document.querySelector("[data-site-bottom-nav]")?.getBoundingClientRect();
-    setSheetBox({ top: Math.max(16, tabs?.top ?? 16), bottom: (nav && nav.height > 0 ? window.innerHeight - nav.top : 0) + window.innerHeight * 0.03 });
+    setSheetBox({ top: Math.max(16, tabs?.top ?? 16), bottom: 0 });
     setCreating(true);
   };
   const mine = games.filter((g) => g.players.includes(me));
@@ -161,12 +160,15 @@ function NewGame({ box, group, rounds, current, onClose, onCreate }: { box: { to
     </div>
     {info && <InfoCard title={gameDef(info).name} text={gameDef(info).blurb} onClose={() => setInfo(null)} />}
     <div className={styles.sheetFooter}>
-      <button type="button" className={styles.sheetPrimary} disabled={!id} onClick={create}>{id ? `Create ${gameDef(id).name}` : "Pick a game"}</button>
+      {id ? <button type="button" className={styles.createButton} onClick={create}>
+        <span><b>Create {gameDef(id).name}</b><small>{players.length} players · Round {round}</small></span>
+        <span className={styles.createArrow} aria-hidden><ChevronRight size={20} strokeWidth={2.5} /></span>
+      </button> : <p className={styles.createPrompt} role="status">Pick a game above to continue</p>}
     </div>
   </GolfTripActionSheet>;
 }
 
-/** A game's description in a small light card over the screen; tap anywhere outside it (or Done) to close. */
+/** A game's description in a small light card over the screen; tap anywhere outside it to close. */
 function InfoCard({ title, text, onClose }: { title: string; text: string; onClose: () => void }) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
@@ -177,7 +179,6 @@ function InfoCard({ title, text, onClose }: { title: string; text: string; onClo
     <div className={styles.infoCard} role="dialog" aria-label={`About ${title}`} onClick={(event) => event.stopPropagation()}>
       <h4>{title}</h4>
       <p>{text}</p>
-      <button type="button" onClick={onClose} autoFocus>Done</button>
     </div>
   </div>;
 }
