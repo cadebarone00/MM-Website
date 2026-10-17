@@ -36,7 +36,7 @@ export const GAMES: GameDef[] = [
   { id: "bestball", name: "Best Ball", blurb: "2 v 2. Each team's best score on each hole counts.", players: [4], teams: true, teamFormat: false, points: false },
   { id: "skins", name: "Skins", blurb: "Outright low score wins the hole's skin. Ties carry over.", players: [2, 3, 4, 5], teams: false, teamFormat: false, points: true },
   { id: "wolf", name: "Wolf", blurb: "The Wolf rotates. Each hole they pick a partner or go Lone Wolf for double.", players: [4, 5], teams: false, teamFormat: false, points: true, holeInput: "wolf" },
-  { id: "vegas", name: "Vegas", blurb: "2 v 2. Team scores make a 2-digit number (4 and 5 = 45). Low number wins the difference.", players: [4], teams: true, teamFormat: false, points: true },
+  { id: "vegas", name: "Vegas", blurb: "2 v 2. Team scores make a 2-digit number (4 and 5 = 45). Low number wins the difference. A birdie flips the other team's number (45 becomes 54).", players: [4], teams: true, teamFormat: false, points: true },
   { id: "daytona", name: "Daytona", blurb: "Left pair v right pair, best ball. The middle player can't lose, and wins from everyone with the outright low.", players: [5], teams: false, teamFormat: false, points: true, holeInput: "daytona" },
   { id: "bbb", name: "Bingo Bango Bongo", blurb: "A point each for first on the green, closest once all are on, and first in.", players: [2, 3, 4, 5], teams: false, teamFormat: false, points: true, holeInput: "bbb" },
   { id: "nines", name: "Nines (5-3-1)", blurb: "9 points a hole: 5 for low, 3 for middle, 1 for high.", players: [3], teams: false, teamFormat: false, points: true },
@@ -208,9 +208,14 @@ export function scoreGame(config: GameConfig, players: GamePlayer[], course: Gam
     }
     case "vegas": {
       const [a, b] = [side(0), side(1)];
-      const number = (members: number[], h: number) => { const [lo, hi] = members.map((p) => score(p, h)).sort((x, y) => x - y); return lo * 10 + hi; };
+      // Low score first (4 and 5 = 45); flipped puts the high score first (54).
+      const number = (members: number[], h: number, flipped = false) => { const [lo, hi] = members.map((p) => score(p, h)).sort((x, y) => x - y); return flipped ? hi * 10 + lo : lo * 10 + hi; };
+      const birdied = (members: number[], h: number) => best(members, h) <= course.par[h] - 1;
       for (const h of holes) {
-        const x = number(a, h), y = number(b, h);
+        // A birdie flips the other team's number (owner rule 2026-10-17); if both teams birdie, neither flips.
+        // "Birdies double points" then doubles the difference, as before.
+        const ba = birdied(a, h), bb = birdied(b, h);
+        const x = number(a, h, bb && !ba), y = number(b, h, ba && !bb);
         if (x === y) continue;
         const winners = x < y ? a : b;
         pay(winners, x < y ? b : a, Math.abs(x - y) * birdie(best(winners, h), h));

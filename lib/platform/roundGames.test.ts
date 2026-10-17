@@ -64,6 +64,19 @@ test("vegas: team numbers, low number wins the difference", () => {
   assert.equal(value(r, "Jake"), "-20");
 });
 
+test("vegas: a birdie flips the other team's number; birdies double then doubles the difference", () => {
+  // Hole 1 (par 4): Cam 3 + Cade 4 = 34 (birdie) v Jake 5 + Mike 4 = 45, flipped to 54 → 20 a hole.
+  const edits: [number, number, number][] = [[0, 0, 3], [1, 0, 4], [2, 0, 5], [3, 0, 4]];
+  const flipOnly = scoreGame(game("vegas", { teams: [0, 0, 1, 1] }), names(4), course, ALL, card(4, edits, 1));
+  assert.equal(value(flipOnly, "Cam"), "+40", "20 from each of the two opponents");
+  const doubled = scoreGame(game("vegas", { teams: [0, 0, 1, 1], birdiesDouble: true }), names(4), course, ALL, card(4, edits, 1));
+  assert.equal(value(doubled, "Cam"), "+80", "40 a hole (20 doubled) from each opponent");
+  assert.equal(value(doubled, "Jake"), "-80");
+  // Both teams birdie: no flip. 34 v 35 → 1, doubled 2.
+  const both = scoreGame(game("vegas", { teams: [0, 0, 1, 1], birdiesDouble: true }), names(4), course, ALL, card(4, [[0, 0, 3], [1, 0, 4], [2, 0, 3], [3, 0, 5]], 1));
+  assert.equal(value(both, "Cam"), "+4");
+});
+
 test("nines: 5-3-1, ties split", () => {
   const r = scoreGame(game("nines"), names(3), course, ALL, card(3, [[0, 0, 3], [2, 0, 5], [0, 1, 4], [1, 1, 4]], 2));
   // Hole 1: 5/3/1. Hole 2: Cam & Cade tie low (4,4,1).

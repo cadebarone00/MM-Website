@@ -74,6 +74,7 @@ test("Vegas hole by hole: with the same teams all round it matches Play's Vegas 
   assert.deepEqual(trip1.standings.map((s) => [s.label, s.value]), play.standings.map((s) => [s.label, s.value]));
   const swapped = vegasByHole({ key: "v", round: 2, players: names, inputs: [{}, { teams: [0, 1, 0, 1] }], config }, players, gameCourse(m), strokes);
   const byName = (r: typeof trip1) => Object.fromEntries(r.standings.map((s) => [s.label, s.value]));
-  assert.deepEqual(byName(trip1), { Cam: "+22", Drew: "+22", Cade: "-22", Luke: "-22" });
-  assert.deepEqual(byName(swapped), { Cam: "-22", Drew: "+22", Cade: "-22", Luke: "+22" }, "Drew & Luke win hole 2 with the swapped teams");
+  // Hole 2 (par 5): Drew's 4 is a birdie, so the other side's number flips (56 → 65): 65 − 45 = 20 from each opponent.
+  assert.deepEqual(byName(trip1), { Cam: "+40", Drew: "+40", Cade: "-40", Luke: "-40" });
+  assert.deepEqual(byName(swapped), { Cam: "-40", Drew: "+40", Cade: "-40", Luke: "+40" }, "Drew & Luke win hole 2 with the swapped teams");
 });
