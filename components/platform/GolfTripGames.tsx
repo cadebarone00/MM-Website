@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import homeStyles from "./GolfTripHome.module.css";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { GolfTripActionSheet } from "./GolfTripActionSheet";
 import { HolePicks, Standings } from "./PlayRound";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
@@ -175,10 +176,11 @@ function InfoCard({ title, text, onClose }: { title: string; text: string; onClo
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
-  return <div className={styles.infoLayer} onClick={onClose}>
+  // On the page itself (not inside the scrolling sheet), so the grey covers the whole screen however far you scroll.
+  return createPortal(<div className={styles.infoLayer} onClick={onClose} onWheel={(event) => event.preventDefault()} onTouchMove={(event) => event.preventDefault()}>
     <div className={styles.infoCard} role="dialog" aria-label={`About ${title}`} onClick={(event) => event.stopPropagation()}>
       <h4>{title}</h4>
       <p>{text}</p>
     </div>
-  </div>;
+  </div>, document.body);
 }

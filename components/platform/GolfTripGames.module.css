@@ -98,7 +98,7 @@ div.gameSheet{position:fixed;left:50%;width:min(92vw,420px);max-height:none;tran
 .holePick{gap:6px;margin:4px 0;padding:8px}
 .gameOption .sheetGame[aria-pressed=true]{border:2px solid #591c2e;background:#f3e6c9}
 /* Game description: a small light grey card over the screen; tap outside to close. */
-.infoLayer{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;padding:24px;background:rgba(0,0,0,.35)}
+.infoLayer{position:fixed;inset:0;z-index:3000;overscroll-behavior:contain;touch-action:none;display:grid;place-items:center;padding:24px;background:rgba(0,0,0,.35)}
 .infoCard{display:grid;gap:8px;width:min(320px,100%);padding:16px;border-radius:14px;background:#e9e8e5;color:#1d1d1d;box-shadow:0 12px 32px rgba(0,0,0,.35);font:500 14px/1.45 var(--font-barlow),sans-serif}
 .infoCard h4{margin:0;font:700 16px var(--font-barlow),sans-serif}
 .infoCard p{margin:0;color:#3b3b3b}
