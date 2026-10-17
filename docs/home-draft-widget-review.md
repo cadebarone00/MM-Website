@@ -1,8 +1,8 @@
 # Home draft widget review ? 2026-10-17
 
-Scope: existing Home draft countdown presentation moved out of MOM into the white card stack; next match draft reads existing scoped setup values. No deployment verified.
+Scope: existing Home draft countdown presentation moved out of MOM into the white card stack; existing dual-draft simulator fixture retains its behavior. No deployment verified.
 
-Data and authorization: reads existing team schedule, round match selection and player props. Existing saved setup provider takes precedence over development storage. Only organizers receive Edit links. No new collection, writes, recipients, vendors, permissions or retention. Team room picks remain local and discarded on close; match countdown does not execute a draft.
+Data and authorization: reads existing team schedule, player props and existing simulator fixture. Only organizers receive Edit links. No new collection, writes, recipients, vendors, permissions or retention. Team room picks remain local and discarded on close; match countdown does not execute a draft.
 
 Privacy/personal data, security, retention, organizer responsibility and provider rules: inherited review_required findings in docs/trip-draft-room-review.md and docs/saved-trip-workspace-review.md remain unresolved. Follow-up: responsible release owner must verify underlying membership visibility, setup authorization and retention before release.
 
