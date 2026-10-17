@@ -31,7 +31,8 @@ export const anon = () => createClient(API, status.ANON_KEY, { auth: { persistSe
 
 export type Jar = Map<string, string>;
 export const browser = (): Jar => new Map();
-type Handler = (request: Request, context: { params: Promise<Record<string, string>> }) => Promise<Response>;
+// `never` params: any route's own params type accepts it (the test supplies the right keys per call).
+type Handler = (request: Request, context: { params: Promise<never> }) => Promise<Response>;
 /** Runs one route handler as the browser that owns `jar`. */
 export async function call(jar: Jar, handler: Handler, path: string, body?: unknown,
   options: { method?: string; params?: Record<string, string>; headers?: Record<string, string> } = {}) {
@@ -39,7 +40,7 @@ export async function call(jar: Jar, handler: Handler, path: string, body?: unkn
   const method = options.method ?? "POST";
   const headers = { "Content-Type": "application/json", origin: "http://127.0.0.1:3999", ...options.headers };
   const request = new Request(`http://127.0.0.1:3999${path}`, method === "GET" ? { method, headers } : { method, headers, body: JSON.stringify(body ?? {}) });
-  const response = await handler(request, { params: Promise.resolve(options.params ?? {}) });
+  const response = await handler(request, { params: Promise.resolve(options.params ?? {}) as Promise<never> });
   const text = await response.text();
   let json: unknown = null;
   try { json = JSON.parse(text); } catch { /* redirects have no JSON */ }

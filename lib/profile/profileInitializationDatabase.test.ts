@@ -82,7 +82,7 @@ test("old player claims: only an admin invitation bound to the verified account 
   const slug = await freeSlug(db);
   const invited = await account(db, false, "player@test");
   await assert.rejects(one(db, "select create_player_claim_invitation($1, $2, $3) as r", [notHost, slug, invited]), /Not authorized/);
-  assert.deepEqual(await one(db, "select create_player_claim_invitation($1, $2, $3) as r", [host, slug, invited]), { playerSlug: slug, pending: true });
+  assert.deepEqual(await one(db, "select create_player_claim_invitation($1, $2, $3, $4) as r", [host, slug, invited, "Real Player"]), { playerSlug: slug, pending: true });
   assert.equal((await slot(db, slug)).claimed_by, null, "inviting claims nothing yet");
 
   // Someone else (another verified account, even with the same email text) initializes: no claim.
@@ -99,6 +99,7 @@ test("old player claims: only an admin invitation bound to the verified account 
   const claimedRow = await row(db, invited);
   assert.equal(claimedRow.player_slug, slug);
   assert.equal(claimedRow.username, null, "the code is never turned into a username");
+  assert.equal(claimedRow.display_name, "Real Player", "the admin's name for the player prefills the display name");
   assert.equal(await one(db, "select count(*)::int as r from player_claim_invitations"), 0, "the invitation is used up");
   assert.deepEqual(await initialize(db, invited), { created: false, complete: false, claimedPlayer: null }, "repeating does nothing");
   await assert.rejects(one(db, "select create_player_claim_invitation($1, $2, $3) as r", [host, slug, stranger]), /Already claimed/);
@@ -149,7 +150,7 @@ test("an incomplete profile can accept a golf trip invitation", async () => {
 
 test("every new function is server-only (no browser role can call it)", async () => {
   const db = await setup();
-  for (const fn of ["initialize_my_profile(uuid)", "complete_my_profile(uuid, jsonb)", "create_player_claim_invitation(uuid, text, uuid)", "profile_is_complete(uuid)"]) {
+  for (const fn of ["initialize_my_profile(uuid)", "complete_my_profile(uuid, jsonb)", "create_player_claim_invitation(uuid, text, uuid, text)", "profile_is_complete(uuid)"]) {
     for (const role of ["anon", "authenticated"]) {
       assert.equal(await one(db, "select has_function_privilege($1, $2, 'execute') as r", [role, `public.${fn}`]), false, `${role} must not call ${fn}`);
     }

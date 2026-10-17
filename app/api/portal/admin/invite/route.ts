@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { getPlayerDisplayName } from "@/lib/data/players";
 
 /**
  * Admin invites an old Maroon player by the email on their player slot (Accounts V2).
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
 
   const { data: slot } = await service
     .from("player_slots")
-    .select("claimed_by, email")
+    .select("claimed_by, email, full_name")
     .eq("player_slug", playerSlug)
     .single();
   if (!slot) {
@@ -52,6 +53,7 @@ export async function POST(request: Request) {
 
   const { error: claimError } = await service.rpc("create_player_claim_invitation", {
     p_host: host.userId, p_player_slug: playerSlug, p_account: invited.user.id,
+    p_display_name: slot.full_name ?? getPlayerDisplayName(playerSlug),
   });
   if (claimError) {
     console.error("create_player_claim_invitation failed:", claimError.message);

@@ -46,13 +46,18 @@ create table if not exists public.player_claim_invitations (
   player_slug text primary key references public.player_slots(player_slug) on delete cascade,
   account_id uuid not null references auth.users(id) on delete cascade,
   invited_by uuid references public.profiles(id) on delete set null,
+  -- The player's real name as the admin knows it; prefills the display name when the claim completes.
+  display_name text check (display_name is null or length(trim(display_name)) between 1 and 60),
   created_at timestamptz not null default now()
 );
+alter table public.player_claim_invitations add column if not exists display_name text;
 create index if not exists player_claim_invitations_account_idx on public.player_claim_invitations (account_id);
 alter table public.player_claim_invitations enable row level security;
 revoke all on public.player_claim_invitations from public, anon, authenticated;
 
-create or replace function public.create_player_claim_invitation(p_host uuid, p_player_slug text, p_account uuid)
+-- An earlier draft took 3 arguments; drop it so no second version stays callable.
+drop function if exists public.create_player_claim_invitation(uuid, text, uuid);
+create or replace function public.create_player_claim_invitation(p_host uuid, p_player_slug text, p_account uuid, p_display_name text default null)
 returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
@@ -70,8 +75,10 @@ begin
   if exists (select 1 from profiles where id = p_account and player_slug is not null) then
     raise exception 'That account is already linked to a player.' using errcode = '22023';
   end if;
-  insert into player_claim_invitations (player_slug, account_id, invited_by) values (p_player_slug, p_account, p_host)
-  on conflict (player_slug) do update set account_id = excluded.account_id, invited_by = excluded.invited_by, created_at = now();
+  insert into player_claim_invitations (player_slug, account_id, invited_by, display_name)
+  values (p_player_slug, p_account, p_host, nullif(left(trim(coalesce(p_display_name, '')), 60), ''))
+  on conflict (player_slug) do update set account_id = excluded.account_id, invited_by = excluded.invited_by,
+    display_name = excluded.display_name, created_at = now();
   return jsonb_build_object('playerSlug', p_player_slug, 'pending', true);
 end;
 $$;
@@ -105,7 +112,7 @@ begin
       returning player_slug, full_name into v_claimed, v_full_name;
       if v_claimed is not null then
         update profiles set player_slug = v_claimed,
-          display_name = coalesce(display_name, nullif(trim(v_full_name), ''))
+          display_name = coalesce(display_name, v_invite.display_name, nullif(trim(v_full_name), ''))
         where id = p_account;
       end if;
     end if;
@@ -168,12 +175,12 @@ begin
 end $$;
 
 revoke all on function public.profile_is_complete(uuid) from public, anon, authenticated;
-revoke all on function public.create_player_claim_invitation(uuid, text, uuid) from public, anon, authenticated;
+revoke all on function public.create_player_claim_invitation(uuid, text, uuid, text) from public, anon, authenticated;
 revoke all on function public.initialize_my_profile(uuid) from public, anon, authenticated;
 revoke all on function public.complete_my_profile(uuid, jsonb) from public, anon, authenticated;
 revoke all on function public.require_complete_profile() from public, anon, authenticated;
 grant execute on function public.profile_is_complete(uuid) to service_role;
-grant execute on function public.create_player_claim_invitation(uuid, text, uuid) to service_role;
+grant execute on function public.create_player_claim_invitation(uuid, text, uuid, text) to service_role;
 grant execute on function public.initialize_my_profile(uuid) to service_role;
 grant execute on function public.complete_my_profile(uuid, jsonb) to service_role;
 

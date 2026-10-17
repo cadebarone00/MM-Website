@@ -191,12 +191,30 @@ const invitePlayer = async (slug: string, email: string) => {
   await confirmByEmail(stranger);
   await login(browser(), stranger, "stranger-password-1");
   check(`S9: a stranger with code ${code} gets nothing`, slot(slug).claimedBy === null);
-  const fragment = new URLSearchParams(new URL(await openLink(invited, "invite")).hash.slice(1));
+  check("S9: the stranger's signup set no password on the invited account", account(invited)?.passwordFingerprint === invitedAccount.passwordFingerprint);
+  check("S9: the stranger can't sign in to it", !(await anon().auth.signInWithPassword({ email: invited, password: "someone-else-1" })).data.session);
+  // Supabase's own behavior: the stranger's signup expires the invite link and mails the owner a fresh confirmation.
+  // The real owner recovers with that email + "forgot password" (which also exercises the legacy password trigger).
+  console.log(`  INFO  old invite link now: ${(await openLink(invited, "invite")).slice(0, 70)}`);
+  await openLink(invited, "signup");
   const jar = browser();
-  await call(jar, passwordSessionPOST, "/api/auth/password-session", { access_token: fragment.get("access_token"), refresh_token: fragment.get("refresh_token") });
+  await call(jar, forgotPOST, "/api/auth/forgot-password", { email: invited });
+  const code2 = new URL(await openLink(invited, "recovery")).searchParams.get("code");
+  const cb = await call(jar, callbackGET, `/auth/callback?code=${code2}`, undefined, { method: "GET" });
+  const reset = await call(jar, resetPOST, "/api/auth/reset-password", { password: "owner-password-456" });
   const claimed = profile(invitedAccount.id);
-  check("the invited person accepting the email completes the claim", slot(slug).claimedBy === invitedAccount.id && claimed?.playerSlug === slug, JSON.stringify(claimed));
+  check("the real owner's verified session completes the claim", slot(slug).claimedBy === invitedAccount.id && claimed?.playerSlug === slug, JSON.stringify(claimed));
   check("claim prefills the real name, never a username", claimed?.username === null && !!claimed?.displayName);
+  check("password reset works with the legacy trigger installed", cb.location?.endsWith("/reset-password") === true && reset.status === 200 && slot(slug).passwordCreated, JSON.stringify(reset.json));
+  check("owner signs in with the new password", (await login(browser(), invited, "owner-password-456")).status === 200);
+}
+{ // The normal path: the invitee opens the invite email (nobody interfered) and gets a session.
+  const [slug] = unclaimedCode();
+  const invited = addr("r9b-invited");
+  await invitePlayer(slug, invited);
+  const fragment = new URLSearchParams(new URL(await openLink(invited, "invite")).hash.slice(1));
+  await call(browser(), passwordSessionPOST, "/api/auth/password-session", { access_token: fragment.get("access_token"), refresh_token: fragment.get("refresh_token") });
+  check("invite link accepted: claim completes right away", slot(slug).claimedBy === account(invited)!.id);
 }
 {
   const [slug] = unclaimedCode();
@@ -243,19 +261,6 @@ section("Golf Trip: an unfinished profile can accept an invite but can't score")
     sql(`insert into public.scoring_group_players (group_id, profile_id, play_order) values (${q(group)}, ${q(half.id)}, 1)`);
   } catch (error) { dbRefused = /Finish setting up your profile/.test(String((error as { stderr?: Buffer }).stderr ?? error)); }
   check("the database also refuses an unfinished profile in a scoring group", dbRefused);
-}
-
-section("Password reset with the legacy trigger (claimed player)");
-{
-  const claimedEmail = sql(`select u.email from auth.users u join public.player_slots s on s.claimed_by = u.id where u.email like '%r9-invited%'`);
-  const jar = browser();
-  await call(jar, forgotPOST, "/api/auth/forgot-password", { email: claimedEmail });
-  const code = new URL(await openLink(claimedEmail, "recovery")).searchParams.get("code");
-  const cb = await call(jar, callbackGET, `/auth/callback?code=${code}`, undefined, { method: "GET" });
-  const reset = await call(jar, resetPOST, "/api/auth/reset-password", { password: "new-password-456" });
-  const slug = sql(`select player_slug from public.player_slots s join auth.users u on u.id = s.claimed_by where u.email = ${q(claimedEmail)}`);
-  check("reset works and the trigger updates password_created", cb.location?.endsWith("/reset-password") === true && reset.status === 200 && slot(slug).passwordCreated, JSON.stringify(reset.json));
-  check("can sign in with the new password", (await login(browser(), claimedEmail, "new-password-456")).status === 200);
 }
 
 section("V1 data preserved");

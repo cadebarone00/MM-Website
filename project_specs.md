@@ -2887,7 +2887,7 @@ Three tabs in Predict, each bet a card; *(team)* = only for trips with a team co
 
 **Done means (Phase 1).** The /dev simulator has a Notifications group showing every surface and state listed above at phone width. Shared types/logic have unit tests. TypeScript, lint and the full test suite pass. Nothing real is sent and no SQL is run.
 
-## Accounts Step 2 — Signup & profile initialization reliability (approved plan 2026-10-16; spec only, nothing built)
+## Accounts Step 2 — Signup & profile initialization reliability (approved plan 2026-10-16; Step 2d built locally 2026-10-17, not deployed)
 
 **Why.** The 2026-10-16 audit (`docs/account-architecture-audit-2026-10-16.md`) and the live read-only inspection
 (578 rows: 16 accounts, 14 profiles, 2 accounts with no profile, 6 never verified, no migration history) found:
@@ -3005,3 +3005,19 @@ path in signup can delete an account. Initialization is idempotent and works wit
 TypeScript, lint and the full test suite pass. Nothing is run on production.
 
 **Phase 1 built (2026-10-16).** Files: `lib/notifications/types.ts` + `format.ts` (+ tests: to-par, thru, time ago, unread, safe links, Apple payload with `thread-id` = group, Live Activity content for Swift); `lib/dev/sampleNotifications.ts` (sample data + the 15 preview screens); `components/notifications/NotificationPreviews.tsx` (+ CSS); pages `/dev/notifications/phone`, `/live-activity`, `/in-app`; simulator state `notificationPreview`. Try it: `/dev` → Notifications group. Non-highlight wording is preview-only, not approved for sending.
+
+### Step 2d as built (2026-10-17, local only, owner decisions applied)
+Full write-up: `docs/accounts-v2-architecture-2026-10-17.md`. Changes from the plan above:
+- **V2 framing (owner, 2026-10-17):** V1.0 holds the existing accounts and history; V2.0 is the public App Store app.
+  No new users until V2 is ready, so no emergency deploy.
+- **Golf Trip invites:** an incomplete profile **may** accept and view a trip; scoring and competition (scoring groups,
+  saved rounds, shared rounds, tournaments) need a finished profile, enforced in the database and in the app.
+- **Old player claims:** **no** automatic email-match claim. A claim completes only through an admin player-claim
+  invitation bound to one auth account id (`player_claim_invitations`), once that account is verified. Player codes
+  claim nothing.
+- **Admin invite route changed** (the plan said "no change"): no profile at invite time, no delete on failure; saves
+  the bound invitation with the player's real name (prefills the display name).
+- Initialization is also called after `/api/auth/password-session` (invite / recovery links) and when accepting a trip
+  invite.
+- **Going live** = run `supabase/profile_initialization.sql` (after a backup), then deploy the code. Separate approval.
+
