@@ -54,7 +54,8 @@ export function GolfTripGames({ match, rounds, signedInName }: { match: GolfMatc
     {mine.map((game) => {
       const update = (next: Partial<TripGame>) => save(games.map((g) => g.key === game.key ? { ...g, ...next } : g));
       const remove = () => save(games.filter((g) => g.key !== game.key));
-      return game.started ? <GameCard key={game.key} game={game} match={match} onRemove={remove}
+      // Games with nothing to set up (Vegas included, even ones saved before it picked teams by hole) go straight to the game card.
+      return game.started || !needsSetup(game.config.id) ? <GameCard key={game.key} game={game} match={match} onRemove={remove}
         onInput={(hole, part) => update({ inputs: Object.assign([...game.inputs], { [hole]: { ...game.inputs[hole], ...part } }) })} />
         : <PreRound key={game.key} game={game} onChange={(config) => update({ config })} onStart={() => update({ started: true })} onRemove={remove} />;
     })}
