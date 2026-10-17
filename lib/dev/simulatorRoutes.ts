@@ -88,7 +88,7 @@ export function simulatorPages(): SimulatorPage[] {
     if (page.navigation?.tab) page.conditions.push(...signedInAs());
     if (page.navigation?.golfSection === "Games") page.conditions.push(
       { id: "games-saved", label: "Your saved games", state: { sampleGames: false } },
-      { id: "games-sample", label: "Sample games, mid-round (Wolf, Skins, Match Play, Snake)", state: { sampleGames: true, roundStatus: "live" } });
+      { id: "games-sample", label: "Sample games, mid-round (every game)", state: { sampleGames: true, roundStatus: "live" } });
     if (page.navigation?.golfSection === "Stats") page.conditions.push(
       { id: "trip-stats-saved", label: "Trip stats from saved cards", state: { sampleTripStats: false } },
       { id: "trip-stats-sample", label: "Sample trip stats (every player, 3 courses)", state: { sampleTripStats: true } });

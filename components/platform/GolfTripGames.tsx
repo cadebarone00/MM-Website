@@ -31,7 +31,8 @@ export function GolfTripGames({ match, rounds, signedInName }: { match: GolfMatc
   const sample = useSimulator()?.state.sampleGames === true;
   const groupKey = group.join("|");
   const holeCount = match.par.length, shownRound = match.round;
-  useEffect(() => { setGames(sample ? sampleTripGames(shownRound, holeCount, groupKey.split("|")) : readGames()); }, [sample, shownRound, holeCount, groupKey]); // eslint-disable-line react-hooks/set-state-in-effect -- loads this device's saved games (or the sample) when the source changes
+  const fieldKey = match.leaderboard.map((row) => row.golfer.name).join("|");
+  useEffect(() => { setGames(sample ? sampleTripGames(shownRound, holeCount, groupKey.split("|"), fieldKey.split("|")) : readGames()); }, [sample, shownRound, holeCount, groupKey, fieldKey]); // eslint-disable-line react-hooks/set-state-in-effect -- loads this device's saved games (or the sample) when the source changes
   const save = (next: TripGame[]) => { setGames(next); if (!sample) try { localStorage.setItem(STORE, JSON.stringify(next)); } catch { /* private mode */ } };
   const [creating, setCreating] = useState(false);
   // The sheet's box: top just covers the trip tabs; it runs to the bottom of the screen, over the bottom nav.
