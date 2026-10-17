@@ -586,7 +586,7 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
     </div>
     {/* Stats (only while Player Stats is on): the trip's stats from the scorecards players have recorded. */}
     {sections.some(({ id }) => id === "Stats") && <div role="tabpanel" aria-label="Stats" hidden={!statsActive}>
-      {tripStats ? <Card title="Trip stats"><GolfTripStats stats={tripStats} changes={scoreChanges} /></Card> : <Card title="Stats"><Empty>Stats will show here once players record rounds</Empty></Card>}
+      {tripStats ? <Card title="Trip Stats"><GolfTripStats stats={tripStats} changes={scoreChanges} /></Card> : <Card title="Stats"><Empty>Stats will show here once players record rounds</Empty></Card>}
     </div>}
     {predictSetup && !noComp && predictActive && <PredictSheet onClose={() => goTo(0)}><GolfTripPredict setup={predictSetup} /></PredictSheet>}
   </>;
