@@ -58,6 +58,7 @@ export default async function AdminCenterPage() {
           <Link href="/portal/admin/odds-model" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-7 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Odds Model</Link>
           <Link href="/portal/admin/broadcast-controls" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-7 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Broadcast Controls</Link>
           <Link href="/portal/admin/course-library" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-7 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Course Library</Link>
+          <Link href="/portal/admin/highlights" className="rounded-lg border-2 border-maroon-700 bg-maroon-700 px-6 py-7 text-center font-serif text-xl font-bold text-white transition hover:bg-maroon-800">Highlights</Link>
         </div>
       </section>
       <SeasonOverview initial={overview} />

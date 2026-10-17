@@ -42,6 +42,17 @@ export interface HighlightDraft {
   preview: DraftPreviewLine[];
 }
 
+/** Every live message of a config, rendered with sample names — for a fresh upload or a saved draft alike. */
+export function previewLines(config: HighlightConfig): DraftPreviewLine[] {
+  const lines: DraftPreviewLine[] = [];
+  for (const rule of publishableConfig(config).rules) for (const conditional of rule.conditionals) for (const variation of conditional.variations) {
+    const headline = renderTemplate(variation.headline, SAMPLE_VALUES), body = renderTemplate(variation.body, SAMPLE_VALUES);
+    lines.push({ ruleId: rule.id, conditionalId: conditional.id, variationId: variation.id,
+      headline: headline.ok ? headline.text : variation.headline, body: body.ok ? body.text : variation.body });
+  }
+  return lines;
+}
+
 export type DraftResult = { ok: true; draft: HighlightDraft } | { ok: false; code: XlsxRejection; error: string };
 
 export function buildHighlightDraft(input: { bytes: Uint8Array; fileName: string; published: PublishedVersion | null }): DraftResult {
@@ -54,12 +65,7 @@ export function buildHighlightDraft(input: { bytes: Uint8Array; fileName: string
   const changes = classifyChanges(input.published ? input.published.config : null, config);
   const live = publishableConfig(config);
 
-  const preview: DraftPreviewLine[] = [];
-  for (const rule of live.rules) for (const conditional of rule.conditionals) for (const variation of conditional.variations) {
-    const headline = renderTemplate(variation.headline, SAMPLE_VALUES), body = renderTemplate(variation.body, SAMPLE_VALUES);
-    preview.push({ ruleId: rule.id, conditionalId: conditional.id, variationId: variation.id,
-      headline: headline.ok ? headline.text : variation.headline, body: body.ok ? body.text : variation.body });
-  }
+  const preview = previewLines(config);
   const conditionals = config.rules.flatMap((rule) => rule.conditionals);
 
   return {
