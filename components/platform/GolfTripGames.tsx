@@ -151,6 +151,15 @@ function NewGame({ box, group, rounds, current, onClose, onCreate }: { box: { to
           <span>{name}{i === 0 && <small>You</small>}</span>
         </label>)}
       </div>
+      {/* Always on the sheet: handicaps, and birdies double (greyed out for a game that isn't a points game). */}
+      <div className={styles.createOptions}>
+        <div className={styles.sheetSetting}><span>Handicaps</span><div className={styles.sheetChoices}>
+          {[false, true].map((value) => <button type="button" key={String(value)} aria-pressed={net === value} onClick={() => setNet(value)}>{value ? "On (net)" : "Off (gross)"}</button>)}
+        </div></div>
+        <div className={styles.sheetSetting}><span>Birdies double points{id && !gameDef(id).points ? " · not used in this game" : ""}</span><div className={styles.sheetChoices}>
+          {[false, true].map((value) => <button type="button" key={String(value)} aria-pressed={birdiesDouble === value} disabled={Boolean(id && !gameDef(id).points)} onClick={() => setBirdiesDouble(value)}>{value ? "On" : "Off"}</button>)}
+        </div></div>
+      </div>
       <div className={styles.sheetSetting}><span>Game · {players.length} players</span>
         {choices.length === 0 && <p className={styles.sheetHint}>No games fit {players.length} player{players.length === 1 ? "" : "s"}. Add someone from your group.</p>}
         <div className={styles.gameGrid}>
@@ -162,15 +171,6 @@ function NewGame({ box, group, rounds, current, onClose, onCreate }: { box: { to
       </div>
     </div>
     {info && <InfoCard title={gameDef(info).name} text={gameDef(info).blurb} onClose={() => setInfo(null)} />}
-    {/* Once a game is picked: handicaps, and birdies double for points games (both can still change before teeing off). */}
-    {id && <div className={styles.createOptions}>
-      <div className={styles.sheetSetting}><span>Handicaps</span><div className={styles.sheetChoices}>
-        {[false, true].map((value) => <button type="button" key={String(value)} aria-pressed={net === value} onClick={() => setNet(value)}>{value ? "On (net)" : "Off (gross)"}</button>)}
-      </div></div>
-      {gameDef(id).points && <div className={styles.sheetSetting}><span>Birdies double points</span><div className={styles.sheetChoices}>
-        {[false, true].map((value) => <button type="button" key={String(value)} aria-pressed={birdiesDouble === value} onClick={() => setBirdiesDouble(value)}>{value ? "On" : "Off"}</button>)}
-      </div></div>}
-    </div>}
     <div className={styles.sheetFooter}>
       {id ? <button type="button" className={styles.createButton} onClick={create}>
         <span><b>Create {gameDef(id).name}</b><small>{players.length} players · Round {round}</small></span>
