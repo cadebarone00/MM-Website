@@ -27,8 +27,10 @@ export function GolfTripStats({ stats, changes = [] }: { stats: TripStatsView; c
   const nameOf = (id: string) => names.get(id) ?? id;
   const rounds = stats.rounds ?? [];
   const one = (n: number | null) => n === null ? "—" : n.toFixed(1);
-  const row = (key: string, name: string, s: TripStatsTotals, total = false) => <tr key={key} className={total ? styles.total : undefined}>
-    <th scope="row">{total ? name : <button type="button" className={styles.playerButton} aria-expanded={openPlayer === key} onClick={() => setOpenPlayer(openPlayer === key ? null : key)}>{name}</button>}</th>
+  // The whole row opens a player's rounds (the name stays a button so it works from the keyboard; its click bubbles up).
+  const row = (key: string, name: string, s: TripStatsTotals, total = false) => <tr key={key} className={total ? styles.total : styles.playerRow}
+    onClick={total ? undefined : () => setOpenPlayer(openPlayer === key ? null : key)}>
+    <th scope="row">{total ? name : <button type="button" className={styles.playerButton} aria-expanded={openPlayer === key}>{name}</button>}</th>
     <td>{s.rounds}</td><td>{one(s.scoringAvg)}</td><td>{one(s.puttsAvg)}</td><td>{show(s.fairwayPct, "%")}</td><td>{show(s.greenPct, "%")}</td>
   </tr>;
   // A player's rounds, one row each, in the table's own columns: score under Avg, putts under Putts, and so on.

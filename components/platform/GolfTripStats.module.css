@@ -96,3 +96,5 @@
 .table tr.roundLine th{padding-left:14px}
 .table tr.roundLine th small{font-size:11px;color:rgba(251,248,241,.5)}
 .table tr.roundLine:has(+ tr:not(.roundLine)) th,.table tr.roundLine:has(+ tr:not(.roundLine)) td{border-bottom:1px solid rgba(251,248,241,.12);padding-bottom:6px}
+.playerRow{cursor:pointer}
+.playerRow:hover th,.playerRow:hover td{background:rgba(255,255,255,.04)}
