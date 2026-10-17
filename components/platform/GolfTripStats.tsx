@@ -31,19 +31,17 @@ export function GolfTripStats({ stats, changes = [] }: { stats: TripStatsView; c
     <th scope="row">{total ? name : <button type="button" className={styles.playerButton} aria-expanded={openPlayer === key} onClick={() => setOpenPlayer(openPlayer === key ? null : key)}>{name}</button>}</th>
     <td>{s.rounds}</td><td>{one(s.scoringAvg)}</td><td>{one(s.puttsAvg)}</td><td>{show(s.fairwayPct, "%")}</td><td>{show(s.greenPct, "%")}</td>
   </tr>;
-  // A player's rounds, one line each (owner request 2026-10-17).
-  const roundsOf = (id: string) => <tr key={id + ":rounds"} className={styles.roundsRow}><td colSpan={6}>
-    <table className={styles.roundsTable}><tbody>
-      {rounds.filter((r) => r.profileId === id).map((r, i) => {
-        const toParN = r.holes.reduce((a, h) => a + h.strokes - h.par, 0);
-        const putts = r.holes.every((h) => h.putts !== null) && r.holes.length ? r.holes.reduce((a, h) => a + (h.putts ?? 0), 0) : null;
-        const fw = r.holes.filter((h) => h.par !== 3 && h.fairway), gir = r.holes.filter((h) => h.green);
-        const pctOf = (list: typeof r.holes, hit: (h: (typeof r.holes)[number]) => boolean) => list.length ? `${Math.round(list.filter(hit).length / list.length * 100)}%` : "—";
-        return <tr key={i}><th scope="row">{shortCourse(r.course.name)}</th><td>{r.total}</td><td>{toPar(toParN, 0)}</td><td>{putts ?? "—"}</td>
-          <td>{pctOf(fw, (h) => h.fairway === "center")}</td><td>{pctOf(gir, (h) => h.green === "center")}</td></tr>;
-      })}
-    </tbody></table>
-  </td></tr>;
+  // A player's rounds, one row each, in the table's own columns: score under Avg, putts under Putts, and so on.
+  const roundsOf = (id: string) => rounds.filter((r) => r.profileId === id).map((r, i) => {
+    const toParN = r.holes.reduce((a, h) => a + h.strokes - h.par, 0);
+    const putts = r.holes.every((h) => h.putts !== null) && r.holes.length ? r.holes.reduce((a, h) => a + (h.putts ?? 0), 0) : null;
+    const fw = r.holes.filter((h) => h.par !== 3 && h.fairway), gir = r.holes.filter((h) => h.green);
+    const pctOf = (list: typeof r.holes, hit: (h: (typeof r.holes)[number]) => boolean) => list.length ? `${Math.round(list.filter(hit).length / list.length * 100)}%` : "—";
+    return <tr key={`${id}:round:${i}`} className={styles.roundLine}>
+      <th scope="row">{shortCourse(r.course.name)} <small>{toPar(toParN, 0)}</small></th><td /><td>{r.total}</td><td>{putts ?? "—"}</td>
+      <td>{pctOf(fw, (h) => h.fairway === "center")}</td><td>{pctOf(gir, (h) => h.green === "center")}</td>
+    </tr>;
+  });
   return <>
     <div className={styles.switch} role="tablist" aria-label="Stats view">
       {(["course", "individual"] as const).map((v) => <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => setView(v)}>{v === "course" ? "Course" : "Individual"}</button>)}
@@ -53,7 +51,7 @@ export function GolfTripStats({ stats, changes = [] }: { stats: TripStatsView; c
       <h3 className={styles.heading}>All players</h3>
       <div className={styles.scroll}><table className={styles.table}>
         <thead><tr><th scope="col">Player</th><th scope="col">Rds</th><th scope="col">Avg</th><th scope="col">Putts</th><th scope="col">FWY</th><th scope="col">GIR</th></tr></thead>
-        <tbody>{stats.players.flatMap((p) => [row(p.profileId, p.name, p), ...(openPlayer === p.profileId ? [roundsOf(p.profileId)] : [])])}{row("trip", "Trip", stats.trip, true)}</tbody>
+        <tbody>{stats.players.flatMap((p) => [row(p.profileId, p.name, p), ...(openPlayer === p.profileId ? roundsOf(p.profileId) : [])])}{row("trip", "Trip", stats.trip, true)}</tbody>
       </table></div>
     </>}
     {changes.length > 0 && <section className={styles.changes} aria-label="Organizer's own score changes">
@@ -117,13 +115,9 @@ function CourseView({ rounds, nameOf }: { rounds: TripRound[]; nameOf: (id: stri
   </>;
 }
 
-/** Stats whose name doesn't explain itself get a small "i". */
-const EXPLAIN = new Set(["bounceBack", "fallOff", "scrambling"]);
-
 function IndividualView({ rounds, nameOf }: { rounds: TripRound[]; nameOf: (id: string) => string }) {
   const list = playerStats(rounds, nameOf);
   const [open, setOpen] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
   if (!list.length) return <p className={styles.empty}>Individual stats show once players have a few holes recorded.</p>;
   return <div className={styles.leaders}>
     {list.map((s) => {
@@ -136,9 +130,7 @@ function IndividualView({ rounds, nameOf }: { rounds: TripRound[]; nameOf: (id: 
             {!expanded && <span className={styles.bw} data-tone="easy">{first(best.name)} <em>{value(s.unit, best.value)}</em></span>}
             {!expanded && s.ranking.length > 1 && <span className={styles.bw} data-tone="hard">{first(worst.name)} <em>{value(s.unit, worst.value)}</em></span>}
           </button>
-          {EXPLAIN.has(s.id) && <button type="button" className={styles.info} aria-label={`What is ${s.label}?`} aria-expanded={info === s.id} onClick={() => setInfo(info === s.id ? null : s.id)}>i</button>}
         </div>
-        {info === s.id && <p className={styles.infoText}>{s.detail}.</p>}
         {expanded && <ol className={styles.ranked}>
           {s.ranking.map((r, i) => <li key={r.name}><span className={styles.rank}>{i > 0 && s.ranking[i - 1].value === r.value ? "" : i + 1}</span><span className={styles.rankName}>{r.name}</span><b>{value(s.unit, r.value)}</b></li>)}
         </ol>}

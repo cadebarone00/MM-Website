@@ -91,3 +91,8 @@
 .roundsTable{width:100%;border-collapse:collapse;font:500 12px var(--font-barlow),sans-serif;color:rgba(251,248,241,.8)}
 .roundsTable th,.roundsTable td{padding:4px 5px;border:0;text-align:right}
 .roundsTable th{text-align:left;font-weight:600;padding-left:14px;color:rgba(251,248,241,.65)}
+/* A player's rounds under their row, lined up with the table's columns. */
+.table tr.roundLine th,.table tr.roundLine td{padding-block:4px;font-size:12px;font-weight:500;color:rgba(251,248,241,.72);border-bottom:0}
+.table tr.roundLine th{padding-left:14px}
+.table tr.roundLine th small{font-size:11px;color:rgba(251,248,241,.5)}
+.table tr.roundLine:has(+ tr:not(.roundLine)) th,.table tr.roundLine:has(+ tr:not(.roundLine)) td{border-bottom:1px solid rgba(251,248,241,.12);padding-bottom:6px}
