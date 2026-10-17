@@ -63,3 +63,17 @@ test("Snake from the scorecard: whoever 3-putted holds it; a hole with no 3-putt
     gameStrokes(m, { round: 2, players: ["Cam", "Drew", "Cade", "Luke"] }), inputs);
   assert.equal(result.note, "Luke has the snake");
 });
+
+test("Vegas hole by hole: with the same teams all round it matches Play's Vegas exactly; changing teams on a hole changes only that hole", async () => {
+  const { vegasByHole } = await import("./tripGames");
+  const m = trip(true), names = ["Cam", "Drew", "Cade", "Luke"];
+  const strokes = gameStrokes(m, { round: 2, players: names }), players = gamePlayers(m, names);
+  const config = { id: "vegas" as const, net: false, birdiesDouble: false, teams: [0, 0, 1, 1] };
+  const play = scoreGame(config, players, gameCourse(m), [0, 18], strokes, []);
+  const trip1 = vegasByHole({ key: "v", round: 2, players: names, inputs: [], config }, players, gameCourse(m), strokes);
+  assert.deepEqual(trip1.standings.map((s) => [s.label, s.value]), play.standings.map((s) => [s.label, s.value]));
+  const swapped = vegasByHole({ key: "v", round: 2, players: names, inputs: [{}, { teams: [0, 1, 0, 1] }], config }, players, gameCourse(m), strokes);
+  const byName = (r: typeof trip1) => Object.fromEntries(r.standings.map((s) => [s.label, s.value]));
+  assert.deepEqual(byName(trip1), { Cam: "+22", Drew: "+22", Cade: "-22", Luke: "-22" });
+  assert.deepEqual(byName(swapped), { Cam: "-22", Drew: "+22", Cade: "-22", Luke: "+22" }, "Drew & Luke win hole 2 with the swapped teams");
+});

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Dot, Plus } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import homeStyles from "./GolfTripHome.module.css";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -10,7 +10,7 @@ import { sampleTripGames } from "@/lib/dev/sampleTripGames";
 import { HolePicks, Standings } from "./PlayRound";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import { gameDef, gamesFor, scoreGame, wolfFor, type GameConfig, type GameId, type GameResult, type HoleInput } from "@/lib/platform/roundGames";
-import { currentHole, gameCourse, gamePlayers, gameStrokes, groupOf, holesThru, meOn, parThru, snakeFromPutts, type TripGame } from "@/lib/platform/tripGames";
+import { currentHole, gameCourse, gamePlayers, gameStrokes, groupOf, holesThru, meOn, parThru, snakeFromPutts, teamsOn, vegasByHole, type TripGame } from "@/lib/platform/tripGames";
 import styles from "./GolfTripGames.module.css";
 
 /**
@@ -75,7 +75,9 @@ function GameCard({ game, match, onInput, onRemove }: { game: TripGame; match: G
   const players = gamePlayers(match, game.players);
   // Snake reads the scorecard's putts (no buttons); every other game uses the picks made on the card.
   const inputs = def.holeInput === "snake" ? snakeFromPutts(match, game) : game.inputs;
-  const result = live ? tidy(scoreGame(game.config, players, gameCourse(match), range, strokes, inputs), game.config.id, parThru(match, strokes)) : null;
+  const vegas = game.config.id === "vegas";
+  const result = !live ? null : vegas ? vegasByHole(game, players, gameCourse(match), strokes)
+    : tidy(scoreGame(game.config, players, gameCourse(match), range, strokes, inputs), game.config.id, parThru(match, strokes));
   const thru = holesThru(strokes, holes);
   const names = game.players.map(firstName);
   return <article className={styles.section} aria-label={def.name}>
@@ -88,13 +90,14 @@ function GameCard({ game, match, onInput, onRemove }: { game: TripGame; match: G
       ? [0, 1].map((t) => game.players.filter((_, i) => game.config.teams![i] === t).map(firstName).join(" & ")).join("  vs  ")
       : names.join(" · ")}</p>}
     {!live ? <p className={styles.emptyGames}>Scores show here during Round {game.round}.</p> : <>
-      {def.holeInput && def.holeInput !== "snake" && <div className={styles.holePick}>
+      {(vegas || (def.holeInput && def.holeInput !== "snake")) && <div className={styles.holePick}>
         <div className={styles.holeStep}>
           <button type="button" aria-label="Previous hole" disabled={hole <= 0} onClick={() => setShown(Math.max(0, hole - 1))}><ChevronLeft size={18} aria-hidden /></button>
           <b>Hole {hole + 1}{hole === now && thru < holes ? " · now" : ""}</b>
           <button type="button" aria-label="Next hole" disabled={hole >= holes - 1} onClick={() => setShown(Math.min(holes - 1, hole + 1))}><ChevronRight size={18} aria-hidden /></button>
         </div>
-        {def.holeInput === "wolf" ? <WolfPicks wolf={wolfFor(hole, range, names.length)} names={names} input={game.inputs[hole] ?? {}} onChange={(part) => onInput(hole, part)} />
+        {vegas ? <TeamPicks key={hole} names={names} teams={teamsOn(game, hole)} onChange={(teams) => onInput(hole, { teams })} />
+          : def.holeInput === "wolf" ? <WolfPicks wolf={wolfFor(hole, range, names.length)} names={names} input={game.inputs[hole] ?? {}} onChange={(part) => onInput(hole, part)} />
           : def.holeInput === "daytona" ? <DaytonaPicks key={hole} names={names} input={game.inputs[hole] ?? {}} onChange={(part) => onInput(hole, part)} />
           : <HolePicks game={game.config} hole={hole} range={range} names={names} input={game.inputs[hole] ?? {}} onChange={(part) => onInput(hole, part)} />}
       </div>}
@@ -103,39 +106,42 @@ function GameCard({ game, match, onInput, onRemove }: { game: TripGame; match: G
   </article>;
 }
 
-/** Before the round: the game's options, then Start (owner request 2026-10-17). */
+/** Games that still need something before teeing off: picking teams (Vegas picks teams hole by hole instead). */
+const needsSetup = (id: GameId) => gameDef(id).teams && id !== "vegas";
+
+/** Before the round: pick the teams, then Start. Handicaps and birdies double were chosen when the game was created. */
 function PreRound({ game, onChange, onStart, onRemove }: { game: TripGame; onChange: (config: GameConfig) => void; onStart: () => void; onRemove: () => void }) {
   const def = gameDef(game.config.id), config = game.config;
   const [info, setInfo] = useState(false);
   const teams = config.teams ?? game.players.map((_, i) => i < game.players.length / 2 ? 0 : 1);
-  const teamsOk = !def.teams || (teams.includes(0) && teams.includes(1));
-  const set = (part: Partial<GameConfig>) => onChange({ ...config, ...(def.teams ? { teams } : {}), ...part });
+  const teamsOk = teams.includes(0) && teams.includes(1);
   return <article className={styles.section} aria-label={`${def.name} setup`}>
     <div className={styles.activeGameHead}>
       <div><h3>{def.name} <button type="button" className={styles.gameInfo} aria-label={`About ${def.name}`} aria-expanded={info} onClick={() => setInfo(!info)}>i</button></h3>
-        <p className={styles.summary}>Round {game.round} · Before you tee off</p></div>
+        <p className={styles.summary}>Round {game.round} · {config.net ? "Net" : "Gross"}{config.birdiesDouble ? " · Birdies double" : ""} · Pick teams</p></div>
       <button type="button" className={styles.back} onClick={onRemove}>Remove</button>
     </div>
     {info && <InfoCard title={def.name} text={def.blurb} onClose={() => setInfo(false)} />}
     <div className={styles.preRound}>
-      <div className={styles.sheetSetting}><span>Scoring</span><div className={styles.sheetChoices}>
-        {[false, true].map((value) => <button type="button" key={String(value)} aria-pressed={config.net === value} onClick={() => set({ net: value })}>{value ? "Net (handicaps)" : "Gross"}</button>)}
-      </div></div>
-      {def.points && <div className={styles.sheetSetting}><span>Birdies double points</span><div className={styles.sheetChoices}>
-        {[false, true].map((value) => <button type="button" key={String(value)} aria-pressed={config.birdiesDouble === value} onClick={() => set({ birdiesDouble: value })}>{value ? "On" : "Off"}</button>)}
-      </div></div>}
-      {def.teams && <div className={styles.sheetSetting}><span>Teams</span>
-        {game.players.map((name, i) => <div key={name} className={styles.arrowRow}>
-          <button type="button" aria-label={`${name} on the left team`} aria-pressed={teams[i] === 0} onClick={() => set({ teams: Object.assign([...teams], { [i]: 0 }) })}><ArrowLeft size={16} aria-hidden /></button>
-          <span>{name}</span>
-          <button type="button" aria-label={`${name} on the right team`} aria-pressed={teams[i] === 1} onClick={() => set({ teams: Object.assign([...teams], { [i]: 1 }) })}><ArrowRight size={16} aria-hidden /></button>
-        </div>)}
-        {!teamsOk && <p className={styles.sheetHint}>Put at least one player on each team.</p>}
-      </div>}
-      {def.holeInput === "wolf" && <p className={styles.summary}>Wolf order: {game.players.map(firstName).join(" → ")}, then it repeats.</p>}
+      <TeamPicks names={game.players} teams={teams} onChange={(next) => onChange({ ...config, teams: next })} />
+      {!teamsOk && <p className={styles.sheetHint}>Put at least one player on each team.</p>}
       <button type="button" className={styles.sheetPrimary} disabled={!teamsOk} onClick={onStart}>Start game</button>
     </div>
   </article>;
+}
+
+/** Teams by arrows: ← left team, → right team, one row per player (Vegas uses this hole by hole, like Daytona). */
+function TeamPicks({ names, teams, onChange }: { names: string[]; teams: number[]; onChange: (teams: number[]) => void }) {
+  const set = (i: number, t: number) => onChange(Object.assign([...teams], { [i]: t }));
+  const ok = teams.filter((t) => t === 0).length === teams.filter((t) => t === 1).length;
+  return <div className={styles.daytona}>
+    {names.map((name, i) => <div key={i} className={`${styles.arrowRow} ${styles.teamPickRow}`}>
+      <span>{name}</span>
+      <button type="button" aria-label={`${name} on the left team`} aria-pressed={teams[i] === 0} onClick={() => set(i, 0)}><ArrowLeft size={16} aria-hidden /></button>
+      <button type="button" aria-label={`${name} on the right team`} aria-pressed={teams[i] === 1} onClick={() => set(i, 1)}><ArrowRight size={16} aria-hidden /></button>
+    </div>)}
+    {!ok && <small className={styles.daytonaHint}>Two players on each side</small>}
+  </div>;
 }
 
 /** New game: round → players from my group → a game that fits that many. Its options come next, on the game itself. */
@@ -151,7 +157,7 @@ function NewGame({ box, group, rounds, current, onClose, onCreate }: { box: { to
   const create = () => {
     if (!id) return;
     const def = gameDef(id);
-    onCreate({ key: `${Date.now()}`, round, players, inputs: [], started: false,
+    onCreate({ key: `${Date.now()}`, round, players, inputs: [], started: !needsSetup(id),
       config: { id, net, birdiesDouble: def.points && birdiesDouble, ...(def.teams ? { teams: players.map((_, i) => i < players.length / 2 ? 0 : 1) } : {}) } });
   };
   return <GolfTripActionSheet label="New game" onClose={onClose} className={styles.gameSheet} style={box}>
@@ -259,7 +265,7 @@ function DaytonaPicks({ names, input, onChange }: { names: string[]; input: Hole
     {names.map((name, i) => <div key={i} className={`${styles.arrowRow} ${styles.spotRow}`}>
       <span>{name}</span>
       <button type="button" aria-label={`${name} left pair`} aria-pressed={spots[i] === "left"} onClick={() => pick(i, "left")}><ArrowLeft size={16} aria-hidden /></button>
-      <button type="button" aria-label={`${name} in the middle`} aria-pressed={spots[i] === "middle"} onClick={() => pick(i, "middle")}><Dot size={22} aria-hidden /></button>
+      <button type="button" aria-label={`${name} in the middle`} aria-pressed={spots[i] === "middle"} onClick={() => pick(i, "middle")}><b className={styles.middleM}>M</b></button>
       <button type="button" aria-label={`${name} right pair`} aria-pressed={spots[i] === "right"} onClick={() => pick(i, "right")}><ArrowRight size={16} aria-hidden /></button>
     </div>)}
     {!ready && <small className={styles.daytonaHint}>Set 2 left, 1 middle and 2 right</small>}

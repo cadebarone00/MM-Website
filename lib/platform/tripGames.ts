@@ -1,5 +1,5 @@
 import { normalizeCompetitor, type GolfMatchPreview } from "./golfTripPreviewFixture";
-import type { GameConfig, GameCourse, GamePlayer, HoleInput } from "./roundGames";
+import { scoreGame, type GameConfig, type GameCourse, type GamePlayer, type GameResult, type HoleInput } from "./roundGames";
 
 /**
  * Golf trip → Games (owner request 2026-10-17): the same games as Play a round (lib/platform/roundGames.ts — scored by
@@ -74,3 +74,30 @@ export function snakeFromPutts(match: GolfMatchPreview, game: Pick<TripGame, "ro
 /** Par of the holes everyone in the game has finished (to show a team total against par). */
 export const parThru = (match: GolfMatchPreview, strokes: (number | null)[][]) =>
   match.par.reduce((sum, par, h) => strokes.every((row) => row[h] != null) ? sum + par : sum, 0);
+
+/** The teams on a hole: that hole's pick, else the last hole picked before it, else the game's starting teams. */
+export function teamsOn(game: Pick<TripGame, "config" | "inputs" | "players">, hole: number): number[] {
+  for (let h = hole; h >= 0; h--) if (game.inputs[h]?.teams) return game.inputs[h].teams!;
+  return game.config.teams ?? game.players.map((_, i) => i < game.players.length / 2 ? 0 : 1);
+}
+
+/**
+ * Vegas with teams chosen hole by hole: each finished hole is scored by Play's own Vegas (`scoreGame`) with that hole's
+ * teams, and the points are added up. A hole only counts with two players on each side.
+ */
+export function vegasByHole(game: TripGame, players: GamePlayer[], course: GameCourse, strokes: (number | null)[][]): GameResult {
+  const holes = course.par.length;
+  const points = players.map(() => 0);
+  let thru = 0;
+  for (let h = 0; h < holes; h++) {
+    if (!strokes.every((row) => row[h] != null)) continue;
+    thru++;
+    const teams = teamsOn(game, h);
+    if (teams.filter((t) => t === 0).length !== 2 || teams.filter((t) => t === 1).length !== 2) continue;
+    const only = strokes.map((row) => row.map((s, i) => i === h ? s : null));
+    const result = scoreGame({ ...game.config, teams }, players, course, [0, holes], only, []);
+    for (const s of result.standings) { const p = players.findIndex((pl) => pl.name === s.label); if (p >= 0) points[p] += Number(s.value.replace("+", "")) || 0; }
+  }
+  const signed = (n: number) => n > 0 ? `+${n}` : String(n);
+  return { title: `Vegas${thru ? ` · thru ${thru}` : ""}`, standings: players.map((p, i) => ({ label: p.name, value: signed(points[i]), rank: points[i] })).sort((a, b) => b.rank - a.rank) };
+}

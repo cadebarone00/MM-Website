@@ -69,6 +69,8 @@ export interface HoleInput {
   bbb?: { bingo?: number; bango?: number; bongo?: number };
   /** Snake: who 3-putted last on this hole (none = undefined). */
   snake?: number;
+  /** Team 0 or 1 for each player on this hole (Golf trip → Vegas picks teams hole by hole). */
+  teams?: number[];
 }
 
 export interface GamePlayer { name: string; /** Handicap index, for net games. */ handicap: number | null }

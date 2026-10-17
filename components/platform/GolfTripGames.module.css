@@ -144,3 +144,6 @@ div.gameSheet{bottom:0;width:min(100%,560px);max-height:none;padding-bottom:0;bo
 .arrowRow button[aria-pressed=true]{background:#dcc495;border-color:#dcc495;color:#2a0d16}
 .daytonaHint{font:600 11px var(--font-barlow),sans-serif;color:rgba(255,255,255,.6)}
 .daytona .arrowRow.spotRow.spotRow{grid-template-columns:minmax(0,1fr) 36px 36px 36px}
+/* Team picks (Vegas by hole, and pre-round teams): name, then ← →, like Daytona. */
+.daytona .arrowRow.teamPickRow.teamPickRow{grid-template-columns:minmax(0,1fr) 36px 36px}
+.middleM{font:800 14px/1 var(--font-barlow),sans-serif}
