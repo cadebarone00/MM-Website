@@ -3131,4 +3131,9 @@ implementation + tests `docs/account-deletion-implementation-2026-10-17.md`.
   RESTRICT on trip creator / round host; restrictive `active_account_only` policies + PostgREST pre-request hook so old
   JWTs stop working immediately; resumable ledger), `lib/account/accountDeletion.ts`, tests.
 - **Next (separate approval):** deletion UI + route, hand-off UI, sweeper cron, then a production migration plan.
+- **Step 3d built locally (2026-10-17):** Settings → Account → Delete account (`/settings/delete-account`), organizer
+  hand-off (ask / accept / decline / withdraw; Settings "Organizer requests"), `POST|GET /api/account/delete`,
+  `/api/golf-trips/[tripId]/organizer-handoff`, cron retry job `/api/internal/account-deletions` (every 10 min,
+  CRON_SECRET only). Deleted people's old player records are unlinked AND locked (no automatic reassignment). Report:
+  `docs/account-deletion-ui-2026-10-17.md`. Not deployed; SQL not run in production.
 

@@ -74,8 +74,46 @@ create table if not exists public.golf_trip_organizer_handoffs (
   accepted_at timestamptz,
   check (from_profile <> to_profile)
 );
+alter table public.golf_trip_organizer_handoffs add column if not exists declined_at timestamptz;
 alter table public.golf_trip_organizer_handoffs enable row level security;
 revoke all on public.golf_trip_organizer_handoffs from public, anon, authenticated;
+
+-- === Old player records released by a deletion stay LOCKED ==============================================================
+-- A deleted person's legacy claim is unlinked, but the slot must never look "free" to the next person. Nothing may claim
+-- a locked slot (no invitation, no initialization, no admin tool) until a future, separately authorized reassignment
+-- with independently verified ownership (not built) sets maroon.claim_unlock for its own transaction.
+alter table public.player_slots add column if not exists claim_locked_at timestamptz;
+alter table public.player_slots add column if not exists claim_locked_reason text;
+alter table public.player_slots drop constraint if exists player_slots_claim_locked_reason_check;
+alter table public.player_slots add constraint player_slots_claim_locked_reason_check
+  check (claim_locked_reason is null or claim_locked_reason in ('account_deleted'));
+
+create or replace function public.guard_locked_player_slot()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if coalesce(current_setting('maroon.claim_unlock', true), '') = 'on' then return new; end if;
+  if tg_table_name = 'player_slots' then
+    if old.claim_locked_at is not null and (new.claimed_by is not null or new.claim_locked_at is null) then
+      raise exception 'This player record is locked after an account deletion.' using errcode = '42501';
+    end if;
+  elsif exists (select 1 from player_slots where player_slug = new.player_slug and claim_locked_at is not null) then
+    raise exception 'This player record is locked after an account deletion.' using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists guard_locked_player_slot on public.player_slots;
+create trigger guard_locked_player_slot before update on public.player_slots
+  for each row execute function public.guard_locked_player_slot();
+do $$
+begin
+  if to_regclass('public.player_claim_invitations') is not null then
+    execute 'drop trigger if exists guard_locked_player_slot on public.player_claim_invitations';
+    execute 'create trigger guard_locked_player_slot before insert or update on public.player_claim_invitations
+      for each row execute function public.guard_locked_player_slot()';
+  end if;
+end $$;
 
 -- === Detach the profile from the login, guard it, defuse creator / host cascades ======================================
 do $$
@@ -213,7 +251,8 @@ begin
     raise exception 'Pick a member who has joined the trip and finished their profile.' using errcode = '22023';
   end if;
   insert into golf_trip_organizer_handoffs (golf_trip_id, from_profile, to_profile) values (p_trip, p_profile, p_to_profile)
-  on conflict (golf_trip_id) do update set from_profile = excluded.from_profile, to_profile = excluded.to_profile, offered_at = now(), accepted_at = null;
+  on conflict (golf_trip_id) do update set from_profile = excluded.from_profile, to_profile = excluded.to_profile, offered_at = now(),
+    accepted_at = null, declined_at = null;
   return jsonb_build_object('offered', true);
 end;
 $$;
@@ -222,10 +261,83 @@ create or replace function public.accept_golf_trip_organizer(p_profile uuid, p_t
 returns jsonb
 language plpgsql security definer set search_path = public as $$
 begin
-  update golf_trip_organizer_handoffs set accepted_at = coalesce(accepted_at, now())
+  if not profile_is_complete(p_profile) or exists (select 1 from account_deletions where account_id = p_profile) then
+    raise exception 'Finish setting up your profile first.' using errcode = '42501';
+  end if;
+  update golf_trip_organizer_handoffs set accepted_at = coalesce(accepted_at, now()), declined_at = null
   where golf_trip_id = p_trip and to_profile = p_profile;
   if not found then raise exception 'There is no organizer hand-off for you on this trip.' using errcode = '42501'; end if;
   return jsonb_build_object('accepted', true);
+end;
+$$;
+
+create or replace function public.decline_golf_trip_organizer(p_profile uuid, p_trip uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+begin
+  update golf_trip_organizer_handoffs set declined_at = coalesce(declined_at, now()), accepted_at = null
+  where golf_trip_id = p_trip and to_profile = p_profile;
+  if not found then raise exception 'There is no organizer hand-off for you on this trip.' using errcode = '42501'; end if;
+  return jsonb_build_object('declined', true);
+end;
+$$;
+
+create or replace function public.cancel_golf_trip_organizer(p_profile uuid, p_trip uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+begin
+  delete from golf_trip_organizer_handoffs where golf_trip_id = p_trip and from_profile = p_profile;
+  return jsonb_build_object('cancelled', found);
+end;
+$$;
+
+-- Offers waiting for this person to accept or decline (Settings shows them).
+create or replace function public.list_my_organizer_offers(p_profile uuid)
+returns jsonb
+language sql stable security definer set search_path = public as $$
+  select coalesce(jsonb_agg(jsonb_build_object('tripId', t.id, 'tripName', t.name, 'startDate', t.start_date, 'endDate', t.end_date,
+    'fromName', coalesce(p.display_name, 'The organizer'), 'accepted', h.accepted_at is not null, 'declined', h.declined_at is not null)
+    order by h.offered_at), '[]'::jsonb)
+  from golf_trip_organizer_handoffs h join golf_trips t on t.id = h.golf_trip_id join profiles p on p.id = h.from_profile
+  where h.to_profile = p_profile and p.deleted_at is null;
+$$;
+
+-- What deletion would do for this person, with the same rules execute_account_deletion uses. Read-only.
+create or replace function public.account_deletion_preview(p_profile uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v_trips jsonb;
+  v_counts jsonb;
+begin
+  select coalesce(jsonb_agg(x order by x->>'startDate'), '[]'::jsonb) into v_trips from (
+    select jsonb_build_object('tripId', t.id, 'name', t.name, 'startDate', t.start_date, 'endDate', t.end_date,
+      'ended', (t.status = 'completed' or t.end_date < current_date),
+      'handoff', case when h.golf_trip_id is null then null else jsonb_build_object('toProfileId', h.to_profile,
+        'toName', coalesce(tp.display_name, 'A member'), 'state', case when h.accepted_at is not null then 'accepted'
+        when h.declined_at is not null then 'declined' else 'pending' end) end,
+      'outcome', case
+        when h.accepted_at is not null and profile_is_complete(h.to_profile) and not exists (select 1 from account_deletions d where d.account_id = h.to_profile) then 'transfer'
+        when t.status = 'completed' or t.end_date < current_date then 'archive' else 'restrict' end,
+      'eligible', coalesce((select jsonb_agg(jsonb_build_object('memberId', m2.id, 'name', p2.display_name) order by p2.display_name)
+        from golf_trip_members m2 join profiles p2 on p2.id = m2.profile_id
+        where m2.golf_trip_id = t.id and m2.invitation_status = 'accepted' and m2.profile_id <> p_profile
+          and profile_is_complete(m2.profile_id) and not exists (select 1 from account_deletions d where d.account_id = m2.profile_id)), '[]'::jsonb)) x
+    from golf_trips t join golf_trip_members m on m.golf_trip_id = t.id and m.profile_id = p_profile and m.role = 'organizer'
+    left join golf_trip_organizer_handoffs h on h.golf_trip_id = t.id and h.from_profile = p_profile
+    left join profiles tp on tp.id = h.to_profile
+  ) s(x);
+  v_counts := jsonb_build_object(
+    'tripsJoined', (select count(*) from golf_trip_members where profile_id = p_profile and role <> 'organizer'),
+    'sharedRoundsHosted', (select count(*) from shared_rounds where host = p_profile and status = 'live'),
+    'tournamentRoles', (select count(*) from tournament_members where profile_id = p_profile),
+    'legacyPlayer', exists (select 1 from player_slots where claimed_by = p_profile),
+    'personalRounds', account_deletion_exec_count('public.player_rounds', 'select 1 from public.player_rounds where profile_id = $1 and source = ''personal''', p_profile),
+    'sharedRounds', account_deletion_exec_count('public.player_rounds', 'select 1 from public.player_rounds where profile_id = $1 and source <> ''personal''', p_profile),
+    'scorecards', account_deletion_exec_count('public.scorecard_submissions', 'select 1 from public.scorecard_submissions where golfer_profile_id = $1', p_profile),
+    'openBets', account_deletion_exec_count('public.mm_coin_bets', 'select 1 from public.mm_coin_bets where profile_id = $1 and status = ''pending''', p_profile),
+    'files', (select count(*) from list_account_storage_objects(p_profile)));
+  return jsonb_build_object('trips', v_trips, 'counts', v_counts);
 end;
 $$;
 
@@ -305,7 +417,9 @@ begin
   -- 4. Shared records stay, de-identified: names / emails others typed about them, and legacy links.
   update golf_trip_members set display_name = 'Former member', email = null, phone = null where profile_id = p_account;
   update tournament_players set display_name = 'Former player', email = null where profile_id = p_account;
-  update player_slots set claimed_by = null, claimed_at = null where claimed_by = p_account;
+  -- Unlinked AND locked: never available for the next person to take (see guard_locked_player_slot).
+  update player_slots set claimed_by = null, claimed_at = null, claim_locked_at = now(), claim_locked_reason = 'account_deleted'
+  where claimed_by = p_account;
   get diagnostics v_n = row_count; v_counts := v_counts || jsonb_build_object('legacyClaimsReleased', v_n);
   v_counts := v_counts || jsonb_build_object('historyLinksRemoved', account_deletion_exec_count('public.historical_participants',
     'update public.historical_participants set profile_id = null where profile_id = $1', p_account));
@@ -365,6 +479,21 @@ begin
   values (p_account, p_step, case when p_ok then 'ok' else 'failed' end,
     case when p_error is null then '{}'::jsonb else jsonb_build_object('error', left(p_error, 120)) end);
   return jsonb_build_object('state', case when p_ok then v_to else v_state end, 'changed', p_ok);
+end;
+$$;
+
+-- Files that still belong to a FINISHED deletion (e.g. uploaded with an old token in the moment before the account
+-- closed, or a Storage hiccup after the step was recorded). The retry job removes them.
+create or replace function public.orphaned_deleted_account_objects(p_limit integer default 200)
+returns table (account_id uuid, bucket_id text, name text)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if to_regclass('storage.objects') is null then return; end if;
+  return query execute 'select d.account_id, o.bucket_id::text, o.name::text from public.account_deletions d
+    join storage.objects o on (o.owner_id = d.account_id::text or o.owner = d.account_id
+      or (o.bucket_id = ''profile-photos'' and o.name like d.account_id::text || ''/%''))
+    where d.state in (''storage_done'', ''auth_done'', ''completed'') limit $1'
+  using greatest(p_limit, 1);
 end;
 $$;
 
@@ -430,6 +559,14 @@ revoke all on function public.account_deletion_state(uuid) from public, anon, au
 revoke all on function public.pending_account_deletions(integer) from public, anon, authenticated;
 revoke all on function public.reapply_account_deletions() from public, anon, authenticated;
 revoke all on function public.purge_account_deletion_events(interval) from public, anon, authenticated;
+revoke all on function public.guard_locked_player_slot() from public, anon, authenticated;
+revoke all on function public.decline_golf_trip_organizer(uuid, uuid) from public, anon, authenticated;
+revoke all on function public.cancel_golf_trip_organizer(uuid, uuid) from public, anon, authenticated;
+revoke all on function public.list_my_organizer_offers(uuid) from public, anon, authenticated;
+revoke all on function public.account_deletion_preview(uuid) from public, anon, authenticated;
+revoke all on function public.orphaned_deleted_account_objects(integer) from public, anon, authenticated;
+grant execute on function public.decline_golf_trip_organizer(uuid, uuid), public.cancel_golf_trip_organizer(uuid, uuid),
+  public.list_my_organizer_offers(uuid), public.account_deletion_preview(uuid), public.orphaned_deleted_account_objects(integer) to service_role;
 grant execute on function public.request_account_deletion(uuid), public.offer_golf_trip_organizer(uuid, uuid, uuid),
   public.accept_golf_trip_organizer(uuid, uuid), public.execute_account_deletion(uuid), public.list_account_storage_objects(uuid),
   public.record_account_deletion_step(uuid, text, boolean, text), public.account_deletion_state(uuid),

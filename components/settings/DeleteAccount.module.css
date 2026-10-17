@@ -1,0 +1,21 @@
+/* Settings → Delete account (and the organizer-offer card on Settings). Same maroon / cream / gold family as Settings. */
+.list{display:grid;gap:6px;margin:6px 0 0;padding:0 0 0 18px;font:500 14px/1.45 var(--font-barlow),sans-serif;color:#1d0b11}
+.subhead{margin:14px 0 4px;font:700 13px var(--font-barlow),sans-serif;color:#1d0b11}
+.trip{display:grid;gap:8px;padding:12px 0;border-top:1px solid #1d0b111f}
+.trip:first-of-type{border-top:0;padding-top:4px}
+.tripName{margin:0;font:700 15px var(--font-barlow),sans-serif;color:#1d0b11}
+.tripDates{font-weight:500;color:#5d4f47}
+.outcome{margin:0;font:500 13px/1.45 var(--font-barlow),sans-serif;color:#3b2d27}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.select,.input{min-height:44px;padding:0 12px;border:1px solid #1d0b1144;border-radius:12px;background:#fffaf2;color:#1d0b11;font:500 15px var(--font-barlow),sans-serif}
+.select{flex:1 1 180px;min-width:0}
+.input{width:100%;box-sizing:border-box}
+.label{display:grid;gap:6px;margin-top:12px;font:600 13px var(--font-barlow),sans-serif;color:#1d0b11}
+.danger{display:inline-flex;align-items:center;justify-content:center;width:100%;min-height:48px;margin-top:16px;border:0;border-radius:12px;background:#9b1c1c;color:#fff;font:700 15px var(--font-barlow),sans-serif;cursor:pointer}
+.danger:disabled{opacity:.45;cursor:not-allowed}
+.dangerLink{display:inline-flex;align-items:center;min-height:44px;margin-top:8px;color:#9b1c1c;font:700 14px var(--font-barlow),sans-serif;text-decoration:underline;text-underline-offset:3px}
+.status{display:grid;gap:8px;text-align:left}
+.statusTitle{margin:0;font:700 20px var(--font-spectral),Georgia,serif;color:#1d0b11}
+.pill{display:inline-block;padding:3px 10px;border-radius:999px;background:#e6dccb;color:#3b2d27;font:700 12px var(--font-barlow),sans-serif}
+.offer{display:grid;gap:8px;padding:10px 0;border-top:1px solid #1d0b111f}
+.offer:first-of-type{border-top:0;padding-top:0}

@@ -59,12 +59,16 @@ test("the migration changes no existing row and can run twice", async () => {
   const slug = (await rows(db, "select player_slug from player_slots order by 1 limit 1"))[0].player_slug as string;
   await db.query("update player_slots set claimed_by = $1 where player_slug = $2", [v1, slug]);
   await db.query("update profiles set player_slug = $2 where id = $1", [v1, slug]);
-  const tables = ["profiles", "player_slots", "golf_trips", "golf_trip_members"];
-  const before = await snapshot(db, tables.slice(1));
+  // Existing columns only: the file adds new, empty columns (e.g. player_slots.claim_locked_at), never changes old values.
+  const existing = async () => JSON.stringify([
+    await rows(db, "select player_slug, username, claimed_by, claimed_at, email, full_name from player_slots order by 1"),
+    await rows(db, "select * from golf_trips order by 1"), await rows(db, "select * from golf_trip_members order by 1")]);
+  const before = await existing();
   const profileBefore = await rows(db, "select id, email, username, display_name, player_slug, is_host from profiles order by 1");
   await db.exec(sqlFile("account_deletion.sql"));
   await db.exec(sqlFile("account_deletion.sql"));
-  assert.equal(await snapshot(db, tables.slice(1)), before);
+  assert.equal(await existing(), before);
+  assert.equal(await one(db, "select count(*)::int as r from player_slots where claim_locked_at is not null"), 0, "no slot is locked by the migration");
   assert.deepEqual(await rows(db, "select id, email, username, display_name, player_slug, is_host from profiles order by 1"), profileBefore);
   assert.equal(await one(db, "select count(*)::int as r from profiles where deleted_at is not null"), 0);
 });
@@ -242,4 +246,55 @@ test("90-day log retention and server-only grants", async () => {
   }
   assert.equal(await one(db, "select has_function_privilege('authenticated', 'public.account_is_active()', 'execute') as r"), true);
   assert.equal(await one(db, "select has_table_privilege('authenticated', 'public.account_deletions', 'select') as r"), false);
+});
+
+test("declined hand-off: the member is never made organizer; the active trip is restricted", async () => {
+  const db = await setup();
+  const a = await golfer(db, "alpha"), b = await golfer(db, "bravo");
+  const t = await trip(db, a);
+  await join(db, a, t, b);
+  await one(db, "select offer_golf_trip_organizer($1, $2, $3) as r", [a, t, b]);
+  assert.deepEqual(await one(db, "select decline_golf_trip_organizer($1, $2) as r", [b, t]), { declined: true });
+  const preview = await one<{ trips: Json[] }>(db, "select account_deletion_preview($1) as r", [a]);
+  assert.equal(preview.trips[0].outcome, "restrict");
+  assert.equal((preview.trips[0].handoff as Json).state, "declined");
+  assert.deepEqual((await one<Json[]>(db, "select list_my_organizer_offers($1) as r", [b]))[0].declined, true);
+  await request(db, a); await execute(db, a);
+  assert.equal(await one(db, "select count(*)::int as r from golf_trip_members where golf_trip_id = $1 and role = 'organizer'", [t]), 0);
+  assert.equal(await one(db, "select ownership_state as r from golf_trips where id = $1", [t]), "restricted");
+});
+
+test("preview matches what the deletion then does (transfer / archive / restrict) and lists only eligible successors", async () => {
+  const db = await setup();
+  const a = await golfer(db, "alpha"), b = await golfer(db, "bravo");
+  const half = await profile(db, "halfway");
+  await db.query("update profiles set username = null where id = $1", [half]); // unfinished profile: not eligible
+  const tActive = await trip(db, a), tPast = await trip(db, a, { startDate: "2024-04-22", endDate: "2024-04-26", day1Date: "2024-04-23" }), tGive = await trip(db, a);
+  for (const t of [tActive, tPast, tGive]) { await join(db, a, t, b); await join(db, a, t, half); }
+  await one(db, "select offer_golf_trip_organizer($1, $2, $3) as r", [a, tGive, b]);
+  await one(db, "select accept_golf_trip_organizer($1, $2) as r", [b, tGive]);
+  const preview = await one<{ trips: Json[]; counts: Json }>(db, "select account_deletion_preview($1) as r", [a]);
+  const byId = Object.fromEntries(preview.trips.map((t) => [t.tripId, t]));
+  assert.deepEqual([byId[tActive].outcome, byId[tPast].outcome, byId[tGive].outcome], ["restrict", "archive", "transfer"]);
+  assert.deepEqual((byId[tActive].eligible as Json[]).map((m) => m.name), ["bravo"], "only finished, joined members can be asked");
+  await request(db, a);
+  const counts = (await execute(db, a) as { counts: Json }).counts;
+  assert.deepEqual([counts.tripsRestricted, counts.tripsArchived, counts.tripsTransferred], [1, 1, 1]);
+});
+
+test("a deleted person's old player record is unlinked and LOCKED: nobody can claim it next", async () => {
+  const db = await setup();
+  const host = await profile(db, "commish", { host: true });
+  const a = await golfer(db, "alpha"), next = await golfer(db, "nextperson");
+  const slug = (await rows(db, "select player_slug from player_slots order by 1 limit 1"))[0].player_slug as string;
+  await db.query("update player_slots set claimed_by = $1 where player_slug = $2", [a, slug]);
+  await db.query("update profiles set player_slug = $2 where id = $1", [a, slug]);
+  await request(db, a); await execute(db, a);
+  assert.deepEqual(await rows(db, "select claimed_by, claim_locked_reason from player_slots where player_slug = $1", [slug]), [{ claimed_by: null, claim_locked_reason: "account_deleted" }]);
+  await assert.rejects(db.query("update player_slots set claimed_by = $1 where player_slug = $2", [next, slug]), /locked/, "direct claim refused");
+  await assert.rejects(one(db, "select create_player_claim_invitation($1, $2, $3, null) as r", [host, slug, next]), /locked/, "admin invitation refused");
+  await assert.rejects(db.query("update player_slots set claim_locked_at = null where player_slug = $1", [slug]), /locked/, "can't quietly unlock");
+  await db.exec("set maroon.claim_unlock = 'on'"); // only a future, separately authorized reassignment may do this
+  await db.query("update player_slots set claim_locked_at = null, claim_locked_reason = null where player_slug = $1", [slug]);
+  await db.exec("reset maroon.claim_unlock");
 });
