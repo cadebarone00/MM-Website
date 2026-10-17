@@ -119,3 +119,6 @@ div.gameSheet{bottom:0;width:min(100%,560px);max-height:none;padding-bottom:0;bo
 /* Round picker: three equal columns, so every round button is the same size (a short last row stays the same width). */
 .roundChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
 .roundChoices button{flex:none;width:100%}
+/* Create button: solid maroon, no gradient or glow. */
+.createButton{background:#591c2e;box-shadow:none}
+.createButton:active{box-shadow:none}
