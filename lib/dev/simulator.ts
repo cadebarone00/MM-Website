@@ -59,6 +59,8 @@ export type SimulatorState = {
   sampleStats?: boolean;
   /** Golf → Stats: a made-up trip's rounds (lib/dev/sampleTripRounds.ts) instead of the saved cards. */
   sampleTripStats?: boolean;
+  /** Golf → Games: sample games partway through the round (lib/dev/sampleTripGames.ts) instead of this device's saved games. */
+  sampleGames?: boolean;
   /** Profile preview (/dev/profile): whose sample profile shows and with how many rounds. Unset = "sample". */
   profilePreview?: ProfilePreview;
   dualDraftMomentum?: boolean;

@@ -5,6 +5,8 @@ import homeStyles from "./GolfTripHome.module.css";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { GolfTripActionSheet } from "./GolfTripActionSheet";
+import { useSimulator } from "@/components/dev/SimulatorBridge";
+import { sampleTripGames } from "@/lib/dev/sampleTripGames";
 import { HolePicks, Standings } from "./PlayRound";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import { gameDef, gamesFor, scoreGame, type GameConfig, type GameId, type HoleInput } from "@/lib/platform/roundGames";
@@ -25,8 +27,12 @@ export function GolfTripGames({ match, rounds, signedInName }: { match: GolfMatc
   const me = meOn(match, signedInName) ?? "You";
   const group = groupOf(match, me);
   const [games, setGames] = useState<TripGame[]>([]);
-  useEffect(() => { setGames(readGames()); }, []); // eslint-disable-line react-hooks/set-state-in-effect -- reads this device's saved games once
-  const save = (next: TripGame[]) => { setGames(next); try { localStorage.setItem(STORE, JSON.stringify(next)); } catch { /* private mode */ } };
+  // App simulator "Sample games, mid-round": made-up games partway through the round (kept in memory, never saved).
+  const sample = useSimulator()?.state.sampleGames === true;
+  const groupKey = group.join("|");
+  const holeCount = match.par.length, shownRound = match.round;
+  useEffect(() => { setGames(sample ? sampleTripGames(shownRound, holeCount, groupKey.split("|")) : readGames()); }, [sample, shownRound, holeCount, groupKey]); // eslint-disable-line react-hooks/set-state-in-effect -- loads this device's saved games (or the sample) when the source changes
+  const save = (next: TripGame[]) => { setGames(next); if (!sample) try { localStorage.setItem(STORE, JSON.stringify(next)); } catch { /* private mode */ } };
   const [creating, setCreating] = useState(false);
   // The sheet's box: top just covers the trip tabs; it runs to the bottom of the screen, over the bottom nav.
   const [sheetBox, setSheetBox] = useState({ top: 16, bottom: 16 });
