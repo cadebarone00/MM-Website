@@ -142,7 +142,7 @@ function NewGame({ box, group, rounds, current, onClose, onCreate }: { box: { to
   return <GolfTripActionSheet label="New game" onClose={onClose} className={styles.gameSheet} style={box}>
     <div className={styles.sheetBody}>
       <h3 className={styles.sheetTitle}>New game</h3>
-      <div className={styles.sheetSetting}><span>Round</span><div className={styles.sheetChoices}>
+      <div className={styles.sheetSetting}><span>Round</span><div className={`${styles.sheetChoices} ${styles.roundChoices}`}>
         {rounds.map((r) => <button type="button" key={r} aria-pressed={round === r} onClick={() => setRound(r)}>Round {r}</button>)}
       </div></div>
       <div className={styles.sheetSetting}><span>Players · your group</span>
