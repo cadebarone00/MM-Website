@@ -46,10 +46,9 @@ export function GolfTripGames({ match, rounds, signedInName }: { match: GolfMatc
 
   return <section className={styles.root} aria-label="Games">
     <header className={styles.gamesHeader}>
-      <h2 className={styles.activeGamesTitle}>Your games</h2>
+      <h2 className={styles.activeGamesTitle}>Your Games</h2>
       <button type="button" className={homeStyles.itineraryAddPill} aria-haspopup="dialog" onClick={openNew}><Plus size={16} strokeWidth={2.5} aria-hidden />New game</button>
     </header>
-    <p className={styles.summary}>Games are with your group: {group.map(firstName).join(", ")}.</p>
     {mine.length === 0 && <p className={styles.emptyGames}>No games yet. Tap New game, pick a round and a game, and it scores itself from the scorecard.</p>}
     {mine.map((game) => {
       const update = (next: Partial<TripGame>) => save(games.map((g) => g.key === game.key ? { ...g, ...next } : g));
