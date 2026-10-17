@@ -129,13 +129,15 @@ function NewGame({ box, group, rounds, current, onClose, onCreate }: { box: { to
   const [players, setPlayers] = useState<string[]>(group);
   const [id, setId] = useState<GameId | null>(null);
   const [info, setInfo] = useState<GameId | null>(null);
+  const [net, setNet] = useState(false);
+  const [birdiesDouble, setBirdiesDouble] = useState(false);
   const choices = gamesFor(players.length);
   const toggle = (name: string) => { setId(null); setPlayers((list) => list.includes(name) ? list.filter((n) => n !== name) : group.filter((n) => list.includes(n) || n === name)); };
   const create = () => {
     if (!id) return;
     const def = gameDef(id);
     onCreate({ key: `${Date.now()}`, round, players, inputs: [], started: false,
-      config: { id, net: false, birdiesDouble: false, ...(def.teams ? { teams: players.map((_, i) => i < players.length / 2 ? 0 : 1) } : {}) } });
+      config: { id, net, birdiesDouble: def.points && birdiesDouble, ...(def.teams ? { teams: players.map((_, i) => i < players.length / 2 ? 0 : 1) } : {}) } });
   };
   return <GolfTripActionSheet label="New game" onClose={onClose} className={styles.gameSheet} style={box}>
     <div className={styles.sheetBody}>
@@ -160,6 +162,15 @@ function NewGame({ box, group, rounds, current, onClose, onCreate }: { box: { to
       </div>
     </div>
     {info && <InfoCard title={gameDef(info).name} text={gameDef(info).blurb} onClose={() => setInfo(null)} />}
+    {/* Once a game is picked: handicaps, and birdies double for points games (both can still change before teeing off). */}
+    {id && <div className={styles.createOptions}>
+      <div className={styles.sheetSetting}><span>Handicaps</span><div className={styles.sheetChoices}>
+        {[false, true].map((value) => <button type="button" key={String(value)} aria-pressed={net === value} onClick={() => setNet(value)}>{value ? "On (net)" : "Off (gross)"}</button>)}
+      </div></div>
+      {gameDef(id).points && <div className={styles.sheetSetting}><span>Birdies double points</span><div className={styles.sheetChoices}>
+        {[false, true].map((value) => <button type="button" key={String(value)} aria-pressed={birdiesDouble === value} onClick={() => setBirdiesDouble(value)}>{value ? "On" : "Off"}</button>)}
+      </div></div>}
+    </div>}
     <div className={styles.sheetFooter}>
       {id ? <button type="button" className={styles.createButton} onClick={create}>
         <span><b>Create {gameDef(id).name}</b><small>{players.length} players · Round {round}</small></span>
