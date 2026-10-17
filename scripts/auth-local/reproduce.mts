@@ -1,4 +1,4 @@
-// Accounts Step 2c: reproduces today's signup behavior against the ISOLATED local Supabase (scripts/auth-local/setup.mjs).
+// Accounts Step 2c: reproduces the V1 signup behavior (run against V1 routes, 2026-10-16; on the V2 routes it shows the fixes) against the ISOLATED local Supabase (scripts/auth-local/setup.mjs).
 //   npx tsx --import ./scripts/auth-local/register.mjs scripts/auth-local/reproduce.mts
 // Runs the app's REAL route handlers (signup, login, forgot/reset password, auth callback) in Node. Every network call
 // is checked to be 127.0.0.1; emails land in the local Mailpit inbox; test addresses use the reserved .test domain.
@@ -130,7 +130,8 @@ console.log(`Isolated stack ${API}; Mailpit ${MAIL}; run ${run}. Accounts before
 { // S7: unverified login
   const email = addr("s7-unverified");
   await signup(browser(), email, "unverified-password-1");
-  const username = profile(account(email)!.id)!.username;
+  // V1 made a profile at signup; on V2 there is none until the email is verified, so log in by email instead.
+  const username = profile(account(email)!.id)?.username ?? email;
   const wrong = await call(browser(), loginPOST, "/api/auth/login", { usernameOrEmail: username, password: "not-the-password" });
   const right = await call(browser(), loginPOST, "/api/auth/login", { usernameOrEmail: username, password: "unverified-password-1" });
   record("S7", "Login before verifying (by username)", "INFO", [
@@ -159,9 +160,10 @@ console.log(`Isolated stack ${API}; Mailpit ${MAIL}; run ${run}. Accounts before
   const hostEmail = addr("host");
   await signup(browser(), hostEmail, "host-password-1");
   await confirmByEmail(hostEmail);
-  sql(`update public.profiles set is_host = true where id = ${q(account(hostEmail)!.id)}`); // local test admin only
   const host = browser();
   const hostLogin = await call(host, loginPOST, "/api/auth/login", { usernameOrEmail: hostEmail, password: "host-password-1" });
+  // After signing in (V2 makes the profile at the first verified sign-in), mark it as the local test admin.
+  sql(`update public.profiles set is_host = true where id = ${q(account(hostEmail)!.id)}`);
   const invite = async (slug: string, email: string) => {
     sql(`update public.player_slots set email = ${q(email)} where player_slug = ${q(slug)}`);
     return call(host, adminInvitePOST, "/api/portal/admin/invite", { playerSlug: slug });
