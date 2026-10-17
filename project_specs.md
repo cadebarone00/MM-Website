@@ -3021,3 +3021,10 @@ Full write-up: `docs/accounts-v2-architecture-2026-10-17.md`. Changes from the p
   invite.
 - **Going live** = run `supabase/profile_initialization.sql` (after a backup), then deploy the code. Separate approval.
 
+
+### Round: Golf trip → Games with Play's rules (built 2026-10-17)
+
+- Same games and rules as Play a round: scored by `scoreGame` and the per-hole picks (`HolePicks`) from lib/platform/roundGames.ts / PlayRound.tsx, not a copy.
+- Only with people in your group (your tee time; without tee times, the players in your match). New game: round → players from your group → a game that fits that many → Gross / Net, Birdies double (points games), Teams (team games).
+- During the round each game card shows the hole's pick (Wolf partner, Daytona spots, Bingo Bango Bongo, Snake) with a hole stepper that opens on the hole being played, and live standings from the scorecard's hole scores (lib/platform/tripGames.ts).
+- Preview: games are kept on this device. Step 2 (database): save games per trip so the whole group sees the same game and picks.

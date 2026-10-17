@@ -59,3 +59,11 @@ div.gameSheet{position:fixed;left:50%;width:min(92vw,420px);max-height:none;tran
 .sheetHint{color:#805b24;font-size:13px}
 .sheetPrimary{min-height:48px;border:0;border-radius:12px;background:#591c2e;color:#fff;font:700 15px var(--font-barlow),sans-serif;cursor:pointer}
 .sheetPrimary:disabled{opacity:.45;cursor:default}
+/* Trip games with Play's rules (owner request 2026-10-17): the hole's pick and a hole stepper. */
+.holePick{display:grid;gap:8px;margin:8px 0;padding:10px;border-radius:12px;background:rgba(255,255,255,.04)}
+.holeStep{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.holeStep b{font:700 14px var(--font-barlow),sans-serif;color:#dcc495}
+.holeStep button{display:grid;place-items:center;width:32px;height:32px;padding:0;border:1px solid rgba(220,196,149,.35);border-radius:50%;background:transparent;color:#dcc495;cursor:pointer}
+.holeStep button:disabled{opacity:.35;cursor:default}
+.teamRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0}
+.sheetGame[aria-pressed=true]{border-color:#dcc495;background:rgba(220,196,149,.14)}

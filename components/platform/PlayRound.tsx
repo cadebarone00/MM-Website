@@ -519,7 +519,7 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
 }
 
 /** The game's extra tap for this hole (Wolf partner, Daytona spots, Bingo Bango Bongo, Snake). */
-function HolePicks({ game, hole, range, names, input, onChange }: { game: GameConfig; hole: number; range: [number, number]; names: string[]; input: HoleInput; onChange: (part: HoleInput) => void }) {
+export function HolePicks({ game, hole, range, names, input, onChange }: { game: GameConfig; hole: number; range: [number, number]; names: string[]; input: HoleInput; onChange: (part: HoleInput) => void }) {
   const kind = gameDef(game.id).holeInput;
   const everyone = names.map((_, i) => i);
   // Tapping the chosen button again clears it (undefined = nothing picked).
@@ -561,7 +561,7 @@ function HolePicks({ game, hole, range, names, input, onChange }: { game: GameCo
   return null;
 }
 
-function Standings({ result, compact = false }: { result: GameResult; compact?: boolean }) {
+export function Standings({ result, compact = false }: { result: GameResult; compact?: boolean }) {
   return <div className={`${styles.standings} ${compact ? styles.standingsCompact : ""}`} aria-label={result.title}>
     <p className={styles.standingsTitle}>{result.title}</p>
     <ol>{result.standings.map((s, i) => <li key={i}><span>{s.label}</span><b>{s.value}</b></li>)}</ol>

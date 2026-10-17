@@ -580,7 +580,7 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
       </div>)}
     </div>
     <div role="tabpanel" aria-label="Games" hidden={!gamesActive || statsActive || predictActive}>
-      {previewMatch ? <GolfTripGames /> : <Card title="Games"><Empty>Golf games are coming soon</Empty></Card>}
+      {previewMatch ? <GolfTripGames match={previewMatch} rounds={rounds.map(round => round.number)} /> : <Card title="Games"><Empty>Golf games are coming soon</Empty></Card>}
     </div>
     {/* Stats (only while Player Stats is on): the trip's stats from the scorecards players have recorded. */}
     {sections.some(({ id }) => id === "Stats") && <div role="tabpanel" aria-label="Stats" hidden={!statsActive}>
