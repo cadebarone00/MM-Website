@@ -245,7 +245,8 @@ function PlayerPublicTripProfile({ name, avatarUrl, username, round, roundCount,
   }, [selectedRound]);
   // Handicap · Sc. Avg. (scoring average) · Career Low, from their profile rounds (a tripmate's always come through). "—" until loaded,
   // when there's no data, and on sample trips (no username).
-  const [stats, setStats] = useState<{ handicapIndex: number | null; average18: number | null; best18: { total: number } | null } | null>(null);
+  const [stats, setStats] = useState<{ handicapIndex: number | null; average18: number | null; best18: { total: number } | null;
+    driving?: { fairwayPct: number } | null; approach?: { girPct: number } | null; putting?: { perRound: number; threePuttPct: number } | null } | null>(null);
   useEffect(() => {
     if (!username) return;
     let live = true;
@@ -338,6 +339,16 @@ function PlayerPublicTripProfile({ name, avatarUrl, username, round, roundCount,
           </dl>
         </div>
       </div>
+    </section>
+    {/* Their own fairway / green / putt numbers, from their profile rounds (owner request 2026-10-16). */}
+    <section className={styles.profileGameStats} aria-label="Fairways, greens and putts">
+      <h4>Their game</h4>
+      <dl>
+        {([["Fairways", stats?.driving ? `${stats.driving.fairwayPct}%` : null], ["Greens", stats?.approach ? `${stats.approach.girPct}%` : null],
+          ["Putts / round", stats?.putting ? stats.putting.perRound.toFixed(1) : null], ["3-putts", stats?.putting ? `${stats.putting.threePuttPct}%` : null]] as const).map(([label, value]) =>
+          <div key={label}><dt>{label}</dt><dd>{value ?? "\u2014"}</dd></div>)}
+      </dl>
+      <p>From their rounds on The Maroon.</p>
     </section>
   </dialog>, document.body);
 }
@@ -681,25 +692,23 @@ function Scorecard({ id, par, holes, name }: { id: string; par: number[]; holes:
     const played = values.filter((v): v is number => v !== null);
     return played.length ? played.reduce((a, b) => a + b, 0) : null;
   };
-  const nine = (start: number) => Array.from({ length: 9 }, (_, i) => start + i);
-  const columns: { label: string; par: number | null; score: number | null; total?: boolean }[] = [
-    ...nine(0).map((i) => ({ label: String(i + 1), par: par[i], score: holes[i] })),
-    { label: "OUT", par: sum(par.slice(0, 9)), score: sum(holes.slice(0, 9)), total: true },
-    ...nine(9).map((i) => ({ label: String(i + 1), par: par[i], score: holes[i] })),
-    { label: "IN", par: sum(par.slice(9, 18)), score: sum(holes.slice(9, 18)), total: true },
-    { label: "TOT", par: sum(par), score: sum(holes), total: true },
+  type Column = { label: string; par: number | null; score: number | null; total?: boolean };
+  const nine = (start: number): Column[] => Array.from({ length: 9 }, (_, i) => ({ label: String(start + i + 1), par: par[start + i] ?? null, score: holes[start + i] ?? null }));
+  // Front nine stacked over the back nine (owner request 2026-10-16); both rows have 11 columns so they line up.
+  const rows: Column[][] = [
+    [...nine(0), { label: "OUT", par: sum(par.slice(0, 9)), score: sum(holes.slice(0, 9)), total: true }, { label: "", par: null, score: null, total: true }],
+    [...nine(9), { label: "IN", par: sum(par.slice(9, 18)), score: sum(holes.slice(9, 18)), total: true }, { label: "TOT", par: sum(par), score: sum(holes), total: true }],
   ];
-
-  return <div id={id} className={styles.scorecard} role="region" aria-label={`${name} scorecard`} tabIndex={0}>
-    <table className={styles.scorecardTable}>
+  return <div id={id} className={`${styles.scorecard} ${styles.scorecardStacked}`} role="region" aria-label={`${name} scorecard`}>
+    {rows.map((columns, n) => <table key={n} className={styles.scorecardTable} aria-label={n ? "Back nine" : "Front nine"}>
       <tbody>
-        <tr><th scope="row">Hole</th>{columns.map((c) => <td key={c.label} className={c.total ? styles.totalCell : ""}>{c.label}</td>)}</tr>
-        <tr><th scope="row">Par</th>{columns.map((c) => <td key={c.label} className={c.total ? styles.totalCell : ""}>{c.par ?? ""}</td>)}</tr>
-        <tr><th scope="row">Score</th>{columns.map((c) => <td key={c.label} className={c.total ? styles.totalCell : ""}>
+        <tr><th scope="row">Hole</th>{columns.map((c, i) => <td key={i} className={c.total ? styles.totalCell : ""}>{c.label}</td>)}</tr>
+        <tr><th scope="row">Par</th>{columns.map((c, i) => <td key={i} className={c.total ? styles.totalCell : ""}>{c.par ?? ""}</td>)}</tr>
+        <tr><th scope="row">Score</th>{columns.map((c, i) => <td key={i} className={c.total ? styles.totalCell : ""}>
           {c.score === null ? "" : c.total || c.par === null ? c.score : <span className={scoreMark(c.score - c.par)}>{c.score}</span>}
         </td>)}</tr>
       </tbody>
-    </table>
+    </table>)}
   </div>;
 }
 
