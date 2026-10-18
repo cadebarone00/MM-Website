@@ -9,7 +9,9 @@ import { scoreGame, type GameConfig, type GameCourse, type GamePlayer, type Game
 
 /** A trip game as saved: which round, the game and its options, the players (by name), each hole's extra pick, and
  *  whether the pre-round options are done (`started`). */
-export interface TripGame { key: string; round: number; config: GameConfig; players: string[]; inputs: HoleInput[]; started?: boolean }
+export interface TripGame { key: string; round: number; config: GameConfig; players: string[]; inputs: HoleInput[]; started?: boolean;
+  /** The round's saved pars (saved trips); unset = the shown round's pars. */
+  pars?: number[] | null }
 
 /** Who I am on the trip: the signed-in player (matched by name), else the first player of the first match. */
 export function meOn(match: GolfMatchPreview, signedInName?: string | null): string | undefined {

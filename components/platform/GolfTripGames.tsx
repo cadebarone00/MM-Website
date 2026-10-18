@@ -7,6 +7,8 @@ import { createPortal } from "react-dom";
 import { GolfTripActionSheet } from "./GolfTripActionSheet";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
 import { sampleTripGames } from "@/lib/dev/sampleTripGames";
+import { savedTripGamesFromJson, tripGameFromSaved, type TripGameAction } from "@/lib/platform/tripGamesRows";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { HolePicks, Standings } from "./PlayRound";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import { gameDef, gamesFor, scoreGame, wolfFor, type GameConfig, type GameId, type GameResult, type HoleInput } from "@/lib/platform/roundGames";
@@ -20,20 +22,58 @@ import styles from "./GolfTripGames.module.css";
  * standings, scored from the scorecard. Preview: games are kept on this device.
  */
 const STORE = "golfTripRoundGames";
+/** A saved trip's games live on the trip (supabase/golf_trip_games.sql) instead of this device. */
+export type SavedGamesContext = { tripId: string; meId: string; group: { profileId: string; name: string }[] };
+const REALTIME = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+/** Pars for a game: the round's saved pars, else the shown round's, else par 4s (birdies can't be told without pars). */
+const withPars = (match: GolfMatchPreview, game: TripGame): GolfMatchPreview =>
+  game.pars?.length === 18 ? { ...match, par: game.pars } : match.par.length ? match : { ...match, par: Array(18).fill(4) };
 const readGames = (): TripGame[] => { try { return JSON.parse(localStorage.getItem(STORE) ?? "[]"); } catch { return []; } };
 const firstName = (name: string) => name.split(/\s+/)[0];
 
-export function GolfTripGames({ match, rounds, signedInName }: { match: GolfMatchPreview; rounds: number[]; signedInName?: string | null }) {
-  const me = meOn(match, signedInName) ?? "You";
-  const group = groupOf(match, me);
+export function GolfTripGames({ match, rounds, signedInName, saved }: { match: GolfMatchPreview; rounds: number[]; signedInName?: string | null; saved?: SavedGamesContext }) {
+  // Saved trip: me and my group come from the trip; preview: from the shown round.
+  const savedMe = saved?.group.find((p) => p.profileId === saved.meId)?.name;
+  const me = savedMe ?? meOn(match, signedInName) ?? "You";
+  const group = saved ? [me, ...saved.group.map((p) => p.name).filter((n) => n !== me)] : groupOf(match, me);
   const [games, setGames] = useState<TripGame[]>([]);
   // App simulator "Sample games, mid-round": made-up games partway through the round (kept in memory, never saved).
   const sample = useSimulator()?.state.sampleGames === true;
   const groupKey = group.join("|");
   const holeCount = match.par.length, shownRound = match.round;
   const fieldKey = match.leaderboard.map((row) => row.golfer.name).join("|");
-  useEffect(() => { setGames(sample ? sampleTripGames(shownRound, holeCount, groupKey.split("|"), fieldKey.split("|")) : readGames()); }, [sample, shownRound, holeCount, groupKey, fieldKey]); // eslint-disable-line react-hooks/set-state-in-effect -- loads this device's saved games (or the sample) when the source changes
-  const save = (next: TripGame[]) => { setGames(next); if (!sample) try { localStorage.setItem(STORE, JSON.stringify(next)); } catch { /* private mode */ } };
+  useEffect(() => { if (!saved) setGames(sample ? sampleTripGames(shownRound, holeCount, groupKey.split("|"), fieldKey.split("|")) : readGames()); }, [saved, sample, shownRound, holeCount, groupKey, fieldKey]); // eslint-disable-line react-hooks/set-state-in-effect -- loads this device's saved games (or the sample) when the source changes
+  const save = (next: TripGame[]) => { setGames(next); if (!sample && !saved) try { localStorage.setItem(STORE, JSON.stringify(next)); } catch { /* private mode */ } };
+
+  // Saved trip: load from the server, refresh on any change to this trip's games (Realtime), on return to the tab, and every 15s.
+  const [error, setError] = useState<string | null>(null);
+  const tripId = saved?.tripId;
+  const apply = (body: unknown) => { const list = savedTripGamesFromJson((body as { games?: unknown })?.games); if (list) setGames(list.map(tripGameFromSaved)); };
+  const send = async (action: TripGameAction) => {
+    if (!tripId) return;
+    setError(null);
+    try {
+      const response = await fetch(`/api/golf-trips/${tripId}/games`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(action) });
+      const body = await response.json().catch(() => ({}));
+      if (response.ok && body.ok) apply(body); else setError(String(body.error ?? "Couldn't save that. Try again."));
+    } catch { setError("You're offline. Try again when you're back online."); }
+  };
+  useEffect(() => {
+    if (!tripId) return;
+    let live = true;
+    const load = () => void fetch(`/api/golf-trips/${tripId}/games`, { cache: "no-store" }).then((r) => r.json()).then((body) => { if (live && body?.ok) apply(body); }).catch(() => {});
+    load();
+    const supabase = REALTIME ? createSupabaseBrowserClient() : null;
+    const channel = supabase?.channel(`trip-games-${tripId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "golf_trip_games", filter: `golf_trip_id=eq.${tripId}` }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "golf_trip_game_picks", filter: `golf_trip_id=eq.${tripId}` }, load)
+      .subscribe();
+    const visible = () => { if (document.visibilityState === "visible") load(); };
+    document.addEventListener("visibilitychange", visible);
+    const poll = window.setInterval(visible, 15_000);
+    return () => { live = false; window.clearInterval(poll); document.removeEventListener("visibilitychange", visible); if (supabase && channel) void supabase.removeChannel(channel); };
+  }, [tripId]);
+  const profileOf = (name: string) => saved?.group.find((p) => p.name === name)?.profileId ?? "";
   const [creating, setCreating] = useState(false);
   // The sheet's box: top just covers the trip tabs; it runs to the bottom of the screen, over the bottom nav.
   const [sheetBox, setSheetBox] = useState({ top: 16, bottom: 16 });
@@ -51,20 +91,37 @@ export function GolfTripGames({ match, rounds, signedInName }: { match: GolfMatc
     </header>
     {mine.length === 0 && <p className={styles.emptyGames}>No games yet. Tap New game, pick a round and a game, and it scores itself from the scorecard.</p>}
     {mine.map((game) => {
-      const update = (next: Partial<TripGame>) => save(games.map((g) => g.key === game.key ? { ...g, ...next } : g));
-      const remove = () => save(games.filter((g) => g.key !== game.key));
+      const update = (next: Partial<TripGame>) => {
+        save(games.map((g) => g.key === game.key ? { ...g, ...next } : g));
+        if (!saved) return;
+        if (next.config?.teams) void send({ action: "update", gameId: game.key, patch: { teams: next.config.teams } });
+        if (next.started) void send({ action: "update", gameId: game.key, patch: { started: true } });
+      };
+      const remove = () => { save(games.filter((g) => g.key !== game.key)); if (saved) void send({ action: "delete", gameId: game.key }); };
+      const pick = (hole: number, part: HoleInput) => {
+        const next = { ...game.inputs[hole], ...part };
+        save(games.map((g) => g.key !== game.key ? g : { ...g, inputs: Object.assign([...g.inputs], { [hole]: next }) }));
+        if (saved) void send({ action: "pick", gameId: game.key, hole: hole + 1, pick: Object.values(next).some((v) => v !== undefined) ? next : null });
+      };
+      const canRemove = !saved || (game as TripGame & { mine?: boolean }).mine !== false;
       // Games with nothing to set up (Vegas included, even ones saved before it picked teams by hole) go straight to the game card.
-      return game.started || !needsSetup(game.config.id) ? <GameCard key={game.key} game={game} match={match} onRemove={remove}
-        onInput={(hole, part) => update({ inputs: Object.assign([...game.inputs], { [hole]: { ...game.inputs[hole], ...part } }) })} />
-        : <PreRound key={game.key} game={game} onChange={(config) => update({ config })} onStart={() => update({ started: true })} onRemove={remove} />;
+      return game.started || !needsSetup(game.config.id) ? <GameCard key={game.key} game={game} match={withPars(match, game)} onRemove={canRemove ? remove : undefined}
+        onInput={pick} />
+        : <PreRound key={game.key} game={game} onChange={(config) => update({ config })} onStart={() => update({ started: true })} onRemove={canRemove ? remove : undefined} />;
     })}
+    {error && <p className={styles.sheetHint} role="alert">{error}</p>}
     {creating && <NewGame box={sheetBox} group={group} rounds={rounds.length ? rounds : [match.round]} current={match.round} onClose={() => setCreating(false)}
-      onCreate={(game) => { save([...games, game]); setCreating(false); }} />}
+      onCreate={(game) => {
+        setCreating(false);
+        if (!saved) { save([...games, game]); return; }
+        void send({ action: "create", round: game.round, requestId: crypto.randomUUID(),
+          game: { gameType: game.config.id, net: game.config.net, birdiesDouble: game.config.birdiesDouble, ...(game.config.teams ? { teams: game.config.teams } : {}), players: game.players.map(profileOf) } });
+      }} />}
   </section>;
 }
 
 /** A game during its round: hole picker for the extra pick, then the standings (scored by Play's own rules). */
-function GameCard({ game, match, onInput, onRemove }: { game: TripGame; match: GolfMatchPreview; onInput: (hole: number, part: HoleInput) => void; onRemove: () => void }) {
+function GameCard({ game, match, onInput, onRemove }: { game: TripGame; match: GolfMatchPreview; onInput: (hole: number, part: HoleInput) => void; onRemove?: () => void }) {
   const def = gameDef(game.config.id);
   const holes = match.par.length, range: [number, number] = [0, holes];
   const strokes = gameStrokes(match, game);
@@ -83,7 +140,7 @@ function GameCard({ game, match, onInput, onRemove }: { game: TripGame; match: G
   return <article className={styles.section} aria-label={def.name}>
     <div className={styles.activeGameHead}>
       <div><h3>{def.name}</h3><p className={styles.summary}>Round {game.round} · {game.config.net ? "Net" : "Gross"}{game.config.birdiesDouble ? " · Birdies double" : ""}{live ? ` · Thru ${thru}` : ""}</p></div>
-      <button type="button" className={styles.back} onClick={onRemove}>Remove</button>
+      {onRemove && <button type="button" className={styles.back} onClick={onRemove}>Remove</button>}
     </div>
     {/* Team games list their sides in the standings, so the names aren't repeated up here. */}
     {!(live && def.teams) && <p className={styles.summary}>{game.config.teams && def.teams
@@ -110,7 +167,7 @@ function GameCard({ game, match, onInput, onRemove }: { game: TripGame; match: G
 const needsSetup = (id: GameId) => gameDef(id).teams && id !== "vegas";
 
 /** Before the round: pick the teams, then Start. Handicaps and birdies double were chosen when the game was created. */
-function PreRound({ game, onChange, onStart, onRemove }: { game: TripGame; onChange: (config: GameConfig) => void; onStart: () => void; onRemove: () => void }) {
+function PreRound({ game, onChange, onStart, onRemove }: { game: TripGame; onChange: (config: GameConfig) => void; onStart: () => void; onRemove?: () => void }) {
   const def = gameDef(game.config.id), config = game.config;
   const [info, setInfo] = useState(false);
   const teams = config.teams ?? game.players.map((_, i) => i < game.players.length / 2 ? 0 : 1);
@@ -119,7 +176,7 @@ function PreRound({ game, onChange, onStart, onRemove }: { game: TripGame; onCha
     <div className={styles.activeGameHead}>
       <div><h3>{def.name} <button type="button" className={styles.gameInfo} aria-label={`About ${def.name}`} aria-expanded={info} onClick={() => setInfo(!info)}>i</button></h3>
         <p className={styles.summary}>Round {game.round} · {config.net ? "Net" : "Gross"}{config.birdiesDouble ? " · Birdies double" : ""} · Pick teams</p></div>
-      <button type="button" className={styles.back} onClick={onRemove}>Remove</button>
+      {onRemove && <button type="button" className={styles.back} onClick={onRemove}>Remove</button>}
     </div>
     {info && <InfoCard title={def.name} text={def.blurb} onClose={() => setInfo(false)} />}
     <div className={styles.preRound}>

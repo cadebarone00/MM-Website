@@ -26,7 +26,7 @@ import type { ScoreEdit } from "@/lib/platform/playerRounds";
 import type { SheetCard } from "@/lib/platform/liveCards";
 import { GolfTripCompetitionMatchPreview } from "./GolfTripCompetitionMatchPreview";
 import { GolfTripActionSheet } from "./GolfTripActionSheet";
-import { GolfTripGames } from "./GolfTripGames";
+import { GolfTripGames, type SavedGamesContext } from "./GolfTripGames";
 import { GolfTripChat } from "./GolfTripChat";
 import { GolfTripVenue } from "./GolfTripVenue";
 import { ItineraryDetailSheet } from "./ItineraryDetailSheet";
@@ -74,7 +74,7 @@ const subscribeNever = () => () => {};
  * `navigation` optionally requests a shared tab/section; in-app navigation remains local between requests.
  * `onNavigationChange` optionally observes the actual tab/section; the dev wrapper supplies it only when embedded.
  */
-export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, now: tripNow, competitionKey, savedCompetitionType, savedTeamColors, savedTeamDraft, organizer, onTravelChange, roundLive = false, opponentCardMatches, scoringPrefill, onScoringSubmit, submittedCard, scoringOwner, tripStats, scoreChanges, attesteeName, scoringEdits, onScoringCardChange, attestedStrokes, onAttestChange, scoringPlayerName, savedScoringCard, attesteeStrokes, scoresVerified, syncStatus, conflicts, onResolveConflict, resetScoringCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, alertScope, signedInName }:
+export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, now: tripNow, competitionKey, savedCompetitionType, savedTeamColors, savedTeamDraft, organizer, onTravelChange, roundLive = false, opponentCardMatches, scoringPrefill, onScoringSubmit, submittedCard, scoringOwner, tripStats, scoreChanges, attesteeName, scoringEdits, onScoringCardChange, attestedStrokes, onAttestChange, scoringPlayerName, savedScoringCard, attesteeStrokes, scoresVerified, syncStatus, conflicts, onResolveConflict, resetScoringCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, alertScope, signedInName, savedGames }:
   { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview; weather?: Promise<TripWeather>; flights?: TripFlights;
     /** Everyone's travel (My Info, the Itinerary and the Home "what's next" cards). Only the dev mock trip has it for now. */
     travel?: TripTravel; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void; now?: string; competitionKey?: string;
@@ -92,6 +92,8 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
     alertScope?: TripAlertScope;
     /** The signed-in player's name: who "you" are in Games. */
     signedInName?: string | null;
+    /** Saved trip: games are stored on the trip (tripId), you are meId, and your group is these players. */
+    savedGames?: SavedGamesContext;
     /** Dev preview only: whether the opponent's own scorecard agrees with mine (there is no second scorer yet). Without it, Save & Submit never shows. */
     opponentCardMatches?: boolean;
     /** Dev preview only: a finished-but-unsubmitted Scoring card (the "End of round" conditionals). */
@@ -245,7 +247,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
         liveRound={roundLive && previewMatch ? { id: `round-${previewMatch.round}`, kind: "teeTime", title: `Round ${previewMatch.round} · ${previewMatch.course}`, startsAt: (tripNow ?? "").slice(0, 16) } : undefined} /></>
         : tab === "Golf" ? <>
           <div style={{ display: "contents", ...teamColorVars }}>
-            <GolfSlides schedule={preview} now={tripNow} key={`${structure.individual}-${structure.team}`} previewMatch={previewMatch} structure={structure} rsvpKey={rsvpKey} navigation={navigation} onNavigationChange={onNavigationChange} tripStats={tripStats} scoreChanges={scoreChanges} roundStarted={roundLive} signedInName={signedInName} />
+            <GolfSlides schedule={preview} now={tripNow} key={`${structure.individual}-${structure.team}`} previewMatch={previewMatch} structure={structure} rsvpKey={rsvpKey} navigation={navigation} onNavigationChange={onNavigationChange} tripStats={tripStats} scoreChanges={scoreChanges} roundStarted={roundLive} signedInName={signedInName} savedGames={savedGames} />
           </div>
         </>
         : tab === "Venue" ? <GolfTripVenue draft={draft} settingsHref={settingsHref} today={tripNow?.slice(0, 10)}
@@ -402,7 +404,7 @@ function WeatherRow({ place, weather }: { place?: string; weather: Promise<TripW
 
 /** Golf sections share the existing responsive scroll-snap strip and tab styling. */
 /** `roundStarted`: the organizer has begun the current round — its matches show THRU instead of tee times. */
-function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpKey = "default", navigation, onNavigationChange, tripStats, scoreChanges, roundStarted = false, signedInName }: { signedInName?: string | null; previewMatch?: GolfMatchPreview; schedule?: GolfTripDraft; now?: string; structure: CompetitionStructure; rsvpKey?: string; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void; tripStats?: TripStatsView; scoreChanges?: ScoreChangeLine[]; roundStarted?: boolean }) {
+function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpKey = "default", navigation, onNavigationChange, tripStats, scoreChanges, roundStarted = false, signedInName, savedGames }: { signedInName?: string | null; savedGames?: SavedGamesContext; previewMatch?: GolfMatchPreview; schedule?: GolfTripDraft; now?: string; structure: CompetitionStructure; rsvpKey?: string; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void; tripStats?: TripStatsView; scoreChanges?: ScoreChangeLine[]; roundStarted?: boolean }) {
   const rounds = useMemo(() => schedule ? plannedRounds(schedule) : [], [schedule]);
   const [chosenRound, setChosenRound] = useState<number | null>(null);
   const selected = rounds.find(round => round.number === chosenRound) ?? rounds.find(round => round.number === sourceMatch?.round);
@@ -582,7 +584,7 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
       </div>)}
     </div>
     <div role="tabpanel" aria-label="Games" hidden={!gamesActive || statsActive || predictActive}>
-      {previewMatch ? <GolfTripGames match={previewMatch} rounds={rounds.map(round => round.number)} signedInName={signedInName} /> : <Card title="Games"><Empty>Golf games are coming soon</Empty></Card>}
+      {previewMatch ? <GolfTripGames match={previewMatch} rounds={rounds.map(round => round.number)} signedInName={signedInName} saved={savedGames} /> : <Card title="Games"><Empty>Golf games are coming soon</Empty></Card>}
     </div>
     {/* Stats (only while Player Stats is on): the trip's stats from the scorecards players have recorded. */}
     {sections.some(({ id }) => id === "Stats") && <div role="tabpanel" aria-label="Stats" hidden={!statsActive}>

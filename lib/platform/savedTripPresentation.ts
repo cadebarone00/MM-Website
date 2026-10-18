@@ -15,11 +15,13 @@ export function savedTripPresentation(trip: SavedGolfTrip, scoring?: TripRoundSc
     format: "Stroke Play", handicap: false, scoring: "Gross", par: [],
     sides: [side("Team A"), side("Team B")], matches: [],
     leaderboard: accepted.map(member => {
-      const holes = Array.from({ length: 18 }, (_, index) => scoring?.entries.find(entry => entry.scoredProfileId === member.profileId && entry.enteredByProfileId === member.profileId && entry.hole === index + 1)?.strokes ?? null);
+      const own = (index: number) => scoring?.entries.find(entry => entry.scoredProfileId === member.profileId && entry.enteredByProfileId === member.profileId && entry.hole === index + 1);
+      const holes = Array.from({ length: 18 }, (_, index) => own(index)?.strokes ?? null);
+      const putts = Array.from({ length: 18 }, (_, index) => own(index)?.putts ?? null);
       const completed = holes.filter(value => value !== null).length;
       const thru = completed === 18 ? "F" : completed ? `Thru ${completed}` : "";
       return { position: "—", golfer: { name: member.displayName, hcp: 0, thru, score: "—", teeTime: "", course, avatarUrl: member.avatarUrl ?? null, username: member.username ?? null },
-        total: "—", today: "—", netTotal: "—", netToday: "—", thru, holes };
+        total: "—", today: "—", netTotal: "—", netToday: "—", thru, holes, putts };
     }),
   };
 }

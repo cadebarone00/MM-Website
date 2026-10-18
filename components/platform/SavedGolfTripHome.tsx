@@ -290,7 +290,13 @@ function SavedGolfTripHomeInner({ scoring, savedTrip, setupSnapshot: _setupSnaps
 
   const types = setup?.values.localCompetitionType as { individual: string | null; team: string | null } | undefined;
   const selected = setup?.values;
-  const shownHome: ComponentProps<typeof GolfTripHome> = savedTrip ? { ...home, previewMatch: savedTripPresentation(savedTrip, live), competitionKey: savedTrip.trip.id,
+  // Games on the trip: my group from the round's scoring groups; before groups exist, everyone who accepted.
+  const myId = scoring?.profileId ?? home.alertScope?.profileId;
+  const accepted = savedTrip?.members.filter((m) => m.profileId && m.invitationStatus === "accepted") ?? [];
+  const myGroupIds = live?.groups.find((g) => g.players.some((p) => p.profileId === myId))?.players.map((p) => p.profileId);
+  const savedGames = savedTrip && myId ? { tripId: savedTrip.trip.id, meId: myId,
+    group: accepted.filter((m) => !myGroupIds || myGroupIds.includes(m.profileId as string)).map((m) => ({ profileId: m.profileId as string, name: m.displayName })) } : undefined;
+  const shownHome: ComponentProps<typeof GolfTripHome> = savedTrip ? { ...home, savedGames, previewMatch: savedTripPresentation(savedTrip, live), competitionKey: savedTrip.trip.id,
     savedCompetitionType: types, savedTeamColors: selected?.teamColors as (string | null)[] | undefined,
     savedTeamDraft: selected ? { teamType: types?.team ?? null, selection: (selected.teamSelection as "Manual" | "Draft" | "Random" | null) ?? null,
       date: String(selected.draftDate ?? ""), time: String(selected.draftTime ?? ""), type: selected.draftType === "Straight" ? "Straight" : "Snake", method: selected.draftMethod === "Duck Race" ? "Duck Race" : "Captain's Picks" } : undefined } : home;

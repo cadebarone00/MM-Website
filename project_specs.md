@@ -3028,3 +3028,18 @@ Full write-up: `docs/accounts-v2-architecture-2026-10-17.md`. Changes from the p
 - Only with people in your group (your tee time; without tee times, the players in your match). New game: round → players from your group → a game that fits that many → Gross / Net, Birdies double (points games), Teams (team games).
 - During the round each game card shows the hole's pick (Wolf partner, Daytona spots, Bingo Bango Bongo, Snake) with a hole stepper that opens on the hole being played, and live standings from the scorecard's hole scores (lib/platform/tripGames.ts).
 - Preview: games are kept on this device. Step 2 (database): save games per trip so the whole group sees the same game and picks.
+
+### Round: Golf trip → Games, saved to the trip (spec 2026-10-17, approved "go ahead with the database")
+
+**What it does.** Games created on a saved trip are stored in the database, so everyone in the group sees the same game cards and picks on their own phone, and games survive a reload or a new phone. The simulator keeps on-device games for previews.
+
+**Data (new SQL `supabase/golf_trip_games.sql`, owner runs it).**
+- `golf_trip_games`: trip, round, game type (one of Play's 17), net, birdies double, teams (0/1 per player), players (profile ids, 2–5, game's allowed sizes), started, created by, a client request id (a double tap creates one game).
+- `golf_trip_game_picks`: one row per game per hole: the hole's pick (Wolf partner, Daytona spots, Bingo Bango Bongo, Vegas teams), who saved it, when.
+- Rules the database enforces: you must be on the trip; every player must be in your scoring group for that round (before the round's groups exist: accepted trip members); only the game's players see it and make its picks; teams only change before Start; only the person who created a game removes it. RLS on with read policies for the game's players (Realtime), no write policies — writes only through the functions, called by the server with the signed-in profile.
+- Functions: `get_trip_games`, `create_trip_game`, `update_trip_game` (teams / start), `save_trip_game_pick`, `delete_trip_game`. Both tables join Supabase Realtime so picks show up live.
+- Scores still come from the scorecard (hole_score_entries, putts for Snake). Pars come from the round's saved pars (`golf_trip_rounds.momentum_pars`, Organizer → round pars); without them games still score, but birdie rules can't tell birdies.
+
+**App.** `/api/golf-trips/[tripId]/games` (GET list; POST create / update / pick / delete) → lib/platform/tripGamesServer.ts. On a saved trip the Games tab loads and saves through it, its group comes from the round's scoring groups, and it refreshes when a pick or game changes.
+
+**Done means:** SQL tested against a real Postgres (PGlite) for every rule above; the Games tab on a saved trip creates, picks, starts and removes games through the server; simulator unchanged.
