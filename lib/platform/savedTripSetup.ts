@@ -1,3 +1,4 @@
+import { draftScheduleError } from "./draftSchedule";
 import type { SavedGolfTrip } from "./golfTripCreate";
 
 export type SetupValues = Record<string, unknown>;
@@ -25,7 +26,7 @@ const int = (value: unknown, min = 0, max = 64): value is number => typeof value
 const mapOf = (value: unknown, check: (value: unknown) => boolean) => object(value) && Object.values(value).every(check);
 const setOf = (value: unknown, check: (value: unknown) => boolean) => object(value) && Array.isArray(value.$set) && value.$set.every(check);
 const formatNames = ["Singles", "Fourball", "Alternate Shot", "Chapman", "Scramble", "Shamble", "Stroke Play", "Stableford"];
-const matchChoice = (value: unknown) => object(value) && [null, "Manual", "Match Draft"].includes(value.method as never) && [null, "Response", "Ranks", "Randomized"].includes(value.draftType as never) && text(value.date, 10) && text(value.time, 5);
+const matchChoice = (value: unknown) => object(value) && [null, "Manual", "Match Draft"].includes(value.method as never) && [null, "Response", "Ranks", "Randomized"].includes(value.draftType as never) && text(value.date, 10) && text(value.time, 5) && ["rankMinutes","putForwardMinutes","responseMinutes"].every(key=>value[key]===undefined || int(value[key],1,120));
 const roundFormat = (value: unknown) => object(value) && int(value.players) && typeof value.pointsPerMatch === "number" && value.pointsPerMatch >= 0 && value.pointsPerMatch <= 1000 && ["Match Play", "Stroke Play"].includes(String(value.matchType)) && typeof value.nassau === "boolean" && ["Gross", "Net", "Both"].includes(String(value.scoring)) && formatNames.includes(String(value.format));
 const tees = (value: unknown) => object(value) && (value.tee === null || text(value.tee)) && typeof value.perHole === "boolean" && mapOf(value.holeTees, entry => text(entry));
 const nestedChecks: Record<string, (value: unknown) => boolean> = {
@@ -78,7 +79,7 @@ export function validSetup(value: unknown): value is SetupValues {
     if (key === "teamTotalChoice" && item !== null && (!Number.isInteger(item) || Number(item) < 1 || Number(item) > 64)) return false;
     if (key === "roundsPerDay" && !Object.entries(item as SetupValues).every(([day, count]) => /^-?\d+$/.test(day) && [0, 1, 2].includes(count as number))) return false;
   }
-  return true;
+  return !draftScheduleError(value);
 }
 export function initialSetup(trip: SavedGolfTrip): TripSetupSnapshot {
   const count = dayDifference(trip.trip.start_date, trip.trip.end_date) + 1;

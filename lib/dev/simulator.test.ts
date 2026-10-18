@@ -229,7 +229,19 @@ test("brand conditions survive the frame boundary and reject malformed playback 
 });
 
 test("notification preview condition survives the frame boundary; unknown screens are rejected", () => {
-  const state = { ...DEFAULT_SIMULATOR_STATE, notificationPreview: "island-expanded" as const };
+  const state = { ...DEFAULT_SIMULATOR_STATE, notificationPreview: "both-expanded" as const };
   assert.deepEqual(parseSimulatorConfig({ source: "maroon", state })?.state, state);
-  for (const invalid of ["island-huge", "", 3]) assert.equal(parseSimulatorConfig({ source: "maroon", state: { ...state, notificationPreview: invalid } }), null);
+  for (const invalid of ["island-huge", "island-expanded", "", 3]) assert.equal(parseSimulatorConfig({ source: "maroon", state: { ...state, notificationPreview: invalid } }), null);
+  for (const wallpaper of ["dark", "light"] as const) assert.equal(parseSimulatorConfig({ source: "maroon", state: { ...state, wallpaper } })?.state.wallpaper, wallpaper);
+  assert.equal(parseSimulatorConfig({ source: "maroon", state: { ...state, wallpaper: "neon" } }), null);
+});
+
+test("match draft conditionals accept only known preview methods",()=>{
+ for(const matchDraftPreview of ["off","Response","Ranks","Randomized"]){const config={source:"maroon",state:{...DEFAULT_SIMULATOR_STATE,matchDraftPreview}};assert.ok(parseSimulatorConfig(config));}
+ assert.equal(parseSimulatorConfig({source:"maroon",state:{...DEFAULT_SIMULATOR_STATE,matchDraftPreview:"unknown"}}),null);
+});
+
+test("player-role viewer conditionals are bounded development inputs",()=>{
+ for(const playerRoleViewer of ["organizer","captain-a","captain-b","player"])assert.ok(parseSimulatorConfig({source:"maroon",state:{...DEFAULT_SIMULATOR_STATE,playerRoleViewer}}));
+ assert.equal(parseSimulatorConfig({source:"maroon",state:{...DEFAULT_SIMULATOR_STATE,playerRoleViewer:"admin"}}),null);
 });

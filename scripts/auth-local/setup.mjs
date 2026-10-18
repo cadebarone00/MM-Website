@@ -30,8 +30,9 @@ const FILES = [
   "golf_trip_scoring.sql", "golf_trip_scoring_fix_groups.sql", "golf_trip_scoring_realtime.sql", "golf_trip_scoring_offline.sql",
   "golf_trip_scoring_submission.sql", "player_rounds.sql", "golf_trip_scoring_corrections.sql", "shared_rounds.sql",
   "profile_v1.sql",
-  // Accounts V2. Leave it out (`setup.mjs v1`) to rebuild the V1 database the 2c reproduction ran against.
-  ...(process.argv[2] === "v1" ? [] : ["profile_initialization.sql"]),
+  "profile_photos.sql",
+  // Accounts V2. Leave them out (`setup.mjs v1`) to rebuild the V1 database the 2c reproduction ran against.
+  ...(process.argv[2] === "v1" ? [] : ["profile_initialization.sql", "account_deletion.sql"]),
 ];
 
 // Always start from an empty database: stop (and delete the data of) any earlier run first.

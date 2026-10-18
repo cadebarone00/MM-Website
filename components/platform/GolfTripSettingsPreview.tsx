@@ -21,13 +21,17 @@ import { GolfTripDatePicker } from "./GolfTripDatePicker";
 import { CourseEditSheet, TripScheduleCoursePicker, type PickedCourse } from "./TripScheduleCoursePicker";
 import { NO_ROUND_TEES, RoundTeeBoxes, type RoundTees } from "./RoundTeeBoxes";
 import { TeeTimePicker } from "./TeeTimePicker";
+import { MatchDraftTimingFields, type MatchDraftTiming } from "./MatchDraftTimingFields";
+import { draftScheduleError } from "@/lib/platform/draftSchedule";
+import { matchDraftPreviewData } from "@/lib/dev/matchDraftPreview";
+import { TripPlayerRoles } from "./TripPlayerRoles";
 import { TripMatchDraftRoom } from "./TripMatchDraftRoom";
 import { TimePicker } from "./TimePicker";
 import { scopedRoundId, DEV_TRIP_ID } from "@/lib/dev/devPlayerRounds";
 import { roundHasStarted, groupHasStarted, type GroupStarts } from "@/lib/platform/scheduleLocks";
 import { removeScheduleSlot, shiftScheduleDays } from "@/lib/platform/scheduleDateShift";
 import { RoundCompetitionSettings } from "./RoundCompetitionSettings";
-import { defaultRoundComp, pointsPerMatchTotal, roundMatches, roundPointsAvailable, type RoundCompSettings } from "@/lib/platform/roundCompetition";
+import { defaultRoundComp, pointsPerMatchTotal, roundMatches, playersPerSide, roundPointsAvailable, type RoundCompSettings } from "@/lib/platform/roundCompetition";
 import { GolfTripHistory, type HistoryLinking } from "./GolfTripHistory";
 import { dispatchDevRounds, useDevPlayerRounds } from "@/components/dev/useDevPlayerRounds";
 import { DEFAULT_DEV_ACCOUNT, DEV_ACCOUNTS, devAccount } from "@/lib/dev/devAccounts";
@@ -76,7 +80,7 @@ const MAX_DAYS = 14;
 // them (Response, Ranks or Randomized) at a set time. Set for every round at once, or (Select per round) round by round.
 const MATCH_METHODS = ["Manual", "Match Draft"] as const;
 const MATCH_DRAFT_TYPES = ["Response", "Ranks", "Randomized"] as const;
-type MatchSelection = { method: (typeof MATCH_METHODS)[number] | null; draftType: (typeof MATCH_DRAFT_TYPES)[number] | null; date: string; time: string };
+type MatchSelection = MatchDraftTiming & { method: (typeof MATCH_METHODS)[number] | null; draftType: (typeof MATCH_DRAFT_TYPES)[number] | null; date: string; time: string };
 const NO_MATCH_SELECTION: MatchSelection = { method: null, draftType: null, date: "", time: "" };
 /** The items in a random order (Fisher–Yates). */
 /** "2027-05-12" → "May 12, 2027". */
@@ -102,8 +106,8 @@ const PLAYER_SCORING_FIELDS = ["Opponent's score", "Putts", "Fairway", "Greens i
 const GAME_LOOKUP = [...GAME_GROUPS.Individual, ...GAME_GROUPS.Matches];
 
 /** Reference layout with local game scoring settings in the site's maroon palette. */
-export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament", playerCount = 0, players = [], tripRounds, pastTrips: tripHistory, dataKey = "default", persistenceScope, scoringTripId, competitionSetup, livePanels, scheduleBaseDate }: {
-  scheduleBaseDate?: string;
+export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament", playerCount = 0, players = [], tripRounds, pastTrips: tripHistory, dataKey = "default", persistenceScope, scoringTripId, competitionSetup, livePanels, scheduleBaseDate, organizerName = devAccount(DEFAULT_DEV_ACCOUNT).name }: {
+  scheduleBaseDate?: string; organizerName?: string;
   livePanels?: { members: ReactNode; scorecards: ReactNode; scoring: ReactNode; isOrganizer: boolean; deleteHref: string };
   tripName: string; backHref?: string; playerCount?: number; players?: string[];
   /** The chosen trip's past trips; without them, the samples. */
@@ -324,6 +328,11 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   // Match Selection Type (all rounds at once): Select per round off = every round follows `allRounds`; on = each round's own.
   const [matchPerRound, setMatchPerRound] = usePersistedState(persist, "matchPerRound", false);
   const [allRoundsMatch, setAllRoundsMatch] = usePersistedState<MatchSelection>(persist, "allRoundsMatch", NO_MATCH_SELECTION);
+  const [draftScheduleMessage,setDraftScheduleMessage] = useState("");
+  const checkDraftSchedule = (changes: Record<string,unknown>) => {
+    const error=draftScheduleError({teamSelection,draftDate,draftTime,matchSelections,matchPerRound,allRoundsMatch,...changes});
+    setDraftScheduleMessage(error ?? "");return !error;
+  };
   const roundMatchSelection = (key: string) => matchPerRound ? matchSelections[key] : allRoundsMatch;
   // Round settings → Players: up to 4 roster slots per tee time group, kept per round slot. A player can be in one group per round.
   const [teePlayers, setTeePlayers] = usePersistedState<Record<string, Record<number, number[]>>>(persist, "teePlayers", {});
@@ -653,6 +662,12 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const exitWithoutSaving = () => { if (savedNow) restoreSettings(savedNow); setLeaveConfirm(false); goBack(); };
 
   if (matchDraftRoomOpen) {
+    const method = simulator?.state.matchDraftPreview;
+    if (process.env.NODE_ENV === "development" && method && method !== "off") {
+      const sourcePlayers = (submittedTeams ?? teamSplit).slice(0,2).flatMap((team,index)=>team.map(player=>({id:String(player),name:playerName(player),team:index===0?"A" as const:"B" as const})));
+      const fixture = matchDraftPreviewData(sourcePlayers,rounds.map(round=>round.course),undefined,method);
+      return <TripMatchDraftRoom key={method} rounds={fixture.rounds} players={fixture.players} initialRound={"preview-"+method} onClose={()=>{setMatchDraftRoomOpen(false);setMatchesOpen(true);}} />;
+    }
     const draftRounds = Array.from({ length: golfDayCount }, (_, day) => Array.from({ length: roundsPerDay[day] ?? 1 }, (_, slot) => scheduleSlot(day, slot))).flat()
       .filter(round => round.course !== "Course TBD" && (compRounds[round.key] ?? true) && roundMatchSelection(round.key)?.method === "Match Draft")
       .map(round => {
@@ -661,14 +676,15 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
         const settings = compFormats[round.key] ?? sourceRoundComp(round.key);
         const date = own?.date || choice.date;
         const time = own?.time || choice.time;
-        return { ...round, format: settings.format, matches: roundMatches(settings), type: choice.draftType ?? "Not selected", when: `${date ? golfDateLabel(date) : "Date not set"} · ${time ? clockLabel(time) : "Time not set"}` };
+        return { ...round, format: settings.format, rankMinutes:choice.rankMinutes, putForwardMinutes:choice.putForwardMinutes, responseMinutes:choice.responseMinutes, matches: roundMatches(settings), perSide: playersPerSide(settings.format), locked: playState(round.key, round.number).started, type: choice.draftType ?? "Not selected", when: `${date ? golfDateLabel(date) : "Date not set"} · ${time ? clockLabel(time) : "Time not set"}` };
       });
-    const draftPlayers = (submittedTeams ?? teamSplit).flatMap((team, index) => team.map(player => ({ name: playerName(player), team: index === 0 ? "A" as const : "B" as const })));
-    return <TripMatchDraftRoom rounds={draftRounds} players={draftPlayers} initialRound={matchDraftRoomRound} onClose={() => { setMatchDraftRoomOpen(false); setMatchesOpen(true); }} />;
+    const draftPlayers = (submittedTeams ?? teamSplit).slice(0,2).flatMap((team, index) => team.map(player => ({ id: String(player), name: playerName(player), team: index === 0 ? "A" as const : "B" as const })));
+    return <TripMatchDraftRoom rounds={draftRounds} canEdit={!savedSetup?.readOnly} teamNames={teamLabels} players={draftPlayers} initialRound={matchDraftRoomRound} onClose={() => { setMatchDraftRoomOpen(false); setMatchesOpen(true); }} />;
   }
 
   return <main className={`${styles.page} ${competitionOpen || gamesOpen || roundsOpen || playersOpen || playerScoringOpen || scorecardViewOpen || historyOpen || predictOpen || matchesOpen || scorecardOpen ? styles.competitionPage : ""}`}>
     <div className={styles.content}>
+      {draftScheduleMessage && <p role="alert" className={styles.statNote}>{draftScheduleMessage}</p>}
       {(competitionOpen || gamesOpen || roundsOpen || playersOpen || playerScoringOpen || scorecardViewOpen || historyOpen || predictOpen || matchesOpen || scorecardOpen) ? <header className={styles.competitionHeader}>
         <button type="button" className={styles.close} aria-label={scorecardPlayer !== null ? "Back to players" : scorecardOpen ? "Back to scorecards" : skinsRound ? "Back to skins" : selectedRound || compRound ? "Back to competition rounds" : selectedGame ? "Back to games" : "Back to organizer settings"} onClick={tryGoBack}><ChevronLeft size={28} aria-hidden /></button>
         <h1>{scorecardPlayer !== null ? playerName(scorecardPlayer) : scorecardRound ? `Round ${scheduleSlot(scorecardRound.day, scorecardRound.slot).number}` : selectedRound ? "Round " + selectedRound.number + " Settings" : compRound ? `Round ${compRound.number} Competition` : skinsRound ? `Round ${scheduleSlot(skinsRound.day, skinsRound.slot).number} Skins` : selectedGame ? selectedGame.name : gamesOpen ? "Games" : roundsOpen ? scheduleRound ? `Round ${scheduleSlot(scheduleRound.day, scheduleRound.slot).number}` : "Golf Schedule" : playersOpen ? "Players" : playerScoringOpen ? "Player Scoring" : scorecardViewOpen ? "Scorecard View" : historyOpen ? "History" : predictOpen ? "Predict" : matchesOpen ? matchRound ? `Round ${scheduleSlot(matchRound.day, matchRound.slot).number}` : "Match Selection" : overviewType === "team" ? "Team Competition" : "Individual Competition"}</h1>
@@ -834,11 +850,11 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                     {teamSelection === "Draft" && <div className={styles.draftSettings} role="group" aria-label="Draft settings">
                       <div className={styles.totalPlayers}>
                         <span className={styles.typeHeading}>Draft date</span>
-                        <DatePicker className={styles.draftInput} aria-label="Draft date" value={draftDate} onChange={event => setDraftDate(event.target.value)} />
+                        <DatePicker className={styles.draftInput} aria-label="Draft date" value={draftDate} onChange={event => { if(checkDraftSchedule({draftDate:event.target.value})) setDraftDate(event.target.value); }} />
                       </div>
                       <div className={styles.totalPlayers}>
                         <span className={styles.typeHeading}>Draft time</span>
-                        <TimePicker className={styles.draftInput} label="Draft time" value={draftTime} onChange={setDraftTime} />
+                        <TimePicker className={styles.draftInput} label="Draft time" value={draftTime} onChange={time=>{if(checkDraftSchedule({draftTime:time}))setDraftTime(time);}} />
                       </div>
                       <span className={styles.typeHeading}>Draft type</span>
                       <div className={styles.draftTypes} role="group" aria-label="Draft type">
@@ -1219,6 +1235,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                 {MATCH_DRAFT_TYPES.map(option => <button key={option} type="button" className={styles.typeChoice} aria-pressed={allRoundsMatch.draftType === option}
                   onClick={() => setAllRoundsMatch(current => ({ ...current, draftType: option }))}>{option}</button>)}
               </div>
+              <MatchDraftTimingFields type={allRoundsMatch.draftType} value={allRoundsMatch} onChange={change=>setAllRoundsMatch(current=>({...current,...change}))}/>
               <p className={styles.statNote}>Select Match Drafts in each round.</p>
             </div>}
           </fieldset>
@@ -1256,7 +1273,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
         const choice = roundMatchSelection(round.key) ?? NO_MATCH_SELECTION;
         // The round's own draft date and time (editable even when the method and type come from all rounds).
         const own = matchSelections[round.key] ?? NO_MATCH_SELECTION;
-        const choose = (change: Partial<MatchSelection>) => { if (playState(round.key, round.number).started) return; setMatchSelections(current => ({ ...current, [round.key]: { ...(current[round.key] ?? NO_MATCH_SELECTION), ...change } })); };
+        const choose = (change: Partial<MatchSelection>) => { if (playState(round.key, round.number).started || !checkDraftSchedule({matchSelections:{...matchSelections,[round.key]:{...(matchSelections[round.key] ?? NO_MATCH_SELECTION),...change}}})) return; setMatchSelections(current => ({ ...current, [round.key]: { ...(current[round.key] ?? NO_MATCH_SELECTION), ...change } })); };
         return <div className={styles.competition}>
           <div className={styles.roundDayHeader}>
             <div className={styles.roundCourseLine}>
@@ -1287,6 +1304,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
               <div className={styles.teamSelectionChoices} role="group" aria-label="Match draft type">
                 {MATCH_DRAFT_TYPES.map(option => <button key={option} type="button" className={styles.typeChoice} aria-pressed={choice.draftType === option} onClick={() => choose({ draftType: option })}>{option}</button>)}
               </div>
+              <MatchDraftTimingFields type={choice.draftType} value={choice} onChange={choose}/>
             </div>}
           </fieldset>
           {choice.method === "Match Draft" && <div className={`${styles.draftSettings} ${styles.matchDraftWhen}`} role="group" aria-label="Match draft date and time">
@@ -1485,21 +1503,12 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                 <button type="button" aria-label="More players" disabled={playerTotal >= MAX_PLAYERS} onClick={() => setPlayerTotal(count => count + 1)}><Plus size={14} strokeWidth={2.5} aria-hidden /></button>
               </div>
             </div>
-            {livePanels ? livePanels.members : <div>
-              <div className={`${leaderboardStyles.single} ${leaderboardStyles.columns} ${styles.playerRow} ${styles.playerListRow}`} aria-hidden="true">
-                <span className={leaderboardStyles.columnPlayer}>Player</span>
-              </div>
-              <ol className={leaderboardStyles.lineup}>
-                {Array.from({ length: playerTotal }, (_, index) => <li key={index} className={`${leaderboardStyles.single} ${styles.playerRow} ${styles.playerListRow}`}>
-                  <span className={leaderboardStyles.rank}>{index + 1}</span>
-                  <div className={leaderboardStyles.golfer}>
-                    <span className={leaderboardStyles.golferName}>{joinedPlayers[index]?.name ?? `Player ${index + 1}`}</span>
-                    {!joinedPlayers[index] && <span className={leaderboardStyles.tee}>Open spot</span>}
-                  </div>
-                  {joinedPlayers[index] && <button type="button" className={styles.playerDelete} aria-label={`Delete ${joinedPlayers[index].name}`} onClick={() => setRemovedPlayers(previous => new Set([...previous, joinedPlayers[index].key]))}><Trash2 size={18} aria-hidden /></button>}
-                </li>)}
-              </ol>
-            </div>}
+            {livePanels ? livePanels.members : <TripPlayerRoles key={simulator?.state.playerRoleViewer ?? simulator?.state.viewAs ?? "default"}
+              players={joinedPlayers.map((player,index)=>({key:player.key,name:player.name,team:teamPicks[index]}))} total={playerTotal} persist={persist}
+              organizerName={organizerName} viewerName={simulator?.state.viewAs && simulator.state.viewAs!==DEFAULT_DEV_ACCOUNT ? devAccount(simulator.state.viewAs).name : organizerName}
+              viewer={process.env.NODE_ENV==="development"?simulator?.state.playerRoleViewer:undefined}
+              teamNames={teamNames} teamCount={Math.max(2,teamCount)} onRemove={key=>setRemovedPlayers(previous=>new Set([...previous,key]))}/>}
+
         </section>
       </div>}
 

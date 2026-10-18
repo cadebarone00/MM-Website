@@ -1,0 +1,15 @@
+# Development player roles and captain handoff review - 2026-10-17
+
+Scope: development Players UI labels Player/Organizer/Captain with combined organizer-captain labels and dynamic named-team labels. Assignment and replacement are organizer-only; current captains can also hand off their own role. Reuses already loaded participant names/roster keys/team indices and existing browser-scoped setup. No saved-trip captain authority, draft-picking permission or server membership change. Implemented locally; deployment not verified.
+
+Engineering findings: helper guards check actor identity, organizer replacement authority, current holder for handoff, known-player eligibility, team and captain uniqueness. The organizer role is immutable in this flow. Handoff removes old captain controls without following the successor's identity. Captain/organizer dev removal controls are disabled. Source-scoped browser storage persists stable roster keys; browser reset clears them. This is local UI policy, not security authorization. Dev viewer conditionals cannot grant production permissions.
+
+Privacy/personal data/retention: existing names and roster keys now have browser-local captain assignments. No new recipients or vendors. Follow-up before any shared release: establish retention/deletion/reset expectations, stable membership identity mapping and verified visibility. Owner unassigned; due before production role launch; review_required.
+
+Security/user accounts/organizer responsibility: saved-trip membership and organizer access remain unchanged. Follow-up before connecting picking: authenticated captain identity, server-side assignment, organizer replacement and handoff validation, race-safe versioning, team membership, correction/recovery, audit evidence and captain consent/notice policy. Owner unassigned; due before production captain authorization; review_required.
+
+IP/UGC/provider/platform/legal: existing UI styles and already supplied participant names only; no uploads, third-party content ingestion or new provider. Underlying name-display/organizer authority and professional review remain review_required. No new payments, subscriptions, prizes, advertising or sponsorship flows. All registry categories retain unresolved review status; no legal or release-readiness certification is claimed.
+
+Evidence: unit tests for organizer assignment and replacement, organizer-plus-captain independence, team restrictions, uniqueness, immutable organizer identity and current-captain handoff; browser regression for role labels, identity after handoff, persistence, team renaming and viewer modes. Structural compliance checks cannot authorize release.
+
+2026-10-17 scope revision 2: organizer override is implemented in the local role helper and Players sheet. Replaced captains lose their role; organizer identity is unchanged. Existing privacy, retention, audit, security and legal follow-ups remain review_required. No new data, vendor, payments, subscriptions or advertising flows; deployment not verified.

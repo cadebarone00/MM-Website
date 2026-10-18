@@ -9,7 +9,7 @@ import { HIGHLIGHT_HEADERS, HIGHLIGHT_TABS, type HighlightCategory, type Highlig
 export type RawCell = string | number | boolean | null | undefined;
 export interface RawTab { name: string; values: RawCell[][] }
 
-export type SheetRowKind = "parent" | "conditional";
+export type SheetRowKind = "parent" | "conditional" | "variation";
 export interface SheetRow {
   kind: SheetRowKind;
   category: HighlightCategory;
@@ -52,8 +52,8 @@ export function parseSheetRows(tabs: RawTab[]): ParsedSheet {
       // Blank rows are the visual separators between rules.
       if (COLUMNS.every((column) => cells[column] === "")) return;
       const type = normalize(cells.rowType);
-      if (type === "parent" || type === "conditional") rows.push({ kind: type, category, source, cells });
-      else error("unknown-row-type", `Row type must be PARENT or CONDITIONAL${cells.rowType ? `, not "${cells.rowType}"` : " (it is blank)"}.`, source);
+      if (type === "parent" || type === "conditional" || type === "variation") rows.push({ kind: type, category, source, cells });
+      else error("unknown-row-type", `Row type must be PARENT, CONDITIONAL or VARIATION${cells.rowType ? `, not "${cells.rowType}"` : " (it is blank)"}.`, source);
     });
   }
   return { rows, issues };

@@ -396,7 +396,7 @@ export function GolfTripScoring({ par, initialHoles, playerName = "You", opponen
   const blocking = !fullScreen && (open || dragOffset !== null);
   // The GPS prototype (dev only): its satellite map fills the whole sheet, with the handle, pills and yardages on top.
   const showGpsMap = view === "gps" && process.env.NODE_ENV === "development";
-  return <>{blocking && <div className={styles.backdrop} aria-hidden />}<div className={`${styles.frame} ${fullScreen ? styles.frameFull : ""} ${blocking ? styles.frameAbove : ""}`}><section ref={sheetRef} className={`${styles.sheet} ${open ? styles.open : ""} ${dragOffset !== null ? styles.dragging : ""} ${fastClose ? styles.fastClose : ""} ${fullScreen ? styles.sheetFull : ""} ${fullScreen && view === "gps" ? styles.gpsFullScreen : ""} ${!fullScreen && showGpsMap ? styles.gpsOverlay : ""}`} style={style} aria-label="Scoring">
+  return <>{blocking && <div className={styles.backdrop} aria-hidden />}<div className={`${styles.frame} ${fullScreen ? styles.frameFull : ""} ${blocking ? styles.frameAbove : ""}`}><section ref={sheetRef} data-scroll-modal={blocking || undefined} className={`${styles.sheet} ${open ? styles.open : ""} ${dragOffset !== null ? styles.dragging : ""} ${fastClose ? styles.fastClose : ""} ${fullScreen ? styles.sheetFull : ""} ${fullScreen && view === "gps" ? styles.gpsFullScreen : ""} ${!fullScreen && showGpsMap ? styles.gpsOverlay : ""}`} style={style} aria-label="Scoring">
     {/* GPS pill (left, red) mirrors the Scorecard pill (right); both show while the sheet is pulled up. */}
     {open && (["gps", "scorecard"] as const).map((target) => {
       const label = target === "gps" ? "GPS" : "Card";

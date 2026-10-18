@@ -25,13 +25,17 @@ export async function POST(request: Request) {
 
   const service = createSupabaseServiceRoleClient();
 
-  const { data: slot } = await service
-    .from("player_slots")
-    .select("claimed_by, email, full_name")
-    .eq("player_slug", playerSlug)
-    .single();
+  // claim_locked_at comes with account_deletion.sql; until it's installed, read without it.
+  const withLock = await service.from("player_slots").select("claimed_by, email, full_name, claim_locked_at").eq("player_slug", playerSlug).maybeSingle();
+  const { data: slot } = withLock.error
+    ? await service.from("player_slots").select("claimed_by, email, full_name").eq("player_slug", playerSlug).maybeSingle()
+    : withLock;
   if (!slot) {
     return NextResponse.json({ ok: false, error: "Unknown player." }, { status: 400 });
+  }
+  // Checked BEFORE any email goes out: a record released by an account deletion stays locked.
+  if ((slot as { claim_locked_at?: string | null }).claim_locked_at) {
+    return NextResponse.json({ ok: false, error: "This player record is locked after an account deletion. Reassigning it needs verified ownership (not available yet)." }, { status: 409 });
   }
   if (slot.claimed_by) {
     return NextResponse.json({ ok: false, error: "Already claimed — unlink first to re-invite." }, { status: 409 });

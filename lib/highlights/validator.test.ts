@@ -62,23 +62,23 @@ test("birdie streak tiers must be whole numbers 3–10: error when live, warning
 test("copy: empty text, unknown variables, stray braces and variables the detector can't fill", () => {
   const { report } = load((config) => {
     const [c1, c2, c3, c4] = rule(config, "HL-001").conditionals;
-    c1.headline = "";
-    c2.body = "{name} is hot";
-    c3.body = "{player birdies";
-    c4.body = "{player} beats {opponent}";
+    c1.variations[0].headline = "";
+    c2.variations[0].body = "{name} is hot";
+    c3.variations[0].body = "{player birdies";
+    c4.variations[0].body = "{player} beats {opponent}";
   });
-  assert.deepEqual(list(report.errors), ["missing-copy:HL-001-C01", "unknown-variable:HL-001-C02", "bad-template:HL-001-C03", "variable-not-provided:HL-001-C04"]);
+  assert.deepEqual(list(report.errors), ["missing-copy:HL-001-C01-V00", "unknown-variable:HL-001-C02-V00", "bad-template:HL-001-C03-V00", "variable-not-provided:HL-001-C04-V00"]);
 });
 
 test("Draft rows only warn about copy; Disabled rows are skipped", () => {
   const { report } = load((config) => {
-    rule(config, "HL-002").conditionals[0].body = "{name}";
+    rule(config, "HL-002").conditionals[0].variations[0].body = "{name}";
     const off = rule(config, "HL-011");
     off.status = "Disabled";
-    off.conditionals[0].headline = "";
+    off.conditionals[0].variations[0].headline = "";
   });
   assert.deepEqual(report.errors, []);
-  assert.deepEqual(list(report.warnings), ["unknown-variable:HL-002-C01"]);
+  assert.deepEqual(list(report.warnings), ["unknown-variable:HL-002-C01-V00"]);
 });
 
 test("warns about an Approved conditional under a non-Approved rule, a rule with no detector, and an empty rule", () => {
@@ -114,7 +114,8 @@ test("{players} is accepted on a live rule", () => {
     const hl = rule(config, "HL-046");
     hl.status = "Approved";
     hl.conditionals[0].status = "Approved";
-    hl.conditionals[0].body = "{players} birdie hole {hole}.";
+    hl.conditionals[0].variations[0].status = "Approved"; // a legacy message shares its CONDITIONAL row's status cell
+    hl.conditionals[0].variations[0].body = "{players} birdie hole {hole}.";
   });
   assert.deepEqual(report.errors, []);
   assert.deepEqual(list(report.warnings), ["no-detector:HL-046"]);
@@ -123,11 +124,11 @@ test("{players} is accepted on a live rule", () => {
 test("warns (never errors) when long names could push copy past the 80 / 180 phone limits", () => {
   const { report } = load((config) => {
     const [c1, c2, c3] = rule(config, "HL-001").conditionals;
-    c1.headline = "{player}, give everyone else a chance! Seriously now 🔥"; // fine with "Alex", too long with a two-golfer side
-    c2.body = "x".repeat(181);
-    c3.headline = "y".repeat(80); // exactly the limit is fine
+    c1.variations[0].headline = "{player}, give everyone else a chance! Seriously now 🔥"; // fine with "Alex", too long with a two-golfer side
+    c2.variations[0].body = "x".repeat(181);
+    c3.variations[0].headline = "y".repeat(80); // exactly the limit is fine
   });
   assert.deepEqual(report.errors, []);
-  assert.deepEqual(list(report.warnings), ["may-be-too-long:HL-001-C01", "may-be-too-long:HL-001-C02"]);
+  assert.deepEqual(list(report.warnings), ["may-be-too-long:HL-001-C01-V00", "may-be-too-long:HL-001-C02-V00"]);
   assert.match(report.warnings[0].message, /Headline can reach \d+ characters/);
 });

@@ -29,3 +29,9 @@ test("Set settings round trip through wire JSON without losing selections", () =
   assert.equal(validSetup(JSON.parse(wire)), true);
   assert.deepEqual(JSON.parse(wire, setupDecode), original);
 });
+
+test("match draft timers accept bounded optional minute values",()=>{
+ const choice={method:"Match Draft",draftType:"Ranks",date:"",time:"",rankMinutes:10,putForwardMinutes:2,responseMinutes:1};
+ assert.equal(validSetup({allRoundsMatch:choice}),true);
+ for(const value of [0,-1,121,1.5,"10"]){assert.equal(validSetup({allRoundsMatch:{...choice,rankMinutes:value}}),false);}
+});

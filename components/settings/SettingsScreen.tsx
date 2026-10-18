@@ -5,9 +5,9 @@ import styles from "./Settings.module.css";
 
 /**
  * The Settings screen's layout: back to Profile, then the Profile photo, Account and Privacy cards and Sign Out at the
- * bottom. Each card shows only when it's given. Used by /settings and the dev profile preview (/dev/profile/settings).
+ * bottom (plus Organizer requests when there are any). Each card shows only when it's given. Used by /settings and the dev profile preview (/dev/profile/settings).
  */
-export function SettingsScreen({ backHref, photo, account, privacy, signOut }: { backHref: string; photo?: ReactNode; account: ReactNode; privacy?: ReactNode; signOut?: ReactNode }) {
+export function SettingsScreen({ backHref, photo, account, offers, privacy, signOut }: { backHref: string; photo?: ReactNode; account: ReactNode; offers?: ReactNode; privacy?: ReactNode; signOut?: ReactNode }) {
   return <main className={styles.page}>
     <div className={styles.inner}>
       <header className={styles.header}>
@@ -24,6 +24,11 @@ export function SettingsScreen({ backHref, photo, account, privacy, signOut }: {
         <h2 id="settings-account" className={styles.cardTitle}>Account</h2>
         {account}
       </section>
+
+      {/* Only when another organizer asked this person to take over a trip (account deletion hand-off). */}
+      {offers && <section aria-labelledby="settings-offers" className={styles.card}>
+        {offers}
+      </section>}
 
       {privacy && <section aria-labelledby="settings-privacy" className={`${styles.card} ${styles.compactCard}`}>
         {privacy}

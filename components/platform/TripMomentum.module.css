@@ -31,3 +31,22 @@
 /* Notifications panel: the Team Draft item above the round alerts, with a rule under it. */
 .notice{gap:12px;padding-bottom:20px;margin-bottom:8px;border-bottom:1px solid rgba(220,196,149,.3)}
 .momentum.dualDraft{height:160px;flex-shrink:0;justify-content:space-around}
+
+/* Drafts keep the itinerary-card inset with a dramatic maroon and gold surface. */
+.draftWidget{position:relative;isolation:isolate;box-sizing:border-box;width:100%;padding:16px 14px;border:1px solid rgba(220,196,149,.65);border-radius:12px;background:linear-gradient(135deg,#240001 0%,#651b30 52%,#30030d 100%);box-shadow:0 8px 22px rgba(36,0,1,.24),inset 0 1px 0 rgba(255,232,181,.12)}
+.draftWidget::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;background:linear-gradient(110deg,transparent 38%,rgba(220,196,149,.07) 44%,rgba(255,224,159,.3) 50%,rgba(220,196,149,.07) 56%,transparent 62%);background-size:350% 100%;background-position:100% 0;animation:draftShimmer 10s ease-in-out infinite}
+@keyframes draftShimmer{0%,75%{background-position:100% 0;opacity:0}78%{opacity:1}95%{background-position:0 0;opacity:1}100%{background-position:0 0;opacity:0}}
+.draftWidget .draft + .draft{margin-top:14px;padding-top:14px;border-top:1px solid rgba(220,196,149,.3)}
+.draftWidget .draftTop{height:auto;flex-wrap:wrap;row-gap:5px}
+.draftWidget .draftTitle{color:#fff5df;text-shadow:0 1px 8px rgba(0,0,0,.2)}
+.draftWidget .digits{color:#edcf91;text-shadow:0 0 14px rgba(220,196,149,.18)}
+.draftWidget .draftWhen{flex-basis:100%;order:3;white-space:normal;line-height:1.4;color:#e3d3c7}
+.draftWidget .edit{margin-left:auto;color:#edcf91}
+.draftWidget .label{color:#d4bfa9}
+.draftWidget .colon{color:#bba075}
+.draftWidget .room{border-color:#dcc495;color:#f4dba8;background:rgba(220,196,149,.1)}
+.draftWidget .room:hover{background:rgba(220,196,149,.2)}
+.draftWidget :is(.edit,.room):focus-visible{outline-color:#edcf91}
+@media(prefers-reduced-motion:reduce){.draftWidget::before{animation:none;opacity:0}}
+
+.matchLabel{margin:0;color:#dcc495;font:500 12px/1.4 var(--font-barlow),sans-serif;overflow-wrap:anywhere}
