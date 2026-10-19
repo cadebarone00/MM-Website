@@ -74,6 +74,11 @@ interface FeatureSeed {
 
 const seeds: FeatureSeed[] = [
   {
+    id: "trip-feed-composer", name: "Trip feed local composer",
+    scope: "Home photo picker and text/photo composer with page-memory posts and deletion. No upload, server persistence, cross-player sharing or Apple/Google account connection. Local blob lifetimes only; proposed shared storage/privacy controls and unresolved follow-ups: docs/trip-feed-review.md. Implemented locally; deployment not verified.",
+    attentionCategories: ["privacy", "personal-data", "ugc", "media-rights", "intellectual-property", "retention", "security", "organizer-responsibility", "platform-rules", "legal-review"],
+  },
+  {
     id: "development-team-captains",
     scopeRevision: 2, name: "Development player roles and captain handoff",
     scope: "Dev Players labels and source-scoped browser captain assignments by stable roster key. Fixed organizer identity; organizer assigns or replaces captains and the current holder can hand off to an eligible teammate. Combined and team-name labels, protected dev removal and bounded actor conditionals. No server captain authority, saved-trip membership change, team-draft seeding, picking permission, messaging or new vendor. Findings and unresolved privacy/security/retention/organizer/IP/provider/legal follow-ups: docs/team-captains-review.md. Implemented locally; deployment not verified.",
@@ -115,8 +120,8 @@ const seeds: FeatureSeed[] = [
     attentionCategories: ["security", "open-source", "intellectual-property", "platform-rules", "legal-review"],
   },
   {
-    id: "development-app-simulator", name: "Development app viewport simulator", scopeRevision: 3,
-    scope: "Development-only /dev control center frames existing routes; source-scoped browser-local setup links real/mock/busy Settings to Home/Golf/Venue/Itinerary, including editable empty travel, actual tournament session mapping and isolated dev scoring/round state. Imported standings and untouched results are preserved; localStorage persistence/retention remain review_required. local viewport/inset/page controls, real tournament adapter or generic/empty/busy fixtures and validated memory-only presentation state. Right-hand canvas review tools retain bounded memory-only stroke history; user-requested local 2x PNG clipboard/download captures the same-origin visible screen and annotations with optional frame; no upload or capture service. Existing page permissions/session remain effective; no auth simulation, source mutation, database or scoring-engine changes. Findings, limitations and follow-ups: docs/dev-simulator-review.md.",
+    id: "development-app-simulator", name: "Development app viewport simulator", scopeRevision: 6,
+    scope: "Development-only /dev control center frames existing routes; separate Mock/Busy scenario column normalizes competition, player count, trip duration/day, rounds, trip-local clock and team/match draft prerequisites; scenario-specific seeded browser setup isolates edits; fictional grouped flights, capacity-limited rentals, lodging and meals obey trip-local schedule buffers without booking/provider calls; fictional prior-round cards, stable cumulative standings, card-derived match results and schedule-based submitted-round stats populate retrospective views without account-round writes; source-scoped browser-local setup links real/mock/busy Settings to Home/Golf/Venue/Itinerary, including editable empty travel, actual tournament session mapping and isolated dev scoring/round state. Imported standings and untouched results are preserved; localStorage persistence/retention remain review_required. local viewport/inset/page controls, real tournament adapter or generic/empty/busy fixtures and validated memory-only presentation state. Right-hand canvas review tools retain bounded memory-only stroke history; user-requested local 2x PNG clipboard/download captures the same-origin visible screen and annotations with optional frame; no upload or capture service. Existing page permissions/session remain effective; no auth simulation, source mutation, database or scoring-engine changes. Findings, limitations and follow-ups: docs/dev-simulator-review.md.",
     attentionCategories: ["privacy", "personal-data", "security", "retention", "ugc", "intellectual-property", "media-rights", "open-source", "third-party-golf-content", "organizer-responsibility", "platform-rules", "legal-review"],
   },
   {

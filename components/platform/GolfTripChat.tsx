@@ -48,7 +48,8 @@ export function GolfTripChat({ open, onClose, members, tripName }: {
   const inbox = [threads[0], ...threads.slice(1).filter(thread => thread.messages.length > 0)
     .sort((a, b) => b.messages.at(-1)!.createdAt - a.messages.at(-1)!.createdAt)];
 
-  return <dialog ref={dialog} className={styles.dialog} aria-label="Trip messages" onCancel={close}>
+  // A tap on the dimmed backdrop (the dialog element itself, outside the sheet's content) closes it, like the bell's sheet.
+  return <dialog ref={dialog} className={styles.dialog} aria-label="Trip messages" onCancel={close} onClick={event => { if (event.target === event.currentTarget) close(); }}>
     <div className={styles.layout}>
       <header className={styles.header}>
         {active && <button type="button" className={styles.iconButton} aria-label="Back to chats" onClick={() => setSelected(null)}><ArrowLeft size={22} /></button>}

@@ -4,12 +4,13 @@
  */
 import { momentumHeadline, momentumSubheading } from "@/lib/platform/momentumCopy";
 import { teamColor } from "@/lib/platform/teamColors";
+import { courseDisplayName } from "@/lib/platform/courseShortName";
 import type { AppNotification, LeaderboardRow, LiveRoundActivity } from "@/lib/notifications/types";
 
 /** Every preview screen in the group. The first id of each surface is its default. */
 export const NOTIFICATION_PREVIEWS = {
   phone: ["lock", "lock-stack", "banner", "signed-out-lock", "signed-out-tap"],
-  live: ["both-live", "both-live-top3", "both-pre", "both-over", "both-final", "both-pairs-live", "both-pairs-over", "both-expanded", "pill-pre", "pill-live", "pill-over", "pill-final", "individual-live", "individual-pill", "team-live", "team-pill", "none-live", "none-pill", "android-pre", "android-live", "android-over", "android-final"],
+  live: ["both-live", "both-live-top3", "both-pre", "both-over", "both-final", "both-pairs-live", "both-pairs-over", "both-lost", "both-expanded", "pill-pre", "pill-live", "pill-over", "pill-final", "pill-lost", "individual-live", "individual-pill", "team-live", "team-pill", "none-live", "none-pill", "android-pre", "android-live", "android-over", "android-final", "android-lost", "android-update-pre", "android-update-live", "android-update-over", "android-update-final", "android-update-individual", "android-update-none"],
   inApp: ["bell-unread", "bell-read", "bell-empty", "top-banner"],
 } as const;
 export type NotificationSurface = keyof typeof NOTIFICATION_PREVIEWS;
@@ -24,6 +25,7 @@ export const NOTIFICATION_PREVIEW_LABELS: Record<NotificationPreview, string> = 
   "pill-live": "Pill · live round (+2, 3 up, thru 15)",
   "pill-over": "Pill · round over, next tee time 2:00",
   "pill-final": "Pill · after the last round (W 3&2)",
+  "pill-lost": "Pill · after the last round, lost (L 2&1)",
   "individual-live": "Individual only · lock screen (live)",
   "individual-pill": "Individual only · pill (live)",
   "team-live": "Team only · lock screen (live)",
@@ -33,7 +35,14 @@ export const NOTIFICATION_PREVIEW_LABELS: Record<NotificationPreview, string> = 
   "android-pre": "Android chip · popped up (13m)",
   "android-live": "Android chip · live round (3▲)",
   "android-over": "Android chip · round over, next tee time",
-  "android-final": "Android chip · after the last round",
+  "android-final": "Android chip · after the last round (won)",
+  "android-lost": "Android chip · after the last round (lost)",
+  "android-update-pre": "Android pinned Live Update · popped up",
+  "android-update-live": "Android pinned Live Update · live round",
+  "android-update-over": "Android pinned Live Update · round over, next tee time",
+  "android-update-final": "Android pinned Live Update · after the last round",
+  "android-update-individual": "Android pinned Live Update · Individual only",
+  "android-update-none": "Android pinned Live Update · No competition",
   "both-live": "Lock screen · live, I'm 6th (top 2 + me)",
   "both-live-top3": "Lock screen · live, I'm 2nd (top 3)",
   "both-pre": "Lock screen · popped up, 13m to tee time",
@@ -41,6 +50,7 @@ export const NOTIFICATION_PREVIEW_LABELS: Record<NotificationPreview, string> = 
   "both-final": "Lock screen · after the last round",
   "both-pairs-live": "Lock screen · fourball (pairs), live",
   "both-pairs-over": "Lock screen · fourball (pairs), round over",
+  "both-lost": "Lock screen · after the last round, lost (L 2&1)",
   "both-expanded": "Dynamic Island · expanded (long press)",
   "bell-unread": "Bell · new notifications",
   "bell-read": "Bell · all read",
@@ -64,7 +74,7 @@ export const SAMPLE_NOTIFICATIONS: AppNotification[] = [
 ];
 
 export const SAMPLE_LIVE_ROUND: LiveRoundActivity = {
-  ...trip, round: 2, course: "PGA West Stadium", playerName: "Cade Barone", toPar: -2, thru: 12, holes: 18,
+  ...trip, round: 2, course: courseDisplayName("PGA West Stadium Course"), playerName: "Cade Barone", toPar: -2, thru: 12, holes: 18,
   position: "T2", match: null, state: "live", teeTime: null, result: null, updatedAt: minutesAgo(2),
 };
 
@@ -94,7 +104,7 @@ const teams = sampleTeams;
 export const SAMPLE_TEAM_STEPS: Record<"pre" | "live" | "over" | "final", LiveRoundActivity> = {
   pre: { ...SAMPLE_LIVE_TEAM, state: "pre", toPar: 0, thru: 0, match: { status: "AS", opponents: ["Collin Ross"] }, teeTime: "2026-10-16T14:24" },
   live: SAMPLE_LIVE_TEAM,
-  over: { ...SAMPLE_LIVE_TEAM, state: "over", thru: 18, match: { status: "Won 3&2", opponents: ["Collin Ross"] }, result: "W 3&2", teeTime: "2026-10-16T14:00", nextCourse: "PGA West Nicklaus", teams: teams(4.5, 1.5) },
+  over: { ...SAMPLE_LIVE_TEAM, state: "over", thru: 18, match: { status: "Won 3&2", opponents: ["Collin Ross"] }, result: "W 3&2", teeTime: "2026-10-16T14:00", nextCourse: courseDisplayName("PGA West - Jack Nicklaus Tournament Course"), teams: teams(4.5, 1.5) },
   final: { ...SAMPLE_LIVE_TEAM, state: "final", thru: 18, match: { status: "Won 3&2", opponents: ["Collin Ross"] }, result: "W 3&2", teams: teams(10.5, 7.5) },
 };
 
@@ -111,3 +121,6 @@ export const SAMPLE_PAIRS = {
   live: { ...SAMPLE_TEAM_STEPS.live, match: { status: "3 UP", opponents: PAIR } },
   over: { ...SAMPLE_TEAM_STEPS.over, match: { status: "Won 3&2", opponents: PAIR } },
 } satisfies Record<string, LiveRoundActivity>;
+
+/** After the last round, lost: shows gray (wins show gold). */
+export const SAMPLE_LOST: LiveRoundActivity = { ...SAMPLE_TEAM_STEPS.final, match: { status: "Lost 2&1", opponents: ["Collin Ross"] }, result: "L 2&1" };

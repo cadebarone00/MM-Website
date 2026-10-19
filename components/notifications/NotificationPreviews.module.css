@@ -1,6 +1,7 @@
-/* DEV ONLY: Notifications group previews. Our fonts (Barlow text, Spectral titles) wherever Apple lets the app pick:
-   Live Activity, Dynamic Island and in-app. Standard phone notifications and the lock-screen clock are drawn by iOS in its own font. */
-.phone{position:relative;box-sizing:border-box;min-height:100vh;min-height:100svh;overflow:hidden;padding-bottom:env(safe-area-inset-bottom);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",var(--font-barlow),sans-serif;color:#fff}
+/* DEV ONLY: Notifications group previews, drawn as the phone will really show them. Our fonts (Barlow text, Spectral
+   titles) only where the app draws: the iPhone Live Activity, Dynamic Island and in-app. Everything the phone draws itself
+   uses its own font: Inter stands in for Apple's SF Pro, Roboto for Android's. */
+.phone{position:relative;box-sizing:border-box;min-height:100vh;min-height:100svh;overflow:hidden;padding-bottom:env(safe-area-inset-bottom);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",var(--font-apple-system),sans-serif;color:#fff}
 /* Beats the app's global top clearance (globals.css .app-camera-buffer); these screens place the camera spacing themselves. */
 .phone:not(.appScreen):not(#_){padding-top:env(safe-area-inset-top)}
 .appScreen:not(#_){padding-top:0}
@@ -54,7 +55,9 @@
 .islandTeams{display:flex;gap:7px;font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
 .islandMine{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
 .islandMine small{font-size:13px;font-weight:600;color:rgba(255,255,255,.65)}
-.matchArrow{display:inline-flex;align-items:center;gap:2px;color:#dcc495;font-weight:800}
+.matchArrow{display:inline-flex;align-items:baseline;gap:2px;color:#dcc495;font-weight:800}
+/* Same height as the digits (cap height), sitting on the same line, like Android draws ▲ in the phone font. */
+.matchTriangle{width:.72em;height:.72em;flex:none;align-self:baseline}
 /* Side-by-side comparison under the home screen grid (not a real iPhone surface). */
 .tinyCompare{position:absolute;z-index:3;left:12px;right:12px;bottom:calc(120px + env(safe-area-inset-bottom));padding:12px;border-radius:18px;background:rgba(0,0,0,.45);text-align:center}
 .tinyCompare p{margin:0 0 8px;font:600 12px/1.3 var(--font-barlow),sans-serif;color:rgba(255,255,255,.75)}
@@ -65,11 +68,24 @@
 
 /* Android: status bar sits beside the Pixel's center punch-hole camera (24px safe top). */
 .phone.androidScreen:not(#_){padding-top:0}
-.androidStatus{display:flex;align-items:center;gap:8px;height:30px;padding:0 18px;margin-top:2px;font:500 14px/1 var(--font-barlow),sans-serif;color:#fff}
+.androidScreen{font-family:var(--font-android-system),Roboto,sans-serif}
+.androidStatus{display:flex;align-items:center;gap:8px;height:30px;padding:0 18px;margin-top:2px;font:500 14px/1 var(--font-android-system),Roboto,sans-serif;color:#fff}
 .androidClock{font-weight:600}
 .androidIcons{margin-left:auto;font-size:11px;letter-spacing:4px;opacity:.85}
-.androidChip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px 0 3px;border-radius:12px;background:var(--color-maroon-900,#240001);color:#fff;font:700 13px/1 var(--font-barlow),sans-serif;box-shadow:0 0 0 1px rgba(220,196,149,.35)}
-.androidChip img{width:18px;height:18px;border-radius:50%}
+.androidChip{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px 0 6px;border-radius:12px;background:var(--color-maroon-900,#240001);color:#fff;font:500 13px/1 var(--font-android-system),Roboto,sans-serif;box-shadow:0 0 0 1px rgba(220,196,149,.35)}
+.smallIcon{width:15px;height:15px;flex:none}
+/* Android lock screen + the pinned Live Update (standard template, phone font, system colors). */
+.androidLockClock{display:flex;flex-direction:column;padding:24px 24px 0;font-family:var(--font-android-system),Roboto,sans-serif}
+.androidLockClock span{font-size:76px;font-weight:400;line-height:1;letter-spacing:-1px}
+.androidLockClock small{margin-top:6px;font-size:16px;opacity:.85}
+.androidNote{margin:28px 10px 0;padding:14px 16px 16px;border-radius:26px;background:rgba(32,32,34,.94);color:#e8e8ea;font-family:var(--font-android-system),Roboto,sans-serif}
+.androidNote header{display:flex;align-items:center;gap:8px;font-size:12px;color:#b9b9bd}
+.androidNoteIcon{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--color-maroon-900,#240001);color:#fff}
+.androidNoteIcon .smallIcon{width:13px;height:13px}
+.androidNoteTitle{margin:10px 0 0;font-size:16px;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.androidNoteText{margin:2px 0 0;font-size:14px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.androidProgress{height:6px;margin-top:12px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden}
+.androidProgress span{display:block;height:100%;border-radius:3px;background:#c98a8e}
 .homeApp .androidIcon{border-radius:50%}
 .androidScreen .homeGrid{padding-top:40px}
 
@@ -91,14 +107,16 @@
 .bothTeamsBig .bothTeam span{font-size:15px}
 /* No competition: the round line (logo, trip, round · course). */
 .roundLine{display:flex;align-items:center;gap:8px;margin:0;height:30px;font-size:13px;color:rgba(255,255,255,.7);white-space:nowrap;overflow:hidden}
+.appHeader{height:28px;padding-bottom:5px;margin-bottom:4px;border-bottom:1px solid rgba(220,196,149,.35)}
 .roundLine img{width:24px;height:24px;border-radius:6px}
 .roundLine b{font:700 15px/1 var(--font-spectral),Georgia,serif;color:#fff}
 /* My spot on the island: my badge is black (as on the leaderboard), with the gold edge so it shows on black. */
-.bothRank.islandRank{width:26px;height:22px;font-size:11px;background:#000;color:#fff;box-shadow:0 0 0 1px rgba(220,196,149,.75)}
+.bothRank.islandRank{width:22px;height:19px;font-size:10px;background:#000;color:#fff;box-shadow:0 0 0 1px rgba(220,196,149,.75)}
 .islandLogo{width:22px;height:22px;border-radius:6px}
 .bothBoard{list-style:none;margin:3px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
-.bothBoard li{display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:8px;height:20px}
-.bothRank{display:grid;place-items:center;width:22px;height:18px;border-radius:5px;background:#fbf8f1;color:var(--color-maroon-900,#240001);font:800 10px/1 var(--font-spectral),Georgia,serif}
+.bothBoard li{display:grid;grid-template-columns:19px 1fr auto;align-items:center;gap:8px;height:20px}
+/* Rank boxes 15% smaller than the first version (owner 2026-10-19). */
+.bothRank{display:grid;place-items:center;width:19px;height:15px;border-radius:4px;background:#fbf8f1;color:var(--color-maroon-900,#240001);font:800 10px/1 var(--font-spectral),Georgia,serif}
 .bothMe .bothRank{background:#000;color:#fff;box-shadow:0 0 0 1px rgba(220,196,149,.55)}
 .bothName{font:700 12px/1 var(--font-spectral),Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bothBoard b{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
@@ -108,9 +126,18 @@
 .bothStatus{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 0;height:32px;padding:0 12px;border-radius:16px;background:#000;border:1px solid rgba(220,196,149,.45);font-size:14px;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden}
 /* The match side keeps its full width (e.g. "W 3&2 vs Sherrell & Ross"); the right side (course) shortens first. */
 .bothStatus>span:first-child{flex:none;max-width:64%;overflow:hidden;text-overflow:ellipsis}
+.bothStatusLeft{display:flex;align-items:baseline;min-width:0}
+.bothStatusFit{display:flex;align-items:baseline}
+.fitLead{flex:none;white-space:nowrap}
+.fitText{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bothStatus b{color:#fff}
 .bothStatusRight{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .bothStatus .matchArrow{color:#dcc495}
+
+/* Match results everywhere: gold = win, gray = loss (owner 2026-10-19), so the colors become familiar. */
+.phone [data-tone=win]{color:#dcc495}
+.phone [data-tone=loss]{color:#9a9a9a}
+.phone [data-tone=halved]{color:#fff}
 
 /* In-app */
 .phone.appScreen{padding-top:0}

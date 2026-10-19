@@ -1,5 +1,6 @@
 "use client";
 
+import { initializeTripScenario } from "@/lib/dev/tripSetupStore";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { isSimulatorPath, parseSimulatorConfig, sameSimulatorNavigation, SIMULATOR_CHANNEL, type SimulatorConfig } from "@/lib/dev/simulator";
@@ -34,6 +35,7 @@ export function SimulatorBridge({ children }: { children: ReactNode }) {
       if (event.data.type === "config") {
         const next = parseSimulatorConfig(event.data.config);
         if (!next) return;
+        initializeTripScenario(next);
         active.current = true;
         if (Array.isArray(event.data.routes)) allowedRoutes.current = new Set(event.data.routes.filter(isSimulatorPath));
         // Fixture updates must not replay a previous tab command after in-app navigation.

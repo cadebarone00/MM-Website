@@ -2,10 +2,12 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, MonitorSmartphone, RotateCcw, Shuffle, SlidersHorizontal } from "lucide-react";
-import { COMPETITION_SETUPS, type CompetitionSetup, DEFAULT_SIMULATOR_STATE, parseGpsState, parseSimulatorLocation, simulatorPageForLocation, SIMULATOR_CHANNEL, SIMULATOR_DEVICES, type SimulatorConfig, type SimulatorGpsCommand, type SimulatorGpsState, type SimulatorPage, type SimulatorSource, type SimulatorState } from "@/lib/dev/simulator";
+import { DEFAULT_SIMULATOR_STATE, parseGpsState, parseSimulatorLocation, syncSimulatorNavigation, simulatorPageForLocation, SIMULATOR_CHANNEL, SIMULATOR_DEVICES, type SimulatorConfig, type SimulatorGpsCommand, type SimulatorGpsState, type SimulatorPage, type SimulatorSource, type SimulatorState } from "@/lib/dev/simulator";
 import { applySimulatorSafeAreas } from "./simulatorSafeAreas";
 import { resetJustCreated } from "@/lib/dev/justCreatedStore";
-import { devTripScope, resetDevSetup } from "@/lib/dev/tripSetupStore";
+import { devTripScope, initializeTripScenario, resetDevSetup } from "@/lib/dev/tripSetupStore";
+import { TripScenarioControls } from "./TripScenarioControls";
+import { normalizeTripScenario } from "@/lib/dev/tripScenario";
 import { HapticsVisualizer } from "./HapticsVisualizer";
 import { DesignReview } from "./DesignReview";
 import { lightTap } from "@/lib/haptics";
@@ -46,6 +48,8 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
   const selectedPage = pages.find(page => page.id === pageId) ?? { ...initialPage, label: `Current route · ${currentPath}` };
   const isBrandIntro = currentPath === "/dev/brand/intro";
   const supportsFixtures = currentPath.startsWith("/dev/tournament");
+  const scenarioVisible = supportsFixtures && (source === "mock" || source === "busy");
+  const conditions = scenarioVisible ? selectedPage.conditions?.filter(condition=>!condition.playerCount && !["competition-source","competitive","social","round-source","scheduled","round-live","round-end-match","round-end-mismatch","round-between","round-complete","dual-draft-momentum","home-draft-configured"].includes(condition.id) && !["home-match-draft-","match-draft-","format-"].some(prefix=>condition.id.startsWith(prefix))) : selectedPage.conditions;
   const groups = Array.from(new Set(pages.map(page => page.group ?? "Other")));
   const selectedGroup = selectedPage.group ?? "Other";
   const branchPath: SimulatorPage[] = [];
@@ -102,6 +106,7 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
       if (location.path === "/dev/tournament/settings" && Array.isArray(rounds) && rounds.length <= 100 && rounds.every(round => round && typeof round.id === "string" && /^[a-z0-9-]{1,80}$/.test(round.id) && Number.isInteger(round.number) && round.number > 0)) {
         setSettingsRounds(current => JSON.stringify(current) === JSON.stringify(rounds) ? current : rounds.map(({ id, number }: { id: string; number: number }) => ({ id, number })));
       }
+      setNavigation(current => syncSimulatorNavigation(current, location.navigation));
       setCurrentPath(location.path);
       setPageId(current => simulatorPageForLocation(pages, location, current)?.id ?? "");
       if (event.data.type === "ready") {
@@ -174,6 +179,11 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
       setInsets({ top: next.top, bottom: next.bottom });
     }
   }
+  function chooseSource(next:SimulatorSource){
+    if(next===source)return;
+    setSource(next);
+    setState(next==="mock"||next==="busy"?normalizeTripScenario({...DEFAULT_SIMULATOR_STATE,tripLength:4,tripMoment:"during",tripDay:1,tripRoundsPerDay:1,tripRoundSlot:1,playerCount:next==="busy"?32:8,competition:"yes",competitionSetup:"both",draftProgress:"ready",roundStatus:"live"}):DEFAULT_SIMULATOR_STATE);
+  }
   function updateState(id: string, value: string) {
     setState(current => ({ ...current, [id]: id === "playerCount" ? value === "" ? null : bounded(value, 1, 64, 8) : value }));
   }
@@ -193,7 +203,7 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
       <div className={styles.brand}><MonitorSmartphone size={22} /><div><h1>App simulator</h1><p>The Maroon · Development workspace</p></div></div>
       <div className={styles.headerStatus}><span className={styles.headerDevice}>{preset.label}</span><span className={styles.devBadge}><span /> LOCAL DEV</span></div>
     </header>
-    <div className={styles.workspace} style={{ gridTemplateColumns: `var(--groups-width) var(--pages-width) ${branchColumns.map(() => "var(--pages-width)").join(" ")} var(--conditions-width) minmax(var(--preview-min-width),1fr) 230px` }}>
+    <div className={styles.workspace} style={{ gridTemplateColumns: `var(--groups-width) var(--pages-width) ${branchColumns.map(() => "var(--pages-width)").join(" ")} var(--conditions-width) ${scenarioVisible ? "var(--conditions-width) " : ""}minmax(var(--preview-min-width),1fr) 230px` }}>
       <aside className={styles.controls} aria-label="Development controls">
         <div className={styles.panelHeading}><SlidersHorizontal size={16} /> Groups</div>
         <div className={styles.cards}>{groups.map(group => <button className={styles.card} type="button" key={group} aria-pressed={selectedGroup === group} onClick={() => choosePage(pages.find(page => (page.group ?? "Other") === group)!.id)}>{group}</button>)}</div>
@@ -222,23 +232,16 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
       </aside>)}
       <aside ref={conditionalColumn} className={styles.controls} aria-label="Conditionals">
         <div className={styles.panelHeading}>Conditionals</div>
-        <div className={styles.cards}>{selectedPage.conditions?.length ? selectedPage.conditions.map(condition => condition.playerCount ? <section key={condition.id} className={styles.controlSection}><label>{condition.label}<input type="number" aria-label={condition.label} min={1} max={64} placeholder="From data source" value={state.playerCount ?? ""} onChange={event => updateState("playerCount", event.target.value)} /></label></section> : <Fragment key={condition.id}><button className={styles.card} type="button" aria-pressed={condition.source ? source === condition.source : Object.entries(condition.state ?? {}).every(([key, value]) => (state[key as keyof SimulatorState] ?? (key === "wallpaper" ? "default" : key === "brandStyle" ? "gold" : key === "brandStage" ? "drawing" : undefined)) === value)} onClick={() => { if (condition.source) setSource(condition.source); if (condition.state) setState(current => ({ ...current, ...condition.state })); }}>{condition.label}</button>
+        <div className={styles.cards}>{conditions?.length ? conditions.map(condition => condition.playerCount ? <section key={condition.id} className={styles.controlSection}><label>{condition.label}<input type="number" aria-label={condition.label} min={1} max={64} placeholder="From data source" value={state.playerCount ?? ""} onChange={event => updateState("playerCount", event.target.value)} /></label></section> : <Fragment key={condition.id}><button className={styles.card} type="button" aria-pressed={condition.source ? source === condition.source : Object.entries(condition.state ?? {}).every(([key, value]) => (state[key as keyof SimulatorState] ?? (key === "wallpaper" ? "default" : key === "brandStyle" ? "gold" : key === "brandStage" ? "drawing" : undefined)) === value)} onClick={() => { if (condition.source) chooseSource(condition.source); if (condition.state) setState(current => ({ ...current, ...condition.state })); }}>{condition.label}</button>
           {/* Just created: wipe everything set up on it and go back to the fresh, just-onboarded trip. */}
-          {condition.source === "empty" && <button type="button" className={styles.resetJustCreated} onClick={() => { resetJustCreated(); setSource("empty"); }}><RotateCcw size={13} /> Reset Just created</button>}
+          {condition.source === "empty" && <button type="button" className={styles.resetJustCreated} onClick={() => { resetJustCreated(); chooseSource("empty"); }}><RotateCcw size={13} /> Reset Just created</button>}
           {/* The Maroon Masters: wipe everything set up on it and start the official trip over (the app frame reloads fresh). */}
           {condition.source === "masters" && <button type="button" className={styles.resetJustCreated} onClick={() => {
             resetDevSetup(devTripScope({ source: "masters", state }));
-            setSource("masters");
+            chooseSource("masters");
             try { iframe.current?.contentWindow?.location.reload(); } catch { /* the frame reloads on its next navigation */ }
           }}><RotateCcw size={13} /> Reset The Maroon Masters</button>}
-          {/* Busy data: how many golfers, and which competitions the trip has. */}
-          {condition.source === "busy" && source === "busy" && <section className={`${styles.controlSection} ${styles.busyControls}`} aria-label="Busy data controls">
-            <label>Players<input type="number" aria-label="Busy players" min={1} max={64} placeholder="32" value={state.playerCount ?? ""} onChange={event => updateState("playerCount", event.target.value)} /></label>
-            <label>Competition<select aria-label="Busy competition" value={state.competitionSetup ?? ""} onChange={event => setState(current => ({ ...current, competitionSetup: (event.target.value || undefined) as CompetitionSetup | undefined }))}>
-              <option value="">From data source</option>
-              {COMPETITION_SETUPS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
-            </select></label>
-          </section>}</Fragment>) : <p>No conditional states</p>}</div>
+</Fragment>) : <p>No conditional states</p>}</div>
         {isBrandIntro && <section className={styles.controlSection} aria-label="Logo animation controls">
           <button type="button" onClick={() => setState(current => ({ ...current, brandStage: "drawing", brandReplay: (current.brandReplay ?? 0) + 1 }))}><RotateCcw size={13} /> Replay entrance</button>
           <label>Drawing time: {((state.brandDuration ?? 1200) / 1000).toFixed(1)} s
@@ -247,9 +250,10 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
         </section>}
         {/* Mock data only: a whole new made-up trip that reads like a real one (people, place, dates, courses, formats, scores,
             tee times, dinners, travel, rules) from a new seed. */}
-        {!isBrandIntro && source === "mock" && !!selectedPage.conditions?.length && <button type="button" onClick={() => setState(current => ({ ...current, seed: 1 + Math.floor(Math.random() * 2 ** 31) }))}><Shuffle size={13} /> Randomize data</button>}
+        {!isBrandIntro && source === "mock" && !scenarioVisible && !!selectedPage.conditions?.length && <button type="button" onClick={() => setState(current => ({ ...current, seed: 1 + Math.floor(Math.random() * 2 ** 31) }))}><Shuffle size={13} /> Randomize data</button>}
         {!!selectedPage.conditions?.length && <button type="button" onClick={() => { setState(DEFAULT_SIMULATOR_STATE); setSource("maroon"); }}><RotateCcw size={13} /> Reset conditionals</button>}
       </aside>
+      {scenarioVisible && <TripScenarioControls state={state} onChange={changes=>setState(current=>normalizeTripScenario({...current,...changes}))} onReset={()=>{resetDevSetup(devTripScope(config));initializeTripScenario(config);iframe.current?.contentWindow?.location.reload();}}/>}
       <div className={styles.previewColumn}>
         <div className={styles.stage} ref={stage}>
           <HapticsVisualizer>

@@ -44,16 +44,15 @@ export function SettingsDataPreview({ mock, maroon }: { mock: SimulatorTripData;
   // History and house rules from the chosen trip: the real trip's past Maroon tournaments (old code) and no house rules
   // (the old data has none); a just-created trip has neither; the mock / busy trips keep their samples.
   const pastTrips = source === "maroon" ? [danzante2025, pinehurst2024].map(adaptTournamentToPastTrip) : source === "empty" || source === "masters" ? [] : undefined;
-  const seed = config.state.seed;
   // The real trip's competition as it actually was (old tournament data): an individual stroke-play leaderboard and two
   // teams, Maroon and White, by roster (players list = Maroon roster, then White), already submitted.
   const maroonCount = (preview?.rosterMaroon ?? "").split(",").filter(slug => slug.trim()).length;
-  const busySetup = source === "busy" ? config.state.competitionSetup : undefined;
+  const busySetup = (source === "busy" || source === "mock") ? config.state.competitionSetup : undefined;
   const competitionSetup = source === "maroon" && roster.length ? {
     types: { individual: "Stroke Play", team: "2 Teams" }, teamNames: ["Maroon", "White"],
     teams: [roster.slice(0, maroonCount).map((_, index) => index), roster.slice(maroonCount).map((_, index) => maroonCount + index)],
-  } : busySetup ? { types: competitionSetupTypes(busySetup), teamNames: [], teams: [] } : undefined;
+  } : busySetup ? { types: competitionSetupTypes(busySetup), teamNames: roster.length ? ["Maroon","White"] : [], teams: roster.length ? [roster.slice(0,maroonCount).map((_,index)=>index),roster.slice(maroonCount).map((_,index)=>maroonCount+index)] : [] } : undefined;
   // A different data choice starts the settings fresh (its days, rounds and players).
-  return ready ? <GolfTripSettingsPreview key={`${source}-${seed ?? 0}-${source === "empty" ? savedVersion : 0}-${busySetup ?? ""}-${config.state.playerCount ?? ""}`} dataKey={source === "empty" ? source : scope} persistenceScope={source === "empty" ? undefined : scope} scoringTripId={scope} tripName={preview?.tripName || "Your Golf Trip"} playerCount={Number(preview?.playerCount) || 0}
+  return ready ? <GolfTripSettingsPreview key={`${scope}-${source === "empty" ? savedVersion : 0}`} dataKey={source === "empty" ? source : scope} persistenceScope={source === "empty" ? undefined : scope} scoringTripId={scope} tripName={preview?.tripName || "Your Golf Trip"} playerCount={Number(preview?.playerCount) || 0}
     organizerName={preview?.yourName || "Cade Barone"} players={players} tripRounds={tripRounds} pastTrips={pastTrips} competitionSetup={competitionSetup} /> : null;
 }

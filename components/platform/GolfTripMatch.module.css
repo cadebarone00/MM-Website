@@ -487,15 +487,21 @@
 .matchupCompact .boxStatus{align-self:start;margin-top:2px}
 
 /* The team divider is the first match row divider; keep its label gap equal to later rows. */
-.matchesList .teamNames + .lineup{margin-top:-16px}
-.matchesList .teamNames + .lineup > .pairing:first-child{border-top:0}
-.matchesList .teamNames + .lineup > .pairing:first-child .matchNumber{top:7px}
+.matchesList .matchListHeading + .lineup{margin-top:-16px}
+.matchesList .matchListHeading + .lineup > .pairing:first-child{border-top:0}
+.matchesList .matchListHeading + .lineup > .pairing:first-child .matchNumber{top:7px}
 
-/* Add buffer above the team names, moving their divider and match rows together. */
-.matchesList .teamNames{margin-top:8px}
+/* Team labels and scoring share one header row. */
+.matchesList .teamNames{margin-top:0}
 
-/* Compact Gross/Net control centered below the featured Match selector. */
-.matchScoringControl:has(.scoring){height:40px;justify-content:center;align-items:flex-end}
+/* Same compact scoring control centered in Matches and Leaderboard headers. */
+.matchListHeading,.leaderboardListHeading{position:relative;min-height:28px;display:grid;align-items:center}
+.matchListHeading{border-bottom:1px solid rgba(255,255,255,.3)}
+.matchListHeading .teamNames{padding:0 2px;border:0}
+.matchListHeading:has(.matchScoringControl) .teamNames{gap:112px}
+.matchListHeading .matchScoringControl,.leaderboardListHeading .matchScoringControl{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);justify-content:center;align-items:center;height:auto}
+.leaderboardListHeading .columns{min-height:28px;border-top:0}
+.matchScoringControl .scoringLabel{min-height:20px;font-size:9px}
 .matchScoringControl .scoring{padding:1px}
 .matchScoringControl .scoring button{min-height:16px;padding:0 8px;font-size:9px}
 /* Player sheet (owner request 2026-10-16): photo fully inside the header, scorecard nines stacked, their game stats. */
@@ -513,3 +519,6 @@
 .profileGameStats dt{font:600 11px var(--font-barlow),sans-serif;color:rgba(251,248,241,.65)}
 .profileGameStats dd{margin:0;font:700 20px/1 var(--font-spectral),Georgia,serif;color:#fbf8f1}
 .profileGameStats p{margin:8px 0 0;font:500 11px var(--font-barlow),sans-serif;color:rgba(251,248,241,.5)}
+
+/* Keep compact headers clear of the centered switch on narrow phones. */
+@media(max-width:374px){.leaderboard .single{grid-template-columns:30px minmax(0,1fr) repeat(3,28px);gap:4px}.leaderboard .singleNet{grid-template-columns:30px minmax(0,1fr) 28px repeat(3,28px)}.leaderboardListHeading .columnLabel:nth-last-child(3){grid-column:-4}.leaderboardListHeading .columnLabel:nth-last-child(2){grid-column:-3}.leaderboardListHeading .columnLabel:last-child{grid-column:-2}.leaderboardListHeading .singleNet>span:nth-child(2){position:absolute;left:38px}}

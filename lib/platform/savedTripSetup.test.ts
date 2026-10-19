@@ -35,3 +35,11 @@ test("match draft timers accept bounded optional minute values",()=>{
  assert.equal(validSetup({allRoundsMatch:choice}),true);
  for(const value of [0,-1,121,1.5,"10"]){assert.equal(validSetup({allRoundsMatch:{...choice,rankMinutes:value}}),false);}
 });
+
+test("course short names save by course name, 24 letters at most", () => {
+  assert.equal(validSetup({ courseShortNames: { "Mission Hills CC": "Dinah Shore" } }), true);
+  assert.equal(validSetup({ courseShortNames: {} }), true);
+  assert.equal(validSetup({ courseShortNames: { "Mission Hills CC": "Mission Hills Tournament" } }), true); // exactly 24
+  for (const bad of [{ "Mission Hills CC": "x".repeat(25) }, { "Mission Hills CC": "  " }, { "Mission Hills CC": 3 }, ["Dinah Shore"], { ["x".repeat(201)]: "Short" }])
+    assert.equal(validSetup({ courseShortNames: bad }), false);
+});

@@ -245,3 +245,13 @@ test("player-role viewer conditionals are bounded development inputs",()=>{
  for(const playerRoleViewer of ["organizer","captain-a","captain-b","player"])assert.ok(parseSimulatorConfig({source:"maroon",state:{...DEFAULT_SIMULATOR_STATE,playerRoleViewer}}));
  assert.equal(parseSimulatorConfig({source:"maroon",state:{...DEFAULT_SIMULATOR_STATE,playerRoleViewer:"admin"}}),null);
 });
+
+ test("reported trip navigation survives scenario remounts without replaying an old Home command", async()=>{
+ const {syncSimulatorNavigation}=await import("./simulator");
+ const home={tab:"Home" as const,command:3};
+ const matches=syncSimulatorNavigation(home,{tab:"Golf",golfSection:"Competition"});
+ assert.deepEqual(matches,{tab:"Golf",golfSection:"Competition",command:3});
+ assert.equal(syncSimulatorNavigation(matches,{tab:"Golf",golfSection:"Competition"}),matches);
+ assert.equal(syncSimulatorNavigation(matches,undefined),matches);
+ assert.deepEqual(syncSimulatorNavigation(home,{tab:"Home",settingsView:"players"}),{tab:"Home",settingsView:"players",command:3});
+ });

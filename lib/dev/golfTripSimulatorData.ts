@@ -1,3 +1,6 @@
+import { scenarioHoleDetails } from "./scenarioTripStats";
+import { withHoleStandings } from "@/lib/platform/matchCenter";
+import { isTripScenario, normalizeTripScenario, scenarioClock, scenarioDay, SCENARIO_START } from "./tripScenario";
 import type { ComponentProps } from "react";
 import type { GolfTripHome } from "@/components/platform/GolfTripHome";
 import type { GolfTripDraft } from "@/lib/platform/golfTripDraft";
@@ -124,7 +127,7 @@ function roundByRoundMatches(match: GolfMatchPreview, current: number, currentSt
   return all;
 }
 
-function withRoundState(match: GolfMatchPreview, roundState: Exclude<SimulatorConfig["state"]["roundStatus"], "source">, mixed = false, seed = 0): GolfMatchPreview {
+function withRoundState(match: GolfMatchPreview, roundState: Exclude<SimulatorConfig["state"]["roundStatus"], "source">, mixed = false, seed = 0, requestedRound?: number): GolfMatchPreview {
   match = { ...match, roundStandings: undefined };
   const resetGolfer = (golfer: ReturnType<typeof normalizeCompetitor>["golfers"][number]) => ({ ...golfer, thru: "—", score: "—", points: 0 });
   if (roundState === "scheduled" && mixed) return { ...withRoundState(match, "scheduled", false, seed), matches: roundByRoundMatches({ ...match, round: 1 }, 1, "pre", seed) };
@@ -138,8 +141,8 @@ function withRoundState(match: GolfMatchPreview, roundState: Exclude<SimulatorCo
     };
   }
   const holesPlayed = roundState === "live" ? 9 : 18;
-  const roundCount = roundState === "between" ? Math.max(4, match.roundCount) : match.roundCount;
-  const round = roundState === "between" ? 3 : roundState === "complete" ? roundCount : Math.min(match.round, roundCount);
+  const roundCount = roundState === "between" && requestedRound === undefined ? Math.max(4, match.roundCount) : match.roundCount;
+  const round = requestedRound ?? (roundState === "between" ? 3 : roundState === "complete" ? roundCount : Math.min(match.round, roundCount));
   const thru = holesPlayed === 18 ? "F" : String(holesPlayed);
   const par = match.par;
   // Rounds already finished before today's: live plays the current round, between has finished round 3, complete the last.
@@ -358,6 +361,7 @@ export const JUST_CREATED_TRAVEL: NonNullable<SimulatorTripData["travel"]> = {
 
 /** Pure presentation overrides; never edit the imported tournament or fixture objects. */
 export function simulatorTripData(mock: SimulatorTripData, maroon: SimulatorTripData, config: SimulatorConfig): SimulatorTripData {
+  if(isTripScenario(config))return scenarioTripData(mock,config);
   const { source, state } = config;
   let base = source === "maroon" ? maroon : mock;
   if (source === "empty") {
@@ -464,6 +468,7 @@ function roundSlot(preview: GolfTripDraft, round: number): { date: string; slot:
  * (and for the real Maroon / empty / Maroon Masters data) undefined = the device's real clock.
  */
 export function simulatorNow(config: SimulatorConfig, data: SimulatorTripData, roundLive: boolean): string | undefined {
+  if(isTripScenario(config))return scenarioClock(config.state);
   const preview = data.preview ?? {};
   const status = config.state.roundStatus;
   if (status === "source" && (!roundLive || config.source === "maroon" || config.source === "empty" || config.source === "masters")) return undefined;
@@ -474,4 +479,109 @@ export function simulatorNow(config: SimulatorConfig, data: SimulatorTripData, r
   if (!at) return undefined;
   const times = at.slot === 0 ? { live: "10:30", end: "12:35", after: "12:45" } : { live: "15:30", end: "17:35", after: "17:45" };
   return `${at.date}T${status === "between" ? times.after : status === "roundEnd" ? times.end : times.live}:00`;
+}
+
+/** Fictional scenario: one roster, schedule and clock shared by all trip surfaces. */
+function scenarioTripData(mock:SimulatorTripData,config:SimulatorConfig):SimulatorTripData {
+ const state=normalizeTripScenario(config.state),length=state.tripLength??4,perDay=state.tripRoundsPerDay??1,count=state.playerCount??8;
+ const randomized=randomMockTrip(mock,state.seed??(config.source==="busy"?291:137),count);
+ const names=config.source==="busy"&&state.seed===undefined?busyNames(count):randomized.travel!.members.map(member=>member.name);
+ const preview:GolfTripDraft=Object.fromEntries(Object.entries(randomized.preview??{}).filter(([key])=>! /^(day\d+|round\d+|roster)/.test(key)));
+ Object.assign(preview,{tripName:config.source==="busy"?"Summer Golf Festival":randomized.preview?.tripName,playerCount:String(count),yourName:names[0],includesTournament:state.competition,golfDays:String(length),startDate:SCENARIO_START,endDate:scenarioDay(SCENARIO_START,length-1)});
+ const team=state.competitionSetup==="team"||state.competitionSetup==="both",teamsReady=team&&state.draftProgress!=="team-draft";
+ const half=Math.ceil(count/2);
+ if(teamsReady){preview.rosterMaroon=names.slice(0,half).join(",");preview.rosterWhite=names.slice(half).join(",");}
+ const members=names.map((name,index)=>({id:"scenario-"+index,name,role:index===0?"organizer" as const:"player" as const}));
+ const items:NonNullable<SimulatorTripData["travel"]>["items"]=[];
+ const sample=state.format!=="source"&&GOLF_MATCH_PREVIEWS[state.format]?GOLF_MATCH_PREVIEWS[state.format]:GOLF_MATCH_PREVIEW;
+ for(let day=0;day<length;day++){
+  const date=scenarioDay(SCENARIO_START,day);preview["day"+(day+1)+"Date"]=date;preview["day"+(day+1)+"Rounds"]=String(perDay);
+  for(let slot=0;slot<perDay;slot++){
+   const round=day*perDay+slot+1,course=randomized.preview?.["round"+round+"Course"]||"Festival Course "+(day+1),time=slot===0?"09:00":"14:00";
+   preview["round"+round+"Course"]=course;preview["round"+round+"Format"]=sample.formatDef?.label??"Singles";preview["round"+round+"Scoring"]="Both";
+   items.push({id:"scenario-round-"+round,kind:"teeTime",details:{name:course,note:"Round "+round},startsAt:date+"T"+time,createdBy:members[0].id,source:"organizer",joinPolicy:"none",optOutAllowed:false});
+  }
+  items.push({id:"scenario-dinner-"+day,kind:"dining",details:{name:"Group dinner",note:"Reservation for "+count},startsAt:date+"T19:00",createdBy:members[0].id,source:"organizer",joinPolicy:"none",optOutAllowed:true});
+ }
+ const current=state.tripMoment==="complete"?length*perDay:(state.tripMoment==="during"?((state.tripDay??1)-1)*perDay+(state.tripRoundSlot??1):1);
+ let field=populatedMatch(sample,count,names);
+ const golfers=field.leaderboard.map(row=>row.golfer);
+ if(team){field={...field,matches:teamsReady&&state.draftProgress==="ready"?Array.from({length:half},(_,index)=>({left:golfers[index],right:golfers[half+index],gross:null,net:null})):[]};}
+ field={...field,round:current,roundCount:length*perDay,roundDate:preview["day"+Math.ceil(current/perDay)+"Date"],course:preview["round"+current+"Course"],scoring:"Both",handicap:true};
+ const status=state.roundStatus==="source"?"live":state.roundStatus;
+ let match=withRoundState(field,status==="scheduled"&&current>1?"live":status,true,state.seed??0,current);
+ if(status==="scheduled"&&current>1){const numeric=(value:string)=>value==="E"?0:Number(value)||0;match={...match,matches:roundByRoundMatches(field,current,"pre",state.seed??0),leaderboard:match.leaderboard.map(row=>({...row,holes:Array(18).fill(null),putts:Array(18).fill(null),thru:"",today:"-",netToday:"-",total:toParLabel(numeric(row.total)-numeric(row.today)),netTotal:toParLabel(numeric(row.netTotal)-numeric(row.netToday)),golfer:{...row.golfer,thru:"",score:"-"}}))};}
+ // Keep source roster order stable even when ranking changes.
+ match={...match,leaderboard:names.map(name=>match.leaderboard.find(row=>row.golfer.name===name)!)};
+ match=scenarioRoundHistory(match,preview,status,state.seed??0);
+ const {travel,flights}=scenarioTravelBookings(preview,state,members,items,randomized.travel!);
+ return {preview,previewMatch:match,travel,flights};
+}
+
+/** Per-round scorecards stay identical when moving the scenario clock forward. */
+function scenarioRoundHistory(match:GolfMatchPreview,preview:GolfTripDraft,status:string,seed:number):GolfMatchPreview {
+ const totals=new Map<string,{gross:number;net:number;points:number}>();
+ const snapshots:NonNullable<GolfMatchPreview["roundStandings"]>=[];
+ const pairings:GolfMatchPreview["matches"]=[];
+ for(let round=1;round<=match.round;round++){
+  const played=round<match.round||!["scheduled","live"].includes(status)?18:status==="live"?9:0;
+  const leaderboard=match.leaderboard.map((row,index)=>{
+   const holes=mixedRound(index,"scenario-round",match.par,played,0,seed+round*104729).holes;
+   const today=holes.reduce<number>((sum,strokes,hole)=>sum+(strokes===null?0:strokes-(match.par[hole]??4)),0);
+   const netToday=today-Math.round((row.golfer.hcp??0)*played/18);
+   const points=holes.reduce<number>((sum,strokes,hole)=>sum+(strokes===null?0:Math.max(0,2+(match.par[hole]??4)-strokes)),0);
+   const before=totals.get(row.golfer.name)??{gross:0,net:0,points:0};
+   totals.set(row.golfer.name,{gross:before.gross+today,net:before.net+netToday,points:before.points+points});
+   const thru=played===18?"F":played?String(played):"";
+   return {...row,holes,putts:holes.map((strokes,hole)=>strokes===null?null:strokes<(match.par[hole]??4)?1:strokes>(match.par[hole]??4)&&(index+hole)%4===0?3:2),today:played?toParLabel(today):"-",netToday:played?toParLabel(netToday):"-",total:round>1||played?toParLabel(before.gross+today):"-",netTotal:round>1||played?toParLabel(before.net+netToday):"-",pointsToday:points,pointsTotal:before.points+points,thru,golfer:{...row.golfer,course:preview["round"+round+"Course"]??match.course,thru:thru==="F"?"F":played?"Thru "+played:"",score:played?toParLabel(today):"-"}};
+  });
+  const value=(text:string)=>text==="E"?0:Number(text)||0;
+  const order=[...leaderboard].sort((a,b)=>value(a.total)-value(b.total)||a.golfer.name.localeCompare(b.golfer.name));
+  for(const row of leaderboard){const index=order.findIndex(other=>other.total===row.total),tied=order.filter(other=>other.total===row.total).length>1;row.position=played||round>1?(tied?"T":"")+String(index+1):"-";}
+  snapshots.push({round,standingsRound:round,par:[...match.par],leaderboard});
+  const updated=withHoleStandings({...match,round,roundStandings:undefined,leaderboard,matches:match.matches.filter(pair=>(pair.round??match.round)===round).map(pair=>({...pair,result:undefined}))});
+  pairings.push(...updated.matches.map(pair=>({...pair,sides:(["left","right"] as const).map((side,index)=>{
+   const comp=pair[side]?normalizeCompetitor(pair[side]!):null;
+   const rows=comp?.golfers.flatMap(g=>leaderboard.filter(row=>row.golfer.name===g.name))??[];
+   const holes=rows.flatMap(row=>scenarioHoleDetails(row,round,match.par));
+   const fairways=holes.filter(h=>h.par!==3&&h.fairway!==null),greens=holes.filter(h=>h.green!==null);
+   const leftPct=matchWinPct(pair.gross,played,played===18);
+   const score=rows.length?rows.reduce((sum,row)=>sum+(row.today==="E"?0:Number(row.today)||0),0)/rows.length:0;
+   return {...(pair.sides?.[index]??match.sides[index]),winPct:index===0?leftPct:100-leftPct,fairwayPct:fairways.length?Math.round(fairways.filter(h=>h.fairway==="center").length/fairways.length*100)+"%":"-",greenPct:greens.length?Math.round(greens.filter(h=>h.green==="center").length/greens.length*100)+"%":"-",putts:holes.length?String(Math.round(holes.reduce((sum,h)=>sum+(h.putts??0),0)/Math.max(1,rows.length))):"-",score:holes.length?toParLabel(Math.round(score)):"-"};
+  }) as GolfMatchPreview["sides"]})));
+ }
+ pairings.push(...match.matches.filter(pair=>(pair.round??match.round)>match.round));
+ return {...match,roundStandings:snapshots,leaderboard:snapshots.at(-1)!.leaderboard,matches:pairings};
+}
+
+/** Bookings are fictional, trip-local wall times; never live airline schedules. */
+function scenarioTravelBookings(preview:GolfTripDraft,state:SimulatorConfig["state"],members:NonNullable<SimulatorTripData["travel"]>["members"],plans:NonNullable<SimulatorTripData["travel"]>["items"],template:NonNullable<SimulatorTripData["travel"]>){
+ const random=seededRandom((state.seed??137)+907),arrival=preview.startDate,departure=preview.endDate;
+ const airport=template.items.find(item=>item.kind==="flight")?.details.to??"PSP";
+ const twoRounds=state.tripRoundsPerDay===2;
+ const items=plans.map(item=>item.kind!=="dining"?item:{...item,startsAt:item.startsAt.startsWith(departure)?departure+"T13:15":item.startsAt,endsAt:item.startsAt.startsWith(departure)?departure+"T13:45":item.startsAt.slice(0,10)+"T20:30",details:{name:item.startsAt.startsWith(departure)?"The Clubhouse Tavern":pickFrom(random,RESTAURANTS),note:(item.startsAt.startsWith(departure)?"Farewell lunch":"Dinner")+" - reservation for "+members.length}});
+ const participants=items.flatMap(item=>members.map(member=>({itemId:item.id,memberId:member.id,status:"going" as const})));
+ type Item=typeof items[number];
+ const add=(item:Item,guests:typeof members)=>{items.push(item);participants.push(...guests.map(member=>({itemId:item.id,memberId:member.id,status:"going" as const})))};
+ const flights:import("@/lib/platform/golfTripFlights").GolfTripFlight[]=[];
+ for(let start=0;start<members.length;start+=8){
+  const group=Math.floor(start/8),guests=members.slice(start,start+8),home=pickFrom(random,HOME_AIRPORTS.filter(code=>code!==airport)),airline=pickFrom(random,AIRLINES);
+  const landing=addMinutes(arrival+"T05:00",group*5),duration=(airport==="EDI"?9:airport==="SJD"?5:3)*60+30*Math.floor(random()*3);
+  const inbound=addMinutes(landing,-duration),returnAt=addMinutes(departure+(twoRounds?"T21:45":"T18:45"),group*15),returnLanding=addMinutes(returnAt,duration);
+  for(const [direction,from,to,startsAt,endsAt] of [["arrival",home,airport,inbound,landing],["return",airport,home,returnAt,returnLanding]] as const){
+   const id="scenario-flight-"+group+"-"+direction,flightNumber=airline.code+(100+Math.floor(random()*2800));
+   add({id,kind:"flight",details:{airline:airline.name,flightNumber,from,to},startsAt,endsAt,createdBy:guests[0].id,source:"mine",joinPolicy:"none",optOutAllowed:true},guests);
+   if(start===0)flights.push({id,direction,airline:airline.name,flightNumber,departureAirport:from,arrivalAirport:to,departureLocal:startsAt,arrivalLocal:endsAt,confirmationNumber:null,notes:null,source:"manual",liveStatus:null,departureTerminal:null,departureGate:null,arrivalTerminal:null,arrivalGate:null});
+  }
+  for(let seat=0;seat<guests.length;seat+=4){
+   const riders=guests.slice(seat,seat+4),vendor=pickFrom(random,["Fairway Rentals","Links Auto","Clubhouse Car Hire"]),vehicle=pickFrom(random,["SUV","Minivan","Estate car"]);
+   add({id:"scenario-car-"+(start+seat),kind:"ride",details:{rideType:"rental",seats:4,place:airport+" Rental Center - "+vendor,name:vendor,note:vehicle+"; allow travel time to the course"},startsAt:addMinutes(landing,45),endsAt:addMinutes(returnAt,-135),createdBy:riders[0].id,source:"mine",joinPolicy:"none",optOutAllowed:true},riders);
+  }
+ }
+ if((state.tripLength??4)>1){
+  add({id:"scenario-hotel",kind:"lodging",details:{name:pickFrom(random,LODGING),place:preview.destination,note:Math.ceil(members.length/2)+" twin rooms; check out before golf and leave bags with reception"},startsAt:arrival+(twoRounds?"T18:15":"T15:00"),endsAt:departure+"T07:15",createdBy:members[0].id,source:"mine",joinPolicy:"none",optOutAllowed:true},members);
+ }
+ Object.assign(preview,{knowsFlights:"yes",knowsTransportation:"yes",knowsLodging:(state.tripLength??4)>1?"yes":"no"});
+ const travel={meId:members[0].id,members,items:items.sort((a,b)=>a.startsAt.localeCompare(b.startsAt)),participants};
+ return {travel,flights:{summary:flightSummary(flights,scenarioClock(state).slice(0,10)),href:null}};
 }

@@ -16,7 +16,7 @@ export const devGolferId = (name: string) => `dev-golfer:${name}`;
 
 export function devTripGroup(match: GolfMatchPreview, viewAs: string, swaps: Record<string, string> = {},
   locked?: { players: RoundGroupPlayer[] | undefined; scoringStarted: boolean }): DevGroup | null {
-  const pairing = match.matches[0];
+  const pairing = match.matches.find(pairing => (pairing.round ?? match.round) === match.round);
   if (!pairing) return null;
   const left = normalizeCompetitor(pairing.left).golfers, right = pairing.right ? normalizeCompetitor(pairing.right).golfers : [];
   const golfers = [...left.map((g) => ({ name: g.name, side: "left" as const })), ...right.map((g) => ({ name: g.name, side: "right" as const }))];

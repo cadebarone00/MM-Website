@@ -342,6 +342,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const [teeMatches, setTeeMatches] = usePersistedState<Record<string, Record<number, { a: (number | null)[]; b: (number | null)[] }>>>(persist, "teeMatches", {});
   // Course names carried by rounds that were dragged (they no longer line up with the sample schedule).
   const [slotCourseNames, setSlotCourseNames] = usePersistedState<Record<string, string>>(persist, "slotCourseNames", {});
+  // Organizer short names for lock screens / Live Activities, by full course name (a course played twice shares one).
+  const [courseShortNames, setCourseShortNames] = usePersistedState<Record<string, string>>(persist, "courseShortNames", {});
   // Dragging a round by its grip: where it started, how far it moved, and where it would land.
   const [roundDrag, setRoundDrag] = useState<{ day: number; slot: number; startY: number; dy: number } | null>(null);
   const [roundDrop, setRoundDrop] = useState<{ day: number; index: number } | null>(null);
@@ -600,7 +602,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const settingsValues = { pastTrips, scoringFieldsOff, playerTotal, removedPlayers, competitionType, lockedComp, teamChoiceSaved, typePlayers,
     teamNames, teamColors, teamPicks, teamTotalChoice, unevenTeams, unevenSizes, teamTie, teamSelection, draftDate, draftTime, draftOrder, draftMethod, submittedTeams,
     gameSettings, dayCount, roundsPerDay, arrivalShift, pickedCourses, yardageCorrections, roundTees, compRounds, compFormats, matchSelections, matchPerRound,
-    allRoundsMatch, teePlayers, teeMatches, slotCourseNames, golfOnArrival, golfOnDeparture, teeTimes, skinsOn, skinsRounds, skinsPlayers, scoringView, playerStats, myStats, inAppScoring, predictSettings };
+    allRoundsMatch, teePlayers, teeMatches, slotCourseNames, courseShortNames, golfOnArrival, golfOnDeparture, teeTimes, skinsOn, skinsRounds, skinsPlayers, scoringView, playerStats, myStats, inAppScoring, predictSettings };
   const restoreSettings = (saved: typeof settingsValues) => {
     setTeamTie(saved.teamTie);
     setPastTrips(saved.pastTrips); setScoringFieldsOff(saved.scoringFieldsOff); setPlayerTotal(saved.playerTotal);
@@ -611,7 +613,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     setGameSettings(saved.gameSettings); setDayCount(saved.dayCount); setRoundsPerDay(saved.roundsPerDay); setArrivalShift(saved.arrivalShift);
     setPickedCourses(saved.pickedCourses); setYardageCorrections(saved.yardageCorrections); setRoundTees(saved.roundTees); setCompRounds(saved.compRounds);
     setCompFormats(saved.compFormats); setMatchSelections(saved.matchSelections); setMatchPerRound(saved.matchPerRound); setAllRoundsMatch(saved.allRoundsMatch);
-    setTeePlayers(saved.teePlayers); setTeeMatches(saved.teeMatches); setSlotCourseNames(saved.slotCourseNames); setGolfOnArrival(saved.golfOnArrival);
+    setTeePlayers(saved.teePlayers); setTeeMatches(saved.teeMatches); setSlotCourseNames(saved.slotCourseNames); setCourseShortNames(saved.courseShortNames ?? {}); setGolfOnArrival(saved.golfOnArrival);
     setGolfOnDeparture(saved.golfOnDeparture); setTeeTimes(saved.teeTimes); setSkinsOn(saved.skinsOn); setSkinsRounds(saved.skinsRounds); setSkinsPlayers(saved.skinsPlayers);
     if (saved.scoringView !== scoringView) setScoringView(saved.scoringView);
     if (saved.playerStats !== playerStats) setPlayerStats(saved.playerStats);
@@ -1101,6 +1103,11 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
       {roundsOpen && editCourse && (() => {
         const round = scheduleSlot(editCourse.day, editCourse.slot);
         return <CourseEditSheet roundLabel={round.label} current={round.course} title={editCourse.adding ? "Select course" : "Edit course"} onClose={() => setEditCourse(null)}
+          shortName={courseShortNames[round.course]} onShortName={shortName => setCourseShortNames(current => {
+            const next = { ...current };
+            if (shortName) next[round.course] = shortName; else delete next[round.course];
+            return next;
+          })}
           onPick={course => { setPickedCourses(current => ({ ...current, [round.key]: { ...course, settings: current[round.key]?.settings } })); setEditCourse(null); }} />;
       })()}
       {coursePicker && <TripScheduleCoursePicker roundLabel={coursePicker.label} current={pickedCourses[coursePicker.key]} onClose={() => setCoursePicker(null)}

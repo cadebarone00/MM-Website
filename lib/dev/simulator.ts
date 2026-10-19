@@ -1,3 +1,4 @@
+import { normalizeTripScenario } from "./tripScenario";
 import type { GpsMode } from "@/lib/platform/golfGps/types";
 import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS, type GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
 import { DEFAULT_DEV_ACCOUNT, DEV_ACCOUNTS } from "./devAccounts";
@@ -39,6 +40,12 @@ export const SIMULATOR_STATES = [
   { id: "notifications", label: "Notifications state", kind: "pending", note: "No notification-state adapter yet." },
 ] as const;
 export type SimulatorState = {
+  tripLength?: number;
+  tripMoment?: "30-days" | "day-before" | "during" | "complete";
+  tripDay?: number;
+  tripRoundsPerDay?: number;
+  tripRoundSlot?: number;
+  draftProgress?: "team-draft" | "match-draft" | "ready";
   competition: "source" | "yes" | "no";
   format: string;
   playerCount: number | null;
@@ -144,6 +151,13 @@ export function sameSimulatorNavigation(left?: GolfTripNavigation, right?: GolfT
   return left?.tab === right?.tab && left?.golfSection === right?.golfSection && left?.settingsView === right?.settingsView && left?.command === right?.command;
 }
 
+/** Remember in-app navigation so a fixture remount restores the visible page, without issuing a new command. */
+export function syncSimulatorNavigation(current: GolfTripNavigation | undefined, reported: GolfTripNavigation | undefined): GolfTripNavigation | undefined {
+  if (!reported) return current;
+  const next = { ...reported, command: current?.command };
+  return sameSimulatorNavigation(current, next) ? current : next;
+}
+
 /** Messages are untrusted, even from another same-origin frame. */
 export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (!value || typeof value !== "object") return null;
@@ -168,8 +182,12 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.brandDuration !== undefined && (typeof state.brandDuration !== "number" || !Number.isFinite(state.brandDuration) || state.brandDuration < 600 || state.brandDuration > 2400)) return null;
   if (state.brandReplay !== undefined && (typeof state.brandReplay !== "number" || !Number.isSafeInteger(state.brandReplay) || state.brandReplay < 0)) return null;
   if (state.playerCount !== null && (typeof state.playerCount !== "number" || !Number.isInteger(state.playerCount) || state.playerCount < 1 || state.playerCount > 64)) return null;
+  for (const key of ["tripLength", "tripDay"] as const) if(state[key]!==undefined && (typeof state[key]!=="number" || !Number.isInteger(state[key]) || state[key]<1 || state[key]>14)) return null;
+  for (const key of ["tripRoundsPerDay", "tripRoundSlot"] as const) if(state[key]!==undefined && ![1,2].includes(state[key] as number)) return null;
+  if(state.tripMoment!==undefined && !["30-days","day-before","during","complete"].includes(String(state.tripMoment))) return null;
+  if(state.draftProgress!==undefined && !["team-draft","match-draft","ready"].includes(String(state.draftProgress))) return null;
   const navigation = record.navigation as GolfTripNavigation | undefined;
   if (navigation && (!GOLF_TRIP_TABS.includes(navigation.tab) || (navigation.golfSection && !GOLF_TRIP_SECTIONS.includes(navigation.golfSection)) || (navigation.command !== undefined && !Number.isSafeInteger(navigation.command)))) return null;
   if (!parseSimulatorLocation({ path: "/dev/tournament/settings", navigation })) return null;
-  return { source: record.source as SimulatorSource, state: { ...(state as SimulatorState), viewAs: (state.viewAs as string | undefined) ?? DEFAULT_DEV_ACCOUNT }, navigation };
+  return { source: record.source as SimulatorSource, state: record.source === "mock" || record.source === "busy" ? normalizeTripScenario({ ...(state as SimulatorState), viewAs: (state.viewAs as string | undefined) ?? DEFAULT_DEV_ACCOUNT }) : { ...(state as SimulatorState), viewAs: (state.viewAs as string | undefined) ?? DEFAULT_DEV_ACCOUNT }, navigation };
 }

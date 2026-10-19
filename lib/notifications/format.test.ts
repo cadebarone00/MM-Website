@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { apnsPayload, BODY_LIMIT, formatPoints, formatToPar, liveLeaderboard, liveTeamText, opponentLabel, matchMark, minutesUntil, pillStatus, resultMargin, teeClock, liveActivityContent, newestFirst, safeAppLink, thruLabel, timeAgo, TITLE_LIMIT, unreadCount } from "./format.ts";
+import { apnsPayload, BODY_LIMIT, androidLiveUpdate, formatPoints, formatToPar, liveLeaderboard, liveTeamText, opponentLabel, ordinal, matchMark, minutesUntil, pillStatus, resultMargin, resultTone, teeClock, liveActivityContent, newestFirst, safeAppLink, thruLabel, timeAgo, TITLE_LIMIT, unreadCount } from "./format.ts";
 import type { AppNotification, LiveRoundActivity } from "./types.ts";
 
 const note = (over: Partial<AppNotification> = {}): AppNotification => ({
@@ -161,4 +161,35 @@ test("finished match margin for the tiny circle / Android chip", () => {
   assert.equal(resultMargin("L 1 DN"), "1▼");
   assert.equal(resultMargin("Halved"), "AS");
   assert.equal(resultMargin("AS"), "AS");
+});
+
+test("result tone: gold for a win, gray for a loss", () => {
+  assert.equal(resultTone("W 3&2"), "win");
+  assert.equal(resultTone("Won 2 UP"), "win");
+  assert.equal(resultTone("L 2&1"), "loss");
+  assert.equal(resultTone("lost 1 dn"), "loss");
+  assert.equal(resultTone("Halved"), "halved");
+  assert.equal(resultTone(""), null);
+  assert.equal(resultTone(null), null);
+  assert.equal(resultTone("3 UP"), null); // a live status is not a result
+});
+
+test("ordinal positions", () => {
+  assert.deepEqual(["1", "2", "3", "4", "11", "12", "13", "21", "22", "T2"].map(ordinal), ["1st", "2nd", "3rd", "4th", "11th", "12th", "13th", "21st", "22nd", "T2"]);
+});
+
+test("Android Live Update text follows the same steps as the iPhone", () => {
+  const teams = { mine: { name: "Maroon", color: "#6b1e2a", onDark: "#c98a8e", points: 3.5 }, other: { name: "White", color: "#f7f3ea", onDark: "#f7f3ea", points: 1.5 } };
+  const board = [{ position: "1", name: "Cam Latto", toPar: -4, me: false }, { position: "6", name: "Cade", toPar: 5, me: true }];
+  const both = live({ playerName: "Cade", toPar: 2, thru: 15, teams, leaderboard: board, match: { status: "3 UP", opponents: ["Collin Ross"] } });
+  assert.deepEqual(androidLiveUpdate(both, "x"), { title: "Maroon 3½ – 1½ White", text: "3▲ vs Collin Ross · +2 thru 15 · 6th", chip: "3▲", progress: 15 / 18 });
+  const pre = androidLiveUpdate({ ...both, state: "pre", teeTime: "2026-10-16T14:24" }, "2026-10-16T14:11");
+  assert.deepEqual([pre.text, pre.chip, pre.progress], ["Tee 2:24 vs Collin Ross", "13m", null]);
+  const over = androidLiveUpdate({ ...both, state: "over", thru: 18, result: "W 3&2", teeTime: "2026-10-16T14:00", nextCourse: "PGA West Jack Nicklaus" }, "x");
+  assert.equal(over.text, "W 3&2 vs Collin Ross · Next 2:00 · PGA West Jack Nicklaus");
+  assert.equal(androidLiveUpdate({ ...both, state: "final", thru: 18, result: "L 2&1" }, "x").text, "L 2&1 vs Collin Ross · Final · 6th");
+  // Individual only: my spot in the title; None: the trip name.
+  const solo = androidLiveUpdate({ ...both, teams: null, match: null }, "x");
+  assert.deepEqual([solo.title, solo.text], ["6th · Cade +5", "Round 2 · +2 thru 15"]);
+  assert.equal(androidLiveUpdate({ ...both, teams: null, match: null, leaderboard: [] }, "x").title, "Desert Classic");
 });

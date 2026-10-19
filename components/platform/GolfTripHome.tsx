@@ -2,6 +2,7 @@
 
 import { Suspense, use, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentProps, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
+import { TripFeed } from "./TripFeed";
 import { GolfTripTitle } from "./GolfTripTitle";
 import { createPortal } from "react-dom";
 import { AlertTriangle, ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronLeft, ChevronRight, Clock, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Droplets, ExternalLink, FileText, Flag, LockKeyhole, MapPin, MessageCircle, Plane, Plus, Settings, Share2, ShieldCheck, ShoppingBag, Sun, Thermometer, Trash2, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
@@ -223,13 +224,14 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
         <button type="button" className={styles.iconButton} aria-label="Trip chat" onClick={() => setChatOpen(true)}><MessageCircle size={24} strokeWidth={1.75} aria-hidden /></button>
         <div className={styles.notificationsAnchor}>
           <button ref={notificationButtonRef} type="button" className={styles.iconButton} aria-label="Notifications" aria-expanded={notificationsOpen} aria-controls="trip-notifications" onClick={() => setNotificationsOpen(open => !open)}><Bell size={24} strokeWidth={1.75} aria-hidden /></button>
-          {notificationsOpen && createPortal(<div ref={notificationsRef} onBlur={event => {
+          {/* Slides up from the bottom, 85% of the screen tall — the same sheet as the chat. Tapping the dimmed backdrop closes it. */}
+          {notificationsOpen && createPortal(<><div className={styles.sheetBackdrop} aria-hidden /><div ref={notificationsRef} onBlur={event => {
             if (!event.currentTarget.contains(event.relatedTarget) && event.relatedTarget !== notificationButtonRef.current) setNotificationsOpen(false);
           }} id="trip-notifications" role="region" aria-label="Notifications" className={`${styles.addSheet} ${styles.notificationsDropdown}`}>
             <button ref={notificationCloseRef} type="button" className={styles.sheetClose} aria-label="Close notifications" onClick={() => { setNotificationsOpen(false); notificationButtonRef.current?.focus(); }}><X size={18} strokeWidth={2.25} aria-hidden /></button>
             <TeamDraftNotice draft={teamDraft} tripKey={competitionKey ?? "default"} startAt={tripNow} />
             <GolfTripNotifications scope={alertScope} />
-          </div>, document.body)}
+          </div></>, document.body)}
         </div>
         <Link href={settingsHref} className={styles.iconButton} aria-label="Trip settings"><Settings size={24} strokeWidth={1.75} aria-hidden /></Link>
       </div>
@@ -1006,6 +1008,7 @@ function InfoAccount({ draftScope, teamNames, draft, draftPlayers, teamDraft, is
     </div>
     <section className={styles.homeFeed} aria-labelledby="home-feed-heading">
       <h2 id="home-feed-heading" className={styles.accountHeading}>Feed</h2>
+      <TripFeed key={draftScope} />
     </section>
   </div>;
 }

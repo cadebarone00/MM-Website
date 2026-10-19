@@ -1,3 +1,4 @@
+import { COURSE_SHORT_NAME_MAX } from "./courseShortName";
 import { draftScheduleError } from "./draftSchedule";
 import type { SavedGolfTrip } from "./golfTripCreate";
 
@@ -14,10 +15,10 @@ export const setupDecode = (_key: string, value: unknown) => value && typeof val
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value);
 export const datePlus = (date: string, days: number) => { const d = new Date(`${date}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); };
 const dayDifference = (from: string, to: string) => Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86400000);
-const fields = new Set("pastTrips scoringFieldsOff playerTotal localCompetitionType lockedComp teamChoiceSaved typePlayers teamNames teamColors teamPicks teamTotalChoice unevenTeams unevenSizes teamTie teamSelection draftDate draftTime draftType draftMethod submittedTeams gameSettings dayCount roundsPerDay arrivalShift pickedCourses yardageCorrections roundTees compRounds skinsOn skinsRounds skinsPlayers compFormats teeTimes matchSelections matchPerRound allRoundsMatch teePlayers teeMatches slotCourseNames golfOnArrival golfOnDeparture playerStats inAppScoring predictSettings".split(" "));
+const fields = new Set("pastTrips scoringFieldsOff playerTotal localCompetitionType lockedComp teamChoiceSaved typePlayers teamNames teamColors teamPicks teamTotalChoice unevenTeams unevenSizes teamTie teamSelection draftDate draftTime draftType draftMethod submittedTeams gameSettings dayCount roundsPerDay arrivalShift pickedCourses yardageCorrections roundTees compRounds skinsOn skinsRounds skinsPlayers compFormats teeTimes matchSelections matchPerRound allRoundsMatch teePlayers teeMatches slotCourseNames courseShortNames golfOnArrival golfOnDeparture playerStats inAppScoring predictSettings".split(" "));
 const bools = new Set("teamChoiceSaved unevenTeams skinsOn matchPerRound golfOnArrival golfOnDeparture playerStats inAppScoring".split(" "));
 const arrays = new Set("pastTrips teamNames teamColors unevenSizes".split(" "));
-const records = new Set("scoringFieldsOff typePlayers teamPicks lockedComp roundsPerDay pickedCourses yardageCorrections roundTees compRounds skinsRounds skinsPlayers compFormats teeTimes matchSelections allRoundsMatch teePlayers teeMatches slotCourseNames gameSettings predictSettings".split(" "));
+const records = new Set("scoringFieldsOff typePlayers teamPicks lockedComp roundsPerDay pickedCourses yardageCorrections roundTees compRounds skinsRounds skinsPlayers compFormats teeTimes matchSelections allRoundsMatch teePlayers teeMatches slotCourseNames courseShortNames gameSettings predictSettings".split(" "));
 const enums: Record<string, readonly unknown[]> = {
   teamTie: ["Retain", "Teams Tie", "Playoff"], teamSelection: [null, "Manual", "Draft", "Random"], draftType: ["Snake", "Straight"], draftMethod: ["Captain's Picks", "Duck Race"],
 };
@@ -39,6 +40,9 @@ const nestedChecks: Record<string, (value: unknown) => boolean> = {
   teamPicks: value => mapOf(value, item => int(item, 0, 63)),
   teeTimes: value => mapOf(value, item => Array.isArray(item) && item.every(time => time === "" || typeof time === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(time))),
   slotCourseNames: value => mapOf(value, item => text(item)),
+  // Organizer short names for lock screens / Live Activities, by full course name: non-blank, at most
+  // COURSE_SHORT_NAME_MAX letters, for at most 64 courses with names up to 200.
+  courseShortNames: value => object(value) && Object.keys(value).length <= 64 && Object.keys(value).every(name => name.length <= 200) && Object.values(value).every(item => text(item, COURSE_SHORT_NAME_MAX) && item.trim() !== ""),
   compRounds: value => mapOf(value, item => typeof item === "boolean"),
   skinsRounds: value => mapOf(value, item => typeof item === "boolean"),
   skinsPlayers: value => mapOf(value, item => setOf(item, player => int(player, 0, 63))),

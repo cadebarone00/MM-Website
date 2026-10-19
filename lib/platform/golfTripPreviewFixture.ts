@@ -178,7 +178,7 @@ export type GolfLeaderboardEntry = {
 };
 
 export type GolfMatchPreview = {
-  /** Historical standings by actual trip session; supplied by the development archive adapter only. */
+  /** Round-specific standings and scorecards from supplied archive data or fictional development scenarios. */
   roundStandings?: { round: number; standingsRound?: number; par?: number[]; leaderboard: GolfLeaderboardEntry[] }[];
   /** Development source identity; absent from public and saved-trip data. */
   devTripId?: string;

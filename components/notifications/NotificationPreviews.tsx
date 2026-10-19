@@ -1,14 +1,21 @@
 "use client";
 
 import { AlertTriangle, Bell, CalendarClock, Camera, Check, ClipboardCheck, Flame, Flashlight, Link2, LockKeyhole, Mail, Trophy, UserPlus, X, type LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
+import { Inter, Roboto } from "next/font/google";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
-import { formatPoints, formatToPar, liveLeaderboard, liveTeamText, matchMark, opponentLabel, newestFirst, pillStatus, thruLabel, timeAgo, unreadCount, type PillStatus } from "@/lib/notifications/format";
+import { androidLiveUpdate, formatPoints, formatToPar, liveLeaderboard, liveTeamText, matchMark, opponentLabel, newestFirst, pillStatus, resultTone, thruLabel, timeAgo, unreadCount, type PillStatus } from "@/lib/notifications/format";
 import type { AppNotification, LiveRoundActivity, NotificationKind } from "@/lib/notifications/types";
-import { NOTIFICATION_PREVIEWS, SAMPLE_BY_TYPE, SAMPLE_PAIRS, SAMPLE_LIVE_TOP3, SAMPLE_LOCAL_NOW, SAMPLE_NOTIFICATIONS, SAMPLE_TEAM_STEPS, SAMPLE_NOW, type NotificationPreview, type NotificationSurface } from "@/lib/dev/sampleNotifications";
+import { NOTIFICATION_PREVIEWS, SAMPLE_BY_TYPE, SAMPLE_LOST, SAMPLE_PAIRS, SAMPLE_LIVE_TOP3, SAMPLE_LOCAL_NOW, SAMPLE_NOTIFICATIONS, SAMPLE_TEAM_STEPS, SAMPLE_NOW, type NotificationPreview, type NotificationSurface } from "@/lib/dev/sampleNotifications";
 import styles from "./NotificationPreviews.module.css";
 
 const APP_ICON = "/icons/mm-192.png";
+
+// What the phone draws itself uses the phone's font, never ours: Inter stands in for Apple's SF Pro (iPhone notifications,
+// lock screen clock), Roboto for Android's system font (status bar, chip, notifications). Our Barlow / Spectral appear
+// only where the app draws: the iPhone Live Activity / Dynamic Island and in-app.
+const appleSystem = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-apple-system" });
+const androidSystem = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-android-system" });
 
 /** DEV ONLY: one surface of the simulator's Notifications group; the simulator condition picks the screen. */
 export function NotificationPreviewScreen({ surface }: { surface: NotificationSurface }) {
@@ -18,6 +25,11 @@ export function NotificationPreviewScreen({ surface }: { surface: NotificationSu
   const screens: readonly NotificationPreview[] = NOTIFICATION_PREVIEWS[surface];
   const screen = requested && screens.includes(requested) ? requested : screens[0];
   const [latest, ...older] = newestFirst(SAMPLE_NOTIFICATIONS);
+  // display: contents — the screen itself stays the page's first box (globals.css top clearance rules).
+  return <div className={`${appleSystem.variable} ${androidSystem.variable}`} style={{ display: "contents" }}>{previewScreen(screen, wall, latest, older)}</div>;
+}
+
+function previewScreen(screen: NotificationPreview, wall: string, latest: AppNotification, older: AppNotification[]): ReactNode {
   switch (screen) {
     case "lock": case "signed-out-lock": return <LockScreen wall={wall}><PhoneNotification note={latest} /></LockScreen>;
     case "lock-stack": return <LockScreen wall={wall}><PhoneNotificationStack notes={[latest, ...older.slice(0, 2)]} /></LockScreen>;
@@ -27,6 +39,13 @@ export function NotificationPreviewScreen({ surface }: { surface: NotificationSu
     case "both-live-top3": return <LockScreen wall={wall}><RoundLiveActivity activity={SAMPLE_LIVE_TOP3} /></LockScreen>;
     case "both-pre": case "both-over": case "both-final": return <LockScreen wall={wall}><RoundLiveActivity activity={SAMPLE_TEAM_STEPS[screen.slice(5) as "pre" | "over" | "final"]} /></LockScreen>;
     case "both-pairs-live": case "both-pairs-over": return <LockScreen wall={wall}><RoundLiveActivity activity={SAMPLE_PAIRS[screen.slice(11) as "live" | "over"]} /></LockScreen>;
+    case "both-lost": return <LockScreen wall={wall}><RoundLiveActivity activity={SAMPLE_LOST} /></LockScreen>;
+    case "pill-lost": return <HomeScreen wall={wall} island={<IslandCompactTeam activity={SAMPLE_LOST} />} below={<IslandMinimalTeam activity={SAMPLE_LOST} />} />;
+    case "android-lost": return <AndroidHome wall={wall} chip={<AndroidChip activity={SAMPLE_LOST} />} />;
+    case "android-update-pre": case "android-update-live": case "android-update-over": case "android-update-final":
+      return <AndroidLock wall={wall} activity={SAMPLE_TEAM_STEPS[screen.slice(15) as keyof typeof SAMPLE_TEAM_STEPS]} />;
+    case "android-update-individual": return <AndroidLock wall={wall} activity={SAMPLE_BY_TYPE.individual} />;
+    case "android-update-none": return <AndroidLock wall={wall} activity={SAMPLE_BY_TYPE.none} />;
     case "both-expanded": return <HomeScreen wall={wall} island={<div className={`${styles.island} ${styles.islandExpanded}`} aria-label="Dynamic Island, expanded"><RoundLiveActivity activity={SAMPLE_TEAM_STEPS.live} island /></div>} />;
     case "individual-live": case "team-live": case "none-live": return <LockScreen wall={wall}><RoundLiveActivity activity={SAMPLE_BY_TYPE[screen.split("-")[0] as keyof typeof SAMPLE_BY_TYPE]} /></LockScreen>;
     case "individual-pill": case "team-pill": case "none-pill": {
@@ -118,7 +137,8 @@ function SignInFirst({ note }: { note: AppNotification }) {
  * The round's Live Activity, styled like the Golf tab board. Sections by competition type (Both = all three):
  * (1) teams — the two teams in their color fills with their points (Both, Team only);
  * (2) leaderboard — three rows, cream rank badges, mine black (Both, Individual only);
- * (3) my status pill for this step of the round (always). None: the round line above the pill.
+ * (3) my status pill for this step of the round (always). None: the round line above the pill. Individual only: the
+ * app icon + "The Maroon" and a line above the leaderboard.
  * Used on the lock screen, the Android pinned notification and the expanded Dynamic Island.
  */
 function RoundLiveActivity({ activity, island = false }: { activity: LiveRoundActivity; island?: boolean }) {
@@ -126,6 +146,8 @@ function RoundLiveActivity({ activity, island = false }: { activity: LiveRoundAc
   const none = !activity.teams && board.rows.length === 0;
   return <article className={`${styles.both} ${island ? styles.bothIsland : ""}`} aria-label="Live Activity">
     {none && <p className={styles.roundLine}><img src={APP_ICON} alt="" /><b>{activity.groupName}</b></p>}
+    {/* Individual only: the app's name over the mini leaderboard, then a line (owner 2026-10-19). */}
+    {!activity.teams && board.rows.length > 0 && <p className={`${styles.roundLine} ${styles.appHeader}`}><img src={APP_ICON} alt="" /><b>The Maroon</b></p>}
     {activity.teams && <div className={`${styles.bothTeams} ${board.rows.length ? "" : styles.bothTeamsBig}`}>
       {[activity.teams.mine, activity.teams.other].map((team, index) => <div key={team.name} className={`${styles.bothTeam} ${index ? styles.bothTeamRight : styles.bothTeamLeft}`}
         style={{ color: liveTeamText(team.onDark) }}>
@@ -143,18 +165,23 @@ function RoundLiveActivity({ activity, island = false }: { activity: LiveRoundAc
   </article>;
 }
 
-/** My round, by step: popped up → tee time + opponent; live → score, match, thru; over → result + next tee; final → result. */
+/**
+ * My round, by step: popped up → tee time + opponent; live → score, match, thru; over → result + next tee time and course
+ * (no "Next" word: a bold time after a finished match reads as the next tee time, and it leaves the course room; owner
+ * 2026-10-19); final → result.
+ */
 function MatchStatusPill({ activity, status }: { activity: LiveRoundActivity; status: PillStatus }) {
   const opponent = activity.match ? opponentLabel(activity.match.opponents) : "";
   // No match (Individual only / None): the left side is the round itself.
-  const where = <>Round {activity.round} · {activity.course}</>;
+  const where = <><span className={styles.fitLead}>Round {activity.round} ·&nbsp;</span><FitText>{activity.course}</FitText></>;
   const score = <b data-par={activity.toPar < 0 ? "under" : activity.toPar === 0 ? "even" : "over"}>{formatToPar(activity.toPar)}</b>;
   return <p className={styles.bothStatus}>
-    {status.kind === "countdown" && <><span>Tee <b>{status.clock}</b>{opponent ? <> vs {opponent}</> : <> · {activity.course}</>}</span><b className={styles.bothStatusRight}>{status.minutes}</b></>}
-    {status.kind === "live" && <><span>{activity.match ? <>{status.mark ? <MatchArrow mark={status.mark} /> : null}{opponent && <> vs {opponent}</>}</> : where}</span>
+    {status.kind === "countdown" && <><span className={styles.bothStatusLeft}>{opponent ? <span className={styles.fitLead}>Tee <b>{status.clock}</b> vs {opponent}</span> : <><span className={styles.fitLead}>Tee <b>{status.clock}</b> ·&nbsp;</span><FitText>{activity.course}</FitText></>}</span><b className={styles.bothStatusRight}>{status.minutes}</b></>}
+    {status.kind === "live" && <><span className={styles.bothStatusLeft}>{activity.match ? <span className={styles.fitLead}>{status.mark ? <MatchArrow mark={status.mark} /> : null}{opponent && <>&nbsp;vs {opponent}</>}</span> : where}</span>
       <span className={styles.bothStatusRight}>{score} · {thruLabel(activity) === "F" ? "Final" : thruLabel(activity)}</span></>}
-    {status.kind === "next" && <><span>{activity.result ? <><b>{activity.result}</b>{opponent && <> vs {opponent}</>}</> : <>Round {activity.round} · {score}</>}</span><span className={styles.bothStatusRight}>Next <b>{status.clock}</b>{activity.nextCourse && <> · {activity.nextCourse}</>}</span></>}
-    {status.kind === "result" && <><span><b>{status.result}</b>{opponent && <> vs {opponent}</>}</span><span className={styles.bothStatusRight}>Final</span></>}
+    {status.kind === "next" && <><span className={styles.bothStatusLeft}><span className={styles.fitLead}>{activity.result ? <><Result text={activity.result} />{opponent && <> vs {opponent}</>}</> : <>Round {activity.round} · {score}</>}</span></span>
+      <span className={`${styles.bothStatusRight} ${styles.bothStatusFit}`}><span className={styles.fitLead}><b>{status.clock}</b>{activity.nextCourse && <>&nbsp;·&nbsp;</>}</span>{activity.nextCourse && <FitText>{activity.nextCourse}</FitText>}</span></>}
+    {status.kind === "result" && <><span className={styles.bothStatusLeft}><span className={styles.fitLead}><Result text={status.result} />{opponent && <> vs {opponent}</>}</span></span><span className={styles.bothStatusRight}>Final</span></>}
   </p>;
 }
 
@@ -175,22 +202,63 @@ function IslandCompactTeam({ activity }: { activity: LiveRoundActivity }) {
       {status.kind === "countdown" && <><b>{status.minutes}</b><small>{status.clock}</small></>}
       {status.kind === "live" && <><b>{status.toPar}</b>{status.mark && <MatchArrow mark={status.mark} />}<small>{thruLabel(activity) === "F" ? "F" : status.thru}</small></>}
       {status.kind === "next" && <><small>Next</small><b>{status.clock}</b></>}
-      {status.kind === "result" && <b className={styles.matchArrow}>{status.result}</b>}
+      {status.kind === "result" && <Result text={status.result} />}
     </span>
   </div>;
 }
 
-/** The holes, then a filled triangle on the right: 3▲ = 3 up, 2▼ = 2 down (no "UP" / "DN" word); all square = "AS". */
+/**
+ * A course name that shrinks to fit its space, down to 85% (what SwiftUI's minimumScaleFactor(0.85) does on the iPhone and
+ * auto-size text on Android), then "…" as the last resort.
+ */
+function FitText({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    // Exact (sub-pixel) widths: whole-pixel scrollWidth can call a text "fitting" while the browser still draws "…".
+    const fit = () => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      let scale = 1;
+      element.style.fontSize = "";
+      const box = () => element.getBoundingClientRect().width;
+      // The box is the text's width when it fits, narrower when it doesn't: shrink only while the text is wider.
+      while (range.getBoundingClientRect().width > box() + 0.05 && scale > 0.85 + 1e-9) {
+        scale = Math.max(0.85, scale - 0.025);
+        element.style.fontSize = `${scale}em`;
+      }
+      element.dataset.scale = String(Math.round(scale * 1000) / 1000);
+      element.dataset.fits = String(range.getBoundingClientRect().width <= box() + 0.05);
+    };
+    fit();
+    // Measure again when the space changes (another phone size) or the fonts finish loading.
+    const observer = new ResizeObserver(fit);
+    if (element.parentElement) observer.observe(element.parentElement.parentElement ?? element.parentElement);
+    let alive = true;
+    document.fonts?.ready.then(() => { if (alive) fit(); });
+    return () => { alive = false; observer.disconnect(); };
+  }, [children]);
+  return <span ref={ref} className={styles.fitText}>{children}</span>;
+}
+
+/** A finished match result in its tone: gold for a win, gray for a loss, white when halved. */
+function Result({ text }: { text: string }) {
+  return <b data-tone={resultTone(text) ?? undefined}>{text}</b>;
+}
+
+/** The holes, then a filled triangle on the right, as tall as the number (like Android's ▲): 3▲ = 3 up, 2▼ = 2 down (no "UP" / "DN" word); all square = "AS". */
 function MatchArrow({ mark }: { mark: NonNullable<ReturnType<typeof matchMark>> }) {
   if (mark.direction === "even") return <span className={styles.matchArrow}>AS</span>;
   return <span className={styles.matchArrow} aria-label={`${mark.holes} ${mark.direction === "up" ? "up" : "down"}`}>
-    {mark.holes}<svg viewBox="0 0 10 10" width="9" height="9" aria-hidden><path d={mark.direction === "up" ? "M5 1 L9.5 9 H0.5 Z" : "M5 9 L9.5 1 H0.5 Z"} fill="currentColor" /></svg>
+    {mark.holes}<svg className={styles.matchTriangle} viewBox="0 0 10 10" aria-hidden><path d={mark.direction === "up" ? "M5 1 L9.5 9 H0.5 Z" : "M5 9 L9.5 1 H0.5 Z"} fill="currentColor" /></svg>
   </span>;
 }
 
 /** The tiny circle fits about 3 characters: the same status, squeezed. */
 function IslandMinimalTeam({ activity }: { activity: LiveRoundActivity }) {
-  return <span className={styles.tinyCircle}>{pillStatus(activity, SAMPLE_LOCAL_NOW).tiny}</span>;
+  const status = pillStatus(activity, SAMPLE_LOCAL_NOW);
+  return <span className={styles.tinyCircle} data-tone={status.kind === "result" ? resultTone(status.result) ?? undefined : undefined}>{status.tiny}</span>;
 }
 
 /* ---------- Android (Live Updates) ---------- */
@@ -207,9 +275,37 @@ function AndroidHome({ chip, wall }: { chip: ReactNode; wall: string }) {
   </main>;
 }
 
-/** Android's status bar chip: our logo + the same short status as the iPhone tiny circle. */
+/**
+ * Android's status bar chip: Android draws it — the app's small icon (Android requires a one-color silhouette, not the
+ * full-color logo; this "M" stands in until that icon is designed) and a few characters, in the phone's font. The
+ * dark maroon is our requested color; Android may show its own.
+ */
 function AndroidChip({ activity }: { activity: LiveRoundActivity }) {
-  return <span className={styles.androidChip} aria-label="Live update"><img src={APP_ICON} alt="" />{pillStatus(activity, SAMPLE_LOCAL_NOW).tiny}</span>;
+  const status = pillStatus(activity, SAMPLE_LOCAL_NOW);
+  return <span className={styles.androidChip} aria-label="Live update"><SmallIcon /><span data-tone={status.kind === "result" ? resultTone(status.result) ?? undefined : undefined}>{status.tiny}</span></span>;
+}
+
+/** Stand-in for the Android small icon: a one-color "M" silhouette. */
+function SmallIcon() {
+  return <svg className={styles.smallIcon} viewBox="0 0 24 24" aria-hidden><path fill="currentColor" d="M3 19V5h3.2L12 13.2 17.8 5H21v14h-3V10.2l-6 8.2-6-8.2V19z" /></svg>;
+}
+
+/**
+ * Android lock screen with the pinned Live Update: Google's standard notification (no custom layout or fonts allowed for
+ * a Live Update) — header (small icon, app, trip, when), title, one text line, a progress bar while the round is live.
+ */
+function AndroidLock({ activity, wall }: { activity: LiveRoundActivity; wall: string }) {
+  const update = androidLiveUpdate(activity, SAMPLE_LOCAL_NOW);
+  return <main className={`${styles.phone} ${styles.androidScreen} ${wall}`} aria-label="Android lock screen preview">
+    <div className={styles.androidStatus}><span className={styles.androidClock}>2:11</span><AndroidChip activity={activity} /><span className={styles.androidIcons} aria-hidden>▲ ◢ ▮</span></div>
+    <div className={styles.androidLockClock}><span>2:11</span><small>Fri, Oct 16</small></div>
+    <article className={styles.androidNote} aria-label="Live update">
+      <header><span className={styles.androidNoteIcon}><SmallIcon /></span><span>The Maroon · {activity.groupName} · now</span></header>
+      <p className={styles.androidNoteTitle}>{update.title}</p>
+      <p className={styles.androidNoteText}>{update.text}</p>
+      {update.progress !== null && <div className={styles.androidProgress} aria-label={`${activity.thru} of ${activity.holes} holes`}><span style={{ width: `${update.progress * 100}%` }} /></div>}
+    </article>
+  </main>;
 }
 
 /* ---------- In-app ---------- */

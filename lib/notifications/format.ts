@@ -120,6 +120,16 @@ export function resultMargin(result: string): string {
   return text.slice(0, 3);
 }
 
+/** Win / loss / halved from a finished match ("W 3&2", "L 2&1", "Halved"): wins show gold, losses gray (owner 2026-10-19). */
+export function resultTone(result: string | null | undefined): "win" | "loss" | "halved" | null {
+  const text = (result ?? "").trim().toUpperCase();
+  if (!text) return null;
+  if (/^(HALVED|AS|A\/S|TIED)\b/.test(text)) return "halved";
+  if (/^(W|WON)\b/.test(text)) return "win";
+  if (/^(L|LOST)\b/.test(text)) return "loss";
+  return null;
+}
+
 export type PillStatus =
   | { kind: "countdown"; minutes: string; clock: string; tiny: string }
   | { kind: "live"; toPar: string; mark: ReturnType<typeof matchMark>; thru: number; tiny: string }
@@ -167,4 +177,36 @@ export function liveTeamText(onDark: string): string {
   const hex = /^#([0-9a-f]{6})$/i.exec(onDark)?.[1];
   if (!hex) return onDark;
   return `#${[0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16)).map(c => Math.round(c + (255 - c) * 0.12).toString(16).padStart(2, "0")).join("")}`;
+}
+
+/** "1" → "1st", "6" → "6th", "T2" stays "T2". */
+export function ordinal(position: string): string {
+  if (!/^\d+$/.test(position)) return position;
+  const n = Number(position), tens = n % 100;
+  const suffix = tens >= 11 && tens <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th";
+  return `${n}${suffix}`;
+}
+
+/**
+ * Android Live Update (Google's standard template — the app can't use its own layout or fonts there): one title line, one
+ * text line, the status bar chip's few characters, and a progress bar while live. Same lifecycle as the iPhone.
+ */
+export function androidLiveUpdate(activity: LiveRoundActivity, nowLocal: string): { title: string; text: string; chip: string; progress: number | null } {
+  const status = pillStatus(activity, nowLocal);
+  const mine = activity.leaderboard?.find(row => row.me);
+  const opponent = activity.match ? opponentLabel(activity.match.opponents) : "";
+  const title = activity.teams
+    ? `${activity.teams.mine.name} ${formatPoints(activity.teams.mine.points)} – ${formatPoints(activity.teams.other.points)} ${activity.teams.other.name}`
+    : mine ? `${ordinal(mine.position)} · ${activity.playerName} ${formatToPar(mine.toPar)}` : activity.groupName;
+  const versus = opponent ? ` vs ${opponent}` : "";
+  const place = mine && activity.teams ? ` · ${ordinal(mine.position)}` : "";
+  let text: string;
+  if (status.kind === "countdown") text = `Tee ${status.clock}${versus || ` · ${activity.course}`}`;
+  else if (status.kind === "next") text = `${activity.result ? `${activity.result}${versus} · ` : ""}Next ${status.clock}${activity.nextCourse ? ` · ${activity.nextCourse}` : ""}`;
+  else if (status.kind === "result") text = `${status.result}${versus} · Final${place}`;
+  else {
+    const match = activity.match ? `${status.tiny}${versus} · ` : `Round ${activity.round} · `;
+    text = `${match}${status.toPar} ${thruLabel(activity) === "F" ? "final" : `thru ${activity.thru}`}${place}`;
+  }
+  return { title, text, chip: status.tiny, progress: status.kind === "live" ? Math.min(1, activity.thru / activity.holes) : null };
 }

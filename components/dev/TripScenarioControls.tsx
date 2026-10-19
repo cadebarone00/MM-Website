@@ -1,0 +1,22 @@
+"use client";
+import {normalizeTripScenario} from "@/lib/dev/tripScenario";
+import type {SimulatorState} from "@/lib/dev/simulator";
+import styles from "./DevSimulator.module.css";
+export function TripScenarioControls({state,onChange,onReset}:{state:SimulatorState;onChange:(changes:Partial<SimulatorState>)=>void;onReset:()=>void}){
+ const s=normalizeTripScenario({...state,tripLength:state.tripLength??4});
+ const before=s.tripMoment==="30-days"||s.tripMoment==="day-before",team=s.competitionSetup==="team"||s.competitionSetup==="both";
+ return <aside className={styles.controls} aria-label="Trip scenario"><div className={styles.panelHeading}>Trip scenario</div><section className={styles.controlSection}>
+ <label>Trip type<select aria-label="Scenario trip type" value={s.competition} onChange={event=>onChange({competition:event.target.value as SimulatorState["competition"],competitionSetup:event.target.value==="no"?"none":"both"})}><option value="yes">Competitive</option><option value="no">Social / non-competitive</option></select></label>
+ {s.competition==="yes"&&<label>Competition<select aria-label="Scenario competition" value={s.competitionSetup} onChange={event=>onChange({competitionSetup:event.target.value as SimulatorState["competitionSetup"]})}><option value="individual">Individual only</option><option value="team">Matches / teams only</option><option value="both">Individual + matches</option></select></label>}
+ <label>Players<input type="number" aria-label="Scenario players" min={team?2:1} max={64} value={s.playerCount??8} onChange={event=>onChange({playerCount:Math.max(team?2:1,Math.min(64,Number(event.target.value)||1))})}/></label>
+ <label>Trip length (days)<input type="number" aria-label="Scenario trip length" min={1} max={14} value={s.tripLength} onChange={event=>onChange({tripLength:Math.max(1,Math.min(14,Number(event.target.value)||1))})}/></label>
+ <label>Rounds per day<select aria-label="Scenario rounds per day" value={s.tripRoundsPerDay} onChange={event=>onChange({tripRoundsPerDay:Number(event.target.value)})}><option value={1}>1 round</option><option value={2}>2 rounds</option></select></label>
+ <label>Trip timeline<select aria-label="Scenario timeline" value={s.tripMoment} onChange={event=>onChange({tripMoment:event.target.value as SimulatorState["tripMoment"],roundStatus:event.target.value==="during"?"live":"scheduled"})}><option value="30-days">30 days out</option><option value="day-before">Day before arrival</option><option value="during">During the trip</option><option value="complete">Trip complete</option></select></label>
+ {s.tripMoment==="during"&&<><label>Trip day<select aria-label="Scenario trip day" value={s.tripDay} onChange={event=>onChange({tripDay:Number(event.target.value)})}>{Array.from({length:s.tripLength??4},(_,day)=><option key={day} value={day+1}>Day {day+1}</option>)}</select></label>
+ {s.tripRoundsPerDay===2&&<label>Round of day<select aria-label="Scenario round of day" value={s.tripRoundSlot} onChange={event=>onChange({tripRoundSlot:Number(event.target.value)})}><option value={1}>Morning</option><option value={2}>Afternoon</option></select></label>}
+ <label>Round state<select aria-label="Scenario round state" value={s.roundStatus} onChange={event=>onChange({roundStatus:event.target.value as SimulatorState["roundStatus"]})}><option value="scheduled">Before tee time</option><option value="live">Live round</option><option value="roundEnd">Finished, unsubmitted</option><option value="between">Round submitted / between rounds</option></select></label></>}
+ {team&&<label>Draft progress<select aria-label="Scenario draft progress" disabled={!before} value={s.draftProgress} onChange={event=>onChange({draftProgress:event.target.value as SimulatorState["draftProgress"]})}><option value="team-draft">Team draft upcoming</option><option value="match-draft">Teams assigned, match draft upcoming</option><option value="ready">Teams and matches ready</option></select></label>}
+ <p>{team?(s.draftProgress==="team-draft"?"No teams or match pairings are assigned yet.":s.draftProgress==="match-draft"?"Team draft complete. Match pairings await the match draft.":"Team and match drafts are complete."):"No team drafts for this trip."}</p>
+ <button className={styles.card} type="button" onClick={()=>onChange({seed:1+Math.floor(Math.random()*2**31)})}>Randomize fictional data</button><button className={styles.card} type="button" onClick={onReset}>Reset scenario edits</button>
+ </section></aside>;
+}

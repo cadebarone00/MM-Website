@@ -28,6 +28,7 @@ export type LiveRoundActivity = {
   groupId: string;
   groupName: string;
   round: number;
+  /** The course as tight spots show it: `courseDisplayName()` (organizer short name, else the automatic one). */
   course: string;
   playerName: string;
   /** Strokes against par so far (−2 = two under). */
@@ -42,7 +43,7 @@ export type LiveRoundActivity = {
   match: { status: string; opponents: string[] } | null;
   /** Individual leaderboard, in leaderboard order (`liveLeaderboard()` picks the 3 rows shown). Empty = no leaderboard. */
   leaderboard?: LeaderboardRow[];
-  /** While over: the next round's course. */
+  /** While over: the next round's course, shortened the same way. */
   nextCourse?: string | null;
   /** Team competition: my team first. Null = no teams. */
   teams?: { mine: TeamScore; other: TeamScore } | null;

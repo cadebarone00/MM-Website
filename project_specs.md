@@ -3126,16 +3126,16 @@ Code: `pillStatus()` / `teeClock()` / `minutesUntil()` / `formatPoints()` / `mat
 
 **Lock screen / expanded / Android pinned layout (owner 2026-10-17, built as previews):** looks like the Golf tab board.
 1. The two teams side by side, my team on the left, **no lead fill** (owner 2026-10-17): each team's name + points are written in its team color, split by a thin line. Text uses the team's app-wide on-dark color (`TeamColor.onDark` in `lib/platform/teamColors.ts`, the same one the Golf board's win % uses: the team color itself, lightened only as far as needed to read on dark maroon). On the Live Activity it is a hair brighter (`liveTeamText()`, +12% toward white; the Golf board is unchanged). Card background = the app background (maroon-900).
-2. Three leaderboard rows: cream rank badges like the leaderboard, **mine in black**; no line or gap before my row (owner 2026-10-17). Names 12px.
-3. A black match status pill: popped up `Tee 2:24 vs Collin Ross · 13m`; live `3▲ vs Collin Ross · +2 · Thru 15`; round over `W 3&2 vs Collin Ross · Next 2:00 · PGA West Nicklaus`; after the last round `W 3&2 vs Collin Ross · Final`.
-Fixed 151px tall in every state (Apple's lock-screen limit is 160pt). Code: `liveLeaderboard()` in `lib/notifications/format.ts` (tested). **Pairs formats (fourball etc.):** the other side shows as last names, `W 3&2 vs Sherrell & Ross` (`opponentLabel()`); one opponent shows in full. The match side never gets cut off; the course name on the right shortens first. The status pill gets the room saved above (32px tall, 14px text). Previews: `/dev` → Notifications → Live Activity → "Lock screen · …" and "Dynamic Island · expanded".
+2. Three leaderboard rows: cream rank badges like the leaderboard (19×15, 15% smaller than first drawn), **mine in black**; no line or gap before my row (owner 2026-10-17). Names 12px.
+3. A black match status pill: popped up `Tee 2:24 vs Collin Ross · 13m`; live `3▲ vs Collin Ross · +2 · Thru 15`; round over `W 3&2 vs Collin Ross · 2:00 · PGA West Jack Nicklaus` (no "Next" word on the iPhone pill, owner 2026-10-19, so the course has room; Android keeps "Next"); after the last round `W 3&2 vs Collin Ross · Final`.
+Fixed 151px tall in every state (Apple's lock-screen limit is 160pt). Code: `liveLeaderboard()` in `lib/notifications/format.ts` (tested). **Result colors (owner 2026-10-19):** every finished match result (`W 3&2`, `3&2`, `2▲` …) is **gold for a win, gray for a loss**, white when halved: tiny circle, Android chip, pill and lock screen alike (`resultTone()`). **Pairs formats (fourball etc.):** the other side shows as last names, `W 3&2 vs Sherrell & Ross` (`opponentLabel()`); one opponent shows in full. The match side never gets cut off; the course name on the right shortens first. The status pill gets the room saved above (32px tall, 14px text). Previews: `/dev` → Notifications → Live Activity → "Lock screen · …" and "Dynamic Island · expanded".
 
 **Other competition types (proposal 2026-10-17, previews built, awaiting owner review)** — same pieces, minus what the trip doesn't have; same lifecycle and pill rules:
 
 | Type | Lock screen / pinned notification | Pill: left of the camera | Pill: right |
 |---|---|---|---|
 | Both | Teams + 3 leaderboard rows + status pill | Team points | Status |
-| Individual only | 3 leaderboard rows + status pill (left side: `Round 2 · course`) | My leaderboard spot in my black badge (`6`) | Status (no match arrow) |
+| Individual only | App icon + "The Maroon", a line, then 3 leaderboard rows + status pill (left side: `Round 2 · course`) | My leaderboard spot in my black badge (`6`) | Status (no match arrow) |
 | Team only | Bigger team boxes + status pill (with match) | Team points | Status |
 | No competition | Logo + trip name + status pill (`Round 2 · course`, score, thru) | Logo | Status (score, thru) |
 
@@ -3175,3 +3175,23 @@ implementation + tests `docs/account-deletion-implementation-2026-10-17.md`.
   CRON_SECRET only). Deleted people's old player records are unlinked AND locked (no automatic reassignment). Report:
   `docs/account-deletion-ui-2026-10-17.md`. Not deployed; SQL not run in production.
 
+
+### Short course names (owner approved 2026-10-19, built)
+
+**What:** long course names get a short display name for tight spots (Live Activity, Dynamic Island, Android chip), the way Apple Sports / ESPN shorten team names. The full name still shows wherever there's room.
+
+1. **Automatic** (`courseShortName()` in `lib/platform/courseShortName.ts`, tested): removes filler (Golf Club, Country Club, Golf Course, Golf Links, Resort & Spa, Tournament / Championship Course, CC, GC, a leading "The"; ALL-CAPS words calmed, acronyms like TPC kept). "Club – Course" names keep both parts when they fit 24 letters (`Pinehurst No. 2`, `PGA West Jack Nicklaus`), otherwise the named course (`Pacific Dunes`, `Dinah Shore`). On screen the course name **shrinks to fit, down to 85%** (SwiftUI `minimumScaleFactor(0.85)` / Android auto-size), then "…" as the last resort; the match side of the pill never shrinks or gets cut. Measured 2026-10-19: a 22-letter name fits a regular iPhone 16 at 85% with one opponent; with a fourball pair it still needs "…" there; everything fits a Pro Max at full size.
+2. **Organizer's own:** Settings → Golf Schedule → a round → **Edit** → **Short name** (up to 24 letters, owner 2026-10-19, starts as the automatic one; saving the automatic name or a blank stores nothing, so it keeps following the rules). Stored by full course name, so a course played twice shares one and moving / deleting rounds can't lose it. `courseDisplayName(full, short)` = the organizer's, else the automatic one.
+3. **Saved:** `courseShortNames` in the trip's saved setup settings (`golf_trip_setup.settings`, whitelisted + checked in `lib/platform/savedTripSetup.ts`: text, non-blank, ≤ `COURSE_SHORT_NAME_MAX` (24), ≤ 64 courses). **No database change needed.**
+
+Not yet: the server that builds real Live Activities reads `courseShortNames` (Phase 4).
+
+### Previews show what phones really draw (owner 2026-10-19)
+
+| Surface | Font / layout |
+|---|---|
+| iPhone Live Activity, Dynamic Island | **Ours** (Barlow / Spectral bundled in the app; Apple allows it — test on a real iPhone in the Xcode step, one developer reported a custom-font Live Activity not appearing). |
+| iPhone + Android phone notifications, iPhone lock-screen clock | **The phone's font.** Previews use Inter as the stand-in for Apple's SF Pro, Roboto for Android. |
+| Android Live Update (status bar chip + pinned notification) | **Google's standard template only** (Android 16: Standard / BigText / Call / Progress style, no custom views, so no custom layout or fonts): header (one-color small icon, app, trip, when), a title line, one text line, a progress bar while live. The chip = small icon + the tiny-circle text. Our dark maroon is a requested color; Android may show its own. The small icon must be a one-color silhouette (to design; the preview uses an "M"). |
+
+Android text (`androidLiveUpdate()` in `lib/notifications/format.ts`, tested): title `Maroon 3½ – 1½ White` (Individual only `6th · Cade Barone +5`, None the trip name); text by step — popped up `Tee 2:24 vs Collin Ross`, live `3▲ vs Collin Ross · +2 thru 15 · 6th`, round over `W 3&2 vs Collin Ross · Next 2:00 · <course>`, after the last round `W 3&2 vs Collin Ross · Final · 6th`. Win/loss colors can't be relied on in Android's template text, so the words W / L carry it there. Previews: `/dev` → Notifications → Live Activity → "Android pinned Live Update · …".

@@ -57,16 +57,11 @@ export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundSt
     : match.sides?.[0]?.name && match.sides[1]?.name ? [match.sides[0].name, match.sides[1].name] as const : null;
 
   return <div className={`${styles.match} ${styles.matchesList}`}>
-    {scoring !== "Gross" && <div className={styles.matchScoringControl}>
-      <ScoringControl scoring={scoring} net={net} onNet={setNet} />
-    </div>}
-    {/* The two teams' names once, above the matches, with this list's own round picker between them (it moves only the
-        matches below; the picker under the big box moves only the box). */}
-    {teamNames ? <div className={styles.teamNames}>
-      <span>{teamNames[0]}</span>
-      {shownRound === undefined && <RoundNav round={viewRound} current={fullMatch.round} count={fullMatch.roundCount} onRound={setViewRound} />}
-      <span>{teamNames[1]}</span>
-    </div> : shownRound === undefined && <RoundNav round={viewRound} current={fullMatch.round} count={fullMatch.roundCount} onRound={setViewRound} />}
+    {shownRound === undefined && <RoundNav round={viewRound} current={fullMatch.round} count={fullMatch.roundCount} onRound={setViewRound} />}
+    <div className={styles.matchListHeading}>
+      {teamNames && <div className={styles.teamNames}><span>{teamNames[0]}</span><span>{teamNames[1]}</span></div>}
+      {scoring !== "Gross" && <div className={styles.matchScoringControl}><ScoringControl scoring={scoring} net={net} onNet={setNet} /></div>}
+    </div>
     <ul className={`${styles.lineup} ${shownRound === undefined ? styles.swipeArea : ""}`} {...(shownRound === undefined ? swipe : {})}>
       {match.matches.map((m, i) => {
         const standing = showNet ? m.net : m.gross;
@@ -199,17 +194,16 @@ export function GolfTripLeaderboard({ match, byToday = false }: { match: GolfMat
   const selectedCard = rows.find(row => row.golfer.name === selectedPlayer);
 
   return <div ref={leaderboardRef} className={`${styles.match} ${styles.leaderboard}`}>
-    {/* The course / round line sits at the top of the Golf tab (GolfRoundHeader); here only the Gross / Net control. */}
-    {scoring !== "Gross" && <div className={`${styles.lineupHeader} ${styles.scoringRow}`}>
-      <ScoringControl scoring={scoring} net={net} onNet={setNet} />
-    </div>}
     <div>
+      <div className={styles.leaderboardListHeading}>
+        {scoring !== "Gross" && <div className={styles.matchScoringControl}><ScoringControl scoring={scoring} net={net} onNet={setNet} /></div>}
       <div className={`${styles.single} ${showNet ? styles.singleNet : ""} ${styles.columns}`} aria-hidden>
         <span className={styles.columnPlayer} />
         {showNet && <span>HCP</span>}
         <span className={styles.columnLabel}>{isStableford ? "PTS" : "TOT"}</span>
         <span className={styles.columnLabel}>THRU</span>
         <span className={styles.columnLabel}>TDY</span>
+      </div>
       </div>
       <ul className={styles.lineup}>
         {rows.map(({ position, golfer, total, thru, today, netTotal, netToday, pointsTotal, pointsToday }) => {
@@ -231,12 +225,16 @@ export function GolfTripLeaderboard({ match, byToday = false }: { match: GolfMat
         })}
       </ul>
     </div>
-    {selectedCard && <PlayerPublicTripProfile key={match.round + selectedCard.golfer.name} name={selectedCard.golfer.name} avatarUrl={selectedCard.golfer.avatarUrl ?? null} username={selectedCard.golfer.username ?? null} round={match.round} roundCount={match.roundCount} par={match.par} holes={selectedCard.holes} snapshot={{ position: selectedCard.position, total: parLabel(showNet ? selectedCard.netTotal : selectedCard.total), roundScore: parLabel(showNet ? selectedCard.netToday : selectedCard.today), thru: selectedCard.thru }} onClose={() => setSelectedPlayer(null)} />}
+    {selectedCard && <PlayerPublicTripProfile key={match.round + selectedCard.golfer.name} name={selectedCard.golfer.name} avatarUrl={selectedCard.golfer.avatarUrl ?? null} username={selectedCard.golfer.username ?? null} round={match.round} roundCount={match.roundCount} roundStandings={match.roundStandings} net={showNet} stableford={isStableford} par={match.par} holes={selectedCard.holes} snapshot={{ position: selectedCard.position, total: parLabel(showNet ? selectedCard.netTotal : selectedCard.total), roundScore: parLabel(showNet ? selectedCard.netToday : selectedCard.today), thru: selectedCard.thru }} onClose={() => setSelectedPlayer(null)} />}
   </div>;
 }
 
-function PlayerPublicTripProfile({ name, avatarUrl, username, round, roundCount, par, holes, snapshot, onClose }: { name: string; avatarUrl: string | null; username: string | null; round: number; roundCount: number; par: number[]; holes: (number | null)[]; snapshot: { position: string; total: string; roundScore: string; thru: string }; onClose: () => void }) {
+function PlayerPublicTripProfile({ name, avatarUrl, username, round, roundCount, par, holes, snapshot, roundStandings, net = false, stableford = false, onClose }: { name: string; avatarUrl: string | null; username: string | null; round: number; roundCount: number; roundStandings?: GolfMatchPreview["roundStandings"]; net?: boolean; stableford?: boolean; par: number[]; holes: (number | null)[]; snapshot: { position: string; total: string; roundScore: string; thru: string }; onClose: () => void }) {
   const [selectedRound, setSelectedRound] = useState(round);
+  const past = roundStandings?.find(item => item.round === selectedRound && (item.standingsRound ?? item.round) === selectedRound);
+  const pastRow = past ? rankLeaderboard(past.leaderboard, { net, stableford }).find(row => row.golfer.name === name) : undefined;
+  const available = selectedRound === round || !!pastRow;
+  const shownSnapshot = selectedRound !== round && pastRow ? {position:pastRow.position,total:parLabel(net ? pastRow.netTotal : pastRow.total),roundScore:parLabel(net ? pastRow.netToday : pastRow.today),thru:pastRow.thru} : snapshot;
   const roundTabsRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const strip = roundTabsRef.current;
@@ -318,24 +316,24 @@ function PlayerPublicTripProfile({ name, avatarUrl, username, round, roundCount,
       {Array.from({ length: Math.max(roundCount, round) }, (_, index) => index + 1).map(number => <button key={number} type="button" role="tab" id={"profile-round-tab-" + number} aria-controls="profile-round-panel" aria-selected={selectedRound === number} onClick={() => setSelectedRound(number)}>Round {number}</button>)}
     </div>
     <section id="profile-round-panel" className={styles.playerTripProfileScorecard} role="tabpanel" aria-labelledby={"profile-round-tab-" + selectedRound}>
-      <Scorecard id="leaderboard-player-scorecard" par={selectedRound === round ? par : []} holes={selectedRound === round ? holes : Array<null>(18).fill(null)} name={name} />
-      {selectedRound !== round && <p className={styles.profileRoundEmpty}>Scores for this round are not available.</p>}
+      <Scorecard id="leaderboard-player-scorecard" par={selectedRound === round ? par : past?.par ?? par} holes={selectedRound === round ? holes : pastRow?.holes ?? Array<null>(18).fill(null)} name={name} />
+      {!available && <p className={styles.profileRoundEmpty}>Scores for this round are not available.</p>}
     </section>
     <section className={styles.profileRoundSnapshot} aria-label="Round snapshot">
       <div className={styles.snapshotSections}>
         <div className={styles.snapshotColumn} role="group" aria-label={"Round " + selectedRound + " snapshot"}>
           <h4>Round {selectedRound}</h4>
           <dl className={styles.snapshotPill}>
-            <div><dt>+/&minus;</dt><dd>{selectedRound === round ? snapshot.roundScore || "\u2014" : "\u2014"}</dd></div>
-            <div><dt>Thru</dt><dd>{selectedRound === round ? snapshot.thru || "\u2014" : "\u2014"}</dd></div>
+            <div><dt>+/&minus;</dt><dd>{available ? shownSnapshot.roundScore || "\u2014" : "\u2014"}</dd></div>
+            <div><dt>Thru</dt><dd>{available ? shownSnapshot.thru || "\u2014" : "\u2014"}</dd></div>
           </dl>
         </div>
         <span className={styles.snapshotDivider} aria-hidden />
         <div className={styles.snapshotColumn} role="group" aria-label="Overall snapshot">
           <h4>Overall</h4>
           <dl className={styles.snapshotPill}>
-            <div><dt>Position</dt><dd>{snapshot.position || "\u2014"}</dd></div>
-            <div><dt>+/&minus;</dt><dd>{snapshot.total || "\u2014"}</dd></div>
+            <div><dt>Position</dt><dd>{shownSnapshot.position || "\u2014"}</dd></div>
+            <div><dt>+/&minus;</dt><dd>{shownSnapshot.total || "\u2014"}</dd></div>
           </dl>
         </div>
       </div>

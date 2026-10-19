@@ -7,6 +7,7 @@ import { GolfTripActionSheet } from "./GolfTripActionSheet";
 import gameStyles from "./GolfTripGames.module.css";
 import styles from "./TripScheduleCoursePicker.module.css";
 import { cityState } from "@/lib/data/usStates";
+import { COURSE_SHORT_NAME_MAX, courseShortName } from "@/lib/platform/courseShortName";
 
 /** A course picked for a Trip Schedule round, with its optional settings (set now or later). */
 export interface PickedCourse {
@@ -191,7 +192,7 @@ function CourseSettings({ course, initial, onBack, onSave }: {
  * it the round's course and closes the pop-up.
  */
 /** `title`: "Select course" for a round just added (+ Add Round), "Edit course" otherwise. */
-export function CourseEditSheet({ roundLabel, current, onPick, onClose, title = "Edit course" }: { roundLabel: string; current: string; onPick: (course: PickedCourse) => void; onClose: () => void; title?: "Edit course" | "Select course" }) {
+export function CourseEditSheet({ roundLabel, current, onPick, onClose, title = "Edit course", shortName, onShortName }: { roundLabel: string; current: string; onPick: (course: PickedCourse) => void; onClose: () => void; title?: "Edit course" | "Select course"; shortName?: string; onShortName?: (shortName: string | undefined) => void }) {
   // Top 16px below the phone's notch / status bar; bottom 5% of the screen above the bottom nav.
   const [sheetBox] = useState(() => {
     const nav = document.querySelector("[data-site-bottom-nav]")?.getBoundingClientRect();
@@ -202,6 +203,26 @@ export function CourseEditSheet({ roundLabel, current, onPick, onClose, title = 
       <h3 className={gameStyles.sheetTitle}>{title}</h3>
       <p className={styles.subtitle}>{roundLabel} · Now: {current}</p>
       <CourseSearchBar roundLabel={roundLabel} onPick={onPick} floating={false} autoFocus />
+      {onShortName && current !== "Course TBD" && <CourseShortNameField key={current} course={current} saved={shortName} onSave={onShortName} />}
     </div>
   </GolfTripActionSheet>;
+}
+
+/**
+ * The course's short name for lock screens and Live Activities (spec: Short course names): starts as the organizer's saved
+ * one, else the automatic one. Saving the automatic name (or clearing the box) stores nothing, so it keeps following the
+ * automatic rules.
+ */
+function CourseShortNameField({ course, saved, onSave }: { course: string; saved?: string; onSave: (shortName: string | undefined) => void }) {
+  const automatic = courseShortName(course);
+  const [value, setValue] = useState(saved ?? automatic);
+  const typed = value.replace(/\s+/g, " ").trim();
+  const next = typed && typed !== automatic ? typed : undefined;
+  return <div className={gameStyles.sheetSetting}>
+    <label htmlFor="course-short-name"><span>Short name</span></label>
+    <input id="course-short-name" type="text" className={styles.timeInput} value={value} maxLength={COURSE_SHORT_NAME_MAX} placeholder={automatic}
+      onChange={(event) => setValue(event.target.value)} aria-describedby="course-short-name-hint" autoComplete="off" />
+    <p id="course-short-name-hint" className={gameStyles.sheetHint}>Shown on lock screens and Live Activities, where space is tight. Up to {COURSE_SHORT_NAME_MAX} letters.</p>
+    <button type="button" className={styles.secondary} disabled={next === saved} onClick={() => onSave(next)}>Save short name</button>
+  </div>;
 }

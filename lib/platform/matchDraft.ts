@@ -33,7 +33,7 @@ export function matchDraftRounds(setup: Record<string, unknown>, rounds: SourceR
     const format = round.format === "Best Ball" ? "Fourball" : round.format;
     const settings = formats?.[key] ?? { ...defaultRoundComp(playerCount), format: ROUND_FORMATS.find(item => item.name === format)?.name ?? "Singles" };
     const date = own?.date || choice.date || "", time = own?.time || choice.time || "";
-    return [{ key, number: round.number, course: round.course, format: settings.format, matches: roundMatches(settings), perSide: playersPerSide(settings.format), type: choice.draftType ?? "Not selected", rankMinutes: choice.rankMinutes, putForwardMinutes: choice.putForwardMinutes, responseMinutes: choice.responseMinutes, date, time, when: date ? draftWhenLabel(date,time) : "Draft date not set yet", locked: round.number <= playedThrough }];
+    return [{ key, number: round.number, course: round.course, format: settings.format, matches: roundMatches(settings), perSide: playersPerSide(settings.format), type: choice.draftType ?? "Not selected", rankMinutes: choice.rankMinutes, putForwardMinutes: choice.putForwardMinutes, responseMinutes: choice.responseMinutes, date, time, when: date ? draftWhenLabel(date,time) : "Draft date not set yet", locked: round.number <= playedThrough || (Array.isArray(setup.completedMatchDrafts) && setup.completedMatchDrafts.includes(key)) }];
   });
 }
 
