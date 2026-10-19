@@ -15,10 +15,10 @@ export const setupDecode = (_key: string, value: unknown) => value && typeof val
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value);
 export const datePlus = (date: string, days: number) => { const d = new Date(`${date}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); };
 const dayDifference = (from: string, to: string) => Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86400000);
-const fields = new Set("pastTrips scoringFieldsOff playerTotal localCompetitionType lockedComp teamChoiceSaved typePlayers teamNames teamColors teamPicks teamTotalChoice unevenTeams unevenSizes teamTie teamSelection draftDate draftTime draftType draftMethod submittedTeams gameSettings dayCount roundsPerDay arrivalShift pickedCourses yardageCorrections roundTees compRounds skinsOn skinsRounds skinsPlayers compFormats teeTimes matchSelections matchPerRound allRoundsMatch teePlayers teeMatches slotCourseNames courseShortNames golfOnArrival golfOnDeparture playerStats inAppScoring predictSettings".split(" "));
+const fields = new Set("pastTrips scoringFieldsOff playerTotal localCompetitionType lockedComp teamChoiceSaved typePlayers teamNames teamColors teamPicks teamTotalChoice unevenTeams unevenSizes teamTie teamSelection draftDate draftTime draftType draftMethod submittedTeams gameSettings dayCount roundsPerDay arrivalShift pickedCourses yardageCorrections roundTees compRounds skinsOn skinsRounds skinsPlayers compFormats teeTimes matchSelections matchPerRound allRoundsMatch teePlayers teeMatches slotCourseNames courseShortNames golfOnArrival golfOnDeparture playerStats inAppScoring predictSettings gameRounds".split(" "));
 const bools = new Set("teamChoiceSaved unevenTeams skinsOn matchPerRound golfOnArrival golfOnDeparture playerStats inAppScoring".split(" "));
 const arrays = new Set("pastTrips teamNames teamColors unevenSizes".split(" "));
-const records = new Set("scoringFieldsOff typePlayers teamPicks lockedComp roundsPerDay pickedCourses yardageCorrections roundTees compRounds skinsRounds skinsPlayers compFormats teeTimes matchSelections allRoundsMatch teePlayers teeMatches slotCourseNames courseShortNames gameSettings predictSettings".split(" "));
+const records = new Set("scoringFieldsOff typePlayers teamPicks lockedComp roundsPerDay pickedCourses yardageCorrections roundTees compRounds skinsRounds skinsPlayers compFormats teeTimes matchSelections allRoundsMatch teePlayers teeMatches slotCourseNames courseShortNames gameSettings predictSettings gameRounds".split(" "));
 const enums: Record<string, readonly unknown[]> = {
   teamTie: ["Retain", "Teams Tie", "Playoff"], teamSelection: [null, "Manual", "Draft", "Random"], draftType: ["Snake", "Straight"], draftMethod: ["Captain's Picks", "Duck Race"],
 };
@@ -55,6 +55,8 @@ const nestedChecks: Record<string, (value: unknown) => boolean> = {
   pastTrips: value => Array.isArray(value) && value.every(trip => object(trip) && text(trip.id) && text(trip.name) && text(trip.place) && text(trip.arrival, 10) && text(trip.departure, 10) && Array.isArray(trip.players) && trip.players.every(player => text(player, 120)) && Array.isArray(trip.rounds) && trip.rounds.every(round => object(round) && text(round.id) && int(round.number, 1, 62) && (round.date === null || text(round.date, 10)) && object(round.course) && text(round.course.name) && text(round.course.place) && mapOf(round.scores, score => int(score, 1, 500)))),
   yardageCorrections: value => mapOf(value, entries => Array.isArray(entries) && entries.every(entry => object(entry) && text(entry.at) && text(entry.reason, 2000) && tees(entry.before) && tees(entry.after) && Array.isArray(entry.affectedCards) && entry.affectedCards.every(card => text(card)))),
   predictSettings: value => object(value) && typeof value.on === "boolean" && Array.isArray(value.off) && value.off.every(item => text(item, 80)),
+  // Organizer → Games: Play game ids per round number.
+  gameRounds: value => mapOf(value, ids => Array.isArray(ids) && ids.length <= 20 && ids.every(id => text(id, 20))),
 };
 function safeJson(value: unknown, depth = 0): boolean {
   if (depth > 12) return false;

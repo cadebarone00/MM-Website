@@ -363,3 +363,10 @@ fieldset.matchSelector{border:0;padding:0;min-width:0}
 .scheduleRoundCard.scheduleRoundCard .roundCardButton .roundCardPlace{margin:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1;line-clamp:1;overflow:hidden}
 .scheduleRoundCard .roundCardButton .roundCardState{grid-column:2;grid-row:1;align-self:start;justify-self:end;color:#805b24;font:600 12px/1.2 var(--font-barlow),sans-serif;white-space:nowrap}
 .scorecardDays .roundCardButton [class*="eventHost"]{padding-right:74px}
+/* Organizer → Games: the round these switches are for, and a switch beside each game. */
+.gameRoundPicker{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:6px}
+.gameRoundPicker button{display:flex;align-items:center;justify-content:center;gap:5px;min-height:34px;padding:0 6px;border:1px solid rgba(220,196,149,.35);border-radius:99px;background:transparent;color:#fff;font:700 12px var(--font-barlow),sans-serif;cursor:pointer}
+.gameRoundPicker button[aria-pressed=true]{background:#dcc495;border-color:#dcc495;color:#2a0d16}
+.gameRoundPicker small{display:grid;place-items:center;min-width:16px;height:16px;padding:0 4px;border-radius:99px;background:rgba(0,0,0,.25);font-size:10px}
+.gameRowLine{display:flex;align-items:center;gap:10px}
+.gameRowLine>.gameRow{flex:1;min-width:0}

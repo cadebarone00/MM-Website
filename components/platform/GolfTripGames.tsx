@@ -2,7 +2,7 @@
 
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import homeStyles from "./GolfTripHome.module.css";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { GolfTripActionSheet } from "./GolfTripActionSheet";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
@@ -12,7 +12,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { HolePicks, Standings } from "./PlayRound";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import { gameDef, gamesFor, scoreGame, wolfFor, type GameConfig, type GameId, type GameResult, type HoleInput } from "@/lib/platform/roundGames";
-import { currentHole, gameCourse, gamePlayers, gameStrokes, groupOf, holesThru, meOn, parThru, snakeFromPutts, teamsOn, vegasByHole, type TripGame } from "@/lib/platform/tripGames";
+import { currentHole, gameCourse, gamePlayers, gameStrokes, groupOf, holesThru, meOn, organizerGames as fromOrganizer, parThru, snakeFromPutts, teamsOn, vegasByHole, type TripGame } from "@/lib/platform/tripGames";
 import styles from "./GolfTripGames.module.css";
 
 /**
@@ -31,24 +31,26 @@ const withPars = (match: GolfMatchPreview, game: TripGame): GolfMatchPreview =>
 const readGames = (): TripGame[] => { try { return JSON.parse(localStorage.getItem(STORE) ?? "[]"); } catch { return []; } };
 const firstName = (name: string) => name.split(/\s+/)[0];
 
-export function GolfTripGames({ match, rounds, signedInName, saved }: { match: GolfMatchPreview; rounds: number[]; signedInName?: string | null; saved?: SavedGamesContext }) {
+export function GolfTripGames({ match, rounds, signedInName, saved, organizerGames }: { match: GolfMatchPreview; rounds: number[]; signedInName?: string | null; saved?: SavedGamesContext; organizerGames?: Record<string, GameId[]> }) {
   // Saved trip: me and my group come from the trip; preview: from the shown round.
   const savedMe = saved?.group.find((p) => p.profileId === saved.meId)?.name;
   const me = savedMe ?? meOn(match, signedInName) ?? "You";
   const group = saved ? [me, ...saved.group.map((p) => p.name).filter((n) => n !== me)] : groupOf(match, me);
   const [games, setGames] = useState<TripGame[]>([]);
+  // Saved games have loaded (from this device or the server), so the organizer's games can be added without duplicates.
+  const [loaded, setLoaded] = useState(false);
   // App simulator "Sample games, mid-round": made-up games partway through the round (kept in memory, never saved).
   const sample = useSimulator()?.state.sampleGames === true;
   const groupKey = group.join("|");
   const holeCount = match.par.length, shownRound = match.round;
   const fieldKey = match.leaderboard.map((row) => row.golfer.name).join("|");
-  useEffect(() => { if (!saved) setGames(sample ? sampleTripGames(shownRound, holeCount, groupKey.split("|"), fieldKey.split("|")) : readGames()); }, [saved, sample, shownRound, holeCount, groupKey, fieldKey]); // eslint-disable-line react-hooks/set-state-in-effect -- loads this device's saved games (or the sample) when the source changes
+  useEffect(() => { if (!saved) { setGames(sample ? sampleTripGames(shownRound, holeCount, groupKey.split("|"), fieldKey.split("|")) : readGames()); setLoaded(true); } }, [saved, sample, shownRound, holeCount, groupKey, fieldKey]); // eslint-disable-line react-hooks/set-state-in-effect -- loads this device's saved games (or the sample) when the source changes
   const save = (next: TripGame[]) => { setGames(next); if (!sample && !saved) try { localStorage.setItem(STORE, JSON.stringify(next)); } catch { /* private mode */ } };
 
   // Saved trip: load from the server, refresh on any change to this trip's games (Realtime), on return to the tab, and every 15s.
   const [error, setError] = useState<string | null>(null);
   const tripId = saved?.tripId;
-  const apply = (body: unknown) => { const list = savedTripGamesFromJson((body as { games?: unknown })?.games); if (list) setGames(list.map(tripGameFromSaved)); };
+  const apply = (body: unknown) => { const list = savedTripGamesFromJson((body as { games?: unknown })?.games); if (list) { setGames(list.map(tripGameFromSaved)); setLoaded(true); } };
   const send = async (action: TripGameAction) => {
     if (!tripId) return;
     setError(null);
@@ -74,6 +76,20 @@ export function GolfTripGames({ match, rounds, signedInName, saved }: { match: G
     return () => { live = false; window.clearInterval(poll); document.removeEventListener("visibilitychange", visible); if (supabase && channel) void supabase.removeChannel(channel); };
   }, [tripId]);
   const profileOf = (name: string) => saved?.group.find((p) => p.name === name)?.profileId ?? "";
+
+  // Organizer → Games: the games put on each round show up for my group, ready to play (made once; the database makes a
+  // saved trip's copy only once per round, game and players, however many phones open it).
+  const asked = useRef(new Set<string>());
+  const wanted = sample ? [] : fromOrganizer(organizerGames, group, games);
+  const wantedKey = wanted.map((g) => g.key).join(",");
+  useEffect(() => {
+    const fresh = wanted.filter((g) => !asked.current.has(g.key));
+    if (!loaded || !fresh.length) return;
+    fresh.forEach((g) => asked.current.add(g.key));
+    if (!saved) { save([...games, ...fresh]); return; }
+    for (const g of fresh) void send({ action: "create", round: g.round, requestId: crypto.randomUUID(),
+      game: { gameType: g.config.id, net: g.config.net, birdiesDouble: g.config.birdiesDouble, ...(g.config.teams ? { teams: g.config.teams } : {}), players: g.players.map(profileOf) } });
+  }, [wantedKey, loaded]); // eslint-disable-line react-hooks/exhaustive-deps -- runs when the organizer's list (or what's already made) changes
   const [creating, setCreating] = useState(false);
   // The sheet's box: top just covers the trip tabs; it runs to the bottom of the screen, over the bottom nav.
   const [sheetBox, setSheetBox] = useState({ top: 16, bottom: 16 });

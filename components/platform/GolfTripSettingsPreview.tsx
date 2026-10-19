@@ -10,6 +10,8 @@ import { motion } from "motion/react";
 import { ArrowLeftRight, ChevronLeft, GripVertical, Minus, Plus, Shuffle, Trash2, X } from "lucide-react";
 import { GolfGameScoringSettings } from "./GolfGameScoringSettings";
 import { SIDE_GAME_REGISTRY } from "@/lib/platform/golfTripGames";
+import { ORGANIZER_GAME_TO_PLAY } from "@/lib/platform/tripGames";
+import type { GameId } from "@/lib/platform/roundGames";
 import type { CompetitionRound } from "@/lib/platform/golfTripCompetitionPreview";
 import styles from "./GolfTripSettingsPreview.module.css";
 import tripStyles from "./GolfTripHome.module.css";
@@ -306,6 +308,9 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const roundSkinsOn = (key: string) => skinsOn && (skinsRounds[key] ?? true);
   const roundSkinsPlayers = (key: string) => skinsPlayers[key] ?? new Set(rosterSlots);
   const [compFormats, setCompFormats] = usePersistedState<Record<string, RoundCompSettings>>(persist, "compFormats", {});
+  // Organizer → Games: which games each round plays (round number → Play game ids). Everyone's Games tab gets them.
+  const [gameRounds, setGameRounds] = usePersistedState<Record<string, GameId[]>>(persist, "gameRounds", {});
+  const [gameRound, setGameRound] = useState(1);
   // Turning a round's Comp switch off waits for this confirm (it removes the round's format).
   const [confirmCompOff, setConfirmCompOff] = useState<string | null>(null);
   const [coursePicker, setCoursePicker] = useState<{ key: string; label: string } | null>(null);
@@ -602,7 +607,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const settingsValues = { pastTrips, scoringFieldsOff, playerTotal, removedPlayers, competitionType, lockedComp, teamChoiceSaved, typePlayers,
     teamNames, teamColors, teamPicks, teamTotalChoice, unevenTeams, unevenSizes, teamTie, teamSelection, draftDate, draftTime, draftOrder, draftMethod, submittedTeams,
     gameSettings, dayCount, roundsPerDay, arrivalShift, pickedCourses, yardageCorrections, roundTees, compRounds, compFormats, matchSelections, matchPerRound,
-    allRoundsMatch, teePlayers, teeMatches, slotCourseNames, courseShortNames, golfOnArrival, golfOnDeparture, teeTimes, skinsOn, skinsRounds, skinsPlayers, scoringView, playerStats, myStats, inAppScoring, predictSettings };
+    allRoundsMatch, teePlayers, teeMatches, slotCourseNames, courseShortNames, golfOnArrival, golfOnDeparture, teeTimes, skinsOn, skinsRounds, skinsPlayers, scoringView, playerStats, myStats, inAppScoring, predictSettings, gameRounds };
   const restoreSettings = (saved: typeof settingsValues) => {
     setTeamTie(saved.teamTie);
     setPastTrips(saved.pastTrips); setScoringFieldsOff(saved.scoringFieldsOff); setPlayerTotal(saved.playerTotal);
@@ -612,7 +617,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     setDraftDate(saved.draftDate); setDraftTime(saved.draftTime); setDraftOrder(saved.draftOrder); setDraftMethod(saved.draftMethod); setSubmittedTeams(saved.submittedTeams);
     setGameSettings(saved.gameSettings); setDayCount(saved.dayCount); setRoundsPerDay(saved.roundsPerDay); setArrivalShift(saved.arrivalShift);
     setPickedCourses(saved.pickedCourses); setYardageCorrections(saved.yardageCorrections); setRoundTees(saved.roundTees); setCompRounds(saved.compRounds);
-    setCompFormats(saved.compFormats); setMatchSelections(saved.matchSelections); setMatchPerRound(saved.matchPerRound); setAllRoundsMatch(saved.allRoundsMatch);
+    setCompFormats(saved.compFormats); setGameRounds(saved.gameRounds ?? {}); setMatchSelections(saved.matchSelections); setMatchPerRound(saved.matchPerRound); setAllRoundsMatch(saved.allRoundsMatch);
     setTeePlayers(saved.teePlayers); setTeeMatches(saved.teeMatches); setSlotCourseNames(saved.slotCourseNames); setCourseShortNames(saved.courseShortNames ?? {}); setGolfOnArrival(saved.golfOnArrival);
     setGolfOnDeparture(saved.golfOnDeparture); setTeeTimes(saved.teeTimes); setSkinsOn(saved.skinsOn); setSkinsRounds(saved.skinsRounds); setSkinsPlayers(saved.skinsPlayers);
     if (saved.scoringView !== scoringView) setScoringView(saved.scoringView);
@@ -1076,18 +1081,39 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
 
       {<div hidden={!gamesOpen || competitionOpen} className={styles.competition}>
         {selectedGame ? <GolfTripCompetition rounds={[gameSettings]} onChange={change => setGameSettings(current => ({ ...current, ...change }))} showBulk={false} /> : <div className={styles.gameGroups}>
+          {/* Which round these switches are for; each round shows how many games it has. */}
+          {(() => {
+            const numbers = Array.from({ length: golfDayCount }, (_, day) => Array.from({ length: roundsPerDay[day] ?? 1 }, (_, slot) => scheduleSlot(day, slot).number)).flat();
+            return numbers.length > 0 && <div className={styles.gameRoundPicker} role="group" aria-label="Round">
+              {numbers.map(number => <button key={number} type="button" aria-pressed={gameRound === number} onClick={() => setGameRound(number)}>
+                Round {number}{gameRounds[number]?.length ? <small>{gameRounds[number].length}</small> : null}
+              </button>)}
+            </div>;
+          })()}
           {Object.entries(GAME_GROUPS).map(([label, games]) => <section key={label} className={styles.gameGroup}>
             <h2 className={styles.gameHeading}>{label}</h2>
             {games.map(game => {
               const isExpanded = expandedGameId === game.id;
               return <div key={game.id} className={styles.gameRowWrapper}>
-                <button type="button" className={styles.gameRow} aria-expanded={isExpanded} onClick={() => setExpandedGameId(isExpanded ? null : game.id)}>
-                  <span className={styles.gameInfo}>
-                    <span className={styles.gameLabel}>{game.name}</span>
-                    <span className={styles.gameMeta}>{game.players}</span>
-                  </span>
-                  <span className={`${styles.gameToggle} ${isExpanded ? styles.gameToggleOpen : ""}`} aria-hidden>▾</span>
-                </button>
+                <div className={styles.gameRowLine}>
+                  <button type="button" className={styles.gameRow} aria-expanded={isExpanded} onClick={() => setExpandedGameId(isExpanded ? null : game.id)}>
+                    <span className={styles.gameInfo}>
+                      <span className={styles.gameLabel}>{game.name}</span>
+                      <span className={styles.gameMeta}>{game.players}</span>
+                    </span>
+                    <span className={`${styles.gameToggle} ${isExpanded ? styles.gameToggleOpen : ""}`} aria-hidden>▾</span>
+                  </button>
+                  {/* On / off for the selected round: everyone's Games tab gets it for that round. */}
+                  {(() => {
+                    const play = ORGANIZER_GAME_TO_PLAY[game.id];
+                    const on = !!play && (gameRounds[gameRound] ?? []).includes(play);
+                    const toggle = () => { if (!play) return; const list = gameRounds[gameRound] ?? []; const next = { ...gameRounds, [gameRound]: on ? list.filter(id => id !== play) : [...list, play] };
+                      setGameRounds(next); saveSection(() => ({ gameRounds: next })); };
+                    return <button type="button" role="switch" aria-checked={on} disabled={!play} aria-label={`${game.name} in Round ${gameRound}`} className={toggleStyles.toggle} onClick={toggle}>
+                      <span className={toggleStyles.track} data-on={on}><span className={toggleStyles.thumb} /></span>
+                    </button>;
+                  })()}
+                </div>
                 <div hidden={!isExpanded} className={styles.gameDropdown}>
                   <GolfGameScoringSettings game={game.id} />
                 </div>

@@ -122,3 +122,10 @@ test("the round's saved pars come with each game (null until the organizer sets 
   assert.equal(await call(db, "set_trip_momentum_pars", cade, trip, 1, `{${PAR.join(",")}}`), true);
   assert.deepEqual((await call<Game[]>(db, "get_trip_games", cade, trip))[0].pars, PAR);
 });
+
+test("the same game for the same players in the same round is made once (an organizer's game opened on several phones)", async () => {
+  const { cade, jake, mike, luke, create } = await setup();
+  await create(cade, { gameType: "wolf", players: [cade, jake, mike, luke] });
+  const again = await create(jake, { gameType: "wolf", players: [jake, cade, luke, mike] });
+  assert.equal(again.length, 1);
+});
