@@ -480,6 +480,8 @@ export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: 
   const [pointsOpen, setPointsOpen] = useState(false);
   const [statsTeam, setStatsTeam] = useState<0 | 1 | null>(null);
   const ranking = pointsOpen ? playerPoints(withHoleStandings(match)) : [];
+  // Team totals: each match's point goes to the team that won it (½ each if halved), however many players were on it.
+  const team = teamPoints(withHoleStandings(match));
   return <div className={styles.matchup} data-points-open={pointsOpen || undefined}>
     <section className={`${styles.versus} ${styles.boardBox}`} aria-label="Tournament standings">
       <div className={`${styles.summaryTeams} ${styles.summaryTap}`} role="button" tabIndex={0} aria-expanded={pointsOpen} aria-label="Points by player"
@@ -487,15 +489,15 @@ export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: 
         {/* Each team sits in its own color fill (like a lead fill, but always there) from its edge in toward TO WIN. */}
         {[left, right].map((side, i) => <div key={side.name} className={`${styles.summaryFill} ${i ? `${styles.summaryRight} ${styles.summaryFillRight}` : styles.summaryFillLeft}`}>
           <FitName name={side.name} />
-          <p className={styles.summaryScore}>{side.score || "—"}</p>
+          <p className={styles.summaryScore}>{team ? halves(team.points[i]) : side.score || "—"}</p>
           {/* Open: the box extends down with this team's players, most points first. */}
           {pointsOpen && <ol className={styles.teamPoints} aria-label={`${side.name} points by player`}>
             {ranking.filter((row) => row.side === (i ? "right" : "left")).map((row) => <li key={row.name}><span>{row.name}</span><b>{row.points}</b></li>)}
           </ol>}
         </div>)}
-        {/* Between the teams, like THRU on the Matches box: the points needed to win (not wired up yet). */}
+        {/* Between the teams, like THRU on the Matches box: the points needed to win (half the points up for grabs, plus ½). */}
         <span className={`${styles.status} ${styles.statusPlain} ${styles.summaryToWin}`} aria-label="Points to win">
-          <small>TO WIN</small>—
+          <small>TO WIN</small>{team ? halves(team.available / 2 + 0.5) : "—"}
         </span>
       </div>
       <div className={styles.stats}>
@@ -515,6 +517,30 @@ export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: 
  * Each player's match points across the trip's matches, best first: the points the data gives a side, otherwise a
  * finished match is worth 1 to each winner and ½ each when halved (net standing when the round is net only).
  */
+/** 4.5 → "4½", 0.5 → "½", 4 → "4". */
+const halves = (n: number) => n % 1 ? `${Math.floor(n) || ""}½` : String(n);
+
+/**
+ * Team points across the trip's matches, counted per match (owner rule 2026-10-19): a finished match's point goes to
+ * the team that won it, ½ each when halved, whether it was singles or a pair. `available` = every match's point.
+ * Null when there are no matches.
+ */
+function teamPoints(match: GolfMatchPreview): { points: [number, number]; available: number } | null {
+  if (!match.matches.length) return null;
+  const net = matchScoring(match) === "Net";
+  const points: [number, number] = [0, 0];
+  for (const pairing of match.matches) {
+    const left = normalizeCompetitor(pairing.left);
+    const standing = net ? pairing.net : pairing.gross;
+    const status = matchStatus({ thru: left.thru ?? left.golfers[0]?.thru, standing, result: pairing.result });
+    if (status.kind !== "final") continue;
+    if (standing?.leader === "left") points[0] += 1;
+    else if (standing?.leader === "right") points[1] += 1;
+    else { points[0] += 0.5; points[1] += 0.5; }
+  }
+  return { points, available: match.matches.length };
+}
+
 function playerPoints(match: GolfMatchPreview): { name: string; side: "left" | "right"; points: number }[] {
   const totals = new Map<string, { name: string; side: "left" | "right"; points: number }>();
   const net = matchScoring(match) === "Net";
