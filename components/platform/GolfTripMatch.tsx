@@ -23,6 +23,7 @@ import homeStyles from "./GolfTripHome.module.css";
 import type { TripStatsView } from "./GolfTripStats";
 import { MatchDraftStatus } from "./MatchDraftStatus";
 import { matchCard, winCurve, withHoleStandings, type MatchCard, type WinPoint } from "@/lib/platform/matchCenter";
+import { teamPoints } from "@/lib/platform/teamPoints";
 
 /**
  * Golf tab, Sleeper's fantasy Match screen translated to golf, on the trip's maroon.
@@ -480,8 +481,8 @@ export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: 
   const [pointsOpen, setPointsOpen] = useState(false);
   const [statsTeam, setStatsTeam] = useState<0 | 1 | null>(null);
   const ranking = pointsOpen ? playerPoints(withHoleStandings(match)) : [];
-  // Team totals: each match's point goes to the team that won it (½ each if halved), however many players were on it.
-  const team = teamPoints(withHoleStandings(match));
+  // Team totals from the organizer's round settings (points per match, Nassau), counted per match.
+  const team = teamPoints(match);
   return <div className={styles.matchup} data-points-open={pointsOpen || undefined}>
     <section className={`${styles.versus} ${styles.boardBox}`} aria-label="Tournament standings">
       <div className={`${styles.summaryTeams} ${styles.summaryTap}`} role="button" tabIndex={0} aria-expanded={pointsOpen} aria-label="Points by player"
@@ -519,27 +520,6 @@ export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: 
  */
 /** 4.5 → "4½", 0.5 → "½", 4 → "4". */
 const halves = (n: number) => n % 1 ? `${Math.floor(n) || ""}½` : String(n);
-
-/**
- * Team points across the trip's matches, counted per match (owner rule 2026-10-19): a finished match's point goes to
- * the team that won it, ½ each when halved, whether it was singles or a pair. `available` = every match's point.
- * Null when there are no matches.
- */
-function teamPoints(match: GolfMatchPreview): { points: [number, number]; available: number } | null {
-  if (!match.matches.length) return null;
-  const net = matchScoring(match) === "Net";
-  const points: [number, number] = [0, 0];
-  for (const pairing of match.matches) {
-    const left = normalizeCompetitor(pairing.left);
-    const standing = net ? pairing.net : pairing.gross;
-    const status = matchStatus({ thru: left.thru ?? left.golfers[0]?.thru, standing, result: pairing.result });
-    if (status.kind !== "final") continue;
-    if (standing?.leader === "left") points[0] += 1;
-    else if (standing?.leader === "right") points[1] += 1;
-    else { points[0] += 0.5; points[1] += 0.5; }
-  }
-  return { points, available: match.matches.length };
-}
 
 function playerPoints(match: GolfMatchPreview): { name: string; side: "left" | "right"; points: number }[] {
   const totals = new Map<string, { name: string; side: "left" | "right"; points: number }>();
