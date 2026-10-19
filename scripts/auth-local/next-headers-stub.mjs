@@ -1,8 +1,11 @@
-// Stand-in for next/headers in the local auth tests. cookies() returns the jar the test selected with
-// globalThis.__authLocalJar (a Map of name -> value), so each simulated browser keeps its own session cookies.
+// Stand-in for next/headers in the local auth tests. cookies() returns the jar of the request being handled (a Map of
+// name -> value), so each simulated browser keeps its own session cookies. The harness runs each request inside
+// globalThis.__authLocalStore (AsyncLocalStorage), so requests sent AT THE SAME TIME never see each other's cookies;
+// globalThis.__authLocalJar is the fallback for code that sets a jar directly.
 function jar() {
-  if (!globalThis.__authLocalJar) throw new Error("auth-local: no cookie jar selected");
-  return globalThis.__authLocalJar;
+  const current = globalThis.__authLocalStore?.getStore() ?? globalThis.__authLocalJar;
+  if (!current) throw new Error("auth-local: no cookie jar selected");
+  return current;
 }
 
 export async function cookies() {

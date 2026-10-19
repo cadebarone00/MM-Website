@@ -179,7 +179,8 @@ begin
   if auth.uid() is null or to_regclass('auth.sessions') is null then return false; end if;
   v_sid := nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'session_id';
   if v_sid is null then return false; end if;
-  return not exists (select 1 from auth.sessions where id = v_sid::uuid);
+  -- Gone (signed out / revoked) or past its end time (Supabase time-boxed sessions): either way, no longer valid.
+  return not exists (select 1 from auth.sessions where id = v_sid::uuid and (not_after is null or not_after > now()));
 exception when others then
   return true; -- a malformed session id is never treated as valid
 end;

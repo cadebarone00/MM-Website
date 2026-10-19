@@ -4,7 +4,8 @@ import { useState } from "react";
 import { LogOut } from "lucide-react";
 import { SignOutConfirmDialog } from "@/components/SignOutConfirmDialog";
 
-/** Settings → Sign Out: opens the same "Are you sure?" popup as the account menu, which signs out and goes home. */
+/** Settings → Sign Out: opens the same "Are you sure?" popup as the account menu, which signs out THIS device and goes
+ *  home (other devices stay signed in; Settings → Account → Devices signs them out). */
 export function SignOutButton() {
   const [confirming, setConfirming] = useState(false);
   return <>

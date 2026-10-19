@@ -2,6 +2,7 @@
 // Importing this file IS the isolation guard: it refuses to run unless the isolated stack from setup.mjs answers on
 // 127.0.0.1:55321, replaces every SUPABASE env var with that stack's local keys (no .env file is read), and makes every
 // network request fail unless it goes to 127.0.0.1 / localhost.
+import { AsyncLocalStorage } from "node:async_hooks";
 import { execFileSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 
@@ -37,10 +38,12 @@ type Handler = (request: Request, context: { params: Promise<never> }) => Promis
 export async function call(jar: Jar, handler: Handler, path: string, body?: unknown,
   options: { method?: string; params?: Record<string, string>; headers?: Record<string, string> } = {}) {
   (globalThis as { __authLocalJar?: Jar }).__authLocalJar = jar;
+  const store = ((globalThis as { __authLocalStore?: AsyncLocalStorage<Jar> }).__authLocalStore ??= new AsyncLocalStorage<Jar>());
   const method = options.method ?? "POST";
   const headers = { "Content-Type": "application/json", origin: "http://127.0.0.1:3999", ...options.headers };
   const request = new Request(`http://127.0.0.1:3999${path}`, method === "GET" ? { method, headers } : { method, headers, body: JSON.stringify(body ?? {}) });
-  const response = await handler(request, { params: Promise.resolve(options.params ?? {}) as Promise<never> });
+  // Each request keeps its own jar even when several run at once.
+  const response = await store.run(jar, () => handler(request, { params: Promise.resolve(options.params ?? {}) as Promise<never> }));
   const text = await response.text();
   let json: unknown = null;
   try { json = JSON.parse(text); } catch { /* redirects have no JSON */ }
