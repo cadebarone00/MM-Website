@@ -6,6 +6,7 @@ import { ProfileFieldsSetting } from "@/components/settings/ProfileFieldsSetting
 import { SettingsScreen } from "@/components/settings/SettingsScreen";
 import { SignOutButton } from "@/components/settings/SignOutButton";
 import { OrganizerOffers } from "@/components/settings/OrganizerOffers";
+import { ChangePasswordSetting } from "@/components/settings/ChangePasswordSetting";
 import { myOrganizerOffers } from "@/lib/account/accountDeletion";
 import deleteStyles from "@/components/settings/DeleteAccount.module.css";
 import { getMyRoundsVisibility } from "@/lib/platform/playerRoundsServer";
@@ -21,7 +22,7 @@ const initialsOf = (name: string) => name.trim().split(/\s+/).slice(0, 2).map((w
 
 /**
  * Settings (the gear on Profile and in the account menu), in the app's look: Profile photo, Account (edit profile,
- * Delete account, Sign Out) and Privacy (Rounds public / private). Signed-out visitors get Log In.
+ * Change password, Delete account, Sign Out) and Privacy (Rounds public / private). Signed-out visitors get Log In.
  */
 export default async function SettingsPage() {
   const { data: { user } } = await (await createSupabaseServerClient()).auth.getUser();
@@ -37,6 +38,7 @@ export default async function SettingsPage() {
     account={user ? <>
       {fields ? <ProfileFieldsSetting email={user.email} initial={{ displayName: fields.displayName, username: fields.username, bio: fields.bio }} bioAvailable={fields.bioAvailable} />
         : user.email && <p className={styles.text}><span className={styles.muted}>Signed in as</span> {user.email}</p>}
+      <ChangePasswordSetting />
       <Link href="/settings/delete-account" className={deleteStyles.dangerLink}>Delete account</Link>
     </> : <>
       <p className={styles.text}>You&apos;re not signed in.</p>

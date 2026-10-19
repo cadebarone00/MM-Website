@@ -6,9 +6,9 @@ import { deletionPreview, requestAccountDeletion, requestWithFreshSignIn } from 
 /**
  * Settings → Account → Delete account (Accounts V2, Step 3; supabase/account_deletion.sql).
  * GET  = what deleting would do + whether a deletion is already under way.
- * POST = delete MY account: { confirm: "DELETE", password? }. The account always comes from the verified session (web
- *        cookie or `Authorization: Bearer`); any id in the body is ignored. Needs a sign-in within the last 10 minutes,
- *        or the account password typed into the form. Answers the state actually reached: "completed" only after the
+ * POST = delete MY account: { confirm: "DELETE", password }. The account always comes from the verified session (web
+ *        cookie or `Authorization: Bearer`); any id in the body is ignored. The account password is always required
+ *        (checked for this account's own email). Answers the state actually reached: "completed" only after the
  *        database, Storage and the login itself are all gone; anything earlier means closed, finishing in the background.
  */
 const headers = { "Cache-Control": "no-store" };
@@ -27,12 +27,13 @@ export async function POST(request: Request) {
   if (!account) return NextResponse.json({ ok: false, error: "Log in first." }, { status: 401, headers });
   const body = await request.json().catch(() => null) as { confirm?: unknown; password?: unknown } | null;
   if (body?.confirm !== "DELETE") return NextResponse.json({ ok: false, error: "Type DELETE to confirm." }, { status: 400, headers });
-  let signedIn: Request = request;
-  if (typeof body.password === "string" && body.password) {
-    const fresh = await requestWithFreshSignIn(account.email, body.password);
-    if (!fresh) return NextResponse.json({ ok: false, reauth: true, error: "That password isn't right." }, { status: 401, headers });
-    signedIn = fresh;
+  // The password is ALWAYS required (found in phase A2 testing): a session alone, even one signed in a few minutes ago,
+  // may be stolen. A future Sign in with Apple account will re-confirm with Apple instead.
+  if (typeof body.password !== "string" || !body.password) {
+    return NextResponse.json({ ok: false, reauth: true, error: "Enter your password to confirm it's you." }, { status: 401, headers });
   }
+  const signedIn = await requestWithFreshSignIn(account.email, body.password);
+  if (!signedIn) return NextResponse.json({ ok: false, reauth: true, error: "That password isn't right." }, { status: 401, headers });
   const result = await requestAccountDeletion(signedIn);
   if (result.status === "reauth-required") return NextResponse.json({ ok: false, reauth: true, error: "Enter your password to confirm it's you." }, { status: 401, headers });
   if (result.status === "signed-out") return NextResponse.json({ ok: false, error: "Log in first." }, { status: 401, headers });

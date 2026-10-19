@@ -167,19 +167,41 @@ create trigger guard_profile_rows before insert or update or delete on public.pr
   for each row execute function public.guard_profile_rows();
 
 -- === Blocking a deleted account everywhere, including old JWTs ========================================================
+-- Is the CURRENT token's session still valid? A token stops working at once when its account is closed (ledger) or its
+-- sign-in session was revoked (signed out on another device, password changed: Accounts V2 phase A2), instead of
+-- living on until it expires. Tokens without a session id (anon / service keys) are unaffected.
+create or replace function public.session_is_revoked()
+returns boolean
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v_sid text;
+begin
+  if auth.uid() is null or to_regclass('auth.sessions') is null then return false; end if;
+  v_sid := nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'session_id';
+  if v_sid is null then return false; end if;
+  return not exists (select 1 from auth.sessions where id = v_sid::uuid);
+exception when others then
+  return true; -- a malformed session id is never treated as valid
+end;
+$$;
+
 create or replace function public.account_is_active()
 returns boolean
 language sql stable security definer set search_path = public as $$
-  select auth.uid() is null or not exists (select 1 from account_deletions where account_id = auth.uid());
+  select auth.uid() is null or (not exists (select 1 from account_deletions where account_id = auth.uid()) and not session_is_revoked());
 $$;
 
--- PostgREST pre-request hook: every REST / RPC request with a deleted account's token is refused before it runs.
+-- PostgREST pre-request hook: every REST / RPC request with a closed account's (or a revoked session's) token is
+-- refused before it runs.
 create or replace function public.reject_deleted_accounts()
 returns void
 language plpgsql stable security definer set search_path = public as $$
 begin
-  if not account_is_active() then
+  if auth.uid() is not null and exists (select 1 from account_deletions where account_id = auth.uid()) then
     raise exception 'This account has been deleted.' using errcode = '42501';
+  end if;
+  if session_is_revoked() then
+    raise exception 'This session has been signed out. Sign in again.' using errcode = '42501';
   end if;
 end;
 $$;
@@ -575,8 +597,9 @@ grant execute on function public.request_account_deletion(uuid), public.offer_go
 -- The checks below run inside every browser request (policies / pre-request), so the request roles must call them.
 -- They only answer "is the CURRENT token's account active?"; they take no arguments.
 revoke all on function public.account_is_active() from public;
+revoke all on function public.session_is_revoked() from public;
 revoke all on function public.reject_deleted_accounts() from public;
-grant execute on function public.account_is_active(), public.reject_deleted_accounts() to anon, authenticated, service_role;
+grant execute on function public.account_is_active(), public.reject_deleted_accounts(), public.session_is_revoked() to anon, authenticated, service_role;
 
 commit;
 

@@ -52,7 +52,8 @@ refresh_token_reuse_interval = 10
 enable_signup = true
 enable_anonymous_sign_ins = false
 enable_manual_linking = false
-minimum_password_length = 6
+# Accounts V2 phase A2: same minimum as the app (lib/auth/passwordPolicy.ts). Supabase caps passwords at 72 bytes.
+minimum_password_length = 12
 
 [auth.rate_limit]
 email_sent = 1000
@@ -65,7 +66,8 @@ enable_signup = true
 double_confirm_changes = true
 # Production has unverified accounts, so email confirmation is ON there; match it.
 enable_confirmations = true
-secure_password_change = false
+# A2: Supabase also requires a recent sign-in to change a password (recommended for production too).
+secure_password_change = true
 max_frequency = "1s"
 otp_length = 6
 otp_expiry = 3600

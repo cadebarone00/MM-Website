@@ -1,4 +1,5 @@
 "use client";
+import { PASSWORD_HINT, PASSWORD_MIN_CHARS } from "@/lib/auth/passwordPolicy";
 import { useState } from "react";
 import Link from "next/link";
 import { AuthMethods } from "./AuthMethods";
@@ -30,7 +31,7 @@ export function SignUpForm({ initialCode, returnTo = null }: { initialCode?: str
       {done ? <div role="status"><h2>Check your email</h2><p>Open the verification link sent to {email}, then <Link href={returnTo ? withReturnTo("/login/email", returnTo) : "/login"}>sign in</Link>.</p></div> :
       <form onSubmit={handleSubmit}>
         {step === 1 ? <><AuthMethods /><label>Email<input autoComplete="email" required type="email" value={email} onChange={e => setEmail(e.target.value)} /></label></> :
-          <><h2>Create a password</h2><p>{email}</p><label>Password<input autoComplete="new-password" required minLength={6} type="password" value={password} onChange={e => setPassword(e.target.value)} /><span>At least 6 characters</span></label></>}
+          <><h2>Create a password</h2><p>{email}</p><label>Password<input autoComplete="new-password" required minLength={PASSWORD_MIN_CHARS} type="password" value={password} onChange={e => setPassword(e.target.value)} /><span>{PASSWORD_HINT}</span></label></>}
         {initialCode && <p>Signing up as {initialCode}</p>}
         {error && <p role="alert">{error}</p>}
         <button type="submit" disabled={submitting}>{submitting ? "Creating account?" : step === 1 ? "Next" : "Create an Account"}</button>

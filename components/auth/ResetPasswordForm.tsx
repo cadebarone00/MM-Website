@@ -1,5 +1,6 @@
 "use client";
 
+import { PASSWORD_MIN_CHARS } from "@/lib/auth/passwordPolicy";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -72,7 +73,7 @@ export function ResetPasswordForm() {
       <input
         required
         disabled={sessionState !== "ready"}
-        minLength={6}
+        minLength={PASSWORD_MIN_CHARS}
         autoComplete="new-password"
         type="password"
         placeholder="New password"

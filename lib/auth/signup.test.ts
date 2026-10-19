@@ -3,10 +3,11 @@ import assert from "node:assert/strict";
 import { signupInputFromBody, signupReply } from "./signup.ts";
 
 test("signup input: email + password only; player codes, names and usernames are ignored", () => {
-  assert.deepEqual(signupInputFromBody({ email: " a@b.co ", password: "secret1", username: "MMCADBAR", name: "Cade" }), { ok: true, input: { email: "a@b.co", password: "secret1" } });
+  assert.deepEqual(signupInputFromBody({ email: " a@b.co ", password: "a long passphrase", username: "MMCADBAR", name: "Cade" }), { ok: true, input: { email: "a@b.co", password: "a long passphrase" } });
   assert.equal(signupInputFromBody(null).ok, false);
-  assert.equal(signupInputFromBody({ email: "nope", password: "secret1" }).ok, false);
-  assert.equal(signupInputFromBody({ email: "a@b.co", password: "12345" }).ok, false);
+  assert.equal(signupInputFromBody({ email: "nope", password: "a long passphrase" }).ok, false);
+  assert.equal(signupInputFromBody({ email: "a@b.co", password: "elevenchars" }).ok, false, "under 12 characters");
+  assert.equal(signupInputFromBody({ email: "a@b.co", password: "ab".repeat(37) }).ok, false, "over 72 bytes");
 });
 
 test("an existing account (verified or not) or a throttled retry answers exactly like a new signup", () => {

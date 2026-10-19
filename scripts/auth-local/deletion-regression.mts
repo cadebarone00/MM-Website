@@ -188,8 +188,14 @@ section("A verified login with no profile (like production's 2 orphans)");
   const fragment = new URLSearchParams(new URL(await openLink(orphanEmail, "invite")).hash.slice(1));
   sql(`delete from public.profiles where false`); // (no profile is ever created for it below)
   const orphanId = account(orphanEmail)!.id;
-  const token = fragment.get("access_token")!;
+  const linkToken = fragment.get("access_token")!;
   check("orphan has no profile", !profile(orphanId));
+  // Phase A2: an invite / reset link is not a "confirm it's you" sign-in. A link-only account sets a password first
+  // (forgot password), then deletes with it.
+  const linkOnly = await deleteAs(linkToken);
+  check("an invite-link session alone can't confirm deletion", linkOnly.status === "reauth-required" && ledger(orphanId) === "<none>", JSON.stringify(linkOnly));
+  await admin.auth.admin.updateUserById(orphanId, { password: "orphan pass phrase 1" }); // stands in for the forgot-password email
+  const token = (await anon().auth.signInWithPassword({ email: orphanEmail, password: "orphan pass phrase 1" })).data.session!.access_token;
   const r = await deleteAs(token);
   check("orphan deletion completes", r.status === "ok" && r.state === "completed" && sql(`select count(*) from auth.users where id = ${q(orphanId)}`) === "0", JSON.stringify(r));
   check("and no profile was created for it", !profile(orphanId));
