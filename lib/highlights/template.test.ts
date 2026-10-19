@@ -9,14 +9,14 @@ test("fills every placeholder, keeps emoji, allows repeats and numbers", () => {
 });
 
 test("refuses to half-render when a value is missing or blank", () => {
-  assert.deepEqual(renderTemplate("{player} makes eagle on No. {hole}.", { player: "Cam" }), { ok: false, missing: ["hole"], problems: [] });
-  assert.deepEqual(renderTemplate("{player}", { player: "  " }), { ok: false, missing: ["player"], problems: [] });
+  assert.deepEqual(renderTemplate("{player} makes eagle on No. {hole}.", { player: "Cam" }), { ok: false, missing: ["Hole"], problems: [] });
+  assert.deepEqual(renderTemplate("{player}", { player: "  " }), { ok: false, missing: ["Player"], problems: [] });
 });
 
 test("rejects unknown variables and stray braces", () => {
   const unknown = renderTemplate("{name} wins", { player: "Cam" });
   assert.equal(unknown.ok, false);
-  assert.deepEqual(checkTemplate("{name} and {player}"), { variables: ["name", "player"], unknown: ["name"], problems: [] });
+  assert.deepEqual(checkTemplate("{name} and {player}"), { variables: ["name", "Player"], unknown: ["name"], problems: [] });
   assert.equal(checkTemplate("Cam {player").problems.length, 1);
   assert.equal(checkTemplate("Cam player}").problems.length, 1);
   assert.equal(checkTemplate("{{player}}").problems.length, 1);

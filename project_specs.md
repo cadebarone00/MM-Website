@@ -2809,6 +2809,22 @@ Three tabs in Predict, each bet a card; *(team)* = only for trips with a team co
 - **Individual:** best and worst player (tap for everyone ranked) for scoring average, par 3s / 4s / 5s, bounce back (birdie+ after bogey+), fall off (bogey+ after birdie+), fairways, GIR, putts per round, 3-putts per round, scrambling, birdies per round, par-or-better %; then the existing all-players table. Minimum chances so one hole can't top a list.
 - Data: the trip's saved rounds (lib/platform/tripInsights.ts). Simulator: Golf Trip Active → Stats → "Sample trip stats" (lib/dev/sampleTripRounds.ts).
 
+### Round: Player pop-up shows the player's own trip stats (owner request 2026-10-19, approved and built 2026-10-19, not committed)
+
+**What it does / who uses it.** Anyone on the trip taps a player on Golf → Overview (the leaderboard). The pop-up that opens now also shows **that player's stats from this trip** — the same numbers the Stats tab compares across everyone, but just for them.
+
+**What's added to the pop-up** (a new "This trip" section, under the Round / Overall snapshot, above "Their game"):
+- **Top line:** Rounds · Scoring avg · Putts · FWY % · GIR % (their row from the Stats tab's All players table).
+- **Every Individual stat:** Scoring average, Par 3s, Par 4s, Par 5s, Bounce back, Fall off, Fairways hit, GIR, Putts per round, 3-putts per round, Scrambling, Birdies per round, Par or better — each with their value and where they rank on the trip (e.g. "2nd of 8").
+- Fixed layout: every row is always there; "—" when they don't have enough holes yet (same minimums as the Stats tab). No trip stats at all → the section shows "—" everywhere with "Shows once rounds are submitted."
+- "Their game" (career numbers from all their rounds) stays as it is.
+
+**Data.** No new tables, no SQL. Uses the trip stats the Golf tab already loads (`tripStats`) and the same math as the Stats tab (`playerStats` in lib/platform/tripInsights.ts). Player matched by name, like the existing team stats sheet.
+
+**Files.** components/platform/GolfTripHome.tsx (pass `tripStats` to the leaderboard), components/platform/GolfTripMatch.tsx (leaderboard → pop-up, new "This trip" section), GolfTripMatch.module.css (its styles).
+
+**Done means:** in the app simulator (Golf Trip Active with sample trip stats), tapping any leaderboard player shows their trip numbers matching the Stats tab exactly; a player with no rounds shows "—"; typecheck + existing tests pass.
+
 ## Highlights Engine — Google Sheet rulebook → published configuration (decisions 2026-10-16, revised 2026-10-17)
 
 **What it does / who uses it.** Organizers/developers (platform admins) edit highlight rules and notification copy in the Google Sheet "The_Maroon_Highlights_Source_of_Truth" and publish them to The Maroon without a code change or app release. Players only ever see published, approved copy.
@@ -2905,6 +2921,30 @@ Three tabs in Predict, each bet a card; *(team)* = only for trips with a team co
 **API (`app/api/portal/admin/highlights`).** `GET /` state; `POST /drafts` (multipart file + action `preview` | `save`; save must re-send the same file — its fingerprint must match the previewed one); `POST /publish`, `/rollback`, `/discard`. Every write: same-origin only → session platform-admin check (`lib/portal/requirePlatformAdmin.ts`, user id from the session, never the request) → admin-checked database function. Database refusals map to 400 / 403 / 404 / 409 with their plain-English messages; anything unexpected is a generic 500, logged server-side only; 503 when the SQL isn't installed. Logic lives in `lib/highlights/adminApi.ts` (dependencies injected; tested with fakes and against the real SQL); `lib/highlights/adminServer.ts` wires the service-role client (server only).
 
 **Not in this round.** No migration run anywhere, no deploy, no detectors (H5), no change to scoring, momentum or push.
+
+### Round: Highlights Phase H4.5 + H5A — expanded sheet, eligibility, preferences, simulator (owner request 2026-10-19)
+
+**Sheet (export of 2026-10-19 10:39).** Seven tabs: the six golf tabs (HL-001 … HL-053; HL-049 = shared birdies in the same group, HL-053 = across different groups) + **Travel and itinerary alerts** (TR-001 … TR-022). Each CONDITIONAL row carries the first quip itself (V1); two VARIATION rows (`-V02`, `-V03`) follow. Golf PARENT rows carry Notification Category, Competition Eligibility, Minimum Alert Level; the travel tab has its own columns (Category, Audience, Reminder / trigger, Source requirement, Notes, Platform check) instead of Tier / Detection notes.
+
+**Importer / schema decisions (config `schemaVersion` 3; stored v2 configs stay readable and are upgraded in memory).**
+- IDs: `HL-` or `TR-` + 3 digits; conditionals `-C01`; variations `-V01`… HL rules live in the six golf tabs, TR rules only in the travel tab.
+- The CONDITIONAL row's own copy is its variation **`<conditional ID>-V01`** (was V00 in v2, when it couldn't be combined with VARIATION rows). VARIATION rows then use V02+; a VARIATION row typed V01 under a conditional that has its own copy is a duplicate. V00 is no longer valid.
+- A VARIATION row with a blank Status inherits its conditional's status. "Needs copy" is still not a status (error).
+- A Tier cell holding a version label (`V1`, `V2`…) is a label, not a tier (four tabs have no Version column).
+- Rule metadata is read from the PARENT row and stored as typed in `rule.meta` (notificationCategory, competitionEligibility, minimumAlertLevel, audience, reminderTrigger, sourceRequirement); the code interprets it. Child rows repeating it are ignored (warning if they disagree). Unparseable metadata is an error on live rules, a warning on Draft ones.
+- Placeholders match case- and spacing-insensitively. Supported: Player, Players, Player 1–3, Player 1/2 + Team A/B, Team, Team A, Team B, Hole, Count, Margin, Round, Course, Time, Date, Destination, Flight Number, Flight Status, Location, Carpool Name, Property, Venue, Event Name, Announcement. `{Team}` = the team the moment is about; Team A = that side, Team B = the other side.
+- Validator adds: family/tab mismatch, metadata parsing, headline-without-emoji warning. Change classifier: eligibility, alert level, category, audience, trigger and source changes are **behavior**.
+- `supabase/highlights_config.sql` (still NOT run anywhere) accepts schema 2 and 3 and TR IDs; re-running it upgrades the constraints.
+
+**Eligibility (from the trip's real setup, not a label).** Competition profile = individual competition (Stroke Play / Points Based), match play (a team format and Match Play rounds), team competition (2 Teams), tournament = any of those. Trip types: Match + Individual, Match Only, Individual Only, Noncompetitive. "(team competition active)" and "(tournament configured)" add those requirements. Noncompetitive trips never get match / team / leaderboard results.
+
+**Preferences (simulator state only; no tables).** Golf highlights: Off / Big Plays / Balanced (default) / All — a ranking: Big Plays rules reach every level, Balanced rules reach Balanced + All, All rules only All. Categories (each on/off): Trip essentials, Golf performance, Match and competition, Individual leaderboard, Flights and transportation, Group announcements, Fun and social. Sheet → preference category: Individual performance → Golf performance; Match play drama + Team competition → Match and competition; Individual leaderboard → Individual leaderboard; Trip and tournament milestones → Trip essentials; Fun and social highlights → Fun and social; Flights + Transportation → Flights and transportation; Golf schedule + Lodging + Trip changes + Trip milestones → Trip essentials; Group activities + Organizer messages → Group announcements. Travel ignores golf intensity. Account-level preferences with optional per-trip overrides. A muted category only stops the push / inbox entry; itinerary data and event history stay.
+
+**Decision for one recipient (shown in the simulator).** (1) competition / activity enabled, (2) recipient in the audience, (3) category on, (4) golf intensity includes the rule (golf only), (5) rule Approved with an Approved variation (simulator can preview Drafts, labeled), (6) every placeholder resolvable for the chosen variation (variations that can't be filled are skipped; none left = suppressed). Outcome: not created (1, 2, 5, 6), muted (3, 4: kept in history, no push), or delivered. Plus modeled (not live): event keys / duplicate suppression, withdrawal on score correction, reminder rescheduling on itinerary edits, trip-time-zone send times, a per-recipient golf highlight volume cap.
+
+**Simulator (existing Notifications group — no new group, existing screens kept).** Phone and In-app pages get a "Highlights scenario" panel in column 3 (like Trip scenario): data source (design samples vs Highlights Engine), scenario (golf + travel), trip competition, team competition, recipient, golf intensity, categories, variation (V1/V2/V3/random), Draft preview, read/unread, delivery state. Phone gains an Android notification screen. The panel shows the six checks and the rendered result. Config comes from a generated snapshot of the 2026-10-19 export (`lib/dev/highlightsSnapshot.json`, clearly a fixture). Nothing is sent.
+
+**Not in this round.** Live scoring hooks, real detection (H5B), scheduled jobs, real push, preference tables, migrations, deploys, Google Sheet edits.
 
 ## Notifications — native App Store app (proposed 2026-10-16; Phase 1 approved and built 2026-10-16)
 
@@ -3195,3 +3235,7 @@ Not yet: the server that builds real Live Activities reads `courseShortNames` (P
 | Android Live Update (status bar chip + pinned notification) | **Google's standard template only** (Android 16: Standard / BigText / Call / Progress style, no custom views, so no custom layout or fonts): header (one-color small icon, app, trip, when), a title line, one text line, a progress bar while live. The chip = small icon + the tiny-circle text. Our dark maroon is a requested color; Android may show its own. The small icon must be a one-color silhouette (to design; the preview uses an "M"). |
 
 Android text (`androidLiveUpdate()` in `lib/notifications/format.ts`, tested): title `Maroon 3½ – 1½ White` (Individual only `6th · Cade Barone +5`, None the trip name); text by step — popped up `Tee 2:24 vs Collin Ross`, live `3▲ vs Collin Ross · +2 thru 15 · 6th`, round over `W 3&2 vs Collin Ross · Next 2:00 · <course>`, after the last round `W 3&2 vs Collin Ross · Final · 6th`. Win/loss colors can't be relied on in Android's template text, so the words W / L carry it there. Previews: `/dev` → Notifications → Live Activity → "Android pinned Live Update · …".
+
+### Trip Home: bell + chat open the same slide-up sheet (owner 2026-10-19, built)
+
+The bell (notifications) and the chat bubble both open one sheet that **slides up from the bottom to 85% of the screen** (743 of 874px on an iPhone 17 Pro), over the bottom menu, with a grab handle and a dimmed backdrop; tapping the backdrop or ✕ closes it. The settings wheel still goes to the settings page. The real notification list is built separately (another window) and drops into the bell's sheet: today it holds the existing Team Draft notice + Round alerts. Files: `GolfTripHome.tsx` / `.module.css` (`.sheetBackdrop`, `.notificationsDropdown`), `GolfTripChat.tsx` / `.module.css` (`.dialog`).

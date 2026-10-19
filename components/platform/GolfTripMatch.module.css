@@ -491,15 +491,14 @@
 .matchesList .matchListHeading + .lineup > .pairing:first-child{border-top:0}
 .matchesList .matchListHeading + .lineup > .pairing:first-child .matchNumber{top:7px}
 
-/* Team labels and scoring share one header row. */
+/* Team labels sit below the left-aligned scoring row. */
 .matchesList .teamNames{margin-top:0}
 
-/* Same compact scoring control centered in Matches and Leaderboard headers. */
-.matchListHeading,.leaderboardListHeading{position:relative;min-height:28px;display:grid;align-items:center}
-.matchListHeading{border-bottom:1px solid rgba(255,255,255,.3)}
+/* Same compact scoring control beneath the board, aligned left on its own row. */
+.matchListHeading,.leaderboardListHeading{position:relative;min-height:28px;display:grid;align-items:center;row-gap:8px}
+.matchListHeading{padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.3)}
 .matchListHeading .teamNames{padding:0 2px;border:0}
-.matchListHeading:has(.matchScoringControl) .teamNames{gap:112px}
-.matchListHeading .matchScoringControl,.leaderboardListHeading .matchScoringControl{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);justify-content:center;align-items:center;height:auto}
+.matchListHeading .matchScoringControl,.leaderboardListHeading .matchScoringControl{position:static;order:-1;justify-self:start;justify-content:flex-start;align-items:center;height:auto}
 .leaderboardListHeading .columns{min-height:28px;border-top:0}
 .matchScoringControl .scoringLabel{min-height:20px;font-size:9px}
 .matchScoringControl .scoring{padding:1px}
@@ -512,6 +511,18 @@
 .scorecardStacked .scorecardTable th{width:52px;padding-right:6px}
 .scorecardStacked .scorecardTable td{min-width:0;padding:6px 0}
 .scorecardStacked .scorecardTable .totalCell{min-width:0}
+.profileTripStats{margin:6px 16px 24px}
+.profileTripStats h4{margin:0 0 8px;font:700 13px var(--font-barlow),sans-serif;color:#dcc495}
+.profileTripStatsTop{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:0}
+.profileTripStatsTop div{display:grid;gap:4px;padding:10px 2px;border:1px solid rgba(251,248,241,.18);border-radius:14px;text-align:center}
+.profileTripStatsTop dt{font:600 11px var(--font-barlow),sans-serif;color:rgba(251,248,241,.65)}
+.profileTripStatsTop dd{margin:0;font:700 18px/1 var(--font-spectral),Georgia,serif;color:#fbf8f1;white-space:nowrap}
+.profileTripStatsList{margin:10px 0 0;padding:0;list-style:none}
+.profileTripStatsList li{display:grid;grid-template-columns:minmax(0,1fr) 64px 64px;align-items:baseline;gap:8px;padding:9px 2px;border-bottom:1px solid rgba(251,248,241,.12)}
+.profileTripStatsList span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 13px var(--font-barlow),sans-serif;color:#fbf8f1}
+.profileTripStatsList b{text-align:right;font:700 16px/1 var(--font-spectral),Georgia,serif;color:#fbf8f1}
+.profileTripStatsList small{text-align:right;font:500 11px var(--font-barlow),sans-serif;color:rgba(251,248,241,.6)}
+.profileTripStats p{margin:8px 0 0;font:500 11px var(--font-barlow),sans-serif;color:rgba(251,248,241,.5)}
 .profileGameStats{margin:6px 16px 24px}
 .profileGameStats h4{margin:0 0 8px;font:700 13px var(--font-barlow),sans-serif;color:#dcc495}
 .profileGameStats dl{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0}
@@ -520,5 +531,5 @@
 .profileGameStats dd{margin:0;font:700 20px/1 var(--font-spectral),Georgia,serif;color:#fbf8f1}
 .profileGameStats p{margin:8px 0 0;font:500 11px var(--font-barlow),sans-serif;color:rgba(251,248,241,.5)}
 
-/* Keep compact headers clear of the centered switch on narrow phones. */
-@media(max-width:374px){.leaderboard .single{grid-template-columns:30px minmax(0,1fr) repeat(3,28px);gap:4px}.leaderboard .singleNet{grid-template-columns:30px minmax(0,1fr) 28px repeat(3,28px)}.leaderboardListHeading .columnLabel:nth-last-child(3){grid-column:-4}.leaderboardListHeading .columnLabel:nth-last-child(2){grid-column:-3}.leaderboardListHeading .columnLabel:last-child{grid-column:-2}.leaderboardListHeading .singleNet>span:nth-child(2){position:absolute;left:38px}}
+/* Compact score columns on narrow phones. */
+@media(max-width:374px){.leaderboard .single{grid-template-columns:30px minmax(0,1fr) repeat(3,28px);gap:4px}.leaderboard .singleNet{grid-template-columns:30px minmax(0,1fr) 28px repeat(3,28px)}.leaderboardListHeading .columnLabel:nth-last-child(3){grid-column:-4}.leaderboardListHeading .columnLabel:nth-last-child(2){grid-column:-3}.leaderboardListHeading .columnLabel:last-child{grid-column:-2}}

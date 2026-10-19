@@ -19,8 +19,8 @@ test("no edits → none", () => {
 
 test("headline or body wording → copy, with before/after", () => {
   const draft = draftWith((c) => { birdies(c).conditionals[0].variations[0].headline = "{player} is cooking! 🔥"; birdies(c).conditionals[1].variations[0].body = "Four straight."; });
-  assert.deepEqual(summary(draft), { kind: "copy", changes: ["copy:HL-001-C01-V00:headline", "copy:HL-001-C02-V00:body"] });
-  assert.deepEqual(classifyChanges(published(), draft).changes[0], { kind: "copy", id: "HL-001-C01-V00", field: "headline", before: "{player}'s heating up! 🔥", after: "{player} is cooking! 🔥" });
+  assert.deepEqual(summary(draft), { kind: "copy", changes: ["copy:HL-001-C01-V01:headline", "copy:HL-001-C02-V01:body"] });
+  assert.deepEqual(classifyChanges(published(), draft).changes[0], { kind: "copy", id: "HL-001-C01-V01", field: "headline", before: "{player}'s heating up! 🔥", after: "{player} is cooking! 🔥" });
 });
 
 test("tier change, disabling or approving → behavior", () => {

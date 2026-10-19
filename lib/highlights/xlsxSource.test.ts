@@ -63,7 +63,7 @@ test("numbers and formula cells are read as their displayed text; formulas are n
 test("missing category tabs are left for the importer to report", () => {
   const result = read(toXlsx(validSheet().slice(0, 5)));
   assert.ok(result.ok);
-  assert.equal(importHighlightSheet(result.tabs).issues.filter((i) => i.code === "missing-tab").length, 4);
+  assert.equal(importHighlightSheet(result.tabs).issues.filter((i) => i.code === "missing-tab").length, 5);
 });
 
 test("rejects empty, oversized, wrong-type and broken files without throwing", () => {

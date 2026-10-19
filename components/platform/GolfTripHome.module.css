@@ -238,7 +238,7 @@
 .itineraryDayStep:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
 /* Info → Itinerary: each plan is a raised cream box (same look as Competition → Format round boxes). */
 .itineraryBox{display:grid;gap:2px;padding:14px 16px;border:1px solid rgba(214,184,121,.55);border-radius:16px;background:linear-gradient(180deg,#fffdf8 0%,#fbf8f1 55%,#efe7d6 100%);color:#591c2e;box-shadow:inset 0 1px 0 #fff,inset 0 -2px 0 rgba(89,28,46,.12),0 6px 14px rgba(0,0,0,.35),0 2px 4px rgba(0,0,0,.25)}
-.itineraryBoxTime{color:#805b24;font:500 13px/1.2 var(--font-barlow),sans-serif}
+.itineraryBoxTime{overflow-wrap:anywhere;color:#805b24;font:500 13px/1.2 var(--font-barlow),sans-serif}
 .itineraryBoxKind{color:#805b24;font:700 12px/1.2 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase}
 .itineraryBoxTitle{color:#591c2e;font:700 17px/1.2 var(--font-spectral),Georgia,serif;overflow-wrap:anywhere}
 .itineraryBoxTop{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
@@ -249,7 +249,7 @@
 .itineraryBoxTop .itineraryBoxTime{color:#591c2e;font:700 16px/1.2 var(--font-spectral),Georgia,serif}
 .itineraryBoxTop .itineraryBoxKind{color:#591c2e;font:700 13px/1.2 var(--font-barlow),sans-serif;letter-spacing:.08em}
 /* Itinerary boxes are buttons that open the plan's sheet. */
-button.itineraryBox{width:100%;text-align:left;font:inherit;cursor:pointer}
+button.itineraryBox{box-sizing:border-box;min-width:0;width:100%;text-align:left;font:inherit;cursor:pointer}
 button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 /* Itinerary: each plan's type sits outside, above its box — cream, left-aligned, bold, with a line under it. */
 .itineraryEntry{display:grid;gap:8px}
@@ -326,14 +326,6 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 
 .titleLine{display:block;white-space:nowrap}
 .predictEntry{display:block;margin:12px auto;padding:9px 28px;border:1px solid #dcc495;border-radius:999px;background:transparent;color:#dcc495;font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
-.itineraryBox.itineraryBox[data-golf=true]{height:90px;box-sizing:border-box;align-content:start;overflow:hidden;row-gap:2px;padding:6px 10px}
-.itineraryBox.itineraryBox[data-golf=true] .itineraryBoxTitle,.itineraryBox.itineraryBox[data-golf=true] > .itineraryBoxTime{max-width:60%}
-.itineraryBox.itineraryBox[data-golf=true] .itineraryBoxTop{padding-right:40%;box-sizing:border-box}
-.itineraryBox.itineraryBox[data-golf=true] .itineraryBoxTitle{font-size:14px;line-height:1.1}
-.itineraryBox.itineraryBox[data-golf=true] .itineraryBoxTop{min-height:16px;padding-bottom:3px;margin-bottom:2px}
-.itineraryBox.itineraryBox[data-golf=true] .itineraryBoxTime{font-size:11px;line-height:1.1}
-.itineraryBox[data-golf=true] .itineraryBoxTitle{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
-.itineraryBox[data-golf=true] > .itineraryBoxTime{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;margin:0}
 
 
 .homeFeed{flex:1;min-height:160px}
@@ -356,3 +348,6 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 .standingsNotice > div{min-width:0}
 .standingsNotice p{margin:1px 0 0;font-size:11px;line-height:13px}
 .standingsNotice button{flex:none;padding:6px 10px;border:1px solid #dcc495;border-radius:999px;background:transparent;color:inherit;font:700 12px var(--font-barlow),sans-serif;cursor:pointer}
+
+/* The active round replaces its green participation label with red Live. */
+.itineraryPlaying[data-live=true]{color:#c62828}

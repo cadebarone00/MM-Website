@@ -9,7 +9,7 @@ import type { AppNotification, LeaderboardRow, LiveRoundActivity } from "@/lib/n
 
 /** Every preview screen in the group. The first id of each surface is its default. */
 export const NOTIFICATION_PREVIEWS = {
-  phone: ["lock", "lock-stack", "banner", "signed-out-lock", "signed-out-tap"],
+  phone: ["lock", "lock-stack", "banner", "signed-out-lock", "signed-out-tap", "android-note"],
   live: ["both-live", "both-live-top3", "both-pre", "both-over", "both-final", "both-pairs-live", "both-pairs-over", "both-lost", "both-expanded", "pill-pre", "pill-live", "pill-over", "pill-final", "pill-lost", "individual-live", "individual-pill", "team-live", "team-pill", "none-live", "none-pill", "android-pre", "android-live", "android-over", "android-final", "android-lost", "android-update-pre", "android-update-live", "android-update-over", "android-update-final", "android-update-individual", "android-update-none"],
   inApp: ["bell-unread", "bell-read", "bell-empty", "top-banner"],
 } as const;
@@ -21,6 +21,7 @@ export const NOTIFICATION_PREVIEW_LABELS: Record<NotificationPreview, string> = 
   "banner": "Unlocked phone · banner over the home screen",
   "signed-out-lock": "Signed out · real notifications still arrive",
   "signed-out-tap": "Signed out · after tapping (sign in, then the update)",
+  "android-note": "Android lock screen · notification",
   "pill-pre": "Pill · popped up, 13m to a 2:24 tee time",
   "pill-live": "Pill · live round (+2, 3 up, thru 15)",
   "pill-over": "Pill · round over, next tee time 2:00",

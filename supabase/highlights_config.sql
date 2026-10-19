@@ -1,6 +1,7 @@
 -- supabase/highlights_config.sql — Highlights Engine phase H3: versioned rule configuration (spec: project_specs.md →
 -- "Highlights Engine"). Additive and re-runnable; touches no existing table. Requires platform_foundation.sql
--- (profiles.platform_role). NOT run in production or staging yet.
+-- (profiles.platform_role). NOT run in production or staging yet. Config schema 2 (2026-10-17) and 3 (2026-10-19:
+-- seven tabs incl. travel TR- rules, rule metadata, own wording = V01) are both accepted.
 --
 -- Flow: the server reads an uploaded .xlsx (lib/highlights/draft.ts) and saves a DRAFT here. Nothing is live until a
 -- platform admin explicitly PUBLISHES a draft, which creates a new immutable VERSION and moves the ACTIVE pointer.
@@ -28,27 +29,35 @@ returns text[] language plpgsql immutable set search_path = public as $$
 declare
   problems text[] := array[]::text[];
   seen text[] := array[]::text[];
-  r jsonb; c jsonb; v jsonb; rid text; cid text; vid text;
+  r jsonb; c jsonb; v jsonb; rid text; cid text; vid text; legacy boolean;
+  version integer := case when p_config->'schemaVersion' in ('2'::jsonb, '3'::jsonb) then (p_config->>'schemaVersion')::integer end;
   statuses constant text[] := array['Draft', 'Approved', 'Disabled'];
   categories constant text[] := array['Individual performance', 'Match play drama', 'Team competition',
-    'Individual leaderboard', 'Trip and tournament milestones', 'Fun and social highlights'];
+    'Individual leaderboard', 'Trip and tournament milestones', 'Fun and social highlights', 'Travel and itinerary alerts'];
+  meta_keys constant text[] := array['notificationCategory', 'competitionEligibility', 'minimumAlertLevel', 'audience', 'reminderTrigger', 'sourceRequirement'];
 begin
   if jsonb_typeof(p_config) is distinct from 'object' then return array['Config must be a JSON object.']; end if;
-  if p_config->'schemaVersion' is distinct from '2'::jsonb then problems := problems || 'schemaVersion must be 2.'::text; end if;
+  if version is null then problems := problems || 'schemaVersion must be 2 or 3.'::text; end if;
   if jsonb_typeof(p_config->'rules') is distinct from 'array' then return problems || 'rules must be an array.'::text; end if;
 
   for r in select value from jsonb_array_elements(p_config->'rules') loop
     rid := r->>'id';
-    if rid is null or rid !~ '^HL-[0-9]{3}$' then problems := problems || format('Bad rule ID %L.', rid);
+    if rid is null or rid !~ '^(HL|TR)-[0-9]{3}$' then problems := problems || format('Bad rule ID %L.', rid);
+    elsif (left(rid, 2) = 'TR') is distinct from (r->>'category' = 'Travel and itinerary alerts') then problems := problems || format('Rule %s is in the wrong tab (TR- rules belong in Travel and itinerary alerts, HL- rules in the golf tabs).', rid);
     elsif rid = any(seen) then problems := problems || format('Duplicate ID %s.', rid); end if;
     seen := seen || coalesce(rid, '');
     if not coalesce(r->>'status' = any(statuses), false) then problems := problems || format('Rule %s has bad status %L.', rid, r->>'status'); end if;
     if not coalesce(r->>'category' = any(categories), false) then problems := problems || format('Rule %s has bad category %L.', rid, r->>'category'); end if;
+    -- Schema 3: rule metadata as typed in the sheet (strings; "" when absent).
+    if version = 3 and (jsonb_typeof(r->'meta') is distinct from 'object'
+      or exists (select 1 from unnest(meta_keys) k where jsonb_typeof(r->'meta'->k) is distinct from 'string')) then
+      problems := problems || format('Rule %s needs its metadata strings.', rid);
+    end if;
     if jsonb_typeof(r->'conditionals') is distinct from 'array' then problems := problems || format('Rule %s has no conditionals array.', rid); continue; end if;
 
     for c in select value from jsonb_array_elements(r->'conditionals') loop
       cid := c->>'id';
-      if cid is null or cid !~ '^HL-[0-9]{3}-C[0-9]{2}$' or left(cid, 6) is distinct from rid then problems := problems || format('Bad conditional ID %L under %s.', cid, rid);
+      if cid is null or cid !~ '^(HL|TR)-[0-9]{3}-C[0-9]{2}$' or left(cid, 6) is distinct from rid then problems := problems || format('Bad conditional ID %L under %s.', cid, rid);
       elsif cid = any(seen) then problems := problems || format('Duplicate ID %s.', cid); end if;
       seen := seen || coalesce(cid, '');
       if not coalesce(c->>'status' = any(statuses), false) then problems := problems || format('Conditional %s has bad status %L.', cid, c->>'status'); end if;
@@ -57,12 +66,16 @@ begin
 
       for v in select value from jsonb_array_elements(c->'variations') loop
         vid := v->>'id';
-        if vid is null or vid !~ '^HL-[0-9]{3}-C[0-9]{2}-V[0-9]{2}$' or left(vid, 10) is distinct from cid then problems := problems || format('Bad variation ID %L under %s.', vid, cid);
+        if vid is null or vid !~ '^(HL|TR)-[0-9]{3}-C[0-9]{2}-V[0-9]{2}$' or left(vid, 10) is distinct from cid then problems := problems || format('Bad variation ID %L under %s.', vid, cid);
         elsif vid = any(seen) then problems := problems || format('Duplicate ID %s.', vid); end if;
         seen := seen || coalesce(vid, '');
         if not coalesce(v->>'status' = any(statuses), false) then problems := problems || format('Variation %s has bad status %L.', vid, v->>'status'); end if;
-        if jsonb_typeof(v->'legacy') is distinct from 'boolean' or (v->>'legacy')::boolean <> coalesce(right(vid, 4) = '-V00', false) then
-          problems := problems || format('Variation %s: V00 is exactly the legacy message.', vid);
+        -- The CONDITIONAL row's own wording ("legacy"): V00 in schema 2; V01 in schema 3, where V00 is never used.
+        legacy := case when jsonb_typeof(v->'legacy') = 'boolean' then (v->>'legacy')::boolean end;
+        if legacy is null
+          or (version = 2 and legacy <> coalesce(right(vid, 4) = '-V00', false))
+          or (version = 3 and (coalesce(right(vid, 4) = '-V00', false) or (legacy and not coalesce(right(vid, 4) = '-V01', false)))) then
+          problems := problems || format('Variation %s: the CONDITIONAL row''s own wording must be %s.', vid, case when version = 2 then 'V00' else 'V01, and V00 is not used' end);
         end if;
         if jsonb_typeof(v->'headline') is distinct from 'string' or jsonb_typeof(v->'body') is distinct from 'string' then
           problems := problems || format('Variation %s needs text headline and body.', vid);
@@ -79,7 +92,7 @@ create table if not exists public.highlight_config_versions (
   version integer primary key check (version > 0),
   config jsonb not null check (octet_length(config::text) <= 2000000),
   config_fingerprint text not null check (config_fingerprint ~ '^sha256:[0-9a-f]{64}$'),
-  schema_version integer not null check (schema_version = 2),
+  schema_version integer not null check (schema_version in (2, 3)),
   change_kind text not null check (change_kind in ('metadata', 'copy', 'behavior')),
   changes jsonb not null,
   from_draft_id uuid not null unique,
@@ -99,7 +112,7 @@ create table if not exists public.highlight_config_drafts (
   file_fingerprint text not null check (file_fingerprint ~ '^sha256:[0-9a-f]{64}$'),
   config jsonb not null check (octet_length(config::text) <= 2000000),
   config_fingerprint text not null check (config_fingerprint ~ '^sha256:[0-9a-f]{64}$'),
-  schema_version integer not null check (schema_version = 2),
+  schema_version integer not null check (schema_version in (2, 3)),
   report jsonb not null check (octet_length(report::text) <= 2000000),
   changes jsonb not null check (octet_length(changes::text) <= 2000000),
   change_kind text not null check (change_kind in ('none', 'metadata', 'copy', 'behavior')),
@@ -118,6 +131,12 @@ create index if not exists highlight_config_drafts_recent on public.highlight_co
 alter table public.highlight_config_versions drop constraint if exists highlight_config_versions_from_draft_fkey;
 alter table public.highlight_config_versions add constraint highlight_config_versions_from_draft_fkey
   foreign key (from_draft_id) references public.highlight_config_drafts(id);
+
+-- Schema 3 (2026-10-19): re-running this file upgrades the original "schema_version = 2" constraints.
+alter table public.highlight_config_versions drop constraint if exists highlight_config_versions_schema_version_check;
+alter table public.highlight_config_versions add constraint highlight_config_versions_schema_version_check check (schema_version in (2, 3));
+alter table public.highlight_config_drafts drop constraint if exists highlight_config_drafts_schema_version_check;
+alter table public.highlight_config_drafts add constraint highlight_config_drafts_schema_version_check check (schema_version in (2, 3));
 
 create table if not exists public.highlight_config_active (
   singleton boolean primary key default true check (singleton),

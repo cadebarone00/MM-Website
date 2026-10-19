@@ -6,10 +6,10 @@ import { HIGHLIGHT_TABS } from "./types.ts";
 
 const codes = (issues: { code: string }[]) => issues.map((issue) => issue.code);
 
-test("reads only the six category tabs and skips blank separator rows", () => {
+test("reads only the seven category tabs (six golf + travel) and skips blank separator rows", () => {
   const { rows, issues } = parseSheetRows(validSheet());
   assert.deepEqual(issues, []);
-  assert.equal(new Set(rows.map((row) => row.category)).size, 6);
+  assert.equal(new Set(rows.map((row) => row.category)).size, 7, "six golf tabs + travel");
   assert.ok(!rows.some((row) => row.cells.id === "HL-999"), "legacy Parent Rules / Conditionals tabs are ignored");
   assert.equal(rows.filter((row) => row.category === HIGHLIGHT_TABS[0]).length, 11); // 2 parents + 9 conditionals, no blanks
 });
@@ -51,7 +51,7 @@ test("reports a missing tab, a duplicate tab, a missing column and an unknown ro
   tabs[5] = { name: HIGHLIGHT_TABS[2], values: [HEADER, ["HL-023", "HEADER", "x"], ["HL-024", "", "y"]] };
   const { issues } = parseSheetRows(tabs);
   assert.deepEqual(codes(issues).sort(), ["duplicate-tab", "missing-header", "missing-tab", "unknown-row-type", "unknown-row-type"]);
-  assert.match(issues.find((i) => i.code === "missing-header")!.message, /Status, Detection notes/);
+  assert.match(issues.find((i) => i.code === "missing-header")!.message, /missing the column: Status.$/);
 });
 
 test("an empty tab or a tab with only a header has no rows and no issues", () => {

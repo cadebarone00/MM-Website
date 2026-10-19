@@ -12,7 +12,7 @@ export type ScoreChangeLine = { name: string; edit: ScoreEdit };
 const show = (value: number | null, suffix = "") => value === null ? "—" : `${value}${suffix}`;
 const toPar = (n: number, decimals = 2) => { const v = Number(n.toFixed(decimals)); return v === 0 ? "E" : v > 0 ? `+${v}` : String(v); };
 /** Per-round numbers (e.g. +13.7) with one decimal; per-hole averages (e.g. +0.83) with two. */
-const value = (unit: PlayerStat["unit"], n: number) => unit === "pct" ? `${n}%` : unit === "toPar" ? toPar(n, Math.abs(n) >= 3 ? 1 : 2) : n.toFixed(1);
+export const value = (unit: PlayerStat["unit"], n: number) => unit === "pct" ? `${n}%` : unit === "toPar" ? toPar(n, Math.abs(n) >= 3 ? 1 : 2) : n.toFixed(1);
 
 /**
  * Golf → Stats: the trip's stats from the saved rounds (Player & Attest add-on), in two views (owner request

@@ -1,5 +1,6 @@
 import type { HighlightDraft } from "./draft.ts";
 import type { HighlightConfig } from "./types.ts";
+import { upgradeConfig } from "./upgrade.ts";
 
 /**
  * The JSON shapes exchanged with supabase/highlights_config.sql. Pure.
@@ -30,7 +31,8 @@ export function draftRowPayload(draft: HighlightDraft): DraftRowPayload {
 export function activeConfigFromJson(value: unknown): { version: number; config: HighlightConfig; configFingerprint: string } | null {
   if (!value || typeof value !== "object") return null;
   const row = value as { version?: unknown; config?: unknown; configFingerprint?: unknown };
-  const config = row.config as Partial<HighlightConfig> | undefined;
-  if (!Number.isInteger(row.version) || typeof row.configFingerprint !== "string" || config?.schemaVersion !== 2 || !Array.isArray(config.rules)) return null;
-  return { version: row.version as number, config: config as HighlightConfig, configFingerprint: row.configFingerprint };
+  // Any stored schema (2 or 3) is read as the current one; the stored version itself is never changed.
+  const config = upgradeConfig(row.config);
+  if (!Number.isInteger(row.version) || typeof row.configFingerprint !== "string" || !config) return null;
+  return { version: row.version as number, config, configFingerprint: row.configFingerprint };
 }

@@ -1,0 +1,4327 @@
+{
+ "note": "DEV FIXTURE — a snapshot of the Highlights Google Sheet for the /dev simulator. Not published, not read by production.",
+ "label": "Google Sheet export, 2026-10-19 10:39 AM (Drive modified time)",
+ "fileFingerprint": "sha256:4dd2de90acf7d8619dc095b586815e1f5cf50c27fc1b6e700230dda934179129",
+ "configFingerprint": "sha256:db528b5af627c3c65fd20509c02e687d7b92e137a1178707034ac7946af33fc2",
+ "report": {
+  "errors": [
+   "HL-001-C05 Status must be Draft, Approved, Disabled, not \"Needs copy\".",
+   "HL-001-C06 Status must be Draft, Approved, Disabled, not \"Needs copy\".",
+   "HL-001-C07 Status must be Draft, Approved, Disabled, not \"Needs copy\".",
+   "HL-001-C08 Status must be Draft, Approved, Disabled, not \"Needs copy\"."
+  ],
+  "warnings": 2
+ },
+ "counts": {
+  "rules": 75,
+  "conditionals": 84,
+  "variations": 252,
+  "liveRules": 0,
+  "liveConditionals": 0,
+  "liveVariations": 0
+ },
+ "config": {
+  "schemaVersion": 3,
+  "rules": [
+   {
+    "id": "HL-001",
+    "category": "Individual performance",
+    "name": "Birdie streak",
+    "status": "Draft",
+    "notes": "Birdie tier; extend through 10.",
+    "meta": {
+     "notificationCategory": "Individual performance",
+     "competitionEligibility": "All trip types",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-001-C01",
+      "condition": "3 consecutive birdies",
+      "tier": 3,
+      "status": "Draft",
+      "notes": "Birdie tier; extend through 10.",
+      "variations": [
+       {
+        "id": "HL-001-C01-V01",
+        "label": "",
+        "headline": "{Player}’s heating up! 🔥",
+        "body": "3 birdies in a row.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-001-C01-V02",
+        "label": "",
+        "headline": "Is that three?! 🐦",
+        "body": "{Player} has stacked 3 birdies. The flagsticks are nervous.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-001-C01-V03",
+        "label": "",
+        "headline": "Birdie, birdie, BIRDIE! 🔥",
+        "body": "Three straight red numbers for {Player}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     },
+     {
+      "id": "HL-001-C02",
+      "condition": "4 consecutive birdies",
+      "tier": 4,
+      "status": "Draft",
+      "notes": "Birdie tier.",
+      "variations": [
+       {
+        "id": "HL-001-C02-V01",
+        "label": "",
+        "headline": "Somebody stop {Player}! 🔥",
+        "body": "4 straight birdies.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-001-C02-V02",
+        "label": "",
+        "headline": "Four the record! 🔥",
+        "body": "{Player} makes it 4 birdies in a row. This is getting silly.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-001-C02-V03",
+        "label": "",
+        "headline": "Is anyone keeping up? 👀",
+        "body": "Four straight birdies. {Player} forgot how to make par.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     },
+     {
+      "id": "HL-001-C03",
+      "condition": "5 consecutive birdies",
+      "tier": 5,
+      "status": "Draft",
+      "notes": "Birdie tier.",
+      "variations": [
+       {
+        "id": "HL-001-C03-V01",
+        "label": "",
+        "headline": "{Player} is actually on fire! 🔥",
+        "body": "5 birdies in a row",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-001-C03-V02",
+        "label": "",
+        "headline": "Five-alarm fire! 🚒",
+        "body": "Five straight birdies for {Player}. Somebody check the scorecard!",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-001-C03-V03",
+        "label": "",
+        "headline": "Par? Never heard of it. 🐦",
+        "body": "{Player} has 5 consecutive birdies. Unbelievable stuff.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     },
+     {
+      "id": "HL-001-C04",
+      "condition": "6 consecutive birdies",
+      "tier": 6,
+      "status": "Draft",
+      "notes": "Birdie tier.",
+      "variations": [
+       {
+        "id": "HL-001-C04-V01",
+        "label": "",
+        "headline": "{Player}, give everyone else a chance! 🔥",
+        "body": "6 birdies in a row",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-001-C04-V02",
+        "label": "",
+        "headline": "Six straight?! 🤯",
+        "body": "{Player} has birdied six holes in a row. That's outrageous.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-001-C04-V03",
+        "label": "",
+        "headline": "The course needs a timeout! 🚨",
+        "body": "Six consecutive birdies for {Player}. Somebody defend these flags.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     },
+     {
+      "id": "HL-001-C05",
+      "condition": "7 consecutive birdies",
+      "tier": 7,
+      "status": "Disabled",
+      "notes": "Same detector; tier-specific headline and body",
+      "variations": [
+       {
+        "id": "HL-001-C05-V01",
+        "label": "",
+        "headline": "{Player} is ACTUALLY COOKING! 👨‍🍳",
+        "body": "7 birdies in a row",
+        "status": "Disabled",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-001-C05-V02",
+        "label": "",
+        "headline": "Seven from heaven! 🐦",
+        "body": "{Player} is on SEVEN straight birdies. Yes, seven.",
+        "status": "Disabled",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-001-C05-V03",
+        "label": "",
+        "headline": "This is not a drill! 🚨",
+        "body": "Seven birdies in a row for {Player}. What are we watching?!",
+        "status": "Disabled",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     },
+     {
+      "id": "HL-001-C06",
+      "condition": "8 consecutive birdies",
+      "tier": 8,
+      "status": "Disabled",
+      "notes": "Same detector; tier-specific headline and body",
+      "variations": [
+       {
+        "id": "HL-001-C06-V01",
+        "label": "",
+        "headline": "{Player}, this is getting RIDICULOUS! 🔥",
+        "body": "8 birdies in a row",
+        "status": "Disabled",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-001-C06-V02",
+        "label": "",
+        "headline": "Eight is absurd! 🤯",
+        "body": "{Player} makes it 8 birdies in a row. Somebody save the course.",
+        "status": "Disabled",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-001-C06-V03",
+        "label": "",
+        "headline": "Breaking birdie news! 📣",
+        "body": "Eight straight red numbers. {Player} is rewriting the script.",
+        "status": "Disabled",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     },
+     {
+      "id": "HL-001-C07",
+      "condition": "9 consecutive birdies",
+      "tier": 9,
+      "status": "Disabled",
+      "notes": "Same detector; tier-specific headline and body",
+      "variations": [
+       {
+        "id": "HL-001-C07-V01",
+        "label": "",
+        "headline": "You CANNOT Make This Up! 🔥",
+        "body": "{Player} has spent the last 2 hours making birdies.. 9 in a row!",
+        "status": "Disabled",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-001-C07-V02",
+        "label": "",
+        "headline": "Nine lives, nine birdies! 🔥",
+        "body": "{Player} has made 9 consecutive birdies. The golf gods are watching.",
+        "status": "Disabled",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-001-C07-V03",
+        "label": "",
+        "headline": "This can't be legal! 👀",
+        "body": "Nine straight birdies for {Player}. We're running out of superlatives.",
+        "status": "Disabled",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     },
+     {
+      "id": "HL-001-C08",
+      "condition": "10 consecutive birdies",
+      "tier": 10,
+      "status": "Disabled",
+      "notes": "Same detector; tier-specific headline and body",
+      "variations": [
+       {
+        "id": "HL-001-C08-V01",
+        "label": "",
+        "headline": "SOMEONE CALL THE BIG TOUR! 🔥",
+        "body": "That’s 10! {Player} with double digit birdies.. In a row!",
+        "status": "Disabled",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-001-C08-V02",
+        "label": "",
+        "headline": "DOUBLE DIGITS?! 🚨",
+        "body": "{Player} has made TEN birdies in a row. Somebody call the tour!",
+        "status": "Disabled",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-001-C08-V03",
+        "label": "",
+        "headline": "Ten out of ten! 🏆",
+        "body": "A 10-hole birdie streak for {Player}. That's video-game golf.",
+        "status": "Disabled",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-002",
+    "category": "Individual performance",
+    "name": "Eagle",
+    "status": "Draft",
+    "notes": "Use player and hole variables.",
+    "meta": {
+     "notificationCategory": "Individual performance",
+     "competitionEligibility": "All trip types",
+     "minimumAlertLevel": "Big Plays",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-002-C01",
+      "condition": "Eagle",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Use player and hole variables.",
+      "variations": [
+       {
+        "id": "HL-002-C01-V01",
+        "label": "",
+        "headline": "An eagle has landed! 🦅",
+        "body": "{Player} makes eagle on No. 8.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-002-C01-V02",
+        "label": "",
+        "headline": "The big bird has landed! 🦅",
+        "body": "{Player} cards an eagle on hole {Hole}. Two under on one hole!",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-002-C01-V03",
+        "label": "",
+        "headline": "Eagle-eyed! 🎯",
+        "body": "{Player} just took two shots off par on No. {Hole}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-003",
+    "category": "Individual performance",
+    "name": "Albatross",
+    "status": "Draft",
+    "notes": "Use player and hole variables.",
+    "meta": {
+     "notificationCategory": "Individual performance",
+     "competitionEligibility": "All trip types",
+     "minimumAlertLevel": "Big Plays",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-003-C01",
+      "condition": "Albatross",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Use player and hole variables.",
+      "variations": [
+       {
+        "id": "HL-003-C01-V01",
+        "label": "",
+        "headline": "That’s one BIG Bird! 🦅",
+        "body": "{Player} makes albatross on No. 12.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-003-C01-V02",
+        "label": "",
+        "headline": "That's a rare bird! 🦅",
+        "body": "An albatross for {Player} on {Hole}. Are you KIDDING?!",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-003-C01-V03",
+        "label": "",
+        "headline": "THREE UNDER?! 🤯",
+        "body": "{Player} makes an albatross on hole {Hole}. Legendary stuff.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-004",
+    "category": "Individual performance",
+    "name": "Hole-in-one",
+    "status": "Draft",
+    "notes": "Use player and hole variables.",
+    "meta": {
+     "notificationCategory": "Individual performance",
+     "competitionEligibility": "All trip types",
+     "minimumAlertLevel": "Big Plays",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-004-C01",
+      "condition": "Hole-in-one",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Use player and hole variables.",
+      "variations": [
+       {
+        "id": "HL-004-C01-V01",
+        "label": "",
+        "headline": "ACE ALERT! 🚨",
+        "body": "{Player} just made a hole-in-one on 12!",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-004-C01-V02",
+        "label": "",
+        "headline": "ONE SHOT. ONE HOLE. 🚨",
+        "body": "{Player} just aced No. {Hole}. Drinks might be on somebody!",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-004-C01-V03",
+        "label": "",
+        "headline": "Somebody frame that ball! 🏌️",
+        "body": "Hole-in-one for {Player} on {Hole}. Absolute scenes.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-005",
+    "category": "Individual performance",
+    "name": "4 consecutive bogeys or worse",
+    "status": "Draft",
+    "notes": "Every hole bogey or worse; confirm tone and push preference later.",
+    "meta": {
+     "notificationCategory": "Individual performance",
+     "competitionEligibility": "All trip types",
+     "minimumAlertLevel": "All",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-005-C01",
+      "condition": "4 consecutive bogeys or worse",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Every hole bogey or worse; confirm tone and push preference later.",
+      "variations": [
+       {
+        "id": "HL-005-C01-V01",
+        "label": "",
+        "headline": "A rough stretch 😬",
+        "body": "{Player} has made 4 bogeys+ in a row.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-005-C01-V02",
+        "label": "",
+        "headline": "Golf is humbling 😬",
+        "body": "Four straight bogeys or worse for {Player}. Time for a reset.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-005-C01-V03",
+        "label": "",
+        "headline": "The bounce-back is loading… ⏳",
+        "body": "{Player} has had a tough 4-hole stretch. The next one's a fresh start.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-006",
+    "category": "Individual performance",
+    "name": "9 consecutive pars",
+    "status": "Draft",
+    "notes": "Distinct from all-par round.",
+    "meta": {
+     "notificationCategory": "Individual performance",
+     "competitionEligibility": "All trip types",
+     "minimumAlertLevel": "All",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-006-C01",
+      "condition": "9 consecutive pars",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Distinct from all-par round.",
+      "variations": [
+       {
+        "id": "HL-006-C01-V01",
+        "label": "",
+        "headline": "Steady as they come 🚂",
+        "body": "{Player} has made 9 straight pars.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-006-C01-V02",
+        "label": "",
+        "headline": "All aboard the par train! 🚂",
+        "body": "Nine straight pars for {Player}. Consistency is a superpower.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-006-C01-V03",
+        "label": "",
+        "headline": "Cruise control activated 🛤️",
+        "body": "{Player} has parred 9 holes running. No drama, just golf.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-007",
+    "category": "Individual performance",
+    "name": "Bogey-free front/back nine",
+    "status": "Draft",
+    "notes": "Wording preserved as supplied; consider typo later.",
+    "meta": {
+     "notificationCategory": "Individual performance",
+     "competitionEligibility": "All trip types",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-007-C01",
+      "condition": "Bogey-free front/back nine",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Wording preserved as supplied; consider typo later.",
+      "variations": [
+       {
+        "id": "HL-007-C01-V01",
+        "label": "",
+        "headline": "Who said golf was hard? ✨",
+        "body": "{Player} cards a bogey-free front (or back) nine.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-007-C01-V02",
+        "label": "",
+        "headline": "Not a bogey in sight ✨",
+        "body": "{Player} survives the nine without a single bogey.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-007-C01-V03",
+        "label": "",
+        "headline": "A squeaky-clean nine! 🧼",
+        "body": "Bogey-free through this side for {Player}. That's tidy golf.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-008",
+    "category": "Individual performance",
+    "name": "Bogey-free round",
+    "status": "Draft",
+    "notes": "Not the same as 18 pars.",
+    "meta": {
+     "notificationCategory": "Individual performance",
+     "competitionEligibility": "All trip types",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-008-C01",
+      "condition": "Bogey-free round",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Not the same as 18 pars.",
+      "variations": [
+       {
+        "id": "HL-008-C01-V01",
+        "label": "",
+        "headline": "Squeaky clean ✨",
+        "body": "{Player} finishes Round 2 without a bogey.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-008-C01-V02",
+        "label": "",
+        "headline": "No squares on this card! ✨",
+        "body": "{Player} completes round {Round} without a bogey.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-008-C01-V03",
+        "label": "",
+        "headline": "Clean as a whistle 🧼",
+        "body": "A bogey-free round for {Player}. Now THAT is golf.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-009",
+    "category": "Individual performance",
+    "name": "Personal best score",
+    "status": "Draft",
+    "notes": "Requires comparable historical rounds.",
+    "meta": {
+     "notificationCategory": "Individual performance",
+     "competitionEligibility": "All trip types",
+     "minimumAlertLevel": "Big Plays",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-009-C01",
+      "condition": "Personal best score",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Requires comparable historical rounds.",
+      "variations": [
+       {
+        "id": "HL-009-C01-V01",
+        "label": "",
+        "headline": "NEW PR! 💪",
+        "body": "{Player} just posted his lowest ever recorded round.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-009-C01-V02",
+        "label": "",
+        "headline": "New number to beat! 💪",
+        "body": "{Player} just set a personal low. Put that score in the scrapbook.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-009-C01-V03",
+        "label": "",
+        "headline": "Career day! 🏆",
+        "body": "Lowest recorded round yet for {Player}. This one deserves a picture.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-010",
+    "category": "Individual performance",
+    "name": "Bounce-back birdie after double bogey or worse",
+    "status": "Draft",
+    "notes": "Use prior-hole score category.",
+    "meta": {
+     "notificationCategory": "Individual performance",
+     "competitionEligibility": "All trip types",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-010-C01",
+      "condition": "Bounce-back birdie after double bogey or worse",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Use prior-hole score category.",
+      "variations": [
+       {
+        "id": "HL-010-C01-V01",
+        "label": "",
+        "headline": "That’s how you respond! 💪",
+        "body": "{Player} gets one back after his double (triple, quad, etc.)",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-010-C01-V02",
+        "label": "",
+        "headline": "No dwelling on that one! 💪",
+        "body": "{Player} follows a tough hole with a birdie. That's a bounce-back.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-010-C01-V03",
+        "label": "",
+        "headline": "That's golf for you! ⛳",
+        "body": "{Player} shakes off the last hole and answers with a birdie.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-011",
+    "category": "Match play drama",
+    "name": "Returns all square after 5+ holes not square",
+    "status": "Draft",
+    "notes": "Define counting of 5+ holes away from all square.",
+    "meta": {
+     "notificationCategory": "Match play drama",
+     "competitionEligibility": "Match + Individual; Match Only",
+     "minimumAlertLevel": "All",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-011-C01",
+      "condition": "Returns all square after 5+ holes not square",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Define counting of 5+ holes away from all square.",
+      "variations": [
+       {
+        "id": "HL-011-C01-V01",
+        "label": "",
+        "headline": "We have a match! ⚖️",
+        "body": "{Player 1, Team A} and {Player 1, Team B} are back to square.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-011-C01-V02",
+        "label": "",
+        "headline": "Back where we started! ⚖️",
+        "body": "{Player 1, Team A} and {Player 1, Team B} are level again after a long battle.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-011-C01-V03",
+        "label": "",
+        "headline": "Nobody blink! 👀",
+        "body": "After five-plus holes apart, this match is all square again.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-012",
+    "category": "Match play drama",
+    "name": "3 consecutive holes won",
+    "status": "Draft",
+    "notes": "Match hole streak.",
+    "meta": {
+     "notificationCategory": "Match play drama",
+     "competitionEligibility": "Match + Individual; Match Only",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-012-C01",
+      "condition": "3 consecutive holes won",
+      "tier": "Team of 3+",
+      "status": "Draft",
+      "notes": "Match hole streak.",
+      "variations": [
+       {
+        "id": "HL-012-C01-V01",
+        "label": "",
+        "headline": "{Team A} is on a roll! 🔥",
+        "body": "3 Straight holes won against {Team B}",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-012-C01-V02",
+        "label": "",
+        "headline": "Three-hole takeover! 🔥",
+        "body": "{Team A} has won three holes running against {Team B}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-012-C01-V03",
+        "label": "",
+        "headline": "The run is real! ⚡",
+        "body": "Three straight holes belong to {Team A}. {Team B} needs an answer.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     },
+     {
+      "id": "HL-012-C02",
+      "condition": "3 consecutive holes won",
+      "tier": "Team of 2",
+      "status": "Draft",
+      "notes": "Match hole streak.",
+      "variations": [
+       {
+        "id": "HL-012-C02-V01",
+        "label": "",
+        "headline": "{Player 1, Team A} & {Player 2, Team A} are on a roll! 🔥",
+        "body": "3 Straight holes won against {Player 1, Team B} & {Player 2, Team B}",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-012-C02-V02",
+        "label": "",
+        "headline": "Can't stop this duo! 🤝",
+        "body": "{Player 1, Team A} & {Player 2, Team A} have taken 3 straight holes from {Player 1, Team B} & {Player 2, Team B}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-012-C02-V03",
+        "label": "",
+        "headline": "Pair pressure! 🔥",
+        "body": "Three holes on the bounce for {Player 1, Team A} & {Player 2, Team A} against {Player 1, Team B} & {Player 2, Team B}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     },
+     {
+      "id": "HL-012-C03",
+      "condition": "3 consecutive holes won",
+      "tier": "Single",
+      "status": "Draft",
+      "notes": "Match hole streak.",
+      "variations": [
+       {
+        "id": "HL-012-C03-V01",
+        "label": "",
+        "headline": "{Player 1, Team A} is on a roll! 🔥",
+        "body": "3 Straight holes won against {Player 1, Team B}",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-012-C03-V02",
+        "label": "",
+        "headline": "Three in a row! 🎯",
+        "body": "{Player 1, Team A} has claimed 3 consecutive holes against {Player 1, Team B}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-012-C03-V03",
+        "label": "",
+        "headline": "A little separation! 👀",
+        "body": "Three straight holes for {Player 1, Team A}. {Player 1, Team B} is feeling it.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-013",
+    "category": "Match play drama",
+    "name": "Match comeback",
+    "status": "Draft",
+    "notes": "Tiered 3, 4, 5, 6, 7+; variations TBD. Use largest erased deficit, avoid duplicates.",
+    "meta": {
+     "notificationCategory": "Match play drama",
+     "competitionEligibility": "Match + Individual; Match Only",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-013-C01",
+      "condition": "Comeback from 3+ down",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Tiered 3, 4, 5, 6, 7+; variations TBD. Use largest erased deficit, avoid duplicates.",
+      "variations": [
+       {
+        "id": "HL-013-C01-V01",
+        "label": "",
+        "headline": "The comeback is ON! 💪",
+        "body": "{Player 1, Team B} has erased a 3-hole deficit.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-013-C01-V02",
+        "label": "",
+        "headline": "Down, not out! 💪",
+        "body": "{Player 1, Team A} was three down and has brought the match level.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-013-C01-V03",
+        "label": "",
+        "headline": "What a fightback! 🚨",
+        "body": "A 3-hole deficit is gone. {Player 1, Team A} is back in this match.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-014",
+    "category": "Match play drama",
+    "name": "Lead change",
+    "status": "Draft",
+    "notes": "Differentiate first lead vs reclaiming lead.",
+    "meta": {
+     "notificationCategory": "Match play drama",
+     "competitionEligibility": "Match + Individual; Match Only",
+     "minimumAlertLevel": "All",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-014-C01",
+      "condition": "Lead change",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Differentiate first lead vs reclaiming lead.",
+      "variations": [
+       {
+        "id": "HL-014-C01-V01",
+        "label": "",
+        "headline": "Momentum shift ⚡",
+        "body": "{Player 1, Team A} takes the lead for the first time (or since hole 3)",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-014-C01-V02",
+        "label": "",
+        "headline": "Lead stolen! ⚡",
+        "body": "{Player 1, Team A} takes control against {Player 1, Team B}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-014-C01-V03",
+        "label": "",
+        "headline": "New leader, same battle 👀",
+        "body": "{Player 1, Team A} moves ahead in this match. The pressure flips.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-015",
+    "category": "Match play drama",
+    "name": "Dormie reached",
+    "status": "Draft",
+    "notes": "Dynamic by hole; example only. Confirm phrasing and interpretation.",
+    "meta": {
+     "notificationCategory": "Match play drama",
+     "competitionEligibility": "Match + Individual; Match Only",
+     "minimumAlertLevel": "All",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-015-C01",
+      "condition": "Dormie reached",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Dynamic by hole; example only. Confirm phrasing and interpretation.",
+      "variations": [
+       {
+        "id": "HL-015-C01-V01",
+        "label": "",
+        "headline": "One hole away 👀",
+        "body": "{Player 1, Team A} and {Player 1, Team B} are dormie going into 18",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-015-C01-V02",
+        "label": "",
+        "headline": "Dormie drama! 👀",
+        "body": "{Player 1, Team A} is dormie with {Count} hole(s) left.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-015-C01-V03",
+        "label": "",
+        "headline": "The finish is looming 🏁",
+        "body": "{Player 1, Team A} cannot lose in regulation from this dormie position.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-016",
+    "category": "Match play drama",
+    "name": "Match reaches final hole",
+    "status": "Draft",
+    "notes": "User explicitly wants to revisit scenarios and copy.",
+    "meta": {
+     "notificationCategory": "Match play drama",
+     "competitionEligibility": "Match + Individual; Match Only",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-016-C01",
+      "condition": "Match reaches final hole",
+      "tier": null,
+      "status": "Draft",
+      "notes": "User explicitly wants to revisit scenarios and copy.",
+      "variations": [
+       {
+        "id": "HL-016-C01-V01",
+        "label": "",
+        "headline": "Going the distance 🏁",
+        "body": "This match is heading to No. 18.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-016-C01-V02",
+        "label": "",
+        "headline": "All roads lead to 18 🏁",
+        "body": "{Player 1, Team A} and {Player 1, Team B} are taking this one to the last.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-016-C01-V03",
+        "label": "",
+        "headline": "One hole to settle it! 👀",
+        "body": "This match is headed for No. 18. Don't look away.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-017",
+    "category": "Match play drama",
+    "name": "Winning on No. 18",
+    "status": "Draft",
+    "notes": "Different from ordinary match win.",
+    "meta": {
+     "notificationCategory": "Match play drama",
+     "competitionEligibility": "Match + Individual; Match Only",
+     "minimumAlertLevel": "Big Plays",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-017-C01",
+      "condition": "Winning on No. 18",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Different from ordinary match win.",
+      "variations": [
+       {
+        "id": "HL-017-C01-V01",
+        "label": "",
+        "headline": "Clutched up! 🏆",
+        "body": "{Player 1, Team A} wins his match on 18.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-017-C01-V02",
+        "label": "",
+        "headline": "Eighteen delivers! 🏆",
+        "body": "{Player 1, Team A} closes it out on the final hole against {Player 1, Team B}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-017-C01-V03",
+        "label": "",
+        "headline": "Last-hole heroics! 🔥",
+        "body": "{Player 1, Team A} wins on No. 18. That's a finish.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-018",
+    "category": "Match play drama",
+    "name": "Match halved",
+    "status": "Draft",
+    "notes": "Exact phrasing preserved.",
+    "meta": {
+     "notificationCategory": "Match play drama",
+     "competitionEligibility": "Match + Individual; Match Only",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-018-C01",
+      "condition": "Match halved",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Exact phrasing preserved.",
+      "variations": [
+       {
+        "id": "HL-018-C01-V01",
+        "label": "",
+        "headline": "Nothing between them 🤝",
+        "body": "{Player 1, Team A} and {Player 1, Team B} match finish all square.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-018-C01-V02",
+        "label": "",
+        "headline": "Nothing settled! 🤝",
+        "body": "{Player 1, Team A} and {Player 1, Team B} finish their match all square.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-018-C01-V03",
+        "label": "",
+        "headline": "Split the spoils ⚖️",
+        "body": "Eighteen holes couldn't separate {Player 1, Team A} and {Player 1, Team B}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-019",
+    "category": "Match play drama",
+    "name": "Match clinched",
+    "status": "Draft",
+    "notes": "Include actual result/opponent; avoid duplicate final-hole alert.",
+    "meta": {
+     "notificationCategory": "Match play drama",
+     "competitionEligibility": "Match + Individual; Match Only",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-019-C01",
+      "condition": "Match clinched",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Include actual result/opponent; avoid duplicate final-hole alert.",
+      "variations": [
+       {
+        "id": "HL-019-C01-V01",
+        "label": "",
+        "headline": "Match secured! 🏆",
+        "body": "{Player 1, Team A} wins 3 & 2 over {Player 1, Team B}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-019-C01-V02",
+        "label": "",
+        "headline": "Point in the bag! 🏆",
+        "body": "{Player 1, Team A} defeats {Player 1, Team B}, {Margin}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-019-C01-V03",
+        "label": "",
+        "headline": "Signed, sealed, delivered ✅",
+        "body": "{Player 1, Team A} gets the match win over {Player 1, Team B}, {Margin}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-020",
+    "category": "Match play drama",
+    "name": "Lower-ranked beats higher-ranked (singles only)",
+    "status": "Draft",
+    "notes": "Requires explicit ranking criteria.",
+    "meta": {
+     "notificationCategory": "Match play drama",
+     "competitionEligibility": "Match + Individual; Match Only",
+     "minimumAlertLevel": "Big Plays",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-020-C01",
+      "condition": "Lower-ranked beats higher-ranked (singles only)",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Requires explicit ranking criteria.",
+      "variations": [
+       {
+        "id": "HL-020-C01-V01",
+        "label": "",
+        "headline": "Upset alert! 🚨",
+        "body": "{Player 1, Team B} gets it done against the odds 3&2",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-020-C01-V02",
+        "label": "",
+        "headline": "Underdog energy! 🐕",
+        "body": "{Player 1, Team A} shocks {Player 1, Team B} with a {Margin} victory.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-020-C01-V03",
+        "label": "",
+        "headline": "The rankings didn't play! 👀",
+        "body": "{Player 1, Team A} beats the higher-ranked {Player 1, Team B}, {Margin}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-021",
+    "category": "Match play drama",
+    "name": "Match ends 4&3 or better / by hole 15",
+    "status": "Draft",
+    "notes": "Interpret winner margin and end hole; discuss edge cases.",
+    "meta": {
+     "notificationCategory": "Match play drama",
+     "competitionEligibility": "Match + Individual; Match Only",
+     "minimumAlertLevel": "All",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-021-C01",
+      "condition": "Match ends 4&3 or better / by hole 15",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Interpret winner margin and end hole; discuss edge cases.",
+      "variations": [
+       {
+        "id": "HL-021-C01-V01",
+        "label": "",
+        "headline": "Never had a chance! 💥",
+        "body": "{Player 1, Team A} beats {Player 1, Team B} 5&3",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-021-C01-V02",
+        "label": "",
+        "headline": "A statement win! 💥",
+        "body": "{Player 1, Team A} takes down {Player 1, Team B}, {Margin}, before No. 16.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-021-C01-V03",
+        "label": "",
+        "headline": "That was QUICK! ⏱️",
+        "body": "{Player 1, Team A} puts this match away early against {Player 1, Team B}, {Margin}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-022",
+    "category": "Team competition",
+    "name": "Team takes/retakes overall lead",
+    "status": "Draft",
+    "notes": "Combined two overlapping rules; first lead vs later lead change.",
+    "meta": {
+     "notificationCategory": "Team competition",
+     "competitionEligibility": "Match + Individual; Match Only (team competition active)",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-022-C01",
+      "condition": "Team takes/retakes overall lead",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Combined two overlapping rules; first lead vs later lead change.",
+      "variations": [
+       {
+        "id": "HL-022-C01-V01",
+        "label": "",
+        "headline": "{Team A} takes control! / The tide has turned 🌊",
+        "body": "{Team A} moves into the lead. / {Team B} jumps ahead.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-022-C01-V02",
+        "label": "",
+        "headline": "Scoreboard takeover! ⚡",
+        "body": "{Team} is officially in front.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-022-C01-V03",
+        "label": "",
+        "headline": "Look who's leading 👀",
+        "body": "{Team} has the edge in the standings.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-023",
+    "category": "Team competition",
+    "name": "Teams become tied",
+    "status": "Draft",
+    "notes": "Exact text preserved; correct typo after review; must tie to confirmed team points.",
+    "meta": {
+     "notificationCategory": "Team competition",
+     "competitionEligibility": "Match + Individual; Match Only (team competition active)",
+     "minimumAlertLevel": "All",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-023-C01",
+      "condition": "Teams become tied",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Exact text preserved; correct typo after review; must tie to confirmed team points.",
+      "variations": [
+       {
+        "id": "HL-023-C01-V01",
+        "label": "",
+        "headline": "Tied at the top! ⚖️",
+        "body": "{Player} ties up the tournament with his win4",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-023-C01-V02",
+        "label": "",
+        "headline": "Back to even! ⚖️",
+        "body": "There's nothing between the teams now.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-023-C01-V03",
+        "label": "",
+        "headline": "All tied up! 🤝",
+        "body": "The overall team score is level.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-024",
+    "category": "Team competition",
+    "name": "3 consecutive match wins",
+    "status": "Draft",
+    "notes": "Consider tiered counts later.",
+    "meta": {
+     "notificationCategory": "Team competition",
+     "competitionEligibility": "Match + Individual; Match Only (team competition active)",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-024-C01",
+      "condition": "3 consecutive match wins",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Consider tiered counts later.",
+      "variations": [
+       {
+        "id": "HL-024-C01-V01",
+        "label": "",
+        "headline": "They’re rolling! 🔥",
+        "body": "{Team} wins 3 straight matches.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-024-C01-V02",
+        "label": "",
+        "headline": "Three's a streak! 🔥",
+        "body": "{Team} has won three matches in a row.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-024-C01-V03",
+        "label": "",
+        "headline": "Winning is contagious 🏆",
+        "body": "Three consecutive match victories for {Team}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-025",
+    "category": "Team competition",
+    "name": "Team comeback",
+    "status": "Draft",
+    "notes": "Tiered to prior largest team-points deficit.",
+    "meta": {
+     "notificationCategory": "Team competition",
+     "competitionEligibility": "Match + Individual; Match Only (team competition active)",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-025-C01",
+      "condition": "Team comeback",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Tiered to prior largest team-points deficit.",
+      "variations": [
+       {
+        "id": "HL-025-C01-V01",
+        "label": "",
+        "headline": "Never count them out 💪",
+        "body": "{Team} erases a 3-point deficit.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-025-C01-V02",
+        "label": "",
+        "headline": "They won't go away! 💪",
+        "body": "{Team} has erased a {Count}-point hole.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-025-C01-V03",
+        "label": "",
+        "headline": "Back in the fight! ⚡",
+        "body": "A {Count}-point deficit is gone for {Team}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-026",
+    "category": "Team competition",
+    "name": "Team reaches match point",
+    "status": "Draft",
+    "notes": "Requires total points available and clinch calculation.",
+    "meta": {
+     "notificationCategory": "Team competition",
+     "competitionEligibility": "Match + Individual; Match Only (team competition active)",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-026-C01",
+      "condition": "Team reaches match point",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Requires total points available and clinch calculation.",
+      "variations": [
+       {
+        "id": "HL-026-C01-V01",
+        "label": "",
+        "headline": "On the doorstep! 🏆",
+        "body": "{Team} is one point from the title.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-026-C01-V02",
+        "label": "",
+        "headline": "Almost trophy time! 👀",
+        "body": "Just one more point for {Team}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-026-C01-V03",
+        "label": "",
+        "headline": "On the brink! 🏆",
+        "body": "{Team} is a single point away from clinching.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-027",
+    "category": "Team competition",
+    "name": "Tournament victory secured",
+    "status": "Draft",
+    "notes": "Only when mathematically clinched.",
+    "meta": {
+     "notificationCategory": "Team competition",
+     "competitionEligibility": "Match + Individual; Match Only (team competition active)",
+     "minimumAlertLevel": "Big Plays",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-027-C01",
+      "condition": "Tournament victory secured",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Only when mathematically clinched.",
+      "variations": [
+       {
+        "id": "HL-027-C01-V01",
+        "label": "",
+        "headline": "CHAMPIONS! 🏆",
+        "body": "{Team} has clinched the Cup.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-027-C01-V02",
+        "label": "",
+        "headline": "CROWN THEM! 👑",
+        "body": "{Team} has secured the Cup.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-027-C01-V03",
+        "label": "",
+        "headline": "Job finished! 🏆",
+        "body": "The title is officially {Team}'s.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-028",
+    "category": "Team competition",
+    "name": "Final match decides title",
+    "status": "Draft",
+    "notes": "Confirm whether actually decisive.",
+    "meta": {
+     "notificationCategory": "Team competition",
+     "competitionEligibility": "Match + Individual; Match Only (team competition active)",
+     "minimumAlertLevel": "Big Plays",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-028-C01",
+      "condition": "Final match decides title",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Confirm whether actually decisive.",
+      "variations": [
+       {
+        "id": "HL-028-C01-V01",
+        "label": "",
+        "headline": "It all comes down to this! 🎯",
+        "body": "The last match will determine the champion",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-028-C01-V02",
+        "label": "",
+        "headline": "One match. One trophy. 🏆",
+        "body": "Everything depends on the final result.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-028-C01-V03",
+        "label": "",
+        "headline": "The whole Cup on one card 👀",
+        "body": "The championship comes down to the last match.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-029",
+    "category": "Team competition",
+    "name": "Team sweep of session",
+    "status": "Draft",
+    "notes": "Requires session finalized.",
+    "meta": {
+     "notificationCategory": "Team competition",
+     "competitionEligibility": "Match + Individual; Match Only (team competition active)",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-029-C01",
+      "condition": "Team sweep of session",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Requires session finalized.",
+      "variations": [
+       {
+        "id": "HL-029-C01-V01",
+        "label": "",
+        "headline": "Clean sweep! 🧹",
+        "body": "{Team} wins every match in the session",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-029-C01-V02",
+        "label": "",
+        "headline": "Brooms out! 🧹",
+        "body": "{Team} swept the entire session.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-029-C01-V03",
+        "label": "",
+        "headline": "No leftovers! 💥",
+        "body": "Every match in the session goes to {Team}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-030",
+    "category": "Team competition",
+    "name": "Team dominates front nine",
+    "status": "Draft",
+    "notes": "Clarify at-turn condition for simultaneous matches.",
+    "meta": {
+     "notificationCategory": "Team competition",
+     "competitionEligibility": "Match + Individual; Match Only (team competition active)",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-030-C01",
+      "condition": "Team dominates front nine",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Clarify at-turn condition for simultaneous matches.",
+      "variations": [
+       {
+        "id": "HL-030-C01-V01",
+        "label": "",
+        "headline": "Well that’s a statement! 💥",
+        "body": "{Team} leads in every active match after 9",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-030-C01-V02",
+        "label": "",
+        "headline": "Nine-hole statement! 🔥",
+        "body": "{Team} leads every active match through nine.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-030-C01-V03",
+        "label": "",
+        "headline": "The turn tells a story 👀",
+        "body": "All active matches favor {Team} after the front nine.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-031",
+    "category": "Individual leaderboard",
+    "name": "New solo leader",
+    "status": "Draft",
+    "notes": "Must be individual leaderboard.",
+    "meta": {
+     "notificationCategory": "Individual leaderboard",
+     "competitionEligibility": "Match + Individual; Individual Only",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-031-C01",
+      "condition": "New solo leader",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Must be individual leaderboard.",
+      "variations": [
+       {
+        "id": "HL-031-C01-V01",
+        "label": "",
+        "headline": "New sheriff in town! 👑",
+        "body": "{Player} takes sole possession of first.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-031-C01-V02",
+        "label": "",
+        "headline": "Top of the heap! 👑",
+        "body": "{Player} stands alone in first.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-031-C01-V03",
+        "label": "",
+        "headline": "Nobody sharing this spot! 📈",
+        "body": "{Player} is the outright leader.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-032",
+    "category": "Individual leaderboard",
+    "name": "Player ties the lead",
+    "status": "Draft",
+    "notes": "Avoid repeats from rescoring.",
+    "meta": {
+     "notificationCategory": "Individual leaderboard",
+     "competitionEligibility": "Match + Individual; Individual Only",
+     "minimumAlertLevel": "All",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-032-C01",
+      "condition": "Player ties the lead",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Avoid repeats from rescoring.",
+      "variations": [
+       {
+        "id": "HL-032-C01-V01",
+        "label": "",
+        "headline": "Well howdy there 👀",
+        "body": "{Player} joins the lead.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-032-C01-V02",
+        "label": "",
+        "headline": "Welcome to first! 👋",
+        "body": "{Player} has joined the leaders.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-032-C01-V03",
+        "label": "",
+        "headline": "It's getting crowded! 👀",
+        "body": "{Player} moves into a tie at the top.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-033",
+    "category": "Individual leaderboard",
+    "name": "Leaderboard breakaway",
+    "status": "Draft",
+    "notes": "Tier at 3, 5, 7, 10 shots; 10 has double-digit quip TBD.",
+    "meta": {
+     "notificationCategory": "Individual leaderboard",
+     "competitionEligibility": "Match + Individual; Individual Only",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-033-C01",
+      "condition": "Player breaks away",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Tier at 3, 5, 7, 10 shots; 10 has double-digit quip TBD.",
+      "variations": [
+       {
+        "id": "HL-033-C01-V01",
+        "label": "",
+        "headline": "Pulling away 📈",
+        "body": "{Player} opens a 3-shot lead.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-033-C01-V02",
+        "label": "",
+        "headline": "Catch me if you can! 🏃",
+        "body": "{Player} now holds a {Count}-shot lead.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-033-C01-V03",
+        "label": "",
+        "headline": "Room to breathe! 🌬️",
+        "body": "The lead grows to {Count} strokes for {Player}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-034",
+    "category": "Individual leaderboard",
+    "name": "Leaderboard shakeup",
+    "status": "Draft",
+    "notes": "Define first time condition.",
+    "meta": {
+     "notificationCategory": "Individual leaderboard",
+     "competitionEligibility": "Match + Individual; Individual Only",
+     "minimumAlertLevel": "All",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-034-C01",
+      "condition": "Leaderboard shakeup",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Define first time condition.",
+      "variations": [
+       {
+        "id": "HL-034-C01-V01",
+        "label": "",
+        "headline": "We’ve got company 👀",
+        "body": "3 players are now within a shot of the lead.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-034-C01-V02",
+        "label": "",
+        "headline": "Anybody's game! 👀",
+        "body": "Three golfers are separated by just one shot.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-034-C01-V03",
+        "label": "",
+        "headline": "Crowded up top! ⛳",
+        "body": "One stroke covers three contenders.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-035",
+    "category": "Individual leaderboard",
+    "name": "Big leaderboard climb",
+    "status": "Draft",
+    "notes": "Define baseline and timing.",
+    "meta": {
+     "notificationCategory": "Individual leaderboard",
+     "competitionEligibility": "Match + Individual; Individual Only",
+     "minimumAlertLevel": "All",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-035-C01",
+      "condition": "Big leaderboard climb",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Define baseline and timing.",
+      "variations": [
+       {
+        "id": "HL-035-C01-V01",
+        "label": "",
+        "headline": "Making moves 📈",
+        "body": "{Player} jumps 5+ places.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-035-C01-V02",
+        "label": "",
+        "headline": "Up goes {Player}! 🚀",
+        "body": "A jump of {Count} spots on the board.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-035-C01-V03",
+        "label": "",
+        "headline": "Making noise! 📈",
+        "body": "{Player} climbs {Count} positions.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-036",
+    "category": "Individual leaderboard",
+    "name": "Final-hole lead change",
+    "status": "Draft",
+    "notes": "Clarify individual vs group/tournament and delayed entry.",
+    "meta": {
+     "notificationCategory": "Individual leaderboard",
+     "competitionEligibility": "Match + Individual; Individual Only",
+     "minimumAlertLevel": "Big Plays",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-036-C01",
+      "condition": "Final-hole lead change",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Clarify individual vs group/tournament and delayed entry.",
+      "variations": [
+       {
+        "id": "HL-036-C01-V01",
+        "label": "",
+        "headline": "Down to the wire! 🚨",
+        "body": "The lead changes on No. 18.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-036-C01-V02",
+        "label": "",
+        "headline": "Eighteen changes everything! 🚨",
+        "body": "The lead changes on the last hole.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-036-C01-V03",
+        "label": "",
+        "headline": "What a finish! 🤯",
+        "body": "Hole 18 flips the top of the leaderboard.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-037",
+    "category": "Individual leaderboard",
+    "name": "New tournament scoring record",
+    "status": "Draft",
+    "notes": "Requires comparable tournament records.",
+    "meta": {
+     "notificationCategory": "Individual leaderboard",
+     "competitionEligibility": "Match + Individual; Individual Only",
+     "minimumAlertLevel": "Big Plays",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-037-C01",
+      "condition": "New tournament scoring record",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Requires comparable tournament records.",
+      "variations": [
+       {
+        "id": "HL-037-C01-V01",
+        "label": "",
+        "headline": "Record breaker! 🏆",
+        "body": "{Player} sets a new tournament scoring record.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-037-C01-V02",
+        "label": "",
+        "headline": "Write it in the books! 📚",
+        "body": "{Player} sets a new tournament scoring record.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-037-C01-V03",
+        "label": "",
+        "headline": "History on the scorecard! 🏆",
+        "body": "A tournament scoring record for {Player}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-038",
+    "category": "Individual leaderboard",
+    "name": "Playoff required",
+    "status": "Draft",
+    "notes": "Only if event rules specify playoff.",
+    "meta": {
+     "notificationCategory": "Individual leaderboard",
+     "competitionEligibility": "Match + Individual; Individual Only",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-038-C01",
+      "condition": "Playoff required",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Only if event rules specify playoff.",
+      "variations": [
+       {
+        "id": "HL-038-C01-V01",
+        "label": "",
+        "headline": "Extra golf! ⛳",
+        "body": "A tie for first forces a playoff.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-038-C01-V02",
+        "label": "",
+        "headline": "Bonus golf! ⛳",
+        "body": "The lead is tied, so we're going to a playoff.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-038-C01-V03",
+        "label": "",
+        "headline": "Not done yet! 👀",
+        "body": "Extra holes will decide first place.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-039",
+    "category": "Individual leaderboard",
+    "name": "Individual champion",
+    "status": "Draft",
+    "notes": "Official verified result.",
+    "meta": {
+     "notificationCategory": "Individual leaderboard",
+     "competitionEligibility": "Match + Individual; Individual Only",
+     "minimumAlertLevel": "Big Plays",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-039-C01",
+      "condition": "Individual champion",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Official verified result.",
+      "variations": [
+       {
+        "id": "HL-039-C01-V01",
+        "label": "",
+        "headline": "Your champion! 🏆",
+        "body": "{Player} wins the individual title.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-039-C01-V02",
+        "label": "",
+        "headline": "The champ is here! 👑",
+        "body": "{Player} wins the individual crown.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-039-C01-V03",
+        "label": "",
+        "headline": "Raise that trophy! 🏆",
+        "body": "The individual title belongs to {Player}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-040",
+    "category": "Trip and tournament milestones",
+    "name": "Tournament begins",
+    "status": "Draft",
+    "notes": "Define actual tournament start.",
+    "meta": {
+     "notificationCategory": "Trip and tournament milestones",
+     "competitionEligibility": "Match + Individual; Match Only; Individual Only (tournament configured)",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-040-C01",
+      "condition": "Tournament begins",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Define actual tournament start.",
+      "variations": [
+       {
+        "id": "HL-040-C01-V01",
+        "label": "",
+        "headline": "Let the games begin! ⛳",
+        "body": "The first round is underway.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-040-C01-V02",
+        "label": "",
+        "headline": "Game on! ⛳",
+        "body": "The tournament is underway.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-040-C01-V03",
+        "label": "",
+        "headline": "Time to settle it on grass! 🔥",
+        "body": "The opening round has begun.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-041",
+    "category": "Trip and tournament milestones",
+    "name": "First score submitted",
+    "status": "Draft",
+    "notes": "Submission vs live first hole needs decision.",
+    "meta": {
+     "notificationCategory": "Trip and tournament milestones",
+     "competitionEligibility": "Match + Individual; Match Only; Individual Only (tournament configured)",
+     "minimumAlertLevel": "All",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-041-C01",
+      "condition": "First score submitted",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Submission vs live first hole needs decision.",
+      "variations": [
+       {
+        "id": "HL-041-C01-V01",
+        "label": "",
+        "headline": "We’re officially live 📲",
+        "body": "The first scorecard is in.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-041-C01-V02",
+        "label": "",
+        "headline": "We have a score! 📲",
+        "body": "The first scorecard is officially in.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-041-C01-V03",
+        "label": "",
+        "headline": "The board is alive! 📊",
+        "body": "Tournament scoring has its first submitted card.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-042",
+    "category": "Trip and tournament milestones",
+    "name": "Round completed",
+    "status": "Draft",
+    "notes": "All required cards completed and verified? clarify.",
+    "meta": {
+     "notificationCategory": "Trip and tournament milestones",
+     "competitionEligibility": "Match + Individual; Match Only; Individual Only (tournament configured)",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-042-C01",
+      "condition": "Round completed",
+      "tier": null,
+      "status": "Draft",
+      "notes": "All required cards completed and verified? clarify.",
+      "variations": [
+       {
+        "id": "HL-042-C01-V01",
+        "label": "",
+        "headline": "That’s a wrap ✅",
+        "body": "All scorecards for Round 1 are in.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-042-C01-V02",
+        "label": "",
+        "headline": "Pencils down! ✏️",
+        "body": "All round {Round} scorecards are submitted.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-042-C01-V03",
+        "label": "",
+        "headline": "Another round in the books! ✅",
+        "body": "Round {Round} is complete.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-043",
+    "category": "Trip and tournament milestones",
+    "name": "Final round begins",
+    "status": "Draft",
+    "notes": "Account for tournaments that can tie.",
+    "meta": {
+     "notificationCategory": "Trip and tournament milestones",
+     "competitionEligibility": "Match + Individual; Match Only; Individual Only (tournament configured)",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-043-C01",
+      "condition": "Final round begins",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Account for tournaments that can tie.",
+      "variations": [
+       {
+        "id": "HL-043-C01-V01",
+        "label": "",
+        "headline": "Today a winner will be crowned 🏆",
+        "body": "The final round is underway.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-043-C01-V02",
+        "label": "",
+        "headline": "This is the big one! 🏆",
+        "body": "The last round is officially underway.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-043-C01-V03",
+        "label": "",
+        "headline": "Championship day is here! 🔥",
+        "body": "One final round to settle the standings.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-044",
+    "category": "Trip and tournament milestones",
+    "name": "Final group approaching 18",
+    "status": "Draft",
+    "notes": "Trigger when all scores through hole 17 submitted for final group.",
+    "meta": {
+     "notificationCategory": "Trip and tournament milestones",
+     "competitionEligibility": "Match + Individual; Match Only; Individual Only (tournament configured)",
+     "minimumAlertLevel": "All",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-044-C01",
+      "condition": "Final group approaching 18",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Trigger when all scores through hole 17 submitted for final group.",
+      "variations": [
+       {
+        "id": "HL-044-C01-V01",
+        "label": "",
+        "headline": "The finish line is near 🏁",
+        "body": "The final group is on No. 18.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-044-C01-V02",
+        "label": "",
+        "headline": "The last hole awaits! 🏁",
+        "body": "The final group has finished 17.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-044-C01-V03",
+        "label": "",
+        "headline": "Here comes eighteen! 👀",
+        "body": "The last group is headed to the closing hole.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-045",
+    "category": "Trip and tournament milestones",
+    "name": "Trip finished",
+    "status": "Draft",
+    "notes": "Defined trip completion state.",
+    "meta": {
+     "notificationCategory": "Trip and tournament milestones",
+     "competitionEligibility": "All trip types",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-045-C01",
+      "condition": "Trip finished",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Defined trip completion state.",
+      "variations": [
+       {
+        "id": "HL-045-C01-V01",
+        "label": "",
+        "headline": "One for the books 📸",
+        "body": "The trip is complete.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-045-C01-V02",
+        "label": "",
+        "headline": "One for the group chat! 📸",
+        "body": "This trip is officially complete.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-045-C01-V03",
+        "label": "",
+        "headline": "Until the next tee time! ⛳",
+        "body": "The golf trip has come to an end.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-046",
+    "category": "Fun and social highlights",
+    "name": "First birdie of trip",
+    "status": "Draft",
+    "notes": "First known birdie from actual scored holes.",
+    "meta": {
+     "notificationCategory": "Fun and social highlights",
+     "competitionEligibility": "All trip types",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-046-C01",
+      "condition": "First birdie of trip",
+      "tier": null,
+      "status": "Draft",
+      "notes": "First known birdie from actual scored holes.",
+      "variations": [
+       {
+        "id": "HL-046-C01-V01",
+        "label": "",
+        "headline": "First birdie on the board! 🐦",
+        "body": "{Player} gets things started.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-046-C01-V02",
+        "label": "",
+        "headline": "First birdie flies! 🐦",
+        "body": "{Player} records the trip's opening birdie.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-046-C01-V03",
+        "label": "",
+        "headline": "The birdie party begins! 🎉",
+        "body": "{Player} gets the first red number on the board.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-047",
+    "category": "Fun and social highlights",
+    "name": "First eagle of trip",
+    "status": "Draft",
+    "notes": "First known eagle.",
+    "meta": {
+     "notificationCategory": "Fun and social highlights",
+     "competitionEligibility": "All trip types",
+     "minimumAlertLevel": "Big Plays",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-047-C01",
+      "condition": "First eagle of trip",
+      "tier": null,
+      "status": "Draft",
+      "notes": "First known eagle.",
+      "variations": [
+       {
+        "id": "HL-047-C01-V01",
+        "label": "",
+        "headline": "First eagle! 🦅",
+        "body": "{Player} delivers the first eagle.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-047-C01-V02",
+        "label": "",
+        "headline": "The first big bird! 🦅",
+        "body": "{Player} makes the trip's first eagle.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-047-C01-V03",
+        "label": "",
+        "headline": "Eagle season is open! 👀",
+        "body": "First eagle of the trip goes to {Player}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-048",
+    "category": "Fun and social highlights",
+    "name": "Birdie streak ends",
+    "status": "Draft",
+    "notes": "At streak ending; avoid separate alert if too short. (Streaks start at 3+ birdies or better)",
+    "meta": {
+     "notificationCategory": "Fun and social highlights",
+     "competitionEligibility": "All trip types",
+     "minimumAlertLevel": "All",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-048-C01",
+      "condition": "Birdie streak ends",
+      "tier": null,
+      "status": "Draft",
+      "notes": "At streak ending; avoid separate alert if too short. (Streaks start at 3+ birdies or better)",
+      "variations": [
+       {
+        "id": "HL-048-C01-V01",
+        "label": "",
+        "headline": "What a run! 👏",
+        "body": "{Player}’s streak ends at 4 birdies.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-048-C01-V02",
+        "label": "",
+        "headline": "The streak was sweet! 🔥",
+        "body": "{Player} finishes a run of {Count} straight birdies.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-048-C01-V03",
+        "label": "",
+        "headline": "What a heater! 👏",
+        "body": "That's {Count} birdies in a row before {Player}'s streak ends.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-049",
+    "category": "Fun and social highlights",
+    "name": "Shared hot streak in same group",
+    "status": "Draft",
+    "notes": "Clarify same group/same course hole and concurrent time.",
+    "meta": {
+     "notificationCategory": "Fun and social highlights",
+     "competitionEligibility": "All trip types",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-049-C01",
+      "condition": "Shared hot streak",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Clarify same course hole and concurrent or different times.",
+      "variations": [
+       {
+        "id": "HL-049-C01-V01",
+        "label": "",
+        "headline": "The whole group is cooking! 👨‍🍳",
+        "body": "{Player 1}, {Player 2}, and {Player 3} birdie {Hole} in the same group.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-049-C01-V02",
+        "label": "",
+        "headline": "The kitchen is OPEN! 👨‍🍳",
+        "body": "{Players} in the same group all make birdie on {Hole}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-049-C01-V03",
+        "label": "",
+        "headline": "Chef's special: birdies! 👨‍🍳",
+        "body": "One group, plenty of birdies. {Players} all birdie {Hole}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-050",
+    "category": "Fun and social highlights",
+    "name": "Biggest comeback of trip",
+    "status": "Draft",
+    "notes": "Must have baseline of completed match comebacks.",
+    "meta": {
+     "notificationCategory": "Fun and social highlights",
+     "competitionEligibility": "Match + Individual; Match Only",
+     "minimumAlertLevel": "Big Plays",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-050-C01",
+      "condition": "Biggest comeback of trip",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Must have baseline of completed match comebacks.",
+      "variations": [
+       {
+        "id": "HL-050-C01-V01",
+        "label": "",
+        "headline": "Comeback king 👑",
+        "body": "{Player} completes the biggest rally so far.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-050-C01-V02",
+        "label": "",
+        "headline": "The comeback crown! 👑",
+        "body": "{Player} owns the trip's biggest rally so far.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-050-C01-V03",
+        "label": "",
+        "headline": "Never out of it! 💪",
+        "body": "Biggest match comeback of the trip belongs to {Player}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-051",
+    "category": "Fun and social highlights",
+    "name": "18 consecutive pars / all-par round",
+    "status": "Draft",
+    "notes": "Separate from bogey-free round; event can qualify for both.",
+    "meta": {
+     "notificationCategory": "Fun and social highlights",
+     "competitionEligibility": "All trip types",
+     "minimumAlertLevel": "All",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-051-C01",
+      "condition": "18 consecutive pars / all-par round",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Separate from bogey-free round; event can qualify for both.",
+      "variations": [
+       {
+        "id": "HL-051-C01-V01",
+        "label": "",
+        "headline": "The par train 🚂",
+        "body": "{Player} makes 18 pars in a row.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-051-C01-V02",
+        "label": "",
+        "headline": "The parfect round! 🚂",
+        "body": "{Player} makes 18 straight pars.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-051-C01-V03",
+        "label": "",
+        "headline": "Consistency is king! 👑",
+        "body": "Eighteen holes, eighteen pars for {Player}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-052",
+    "category": "Fun and social highlights",
+    "name": "Round’s most birdies",
+    "status": "Draft",
+    "notes": "Clarify when comparison is final vs ongoing.",
+    "meta": {
+     "notificationCategory": "Fun and social highlights",
+     "competitionEligibility": "All trip types",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-052-C01",
+      "condition": "Round’s most birdies",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Clarify when comparison is final vs ongoing.",
+      "variations": [
+       {
+        "id": "HL-052-C01-V01",
+        "label": "",
+        "headline": "Birdie machine 🐦",
+        "body": "{Player} leads the round with 6 birdies.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-052-C01-V02",
+        "label": "",
+        "headline": "Birdie collector! 🐦",
+        "body": "{Player} leads the round with {Count} birdies.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-052-C01-V03",
+        "label": "",
+        "headline": "Feeding the birdies! 🍽️",
+        "body": "A round-leading {Count} birdies for {Player}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "HL-053",
+    "category": "Fun and social highlights",
+    "name": "Shared hot streak in different groups",
+    "status": "Draft",
+    "notes": "Clarify same group/same course hole and concurrent time.",
+    "meta": {
+     "notificationCategory": "Fun and social highlights",
+     "competitionEligibility": "All trip types",
+     "minimumAlertLevel": "Balanced",
+     "audience": "",
+     "reminderTrigger": "",
+     "sourceRequirement": ""
+    },
+    "conditionals": [
+     {
+      "id": "HL-053-C01",
+      "condition": "Shared hot streak",
+      "tier": null,
+      "status": "Draft",
+      "notes": "Clarify same group/same course hole and concurrent time.",
+      "variations": [
+       {
+        "id": "HL-053-C01-V01",
+        "label": "",
+        "headline": "Birdies for everybody! 🐦",
+        "body": "{Players} in different groups all birdie hole {Hole}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-053-C01-V02",
+        "label": "",
+        "headline": "Group project: birdies ✅",
+        "body": "{Players} from different groups each make birdie on hole {Hole}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-053-C01-V03",
+        "label": "",
+        "headline": "The birdie bug is spreading! 🐦",
+        "body": "Different groups, same result: {Players} all birdie hole {Hole}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-001",
+    "category": "Travel and itinerary alerts",
+    "name": "Flight tomorrow",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Flights",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Flight travelers",
+     "reminderTrigger": "24h before",
+     "sourceRequirement": "Scheduled"
+    },
+    "conditionals": [
+     {
+      "id": "TR-001-C01",
+      "condition": "Flight tomorrow",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-001-C01-V01",
+        "label": "",
+        "headline": "Takeoff tomorrow! ✈️",
+        "body": "Flight {Flight Number} leaves at {Time}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-001-C01-V02",
+        "label": "",
+        "headline": "Wheels up soon! 🧳",
+        "body": "Your flight to {Destination} is tomorrow.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-001-C01-V03",
+        "label": "",
+        "headline": "Don't forget the clubs! ✈️",
+        "body": "Double-check flight {Flight Number} and your departure time.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-002",
+    "category": "Travel and itinerary alerts",
+    "name": "Flight approaching",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Flights",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Flight travelers",
+     "reminderTrigger": "3h before",
+     "sourceRequirement": "Scheduled"
+    },
+    "conditionals": [
+     {
+      "id": "TR-002-C01",
+      "condition": "Flight approaching",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-002-C01-V01",
+        "label": "",
+        "headline": "Airport day! ✈️",
+        "body": "Flight {Flight Number} departs at {Time}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-002-C01-V02",
+        "label": "",
+        "headline": "Time to travel! 🧳",
+        "body": "Your flight is scheduled for {Time}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-002-C01-V03",
+        "label": "",
+        "headline": "Cleared for takeoff? ✈️",
+        "body": "Review your flight details before heading out.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-003",
+    "category": "Travel and itinerary alerts",
+    "name": "Flight itinerary changed",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Flights",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Affected travelers",
+     "reminderTrigger": "On edit",
+     "sourceRequirement": "Itinerary edit"
+    },
+    "conditionals": [
+     {
+      "id": "TR-003-C01",
+      "condition": "Flight itinerary changed",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-003-C01-V01",
+        "label": "",
+        "headline": "Flight plan changed ✈️",
+        "body": "Your saved flight details were updated.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-003-C01-V02",
+        "label": "",
+        "headline": "New travel details! 📋",
+        "body": "Review the latest entry for {Flight Number}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-003-C01-V03",
+        "label": "",
+        "headline": "Check your flight 👀",
+        "body": "Your itinerary has new flight information.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-004",
+    "category": "Travel and itinerary alerts",
+    "name": "Confirmed flight disruption",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Flights",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Affected travelers",
+     "reminderTrigger": "On verified change",
+     "sourceRequirement": "Live feed/manual confirmation"
+    },
+    "conditionals": [
+     {
+      "id": "TR-004-C01",
+      "condition": "Confirmed flight disruption",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-004-C01-V01",
+        "label": "",
+        "headline": "Flight update! ⚠️",
+        "body": "Confirmed status for {Flight Number}: {Flight Status}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-004-C01-V02",
+        "label": "",
+        "headline": "Travel plans shifted ✈️",
+        "body": "Your flight status has changed: {Flight Status}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-004-C01-V03",
+        "label": "",
+        "headline": "New flight status 🧳",
+        "body": "Check the verified update for {Flight Number}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-005",
+    "category": "Travel and itinerary alerts",
+    "name": "Airport pickup",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Transportation",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Assigned travelers and driver",
+     "reminderTrigger": "60m before",
+     "sourceRequirement": "Scheduled"
+    },
+    "conditionals": [
+     {
+      "id": "TR-005-C01",
+      "condition": "Airport pickup",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-005-C01-V01",
+        "label": "",
+        "headline": "Airport pickup soon! 🚗",
+        "body": "Meet at {Location} at {Time}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-005-C01-V02",
+        "label": "",
+        "headline": "Ride plan ready 🧳",
+        "body": "Your airport pickup is scheduled for {Time}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-005-C01-V03",
+        "label": "",
+        "headline": "Find your ride 🚙",
+        "body": "Check the pickup location in your itinerary.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-006",
+    "category": "Travel and itinerary alerts",
+    "name": "Carpool leaving soon",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Transportation",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Carpool members and driver",
+     "reminderTrigger": "30m before",
+     "sourceRequirement": "Scheduled"
+    },
+    "conditionals": [
+     {
+      "id": "TR-006-C01",
+      "condition": "Carpool leaving soon",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-006-C01-V01",
+        "label": "",
+        "headline": "Convoy in 30! 🚗",
+        "body": "Carpool {Carpool Name} leaves {Location} at {Time}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-006-C01-V02",
+        "label": "",
+        "headline": "Who's riding shotgun? 🚙",
+        "body": "Your carpool is scheduled to depart at {Time}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-006-C01-V03",
+        "label": "",
+        "headline": "Let's roll! 🚗",
+        "body": "Be at {Location} before the carpool leaves.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-007",
+    "category": "Travel and itinerary alerts",
+    "name": "Carpool changed",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Transportation",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Carpool members and driver",
+     "reminderTrigger": "On edit",
+     "sourceRequirement": "Itinerary edit"
+    },
+    "conditionals": [
+     {
+      "id": "TR-007-C01",
+      "condition": "Carpool changed",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-007-C01-V01",
+        "label": "",
+        "headline": "Carpool update! 📍",
+        "body": "Pickup or driver details have changed.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-007-C01-V02",
+        "label": "",
+        "headline": "New convoy plans 🚗",
+        "body": "Review the latest carpool details.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-007-C01-V03",
+        "label": "",
+        "headline": "Don't miss your ride 🚙",
+        "body": "Check the updated location and driver.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-008",
+    "category": "Travel and itinerary alerts",
+    "name": "Rental car pickup",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Transportation",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Rental group and driver",
+     "reminderTrigger": "60m before",
+     "sourceRequirement": "Scheduled"
+    },
+    "conditionals": [
+     {
+      "id": "TR-008-C01",
+      "condition": "Rental car pickup",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-008-C01-V01",
+        "label": "",
+        "headline": "Grab the keys! 🔑",
+        "body": "Rental pickup at {Location} is at {Time}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-008-C01-V02",
+        "label": "",
+        "headline": "Time for some wheels 🚗",
+        "body": "Your rental pickup is coming up.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-008-C01-V03",
+        "label": "",
+        "headline": "Keys, please! 🔑",
+        "body": "Check the rental collection details.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-009",
+    "category": "Travel and itinerary alerts",
+    "name": "Rental car return",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Transportation",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Rental group and driver",
+     "reminderTrigger": "24h before",
+     "sourceRequirement": "Scheduled"
+    },
+    "conditionals": [
+     {
+      "id": "TR-009-C01",
+      "condition": "Rental car return",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-009-C01-V01",
+        "label": "",
+        "headline": "Rental return soon 🔑",
+        "body": "Drop-off at {Location} is due {Date} at {Time}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-009-C01-V02",
+        "label": "",
+        "headline": "Don't forget the return! 🚗",
+        "body": "Your rental vehicle is due back tomorrow.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-009-C01-V03",
+        "label": "",
+        "headline": "Return those wheels 📅",
+        "body": "Check the rental return time and location.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-010",
+    "category": "Travel and itinerary alerts",
+    "name": "Shuttle or rideshare pickup",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Transportation",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Ride passengers",
+     "reminderTrigger": "30m before",
+     "sourceRequirement": "Scheduled"
+    },
+    "conditionals": [
+     {
+      "id": "TR-010-C01",
+      "condition": "Shuttle or rideshare pickup",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-010-C01-V01",
+        "label": "",
+        "headline": "Your ride is coming up! 🚕",
+        "body": "Scheduled pickup at {Location} is at {Time}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-010-C01-V02",
+        "label": "",
+        "headline": "Lobby check! 🚐",
+        "body": "Your shuttle pickup is scheduled for {Time}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-010-C01-V03",
+        "label": "",
+        "headline": "Time to meet the ride 🚕",
+        "body": "Check your scheduled pickup details.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-011",
+    "category": "Travel and itinerary alerts",
+    "name": "Golf round tomorrow",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Golf schedule",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Round players",
+     "reminderTrigger": "24h before",
+     "sourceRequirement": "Scheduled"
+    },
+    "conditionals": [
+     {
+      "id": "TR-011-C01",
+      "condition": "Golf round tomorrow",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-011-C01-V01",
+        "label": "",
+        "headline": "Tee time tomorrow! ⛳",
+        "body": "Round {Round} at {Course} starts at {Time}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-011-C01-V02",
+        "label": "",
+        "headline": "Tomorrow's agenda: golf 🏌️",
+        "body": "See you at {Course} tomorrow.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-011-C01-V03",
+        "label": "",
+        "headline": "Sleep fast, golf early ⛳",
+        "body": "Check tomorrow's assigned tee time.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-012",
+    "category": "Travel and itinerary alerts",
+    "name": "Golf round soon",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Golf schedule",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Assigned tee group",
+     "reminderTrigger": "60m before",
+     "sourceRequirement": "Scheduled"
+    },
+    "conditionals": [
+     {
+      "id": "TR-012-C01",
+      "condition": "Golf round soon",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-012-C01-V01",
+        "label": "",
+        "headline": "You're on deck! ⛳",
+        "body": "Your tee time at {Course} is {Time}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-012-C01-V02",
+        "label": "",
+        "headline": "Find those golf shoes! 🏌️",
+        "body": "Round {Round} is coming up.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-012-C01-V03",
+        "label": "",
+        "headline": "Tee time creeping up 👀",
+        "body": "Review your pairing and tee time.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-013",
+    "category": "Travel and itinerary alerts",
+    "name": "Tee time or course change",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Golf schedule",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Affected round players",
+     "reminderTrigger": "On edit",
+     "sourceRequirement": "Itinerary edit"
+    },
+    "conditionals": [
+     {
+      "id": "TR-013-C01",
+      "condition": "Tee time or course change",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-013-C01-V01",
+        "label": "",
+        "headline": "Tee-time update! ⛳",
+        "body": "Round {Round} details have changed.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-013-C01-V02",
+        "label": "",
+        "headline": "Golf plans shifted 📅",
+        "body": "Check the latest course and start time.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-013-C01-V03",
+        "label": "",
+        "headline": "Read before you tee off 👀",
+        "body": "There's a change to your round.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-014",
+    "category": "Travel and itinerary alerts",
+    "name": "Pairings ready or changed",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Golf schedule",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Affected round players",
+     "reminderTrigger": "On organizer publish",
+     "sourceRequirement": "Itinerary edit"
+    },
+    "conditionals": [
+     {
+      "id": "TR-014-C01",
+      "condition": "Pairings ready or changed",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-014-C01-V01",
+        "label": "",
+        "headline": "Your group is set! 🏌️",
+        "body": "Pairings for Round {Round} are available.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-014-C01-V02",
+        "label": "",
+        "headline": "Your pairing is official ⛳",
+        "body": "Check who's in your playing group.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-014-C01-V03",
+        "label": "",
+        "headline": "New pairing alert 📋",
+        "body": "Your Round {Round} group has been updated.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-015",
+    "category": "Travel and itinerary alerts",
+    "name": "Lodging check-in",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Lodging",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Lodging guests",
+     "reminderTrigger": "24h before",
+     "sourceRequirement": "Scheduled"
+    },
+    "conditionals": [
+     {
+      "id": "TR-015-C01",
+      "condition": "Lodging check-in",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-015-C01-V01",
+        "label": "",
+        "headline": "Home base tomorrow! 🏡",
+        "body": "Check-in at {Property} is at {Time}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-015-C01-V02",
+        "label": "",
+        "headline": "Trip headquarters awaits 🏠",
+        "body": "Review your arrival instructions.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-015-C01-V03",
+        "label": "",
+        "headline": "House-bound! 🧳",
+        "body": "Check your lodging address in the itinerary.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-016",
+    "category": "Travel and itinerary alerts",
+    "name": "Lodging check-out",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Lodging",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Lodging guests",
+     "reminderTrigger": "Evening before",
+     "sourceRequirement": "Scheduled"
+    },
+    "conditionals": [
+     {
+      "id": "TR-016-C01",
+      "condition": "Lodging check-out",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-016-C01-V01",
+        "label": "",
+        "headline": "Pack those clubs! 🧳",
+        "body": "Check-out at {Property} is tomorrow at {Time}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-016-C01-V02",
+        "label": "",
+        "headline": "Don't leave a wedge! 🏡",
+        "body": "Your lodging check-out is coming up.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-016-C01-V03",
+        "label": "",
+        "headline": "Last look around 👀",
+        "body": "Check the departure instructions.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-017",
+    "category": "Travel and itinerary alerts",
+    "name": "Lodging instructions updated",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Lodging",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Lodging guests",
+     "reminderTrigger": "On edit",
+     "sourceRequirement": "Itinerary edit"
+    },
+    "conditionals": [
+     {
+      "id": "TR-017-C01",
+      "condition": "Lodging instructions updated",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-017-C01-V01",
+        "label": "",
+        "headline": "House update! 🏡",
+        "body": "Arrival information for {Property} has changed.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-017-C01-V02",
+        "label": "",
+        "headline": "New lodging details 📍",
+        "body": "Open the app for secure arrival instructions.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-017-C01-V03",
+        "label": "",
+        "headline": "Home-base update 🏠",
+        "body": "Review the latest lodging information.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-018",
+    "category": "Travel and itinerary alerts",
+    "name": "Dinner reminder",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Group activities",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Event attendees",
+     "reminderTrigger": "60m before",
+     "sourceRequirement": "Scheduled"
+    },
+    "conditionals": [
+     {
+      "id": "TR-018-C01",
+      "condition": "Dinner reminder",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-018-C01-V01",
+        "label": "",
+        "headline": "Dinner with the crew! 🍽️",
+        "body": "Your group dinner at {Venue} is at {Time}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-018-C01-V02",
+        "label": "",
+        "headline": "Put the clubs down 🍴",
+        "body": "It's almost dinner time at {Venue}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-018-C01-V03",
+        "label": "",
+        "headline": "The next tee time is a table 🍽️",
+        "body": "Check your dinner meetup details.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-019",
+    "category": "Travel and itinerary alerts",
+    "name": "Activity changed",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Group activities",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Event attendees",
+     "reminderTrigger": "On edit",
+     "sourceRequirement": "Itinerary edit"
+    },
+    "conditionals": [
+     {
+      "id": "TR-019-C01",
+      "condition": "Activity changed",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-019-C01-V01",
+        "label": "",
+        "headline": "Change of plans 📅",
+        "body": "{Event Name} has new time or location details.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-019-C01-V02",
+        "label": "",
+        "headline": "New meetup instructions 📍",
+        "body": "Check the updated {Event Name} itinerary.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-019-C01-V03",
+        "label": "",
+        "headline": "Heads up, crew 👀",
+        "body": "Your activity details have been updated.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-020",
+    "category": "Travel and itinerary alerts",
+    "name": "Organizer announcement",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Organizer messages",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Selected audience or everyone",
+     "reminderTrigger": "Immediate",
+     "sourceRequirement": "Manual send"
+    },
+    "conditionals": [
+     {
+      "id": "TR-020-C01",
+      "condition": "Organizer announcement",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-020-C01-V01",
+        "label": "",
+        "headline": "From your organizer 📣",
+        "body": "{Announcement}",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-020-C01-V02",
+        "label": "",
+        "headline": "Heads up, crew! 📣",
+        "body": "Organizer message: {Announcement}",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-020-C01-V03",
+        "label": "",
+        "headline": "Trip news 📬",
+        "body": "{Announcement}",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-021",
+    "category": "Travel and itinerary alerts",
+    "name": "Itinerary event cancelled",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Trip changes",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Affected attendees",
+     "reminderTrigger": "On cancellation",
+     "sourceRequirement": "Itinerary edit"
+    },
+    "conditionals": [
+     {
+      "id": "TR-021-C01",
+      "condition": "Itinerary event cancelled",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-021-C01-V01",
+        "label": "",
+        "headline": "Event cancelled ⚠️",
+        "body": "{Event Name} on {Date} has been cancelled.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-021-C01-V02",
+        "label": "",
+        "headline": "Change to the plan 📅",
+        "body": "{Event Name} is no longer scheduled.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-021-C01-V03",
+        "label": "",
+        "headline": "Schedule update 📋",
+        "body": "Check your itinerary for changes.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "TR-022",
+    "category": "Travel and itinerary alerts",
+    "name": "Trip starting tomorrow",
+    "status": "Draft",
+    "notes": "Editorial draft; not supported by current golf-only importer",
+    "meta": {
+     "notificationCategory": "Trip milestones",
+     "competitionEligibility": "",
+     "minimumAlertLevel": "",
+     "audience": "Entire trip or selected travelers",
+     "reminderTrigger": "24h before",
+     "sourceRequirement": "Scheduled"
+    },
+    "conditionals": [
+     {
+      "id": "TR-022-C01",
+      "condition": "Trip starting tomorrow",
+      "tier": null,
+      "status": "Draft",
+      "notes": "",
+      "variations": [
+       {
+        "id": "TR-022-C01-V01",
+        "label": "",
+        "headline": "Countdown is ON! 🧳",
+        "body": "Your golf trip starts tomorrow.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "TR-022-C01-V02",
+        "label": "",
+        "headline": "Almost time to roll! ⛳",
+        "body": "Review your plans before departure.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "TR-022-C01-V03",
+        "label": "",
+        "headline": "Golf trip loading… ⏳",
+        "body": "Tomorrow's the day. Check the itinerary.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

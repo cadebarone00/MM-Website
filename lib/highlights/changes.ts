@@ -1,11 +1,12 @@
 import { publishableConfig } from "./validator.ts";
-import type { HighlightConditional, HighlightConfig, HighlightRule, HighlightVariation } from "./types.ts";
+import { RULE_META_KEYS, type HighlightConditional, type HighlightConfig, type HighlightRule, type HighlightVariation } from "./types.ts";
 
 /**
  * What a publish would change for players, compared with the currently published config. Pure.
  * Only what goes live is compared (Approved rules → live conditionals → Approved variations), so editing a Draft row
  * is "none".
- *   behavior  — a rule or conditional (trigger) starts or stops going live, or its Tier changes: who gets notified, and when.
+ *   behavior  — a rule or conditional (trigger) starts or stops going live, its Tier changes, or the rule's metadata
+ *               (category, competition eligibility, alert level, audience, trigger, source) changes: who gets notified, and when.
  *   copy      — a message variation is added, removed or reworded: what the notification says, never whether it fires.
  *   metadata  — rule name, condition / variation label, category, notes: no effect on players.
  * Sheet row numbers are never compared — moving rows around is not a change.
@@ -65,7 +66,13 @@ export function classifyChanges(published: HighlightConfig | null, draft: Highli
     const oldRule = oldRules.get(id), newRule = newRules.get(id);
     if (!oldRule) changes.push({ kind: "behavior", id, field: "added", before: null, after: newRule!.name });
     else if (!newRule) changes.push({ kind: "behavior", id, field: "removed", before: oldRule.name, after: null });
-    else compare(id, oldRule, newRule, RULE_FIELDS);
+    else {
+      compare(id, oldRule, newRule, RULE_FIELDS);
+      for (const key of RULE_META_KEYS) {
+        const before = oldRule.meta?.[key] ?? "", after = newRule.meta?.[key] ?? "";
+        if (before !== after) changes.push({ kind: "behavior", id, field: key, before, after });
+      }
+    }
     // A rule that starts or stops going live lists its triggers too, so the preview shows what will (stop) fire.
     pair(oldRule?.conditionals ?? [], newRule?.conditionals ?? [], "behavior", (c) => c.condition, (a, b) => {
       compare(a.id, a, b, CONDITIONAL_FIELDS);

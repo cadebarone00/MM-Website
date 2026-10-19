@@ -5,6 +5,8 @@
 export const NOTIFICATION_KINDS = [
   "highlight", "teeTime", "opponentSubmitted", "cardMismatch", "roundFinal",
   "joinRequest", "requestAccepted", "requestDeclined", "invited", "linkRequest",
+  // Highlights Engine travel alerts (flights, rides, lodging, activities) and organizer announcements (TR- rules).
+  "travel", "announcement",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 

@@ -7,8 +7,8 @@ import { HIGHLIGHT_TABS } from "./types.ts";
 test("groups CONDITIONAL rows under the PARENT above them", () => {
   const { config, issues } = importHighlightSheet(validSheet());
   assert.deepEqual(issues, []);
-  assert.equal(config.schemaVersion, 2);
-  assert.deepEqual(config.rules.map((r) => r.id), ["HL-001", "HL-002", "HL-011", "HL-023", "HL-031", "HL-040", "HL-046"]);
+  assert.equal(config.schemaVersion, 3);
+  assert.deepEqual(config.rules.map((r) => r.id), ["HL-001", "HL-002", "HL-011", "HL-023", "HL-031", "HL-040", "HL-046", "TR-001"]);
   const birdies = config.rules[0];
   assert.equal(birdies.category, "Individual performance");
   assert.equal(birdies.status, "Approved");
@@ -61,5 +61,5 @@ test("copy typed on a PARENT row is flagged as ignored", () => {
 
 test("parser issues come through the importer", () => {
   const { issues } = importHighlightSheet([]);
-  assert.equal(issues.filter((i) => i.code === "missing-tab").length, 6);
+  assert.equal(issues.filter((i) => i.code === "missing-tab").length, 7);
 });

@@ -4,6 +4,7 @@ import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS, type GolfTripNavigation } from "@/l
 import { DEFAULT_DEV_ACCOUNT, DEV_ACCOUNTS } from "./devAccounts";
 import { PROFILE_PREVIEWS, type ProfilePreview } from "./sampleProfile";
 import { ALL_NOTIFICATION_PREVIEWS, type NotificationPreview } from "./sampleNotifications";
+import { parseHighlightSim, type HighlightSim } from "./highlightScenarios";
 
 // Portrait CSS pixels, not panel pixels. Safe insets are editable test inputs.
 // Dimensions/provenance and browser-emulation limits: docs/dev-simulator-review.md.
@@ -75,6 +76,8 @@ export type SimulatorState = {
   matchDraftPreview?: "off" | "Response" | "Ranks" | "Randomized";
   /** Notifications group: which preview screen shows (lib/dev/sampleNotifications.ts). Unset = the page's first one. */
   notificationPreview?: NotificationPreview;
+  /** Notifications group (Phone, In-app): the Highlights scenario panel — engine output instead of the design samples. Unset = design samples. */
+  highlightSim?: HighlightSim;
   /** Notifications group: lock / home screen wallpaper. Unset = the default (brighter maroon). */
   wallpaper?: "default" | "dark" | "light";
   brandStyle?: "clean" | "gold";
@@ -177,6 +180,7 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.dualDraftMomentum !== undefined && typeof state.dualDraftMomentum !== "boolean") return null;
   if (state.notificationPreview !== undefined && !ALL_NOTIFICATION_PREVIEWS.includes(String(state.notificationPreview))) return null;
   if (state.wallpaper !== undefined && !["default", "dark", "light"].includes(String(state.wallpaper))) return null;
+  if (state.highlightSim !== undefined && !parseHighlightSim(state.highlightSim)) return null;
   if (state.brandStyle !== undefined && !["clean", "gold"].includes(String(state.brandStyle))) return null;
   if (state.brandStage !== undefined && !["drawing", "finished", "reduced"].includes(String(state.brandStage))) return null;
   if (state.brandDuration !== undefined && (typeof state.brandDuration !== "number" || !Number.isFinite(state.brandDuration) || state.brandDuration < 600 || state.brandDuration > 2400)) return null;

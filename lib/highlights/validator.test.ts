@@ -67,7 +67,7 @@ test("copy: empty text, unknown variables, stray braces and variables the detect
     c3.variations[0].body = "{player birdies";
     c4.variations[0].body = "{player} beats {opponent}";
   });
-  assert.deepEqual(list(report.errors), ["missing-copy:HL-001-C01-V00", "unknown-variable:HL-001-C02-V00", "bad-template:HL-001-C03-V00", "variable-not-provided:HL-001-C04-V00"]);
+  assert.deepEqual(list(report.errors), ["missing-copy:HL-001-C01-V01", "unknown-variable:HL-001-C02-V01", "bad-template:HL-001-C03-V01", "variable-not-provided:HL-001-C04-V01"]);
 });
 
 test("Draft rows only warn about copy; Disabled rows are skipped", () => {
@@ -78,7 +78,7 @@ test("Draft rows only warn about copy; Disabled rows are skipped", () => {
     off.conditionals[0].variations[0].headline = "";
   });
   assert.deepEqual(report.errors, []);
-  assert.deepEqual(list(report.warnings), ["unknown-variable:HL-002-C01-V00"]);
+  assert.deepEqual(list(report.warnings), ["unknown-variable:HL-002-C01-V01"]);
 });
 
 test("warns about an Approved conditional under a non-Approved rule, a rule with no detector, and an empty rule", () => {
@@ -126,9 +126,9 @@ test("warns (never errors) when long names could push copy past the 80 / 180 pho
     const [c1, c2, c3] = rule(config, "HL-001").conditionals;
     c1.variations[0].headline = "{player}, give everyone else a chance! Seriously now 🔥"; // fine with "Alex", too long with a two-golfer side
     c2.variations[0].body = "x".repeat(181);
-    c3.variations[0].headline = "y".repeat(80); // exactly the limit is fine
+    c3.variations[0].headline = "y".repeat(78) + "🔥"; // exactly the limit (an emoji is 2 characters) is fine
   });
   assert.deepEqual(report.errors, []);
-  assert.deepEqual(list(report.warnings), ["may-be-too-long:HL-001-C01-V00", "may-be-too-long:HL-001-C02-V00"]);
+  assert.deepEqual(list(report.warnings), ["may-be-too-long:HL-001-C01-V01", "may-be-too-long:HL-001-C02-V01"]);
   assert.match(report.warnings[0].message, /Headline can reach \d+ characters/);
 });

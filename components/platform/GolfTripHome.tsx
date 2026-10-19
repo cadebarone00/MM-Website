@@ -264,7 +264,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
         : tab === "Itinerary" ? <>
           {/* "+ Add" (the My Info add pop-ups) sits right under the Itinerary tab; then the day-by-day itinerary. */}
           {travel && <div className={styles.itineraryAddRow}><GolfTripAddTravel travel={travel} onChange={changeMyTravel} className={styles.itineraryAddPill} /></div>}
-          <ItineraryList items={itinerary} tripDays={dates} today={tripNow?.slice(0, 10)} now={tripNow?.slice(0, 16)} rsvpKey={rsvpKey} myName={myName}
+          <ItineraryList items={itinerary} tripDays={dates} today={tripNow?.slice(0, 10)} now={tripNow?.slice(0, 16)} rsvpKey={rsvpKey} myName={myName} activeRound={roundLive && previewMatch?.leaderboard.some(row => row.holes.some(strokes => strokes === null)) ? previewMatch.round : undefined}
             onRespond={(id, answer) => changeMyTravel({ type: "respond", id, answer })}
             onDelete={id => changeMyTravel({ type: "remove", id: id.split(":")[0] })}
             canDelete={id => Boolean(travel?.items.some(item => item.id === id.split(":")[0] && item.source === "mine" && item.createdBy === travel.meId))}
@@ -587,7 +587,7 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
         {name === "Overview"
           ? noComp && !inAppScoring ? null
           : teamOnly && previewMatch ? <GolfTeeSheet match={previewMatch} sittingOut={sittingOut} />
-          : previewMatch ? <GolfTripLeaderboard match={leaderboardMatch ?? previewMatch} byToday={noComp} /> : <Card title="Score Overview"><Empty>Your leaderboard and round scores will show here</Empty></Card>
+          : previewMatch ? <GolfTripLeaderboard match={leaderboardMatch ?? previewMatch} byToday={noComp} tripStats={tripStats} /> : <Card title="Score Overview"><Empty>Your leaderboard and round scores will show here</Empty></Card>
           : previewMatch && roundMatch ? <GolfTripCompetitionMatchPreview key={previewMatch.round} initialMatch={previewMatch} matchOffset={matchOffset} viewRound={previewMatch.round} roundStarted={roundStarted && previewMatch.round === sourceMatch?.round} draftScope={rsvpKey} /> : <Card title="Competition"><Empty>Your matchups will show here</Empty></Card>}
       </div>)}
     </div>
@@ -826,10 +826,10 @@ function ItineraryCard({ item, status, onOpen }: { item: ItineraryItem; status?:
  * Days run from the trip's first day (plus any earlier day with something on it) to its last; no < on the first, no > on the last.
  * Opens on today when today is one of the days.
  */
-function ItineraryList({ items, tripDays, today: tripToday, whoFor, rsvpKey = "default", myName = "You", now: tripNowProp, onRespond, onDelete, canDelete }: {
+function ItineraryList({ items, tripDays, today: tripToday, whoFor, rsvpKey = "default", myName = "You", now: tripNowProp, activeRound, onRespond, onDelete, canDelete }: {
   items?: ItineraryItem[]; tripDays: string[]; today?: string; whoFor?: (itemId: string) => string[];
   /** Play / Sit out on golf rounds: which trip, and who I am. */
-  rsvpKey?: string; myName?: string;
+  rsvpKey?: string; myName?: string; activeRound?: number;
   /** Trip clock "YYYY-MM-DDTHH:mm" (dev); otherwise the device's time when the list opened. */
   now?: string;
   /** Decline / Accept on something another member invited me to (the travel item's id). */
@@ -879,7 +879,8 @@ function ItineraryList({ items, tripDays, today: tripToday, whoFor, rsvpKey = "d
         // Golf rounds: my Play / Sit out. Playing adds "Playing" bottom right; sitting out collapses the box to its top row.
         // Invites work the same way: Accept = "Going", Decline = collapsed (and can still Accept later).
         const round = item.round, invite = item.invite;
-        const choice = round !== undefined ? rsvps[round]?.[myName] : invite ? (invite.status === "going" ? "in" : invite.status === "declined" ? "out" : undefined) : undefined;
+        const isLive = round !== undefined && round === activeRound;
+        const choice = round !== undefined ? rsvps[round]?.[myName] ?? "in" : invite ? (invite.status === "going" ? "in" : invite.status === "declined" ? "out" : undefined) : undefined;
         // Play / Sit out can change until the round's tee times have started: my tee time, or (no tee time yet) the end of
         // the round's day.
         const locked = round !== undefined && nowStamp >= (item.timeTbd ? `${item.startsAt.slice(0, 10)}T23:59` : item.startsAt.slice(0, 16));
@@ -887,7 +888,7 @@ function ItineraryList({ items, tripDays, today: tripToday, whoFor, rsvpKey = "d
         {/* The type sits above its box in cream, left-aligned, over a line — once for a run of the same type back to back. */}
         {(index === 0 || itineraryCategory(dayItems[index - 1]) !== itineraryCategory(item)) && <h3 className={styles.itineraryType}>{itineraryCategory(item)}</h3>}
         <div className={styles.itineraryBoxWrap}>
-          <button type="button" className={styles.itineraryBox} data-golf={round !== undefined} data-round={round !== undefined || invite !== undefined} data-rsvp={choice} aria-haspopup="dialog" aria-label={`${itineraryCategory(item)}: ${item.title}, ${item.timeTbd ? "tee time to be decided" : itineraryTime(item.startsAt)}${invite ? `, invited by ${invite.from || "a trip member"}${choice === "in" ? ", going" : choice === "out" ? ", declined" : ""}` : choice === "in" ? ", playing" : choice === "out" ? ", sitting out" : ""}`} onClick={() => setOpenItem(item)}>
+          <button type="button" className={styles.itineraryBox} data-golf={round !== undefined} data-round={round !== undefined || invite !== undefined} data-rsvp={choice} aria-haspopup="dialog" aria-label={`${itineraryCategory(item)}: ${item.title}, ${item.timeTbd ? "tee time to be decided" : itineraryTime(item.startsAt)}${invite ? `, invited by ${invite.from || "a trip member"}${choice === "in" ? ", going" : choice === "out" ? ", declined" : ""}` : choice === "in" ? isLive ? ", live" : ", playing" : choice === "out" ? ", sitting out" : ""}`} onClick={() => setOpenItem(item)}>
             <div className={styles.itineraryBoxTop}>
               <span className={styles.itineraryBoxTime}>{item.timeTbd ? "Tee time TBD" : itineraryTime(item.startsAt)}</span>
             </div>
@@ -896,7 +897,7 @@ function ItineraryList({ items, tripDays, today: tripToday, whoFor, rsvpKey = "d
               {item.detail && <span className={styles.itineraryBoxTime}>{item.detail}</span>}
               {invite && <span className={styles.itineraryInvitedBy}>Invited by {invite.from || "a trip member"}</span>}
             </>}
-            {choice === "in" && <span className={styles.itineraryPlaying}>{invite ? "Going" : "Playing"}</span>}
+            {choice === "in" && <span className={styles.itineraryPlaying} data-live={isLive}>{isLive ? "Live" : invite ? "Going" : "Playing"}</span>}
           </button>
           {/* Sit out (red), then Play (green), side by side in the box's top row, level with the tee time; the organizer sees
               the choice when picking tee-time players. */}

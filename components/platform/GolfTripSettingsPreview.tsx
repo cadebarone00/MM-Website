@@ -1194,7 +1194,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                 const full = !inThis && (groups[teePlayersGroup] ?? []).length >= 4;
                 const taken = other !== undefined && Number(other) !== teePlayersGroup;
                 // The player's own Play / Sit out for this round: "I'm out" greys them out and they can't be picked.
-                const rsvp = roundRsvps[round.number]?.[playerName(player)];
+                const rsvp = roundRsvps[round.number]?.[playerName(player)] ?? (other !== undefined ? "in" : undefined);
                 const sittingOut = rsvp === "out" && !inThis;
                 return <li key={player} className={styles.addPlayerRow} data-selected={inThis} data-out={sittingOut}>
                   <label className={styles.teePlayerPick}>

@@ -28,10 +28,10 @@ test("VARIATION rows attach to the CONDITIONAL above them, keeping typed IDs, la
   assert.deepEqual(conditional(config, "HL-001-C03").variations.map((v) => v.status), ["Approved", "Draft", "Disabled"]);
 });
 
-test("legacy: copy on a CONDITIONAL row becomes its one built-in variation <ID>-V00 with the same status", () => {
+test("the CONDITIONAL row's own copy is its first variation <ID>-V01, sharing its status", () => {
   const { config } = load(variationSheet());
   assert.deepEqual(conditional(config, "HL-001-C02").variations, [{
-    id: "HL-001-C02-V00", label: "", headline: "Somebody stop {player}! 🔥", body: "4 straight birdies.", status: "Approved", notes: "", legacy: true,
+    id: "HL-001-C02-V01", label: "", headline: "Somebody stop {player}! 🔥", body: "4 straight birdies.", status: "Approved", notes: "", legacy: true,
     source: { tab: HIGHLIGHT_TABS[0], row: 7 },
   }]);
 });
@@ -58,14 +58,21 @@ test("variation IDs: missing, malformed, reserved V00, wrong conditional and dup
   ]);
 });
 
-test("a CONDITIONAL can't have both its own message and VARIATION rows (error when Approved, warning in Draft)", () => {
-  const tabs = variationSheet();
-  birdieRows(tabs)[2][4] = "Old single headline"; birdieRows(tabs)[2][5] = "Old single body";
-  assert.deepEqual(list(load(tabs).report.errors), ["legacy-and-variations:HL-001-C01"]);
-  birdieRows(tabs)[2][6] = "Draft";
-  const draft = load(tabs).report;
-  assert.deepEqual(draft.errors, []);
-  assert.ok(list(draft.warnings).includes("legacy-and-variations:HL-001-C01"));
+test("own copy + VARIATION rows is the sheet's layout (V1 on the CONDITIONAL, V02+ below); a VARIATION typed V01 under it is a duplicate", () => {
+  // The 2026-10-19 sheet: the CONDITIONAL row holds V1, VARIATION rows hold V02 and V03.
+  const sheet = variationSheet();
+  const rows = birdieRows(sheet);
+  rows[2][4] = "{player}'s heating up! 🔥"; rows[2][5] = "{count} birdies in a row.";
+  rows.splice(3, 1); // the VARIATION typed V01 goes; V02 and V03 stay
+  const { config, report } = load(sheet);
+  assert.deepEqual(report, { ok: true, errors: [], warnings: [] });
+  assert.deepEqual(conditional(config, "HL-001-C01").variations.map((v) => [v.id, v.legacy]), [["HL-001-C01-V01", true], ["HL-001-C01-V02", false], ["HL-001-C01-V03", false]]);
+  // Keeping the V01 VARIATION row too would give two V01s — an error even in Draft (it's structural).
+  const clash = variationSheet();
+  birdieRows(clash)[2][4] = "Old single headline 🔥"; birdieRows(clash)[2][5] = "Old single body"; birdieRows(clash)[2][6] = "Draft";
+  const errors = load(clash).report.errors;
+  assert.deepEqual(list(errors), ["duplicate-id:HL-001-C01-V01"]);
+  assert.match(errors[0].message, /already the CONDITIONAL row's own wording. Number this VARIATION row from V02/);
 });
 
 test("an Approved trigger needs a message: none at all is an error; none Approved is a warning (it won't fire)", () => {
@@ -83,7 +90,7 @@ test("copy checks run per variation: errors on live ones, warnings on Draft ones
   const tabs = variationSheet();
   const rows = birdieRows(tabs);
   rows[3][5] = "{player} beats {opponent}"; // live: the birdie detector can't fill {opponent}
-  rows[9][4] = "{name} keeps going"; // Draft
+  rows[9][4] = "{name} keeps going 🔥"; // Draft
   // rows[10] is Disabled with a broken "{line" headline and empty body — ignored.
   const { report } = load(tabs);
   assert.deepEqual(list(report.errors), ["variable-not-provided:HL-001-C01-V01"]);
@@ -113,7 +120,7 @@ test("only Approved variations under Approved conditionals and rules are eligibl
   assert.deepEqual(live.rules.map((r) => r.id), ["HL-001"]);
   assert.deepEqual(live.rules[0].conditionals.map((c) => [c.id, c.variations.map((v) => v.id)]), [
     ["HL-001-C01", ["HL-001-C01-V01", "HL-001-C01-V02", "HL-001-C01-V03"]],
-    ["HL-001-C02", ["HL-001-C02-V00"]],
+    ["HL-001-C02", ["HL-001-C02-V01"]],
     ["HL-001-C03", ["HL-001-C03-V01"]],
   ]);
 });
@@ -135,7 +142,7 @@ test("adding, removing or rewording a variation is a copy change, never behavior
   assert.deepEqual(summary((rows) => { rows[8][6] = "Draft"; }), { kind: "behavior", changes: ["behavior:HL-001-C03:removed"] });
 });
 
-test("moving a legacy message into a VARIATION row is a copy change (V00 → V01), not behavior", () => {
+test("moving the CONDITIONAL row's own wording into a VARIATION row typed V01 keeps its ID: nothing changes for players", () => {
   const published = load(variationSheet()).config;
   const tabs = variationSheet();
   const rows = birdieRows(tabs);
@@ -143,8 +150,7 @@ test("moving a legacy message into a VARIATION row is a copy change (V00 → V01
   rows[6][4] = ""; rows[6][5] = "";
   rows.splice(7, 0, ["HL-001-C02-V01", "VARIATION", "", "", headline, body, "Approved", ""]);
   const { kind, changes } = classifyChanges(published, load(tabs).config);
-  assert.equal(kind, "copy");
-  assert.deepEqual(changes.map((c) => `${c.id}:${c.field}`), ["HL-001-C02-V00:removed", "HL-001-C02-V01:added"]);
+  assert.deepEqual([kind, changes], ["none", []]);
 });
 
 test("fingerprint: variation row order doesn't matter; any variation wording or status does", () => {
@@ -164,12 +170,12 @@ test("an .xlsx with VARIATION rows previews one line per live message, emoji int
   assert.ok(result.ok);
   const { draft } = result;
   assert.equal(draft.report.ok, true);
-  assert.deepEqual(draft.counts, { rules: 7, conditionals: 9, variations: 13, liveRules: 1, liveConditionals: 3, liveVariations: 5 });
+  assert.deepEqual(draft.counts, { rules: 8, conditionals: 10, variations: 16, liveRules: 1, liveConditionals: 3, liveVariations: 5 });
   assert.deepEqual(draft.preview.map((p) => [p.variationId, p.headline, p.body]), [
     ["HL-001-C01-V01", "Alex's heating up! 🔥", "4 birdies in a row."],
     ["HL-001-C01-V02", "Somebody check those clubs! 👀", "Alex has 4 straight birdies."],
     ["HL-001-C01-V03", "Three's a party! 🐦", "Alex birdies 4 in a row."],
-    ["HL-001-C02-V00", "Somebody stop Alex! 🔥", "4 straight birdies."],
+    ["HL-001-C02-V01", "Somebody stop Alex! 🔥", "4 straight birdies."],
     ["HL-001-C03-V01", "Alex is actually on fire! 🔥", "5 birdies in a row"],
   ]);
 });

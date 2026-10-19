@@ -7,6 +7,7 @@ import { applySimulatorSafeAreas } from "./simulatorSafeAreas";
 import { resetJustCreated } from "@/lib/dev/justCreatedStore";
 import { devTripScope, initializeTripScenario, resetDevSetup } from "@/lib/dev/tripSetupStore";
 import { TripScenarioControls } from "./TripScenarioControls";
+import { HighlightScenarioControls } from "./HighlightScenarioControls";
 import { normalizeTripScenario } from "@/lib/dev/tripScenario";
 import { HapticsVisualizer } from "./HapticsVisualizer";
 import { DesignReview } from "./DesignReview";
@@ -242,6 +243,8 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
             try { iframe.current?.contentWindow?.location.reload(); } catch { /* the frame reloads on its next navigation */ }
           }}><RotateCcw size={13} /> Reset The Maroon Masters</button>}
 </Fragment>) : <p>No conditional states</p>}</div>
+        {/* Notifications → Phone / In-app: preview the Highlights Engine's real output (rules, quips, decisions) on these same screens. */}
+        {(currentPath === "/dev/notifications/phone" || currentPath === "/dev/notifications/in-app") && <HighlightScenarioControls value={state.highlightSim} onChange={next => setState(current => ({ ...current, highlightSim: next }))} />}
         {isBrandIntro && <section className={styles.controlSection} aria-label="Logo animation controls">
           <button type="button" onClick={() => setState(current => ({ ...current, brandStage: "drawing", brandReplay: (current.brandReplay ?? 0) + 1 }))}><RotateCcw size={13} /> Replay entrance</button>
           <label>Drawing time: {((state.brandDuration ?? 1200) / 1000).toFixed(1)} s

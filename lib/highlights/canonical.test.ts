@@ -52,7 +52,7 @@ test("canonical config: sorted by ID, no sheet row numbers, wording untouched, i
   const imported = importHighlightSheet(validSheet()).config;
   imported.rules.reverse();
   const canonical = canonicalConfig(imported);
-  assert.deepEqual(canonical.rules.map((r) => r.id), ["HL-001", "HL-002", "HL-011", "HL-023", "HL-031", "HL-040", "HL-046"]);
+  assert.deepEqual(canonical.rules.map((r) => r.id), ["HL-001", "HL-002", "HL-011", "HL-023", "HL-031", "HL-040", "HL-046", "TR-001"]);
   assert.ok(!canonicalJson(imported).includes('"source"'));
   assert.ok(canonicalJson(imported).includes("🔥"));
   assert.ok(imported.rules[0].source, "the imported config keeps its rows for error messages");

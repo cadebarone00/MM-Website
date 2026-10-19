@@ -1,11 +1,11 @@
 import { createHash } from "node:crypto";
-import type { HighlightConditional, HighlightConfig, HighlightRule, HighlightVariation } from "./types.ts";
+import { RULE_META_KEYS, type HighlightConditional, type HighlightConfig, type HighlightRule, type HighlightVariation, type RuleMeta } from "./types.ts";
 
 /**
  * The stored form of a config and its fingerprint. Pure.
  * Canonical = rules, conditionals and variations sorted by ID, fields in a fixed order, no sheet row numbers. So moving rows,
  * adding blank rows or changing fonts / colors / column widths gives the same fingerprint; any change to wording,
- * emoji, status, tier, name, category or notes gives a different one. Text is kept exactly as imported (the importer
+ * emoji, status, tier, name, category, notes or rule metadata gives a different one. Text is kept exactly as imported (the importer
  * already trims cell edges) — never rewritten, so approved wording and emoji are stored byte for byte.
  */
 
@@ -22,12 +22,13 @@ function canonicalConditional(c: HighlightConditional): HighlightConditional {
 function canonicalRule(rule: HighlightRule): HighlightRule {
   return {
     id: rule.id, category: rule.category, name: rule.name, status: rule.status, notes: rule.notes,
+    meta: Object.fromEntries(RULE_META_KEYS.map((key) => [key, rule.meta?.[key] ?? ""])) as RuleMeta,
     conditionals: rule.conditionals.map(canonicalConditional).sort(byId),
   };
 }
 
 export function canonicalConfig(config: HighlightConfig): HighlightConfig {
-  return { schemaVersion: 2, rules: config.rules.map(canonicalRule).sort(byId) };
+  return { schemaVersion: 3, rules: config.rules.map(canonicalRule).sort(byId) };
 }
 
 /** Stable JSON: same config → same string, whatever the sheet's row order. */

@@ -119,25 +119,27 @@ export function playerStats(rounds: TripRound[], nameOf: (id: string) => string)
     add("parOrBetter", name, holes.length ? holes.filter((h) => toPar(h) <= 0).length / holes.length * 100 : null);
     add("scoring", name, holes.length >= 9 ? avg(holes.map(toPar))! * 18 : null);
   }
-  const defs: { id: string; label: string; detail: string; unit: PlayerStat["unit"]; higher: boolean }[] = [
-    { id: "scoring", label: "Scoring average", detail: "To par per 18 holes", unit: "toPar", higher: false },
-    { id: "par3", label: "Par 3s", detail: "Average to par", unit: "toPar", higher: false },
-    { id: "par4", label: "Par 4s", detail: "Average to par", unit: "toPar", higher: false },
-    { id: "par5", label: "Par 5s", detail: "Average to par", unit: "toPar", higher: false },
-    { id: "bounceBack", label: "Bounce back", detail: "Birdie or better after a bogey or worse", unit: "pct", higher: true },
-    { id: "fallOff", label: "Fall off", detail: "Bogey or worse after a birdie or better", unit: "pct", higher: false },
-    { id: "fairways", label: "Fairways hit", detail: "Par 4s and 5s", unit: "pct", higher: true },
-    { id: "gir", label: "GIR", detail: "Greens in regulation", unit: "pct", higher: true },
-    { id: "putts", label: "Putts per round", detail: "Per 18 holes", unit: "num", higher: false },
-    { id: "threePutts", label: "3-putts per round", detail: "Per 18 holes", unit: "num", higher: false },
-    { id: "scrambling", label: "Scrambling", detail: "Par or better after missing the green", unit: "pct", higher: true },
-    { id: "birdies", label: "Birdies per round", detail: "Birdie or better, per 18 holes", unit: "num", higher: true },
-    { id: "parOrBetter", label: "Par or better", detail: "Share of holes", unit: "pct", higher: true },
-  ];
-  return defs.flatMap((d) => {
+  return PLAYER_STAT_DEFS.flatMap((d) => {
     const ranking = (rows[d.id] ?? []).filter((r): r is { name: string; value: number } => r.value !== null)
       .map((r) => ({ name: r.name, value: d.unit === "pct" ? Math.round(r.value) : round2(r.value) }))
       .sort((a, b) => d.higher ? b.value - a.value : a.value - b.value);
     return ranking.length ? [{ id: d.id, label: d.label, detail: d.detail, unit: d.unit, ranking }] : [];
   });
 }
+
+/** Every Individual stat, in the Stats tab's order; `higher`: a bigger number is better. */
+export const PLAYER_STAT_DEFS: { id: string; label: string; detail: string; unit: PlayerStat["unit"]; higher: boolean }[] = [
+  { id: "scoring", label: "Scoring average", detail: "To par per 18 holes", unit: "toPar", higher: false },
+  { id: "par3", label: "Par 3s", detail: "Average to par", unit: "toPar", higher: false },
+  { id: "par4", label: "Par 4s", detail: "Average to par", unit: "toPar", higher: false },
+  { id: "par5", label: "Par 5s", detail: "Average to par", unit: "toPar", higher: false },
+  { id: "bounceBack", label: "Bounce back", detail: "Birdie or better after a bogey or worse", unit: "pct", higher: true },
+  { id: "fallOff", label: "Fall off", detail: "Bogey or worse after a birdie or better", unit: "pct", higher: false },
+  { id: "fairways", label: "Fairways hit", detail: "Par 4s and 5s", unit: "pct", higher: true },
+  { id: "gir", label: "GIR", detail: "Greens in regulation", unit: "pct", higher: true },
+  { id: "putts", label: "Putts per round", detail: "Per 18 holes", unit: "num", higher: false },
+  { id: "threePutts", label: "3-putts per round", detail: "Per 18 holes", unit: "num", higher: false },
+  { id: "scrambling", label: "Scrambling", detail: "Par or better after missing the green", unit: "pct", higher: true },
+  { id: "birdies", label: "Birdies per round", detail: "Birdie or better, per 18 holes", unit: "num", higher: true },
+  { id: "parOrBetter", label: "Par or better", detail: "Share of holes", unit: "pct", higher: true },
+];

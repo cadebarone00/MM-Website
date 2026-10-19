@@ -39,7 +39,7 @@ const live = async (db: PGlite): Promise<PublishedVersion> => { const a = await 
 /** The fixture with one more emoji on HL-001-C01-V01's headline: a copy-only change. */
 const reworded = () => { const tabs = variationSheet(); tabs[3].values[3][4] = "{player}'s heating up! 🔥🔥"; return tabs; };
 
-test("upload → draft (nothing live) → explicit publish → live version with variations, emoji and schema 2 intact", async () => {
+test("upload → draft (nothing live) → explicit publish → live version with variations, emoji and schema 3 intact", async () => {
   const { db, admin } = await setup();
   const p = payload(variationSheet(), null);
   const draft = await save(db, admin, p);
@@ -54,11 +54,12 @@ test("upload → draft (nothing live) → explicit publish → live version with
   assert.equal(now.version, 1);
   assert.equal(now.configFingerprint, p.configFingerprint);
   assert.deepEqual(now.config, p.config, "stored byte for byte");
-  assert.equal(now.config.schemaVersion, 2);
+  assert.equal(now.config.schemaVersion, 3);
+  assert.equal(now.config.rules.find((r) => r.id === "TR-001")?.meta.reminderTrigger, "24h before", "travel rules and their metadata are stored");
   const c01 = now.config.rules[0].conditionals[0];
   assert.deepEqual(c01.variations.map((v) => v.id), ["HL-001-C01-V01", "HL-001-C01-V02", "HL-001-C01-V03"]);
   assert.equal(c01.variations[2].headline, "Three's a party! 🐦");
-  assert.equal(now.config.rules[0].conditionals[1].variations[0].id, "HL-001-C02-V00");
+  assert.equal(now.config.rules[0].conditionals[1].variations[0].id, "HL-001-C02-V01");
   assert.equal(await one(db, "select status as r from highlight_config_drafts where id = $1", [draft]), "published");
   assert.deepEqual(await audit(db), [["upload", null, null], ["publish", 1, null]]);
   await assert.rejects(publish(db, admin, draft, true), /already published/);
@@ -193,27 +194,48 @@ test("drafts with errors, no live change, discarded or expired can't be publishe
   assert.deepEqual((await audit(db)).map((a) => a[0]), ["upload", "upload", "publish", "upload", "upload", "discard", "upload", "upload"]);
 });
 
-test("the database re-checks structure: schema 2, rule / conditional / variation IDs, prefixes, duplicates, statuses", async () => {
+test("the database re-checks structure: schema 2 or 3, HL / TR IDs and tabs, metadata, prefixes, duplicates, statuses", async () => {
   const { db, admin } = await setup();
   const good = payload(variationSheet(), null).config;
   const problems = (config: unknown) => one<string[]>(db, "select highlight_config_problems($1) as r", [JSON.stringify(config)]);
   assert.deepEqual(await problems(good), []);
   const mutate = (edit: (c: HighlightConfig) => void) => { const c = structuredClone(good); edit(c); return problems(c); };
   const c01 = (c: HighlightConfig) => c.rules[0].conditionals[0];
-  assert.match((await mutate((c) => { (c as { schemaVersion: number }).schemaVersion = 1; })).join(), /schemaVersion must be 2/);
+  assert.match((await mutate((c) => { (c as { schemaVersion: number }).schemaVersion = 1; })).join(), /schemaVersion must be 2 or 3/);
   assert.match((await mutate((c) => { c01(c).variations[0].id = "HL-001-C01-1"; })).join(), /Bad variation ID 'HL-001-C01-1'/);
   assert.match((await mutate((c) => { c01(c).variations[0].id = "HL-001-C02-V09"; })).join(), /Bad variation ID 'HL-001-C02-V09' under HL-001-C01/);
   assert.match((await mutate((c) => { c01(c).variations[1].id = "HL-001-C01-V01"; })).join(), /Duplicate ID HL-001-C01-V01/);
-  assert.match((await mutate((c) => { c01(c).variations[0].id = "HL-001-C01-V00"; })).join(), /V00 is exactly the legacy message/);
+  assert.match((await mutate((c) => { c01(c).variations[0].id = "HL-001-C01-V00"; })).join(), /HL-001-C01-V00: the CONDITIONAL row's own wording must be V01, and V00 is not used/);
+  // HL-001-C02's own wording must be V01.
+  assert.match((await mutate((c) => { c.rules[0].conditionals[1].variations[0].id = "HL-001-C02-V02"; })).join(), /HL-001-C02-V02: the CONDITIONAL row's own wording must be V01/);
+  // Travel: TR- rules only in the travel tab, HL- rules never there; schema 3 needs every metadata string.
+  const tr = (c: HighlightConfig) => c.rules.find((r) => r.id === "TR-001")!;
+  assert.match((await mutate((c) => { tr(c).category = "Individual performance"; })).join(), /Rule TR-001 is in the wrong tab/);
+  assert.match((await mutate((c) => { c.rules[0].category = "Travel and itinerary alerts"; })).join(), /Rule HL-001 is in the wrong tab/);
+  assert.match((await mutate((c) => { delete (tr(c).meta as Partial<HighlightConfig["rules"][number]["meta"]>).audience; })).join(), /Rule TR-001 needs its metadata strings/);
   assert.match((await mutate((c) => { c01(c).id = "HL-002-C01"; })).join(), /Bad conditional ID 'HL-002-C01' under HL-001/);
   assert.match((await mutate((c) => { c01(c).variations[0].status = "Needs copy" as "Draft"; })).join(), /bad status 'Needs copy'/);
   assert.match((await mutate((c) => { delete (c01(c) as { status?: string }).status; })).join(), /Conditional HL-001-C01 has bad status/);
   assert.match((await mutate((c) => { c.rules[1].id = "HL-001"; })).join(), /Duplicate ID HL-001/);
 
+  // A version stored under schema 2 (no metadata, own wording = V00) still passes, so it can be rolled back to.
+  const v2 = { schemaVersion: 2, rules: [{ id: "HL-001", category: "Individual performance", name: "Birdie streak", status: "Approved", notes: "", conditionals: [
+    { id: "HL-001-C01", condition: "3", tier: 3, status: "Approved", notes: "", variations: [{ id: "HL-001-C01-V00", label: "", headline: "Hot! 🔥", body: "x", status: "Approved", notes: "", legacy: true }] }] }] };
+  assert.deepEqual(await problems(v2), []);
+
   // Defense in depth: a draft claiming "no errors" whose config fails the database check is refused.
   const lying = payload(variationSheet(), null);
   c01(lying.config).variations[0].id = "HL-001-C01-X";
   await assert.rejects(save(db, admin, lying), /failed the database check: Bad variation ID/);
+});
+
+test("re-running highlights_config.sql upgrades a database that only allowed schema 2", async () => {
+  const { db, admin } = await setup();
+  await db.exec(`alter table highlight_config_drafts drop constraint highlight_config_drafts_schema_version_check;
+    alter table highlight_config_drafts add constraint highlight_config_drafts_schema_version_check check (schema_version = 2);`);
+  await assert.rejects(save(db, admin, payload(variationSheet(), null)), /schema_version_check/, "the old constraint refuses schema 3");
+  await db.exec(sqlFile("highlights_config.sql"));
+  assert.ok(await save(db, admin, payload(variationSheet(), null)), "after re-running the file, schema 3 drafts save");
 });
 
 test("publishing and rolling back never touch stored highlight messages (trip_momentum_events)", async () => {

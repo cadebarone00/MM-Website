@@ -1,12 +1,13 @@
 "use client";
 
-import { AlertTriangle, Bell, CalendarClock, Camera, Check, ClipboardCheck, Flame, Flashlight, Link2, LockKeyhole, Mail, Trophy, UserPlus, X, type LucideIcon } from "lucide-react";
+import { AlertTriangle, Bell, CalendarClock, Camera, Check, ClipboardCheck, Flame, Flashlight, Link2, LockKeyhole, Mail, Megaphone, Plane, Trophy, UserPlus, X, type LucideIcon } from "lucide-react";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { Inter, Roboto } from "next/font/google";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
 import { androidLiveUpdate, formatPoints, formatToPar, liveLeaderboard, liveTeamText, matchMark, opponentLabel, newestFirst, pillStatus, resultTone, thruLabel, timeAgo, unreadCount, type PillStatus } from "@/lib/notifications/format";
 import type { AppNotification, LiveRoundActivity, NotificationKind } from "@/lib/notifications/types";
 import { NOTIFICATION_PREVIEWS, SAMPLE_BY_TYPE, SAMPLE_LOST, SAMPLE_PAIRS, SAMPLE_LIVE_TOP3, SAMPLE_LOCAL_NOW, SAMPLE_NOTIFICATIONS, SAMPLE_TEAM_STEPS, SAMPLE_NOW, type NotificationPreview, type NotificationSurface } from "@/lib/dev/sampleNotifications";
+import { previewNotes } from "@/lib/dev/highlightScenarios";
 import styles from "./NotificationPreviews.module.css";
 
 const APP_ICON = "/icons/mm-192.png";
@@ -24,17 +25,23 @@ export function NotificationPreviewScreen({ surface }: { surface: NotificationSu
   const wall = WALLPAPERS[simulator?.state.wallpaper ?? "default"];
   const screens: readonly NotificationPreview[] = NOTIFICATION_PREVIEWS[surface];
   const screen = requested && screens.includes(requested) ? requested : screens[0];
-  const [latest, ...older] = newestFirst(SAMPLE_NOTIFICATIONS);
+  // Highlights scenario (simulator panel): the Highlights Engine's real output for the chosen scenario + the viewer's
+  // inbox. Otherwise the original design samples. `latest` is null when the scenario's alert isn't on the phone.
+  const highlight = simulator?.state.highlightSim;
+  const engine = highlight?.source === "engine" ? previewNotes(highlight, SAMPLE_NOW) : null;
+  const notes = engine ? engine.inbox : SAMPLE_NOTIFICATIONS;
+  const [latest, ...older]: (AppNotification | null)[] = engine ? [engine.current, ...engine.inbox.filter(note => note.id !== engine.current?.id)] : newestFirst(SAMPLE_NOTIFICATIONS);
   // display: contents — the screen itself stays the page's first box (globals.css top clearance rules).
-  return <div className={`${appleSystem.variable} ${androidSystem.variable}`} style={{ display: "contents" }}>{previewScreen(screen, wall, latest, older)}</div>;
+  return <div className={`${appleSystem.variable} ${androidSystem.variable}`} style={{ display: "contents" }}>{previewScreen(screen, wall, latest, older as AppNotification[], notes)}</div>;
 }
 
-function previewScreen(screen: NotificationPreview, wall: string, latest: AppNotification, older: AppNotification[]): ReactNode {
+function previewScreen(screen: NotificationPreview, wall: string, latest: AppNotification | null, older: AppNotification[], notes: AppNotification[]): ReactNode {
   switch (screen) {
-    case "lock": case "signed-out-lock": return <LockScreen wall={wall}><PhoneNotification note={latest} /></LockScreen>;
-    case "lock-stack": return <LockScreen wall={wall}><PhoneNotificationStack notes={[latest, ...older.slice(0, 2)]} /></LockScreen>;
-    case "banner": return <HomeScreen wall={wall} banner={<PhoneNotification note={latest} />} />;
-    case "signed-out-tap": return <SignInFirst note={latest} />;
+    case "lock": case "signed-out-lock": return <LockScreen wall={wall}>{latest && <PhoneNotification note={latest} />}</LockScreen>;
+    case "lock-stack": return <LockScreen wall={wall}>{latest && <PhoneNotificationStack notes={[latest, ...older.slice(0, 2)]} />}</LockScreen>;
+    case "banner": return <HomeScreen wall={wall} banner={latest && <PhoneNotification note={latest} />} />;
+    case "signed-out-tap": return latest ? <SignInFirst note={latest} /> : <LockScreen wall={wall} />;
+    case "android-note": return <AndroidNotificationScreen wall={wall} note={latest} />;
     case "both-live": return <LockScreen wall={wall}><RoundLiveActivity activity={SAMPLE_TEAM_STEPS.live} /></LockScreen>;
     case "both-live-top3": return <LockScreen wall={wall}><RoundLiveActivity activity={SAMPLE_LIVE_TOP3} /></LockScreen>;
     case "both-pre": case "both-over": case "both-final": return <LockScreen wall={wall}><RoundLiveActivity activity={SAMPLE_TEAM_STEPS[screen.slice(5) as "pre" | "over" | "final"]} /></LockScreen>;
@@ -58,10 +65,10 @@ function previewScreen(screen: NotificationPreview, wall: string, latest: AppNot
       const activity = SAMPLE_TEAM_STEPS[screen.slice(5) as keyof typeof SAMPLE_TEAM_STEPS];
       return <HomeScreen wall={wall} island={<IslandCompactTeam activity={activity} />} below={<IslandMinimalTeam activity={activity} />} />;
     }
-    case "bell-unread": return <AppScreen><NotificationList notes={SAMPLE_NOTIFICATIONS} now={SAMPLE_NOW} /></AppScreen>;
-    case "bell-read": return <AppScreen><NotificationList notes={SAMPLE_NOTIFICATIONS.map(note => ({ ...note, read: true }))} now={SAMPLE_NOW} /></AppScreen>;
-    case "bell-empty": return <AppScreen><NotificationList notes={[]} now={SAMPLE_NOW} /></AppScreen>;
-    case "top-banner": return <AppScreen banner={<TopBanner note={latest} />} />;
+    case "bell-unread": return <AppScreen notes={notes}><NotificationList notes={notes} now={SAMPLE_NOW} /></AppScreen>;
+    case "bell-read": return <AppScreen notes={notes}><NotificationList notes={notes.map(note => ({ ...note, read: true }))} now={SAMPLE_NOW} /></AppScreen>;
+    case "bell-empty": return <AppScreen notes={[]}><NotificationList notes={[]} now={SAMPLE_NOW} /></AppScreen>;
+    case "top-banner": return <AppScreen notes={notes} banner={latest && <TopBanner note={latest} />} />;
   }
 }
 
@@ -70,7 +77,7 @@ function previewScreen(screen: NotificationPreview, wall: string, latest: AppNot
 /** Lock / home screen wallpaper (simulator condition): default (also when unset), darker or lighter, to check contrast. */
 const WALLPAPERS = { default: styles.wallpaper, dark: styles.wallpaperDark, light: styles.wallpaperLight } as const;
 
-function LockScreen({ children, wall }: { children: ReactNode; wall: string }) {
+function LockScreen({ children, wall }: { children?: ReactNode; wall: string }) {
   return <main className={`${styles.phone} ${wall}`} aria-label="Locked iPhone preview">
     <div className={styles.lockTop}>
       <LockKeyhole size={16} strokeWidth={2.25} aria-hidden />
@@ -308,16 +315,34 @@ function AndroidLock({ activity, wall }: { activity: LiveRoundActivity; wall: st
   </main>;
 }
 
+/**
+ * Android lock screen with an ordinary notification (not a Live Update): Google's standard layout in the phone's font —
+ * small icon, app · trip · time, title, text. Same styles as the pinned Live Update above. Emoji are drawn by the
+ * phone, so they will look like Android's own set, not exactly like this preview.
+ */
+function AndroidNotificationScreen({ note, wall }: { note: AppNotification | null; wall: string }) {
+  return <main className={`${styles.phone} ${styles.androidScreen} ${wall}`} aria-label="Android lock screen preview">
+    <div className={styles.androidStatus}><span className={styles.androidClock}>2:11</span><span className={styles.androidIcons} aria-hidden>▲ ◢ ▮</span></div>
+    <div className={styles.androidLockClock}><span>2:11</span><small>Fri, Oct 16</small></div>
+    {note && <article className={styles.androidNote} aria-label="Notification">
+      <header><span className={styles.androidNoteIcon}><SmallIcon /></span><span>The Maroon · {note.groupName} · {timeAgo(note.createdAt, SAMPLE_NOW)}</span></header>
+      <p className={styles.androidNoteTitle}>{note.title}</p>
+      <p className={styles.androidNoteText}>{note.body}</p>
+    </article>}
+  </main>;
+}
+
 /* ---------- In-app ---------- */
 
 const KIND_ICONS: Record<NotificationKind, LucideIcon> = {
   highlight: Flame, teeTime: CalendarClock, opponentSubmitted: ClipboardCheck, cardMismatch: AlertTriangle, roundFinal: Trophy,
   joinRequest: UserPlus, requestAccepted: Check, requestDeclined: X, invited: Mail, linkRequest: Link2,
+  travel: Plane, announcement: Megaphone,
 };
 
 /** A plain app screen behind the in-app previews: the trip's maroon top bar with the bell. */
-function AppScreen({ children, banner }: { children?: ReactNode; banner?: ReactNode }) {
-  const unread = unreadCount(SAMPLE_NOTIFICATIONS);
+function AppScreen({ children, banner, notes = SAMPLE_NOTIFICATIONS }: { children?: ReactNode; banner?: ReactNode; notes?: AppNotification[] }) {
+  const unread = unreadCount(notes);
   return <main className={`${styles.phone} ${styles.appScreen}`} aria-label="App preview">
     <header className={styles.appBar}>
       <span>Desert Classic</span>

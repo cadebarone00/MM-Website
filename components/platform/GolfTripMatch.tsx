@@ -20,7 +20,8 @@ import {
 } from "@/lib/platform/golfTripPreviewFixture";
 import styles from "./GolfTripMatch.module.css";
 import homeStyles from "./GolfTripHome.module.css";
-import type { TripStatsView } from "./GolfTripStats";
+import { value as statValue, type TripStatsView } from "./GolfTripStats";
+import { PLAYER_STAT_DEFS, playerStats } from "@/lib/platform/tripInsights";
 import { MatchDraftStatus } from "./MatchDraftStatus";
 import { matchCard, winCurve, withHoleStandings, type MatchCard, type WinPoint } from "@/lib/platform/matchCenter";
 
@@ -139,7 +140,7 @@ function MatchSide({ competitor, side, standing, score }: { competitor: GolfMatc
  * Stableford formats display PTS columns; stroke play formats display TOT relative to par.
  */
 /** `byToday` (no competition): ranked by the day's score, best first, rather than the trip total. */
-export function GolfTripLeaderboard({ match, byToday = false }: { match: GolfMatchPreview; byToday?: boolean }) {
+export function GolfTripLeaderboard({ match, byToday = false, tripStats }: { match: GolfMatchPreview; byToday?: boolean; tripStats?: TripStatsView }) {
   const leaderboardRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const list = leaderboardRef.current;
@@ -225,11 +226,11 @@ export function GolfTripLeaderboard({ match, byToday = false }: { match: GolfMat
         })}
       </ul>
     </div>
-    {selectedCard && <PlayerPublicTripProfile key={match.round + selectedCard.golfer.name} name={selectedCard.golfer.name} avatarUrl={selectedCard.golfer.avatarUrl ?? null} username={selectedCard.golfer.username ?? null} round={match.round} roundCount={match.roundCount} roundStandings={match.roundStandings} net={showNet} stableford={isStableford} par={match.par} holes={selectedCard.holes} snapshot={{ position: selectedCard.position, total: parLabel(showNet ? selectedCard.netTotal : selectedCard.total), roundScore: parLabel(showNet ? selectedCard.netToday : selectedCard.today), thru: selectedCard.thru }} onClose={() => setSelectedPlayer(null)} />}
+    {selectedCard && <PlayerPublicTripProfile key={match.round + selectedCard.golfer.name} name={selectedCard.golfer.name} avatarUrl={selectedCard.golfer.avatarUrl ?? null} username={selectedCard.golfer.username ?? null} round={match.round} roundCount={match.roundCount} roundStandings={match.roundStandings} net={showNet} stableford={isStableford} par={match.par} holes={selectedCard.holes} snapshot={{ position: selectedCard.position, total: parLabel(showNet ? selectedCard.netTotal : selectedCard.total), roundScore: parLabel(showNet ? selectedCard.netToday : selectedCard.today), thru: selectedCard.thru }} tripStats={tripStats} onClose={() => setSelectedPlayer(null)} />}
   </div>;
 }
 
-function PlayerPublicTripProfile({ name, avatarUrl, username, round, roundCount, par, holes, snapshot, roundStandings, net = false, stableford = false, onClose }: { name: string; avatarUrl: string | null; username: string | null; round: number; roundCount: number; roundStandings?: GolfMatchPreview["roundStandings"]; net?: boolean; stableford?: boolean; par: number[]; holes: (number | null)[]; snapshot: { position: string; total: string; roundScore: string; thru: string }; onClose: () => void }) {
+function PlayerPublicTripProfile({ name, avatarUrl, username, round, roundCount, par, holes, snapshot, roundStandings, net = false, stableford = false, tripStats, onClose }: { name: string; avatarUrl: string | null; username: string | null; round: number; roundCount: number; roundStandings?: GolfMatchPreview["roundStandings"]; net?: boolean; stableford?: boolean; par: number[]; holes: (number | null)[]; snapshot: { position: string; total: string; roundScore: string; thru: string }; tripStats?: TripStatsView; onClose: () => void }) {
   const [selectedRound, setSelectedRound] = useState(round);
   const past = roundStandings?.find(item => item.round === selectedRound && (item.standingsRound ?? item.round) === selectedRound);
   const pastRow = past ? rankLeaderboard(past.leaderboard, { net, stableford }).find(row => row.golfer.name === name) : undefined;
@@ -338,6 +339,7 @@ function PlayerPublicTripProfile({ name, avatarUrl, username, round, roundCount,
         </div>
       </div>
     </section>
+    <PlayerTripStats name={name} stats={tripStats} />
     {/* Their own fairway / green / putt numbers, from their profile rounds (owner request 2026-10-16). */}
     <section className={styles.profileGameStats} aria-label="Fairways, greens and putts">
       <h4>Their game</h4>
@@ -349,6 +351,44 @@ function PlayerPublicTripProfile({ name, avatarUrl, username, round, roundCount,
       <p>From their rounds on The Maroon.</p>
     </section>
   </dialog>, document.body);
+}
+
+const ordinal = (n: number) => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th");
+
+/**
+ * The player pop-up's "This trip": their row of the Stats tab's All players table, then every Individual stat with where
+ * they rank on the trip (owner request 2026-10-19). Every row is always there, "—" until they have enough holes.
+ */
+function PlayerTripStats({ name, stats }: { name: string; stats?: TripStatsView }) {
+  const leaders = useMemo(() => {
+    if (!stats?.rounds?.length) return [];
+    const names = new Map(stats.players.map((p) => [p.profileId, p.name]));
+    return playerStats(stats.rounds, (id) => names.get(id) ?? id);
+  }, [stats]);
+  const me = stats?.players.find((p) => p.name === name);
+  const one = (n: number | null | undefined) => n == null ? null : n.toFixed(1);
+  const pct = (n: number | null | undefined) => n == null ? null : n + "%";
+  return <section className={styles.profileTripStats} aria-label="This trip's stats">
+    <h4>This trip</h4>
+    <dl className={styles.profileTripStatsTop}>
+      {([["Rounds", me ? String(me.rounds) : null], ["Avg", one(me?.scoringAvg)], ["Putts", one(me?.puttsAvg)], ["FWY", pct(me?.fairwayPct)], ["GIR", pct(me?.greenPct)]] as const).map(([label, shown]) =>
+        <div key={label}><dt>{label}</dt><dd>{shown ?? "—"}</dd></div>)}
+    </dl>
+    <ul className={styles.profileTripStatsList}>
+      {PLAYER_STAT_DEFS.map((def) => {
+        const ranking = leaders.find((s) => s.id === def.id)?.ranking ?? [];
+        const mine = ranking.find((r) => r.name === name);
+        // Ties share a place: 1 + everyone strictly better.
+        const place = mine ? 1 + ranking.filter((r) => def.higher ? r.value > mine.value : r.value < mine.value).length : null;
+        return <li key={def.id}>
+          <span>{def.label}</span>
+          <b>{mine ? statValue(def.unit, mine.value) : "—"}</b>
+          <small>{place ? `${ordinal(place)} of ${ranking.length}` : ""}</small>
+        </li>;
+      })}
+    </ul>
+    <p>{stats?.trip ? "From this trip's submitted rounds." : "Shows once rounds are submitted."}</p>
+  </section>;
 }
 
 function parLabel(score: string): string {

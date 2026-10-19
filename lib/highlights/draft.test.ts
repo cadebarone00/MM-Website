@@ -18,9 +18,9 @@ test("first upload: everything Approved counts as new behavior and gets a sample
   assert.equal(draft.changes.kind, "behavior");
   assert.equal(draft.canPublish, true);
   assert.equal(draft.needsBehaviorConfirm, true);
-  assert.deepEqual(draft.counts, { rules: 7, conditionals: 14, variations: 14, liveRules: 1, liveConditionals: 8, liveVariations: 8 });
+  assert.deepEqual(draft.counts, { rules: 8, conditionals: 15, variations: 17, liveRules: 1, liveConditionals: 8, liveVariations: 8 });
   assert.equal(draft.preview.length, 8);
-  assert.deepEqual(draft.preview[1], { ruleId: "HL-001", conditionalId: "HL-001-C02", variationId: "HL-001-C02-V00", headline: "Alex's heating up! 🔥", body: "4 birdies in a row." });
+  assert.deepEqual(draft.preview[1], { ruleId: "HL-001", conditionalId: "HL-001-C02", variationId: "HL-001-C02-V01", headline: "Alex's heating up! 🔥", body: "4 birdies in a row." });
   assert.equal(draft.file.name, "The_Maroon_Highlights_Source_of_Truth.xlsx");
   assert.match(draft.file.fingerprint, /^sha256:/);
   assert.match(draft.configFingerprint, /^sha256:/);
