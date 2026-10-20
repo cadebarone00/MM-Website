@@ -60,19 +60,28 @@ export function reconcile(recorded: string[], detected: string[]): { withdraw: s
 export const isDuplicate = (key: string, recipient: string, delivered: Set<string>) => delivered.has(`${key}:${recipient}`);
 
 export interface QueuedGolfAlert { key: string; level: AlertLevel; at: string }
+
 /**
- * Volume control for golf highlights (travel is never capped): at most `max` per recipient in any `windowMinutes`,
- * keeping the biggest moments first, then the earliest. The rest are muted (they stay in the trip's history).
+ * Volume control for golf highlights, per recipient (travel alerts are never capped). Configurable:
+ *   maxPerWindow / windowMinutes — at most this many golf alerts in any window of this length (0 = no limit);
+ *   exceptional — how Big Plays are treated: "always-send" = never muted and they don't use up the limit;
+ *                 "prioritize" = counted, but kept ahead of smaller moments.
+ * Within the limit the biggest moments win, then the earliest. Muted alerts stay in the trip's history.
  */
-export function applyVolumeCap(alerts: QueuedGolfAlert[], max = 3, windowMinutes = 15): { send: string[]; muted: string[] } {
+export interface VolumePolicy { maxPerWindow: number; windowMinutes: number; exceptional: "always-send" | "prioritize" }
+export const DEFAULT_VOLUME_POLICY: VolumePolicy = { maxPerWindow: 3, windowMinutes: 15, exceptional: "always-send" };
+
+export function applyVolumeCap(alerts: QueuedGolfAlert[], policy: VolumePolicy = DEFAULT_VOLUME_POLICY): { send: string[]; muted: string[] } {
   const priority: Record<AlertLevel, number> = { "big-plays": 0, balanced: 1, all: 2 };
+  const exempt = (a: QueuedGolfAlert) => policy.exceptional === "always-send" && a.level === "big-plays";
   const ordered = [...alerts].sort((a, b) => priority[a.level] - priority[b.level] || a.at.localeCompare(b.at));
   const sent: QueuedGolfAlert[] = [];
   const muted: string[] = [];
   for (const alert of ordered) {
+    if (exempt(alert) || policy.maxPerWindow <= 0) { sent.push(alert); continue; }
     const t = Date.parse(alert.at);
-    const nearby = sent.filter((s) => Math.abs(Date.parse(s.at) - t) < windowMinutes * 60000).length;
-    if (nearby < max) sent.push(alert); else muted.push(alert.key);
+    const nearby = sent.filter((s) => !exempt(s) && Math.abs(Date.parse(s.at) - t) < policy.windowMinutes * 60000).length;
+    if (nearby < policy.maxPerWindow) sent.push(alert); else muted.push(alert.key);
   }
   return { send: sent.sort((a, b) => a.at.localeCompare(b.at)).map((a) => a.key), muted };
 }

@@ -9,12 +9,13 @@
  * Player: one golfer, or a whole match side ("Cam & Cade"). Players: a list of golfers ("Cam, Drew, and Cade").
  * Player 1–3: the golfers of a shared moment, in order. Player N, Team A / B: a match side's golfers.
  * Team: the team the moment is about. Team A: that side's team. Team B: the other side's. Opponent: the other side (v2).
+ * Score: a hole result in words ("double bogey", "triple bogey").
  */
 export const TEMPLATE_VARIABLES = [
   "Player", "Players", "Player 1", "Player 2", "Player 3",
   "Player 1, Team A", "Player 2, Team A", "Player 1, Team B", "Player 2, Team B",
   "Team", "Team A", "Team B", "Opponent",
-  "Hole", "Count", "Margin", "Round", "Course",
+  "Hole", "Count", "Margin", "Round", "Course", "Score",
   "Time", "Date", "Destination", "Flight Number", "Flight Status", "Location", "Carpool Name", "Property", "Venue", "Event Name", "Announcement",
 ] as const;
 export type TemplateVariable = (typeof TEMPLATE_VARIABLES)[number];
@@ -31,7 +32,7 @@ export const SAMPLE_VALUES: Record<TemplateVariable, string> = {
   Player: "Alex", Players: "Alex, Sam, and Jordan", "Player 1": "Alex", "Player 2": "Sam", "Player 3": "Jordan",
   "Player 1, Team A": "Alex", "Player 2, Team A": "Sam", "Player 1, Team B": "Jordan", "Player 2, Team B": "Riley",
   Team: "Team Maroon", "Team A": "Team Maroon", "Team B": "Team White", Opponent: "Team White",
-  Hole: "12", Count: "4", Margin: "3&2", Round: "2", Course: "Mission Hills",
+  Hole: "12", Count: "4", Margin: "3&2", Round: "2", Course: "Mission Hills", Score: "double bogey",
   Time: "2:10 PM", Date: "Fri, Oct 16", Destination: "Palm Springs", "Flight Number": "AA 1234", "Flight Status": "Delayed 45 min",
   Location: "Terminal 4 pickup", "Carpool Name": "Van 1", Property: "La Quinta Resort", Venue: "Mastro's", "Event Name": "Team dinner",
   Announcement: "Shuttle leaves at 7:15 sharp.",
@@ -43,7 +44,7 @@ export const LONG_SAMPLE_VALUES: Record<TemplateVariable, string> = {
   "Player 1": "Christopher Williams", "Player 2": "Alexander Thompson", "Player 3": "Jonathan Richardson",
   "Player 1, Team A": "Christopher Williams", "Player 2, Team A": "Alexander Thompson", "Player 1, Team B": "Jonathan Richardson", "Player 2, Team B": "Benjamin Hutchinson",
   Team: "The Weekend Warriors", "Team A": "The Weekend Warriors", "Team B": "The Sunday Slicers", Opponent: "Christopher Williams & Alexander Thompson",
-  Hole: "18", Count: "10", Margin: "10&8", Round: "10", Course: "Pinehurst Resort Course No. 2",
+  Hole: "18", Count: "10", Margin: "10&8", Round: "10", Course: "Pinehurst Resort Course No. 2", Score: "quadruple bogey or worse",
   Destination: "Scottsdale / Phoenix Sky Harbor", "Flight Status": "Cancelled — rebooked on a later flight", Location: "Terminal 4, Door 7, ride-share pickup",
   "Carpool Name": "The Big White Suburban", Property: "La Quinta Resort & Club, Casita 214", Venue: "The Steakhouse at Mission Hills",
   "Event Name": "Welcome dinner and team draft", Announcement: "Shuttle to the course leaves at 7:15 sharp from the main lobby — don't be late.",

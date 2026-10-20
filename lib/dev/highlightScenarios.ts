@@ -108,7 +108,7 @@ export function parseHighlightSim(value: unknown): HighlightSim | null {
 
 // --- Scenarios ------------------------------------------------------------------------------------------------------
 
-type Built = { values: TemplateValues; tier?: number | string; itemId?: ItemId | null; confirmed?: boolean; selected?: string[] | null; round?: AudienceContext["round"] };
+type Built = { values: TemplateValues; tier?: number | string; itemId?: ItemId | null; confirmed?: boolean; selected?: string[] | null; round?: AudienceContext["round"]; sides?: { a: number; b: number } };
 export interface Scenario { id: string; label: string; group: "Golf" | "Travel"; ruleId: string; build: (s: HighlightSim) => Built }
 
 const roundValues = (s: HighlightSim) => ({ Round: String(s.round), Course: SIM_ROUNDS[s.round - 1].course, Hole: String(s.hole) });
@@ -126,7 +126,7 @@ function sides(s: HighlightSim): [Side, Side] {
 }
 const golf = (id: string, label: string, ruleId: string, build: Scenario["build"]): Scenario => ({ id, label, group: "Golf", ruleId, build });
 const player = (s: HighlightSim) => ({ Player: first(s.subject), ...roundValues(s) });
-const match = (s: HighlightSim, extra: TemplateValues = {}): Built => { const [a, b] = sides(s); return { values: { ...matchValues(a, b), ...roundValues(s), ...extra } }; };
+const match = (s: HighlightSim, extra: TemplateValues = {}): Built => { const [a, b] = sides(s); return { values: { ...matchValues(a, b), ...roundValues(s), ...extra }, sides: { a: a.players.length, b: b.players.length } }; };
 const roundPlayers = () => ({ players: [...MEMBER_IDS], teeGroup: [] as string[] });
 
 export const SCENARIOS: Scenario[] = [
@@ -137,7 +137,7 @@ export const SCENARIOS: Scenario[] = [
   golf("hl012", "Match · 3 holes won in a row (HL-012)", "HL-012", (s) => ({ ...match(s), tier: s.matchFormat === "fourball" ? "Team of 2" : "Single" })),
   golf("hl013", "Match comeback (HL-013)", "HL-013", (s) => match(s, { Count: "3" })),
   golf("hl014", "Match lead change (HL-014)", "HL-014", (s) => match(s)),
-  golf("hl019", "Match clinched · 3&2 (HL-019, fourball shows pairs)", "HL-019", (s) => match(s, { Margin: "3&2" })),
+  golf("hl019", "Match clinched · 3&2 (HL-019)", "HL-019", (s) => match(s, { Margin: "3&2" })),
   golf("hl031", "Leaderboard · new solo leader (HL-031)", "HL-031", (s) => ({ values: player(s) })),
   golf("hl033", "Leaderboard · breakaway by 3 (HL-033)", "HL-033", (s) => ({ values: { ...player(s), Count: "3" } })),
   golf("hl022", "Team takes the lead (HL-022)", "HL-022", (s) => {
@@ -216,7 +216,7 @@ export function simulate(sim: HighlightSim, scenarioId = sim.scenario): Simulate
   };
   const event: AlertEvent = {
     tripId: SIM_TRIP.id, ruleId: scenario.ruleId, tier: built.tier ?? null, values: built.values, itemId: built.itemId ?? null,
-    confirmed: built.confirmed, key: `${scenario.ruleId}:${built.itemId ?? me.id}:${sim.round}:${sim.hole}`,
+    confirmed: built.confirmed, sides: built.sides ?? null, key: `${scenario.ruleId}:${built.itemId ?? me.id}:${sim.round}:${sim.hole}`,
   };
   const account = { golf: sim.intensity, categories: { ...DEFAULT_PREFERENCES.categories, ...Object.fromEntries(sim.categoriesOff.map((c) => [c, false])) } };
   const conditionalId = SNAPSHOT.config.rules.find((r) => r.id === scenario.ruleId)?.conditionals.find((c) => built.tier === undefined || String(c.tier) === String(built.tier))?.id;

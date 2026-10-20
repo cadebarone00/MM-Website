@@ -111,6 +111,12 @@ test("idempotency, score corrections and volume control", () => {
   const capped = applyVolumeCap([
     { key: "all-1", level: "all", at: at(0) }, { key: "bal-1", level: "balanced", at: at(1) }, { key: "big-1", level: "big-plays", at: at(2) },
     { key: "bal-2", level: "balanced", at: at(3) }, { key: "late", level: "all", at: at(40) },
-  ], 3, 15);
+  ], { maxPerWindow: 3, windowMinutes: 15, exceptional: "prioritize" });
   assert.deepEqual(capped, { send: ["bal-1", "big-1", "bal-2", "late"], muted: ["all-1"] }, "the smallest moment in a burst is the one muted");
+  // Default: Big Plays always go out and don't use up the limit.
+  const burst = [0, 1, 2, 3].map((m) => ({ key: `bal-${m}`, level: "balanced" as const, at: at(m) }));
+  const ace = { key: "ace", level: "big-plays" as const, at: at(4) };
+  assert.deepEqual(applyVolumeCap([...burst, ace]), { send: ["bal-0", "bal-1", "bal-2", "ace"], muted: ["bal-3"] });
+  assert.deepEqual(applyVolumeCap([...burst, ace], { maxPerWindow: 2, windowMinutes: 15, exceptional: "prioritize" }).send, ["bal-0", "ace"], "prioritize: the ace takes a slot first");
+  assert.deepEqual(applyVolumeCap([...burst, ace], { maxPerWindow: 0, windowMinutes: 15, exceptional: "prioritize" }).muted, [], "0 = no limit");
 });

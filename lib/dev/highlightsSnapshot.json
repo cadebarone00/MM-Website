@@ -1,16 +1,11 @@
 {
  "note": "DEV FIXTURE — a snapshot of the Highlights Google Sheet for the /dev simulator. Not published, not read by production.",
- "label": "Google Sheet export, 2026-10-19 10:39 AM (Drive modified time)",
- "fileFingerprint": "sha256:4dd2de90acf7d8619dc095b586815e1f5cf50c27fc1b6e700230dda934179129",
- "configFingerprint": "sha256:db528b5af627c3c65fd20509c02e687d7b92e137a1178707034ac7946af33fc2",
+ "label": "Google Sheet export, 2026-10-19 2:40 PM (Drive modified time) — corrected, re-audited",
+ "fileFingerprint": "sha256:2a0aa2044e1df81aed00b575cca1001b9637ee6d2befc5d8577e86402ec44e0c",
+ "configFingerprint": "sha256:ab9e7f827a987a2f44b57770c58cd6e89f5224126576a15f401b5961d94c3fe2",
  "report": {
-  "errors": [
-   "HL-001-C05 Status must be Draft, Approved, Disabled, not \"Needs copy\".",
-   "HL-001-C06 Status must be Draft, Approved, Disabled, not \"Needs copy\".",
-   "HL-001-C07 Status must be Draft, Approved, Disabled, not \"Needs copy\".",
-   "HL-001-C08 Status must be Draft, Approved, Disabled, not \"Needs copy\"."
-  ],
-  "warnings": 2
+  "errors": [],
+  "warnings": 0
  },
  "counts": {
   "rules": 75,
@@ -186,7 +181,7 @@
       "id": "HL-001-C05",
       "condition": "7 consecutive birdies",
       "tier": 7,
-      "status": "Disabled",
+      "status": "Draft",
       "notes": "Same detector; tier-specific headline and body",
       "variations": [
        {
@@ -194,7 +189,7 @@
         "label": "",
         "headline": "{Player} is ACTUALLY COOKING! 👨‍🍳",
         "body": "7 birdies in a row",
-        "status": "Disabled",
+        "status": "Draft",
         "notes": "",
         "legacy": true
        },
@@ -203,7 +198,7 @@
         "label": "",
         "headline": "Seven from heaven! 🐦",
         "body": "{Player} is on SEVEN straight birdies. Yes, seven.",
-        "status": "Disabled",
+        "status": "Draft",
         "notes": "",
         "legacy": false
        },
@@ -212,7 +207,7 @@
         "label": "",
         "headline": "This is not a drill! 🚨",
         "body": "Seven birdies in a row for {Player}. What are we watching?!",
-        "status": "Disabled",
+        "status": "Draft",
         "notes": "",
         "legacy": false
        }
@@ -222,7 +217,7 @@
       "id": "HL-001-C06",
       "condition": "8 consecutive birdies",
       "tier": 8,
-      "status": "Disabled",
+      "status": "Draft",
       "notes": "Same detector; tier-specific headline and body",
       "variations": [
        {
@@ -230,7 +225,7 @@
         "label": "",
         "headline": "{Player}, this is getting RIDICULOUS! 🔥",
         "body": "8 birdies in a row",
-        "status": "Disabled",
+        "status": "Draft",
         "notes": "",
         "legacy": true
        },
@@ -239,7 +234,7 @@
         "label": "",
         "headline": "Eight is absurd! 🤯",
         "body": "{Player} makes it 8 birdies in a row. Somebody save the course.",
-        "status": "Disabled",
+        "status": "Draft",
         "notes": "",
         "legacy": false
        },
@@ -248,7 +243,7 @@
         "label": "",
         "headline": "Breaking birdie news! 📣",
         "body": "Eight straight red numbers. {Player} is rewriting the script.",
-        "status": "Disabled",
+        "status": "Draft",
         "notes": "",
         "legacy": false
        }
@@ -258,15 +253,15 @@
       "id": "HL-001-C07",
       "condition": "9 consecutive birdies",
       "tier": 9,
-      "status": "Disabled",
+      "status": "Draft",
       "notes": "Same detector; tier-specific headline and body",
       "variations": [
        {
         "id": "HL-001-C07-V01",
         "label": "",
         "headline": "You CANNOT Make This Up! 🔥",
-        "body": "{Player} has spent the last 2 hours making birdies.. 9 in a row!",
-        "status": "Disabled",
+        "body": "{Player} has made 9 birdies in a row. That's one serious heater!",
+        "status": "Draft",
         "notes": "",
         "legacy": true
        },
@@ -275,7 +270,7 @@
         "label": "",
         "headline": "Nine lives, nine birdies! 🔥",
         "body": "{Player} has made 9 consecutive birdies. The golf gods are watching.",
-        "status": "Disabled",
+        "status": "Draft",
         "notes": "",
         "legacy": false
        },
@@ -284,7 +279,7 @@
         "label": "",
         "headline": "This can't be legal! 👀",
         "body": "Nine straight birdies for {Player}. We're running out of superlatives.",
-        "status": "Disabled",
+        "status": "Draft",
         "notes": "",
         "legacy": false
        }
@@ -294,15 +289,15 @@
       "id": "HL-001-C08",
       "condition": "10 consecutive birdies",
       "tier": 10,
-      "status": "Disabled",
+      "status": "Draft",
       "notes": "Same detector; tier-specific headline and body",
       "variations": [
        {
         "id": "HL-001-C08-V01",
         "label": "",
         "headline": "SOMEONE CALL THE BIG TOUR! 🔥",
-        "body": "That’s 10! {Player} with double digit birdies.. In a row!",
-        "status": "Disabled",
+        "body": "That's 10! {Player} has made double-digit birdies in a row!",
+        "status": "Draft",
         "notes": "",
         "legacy": true
        },
@@ -311,7 +306,7 @@
         "label": "",
         "headline": "DOUBLE DIGITS?! 🚨",
         "body": "{Player} has made TEN birdies in a row. Somebody call the tour!",
-        "status": "Disabled",
+        "status": "Draft",
         "notes": "",
         "legacy": false
        },
@@ -320,7 +315,7 @@
         "label": "",
         "headline": "Ten out of ten! 🏆",
         "body": "A 10-hole birdie streak for {Player}. That's video-game golf.",
-        "status": "Disabled",
+        "status": "Draft",
         "notes": "",
         "legacy": false
        }
@@ -407,7 +402,7 @@
         "id": "HL-003-C01-V01",
         "label": "",
         "headline": "That’s one BIG Bird! 🦅",
-        "body": "{Player} makes albatross on No. 12.",
+        "body": "{Player} makes albatross on No. {Hole}.",
         "status": "Draft",
         "notes": "",
         "legacy": true
@@ -460,7 +455,7 @@
         "id": "HL-004-C01-V01",
         "label": "",
         "headline": "ACE ALERT! 🚨",
-        "body": "{Player} just made a hole-in-one on 12!",
+        "body": "{Player} just made a hole-in-one on No. {Hole}!",
         "status": "Draft",
         "notes": "",
         "legacy": true
@@ -778,7 +773,7 @@
         "id": "HL-010-C01-V01",
         "label": "",
         "headline": "That’s how you respond! 💪",
-        "body": "{Player} gets one back after his double (triple, quad, etc.)",
+        "body": "{Player} gets one back after his {Score}",
         "status": "Draft",
         "notes": "",
         "legacy": true
@@ -786,7 +781,7 @@
        {
         "id": "HL-010-C01-V02",
         "label": "",
-        "headline": "No dwelling on that one! 💪",
+        "headline": "No dwelling on that one! 🔥",
         "body": "{Player} follows a tough hole with a birdie. That's a bounce-back.",
         "status": "Draft",
         "notes": "",
@@ -795,7 +790,7 @@
        {
         "id": "HL-010-C01-V03",
         "label": "",
-        "headline": "That's golf for you! ⛳",
+        "headline": "Mental game strong! 💪",
         "body": "{Player} shakes off the last hole and answers with a birdie.",
         "status": "Draft",
         "notes": "",
@@ -1009,7 +1004,7 @@
         "id": "HL-013-C01-V01",
         "label": "",
         "headline": "The comeback is ON! 💪",
-        "body": "{Player 1, Team B} has erased a 3-hole deficit.",
+        "body": "{Player 1, Team A} has erased a 3-hole deficit.",
         "status": "Draft",
         "notes": "",
         "legacy": true
@@ -1485,8 +1480,8 @@
        {
         "id": "HL-022-C01-V01",
         "label": "",
-        "headline": "{Team A} takes control! / The tide has turned 🌊",
-        "body": "{Team A} moves into the lead. / {Team B} jumps ahead.",
+        "headline": "{Team} takes control! 🌊",
+        "body": "{Team} moves into the overall lead.",
         "status": "Draft",
         "notes": "",
         "legacy": true
@@ -1539,7 +1534,7 @@
         "id": "HL-023-C01-V01",
         "label": "",
         "headline": "Tied at the top! ⚖️",
-        "body": "{Player} ties up the tournament with his win4",
+        "body": "{Player} ties the overall team competition with a match victory.",
         "status": "Draft",
         "notes": "",
         "legacy": true
@@ -2917,7 +2912,7 @@
         "id": "HL-049-C01-V01",
         "label": "",
         "headline": "The whole group is cooking! 👨‍🍳",
-        "body": "{Player 1}, {Player 2}, and {Player 3} birdie {Hole} in the same group.",
+        "body": "{Player 1}, {Player 2}, and {Player 3} all birdie hole {Hole} in the same group.",
         "status": "Draft",
         "notes": "",
         "legacy": true
@@ -2935,7 +2930,7 @@
         "id": "HL-049-C01-V03",
         "label": "",
         "headline": "Chef's special: birdies! 👨‍🍳",
-        "body": "One group, plenty of birdies. {Players} all birdie {Hole}.",
+        "body": "One group, plenty of birdies. {Players} all birdie hole {Hole}.",
         "status": "Draft",
         "notes": "",
         "legacy": false

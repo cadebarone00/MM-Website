@@ -21,8 +21,9 @@ test("the sheet snapshot: 53 golf + 22 travel rules, unique stable IDs, three wo
     assert.ok(c.id.startsWith(`${rule.id}-C`), c.id);
     assert.deepEqual(c.variations.map((v) => v.id), [`${c.id}-V01`, `${c.id}-V02`, `${c.id}-V03`], c.id);
   }
-  assert.equal(SNAPSHOT.report.errors.length, 4, "only the four 'Needs copy' statuses block publishing");
-  assert.ok(SNAPSHOT.report.errors.every((e) => /Needs copy/.test(e)));
+  assert.deepEqual([SNAPSHOT.counts.rules, SNAPSHOT.counts.conditionals, SNAPSHOT.counts.variations], [75, 84, 252]);
+  assert.deepEqual(SNAPSHOT.report, { errors: [], warnings: 0 }, "the corrected sheet (2026-10-19 2:40 PM) validates cleanly");
+  assert.ok(rules.every((r) => r.status === "Draft" && r.conditionals.every((c) => c.status === "Draft")), "everything is still Draft (no 'Needs copy')");
 });
 
 test("same-group (HL-049) and different-groups (HL-053) shared birdies are distinct rules with distinct wording and players", () => {
@@ -148,4 +149,33 @@ test("nothing here can send: no network calls, and no push / database modules ar
   assert.equal(calls, 0);
   const sources = ["lib/dev/highlightScenarios.ts", ...["audience", "competition", "delivery", "destinations", "evaluate", "preferences", "selection", "values"].map((f) => `lib/highlights/engine/${f}.ts`)];
   for (const file of sources) assert.ok(!/webPushTransport|tripPush|supabase|fetch\(|sendWebPush/.test(readFileSync(file, "utf8")), file);
+});
+
+test("corrected rules: HL-022 one message per quip, HL-023 typo gone, HL-004 / HL-049 / HL-053 use {Hole}, HL-010 fills {Score}", () => {
+  const copy = (id: string) => rules.find((r) => r.id === id)!.conditionals.flatMap((c) => c.variations.map((v) => `${v.headline} ${v.body}`));
+  assert.ok(copy("HL-022").every((t) => !t.includes(" / ") && t.includes("{Team}")));
+  assert.ok(copy("HL-023").every((t) => !/win4/.test(t)));
+  assert.ok(copy("HL-004").every((t) => t.includes("{Hole}") && !/12/.test(t)));
+  for (const id of ["HL-049", "HL-053"]) assert.ok(copy(id).every((t) => /hole {Hole}|on {Hole}/.test(t)), id);
+  const evaluation = evaluateAlert({ tripId: "t", ruleId: "HL-010", values: { Player: "Cam", Score: "double bogey" }, key: "k" }, {
+    config: SNAPSHOT.config, configVersion: null, competition: competitionProfile(setupFor("noncompetitive", false)), audience: { members: ["me"] },
+    recipientId: "me", preferences: DEFAULT_PREFERENCES, previewDrafts: true, forcedVariation: "HL-010-C01-V01",
+  });
+  assert.equal(evaluation.alert?.body, "Cam gets one back after his double bogey");
+});
+
+test("singles vs fourball: partners are never invented in singles, never dropped in fourball", () => {
+  for (const id of ["hl013", "hl014", "hl017", "hl019"].filter((x) => SCENARIOS.some((s) => s.id === x))) {
+    const singles = simulate(sim({ scenario: id, matchFormat: "singles", intensity: "all" }));
+    assert.equal(singles.evaluation.outcome, "delivered", `${id} singles`);
+    assert.ok(!/Pete|Luke/.test(singles.evaluation.alert!.body), `${id} singles names no partner: ${singles.evaluation.alert!.body}`);
+    // These wordings only name Player 1 of each side, so in fourball they'd drop the partner: not created, with the reason.
+    const fourball = simulate(sim({ scenario: id, matchFormat: "fourball", intensity: "all" }));
+    assert.equal(fourball.evaluation.outcome, "not-created", `${id} fourball`);
+    assert.match(fourball.evaluation.checks.find((c) => c.id === "placeholders")!.detail, /names 1 of the 2 golfers on Team A/);
+  }
+  const pairs = simulate(sim({ scenario: "hl012", matchFormat: "fourball" }));
+  assert.equal(pairs.evaluation.outcome, "delivered", "HL-012 has a Team of 2 trigger that names both partners");
+  assert.ok(/Jake/.test(pairs.evaluation.alert!.body + pairs.evaluation.alert!.title) && /Pete/.test(pairs.evaluation.alert!.body + pairs.evaluation.alert!.title), pairs.evaluation.alert!.body);
+  assert.ok(/Alex/.test(pairs.evaluation.alert!.body) && /Luke/.test(pairs.evaluation.alert!.body), "both opponents too");
 });

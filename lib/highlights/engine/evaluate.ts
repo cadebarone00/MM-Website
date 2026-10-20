@@ -29,6 +29,22 @@ export interface AlertEvent {
   confirmed?: boolean;
   /** Idempotency key (delivery.ts). */
   key: string;
+  /** Match moments: golfers per side (1 = singles, 2 = pairs). A pairs wording must name both partners of any side it names. */
+  sides?: { a: number; b: number } | null;
+}
+
+/**
+ * Wordings that would misrepresent a pairs match: naming one partner of a side but not the other
+ * ("{Player 1, Team A} wins…" in fourball drops the partner). Side-level slots ({Player}, {Team}, {Team A}) are fine.
+ * Returns the problem in words, or null.
+ */
+export function partnerProblem(text: string, sides: { a: number; b: number } | null | undefined): string | null {
+  if (!sides) return null;
+  for (const [team, size] of [["A", sides.a], ["B", sides.b]] as const) {
+    const named = [1, 2].filter((n) => new RegExp("\\{\\s*player\\s*" + n + "\\s*,\\s*team\\s*" + team + "\\s*\\}", "i").test(text)).length;
+    if (named > 0 && named < size) return `names ${named} of the ${size} golfers on Team ${team}`;
+  }
+  return null;
 }
 
 export interface EvaluateOptions {
@@ -126,15 +142,19 @@ export function evaluateAlert(event: AlertEvent, options: EvaluateOptions): Eval
   }
 
   // 6 — placeholders: skip wordings this event can't fill; pick from the rest.
-  const missingOf = (v: HighlightVariation) => [renderTemplate(v.headline, event.values), renderTemplate(v.body, event.values)]
-    .flatMap((r) => (r.ok ? [] : [...r.missing, ...r.problems]));
+  const missingOf = (v: HighlightVariation) => {
+    const partners = partnerProblem(`${v.headline} ${v.body}`, event.sides);
+    return [renderTemplate(v.headline, event.values), renderTemplate(v.body, event.values)]
+      .flatMap((r) => (r.ok ? [] : [...r.missing, ...r.problems])).concat(partners ? [`a pairs wording (it ${partners})`] : []);
+  };
+  const needs = (v: HighlightVariation) => missingOf(v).map((m) => (m.startsWith("a pairs wording") ? m : `{${m}}`)).join(", ");
   const usable = candidates.filter((v) => missingOf(v).length === 0);
   const skipped = candidates.filter((v) => missingOf(v).length > 0);
   const forcedBad = options.forcedVariation && skipped.find((v) => v.id === options.forcedVariation);
   const picked = forcedBad ? { variation: null } : pickVariation(usable, { recent: options.recent ?? [], random: options.random ?? Math.random, forced: options.forcedVariation });
   if (!candidates.length) check("placeholders", "skip", "—");
-  else if (!picked.variation) check("placeholders", "fail", forcedBad ? `${forcedBad.id} needs {${missingOf(forcedBad).join("}, {")}} — not known for this event.` : `No wording can be filled: ${skipped.map((v) => `${short(v.id)} needs {${missingOf(v).join("}, {")}}`).join("; ")}.`);
-  else check("placeholders", "pass", `${short(picked.variation.id)} fills completely.${skipped.length ? ` Skipped: ${skipped.map((v) => `${short(v.id)} (needs {${missingOf(v).join("}, {")}})`).join(", ")}.` : ""}`);
+  else if (!picked.variation) check("placeholders", "fail", forcedBad ? `${forcedBad.id} needs ${needs(forcedBad)} — not known for this event.` : `No wording can be filled: ${skipped.map((v) => `${short(v.id)} needs ${needs(v)}`).join("; ")}.`);
+  else check("placeholders", "pass", `${short(picked.variation.id)} fills completely.${skipped.length ? ` Skipped: ${skipped.map((v) => `${short(v.id)} (needs ${needs(v)})`).join(", ")}.` : ""}`);
 
   const failed = (id: CheckId) => checks.find((c) => c.id === id)?.status === "fail";
   const blocked = (["competition", "audience", "approved", "placeholders"] as CheckId[]).filter(failed);
