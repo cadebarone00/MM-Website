@@ -34,3 +34,7 @@ Copy `components/marketing` and `public/marketing`; mount `MarketingWebsite` fro
 ## 2026-10-19 separation revision
 
 Revision 2 adapts V1 full-width hero, maroon chrome, text wordmark and section rules in website-owned components after checking import consumers. No V1 module, authentication, scoring or season logic was copied. Existing shared V1/V2 sources remain untouched. Source boundary guard: `node scripts/check-marketing-boundary.cjs`. Ownership and extraction inventory: `docs/website-mobile-separation.md`. No independent production runtime or deployment is claimed. Photo rights and inherited root coupling require resolution before launch.
+
+## 2026-10-20 shared preview navigation
+
+The existing desktop/mobile groups share one marketing renderer. Added an on-page Support anchor and availability copy; no contact address, form, collection, persistence, vendor, payment, subscription, advertising or user-content flow is introduced. Existing privacy, security, retention, media/IP, provider/store and professional-review findings above remain `review_required`. Support operations and an approved contact destination remain follow-ups before launch. No deployment verified.

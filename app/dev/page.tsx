@@ -8,7 +8,8 @@ import { adaptTournamentToDraft } from "@/lib/platform/tournamentToGolfTrip";
 export const metadata: Metadata = { title: "App simulator | The Maroon", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
-export default function DevPage() {
+export default async function DevPage({ searchParams }: { searchParams: Promise<{ group?: string | string[] }> }) {
   if (process.env.NODE_ENV !== "development") notFound();
-  return <DevSimulator pages={simulatorPages()} unmapped={adaptTournamentToDraft(palmSprings2026).unmapped} />;
+  const { group } = await searchParams;
+  return <DevSimulator pages={simulatorPages()} initialGroup={typeof group === "string" ? group : undefined} unmapped={adaptTournamentToDraft(palmSprings2026).unmapped} />;
 }

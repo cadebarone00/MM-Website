@@ -17,17 +17,18 @@ import styles from "./DevSimulator.module.css";
 const initialDevice = SIMULATOR_DEVICES[4];
 const bounded = (value: string, min: number, max: number, fallback: number) => value === "" || !Number.isFinite(Number(value)) ? fallback : Math.max(min, Math.min(max, Math.round(Number(value))));
 
-export function DevSimulator({ pages: registryPages, unmapped }: { pages: SimulatorPage[]; unmapped: Record<string, unknown> }) {
+export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: { pages: SimulatorPage[]; unmapped: Record<string, unknown>; initialGroup?: string }) {
   const [settingsRounds, setSettingsRounds] = useState<{ id: string; number: number }[]>([]);
   const pages = useMemo(() => [...registryPages, ...settingsRounds.map(round => ({ ...registryPages.find(page => page.id === "settings-competition-rounds")!, id: `settings-round-${round.id}`, label: `Round ${round.number}`, parentId: "settings-competition-rounds", navigation: { tab: "Home" as const, settingsView: `round-${round.id}` } }))], [registryPages, settingsRounds]);
-  const initialPage = pages.find(page => page.path === "/dev/tournament") ?? pages[0];
+  const initialPage = pages.find(page => page.group === initialGroup) ?? pages.find(page => page.path === "/dev/tournament") ?? pages[0];
+  const initialPreset = SIMULATOR_DEVICES.find(item => item.id === (initialPage.viewport === "desktop" ? "desktop" : initialPage.viewport === "mobile" ? "iphone16" : initialDevice.id))!;
   const [pageId, setPageId] = useState(initialPage.id);
   const [frameSrc, setFrameSrc] = useState(`${initialPage.path}?simulator=1`);
   const [currentPath, setCurrentPath] = useState(initialPage.path);
-  const [device, setDevice] = useState<string>(initialDevice.id);
-  const [size, setSize] = useState({ width: initialDevice.width as number, height: initialDevice.height as number });
-  const [sizeText, setSizeText] = useState({ width: String(initialDevice.width), height: String(initialDevice.height) });
-  const [insets, setInsets] = useState({ top: initialDevice.top as number, bottom: initialDevice.bottom as number });
+  const [device, setDevice] = useState<string>(initialPreset.id);
+  const [size, setSize] = useState({ width: initialPreset.width as number, height: initialPreset.height as number });
+  const [sizeText, setSizeText] = useState({ width: String(initialPreset.width), height: String(initialPreset.height) });
+  const [insets, setInsets] = useState({ top: initialPage.standalone ? 0 : initialPreset.top as number, bottom: initialPage.standalone ? 0 : initialPreset.bottom as number });
   const [showSafeAreas, setShowSafeAreas] = useState(false);
   const [zoom, setZoom] = useState("fit");
   const [available, setAvailable] = useState({ width: 700, height: 850 });
@@ -47,6 +48,8 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
   const bridgeReady = useRef(false);
   const config = useMemo<SimulatorConfig>(() => ({ source, state, navigation }), [source, state, navigation]);
   const selectedPage = pages.find(page => page.id === pageId) ?? { ...initialPage, label: `Current route · ${currentPath}` };
+  const desktopPreview = size.width >= 1024;
+  const websitePreview = selectedPage.group === "Website desktop" || selectedPage.group === "Website mobile";
   const isBrandIntro = currentPath === "/dev/brand/intro";
   const supportsFixtures = currentPath.startsWith("/dev/tournament");
   const scenarioVisible = supportsFixtures && (source === "mock" || source === "busy");
@@ -100,6 +103,7 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
 
   useEffect(() => {
     function receive(event: MessageEvent) {
+      if (pages.find(page => page.id === pageId)?.standalone) return;
       if (event.origin !== window.location.origin || event.source !== iframe.current?.contentWindow || event.data?.channel !== SIMULATOR_CHANNEL || !["ready", "location"].includes(event.data.type)) return;
       const location = parseSimulatorLocation(event.data.location);
       if (!location) return;
@@ -120,7 +124,7 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
     window.addEventListener("message", receive);
     sendConfig();
     return () => window.removeEventListener("message", receive);
-  }, [sendConfig, pages]);
+  }, [sendConfig, pages, pageId]);
 
   // GPS test: the phone's GPS screen reports its mode and accuracy (or null when it closes).
   useEffect(() => {
@@ -157,9 +161,26 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
   function choosePage(id: string) {
     const next = pages.find(page => page.id === id);
     if (!next) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("group", next.group ?? "Other");
+    window.history.replaceState(null, "", url);
+    if (next.viewport || selectedPage.standalone) {
+      chooseDevice(next.viewport === "desktop" ? "desktop" : next.viewport === "mobile" ? "iphone16" : initialDevice.id);
+      if (next.standalone) setInsets({ top: 0, bottom: 0 });
+    }
     setPageId(id);
     const requested = next.navigation ? { ...next.navigation, command: ++command.current } : undefined;
     setNavigation(requested);
+    // These canvases intentionally have no simulator bridge. Always replace their
+    // document, including desktop/mobile entries that share the same route.
+    if (next.standalone || selectedPage.standalone) {
+      bridgeReady.current = false;
+      setReady(false);
+      setGps(null);
+      setCurrentPath(next.path);
+      setFrameSrc(`${next.path}?simulator=1&command=${++command.current}`);
+      return;
+    }
     let path = currentPath;
     try { path = iframe.current?.contentWindow?.location.pathname ?? path; } catch { bridgeReady.current = false; }
     if (bridgeReady.current) {
@@ -199,7 +220,7 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
     }
   }
 
-  return <main className={styles.shell} style={{ "--phone-aspect": (size.width + 16) / (size.height + 16), "--phone-display-width": zoom === "fit" ? "0px" : `${(size.width + 16) * Number(zoom)}px` } as CSSProperties}>
+  return <main className={styles.shell} style={{ "--phone-aspect": (size.width + 16) / (size.height + 16), "--phone-display-width": zoom === "fit" ? "0px" : `${(size.width + 16) * Number(zoom)}px`, ...(desktopPreview ? { "--preview-min-width": "720px" } : {}) } as CSSProperties}>
     <header className={styles.header}>
       <div className={styles.brand}><MonitorSmartphone size={22} /><div><h1>App simulator</h1><p>The Maroon · Development workspace</p></div></div>
       <div className={styles.headerStatus}><span className={styles.headerDevice}>{preset.label}</span><span className={styles.devBadge}><span /> LOCAL DEV</span></div>
@@ -207,7 +228,7 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
     <div className={styles.workspace} style={{ gridTemplateColumns: `var(--groups-width) var(--pages-width) ${branchColumns.map(() => "var(--pages-width)").join(" ")} var(--conditions-width) ${scenarioVisible ? "var(--conditions-width) " : ""}minmax(var(--preview-min-width),1fr) 230px` }}>
       <aside className={styles.controls} aria-label="Development controls">
         <div className={styles.panelHeading}><SlidersHorizontal size={16} /> Groups</div>
-        <div className={styles.cards}>{groups.map(group => <button className={styles.card} type="button" key={group} aria-pressed={selectedGroup === group} onClick={() => choosePage(pages.find(page => (page.group ?? "Other") === group)!.id)}>{group}</button>)}</div>
+        <form className={styles.cards} action="/dev" method="get">{groups.map(group => <button className={styles.card} type="submit" name="group" value={group} key={group} aria-pressed={selectedGroup === group} onClick={event => { event.preventDefault(); choosePage(pages.find(page => (page.group ?? "Other") === group)!.id); }}>{group}</button>)}</form>
         <section className={styles.controlSection} aria-labelledby="device-heading">
           <h2 id="device-heading">Device</h2>
           <label>Preset<select aria-label="Device preset" value={device} onChange={event => chooseDevice(event.target.value)}>{SIMULATOR_DEVICES.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
@@ -261,14 +282,14 @@ export function DevSimulator({ pages: registryPages, unmapped }: { pages: Simula
         <div className={styles.stage} ref={stage}>
           <HapticsVisualizer>
           <div className={styles.deviceSpace} style={{ width: (size.width + 16) * scale, height: (size.height + 16) * scale }}>
-            <div className={styles.device} style={{ width: size.width + 16, height: size.height + 16, transform: `scale(${scale})`, "--safe-top": `${insets.top}px`, "--safe-bottom": `${insets.bottom}px` } as CSSProperties}>
-              <div ref={setScreen} className={styles.screen} style={{ width: size.width, height: size.height }}>
-              <iframe ref={iframe} title="Mobile application preview" src={frameSrc} width={size.width} height={size.height}
+            <div className={`${styles.device} ${desktopPreview ? styles.desktopDevice : ""}`} style={{ width: size.width + 16, height: size.height + 16, transform: `scale(${scale})`, "--safe-top": `${insets.top}px`, "--safe-bottom": `${insets.bottom}px` } as CSSProperties}>
+              <div ref={setScreen} className={styles.screen} style={{ width: size.width, height: size.height, ...(desktopPreview ? { borderRadius: 4 } : {}) }}>
+              <iframe ref={iframe} title={selectedPage.standalone ? `${selectedPage.group} preview` : "Mobile application preview"} src={frameSrc} width={size.width} height={size.height}
                 style={{ width: size.width, height: size.height, minWidth: size.width, minHeight: size.height, maxWidth: "none", maxHeight: "none" }}
-                className={styles.frame} onLoad={() => { setReady(true); sendConfig(); }} />
+                className={`${styles.frame} ${desktopPreview ? styles.desktopFrame : ""}`} onLoad={() => { setReady(true); sendConfig(); }} />
               {/* The phone's front camera, drawn over the screen like the real hardware (taps pass through). */}
-              {device.startsWith("iphone") && <span className={`${styles.camera} ${styles.dynamicIsland}`} aria-hidden />}
-              {device.startsWith("pixel") && <span className={`${styles.camera} ${styles.punchHole}`} aria-hidden />}
+              {!websitePreview && device.startsWith("iphone") && <span className={`${styles.camera} ${styles.dynamicIsland}`} aria-hidden />}
+              {!websitePreview && device.startsWith("pixel") && <span className={`${styles.camera} ${styles.punchHole}`} aria-hidden />}
               </div>
               {showSafeAreas && <div className={styles.safeGuides} aria-hidden><span /><span /></div>}
             </div>

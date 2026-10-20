@@ -17,6 +17,7 @@ export const SIMULATOR_DEVICES = [
   { id: "iphone17promax", label: "iPhone 17 Pro Max", width: 440, height: 956, top: 62, bottom: 34 },
   { id: "pixel9", label: "Google Pixel (9)", width: 412, height: 924, top: 24, bottom: 24 },
   { id: "pixel9pro", label: "Google Pixel Pro (9 Pro)", width: 412, height: 918, top: 24, bottom: 24 },
+  { id: "desktop", label: "Desktop browser", width: 1440, height: 900, top: 0, bottom: 0 },
   { id: "custom", label: "Custom viewport", width: 402, height: 874, top: 0, bottom: 0 },
 ] as const;
 
@@ -29,7 +30,7 @@ export const SIMULATOR_SOURCES = [
 ] as const;
 export type SimulatorSource = (typeof SIMULATOR_SOURCES)[number]["id"];
 export type SimulatorConditional = { id: string; label: string; source?: SimulatorSource; state?: Partial<SimulatorState>; playerCount?: boolean };
-export type SimulatorPage = { id: string; label: string; path: string; navigation?: GolfTripNavigation; fixtures: boolean; group?: string; parentId?: string; section?: string; conditions?: SimulatorConditional[] };
+export type SimulatorPage = { id: string; label: string; path: string; navigation?: GolfTripNavigation; fixtures: boolean; group?: string; parentId?: string; section?: string; conditions?: SimulatorConditional[]; viewport?: "desktop" | "mobile"; standalone?: boolean };
 export const SIMULATOR_STATES = [
   { id: "competition", label: "Trip / tournament status", kind: "select", options: [["source", "From data source"], ["yes", "Competitive trip"], ["no", "Social golf trip"]] },
   { id: "format", label: "Golf format", kind: "format" },

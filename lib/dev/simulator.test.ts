@@ -63,9 +63,10 @@ test("real and mock preserve their sources; fixture/state overrides cannot mutat
   assert.equal(JSON.stringify({ tournament: palmSprings2026, mock, maroon }), original);
 });
 
-test("requested device presets specify portrait CSS dimensions", () => {
-  assert.equal(SIMULATOR_DEVICES.length, 9);
+test("phone presets retain portrait dimensions alongside the desktop browser", () => {
+  assert.equal(SIMULATOR_DEVICES.filter(device => device.id !== "desktop").length, 9);
   assert.deepEqual(SIMULATOR_DEVICES.filter(device => device.id.startsWith("iphone17")).map(device => [device.width, device.height]), [[402, 874], [402, 874], [440, 956]]);
+  assert.deepEqual(SIMULATOR_DEVICES.find(device => device.id === "desktop"), { id: "desktop", label: "Desktop browser", width: 1440, height: 900, top: 0, bottom: 0 });
 });
 
 test("GPS test messages: only exact Real / Mock, single-step moves and reset get through", () => {
