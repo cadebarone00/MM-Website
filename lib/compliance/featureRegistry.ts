@@ -79,6 +79,11 @@ const seeds: FeatureSeed[] = [
     attentionCategories: ["privacy", "personal-data", "ugc", "media-rights", "intellectual-property", "retention", "security", "organizer-responsibility", "platform-rules", "legal-review"],
   },
   {
+    id: "marketing-website-development", name: "Independent marketing development canvas", scopeRevision: 2,
+    scope: "Development-only /dev-website: static responsive marketing UI, V1 presentation adapted into website-owned components after consumer audit, isolated existing course-photo copy with rights review outstanding, original SVG alternative, proposed feature and story copy, noninteractive coming-soon download/footer destinations. No added collection, persistence, analytics, payments or external links. Inherits root layout fonts/providers/season reads. Findings and unresolved launch, privacy, IP, platform and professional-review follow-ups: docs/marketing-website-review.md. Implemented locally; deployment not verified.",
+    attentionCategories: ["privacy", "personal-data", "retention", "security", "intellectual-property", "open-source", "media-rights", "platform-rules", "legal-review"],
+  },
+  {
     id: "development-team-captains",
     scopeRevision: 2, name: "Development player roles and captain handoff",
     scope: "Dev Players labels and source-scoped browser captain assignments by stable roster key. Fixed organizer identity; organizer assigns or replaces captains and the current holder can hand off to an eligible teammate. Combined and team-name labels, protected dev removal and bounded actor conditionals. No server captain authority, saved-trip membership change, team-draft seeding, picking permission, messaging or new vendor. Findings and unresolved privacy/security/retention/organizer/IP/provider/legal follow-ups: docs/team-captains-review.md. Implemented locally; deployment not verified.",
