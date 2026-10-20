@@ -5452,3 +5452,739 @@ Could not read season calendar. {
   hint: '',
   code: ''
 }
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read the active tournament end date.
+Could not read the active tournament end date.
+Could not read the active tournament end date.
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read the active tournament end date.
+Could not read the active tournament end date.
+Could not read the active tournament end date.
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read the active tournament end date.
+Could not read the active tournament end date.
+Could not read the active tournament end date.
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read the active tournament end date.
+Could not read the active tournament end date.
+Could not read the active tournament end date.
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read the active tournament end date.
+Could not read the active tournament end date.
+Could not read the active tournament end date.
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read the active tournament end date.
+Could not read the active tournament end date.
+Could not read the active tournament end date.
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read the active tournament end date.
+Could not read the active tournament end date.
+Could not read the active tournament end date.
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read the active tournament end date.
+Could not read the active tournament end date.
+Could not read the active tournament end date.
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read the active tournament end date.
+Could not read the active tournament end date.
+Could not read the active tournament end date.
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not synchronize season calendar. {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: AggregateError:  (EACCES)\n' +
+    'AggregateError: \n' +
+    '    at internalConnectMultiple (node:net:1193:18)\n' +
+    '    at afterConnectMultiple (node:net:1783:7)\n' +
+    '    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+Could not read the active tournament end date.
