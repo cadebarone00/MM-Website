@@ -8,6 +8,7 @@ import { venue2025 } from "./2025-venue";
 import { venue2026 } from "./2026-venue";
 import { venue2027 } from "./2027-venue";
 import type { Team, Tournament, UpcomingTournament, PlayerScorecard, RoundScorecard, VenueSchedule } from "./types";
+import { markerForToPar, type HoleMarker } from "../golf/holeResult";
 
 export type { Team, Tournament, UpcomingTournament, RealMatch, IndividualStanding, PlayerScorecard, RoundScorecard, HoleStat, CourseHole, VenueCourse, VenueSession, VenueSchedule, NextTournamentOverride } from "./types";
 
@@ -121,14 +122,11 @@ export function getHoleStat(t: Tournament, player: string, round: number, hole: 
   return getRoundScorecard(t, player, round)?.holes.find((h) => h.hole === hole);
 }
 
-export type HoleMarker = "eagle" | "birdie" | "par" | "bogey" | "double-or-worse";
+export type { HoleMarker } from "../golf/holeResult";
 
+/** The scorecard bucket for a score against par — the shared classifier (lib/golf/holeResult.ts). */
 export function holeMarker(diff: number): HoleMarker {
-  if (diff <= -2) return "eagle";
-  if (diff === -1) return "birdie";
-  if (diff === 0) return "par";
-  if (diff === 1) return "bogey";
-  return "double-or-worse";
+  return markerForToPar(diff);
 }
 
 // Short, informal course names for spots where a round needs to be labeled

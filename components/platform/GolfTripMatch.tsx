@@ -24,6 +24,7 @@ import { value as statValue, type TripStatsView } from "./GolfTripStats";
 import { PLAYER_STAT_DEFS, playerStats } from "@/lib/platform/tripInsights";
 import { MatchDraftStatus } from "./MatchDraftStatus";
 import { matchCard, winCurve, withHoleStandings, type MatchCard, type WinPoint } from "@/lib/platform/matchCenter";
+import { shapeForToPar } from "@/lib/golf/holeResult";
 
 /**
  * Golf tab, Sleeper's fantasy Match screen translated to golf, on the trip's maroon.
@@ -882,12 +883,11 @@ function Golfer({ golfer, align, showThru = true, showHcp = true, showTee = true
   </div>;
 }
 
+/** Birdie circle / eagle-or-better double circle / bogey box / double box, from the shared hole classifier. */
 function scoreMark(toPar: number): string {
-  if (toPar <= -2) return `${styles.mark} ${styles.circle} ${styles.double}`;
-  if (toPar === -1) return `${styles.mark} ${styles.circle}`;
-  if (toPar === 1) return `${styles.mark} ${styles.box}`;
-  if (toPar >= 2) return `${styles.mark} ${styles.box} ${styles.double}`;
-  return styles.mark;
+  const { outline, rings } = shapeForToPar(toPar);
+  if (outline === "none") return styles.mark;
+  return `${styles.mark} ${outline === "circle" ? styles.circle : styles.box}${rings === 2 ? ` ${styles.double}` : ""}`;
 }
 
 /**

@@ -1,5 +1,6 @@
 import type { HoleScoreEntry, TripRoundScoring } from "../../platform/tripScoring.ts";
 import type { TemplateValues } from "../template.ts";
+import { classifyHole } from "../../golf/holeResult.ts";
 
 /**
  * H5B — the first automatic golf detectors, in TypeScript (spec: "Highlights Engine", decision 1: gradual move from SQL).
@@ -97,15 +98,16 @@ export function detectRoundMoments(input: DetectionInput): DetectionResult {
     for (const hole of playingOrder(startOf.get(profileId))) {
       const i = hole - 1;
       const score = holes[i];
-      if (score && score.strokes === 1) {
-        moments.push({ key: keyOf("HL-004", profileId, hole), ruleId: "HL-004", tier: null, profileId, playerName: names.get(profileId) ?? "", hole, at: score.at, values: { ...base(profileId), Hole: String(hole) } });
-      } else if (score && parsOk) {
-        const toPar = score.strokes - pars![i];
-        if (toPar === -3) moments.push({ key: keyOf("HL-003", profileId, hole), ruleId: "HL-003", tier: null, profileId, playerName: names.get(profileId) ?? "", hole, at: score.at, values: { ...base(profileId), Hole: String(hole) } });
-        if (toPar === -2) moments.push({ key: keyOf("HL-002", profileId, hole), ruleId: "HL-002", tier: null, profileId, playerName: names.get(profileId) ?? "", hole, at: score.at, values: { ...base(profileId), Hole: String(hole) } });
+      // The shared hole classifier (lib/golf/holeResult.ts) — the same one scorecards, stats and skins use. An ace needs
+      // no par; everything else needs the round's confirmed par, or it's unknown.
+      const result = score ? classifyHole(score.strokes, parsOk ? pars![i] : null).result : null;
+      const single = { ace: "HL-004", albatross: "HL-003", eagle: "HL-002" } as const;
+      if (score && (result === "ace" || result === "albatross" || result === "eagle")) {
+        const ruleId = single[result];
+        moments.push({ key: keyOf(ruleId, profileId, hole), ruleId, tier: null, profileId, playerName: names.get(profileId) ?? "", hole, at: score.at, values: { ...base(profileId), Hole: String(hole) } });
       }
       // Birdie streak: exactly one under, hole after hole.
-      const birdie = !!score && parsOk && score.strokes > 1 && score.strokes - pars![i] === -1;
+      const birdie = result === "birdie";
       run = birdie ? run + 1 : 0;
       if (birdie && run >= STREAK_MIN && run <= STREAK_MAX) {
         moments.push({ key: keyOf("HL-001", profileId, hole, `:${run}`), ruleId: "HL-001", tier: run, profileId, playerName: names.get(profileId) ?? "", hole, at: score!.at,

@@ -10,6 +10,7 @@ import { sheetCardFromScoring, type SheetCard } from "@/lib/platform/liveCards";
 import { holeEditable, type RevisionHole } from "@/lib/platform/tripCorrections";
 import { GolfGpsScreen } from "./gps/GolfGpsScreen";
 import { SubmitCelebration } from "./SubmitCelebration";
+import { shapeForToPar } from "@/lib/golf/holeResult";
 import styles from "./GolfTripScoring.module.css";
 
 const HOLES = 18;
@@ -677,8 +678,10 @@ function GpsSection({ hole, holePar }: { hole: number; holePar: number | undefin
 /** Scorecard shapes, as on the leaderboard card: birdie circle, eagle-or-better double circle, bogey box,
  *  double-bogey-or-worse double box; par has none. */
 export function scoreShape(toPar: number): string {
-  const shape = toPar <= -2 ? `${styles.shapeCircle} ${styles.shapeDouble}` : toPar === -1 ? styles.shapeCircle
-    : toPar === 1 ? styles.shapeBox : toPar >= 2 ? `${styles.shapeBox} ${styles.shapeDouble}` : "";
+  // The shape comes from the shared hole classifier (lib/golf/holeResult.ts); this only maps it to this card's classes.
+  const { outline, rings } = shapeForToPar(toPar);
+  const base = outline === "circle" ? styles.shapeCircle : outline === "square" ? styles.shapeBox : "";
+  const shape = outline === "none" ? "" : rings === 2 ? `${base} ${styles.shapeDouble}` : base;
   return `${styles.shape} ${shape}`;
 }
 

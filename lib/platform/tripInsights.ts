@@ -1,4 +1,5 @@
 import type { PlayerRound, PlayerRoundHole } from "./playerRounds";
+import { isBirdieOrBetter, isBogeyOrWorse, isParOrBetter, markerForToPar, type HoleMarker } from "../golf/holeResult";
 
 /**
  * Golf → Stats (owner request 2026-10-15): two views of the trip's saved rounds.
@@ -25,6 +26,7 @@ export interface CourseInsights {
 export interface PlayerStat { id: string; label: string; detail: string; unit: "toPar" | "pct" | "num"; ranking: { name: string; value: number }[] }
 
 const toPar = (h: PlayerRoundHole) => h.strokes - h.par;
+const bucket = (holes: PlayerRoundHole[], marker: HoleMarker) => holes.filter((h) => markerForToPar(toPar(h)) === marker).length;
 const avg = (values: number[]) => values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
 const round2 = (n: number) => Math.round(n * 100) / 100;
 const full = (r: TripRound) => r.holesPlayed === 18 && r.holes.length === 18;
@@ -38,7 +40,7 @@ export function courseInsights(rounds: TripRound[], nameOf: (id: string) => stri
     holeMap.set(key, entry);
   }
   const holes: HoleStat[] = [...holeMap.values()].map((e) => ({ course: e.course, hole: e.hole, par: e.par, plays: e.scores.length,
-    avgToPar: round2(avg(e.scores)!), birdies: e.scores.filter((s) => s < 0).length, bogeys: e.scores.filter((s) => s > 0).length }));
+    avgToPar: round2(avg(e.scores)!), birdies: e.scores.filter(isBirdieOrBetter).length, bogeys: e.scores.filter(isBogeyOrWorse).length }));
   const pick = <T,>(list: T[], better: (a: T, b: T) => number) => list.length ? [...list].sort(better)[0] : null;
 
   // 3-hole stretches: holes n, n+1, n+2 of the same round, averaged over every round played there.
@@ -62,7 +64,7 @@ export function courseInsights(rounds: TripRound[], nameOf: (id: string) => stri
   const courses: CourseRank[] = [...byCourse].map(([course, list]) => ({ course, rounds: list.length,
     avgToPar: round2(avg(list.map((r) => r.holes.reduce((a, h) => a + toPar(h), 0)))!),
     avgScore: round2(avg(list.map((r) => r.total))!),
-    birdies: list.reduce((a, r) => a + r.holes.filter((h) => toPar(h) < 0).length, 0) })).sort((a, b) => b.avgToPar - a.avgToPar);
+    birdies: list.reduce((a, r) => a + r.holes.filter((h) => isBirdieOrBetter(toPar(h))).length, 0) })).sort((a, b) => b.avgToPar - a.avgToPar);
 
   const all = rounds.flatMap((r) => r.holes);
   const scored = rounds.filter(full).map((r) => ({ name: nameOf(r.profileId), course: r.course.name, total: r.total, toPar: r.holes.reduce((a, h) => a + toPar(h), 0) }));
@@ -75,8 +77,8 @@ export function courseInsights(rounds: TripRound[], nameOf: (id: string) => stri
     hardestStretch: pick(stretches, (a, b) => b.avgToPar - a.avgToPar),
     easiestStretch: pick(stretches, (a, b) => a.avgToPar - b.avgToPar),
     byPar: ([3, 4, 5] as const).map((par) => { const v = avg(all.filter((h) => h.par === par).map(toPar)); return { par, avgToPar: v === null ? null : round2(v) }; }),
-    totals: { eagles: all.filter((h) => toPar(h) <= -2).length, birdies: all.filter((h) => toPar(h) === -1).length, pars: all.filter((h) => toPar(h) === 0).length,
-      bogeys: all.filter((h) => toPar(h) === 1).length, doubles: all.filter((h) => toPar(h) >= 2).length },
+    // The scorecard's five buckets (shared hole classifier): eagle-or-better … double-or-worse.
+    totals: { eagles: bucket(all, "eagle"), birdies: bucket(all, "birdie"), pars: bucket(all, "par"), bogeys: bucket(all, "bogey"), doubles: bucket(all, "double-or-worse") },
     bestRound: pick(scored, (a, b) => a.toPar - b.toPar),
     worstRound: pick(scored, (a, b) => b.toPar - a.toPar),
   };
@@ -101,9 +103,9 @@ export function playerStats(rounds: TripRound[], nameOf: (id: string) => string)
     let bbChances = 0, bb = 0, foChances = 0, fo = 0, scrChances = 0, scr = 0;
     for (const r of list) r.holes.forEach((h, i) => {
       const next = r.holes[i + 1];
-      if (next && toPar(h) > 0) { bbChances++; if (toPar(next) < 0) bb++; }
-      if (next && toPar(h) < 0) { foChances++; if (toPar(next) > 0) fo++; }
-      if (h.green && h.green !== "center") { scrChances++; if (toPar(h) <= 0) scr++; }
+      if (next && isBogeyOrWorse(toPar(h))) { bbChances++; if (isBirdieOrBetter(toPar(next))) bb++; }
+      if (next && isBirdieOrBetter(toPar(h))) { foChances++; if (isBogeyOrWorse(toPar(next))) fo++; }
+      if (h.green && h.green !== "center") { scrChances++; if (isParOrBetter(toPar(h))) scr++; }
     });
     add("bounceBack", name, bbChances >= 3 ? bb / bbChances * 100 : null);
     add("fallOff", name, foChances >= 3 ? fo / foChances * 100 : null);
@@ -115,8 +117,8 @@ export function playerStats(rounds: TripRound[], nameOf: (id: string) => string)
     add("putts", name, puttRounds.length ? avg(puttRounds.map((r) => r.holes.reduce((a, h) => a + (h.putts ?? 0), 0) / r.holes.length * 18)) : null);
     const puttHoles = holes.filter((h) => h.putts !== null);
     add("threePutts", name, puttHoles.length >= 9 ? puttHoles.filter((h) => (h.putts ?? 0) >= 3).length / puttHoles.length * 18 : null);
-    add("birdies", name, per18(holes.filter((h) => toPar(h) < 0).length));
-    add("parOrBetter", name, holes.length ? holes.filter((h) => toPar(h) <= 0).length / holes.length * 100 : null);
+    add("birdies", name, per18(holes.filter((h) => isBirdieOrBetter(toPar(h))).length));
+    add("parOrBetter", name, holes.length ? holes.filter((h) => isParOrBetter(toPar(h))).length / holes.length * 100 : null);
     add("scoring", name, holes.length >= 9 ? avg(holes.map(toPar))! * 18 : null);
   }
   return PLAYER_STAT_DEFS.flatMap((d) => {

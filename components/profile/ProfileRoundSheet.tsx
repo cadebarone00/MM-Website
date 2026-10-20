@@ -4,6 +4,7 @@ import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import type { ProfileHistoryRound } from "@/lib/platform/playerRoundsRows";
+import { shapeForToPar } from "@/lib/golf/holeResult";
 import styles from "@/components/platform/GolfTripMatch.module.css";
 
 /**
@@ -133,10 +134,9 @@ function Scorecard({ par, scores, name }: { par: (number | null)[]; scores: (num
   </div>;
 }
 
+/** Birdie circle / eagle-or-better double circle / bogey box / double box, from the shared hole classifier. */
 function scoreMark(diff: number): string {
-  if (diff <= -2) return `${styles.mark} ${styles.circle} ${styles.double}`;
-  if (diff === -1) return `${styles.mark} ${styles.circle}`;
-  if (diff === 1) return `${styles.mark} ${styles.box}`;
-  if (diff >= 2) return `${styles.mark} ${styles.box} ${styles.double}`;
-  return styles.mark;
+  const { outline, rings } = shapeForToPar(diff);
+  if (outline === "none") return styles.mark;
+  return `${styles.mark} ${outline === "circle" ? styles.circle : styles.box}${rings === 2 ? ` ${styles.double}` : ""}`;
 }

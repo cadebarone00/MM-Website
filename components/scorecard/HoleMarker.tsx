@@ -1,13 +1,9 @@
 import type { ReactNode } from "react";
 import { holeMarker, type HoleMarker as HoleMarkerType } from "@/lib/data";
+import { MARKER_SHAPES } from "@/lib/golf/holeResult";
 
-const SHAPE: Record<HoleMarkerType, { outline: "circle" | "square" | "none"; rings: number }> = {
-  eagle: { outline: "circle", rings: 2 },
-  birdie: { outline: "circle", rings: 1 },
-  par: { outline: "none", rings: 0 },
-  bogey: { outline: "square", rings: 1 },
-  "double-or-worse": { outline: "square", rings: 2 },
-};
+/** Circle / square / double, from the shared hole classifier (lib/golf/holeResult.ts). */
+const SHAPE = MARKER_SHAPES;
 
 export const MARKER_LABELS: Record<HoleMarkerType, string> = {
   eagle: "Eagle",
