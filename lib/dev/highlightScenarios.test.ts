@@ -21,8 +21,8 @@ test("the sheet snapshot: 53 golf + 22 travel rules, unique stable IDs, three wo
     assert.ok(c.id.startsWith(`${rule.id}-C`), c.id);
     assert.deepEqual(c.variations.map((v) => v.id), [`${c.id}-V01`, `${c.id}-V02`, `${c.id}-V03`], c.id);
   }
-  assert.deepEqual([SNAPSHOT.counts.rules, SNAPSHOT.counts.conditionals, SNAPSHOT.counts.variations], [75, 84, 252]);
-  assert.deepEqual(SNAPSHOT.report, { errors: [], warnings: 0 }, "the corrected sheet (2026-10-19 2:40 PM) validates cleanly");
+  assert.deepEqual([SNAPSHOT.counts.rules, SNAPSHOT.counts.conditionals, SNAPSHOT.counts.variations], [75, 88, 264], "fourball C02 triggers added 2026-10-20");
+  assert.deepEqual(SNAPSHOT.report, { errors: [], warnings: 0 }, "the sheet (2026-10-20 9:21 AM) validates cleanly");
   assert.ok(rules.every((r) => r.status === "Draft" && r.conditionals.every((c) => c.status === "Draft")), "everything is still Draft (no 'Needs copy')");
 });
 
@@ -164,16 +164,24 @@ test("corrected rules: HL-022 one message per quip, HL-023 typo gone, HL-004 / H
   assert.equal(evaluation.alert?.body, "Cam gets one back after his double bogey");
 });
 
-test("singles vs fourball: partners are never invented in singles, never dropped in fourball", () => {
-  for (const id of ["hl013", "hl014", "hl017", "hl019"].filter((x) => SCENARIOS.some((s) => s.id === x))) {
-    const singles = simulate(sim({ scenario: id, matchFormat: "singles", intensity: "all" }));
-    assert.equal(singles.evaluation.outcome, "delivered", `${id} singles`);
-    assert.ok(!/Pete|Luke/.test(singles.evaluation.alert!.body), `${id} singles names no partner: ${singles.evaluation.alert!.body}`);
-    // These wordings only name Player 1 of each side, so in fourball they'd drop the partner: not created, with the reason.
-    const fourball = simulate(sim({ scenario: id, matchFormat: "fourball", intensity: "all" }));
-    assert.equal(fourball.evaluation.outcome, "not-created", `${id} fourball`);
-    assert.match(fourball.evaluation.checks.find((c) => c.id === "placeholders")!.detail, /names 1 of the 2 golfers on Team A/);
+test("singles vs fourball: the format picks the trigger — singles keeps C01 (no partners), fourball C02 names all four", () => {
+  for (const id of ["hl013", "hl014", "hl017", "hl019"]) {
+    assert.ok(SCENARIOS.some((s) => s.id === id), id);
+    for (const variation of ["V01", "V02", "V03"] as const) {
+      const singles = simulate(sim({ scenario: id, matchFormat: "singles", intensity: "all", variation }));
+      assert.equal(singles.evaluation.alert?.conditionalId.slice(-3), "C01", `${id} singles`);
+      assert.ok(!/Pete|Luke/.test(singles.evaluation.alert!.body), `${id} singles names no partner: ${singles.evaluation.alert!.body}`);
+      const fourball = simulate(sim({ scenario: id, matchFormat: "fourball", intensity: "all", variation }));
+      assert.equal(fourball.evaluation.alert?.conditionalId.slice(-3), "C02", `${id} fourball`);
+      for (const name of ["Jake", "Pete", "Alex", "Luke"]) assert.ok(fourball.evaluation.alert!.body.includes(name), `${id} ${variation} fourball names ${name}: ${fourball.evaluation.alert!.body}`);
+    }
   }
+  // The pairs rule still guards: forcing a singles wording onto a fourball event is refused, with the reason.
+  const forced = evaluateAlert({ tripId: "t", ruleId: "HL-013", conditionalId: "HL-013-C01", values: simulate(sim({ scenario: "hl013", matchFormat: "fourball" })).event.values, sides: { a: 2, b: 2 }, key: "k" }, {
+    config: SNAPSHOT.config, configVersion: null, competition: competitionProfile(setupFor("match-only", true)), audience: { members: ["me"] }, recipientId: "me", preferences: DEFAULT_PREFERENCES, previewDrafts: true,
+  });
+  assert.equal(forced.outcome, "not-created");
+  assert.match(forced.checks.find((c) => c.id === "placeholders")!.detail, /names 1 of the 2 golfers on Team A/);
   const pairs = simulate(sim({ scenario: "hl012", matchFormat: "fourball" }));
   assert.equal(pairs.evaluation.outcome, "delivered", "HL-012 has a Team of 2 trigger that names both partners");
   assert.ok(/Jake/.test(pairs.evaluation.alert!.body + pairs.evaluation.alert!.title) && /Pete/.test(pairs.evaluation.alert!.body + pairs.evaluation.alert!.title), pairs.evaluation.alert!.body);

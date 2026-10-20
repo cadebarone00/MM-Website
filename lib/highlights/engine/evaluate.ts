@@ -31,6 +31,8 @@ export interface AlertEvent {
   key: string;
   /** Match moments: golfers per side (1 = singles, 2 = pairs). A pairs wording must name both partners of any side it names. */
   sides?: { a: number; b: number } | null;
+  /** Match moments: the match format, which picks the format's trigger (FORMAT_TIER_LABELS). */
+  format?: MatchFormat | null;
 }
 
 /**
@@ -80,13 +82,28 @@ const LABELS: Record<CheckId, string> = {
   intensity: "Golf intensity includes it", approved: "Rule and wording approved", placeholders: "Every placeholder can be filled",
 };
 
-export function findConditional(rule: HighlightRule, event: Pick<AlertEvent, "conditionalId" | "tier">): HighlightConditional | null {
+/** Tier labels the sheet uses for each match format (HL-012 says "Team of 2" / "Single"; HL-013/014/017/019 say "Fourball"). */
+export const FORMAT_TIER_LABELS: Record<MatchFormat, string[]> = { singles: ["single", "singles"], fourball: ["fourball", "team of 2", "pairs"], team: ["team of 3+"] };
+export type MatchFormat = "singles" | "fourball" | "team";
+
+/**
+ * The trigger an event fires: an explicit ID; else the one whose Tier matches the event's tier; else, for match moments,
+ * the one labeled for the match format — falling back to the rule's single unlabeled trigger (e.g. HL-013's C01 is the
+ * singles wording, C02 "Fourball" the pairs one); else the rule's only trigger.
+ */
+export function findConditional(rule: HighlightRule, event: Pick<AlertEvent, "conditionalId" | "tier" | "format">): HighlightConditional | null {
   if (event.conditionalId) return rule.conditionals.find((c) => c.id === event.conditionalId) ?? null;
+  const label = (c: HighlightConditional) => (c.tier === null ? null : String(c.tier).toLowerCase());
   if (event.tier !== undefined && event.tier !== null) {
     const wanted = String(event.tier).toLowerCase();
-    return rule.conditionals.find((c) => c.tier !== null && String(c.tier).toLowerCase() === wanted) ?? null;
+    return rule.conditionals.find((c) => label(c) === wanted) ?? null;
   }
-  return rule.conditionals.length === 1 ? rule.conditionals[0] : null;
+  const unlabeled = rule.conditionals.filter((c) => c.tier === null);
+  if (event.format) {
+    const labels = FORMAT_TIER_LABELS[event.format];
+    return rule.conditionals.find((c) => labels.includes(label(c) ?? "")) ?? (unlabeled.length === 1 ? unlabeled[0] : null);
+  }
+  return rule.conditionals.length === 1 ? rule.conditionals[0] : unlabeled.length === 1 && rule.conditionals.every((c) => c.tier === null || typeof c.tier === "string") ? unlabeled[0] : null;
 }
 
 export function evaluateAlert(event: AlertEvent, options: EvaluateOptions): Evaluation {

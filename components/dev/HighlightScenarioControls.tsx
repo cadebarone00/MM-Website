@@ -3,6 +3,7 @@ import { RotateCcw, Shuffle } from "lucide-react";
 import { DEFAULT_HIGHLIGHT_SIM, DELIVERY_STATES, SCENARIOS, SIM_MEMBERS, SIM_ROUNDS, SNAPSHOT, VARIATION_CHOICES, simulate, type HighlightSim } from "@/lib/dev/highlightScenarios";
 import { PREFERENCE_CATEGORIES, PREFERENCE_CATEGORY_LABELS, TRIP_TYPES, TRIP_TYPE_LABELS } from "@/lib/highlights/metadata";
 import { GOLF_INTENSITIES, GOLF_INTENSITY_LABELS } from "@/lib/highlights/engine/preferences";
+import { DetectionShadowControls } from "./DetectionShadowControls";
 import styles from "./DevSimulator.module.css";
 
 /**
@@ -24,9 +25,11 @@ export function HighlightScenarioControls({ value, onChange }: { value: Highligh
 
   return <section className={styles.controlSection} aria-label="Highlights scenario">
     <h2>Highlights scenario</h2>
-    <label>Data<select aria-label="Notification data" value={sim.source} onChange={(e) => e.target.value === "design" ? onChange(undefined) : set({ source: "engine" })}>
-      <option value="design">Design samples (original)</option><option value="engine">Highlights Engine (sheet snapshot)</option></select></label>
-    {!engine && <p>The screens show the original design samples. Switch to the Highlights Engine to preview real rules, quips and decisions.</p>}
+    <label>Data<select aria-label="Notification data" value={sim.source} onChange={(e) => e.target.value === "design" ? onChange(undefined) : set({ source: e.target.value as HighlightSim["source"] })}>
+      <option value="design">Design samples (original)</option><option value="engine">Highlights Engine (sheet snapshot)</option>
+      <option value="detection">Detection (H5B shadow run, test only)</option></select></label>
+    {sim.source === "design" && <p>The screens show the original design samples. Switch to the Highlights Engine to preview real rules, quips and decisions.</p>}
+    {sim.source === "detection" && <DetectionShadowControls sim={sim} set={set} onReset={() => onChange({ ...DEFAULT_HIGHLIGHT_SIM, source: "detection" })} />}
     {engine && result && <>
       <label>Scenario<select aria-label="Highlight scenario" value={sim.scenario} onChange={(e) => set({ scenario: e.target.value })}>
         {(["Golf", "Travel"] as const).map((group) => <optgroup key={group} label={group === "Golf" ? "Golf highlights" : "Travel & itinerary alerts"}>

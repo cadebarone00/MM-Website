@@ -1,16 +1,16 @@
 {
  "note": "DEV FIXTURE — a snapshot of the Highlights Google Sheet for the /dev simulator. Not published, not read by production.",
- "label": "Google Sheet export, 2026-10-19 2:40 PM (Drive modified time) — corrected, re-audited",
- "fileFingerprint": "sha256:2a0aa2044e1df81aed00b575cca1001b9637ee6d2befc5d8577e86402ec44e0c",
- "configFingerprint": "sha256:ab9e7f827a987a2f44b57770c58cd6e89f5224126576a15f401b5961d94c3fe2",
+ "label": "Google Sheet export, 2026-10-20 9:21 AM (Drive modified time) — fourball triggers added",
+ "fileFingerprint": "sha256:5b431d14f83696196b7c0f325bdcdc5ab3d15ea345b20cd609c1da78b23fafb2",
+ "configFingerprint": "sha256:364ed812aef6dbdf5a5cab5176f228b32bf8d8297cbd7f770702f707852624bc",
  "report": {
   "errors": [],
   "warnings": 0
  },
  "counts": {
   "rules": 75,
-  "conditionals": 84,
-  "variations": 252,
+  "conditionals": 88,
+  "variations": 264,
   "liveRules": 0,
   "liveConditionals": 0,
   "liveVariations": 0
@@ -1028,6 +1028,42 @@
         "legacy": false
        }
       ]
+     },
+     {
+      "id": "HL-013-C02",
+      "condition": "Comeback from 3+ down — Fourball",
+      "tier": "Fourball",
+      "status": "Draft",
+      "notes": "Requires two players on each side of a Fourball match; distinct from singles.",
+      "variations": [
+       {
+        "id": "HL-013-C02-V01",
+        "label": "",
+        "headline": "The duo fights back! 💪",
+        "body": "{Player 1, Team A} and {Player 2, Team A} erase a {Count}-hole deficit against {Player 1, Team B} and {Player 2, Team B}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-013-C02-V02",
+        "label": "",
+        "headline": "Never count out the partners! 🔥",
+        "body": "Down {Count}, {Player 1, Team A} and {Player 2, Team A} battle back to all square against {Player 1, Team B} and {Player 2, Team B}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-013-C02-V03",
+        "label": "",
+        "headline": "Fourball comeback alert! 🚨",
+        "body": "{Player 1, Team A} and {Player 2, Team A} wipe away a {Count}-hole deficit. {Player 1, Team B} and {Player 2, Team B} can't shake them.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
      }
     ]
    },
@@ -1076,6 +1112,42 @@
         "label": "",
         "headline": "New leader, same battle 👀",
         "body": "{Player 1, Team A} moves ahead in this match. The pressure flips.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     },
+     {
+      "id": "HL-014-C02",
+      "condition": "Lead change — Fourball",
+      "tier": "Fourball",
+      "status": "Draft",
+      "notes": "Requires two players on each side of a Fourball match; distinct from singles.",
+      "variations": [
+       {
+        "id": "HL-014-C02-V01",
+        "label": "",
+        "headline": "The lead just flipped! ⚡",
+        "body": "{Player 1, Team A} and {Player 2, Team A} move ahead of {Player 1, Team B} and {Player 2, Team B}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-014-C02-V02",
+        "label": "",
+        "headline": "Partners with the momentum! 🔥",
+        "body": "{Player 1, Team A} and {Player 2, Team A} take the Fourball lead. {Player 1, Team B} and {Player 2, Team B} have work to do.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-014-C02-V03",
+        "label": "",
+        "headline": "New leaders on the card! 👀",
+        "body": "The pair of {Player 1, Team A} and {Player 2, Team A} grabs the lead over {Player 1, Team B} and {Player 2, Team B}.",
         "status": "Draft",
         "notes": "",
         "legacy": false
@@ -1240,6 +1312,42 @@
         "legacy": false
        }
       ]
+     },
+     {
+      "id": "HL-017-C02",
+      "condition": "Winning on No. 18 — Fourball",
+      "tier": "Fourball",
+      "status": "Draft",
+      "notes": "Requires two players on each side of a Fourball match; distinct from singles.",
+      "variations": [
+       {
+        "id": "HL-017-C02-V01",
+        "label": "",
+        "headline": "Eighteen belongs to the duo! 🏆",
+        "body": "{Player 1, Team A} and {Player 2, Team A} close out {Player 1, Team B} and {Player 2, Team B} on No. 18.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-017-C02-V02",
+        "label": "",
+        "headline": "Last-hole teamwork! 🔥",
+        "body": "{Player 1, Team A} and {Player 2, Team A} win the Fourball match on the final hole against {Player 1, Team B} and {Player 2, Team B}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-017-C02-V03",
+        "label": "",
+        "headline": "Four players. One final answer. ⛳",
+        "body": "No. 18 decides it: {Player 1, Team A} and {Player 2, Team A} take the win over {Player 1, Team B} and {Player 2, Team B}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
      }
     ]
    },
@@ -1341,6 +1449,42 @@
         "label": "",
         "headline": "Signed, sealed, delivered ✅",
         "body": "{Player 1, Team A} gets the match win over {Player 1, Team B}, {Margin}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       }
+      ]
+     },
+     {
+      "id": "HL-019-C02",
+      "condition": "Match clinched — Fourball",
+      "tier": "Fourball",
+      "status": "Draft",
+      "notes": "Requires two players on each side of a Fourball match; distinct from singles.",
+      "variations": [
+       {
+        "id": "HL-019-C02-V01",
+        "label": "",
+        "headline": "Match secured, together! 🏆",
+        "body": "{Player 1, Team A} and {Player 2, Team A} beat {Player 1, Team B} and {Player 2, Team B}, {Margin}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": true
+       },
+       {
+        "id": "HL-019-C02-V02",
+        "label": "",
+        "headline": "Two against two. Point secured! 🤝",
+        "body": "The pair of {Player 1, Team A} and {Player 2, Team A} clinches the match over {Player 1, Team B} and {Player 2, Team B}, {Margin}.",
+        "status": "Draft",
+        "notes": "",
+        "legacy": false
+       },
+       {
+        "id": "HL-019-C02-V03",
+        "label": "",
+        "headline": "That's a team effort! 🏆",
+        "body": "{Player 1, Team A} and {Player 2, Team A} seal the Fourball win against {Player 1, Team B} and {Player 2, Team B}.",
         "status": "Draft",
         "notes": "",
         "legacy": false

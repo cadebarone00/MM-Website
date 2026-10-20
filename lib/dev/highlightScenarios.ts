@@ -9,7 +9,7 @@ import snapshot from "./highlightsSnapshot.json";
 import { ruleProfile, TRIP_TYPES, PREFERENCE_CATEGORIES, type PreferenceCategory, type TripType } from "@/lib/highlights/metadata";
 import { competitionProfile, setupFor } from "@/lib/highlights/engine/competition";
 import { effectivePreferences, DEFAULT_PREFERENCES, GOLF_INTENSITIES, type GolfIntensity } from "@/lib/highlights/engine/preferences";
-import { evaluateAlert, type AlertEvent, type Evaluation } from "@/lib/highlights/engine/evaluate";
+import { evaluateAlert, findConditional, type AlertEvent, type Evaluation } from "@/lib/highlights/engine/evaluate";
 import { groupValues, matchValues, teamValues, type Side } from "@/lib/highlights/engine/values";
 import { reminderSendAt } from "@/lib/highlights/engine/delivery";
 import { seededRandom } from "@/lib/highlights/engine/selection";
@@ -62,8 +62,9 @@ type ItemId = keyof typeof SIM_ITEMS;
 export const VARIATION_CHOICES = ["random", "V01", "V02", "V03"] as const;
 export const DELIVERY_STATES = [["delivered", "Delivered (shown now)"], ["scheduled", "Scheduled (not sent yet)"], ["withdrawn", "Withdrawn after a score correction"]] as const;
 export type HighlightSim = {
-  /** "design": the original sample notifications. "engine": the Highlights Engine + this scenario. */
-  source: "design" | "engine";
+  /** "design": the original sample notifications. "engine": the Highlights Engine + this scenario.
+   *  "detection": H5B shadow run — the TypeScript detectors on a scoring fixture (lib/dev/detectionScenarios.ts). */
+  source: "design" | "engine" | "detection";
   scenario: string;
   tripType: TripType;
   teamCompetition: boolean;
@@ -85,30 +86,43 @@ export type HighlightSim = {
   hole: number;
   read: boolean;
   delivery: (typeof DELIVERY_STATES)[number][0];
+  /** H5B shadow run: which scoring fixture, whether a score correction / a second run follows, and the golf volume policy. */
+  detectionFixture: string;
+  correction: boolean;
+  /** After the correction, restore the original score (third run). */
+  restore: boolean;
+  rerun: boolean;
+  volumeMax: number;
+  exceptional: "always-send" | "prioritize";
 };
 export const DEFAULT_HIGHLIGHT_SIM: HighlightSim = {
   source: "engine", scenario: "hl001-3", tripType: "match+individual", teamCompetition: true, matchFormat: "singles", swapSides: false,
   subject: "jake", recipient: "cade", intensity: DEFAULT_PREFERENCES.golf as GolfIntensity, tripIntensity: "inherit", categoriesOff: [],
   variation: "random", seed: 1, previewDrafts: true, round: 2, hole: 7, read: false, delivery: "delivered",
+  detectionFixture: "correct-restore", correction: false, restore: false, rerun: false, volumeMax: 3, exceptional: "always-send",
 };
+/** Scoring fixtures of the H5B shadow run (ids only, so this file doesn't depend on the detector fixtures). */
+export const DETECTION_FIXTURE_IDS = ["correct-restore", "birdies", "big-plays", "burst", "unconfirmed", "no-pars", "out-of-order", "shotgun"] as const;
 
 /** Messages are untrusted (postMessage): anything off-spec is rejected. */
 export function parseHighlightSim(value: unknown): HighlightSim | null {
   if (!value || typeof value !== "object") return null;
   const v = value as Record<string, unknown>;
   const oneOf = (x: unknown, list: readonly unknown[]) => list.includes(x);
-  const ok = oneOf(v.source, ["design", "engine"]) && typeof v.scenario === "string" && SCENARIOS.some((s) => s.id === v.scenario)
+  const ok = oneOf(v.source, ["design", "engine", "detection"]) && typeof v.scenario === "string" && SCENARIOS.some((s) => s.id === v.scenario)
     && oneOf(v.tripType, TRIP_TYPES) && typeof v.teamCompetition === "boolean" && oneOf(v.matchFormat, ["singles", "fourball"]) && typeof v.swapSides === "boolean"
     && oneOf(v.subject, MEMBER_IDS) && oneOf(v.recipient, MEMBER_IDS) && oneOf(v.intensity, GOLF_INTENSITIES) && oneOf(v.tripIntensity, ["inherit", ...GOLF_INTENSITIES])
     && Array.isArray(v.categoriesOff) && v.categoriesOff.every((c) => oneOf(c, PREFERENCE_CATEGORIES)) && oneOf(v.variation, VARIATION_CHOICES)
     && Number.isSafeInteger(v.seed) && (v.seed as number) >= 0 && typeof v.previewDrafts === "boolean" && oneOf(v.round, [1, 2, 3])
-    && Number.isInteger(v.hole) && (v.hole as number) >= 1 && (v.hole as number) <= 18 && typeof v.read === "boolean" && oneOf(v.delivery, DELIVERY_STATES.map(([id]) => id));
+    && Number.isInteger(v.hole) && (v.hole as number) >= 1 && (v.hole as number) <= 18 && typeof v.read === "boolean" && oneOf(v.delivery, DELIVERY_STATES.map(([id]) => id))
+    && oneOf(v.detectionFixture, DETECTION_FIXTURE_IDS) && typeof v.correction === "boolean" && typeof v.restore === "boolean" && typeof v.rerun === "boolean"
+    && oneOf(v.volumeMax, [0, 2, 3, 5]) && oneOf(v.exceptional, ["always-send", "prioritize"]);
   return ok ? (value as HighlightSim) : null;
 }
 
 // --- Scenarios ------------------------------------------------------------------------------------------------------
 
-type Built = { values: TemplateValues; tier?: number | string; itemId?: ItemId | null; confirmed?: boolean; selected?: string[] | null; round?: AudienceContext["round"]; sides?: { a: number; b: number } };
+type Built = { values: TemplateValues; tier?: number | string; itemId?: ItemId | null; confirmed?: boolean; selected?: string[] | null; round?: AudienceContext["round"]; sides?: { a: number; b: number }; format?: "singles" | "fourball" };
 export interface Scenario { id: string; label: string; group: "Golf" | "Travel"; ruleId: string; build: (s: HighlightSim) => Built }
 
 const roundValues = (s: HighlightSim) => ({ Round: String(s.round), Course: SIM_ROUNDS[s.round - 1].course, Hole: String(s.hole) });
@@ -126,7 +140,7 @@ function sides(s: HighlightSim): [Side, Side] {
 }
 const golf = (id: string, label: string, ruleId: string, build: Scenario["build"]): Scenario => ({ id, label, group: "Golf", ruleId, build });
 const player = (s: HighlightSim) => ({ Player: first(s.subject), ...roundValues(s) });
-const match = (s: HighlightSim, extra: TemplateValues = {}): Built => { const [a, b] = sides(s); return { values: { ...matchValues(a, b), ...roundValues(s), ...extra }, sides: { a: a.players.length, b: b.players.length } }; };
+const match = (s: HighlightSim, extra: TemplateValues = {}): Built => { const [a, b] = sides(s); return { values: { ...matchValues(a, b), ...roundValues(s), ...extra }, sides: { a: a.players.length, b: b.players.length }, format: s.matchFormat }; };
 const roundPlayers = () => ({ players: [...MEMBER_IDS], teeGroup: [] as string[] });
 
 export const SCENARIOS: Scenario[] = [
@@ -134,9 +148,10 @@ export const SCENARIOS: Scenario[] = [
   golf("hl001-5", "Birdie streak · 5 in a row (HL-001)", "HL-001", (s) => ({ tier: 5, values: { ...player(s), Count: "5" } })),
   golf("hl002", "Eagle (HL-002)", "HL-002", (s) => ({ values: player(s) })),
   golf("hl004", "Hole-in-one (HL-004)", "HL-004", (s) => ({ values: player(s) })),
-  golf("hl012", "Match · 3 holes won in a row (HL-012)", "HL-012", (s) => ({ ...match(s), tier: s.matchFormat === "fourball" ? "Team of 2" : "Single" })),
+  golf("hl012", "Match · 3 holes won in a row (HL-012)", "HL-012", (s) => match(s)),
   golf("hl013", "Match comeback (HL-013)", "HL-013", (s) => match(s, { Count: "3" })),
   golf("hl014", "Match lead change (HL-014)", "HL-014", (s) => match(s)),
+  golf("hl017", "Match won on No. 18 (HL-017)", "HL-017", (s) => match(s, { Hole: "18" })),
   golf("hl019", "Match clinched · 3&2 (HL-019)", "HL-019", (s) => match(s, { Margin: "3&2" })),
   golf("hl031", "Leaderboard · new solo leader (HL-031)", "HL-031", (s) => ({ values: player(s) })),
   golf("hl033", "Leaderboard · breakaway by 3 (HL-033)", "HL-033", (s) => ({ values: { ...player(s), Count: "3" } })),
@@ -216,10 +231,11 @@ export function simulate(sim: HighlightSim, scenarioId = sim.scenario): Simulate
   };
   const event: AlertEvent = {
     tripId: SIM_TRIP.id, ruleId: scenario.ruleId, tier: built.tier ?? null, values: built.values, itemId: built.itemId ?? null,
-    confirmed: built.confirmed, sides: built.sides ?? null, key: `${scenario.ruleId}:${built.itemId ?? me.id}:${sim.round}:${sim.hole}`,
+    confirmed: built.confirmed, sides: built.sides ?? null, format: built.format ?? null, key: `${scenario.ruleId}:${built.itemId ?? me.id}:${sim.round}:${sim.hole}`,
   };
   const account = { golf: sim.intensity, categories: { ...DEFAULT_PREFERENCES.categories, ...Object.fromEntries(sim.categoriesOff.map((c) => [c, false])) } };
-  const conditionalId = SNAPSHOT.config.rules.find((r) => r.id === scenario.ruleId)?.conditionals.find((c) => built.tier === undefined || String(c.tier) === String(built.tier))?.id;
+  const rule0 = SNAPSHOT.config.rules.find((r) => r.id === scenario.ruleId);
+  const conditionalId = rule0 ? findConditional(rule0, { tier: built.tier ?? null, format: built.format ?? null })?.id ?? rule0.conditionals[0]?.id : undefined;
   const evaluation = evaluateAlert(event, {
     config: SNAPSHOT.config, configVersion: null, competition: competitionProfile(setupFor(sim.tripType, sim.teamCompetition)), audience,
     recipientId: sim.recipient, preferences: effectivePreferences(account, sim.tripIntensity === "inherit" ? null : { golf: sim.tripIntensity }),

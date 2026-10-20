@@ -22,6 +22,10 @@ export interface DetectorCapability {
 export const DETECTOR_CATALOG: readonly DetectorCapability[] = [
   // Owner decision 2026-10-16: birdie streaks fire from 3 in a row, tiers 3–10.
   { ruleId: "HL-001", name: "Birdie streak", tiers: { kind: "integer", min: 3, max: 10 }, variables: ["Player", "Count", "Hole", "Round", "Course"] },
+  // H5B (2026-10-20): TypeScript detectors in lib/highlights/detect/scoreMoments.ts (shadow mode only).
+  { ruleId: "HL-002", name: "Eagle", tiers: { kind: "none" }, variables: ["Player", "Hole", "Round", "Course"] },
+  { ruleId: "HL-003", name: "Albatross", tiers: { kind: "none" }, variables: ["Player", "Hole", "Round", "Course"] },
+  { ruleId: "HL-004", name: "Hole-in-one", tiers: { kind: "none" }, variables: ["Player", "Hole", "Round", "Course"] },
 ];
 
 export function detectorFor(ruleId: string): DetectorCapability | null {

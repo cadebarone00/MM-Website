@@ -8,6 +8,7 @@ import { androidLiveUpdate, formatPoints, formatToPar, liveLeaderboard, liveTeam
 import type { AppNotification, LiveRoundActivity, NotificationKind } from "@/lib/notifications/types";
 import { NOTIFICATION_PREVIEWS, SAMPLE_BY_TYPE, SAMPLE_LOST, SAMPLE_PAIRS, SAMPLE_LIVE_TOP3, SAMPLE_LOCAL_NOW, SAMPLE_NOTIFICATIONS, SAMPLE_TEAM_STEPS, SAMPLE_NOW, type NotificationPreview, type NotificationSurface } from "@/lib/dev/sampleNotifications";
 import { previewNotes } from "@/lib/dev/highlightScenarios";
+import { detectionPreviewNotes } from "@/lib/dev/detectionScenarios";
 import styles from "./NotificationPreviews.module.css";
 
 const APP_ICON = "/icons/mm-192.png";
@@ -28,7 +29,7 @@ export function NotificationPreviewScreen({ surface }: { surface: NotificationSu
   // Highlights scenario (simulator panel): the Highlights Engine's real output for the chosen scenario + the viewer's
   // inbox. Otherwise the original design samples. `latest` is null when the scenario's alert isn't on the phone.
   const highlight = simulator?.state.highlightSim;
-  const engine = highlight?.source === "engine" ? previewNotes(highlight, SAMPLE_NOW) : null;
+  const engine = highlight?.source === "engine" ? previewNotes(highlight, SAMPLE_NOW) : highlight?.source === "detection" ? detectionPreviewNotes(highlight) : null;
   const notes = engine ? engine.inbox : SAMPLE_NOTIFICATIONS;
   const [latest, ...older]: (AppNotification | null)[] = engine ? [engine.current, ...engine.inbox.filter(note => note.id !== engine.current?.id)] : newestFirst(SAMPLE_NOTIFICATIONS);
   // display: contents — the screen itself stays the page's first box (globals.css top clearance rules).
