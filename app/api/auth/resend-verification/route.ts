@@ -1,13 +1,14 @@
+import { websiteVerificationOptions } from "@/lib/auth/websiteFlow";
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
-  const { email } = await request.json();
+  const { email, next } = await request.json();
   if (!email) {
     return NextResponse.json({ ok: false, error: "Missing email." }, { status: 400 });
   }
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.resend({ type: "signup", email });
+  const { error } = await supabase.auth.resend({ type: "signup", email, ...websiteVerificationOptions(request.url, next) });
   if (error) {
     // Never surface Supabase's error text to the client — it can differ
     // based on whether the email is registered, which would turn this into

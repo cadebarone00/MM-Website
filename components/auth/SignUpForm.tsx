@@ -3,7 +3,7 @@ import { PASSWORD_HINT, PASSWORD_MIN_CHARS } from "@/lib/auth/passwordPolicy";
 import { useState } from "react";
 import Link from "next/link";
 import { AuthMethods } from "./AuthMethods";
-import { withReturnTo } from "@/lib/auth/returnTo";
+import { authReturnPath, withReturnTo } from "@/lib/auth/returnTo";
 import styles from "./SignUpForm.module.css";
 
 export function SignUpForm({ initialCode, returnTo = null }: { initialCode?: string; returnTo?: string | null }) {
@@ -18,7 +18,7 @@ export function SignUpForm({ initialCode, returnTo = null }: { initialCode?: str
     if (step === 1) { setStep(2); return; }
     setSubmitting(true);
     try {
-      const res = await fetch("/api/auth/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password, ...(initialCode ? { username: initialCode } : {}) }) });
+      const res = await fetch("/api/auth/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password, next: authReturnPath(returnTo), ...(initialCode ? { username: initialCode } : {}) }) });
       const data = await res.json();
       if (!res.ok || !data.ok) { setError(data.error ?? "Could not create account."); return; }
       setDone(true);
@@ -36,7 +36,7 @@ export function SignUpForm({ initialCode, returnTo = null }: { initialCode?: str
         {error && <p role="alert">{error}</p>}
         <button type="submit" disabled={submitting}>{submitting ? "Creating account?" : step === 1 ? "Next" : "Create an Account"}</button>
         {step === 2 && <button type="button" disabled={submitting} onClick={() => { setStep(1); setError(null); }}>Back</button>}
-        <Link href="/login">Sign in</Link>
+        <Link href={withReturnTo("/login/email", returnTo)}>Sign in</Link>
       </form>}
     </section>
   </main>;

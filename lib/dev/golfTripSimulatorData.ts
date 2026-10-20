@@ -11,6 +11,11 @@ import type { SimulatorConfig } from "./simulator";
 
 export type SimulatorTripData = Pick<ComponentProps<typeof GolfTripHome>, "preview" | "previewMatch" | "flights" | "travel">;
 
+/** Official trip statistics come only from its own saved cards, never sample history. */
+export function simulatorUsesSampleTripStats(config: SimulatorConfig, hasSavedStats: boolean): boolean {
+  return config.source !== "masters" && config.source !== "maroon" && (config.state.sampleTripStats ?? !hasSavedStats);
+}
+
 /** Deterministic fictional crowd, derived from the existing generic format fixture. `names` (randomized busy data) replaces "Guest Golfer N". */
 export function populatedMatch(sample: GolfMatchPreview, count: number, names?: string[]): GolfMatchPreview {
   const leaderboard = Array.from({ length: count }, (_, index) => {
@@ -382,7 +387,7 @@ export function simulatorTripData(mock: SimulatorTripData, maroon: SimulatorTrip
     const draft = MAROON_MASTERS_DRAFT;
     base = {
       preview: { ...draft },
-      previewMatch: { ...(mock.previewMatch ?? GOLF_MATCH_PREVIEW), course: "Course TBD", roundDate: draft.day1Date, matches: [], leaderboard: [], round: 1, roundCount: 4, sides: [{ ...side, name: "Team A" }, { ...side, name: "Team B" }] },
+      previewMatch: { course: "Course TBD", roundDate: draft.day1Date, format: "", handicap: false, par: [], matches: [], leaderboard: [], round: 1, roundCount: 4, sides: [{ ...side, name: "Team A" }, { ...side, name: "Team B" }] },
       flights: { summary: flightSummary([], draft.startDate), href: null },
       travel: MAROON_MASTERS_TRAVEL,
     };

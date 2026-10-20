@@ -95,3 +95,15 @@ Mock/Busy scenarios now include stable historical scorecards and putts, cumulati
 ## 2026-10-19 - Randomized travel fixtures (scope revision 6)
 
 Scenario travel now includes fictional grouped flights and rental cars with assigned participants and sufficient seats, lodging for multi-day trips and fictional meal venues. Timing guards preserve airport/golf/checkout order; one-day trips omit hotels. Own-flight summary and travel screens share these bookings. Existing airline/airport catalogs are reused; no provider integration, real booking, new personal data, confirmation numbers, payments/subscriptions/advertising/sponsorship, recipients or production writes. Durations use trip-local wall time, not verified schedules or timezone conversions. Existing privacy, personal-data, IP/provider, UGC, retention, security, organizer and legal follow-ups remain review_required with unassigned owners and pre-release dependencies. Implemented locally; deployment not verified.
+
+## Official source isolation - 2026-10-20
+
+Targeted correction, implemented locally; deployment not verified. Official no longer inherits fixture standings, pars or format and never generates sample trip statistics. Source-scoped setup, cards and explicit History imports remain; historical Real development fixtures are preserved. No new collection, vendor, permission, payment, subscription or advertising/sponsorship flow. Existing privacy, personal-data, UGC, security, retention, intellectual-property, platform/provider and professional legal findings remain review_required. Existing browser data is not deleted or migrated.
+
+## Historical card statistics parity - 2026-10-20
+
+Scope revision 4. Implemented locally; deployment not verified. Existing 2026 leaderboard scorecard holes now feed the existing tripStats engine with actual strokes, pars, putts and binary FIR/GIR hits. No unrelated sample courses are substituted for Real development or Official. Carry-forward shared-ball snapshots are excluded; source-scoped saved player scoring replaces its matching imported record and leaderboard snapshot. No new collection, vendor, production writes, sharing, payments, subscriptions or advertising. Legacy FIR/GIR misses use a non-hit bucket internally, not an asserted shot direction. Published event standings and all-card scoring averages remain distinct metrics. Privacy/personal-data, IP/source rights, UGC, security, retention, provider/platform and legal review remain review_required under the existing findings; no professional approval or deployment is claimed.
+
+## Non-individual scorecard presentation - 2026-10-20
+
+Presentation-only follow-up: existing player profile data supplies format, partner, competitors and player-relative team result in place of a non-individual score grid. Supplied team stroke totals are used without inventing individual scores. No new data collection, persistence, permissions, sharing or providers; existing unresolved findings remain review_required. Implemented locally; deployment not verified.

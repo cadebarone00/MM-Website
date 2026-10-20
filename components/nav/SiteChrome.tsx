@@ -35,7 +35,7 @@ import { PageScrollBackground } from "./PageScrollBackground";
 export function SiteChrome({ children, nextTournamentOverride }: { children: ReactNode; nextTournamentOverride: NextTournamentOverride }) {
   const pathname = usePathname();
   // Independent development canvases own their navigation and page surface.
-  if (pathname === "/dev-website" || pathname === "/dev-v1") return <>{children}</>;
+  if (pathname === "/dev-website" || pathname === "/dev-v1" || pathname === "/dashboard") return <>{children}</>;
   const content = (
     <div className="app-camera-buffer"><AreaNavigation>
       <RoundExitProvider>

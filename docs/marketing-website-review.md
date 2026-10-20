@@ -38,3 +38,17 @@ Revision 2 adapts V1 full-width hero, maroon chrome, text wordmark and section r
 ## 2026-10-20 shared preview navigation
 
 The existing desktop/mobile groups share one marketing renderer. Added an on-page Support anchor and availability copy; no contact address, form, collection, persistence, vendor, payment, subscription, advertising or user-content flow is introduced. Existing privacy, security, retention, media/IP, provider/store and professional-review findings above remain `review_required`. Support operations and an approved contact destination remain follow-ups before launch. No deployment verified.
+
+## 2026-10-20 hero app capture
+
+The hero adds a static screenshot of the actual V2 Golf Trip Home UI, captured from the existing `/dev` simulator with Mock golf trip data, iPhone 16 (393?852 CSS pixels, 2? raster). Source route: `/dev/tournament?simulator=1`; navigation: Home. It shows The Invitational and fictional fixture content, with no authenticated browser session. The Next.js development indicator was hidden during capture only. Asset: `public/marketing/v2-golf-trip-home.png`. No V2 source modification or app-runtime import. Recapture through the same simulator controls when the approved product presentation changes.
+
+No new data collection, UGC, persistence, security permission, vendor, retention, payment/subscription or advertising flow is added. Existing brand/UI/font/icon and photograph rights, fixture naming/provenance, marketing claims, platform distribution and counsel review remain `review_required`; this capture does not establish release clearance. Reduced-motion preferences suppress hero entrance and hover animation. No store links, commit, deployment or production routing change.
+
+## 2026-10-20 multi-device showcase
+
+Added a presentation-only section after Features. The phone reuses the documented mock-data V2 capture; desktop trip planning and Apple Watch yardage are website-owned HTML/CSS concepts, with explicit concept/availability copy. Fictional itinerary and yardage values are illustrative, not live travel, competition or GPS information. No additional assets, vendors, personal data, user content, permissions, retention, payments, subscriptions, sponsorship, analytics or external destinations. Existing inherited privacy/security and IP/media/font/brand findings remain `review_required`. Platform branding, device representation and final availability/marketing claims require policy and professional review before public launch; no desktop/watch product or release is asserted. No V1/V2, simulator, production routing or deployment change.
+
+## 2026-10-20 website account entry and dashboard
+
+Marketing Sign In links to existing `/login/email`; it does not change authentication or return-path rules. The new `/dev-website?view=dashboard` view uses isolated fictional constants with no auth/data imports or writes. Functional navigation, mock-only sections, proposed production guards, reusable profile/history/statistics queries, ownership boundaries and category review are recorded in `docs/website-player-dashboard-integration.md`. All unresolved privacy/security/IP/provider and professional questions remain `review_required`. No production integration, commit or deployment is asserted.

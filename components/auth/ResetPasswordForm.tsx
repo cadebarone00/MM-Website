@@ -1,5 +1,6 @@
 "use client";
 
+import { authReturnPath, withReturnTo } from "@/lib/auth/returnTo";
 import { PASSWORD_MIN_CHARS } from "@/lib/auth/passwordPolicy";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -51,7 +52,8 @@ export function ResetPasswordForm() {
         setError(data.error);
         return;
       }
-      router.push("/login");
+      const next = authReturnPath(new URLSearchParams(window.location.search).get("next"));
+      router.push(next ? withReturnTo("/login/email", next) : "/login");
     } catch {
       setError("Could not save your password. Check your connection and try again.");
     } finally {

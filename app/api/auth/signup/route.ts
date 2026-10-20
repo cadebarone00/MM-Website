@@ -1,3 +1,4 @@
+import { websiteVerificationOptions } from "@/lib/auth/websiteFlow";
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { signupInputFromBody, signupReply } from "@/lib/auth/signup";
@@ -10,10 +11,11 @@ import { signupInputFromBody, signupReply } from "@/lib/auth/signup";
  * as new ones.
  */
 export async function POST(request: Request) {
-  const parsed = signupInputFromBody(await request.json().catch(() => null));
+  const body = await request.json().catch(() => null);
+  const parsed = signupInputFromBody(body);
   if (!parsed.ok) return NextResponse.json({ ok: false, error: parsed.error }, { status: 400 });
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.signUp(parsed.input);
+  const { error } = await supabase.auth.signUp({ ...parsed.input, ...websiteVerificationOptions(request.url, body?.next) });
   if (error && signupReply(error).status >= 500) console.error("signUp failed:", error.code ?? "", error.message);
   const reply = signupReply(error);
   return NextResponse.json(reply.body, { status: reply.status });

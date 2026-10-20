@@ -4,7 +4,8 @@ import { assignAttesters, stableAttesters, type RoundGroup, type RoundGroupPlaye
 import { organizerOwnEdits } from "@/lib/platform/scoreEdits";
 import { tripStats } from "@/lib/platform/tripStats";
 import { DEV_ACCOUNTS } from "./devAccounts";
-import { DEV_TRIP_ID, devTripId, devTripRoundId, type DevRoundsState } from "./devPlayerRounds";
+import { scorecardTripRounds } from "./scorecardTripRounds";
+import { DEV_TRIP_ID, devTripId, devTripRoundId, scopedRoundId, type DevRoundsState } from "./devPlayerRounds";
 
 /**
  * DEV ONLY: the preview trip's group for Player & Attest. The first match's golfers are the group; the signed-in mock
@@ -49,7 +50,7 @@ export function withSavedRounds(match: GolfMatchPreview, group: DevGroup, rounds
     if (!round) return row;
     const today = round.holes.reduce((sum, h) => sum + h.strokes - h.par, 0);
     const total = parse(row.total) - parse(row.today) + today;
-    return { ...row, holes: round.holes.map((h) => h.strokes), thru: "F", today: label(today), total: label(total),
+    return { ...row, holes: round.holes.map((h) => h.strokes), holeDetails: round.holes, putts: round.holes.map(h => h.putts), thru: "F", today: label(today), total: label(total),
       golfer: { ...row.golfer, thru: "F", score: label(total) } };
   });
   return { ...match, leaderboard };
@@ -64,14 +65,24 @@ export function devTripScoring(store: DevRoundsState, match: GolfMatchPreview | 
   const groupId = match ? `${DEV_TRIP_ID}:${devTripRoundId(match)}:group-1` : null;
   const scoringStarted = store.liveCards.some((c) => c.groupId === groupId) || store.rounds.some((r) => r.groupId === groupId);
   const group = match ? devTripGroup(match, viewAs, store.attesters, { players: store.groups.find((g) => g.id === groupId)?.players, scoringStarted }) : null;
-  const nameOf = (id: string) => group?.names[id] ?? DEV_ACCOUNTS.find((a) => a.id === id)?.name ?? id;
-  const tripRounds = store.rounds.filter((r) => r.source === "trip" && r.tripId === (match?devTripId(match):DEV_TRIP_ID));
-  const stats = tripStats(store.rounds, match?devTripId(match):DEV_TRIP_ID);
+  const names = { ...Object.fromEntries((match?.leaderboard ?? []).map(row => [devGolferId(row.golfer.name), row.golfer.name])), ...group?.names };
+  const nameOf = (id: string) => names[id] ?? DEV_ACCOUNTS.find((a) => a.id === id)?.name ?? id;
+  const idOf = (name: string) => Object.entries(names).find(([id, value]) => value === name && id !== devGolferId(name))?.[0] ?? devGolferId(name);
+  const savedRounds = store.rounds.filter((r) => r.source === "trip" && r.tripId === (match?devTripId(match):DEV_TRIP_ID));
+  const imported = match ? scorecardTripRounds(match, idOf) : [];
+  const tripRounds = [...imported.filter(r => !savedRounds.some(saved => saved.profileId === r.profileId && saved.tripRoundId === r.tripRoundId)), ...savedRounds];
+  const stats = tripStats(tripRounds, match?devTripId(match):DEV_TRIP_ID);
+  const shownMatch = match && group ? { ...withSavedRounds(match, { ...group, names }, savedRounds) } : match;
+  if (shownMatch?.roundStandings && group) shownMatch.roundStandings = shownMatch.roundStandings.map(snapshot => {
+    const round = snapshot.standingsRound ?? snapshot.round;
+    const context = { ...shownMatch, round, par: snapshot.par ?? shownMatch.par, leaderboard: snapshot.leaderboard };
+    return { ...snapshot, leaderboard: withSavedRounds(context, { ...group, names, tripRoundId: scopedRoundId(devTripId(shownMatch), round) }, savedRounds).leaderboard };
+  });
   const attestee = group ? attesteeOf(group, viewAs) : null;
   return {
     group,
     myLiveCard: group ? store.liveCards.find((c) => c.groupId === group.id && c.profileId === viewAs) : undefined,
-    shownMatch: match && group ? withSavedRounds(match, group, tripRounds) : match,
+    shownMatch,
     attesteeId: attestee,
     attesteeName: attestee ? nameOf(attestee) : undefined,
     tripStats: { players: stats.players.map((p) => ({ ...p, name: nameOf(p.profileId) })), trip: stats.trip, rounds: tripRounds },

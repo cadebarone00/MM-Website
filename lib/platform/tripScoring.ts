@@ -1,6 +1,7 @@
 import type { HolePenalties, ShotResult } from "./playerRounds";
 import { assignAttesters, groupTripPlayers } from "./roundGroups";
 import type { SavedGolfTrip } from "./golfTripCreate";
+import { tripRoundParsFromJson, type TripRoundPars } from "./tripRoundPars.ts";
 
 /**
  * Saved-trip scoring (Player & Attest Step 2, supabase/golf_trip_scoring.sql). Pure: builds the playing groups the
@@ -13,12 +14,14 @@ const SHOTS: ShotResult[] = ["up", "left", "center", "right", "down"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface TripScoringPlayer { profileId: string; displayName: string; playOrder: number; side: "left" | "right" | null; attesterProfileId: string | null; submittedAt: string | null }
-export interface TripScoringGroup { id: string; groupNumber: number; lockedAt: string | null; players: TripScoringPlayer[] }
+/** startHole: the hole the group tees off on (shotgun; golf_trip_round_pars.sql). Absent on databases without it = hole 1. */
+export interface TripScoringGroup { id: string; groupNumber: number; lockedAt: string | null; startHole?: number; players: TripScoringPlayer[] }
 export interface HoleScoreEntry {
   scoredProfileId: string; enteredByProfileId: string; hole: number; strokes: number | null; putts: number | null;
   fairway: ShotResult | null; green: ShotResult | null; penaltyFairway: boolean; penaltyGreen: boolean; clientUpdatedAt: string; version: number;
 }
-export interface TripRoundScoring { roundId: string; roundNumber: number; groups: TripScoringGroup[]; entries: HoleScoreEntry[] }
+/** pars: the round's confirmed par snapshot (golf_trip_round_pars.sql); null = none confirmed; absent = not installed. */
+export interface TripRoundScoring { roundId: string; roundNumber: number; pars?: TripRoundPars | null; groups: TripScoringGroup[]; entries: HoleScoreEntry[] }
 /** One hole as the sheet sends it. An attester's entry is strokes only. */
 export interface HoleEntryInput { hole: number; strokes: number | null; putts?: number | null; fairway?: ShotResult | null; green?: ShotResult | null; penaltyFairway?: boolean; penaltyGreen?: boolean }
 
@@ -63,11 +66,12 @@ export function tripScoringFromJson(value: unknown): TripRoundScoring | null {
     if (!isObject(g) || !str(g.id) || !intIn(g.groupNumber, 1, 50) || !(g.lockedAt === null || str(g.lockedAt)) || !Array.isArray(g.players)) return null;
     const players = g.players.map(playerFrom);
     if (players.some((p) => p === null)) return null;
-    groups.push({ id: g.id as string, groupNumber: g.groupNumber as number, lockedAt: g.lockedAt as string | null, players: players as TripScoringPlayer[] });
+    if (g.startHole !== undefined && !intIn(g.startHole, 1, HOLES)) return null;
+    groups.push({ id: g.id as string, groupNumber: g.groupNumber as number, lockedAt: g.lockedAt as string | null, ...(g.startHole !== undefined ? { startHole: g.startHole as number } : {}), players: players as TripScoringPlayer[] });
   }
   const entries = value.entries.map(entryFrom);
   if (entries.some((e) => e === null)) return null;
-  return { roundId: value.roundId as string, roundNumber: value.roundNumber as number, groups, entries: entries as HoleScoreEntry[] };
+  return { roundId: value.roundId as string, roundNumber: value.roundNumber as number, ...("pars" in value ? { pars: tripRoundParsFromJson(value.pars) } : {}), groups, entries: entries as HoleScoreEntry[] };
 }
 
 const blank = <T,>(fill: T) => Array.from({ length: HOLES }, () => fill);

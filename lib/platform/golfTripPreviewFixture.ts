@@ -175,11 +175,13 @@ export type GolfLeaderboardEntry = {
   holes: (number | null)[];
   /** Putts per hole from the scorecard, when entered (Games → Snake finds the last 3-putt from these). */
   putts?: (number | null)[];
+  /** Recorded personal shot details from the same card as `holes`. */
+  holeDetails?: import("./playerRounds").PlayerRoundHole[];
 };
 
 export type GolfMatchPreview = {
   /** Round-specific standings and scorecards from supplied archive data or fictional development scenarios. */
-  roundStandings?: { round: number; standingsRound?: number; par?: number[]; leaderboard: GolfLeaderboardEntry[] }[];
+  roundStandings?: { round: number; standingsRound?: number; datePlayed?: string; format?: string; par?: number[]; leaderboard: GolfLeaderboardEntry[] }[];
   /** Development source identity; absent from public and saved-trip data. */
   devTripId?: string;
   round: number;

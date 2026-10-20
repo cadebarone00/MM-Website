@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     // Missing migration has no subscriptions to remove; other failures must be surfaced before sign-out.
     if (error && error.code !== "42P01" && error.code !== "PGRST205") return NextResponse.json({ error: "Could not disable device alerts." }, { status: 503 });
   }
-  if (bearer) await service.auth.admin.signOut(bearer, "local").catch(() => undefined);
-  else await supabase!.auth.signOut({ scope: "local" }).catch(() => undefined);
+  const result = bearer ? await service.auth.admin.signOut(bearer, "local") : await supabase!.auth.signOut({ scope: "local" });
+  if (result.error) return NextResponse.json({ ok: false, error: "Could not sign out. Try again." }, { status: 503 });
   return NextResponse.json({ ok: true });
 }

@@ -12,7 +12,7 @@ import { readJustCreated, readJustCreatedAll, useJustCreatedReady, useJustCreate
 import { applyEditedTrip } from "@/lib/dev/editedTrip";
 import { devTripScope, useDevSetup, writeDevSetup } from "@/lib/dev/tripSetupStore";
 import { applyJustCreatedSetup, type JustCreatedSetup } from "@/lib/dev/justCreatedTrip";
-import { simulatorNow, simulatorRoundLive, simulatorScorecard, simulatorTripData, type SimulatorTripData as TripData } from "@/lib/dev/golfTripSimulatorData";
+import { simulatorNow, simulatorRoundLive, simulatorScorecard, simulatorTripData, simulatorUsesSampleTripStats, type SimulatorTripData as TripData } from "@/lib/dev/golfTripSimulatorData";
 import { DEFAULT_SIMULATOR_STATE, competitionSetupTypes } from "@/lib/dev/simulator";
 import { dispatchDevRounds, useDevPlayerRounds } from "@/components/dev/useDevPlayerRounds";
 import { DEFAULT_DEV_ACCOUNT, devAccount } from "@/lib/dev/devAccounts";
@@ -71,7 +71,7 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
   const group = scoring.group;
   // Golf → Stats preview: a made-up trip's rounds for this trip's players — whenever no cards have been submitted yet (so the
   // tab always has something to show in dev), or always with the simulator's "Sample trip stats". "From saved cards" turns it off.
-  const useSample = config.state.sampleTripStats ?? !scoring.tripStats.trip;
+  const useSample = simulatorUsesSampleTripStats(config, Boolean(scoring.tripStats.trip));
   const scenarioStatus = isTripScenario(config) && config.state.sampleTripStats !== true ? config.state.roundStatus : null;
   const sampleStats = useMemo(() => scenarioStatus !== null && data.preview && match ? scenarioTripStats(match,data.preview,scenarioStatus) : useSample && match ? sampleTripStatsView(match.leaderboard.map((row) => ({ id: row.golfer.name, name: row.golfer.name, hcp: row.golfer.hcp }))) : undefined, [scenarioStatus, data.preview, useSample, match]);
   const groupKey = group ? JSON.stringify(group) : null;

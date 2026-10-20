@@ -6,4 +6,11 @@ const INVITE_PATH = /^\/(golf-trips|tournaments)\/invite\/[A-Za-z0-9_-]{32,200}$
 
 export const inviteReturnPath = (value: string | null | undefined): string | null => value && INVITE_PATH.test(value) ? value : null;
 
-export const withReturnTo = (href: string, next: string | null): string => next ? `${href}?next=${encodeURIComponent(next)}` : href;
+/** Exact website destination only; keep the invite-only helper unchanged for existing callers. */
+export const authReturnPath = (value: unknown): string | null =>
+  typeof value === "string" ? value === "/dashboard" ? value : inviteReturnPath(value) : null;
+
+export const withReturnTo = (href: string, next: string | null): string => {
+  const safe = authReturnPath(next);
+  return safe ? `${href}?next=${encodeURIComponent(safe)}` : href;
+};

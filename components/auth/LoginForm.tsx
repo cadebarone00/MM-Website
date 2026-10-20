@@ -2,13 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { AuthMethods } from "./AuthMethods";
-import { inviteReturnPath } from "@/lib/auth/returnTo";
+import { authReturnPath, withReturnTo } from "@/lib/auth/returnTo";
 import { Eye, EyeOff } from "lucide-react";
 
-export function LoginForm() {
-  const router = useRouter();
+export function LoginForm({ returnTo = null }: { returnTo?: string | null }) {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
   // Clicking the eye toggles this and it sticks (works on mobile too, where
@@ -42,8 +40,8 @@ export function LoginForm() {
         return;
       }
       window.dispatchEvent(new CustomEvent("mm:session-changed"));
-      // Logins land on your profile, except from a Golf Trip invite (?next=, invite pages only), which returns there.
-      router.push(inviteReturnPath(new URLSearchParams(window.location.search).get("next")) ?? "/profile");
+      // A full navigation reloads server-rendered account UI after cookies change. Default remains /profile.
+      window.location.assign(authReturnPath(new URLSearchParams(window.location.search).get("next")) ?? "/profile");
     } catch {
       setError("Something went wrong. Try again.");
     } finally {
@@ -56,7 +54,7 @@ export function LoginForm() {
     await fetch("/api/auth/resend-verification", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: unverifiedEmail }),
+      body: JSON.stringify({ email: unverifiedEmail, next: authReturnPath(returnTo) }),
     });
     setResent(true);
   }
@@ -109,7 +107,7 @@ export function LoginForm() {
           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
         </button>
       </div>
-      <Link href="/forgot-password" className="self-start font-title text-xs font-semibold uppercase tracking-widest text-white underline underline-offset-4">Forgot your password?</Link>
+      <Link href={withReturnTo("/forgot-password", returnTo)} className="self-start font-title text-xs font-semibold uppercase tracking-widest text-white underline underline-offset-4">Forgot your password?</Link>
       <button
         type="submit"
         disabled={submitting}
@@ -117,7 +115,7 @@ export function LoginForm() {
       >
         {submitting ? "Logging in…" : "Next"}
       </button>
-      <Link href="/signup" className="self-start font-title text-sm font-semibold uppercase tracking-widest text-white underline underline-offset-4">Don?t have an account? Sign Up</Link>
+      <Link href={withReturnTo("/signup", returnTo)} className="self-start font-title text-sm font-semibold uppercase tracking-widest text-white underline underline-offset-4">Don?t have an account? Sign Up</Link>
     </form>
   );
 }

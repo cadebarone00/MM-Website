@@ -5,7 +5,7 @@ const ts = require('typescript');
 const root = path.resolve(__dirname, '..');
 const ui = path.join(root, 'components/marketing');
 const entry = path.join(root, 'app/dev-website/page.tsx');
-const allowedPackages = new Set(['react', 'react/jsx-runtime', 'next', 'next/image', 'next/navigation', 'lucide-react']);
+const allowedPackages = new Set(['react', 'react/jsx-runtime', 'next', 'next/image', 'next/link', 'next/navigation', 'lucide-react']);
 const errors = [];
 const sources = [entry];
 function walk(dir) {
@@ -21,6 +21,8 @@ function insideUi(file) {
   return relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
 }
 function checkImport(file, specifier) {
+  // The server entry composes an external account slot. Marketing modules still cannot import auth/data.
+  if (file === entry && ['@/lib/website/playerSession', '@/components/website/WebsiteAccountActions'].includes(specifier)) return;
   if (!specifier.startsWith('.') && !specifier.startsWith('@/')) {
     if (!allowedPackages.has(specifier)) errors.push(`${path.relative(root, file)}: unapproved package ${specifier}`);
     return;

@@ -1,4 +1,9 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
+
+/* Scan application sources only; generated artifacts and local caches are not UI. */
+@source "./";
+@source "../components";
+@source "../lib";
 
 /* ============================================================
    THE MAROON TOURNAMENT — DESIGN TOKENS

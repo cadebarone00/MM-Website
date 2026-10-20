@@ -1,5 +1,6 @@
 "use client";
 
+import { authReturnPath } from "@/lib/auth/returnTo";
 import { useState } from "react";
 
 export function ForgotPasswordForm() {
@@ -11,7 +12,7 @@ export function ForgotPasswordForm() {
     await fetch("/api/auth/forgot-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, next: authReturnPath(new URLSearchParams(window.location.search).get("next")) }),
     });
     setSent(true);
   }

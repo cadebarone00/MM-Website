@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {palmSprings2026} from '@/lib/data/2026-palm-springs';
 import {adaptTournamentToDraft,adaptTournamentToPreviewMatch} from '@/lib/platform/tournamentToGolfTrip';
 import {plannedRounds} from '@/lib/platform/golfTripDraft';
-import {simulatorTripData} from './golfTripSimulatorData';
+import {simulatorTripData,simulatorUsesSampleTripStats} from './golfTripSimulatorData';
 import {DEFAULT_SIMULATOR_STATE} from './simulator';
 import {applyEditedTrip} from './editedTrip';
 import {devTripScoring} from './devTripScores';
@@ -11,6 +11,22 @@ import {devTripGroup} from './devTripScores';
 import {devTripRoundId,seedDevRounds,devRoundsReducer,devRoundMeta} from './devPlayerRounds';
 const maroon={preview:adaptTournamentToDraft(palmSprings2026).draft,previewMatch:adaptTournamentToPreviewMatch(palmSprings2026)};
 const real=simulatorTripData(maroon,maroon,{source:'maroon',state:DEFAULT_SIMULATOR_STATE});
+
+test('official excludes historical fixture standings and sample stats',()=>{
+ const historical={...maroon,previewMatch:{...maroon.previewMatch!,roundStandings:[{round:1,leaderboard:maroon.previewMatch!.leaderboard}]}};
+ const config={source:'masters' as const,state:DEFAULT_SIMULATOR_STATE};
+ const official=simulatorTripData(historical,historical,config);
+ assert.equal(official.preview?.tripName,'The Maroon Masters');
+ assert.deepEqual(official.previewMatch?.leaderboard,[]);
+ assert.deepEqual(official.previewMatch?.matches,[]);
+ assert.equal(official.previewMatch?.roundStandings,undefined);
+ assert.deepEqual(official.previewMatch?.par,[]);
+ assert.equal(official.travel?.members.length,1);
+ assert.deepEqual(official.travel?.items,[]);
+ assert.equal(simulatorUsesSampleTripStats(config,false),false);
+ assert.equal(simulatorUsesSampleTripStats({...config,state:{...config.state,sampleTripStats:true}},false),false);
+ assert.deepEqual(simulatorTripData(historical,historical,{source:'maroon',state:DEFAULT_SIMULATOR_STATE}).previewMatch?.roundStandings,historical.previewMatch.roundStandings);
+});
 test('real data has editable empty travel and all actual tournament sessions',()=>{
  assert.equal(real.travel?.members.length,12);assert.equal(real.travel?.items.length,0);
  assert.equal(plannedRounds(real.preview!).length,8);

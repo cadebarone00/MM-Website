@@ -28,7 +28,8 @@ export function SavedTripScorecards({ trip }: { trip: SavedGolfTrip }) {
     });
     return <div><button type="button" onClick={() => player ? setPlayer(null) : setSelected(null)}>Back to {player ? "players" : "scorecards"}</button><h2>Round {selected}</h2>
       {message && <p role="status">{message}</p>}
-      {golfer ? <OrganizerScorecard name={golfer.displayName} par={[]} holes={holes} editable={false} competition={trip.trip.includes_tournament === "yes"} onSave={() => {}} />
+      {/* The round's confirmed pars (golf_trip_round_pars.sql), else none: plain numbers, nothing guessed. */}
+      {golfer ? <OrganizerScorecard name={golfer.displayName} par={scoring?.pars?.pars ?? []} holes={holes} editable={false} competition={trip.trip.includes_tournament === "yes"} onSave={() => {}} />
         : scoring?.groups.flatMap(group => group.players).map(item => <button type="button" key={item.profileId} className={styles.scheduleRoundCard} onClick={() => setPlayer(item.profileId)}>{item.displayName}{item.submittedAt ? " · Submitted" : ""}</button>)}
     </div>;
   }

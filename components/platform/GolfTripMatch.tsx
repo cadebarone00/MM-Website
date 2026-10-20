@@ -1,4 +1,5 @@
 import { competitionMatchOffset } from "@/lib/platform/competitionMatchNumber";
+import { nonIndividualRound } from "@/lib/platform/nonIndividualRound";
 import { createPortal } from "react-dom";
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
@@ -227,12 +228,13 @@ export function GolfTripLeaderboard({ match, byToday = false, tripStats }: { mat
         })}
       </ul>
     </div>
-    {selectedCard && <PlayerPublicTripProfile key={match.round + selectedCard.golfer.name} name={selectedCard.golfer.name} avatarUrl={selectedCard.golfer.avatarUrl ?? null} username={selectedCard.golfer.username ?? null} round={match.round} roundCount={match.roundCount} roundStandings={match.roundStandings} net={showNet} stableford={isStableford} par={match.par} holes={selectedCard.holes} snapshot={{ position: selectedCard.position, total: parLabel(showNet ? selectedCard.netTotal : selectedCard.total), roundScore: parLabel(showNet ? selectedCard.netToday : selectedCard.today), thru: selectedCard.thru }} tripStats={tripStats} onClose={() => setSelectedPlayer(null)} />}
+    {selectedCard && <PlayerPublicTripProfile match={match} key={match.round + selectedCard.golfer.name} name={selectedCard.golfer.name} avatarUrl={selectedCard.golfer.avatarUrl ?? null} username={selectedCard.golfer.username ?? null} round={match.round} roundCount={match.roundCount} roundStandings={match.roundStandings} net={showNet} stableford={isStableford} par={match.par} holes={selectedCard.holes} snapshot={{ position: selectedCard.position, total: parLabel(showNet ? selectedCard.netTotal : selectedCard.total), roundScore: parLabel(showNet ? selectedCard.netToday : selectedCard.today), thru: selectedCard.thru }} tripStats={tripStats} onClose={() => setSelectedPlayer(null)} />}
   </div>;
 }
 
-function PlayerPublicTripProfile({ name, avatarUrl, username, round, roundCount, par, holes, snapshot, roundStandings, net = false, stableford = false, tripStats, onClose }: { name: string; avatarUrl: string | null; username: string | null; round: number; roundCount: number; roundStandings?: GolfMatchPreview["roundStandings"]; net?: boolean; stableford?: boolean; par: number[]; holes: (number | null)[]; snapshot: { position: string; total: string; roundScore: string; thru: string }; tripStats?: TripStatsView; onClose: () => void }) {
+function PlayerPublicTripProfile({ match, name, avatarUrl, username, round, roundCount, par, holes, snapshot, roundStandings, net = false, stableford = false, tripStats, onClose }: { match: GolfMatchPreview; name: string; avatarUrl: string | null; username: string | null; round: number; roundCount: number; roundStandings?: GolfMatchPreview["roundStandings"]; net?: boolean; stableford?: boolean; par: number[]; holes: (number | null)[]; snapshot: { position: string; total: string; roundScore: string; thru: string }; tripStats?: TripStatsView; onClose: () => void }) {
   const [selectedRound, setSelectedRound] = useState(round);
+  const teamRound = nonIndividualRound(match, selectedRound, name);
   const past = roundStandings?.find(item => item.round === selectedRound && (item.standingsRound ?? item.round) === selectedRound);
   const pastRow = past ? rankLeaderboard(past.leaderboard, { net, stableford }).find(row => row.golfer.name === name) : undefined;
   const available = selectedRound === round || !!pastRow;
@@ -318,16 +320,21 @@ function PlayerPublicTripProfile({ name, avatarUrl, username, round, roundCount,
       {Array.from({ length: Math.max(roundCount, round) }, (_, index) => index + 1).map(number => <button key={number} type="button" role="tab" id={"profile-round-tab-" + number} aria-controls="profile-round-panel" aria-selected={selectedRound === number} onClick={() => setSelectedRound(number)}>Round {number}</button>)}
     </div>
     <section id="profile-round-panel" className={styles.playerTripProfileScorecard} role="tabpanel" aria-labelledby={"profile-round-tab-" + selectedRound}>
-      <Scorecard id="leaderboard-player-scorecard" par={selectedRound === round ? par : past?.par ?? par} holes={selectedRound === round ? holes : pastRow?.holes ?? Array<null>(18).fill(null)} name={name} />
-      {!available && <p className={styles.profileRoundEmpty}>Scores for this round are not available.</p>}
+      {teamRound ? <div className={styles.nonIndividualCard} aria-label="Team round summary">
+        <p>No Individual data due to {teamRound.format}</p>
+        <dl><div><dt>Partner</dt><dd>{teamRound.partners.join(" & ") || "Not assigned"}</dd></div>
+          <div><dt>Competitors</dt><dd>{teamRound.competitors.join(" & ") || "Not assigned"}</dd></div></dl>
+        <strong>{teamRound.result}</strong>
+      </div> : <><Scorecard id="leaderboard-player-scorecard" par={selectedRound === round ? par : past?.par ?? par} holes={selectedRound === round ? holes : pastRow?.holes ?? Array<null>(18).fill(null)} name={name} />
+      {!available && <p className={styles.profileRoundEmpty}>Scores for this round are not available.</p>}</>}
     </section>
     <section className={styles.profileRoundSnapshot} aria-label="Round snapshot">
       <div className={styles.snapshotSections}>
         <div className={styles.snapshotColumn} role="group" aria-label={"Round " + selectedRound + " snapshot"}>
           <h4>Round {selectedRound}</h4>
           <dl className={styles.snapshotPill}>
-            <div><dt>+/&minus;</dt><dd>{available ? shownSnapshot.roundScore || "\u2014" : "\u2014"}</dd></div>
-            <div><dt>Thru</dt><dd>{available ? shownSnapshot.thru || "\u2014" : "\u2014"}</dd></div>
+            <div><dt>+/&minus;</dt><dd>{!teamRound && available ? shownSnapshot.roundScore || "\u2014" : "\u2014"}</dd></div>
+            <div><dt>Thru</dt><dd>{!teamRound && available ? shownSnapshot.thru || "\u2014" : "\u2014"}</dd></div>
           </dl>
         </div>
         <span className={styles.snapshotDivider} aria-hidden />

@@ -533,3 +533,12 @@
 
 /* Compact score columns on narrow phones. */
 @media(max-width:374px){.leaderboard .single{grid-template-columns:30px minmax(0,1fr) repeat(3,28px);gap:4px}.leaderboard .singleNet{grid-template-columns:30px minmax(0,1fr) 28px repeat(3,28px)}.leaderboardListHeading .columnLabel:nth-last-child(3){grid-column:-4}.leaderboardListHeading .columnLabel:nth-last-child(2){grid-column:-3}.leaderboardListHeading .columnLabel:last-child{grid-column:-2}}
+
+.playerTripProfileScorecard .scorecardStacked,.nonIndividualCard{min-height:184px;box-sizing:border-box}
+.nonIndividualCard{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;color:#fbf8f1;font:600 14px/1.25 var(--font-spectral),Georgia,serif}
+.nonIndividualCard p{margin:0;color:#dcc495}
+.nonIndividualCard dl{display:grid;gap:10px;margin:0}
+.nonIndividualCard dt{font:500 11px var(--font-barlow),sans-serif;color:rgba(251,248,241,.65)}
+.nonIndividualCard dd{margin:3px 0 0}
+.nonIndividualCard strong{font-weight:700}
+

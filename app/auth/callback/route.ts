@@ -1,3 +1,4 @@
+import { authCallbackPath } from "@/lib/auth/websiteFlow";
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { initializeAfterSignIn } from "@/lib/profile/profileInitialization";
@@ -10,7 +11,7 @@ export async function GET(request: Request) {
   const code = searchParams.get("code");
   // Both invite and recovery send users to the password form. Do not allow
   // arbitrary redirect destinations to receive inherited session fragments.
-  const destination = new URL("/reset-password", origin);
+  const destination = new URL(authCallbackPath(searchParams), origin);
 
   if (searchParams.has("error") || searchParams.has("error_code")) {
     destination.searchParams.set("error", "invalid_link");
