@@ -13,8 +13,8 @@ import { coursePars, roundCoursePick, type CourseParsResult } from "./tripRoundP
 
 export type RoundCourseLoad =
   | { status: "no-course" }
-  | { status: "not-found" | "unavailable"; ref: string; name: string; tee: string | null }
-  | ({ status: "ok" | "no-scorecard" | "tee-par"; ref: string; name: string; tee: string | null } & { pars: number[] | null });
+  | { status: "not-found" | "unavailable" | "no-scorecard" | "tee-par"; ref: string; name: string; tee: string | null }
+  | { status: "ok"; ref: string; name: string; tee: string | null; pars: number[] };
 
 /** The round's course + tee from Trip Settings, and its pars through scoringCourse() (course library first, then OpenGolf). */
 export async function loadRoundCoursePars(trip: SavedGolfTrip, roundNumber: number): Promise<RoundCourseLoad> {
@@ -29,7 +29,7 @@ export async function loadRoundCoursePars(trip: SavedGolfTrip, roundNumber: numb
     if (!course) return { status: "not-found", ref: pick.ref, name: pick.name, tee: teeName };
     const result: CourseParsResult = coursePars(pick.ref, course, pick.tees);
     return result.ok ? { status: "ok", ref: pick.ref, name: pick.name, tee: result.tee, pars: result.pars }
-      : { status: result.reason, ref: pick.ref, name: pick.name, tee: teeName, pars: null };
+      : { status: result.reason, ref: pick.ref, name: pick.name, tee: teeName };
   } catch (error) {
     console.error("Round course pars failed:", error instanceof Error ? error.message : error);
     return { status: "unavailable", ref: pick.ref, name: pick.name, tee: teeName };

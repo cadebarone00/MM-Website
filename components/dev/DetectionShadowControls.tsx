@@ -44,6 +44,7 @@ export function DetectionShadowControls({ sim, set, onReset }: { sim: HighlightS
     <div role="status" style={{ marginTop: 14, padding: 10, border: "1px solid #dfe2e8", borderRadius: 8, background: "#fafbfc" }}>
       <p style={{ margin: 0, fontSize: 12, fontWeight: 650, color: "#303643" }}>Shadow run · {view.report.moments.length} moment{view.report.moments.length === 1 ? "" : "s"} detected</p>
       {view.secondRun && <p>{view.secondRun}{view.report.withdrawn.length ? ` — withdrawn: ${view.report.withdrawn.length}` : ""}{view.report.added.length ? ` — new: ${view.report.added.length}` : ""}</p>}
+      {view.parsNote && <p>{view.parsNote}</p>}
       {view.report.notes.map((note) => <p key={note}>{note}</p>)}
       {view.report.withdrawn.map((key) => <p key={key}>Withdrawn: {key.split(":").slice(2).join(" · ")} (leaves the inbox; a delivered push can&rsquo;t be recalled)</p>)}
       <ul style={{ listStyle: "none", padding: 0, margin: "8px 0 0", fontSize: 11, lineHeight: 1.5, color: "#424956" }}>

@@ -1,5 +1,9 @@
+import type { TripRoundScoring } from "../../platform/tripScoring.ts";
+import { startHolesOf, type TripRoundPars } from "../../platform/tripRoundPars.ts";
+
 /**
- * The per-round hole-par snapshot detection is allowed to use (H5B proposal; no table or migration yet). Pure.
+ * The per-round hole-par snapshot detection is allowed to use. Pure. H5C Part 1 stores it per trip round
+ * (the golf_trip_round_pars.sql migration; lib/platform/tripRoundPars.ts); snapshotFromTripPars() maps it here.
  *
  * Audit (2026-10-20): saved Golf Trip rounds store only course_name — no course link and no pars; the saved-trip
  * scoring screen gets an empty par list and shows 4 on every hole. Real pars exist elsewhere but aren't linked to trip
@@ -33,4 +37,21 @@ export function parsForDetection(snapshot: RoundParSnapshot | null | undefined):
   if (!validPars(snapshot.pars)) return { pars: null, reason: "The round's par snapshot isn't 18 valid pars (3–6): only hole-in-ones can be detected." };
   if (!snapshot.confirmedAt) return { pars: null, reason: `The round's pars (from ${snapshot.source}) aren't confirmed by the organizer yet: only hole-in-ones can be detected.` };
   return { pars: snapshot.pars, reason: null };
+}
+
+/** A saved trip round's confirmed pars (lib/platform/tripRoundPars.ts) as the snapshot detection reads. Saved = confirmed. */
+export function snapshotFromTripPars(pars: TripRoundPars | null | undefined): RoundParSnapshot | null {
+  if (!pars) return null;
+  return {
+    pars: pars.pars, source: pars.source === "course" ? "course-library" : "organizer",
+    sourceRef: pars.source === "course" ? [pars.courseRef, pars.tee].filter(Boolean).join(":") || null : null,
+    // Only the organizer can save pars, so saved pars are confirmed. Pars typed before golf_trip_round_pars.sql have no
+    // confirmation time; they still count (marked, never left looking unconfirmed).
+    confirmedBy: pars.confirmedBy, confirmedAt: pars.confirmedAt ?? "before-confirmation-times", lockedAt: pars.lockedAt,
+  };
+}
+
+/** What detectRoundMoments needs from a saved round's scoring: confirmed pars (or null + why) and each group's start hole. */
+export function detectionSetup(scoring: TripRoundScoring): { pars: number[] | null; reason: string | null; startHoles: Record<string, number> } {
+  return { ...parsForDetection(snapshotFromTripPars(scoring.pars)), startHoles: startHolesOf(scoring.groups) };
 }

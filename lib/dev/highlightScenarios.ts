@@ -102,7 +102,7 @@ export const DEFAULT_HIGHLIGHT_SIM: HighlightSim = {
   detectionFixture: "correct-restore", correction: false, restore: false, rerun: false, volumeMax: 3, exceptional: "always-send",
 };
 /** Scoring fixtures of the H5B shadow run (ids only, so this file doesn't depend on the detector fixtures). */
-export const DETECTION_FIXTURE_IDS = ["correct-restore", "birdies", "big-plays", "burst", "unconfirmed", "no-pars", "out-of-order", "shotgun"] as const;
+export const DETECTION_FIXTURE_IDS = ["correct-restore", "birdies", "big-plays", "burst", "unconfirmed", "no-pars", "out-of-order", "shotgun", "pars-course", "pars-manual", "pars-missing", "shotgun-pars"] as const;
 
 /** Messages are untrusted (postMessage): anything off-spec is rejected. */
 export function parseHighlightSim(value: unknown): HighlightSim | null {

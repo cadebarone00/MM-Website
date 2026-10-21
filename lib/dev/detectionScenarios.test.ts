@@ -78,3 +78,18 @@ test("/dev: shotgun fixture — the streak carries 18 → 1 from a 16th-hole sta
   assert.equal(simulateDetection(sim({ detectionFixture: "shotgun" })).rows[0].moment.hole, 1);
   assert.deepEqual(simulateDetection(sim({ detectionFixture: "shotgun", correction: true })).rows, []);
 });
+
+test("/dev H5C: saved round pars — course pars, pars entered by hand, none confirmed, and a saved shotgun start", () => {
+  const kinds = (changes: Partial<HighlightSim>) => rows(changes).map((r) => r.split(":")[0]);
+  assert.deepEqual(kinds({ detectionFixture: "pars-course" }), ["HL-001×3@Jake", "HL-002@Cade"]);
+  assert.deepEqual(kinds({ detectionFixture: "pars-course", correction: true }), ["HL-001×3@Jake"], "the corrected eagle is withdrawn");
+  assert.match(simulateDetection(sim({ detectionFixture: "pars-course" })).parsNote!, /confirmed from .+ · Blue by Cade/);
+  assert.deepEqual(kinds({ detectionFixture: "pars-manual" }), ["HL-003@Alex"], "a 2 on the hand-entered par 5 is an albatross");
+  assert.deepEqual(kinds({ detectionFixture: "pars-manual", correction: true }), ["HL-002@Alex"]);
+  assert.match(simulateDetection(sim({ detectionFixture: "pars-manual" })).parsNote!, /by hand/);
+  assert.deepEqual(kinds({ detectionFixture: "pars-missing" }), ["HL-004@Cam"], "no confirmed pars: only the ace");
+  assert.match(simulateDetection(sim({ detectionFixture: "pars-missing" })).parsNote!, /none confirmed/);
+  assert.deepEqual(kinds({ detectionFixture: "shotgun-pars" }), ["HL-001×3@Jake"], "17-18-1 from the saved 16th-hole start");
+  assert.deepEqual(kinds({ detectionFixture: "shotgun-pars", correction: true }), [], "as a normal start: no streak");
+  assert.equal(simulateDetection(sim({ detectionFixture: "birdies" })).parsNote, null, "older fixtures are unchanged");
+});

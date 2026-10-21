@@ -11,6 +11,13 @@ import { datePlus, type SetupBasis, type SetupValues } from "./savedTripSetup.ts
  *   - "manual": typed or edited by the organizer (a course without a scorecard, or a correction before tee-off).
  * Only the organizer saves pars, so saved pars are confirmed. Missing pars stay missing: scorecards draw plain numbers and
  * Highlights only detects aces (lib/golf/holeResult.ts never guesses). Locked at the round's first score.
+ *
+ * Owner decision (2026-10-21) — PAR IS REFERENCE INFORMATION, NEVER AN AUTOMATICALLY ENTERED SCORE. On saved Golf Trip
+ * scorecards an untouched hole stays null / unentered; the confirmed par is shown for reference only; only scores a
+ * golfer explicitly entered count toward scoring, stats, competitions and Highlights. Attestation, submission, the
+ * offline queue and corrections don't change. Part 1 therefore never passes pars to the live scoring sheet
+ * (GolfTripScoring), which would count untouched holes as par; H5C Part 2 must show them there for reference without
+ * that default.
  */
 
 export type TripParSource = "course" | "manual";

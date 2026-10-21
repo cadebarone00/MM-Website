@@ -10,6 +10,11 @@ import { getTripRoundScoring } from "@/lib/platform/tripScoringServer";
  * snapshot, and the round's scoring groups with their starting holes.
  * POST { action: "confirm", round, pars, source } — "course" pars are loaded again here and must match exactly (so the
  * label is true); anything typed or edited is "manual". POST { action: "start-hole", round, groupId, startHole }.
+ *
+ * APP STORE READINESS BLOCKER (2026-10-21): like the other trip API routes, this one trusts a browser session cookie
+ * and refuses any request whose Origin isn't this website. A native Capacitor app (capacitor://localhost /
+ * https://localhost) can't call it as it stands. The fix must be a native-compatible API contract (e.g. token auth
+ * and an allowed native origin), NOT making the native app load the hosted website.
  */
 const headers = { "Cache-Control": "private, no-store" };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

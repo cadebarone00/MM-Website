@@ -20,6 +20,7 @@ import { GolfTripCompetition } from "./GolfTripCompetition";
 import { GolfTripDatePicker } from "./GolfTripDatePicker";
 import { CourseEditSheet, TripScheduleCoursePicker, type PickedCourse } from "./TripScheduleCoursePicker";
 import { NO_ROUND_TEES, RoundTeeBoxes, type RoundTees } from "./RoundTeeBoxes";
+import { TripRoundPars } from "./TripRoundPars";
 import { TeeTimePicker } from "./TeeTimePicker";
 import { MatchDraftTimingFields, type MatchDraftTiming } from "./MatchDraftTimingFields";
 import { draftScheduleError } from "@/lib/platform/draftSchedule";
@@ -1182,6 +1183,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
             <strong>Course corrections</strong>
             {(yardageCorrections[round.key] ?? []).map((entry, index) => <p key={index}>{new Date(entry.at).toLocaleString()} {entry.reason} ({entry.affectedCards.length} player cards to review)</p>)}
           </div>}
+          {/* H5C: a saved trip's confirmed round pars + shotgun starting holes (organizer; not in the dev simulator). */}
+          {scheduleTab === "Course Yardage" && savedSetup && !savedSetup.readOnly && scoringTripId && <TripRoundPars key={`${scoringTripId}-${round.number}`} tripId={scoringTripId} roundNumber={round.number} />}
           {/* Players drop-down for one group: tick up to 4; anyone already in another group this round is shown with that group and can't be picked. */}
           {!comp && teePlayersGroup !== null && !play.groupStarted(teePlayersGroup) && <div className={`${styles.teamsDropdown} ${styles.addPlayerDropdown}`} role="dialog" aria-modal="false" aria-label={`Group ${teePlayersGroup + 1} players`}>
             <button type="button" className={tripStyles.sheetClose} aria-label="Close players" onClick={() => setTeePlayersGroup(null)}><X size={18} strokeWidth={2.25} aria-hidden /></button>
