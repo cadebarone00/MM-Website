@@ -198,6 +198,8 @@ export type GolfMatchPreview = {
   scoring?: "Gross" | "Net" | "Both";
   /** This round's par for holes 1–18 (the Leaderboard's SCORECARD view). */
   par: number[];
+  /** Saved Golf Trips: `par` is the round's confirmed pars, reference only — never a score for an untouched hole. */
+  parIsReference?: boolean;
   sides: [GolfMatchSide, GolfMatchSide];
   /** Each match's standing, gross and net (the Match slide's GROSS / NET switch). */
   matches: GolfMatchPairing[];

@@ -1,5 +1,6 @@
 "use client";
 
+import { signOutWebsite } from "@/lib/website/signOut";
 import { useState } from "react";
 import styles from "./WebsiteAccountActions.module.css";
 
@@ -9,9 +10,7 @@ export function WebsiteAccountActions({ signedIn }: { signedIn: boolean }) {
   async function signOut() {
     setBusy(true); setError(false);
     try {
-      const response = await fetch("/api/auth/signout", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
-      if (!response.ok || !(await response.json()).ok) throw new Error("Sign out failed");
-      window.location.replace("/login/email?next=%2Fdashboard");
+      window.location.replace(await signOutWebsite());
     } catch { setError(true); setBusy(false); }
   }
   return <span className={styles.account}>

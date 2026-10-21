@@ -12,7 +12,8 @@ export function savedTripPresentation(trip: SavedGolfTrip, scoring?: TripRoundSc
   return {
     round: round?.roundNumber ?? 1, roundCount: trip.rounds.length,
     roundDate: round?.playDate ?? trip.trip.start_date, course,
-    format: "Stroke Play", handicap: false, scoring: "Gross", par: [],
+    // The round's confirmed pars (H5C), reference only: never filled in as anyone's score. None confirmed = [].
+    format: "Stroke Play", handicap: false, scoring: "Gross", par: scoring?.pars?.pars ?? [], parIsReference: true,
     sides: [side("Team A"), side("Team B")], matches: [],
     leaderboard: accepted.map(member => {
       const own = (index: number) => scoring?.entries.find(entry => entry.scoredProfileId === member.profileId && entry.enteredByProfileId === member.profileId && entry.hole === index + 1);

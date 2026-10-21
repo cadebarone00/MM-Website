@@ -8,10 +8,12 @@ export function WebsiteVerification() {
   const [failed, setFailed] = useState(false);
   const pending = useRef<Promise<unknown> | null>(null);
   useEffect(() => {
+    let active = true;
     pending.current ??= preparePasswordSession(window.location.href, () => {
       window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
     });
-    pending.current.then(() => window.location.replace("/dashboard")).catch(() => setFailed(true));
+    pending.current.then(() => { if (active) window.location.replace("/dashboard"); }).catch(() => { if (active) setFailed(true); });
+    return () => { active = false; };
   }, []);
   return <section style={{ maxWidth: 480, margin: "60px auto", padding: 24 }}>
     <h1>{failed ? "Verification link unavailable" : "Completing your sign in"}</h1>

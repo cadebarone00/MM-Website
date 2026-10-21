@@ -15,7 +15,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  // Only accept JSON from this site's password form.
+  // Only accept JSON from this site's password and verification flows.
   if (request.headers.get("origin") !== new URL(request.url).origin ||
       !request.headers.get("content-type")?.includes("application/json")) {
     return result(false);

@@ -1,0 +1,104 @@
+{
+  "retrieved": "2026-10-21",
+  "upstream": "https://github.com/google/fonts/tree/main/ofl/spectral",
+  "files": [
+    {
+      "file": "Spectral-Light.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/spectral/Spectral-Light.ttf",
+      "gitBlob": "852e7d67ad79d72bd5b0ded7242991483c999df0",
+      "sha256": "a2a530303d326473b69ab7863b879e9203ec747e51d5fa7c7b19e0e975e00740",
+      "bytes": 269312
+    },
+    {
+      "file": "Spectral-LightItalic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/spectral/Spectral-LightItalic.ttf",
+      "gitBlob": "0d3c3b6f92dd04b983a6c2703c36147f960443dd",
+      "sha256": "4cb424aeb1d6b822e9ce6213789afeabd403c6765fc7339e184c27ae4d6a6b01",
+      "bytes": 282836
+    },
+    {
+      "file": "Spectral-Regular.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/spectral/Spectral-Regular.ttf",
+      "gitBlob": "25a6c47f8050e4ea3c9713a02a4843a8d6c503d5",
+      "sha256": "c89021dc20720c8d0dcf40b0b2f6e00c13665fa8041717f581396f51b8c78f5d",
+      "bytes": 261088
+    },
+    {
+      "file": "Spectral-Italic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/spectral/Spectral-Italic.ttf",
+      "gitBlob": "99d6c2def129dea2daa47652c2168c271c7a59a7",
+      "sha256": "7ec97244259db4008c4b1224c7914e5371c797c0044af9d85c2d761ba0e5f787",
+      "bytes": 270468
+    },
+    {
+      "file": "Spectral-Medium.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/spectral/Spectral-Medium.ttf",
+      "gitBlob": "77420e8ea8155bd3a36960a94d6edd1fcc0e3661",
+      "sha256": "f385bc588599c879112272711d4acecc126674009d747a27284f59e93a240e83",
+      "bytes": 272920
+    },
+    {
+      "file": "Spectral-MediumItalic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/spectral/Spectral-MediumItalic.ttf",
+      "gitBlob": "20ed2edce4c50cd4fc59b85cf9fe9d7a266a2f4c",
+      "sha256": "82388c41e76d6417ce9947418fa2cda1ed99f24d4ff295b2f05572178127663f",
+      "bytes": 284312
+    },
+    {
+      "file": "Spectral-SemiBold.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/spectral/Spectral-SemiBold.ttf",
+      "gitBlob": "ceaf00b9b059e4646fcd9d60a24e0b9f957d2888",
+      "sha256": "5f86915a744832ecf6e4a17ab04bea091b9fa992ef5164ff65ae34c1da2fe94b",
+      "bytes": 273068
+    },
+    {
+      "file": "Spectral-SemiBoldItalic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/spectral/Spectral-SemiBoldItalic.ttf",
+      "gitBlob": "8f78c72f8887adfad361813d58a11f6a044df815",
+      "sha256": "46ad3a9f93b98dc2dbdeee265e76eb846c5be912aa8f09f42e3692706c6f563b",
+      "bytes": 284032
+    },
+    {
+      "file": "Spectral-Bold.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/spectral/Spectral-Bold.ttf",
+      "gitBlob": "5019e0802e726cebe021b007e661ec763c63e54f",
+      "sha256": "70ddb1ec6ae3b0b8d0c79231f670de786978f19baeba2130757526e407aebf9b",
+      "bytes": 273220
+    },
+    {
+      "file": "Spectral-BoldItalic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/spectral/Spectral-BoldItalic.ttf",
+      "gitBlob": "90aea8b167fe1f21316480c4e2860eb93a17c0a0",
+      "sha256": "709fa4f2da9be216fd52125db2d6caa4f90150f48de1a453c9ecf91117ab49b6",
+      "bytes": 284356
+    },
+    {
+      "file": "Spectral-ExtraBold.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/spectral/Spectral-ExtraBold.ttf",
+      "gitBlob": "103f6453c8be27938cd69ebb050c0c2b3fcaed4d",
+      "sha256": "af3f8513db8d047ebecb1682b5e04dfc12ec7e6b51b71654d4d348f12a5e6b5a",
+      "bytes": 260528
+    },
+    {
+      "file": "Spectral-ExtraBoldItalic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/spectral/Spectral-ExtraBoldItalic.ttf",
+      "gitBlob": "cda2e83154a601a1a0ae8410accf21bc5e261ecc",
+      "sha256": "680ba360e376759b54f33154a89e3c75842d4cf8faa498a717c3e1a65a93305a",
+      "bytes": 273528
+    },
+    {
+      "file": "OFL.txt",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/spectral/OFL.txt",
+      "gitBlob": "163d3a50c1666a69aac8b9f78dfc7142fb319a27",
+      "sha256": "501d6ceca8e552630fe3aa9442b9a818565680a1a2f79f3fb8c13d6f309a9e98",
+      "bytes": 4392
+    },
+    {
+      "file": "METADATA.pb",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/spectral/METADATA.pb",
+      "gitBlob": "7679fd368d9fef3557f8ad7386746049ccb8e8cd",
+      "sha256": "e5801c5af1e0cad014ffd493e5f6e3d526db3e34f6ed3d20d840092068d5ad4f",
+      "bytes": 5914
+    }
+  ]
+}

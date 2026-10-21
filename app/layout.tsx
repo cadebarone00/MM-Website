@@ -2,30 +2,11 @@ import { SeasonCatalogProvider } from "@/components/SeasonCatalogProvider";
 import { ModalScrollLock } from "@/components/ModalScrollLock";
 import { getSeasonCatalog } from "@/lib/data/seasonCatalog";
 import type { Metadata, Viewport } from "next";
-import { Spectral, Barlow, Barlow_Semi_Condensed } from "next/font/google";
+import { spectral, barlow, barlowCondensed } from "@/lib/fonts/brand";
+import "@/lib/fonts/fallbacks.css";
 import "./globals.css";
 import { SiteChrome } from "@/components/nav/SiteChrome";
 import { getNextTournamentOverride } from "@/lib/data/activeSeasonOverlay";
-
-const spectral = Spectral({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-  style: ["normal", "italic"],
-  variable: "--font-spectral",
-});
-
-const barlow = Barlow({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  style: ["normal", "italic"],
-  variable: "--font-barlow",
-});
-
-const barlowCondensed = Barlow_Semi_Condensed({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-barlow-condensed",
-});
 
 export const dynamic = "force-dynamic";
 

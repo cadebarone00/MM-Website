@@ -1,0 +1,90 @@
+{
+  "retrieved": "2026-10-21",
+  "upstream": "https://github.com/google/fonts/tree/main/ofl/barlow",
+  "files": [
+    {
+      "file": "Barlow-Light.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/barlow/Barlow-Light.ttf",
+      "gitBlob": "e4310bf2a929ab9fcc05c34de0b024d1a98bac8d",
+      "sha256": "20b1375c0c6606701867bf34c7cc97f44087850567a36587d25abb9510b183cc",
+      "bytes": 103136
+    },
+    {
+      "file": "Barlow-LightItalic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/barlow/Barlow-LightItalic.ttf",
+      "gitBlob": "ce6c02d5b9b132f1ad9af5b29c2399a9060ab6fc",
+      "sha256": "567f200fdd53e848cc5966f8bf3fe5aefc6eb5a5f15149a47412777b8cc4c203",
+      "bytes": 108924
+    },
+    {
+      "file": "Barlow-Regular.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/barlow/Barlow-Regular.ttf",
+      "gitBlob": "bb3faec4e243e812b288fbfb9235b12ea781eee4",
+      "sha256": "95aa02c7c43096e0dd44d787ba6216864a67157e402adab59b35572e0c1577ea",
+      "bytes": 104068
+    },
+    {
+      "file": "Barlow-Italic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/barlow/Barlow-Italic.ttf",
+      "gitBlob": "52d25befd268591d0347563ac7ebb28e8776c90a",
+      "sha256": "70cf45c354af39e55082fd506e748cc6a0a1812949875f99ded3f76bf691e4ca",
+      "bytes": 109624
+    },
+    {
+      "file": "Barlow-Medium.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/barlow/Barlow-Medium.ttf",
+      "gitBlob": "d546e7a376da63b119bfbf67bc3e8bdee0172316",
+      "sha256": "f8906f762cb73dca441da034bc363b2d8e2e68bc10d5c05e58717646c20cc4b4",
+      "bytes": 103536
+    },
+    {
+      "file": "Barlow-MediumItalic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/barlow/Barlow-MediumItalic.ttf",
+      "gitBlob": "74d8de69ad74a450e72714f636120e251c60a34b",
+      "sha256": "dbf6d2df1348c4a91874a15bbe7b3f3d893d491bd2ae73370795afe157c993b9",
+      "bytes": 109184
+    },
+    {
+      "file": "Barlow-SemiBold.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/barlow/Barlow-SemiBold.ttf",
+      "gitBlob": "7c974a4aa67c689a4b2a844b48f624cb4eeaa6bd",
+      "sha256": "86577cb32f8abe3673db53ca0f4221e6856751a4f6730c867e00f720f8bb1fc5",
+      "bytes": 108348
+    },
+    {
+      "file": "Barlow-SemiBoldItalic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/barlow/Barlow-SemiBoldItalic.ttf",
+      "gitBlob": "6b3aaaa6ae158753444cd70298224af686ba744f",
+      "sha256": "277b45fc0b9f066bf77e88e5d147baae8d1ad7441cedee1dc305fc3dc6e84ce7",
+      "bytes": 111820
+    },
+    {
+      "file": "Barlow-Bold.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/barlow/Barlow-Bold.ttf",
+      "gitBlob": "2f20cbe667ca5cd871410dc50dc4b1a30c1d6267",
+      "sha256": "84e6a4d61e7c3e21f3c50ea6a4f7e5303a3467864c038be6ea3759bab8d547f9",
+      "bytes": 108220
+    },
+    {
+      "file": "Barlow-BoldItalic.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/barlow/Barlow-BoldItalic.ttf",
+      "gitBlob": "0c2a4fe1e3f68457631173e0d38c962bdd07b335",
+      "sha256": "079dcee4a53544177f3b16354b27b40b521e22861a40084ab4d052f0289ed9e8",
+      "bytes": 111996
+    },
+    {
+      "file": "OFL.txt",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/barlow/OFL.txt",
+      "gitBlob": "2f22ba6ca4dbc12145ae40b14c3368f387cba0e2",
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "bytes": 4377
+    },
+    {
+      "file": "METADATA.pb",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/barlow/METADATA.pb",
+      "gitBlob": "9d2df6a754b6eaecf8ad56bb450b866c978c7533",
+      "sha256": "636e983a5a87c2d7aa3ff9f6544f65910eac0c8537a2a8b29c584d786770d878",
+      "bytes": 4877
+    }
+  ]
+}

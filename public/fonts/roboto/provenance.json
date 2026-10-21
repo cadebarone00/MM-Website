@@ -1,0 +1,42 @@
+{
+  "retrieved": "2026-10-21",
+  "upstream": "https://github.com/google/fonts/tree/main/ofl/roboto",
+  "files": [
+    {
+      "file": "OFL.txt",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/roboto/OFL.txt",
+      "gitBlob": "9c48e05a24fa2267e207ecf17560291b5621c197",
+      "sha256": "061402327a96aadb0bfb694a960ed289ecd38d383e396243831ab81feb109c41",
+      "bytes": 4394
+    },
+    {
+      "file": "METADATA.pb",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/roboto/METADATA.pb",
+      "gitBlob": "9ae795d676a683ce135be1835797e3ad8968ec02",
+      "sha256": "6fef19da54fb62d152f0c7b21710e6849950db7ecf852ea29511c593dad462f0",
+      "bytes": 1463
+    },
+    {
+      "file": "Roboto-400-normal.ttf",
+      "source": "https://fonts.gstatic.com/s/roboto/v51/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWubEbWmT.ttf",
+      "cssSource": "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap",
+      "sha256": "dece7c71bbe61710787f0839c722c65e87355dd2eb4a823e6b5488121ff81e4b",
+      "bytes": 123720
+    },
+    {
+      "file": "Roboto-500-normal.ttf",
+      "source": "https://fonts.gstatic.com/s/roboto/v51/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWub2bWmT.ttf",
+      "cssSource": "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap",
+      "sha256": "4d984240cefb093a74300bcae4b5dbd49f700e0af501eaaa079c56aa64142d2f",
+      "bytes": 123904
+    },
+    {
+      "file": "Roboto-700-normal.ttf",
+      "source": "https://fonts.gstatic.com/s/roboto/v51/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWuYjammT.ttf",
+      "cssSource": "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap",
+      "sha256": "35757eaa996b3359022f47f164a67ee9eac04971af24c5b8fbd4b89e844ff190",
+      "bytes": 124292
+    }
+  ],
+  "note": "Official Google delivery files freeze the existing default optical size/width, avoiding new axes from upstream variable masters."
+}

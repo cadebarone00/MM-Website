@@ -1,5 +1,7 @@
 # Website merger phase 1: player dashboard and authentication
 
+**Historical phase 1 assessment.** Phase 2 is now implemented in source; see `docs/website-player-portal-auth.md` for current authentication behavior and verification limits. Proposals and unimplemented statements below describe phase 1, not the current route availability.
+
 2026-10-20. Implementation assessment from repository source, not verification of the deployed Supabase project, native binaries, database migrations or domain configuration. Production integration and release are not approved or implemented by this phase.
 
 ## Implemented boundary and file ownership

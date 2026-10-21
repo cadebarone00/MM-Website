@@ -2,7 +2,7 @@
 
 import { AlertTriangle, Bell, CalendarClock, Camera, Check, ClipboardCheck, Flame, Flashlight, Link2, LockKeyhole, Mail, Megaphone, Plane, Trophy, UserPlus, X, type LucideIcon } from "lucide-react";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
-import { Inter, Roboto } from "next/font/google";
+import { appleSystem, androidSystem } from "@/lib/fonts/notifications";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
 import { androidLiveUpdate, formatPoints, formatToPar, liveLeaderboard, liveTeamText, matchMark, opponentLabel, newestFirst, pillStatus, resultTone, thruLabel, timeAgo, unreadCount, type PillStatus } from "@/lib/notifications/format";
 import type { AppNotification, LiveRoundActivity, NotificationKind } from "@/lib/notifications/types";
@@ -16,8 +16,6 @@ const APP_ICON = "/icons/mm-192.png";
 // What the phone draws itself uses the phone's font, never ours: Inter stands in for Apple's SF Pro (iPhone notifications,
 // lock screen clock), Roboto for Android's system font (status bar, chip, notifications). Our Barlow / Spectral appear
 // only where the app draws: the iPhone Live Activity / Dynamic Island and in-app.
-const appleSystem = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-apple-system" });
-const androidSystem = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-android-system" });
 
 /** DEV ONLY: one surface of the simulator's Notifications group; the simulator condition picks the screen. */
 export function NotificationPreviewScreen({ surface }: { surface: NotificationSurface }) {

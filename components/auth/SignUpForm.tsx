@@ -36,7 +36,7 @@ export function SignUpForm({ initialCode, returnTo = null }: { initialCode?: str
         {error && <p role="alert">{error}</p>}
         <button type="submit" disabled={submitting}>{submitting ? "Creating account?" : step === 1 ? "Next" : "Create an Account"}</button>
         {step === 2 && <button type="button" disabled={submitting} onClick={() => { setStep(1); setError(null); }}>Back</button>}
-        <Link href={withReturnTo("/login/email", returnTo)}>Sign in</Link>
+        <Link href={returnTo ? withReturnTo("/login/email", returnTo) : "/login"}>Sign in</Link>
       </form>}
     </section>
   </main>;

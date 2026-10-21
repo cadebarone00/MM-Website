@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PASSWORD_LINK_ERROR, preparePasswordSession, type PasswordAccount } from "@/lib/auth/passwordSession";
 
-export function ResetPasswordForm() {
+export function ResetPasswordForm({ returnTo = null }: { returnTo?: string | null }) {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +52,7 @@ export function ResetPasswordForm() {
         setError(data.error);
         return;
       }
-      const next = authReturnPath(new URLSearchParams(window.location.search).get("next"));
+      const next = authReturnPath(returnTo);
       router.push(next ? withReturnTo("/login/email", next) : "/login");
     } catch {
       setError("Could not save your password. Check your connection and try again.");
@@ -90,7 +90,7 @@ export function ResetPasswordForm() {
       >
         {submitting ? "Saving…" : "Save password"}
       </button>
-      {error && <Link href="/forgot-password" className="text-sm underline">Request a new password link</Link>}
+      {error && <Link href={withReturnTo("/forgot-password", returnTo)} className="text-sm underline">Request a new password link</Link>}
     </form>
   );
 }

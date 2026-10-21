@@ -592,3 +592,8 @@ Regenerate/review after dependency or lockfile changes, using local metadata wit
 ## What changed
 
 2026-09-29: Added a repository/local-metadata inventory only. No dependency changes, production checks, license approvals or application behavior changes.
+
+
+## 2026-10-21 local font supplement
+
+Spectral, Barlow, Barlow Semi Condensed, Inter and Roboto are redistributed unchanged under SIL OFL 1.1. Full copyright/license text, upstream metadata and source/hash manifests accompany each family under public/fonts. The license permits embedding/self-hosting subject to its retained notices and other conditions. See public/fonts/README.md for exact configured weights and engineering review. Broader distribution/legal review remains review_required; no release or deployment approval is asserted. This supplement does not replace the historical dependency inventory.

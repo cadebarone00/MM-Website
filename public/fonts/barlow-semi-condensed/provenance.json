@@ -1,0 +1,48 @@
+{
+  "retrieved": "2026-10-21",
+  "upstream": "https://github.com/google/fonts/tree/main/ofl/barlowsemicondensed",
+  "files": [
+    {
+      "file": "BarlowSemiCondensed-Regular.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/barlowsemicondensed/BarlowSemiCondensed-Regular.ttf",
+      "gitBlob": "473604976bc07e69c0a8e6dca63e159fac54f5fe",
+      "sha256": "e8c7242f612b13d026e18a94b63b0fd079e91a3faf009d1b6981dbb5f16d1153",
+      "bytes": 105776
+    },
+    {
+      "file": "BarlowSemiCondensed-Medium.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/barlowsemicondensed/BarlowSemiCondensed-Medium.ttf",
+      "gitBlob": "415429b64420872f198e76cbb1d309db5bfb1df4",
+      "sha256": "4998b693a190b76f2b11315844345a8546c1e2e6a320905507a9eed04edf8b48",
+      "bytes": 105560
+    },
+    {
+      "file": "BarlowSemiCondensed-SemiBold.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/barlowsemicondensed/BarlowSemiCondensed-SemiBold.ttf",
+      "gitBlob": "082c76327d21d663948c8ccd2271fa527bd0c145",
+      "sha256": "bd299f4bc5b44d30be8d42e9bad3a5df7d66af1cd55d0ed72a8b8916360a1424",
+      "bytes": 109772
+    },
+    {
+      "file": "BarlowSemiCondensed-Bold.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/barlowsemicondensed/BarlowSemiCondensed-Bold.ttf",
+      "gitBlob": "ee04b09e31e98d2509354d7003797ec6540e796f",
+      "sha256": "5bd6757e459a110da81b44532f0f43058e2dab2401688abca84f2fdbde193cbb",
+      "bytes": 111772
+    },
+    {
+      "file": "OFL.txt",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/barlowsemicondensed/OFL.txt",
+      "gitBlob": "2f22ba6ca4dbc12145ae40b14c3368f387cba0e2",
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "bytes": 4377
+    },
+    {
+      "file": "METADATA.pb",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/barlowsemicondensed/METADATA.pb",
+      "gitBlob": "c76d0a31c0f7f2cd77bbb99017abba9cb14b9291",
+      "sha256": "abbe4d1729c6e47b6f49f1d55a28b4661e8831c85f95a2efbf1318555904028f",
+      "bytes": 5900
+    }
+  ]
+}

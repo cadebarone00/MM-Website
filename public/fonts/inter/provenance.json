@@ -1,0 +1,49 @@
+{
+  "retrieved": "2026-10-21",
+  "upstream": "https://github.com/google/fonts/tree/main/ofl/inter",
+  "files": [
+    {
+      "file": "OFL.txt",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/OFL.txt",
+      "gitBlob": "21f6aff961064c2e429f570995e446bcdd555422",
+      "sha256": "5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57",
+      "bytes": 4377
+    },
+    {
+      "file": "METADATA.pb",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/METADATA.pb",
+      "gitBlob": "2b68e433ea1923f86fa295977274a84e878d65ec",
+      "sha256": "79e4721ef4f72251c6080a40dfd9efb6728b4df1fc690f0c70eb4b1b5303a5b0",
+      "bytes": 1342
+    },
+    {
+      "file": "Inter-400-normal.ttf",
+      "source": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf",
+      "cssSource": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
+      "sha256": "1b08e7fc267a5c7e1d614100f604b83e7e8a0be241f0f288faa2b3ac93a683ba",
+      "bytes": 324820
+    },
+    {
+      "file": "Inter-500-normal.ttf",
+      "source": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fMZg.ttf",
+      "cssSource": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
+      "sha256": "8c883f63b2c4157d997319f2c8bc6995ed4357ef371940d31ca159004a4aae63",
+      "bytes": 325304
+    },
+    {
+      "file": "Inter-600-normal.ttf",
+      "source": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuGKYMZg.ttf",
+      "cssSource": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
+      "sha256": "e7a1aaf7eda9f2fad4131725fa556265ec75ca7b2d756260173a040363e8d4f7",
+      "bytes": 326048
+    },
+    {
+      "file": "Inter-700-normal.ttf",
+      "source": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYMZg.ttf",
+      "cssSource": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
+      "sha256": "b37284b5701b6b168dfc770aa1a4ac492106422fd3ba76bc7641e37434e8019c",
+      "bytes": 326468
+    }
+  ],
+  "note": "Official Google delivery files freeze the existing default optical size/width, avoiding new axes from upstream variable masters."
+}

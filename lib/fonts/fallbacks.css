@@ -1,0 +1,6 @@
+/* Exact existing next/font/google fallback metrics; system faces, no font downloads. */
+@font-face{font-family:"Spectral Fallback";src:local("Times New Roman");ascent-override:96.46%;descent-override:42.17%;line-gap-override:0%;size-adjust:109.78%}
+@font-face{font-family:"Barlow Fallback";src:local("Arial");ascent-override:103.43%;descent-override:20.69%;line-gap-override:0%;size-adjust:96.68%}
+@font-face{font-family:"Barlow Semi Condensed Fallback";src:local("Arial");ascent-override:115.49%;descent-override:23.1%;line-gap-override:0%;size-adjust:86.59%}
+@font-face{font-family:"Inter Fallback";src:local("Arial");ascent-override:90.44%;descent-override:22.52%;line-gap-override:0%;size-adjust:107.12%}
+@font-face{font-family:"Roboto Fallback";src:local("Arial");ascent-override:92.98%;descent-override:24.47%;line-gap-override:0%;size-adjust:99.78%}

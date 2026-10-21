@@ -56,3 +56,36 @@ test("the sheet's untouched holes count as par on the saved live card, same as o
   assert.deepEqual(mismatchedHoles(card), []);
   assert.equal(cardComplete(card, par), true);
 });
+
+// H5C Part 2 — saved Golf Trips: par is reference information, never an automatically entered score (owner 2026-10-21).
+test("saved trips: untouched holes stay empty with pars known — partial cards aren't complete and never match by par", async () => {
+  const { countedStrokes, sheetCardFromScoring } = await import("./liveCards.ts");
+  const holes = par.map((p, i) => (i < 3 ? p + 1 : null));
+  assert.deepEqual(countedStrokes(holes, par, true), holes, "nothing filled in");
+  assert.deepEqual(countedStrokes(holes, par).slice(3), par.slice(3), "elsewhere (preview, Play a round) untouched = par, unchanged");
+  assert.deepEqual(countedStrokes(holes, undefined, true), holes, "no pars confirmed: the same");
+  assert.deepEqual(countedStrokes(holes, [], false), holes, "no pars at all: nothing to fill with");
+  const sheet = sheetCardFromScoring({ holes, par, parIsReference: true, putts: par.map(() => 2), fairways: par.map((p) => (p === 3 ? null : "center")), greens: par.map(() => "left"),
+    penalties: par.map(() => ({ fairway: false, green: false })), attestStrokes: par.map((p, i) => (i < 3 ? p + 1 : null)) });
+  assert.deepEqual(sheet.strokes, holes);
+  assert.deepEqual(sheet.entered, holes.map((h) => h !== null));
+  const card = liveCardFromSheet("g1", "me", sheet);
+  assert.equal(cardComplete(card, par), false, "15 untouched holes: not complete");
+  assert.equal(readyToSubmit(card, par, true), false);
+  assert.deepEqual(mismatchedHoles(card), [], "untouched on both phones isn't a disagreement");
+  // My attester entered par on hole 5 where I typed nothing: that's a mismatch, never 'both par'.
+  assert.deepEqual(mismatchedHoles(liveCardFromSheet("g1", "me", { ...sheet, attestStrokes: sheet.attestStrokes.map((s, i) => (i === 4 ? par[4] : s)) })), [5]);
+});
+
+test("saved trips: all 18 entered (and attested) is complete exactly as before; a corrected hole counts as entered", async () => {
+  const { sheetCardFromScoring } = await import("./liveCards.ts");
+  const holes = par.map((p, i) => p + (i % 3 === 0 ? 1 : 0));
+  const base = { putts: par.map(() => 2), fairways: par.map((p) => (p === 3 ? null : "center" as const)), greens: par.map(() => "left" as const), penalties: par.map(() => ({ fairway: false, green: false })) };
+  const sheet = sheetCardFromScoring({ holes, par, parIsReference: true, ...base, attestStrokes: holes });
+  assert.deepEqual(sheet.strokes, holes);
+  assert.equal(readyToSubmit(liveCardFromSheet("g1", "me", sheet), par, true), true);
+  assert.deepEqual(scoredCardFrom(liveCardFromSheet("g1", "me", sheet)).strokes, holes, "the submitted card is exactly what was entered");
+  // A correction changes hole 7 on my card; until my attester re-enters it, it's the one mismatch.
+  const corrected = sheetCardFromScoring({ holes: holes.map((h, i) => (i === 6 ? 3 : h)), par, parIsReference: true, ...base, attestStrokes: holes });
+  assert.deepEqual(mismatchedHoles(liveCardFromSheet("g1", "me", corrected)), [7]);
+});

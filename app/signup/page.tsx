@@ -7,6 +7,6 @@ export default async function SignUpPage({
   searchParams: Promise<{ code?: string; next?: string }>;
 }) {
   const { code, next } = await searchParams;
-  // From a Golf Trip invite: after verifying, signing in returns to the invite (only invite pages are allowed).
+  // Website dashboard and existing invite returns are validated before reaching the signup form.
   return <SignUpForm initialCode={code} returnTo={authReturnPath(next)} />;
 }

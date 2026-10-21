@@ -41,7 +41,15 @@ export function scoredCardFrom(card: LiveCard, strokes?: number[]): ScoredCard {
   };
 }
 
-/** The Scoring sheet's state → its live card. Untouched holes count as par, exactly as the sheet shows and submits them. */
-export function sheetCardFromScoring({ holes, par, ...rest }: Omit<SheetCard, "strokes"> & { holes: (number | null)[]; par?: number[] }): SheetCard {
-  return { ...rest, strokes: holes.map((h, i) => h ?? par?.[i] ?? null), entered: holes.map((h) => h !== null) };
+/**
+ * The strokes that count on a card. Saved Golf Trips pass `parIsReference` (owner decision 2026-10-21: par is reference
+ * information, never an automatically entered score): only what the golfer entered counts and untouched holes stay
+ * null. Elsewhere (the dev preview, Play a round) an untouched hole counts as par, as before.
+ */
+export const countedStrokes = (holes: (number | null)[], par: number[] | undefined, parIsReference = false): (number | null)[] =>
+  holes.map((h, i) => h ?? (parIsReference ? null : par?.[i] ?? null));
+
+/** The Scoring sheet's state → its live card. Untouched holes count as par, exactly as the sheet shows and submits them (not on saved trips). */
+export function sheetCardFromScoring({ holes, par, parIsReference = false, ...rest }: Omit<SheetCard, "strokes"> & { holes: (number | null)[]; par?: number[]; parIsReference?: boolean }): SheetCard {
+  return { ...rest, strokes: countedStrokes(holes, par, parIsReference), entered: holes.map((h) => h !== null) };
 }

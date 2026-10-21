@@ -9,7 +9,7 @@ import { initializeAfterSignIn } from "@/lib/profile/profileInitialization";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  // Both invite and recovery send users to the password form. Do not allow
+  // Website verification uses a fixed completion page; invite/recovery retain the password form. Do not allow
   // arbitrary redirect destinations to receive inherited session fragments.
   const destination = new URL(authCallbackPath(searchParams), origin);
 
