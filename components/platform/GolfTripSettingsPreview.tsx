@@ -11,7 +11,8 @@ import { ArrowLeftRight, ChevronLeft, GripVertical, Minus, Plus, Shuffle, Trash2
 import { GolfGameScoringSettings } from "./GolfGameScoringSettings";
 import { SIDE_GAME_REGISTRY } from "@/lib/platform/golfTripGames";
 import { ORGANIZER_GAME_TO_PLAY } from "@/lib/platform/tripGames";
-import type { GameId } from "@/lib/platform/roundGames";
+import { gameDef, type GameId } from "@/lib/platform/roundGames";
+import { InfoCard } from "./GolfTripGames";
 import type { CompetitionRound } from "@/lib/platform/golfTripCompetitionPreview";
 import styles from "./GolfTripSettingsPreview.module.css";
 import tripStyles from "./GolfTripHome.module.css";
@@ -317,6 +318,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const [gameRounds, setGameRounds] = usePersistedState<Record<string, GameId[]>>(persist, "gameRounds", {});
   // Which round the Games switches are for: the one picked, else the round the trip is on now (its players' latest group).
   const [pickedGameRound, setGameRound] = useState<number | null>(null);
+  // The Games screen's i popup: which game's description is open.
+  const [gameInfo, setGameInfo] = useState<{ name: string; text: string } | null>(null);
   const liveGroupRound = [...devRounds.groups].reverse().map(group => /round-(\d+)$/.exec(group.tripRoundId ?? "")).find(found => found && scopedRoundId(scoringTripId ?? DEV_TRIP_ID, Number(found[1])) === found.input);
   const gameRound = pickedGameRound ?? (liveGroupRound ? Number(liveGroupRound[1]) : 1);
   // Turning a round's Comp switch off waits for this confirm (it removes the round's format).
@@ -1071,6 +1074,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                     </span>
                     <span className={`${styles.gameToggle} ${isExpanded ? styles.gameToggleOpen : ""}`} aria-hidden>▾</span>
                   </button>
+                  {/* i: what the game is and how it works (the same description as the Games tab). */}
+                  <button type="button" className={gamesStyles.gameInfo} aria-label={`About ${game.name}`} onClick={() => { const play = ORGANIZER_GAME_TO_PLAY[game.id]; setGameInfo({ name: game.name, text: play ? gameDef(play).blurb : game.description }); }}>i</button>
                   {/* On / off for the selected round: everyone's Games tab gets it for that round. */}
                   {(() => {
                     const play = ORGANIZER_GAME_TO_PLAY[game.id];
@@ -1089,6 +1094,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
             })}
           </section>)}
         </div>}
+        {gameInfo && <InfoCard title={gameInfo.name} text={gameInfo.text} onClose={() => setGameInfo(null)} />}
       </div>}
 
       {teeTimePicker && <TeeTimePicker key={`${teeTimePicker.key}-${teeTimePicker.startGroup ?? 0}`} fixedGroups={teeTimePicker.fixedGroups} startGroup={teeTimePicker.startGroup} course={teeTimePicker.course} date={teeTimePicker.date} round={teeTimePicker.round} value={teeTimes[teeTimePicker.key] ?? (pickedCourses[teeTimePicker.key]?.settings?.teeTime ? [pickedCourses[teeTimePicker.key]!.settings!.teeTime] : undefined)}

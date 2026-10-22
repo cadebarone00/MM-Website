@@ -275,7 +275,7 @@ function NewGame({ box, group, rounds, current, onClose, onCreate }: { box: { to
 }
 
 /** A game's description in a small light card over the screen; tap anywhere outside it to close. */
-function InfoCard({ title, text, onClose }: { title: string; text: string; onClose: () => void }) {
+export function InfoCard({ title, text, onClose }: { title: string; text: string; onClose: () => void }) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
