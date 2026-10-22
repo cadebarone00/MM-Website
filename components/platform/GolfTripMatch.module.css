@@ -556,5 +556,5 @@
 .winLine[data-side=left] small{left:0}
 .winLine[data-side=right] small{right:0}
 /* Predict on, stats off: the Predict button stands alone under the win bar, at a natural height. */
-.predictRow[data-stats-off] .predictPill{align-self:center;min-height:34px;padding:0 26px;border-radius:999px}
+.predictRow[data-stats-off] .predictPill{align-self:center;min-height:34px;padding:0 26px;border-radius:999px;transform:translateY(5px)}
 .boardBox[data-board-predict-only]>.stats{height:auto;padding-bottom:6px}
