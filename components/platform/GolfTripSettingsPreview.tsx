@@ -307,6 +307,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const [skinsOn, setSkinsOn] = usePersistedState(persist, "skinsOn", false);
   const [skinsRounds, setSkinsRounds] = usePersistedState<Record<string, boolean>>(persist, "skinsRounds", {});
   const [skinsPlayers, setSkinsPlayers] = usePersistedState<Record<string, Set<number>>>(persist, "skinsPlayers", {});
+  // Gross or net skins (net: each player's handicap strokes come off on the hardest holes first).
+  const [skinsScoring, setSkinsScoring] = usePersistedState<"Gross" | "Net">(persist, "skinsScoring", "Gross");
   const [skinsRound, setSkinsRound] = useState<{ day: number; slot: number } | null>(null);
   const roundSkinsOn = (key: string) => skinsOn && (skinsRounds[key] ?? true);
   const roundSkinsPlayers = (key: string) => skinsPlayers[key] ?? new Set(rosterSlots);
@@ -612,7 +614,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const settingsValues = { pastTrips, scoringFieldsOff, playerTotal, removedPlayers, competitionType, lockedComp, teamChoiceSaved, typePlayers,
     teamNames, teamColors, teamPicks, teamTotalChoice, unevenTeams, unevenSizes, teamTie, teamSelection, draftDate, draftTime, draftOrder, draftMethod, submittedTeams,
     gameSettings, dayCount, roundsPerDay, arrivalShift, pickedCourses, yardageCorrections, roundTees, compRounds, compFormats, matchSelections, matchPerRound,
-    allRoundsMatch, teePlayers, teeMatches, slotCourseNames, courseShortNames, golfOnArrival, golfOnDeparture, teeTimes, skinsOn, skinsRounds, skinsPlayers, scoringView, playerStats, myStats, inAppScoring, predictSettings, gameRounds };
+    allRoundsMatch, teePlayers, teeMatches, slotCourseNames, courseShortNames, golfOnArrival, golfOnDeparture, teeTimes, skinsOn, skinsRounds, skinsPlayers, skinsScoring, scoringView, playerStats, myStats, inAppScoring, predictSettings, gameRounds };
   const restoreSettings = (saved: typeof settingsValues) => {
     setTeamTie(saved.teamTie);
     setPastTrips(saved.pastTrips); setScoringFieldsOff(saved.scoringFieldsOff); setPlayerTotal(saved.playerTotal);
@@ -624,7 +626,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     setPickedCourses(saved.pickedCourses); setYardageCorrections(saved.yardageCorrections); setRoundTees(saved.roundTees); setCompRounds(saved.compRounds);
     setCompFormats(saved.compFormats); setGameRounds(saved.gameRounds ?? {}); setMatchSelections(saved.matchSelections); setMatchPerRound(saved.matchPerRound); setAllRoundsMatch(saved.allRoundsMatch);
     setTeePlayers(saved.teePlayers); setTeeMatches(saved.teeMatches); setSlotCourseNames(saved.slotCourseNames); setCourseShortNames(saved.courseShortNames ?? {}); setGolfOnArrival(saved.golfOnArrival);
-    setGolfOnDeparture(saved.golfOnDeparture); setTeeTimes(saved.teeTimes); setSkinsOn(saved.skinsOn); setSkinsRounds(saved.skinsRounds); setSkinsPlayers(saved.skinsPlayers);
+    setGolfOnDeparture(saved.golfOnDeparture); setTeeTimes(saved.teeTimes); setSkinsOn(saved.skinsOn); setSkinsRounds(saved.skinsRounds); setSkinsPlayers(saved.skinsPlayers); setSkinsScoring(saved.skinsScoring ?? "Gross");
     if (saved.scoringView !== scoringView) setScoringView(saved.scoringView);
     if (saved.playerStats !== playerStats) setPlayerStats(saved.playerStats);
     if (saved.myStats !== myStats) setMyStatsOptIn(saved.myStats);
@@ -1534,6 +1536,12 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                 <button type="button" role="switch" aria-checked={skinsOn} aria-label="Skins" className={toggleStyles.toggle} onClick={() => setSkinsOn(!skinsOn)}>
                   <span className={toggleStyles.track} data-on={skinsOn}><span className={toggleStyles.thumb} /></span><span>{skinsOn ? "On" : "Off"}</span>
                 </button>
+              </div>
+              <div className={styles.totalPlayers} role="group" aria-label="Skins scoring">
+                <span className={styles.typeHeading}>Scoring</span>
+                <div className={styles.roundCompChoices}>
+                  {(["Gross", "Net"] as const).map(option => <button key={option} type="button" className={styles.typeChoice} aria-pressed={skinsScoring === option} disabled={!skinsOn} onClick={() => setSkinsScoring(option)}>{option}</button>)}
+                </div>
               </div>
               <div className={styles.formatRounds}>
                 {Array.from({ length: golfDayCount }, (_, day) => Array.from({ length: roundsPerDay[day] ?? 1 }, (_, slot) => {

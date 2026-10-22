@@ -25,5 +25,13 @@ test("settings: skins off = none; rounds on unless switched off; players are ros
   const rounds = [{ number: 1, dayNumber: 1 }, { number: 2, dayNumber: 2 }, { number: 3, dayNumber: 2 }];
   assert.deepEqual(skinsRoundsFrom(rounds, { skinsOn: false }, []), []);
   const on = skinsRoundsFrom(rounds, { skinsOn: true, skinsRounds: { "1-0": false }, skinsPlayers: { "1-1": { $set: [0, 2] } } }, ["Cam", "Drew", "Cade"]);
-  assert.deepEqual(on, [{ round: 1, players: null }, { round: 3, players: ["Cam", "Cade"] }]);
+  assert.deepEqual(on, [{ round: 1, players: null, net: false }, { round: 3, players: ["Cam", "Cade"], net: false }]);
+});
+
+test("net skins: handicap strokes come off on the hardest holes before the low score is found", () => {
+  const scratch = { ...row("Cam", PAR.map((p) => p)) };
+  const eighteen = { ...row("Drew", PAR.map((p) => p)), golfer: { ...row("Drew", []).golfer, hcp: 18 } };
+  const m = (net: boolean) => field([scratch, eighteen], [{ round: 1, players: null, net }]);
+  assert.deepEqual(Object.fromEntries(skinsCount(m(false))!), { Cam: 0, Drew: 0 }, "gross: every hole halved");
+  assert.deepEqual(Object.fromEntries(skinsCount(m(true))!), { Cam: 0, Drew: 18 }, "net: Drew's stroke on every hole wins it");
 });

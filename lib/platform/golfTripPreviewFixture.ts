@@ -183,7 +183,7 @@ export type GolfLeaderboardEntry = {
 export type RoundScoring = { round: number; matchPlay: boolean; pointsPerMatch: number; nassau: boolean; pointsAvailable: number };
 
 /** A round with skins on, and who's in it (names; null = everyone on the leaderboard). */
-export type RoundSkins = { round: number; players: string[] | null };
+export type RoundSkins = { round: number; players: string[] | null; /** Handicap strokes off first. */ net?: boolean };
 
 export type GolfMatchPreview = {
   /** Rounds with the organizer's skins on (the Leaderboard's SKINS column). */
