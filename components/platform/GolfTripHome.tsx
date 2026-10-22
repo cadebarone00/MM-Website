@@ -44,6 +44,7 @@ import { getPlayerDisplayName } from "@/lib/data/players";
 import styles from "./GolfTripHome.module.css";
 import { GolfTripPredict } from "./GolfTripPredict";
 import { tripSetupFromPreview } from "@/lib/platform/predictFromPreview";
+import { usePredictSettings } from "@/lib/platform/predictSetting";
 
 import { GOLF_TRIP_TABS as TABS, golfSections, type CompetitionStructure, type GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
 import { useGolfTripCompetitionPreview } from "./GolfTripCompetitionPreviewProvider";
@@ -460,7 +461,9 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
   // Organizer → Predict on: the prediction market's tab comes last. The app simulator's Predict card (dev only) opens it
   // even while the organizer has it off, so it can be previewed.
   const sections = golfSections(structure, playerStats);
-  const predictSetup = useMemo(() => previewMatch ? tripSetupFromPreview(previewMatch, structure) : null, [previewMatch, structure]);
+  // Organizer → Predict off: no Predict button and no Predict sheet.
+  const predictOn = usePredictSettings().on;
+  const predictSetup = useMemo(() => previewMatch && predictOn ? tripSetupFromPreview(previewMatch, structure) : null, [previewMatch, structure, predictOn]);
   // No competition: the Overview box is the day's round (course, tee times, who's playing — not those sitting out).
   const noComp = !structure.individual && !structure.team;
   // Individual only: the same box, split — the round on the left, the leaderboard's top 5 on the right.
@@ -539,7 +542,7 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
         const shown = current === section;
         // Overview's box sets the size; Competition and Games fill exactly that box.
         return <div key={section} className={`${section === "Overview" ? styles.golfTopSize : styles.golfTopFill} ${shown ? "" : styles.golfTopHidden}`} inert={!shown}>
-          {section === "Overview" ? noComp || individualOnly || teamOnly ? <><GolfRoundInfo match={previewMatch} sittingOut={sittingOut} topFive={individualOnly} />{!noComp && predictSetup && <button type="button" className={styles.predictEntry} onClick={() => goTo(availableSlides.indexOf("Predict"))}>Predict</button>}</> : <GolfTournamentSummary match={previewMatch} tripStats={tripStats} onPredict={() => goTo(availableSlides.indexOf("Predict"))} />
+          {section === "Overview" ? noComp || individualOnly || teamOnly ? <><GolfRoundInfo match={previewMatch} sittingOut={sittingOut} topFive={individualOnly} />{!noComp && predictSetup && <button type="button" className={styles.predictEntry} onClick={() => goTo(availableSlides.indexOf("Predict"))}>Predict</button>}</> : <GolfTournamentSummary match={previewMatch} tripStats={tripStats} onPredict={predictSetup && !noComp ? () => goTo(availableSlides.indexOf("Predict")) : undefined} />
             // Matches keeps its featured matchup board and match selector.
             : section === "Competition" ? <GolfMatchup match={roundMatch ?? previewMatch} compact swipe={boxSwipe} featured={featured} roundStarted={roundStarted && previewMatch.round === sourceMatch?.round}
               below={<MatchNav match={featured + 1} count={matchCount} offset={matchOffset} onMatch={match => setBoxMatch(view => ({ ...view, index: match - 1 }))} />} /> : <GolfGamesSummary />}

@@ -557,11 +557,12 @@ export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: 
       </div>
       <div className={styles.stats}>
         <WinBar left={left.winPct} right={right.winPct} />
-        {onPredict ? <div className={styles.predictRow}>
+        {/* Predict off (Organizer → Predict): no button; the team stats stay where they are. */}
+        <div className={styles.predictRow}>
           <SummaryStats align="left" team={left.name} onOpen={() => setStatsTeam(0)} />
-          <button type="button" className={styles.predictPill} onClick={onPredict}>Predict</button>
+          {onPredict ? <button type="button" className={styles.predictPill} onClick={onPredict}>Predict</button> : <span aria-hidden />}
           <SummaryStats align="right" team={right.name} onOpen={() => setStatsTeam(1)} />
-        </div> : <><RoundStats side={left} align="left" /><RoundStats side={right} align="right" /></>}
+        </div>
       </div>
     </section>
     {statsTeam !== null && <TeamStatsSheet match={match} initialTeam={statsTeam} stats={tripStats} onClose={() => setStatsTeam(null)} />}

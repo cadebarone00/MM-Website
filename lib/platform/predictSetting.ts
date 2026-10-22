@@ -6,7 +6,7 @@ import type { BetId } from "./predictBets";
 
 /**
  * Organizer → Predict: whether the trip's prediction market is shown (Golf → Predict) and which bets are offered.
- * Off by default; when turned on, every bet the trip allows starts on. Maroon Coins are play-only.
+ * On by default (the organizer can turn it off); every bet the trip allows starts on. Maroon Coins are play-only.
  * Preview: kept on this device (like Player Stats) until trip settings are saved to the database.
  */
 export interface PredictSettings { on: boolean; /** Bets switched off by the organizer (everything else the trip allows is on). */ off: BetId[] }
@@ -20,7 +20,7 @@ function snapshot(): string {
 function parse(text: string): PredictSettings {
   try {
     const value = JSON.parse(text) as Partial<PredictSettings>;
-    return { on: true, off: Array.isArray(value.off) ? value.off : [] };
+    return { on: value.on !== false, off: Array.isArray(value.off) ? value.off : [] };
   } catch { return { on: true, off: [] }; }
 }
 function subscribe(onChange: () => void) {
