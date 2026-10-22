@@ -10,8 +10,8 @@ import { motion } from "motion/react";
 import { ArrowLeftRight, ChevronLeft, GripVertical, Minus, Plus, Shuffle, Trash2, X } from "lucide-react";
 import { GolfGameScoringSettings } from "./GolfGameScoringSettings";
 import { SIDE_GAME_REGISTRY } from "@/lib/platform/golfTripGames";
-import { ORGANIZER_GAME_TO_PLAY } from "@/lib/platform/tripGames";
-import { GAMES, type GameId } from "@/lib/platform/roundGames";
+import { ORGANIZER_GAME_TO_PLAY, TRIP_GAMES } from "@/lib/platform/tripGames";
+import type { GameId } from "@/lib/platform/roundGames";
 import type { ScoringGameId } from "@/lib/platform/game-engine";
 import { InfoCard } from "./GolfTripGames";
 import type { CompetitionRound } from "@/lib/platform/golfTripCompetitionPreview";
@@ -1062,9 +1062,9 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
               </button>)}
             </div>;
           })()}
-          {/* Every game Play offers (same list, same order); a game with organizer scoring settings opens them. */}
+          {/* Play's games that make sense on a trip (same order); a game with organizer scoring settings opens them. */}
           <section className={styles.gameGroup}>
-            {GAMES.map(def => {
+            {TRIP_GAMES.map(def => {
               const scoringId = Object.keys(ORGANIZER_GAME_TO_PLAY).find(key => ORGANIZER_GAME_TO_PLAY[key] === def.id) as ScoringGameId | undefined;
               const isExpanded = !!scoringId && expandedGameId === scoringId;
               const on = (gameRounds[gameRound] ?? []).includes(def.id);

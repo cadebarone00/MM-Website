@@ -1,5 +1,5 @@
 import { normalizeCompetitor, type GolfMatchPreview } from "./golfTripPreviewFixture";
-import { gameDef, scoreGame, type GameConfig, type GameCourse, type GameId, type GamePlayer, type GameResult, type HoleInput } from "./roundGames";
+import { GAMES, gameDef, scoreGame, type GameConfig, type GameCourse, type GameId, type GamePlayer, type GameResult, type HoleInput } from "./roundGames";
 
 /**
  * Golf trip → Games (owner request 2026-10-17): the same games as Play a round (lib/platform/roundGames.ts — scored by
@@ -105,6 +105,14 @@ export function vegasByHole(game: TripGame, players: GamePlayer[], course: GameC
 }
 
 /** Organizer → Games uses its own game list; these are the matching Play games (Coin Flip has none yet). */
+/**
+ * Play's games that make sense on a trip (owner rule 2026-10-22): side games only. The team formats (Scramble, Shamble,
+ * Alternate Shot, Chapman) change how the round is played, which the organizer's schedule already decides, and Stroke Play /
+ * Stableford repeat the trip leaderboard.
+ */
+const NOT_ON_TRIPS: GameId[] = ["stroke", "stableford", "scramble", "shamble", "alternate", "chapman"];
+export const TRIP_GAMES = GAMES.filter((game) => !NOT_ON_TRIPS.includes(game.id));
+
 export const ORGANIZER_GAME_TO_PLAY: Record<string, GameId> = { skins: "skins", "match-play": "match", "9-point": "nines", wolf: "wolf", vegas: "vegas", "round-robin": "sixes" };
 
 /**
@@ -114,7 +122,7 @@ export const ORGANIZER_GAME_TO_PLAY: Record<string, GameId> = { skins: "skins", 
  */
 export function organizerGames(allocations: Record<string, GameId[]> | undefined, group: string[], existing: TripGame[]): TripGame[] {
   const same = (a: string[], b: string[]) => a.length === b.length && [...a].sort().join("|") === [...b].sort().join("|");
-  return Object.entries(allocations ?? {}).flatMap(([round, ids]) => ids.flatMap((id): TripGame[] => {
+  return Object.entries(allocations ?? {}).flatMap(([round, ids]) => ids.filter((id) => !NOT_ON_TRIPS.includes(id)).flatMap((id): TripGame[] => {
     const def = gameDef(id);
     const size = [...def.players].sort((a, b) => b - a).find((n) => n <= group.length);
     if (!size) return [];
