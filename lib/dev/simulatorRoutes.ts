@@ -118,7 +118,7 @@ export function simulatorPages(): SimulatorPage[] {
     add("organizer", "Organizer settings", settings.id, "Organizer");
     add("match-selection", "Match Selection settings", settings.id, "Organizer");
     pages.push({ ...settings, id: "trip-match-selector", label: "Match Selector", parentId: undefined, navigation: { tab: "Home", settingsView: "match-draft-room" }, conditions: [...(settings.conditions ?? []), ...(["Response", "Ranks", "Randomized"] as const).map(method=>({id:"match-draft-"+method.toLowerCase(),label:method+" match draft",state:{matchDraftPreview:method}})), {id:"match-draft-configured",label:"Use configured draft rounds",state:{matchDraftPreview:"off" as const}}] });
-    for (const [view, label] of [["players", "Players"], ["schedule", "Golf Schedule"], ["competition", "Competition"], ["games", "Games"], ["history", "History"], ["placeholder-7", "Place holder 1"], ["placeholder-8", "Place holder 2"]]) add(view, label, settings.id, "Organizer");
+    for (const [view, label] of [["players", "Players"], ["schedule", "Golf Schedule"], ["competition", "Competition"], ["skins", "Skins"], ["games", "Games"], ["history", "History"], ["placeholder-7", "Place holder 1"], ["placeholder-8", "Place holder 2"]]) add(view, label, settings.id, "Organizer");
     const rolePlayers = pages.find(page=>page.id==="settings-players");
     if(rolePlayers) rolePlayers.conditions?.push(...([
       ["organizer","View as organizer"],["captain-a","View as first captain"],["captain-b","View as second captain"],["player","View as player"],

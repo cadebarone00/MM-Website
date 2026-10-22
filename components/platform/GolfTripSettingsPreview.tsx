@@ -60,7 +60,7 @@ const GENERAL_CARDS = ["Scorecard View", ...Array.from({ length: 5 }, () => "Pla
 // Individual and Team competition are separate boxes; each opens the competition page for just that type.
 const ORGANIZER_SECTIONS = [
   { title: "Overview", cards: ["Players", "Golf Schedule", "Games", "Player Scoring"] },
-  { title: "Competition", cards: ["Individual Competition", "Team Competition", "Match Selection", "Predict"] },
+  { title: "Competition", cards: ["Individual Competition", "Team Competition", "Skins", "Match Selection", "Predict"] },
   { title: "History", cards: ["History", "Delete Trip"] },
 ];
 const GAME_GROUPS = {
@@ -141,6 +141,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   // History: past trips the organizer entered. Preview only; one sample trip, resets on reload.
   const [historyOpen, setHistoryOpen] = useState(false);
   const [predictOpen, setPredictOpen] = useState(false);
+  // Organizer → Skins: the trip's skins game (any trip, separate from Individual / Team Competition).
+  const [skinsOpen, setSkinsOpen] = useState(false);
   const [pastTrips, setPastTrips] = usePersistedState<PastTrip[]>(persist, "pastTrips", () => tripHistory ?? samplePastTrips(players));
   // History → Link to account (dev): requests go to the shared player-rounds store; the player answers on /dev/profile/requests.
   const devRounds = useDevPlayerRounds();
@@ -576,12 +578,13 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     setPlayerScoringOpen(view === "player-scoring");
     setScorecardViewOpen(view === "scorecard-view");
     setHistoryOpen(view === "history");
+    setSkinsOpen(view === "skins");
   }, [simulator?.navigation]);
   useEffect(() => {
     if (!reportNavigation) return;
-    const settingsView = matchDraftRoomOpen ? "match-draft-room" : matchesOpen ? "match-selection" : predictOpen ? "predict" : historyOpen ? "history" : scorecardViewOpen ? "scorecard-view" : playerScoringOpen ? "player-scoring" : playersOpen ? "players" : roundsOpen ? "schedule" : competitionOpen ? selectedRoundId ? `round-${selectedRoundId}` : competitionSection === "Format" ? "competition-rounds" : "competition" : gamesOpen ? expandedGameId ? `game-${expandedGameId}` : "games" : placeholder ? `placeholder-${placeholder}` : section === "General" ? "player" : "organizer";
+    const settingsView = matchDraftRoomOpen ? "match-draft-room" : matchesOpen ? "match-selection" : predictOpen ? "predict" : skinsOpen ? "skins" : historyOpen ? "history" : scorecardViewOpen ? "scorecard-view" : playerScoringOpen ? "player-scoring" : playersOpen ? "players" : roundsOpen ? "schedule" : competitionOpen ? selectedRoundId ? `round-${selectedRoundId}` : competitionSection === "Format" ? "competition-rounds" : "competition" : gamesOpen ? expandedGameId ? `game-${expandedGameId}` : "games" : placeholder ? `placeholder-${placeholder}` : section === "General" ? "player" : "organizer";
     reportNavigation({ tab: "Home", settingsView }, rounds.map(({ id, number }) => ({ id, number })));
-  }, [reportNavigation, matchDraftRoomOpen, matchesOpen, predictOpen, historyOpen, scorecardViewOpen, playerScoringOpen, playersOpen, roundsOpen, competitionOpen, competitionSection, gamesOpen, expandedGameId, placeholder, section, selectedRoundId, rounds]);
+  }, [reportNavigation, matchDraftRoomOpen, matchesOpen, predictOpen, skinsOpen, historyOpen, scorecardViewOpen, playerScoringOpen, playersOpen, roundsOpen, competitionOpen, competitionSection, gamesOpen, expandedGameId, placeholder, section, selectedRoundId, rounds]);
   const cardSections = section === "Organizer" ? ORGANIZER_SECTIONS : [{ title: null, cards: livePanels ? ["Scorecard View"] : GENERAL_CARDS }];
   // Steps back one level (the back arrow goes through tryGoBack below).
   const goBack = () => {
@@ -601,6 +604,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     else if (scorecardViewOpen) setScorecardViewOpen(false);
     else if (historyOpen) setHistoryOpen(false);
     else if (predictOpen) setPredictOpen(false);
+    else if (skinsOpen) setSkinsOpen(false);
     else setGamesOpen(false);
   };
   // SAVE: every setting below, as it was when each open settings page was opened (one entry per level). Changes only
@@ -627,7 +631,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     if (saved.inAppScoring !== inAppScoring) setInAppScoring(saved.inAppScoring);
     if (settingsKey(saved.predictSettings) !== settingsKey(predictSettings)) savePredictSettings(saved.predictSettings);
   };
-  const settingsDepth = (competitionOpen || gamesOpen || roundsOpen || playersOpen || playerScoringOpen || scorecardViewOpen || historyOpen || predictOpen || matchesOpen || scorecardOpen ? 1 : 0)
+  const settingsDepth = (competitionOpen || gamesOpen || roundsOpen || playersOpen || playerScoringOpen || scorecardViewOpen || historyOpen || predictOpen || skinsOpen || matchesOpen || scorecardOpen ? 1 : 0)
     + (selectedRound || compRound || skinsRound || selectedGame || scheduleRound || matchRound || scorecardPlayer !== null ? 1 : 0);
   const [savedSettings, setSavedSettings] = useState<(typeof settingsValues)[]>([]);
   // Opening a page remembers the settings as they are; closing one forgets its entry.
@@ -690,12 +694,12 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     return <TripMatchDraftRoom rounds={draftRounds} canEdit={!savedSetup?.readOnly} teamNames={teamLabels} players={draftPlayers} initialRound={matchDraftRoomRound} onClose={() => { setMatchDraftRoomOpen(false); setMatchesOpen(true); }} />;
   }
 
-  return <main className={`${styles.page} ${competitionOpen || gamesOpen || roundsOpen || playersOpen || playerScoringOpen || scorecardViewOpen || historyOpen || predictOpen || matchesOpen || scorecardOpen ? styles.competitionPage : ""}`}>
+  return <main className={`${styles.page} ${competitionOpen || gamesOpen || roundsOpen || playersOpen || playerScoringOpen || scorecardViewOpen || historyOpen || predictOpen || skinsOpen || matchesOpen || scorecardOpen ? styles.competitionPage : ""}`}>
     <div className={styles.content}>
       {draftScheduleMessage && <p role="alert" className={styles.statNote}>{draftScheduleMessage}</p>}
-      {(competitionOpen || gamesOpen || roundsOpen || playersOpen || playerScoringOpen || scorecardViewOpen || historyOpen || predictOpen || matchesOpen || scorecardOpen) ? <header className={styles.competitionHeader}>
+      {(competitionOpen || gamesOpen || roundsOpen || playersOpen || playerScoringOpen || scorecardViewOpen || historyOpen || predictOpen || skinsOpen || matchesOpen || scorecardOpen) ? <header className={styles.competitionHeader}>
         <button type="button" className={styles.close} aria-label={scorecardPlayer !== null ? "Back to players" : scorecardOpen ? "Back to scorecards" : skinsRound ? "Back to skins" : selectedRound || compRound ? "Back to competition rounds" : selectedGame ? "Back to games" : "Back to organizer settings"} onClick={tryGoBack}><ChevronLeft size={28} aria-hidden /></button>
-        <h1>{scorecardPlayer !== null ? playerName(scorecardPlayer) : scorecardRound ? `Round ${scheduleSlot(scorecardRound.day, scorecardRound.slot).number}` : selectedRound ? "Round " + selectedRound.number + " Settings" : compRound ? `Round ${compRound.number} Competition` : skinsRound ? `Round ${scheduleSlot(skinsRound.day, skinsRound.slot).number} Skins` : selectedGame ? selectedGame.name : gamesOpen ? "Games" : roundsOpen ? scheduleRound ? `Round ${scheduleSlot(scheduleRound.day, scheduleRound.slot).number}` : "Golf Schedule" : playersOpen ? "Players" : playerScoringOpen ? "Player Scoring" : scorecardViewOpen ? "Scorecard View" : historyOpen ? "History" : predictOpen ? "Predict" : matchesOpen ? matchRound ? `Round ${scheduleSlot(matchRound.day, matchRound.slot).number}` : "Match Selection" : overviewType === "team" ? "Team Competition" : "Individual Competition"}</h1>
+        <h1>{scorecardPlayer !== null ? playerName(scorecardPlayer) : scorecardRound ? `Round ${scheduleSlot(scorecardRound.day, scorecardRound.slot).number}` : selectedRound ? "Round " + selectedRound.number + " Settings" : compRound ? `Round ${compRound.number} Competition` : skinsRound ? `Round ${scheduleSlot(skinsRound.day, skinsRound.slot).number} Skins` : selectedGame ? selectedGame.name : gamesOpen ? "Games" : roundsOpen ? scheduleRound ? `Round ${scheduleSlot(scheduleRound.day, scheduleRound.slot).number}` : "Golf Schedule" : playersOpen ? "Players" : playerScoringOpen ? "Player Scoring" : scorecardViewOpen ? "Scorecard View" : historyOpen ? "History" : predictOpen ? "Predict" : skinsOpen ? "Skins" : matchesOpen ? matchRound ? `Round ${scheduleSlot(matchRound.day, matchRound.slot).number}` : "Match Selection" : overviewType === "team" ? "Team Competition" : "Individual Competition"}</h1>
         {/* Gold SAVE once something has changed; greyed-out SAVED (can't be tapped) while there's nothing to save. */}
         <motion.button type="button" className={styles.save} disabled={!unsaved} onClick={saveSettings} whileHover={unsaved ? { scale: 1.02 } : undefined} whileTap={unsaved ? { scale: 0.96 } : undefined} transition={{ type: "spring", stiffness: 420, damping: 24 }}>{unsaved ? "SAVE" : "SAVED"}</motion.button>
       </header> : <header className={styles.header}>
@@ -706,35 +710,22 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
       </div>
       </header>}
 
-      {!competitionOpen && !gamesOpen && !roundsOpen && !playersOpen && !playerScoringOpen && !scorecardViewOpen && !historyOpen && !predictOpen && !matchesOpen && !scorecardOpen && <div className={`${tripStyles.tabs} ${styles.tabs}`} aria-label="Settings sections preview">
+      {!competitionOpen && !gamesOpen && !roundsOpen && !playersOpen && !playerScoringOpen && !scorecardViewOpen && !historyOpen && !predictOpen && !skinsOpen && !matchesOpen && !scorecardOpen && <div className={`${tripStyles.tabs} ${styles.tabs}`} aria-label="Settings sections preview">
         {["General", ...(livePanels && !livePanels.isOrganizer ? [] : ["Organizer"]), "Scorecards"].map((name) => <button key={name} type="button" aria-pressed={section === name}
           className={`${tripStyles.tab} ${section === name ? tripStyles.tabActive : ""} ${styles.tab}`}
           onClick={() => { setSection(name); setPlaceholder(null); setCompetitionOpen(false); setGamesOpen(false); setRoundsOpen(false); setPlayersOpen(false); }}>{name}</button>)}
       </div>}
 
       {competitionOpen && competition ? <div className={styles.competition}>
-        {/* Individual: Format (its type and players; every round plays it) | Skins | Summary. Team: Overview | Format | Summary. */}
+        {/* Individual: Format (its type and players; every round plays it) | Summary. Team: Overview | Format | Summary. Skins has its own card. */}
         {!selectedRound && !compRound && !skinsRound && <div className={`${tripStyles.tabs} ${styles.tabs}`} aria-label="Competition sections">
-          {(overviewType === "individual" ? [["Overview", "Format"], ["Skins", "Skins"], ["Summary", "Summary"]] : [["Overview", "Overview"], ["Format", "Format"], ["Skins", "Skins"], ["Summary", "Summary"]]).map(([name, label]) => <button key={name} type="button" aria-pressed={competitionSection === name}
+          {(overviewType === "individual" ? [["Overview", "Format"], ["Summary", "Summary"]] : [["Overview", "Overview"], ["Format", "Format"], ["Summary", "Summary"]]).map(([name, label]) => <button key={name} type="button" aria-pressed={competitionSection === name}
             className={`${tripStyles.tab} ${competitionSection === name ? tripStyles.tabActive : ""} ${styles.tab}`}
             onClick={() => setCompetitionSection(name)}>{label}</button>)}
         </div>}
         {selectedRound ? <GolfTripCompetition rounds={[selectedRound]} onChange={change => competition.change(change, selectedRound.id)} showBulk={false} />
           : compRound ? <fieldset className={styles.compLock} disabled={playState(compRound.id, compRound.number).started}><RoundCompetitionSettings key={compRound.id} course={compRound.course} date={compRound.date} round={compRound.number} settings={compRound.settings} maxPlayers={playerTotal}
             onSubmit={next => { if (playState(compRound.id, compRound.number).started) return; saveSection(saved => ({ compFormats: { ...saved.compFormats, [compRound.id]: next } })); setCompFormats(current => ({ ...current, [compRound.id]: next })); setCompRoundSlot(null); }} /></fieldset>
-          : skinsRound ? (() => {
-            // Skins → a round: who's playing skins in it (locked once the round has started).
-            const round = scheduleSlot(skinsRound.day, skinsRound.slot);
-            return <section className={tripStyles.infoSection} aria-label={`Round ${round.number} skins players`}>
-              <div className={styles.roundDayHeader}>
-                <h2>{round.course}</h2>
-                <time dateTime={golfIso(skinsRound.day)}>{golfDate(skinsRound.day)} · Round {round.number}</time>
-              </div>
-              <fieldset className={styles.compLock} disabled={playState(round.key, round.number).started}>
-                {playerChecklist(`Round ${round.number} skins players`, roundSkinsPlayers(round.key), next => setSkinsPlayers(current => ({ ...current, [round.key]: next })))}
-              </fieldset>
-            </section>;
-          })()
           : <div className={tripStyles.events}>
             {competitionSection === "Overview" && <section className={tripStyles.infoSection} aria-label="Overview">
               <div className={styles.typePicker}>
@@ -967,36 +958,6 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
             </section>}
             {/* One section per trip day (Arrival to Departure): centered Day N, its date small underneath, then a line and that day's rounds. */}
             {/* Format: just the round boxes (no day headers). Each box: Date / Round # / course (+ format when on), with a Comp switch top right; tap a comp round for its competition settings. On = a competition round (box lit); off = not (box greyed). */}
-            {/* Skins (Individual): on or off for the trip, then every round; while on, the rounds light up, each with its own
-                switch, and tapping a round that's on opens its players. */}
-            {/* Skins is on Individual and Team Competition alike (any trip can play skins). */}
-            {competitionSection === "Skins" && <section className={tripStyles.infoSection} aria-label="Skins">
-              <div className={styles.totalPlayers}>
-                <span className={styles.typeHeading}>Skins</span>
-                <button type="button" role="switch" aria-checked={skinsOn} aria-label="Skins" className={toggleStyles.toggle} onClick={() => setSkinsOn(!skinsOn)}>
-                  <span className={toggleStyles.track} data-on={skinsOn}><span className={toggleStyles.thumb} /></span><span>{skinsOn ? "On" : "Off"}</span>
-                </button>
-              </div>
-              <div className={styles.formatRounds}>
-                {Array.from({ length: golfDayCount }, (_, day) => Array.from({ length: roundsPerDay[day] ?? 1 }, (_, slot) => {
-                  const round = scheduleSlot(day, slot), on = roundSkinsOn(round.key);
-                  return <div key={round.key} className={`${styles.compRoundRow} ${styles.scheduleRoundCard} ${styles.formatRoundCard}`} data-comp={on}>
-                    <button type="button" className={styles.roundCardButton} disabled={!on} aria-label={`Round ${round.number}: ${round.course}. Skins players`} onClick={() => setSkinsRound({ day, slot })}>
-                      <span className={tripStyles.eventInfo}>
-                        <span className={styles.roundCardPlace}>{golfDate(day)}</span>
-                        <span className={tripStyles.eventHost}>Round {round.number}</span>
-                        <span className={tripStyles.eventTitle}>{round.course}</span>
-                        {on && <span className={styles.roundCardPlace}>{roundSkinsPlayers(round.key).size} players</span>}
-                      </span>
-                    </button>
-                    <button type="button" role="switch" aria-checked={on} aria-label={`Round ${round.number} skins`} disabled={!skinsOn || playState(round.key, round.number).started} className={styles.formatSwitch}
-                      onClick={() => setSkinsRounds(current => ({ ...current, [round.key]: !on }))}>
-                      <span className={styles.formatThumb} />
-                    </button>
-                  </div>;
-                }))}
-              </div>
-            </section>}
             {competitionSection === "Format" && overviewType === "team" && <div className={styles.formatRounds}>
               {Array.from({ length: golfDayCount }, (_, day) => Array.from({ length: roundsPerDay[day] ?? 1 }, (_, slot) => {
                 const noTeamCompetition = overviewType === "team" && !competitionType.team && (lockedComp.team || teamChoiceSaved);
@@ -1549,6 +1510,53 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
         </section>
       </div>}
 
+      {/* Organizer → Skins: the trip's skins game, then a round's players. */}
+      {skinsOpen && <div className={styles.competition}>
+        {skinsRound ? (() => {
+            // Skins → a round: who's playing skins in it (locked once the round has started).
+            const round = scheduleSlot(skinsRound.day, skinsRound.slot);
+            return <section className={tripStyles.infoSection} aria-label={`Round ${round.number} skins players`}>
+              <div className={styles.roundDayHeader}>
+                <h2>{round.course}</h2>
+                <time dateTime={golfIso(skinsRound.day)}>{golfDate(skinsRound.day)} · Round {round.number}</time>
+              </div>
+              <fieldset className={styles.compLock} disabled={playState(round.key, round.number).started}>
+                {playerChecklist(`Round ${round.number} skins players`, roundSkinsPlayers(round.key), next => setSkinsPlayers(current => ({ ...current, [round.key]: next })))}
+              </fieldset>
+            </section>;
+          })()
+          : <div className={tripStyles.events}>
+            {/* Skins: on or off for the trip, then every round; while on, the rounds light up, each with its own
+                switch, and tapping a round that's on opens its players. */}
+            <section className={tripStyles.infoSection} aria-label="Skins">
+              <div className={styles.totalPlayers}>
+                <span className={styles.typeHeading}>Skins</span>
+                <button type="button" role="switch" aria-checked={skinsOn} aria-label="Skins" className={toggleStyles.toggle} onClick={() => setSkinsOn(!skinsOn)}>
+                  <span className={toggleStyles.track} data-on={skinsOn}><span className={toggleStyles.thumb} /></span><span>{skinsOn ? "On" : "Off"}</span>
+                </button>
+              </div>
+              <div className={styles.formatRounds}>
+                {Array.from({ length: golfDayCount }, (_, day) => Array.from({ length: roundsPerDay[day] ?? 1 }, (_, slot) => {
+                  const round = scheduleSlot(day, slot), on = roundSkinsOn(round.key);
+                  return <div key={round.key} className={`${styles.compRoundRow} ${styles.scheduleRoundCard} ${styles.formatRoundCard}`} data-comp={on}>
+                    <button type="button" className={styles.roundCardButton} disabled={!on} aria-label={`Round ${round.number}: ${round.course}. Skins players`} onClick={() => setSkinsRound({ day, slot })}>
+                      <span className={tripStyles.eventInfo}>
+                        <span className={styles.roundCardPlace}>{golfDate(day)}</span>
+                        <span className={tripStyles.eventHost}>Round {round.number}</span>
+                        <span className={tripStyles.eventTitle}>{round.course}</span>
+                        {on && <span className={styles.roundCardPlace}>{roundSkinsPlayers(round.key).size} players</span>}
+                      </span>
+                    </button>
+                    <button type="button" role="switch" aria-checked={on} aria-label={`Round ${round.number} skins`} disabled={!skinsOn || playState(round.key, round.number).started} className={styles.formatSwitch}
+                      onClick={() => setSkinsRounds(current => ({ ...current, [round.key]: !on }))}>
+                      <span className={styles.formatThumb} />
+                    </button>
+                  </div>;
+                }))}
+              </div>
+            </section>
+          </div>}
+      </div>}
       {predictOpen && <div className={styles.competition}><GolfTripPredictSettings teamEvent={Boolean(competitionType.team)} /></div>}
       {historyOpen && <div className={styles.competition}><GolfTripHistory trips={pastTrips} onChange={setPastTrips} tripPlayers={joinedPlayers.map(player => player.name)} linking={livePanels ? undefined : historyLinking} /></div>}
 
@@ -1600,7 +1608,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
           scheduledToday={simulator?.state.roundStatus === "live" || simulator?.state.roundStatus === "roundEnd"} />}
       </div>}
 
-      {!placeholder && !competitionOpen && !gamesOpen && !roundsOpen && !playersOpen && !playerScoringOpen && !scorecardViewOpen && !historyOpen && !predictOpen && !matchesOpen && !scorecardOpen && <div className={styles.settingsSections}>
+      {!placeholder && !competitionOpen && !gamesOpen && !roundsOpen && !playersOpen && !playerScoringOpen && !scorecardViewOpen && !historyOpen && !predictOpen && !skinsOpen && !matchesOpen && !scorecardOpen && <div className={styles.settingsSections}>
         {/* Scorecards: every round from Golf Schedule, by day (same Day N + date header and cream round box). Tap a round
             to open its players page. */}
         {section === "Scorecards" ? livePanels?.scorecards ?? <div className={`${tripStyles.events} ${styles.scorecardDays}`}>
@@ -1649,6 +1657,9 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
             <h2>{title}</h2>
           </button>;
           if (title === "Player Scoring") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`} onClick={() => setPlayerScoringOpen(true)}>
+            <h2>{title}</h2>
+          </button>;
+          if (title === "Skins") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`} onClick={() => setSkinsOpen(true)}>
             <h2>{title}</h2>
           </button>;
           if (title === "Predict") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`} onClick={() => setPredictOpen(true)}>
