@@ -315,7 +315,10 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const [compFormats, setCompFormats] = usePersistedState<Record<string, RoundCompSettings>>(persist, "compFormats", {});
   // Organizer → Games: which games each round plays (round number → Play game ids). Everyone's Games tab gets them.
   const [gameRounds, setGameRounds] = usePersistedState<Record<string, GameId[]>>(persist, "gameRounds", {});
-  const [gameRound, setGameRound] = useState(1);
+  // Which round the Games switches are for: the one picked, else the round the trip is on now (its players' latest group).
+  const [pickedGameRound, setGameRound] = useState<number | null>(null);
+  const liveGroupRound = [...devRounds.groups].reverse().map(group => /round-(\d+)$/.exec(group.tripRoundId ?? "")).find(found => found && scopedRoundId(scoringTripId ?? DEV_TRIP_ID, Number(found[1])) === found.input);
+  const gameRound = pickedGameRound ?? (liveGroupRound ? Number(liveGroupRound[1]) : 1);
   // Turning a round's Comp switch off waits for this confirm (it removes the round's format).
   const [confirmCompOff, setConfirmCompOff] = useState<string | null>(null);
   const [coursePicker, setCoursePicker] = useState<{ key: string; label: string } | null>(null);
