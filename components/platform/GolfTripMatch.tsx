@@ -24,7 +24,8 @@ import homeStyles from "./GolfTripHome.module.css";
 import { value as statValue, type TripStatsView } from "./GolfTripStats";
 import { PLAYER_STAT_DEFS, playerStats } from "@/lib/platform/tripInsights";
 import { MatchDraftStatus } from "./MatchDraftStatus";
-import { matchCard, winCurve, withHoleStandings, type MatchCard, type WinPoint } from "@/lib/platform/matchCenter";
+import { hasHoleScores, matchCard, winCurve, winNow, withHoleStandings, type MatchCard, type WinPoint } from "@/lib/platform/matchCenter";
+import { usePredictSettings } from "@/lib/platform/predictSetting";
 import { shapeForToPar } from "@/lib/golf/holeResult";
 import { teamPoints } from "@/lib/platform/teamPoints";
 import { usePlayerStats } from "@/lib/platform/playerStatsSetting";
@@ -52,6 +53,15 @@ export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundSt
     matches: scored.matches.filter(pairing => (pairing.round ?? fullMatch.round) === viewRound) };
   const original = fullMatch.matches.filter(pairing => (pairing.round ?? fullMatch.round) === viewRound);
   const [opened, setOpened] = useState<number | null>(null);
+  // Predict on: each match's chance to win right now (Predict's model with the holes played; a finished match is certain).
+  const predictOn = usePredictSettings().on;
+  const chances = useMemo(() => !predictOn ? [] : original.map((pairing) => {
+    const net = matchScoring(fullMatch) === "Net";
+    if (hasHoleScores(fullMatch, pairing)) { const now = winNow(fullMatch, matchCard(fullMatch, pairing, net)); return now ? now.left + now.halved / 2 : 0.5; }
+    const left = normalizeCompetitor(pairing.left), standing = net ? pairing.net : pairing.gross;
+    const status = matchStatus({ thru: left.thru ?? left.golfers[0]?.thru, standing, result: pairing.result });
+    return matchWinPct(standing, status.kind === "thru" ? status.holes : status.kind === "final" ? 18 : 0, status.kind === "final") / 100;
+  }), [predictOn, original, fullMatch]);
   // Gross only: gross, no control. Net only: net, "Net Scoring". Both: the GROSS / NET switch.
   const scoring = matchScoring(match);
   const showNet = scoring === "Net" || (scoring === "Both" && net);
@@ -85,6 +95,7 @@ export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundSt
             <MatchStatus status={status} plain />
           </span>
           {rightComp && <MatchSide competitor={rightComp} side="right" standing={shown} score={sideScore(status, shown, "right")} />}
+          {predictOn && chances[i] !== undefined && <WinLine left={chances[i]} />}
         </li>;
       })}
       {/* No matches set for this round yet: the same row, with placeholders. */}
@@ -454,6 +465,7 @@ export function GolfMatchup({ match, compact = false, below, swipe, featured = 0
 }) {
   // Organizer → Player Scoring → Player Stats off: no stats anywhere on the Golf tab.
   const showStats = usePlayerStats();
+  const predictOn = usePredictSettings().on;
   const [left, right] = match.sides;
   const pairing: GolfMatchPairing | undefined = match.matches[featured];
   const leftComp = pairing ? normalizeCompetitor(pairing.left) : undefined;
@@ -471,7 +483,7 @@ export function GolfMatchup({ match, compact = false, below, swipe, featured = 0
     : [blank(left, left.name, 50), blank(right, right.name, 50)]);
 
   return <div className={`${styles.matchup} ${compact ? styles.matchupCompact : ""}`}>
-    <section className={`${styles.versus} ${compact ? styles.boardBox : ""}`} aria-label="Match" {...swipe}>
+    <section className={`${styles.versus} ${compact ? styles.boardBox : ""}`} aria-label="Match" data-board-compact={!predictOn && !showStats || undefined} {...swipe}>
       <div className={styles.teams}>
         {leftComp ? <>
           <PlayerSide competitor={leftComp} align="left" standing={shown} score={status ? sideScore(status, shown, "left") : ""} />
@@ -484,11 +496,11 @@ export function GolfMatchup({ match, compact = false, below, swipe, featured = 0
           <div className={`${styles.side} ${styles.right}`}><p className={styles.teamName}>TBD</p></div>
         </>}
       </div>
-      <div className={styles.stats}>
-        <WinBar left={boxLeft.winPct} right={boxRight.winPct} />
+      {(predictOn || showStats) && <div className={styles.stats}>
+        {predictOn && <WinBar left={boxLeft.winPct} right={boxRight.winPct} />}
         {showStats && <RoundStats side={boxLeft} align="left" />}
         {showStats && <RoundStats side={boxRight} align="right" />}
-      </div>
+      </div>}
     </section>
 
     {/* Under the big box: the round picker (where the match ovals used to be). */}
@@ -539,13 +551,14 @@ export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: 
   // Tapping the team boxes drops down every player's match points, best first (owner request 2026-10-15).
   // Organizer → Player Scoring → Player Stats off: no stats anywhere on the Golf tab.
   const showStats = usePlayerStats();
+  const predictOn = usePredictSettings().on;
   const [pointsOpen, setPointsOpen] = useState(false);
   const [statsTeam, setStatsTeam] = useState<0 | 1 | null>(null);
   const ranking = pointsOpen ? playerPoints(withHoleStandings(match)) : [];
   // Team totals from the organizer's round settings (points per match, Nassau), counted per match.
   const team = teamPoints(match);
   return <div className={styles.matchup} data-points-open={pointsOpen || undefined}>
-    <section className={`${styles.versus} ${styles.boardBox}`} aria-label="Tournament standings">
+    <section className={`${styles.versus} ${styles.boardBox}`} aria-label="Tournament standings" data-board-compact={!predictOn && !showStats || undefined}>
       <div className={`${styles.summaryTeams} ${styles.summaryTap}`} role="button" tabIndex={0} aria-expanded={pointsOpen} aria-label="Points by player"
         onClick={() => setPointsOpen(!pointsOpen)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setPointsOpen(!pointsOpen); } }}>
         {/* Each team sits in its own color fill (like a lead fill, but always there) from its edge in toward TO WIN. */}
@@ -562,8 +575,8 @@ export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: 
           <small>TO WIN</small>{team ? halves(team.available / 2 + 0.5) : "—"}
         </span>
       </div>
-      <div className={styles.stats}>
-        <WinBar left={left.winPct} right={right.winPct} />
+      {(predictOn || showStats) && <div className={styles.stats}>
+        {predictOn && <WinBar left={left.winPct} right={right.winPct} />}
         {/* Predict off (Organizer → Predict): no button; the team stats stay where they are. */}
         {/* Player Stats off: no team stats; the Predict button (if on) stays in the middle. */}
         {(showStats || onPredict) && <div className={styles.predictRow}>
@@ -571,7 +584,7 @@ export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: 
           {onPredict ? <button type="button" className={styles.predictPill} onClick={onPredict}>Predict</button> : <span aria-hidden />}
           {showStats ? <SummaryStats align="right" team={right.name} onOpen={() => setStatsTeam(1)} /> : <span aria-hidden />}
         </div>}
-      </div>
+      </div>}
     </section>
     {statsTeam !== null && <TeamStatsSheet match={match} initialTeam={statsTeam} stats={tripStats} onClose={() => setStatsTeam(null)} />}
   </div>;
@@ -1067,4 +1080,13 @@ function WinChart({ curve, holes, teamNames }: { curve: WinPoint[]; holes: numbe
       <span data-side="right">{teamNames[1]} <strong>{Math.round(held.right * 100)}%</strong></span>
     </div>}
   </div>;
+}
+
+/** A thin line under a match: the favorite's side fills from its edge, as far as their chance to win, with the %. */
+function WinLine({ left }: { left: number }) {
+  const favorite = left >= 0.5 ? "left" : "right", pct = Math.round((favorite === "left" ? left : 1 - left) * 100);
+  return <span className={styles.winLine} data-side={favorite} role="img" aria-label={`${pct}% to win`}>
+    <span className={styles.winLineFill} style={{ width: `${pct}%` }} />
+    <small>{pct}%</small>
+  </span>;
 }
