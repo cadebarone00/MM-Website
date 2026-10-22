@@ -6,7 +6,6 @@ import { DatePicker } from "@/components/platform/DatePicker";
 
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { motion } from "motion/react";
 import { ArrowLeftRight, ChevronLeft, GripVertical, Minus, Plus, Shuffle, Trash2, X } from "lucide-react";
 import { GolfGameScoringSettings } from "./GolfGameScoringSettings";
 import { SIDE_GAME_REGISTRY } from "@/lib/platform/golfTripGames";
@@ -616,42 +615,21 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     else if (skinsOpen) setSkinsOpen(false);
     else setGamesOpen(false);
   };
-  // SAVE: every setting below, as it was when each open settings page was opened (one entry per level). Changes only
-  // count once SAVE is tapped; leaving a page with unsaved changes asks first, and Exit without saving puts them back.
+  // Every setting below, as it was when each open settings page was opened (one entry per level). Settings auto save, so
+  // this is only the sections' own record of what they last kept.
   const settingsValues = { pastTrips, scoringFieldsOff, playerTotal, removedPlayers, competitionType, lockedComp, teamChoiceSaved, typePlayers,
     teamNames, teamColors, teamPicks, teamTotalChoice, unevenTeams, unevenSizes, teamTie, teamSelection, draftDate, draftTime, draftOrder, draftMethod, submittedTeams,
     gameSettings, dayCount, roundsPerDay, arrivalShift, pickedCourses, yardageCorrections, roundTees, compRounds, compFormats, matchSelections, matchPerRound,
     allRoundsMatch, teePlayers, teeMatches, slotCourseNames, courseShortNames, golfOnArrival, golfOnDeparture, teeTimes, skinsOn, skinsRounds, skinsPlayers, skinsScoring, scoringView, playerStats, myStats, inAppScoring, predictSettings, gameRounds };
-  const restoreSettings = (saved: typeof settingsValues) => {
-    setTeamTie(saved.teamTie);
-    setPastTrips(saved.pastTrips); setScoringFieldsOff(saved.scoringFieldsOff); setPlayerTotal(saved.playerTotal);
-    setRemovedPlayers(saved.removedPlayers); setCompetitionType(saved.competitionType); setLockedComp(saved.lockedComp); setTeamChoiceSaved(saved.teamChoiceSaved);
-    setTypePlayers(saved.typePlayers); setTeamNames(saved.teamNames); setTeamColors(saved.teamColors); setTeamPicks(saved.teamPicks);
-    setTeamTotalChoice(saved.teamTotalChoice); setUnevenTeams(saved.unevenTeams); setUnevenSizes(saved.unevenSizes); setTeamSelectionState(saved.teamSelection);
-    setDraftDate(saved.draftDate); setDraftTime(saved.draftTime); setDraftOrder(saved.draftOrder); setDraftMethod(saved.draftMethod); setSubmittedTeams(saved.submittedTeams);
-    setGameSettings(saved.gameSettings); setDayCount(saved.dayCount); setRoundsPerDay(saved.roundsPerDay); setArrivalShift(saved.arrivalShift);
-    setPickedCourses(saved.pickedCourses); setYardageCorrections(saved.yardageCorrections); setRoundTees(saved.roundTees); setCompRounds(saved.compRounds);
-    setCompFormats(saved.compFormats); setGameRounds(saved.gameRounds ?? {}); setMatchSelections(saved.matchSelections); setMatchPerRound(saved.matchPerRound); setAllRoundsMatch(saved.allRoundsMatch);
-    setTeePlayers(saved.teePlayers); setTeeMatches(saved.teeMatches); setSlotCourseNames(saved.slotCourseNames); setCourseShortNames(saved.courseShortNames ?? {}); setGolfOnArrival(saved.golfOnArrival);
-    setGolfOnDeparture(saved.golfOnDeparture); setTeeTimes(saved.teeTimes); setSkinsOn(saved.skinsOn); setSkinsRounds(saved.skinsRounds); setSkinsPlayers(saved.skinsPlayers); setSkinsScoring(saved.skinsScoring ?? "Gross");
-    if (saved.scoringView !== scoringView) setScoringView(saved.scoringView);
-    if (saved.playerStats !== playerStats) setPlayerStats(saved.playerStats);
-    if (saved.myStats !== myStats) setMyStatsOptIn(saved.myStats);
-    if (saved.inAppScoring !== inAppScoring) setInAppScoring(saved.inAppScoring);
-    if (settingsKey(saved.predictSettings) !== settingsKey(predictSettings)) savePredictSettings(saved.predictSettings);
-  };
   const settingsDepth = (competitionOpen || gamesOpen || roundsOpen || playersOpen || playerScoringOpen || scorecardViewOpen || historyOpen || predictOpen || skinsOpen || matchesOpen || scorecardOpen ? 1 : 0)
     + (selectedRound || compRound || skinsRound || selectedGame || scheduleRound || matchRound || scorecardPlayer !== null ? 1 : 0);
   const [savedSettings, setSavedSettings] = useState<(typeof settingsValues)[]>([]);
   // Opening a page remembers the settings as they are; closing one forgets its entry.
   if (savedSettings.length !== settingsDepth) setSavedSettings(stack => stack.length < settingsDepth
     ? [...stack, ...Array.from({ length: settingsDepth - stack.length }, () => settingsValues)] : stack.slice(0, settingsDepth));
-  const savedNow = savedSettings[savedSettings.length - 1];
-  const unsaved = savedNow !== undefined && settingsKey(savedNow) !== settingsKey(settingsValues);
-  const [leaveConfirm, setLeaveConfirm] = useState(false);
-  // SAVE keeps everything as it is now (on this page and the pages under it); you stay on the page, and it reads SAVED.
-  const saveSettings = () => setSavedSettings(stack => stack.map(() => settingsValues));
-  const tryGoBack = () => { if (unsaved) setLeaveConfirm(true); else goBack(); };
+  // Auto save (owner request 2026-10-22): every change keeps as soon as it's tapped, so there's no SAVE button and the
+  // back arrow never asks about unsaved changes.
+  const tryGoBack = goBack;
   // The trip's players as checkboxes in two columns (filled down the left first), with Select all on top.
   const playerChecklist = (label: string, checked: Set<number>, onChange: (next: Set<number>) => void) => {
     const everyone = Array.from({ length: playerTotal }, (_, index) => index);
@@ -680,7 +658,6 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const teamSizeSection = (saved: SettingsValues): Partial<SettingsValues> => ({ competitionType: { ...saved.competitionType, team: competitionType.team },
     teamTotalChoice, unevenTeams, unevenSizes, teamTie });
   const teamsSection = (): Partial<SettingsValues> => ({ teamSelection, teamPicks, teamNames, teamColors });
-  const exitWithoutSaving = () => { if (savedNow) restoreSettings(savedNow); setLeaveConfirm(false); goBack(); };
 
   if (matchDraftRoomOpen) {
     const method = simulator?.state.matchDraftPreview;
@@ -709,8 +686,6 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
       {(competitionOpen || gamesOpen || roundsOpen || playersOpen || playerScoringOpen || scorecardViewOpen || historyOpen || predictOpen || skinsOpen || matchesOpen || scorecardOpen) ? <header className={styles.competitionHeader}>
         <button type="button" className={styles.close} aria-label={scorecardPlayer !== null ? "Back to players" : scorecardOpen ? "Back to scorecards" : skinsRound ? "Back to skins" : selectedRound || compRound ? "Back to competition rounds" : selectedGame ? "Back to games" : "Back to organizer settings"} onClick={tryGoBack}><ChevronLeft size={28} aria-hidden /></button>
         <h1>{scorecardPlayer !== null ? playerName(scorecardPlayer) : scorecardRound ? `Round ${scheduleSlot(scorecardRound.day, scorecardRound.slot).number}` : selectedRound ? "Round " + selectedRound.number + " Settings" : compRound ? `Round ${compRound.number} Competition` : skinsRound ? `Round ${scheduleSlot(skinsRound.day, skinsRound.slot).number} Skins` : selectedGame ? selectedGame.name : gamesOpen ? "Games" : roundsOpen ? scheduleRound ? `Round ${scheduleSlot(scheduleRound.day, scheduleRound.slot).number}` : "Golf Schedule" : playersOpen ? "Players" : playerScoringOpen ? "Player Scoring" : scorecardViewOpen ? "Scorecard View" : historyOpen ? "History" : predictOpen ? "Predict" : skinsOpen ? "Skins" : matchesOpen ? matchRound ? `Round ${scheduleSlot(matchRound.day, matchRound.slot).number}` : "Match Selection" : overviewType === "team" ? "Team Competition" : "Individual Competition"}</h1>
-        {/* Gold SAVE once something has changed; greyed-out SAVED (can't be tapped) while there's nothing to save. */}
-        <motion.button type="button" className={styles.save} disabled={!unsaved} onClick={saveSettings} whileHover={unsaved ? { scale: 1.02 } : undefined} whileTap={unsaved ? { scale: 0.96 } : undefined} transition={{ type: "spring", stiffness: 420, damping: 24 }}>{unsaved ? "SAVE" : "SAVED"}</motion.button>
       </header> : <header className={styles.header}>
       <Link href={backHref} className={styles.close} aria-label="Back to trip"><ChevronLeft size={26} strokeWidth={1.75} aria-hidden /></Link>
       <div className={styles.heading}>
@@ -1437,15 +1412,6 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
             setScheduleRound(null);
           }}>Confirm</button>
           <button type="button" className={tripStyles.cancelButton} onClick={() => setDeleteScheduleRound(false)}>Keep editing</button>
-        </div>
-      </div>}
-
-      {/* Leaving a settings page without tapping SAVE: Go back stays on the page; Exit without saving puts the changes back. */}
-      {leaveConfirm && <div className={tripStyles.deleteOverlay} role="dialog" aria-modal="true" aria-label="Unsaved changes">
-        <div className={tripStyles.deleteDialog}>
-          <p className={tripStyles.deletePrompt}>Unsaved changes will be lost</p>
-          <button type="button" className={tripStyles.cancelButton} onClick={() => setLeaveConfirm(false)}>Go back</button>
-          <button type="button" className={tripStyles.deleteButton} onClick={exitWithoutSaving}>Exit without saving</button>
         </div>
       </div>}
 
