@@ -1,5 +1,5 @@
 import { normalizeCompetitor, type GolfMatchPreview } from "./golfTripPreviewFixture";
-import { scoreGame, type GameConfig, type GameCourse, type GamePlayer, type GameResult, type HoleInput } from "./roundGames";
+import { gameDef, scoreGame, type GameConfig, type GameCourse, type GameId, type GamePlayer, type GameResult, type HoleInput } from "./roundGames";
 
 /**
  * Golf trip → Games (owner request 2026-10-17): the same games as Play a round (lib/platform/roundGames.ts — scored by
@@ -102,4 +102,25 @@ export function vegasByHole(game: TripGame, players: GamePlayer[], course: GameC
   }
   const signed = (n: number) => n > 0 ? `+${n}` : String(n);
   return { title: `Vegas${thru ? ` · thru ${thru}` : ""}`, standings: players.map((p, i) => ({ label: p.name, value: signed(points[i]), rank: points[i] })).sort((a, b) => b.rank - a.rank) };
+}
+
+/** Organizer → Games uses its own game list; these are the matching Play games (Coin Flip has none yet). */
+export const ORGANIZER_GAME_TO_PLAY: Record<string, GameId> = { skins: "skins", "match-play": "match", "9-point": "nines", wolf: "wolf", vegas: "vegas", "round-robin": "sixes" };
+
+/**
+ * The games the organizer put on a round, as my group's games (owner request 2026-10-19): every group plays its own
+ * copy, with as many of the group as the game takes (me first). Games already made for that round, game and players
+ * aren't made again. A game that can't fit the group is skipped.
+ */
+export function organizerGames(allocations: Record<string, GameId[]> | undefined, group: string[], existing: TripGame[]): TripGame[] {
+  const same = (a: string[], b: string[]) => a.length === b.length && [...a].sort().join("|") === [...b].sort().join("|");
+  return Object.entries(allocations ?? {}).flatMap(([round, ids]) => ids.flatMap((id): TripGame[] => {
+    const def = gameDef(id);
+    const size = [...def.players].sort((a, b) => b - a).find((n) => n <= group.length);
+    if (!size) return [];
+    const players = group.slice(0, size);
+    if (existing.some((g) => g.round === Number(round) && g.config.id === id && same(g.players, players))) return [];
+    return [{ key: `organizer-${round}-${id}`, round: Number(round), players, inputs: [], started: !(def.teams && id !== "vegas"),
+      config: { id, net: false, birdiesDouble: false, ...(def.teams ? { teams: players.map((_, i) => i < players.length / 2 ? 0 : 1) } : {}) } }];
+  }));
 }

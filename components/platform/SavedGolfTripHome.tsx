@@ -4,6 +4,9 @@ import { useEffect, useRef, useState, type ComponentProps } from "react";
 import { GolfTripHome } from "./GolfTripHome";
 import type { SavedGolfTrip } from "@/lib/platform/golfTripCreate";
 import { savedTripPresentation } from "@/lib/platform/savedTripPresentation";
+import { roundScoringFrom } from "@/lib/platform/teamPoints";
+import type { RoundCompSettings } from "@/lib/platform/roundCompetition";
+import type { GameId } from "@/lib/platform/roundGames";
 import type { TripSetupSnapshot } from "@/lib/platform/savedTripSetup";
 import { SavedTripSetupProvider, useSavedTripSetup } from "./SavedTripSetupProvider";
 import type { SavedTravelSnapshot } from "@/lib/platform/savedTripTravel";
@@ -296,7 +299,7 @@ function SavedGolfTripHomeInner({ scoring, savedTrip, setupSnapshot: _setupSnaps
   const myGroupIds = live?.groups.find((g) => g.players.some((p) => p.profileId === myId))?.players.map((p) => p.profileId);
   const savedGames = savedTrip && myId ? { tripId: savedTrip.trip.id, meId: myId,
     group: accepted.filter((m) => !myGroupIds || myGroupIds.includes(m.profileId as string)).map((m) => ({ profileId: m.profileId as string, name: m.displayName })) } : undefined;
-  const shownHome: ComponentProps<typeof GolfTripHome> = savedTrip ? { ...home, savedGames, previewMatch: savedTripPresentation(savedTrip, live), competitionKey: savedTrip.trip.id,
+  const shownHome: ComponentProps<typeof GolfTripHome> = savedTrip ? { ...home, savedGames, organizerGames: selected?.gameRounds as Record<string, GameId[]> | undefined, previewMatch: { ...savedTripPresentation(savedTrip, live), roundScoring: roundScoringFrom(savedTrip.rounds.map((r) => ({ number: r.roundNumber, dayNumber: r.dayNumber })), selected?.compFormats as Record<string, RoundCompSettings> | undefined, selected?.compRounds as Record<string, boolean> | undefined, Number(selected?.playerTotal) || accepted.length) }, competitionKey: savedTrip.trip.id,
     savedCompetitionType: types, savedTeamColors: selected?.teamColors as (string | null)[] | undefined,
     savedTeamDraft: selected ? { teamType: types?.team ?? null, selection: (selected.teamSelection as "Manual" | "Draft" | "Random" | null) ?? null,
       date: String(selected.draftDate ?? ""), time: String(selected.draftTime ?? ""), type: selected.draftType === "Straight" ? "Straight" : "Snake", method: selected.draftMethod === "Duck Race" ? "Duck Race" : "Captain's Picks" } : undefined } : home;

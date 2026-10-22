@@ -26,6 +26,7 @@ import { PLAYER_STAT_DEFS, playerStats } from "@/lib/platform/tripInsights";
 import { MatchDraftStatus } from "./MatchDraftStatus";
 import { matchCard, winCurve, withHoleStandings, type MatchCard, type WinPoint } from "@/lib/platform/matchCenter";
 import { shapeForToPar } from "@/lib/golf/holeResult";
+import { teamPoints } from "@/lib/platform/teamPoints";
 
 /**
  * Golf tab, Sleeper's fantasy Match screen translated to golf, on the trip's maroon.
@@ -528,6 +529,8 @@ export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: 
   const [pointsOpen, setPointsOpen] = useState(false);
   const [statsTeam, setStatsTeam] = useState<0 | 1 | null>(null);
   const ranking = pointsOpen ? playerPoints(withHoleStandings(match)) : [];
+  // Team totals from the organizer's round settings (points per match, Nassau), counted per match.
+  const team = teamPoints(match);
   return <div className={styles.matchup} data-points-open={pointsOpen || undefined}>
     <section className={`${styles.versus} ${styles.boardBox}`} aria-label="Tournament standings">
       <div className={`${styles.summaryTeams} ${styles.summaryTap}`} role="button" tabIndex={0} aria-expanded={pointsOpen} aria-label="Points by player"
@@ -535,15 +538,15 @@ export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: 
         {/* Each team sits in its own color fill (like a lead fill, but always there) from its edge in toward TO WIN. */}
         {[left, right].map((side, i) => <div key={side.name} className={`${styles.summaryFill} ${i ? `${styles.summaryRight} ${styles.summaryFillRight}` : styles.summaryFillLeft}`}>
           <FitName name={side.name} />
-          <p className={styles.summaryScore}>{side.score || "—"}</p>
+          <p className={styles.summaryScore}>{team ? halves(team.points[i]) : side.score || "—"}</p>
           {/* Open: the box extends down with this team's players, most points first. */}
           {pointsOpen && <ol className={styles.teamPoints} aria-label={`${side.name} points by player`}>
             {ranking.filter((row) => row.side === (i ? "right" : "left")).map((row) => <li key={row.name}><span>{row.name}</span><b>{row.points}</b></li>)}
           </ol>}
         </div>)}
-        {/* Between the teams, like THRU on the Matches box: the points needed to win (not wired up yet). */}
+        {/* Between the teams, like THRU on the Matches box: the points needed to win (half the points up for grabs, plus ½). */}
         <span className={`${styles.status} ${styles.statusPlain} ${styles.summaryToWin}`} aria-label="Points to win">
-          <small>TO WIN</small>—
+          <small>TO WIN</small>{team ? halves(team.available / 2 + 0.5) : "—"}
         </span>
       </div>
       <div className={styles.stats}>
@@ -563,6 +566,9 @@ export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: 
  * Each player's match points across the trip's matches, best first: the points the data gives a side, otherwise a
  * finished match is worth 1 to each winner and ½ each when halved (net standing when the round is net only).
  */
+/** 4.5 → "4½", 0.5 → "½", 4 → "4". */
+const halves = (n: number) => n % 1 ? `${Math.floor(n) || ""}½` : String(n);
+
 function playerPoints(match: GolfMatchPreview): { name: string; side: "left" | "right"; points: number }[] {
   const totals = new Map<string, { name: string; side: "left" | "right"; points: number }>();
   const net = matchScoring(match) === "Net";

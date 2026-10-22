@@ -148,6 +148,11 @@ begin
       select 1 from golf_trip_members m where m.golf_trip_id = p_trip and m.profile_id = x and m.invitation_status = 'accepted')) then
     raise exception 'Those players aren''t on this trip.';
   end if;
+  -- The same game for the same players in the same round already exists (e.g. an organizer's game opened on two phones).
+  if exists (select 1 from golf_trip_games g where g.golf_trip_round_id = v_round.id and g.game_type = v_type
+      and (select array_agg(x order by x) from unnest(g.player_profile_ids) x) = (select array_agg(x order by x) from unnest(v_players) x)) then
+    return get_trip_games(p_profile, p_trip);
+  end if;
   if trip_game_has_teams(v_type) then
     select array_agg(value::smallint order by ord) into v_teams from jsonb_array_elements_text(coalesce(p_game -> 'teams', '[]'::jsonb)) with ordinality as e(value, ord);
     if v_teams is null then v_teams := (select array_agg((case when ord <= array_length(v_players, 1) / 2 then 0 else 1 end)::smallint order by ord) from generate_series(1, array_length(v_players, 1)) as ord); end if;
