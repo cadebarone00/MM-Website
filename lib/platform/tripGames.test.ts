@@ -78,3 +78,12 @@ test("Vegas hole by hole: with the same teams all round it matches Play's Vegas 
   assert.deepEqual(byName(trip1), { Cam: "+40", Drew: "+40", Cade: "-40", Luke: "-40" });
   assert.deepEqual(byName(swapped), { Cam: "-40", Drew: "+40", Cade: "-40", Luke: "+40" }, "Drew & Luke win hole 2 with the swapped teams");
 });
+
+test("organizer games: each round's games become my group's games, sized to fit, made once", async () => {
+  const { organizerGames } = await import("./tripGames");
+  const group = ["Cam", "Drew", "Cade", "Luke"];
+  const made = organizerGames({ "1": ["wolf", "nines", "daytona"], "2": ["match"] }, group, []);
+  assert.deepEqual(made.map((g) => [g.round, g.config.id, g.players.length, g.started]), [[1, "wolf", 4, true], [1, "nines", 3, true], [2, "match", 4, false]],
+    "Daytona needs 5 so it's skipped; Nines takes 3; Match Play waits for teams");
+  assert.equal(organizerGames({ "1": ["wolf"] }, group, made).length, 0, "already made");
+});

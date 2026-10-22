@@ -179,7 +179,12 @@ export type GolfLeaderboardEntry = {
   holeDetails?: import("./playerRounds").PlayerRoundHole[];
 };
 
+/** One competition round's settings from the organizer's Team Competition → Format (what each match pays). */
+export type RoundScoring = { round: number; matchPlay: boolean; pointsPerMatch: number; nassau: boolean; pointsAvailable: number };
+
 export type GolfMatchPreview = {
+  /** The organizer's competition settings per round (team points and TO WIN use these when present). */
+  roundScoring?: RoundScoring[];
   /** Round-specific standings and scorecards from supplied archive data or fictional development scenarios. */
   roundStandings?: { round: number; standingsRound?: number; datePlayed?: string; format?: string; par?: number[]; leaderboard: GolfLeaderboardEntry[] }[];
   /** Development source identity; absent from public and saved-trip data. */

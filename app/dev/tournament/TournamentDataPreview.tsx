@@ -4,6 +4,10 @@ import { isTripScenario } from "@/lib/dev/tripScenario";
 
 
 import { sampleTripStatsView } from "@/lib/dev/sampleTripRounds";
+import { roundScoringFrom } from "@/lib/platform/teamPoints";
+import { plannedRounds } from "@/lib/platform/golfTripDraft";
+import type { RoundCompSettings } from "@/lib/platform/roundCompetition";
+import type { GameId } from "@/lib/platform/roundGames";
 import { useEffect, useMemo, useState } from "react";
 import { GolfTripHome } from "@/components/platform/GolfTripHome";
 import { CELEBRATION_MS } from "@/components/platform/SubmitCelebration";
@@ -69,6 +73,10 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
   // keep, the leaderboard with saved rounds, trip stats and the organizer's own changes.
   const scoring = devTripScoring(devRounds, match, viewAs);
   const group = scoring.group;
+  // Team points: the organizer's saved Team Competition settings per round (points per match, Nassau).
+  const shownMatch = scoring.shownMatch && data.preview ? { ...scoring.shownMatch, roundScoring: roundScoringFrom(plannedRounds(data.preview),
+    setup.compFormats as Record<string, RoundCompSettings> | undefined, setup.compRounds as Record<string, boolean> | undefined,
+    Number(setup.playerTotal ?? data.preview.playerCount) || scoring.shownMatch.leaderboard.length) } : scoring.shownMatch;
   // Golf → Stats preview: a made-up trip's rounds for this trip's players — whenever no cards have been submitted yet (so the
   // tab always has something to show in dev), or always with the simulator's "Sample trip stats". "From saved cards" turns it off.
   const useSample = simulatorUsesSampleTripStats(config, Boolean(scoring.tripStats.trip));
@@ -108,7 +116,7 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
       organizer={viewAs === DEFAULT_DEV_ACCOUNT}
       savedTeamDraft={justCreated ? { teamType: readJustCreated<{ team: string | null }>("localCompetitionType")?.team ?? null, selection: readJustCreated("teamSelection") ?? null,
         date: readJustCreated("draftDate") ?? "", time: readJustCreated("draftTime") ?? "", type: readJustCreated("draftType") ?? "Snake", method: readJustCreated("draftMethod") ?? "Captain's Picks" } : setup.teamSelection ? {teamType:(setup.localCompetitionType as {team:string|null}|undefined)?.team??(config.source==="maroon"?"2 Teams":null),selection:setup.teamSelection as TeamDraft["selection"],date:(setup.draftDate as string)??"",time:(setup.draftTime as string)??"",type:(setup.draftType as TeamDraft["type"])??"Snake",method:(setup.draftMethod as TeamDraft["method"])??"Captain's Picks"} : undefined}
-      onTravelChange={travel => justCreated ? writeJustCreated("travel", travel) : writeDevSetup(scope,"travel",travel)} weather={weather} previewMatch={scoring.shownMatch} tripStats={sampleStats ?? scoring.tripStats} scoreChanges={scoring.scoreChanges} attesteeName={scoring.attesteeName} attestedStrokes={scoring.myLiveCard?.holes.map((h) => h.attestStrokes)} onAttestChange={onAttestChange} scoringEdits={saved?.edits} onScoringCardChange={onScoringCardChange} roundLive={roundLive} opponentCardMatches={config.state.opponentCard !== "mismatch"} scoringPrefill={scoringPrefill} onScoringSubmit={onScoringSubmit} submittedCard={submittedCard} scoringOwner={viewAs} signedInName={signedInName ?? devAccount(viewAs).name} navigation={simulator?.navigation} onNavigationChange={reportNavigation} settingsHref={settingsHref} backHref="/golf-trips" />
+      onTravelChange={travel => justCreated ? writeJustCreated("travel", travel) : writeDevSetup(scope,"travel",travel)} weather={weather} organizerGames={setup.gameRounds as Record<string, GameId[]> | undefined} previewMatch={shownMatch} tripStats={sampleStats ?? scoring.tripStats} scoreChanges={scoring.scoreChanges} attesteeName={scoring.attesteeName} attestedStrokes={scoring.myLiveCard?.holes.map((h) => h.attestStrokes)} onAttestChange={onAttestChange} scoringEdits={saved?.edits} onScoringCardChange={onScoringCardChange} roundLive={roundLive} opponentCardMatches={config.state.opponentCard !== "mismatch"} scoringPrefill={scoringPrefill} onScoringSubmit={onScoringSubmit} submittedCard={submittedCard} scoringOwner={viewAs} signedInName={signedInName ?? devAccount(viewAs).name} navigation={simulator?.navigation} onNavigationChange={reportNavigation} settingsHref={settingsHref} backHref="/golf-trips" />
     {!simulator && !embedded && !fictional && view === "maroon" && <details style={{ maxWidth: 920, margin: "24px auto", padding: 12, background: "#fff8ef", borderRadius: 8 }}>
       <summary style={{ fontWeight: 600 }}>DEV: Unmapped Tournament Data (click to view)</summary>
       <pre style={{ whiteSpace: "pre-wrap", marginTop: 8 }}>{JSON.stringify(unmapped, null, 2)}</pre>
