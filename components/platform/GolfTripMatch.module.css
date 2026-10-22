@@ -542,3 +542,7 @@
 .nonIndividualCard dd{margin:3px 0 0}
 .nonIndividualCard strong{font-weight:700}
 
+/* Leaderboard with skins: one more column (SKINS) after TOT. */
+.single.singleSkins{grid-template-columns:30px minmax(0,1fr) 34px 42px 34px 34px}
+.single.singleNet.singleSkins{grid-template-columns:30px minmax(0,1fr) 28px 34px 42px 34px 34px}
+@media(max-width:374px){.leaderboard .single.singleSkins{grid-template-columns:30px minmax(0,1fr) repeat(4,28px)}.leaderboard .single.singleNet.singleSkins{grid-template-columns:30px minmax(0,1fr) 28px repeat(4,28px)}}

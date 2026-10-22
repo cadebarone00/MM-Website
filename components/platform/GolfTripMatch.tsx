@@ -27,6 +27,7 @@ import { MatchDraftStatus } from "./MatchDraftStatus";
 import { matchCard, winCurve, withHoleStandings, type MatchCard, type WinPoint } from "@/lib/platform/matchCenter";
 import { shapeForToPar } from "@/lib/golf/holeResult";
 import { teamPoints } from "@/lib/platform/teamPoints";
+import { skinsCount } from "@/lib/platform/tripSkins";
 
 /**
  * Golf tab, Sleeper's fantasy Match screen translated to golf, on the trip's maroon.
@@ -194,6 +195,9 @@ export function GolfTripLeaderboard({ match, byToday = false, tripStats }: { mat
   const showNet = scoring === "Net" || (scoring === "Both" && net);
   // Always best → worst (alphabetical by last name before anyone has a score), for Gross and Net alike.
   const rows = rankLeaderboard(match.leaderboard, { net: showNet, stableford: isStableford, today: byToday });
+  // Skins this round (organizer's Competition → Skins): a column next to TOT. Players not in skins show "—".
+  const skins = skinsCount(match);
+  const rowClass = `${styles.single} ${showNet ? styles.singleNet : ""} ${skins ? styles.singleSkins : ""}`;
 
   const selectedCard = rows.find(row => row.golfer.name === selectedPlayer);
 
@@ -201,10 +205,11 @@ export function GolfTripLeaderboard({ match, byToday = false, tripStats }: { mat
     <div>
       <div className={styles.leaderboardListHeading}>
         {scoring !== "Gross" && <div className={styles.matchScoringControl}><ScoringControl scoring={scoring} net={net} onNet={setNet} /></div>}
-      <div className={`${styles.single} ${showNet ? styles.singleNet : ""} ${styles.columns}`} aria-hidden>
+      <div className={`${rowClass} ${styles.columns}`} aria-hidden>
         <span className={styles.columnPlayer} />
         {showNet && <span>HCP</span>}
         <span className={styles.columnLabel}>{isStableford ? "PTS" : "TOT"}</span>
+        {skins && <span className={styles.columnLabel}>SKINS</span>}
         <span className={styles.columnLabel}>THRU</span>
         <span className={styles.columnLabel}>TDY</span>
       </div>
@@ -215,13 +220,14 @@ export function GolfTripLeaderboard({ match, byToday = false, tripStats }: { mat
 
           const totDisplay = isStableford ? (pointsTotal !== undefined ? `${pointsTotal} PTS` : total) : parLabel(showNet ? netTotal : total);
           const tdyDisplay = isStableford ? (pointsToday !== undefined ? `${pointsToday} PTS` : today) : parLabel(showNet ? netToday : today);
-          return <li key={golfer.name} className={`${styles.single} ${showNet ? styles.singleNet : ""}`}>
+          return <li key={golfer.name} className={rowClass}>
             <span className={styles.rank}>{position}</span>
             <button type="button" className={styles.playerCardTrigger} onClick={() => setSelectedPlayer(golfer.name)} aria-haspopup="dialog" aria-label={golfer.name + " public trip profile"}>
               <Golfer golfer={golfer} align="left" showThru={false} showHcp={false} />
             </button>
             {showNet && <span className={styles.number} aria-label={`Handicap ${golfer.hcp}`}>{golfer.hcp}</span>}
             <span className={styles.number} data-par={isStableford ? undefined : parColor(totDisplay)} aria-label={`Total ${totDisplay}`}>{totDisplay}</span>
+            {skins && <span className={styles.number} aria-label={`Skins ${skins.get(golfer.name) ?? "not in skins"}`}>{skins.has(golfer.name) ? skins.get(golfer.name) : "—"}</span>}
             <span className={styles.number} aria-label={`Thru ${thru}`}>{thru}</span>
             <span className={styles.number} data-par={isStableford ? undefined : parColor(tdyDisplay)} aria-label={`Today ${tdyDisplay}`}>{tdyDisplay}</span>
 

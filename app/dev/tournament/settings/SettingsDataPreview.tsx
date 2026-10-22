@@ -1,5 +1,7 @@
 "use client";
 
+import { devSettingsRoster } from "@/lib/dev/devSettingsRoster";
+
 import { devTripScope, useDevSetup } from "@/lib/dev/tripSetupStore";
 import { useJustCreatedReady } from "@/lib/dev/justCreatedStore";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
@@ -28,9 +30,8 @@ export function SettingsDataPreview({ mock, maroon }: { mock: SimulatorTripData;
   // Players who have joined, from the tournament roster; the rest of the expected count shows as open spots.
   const roster = [preview?.rosterMaroon, preview?.rosterWhite].flatMap(list => (list ?? "").split(",")).map(slug => slug.trim()).filter(Boolean).map(getPlayerDisplayName);
   // Without a roster: the golfers on the trip's leaderboard (busy / mock data), else whoever has joined (a just-created
-  // trip: only the organizer).
-  const golfers = data.previewMatch?.leaderboard.map(row => row.golfer.name) ?? [];
-  const players = roster.length ? roster : golfers.length ? golfers : data.travel?.members.map(member => member.name) ?? (preview?.yourName ? [preview.yourName] : []);
+  // trip: only the organizer). Shared with the trip page (skins players are positions on this list).
+  const players = devSettingsRoster(data);
   // The trip's rounds from the chosen data (empty data → none), so Golf Schedule, Format and Summary match the rest of the app.
   // Rounds already played (or in play) are locked, the same way the trip page reads the round state.
   const match = data.previewMatch;

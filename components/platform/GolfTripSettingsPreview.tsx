@@ -715,7 +715,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
       {competitionOpen && competition ? <div className={styles.competition}>
         {/* Individual: Format (its type and players; every round plays it) | Skins | Summary. Team: Overview | Format | Summary. */}
         {!selectedRound && !compRound && !skinsRound && <div className={`${tripStyles.tabs} ${styles.tabs}`} aria-label="Competition sections">
-          {(overviewType === "individual" ? [["Overview", "Format"], ["Skins", "Skins"], ["Summary", "Summary"]] : [["Overview", "Overview"], ["Format", "Format"], ["Summary", "Summary"]]).map(([name, label]) => <button key={name} type="button" aria-pressed={competitionSection === name}
+          {(overviewType === "individual" ? [["Overview", "Format"], ["Skins", "Skins"], ["Summary", "Summary"]] : [["Overview", "Overview"], ["Format", "Format"], ["Skins", "Skins"], ["Summary", "Summary"]]).map(([name, label]) => <button key={name} type="button" aria-pressed={competitionSection === name}
             className={`${tripStyles.tab} ${competitionSection === name ? tripStyles.tabActive : ""} ${styles.tab}`}
             onClick={() => setCompetitionSection(name)}>{label}</button>)}
         </div>}
@@ -969,7 +969,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
             {/* Format: just the round boxes (no day headers). Each box: Date / Round # / course (+ format when on), with a Comp switch top right; tap a comp round for its competition settings. On = a competition round (box lit); off = not (box greyed). */}
             {/* Skins (Individual): on or off for the trip, then every round; while on, the rounds light up, each with its own
                 switch, and tapping a round that's on opens its players. */}
-            {competitionSection === "Skins" && overviewType === "individual" && <section className={tripStyles.infoSection} aria-label="Skins">
+            {/* Skins is on Individual and Team Competition alike (any trip can play skins). */}
+            {competitionSection === "Skins" && <section className={tripStyles.infoSection} aria-label="Skins">
               <div className={styles.totalPlayers}>
                 <span className={styles.typeHeading}>Skins</span>
                 <button type="button" role="switch" aria-checked={skinsOn} aria-label="Skins" className={toggleStyles.toggle} onClick={() => setSkinsOn(!skinsOn)}>
