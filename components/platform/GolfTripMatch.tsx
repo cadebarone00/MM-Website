@@ -27,6 +27,7 @@ import { MatchDraftStatus } from "./MatchDraftStatus";
 import { matchCard, winCurve, withHoleStandings, type MatchCard, type WinPoint } from "@/lib/platform/matchCenter";
 import { shapeForToPar } from "@/lib/golf/holeResult";
 import { teamPoints } from "@/lib/platform/teamPoints";
+import { usePlayerStats } from "@/lib/platform/playerStatsSetting";
 import { skinsCount } from "@/lib/platform/tripSkins";
 
 /**
@@ -240,6 +241,8 @@ export function GolfTripLeaderboard({ match, byToday = false, tripStats }: { mat
 }
 
 function PlayerPublicTripProfile({ match, name, avatarUrl, username, round, roundCount, par, holes, snapshot, roundStandings, net = false, stableford = false, tripStats, onClose }: { match: GolfMatchPreview; name: string; avatarUrl: string | null; username: string | null; round: number; roundCount: number; roundStandings?: GolfMatchPreview["roundStandings"]; net?: boolean; stableford?: boolean; par: number[]; holes: (number | null)[]; snapshot: { position: string; total: string; roundScore: string; thru: string }; tripStats?: TripStatsView; onClose: () => void }) {
+  // Organizer → Player Scoring → Player Stats off: no stats anywhere on the Golf tab.
+  const showStats = usePlayerStats();
   const [selectedRound, setSelectedRound] = useState(round);
   const teamRound = nonIndividualRound(match, selectedRound, name);
   const past = roundStandings?.find(item => item.round === selectedRound && (item.standingsRound ?? item.round) === selectedRound);
@@ -354,9 +357,9 @@ function PlayerPublicTripProfile({ match, name, avatarUrl, username, round, roun
         </div>
       </div>
     </section>
-    <PlayerTripStats name={name} stats={tripStats} />
+    {showStats && <PlayerTripStats name={name} stats={tripStats} />}
     {/* Their own fairway / green / putt numbers, from their profile rounds (owner request 2026-10-16). */}
-    <section className={styles.profileGameStats} aria-label="Fairways, greens and putts">
+    {showStats && <section className={styles.profileGameStats} aria-label="Fairways, greens and putts">
       <h4>Their game</h4>
       <dl>
         {([["Fairways", stats?.driving ? `${stats.driving.fairwayPct}%` : null], ["Greens", stats?.approach ? `${stats.approach.girPct}%` : null],
@@ -364,7 +367,7 @@ function PlayerPublicTripProfile({ match, name, avatarUrl, username, round, roun
           <div key={label}><dt>{label}</dt><dd>{value ?? "\u2014"}</dd></div>)}
       </dl>
       <p>From their rounds on The Maroon.</p>
-    </section>
+    </section>}
   </dialog>, document.body);
 }
 
@@ -449,6 +452,8 @@ export function GolfMatchup({ match, compact = false, below, swipe, featured = 0
   /** The organizer has begun this round: THRU rather than the tee time. */
   roundStarted?: boolean;
 }) {
+  // Organizer → Player Scoring → Player Stats off: no stats anywhere on the Golf tab.
+  const showStats = usePlayerStats();
   const [left, right] = match.sides;
   const pairing: GolfMatchPairing | undefined = match.matches[featured];
   const leftComp = pairing ? normalizeCompetitor(pairing.left) : undefined;
@@ -481,8 +486,8 @@ export function GolfMatchup({ match, compact = false, below, swipe, featured = 0
       </div>
       <div className={styles.stats}>
         <WinBar left={boxLeft.winPct} right={boxRight.winPct} />
-        <RoundStats side={boxLeft} align="left" />
-        <RoundStats side={boxRight} align="right" />
+        {showStats && <RoundStats side={boxLeft} align="left" />}
+        {showStats && <RoundStats side={boxRight} align="right" />}
       </div>
     </section>
 
@@ -532,6 +537,8 @@ export function GolfRoundHeader({ match, competitive = true, today, previousDisa
 export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: GolfMatchPreview; onPredict?: () => void; tripStats?: TripStatsView }) {
   const [left, right] = match.sides;
   // Tapping the team boxes drops down every player's match points, best first (owner request 2026-10-15).
+  // Organizer → Player Scoring → Player Stats off: no stats anywhere on the Golf tab.
+  const showStats = usePlayerStats();
   const [pointsOpen, setPointsOpen] = useState(false);
   const [statsTeam, setStatsTeam] = useState<0 | 1 | null>(null);
   const ranking = pointsOpen ? playerPoints(withHoleStandings(match)) : [];
@@ -558,11 +565,12 @@ export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: 
       <div className={styles.stats}>
         <WinBar left={left.winPct} right={right.winPct} />
         {/* Predict off (Organizer → Predict): no button; the team stats stay where they are. */}
-        <div className={styles.predictRow}>
-          <SummaryStats align="left" team={left.name} onOpen={() => setStatsTeam(0)} />
+        {/* Player Stats off: no team stats; the Predict button (if on) stays in the middle. */}
+        {(showStats || onPredict) && <div className={styles.predictRow}>
+          {showStats ? <SummaryStats align="left" team={left.name} onOpen={() => setStatsTeam(0)} /> : <span aria-hidden />}
           {onPredict ? <button type="button" className={styles.predictPill} onClick={onPredict}>Predict</button> : <span aria-hidden />}
-          <SummaryStats align="right" team={right.name} onOpen={() => setStatsTeam(1)} />
-        </div>
+          {showStats ? <SummaryStats align="right" team={right.name} onOpen={() => setStatsTeam(1)} /> : <span aria-hidden />}
+        </div>}
       </div>
     </section>
     {statsTeam !== null && <TeamStatsSheet match={match} initialTeam={statsTeam} stats={tripStats} onClose={() => setStatsTeam(null)} />}
@@ -916,6 +924,8 @@ function scoreMark(toPar: number): string {
  * both sides' stats. Hole scores are this round's leaderboard; other rounds show the data's result only.
  */
 function MatchDetail({ match, pairing, number, round, net, teamNames, onClose }: { match: GolfMatchPreview; pairing: GolfMatchPairing; number: number; round: number; net: boolean; teamNames: [string, string]; onClose: () => void }) {
+  // Organizer → Player Scoring → Player Stats off: no stats anywhere on the Golf tab.
+  const showStats = usePlayerStats();
   const scored = (pairing.round ?? match.round) === match.round;
   const card = useMemo(() => matchCard(scored ? match : { ...match, leaderboard: [] }, pairing, net), [match, pairing, net, scored]);
   const curve = useMemo(() => winCurve(match, card), [match, card]);
@@ -975,13 +985,13 @@ function MatchDetail({ match, pairing, number, round, net, teamNames, onClose }:
       </> : <p className={styles.matchSheetNote}>Odds show for the round being played.</p>}
     </section>
 
-    <section aria-label="Team stats">
+    {showStats && <section aria-label="Team stats">
       <h3 className={styles.matchSheetTitle}>Stats</h3>
       <div className={styles.matchStatsGrid}>
         <b data-side="left">{teamNames[0]}</b><span /><b data-side="right">{teamNames[1]}</b>
         {statsFor(0).map(([label, value], i) => <Fragment key={label}><span>{value}</span><small>{label}</small><span>{statsFor(1)[i][1]}</span></Fragment>)}
       </div>
-    </section>
+    </section>}
   </dialog>;
 }
 
