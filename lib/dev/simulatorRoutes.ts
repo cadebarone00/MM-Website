@@ -124,7 +124,7 @@ export function simulatorPages(): SimulatorPage[] {
       ["organizer","View as organizer"],["captain-a","View as first captain"],["captain-b","View as second captain"],["player","View as player"],
     ] as const).map(([value,label])=>({id:"player-role-"+value,label,state:{playerRoleViewer:value}})));
     add("competition-rounds", "Rounds", "settings-competition");
-    for (const game of [{ id: "skins", name: "Skins" }, ...SIDE_GAME_REGISTRY.filter(game => game.id !== "skins")]) add(`game-${game.id}`, game.name, "settings-games");
+    for (const game of [{ id: "skins", name: "Skins" }, ...SIDE_GAME_REGISTRY.filter(game => game.id !== "skins" && game.id !== "coin-flip")]) add(`game-${game.id}`, game.name, "settings-games");
   }
   // Notifications group: phone notifications, Live Activity and in-app, each with its preview screens (spec: Notifications).
   for (const [path, label, surface] of [["/dev/notifications/phone", "Phone notifications", "phone"], ["/dev/notifications/live-activity", "Live Activity", "live"], ["/dev/notifications/in-app", "In-app notifications", "inApp"]] as const) {

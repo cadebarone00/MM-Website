@@ -11,7 +11,8 @@ import { ArrowLeftRight, ChevronLeft, GripVertical, Minus, Plus, Shuffle, Trash2
 import { GolfGameScoringSettings } from "./GolfGameScoringSettings";
 import { SIDE_GAME_REGISTRY } from "@/lib/platform/golfTripGames";
 import { ORGANIZER_GAME_TO_PLAY } from "@/lib/platform/tripGames";
-import { gameDef, type GameId } from "@/lib/platform/roundGames";
+import { GAMES, type GameId } from "@/lib/platform/roundGames";
+import type { ScoringGameId } from "@/lib/platform/game-engine";
 import { InfoCard } from "./GolfTripGames";
 import type { CompetitionRound } from "@/lib/platform/golfTripCompetitionPreview";
 import styles from "./GolfTripSettingsPreview.module.css";
@@ -1061,38 +1062,36 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
               </button>)}
             </div>;
           })()}
-          {Object.entries(GAME_GROUPS).map(([label, games]) => <section key={label} className={styles.gameGroup}>
-            <h2 className={styles.gameHeading}>{label}</h2>
-            {games.map(game => {
-              const isExpanded = expandedGameId === game.id;
-              return <div key={game.id} className={styles.gameRowWrapper}>
+          {/* Every game Play offers (same list, same order); a game with organizer scoring settings opens them. */}
+          <section className={styles.gameGroup}>
+            {GAMES.map(def => {
+              const scoringId = Object.keys(ORGANIZER_GAME_TO_PLAY).find(key => ORGANIZER_GAME_TO_PLAY[key] === def.id) as ScoringGameId | undefined;
+              const isExpanded = !!scoringId && expandedGameId === scoringId;
+              const on = (gameRounds[gameRound] ?? []).includes(def.id);
+              const toggle = () => { const list = gameRounds[gameRound] ?? []; const next = { ...gameRounds, [gameRound]: on ? list.filter(id => id !== def.id) : [...list, def.id] };
+                setGameRounds(next); saveSection(() => ({ gameRounds: next })); };
+              return <div key={def.id} className={styles.gameRowWrapper}>
                 <div className={styles.gameRowLine}>
-                  <button type="button" className={styles.gameRow} aria-expanded={isExpanded} onClick={() => setExpandedGameId(isExpanded ? null : game.id)}>
+                  <button type="button" className={styles.gameRow} aria-expanded={scoringId ? isExpanded : undefined} onClick={() => scoringId && setExpandedGameId(isExpanded ? null : scoringId)}>
                     <span className={styles.gameInfo}>
-                      <span className={styles.gameLabel}>{game.name}</span>
-                      <span className={styles.gameMeta}>{game.players}</span>
+                      <span className={styles.gameLabel}>{def.name}</span>
+                      <span className={styles.gameMeta}>{def.players.join(" / ")} players</span>
                     </span>
-                    <span className={`${styles.gameToggle} ${isExpanded ? styles.gameToggleOpen : ""}`} aria-hidden>▾</span>
+                    {scoringId && <span className={`${styles.gameToggle} ${isExpanded ? styles.gameToggleOpen : ""}`} aria-hidden>▾</span>}
                   </button>
                   {/* i: what the game is and how it works (the same description as the Games tab). */}
-                  <button type="button" className={gamesStyles.gameInfo} aria-label={`About ${game.name}`} onClick={() => { const play = ORGANIZER_GAME_TO_PLAY[game.id]; setGameInfo({ name: game.name, text: play ? gameDef(play).blurb : game.description }); }}>i</button>
+                  <button type="button" className={gamesStyles.gameInfo} aria-label={`About ${def.name}`} onClick={() => setGameInfo({ name: def.name, text: def.blurb })}>i</button>
                   {/* On / off for the selected round: everyone's Games tab gets it for that round. */}
-                  {(() => {
-                    const play = ORGANIZER_GAME_TO_PLAY[game.id];
-                    const on = !!play && (gameRounds[gameRound] ?? []).includes(play);
-                    const toggle = () => { if (!play) return; const list = gameRounds[gameRound] ?? []; const next = { ...gameRounds, [gameRound]: on ? list.filter(id => id !== play) : [...list, play] };
-                      setGameRounds(next); saveSection(() => ({ gameRounds: next })); };
-                    return <button type="button" role="switch" aria-checked={on} disabled={!play} aria-label={`${game.name} in Round ${gameRound}`} className={toggleStyles.toggle} onClick={toggle}>
-                      <span className={toggleStyles.track} data-on={on}><span className={toggleStyles.thumb} /></span>
-                    </button>;
-                  })()}
+                  <button type="button" role="switch" aria-checked={on} aria-label={`${def.name} in Round ${gameRound}`} className={toggleStyles.toggle} onClick={toggle}>
+                    <span className={toggleStyles.track} data-on={on}><span className={toggleStyles.thumb} /></span>
+                  </button>
                 </div>
-                <div hidden={!isExpanded} className={styles.gameDropdown}>
-                  <GolfGameScoringSettings game={game.id} />
-                </div>
+                {scoringId && <div hidden={!isExpanded} className={styles.gameDropdown}>
+                  <GolfGameScoringSettings game={scoringId} />
+                </div>}
               </div>;
             })}
-          </section>)}
+          </section>
         </div>}
         {gameInfo && <InfoCard title={gameInfo.name} text={gameInfo.text} onClose={() => setGameInfo(null)} />}
       </div>}
