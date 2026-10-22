@@ -74,6 +74,11 @@ interface FeatureSeed {
 
 const seeds: FeatureSeed[] = [
   {
+    id: "native-android-a6", name: "A6 isolated packaged Android prototype",
+    scope: "Local debug APK built, installed and launched on API 36 in sibling maroon-a6-poc using packaged A1 trip/profile/navigation/scoring UI, native secure storage and isolated maroon-auth-test Supabase plus existing Next.js test backend. Mixed-content Realtime crashes trip rendering; offline scoring/sync unverified. Local sign-out clears secure storage but immediate token invalidation probes failed; Profile content cards unavailable. Exact scoped evidence: docs/android-a6-phase2-results.md. No hosted staging provisioning, production changes, iOS implementation or store distribution. Review and unresolved follow-ups: docs/android-a6-phase2-review.md; future environment/distribution plan: docs/mobile-beta-staging-plan.md.",
+    attentionCategories: ["privacy", "personal-data", "user-accounts", "security", "retention", "account-deletion", "intellectual-property", "open-source", "third-party-golf-content", "ugc", "platform-rules", "minors", "legal-review"],
+  },
+  {
     id: "trip-feed-composer", name: "Trip feed local composer",
     scope: "Home photo picker and text/photo composer with page-memory posts and deletion. No upload, server persistence, cross-player sharing or Apple/Google account connection. Local blob lifetimes only; proposed shared storage/privacy controls and unresolved follow-ups: docs/trip-feed-review.md. Implemented locally; deployment not verified.",
     attentionCategories: ["privacy", "personal-data", "ugc", "media-rights", "intellectual-property", "retention", "security", "organizer-responsibility", "platform-rules", "legal-review"],
