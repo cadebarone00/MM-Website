@@ -483,7 +483,7 @@ export function GolfMatchup({ match, compact = false, below, swipe, featured = 0
     : [blank(left, left.name, 50), blank(right, right.name, 50)]);
 
   return <div className={`${styles.matchup} ${compact ? styles.matchupCompact : ""}`}>
-    <section className={`${styles.versus} ${compact ? styles.boardBox : ""}`} aria-label="Match" data-board-compact={!predictOn && !showStats || undefined} {...swipe}>
+    <section className={`${styles.versus} ${compact ? styles.boardBox : ""}`} aria-label="Match" data-board-compact={!predictOn && !showStats || undefined} data-board-predict-only={predictOn && !showStats || undefined} {...swipe}>
       <div className={styles.teams}>
         {leftComp ? <>
           <PlayerSide competitor={leftComp} align="left" standing={shown} score={status ? sideScore(status, shown, "left") : ""} />
@@ -558,7 +558,7 @@ export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: 
   // Team totals from the organizer's round settings (points per match, Nassau), counted per match.
   const team = teamPoints(match);
   return <div className={styles.matchup} data-points-open={pointsOpen || undefined}>
-    <section className={`${styles.versus} ${styles.boardBox}`} aria-label="Tournament standings" data-board-compact={!predictOn && !showStats || undefined}>
+    <section className={`${styles.versus} ${styles.boardBox}`} aria-label="Tournament standings" data-board-compact={!predictOn && !showStats || undefined} data-board-predict-only={predictOn && !showStats || undefined}>
       <div className={`${styles.summaryTeams} ${styles.summaryTap}`} role="button" tabIndex={0} aria-expanded={pointsOpen} aria-label="Points by player"
         onClick={() => setPointsOpen(!pointsOpen)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setPointsOpen(!pointsOpen); } }}>
         {/* Each team sits in its own color fill (like a lead fill, but always there) from its edge in toward TO WIN. */}
@@ -579,7 +579,7 @@ export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: 
         {predictOn && <WinBar left={left.winPct} right={right.winPct} />}
         {/* Predict off (Organizer → Predict): no button; the team stats stay where they are. */}
         {/* Player Stats off: no team stats; the Predict button (if on) stays in the middle. */}
-        {(showStats || onPredict) && <div className={styles.predictRow}>
+        {(showStats || onPredict) && <div className={styles.predictRow} data-stats-off={!showStats || undefined}>
           {showStats ? <SummaryStats align="left" team={left.name} onOpen={() => setStatsTeam(0)} /> : <span aria-hidden />}
           {onPredict ? <button type="button" className={styles.predictPill} onClick={onPredict}>Predict</button> : <span aria-hidden />}
           {showStats ? <SummaryStats align="right" team={right.name} onOpen={() => setStatsTeam(1)} /> : <span aria-hidden />}
