@@ -74,6 +74,16 @@ interface FeatureSeed {
 
 const seeds: FeatureSeed[] = [
   {
+    id: "mobile-golf-trip-reads", name: "Phase 2A mobile Golf Trip JSON reads",
+    scope: "Authenticated GET list/detail on existing golf-trips routes, explicit verified profile context, existing membership RPCs and browser behavior retained. Minimal trip/accepted-roster/round DTOs plus optional setup availability; no emails, profile IDs, invite/watch secrets, database structures, native changes or deployment. Review and A6 handoff: docs/mobile-golf-trip-read-api.md. Hosted runtime and distribution remain review_required.",
+    attentionCategories: ["privacy", "personal-data", "user-accounts", "security", "retention", "account-deletion", "ugc", "third-party-golf-content", "organizer-responsibility", "platform-rules", "legal-review"],
+  },
+  {
+    id: "native-bearer-foundation", name: "Native bearer identity foundation",
+    scope: "Explicit Request opt-in for Supabase bearer identity on account/me and existing accountForRequest callers. Auth verification, mandatory session_is_revoked=false, cookie identity conflict rejection and request-local anon-key clients preserve RLS. No migration, new persistence, native build, CORS change or deployment. Target database revocation function and policies remain unverified; security/privacy/provider and distribution review remain review_required. Findings: docs/native-bearer-foundation-review.md.",
+    attentionCategories: ["privacy", "personal-data", "user-accounts", "security", "retention", "account-deletion", "platform-rules", "legal-review"],
+  },
+  {
     id: "native-android-a6", name: "A6 isolated packaged Android prototype",
     scope: "Local debug APK built, installed and launched on API 36 in sibling maroon-a6-poc using packaged A1 trip/profile/navigation/scoring UI, native secure storage and isolated maroon-auth-test Supabase plus existing Next.js test backend. Mixed-content Realtime crashes trip rendering; offline scoring/sync unverified. Local sign-out clears secure storage but immediate token invalidation probes failed; Profile content cards unavailable. Exact scoped evidence: docs/android-a6-phase2-results.md. No hosted staging provisioning, production changes, iOS implementation or store distribution. Review and unresolved follow-ups: docs/android-a6-phase2-review.md; future environment/distribution plan: docs/mobile-beta-staging-plan.md.",
     attentionCategories: ["privacy", "personal-data", "user-accounts", "security", "retention", "account-deletion", "intellectual-property", "open-source", "third-party-golf-content", "ugc", "platform-rules", "minors", "legal-review"],
@@ -261,6 +271,8 @@ export const featureRegistry = {
   createdOn: "2026-09-29",
   purpose: "Internal issue tracking; not legal advice, certification, or a runtime/deployment gate.",
   documentation: [
+    "docs/mobile-golf-trip-read-api.md",
+    "docs/native-bearer-foundation-review.md",
     "LEGAL_COMPLIANCE_SPEC.md", "FEATURE_COMPLIANCE_CHECKLIST.md",
     "OPEN_SOURCE_LICENSES.md", "DATA_INVENTORY.md",
     "LEGAL_REVIEW_REQUIRED.md", "INITIAL_COMPLIANCE_AUDIT.md",

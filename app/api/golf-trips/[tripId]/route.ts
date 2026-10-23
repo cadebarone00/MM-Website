@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/profile/currentProfile";
 import { isGolfTripId } from "@/lib/platform/golfTripCreate";
+import { golfTripDetailResponse } from "@/lib/platform/golfTripReadApi";
+
+export async function GET(request: Request, { params }: { params: Promise<{ tripId: string }> }) {
+  return golfTripDetailResponse(request, (await params).tripId);
+}
 
 /**
  * Delete Golf Trip (Trip Settings → Organizer): removes the whole trip, its members and rounds. Only the

@@ -1,9 +1,12 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createServiceClient, type SupabaseClient } from "@supabase/supabase-js";
+import { requestIdentityClient } from "./requestIdentity";
 
 /**
- * Cookie-bound client for use inside Route Handlers and Server Components.
+ * Cookie-bound client for Route Handlers and Server Components by default.
+ * Passing a Request opts a route into verified bearer identity (with cookie
+ * conflict detection); missing Authorization preserves the cookie path.
  * Acts as whichever user's session cookie is present (or as an anonymous
  * request if there isn't one) — every read/write goes through RLS.
  *
@@ -11,7 +14,13 @@ import { createClient as createServiceClient, type SupabaseClient } from "@supab
  * wrapped in try/catch; `middleware.ts` is what actually persists a
  * refreshed token in that case.
  */
-export async function createSupabaseServerClient(): Promise<SupabaseClient> {
+export async function createSupabaseServerClient(request?: Request): Promise<SupabaseClient> {
+  if (request) return requestIdentityClient(request.headers.get("authorization"), createSupabaseCookieClient, plainClient);
+  return createSupabaseCookieClient();
+}
+
+// Opt-in request identity leaves existing browser-only callers unchanged.
+async function createSupabaseCookieClient(): Promise<SupabaseClient> {
   const cookieStore = await cookies();
   return createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
     cookies: {
@@ -26,6 +35,13 @@ export async function createSupabaseServerClient(): Promise<SupabaseClient> {
         }
       },
     },
+  });
+}
+
+function plainClient(token?: string): SupabaseClient {
+  return createServiceClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
+    auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+    ...(token ? { global: { headers: { Authorization: `Bearer ${token}` } } } : {}),
   });
 }
 

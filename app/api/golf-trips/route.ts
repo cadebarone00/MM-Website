@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/profile/currentProfile";
 import { golfTripCreateFailure, golfTripPayloadFromBody, golfTripUrl } from "@/lib/platform/golfTripCreate";
+import { golfTripListResponse } from "@/lib/platform/golfTripReadApi";
+
+export async function GET(request: Request) {
+  return golfTripListResponse(request);
+}
 
 /**
  * Create Golf Trip: saves the questionnaire as a trip owned by the signed-in golfer's profile, in one
