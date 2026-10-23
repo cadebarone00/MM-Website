@@ -96,6 +96,8 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
   if (pathname.startsWith("/golf-trips/") || pathname === "/dev/tournament" || pathname.startsWith("/dev/tournament/")) return <>{children}</>;
   // Play a round is app-only too: no website top nav.
   if (pathname.startsWith("/rounds/")) return <>{children}</>;
+  // The dev tournament preview is app-only too.
+  if (pathname === "/dev/tourney") return <>{children}</>;
 
   if (inPortal) {
     return (

@@ -31,7 +31,7 @@ const HOLD_SLOP = 10;
  * submitting locks the card until the page reloads. Submit & Save calls `onSubmit` with the card (the dev preview saves it
  * as the player's round); `submittedCard` reopens a saved round locked.
  */
-export function GolfTripScoring({ par, parIsReference = false, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard, attesteeStrokes, scoresVerified = true, syncStatus, conflicts, onResolveConflict, resetCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, solo = false, holeRange = [0, HOLES], stats = true, startOpen = false, group, gameSlot, remoteHoles, onParChange }: {
+export function GolfTripScoring({ par, parIsReference = false, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard, attesteeStrokes, scoresVerified = true, syncStatus, conflicts, onResolveConflict, resetCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, solo = false, holeRange = [0, HOLES], stats = true, gps = true, startOpen = false, group, gameSlot, remoteHoles, onParChange }: {
   par?: number[]; initialHoles?: (number | null)[]; playerName?: string; opponentCardMatches?: boolean; courseName?: string;
   /** Saved Golf Trips (owner decision 2026-10-21): par is reference information only. Shown on the hole and card, but an
    *  untouched hole stays empty everywhere (score box, totals, Submit, attestation); only entered strokes count. */
@@ -83,6 +83,8 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
   holeRange?: [number, number];
   /** Off = strokes only: putts, fairway, green and penalties are hidden and not needed to submit. */
   stats?: boolean;
+  /** Off = no GPS pill or GPS view. */
+  gps?: boolean;
   /** Open the scoring sheet on first load. */
   startOpen?: boolean;
   /** Play a round with friends (with `solo`): the other players, whose strokes the scorekeeper also enters. Kept by the page. */
@@ -152,7 +154,7 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
   // The GPS and Scorecard pills swap the pulled-up sheet to their own view (same sheet, no page change); tapping again returns to scoring.
   const [view, setView] = useState<"scoring" | "gps" | "scorecard">("scoring");
   const [lockedView, setLockedView] = useState<"gps" | "scorecard" | null>(() => {
-    try { const saved = localStorage.getItem("golfTripScoringLockedView"); return saved === "gps" || saved === "scorecard" ? saved : null; } catch { return null; }
+    try { const saved = localStorage.getItem("golfTripScoringLockedView"); return (saved === "gps" && gps) || saved === "scorecard" ? saved : null; } catch { return null; }
   });
   const setOpen = useCallback((next: boolean | ((value: boolean) => boolean)) => {
     const value = typeof next === "function" ? next(open) : next;
@@ -406,7 +408,7 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
   const showGpsMap = view === "gps" && process.env.NODE_ENV === "development";
   return <>{blocking && <div className={styles.backdrop} aria-hidden />}<div className={`${styles.frame} ${fullScreen ? styles.frameFull : ""} ${blocking ? styles.frameAbove : ""}`}><section ref={sheetRef} data-scroll-modal={blocking || undefined} className={`${styles.sheet} ${open ? styles.open : ""} ${dragOffset !== null ? styles.dragging : ""} ${fastClose ? styles.fastClose : ""} ${fullScreen ? styles.sheetFull : ""} ${fullScreen && view === "gps" ? styles.gpsFullScreen : ""} ${!fullScreen && showGpsMap ? styles.gpsOverlay : ""}`} style={style} aria-label="Scoring">
     {/* GPS pill (left, red) mirrors the Scorecard pill (right); both show while the sheet is pulled up. */}
-    {open && (["gps", "scorecard"] as const).map((target) => {
+    {open && ((gps ? ["gps", "scorecard"] : ["scorecard"]) as ("gps" | "scorecard")[]).map((target) => {
       const label = target === "gps" ? "GPS" : "Card";
       const locked = lockedView === target;
       const Icon = locked ? LockKeyhole : LockKeyholeOpen;
@@ -436,7 +438,7 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
       {view === "gps" ? showGpsMap ? <GolfGpsScreen holeNumber={current + 1} className={`${styles.gpsMap} ${fullScreen ? styles.gpsMapFull : styles.gpsMapFill}`} /> : <GpsSection hole={current + 1} holePar={holePar} />
         : view === "scorecard" ? <>
           {courseName && <h3 className={styles.scorecardCourse}>{courseName}</h3>}
-          <ScorecardSection solo={solo} holeRange={holeRange} groupNames={group?.names} groupHoles={group?.strokes} par={par} parIsReference={parIsReference} holes={holes} opponentHoles={holesCompetitor} playerName={playerName} opponentName={opponentName} putts={putts} fairways={fairways} greens={greens}
+          <ScorecardSection solo={solo} stats={stats} holeRange={holeRange} groupNames={group?.names} groupHoles={group?.strokes} par={par} parIsReference={parIsReference} holes={holes} opponentHoles={holesCompetitor} playerName={playerName} opponentName={opponentName} putts={putts} fairways={fairways} greens={greens}
             myTotal={sumOf(submittedHoles.map((h, i) => inPlay(i) ? h : null))} opponentTotal={sumOf(submittedOpponentHoles)} myCheck={check(meMatches)} opponentCheck={check(opponentMatches)} edits={edits} />
           {/* Always shown; only lights up once both cards are complete and the opponent's card agrees. */}
           {conflicts && conflicts.length > 0 && <div className={styles.conflicts} role="group" aria-label="Score conflicts">
@@ -699,8 +701,8 @@ const shortName = (name: string) => (name.trim().split(/\s+/).at(-1) ?? name).sl
  * Three sections, each lightly tinted maroon with a narrow clear gap between them: the hole (Hole · Yds · Par, against the
  * left edge), your stats (FWY · GRN · PUT), then the scores (your last name · the opponent's last name, up to 8 letters).
  */
-function ScorecardSection({ solo = false, holeRange = [0, HOLES], groupNames = [], groupHoles = [], par, parIsReference = false, holes, opponentHoles, playerName, opponentName, putts, fairways, greens, myTotal, opponentTotal, myCheck, opponentCheck, edits }: {
-  solo?: boolean; holeRange?: [number, number]; groupNames?: string[]; groupHoles?: (number | null)[][]; par?: number[]; parIsReference?: boolean; holes: (number | null)[]; opponentHoles: (number | null)[]; playerName: string; opponentName: string;
+function ScorecardSection({ solo = false, stats = true, holeRange = [0, HOLES], groupNames = [], groupHoles = [], par, parIsReference = false, holes, opponentHoles, playerName, opponentName, putts, fairways, greens, myTotal, opponentTotal, myCheck, opponentCheck, edits }: {
+  solo?: boolean; stats?: boolean; holeRange?: [number, number]; groupNames?: string[]; groupHoles?: (number | null)[][]; par?: number[]; parIsReference?: boolean; holes: (number | null)[]; opponentHoles: (number | null)[]; playerName: string; opponentName: string;
   myTotal: number | "—"; opponentTotal: number | "—"; myCheck: "ok" | "wrong" | null; opponentCheck: "ok" | "wrong" | null;
   putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[]; edits?: ScoreEdit[];
 }) {
@@ -717,20 +719,20 @@ function ScorecardSection({ solo = false, holeRange = [0, HOLES], groupNames = [
     : par?.[i] === undefined ? strokes : <span className={scoreShape(strokes - par[i])}>{strokes}</span>;
   const holeRow = (i: number) => <tr key={i}>
     <th scope="row" className={styles.section}>{i + 1}{editsFor(i + 1).length > 0 && <button type="button" className={styles.editMark} aria-label={`Hole ${i + 1} edited by organizer`} onClick={() => setShownEdit(shownEdit === i + 1 ? null : i + 1)}>✎</button>}</th><td className={styles.section}>—</td><td className={styles.section}>{par?.[i] ?? "—"}</td>{gap}
-    <td className={styles.section}>{par?.[i] === 3 ? "" : mark(fairways[i])}</td><td className={styles.section}>{mark(greens[i])}</td><td className={styles.section}>{putts[i] ?? "—"}</td>{gap}
+    {stats && <><td className={styles.section}>{par?.[i] === 3 ? "" : mark(fairways[i])}</td><td className={styles.section}>{mark(greens[i])}</td><td className={styles.section}>{putts[i] ?? "—"}</td>{gap}</>}
     <td className={`${styles.section} ${styles.myScore}`}>{scoreCell(holes[i], i)}</td>{!solo && <td className={styles.section}>{scoreCell(opponentHoles[i], i)}</td>}{groupHoles.map((row, g) => <td key={g} className={styles.section}>{scoreCell(row[i], i)}</td>)}
   </tr>;
   const totalRow = (label: string, index: number[]) => <tr key={label} className={styles.totalRow}>
     <th scope="row" className={styles.section}>{label}</th><td className={styles.section}>—</td><td className={styles.section}>{sumOf(index.map((i) => par?.[i]))}</td>{gap}
-    <td className={styles.section}>{hits(fairways, index)}</td><td className={styles.section}>{hits(greens, index)}</td><td className={styles.section}>{sumOf(index.map((i) => putts[i]))}</td>{gap}
+    {stats && <><td className={styles.section}>{hits(fairways, index)}</td><td className={styles.section}>{hits(greens, index)}</td><td className={styles.section}>{sumOf(index.map((i) => putts[i]))}</td>{gap}</>}
     <td className={`${styles.section} ${styles.myScore}`}>{sumOf(index.map((i) => countedStrokes(holes, par, parIsReference)[i]))}</td>{!solo && <td className={styles.section}>{sumOf(index.map((i) => countedStrokes(opponentHoles, par, parIsReference)[i]))}</td>}{groupHoles.map((row, g) => <td key={g} className={styles.section}>{sumOf(index.map((i) => row[i] ?? par?.[i]))}</td>)}
   </tr>;
   return <section className={styles.scorecardView} aria-label="Scorecard">
     <table className={styles.scorecardTable}>
-      <colgroup>{(solo ? ["10%", "10%", "9%", "3%", "10%", "10%", "9%", "3%", ...Array.from({ length: 1 + groupNames.length }, () => `${36 / (1 + groupNames.length)}%`)] : ["10%", "10%", "9%", "3%", "10%", "10%", "9%", "3%", "18%", "18%"]).map((width, i) => <col key={i} style={{ width }} />)}</colgroup>
+      <colgroup>{(solo ? ["10%", "10%", "9%", "3%", ...(stats ? ["10%", "10%", "9%", "3%"] : []), ...Array.from({ length: 1 + groupNames.length }, () => `${(stats ? 36 : 68) / (1 + groupNames.length)}%`)] : ["10%", "10%", "9%", "3%", ...(stats ? ["10%", "10%", "9%", "3%", "18%", "18%"] : ["34%", "34%"])]).map((width, i) => <col key={i} style={{ width }} />)}</colgroup>
       <thead><tr>
         <th scope="col" className={styles.section}>Hole</th><th scope="col" className={styles.section}>Yds</th><th scope="col" className={styles.section}>Par</th><th className={styles.sectionGap} aria-hidden />
-        <th scope="col" className={styles.section}>FWY</th><th scope="col" className={styles.section}>GRN</th><th scope="col" className={styles.section}>PUT</th><th className={styles.sectionGap} aria-hidden />
+        {stats && <><th scope="col" className={styles.section}>FWY</th><th scope="col" className={styles.section}>GRN</th><th scope="col" className={styles.section}>PUT</th><th className={styles.sectionGap} aria-hidden /></>}
         <th scope="col" className={`${styles.section} ${styles.nameHead}`} title={playerName}>{shortName(playerName)}</th>
         {!solo && <th scope="col" className={`${styles.section} ${styles.nameHead}`} title={opponentName}>{shortName(opponentName)}</th>}
         {groupNames.map((name, g) => <th key={g} scope="col" className={`${styles.section} ${styles.nameHead}`} title={name}>{shortName(name)}</th>)}

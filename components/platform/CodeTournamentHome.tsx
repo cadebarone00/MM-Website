@@ -128,6 +128,6 @@ function TournamentScoring({ t, act, meId, round, setup, onProblem, onSaved }: {
     return result.ok ? { ok: true } : { ok: false, message: result.message ?? "Couldn't submit. Try again." };
   }
   const submittedCard: ScoredCard | undefined = locked ? { strokes: mine.map((s) => s ?? 0), putts: mine.map(() => null), fairways: mine.map(() => null), greens: mine.map(() => null), penalties: mine.map(() => ({ fairway: false, green: false })) } : undefined;
-  return <GolfTripScoring solo stats={false} parIsReference holeRange={[0, holes]} par={setup.course.par} courseName={setup.course.name}
+  return <GolfTripScoring solo stats={false} gps={false} parIsReference holeRange={[0, holes]} par={setup.course.par} courseName={setup.course.name}
     initialHoles={initialHoles} submittedCard={submittedCard} onCardChange={onCardChange} onSubmit={onSubmit} />;
 }
