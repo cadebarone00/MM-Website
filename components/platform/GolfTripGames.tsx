@@ -11,8 +11,8 @@ import { savedTripGamesFromJson, tripGameFromSaved, type TripGameAction } from "
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { HolePicks, Standings } from "./PlayRound";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
-import { gameDef, gamesFor, scoreGame, wolfFor, type GameConfig, type GameId, type GameResult, type HoleInput } from "@/lib/platform/roundGames";
-import { currentHole, gameCourse, gamePlayers, gameStrokes, groupOf, holesThru, meOn, organizerGames as fromOrganizer, parThru, snakeFromPutts, teamsOn, vegasByHole, type TripGame } from "@/lib/platform/tripGames";
+import { gameDef, scoreGame, wolfFor, type GameConfig, type GameId, type GameResult, type HoleInput } from "@/lib/platform/roundGames";
+import { currentHole, gameCourse, gamePlayers, gameStrokes, groupOf, holesThru, meOn, organizerGames as fromOrganizer, parThru, snakeFromPutts, teamsOn, TRIP_GAMES, vegasByHole, type TripGame } from "@/lib/platform/tripGames";
 import styles from "./GolfTripGames.module.css";
 
 /**
@@ -225,7 +225,7 @@ function NewGame({ box, group, rounds, current, onClose, onCreate }: { box: { to
   const [info, setInfo] = useState<GameId | null>(null);
   const [net, setNet] = useState(false);
   const [birdiesDouble, setBirdiesDouble] = useState(false);
-  const choices = gamesFor(players.length);
+  const choices = TRIP_GAMES.filter((game) => game.players.includes(players.length));
   const toggle = (name: string) => { setId(null); setPlayers((list) => list.includes(name) ? list.filter((n) => n !== name) : group.filter((n) => list.includes(n) || n === name)); };
   const create = () => {
     if (!id) return;
@@ -275,7 +275,7 @@ function NewGame({ box, group, rounds, current, onClose, onCreate }: { box: { to
 }
 
 /** A game's description in a small light card over the screen; tap anywhere outside it to close. */
-function InfoCard({ title, text, onClose }: { title: string; text: string; onClose: () => void }) {
+export function InfoCard({ title, text, onClose }: { title: string; text: string; onClose: () => void }) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);

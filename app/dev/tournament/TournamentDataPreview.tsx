@@ -5,6 +5,8 @@ import { isTripScenario } from "@/lib/dev/tripScenario";
 
 import { sampleTripStatsView } from "@/lib/dev/sampleTripRounds";
 import { roundScoringFrom } from "@/lib/platform/teamPoints";
+import { skinsRoundsFrom } from "@/lib/platform/tripSkins";
+import { devSettingsRoster } from "@/lib/dev/devSettingsRoster";
 import { plannedRounds } from "@/lib/platform/golfTripDraft";
 import type { RoundCompSettings } from "@/lib/platform/roundCompetition";
 import type { GameId } from "@/lib/platform/roundGames";
@@ -76,7 +78,8 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
   // Team points: the organizer's saved Team Competition settings per round (points per match, Nassau).
   const shownMatch = scoring.shownMatch && data.preview ? { ...scoring.shownMatch, roundScoring: roundScoringFrom(plannedRounds(data.preview),
     setup.compFormats as Record<string, RoundCompSettings> | undefined, setup.compRounds as Record<string, boolean> | undefined,
-    Number(setup.playerTotal ?? data.preview.playerCount) || scoring.shownMatch.leaderboard.length) } : scoring.shownMatch;
+    Number(setup.playerTotal ?? data.preview.playerCount) || scoring.shownMatch.leaderboard.length),
+    skins: skinsRoundsFrom(plannedRounds(data.preview), setup, devSettingsRoster(data)) } : scoring.shownMatch;
   // Golf → Stats preview: a made-up trip's rounds for this trip's players — whenever no cards have been submitted yet (so the
   // tab always has something to show in dev), or always with the simulator's "Sample trip stats". "From saved cards" turns it off.
   const useSample = simulatorUsesSampleTripStats(config, Boolean(scoring.tripStats.trip));

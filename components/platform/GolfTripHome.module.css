@@ -351,3 +351,7 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 
 /* The active round replaces its green participation label with red Live. */
 .itineraryPlaying[data-live=true]{color:#c62828}
+/* Predict and Player Stats both off: nothing under the team scores, so the board shrinks to fit them. */
+.golfTop:has([data-board-compact]){--golf-board-height:100px}
+/* Predict on, Player Stats off: team scores, the win bar and the Predict button only, so the board is shorter. */
+.golfTop:has([data-board-predict-only]){--golf-board-height:152px}

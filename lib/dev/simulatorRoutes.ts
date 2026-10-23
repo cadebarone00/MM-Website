@@ -118,13 +118,13 @@ export function simulatorPages(): SimulatorPage[] {
     add("organizer", "Organizer settings", settings.id, "Organizer");
     add("match-selection", "Match Selection settings", settings.id, "Organizer");
     pages.push({ ...settings, id: "trip-match-selector", label: "Match Selector", parentId: undefined, navigation: { tab: "Home", settingsView: "match-draft-room" }, conditions: [...(settings.conditions ?? []), ...(["Response", "Ranks", "Randomized"] as const).map(method=>({id:"match-draft-"+method.toLowerCase(),label:method+" match draft",state:{matchDraftPreview:method}})), {id:"match-draft-configured",label:"Use configured draft rounds",state:{matchDraftPreview:"off" as const}}] });
-    for (const [view, label] of [["players", "Players"], ["schedule", "Golf Schedule"], ["competition", "Competition"], ["games", "Games"], ["history", "History"], ["placeholder-7", "Place holder 1"], ["placeholder-8", "Place holder 2"]]) add(view, label, settings.id, "Organizer");
+    for (const [view, label] of [["players", "Players"], ["schedule", "Golf Schedule"], ["competition", "Competition"], ["skins", "Skins"], ["games", "Games"], ["history", "History"], ["placeholder-7", "Place holder 1"], ["placeholder-8", "Place holder 2"]]) add(view, label, settings.id, "Organizer");
     const rolePlayers = pages.find(page=>page.id==="settings-players");
     if(rolePlayers) rolePlayers.conditions?.push(...([
       ["organizer","View as organizer"],["captain-a","View as first captain"],["captain-b","View as second captain"],["player","View as player"],
     ] as const).map(([value,label])=>({id:"player-role-"+value,label,state:{playerRoleViewer:value}})));
     add("competition-rounds", "Rounds", "settings-competition");
-    for (const game of [{ id: "skins", name: "Skins" }, ...SIDE_GAME_REGISTRY.filter(game => game.id !== "skins")]) add(`game-${game.id}`, game.name, "settings-games");
+    for (const game of [{ id: "skins", name: "Skins" }, ...SIDE_GAME_REGISTRY.filter(game => game.id !== "skins" && game.id !== "coin-flip")]) add(`game-${game.id}`, game.name, "settings-games");
   }
   // Notifications group: phone notifications, Live Activity and in-app, each with its preview screens (spec: Notifications).
   for (const [path, label, surface] of [["/dev/notifications/phone", "Phone notifications", "phone"], ["/dev/notifications/live-activity", "Live Activity", "live"], ["/dev/notifications/in-app", "In-app notifications", "inApp"]] as const) {

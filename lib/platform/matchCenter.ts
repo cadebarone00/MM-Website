@@ -88,13 +88,13 @@ export function withHoleStandings(match: GolfMatchPreview): GolfMatchPreview {
 export interface WinPoint { hole: number; left: number; halved: number; right: number }
 
 /** Chance of each result after every hole played so far (Predict's model, the holes so far locked in). */
-export function winCurve(match: GolfMatchPreview, card: MatchCard, sims = 1500, seed = 11): WinPoint[] {
+export function winCurve(match: GolfMatchPreview, card: MatchCard, sims = 1500, seed = 11, from = 0): WinPoint[] {
   const everyone = [...card.left, ...card.right];
   if (!card.left.length || !card.right.length) return [];
   const models = everyone.map((p) => buildPlayerModel(p.name, p.name, [], p.hcp));
   const n = match.par.length, leftCount = card.left.length;
   const points: WinPoint[] = [];
-  for (let k = 0; k <= card.played; k++) {
+  for (let k = Math.min(from, card.played); k <= card.played; k++) {
     const tally = [0, 0, 0];
     const live = { holes: everyone.map((p) => [p.holes.map((s, h) => h < k ? s : null)]) };
     simulateTrip(models, [course(match)], sims, seed + k, (_s, _r, holes) => {
@@ -115,4 +115,9 @@ export function winCurve(match: GolfMatchPreview, card: MatchCard, sims = 1500, 
     points[points.length - 1] = { hole: card.played, left: Number(lead > 0), halved: Number(lead === 0), right: Number(lead < 0) };
   }
   return points;
+}
+
+/** The chance of each result right now (the curve's last point only). Null when a side has no players. */
+export function winNow(match: GolfMatchPreview, card: MatchCard, sims = 600): WinPoint | null {
+  return winCurve(match, card, sims, 11, card.played).at(-1) ?? null;
 }

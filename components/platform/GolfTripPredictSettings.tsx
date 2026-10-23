@@ -22,6 +22,11 @@ export function GolfTripPredictSettings({ teamEvent }: { teamEvent: boolean }) {
     <section className={notificationStyles.category} aria-label="Prediction market">
       <h2 className={notificationStyles.categoryTitle}>Prediction market</h2>
       <p className={styles.settingsNote}>Players predict with Maroon Coins: a play-only balance for this trip. No money changes hands, and coins can&apos;t be bought or cashed out.</p>
+      {/* Off: no Predict button on the leaderboard, and Predict can't be opened. */}
+      <div className={notificationStyles.row}>
+        <span className={notificationStyles.label}>Predict</span>
+        {toggle(settings.on, "Predict", () => savePredictSettings({ ...settings, on: !settings.on }))}
+      </div>
     </section>
     {BET_CATEGORIES.map((category) => <section key={category} className={`${notificationStyles.category} ${settings.on ? "" : styles.settingsDimmed}`} aria-label={`${category} bets`}>
       <h2 className={notificationStyles.categoryTitle}>{category}</h2>

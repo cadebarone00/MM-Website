@@ -542,3 +542,19 @@
 .nonIndividualCard dd{margin:3px 0 0}
 .nonIndividualCard strong{font-weight:700}
 
+/* Leaderboard with skins: one more column (SKINS) after TOT. */
+.single.singleSkins{grid-template-columns:30px minmax(0,1fr) 34px 42px 34px 34px}
+.single.singleNet.singleSkins{grid-template-columns:30px minmax(0,1fr) 28px 34px 42px 34px 34px}
+@media(max-width:374px){.leaderboard .single.singleSkins{grid-template-columns:30px minmax(0,1fr) repeat(4,28px)}.leaderboard .single.singleNet.singleSkins{grid-template-columns:30px minmax(0,1fr) 28px repeat(4,28px)}}
+/* Matches list: a thin win-chance line under each match, filled from the favorite's side (Predict on). */
+.pairing{position:relative}
+.winLine{grid-column:1/-1;position:relative;display:block;height:3px;margin:2px 0 -4px;border-radius:99px;background:rgba(255,255,255,.1)}
+.winLineFill{position:absolute;top:0;bottom:0;border-radius:99px;background:#dcc495}
+.winLine[data-side=left] .winLineFill{left:0}
+.winLine[data-side=right] .winLineFill{right:0}
+.winLine small{position:absolute;top:5px;font:700 10px/1 var(--font-barlow),sans-serif;color:rgba(220,196,149,.9)}
+.winLine[data-side=left] small{left:0}
+.winLine[data-side=right] small{right:0}
+/* Predict on, stats off: the Predict button stands alone under the win bar, at a natural height. */
+.predictRow[data-stats-off] .predictPill{align-self:center;min-height:34px;padding:0 26px;border-radius:999px;transform:translateY(5px)}
+.boardBox[data-board-predict-only]>.stats{height:auto;padding-bottom:6px}

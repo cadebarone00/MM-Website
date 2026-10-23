@@ -24,9 +24,12 @@ import homeStyles from "./GolfTripHome.module.css";
 import { value as statValue, type TripStatsView } from "./GolfTripStats";
 import { PLAYER_STAT_DEFS, playerStats } from "@/lib/platform/tripInsights";
 import { MatchDraftStatus } from "./MatchDraftStatus";
-import { matchCard, winCurve, withHoleStandings, type MatchCard, type WinPoint } from "@/lib/platform/matchCenter";
+import { hasHoleScores, matchCard, winCurve, winNow, withHoleStandings, type MatchCard, type WinPoint } from "@/lib/platform/matchCenter";
+import { usePredictSettings } from "@/lib/platform/predictSetting";
 import { shapeForToPar } from "@/lib/golf/holeResult";
 import { teamPoints } from "@/lib/platform/teamPoints";
+import { usePlayerStats } from "@/lib/platform/playerStatsSetting";
+import { skinsCount } from "@/lib/platform/tripSkins";
 
 /**
  * Golf tab, Sleeper's fantasy Match screen translated to golf, on the trip's maroon.
@@ -50,6 +53,15 @@ export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundSt
     matches: scored.matches.filter(pairing => (pairing.round ?? fullMatch.round) === viewRound) };
   const original = fullMatch.matches.filter(pairing => (pairing.round ?? fullMatch.round) === viewRound);
   const [opened, setOpened] = useState<number | null>(null);
+  // Predict on: each match's chance to win right now (Predict's model with the holes played; a finished match is certain).
+  const predictOn = usePredictSettings().on;
+  const chances = useMemo(() => !predictOn ? [] : original.map((pairing) => {
+    const net = matchScoring(fullMatch) === "Net";
+    if (hasHoleScores(fullMatch, pairing)) { const now = winNow(fullMatch, matchCard(fullMatch, pairing, net)); return now ? now.left + now.halved / 2 : 0.5; }
+    const left = normalizeCompetitor(pairing.left), standing = net ? pairing.net : pairing.gross;
+    const status = matchStatus({ thru: left.thru ?? left.golfers[0]?.thru, standing, result: pairing.result });
+    return matchWinPct(standing, status.kind === "thru" ? status.holes : status.kind === "final" ? 18 : 0, status.kind === "final") / 100;
+  }), [predictOn, original, fullMatch]);
   // Gross only: gross, no control. Net only: net, "Net Scoring". Both: the GROSS / NET switch.
   const scoring = matchScoring(match);
   const showNet = scoring === "Net" || (scoring === "Both" && net);
@@ -83,6 +95,7 @@ export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundSt
             <MatchStatus status={status} plain />
           </span>
           {rightComp && <MatchSide competitor={rightComp} side="right" standing={shown} score={sideScore(status, shown, "right")} />}
+          {predictOn && chances[i] !== undefined && <WinLine left={chances[i]} />}
         </li>;
       })}
       {/* No matches set for this round yet: the same row, with placeholders. */}
@@ -194,6 +207,9 @@ export function GolfTripLeaderboard({ match, byToday = false, tripStats }: { mat
   const showNet = scoring === "Net" || (scoring === "Both" && net);
   // Always best → worst (alphabetical by last name before anyone has a score), for Gross and Net alike.
   const rows = rankLeaderboard(match.leaderboard, { net: showNet, stableford: isStableford, today: byToday });
+  // Skins this round (organizer's Competition → Skins): a column next to TOT. Players not in skins show "—".
+  const skins = skinsCount(match);
+  const rowClass = `${styles.single} ${showNet ? styles.singleNet : ""} ${skins ? styles.singleSkins : ""}`;
 
   const selectedCard = rows.find(row => row.golfer.name === selectedPlayer);
 
@@ -201,10 +217,11 @@ export function GolfTripLeaderboard({ match, byToday = false, tripStats }: { mat
     <div>
       <div className={styles.leaderboardListHeading}>
         {scoring !== "Gross" && <div className={styles.matchScoringControl}><ScoringControl scoring={scoring} net={net} onNet={setNet} /></div>}
-      <div className={`${styles.single} ${showNet ? styles.singleNet : ""} ${styles.columns}`} aria-hidden>
+      <div className={`${rowClass} ${styles.columns}`} aria-hidden>
         <span className={styles.columnPlayer} />
         {showNet && <span>HCP</span>}
         <span className={styles.columnLabel}>{isStableford ? "PTS" : "TOT"}</span>
+        {skins && <span className={styles.columnLabel}>SKINS</span>}
         <span className={styles.columnLabel}>THRU</span>
         <span className={styles.columnLabel}>TDY</span>
       </div>
@@ -215,13 +232,14 @@ export function GolfTripLeaderboard({ match, byToday = false, tripStats }: { mat
 
           const totDisplay = isStableford ? (pointsTotal !== undefined ? `${pointsTotal} PTS` : total) : parLabel(showNet ? netTotal : total);
           const tdyDisplay = isStableford ? (pointsToday !== undefined ? `${pointsToday} PTS` : today) : parLabel(showNet ? netToday : today);
-          return <li key={golfer.name} className={`${styles.single} ${showNet ? styles.singleNet : ""}`}>
+          return <li key={golfer.name} className={rowClass}>
             <span className={styles.rank}>{position}</span>
             <button type="button" className={styles.playerCardTrigger} onClick={() => setSelectedPlayer(golfer.name)} aria-haspopup="dialog" aria-label={golfer.name + " public trip profile"}>
               <Golfer golfer={golfer} align="left" showThru={false} showHcp={false} />
             </button>
             {showNet && <span className={styles.number} aria-label={`Handicap ${golfer.hcp}`}>{golfer.hcp}</span>}
             <span className={styles.number} data-par={isStableford ? undefined : parColor(totDisplay)} aria-label={`Total ${totDisplay}`}>{totDisplay}</span>
+            {skins && <span className={styles.number} aria-label={`Skins ${skins.get(golfer.name) ?? "not in skins"}`}>{skins.has(golfer.name) ? skins.get(golfer.name) : "—"}</span>}
             <span className={styles.number} aria-label={`Thru ${thru}`}>{thru}</span>
             <span className={styles.number} data-par={isStableford ? undefined : parColor(tdyDisplay)} aria-label={`Today ${tdyDisplay}`}>{tdyDisplay}</span>
 
@@ -234,6 +252,8 @@ export function GolfTripLeaderboard({ match, byToday = false, tripStats }: { mat
 }
 
 function PlayerPublicTripProfile({ match, name, avatarUrl, username, round, roundCount, par, holes, snapshot, roundStandings, net = false, stableford = false, tripStats, onClose }: { match: GolfMatchPreview; name: string; avatarUrl: string | null; username: string | null; round: number; roundCount: number; roundStandings?: GolfMatchPreview["roundStandings"]; net?: boolean; stableford?: boolean; par: number[]; holes: (number | null)[]; snapshot: { position: string; total: string; roundScore: string; thru: string }; tripStats?: TripStatsView; onClose: () => void }) {
+  // Organizer → Player Scoring → Player Stats off: no stats anywhere on the Golf tab.
+  const showStats = usePlayerStats();
   const [selectedRound, setSelectedRound] = useState(round);
   const teamRound = nonIndividualRound(match, selectedRound, name);
   const past = roundStandings?.find(item => item.round === selectedRound && (item.standingsRound ?? item.round) === selectedRound);
@@ -348,9 +368,9 @@ function PlayerPublicTripProfile({ match, name, avatarUrl, username, round, roun
         </div>
       </div>
     </section>
-    <PlayerTripStats name={name} stats={tripStats} />
+    {showStats && <PlayerTripStats name={name} stats={tripStats} />}
     {/* Their own fairway / green / putt numbers, from their profile rounds (owner request 2026-10-16). */}
-    <section className={styles.profileGameStats} aria-label="Fairways, greens and putts">
+    {showStats && <section className={styles.profileGameStats} aria-label="Fairways, greens and putts">
       <h4>Their game</h4>
       <dl>
         {([["Fairways", stats?.driving ? `${stats.driving.fairwayPct}%` : null], ["Greens", stats?.approach ? `${stats.approach.girPct}%` : null],
@@ -358,7 +378,7 @@ function PlayerPublicTripProfile({ match, name, avatarUrl, username, round, roun
           <div key={label}><dt>{label}</dt><dd>{value ?? "\u2014"}</dd></div>)}
       </dl>
       <p>From their rounds on The Maroon.</p>
-    </section>
+    </section>}
   </dialog>, document.body);
 }
 
@@ -443,6 +463,9 @@ export function GolfMatchup({ match, compact = false, below, swipe, featured = 0
   /** The organizer has begun this round: THRU rather than the tee time. */
   roundStarted?: boolean;
 }) {
+  // Organizer → Player Scoring → Player Stats off: no stats anywhere on the Golf tab.
+  const showStats = usePlayerStats();
+  const predictOn = usePredictSettings().on;
   const [left, right] = match.sides;
   const pairing: GolfMatchPairing | undefined = match.matches[featured];
   const leftComp = pairing ? normalizeCompetitor(pairing.left) : undefined;
@@ -460,7 +483,7 @@ export function GolfMatchup({ match, compact = false, below, swipe, featured = 0
     : [blank(left, left.name, 50), blank(right, right.name, 50)]);
 
   return <div className={`${styles.matchup} ${compact ? styles.matchupCompact : ""}`}>
-    <section className={`${styles.versus} ${compact ? styles.boardBox : ""}`} aria-label="Match" {...swipe}>
+    <section className={`${styles.versus} ${compact ? styles.boardBox : ""}`} aria-label="Match" data-board-compact={!predictOn && !showStats || undefined} data-board-predict-only={predictOn && !showStats || undefined} {...swipe}>
       <div className={styles.teams}>
         {leftComp ? <>
           <PlayerSide competitor={leftComp} align="left" standing={shown} score={status ? sideScore(status, shown, "left") : ""} />
@@ -473,11 +496,11 @@ export function GolfMatchup({ match, compact = false, below, swipe, featured = 0
           <div className={`${styles.side} ${styles.right}`}><p className={styles.teamName}>TBD</p></div>
         </>}
       </div>
-      <div className={styles.stats}>
-        <WinBar left={boxLeft.winPct} right={boxRight.winPct} />
-        <RoundStats side={boxLeft} align="left" />
-        <RoundStats side={boxRight} align="right" />
-      </div>
+      {(predictOn || showStats) && <div className={styles.stats}>
+        {predictOn && <WinBar left={boxLeft.winPct} right={boxRight.winPct} />}
+        {showStats && <RoundStats side={boxLeft} align="left" />}
+        {showStats && <RoundStats side={boxRight} align="right" />}
+      </div>}
     </section>
 
     {/* Under the big box: the round picker (where the match ovals used to be). */}
@@ -526,13 +549,16 @@ export function GolfRoundHeader({ match, competitive = true, today, previousDisa
 export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: GolfMatchPreview; onPredict?: () => void; tripStats?: TripStatsView }) {
   const [left, right] = match.sides;
   // Tapping the team boxes drops down every player's match points, best first (owner request 2026-10-15).
+  // Organizer → Player Scoring → Player Stats off: no stats anywhere on the Golf tab.
+  const showStats = usePlayerStats();
+  const predictOn = usePredictSettings().on;
   const [pointsOpen, setPointsOpen] = useState(false);
   const [statsTeam, setStatsTeam] = useState<0 | 1 | null>(null);
   const ranking = pointsOpen ? playerPoints(withHoleStandings(match)) : [];
   // Team totals from the organizer's round settings (points per match, Nassau), counted per match.
   const team = teamPoints(match);
   return <div className={styles.matchup} data-points-open={pointsOpen || undefined}>
-    <section className={`${styles.versus} ${styles.boardBox}`} aria-label="Tournament standings">
+    <section className={`${styles.versus} ${styles.boardBox}`} aria-label="Tournament standings" data-board-compact={!predictOn && !showStats || undefined} data-board-predict-only={predictOn && !showStats || undefined}>
       <div className={`${styles.summaryTeams} ${styles.summaryTap}`} role="button" tabIndex={0} aria-expanded={pointsOpen} aria-label="Points by player"
         onClick={() => setPointsOpen(!pointsOpen)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setPointsOpen(!pointsOpen); } }}>
         {/* Each team sits in its own color fill (like a lead fill, but always there) from its edge in toward TO WIN. */}
@@ -549,14 +575,16 @@ export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: 
           <small>TO WIN</small>{team ? halves(team.available / 2 + 0.5) : "—"}
         </span>
       </div>
-      <div className={styles.stats}>
-        <WinBar left={left.winPct} right={right.winPct} />
-        {onPredict ? <div className={styles.predictRow}>
-          <SummaryStats align="left" team={left.name} onOpen={() => setStatsTeam(0)} />
-          <button type="button" className={styles.predictPill} onClick={onPredict}>Predict</button>
-          <SummaryStats align="right" team={right.name} onOpen={() => setStatsTeam(1)} />
-        </div> : <><RoundStats side={left} align="left" /><RoundStats side={right} align="right" /></>}
-      </div>
+      {(predictOn || showStats) && <div className={styles.stats}>
+        {predictOn && <WinBar left={left.winPct} right={right.winPct} />}
+        {/* Predict off (Organizer → Predict): no button; the team stats stay where they are. */}
+        {/* Player Stats off: no team stats; the Predict button (if on) stays in the middle. */}
+        {(showStats || onPredict) && <div className={styles.predictRow} data-stats-off={!showStats || undefined}>
+          {showStats ? <SummaryStats align="left" team={left.name} onOpen={() => setStatsTeam(0)} /> : <span aria-hidden />}
+          {onPredict ? <button type="button" className={styles.predictPill} onClick={onPredict}>Predict</button> : <span aria-hidden />}
+          {showStats ? <SummaryStats align="right" team={right.name} onOpen={() => setStatsTeam(1)} /> : <span aria-hidden />}
+        </div>}
+      </div>}
     </section>
     {statsTeam !== null && <TeamStatsSheet match={match} initialTeam={statsTeam} stats={tripStats} onClose={() => setStatsTeam(null)} />}
   </div>;
@@ -909,6 +937,8 @@ function scoreMark(toPar: number): string {
  * both sides' stats. Hole scores are this round's leaderboard; other rounds show the data's result only.
  */
 function MatchDetail({ match, pairing, number, round, net, teamNames, onClose }: { match: GolfMatchPreview; pairing: GolfMatchPairing; number: number; round: number; net: boolean; teamNames: [string, string]; onClose: () => void }) {
+  // Organizer → Player Scoring → Player Stats off: no stats anywhere on the Golf tab.
+  const showStats = usePlayerStats();
   const scored = (pairing.round ?? match.round) === match.round;
   const card = useMemo(() => matchCard(scored ? match : { ...match, leaderboard: [] }, pairing, net), [match, pairing, net, scored]);
   const curve = useMemo(() => winCurve(match, card), [match, card]);
@@ -968,13 +998,13 @@ function MatchDetail({ match, pairing, number, round, net, teamNames, onClose }:
       </> : <p className={styles.matchSheetNote}>Odds show for the round being played.</p>}
     </section>
 
-    <section aria-label="Team stats">
+    {showStats && <section aria-label="Team stats">
       <h3 className={styles.matchSheetTitle}>Stats</h3>
       <div className={styles.matchStatsGrid}>
         <b data-side="left">{teamNames[0]}</b><span /><b data-side="right">{teamNames[1]}</b>
         {statsFor(0).map(([label, value], i) => <Fragment key={label}><span>{value}</span><small>{label}</small><span>{statsFor(1)[i][1]}</span></Fragment>)}
       </div>
-    </section>
+    </section>}
   </dialog>;
 }
 
@@ -1050,4 +1080,13 @@ function WinChart({ curve, holes, teamNames }: { curve: WinPoint[]; holes: numbe
       <span data-side="right">{teamNames[1]} <strong>{Math.round(held.right * 100)}%</strong></span>
     </div>}
   </div>;
+}
+
+/** A thin line under a match: the favorite's side fills from its edge, as far as their chance to win, with the %. */
+function WinLine({ left }: { left: number }) {
+  const favorite = left >= 0.5 ? "left" : "right", pct = Math.round((favorite === "left" ? left : 1 - left) * 100);
+  return <span className={styles.winLine} data-side={favorite} role="img" aria-label={`${pct}% to win`}>
+    <span className={styles.winLineFill} style={{ width: `${pct}%` }} />
+    <small>{pct}%</small>
+  </span>;
 }

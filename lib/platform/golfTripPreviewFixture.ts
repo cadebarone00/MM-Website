@@ -182,7 +182,12 @@ export type GolfLeaderboardEntry = {
 /** One competition round's settings from the organizer's Team Competition → Format (what each match pays). */
 export type RoundScoring = { round: number; matchPlay: boolean; pointsPerMatch: number; nassau: boolean; pointsAvailable: number };
 
+/** A round with skins on, and who's in it (names; null = everyone on the leaderboard). */
+export type RoundSkins = { round: number; players: string[] | null; /** Handicap strokes off first. */ net?: boolean };
+
 export type GolfMatchPreview = {
+  /** Rounds with the organizer's skins on (the Leaderboard's SKINS column). */
+  skins?: RoundSkins[];
   /** The organizer's competition settings per round (team points and TO WIN use these when present). */
   roundScoring?: RoundScoring[];
   /** Round-specific standings and scorecards from supplied archive data or fictional development scenarios. */
