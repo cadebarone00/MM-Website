@@ -3259,3 +3259,6 @@ Android text (`androidLiveUpdate()` in `lib/notifications/format.ts`, tested): t
 ### Trip Home: bell + chat open the same slide-up sheet (owner 2026-10-19, built)
 
 The bell (notifications) and the chat bubble both open one sheet that **slides up from the bottom to 85% of the screen** (743 of 874px on an iPhone 17 Pro), over the bottom menu, with a grab handle and a dimmed backdrop; tapping the backdrop or ✕ closes it. The settings wheel still goes to the settings page. The real notification list is built separately (another window) and drops into the bell's sheet: today it holds the existing Team Draft notice + Round alerts. Files: `GolfTripHome.tsx` / `.module.css` (`.sheetBackdrop`, `.notificationsDropdown`), `GolfTripChat.tsx` / `.module.css` (`.dialog`).
+
+### Maroon U removed for now (owner request 2026-10-23)
+- The Maroon U is planned for a later version. Removed: the `/maroon-u` Coming soon page, The Maroon U card on Golf Trips, the dev-only `/dev/tournament/maroon-u` preview (and its settings page and fixture), and the simulator's Maroon U Active group. Older notes in `docs/app-workflow.md` describe it as it was; git history has the code to bring back.

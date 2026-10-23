@@ -163,17 +163,6 @@ export function simulatorPages(): SimulatorPage[] {
   if (requests) Object.assign(requests, { label: "Link requests (dev)", group: "Profile", conditions: signedInAs() });
   // Keep the sample profile first in its group, then the live account, then link requests.
   for (const page of [realProfile, requests]) if (page) pages.push(...pages.splice(pages.indexOf(page), 1));
-  const maroonUPath = "/dev/tournament/maroon-u";
-  for (let index = pages.length - 1; index >= 0; index--) {
-    if (pages[index].path.startsWith(maroonUPath)) pages.splice(index, 1);
-  }
-  const maroonUPages = pages.filter(page => page.group === "Golf Trip Active").map(page => ({
-    ...page, id: "maroon-u-" + page.id, parentId: page.parentId ? "maroon-u-" + page.parentId : page.parentId, // keep settings branches inside Maroon U
-    path: page.path.endsWith("/settings") ? maroonUPath + "/settings" : maroonUPath,
-    group: "Maroon U Active", fixtures: true,
-    conditions: page.conditions?.map(condition => condition.id === "source-maroon" ? { ...condition, label: "Fictional Maroon U team data" } : condition),
-  }));
-  pages.splice(pages.map(page => page.group).lastIndexOf("Golf Trip Active") + 1, 0, ...maroonUPages);
   const onboardingOrder = ["/tournaments/create/golf-trip", ...steps.map(step => "/golf-trips/new" + (step ? "/" + step : ""))];
   const reviewGroups = ["V1", "Website desktop", "Website mobile"];
   const groupOrder = [...reviewGroups, ...Array.from(new Set(pages.map(page => page.group))).filter(group => !reviewGroups.includes(group ?? ""))];
