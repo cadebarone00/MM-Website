@@ -23,8 +23,8 @@ function timeLabel(time: string): string {
   return `${HOURS[hour]}:${MINUTES[minute]} ${PERIODS[period]}`;
 }
 
-/** One scroll wheel: the row that settles in the middle band is the chosen value. */
-function Wheel({ label, values, index, onIndex }: { label: string; values: string[]; index: number; onIndex: (index: number) => void }) {
+/** One scroll wheel: the row that settles in the middle band is the chosen value (also the tee sheet's first tee time). */
+export function Wheel({ label, values, index, onIndex }: { label: string; values: string[]; index: number; onIndex: (index: number) => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const timer = useRef<number | undefined>(undefined);
   const startIndex = useRef(index);

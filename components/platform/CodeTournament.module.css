@@ -13,7 +13,15 @@
 .teeEditor{display:grid;gap:12px;margin:8px 0 16px}
 .teeTiming{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
 .teeField{display:grid;gap:4px;font:600 11px var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#c9a86e}
-.teeFirst{width:200px;max-width:100%}
+.teeFirst{width:220px;max-width:100%}
+/* First tee: hour : tens ones AM/PM on narrow vertical wheels, three rows tall (TeeTimePicker.module.css wheels). */
+div.firstTeeWheels{gap:2px;margin:0;height:132px;border-radius:14px;background:rgba(0,0,0,.22);box-shadow:inset 0 1px 3px rgba(0,0,0,.45);-webkit-mask-image:linear-gradient(transparent,#000 25%,#000 75%,transparent);mask-image:linear-gradient(transparent,#000 25%,#000 75%,transparent)}
+div.firstTeeWheels [role=listbox]{width:40px;height:132px;padding:44px 0}
+div.firstTeeWheels [role=listbox]:last-of-type{width:52px;margin-left:6px}
+div.firstTeeWheels [role=option]{font-size:18px}
+div.firstTeeWheels [role=option][data-selected=true]{font-size:22px}
+div.firstTeeWheels>span[aria-hidden]:first-child{top:44px;left:6px;right:6px}
+.firstTeeColon{align-self:center;color:#fbf8f1;font:600 22px/1 var(--font-spectral),Georgia,serif}
 .teeEvery{width:140px;max-width:100%}
 .teeField [role=listbox]{text-transform:none;letter-spacing:0}
 /* The page's own dropdown (Start on, each group's starting hole). */

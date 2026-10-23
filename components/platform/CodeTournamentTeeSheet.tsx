@@ -4,13 +4,36 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowDownWideNarrow, Check, ChevronDown, Shuffle } from "lucide-react";
 import { GolfTeeSheet } from "./GolfTripMatch";
 import { Wheel } from "./Wheel";
+import { Wheel as VerticalWheel } from "./TeeTimePicker";
+import wheelStyles from "./TeeTimePicker.module.css";
 import { DEFAULT_TIMING, randomTeeSheet, roundTeeSheet, scoreTeeSheet, teeSlot, teeTimeLabel, type CodeTournament, type TeeSheet, type TeeStart, type TeeTiming } from "@/lib/platform/codeTournaments";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import styles from "./CodeTournament.module.css";
 
 const EVERY = [7, 8, 9, 10, 12, 15];
-/** First tee time choices: every 5 minutes, 5:00 AM to 6:00 PM. */
-const FIRST_TIMES = Array.from({ length: 13 * 12 + 1 }, (_, i) => { const m = 5 * 60 + i * 5; return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`; });
+const HOURS = Array.from({ length: 12 }, (_, i) => String(i + 1));
+const DIGITS = Array.from({ length: 10 }, (_, i) => String(i));
+
+/**
+ * The first tee time on vertical wheels (like the golf schedule's): the hour, the minutes' tens and ones (each on its
+ * own wheel), and AM / PM. `value` and `onChange` are "HH:MM" (24-hour).
+ */
+function FirstTeeWheels({ value, onChange }: { value: string; onChange: (time: string) => void }) {
+  const [h, m] = value.split(":").map(Number);
+  const parts = { hour: (h % 12 || 12) - 1, tens: Math.floor((m || 0) / 10), ones: (m || 0) % 10, period: h < 12 ? 0 : 1 };
+  const set = (change: Partial<typeof parts>) => {
+    const next = { ...parts, ...change };
+    onChange(`${String(((next.hour + 1) % 12) + (next.period ? 12 : 0)).padStart(2, "0")}:${next.tens}${next.ones}`);
+  };
+  return <div className={`${wheelStyles.wheels} ${styles.firstTeeWheels}`}>
+    <span className={wheelStyles.band} aria-hidden />
+    <VerticalWheel label="Hour" values={HOURS} index={parts.hour} onIndex={(hour) => set({ hour })} />
+    <span className={styles.firstTeeColon} aria-hidden>:</span>
+    <VerticalWheel label="Minutes, tens" values={DIGITS.slice(0, 6)} index={parts.tens} onIndex={(tens) => set({ tens })} />
+    <VerticalWheel label="Minutes, ones" values={DIGITS} index={parts.ones} onIndex={(ones) => set({ ones })} />
+    <VerticalWheel label="AM or PM" values={["AM", "PM"]} index={parts.period} onIndex={(period) => set({ period })} />
+  </div>;
+}
 const STARTS: { value: TeeStart; label: string }[] = [{ value: "1", label: "Hole 1" }, { value: "1&10", label: "Holes 1 & 10" }, { value: "shotgun", label: "Shotgun" }];
 
 /** How a saved sheet was started: one time with holes beyond 1 / 10 = shotgun; any group off 10 = 1 & 10; else off 1. */
@@ -57,8 +80,6 @@ export function CodeTournamentTeeSheet({ t, round, match }: { t: CodeTournament;
 export function TeeSheetEditor({ t, round, sheet, holes, onCancel, onSave }: { t: CodeTournament; round: number; sheet: TeeSheet; holes: number; onCancel: () => void; onSave: (sheet: TeeSheet) => Promise<void> }) {
   const [draft, setDraft] = useState(sheet);
   const [timing, setTiming] = useState<TeeTiming>(() => ({ ...DEFAULT_TIMING, first: sheet.groups[0]?.time || DEFAULT_TIMING.first, start: holes >= 18 || startOf(sheet) === "shotgun" ? startOf(sheet) : "1" }));
-  // The first tee wheel: 5-minute steps, plus a saved time between them.
-  const firstTimes = FIRST_TIMES.includes(timing.first) ? FIRST_TIMES : [...FIRST_TIMES, timing.first].sort();
   const [saving, setSaving] = useState(false);
   const ids = sheet.groups.flatMap((g) => g.players);
   const byScore = scoreTeeSheet(t, round, ids, timing, holes);
@@ -77,7 +98,7 @@ export function TeeSheetEditor({ t, round, sheet, holes, onCancel, onSave }: { t
   return <section className={styles.teeEditor} aria-label="Edit tee sheet">
     <div className={styles.teeTiming}>
       <div className={`${styles.teeField} ${styles.teeFirst}`}><span>First tee</span>
-        <Wheel label="First tee time" itemWidth={84} items={firstTimes.map(teeTimeLabel)} index={firstTimes.indexOf(timing.first)} onChange={(i) => retime({ ...timing, first: firstTimes[i] })} /></div>
+        <FirstTeeWheels value={timing.first} onChange={(first) => retime({ ...timing, first })} /></div>
       {/* A shotgun sends every group off at once, so there's no gap between times. */}
       {timing.start !== "shotgun" && <div className={`${styles.teeField} ${styles.teeEvery}`}><span>Every</span>
         <Wheel label="Minutes between tee times" items={EVERY.map((m) => `${m} min`)} index={Math.max(EVERY.indexOf(timing.every), 0)} onChange={(i) => retime({ ...timing, every: EVERY[i] })} /></div>}
