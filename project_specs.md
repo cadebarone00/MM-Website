@@ -3278,3 +3278,27 @@ The bell (notifications) and the chat bubble both open one sheet that **slides u
 **Not in this step.** Fairway / green / putt stats, teams or matches, side games, attesting / score corrections, organizer editing other players' scores, payments, the existing Maroon Tournament and organizer-studio pages (left as they are).
 
 **Done when.** In the simulator and on a real account: an organizer creates a tournament and sees a code; a second account joins with the code; both score holes and see each other on the leaderboard live; gross and net rank correctly across two rounds; Submit locks a card; a wrong or ended code shows a clear message; database tests cover create / join / scoring / permissions.
+
+## Feature: Watch codes, read-only tune-in for tournaments and trips (spec 2026-10-23, awaiting approval)
+
+**What it does / who uses it.** Every tournament and every golf trip gets a second code, a **watch code**, separate from the join code. Anyone with it (family, friends, other golfers) can follow along live without being part of the event and without a Maroon account. Spectators can only look. They can't score, join, chat or see anything private. Owner picked: no account needed, golf only for trips, always on.
+
+**Flow.**
+1. **Getting the code.** It exists from the start (always on). Tournaments: the organizer sees it next to the join code on the tournament page (**Watch** chip, tap to copy, with Share). Trips: the organizer sees it in Trip Settings (and members can see it on the trip page too, so anyone in the group can share it). Spectator codes look different from join codes so they're never mixed up: 6 characters starting with **W** (e.g. `W4K-9PZ`).
+2. **Tuning in.** Tourneys → the same code box (**Join a Tournament** becomes **Join or watch**): a join code goes to joining as before; a watch code opens the watch page. There's also a direct link (`/watch/W4K9PZ`) for sharing in a text, which works signed out (no login screen).
+3. **What spectators see.**
+   - **Tournament:** the round header (arrows between rounds) and the individual leaderboard, exactly as players see it, tap a player for their scorecard. No scoring sheet, no organizer buttons, no code chips.
+   - **Golf trip:** the Golf tab only, the round header, Leaderboard, Matches (match list and match center) and Stats, read-only. Never the Home / Venue / Itinerary tabs, lodging, flights, chat, invites, settings, Games, or Predict.
+   - Scores refresh every few seconds while the page is open. A banner at the top says "Watching · read only".
+4. **When it stops working.** If the tournament or trip is deleted, the watch code shows "This event isn't available." Ended tournaments and finished trips stay watchable (final results).
+
+**Data / security.**
+- New column `watch_code` (unique) on `code_tournaments` and on `golf_trips`, filled for existing rows; new SQL file `supabase/watch_codes.sql` (owner runs it).
+- Spectators never get database access. The server looks up the watch code with the service key and returns only the read-only leaderboard / match / stats data. No emails, phone numbers, profile ids, join codes, invite links, lodging or chat ever leave the server.
+- Player names (and profile photos where the trip already shows them) are visible to spectators, since that's what a leaderboard is.
+
+**Effort note.** Tournaments are quick (their leaderboard is already built from one server reply). Trips are bigger: the trip's Golf tab is put together from several member-only sources, so it needs a spectator version of that loader. I'd build tournaments first, then trips, on one branch.
+
+**Not in this step.** Turning watching off or making a new watch code (always on was chosen; can add later), seeing who's watching, spectator chat or reactions, Predict for spectators.
+
+**Done when.** A signed-out browser can open a tournament's and a trip's watch link and see the live leaderboard (and trip matches / stats) update; nothing private shows; a join code still joins; a watch code can't score or join; a deleted event's watch code says it's unavailable; database tests cover the lookups and that spectator replies leave out private fields.
