@@ -11,19 +11,26 @@
 
 /* Tee Sheet editor (organizer): timing, randomize, then each group's time, starting hole and players. */
 .teeEditor{display:grid;gap:12px;margin:8px 0 16px}
-.teeTiming{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
-.teeField{display:grid;gap:4px;font:600 11px var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#c9a86e}
-.teeFirst{width:220px;max-width:100%}
-/* First tee: hour : tens ones AM/PM on narrow vertical wheels, three rows tall (TeeTimePicker.module.css wheels). */
-div.firstTeeWheels{gap:2px;margin:0;height:132px;border-radius:14px;background:rgba(0,0,0,.22);box-shadow:inset 0 1px 3px rgba(0,0,0,.45);-webkit-mask-image:linear-gradient(transparent,#000 25%,#000 75%,transparent);mask-image:linear-gradient(transparent,#000 25%,#000 75%,transparent)}
-div.firstTeeWheels [role=listbox]{width:40px;height:132px;padding:44px 0}
-div.firstTeeWheels [role=listbox]:last-of-type{width:52px;margin-left:6px}
-div.firstTeeWheels [role=option]{font-size:18px}
-div.firstTeeWheels [role=option][data-selected=true]{font-size:22px}
-div.firstTeeWheels>span[aria-hidden]:first-child{top:44px;left:6px;right:6px}
-.firstTeeColon{align-self:center;color:#fbf8f1;font:600 22px/1 var(--font-spectral),Georgia,serif}
-.teeEvery{width:140px;max-width:100%}
+/* Tee times card: First tee | Every on matching vertical wheels (three rows, gold band on the picked row), Start on below. */
+.teeTimes{display:grid;grid-template-columns:minmax(0,1fr) 108px;gap:14px 10px;padding:14px;border:1px solid rgba(255,255,255,.1);border-radius:16px;background:rgba(255,255,255,.04)}
+.teeTimesShotgun{grid-template-columns:minmax(0,1fr)}
+.teeField{display:grid;gap:6px;min-width:0;font:600 11px var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#c9a86e}
+.teeStart{grid-column:1/-1}
+.teeStart .dropdown,.teeStart .dropdownButton{width:100%}
 .teeField [role=listbox]{text-transform:none;letter-spacing:0}
+div.timeWheels{align-items:center;gap:0;margin:0;height:132px;border-radius:12px;background:rgba(0,0,0,.25);box-shadow:inset 0 1px 3px rgba(0,0,0,.4);-webkit-mask-image:none;mask-image:none;overflow:hidden}
+div.timeWheels::before,div.timeWheels::after{content:"";position:absolute;left:0;right:0;height:44px;z-index:1;pointer-events:none}
+div.timeWheels::before{top:0;background:linear-gradient(rgba(29,8,13,.92),rgba(29,8,13,0))}
+div.timeWheels::after{bottom:0;background:linear-gradient(rgba(29,8,13,0),rgba(29,8,13,.92))}
+div.timeWheels>span:first-child{top:44px;left:6px;right:6px;border:1px solid rgba(220,196,149,.55);border-radius:10px;background:rgba(220,196,149,.12)}
+div.timeWheels [role=listbox]{width:34px;height:132px;padding:44px 0}
+div.timeWheels [role=listbox]:nth-of-type(4){width:46px;margin-left:4px}
+div.timeWheels [role=listbox]:nth-of-type(2),div.timeWheels [role=listbox]:nth-of-type(3){width:22px}
+div.timeWheels [role=option]{font:600 17px/1 var(--font-barlow),sans-serif;font-variant-numeric:tabular-nums;color:rgba(251,248,241,.4)}
+div.timeWheels [role=option][data-selected=true]{font-size:22px;font-weight:700;color:#fff3d6}
+.firstTeeColon,.timeUnit{position:relative;z-index:0;color:#fff3d6;font:700 20px/1 var(--font-barlow),sans-serif}
+.firstTeeColon{margin:0 2px 3px}
+.timeUnit{margin-left:2px;color:#c9a86e;font-size:13px;font-weight:600;letter-spacing:0;text-transform:none}
 /* The page's own dropdown (Start on, each group's starting hole). */
 .dropdown{position:relative}
 .dropdownButton{display:inline-flex;align-items:center;justify-content:space-between;gap:10px;min-width:148px;min-height:50px;padding:0 14px;border:1px solid rgba(201,168,110,.55);border-radius:14px;background:rgba(0,0,0,.22);box-shadow:inset 0 1px 3px rgba(0,0,0,.45);color:#fff3d6;font:700 14px var(--font-barlow),sans-serif;letter-spacing:0;text-transform:none;cursor:pointer}
