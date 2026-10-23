@@ -112,7 +112,8 @@ export function ExploreCourseProfile({ course, onBack }: { course: CourseResult;
           ? <p className={styles.teeNames}>{info.teeSets.map((tee) => tee.name).join(" · ")}</p>
           : <ul className={styles.teeList}>{info.teeSets.map((tee) => <li key={tee.name}><span>{tee.name}</span>{tee.totalYards && <span>{tee.totalYards.toLocaleString("en-US")} yds</span>}</li>)}</ul>}
       </div>}
-      {view === "profile" && <p className={styles.soon}>More of this course — scorecard, hole-by-hole maps and reviews — is on the way.</p>}
+      {view === "profile" && info?.scorecard && <Scorecard holes={info.scorecard} tees={info.teeSets.map((tee) => tee.name)} />}
+      {view === "profile" && <p className={styles.soon}>{info?.scorecard ? "Hole-by-hole maps and reviews are on the way." : "More of this course — scorecard, hole-by-hole maps and reviews — is on the way."}</p>}
       {actions}
       {gps?.status === "error" && <p className={styles.hint} role="alert">{gps.message}</p>}
     </article>
@@ -122,4 +123,31 @@ export function ExploreCourseProfile({ course, onBack }: { course: CourseResult;
         <CourseGpsNavigator course={gps.data.gps} holeNumbers={gps.data.holeNumbers} onClose={() => setGps(null)} />
       </div>, document.body)}
   </section>;
+}
+
+type ScorecardHole = NonNullable<CoursePreview["scorecard"]>[number];
+
+/**
+ * The course's scorecard (OpenGolf), nine holes per table like a paper card: Hole, each tee's yards (longest tee first, as
+ * the tees are listed), Par and Hcp, with each nine's total. Swipes sideways if it doesn't fit.
+ */
+function Scorecard({ holes, tees }: { holes: ScorecardHole[]; tees: string[] }) {
+  const shownTees = tees.filter((tee) => holes.some((hole) => hole.yards[tee]));
+  const nines = Array.from({ length: Math.ceil(holes.length / 9) }, (_, i) => holes.slice(i * 9, i * 9 + 9));
+  const sum = (list: ScorecardHole[], value: (hole: ScorecardHole) => number | undefined) => list.reduce((total, hole) => total + (value(hole) ?? 0), 0) || "";
+  const label = (i: number) => nines.length === 2 ? (i === 0 ? "Out" : "In") : "Tot";
+  return <div className={styles.scorecard}>
+    <p className={styles.kicker}>Scorecard</p>
+    {nines.map((nine, i) => <div key={i} className={styles.scorecardScroll}>
+      <table className={styles.scorecardTable} aria-label={`Holes ${nine[0].number} to ${nine[nine.length - 1].number}`}>
+        <thead><tr><th scope="row">Hole</th>{nine.map((hole) => <th key={hole.number} scope="col">{hole.number}</th>)}<th scope="col">{label(i)}</th></tr></thead>
+        <tbody>
+          {shownTees.map((tee) => <tr key={tee}><th scope="row">{tee}</th>{nine.map((hole) => <td key={hole.number}>{hole.yards[tee] ?? "–"}</td>)}<td>{sum(nine, (hole) => hole.yards[tee])}</td></tr>)}
+          <tr className={styles.scorecardPar}><th scope="row">Par</th>{nine.map((hole) => <td key={hole.number}>{hole.par}</td>)}<td>{sum(nine, (hole) => hole.par)}</td></tr>
+          {nine.some((hole) => hole.strokeIndex) && <tr><th scope="row">Hcp</th>{nine.map((hole) => <td key={hole.number}>{hole.strokeIndex ?? "–"}</td>)}<td /></tr>}
+        </tbody>
+      </table>
+    </div>)}
+    {nines.length === 2 && <p className={styles.scorecardTotal}>Total · Par {sum(holes, (hole) => hole.par)}{shownTees.map((tee) => ` · ${tee} ${Number(sum(holes, (hole) => hole.yards[tee])).toLocaleString("en-US")}`).join("")}</p>}
+  </div>;
 }

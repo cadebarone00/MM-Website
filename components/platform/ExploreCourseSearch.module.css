@@ -51,3 +51,15 @@
 .skeleton{height:68px;border-radius:16px;background:linear-gradient(90deg,#efe7da 0%,#f8f2e8 50%,#efe7da 100%);background-size:200% 100%;animation:shimmer 1.2s ease-in-out infinite}
 @keyframes shimmer{from{background-position:100% 0}to{background-position:-100% 0}}
 @media(prefers-reduced-motion:reduce){.skeleton,.spinner{animation:none}.results button{transition:none}}
+/* Course profile: the scorecard, nine holes per table (swipes sideways if it doesn't fit). */
+.scorecard{margin-top:16px;display:grid;gap:10px}
+.scorecardScroll{overflow-x:auto;border-radius:10px;border:1px solid #e6dccb}
+.scorecardTable{width:100%;border-collapse:collapse;font:500 11px/1 var(--font-barlow),sans-serif;font-variant-numeric:tabular-nums;color:#2b211d;text-align:center}
+.scorecardTable th,.scorecardTable td{padding:7px 1px;min-width:0;border-top:1px solid #efe6d8}
+.scorecardTable thead th{border-top:0;background:#591c2e;color:#f3e6c9;font-weight:700}
+.scorecardTable th[scope=row]{position:sticky;left:0;min-width:0;padding:7px 4px 7px 6px;text-align:left;background:#f6f0e6;font-weight:700;white-space:nowrap}
+.scorecardTable thead th[scope=row]{background:#591c2e}
+.scorecardTable td:last-child,.scorecardTable thead th:last-child{font-weight:700;background:#f6f0e6}
+.scorecardTable thead th:last-child{background:#4a1726}
+.scorecardPar td{font-weight:700}
+.scorecardTotal{margin:0;font:600 13px var(--font-barlow),sans-serif;color:#5d4f47}
