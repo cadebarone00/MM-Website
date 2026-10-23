@@ -11,15 +11,27 @@
 
 /* Tee Sheet editor (organizer): timing, randomize, then each group's time, starting hole and players. */
 .teeEditor{display:grid;gap:12px;margin:8px 0 16px}
-.teeTiming{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
-.teeTiming input[type=time]{justify-self:start}
-.teeField [role=listbox]{text-transform:none;letter-spacing:0}
+.teeTiming{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
 .teeField{display:grid;gap:4px;font:600 11px var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#c9a86e}
+.teeFirst{width:200px;max-width:100%}
+.teeEvery{width:140px;max-width:100%}
+.teeField [role=listbox]{text-transform:none;letter-spacing:0}
+/* The page's own dropdown (Start on, each group's starting hole). */
+.dropdown{position:relative}
+.dropdownButton{display:inline-flex;align-items:center;justify-content:space-between;gap:10px;min-width:148px;min-height:50px;padding:0 14px;border:1px solid rgba(201,168,110,.55);border-radius:14px;background:rgba(0,0,0,.22);box-shadow:inset 0 1px 3px rgba(0,0,0,.45);color:#fff3d6;font:700 14px var(--font-barlow),sans-serif;letter-spacing:0;text-transform:none;cursor:pointer}
+.dropdownButton svg{color:#dcc495;transition:transform .15s}
+.dropdownButton[aria-expanded=true]{border-color:#dcc495}
+.dropdownButton[aria-expanded=true] svg{transform:rotate(180deg)}
+.teeGroupHead .dropdownButton{min-width:116px;min-height:36px;border-radius:10px}
+.dropdownList{position:absolute;z-index:20;top:calc(100% + 6px);left:0;min-width:100%;max-height:260px;overflow-y:auto;margin:0;padding:6px;list-style:none;border:1px solid rgba(201,168,110,.55);border-radius:14px;background:#2a0a12;box-shadow:0 12px 28px rgba(0,0,0,.5)}
+.dropdownList button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:40px;padding:0 12px;border:0;border-radius:10px;background:transparent;color:#fbf8f1;font:600 14px var(--font-barlow),sans-serif;letter-spacing:0;text-transform:none;white-space:nowrap;text-align:left;cursor:pointer}
+.dropdownList button:hover{background:rgba(255,255,255,.06)}
+.dropdownList button[aria-selected=true]{background:rgba(220,196,149,.14);color:#fff3d6}
+.dropdownList svg{color:#dcc495}
 .teeEditor input,.teeEditor select{min-height:36px;padding:0 10px;border:1px solid rgba(201,168,110,.55);border-radius:10px;background:rgba(255,255,255,.06);color:#fbf8f1;font:600 14px var(--font-barlow),sans-serif;color-scheme:dark}
 .teeGroups{list-style:none;margin:0;padding:0;display:grid;gap:10px}
 .teeGroup{padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.04)}
 .teeGroupHead{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}
-.teeGroupWheel{margin-bottom:10px}
 .teeGroupHead b{flex:1;font:700 14px var(--font-barlow),sans-serif;color:#dcc495}
 .teePlayers{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .teePlayers li{display:flex;align-items:center;justify-content:space-between;gap:10px;font:600 15px/1.3 var(--font-spectral),Georgia,serif;color:#fff}

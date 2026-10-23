@@ -52,7 +52,7 @@ test("tee sheet: even foursomes, two groups a time off 1 and 10 on 18 holes, one
   const ids = Array.from({ length: 10 }, (_, i) => `p${i}`);
   assert.deepEqual(foursomes(ids, DEFAULT_TIMING, 18).groups.map((g) => [teeTimeLabel(g.time), g.hole, g.players.length]),
     [["8:00 AM", 1, 4], ["8:00 AM", 10, 3], ["8:10 AM", 1, 3]]);
-  assert.deepEqual(foursomes(ids, { first: "12:55", every: 8, split: true }, 9).groups.map((g) => [teeTimeLabel(g.time), g.hole]),
+  assert.deepEqual(foursomes(ids, { first: "12:55", every: 8, start: "1&10" }, 9).groups.map((g) => [teeTimeLabel(g.time), g.hole]),
     [["12:55 PM", 1], ["1:03 PM", 1], ["1:11 PM", 1]]);
   assert.deepEqual(randomTeeSheet(ids, DEFAULT_TIMING, 18).groups.flatMap((g) => g.players).sort(), ids);
 });
@@ -84,6 +84,11 @@ test("cut: top N and ties, or a cut number, on the standings through the cut rou
 test("tee sheet by score: worst first, leaders last, on every earlier round; nothing to go on before a round is scored", () => {
   // Round 1: a +2, b -1, c not played.
   const t = tournament("Gross", [{ profileId: "a", round: 1, hole: 1, strokes: 6 }, { profileId: "b", round: 1, hole: 1, strokes: 3 }]);
-  assert.deepEqual(scoreTeeSheet(t, 2, ["a", "b", "c"], { first: "08:00", every: 10, split: false }, 18)?.groups, [{ time: "08:00", hole: 1, players: ["c", "a", "b"] }]);
+  assert.deepEqual(scoreTeeSheet(t, 2, ["a", "b", "c"], { first: "08:00", every: 10, start: "1" }, 18)?.groups, [{ time: "08:00", hole: 1, players: ["c", "a", "b"] }]);
   assert.equal(scoreTeeSheet(t, 1, ["a", "b", "c"], DEFAULT_TIMING, 18), null);
+});
+
+test("tee sheet shotgun: every group at the first tee time, one per hole", () => {
+  const ids = Array.from({ length: 10 }, (_, i) => `p${i}`);
+  assert.deepEqual(foursomes(ids, { first: "09:00", every: 10, start: "shotgun" }, 18).groups.map((g) => [g.time, g.hole]), [["09:00", 1], ["09:00", 2], ["09:00", 3]]);
 });

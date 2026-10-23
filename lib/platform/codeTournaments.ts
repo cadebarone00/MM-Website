@@ -103,9 +103,11 @@ function rows(t: CodeTournament, shown: number, upTo = Infinity): GolfLeaderboar
 
 /** A round's tee sheet: each group's tee time ("HH:MM", 24-hour), starting hole and players (profile ids, in order). */
 export interface TeeSheet { groups: { time: string; hole: number; players: string[] }[] }
-/** How the organizer times the groups: the first tee time, minutes between times, and whether 18-hole rounds go off 1 and 10. */
-export interface TeeTiming { first: string; every: number; split: boolean }
-export const DEFAULT_TIMING: TeeTiming = { first: "08:00", every: 10, split: true };
+/** How the organizer times the groups: the first tee time, minutes between times, and where they start: all off 1,
+ *  off 1 and 10 (18-hole rounds), or a shotgun (every group at the first tee time, each on its own hole). */
+export type TeeStart = "1" | "1&10" | "shotgun";
+export interface TeeTiming { first: string; every: number; start: TeeStart }
+export const DEFAULT_TIMING: TeeTiming = { first: "08:00", every: 10, start: "1&10" };
 
 /** "08:30" → "8:30 AM". */
 export function teeTimeLabel(time: string): string {
@@ -114,9 +116,11 @@ export function teeTimeLabel(time: string): string {
   return `${(h + 11) % 12 + 1}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
 }
 
-/** Group `g`'s time and starting hole under a timing: two groups per time (holes 1 and 10) when split, else one off 1. */
+/** Group `g`'s time and starting hole under a timing: two groups per time (holes 1 and 10) off 1 & 10, one per time off 1,
+ *  or a shotgun: all at the first tee time on holes 1, 2, 3… (past the last hole, a second group goes off each hole). */
 export function teeSlot(g: number, timing: TeeTiming, holes: number): { time: string; hole: number } {
-  const perTee = timing.split && holes >= 18 ? 2 : 1;
+  if (timing.start === "shotgun") return { time: timing.first, hole: g % holes + 1 };
+  const perTee = timing.start === "1&10" && holes >= 18 ? 2 : 1;
   const [h, m] = timing.first.split(":").map(Number);
   const minutes = ((h || 0) * 60 + (m || 0) + Math.floor(g / perTee) * timing.every) % (24 * 60);
   return { time: `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`, hole: g % perTee ? 10 : 1 };
