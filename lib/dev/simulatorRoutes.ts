@@ -139,6 +139,18 @@ export function simulatorPages(): SimulatorPage[] {
       pages.push(...pages.splice(pages.indexOf(page), 1)); // keep this order: phone, Live Activity, in-app
     }
   }
+  // Tourneys group: a sample tournament joined by code (lib/dev/sampleTourney.ts), no sign-in, nothing saved.
+  const tourney = pages.find(page => page.path === "/dev/tourney");
+  if (tourney) Object.assign(tourney, { label: "Tournament (sample)", group: "Tourneys", conditions: [
+    { id: "tourney-player", label: "Player · round in progress", state: { tourneyPreview: "player" } },
+    { id: "tourney-player-net", label: "Player · Net, round 2 (round 1 done)", state: { tourneyPreview: "player-net" } },
+    { id: "tourney-organizer", label: "Organizer (playing) · codes, + Round, End", state: { tourneyPreview: "organizer" } },
+    { id: "tourney-organizer-out", label: "Organizer not playing", state: { tourneyPreview: "organizer-out" } },
+    { id: "tourney-spectator", label: "Spectator (watch code)", state: { tourneyPreview: "spectator" } },
+    { id: "tourney-final", label: "Tournament ended (final)", state: { tourneyPreview: "final" } },
+    { id: "tourney-create", label: "Create a tournament screen", state: { tourneyPreview: "create" } },
+    { id: "tourney-join", label: "Join with code screen", state: { tourneyPreview: "join" } },
+  ] });
   // Profile group. First (the default): the real profile screens on a sample profile, no sign-in needed.
   const profile = pages.find(page => page.path === "/dev/profile");
   if (profile) Object.assign(profile, { label: "Profile (sample)", group: "Profile", conditions: [

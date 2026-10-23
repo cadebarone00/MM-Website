@@ -1,4 +1,5 @@
 import { normalizeTripScenario } from "./tripScenario";
+import { TOURNEY_PREVIEWS, type TourneyPreview } from "./sampleTourney";
 import type { GpsMode } from "@/lib/platform/golfGps/types";
 import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS, type GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
 import { DEFAULT_DEV_ACCOUNT, DEV_ACCOUNTS } from "./devAccounts";
@@ -85,6 +86,8 @@ export type SimulatorState = {
   brandStage?: "drawing" | "finished" | "reduced";
   brandDuration?: number;
   brandReplay?: number;
+  /** Tourneys group (/dev/tourney): which sample tournament screen shows (lib/dev/sampleTourney.ts). Unset = "player". */
+  tourneyPreview?: TourneyPreview;
 };
 export const COMPETITION_SETUPS = [["none", "No competition"], ["individual", "Individual only"], ["team", "Match only"], ["both", "Individual + match"]] as const;
 export type CompetitionSetup = (typeof COMPETITION_SETUPS)[number][0];
@@ -185,6 +188,7 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.brandStyle !== undefined && !["clean", "gold"].includes(String(state.brandStyle))) return null;
   if (state.brandStage !== undefined && !["drawing", "finished", "reduced"].includes(String(state.brandStage))) return null;
   if (state.brandDuration !== undefined && (typeof state.brandDuration !== "number" || !Number.isFinite(state.brandDuration) || state.brandDuration < 600 || state.brandDuration > 2400)) return null;
+  if (state.tourneyPreview !== undefined && !TOURNEY_PREVIEWS.includes(state.tourneyPreview as TourneyPreview)) return null;
   if (state.brandReplay !== undefined && (typeof state.brandReplay !== "number" || !Number.isSafeInteger(state.brandReplay) || state.brandReplay < 0)) return null;
   if (state.playerCount !== null && (typeof state.playerCount !== "number" || !Number.isInteger(state.playerCount) || state.playerCount < 1 || state.playerCount > 64)) return null;
   for (const key of ["tripLength", "tripDay"] as const) if(state[key]!==undefined && (typeof state[key]!=="number" || !Number.isInteger(state[key]) || state[key]<1 || state[key]>14)) return null;

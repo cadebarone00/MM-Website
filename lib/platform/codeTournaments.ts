@@ -105,3 +105,20 @@ export function tournamentPreview(t: CodeTournament, shown: number): GolfMatchPr
     roundStandings: t.rounds.map((r) => ({ round: r.number, datePlayed: r.date, format: "Stroke Play", par: r.setup.course.par, leaderboard: rows(t, r.number, r.number) })),
   };
 }
+
+/** One change a player or organizer makes (the POST body for /api/code-tournaments/<id>). */
+export type TournamentChange = { action: "strokes"; round: number; hole: number; strokes: number | null } | { action: "submit"; round: number }
+  | { action: "addRound"; setup: CodeRoundSetup; date: string } | { action: "end" };
+
+/** The tournament after a change, as the database would make it (the app simulator's sample tournament uses this). */
+export function applyChange(t: CodeTournament, me: string, change: TournamentChange): CodeTournament {
+  switch (change.action) {
+    case "strokes": {
+      const holes = t.holes.filter((h) => !(h.profileId === me && h.round === change.round && h.hole === change.hole));
+      return { ...t, holes: change.strokes === null ? holes : [...holes, { profileId: me, round: change.round, hole: change.hole, strokes: change.strokes }] };
+    }
+    case "submit": return submitted(t, me, change.round) ? t : { ...t, cards: [...t.cards, { profileId: me, round: change.round, submittedAt: new Date().toISOString() }] };
+    case "addRound": return { ...t, rounds: [...t.rounds, { number: t.rounds.length + 1, setup: change.setup, date: change.date }] };
+    case "end": return { ...t, status: "ended" };
+  }
+}

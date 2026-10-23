@@ -12,22 +12,27 @@ type Look = { status: "loading" } | { status: "found"; t: CodeTournamentLookup }
 const handicapValue = (text: string) => { const n = Number.parseFloat(text); return Number.isFinite(n) && n >= -10 && n <= 54 ? n : null; };
 const roundDate = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 
-/** The code's tournament (name, organizer, rounds) with Join — a handicap index first for net — or Open if I'm already in. */
-export function CodeTournamentJoin({ code }: { code: string }) {
+/**
+ * The code's tournament (name, organizer, rounds) with Join — a handicap index first for net — or Open if I'm already in.
+ * `sample` (app simulator only): shows that tournament for the code; Join saves nothing.
+ */
+export function CodeTournamentJoin({ code, sample }: { code: string; sample?: CodeTournamentLookup }) {
   const router = useRouter();
-  const [look, setLook] = useState<Look>({ status: "loading" });
+  const [look, setLook] = useState<Look>(sample ? { status: "found", t: sample } : { status: "loading" });
   const [handicap, setHandicap] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
+    if (sample) return;
     fetch(`/api/code-tournaments/lookup?code=${encodeURIComponent(code)}`, { cache: "no-store" })
       .then((r) => r.json() as Promise<{ ok: boolean; tournament?: CodeTournamentLookup | null; code?: string }>)
       .then((body) => setLook(body.ok ? body.tournament ? { status: "found", t: body.tournament } : { status: "missing" }
         : { status: "error", message: body.code === "not_installed" ? "Tournaments aren't set up in the database yet." : "Couldn't look up that code. Try again." }))
       .catch(() => setLook({ status: "error", message: "No connection. Try again when you're back online." }));
-  }, [code]);
+  }, [code, sample]);
 
   async function join(t: CodeTournamentLookup) {
+    if (sample) { setError("Sample tournament: joining isn't saved in the simulator."); return; }
     setBusy(true); setError(null);
     const reply = await fetch("/api/code-tournaments/join", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, handicap: handicapValue(handicap) }) })
       .then((r) => r.json() as Promise<{ ok: boolean; id?: string; message?: string }>).catch(() => null);

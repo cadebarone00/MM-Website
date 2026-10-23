@@ -18,8 +18,9 @@ const roundDate = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateStr
 /**
  * Create a tournament (/tournaments/code/new): name, Gross / Net, whether I'm playing (my handicap for net), and one or
  * more rounds (course from the course search, tee, date). Create shows the join code to send out.
+ * `sample` (app simulator only): Create shows a made-up code and saves nothing.
  */
-export function CodeTournamentCreate() {
+export function CodeTournamentCreate({ sample = false }: { sample?: boolean } = {}) {
   const [name, setName] = useState("");
   const [scoring, setScoring] = useState<"Gross" | "Net">("Gross");
   const [plays, setPlays] = useState(true);
@@ -34,6 +35,7 @@ export function CodeTournamentCreate() {
 
   async function create() {
     if (!ready) return;
+    if (sample) { setMade({ id: "sample", code: "K7Q4MZ" }); return; }
     setBusy(true); setError(null);
     const reply = await fetch("/api/code-tournaments", { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: name.trim(), scoring, plays, handicap: needsHandicap ? handicapValue(handicap) : null, rounds }) })
