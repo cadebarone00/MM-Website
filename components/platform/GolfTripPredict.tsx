@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Coins, X } from "lucide-react";
 import { BET_CATEGORIES, betDef, priceTrip, type BetCategory, type Market, type PlayerLine, type TripSetup } from "@/lib/platform/predictBets";
 import { STAT_LABELS, type StatKey } from "@/lib/platform/predictStats";
 import { usePredictSettings } from "@/lib/platform/predictSetting";
+import { Wheel } from "./Wheel";
 import styles from "./GolfTripPredict.module.css";
 
 /**
@@ -256,30 +257,3 @@ function TradeSheet({ pool, outcome, balance, onBuy, onClose }: { pool: Pool; ou
   </div>;
 }
 
-/** A sideways wheel picker (owner request 2026-10-11): swipe and it snaps; the value in the middle is picked. Tap to jump. */
-function Wheel({ items, index, onChange, label }: { items: string[]; index: number; onChange: (index: number) => void; label: string }) {
-  const ref = useRef<HTMLDivElement>(null), settle = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const center = (i: number, smooth: boolean) => {
-    const box = ref.current, el = box?.children[i] as HTMLElement | undefined;
-    if (box && el) box.scrollTo({ left: el.offsetLeft - (box.clientWidth - el.offsetWidth) / 2, behavior: smooth ? "smooth" : "auto" });
-  };
-  useEffect(() => { center(index, true); }, [index]);
-  useEffect(() => () => clearTimeout(settle.current), []);
-  // Once a swipe stops, pick whichever value is in the middle.
-  const onScroll = () => {
-    clearTimeout(settle.current);
-    settle.current = setTimeout(() => {
-      const box = ref.current;
-      if (!box) return;
-      const mid = box.scrollLeft + box.clientWidth / 2;
-      let best = 0, gap = Infinity;
-      Array.from(box.children).forEach((c, i) => { const el = c as HTMLElement, d = Math.abs(el.offsetLeft + el.offsetWidth / 2 - mid); if (d < gap) { gap = d; best = i; } });
-      if (best !== index) onChange(best);
-    }, 90);
-  };
-  return <div className={styles.wheelWrap}>
-    <div ref={ref} className={styles.wheel} role="listbox" aria-label={label} onScroll={onScroll}>
-      {items.map((item, i) => <button key={i} type="button" role="option" aria-selected={i === index} className={styles.wheelItem} onClick={() => onChange(i)}>{item}</button>)}
-    </div>
-  </div>;
-}

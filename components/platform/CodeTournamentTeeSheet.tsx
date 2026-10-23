@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowDownWideNarrow, Shuffle } from "lucide-react";
 import { GolfTeeSheet } from "./GolfTripMatch";
+import { Wheel } from "./Wheel";
 import { DEFAULT_TIMING, randomTeeSheet, roundTeeSheet, scoreTeeSheet, teeSlot, teeTimeLabel, type CodeTournament, type TeeSheet, type TeeTiming } from "@/lib/platform/codeTournaments";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import styles from "./CodeTournament.module.css";
@@ -43,11 +44,12 @@ export function TeeSheetEditor({ t, round, sheet, holes, onCancel, onSave }: { t
     <div className={styles.teeTiming}>
       <label className={styles.teeField}><span>First tee</span>
         <input type="time" value={timing.first} onChange={(e) => e.target.value && retime({ ...timing, first: e.target.value })} /></label>
-      <label className={styles.teeField}><span>Every</span>
-        <select value={timing.every} onChange={(e) => retime({ ...timing, every: Number(e.target.value) })}>{EVERY.map((m) => <option key={m} value={m}>{m} min</option>)}</select></label>
-      {holes >= 18 && <label className={styles.teeField}><span>Start on</span>
-        <select value={timing.split ? "split" : "one"} onChange={(e) => retime({ ...timing, split: e.target.value === "split" })}>
-          <option value="one">Hole 1</option><option value="split">Holes 1 & 10</option></select></label>}
+      <div className={styles.teeField}><span>Every</span>
+        <Wheel label="Minutes between tee times" itemWidth={72} items={EVERY.map((m) => `${m} min`)} index={Math.max(EVERY.indexOf(timing.every), 0)}
+          onChange={(i) => retime({ ...timing, every: EVERY[i] })} /></div>
+      {holes >= 18 && <div className={styles.teeField}><span>Start on</span>
+        <Wheel label="Starting holes" itemWidth={112} items={["Hole 1", "Holes 1 & 10"]} index={timing.split ? 1 : 0}
+          onChange={(i) => retime({ ...timing, split: i === 1 })} /></div>}
     </div>
     <div className={styles.organizer}>
       <button type="button" className={styles.organizerButton} onClick={() => setDraft(randomTeeSheet(ids, timing, holes))}><Shuffle size={14} aria-hidden="true" /> Randomize pairings</button>
@@ -59,9 +61,9 @@ export function TeeSheetEditor({ t, round, sheet, holes, onCancel, onSave }: { t
         <div className={styles.teeGroupHead}>
           <b>Group {i + 1}</b>
           <input type="time" aria-label={`Group ${i + 1} tee time`} value={g.time} onChange={(e) => setGroup(i, { time: e.target.value })} />
-          <select aria-label={`Group ${i + 1} starting hole`} value={g.hole} onChange={(e) => setGroup(i, { hole: Number(e.target.value) })}>
-            {Array.from({ length: holes }, (_, h) => <option key={h} value={h + 1}>Hole {h + 1}</option>)}</select>
         </div>
+        <div className={styles.teeGroupWheel}><Wheel label={`Group ${i + 1} starting hole`} itemWidth={72} items={Array.from({ length: holes }, (_, h) => `Hole ${h + 1}`)} index={g.hole - 1}
+          onChange={(h) => setGroup(i, { hole: h + 1 })} /></div>
         <ul className={styles.teePlayers}>
           {g.players.map((id) => <li key={id}><span>{name(id)}</span>
             <select aria-label={`Move ${name(id)}`} value={i} onChange={(e) => move(id, Number(e.target.value))}>
