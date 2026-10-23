@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { applyChange, cleanCode, currentRound, cutFrom, cutStatus, DEFAULT_TIMING, formatCode, foursomes, randomTeeSheet, roundTeeSheet, teeTimeLabel, tournamentPreview, type CodeTournament } from "./codeTournaments.ts";
+import { applyChange, cleanCode, currentRound, cutFrom, cutStatus, DEFAULT_TIMING, formatCode, foursomes, randomTeeSheet, roundTeeSheet, scoreTeeSheet, teeTimeLabel, tournamentPreview, type CodeTournament } from "./codeTournaments.ts";
 import { rankLeaderboard } from "./golfLeaderboardOrder.ts";
 
 const PAR = Array(18).fill(4);
@@ -79,4 +79,11 @@ test("cut: top N and ties, or a cut number, on the standings through the cut rou
   assert.equal(cutFrom(byScore, "a", 1), false);
   assert.deepEqual(roundTeeSheet(byScore, 2).groups.flatMap((g) => g.players), ["b", "c"]);
   assert.equal(cutStatus({ ...t, cut: null }), null);
+});
+
+test("tee sheet by score: worst first, leaders last, on every earlier round; nothing to go on before a round is scored", () => {
+  // Round 1: a +2, b -1, c not played.
+  const t = tournament("Gross", [{ profileId: "a", round: 1, hole: 1, strokes: 6 }, { profileId: "b", round: 1, hole: 1, strokes: 3 }]);
+  assert.deepEqual(scoreTeeSheet(t, 2, ["a", "b", "c"], { first: "08:00", every: 10, split: false }, 18)?.groups, [{ time: "08:00", hole: 1, players: ["c", "a", "b"] }]);
+  assert.equal(scoreTeeSheet(t, 1, ["a", "b", "c"], DEFAULT_TIMING, 18), null);
 });

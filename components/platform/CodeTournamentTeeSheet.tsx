@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Shuffle } from "lucide-react";
+import { ArrowDownWideNarrow, Shuffle } from "lucide-react";
 import { GolfTeeSheet } from "./GolfTripMatch";
-import { DEFAULT_TIMING, randomTeeSheet, roundTeeSheet, teeSlot, teeTimeLabel, type CodeTournament, type TeeSheet, type TeeTiming } from "@/lib/platform/codeTournaments";
+import { DEFAULT_TIMING, randomTeeSheet, roundTeeSheet, scoreTeeSheet, teeSlot, teeTimeLabel, type CodeTournament, type TeeSheet, type TeeTiming } from "@/lib/platform/codeTournaments";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import styles from "./CodeTournament.module.css";
 
@@ -18,14 +18,15 @@ export function CodeTournamentTeeSheet({ t, round, match }: { t: CodeTournament;
 
 /**
  * Tournament Settings → Tee Sheet: set the first tee time, minutes between groups and 1 / 1 & 10 starts (re-times every
- * group), randomize the pairings, move a player to another group, and change any one group's time or hole. Save sends it
+ * group), randomize the pairings or order them by score (worst first, leaders last), move a player to another group, and change any one group's time or hole. Save sends it
  * to everyone.
  */
-export function TeeSheetEditor({ t, sheet, holes, onCancel, onSave }: { t: CodeTournament; sheet: TeeSheet; holes: number; onCancel: () => void; onSave: (sheet: TeeSheet) => Promise<void> }) {
+export function TeeSheetEditor({ t, round, sheet, holes, onCancel, onSave }: { t: CodeTournament; round: number; sheet: TeeSheet; holes: number; onCancel: () => void; onSave: (sheet: TeeSheet) => Promise<void> }) {
   const [draft, setDraft] = useState(sheet);
   const [timing, setTiming] = useState<TeeTiming>(() => ({ ...DEFAULT_TIMING, first: sheet.groups[0]?.time || DEFAULT_TIMING.first, split: holes >= 18 && sheet.groups.some((g) => g.hole === 10) }));
   const [saving, setSaving] = useState(false);
-  const ids = t.players.map((p) => p.profileId);
+  const ids = sheet.groups.flatMap((g) => g.players);
+  const byScore = scoreTeeSheet(t, round, ids, timing, holes);
   const name = (id: string) => t.players.find((p) => p.profileId === id)?.name ?? "Player";
   // New timing: every group gets its slot in order (players stay put).
   const retime = (next: TeeTiming) => { setTiming(next); setDraft((d) => ({ groups: d.groups.map((g, i) => ({ ...g, ...teeSlot(i, next, holes) })) })); };
@@ -50,6 +51,8 @@ export function TeeSheetEditor({ t, sheet, holes, onCancel, onSave }: { t: CodeT
     </div>
     <div className={styles.organizer}>
       <button type="button" className={styles.organizerButton} onClick={() => setDraft(randomTeeSheet(ids, timing, holes))}><Shuffle size={14} aria-hidden="true" /> Randomize pairings</button>
+      {/* Worst score off first, the leaders last; needs scores from an earlier round. */}
+      <button type="button" className={styles.organizerButton} disabled={!byScore} onClick={() => byScore && setDraft(byScore)}><ArrowDownWideNarrow size={14} aria-hidden="true" /> By score</button>
     </div>
     <ol className={styles.teeGroups}>
       {draft.groups.map((g, i) => <li key={i} className={styles.teeGroup}>

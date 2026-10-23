@@ -133,6 +133,24 @@ export function foursomes(players: string[], timing: TeeTiming, holes: number): 
 }
 
 /** Random pairings: the field shuffled, then split into foursomes. */
+/**
+ * Pairings by score: the field ordered worst to best on the standings before `round` (the tournament's gross or net,
+ * every earlier round), so the worst scores go off first and the leaders last; players with no score yet go first.
+ * Ties keep the field's order. Null before anyone has a score from an earlier round (e.g. Round 1).
+ */
+export function scoreTeeSheet(t: CodeTournament, round: number, players: string[], timing: TeeTiming, holes: number): TeeSheet | null {
+  const earlier = t.rounds.filter((r) => r.number < round);
+  const net = t.scoring === "Net";
+  const score = new Map(players.map((id) => {
+    const player = t.players.find((p) => p.profileId === id);
+    const scores = player ? earlier.map((r) => roundScore(t, player, r)) : [];
+    return [id, scores.some((s) => s.played) ? scores.reduce((sum, s) => sum + (net ? s.net : s.gross), 0) : null] as const;
+  }));
+  if (![...score.values()].some((s) => s !== null)) return null;
+  const rank = (id: string) => score.get(id) ?? Infinity;
+  return foursomes([...players].sort((a, b) => rank(b) - rank(a)), timing, holes);
+}
+
 export function randomTeeSheet(players: string[], timing: TeeTiming, holes: number): TeeSheet {
   const shuffled = [...players];
   for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }

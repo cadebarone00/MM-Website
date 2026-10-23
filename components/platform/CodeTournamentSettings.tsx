@@ -122,7 +122,7 @@ function TeeSheetPanel({ t, live, onDone, onSave }: { t: CodeTournament; live: b
       <span><b>Round {round.number}</b><small>{round.setup.course.name} · {roundDate(round.date)}</small></span>
       <button type="button" aria-label="Next round" disabled={index >= t.rounds.length - 1} onClick={() => setIndex(index + 1)}><ChevronRight size={20} aria-hidden="true" /></button>
     </div>
-    <TeeSheetEditor key={round.number} t={t} sheet={roundTeeSheet(t, round.number)} holes={round.setup.course.par.length} onCancel={onDone}
+    <TeeSheetEditor key={round.number} t={t} round={round.number} sheet={roundTeeSheet(t, round.number)} holes={round.setup.course.par.length} onCancel={onDone}
       onSave={async (sheet) => { if (await onSave(round.number, sheet)) onDone(); }} />
   </section>;
 }
