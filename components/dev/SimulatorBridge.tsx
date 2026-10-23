@@ -55,3 +55,8 @@ export function SimulatorBridge({ children }: { children: ReactNode }) {
   }, [pathname]);
   return <SimulatorContext.Provider value={config}><NavigationReporter.Provider value={config ? reportNavigation : undefined}>{children}</NavigationReporter.Provider></SimulatorContext.Provider>;
 }
+
+/** Direct fixture canvas adapter; leaves the existing iframe bridge unchanged. */
+export function SimulatorFixtureProvider({ config, children }: { config: SimulatorConfig; children: ReactNode }) {
+  return <SimulatorContext.Provider value={config}>{children}</SimulatorContext.Provider>;
+}

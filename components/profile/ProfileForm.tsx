@@ -13,7 +13,7 @@ const input = "min-h-12 w-full rounded-md border border-maroon-900/25 bg-white p
  * username, bio). Only those fields exist here — history, teams, results and the legacy link aren't editable.
  */
 /** `onSave` + `doneHref` (dev profile preview only): save somewhere else instead of the account (throws to show an error), then go there. */
-export function ProfileForm({ mode, initial, onSave, doneHref = "/profile" }: { mode: "setup" | "edit"; initial: { displayName: string; username: string; bio: string; bioAvailable?: boolean }; onSave?: (body: { displayName: string; username?: string; bio?: string }) => Promise<void>; doneHref?: string }) {
+export function ProfileForm({ mode, initial, onSave, onDone, onCancel, doneHref = "/profile" }: { mode: "setup" | "edit"; initial: { displayName: string; username: string; bio: string; bioAvailable?: boolean }; onSave?: (body: { displayName: string; username?: string; bio?: string }) => Promise<void>; doneHref?: string; onDone?: () => void; onCancel?: () => void }) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState(initial.displayName);
   const [username, setUsername] = useState(initial.username);
@@ -33,13 +33,13 @@ export function ProfileForm({ mode, initial, onSave, doneHref = "/profile" }: { 
     try {
       if (onSave) {
         try { await onSave(body); } catch (problem) { setError(problem instanceof Error ? problem.message : "Couldn't save your profile."); setSaving(false); return; }
-        router.push(doneHref);
+        if (onDone) onDone(); else router.push(doneHref);
         return;
       }
       const response = await fetch("/api/account/profile", { method: mode === "setup" ? "POST" : "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const reply = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
       if (response.ok && reply?.ok) {
-        router.push(doneHref);
+        if (onDone) onDone(); else router.push(doneHref);
         router.refresh();
         return;
       }
@@ -73,7 +73,7 @@ export function ProfileForm({ mode, initial, onSave, doneHref = "/profile" }: { 
       <p id="bio-count" className={hint}>{bio.length} / {BIO_MAX}</p>
     </div>}
     <div className="flex gap-3">
-      {mode === "edit" && <button type="button" className="min-h-12 flex-1 rounded-pill border border-maroon-900/30 font-condensed text-sm font-semibold uppercase tracking-wide" onClick={() => router.back()} disabled={saving}>Cancel</button>}
+      {mode === "edit" && <button type="button" className="min-h-12 flex-1 rounded-pill border border-maroon-900/30 font-condensed text-sm font-semibold uppercase tracking-wide" onClick={() => onCancel ? onCancel() : router.back()} disabled={saving}>Cancel</button>}
       <button type="submit" className="min-h-12 flex-1 rounded-pill bg-maroon-900 font-condensed text-sm font-semibold uppercase tracking-wide text-cream-50 disabled:opacity-60" disabled={saving}>
         {saving ? "Saving…" : mode === "setup" ? "Create my profile" : "Save"}
       </button>

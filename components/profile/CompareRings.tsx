@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Search, X } from "lucide-react";
 import { roundStats, type RoundStats } from "@/lib/profile/roundStats";
 import { sampleProfileRounds } from "@/lib/dev/sampleProfileRounds";
+import { useFixtureIsolation } from "@/components/dev/FixtureIsolation";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
 
 /**
@@ -36,6 +37,7 @@ const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
 type Loaded = { status: "idle" | "loading" } | { status: "ok"; person: Person; stats: RoundStats | null } | { status: "private" | "not_found" | "error"; person?: Person };
 
 export function CompareRings({ mine }: { mine: RoundStats }) {
+  const isolated = useFixtureIsolation();
   const [picked, setPicked] = useState<string[]>(DEFAULT);
   const sampleOn = useSimulator()?.state.sampleStats === true;
   const [people, setPeople] = useState<Person[]>([]);
@@ -44,24 +46,26 @@ export function CompareRings({ mine }: { mine: RoundStats }) {
   const [found, setFound] = useState<Person[]>([]);
 
   useEffect(() => {
+    if (isolated) return;
     fetch("/api/profile/compare/people", { cache: "no-store" }).then((r) => r.json() as Promise<{ people?: Person[] }>)
       .then((body) => setPeople(body.people ?? [])).catch(() => { /* search still works */ });
-  }, []);
+  }, [isolated]);
   const text = query.trim();
   useEffect(() => {
-    if (text.length < 2) return;
+    if (isolated || text.length < 2) return;
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       fetch(`/api/account/search?q=${encodeURIComponent(text)}`, { signal: controller.signal }).then((r) => r.json() as Promise<{ accounts?: { username: string; name: string }[] }>)
         .then((body) => setFound((body.accounts ?? []).map((a) => ({ username: a.username, name: a.name })))).catch(() => { /* keep typing */ });
     }, 300);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [text]);
+  }, [text, isolated]);
 
   async function compare(person: Person) {
     setQuery(""); setFound([]);
     // DEV ONLY (simulator condition): a made-up golfer to compare against, without anyone's real data.
     if (person.username === SAMPLE.username) { setLoaded({ status: "ok", person, stats: roundStats(sampleProfileRounds(20, 2, 31)) }); return; }
+    if (isolated) return;
     setLoaded({ status: "loading" });
     try {
       const body = await fetch(`/api/profile/compare?u=${encodeURIComponent(person.username)}`, { cache: "no-store" }).then((r) => r.json()) as { result?: { status: string; person?: Person; stats?: RoundStats | null } };

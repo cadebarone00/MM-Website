@@ -54,9 +54,9 @@ export function DevSettingsPreview() {
     signOut={<p className={styles.note}>Sample profile: changes stay in this preview. Sign Out is on the live Settings.</p>} />;
 }
 
-export function DevEditProfilePreview() {
+export function DevEditProfilePreview({ onDone, onCancel }: { onDone?: () => void; onCancel?: () => void } = {}) {
   const mine = useSampleProfile();
-  return <ProfileForm key={`${mine.displayName}|${mine.username}|${mine.bio}`} mode="edit" doneHref="/dev/profile"
+  return <ProfileForm key={`${mine.displayName}|${mine.username}|${mine.bio}`} mode="edit" doneHref="/dev/profile" onDone={onDone} onCancel={onCancel}
     initial={{ displayName: mine.displayName, username: mine.username, bio: mine.bio }}
     onSave={async (body) => { updateSampleProfile(checked(body)); }} />;
 }

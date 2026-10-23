@@ -37,7 +37,9 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts",
     ".next-savedtrip-check/types/**/*.ts",
-    ".next-savedtrip-check/dev/types/**/*.ts"
+    ".next-savedtrip-check/dev/types/**/*.ts",
+    ".next-iphone-preview/types/**/*.ts",
+    ".next-iphone-preview/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

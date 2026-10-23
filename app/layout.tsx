@@ -1,3 +1,5 @@
+import { headers } from "next/headers";
+import { iphonePreviewEnabled, IPHONE_PREVIEW_HEADER } from "@/lib/dev/iphonePreview";
 import { SeasonCatalogProvider } from "@/components/SeasonCatalogProvider";
 import { ModalScrollLock } from "@/components/ModalScrollLock";
 import { getSeasonCatalog } from "@/lib/data/seasonCatalog";
@@ -31,6 +33,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // The middleware marker is erased/recomputed for every request, never trusted from callers.
+  if (iphonePreviewEnabled() && (await headers()).get(IPHONE_PREVIEW_HEADER) === "1") {
+    return <html lang="en" className={`${spectral.variable} ${barlow.variable} ${barlowCondensed.variable}`}>
+      <body className="min-h-dvh bg-cream-50 font-sans text-ink-900 antialiased"><ModalScrollLock />{children}</body>
+    </html>;
+  }
   const [nextTournamentOverride, catalog] = await Promise.all([getNextTournamentOverride(), getSeasonCatalog()]);
   return (
     <html

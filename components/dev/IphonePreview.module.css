@@ -1,0 +1,10 @@
+.canvas { min-height: 100dvh; width: 100%; background: #500001; }
+.overlay { position: fixed; z-index: 2147483000; top: max(8px, env(safe-area-inset-top)); right: 8px; font: 13px/1.4 system-ui, sans-serif; color: #fbf8f1; }
+.toggle { border: 1px solid #dcc49580; border-radius: 50%; width: 36px; height: 36px; background: #500001d9; color: #fbf8f1; }
+.panel { width: min(310px, calc(100vw - 16px)); max-height: 70dvh; overflow: auto; padding: 12px; border: 1px solid #dcc49580; border-radius: 12px; background: #300001f5; box-shadow: 0 4px 24px #0005; display: grid; gap: 10px; }
+.panel label { display: grid; gap: 4px; }
+.panel select, .panel button { min-height: 36px; padding: 6px; border: 1px solid #dcc49580; border-radius: 6px; background: #fbf8f1; color: #500001; }
+.restore { position: fixed; z-index: 2147483000; top: env(safe-area-inset-top); right: 0; width: 44px; height: 44px; opacity: 0; border: 0; }
+.restore:focus-visible { opacity: 1; }
+
+:global(body:has([data-iphone-preview]) nextjs-portal) { display: none; }
