@@ -4,7 +4,10 @@ import { formatDateRange } from "@/lib/platform/publicSite";
 import { loadMyPastTournaments } from "@/lib/platform/pastTournamentsServer";
 import type { PastTournament } from "@/lib/platform/pastTournaments";
 import { JoinLinkForm } from "./JoinLinkForm";
-import { JoinMethodSelector } from "./JoinMethodSelector";
+import { JoinCodeEntry } from "./JoinCodeEntry";
+import { listMyCodeTournaments } from "@/lib/platform/codeTournamentsServer";
+import type { MyCodeTournament } from "@/lib/platform/codeTournaments";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PlatformHeader } from "./PlatformHeader";
 import { SignInRequiredLink } from "./SignInRequiredLink";
 import styles from "./JoinTournament.module.css";
@@ -16,6 +19,10 @@ import { JoinTournamentEntrance } from "@/components/motion/JoinTournamentEntran
  */
 export async function JoinTournamentPage() {
   const past = await loadMyPastTournaments();
+  // Tournaments joined by code (current first); none when signed out or before tournament_codes.sql is run.
+  const { data: { user } } = await (await createSupabaseServerClient()).auth.getUser();
+  const coded = user ? await listMyCodeTournaments(user.id) : null;
+  const codeTournaments = coded?.ok ? coded.value : [];
 
   return <>
     <PlatformHeader title="Tourneys" />
@@ -23,8 +30,8 @@ export async function JoinTournamentPage() {
       <div className={styles.photoPanel}>
       <h2 className={styles.descriptor}>Get started</h2>
       <div className={styles.actions}>
-        <SignInRequiredLink href="/tournaments/create" className={styles.actionBox} message="Sign in to create a tournament"><span>Creat a Tournament</span></SignInRequiredLink>
-        <JoinMethodSelector />
+        <SignInRequiredLink href="/tournaments/create" className={styles.actionBox} message="Sign in to create a tournament"><span>Create a Tournament</span></SignInRequiredLink>
+        <JoinCodeEntry />
       </div>
       </div>
       <div className={styles.lowerContent}>
@@ -32,12 +39,16 @@ export async function JoinTournamentPage() {
 
       <section aria-labelledby="my-tournaments-heading" className={styles.tournamentSection}>
         <h2 id="my-tournaments-heading" className={styles.descriptor}>My Tournaments</h2>
+        {codeTournaments.some((t) => t.status === "live") && <div className={styles.past}>
+          <h3 className={styles.pastLabel}>Current</h3>
+          <CodeTournamentRows tournaments={codeTournaments.filter((t) => t.status === "live")} />
+        </div>}
         <div className={styles.past}>
         <h3 className={styles.pastLabel}>Past Tournaments</h3>
         {!past.signedIn ? <p className={styles.note}><Link href="/login">Log in</Link> to see your past tournaments.</p>
           : !past.ok ? <p className={styles.note} role="alert">We couldn&apos;t load your past tournaments right now. Refresh the page to try again.</p>
-          : past.tournaments.length === 0 ? <p className={styles.note}>No past tournaments yet.</p>
-          : <TournamentRows tournaments={past.tournaments} />}
+          : past.tournaments.length === 0 && !codeTournaments.some((t) => t.status === "ended") ? <p className={styles.note}>No past tournaments yet.</p>
+          : <><CodeTournamentRows tournaments={codeTournaments.filter((t) => t.status === "ended")} /><TournamentRows tournaments={past.tournaments} /></>}
         </div>
       </section>
       </div>
@@ -64,6 +75,24 @@ export function TournamentRows({ tournaments, enter = false }: { tournaments: Pa
       {enter && <Link href={t.href} className={styles.enter}>
         Enter Tournament<span className={styles.srOnly}> {t.name} {t.year}</span>
       </Link>}
+    </li>)}
+  </ul>;
+}
+
+/** Tournaments joined by code, one row each, opening the tournament. */
+function CodeTournamentRows({ tournaments }: { tournaments: MyCodeTournament[] }) {
+  if (!tournaments.length) return null;
+  return <ul className={styles.list}>{tournaments.map((t) =>
+    <li key={t.id}>
+      <Link href={`/tournaments/code/${t.id}`} className={styles.row}>
+        <span className={styles.badge} aria-hidden="true"><Flag size={20} /></span>
+        <span className={styles.rowText}>
+          <strong>{t.name}</strong>
+          {t.course && <span>{t.course}</span>}
+          {t.firstDate && <span className={styles.dates}>{formatDateRange(t.firstDate, t.lastDate ?? t.firstDate)}</span>}
+        </span>
+        <ChevronRight size={18} aria-hidden="true" />
+      </Link>
     </li>)}
   </ul>;
 }

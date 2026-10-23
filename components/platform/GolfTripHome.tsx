@@ -77,7 +77,7 @@ const subscribeNever = () => () => {};
  * `navigation` optionally requests a shared tab/section; in-app navigation remains local between requests.
  * `onNavigationChange` optionally observes the actual tab/section; the dev wrapper supplies it only when embedded.
  */
-export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, now: tripNow, competitionKey, savedCompetitionType, savedTeamColors, savedTeamDraft, organizer, onTravelChange, roundLive = false, opponentCardMatches, scoringPrefill, onScoringSubmit, submittedCard, scoringOwner, tripStats, scoreChanges, attesteeName, scoringEdits, onScoringCardChange, attestedStrokes, onAttestChange, scoringPlayerName, savedScoringCard, attesteeStrokes, scoresVerified, syncStatus, conflicts, onResolveConflict, resetScoringCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, alertScope, signedInName, savedGames, organizerGames }:
+export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, now: tripNow, competitionKey, savedCompetitionType, savedTeamColors, savedTeamDraft, organizer, onTravelChange, roundLive = false, opponentCardMatches, scoringPrefill, onScoringSubmit, submittedCard, scoringOwner, tripStats, scoreChanges, attesteeName, scoringEdits, onScoringCardChange, attestedStrokes, onAttestChange, scoringPlayerName, savedScoringCard, attesteeStrokes, scoresVerified, syncStatus, conflicts, onResolveConflict, resetScoringCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, alertScope, signedInName, savedGames, organizerGames, spectator = false }:
   { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview; weather?: Promise<TripWeather>; flights?: TripFlights;
     /** Everyone's travel (My Info, the Itinerary and the Home "what's next" cards). Only the dev mock trip has it for now. */
     travel?: TripTravel; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void; now?: string; competitionKey?: string;
@@ -122,14 +122,17 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
     onResolveConflict?: ComponentProps<typeof GolfTripScoring>["onResolveConflict"]; resetScoringCard?: ComponentProps<typeof GolfTripScoring>["resetCard"];
     /** Corrections (saved trips, Step 6). */
     corrections?: ComponentProps<typeof GolfTripScoring>["corrections"]; onRequestCorrection?: ComponentProps<typeof GolfTripScoring>["onRequestCorrection"];
-    onDecideCorrection?: ComponentProps<typeof GolfTripScoring>["onDecideCorrection"]; correctionOpen?: ComponentProps<typeof GolfTripScoring>["correctionOpen"] }) {
+    onDecideCorrection?: ComponentProps<typeof GolfTripScoring>["onDecideCorrection"]; correctionOpen?: ComponentProps<typeof GolfTripScoring>["correctionOpen"];
+    /** Watch code (read only, no sign-in): the trip name and the Golf tab only — no other tabs, chat, notifications,
+     *  settings, Games, Predict or scoring. */
+    spectator?: boolean }) {
   const raw = useSyncExternalStore(subscribeNever, golfTripDraftSnapshot, () => "");
   const stored = useMemo(() => parseGolfTripDraft(raw), [raw]);
   const draft = preview ?? stored;
   const [selection, setSelection] = useState<{ navigation?: GolfTripNavigation; tab: Tab }>({ navigation, tab: navigation?.tab ?? "Home" });
   // A new external navigation request selects a tab; ordinary renders keep in-app navigation.
   if (selection.navigation !== navigation) setSelection({ navigation, tab: navigation?.tab ?? selection.tab });
-  const tab = selection.navigation === navigation ? selection.tab : navigation?.tab ?? selection.tab;
+  const tab = spectator ? "Golf" : selection.navigation === navigation ? selection.tab : navigation?.tab ?? selection.tab;
   const setTab = (tab: Tab) => setSelection({ navigation, tab });
   // A Home box or the Venue's Itinerary tile opens the Itinerary tab.
   const openItinerary = () => setTab("Itinerary");
@@ -224,7 +227,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   return <main className={`${styles.page} ${roundLive ? styles.pageWithScoring : ""} ${tab === "Golf" && preview && previewMatch ? styles.pageGolfPreview : ""}`}>
     {backHref && <Link href={backHref} className={styles.desktopBack}><ArrowLeft size={16} strokeWidth={2} aria-hidden />Golf Trips</Link>}
     <header className={styles.header}>
-      <div className={styles.headerActions}>
+      {!spectator && <div className={styles.headerActions}>
         <button type="button" className={styles.iconButton} aria-label="Trip chat" onClick={() => setChatOpen(true)}><MessageCircle size={24} strokeWidth={1.75} aria-hidden /></button>
         <div className={styles.notificationsAnchor}>
           <button ref={notificationButtonRef} type="button" className={styles.iconButton} aria-label="Notifications" aria-expanded={notificationsOpen} aria-controls="trip-notifications" onClick={() => setNotificationsOpen(open => !open)}><Bell size={24} strokeWidth={1.75} aria-hidden /></button>
@@ -238,9 +241,9 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
           </div></>, document.body)}
         </div>
         <Link href={settingsHref} className={styles.iconButton} aria-label="Trip settings"><Settings size={24} strokeWidth={1.75} aria-hidden /></Link>
-      </div>
+      </div>}
       <GolfTripTitle name={draft.tripName || "Your Golf Trip"} />
-      <div className={`${styles.tabs} ${styles.tripTabs}`} role="tablist" aria-label="Trip sections">
+      {!spectator && <div className={`${styles.tabs} ${styles.tripTabs}`} role="tablist" aria-label="Trip sections">
         {TABS.map((name) => <button key={name} type="button" role="tab" aria-selected={tab === name}
           className={`${styles.tab} ${tab === name ? styles.tabActive : ""}`} onClick={event => {
             setTab(name);
@@ -250,7 +253,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
               button.animate([{ transform: "scale(1)" }, { transform: `scale(${1 + 3 / button.offsetWidth}, ${1 + 3 / button.offsetHeight})` }, { transform: "scale(1)" }], { duration: 220, easing: "ease-out" });
             }
           }}>{name}</button>)}
-      </div>
+      </div>}
     </header>
     <div className={`${styles.body} ${tab === "Golf" ? styles.golfBody : ""}`} role="tabpanel" aria-label={tab}>
       {tab === "Home" ? <><InfoAccount draftScope={competitionKey ?? "default"} teamNames={previewMatch?.sides.map(side=>side.name)} draft={draft} draftPlayers={draftRoster} teamDraft={teamDraft} isOrganizer={isOrganizer} momentumEvents={momentum.events} settingsHref={settingsHref} flights={flights} weather={weather} itinerary={goingItinerary} travel={travel} tripNow={tripNow} onOpenItinerary={openItinerary}
@@ -259,7 +262,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
         liveRound={roundLive && previewMatch ? { id: `round-${previewMatch.round}`, kind: "teeTime", title: `Round ${previewMatch.round} · ${previewMatch.course}`, startsAt: (tripNow ?? "").slice(0, 16) } : undefined} /></>
         : tab === "Golf" ? <>
           <div style={{ display: "contents", ...teamColorVars }}>
-            <GolfSlides schedule={preview} now={tripNow} key={`${structure.individual}-${structure.team}`} previewMatch={previewMatch} structure={structure} rsvpKey={rsvpKey} navigation={navigation} onNavigationChange={onNavigationChange} tripStats={tripStats} scoreChanges={scoreChanges} roundStarted={roundLive} signedInName={signedInName} savedGames={savedGames} organizerGames={organizerGames} />
+            <GolfSlides schedule={preview} now={tripNow} key={`${structure.individual}-${structure.team}`} previewMatch={previewMatch} structure={structure} rsvpKey={rsvpKey} navigation={navigation} onNavigationChange={onNavigationChange} tripStats={tripStats} scoreChanges={scoreChanges} roundStarted={roundLive} signedInName={signedInName} savedGames={savedGames} organizerGames={organizerGames} spectator={spectator} />
           </div>
         </>
         : tab === "Venue" ? <GolfTripVenue draft={draft} settingsHref={settingsHref} today={tripNow?.slice(0, 10)}
@@ -416,7 +419,7 @@ function WeatherRow({ place, weather }: { place?: string; weather: Promise<TripW
 
 /** Golf sections share the existing responsive scroll-snap strip and tab styling. */
 /** `roundStarted`: the organizer has begun the current round — its matches show THRU instead of tee times. */
-function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpKey = "default", navigation, onNavigationChange, tripStats, scoreChanges, roundStarted = false, signedInName, savedGames, organizerGames }: { signedInName?: string | null; savedGames?: SavedGamesContext; organizerGames?: Record<string, GameId[]>; previewMatch?: GolfMatchPreview; schedule?: GolfTripDraft; now?: string; structure: CompetitionStructure; rsvpKey?: string; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void; tripStats?: TripStatsView; scoreChanges?: ScoreChangeLine[]; roundStarted?: boolean }) {
+function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpKey = "default", navigation, onNavigationChange, tripStats, scoreChanges, roundStarted = false, signedInName, savedGames, organizerGames, spectator = false }: { spectator?: boolean; signedInName?: string | null; savedGames?: SavedGamesContext; organizerGames?: Record<string, GameId[]>; previewMatch?: GolfMatchPreview; schedule?: GolfTripDraft; now?: string; structure: CompetitionStructure; rsvpKey?: string; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void; tripStats?: TripStatsView; scoreChanges?: ScoreChangeLine[]; roundStarted?: boolean }) {
   const rounds = useMemo(() => schedule ? plannedRounds(schedule) : [], [schedule]);
   const [chosenRound, setChosenRound] = useState<number | null>(null);
   const selected = rounds.find(round => round.number === chosenRound) ?? rounds.find(round => round.number === sourceMatch?.round);
@@ -460,10 +463,11 @@ function GolfSlides({ previewMatch: sourceMatch, schedule, now, structure, rsvpK
   const playerStats = usePlayerStats();
   // Organizer → Predict on: the prediction market's tab comes last. The app simulator's Predict card (dev only) opens it
   // even while the organizer has it off, so it can be previewed.
-  const sections = golfSections(structure, playerStats);
+  // Spectators (watch code): no Games or Predict.
+  const sections = golfSections(structure, playerStats).filter(section => !spectator || section.id !== "Games");
   // Organizer → Predict off: no Predict button and no Predict sheet.
   const predictOn = usePredictSettings().on;
-  const predictSetup = useMemo(() => previewMatch && predictOn ? tripSetupFromPreview(previewMatch, structure) : null, [previewMatch, structure, predictOn]);
+  const predictSetup = useMemo(() => previewMatch && predictOn && !spectator ? tripSetupFromPreview(previewMatch, structure) : null, [previewMatch, structure, predictOn, spectator]);
   // No competition: the Overview box is the day's round (course, tee times, who's playing — not those sitting out).
   const noComp = !structure.individual && !structure.team;
   // Individual only: the same box, split — the round on the left, the leaderboard's top 5 on the right.

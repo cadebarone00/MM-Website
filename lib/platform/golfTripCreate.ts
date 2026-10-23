@@ -162,6 +162,8 @@ export interface SavedGolfTrip {
     transportation_plan: PlanAnswer; tournament_id: string | null; status: string; created_by: string;
     /** Missing on a database that hasn't run the location columns in golf_trips.sql yet. */
     latitude?: number | null; longitude?: number | null; external_place_id?: string | null;
+    /** The read-only watch code (supabase/watch_codes.sql); missing before that file is run. */
+    watch_code?: string | null;
   };
   /** username: only for members who accepted with a real profile (their /profile link); absent / null otherwise.
    *  avatarUrl: their profile photo, added by the server (golfTripsServer) when the viewer may see it; absent / null otherwise. */

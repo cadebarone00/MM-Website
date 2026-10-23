@@ -162,3 +162,8 @@ a.actionBox:hover{background:var(--color-maroon-600)}
   .photoPanel { height: auto; min-height: calc(45svh - max(100px, 14svh)); padding-top: 12px; padding-bottom: 12px; }
   .photoPanel > .descriptor { margin-bottom: 8px; }
 }
+/* Join a Tournament: the code box and its Join button side by side. */
+.codeRow{display:flex;gap:8px;align-items:stretch}
+.codeRow .joinInput{flex:1;min-width:0;text-transform:uppercase;letter-spacing:.1em}
+.codeGo{flex:0 0 auto;min-width:68px;padding:0 16px;border:0;border-radius:10px;background:var(--tj-gold,#c9a86e);color:#3b0d18;font:700 15px var(--font-barlow),sans-serif;cursor:pointer}
+.codeGo:disabled{opacity:.5;cursor:default}

@@ -3260,5 +3260,49 @@ Android text (`androidLiveUpdate()` in `lib/notifications/format.ts`, tested): t
 
 The bell (notifications) and the chat bubble both open one sheet that **slides up from the bottom to 85% of the screen** (743 of 874px on an iPhone 17 Pro), over the bottom menu, with a grab handle and a dimmed backdrop; tapping the backdrop or ✕ closes it. The settings wheel still goes to the settings page. The real notification list is built separately (another window) and drops into the bell's sheet: today it holds the existing Team Draft notice + Round alerts. Files: `GolfTripHome.tsx` / `.module.css` (`.sheetBackdrop`, `.notificationsDropdown`), `GolfTripChat.tsx` / `.module.css` (`.dialog`).
 
+
 ### Maroon U removed for now (owner request 2026-10-23)
 - The Maroon U is planned for a later version. Removed: the `/maroon-u` Coming soon page, The Maroon U card on Golf Trips, the dev-only `/dev/tournament/maroon-u` preview (and its settings page and fixture), and the simulator's Maroon U Active group. Older notes in `docs/app-workflow.md` describe it as it was; git history has the code to bring back.
+
+## Feature: Tournaments by code (spec 2026-10-23, approved 2026-10-23; owner picked: multiple rounds, organizer picks gross or net, strokes only, organizer may sit out)
+
+**What it does / who uses it.** An organizer creates a simple stroke-play tournament and gets a short join code. They send the code to players (text, group chat). Players type the code in the app and are in. The tournament page is deliberately bare: the scorekeeper slide-up, its scorecard (swipe right inside the sheet), and an individual leaderboard styled like the golf trip one. Nothing else (no teams, matches, games, Predict, stats tabs, chat or venue).
+
+**Flow.**
+1. Organizer: Tourneys → Create a Tournament → **Tournament** → name, gross or net, then one or more rounds (each: course from the same search as Play with the OpenGolf scorecard, tees, date; + Add round) → Create. Rounds can be added later too, until the tournament ends. The next screen shows the code big (6 characters, e.g. `K7Q-4MZ`) with Copy and Share. The organizer picks **I'm playing** (on by default) or not: an organizer who isn't playing isn't on the leaderboard and gets no scorekeeper, but can still open the tournament, see the code and leaderboard, add rounds and end it.
+2. Player: Tourneys → **Join with code** → type the code → sees the tournament name, course and date → Join. Signed-in Maroon account needed (sign in first if not).
+3. Tournament page (Tourneys → My Tournaments → the tournament, or straight after joining/creating):
+   - Header: tournament name, and the round being shown (course, date) with arrows to step between rounds, like the trip's round header.
+   - Individual leaderboard, same look as the trip leaderboard: Pos, Player, To par (whole tournament), Thru and Today (the shown round), Total. Net tournaments rank by net (handicap strokes off on the hardest holes first, the same rule as trips). Tapping a player opens their scorecard. Updates live while people score.
+   - Scoring slide-up (the trip / Play scorekeeper), strokes only (no fairway / green / putts): it opens for the current round (the round dated today, else the next one not yet submitted); each player keeps their own card hole by hole; the Scorecard view sits to the right inside the sheet. Scores save as they're entered and show on everyone's leaderboard. Submit locks that round's card.
+4. The organizer can end the tournament; it then moves to Past Tournaments for everyone in it.
+
+**Data (Supabase; new file `supabase/tournament_codes.sql`, owner runs it).** `code_tournaments` (id, code unique, name, organizer, organizer plays yes/no, scoring gross/net, status live/ended), `code_tournament_rounds` (tournament, round number, course + tee + par / stroke index JSON, date), `code_tournament_players` (tournament, profile, handicap, joined at), `code_tournament_holes` (tournament, round, profile, hole, strokes), `code_tournament_cards` (tournament, round, profile, submitted at). RLS on with no direct access; the server calls security-definer functions with the signed-in user (same pattern as shared rounds): create, add round, find by code, join, set my strokes, submit a round, end, read leaderboard. Only members read a tournament; a player writes only their own strokes; only the organizer ends it. Codes skip look-alike letters (0/O, 1/I/L). Everyone's scores refresh every 5 seconds while the page is open (same approach as Play's shared rounds).
+
+**Not in this step.** Fairway / green / putt stats, teams or matches, side games, attesting / score corrections, organizer editing other players' scores, payments, the existing Maroon Tournament and organizer-studio pages (left as they are).
+
+**Done when.** In the simulator and on a real account: an organizer creates a tournament and sees a code; a second account joins with the code; both score holes and see each other on the leaderboard live; gross and net rank correctly across two rounds; Submit locks a card; a wrong or ended code shows a clear message; database tests cover create / join / scoring / permissions.
+
+## Feature: Watch codes, read-only tune-in for tournaments and trips (spec 2026-10-23, approved 2026-10-23)
+
+**What it does / who uses it.** Every tournament and every golf trip gets a second code, a **watch code**, separate from the join code. Anyone with it (family, friends, other golfers) can follow along live without being part of the event and without a Maroon account. Spectators can only look. They can't score, join, chat or see anything private. Owner picked: no account needed, golf only for trips, always on.
+
+**Flow.**
+1. **Getting the code.** It exists from the start (always on). Tournaments: the organizer sees it next to the join code on the tournament page (**Watch** chip, tap to copy, with Share). Trips: the organizer sees it in Trip Settings (and members can see it on the trip page too, so anyone in the group can share it). Spectator codes look different from join codes so they're never mixed up: 6 characters starting with **W** (e.g. `W4K-9PZ`).
+2. **Tuning in.** Tourneys → the same code box (**Join a Tournament** becomes **Join or watch**): a join code goes to joining as before; a watch code opens the watch page. There's also a direct link (`/watch/W4K9PZ`) for sharing in a text, which works signed out (no login screen).
+3. **What spectators see.**
+   - **Tournament:** the round header (arrows between rounds) and the individual leaderboard, exactly as players see it, tap a player for their scorecard. No scoring sheet, no organizer buttons, no code chips.
+   - **Golf trip:** the Golf tab only, the round header, Leaderboard, Matches (match list and match center) and Stats, read-only. Never the Home / Venue / Itinerary tabs, lodging, flights, chat, invites, settings, Games, or Predict.
+   - Scores refresh every few seconds while the page is open. No banner (owner: not needed).
+4. **When it stops working.** If the tournament or trip is deleted, the watch code shows "This event isn't available." Ended tournaments and finished trips stay watchable (final results).
+
+**Data / security.**
+- New column `watch_code` (unique) on `code_tournaments` and on `golf_trips`, filled for existing rows; new SQL file `supabase/watch_codes.sql` (owner runs it).
+- Spectators never get database access. The server looks up the watch code with the service key and returns only the read-only leaderboard / match / stats data. No emails, phone numbers, profile ids, join codes, invite links, lodging or chat ever leave the server.
+- Player names (and profile photos where the trip already shows them) are visible to spectators, since that's what a leaderboard is.
+
+**Effort note.** Tournaments are quick (their leaderboard is already built from one server reply). Trips are bigger: the trip's Golf tab is put together from several member-only sources, so it needs a spectator version of that loader. I'd build tournaments first, then trips, on one branch.
+
+**Not in this step.** Turning watching off or making a new watch code (always on was chosen; can add later), seeing who's watching, spectator chat or reactions, Predict for spectators.
+
+**Done when.** A signed-out browser can open a tournament's and a trip's watch link and see the live leaderboard (and trip matches / stats) update; nothing private shows; a join code still joins; a watch code can't score or join; a deleted event's watch code says it's unavailable; database tests cover the lookups and that spectator replies leave out private fields.
