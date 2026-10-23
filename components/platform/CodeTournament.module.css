@@ -35,6 +35,30 @@
 .cutBlurb{margin:0;font:500 13px/1.45 var(--font-barlow),sans-serif;letter-spacing:0;text-transform:none;color:#e8d7b2}
 .cutNote{margin:-4px 0 12px;text-align:center;font:600 12px var(--font-barlow),sans-serif;color:#e8a29a}
 
+/* Top row: back to Tourneys (left), the organizer's settings wheel (right). */
+.topBar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 4px}
+.topBar .back{margin-bottom:0}
+.settingsButton{color:#fbf8f1;background:transparent;cursor:pointer}
+/* Tournament Settings (GolfTripSettingsPreview.module.css look): cards, then each card's page. */
+.plainButton{padding:0;border:0;background:transparent;cursor:pointer}
+.settingsCards{margin-top:28px}
+.cardDetail{margin:0;color:#6b4a3e;font:500 13px/1.35 var(--font-barlow),sans-serif}
+.settingsPanel{display:grid;gap:14px}
+.settingsAction{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:46px;border:1.5px dashed #b99c6b;border-radius:12px;background:transparent;color:#e8c98a;font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
+.endButton{border-style:solid;border-color:rgba(232,162,154,.6);color:#e8a29a}
+.infoList{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0}
+.infoList div{padding:10px;border:1px solid rgba(201,168,110,.35);border-radius:12px;text-align:center}
+.infoList dt{font:600 11px var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#c9a86e}
+.infoList dd{margin:4px 0 0;font:700 16px var(--font-barlow),sans-serif;color:#fbf8f1}
+.infoPlayers{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.infoPlayers li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,.08);font:600 15px/1.3 var(--font-spectral),Georgia,serif;color:#fff}
+.infoPlayers small{font:500 12px var(--font-barlow),sans-serif;color:rgba(251,248,241,.6)}
+.roundStepper{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:8px;text-align:center}
+.roundStepper button{display:grid;place-items:center;width:44px;height:44px;border:1px solid rgba(201,168,110,.55);border-radius:50%;background:transparent;color:#fbf8f1;cursor:pointer}
+.roundStepper button:disabled{opacity:.35;cursor:default}
+.roundStepper b{display:block;font:700 16px var(--font-barlow),sans-serif;color:#fbf8f1}
+.roundStepper small{font:500 12px var(--font-barlow),sans-serif;color:#c9a86e}
+
 /* Create page (light Play-a-round page): the rounds added so far, and the code once it's made. */
 .roundList{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:8px}
 .roundList li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:12px;background:#f6f0e6;font:500 14px/1.35 var(--font-barlow),sans-serif;color:#2b211d}

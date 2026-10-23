@@ -16,6 +16,8 @@ export interface CodeTournament {
   watchCode?: string;
   /** The organizer's cut (supabase/tournament_cuts.sql); none = everyone plays every round. */
   cut?: TournamentCut | null;
+  /** Shown in the Tourneys search and live feed (supabase/tournament_public.sql); new tournaments start private. */
+  isPublic?: boolean;
   rounds: { number: number; setup: CodeRoundSetup; date: string; /** Set by the organizer (supabase/tournament_tee_sheets.sql); none = automatic foursomes. */ teeSheet?: TeeSheet | null }[];
   players: { profileId: string; name: string; username: string | null; handicap: number | null }[];
   holes: { profileId: string; round: number; hole: number; strokes: number }[];
@@ -29,6 +31,8 @@ export interface CodeTournamentLookup {
   id: string; name: string; status: "live" | "ended"; scoring: "Gross" | "Net"; organizerName: string; member: boolean; playerCount: number;
   rounds: { number: number; course: string; date: string }[];
 }
+/** A public tournament in the Tourneys search / live feed. */
+export interface PublicCodeTournament { id: string; name: string; scoring: "Gross" | "Net"; status: "live" | "ended"; organizerName: string; playerCount: number; firstDate: string | null; lastDate: string | null; course: string | null }
 export interface MyCodeTournament { id: string; name: string; status: "live" | "ended"; firstDate: string | null; lastDate: string | null; course: string | null }
 
 /** "K7Q4MZ" → "K7Q-4MZ" (easier to read out and type). */
@@ -192,7 +196,7 @@ export function tournamentPreview(t: CodeTournament, shown: number): GolfMatchPr
 
 /** One change a player or organizer makes (the POST body for /api/code-tournaments/<id>). */
 export type TournamentChange = { action: "strokes"; round: number; hole: number; strokes: number | null } | { action: "submit"; round: number }
-  | { action: "addRound"; setup: CodeRoundSetup; date: string } | { action: "teeSheet"; round: number; teeSheet: TeeSheet } | { action: "cut"; cut: TournamentCut | null } | { action: "end" };
+  | { action: "addRound"; setup: CodeRoundSetup; date: string } | { action: "teeSheet"; round: number; teeSheet: TeeSheet } | { action: "cut"; cut: TournamentCut | null } | { action: "public"; isPublic: boolean } | { action: "end" };
 
 /** The tournament after a change, as the database would make it (the app simulator's sample tournament uses this). */
 export function applyChange(t: CodeTournament, me: string, change: TournamentChange): CodeTournament {
@@ -205,6 +209,7 @@ export function applyChange(t: CodeTournament, me: string, change: TournamentCha
     case "addRound": return { ...t, rounds: [...t.rounds, { number: t.rounds.length + 1, setup: change.setup, date: change.date }] };
     case "teeSheet": return { ...t, rounds: t.rounds.map((r) => r.number === change.round ? { ...r, teeSheet: change.teeSheet } : r) };
     case "cut": return { ...t, cut: change.cut };
+    case "public": return { ...t, isPublic: change.isPublic };
     case "end": return { ...t, status: "ended" };
   }
 }

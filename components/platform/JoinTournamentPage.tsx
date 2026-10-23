@@ -5,6 +5,7 @@ import { loadMyPastTournaments } from "@/lib/platform/pastTournamentsServer";
 import type { PastTournament } from "@/lib/platform/pastTournaments";
 import { JoinLinkForm } from "./JoinLinkForm";
 import { JoinCodeEntry } from "./JoinCodeEntry";
+import { PublicTournamentSearch } from "./PublicTournamentSearch";
 import { listMyCodeTournaments } from "@/lib/platform/codeTournamentsServer";
 import type { MyCodeTournament } from "@/lib/platform/codeTournaments";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -14,8 +15,8 @@ import styles from "./JoinTournament.module.css";
 import { JoinTournamentEntrance } from "@/components/motion/JoinTournamentEntrance";
 
 /**
- * Tourneys (/tournaments/join): create a tournament, open one from its link,
- * go to My Tournaments, or revisit the finished tournaments you played in.
+ * Tourneys (/tournaments/join): create a tournament, open one from its link, search public tournaments or follow the
+ * live ones, go to My Tournaments, or revisit the finished tournaments you played in.
  */
 export async function JoinTournamentPage() {
   const past = await loadMyPastTournaments();
@@ -36,6 +37,7 @@ export async function JoinTournamentPage() {
       </div>
       <div className={styles.lowerContent}>
       <JoinLinkForm />
+      <PublicTournamentSearch />
 
       <section aria-labelledby="my-tournaments-heading" className={styles.tournamentSection}>
         <h2 id="my-tournaments-heading" className={styles.descriptor}>My Tournaments</h2>

@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, ChevronLeft, Copy, Plus, Scissors } from "lucide-react";
+import { ChevronLeft, Settings } from "lucide-react";
 import { GolfRoundHeader, GolfTripLeaderboard } from "./GolfTripMatch";
 import { CodeTournamentTeeSheet } from "./CodeTournamentTeeSheet";
 import { GolfTripScoring } from "./GolfTripScoring";
-import { AddRound } from "./CodeTournamentCreate";
-import { CutFields, cutSummary } from "./CodeTournamentCut";
-import { applyChange, cardFor, currentRound, cutFrom, cutLabel, cutStatus, formatCode, submitted, tournamentPreview, type CodeRoundSetup, type CodeTournament, type TournamentChange, type TournamentCut } from "@/lib/platform/codeTournaments";
+import { cutSummary } from "./CodeTournamentCut";
+import { CodeTournamentSettings } from "./CodeTournamentSettings";
+import { applyChange, cardFor, currentRound, cutFrom, cutLabel, cutStatus, submitted, tournamentPreview, type CodeRoundSetup, type CodeTournament, type TournamentChange } from "@/lib/platform/codeTournaments";
 import type { SheetCard } from "@/lib/platform/liveCards";
 import type { ScoredCard } from "@/lib/platform/playerRounds";
 import homeStyles from "./GolfTripHome.module.css";
@@ -24,39 +24,38 @@ const post = (id: string, body: object): Promise<PostResult> => fetch(`/api/code
 
 /**
  * A tournament joined by code (/tournaments/code/<id>), kept bare on purpose: the round header, the golf trip's
- * individual leaderboard, and (for players) the trip's scoring slide-up with its Scorecard view, strokes only. The
- * organizer also gets the join and watch codes, Add round and End tournament. Everyone's scores refresh every few seconds.
- * `watchCode`: a spectator (no sign-in): the same header and leaderboard from /api/watch, nothing else.
+ * individual leaderboard and tee sheet, and (for players) the trip's scoring slide-up with its Scorecard view, strokes only.
+ * The organizer's settings wheel opens Tournament Settings (code, rounds, tee sheet, cut, public / private). Everyone's
+ * scores refresh every few seconds.
+ * `watchCode` / `publicView`: a spectator (no sign-in): the same header, leaderboard and tee sheet, nothing else; from a
+ * watch code (/api/watch) or a public tournament (/tournaments/live/<id>, from the Tourneys search and live feed).
  * `sample` (app simulator only): a made-up tournament; changes stay on this page and nothing is sent.
  */
-export function CodeTournamentHome({ id, meId, watchCode, sample }: { id: string; meId: string | null; watchCode?: string; sample?: { tournament: CodeTournament; spectator: boolean } }) {
+export function CodeTournamentHome({ id, meId, watchCode, publicView = false, sample }: { id: string; meId: string | null; watchCode?: string; publicView?: boolean; sample?: { tournament: CodeTournament; spectator: boolean } }) {
   const [t, setT] = useState<CodeTournament | null>(sample?.tournament ?? null);
-  const spectating = Boolean(watchCode || sample?.spectator);
+  const spectating = Boolean(watchCode || publicView || sample?.spectator);
   const [problem, setProblem] = useState<string | null>(null);
   const [shown, setShown] = useState<number | null>(null);
-  const [adding, setAdding] = useState(false);
-  // The organizer's cut panel: the answer being edited (undefined = unfinished), or null for no cut.
-  const [cutDraft, setCutDraft] = useState<{ cut: TournamentCut | null | undefined } | null>(null);
-  const [copied, setCopied] = useState<"join" | "watch" | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [section, setSection] = useState<"Leaderboard" | "Tee Sheet">("Leaderboard");
 
   const load = useCallback(async () => {
     if (sample) return;
-    const reply = await fetch(watchCode ? `/api/watch/${encodeURIComponent(watchCode)}` : `/api/code-tournaments/${encodeURIComponent(id)}`, { cache: "no-store" })
+    const reply = await fetch(watchCode ? `/api/watch/${encodeURIComponent(watchCode)}` : publicView ? `/api/code-tournaments/public/${encodeURIComponent(id)}` : `/api/code-tournaments/${encodeURIComponent(id)}`, { cache: "no-store" })
       .then((r) => r.json() as Promise<{ ok: boolean; tournament?: CodeTournament; code?: string }>).catch(() => null);
     if (reply?.ok && reply.tournament) { setT(reply.tournament); setProblem(null); return; }
     setProblem(reply === null ? "No connection. Scores will refresh when you're back online."
       : reply.code === "missing" ? "This event isn't available."
       : reply.code === "not_member" ? "You're not in this tournament. Join it with its code on Tourneys."
       : reply.code === "not_installed" ? "Tournaments aren't set up in the database yet (supabase/tournament_codes.sql)." : "Couldn't load the tournament. Trying again…");
-  }, [id, watchCode, sample]);
+  }, [id, watchCode, publicView, sample]);
   useEffect(() => {
     const first = window.setTimeout(load, 0);
     const timer = window.setInterval(() => { if (document.visibilityState === "visible") void load(); }, POLL_MS);
     return () => { window.clearTimeout(first); window.clearInterval(timer); };
   }, [load]);
 
-  const back = !spectating && <Link href="/tournaments/join" className={styles.back}><ChevronLeft size={18} aria-hidden="true" /> Tourneys</Link>;
+  const back = (!spectating || publicView) && <Link href="/tournaments/join" className={styles.back}><ChevronLeft size={18} aria-hidden="true" /> Tourneys</Link>;
   if (!t) return <main className={homeStyles.page}>
     {back}
     <p className={styles.status} role={problem ? "alert" : undefined}>{problem ?? "Loading the tournament…"}</p>
@@ -73,57 +72,22 @@ export function CodeTournamentHome({ id, meId, watchCode, sample }: { id: string
   const index = t.rounds.findIndex((r) => r.number === round);
   const scoring = t.rounds.find((r) => r.number === scoringRound)!;
 
-  if (adding) return <AddRound minDate={t.rounds.at(-1)?.date} onCancel={() => setAdding(false)} onAdd={async (next) => {
-    const result = await act({ action: "addRound", ...next });
-    setAdding(false);
-    if (!result.ok) setProblem(result.message ?? "Couldn't add the round. Try again.");
-    await load();
-  }} />;
-
-  const copy = (which: "join" | "watch", code: string) => navigator.clipboard?.writeText(formatCode(code)).then(() => { setCopied(which); window.setTimeout(() => setCopied(null), 1800); }).catch(() => {});
-  async function end() {
-    if (!window.confirm(`End ${t!.name} for everyone? Scores lock and it moves to Past Tournaments.`)) return;
-    const result = await act({ action: "end" });
-    if (!result.ok) setProblem(result.message ?? "Couldn't end the tournament. Try again.");
-    await load();
-  }
+  // Tournament Settings: every change goes through the same `act`, then the page reloads the tournament.
+  if (settingsOpen && isOrganizer) return <CodeTournamentSettings t={t} onClose={() => setSettingsOpen(false)}
+    act={async (change) => { const result = await act(change); if (result.ok) await load(); return result; }} />;
 
   // The cut line on the leaderboard; past the cut round, those who missed it show CUT. Missing the cut ends my scoring.
   const cut = cutStatus(t);
   const cutLine = cut && { missed: new Set(t.players.filter((p) => cut.missed.has(p.profileId)).map((p) => p.name)), out: cut.final && round > cut.cut.after,
     label: `${cut.final ? "Cut" : "Projected cut"} · ${cut.cut.kind === "top" ? `Top ${cut.cut.value} & ties` : cutLabel(cut.cut.value)}` };
   const outOfScoring = cutFrom(t, meId, scoringRound);
-  async function saveCut(next: TournamentCut | null) {
-    const result = await act({ action: "cut", cut: next });
-    setProblem(result.ok ? null : result.message ?? "Couldn't save the cut. Try again.");
-    if (result.ok) { setCutDraft(null); await load(); }
-  }
-
   return <main className={`${homeStyles.page} ${playing && live && !outOfScoring ? homeStyles.pageWithScoring : ""}`}>
-    {back}
+    {(back || isOrganizer) && <div className={styles.topBar}>{back || <span />}
+      {isOrganizer && <button type="button" className={`${homeStyles.iconButton} ${styles.settingsButton}`} aria-label="Tournament settings" onClick={() => setSettingsOpen(true)}><Settings size={24} strokeWidth={1.75} aria-hidden /></button>}
+    </div>}
     <h1 className={styles.name}>{t.name}</h1>
     <p className={styles.sub}>{t.scoring} · {t.players.length} {t.players.length === 1 ? "player" : "players"}{live ? "" : " · Final"}</p>
-    {isOrganizer && <div className={styles.organizer} role="group" aria-label="Organizer">
-      <button type="button" className={styles.codeChip} onClick={() => copy("join", t.code)} aria-label={`Join code ${formatCode(t.code)}, copy`}>
-        <span>Code</span><b>{formatCode(t.code)}</b>{copied === "join" ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
-      </button>
-      {t.watchCode && <button type="button" className={styles.codeChip} onClick={() => copy("watch", t.watchCode!)} aria-label={`Watch code ${formatCode(t.watchCode)}, copy`}>
-        <span>Watch</span><b>{formatCode(t.watchCode)}</b>{copied === "watch" ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
-      </button>}
-      {live && t.rounds.length < 10 && <button type="button" className={styles.organizerButton} onClick={() => setAdding(true)}><Plus size={15} aria-hidden="true" /> Round</button>}
-      {live && <button type="button" className={styles.organizerButton} aria-expanded={Boolean(cutDraft)} onClick={() => setCutDraft(cutDraft ? null : { cut: t.cut ?? null })}>
-        <Scissors size={15} aria-hidden="true" /> {t.cut ? `Cut: ${t.cut.kind === "top" ? `Top ${t.cut.value}` : cutLabel(t.cut.value)}` : "Cut"}</button>}
-      {live && <button type="button" className={styles.organizerButton} onClick={end}>End</button>}
-    </div>}
-    {isOrganizer && live && cutDraft && <section className={styles.cutEditor} aria-label="Cut">
-      <CutFields initial={t.cut ?? null} rounds={t.rounds.length} net={t.scoring === "Net"} onChange={(next) => setCutDraft({ cut: next })}
-        css={{ field: styles.cutField, choices: styles.cutChoices, blurb: styles.cutBlurb }} />
-      <div className={styles.organizer}>
-        <button type="button" className={styles.organizerButton} onClick={() => setCutDraft(null)}>Cancel</button>
-        <button type="button" className={`${styles.organizerButton} ${styles.teeSave}`} disabled={cutDraft.cut === undefined} onClick={() => void saveCut(cutDraft.cut ?? null)}>Save cut</button>
-      </div>
-    </section>}
-    {!isOrganizer && t.cut && <p className={styles.cutNote}>Cut: {cutSummary(t.cut)}</p>}
+    {t.cut && <p className={styles.cutNote}>Cut: {cutSummary(t.cut)}</p>}
     {problem && <p className={styles.status} role="alert">{problem}</p>}
     <GolfRoundHeader match={preview} previousDisabled={index <= 0} nextDisabled={index >= t.rounds.length - 1}
       onPrevious={() => index > 0 && setShown(t.rounds[index - 1].number)} onNext={() => index < t.rounds.length - 1 && setShown(t.rounds[index + 1].number)} />
@@ -131,13 +95,8 @@ export function CodeTournamentHome({ id, meId, watchCode, sample }: { id: string
       {(["Leaderboard", "Tee Sheet"] as const).map((name) => <button key={name} type="button" role="tab" aria-selected={section === name}
         className={`${homeStyles.tab} ${section === name ? homeStyles.tabActive : ""}`} onClick={() => setSection(name)}>{name}</button>)}
     </div>
-    {!t.players.length ? <p className={styles.status}>No players yet. Send the code to your players so they can join.</p>
-      : section === "Tee Sheet" ? <CodeTournamentTeeSheet t={t} round={round} match={preview} canEdit={isOrganizer && live} onSave={async (teeSheet) => {
-        const result = await act({ action: "teeSheet", round, teeSheet });
-        setProblem(result.ok ? null : result.message ?? "Couldn't save the tee sheet. Try again.");
-        if (result.ok) await load();
-        return result.ok;
-      }} />
+    {!t.players.length ? <p className={styles.status}>No players yet.{isOrganizer ? " Send the code (Settings → Info) to your players so they can join." : ""}</p>
+      : section === "Tee Sheet" ? <CodeTournamentTeeSheet t={t} round={round} match={preview} />
       : <GolfTripLeaderboard key={`board-${round}`} match={preview} cut={cutLine || undefined} />}
     {playing && live && meId && outOfScoring && <p className={styles.status}>You missed the cut. Follow the rest of the tournament on the leaderboard.</p>}
     {playing && live && meId && !outOfScoring && <TournamentScoring key={`scoring-${scoringRound}`} t={t} act={act} meId={meId} round={scoringRound} setup={scoring.setup} onProblem={setProblem} onSaved={load} />}

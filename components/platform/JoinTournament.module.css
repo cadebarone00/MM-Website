@@ -167,3 +167,9 @@ a.actionBox:hover{background:var(--color-maroon-600)}
 .codeRow .joinInput{flex:1;min-width:0;text-transform:uppercase;letter-spacing:.1em}
 .codeGo{flex:0 0 auto;min-width:68px;padding:0 16px;border:0;border-radius:10px;background:var(--tj-gold,#c9a86e);color:#3b0d18;font:700 15px var(--font-barlow),sans-serif;cursor:pointer}
 .codeGo:disabled{opacity:.5;cursor:default}
+
+/* Tourneys: search public tournaments (the Live Tournaments feed shows under it). */
+.searchRow{display:flex;align-items:center;gap:10px;min-height:46px;margin:0 0 4px;padding:0 14px;border-radius:12px;background:var(--tj-box);color:var(--tj-muted)}
+.searchRow:focus-within{outline:3px solid var(--tj-gold);outline-offset:2px}
+.searchInput{flex:1;min-width:0;min-height:44px;border:0;background:transparent;color:var(--tj-text);font:500 16px var(--font-barlow),sans-serif;outline:none}
+.searchInput::placeholder{color:var(--tj-muted)}

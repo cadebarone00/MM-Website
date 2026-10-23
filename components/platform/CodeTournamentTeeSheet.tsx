@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Shuffle } from "lucide-react";
+import { Shuffle } from "lucide-react";
 import { GolfTeeSheet } from "./GolfTripMatch";
 import { DEFAULT_TIMING, randomTeeSheet, roundTeeSheet, teeSlot, teeTimeLabel, type CodeTournament, type TeeSheet, type TeeTiming } from "@/lib/platform/codeTournaments";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
@@ -9,26 +9,19 @@ import styles from "./CodeTournament.module.css";
 
 const EVERY = [7, 8, 9, 10, 12, 15];
 
-/**
- * A tournament round's Tee Sheet tab: each group's tee time, starting hole and players. The organizer (live tournament)
- * can edit it: set the first tee time, minutes between groups and 1 / 1 & 10 starts (re-times every group), randomize
- * the pairings, move a player to another group, and change any one group's time or hole. Save sends it to everyone.
- */
-export function CodeTournamentTeeSheet({ t, round, match, canEdit, onSave }: { t: CodeTournament; round: number; match: GolfMatchPreview; canEdit: boolean;
-  onSave: (sheet: TeeSheet) => Promise<boolean> }) {
-  const [editing, setEditing] = useState(false);
-  const sheet = roundTeeSheet(t, round);
+/** A tournament round's Tee Sheet tab: each group's tee time, starting hole and players (the organizer edits it in Settings). */
+export function CodeTournamentTeeSheet({ t, round, match }: { t: CodeTournament; round: number; match: GolfMatchPreview }) {
   const golfer = (id: string) => match.leaderboard[t.players.findIndex((p) => p.profileId === id)]?.golfer;
-  const groups = sheet.groups.map((g) => ({ time: teeTimeLabel(g.time), hole: g.hole, golfers: g.players.map(golfer).filter((x) => x !== undefined) }));
-  if (editing) return <TeeSheetEditor t={t} sheet={sheet} holes={match.par.length} onCancel={() => setEditing(false)}
-    onSave={async (next) => { if (await onSave(next)) setEditing(false); }} />;
-  return <>
-    <GolfTeeSheet match={match} groups={groups} />
-    {canEdit && <div className={styles.organizer}><button type="button" className={styles.organizerButton} onClick={() => setEditing(true)}><Pencil size={14} aria-hidden="true" /> Edit tee sheet</button></div>}
-  </>;
+  const groups = roundTeeSheet(t, round).groups.map((g) => ({ time: teeTimeLabel(g.time), hole: g.hole, golfers: g.players.map(golfer).filter((x) => x !== undefined) }));
+  return <GolfTeeSheet match={match} groups={groups} />;
 }
 
-function TeeSheetEditor({ t, sheet, holes, onCancel, onSave }: { t: CodeTournament; sheet: TeeSheet; holes: number; onCancel: () => void; onSave: (sheet: TeeSheet) => Promise<void> }) {
+/**
+ * Tournament Settings → Tee Sheet: set the first tee time, minutes between groups and 1 / 1 & 10 starts (re-times every
+ * group), randomize the pairings, move a player to another group, and change any one group's time or hole. Save sends it
+ * to everyone.
+ */
+export function TeeSheetEditor({ t, sheet, holes, onCancel, onSave }: { t: CodeTournament; sheet: TeeSheet; holes: number; onCancel: () => void; onSave: (sheet: TeeSheet) => Promise<void> }) {
   const [draft, setDraft] = useState(sheet);
   const [timing, setTiming] = useState<TeeTiming>(() => ({ ...DEFAULT_TIMING, first: sheet.groups[0]?.time || DEFAULT_TIMING.first, split: holes >= 18 && sheet.groups.some((g) => g.hole === 10) }));
   const [saving, setSaving] = useState(false);

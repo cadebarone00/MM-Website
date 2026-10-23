@@ -144,7 +144,7 @@ export function simulatorPages(): SimulatorPage[] {
   if (tourney) Object.assign(tourney, { label: "Tournament (sample)", group: "Tourneys", conditions: [
     { id: "tourney-player", label: "Player · round in progress", state: { tourneyPreview: "player" } },
     { id: "tourney-player-net", label: "Player · Net, round 2 (round 1 done)", state: { tourneyPreview: "player-net" } },
-    { id: "tourney-organizer", label: "Organizer (playing) · codes, + Round, End", state: { tourneyPreview: "organizer" } },
+    { id: "tourney-organizer", label: "Organizer (playing) · settings wheel", state: { tourneyPreview: "organizer" } },
     { id: "tourney-organizer-out", label: "Organizer not playing", state: { tourneyPreview: "organizer-out" } },
     { id: "tourney-spectator", label: "Spectator (watch code)", state: { tourneyPreview: "spectator" } },
     { id: "tourney-final", label: "Tournament ended (final)", state: { tourneyPreview: "final" } },

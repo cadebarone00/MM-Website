@@ -1,6 +1,6 @@
 import "server-only";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import type { CodeRoundSetup, CodeTournament, CodeTournamentLookup, MyCodeTournament, TeeSheet, TournamentCut } from "./codeTournaments.ts";
+import type { CodeRoundSetup, CodeTournament, CodeTournamentLookup, MyCodeTournament, PublicCodeTournament, TeeSheet, TournamentCut } from "./codeTournaments.ts";
 
 /**
  * Tournaments by code (supabase/tournament_codes.sql). Profile ids always come from the signed-in session — callers pass
@@ -33,6 +33,16 @@ export const listMyCodeTournaments = (me: string) => rpc<MyCodeTournament[]>("li
 export const setCodeTournamentStrokes = (me: string, id: string, round: number, hole: number, strokes: number | null) =>
   rpc<null>("set_code_tournament_strokes", { p_profile: me, p_tournament: id, p_round: round, p_hole: hole, p_strokes: strokes });
 export const submitCodeTournamentCard = (me: string, id: string, round: number) => rpc<null>("submit_code_tournament_card", { p_profile: me, p_tournament: id, p_round: round });
+/** supabase/tournament_public.sql: public or private; the public ones (search words, or none for the live feed). */
+export const setCodeTournamentPublic = (organizer: string, id: string, isPublic: boolean) =>
+  rpc<null>("set_code_tournament_public", { p_organizer: organizer, p_tournament: id, p_public: isPublic });
+export const searchPublicCodeTournaments = (query: string) => rpc<PublicCodeTournament[]>("search_public_code_tournaments", { p_query: query.slice(0, 60) });
+/** A public tournament as its organizer reads it (callers strip it for spectators); null if it isn't public. */
+export async function getPublicCodeTournament(id: string): Promise<Result<CodeTournament | null>> {
+  const organizer = await rpc<string | null>("public_code_tournament_organizer", { p_tournament: id });
+  if (!organizer.ok || !organizer.value) return organizer.ok ? { ok: true, value: null } : organizer;
+  return getCodeTournament(organizer.value, id);
+}
 /** supabase/tournament_cuts.sql. Null = no cut. */
 export const setCodeTournamentCut = (organizer: string, id: string, cut: TournamentCut | null) =>
   rpc<null>("set_code_tournament_cut", { p_organizer: organizer, p_tournament: id, p_cut: cut });

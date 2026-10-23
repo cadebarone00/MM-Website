@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { addCodeTournamentRound, endCodeTournament, getCodeTournament, setCodeTournamentCut, setCodeTournamentStrokes, setCodeTournamentTeeSheet, submitCodeTournamentCard } from "@/lib/platform/codeTournamentsServer";
+import { addCodeTournamentRound, endCodeTournament, getCodeTournament, setCodeTournamentCut, setCodeTournamentPublic, setCodeTournamentStrokes, setCodeTournamentTeeSheet, submitCodeTournamentCard } from "@/lib/platform/codeTournamentsServer";
 import type { TeeSheet } from "@/lib/platform/codeTournaments";
 import { badRequest, cutFrom, reply, roundFrom, signedOut } from "@/lib/platform/codeTournamentsRequest";
 
@@ -35,13 +35,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
 /**
  * POST { action }: "strokes" { round, hole, strokes (null clears) } · "submit" { round } (my card) · "addRound" { setup, date }
- * "teeSheet" { round, teeSheet }, "cut" { cut (null = none) } and "end" (organizer only).
+ * "teeSheet" { round, teeSheet }, "cut" { cut (null = none) }, "public" { isPublic } and "end" (organizer only).
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { data: { user } } = await (await createSupabaseServerClient()).auth.getUser();
   if (!user) return signedOut();
-  const body = await request.json().catch(() => null) as { action?: string; round?: unknown; hole?: unknown; strokes?: unknown; setup?: unknown; date?: unknown; teeSheet?: unknown; cut?: unknown } | null;
+  const body = await request.json().catch(() => null) as { action?: string; round?: unknown; hole?: unknown; strokes?: unknown; setup?: unknown; date?: unknown; teeSheet?: unknown; cut?: unknown; isPublic?: unknown } | null;
   switch (body?.action) {
     case "strokes":
       if (!whole(body.round, 1, 10) || !whole(body.hole, 1, 18) || !(body.strokes === null || whole(body.strokes, 1, 20))) return badRequest();
@@ -64,6 +64,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       if (cut === undefined) return badRequest();
       return reply(await setCodeTournamentCut(user.id, id, cut), () => ({}));
     }
+    case "public":
+      if (typeof body.isPublic !== "boolean") return badRequest();
+      return reply(await setCodeTournamentPublic(user.id, id, body.isPublic), () => ({}));
     case "end":
       return reply(await endCodeTournament(user.id, id), () => ({}));
     default:

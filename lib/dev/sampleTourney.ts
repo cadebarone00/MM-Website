@@ -36,7 +36,7 @@ function build({ scoring, roundsPlayed, holesToday, status, organizerPlays }: { 
     { number: 1, setup: setup("Stevens Golf Course"), date: day(roundsPlayed ? -1 : 0) },
     { number: 2, setup: setup("Cedar Crest Golf Course"), date: day(roundsPlayed ? 0 : 1) },
   ];
-  return { id: "sample", code: "K7Q4MZ", watchCode: "W4K9PZ", name: "Fall Classic", organizer: SAMPLE_ME, organizerPlays, scoring, status, createdAt: "",
+  return { id: "sample", code: "K7Q4MZ", name: "Fall Classic", organizer: SAMPLE_ME, organizerPlays, scoring, status, createdAt: "",
     rounds, players: players.map(([profileId, name, handicap]) => ({ profileId, name, username: null, handicap })), holes, cards };
 }
 
