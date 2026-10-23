@@ -69,6 +69,8 @@
 .stepperWrap{display:flex;flex-direction:column;gap:10px}
 
 .scoreSplit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:340px;margin:0 auto;width:100%}
+/* Just my score: one centered column instead of the left half. */
+.scoreSplit:has(> :only-child){grid-template-columns:minmax(0,1fr)}
 .scoreCard{display:flex;flex-direction:column;align-items:center;gap:8px}
 .scoreCardCompact{gap:10px;min-width:0}
 .scoreCardLabel{font:700 13px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(47,12,14,.7)}

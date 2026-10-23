@@ -127,7 +127,12 @@ function TournamentScoring({ t, act, meId, round, setup, onProblem, onSaved }: {
     if (result.ok) await onSaved();
     return result.ok ? { ok: true } : { ok: false, message: result.message ?? "Couldn't submit. Try again." };
   }
+  // My attestor sits beside my score: the next player in the field (look only for now; their entries stay on this screen).
+  const others = t.players.filter((player) => player.profileId !== meId);
+  const attestor = others.length ? others[(t.players.findIndex((player) => player.profileId === meId) + others.length) % others.length] : null;
+  const [attestorStrokes, setAttestorStrokes] = useState(() => attestor ? cardFor(t, attestor.profileId, round) : []);
   const submittedCard: ScoredCard | undefined = locked ? { strokes: mine.map((s) => s ?? 0), putts: mine.map(() => null), fairways: mine.map(() => null), greens: mine.map(() => null), penalties: mine.map(() => ({ fairway: false, green: false })) } : undefined;
   return <GolfTripScoring solo stats={false} gps={false} parIsReference holeRange={[0, holes]} par={setup.course.par} courseName={setup.course.name}
-    initialHoles={initialHoles} submittedCard={submittedCard} onCardChange={onCardChange} onSubmit={onSubmit} />;
+    initialHoles={initialHoles} submittedCard={submittedCard} onCardChange={onCardChange} onSubmit={onSubmit}
+    group={attestor ? { names: [attestor.name], strokes: [attestorStrokes], onChange: ([strokes]) => setAttestorStrokes(strokes) } : undefined} />;
 }
