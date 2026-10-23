@@ -10,6 +10,8 @@ import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import styles from "./CodeTournament.module.css";
 
 const EVERY = [7, 8, 9, 10, 12, 15];
+/** Row height of the small tee time wheels (three rows show). */
+const WHEEL_ROW = 30;
 const HOURS = Array.from({ length: 12 }, (_, i) => String(i + 1));
 const DIGITS = Array.from({ length: 10 }, (_, i) => String(i));
 
@@ -26,11 +28,11 @@ function FirstTeeWheels({ value, onChange }: { value: string; onChange: (time: s
   };
   return <div className={`${wheelStyles.wheels} ${styles.timeWheels}`}>
     <span className={wheelStyles.band} aria-hidden />
-    <VerticalWheel label="Hour" values={HOURS} index={parts.hour} onIndex={(hour) => set({ hour })} />
+    <VerticalWheel row={WHEEL_ROW} label="Hour" values={HOURS} index={parts.hour} onIndex={(hour) => set({ hour })} />
     <span className={styles.firstTeeColon} aria-hidden>:</span>
-    <VerticalWheel label="Minutes, tens" values={DIGITS.slice(0, 6)} index={parts.tens} onIndex={(tens) => set({ tens })} />
-    <VerticalWheel label="Minutes, ones" values={DIGITS} index={parts.ones} onIndex={(ones) => set({ ones })} />
-    <VerticalWheel label="AM or PM" values={["AM", "PM"]} index={parts.period} onIndex={(period) => set({ period })} />
+    <VerticalWheel row={WHEEL_ROW} label="Minutes, tens" values={DIGITS.slice(0, 6)} index={parts.tens} onIndex={(tens) => set({ tens })} />
+    <VerticalWheel row={WHEEL_ROW} label="Minutes, ones" values={DIGITS} index={parts.ones} onIndex={(ones) => set({ ones })} />
+    <VerticalWheel row={WHEEL_ROW} label="AM or PM" values={["AM", "PM"]} index={parts.period} onIndex={(period) => set({ period })} />
   </div>;
 }
 const STARTS: { value: TeeStart; label: string }[] = [{ value: "1", label: "Hole 1" }, { value: "1&10", label: "Holes 1 & 10" }, { value: "shotgun", label: "Shotgun" }];
@@ -103,7 +105,7 @@ export function TeeSheetEditor({ t, round, sheet, holes, onCancel, onSave }: { t
       {timing.start !== "shotgun" && <div className={styles.teeField}><span>Every</span>
         <div className={`${wheelStyles.wheels} ${styles.timeWheels}`}>
           <span className={wheelStyles.band} aria-hidden />
-          <VerticalWheel label="Minutes between tee times" values={EVERY.map(String)} index={Math.max(EVERY.indexOf(timing.every), 0)} onIndex={(i) => retime({ ...timing, every: EVERY[i] })} />
+          <VerticalWheel row={WHEEL_ROW} label="Minutes between tee times" values={EVERY.map(String)} index={Math.max(EVERY.indexOf(timing.every), 0)} onIndex={(i) => retime({ ...timing, every: EVERY[i] })} />
           <span className={styles.timeUnit} aria-hidden>min</span>
         </div></div>}
       <div className={`${styles.teeField} ${styles.teeStart}`}><span>Start on</span>
