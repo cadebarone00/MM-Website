@@ -92,6 +92,21 @@ function rows(t: CodeTournament, shown: number, upTo = Infinity): GolfLeaderboar
   });
 }
 
+/** Tee sheet groups: the field split as evenly as possible into foursomes (threesomes when it doesn't divide by four),
+ *  from 8:00 AM every 10 minutes. 18-hole rounds start off 1 and 10 (two groups per time); 9-hole rounds all off 1. */
+export function teeGroups<T>(field: T[], holes: number): { time: string; hole: number; golfers: T[] }[] {
+  const count = Math.ceil(field.length / 4);
+  const perTee = holes >= 18 ? 2 : 1;
+  let next = 0;
+  return Array.from({ length: count }, (_, g) => {
+    const size = Math.floor(field.length / count) + (g < field.length % count ? 1 : 0);
+    const golfers = field.slice(next, next += size);
+    const minutes = 8 * 60 + Math.floor(g / perTee) * 10;
+    const time = `${(Math.floor(minutes / 60) + 11) % 12 + 1}:${String(minutes % 60).padStart(2, "0")} ${minutes < 720 ? "AM" : "PM"}`;
+    return { time, hole: g % perTee ? 10 : 1, golfers };
+  });
+}
+
 const NO_SIDE: GolfMatchSide = { name: "", winPct: 0, fairwayPct: "—", greenPct: "—", putts: "—", score: "—" };
 
 /** The tournament as the golf trip's leaderboard reads it, showing one round (totals run through every round). */

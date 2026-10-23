@@ -6,7 +6,7 @@ import { Check, ChevronLeft, Copy, Plus } from "lucide-react";
 import { GolfRoundHeader, GolfTeeSheet, GolfTripLeaderboard } from "./GolfTripMatch";
 import { GolfTripScoring } from "./GolfTripScoring";
 import { AddRound } from "./CodeTournamentCreate";
-import { applyChange, cardFor, currentRound, formatCode, submitted, tournamentPreview, type CodeRoundSetup, type CodeTournament, type TournamentChange } from "@/lib/platform/codeTournaments";
+import { applyChange, cardFor, currentRound, formatCode, submitted, teeGroups, tournamentPreview, type CodeRoundSetup, type CodeTournament, type TournamentChange } from "@/lib/platform/codeTournaments";
 import type { SheetCard } from "@/lib/platform/liveCards";
 import type { ScoredCard } from "@/lib/platform/playerRounds";
 import homeStyles from "./GolfTripHome.module.css";
@@ -106,7 +106,7 @@ export function CodeTournamentHome({ id, meId, watchCode, sample }: { id: string
         className={`${homeStyles.tab} ${section === name ? homeStyles.tabActive : ""}`} onClick={() => setSection(name)}>{name}</button>)}
     </div>
     {!t.players.length ? <p className={styles.status}>No players yet. Send the code to your players so they can join.</p>
-      : section === "Tee Sheet" ? <GolfTeeSheet match={preview} />
+      : section === "Tee Sheet" ? <GolfTeeSheet match={preview} groups={teeGroups(preview.leaderboard.map(({ golfer }) => golfer), preview.par?.length ?? 18)} />
       : <GolfTripLeaderboard key={`board-${round}`} match={preview} />}
     {playing && live && meId && <TournamentScoring key={`scoring-${scoringRound}`} t={t} act={act} meId={meId} round={scoringRound} setup={scoring.setup} onProblem={setProblem} onSaved={load} />}
   </main>;
