@@ -22,36 +22,39 @@ const post = (id: string, body: object): Promise<PostResult> => fetch(`/api/code
 /**
  * A tournament joined by code (/tournaments/code/<id>), kept bare on purpose: the round header, the golf trip's
  * individual leaderboard, and (for players) the trip's scoring slide-up with its Scorecard view, strokes only. The
- * organizer also gets the join code, Add round and End tournament. Everyone's scores refresh every few seconds.
+ * organizer also gets the join and watch codes, Add round and End tournament. Everyone's scores refresh every few seconds.
+ * `watchCode`: a spectator (no sign-in): the same header and leaderboard from /api/watch, nothing else.
  */
-export function CodeTournamentHome({ id, meId }: { id: string; meId: string }) {
+export function CodeTournamentHome({ id, meId, watchCode }: { id: string; meId: string | null; watchCode?: string }) {
   const [t, setT] = useState<CodeTournament | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [shown, setShown] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"join" | "watch" | null>(null);
 
   const load = useCallback(async () => {
-    const reply = await fetch(`/api/code-tournaments/${encodeURIComponent(id)}`, { cache: "no-store" })
+    const reply = await fetch(watchCode ? `/api/watch/${encodeURIComponent(watchCode)}` : `/api/code-tournaments/${encodeURIComponent(id)}`, { cache: "no-store" })
       .then((r) => r.json() as Promise<{ ok: boolean; tournament?: CodeTournament; code?: string }>).catch(() => null);
     if (reply?.ok && reply.tournament) { setT(reply.tournament); setProblem(null); return; }
     setProblem(reply === null ? "No connection. Scores will refresh when you're back online."
+      : reply.code === "missing" ? "This event isn't available."
       : reply.code === "not_member" ? "You're not in this tournament. Join it with its code on Tourneys."
       : reply.code === "not_installed" ? "Tournaments aren't set up in the database yet (supabase/tournament_codes.sql)." : "Couldn't load the tournament. Trying again…");
-  }, [id]);
+  }, [id, watchCode]);
   useEffect(() => {
     const first = window.setTimeout(load, 0);
     const timer = window.setInterval(() => { if (document.visibilityState === "visible") void load(); }, POLL_MS);
     return () => { window.clearTimeout(first); window.clearInterval(timer); };
   }, [load]);
 
+  const back = !watchCode && <Link href="/tournaments/join" className={styles.back}><ChevronLeft size={18} aria-hidden="true" /> Tourneys</Link>;
   if (!t) return <main className={homeStyles.page}>
-    <Link href="/tournaments/join" className={styles.back}><ChevronLeft size={18} aria-hidden="true" /> Tourneys</Link>
+    {back}
     <p className={styles.status} role={problem ? "alert" : undefined}>{problem ?? "Loading the tournament…"}</p>
   </main>;
 
-  const isOrganizer = t.organizer === meId;
-  const playing = t.players.some((p) => p.profileId === meId);
+  const isOrganizer = !watchCode && t.organizer === meId;
+  const playing = !watchCode && t.players.some((p) => p.profileId === meId);
   const live = t.status === "live";
   const scoringRound = currentRound(t, playing ? meId : null, today());
   const round = shown ?? scoringRound;
@@ -66,7 +69,7 @@ export function CodeTournamentHome({ id, meId }: { id: string; meId: string }) {
     await load();
   }} />;
 
-  const copy = () => navigator.clipboard?.writeText(formatCode(t.code)).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1800); }).catch(() => {});
+  const copy = (which: "join" | "watch", code: string) => navigator.clipboard?.writeText(formatCode(code)).then(() => { setCopied(which); window.setTimeout(() => setCopied(null), 1800); }).catch(() => {});
   async function end() {
     if (!window.confirm(`End ${t!.name} for everyone? Scores lock and it moves to Past Tournaments.`)) return;
     const result = await post(t!.id, { action: "end" });
@@ -75,13 +78,16 @@ export function CodeTournamentHome({ id, meId }: { id: string; meId: string }) {
   }
 
   return <main className={`${homeStyles.page} ${playing && live ? homeStyles.pageWithScoring : ""}`}>
-    <Link href="/tournaments/join" className={styles.back}><ChevronLeft size={18} aria-hidden="true" /> Tourneys</Link>
+    {back}
     <h1 className={styles.name}>{t.name}</h1>
     <p className={styles.sub}>{t.scoring} · {t.players.length} {t.players.length === 1 ? "player" : "players"}{live ? "" : " · Final"}</p>
     {isOrganizer && <div className={styles.organizer} role="group" aria-label="Organizer">
-      <button type="button" className={styles.codeChip} onClick={copy} aria-label={`Join code ${formatCode(t.code)}, copy`}>
-        <span>Code</span><b>{formatCode(t.code)}</b>{copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
+      <button type="button" className={styles.codeChip} onClick={() => copy("join", t.code)} aria-label={`Join code ${formatCode(t.code)}, copy`}>
+        <span>Code</span><b>{formatCode(t.code)}</b>{copied === "join" ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
       </button>
+      {t.watchCode && <button type="button" className={styles.codeChip} onClick={() => copy("watch", t.watchCode!)} aria-label={`Watch code ${formatCode(t.watchCode)}, copy`}>
+        <span>Watch</span><b>{formatCode(t.watchCode)}</b>{copied === "watch" ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
+      </button>}
       {live && t.rounds.length < 10 && <button type="button" className={styles.organizerButton} onClick={() => setAdding(true)}><Plus size={15} aria-hidden="true" /> Round</button>}
       {live && <button type="button" className={styles.organizerButton} onClick={end}>End</button>}
     </div>}
@@ -89,7 +95,7 @@ export function CodeTournamentHome({ id, meId }: { id: string; meId: string }) {
     <GolfRoundHeader match={preview} previousDisabled={index <= 0} nextDisabled={index >= t.rounds.length - 1}
       onPrevious={() => index > 0 && setShown(t.rounds[index - 1].number)} onNext={() => index < t.rounds.length - 1 && setShown(t.rounds[index + 1].number)} />
     {t.players.length ? <GolfTripLeaderboard key={`board-${round}`} match={preview} /> : <p className={styles.status}>No players yet. Send the code to your players so they can join.</p>}
-    {playing && live && <TournamentScoring key={`scoring-${scoringRound}`} t={t} meId={meId} round={scoringRound} setup={scoring.setup} onProblem={setProblem} onSaved={load} />}
+    {playing && live && meId && <TournamentScoring key={`scoring-${scoringRound}`} t={t} meId={meId} round={scoringRound} setup={scoring.setup} onProblem={setProblem} onSaved={load} />}
   </main>;
 }
 

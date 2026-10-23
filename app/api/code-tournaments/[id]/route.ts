@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { addCodeTournamentRound, endCodeTournament, getCodeTournament, setCodeTournamentStrokes, submitCodeTournamentCard } from "@/lib/platform/codeTournamentsServer";
 import { badRequest, reply, roundFrom, signedOut } from "@/lib/platform/codeTournamentsRequest";
 
@@ -12,6 +12,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   if (!user) return signedOut();
   const result = await getCodeTournament(user.id, id);
   if (result.ok && !result.value) return NextResponse.json({ ok: false, code: "not_member" }, { status: 404 });
+  // The organizer also gets the watch code (none until supabase/watch_codes.sql is run).
+  if (result.ok && result.value?.organizer === user.id) {
+    const { data } = await createSupabaseServiceRoleClient().from("code_tournaments").select("watch_code").eq("id", id).maybeSingle();
+    if (data?.watch_code) result.value.watchCode = data.watch_code as string;
+  }
   return reply(result, (tournament) => ({ tournament }));
 }
 

@@ -30,7 +30,7 @@ export async function JoinTournamentPage() {
       <div className={styles.photoPanel}>
       <h2 className={styles.descriptor}>Get started</h2>
       <div className={styles.actions}>
-        <SignInRequiredLink href="/tournaments/create" className={styles.actionBox} message="Sign in to create a tournament"><span>Creat a Tournament</span></SignInRequiredLink>
+        <SignInRequiredLink href="/tournaments/create" className={styles.actionBox} message="Sign in to create a tournament"><span>Create a Tournament</span></SignInRequiredLink>
         <JoinCodeEntry />
       </div>
       </div>

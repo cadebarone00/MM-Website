@@ -119,9 +119,11 @@ begin
   for v_round in select value from jsonb_array_elements(p_rounds) loop
     perform code_tournament_check_round(v_round -> 'setup', (v_round ->> 'date')::date);
   end loop;
-  -- 6 characters with no look-alikes (no 0 / O, 1 / I / L); try again on the rare clash.
+  -- 6 characters with no look-alikes (no 0 / O, 1 / I / L), never starting with W (watch codes do,
+  -- supabase/watch_codes.sql); try again on the rare clash.
   loop
-    v_code := (select string_agg(substr(v_letters, 1 + floor(random() * length(v_letters))::integer, 1), '') from generate_series(1, 6));
+    v_code := substr(replace(v_letters, 'W', ''), 1 + floor(random() * (length(v_letters) - 1))::integer, 1)
+      || (select string_agg(substr(v_letters, 1 + floor(random() * length(v_letters))::integer, 1), '') from generate_series(1, 5));
     exit when not exists (select 1 from code_tournaments where code = v_code);
   end loop;
   insert into code_tournaments (code, name, organizer, organizer_plays, scoring) values (v_code, btrim(p_name), p_organizer, coalesce(p_plays, true), p_scoring)

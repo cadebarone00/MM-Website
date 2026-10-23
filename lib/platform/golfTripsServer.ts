@@ -43,7 +43,7 @@ export const getGolfTrip = cache(async (tripId: string): Promise<GolfTripLoad> =
  * own; someone else's shows only if their profile is Public. Until profile_photos.sql / player_rounds.sql are run
  * the read fails and everyone just shows initials.
  */
-async function withMemberPhotos(members: SavedGolfTrip["members"], viewerId: string): Promise<SavedGolfTrip["members"]> {
+export async function withMemberPhotos(members: SavedGolfTrip["members"], viewerId: string): Promise<SavedGolfTrip["members"]> {
   const ids = members.filter((m) => m.invitationStatus === "accepted" && m.profileId).map((m) => m.profileId as string);
   if (!ids.length) return members;
   const { data, error } = await createSupabaseServiceRoleClient().from("profiles").select("id, avatar_path, rounds_visibility").in("id", ids);

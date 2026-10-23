@@ -12,6 +12,8 @@ import { courseHandicap, strokesReceived } from "./roundGames";
 export interface CodeRoundSetup { course: Pick<ScoringCourse, "ref" | "name" | "place" | "par" | "strokeIndex">; tee: PlayerRoundTee | null }
 export interface CodeTournament {
   id: string; code: string; name: string; organizer: string; organizerPlays: boolean; scoring: "Gross" | "Net"; status: "live" | "ended"; createdAt: string;
+  /** The read-only code (supabase/watch_codes.sql); sent to the organizer only. */
+  watchCode?: string;
   rounds: { number: number; setup: CodeRoundSetup; date: string }[];
   players: { profileId: string; name: string; username: string | null; handicap: number | null }[];
   holes: { profileId: string; round: number; hole: number; strokes: number }[];

@@ -8,10 +8,11 @@ import { GolfTripMembers, LeaveGolfTrip } from "./GolfTripMembers";
 import { SavedTripScorecards } from "./SavedTripScorecards";
 import { GolfTripCorrections } from "./GolfTripCorrections";
 import { GolfTripCompetitionPreviewProvider } from "./GolfTripCompetitionPreviewProvider";
+import { WatchCodeChip } from "./WatchCodeChip";
 
 export function SavedTripSettingsWorkspace({ trip, snapshot, viewer }: { trip: SavedGolfTrip; snapshot: TripSetupSnapshot; viewer: { isOrganizer: boolean; memberId: string; profileId: string } }) {
   const tripId = trip.trip.id;
-  const members = <><GolfTripMembers tripId={tripId} members={trip.members} viewerMemberId={viewer.memberId} manage={viewer.isOrganizer} />{!viewer.isOrganizer && <LeaveGolfTrip tripId={tripId} />}</>;
+  const members = <>{trip.trip.watch_code && <WatchCodeChip code={trip.trip.watch_code} name={trip.trip.name} />}<GolfTripMembers tripId={tripId} members={trip.members} viewerMemberId={viewer.memberId} manage={viewer.isOrganizer} />{!viewer.isOrganizer && <LeaveGolfTrip tripId={tripId} />}</>;
   return <SavedTripSetupProvider tripId={tripId} snapshot={snapshot} editable={viewer.isOrganizer}>
     <GolfTripCompetitionPreviewProvider initialRounds={[]}>
     <GolfTripSettingsPreview tripName={trip.trip.name} backHref={`/golf-trips/${tripId}`} dataKey={tripId} persistenceScope={tripId} scoringTripId={tripId}

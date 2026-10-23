@@ -3279,7 +3279,7 @@ The bell (notifications) and the chat bubble both open one sheet that **slides u
 
 **Done when.** In the simulator and on a real account: an organizer creates a tournament and sees a code; a second account joins with the code; both score holes and see each other on the leaderboard live; gross and net rank correctly across two rounds; Submit locks a card; a wrong or ended code shows a clear message; database tests cover create / join / scoring / permissions.
 
-## Feature: Watch codes, read-only tune-in for tournaments and trips (spec 2026-10-23, awaiting approval)
+## Feature: Watch codes, read-only tune-in for tournaments and trips (spec 2026-10-23, approved 2026-10-23)
 
 **What it does / who uses it.** Every tournament and every golf trip gets a second code, a **watch code**, separate from the join code. Anyone with it (family, friends, other golfers) can follow along live without being part of the event and without a Maroon account. Spectators can only look. They can't score, join, chat or see anything private. Owner picked: no account needed, golf only for trips, always on.
 
@@ -3289,7 +3289,7 @@ The bell (notifications) and the chat bubble both open one sheet that **slides u
 3. **What spectators see.**
    - **Tournament:** the round header (arrows between rounds) and the individual leaderboard, exactly as players see it, tap a player for their scorecard. No scoring sheet, no organizer buttons, no code chips.
    - **Golf trip:** the Golf tab only, the round header, Leaderboard, Matches (match list and match center) and Stats, read-only. Never the Home / Venue / Itinerary tabs, lodging, flights, chat, invites, settings, Games, or Predict.
-   - Scores refresh every few seconds while the page is open. A banner at the top says "Watching · read only".
+   - Scores refresh every few seconds while the page is open. No banner (owner: not needed).
 4. **When it stops working.** If the tournament or trip is deleted, the watch code shows "This event isn't available." Ended tournaments and finished trips stay watchable (final results).
 
 **Data / security.**
