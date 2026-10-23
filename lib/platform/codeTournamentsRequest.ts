@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { CodeRoundSetup } from "./codeTournaments.ts";
+import type { CodeRoundSetup, TournamentCut } from "./codeTournaments.ts";
 import type { Result } from "./codeTournamentsServer.ts";
 
 /**
@@ -14,6 +14,16 @@ const num = (value: unknown): number | null => typeof value === "number" && Numb
 export function handicapFrom(value: unknown): number | null {
   const n = num(value);
   return n !== null && n >= -10 && n <= 54 ? Math.round(n * 10) / 10 : null;
+}
+
+/** A cut as sent: undefined = not valid; null = no cut. Top 1–500 players, or a cut number of -50 to +100, after round 1–9. */
+export function cutFrom(value: unknown): TournamentCut | null | undefined {
+  if (value === null || value === undefined) return null;
+  const { after, kind, value: n } = value as { after?: unknown; kind?: unknown; value?: unknown };
+  if (!Number.isInteger(after) || (after as number) < 1 || (after as number) > 9 || !Number.isInteger(n)) return undefined;
+  if (kind === "top" && (n as number) >= 1 && (n as number) <= 500) return { after: after as number, kind, value: n as number };
+  if (kind === "score" && (n as number) >= -50 && (n as number) <= 100) return { after: after as number, kind, value: n as number };
+  return undefined;
 }
 
 export function roundFrom(value: unknown): { setup: CodeRoundSetup; date: string } | null {

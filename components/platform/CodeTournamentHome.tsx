@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, ChevronLeft, Copy, Plus } from "lucide-react";
+import { Check, ChevronLeft, Copy, Plus, Scissors } from "lucide-react";
 import { GolfRoundHeader, GolfTripLeaderboard } from "./GolfTripMatch";
 import { CodeTournamentTeeSheet } from "./CodeTournamentTeeSheet";
 import { GolfTripScoring } from "./GolfTripScoring";
 import { AddRound } from "./CodeTournamentCreate";
-import { applyChange, cardFor, currentRound, formatCode, submitted, tournamentPreview, type CodeRoundSetup, type CodeTournament, type TournamentChange } from "@/lib/platform/codeTournaments";
+import { CutFields, cutSummary } from "./CodeTournamentCut";
+import { applyChange, cardFor, currentRound, cutFrom, cutLabel, cutStatus, formatCode, submitted, tournamentPreview, type CodeRoundSetup, type CodeTournament, type TournamentChange, type TournamentCut } from "@/lib/platform/codeTournaments";
 import type { SheetCard } from "@/lib/platform/liveCards";
 import type { ScoredCard } from "@/lib/platform/playerRounds";
 import homeStyles from "./GolfTripHome.module.css";
@@ -34,6 +35,8 @@ export function CodeTournamentHome({ id, meId, watchCode, sample }: { id: string
   const [problem, setProblem] = useState<string | null>(null);
   const [shown, setShown] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
+  // The organizer's cut panel: the answer being edited (undefined = unfinished), or null for no cut.
+  const [cutDraft, setCutDraft] = useState<{ cut: TournamentCut | null | undefined } | null>(null);
   const [copied, setCopied] = useState<"join" | "watch" | null>(null);
   const [section, setSection] = useState<"Leaderboard" | "Tee Sheet">("Leaderboard");
 
@@ -85,7 +88,18 @@ export function CodeTournamentHome({ id, meId, watchCode, sample }: { id: string
     await load();
   }
 
-  return <main className={`${homeStyles.page} ${playing && live ? homeStyles.pageWithScoring : ""}`}>
+  // The cut line on the leaderboard; past the cut round, those who missed it show CUT. Missing the cut ends my scoring.
+  const cut = cutStatus(t);
+  const cutLine = cut && { missed: new Set(t.players.filter((p) => cut.missed.has(p.profileId)).map((p) => p.name)), out: cut.final && round > cut.cut.after,
+    label: `${cut.final ? "Cut" : "Projected cut"} · ${cut.cut.kind === "top" ? `Top ${cut.cut.value} & ties` : cutLabel(cut.cut.value)}` };
+  const outOfScoring = cutFrom(t, meId, scoringRound);
+  async function saveCut(next: TournamentCut | null) {
+    const result = await act({ action: "cut", cut: next });
+    setProblem(result.ok ? null : result.message ?? "Couldn't save the cut. Try again.");
+    if (result.ok) { setCutDraft(null); await load(); }
+  }
+
+  return <main className={`${homeStyles.page} ${playing && live && !outOfScoring ? homeStyles.pageWithScoring : ""}`}>
     {back}
     <h1 className={styles.name}>{t.name}</h1>
     <p className={styles.sub}>{t.scoring} · {t.players.length} {t.players.length === 1 ? "player" : "players"}{live ? "" : " · Final"}</p>
@@ -97,8 +111,19 @@ export function CodeTournamentHome({ id, meId, watchCode, sample }: { id: string
         <span>Watch</span><b>{formatCode(t.watchCode)}</b>{copied === "watch" ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
       </button>}
       {live && t.rounds.length < 10 && <button type="button" className={styles.organizerButton} onClick={() => setAdding(true)}><Plus size={15} aria-hidden="true" /> Round</button>}
+      {live && <button type="button" className={styles.organizerButton} aria-expanded={Boolean(cutDraft)} onClick={() => setCutDraft(cutDraft ? null : { cut: t.cut ?? null })}>
+        <Scissors size={15} aria-hidden="true" /> {t.cut ? `Cut: ${t.cut.kind === "top" ? `Top ${t.cut.value}` : cutLabel(t.cut.value)}` : "Cut"}</button>}
       {live && <button type="button" className={styles.organizerButton} onClick={end}>End</button>}
     </div>}
+    {isOrganizer && live && cutDraft && <section className={styles.cutEditor} aria-label="Cut">
+      <CutFields initial={t.cut ?? null} rounds={t.rounds.length} net={t.scoring === "Net"} onChange={(next) => setCutDraft({ cut: next })}
+        css={{ field: styles.cutField, choices: styles.cutChoices, blurb: styles.cutBlurb }} />
+      <div className={styles.organizer}>
+        <button type="button" className={styles.organizerButton} onClick={() => setCutDraft(null)}>Cancel</button>
+        <button type="button" className={`${styles.organizerButton} ${styles.teeSave}`} disabled={cutDraft.cut === undefined} onClick={() => void saveCut(cutDraft.cut ?? null)}>Save cut</button>
+      </div>
+    </section>}
+    {!isOrganizer && t.cut && <p className={styles.cutNote}>Cut: {cutSummary(t.cut)}</p>}
     {problem && <p className={styles.status} role="alert">{problem}</p>}
     <GolfRoundHeader match={preview} previousDisabled={index <= 0} nextDisabled={index >= t.rounds.length - 1}
       onPrevious={() => index > 0 && setShown(t.rounds[index - 1].number)} onNext={() => index < t.rounds.length - 1 && setShown(t.rounds[index + 1].number)} />
@@ -113,8 +138,9 @@ export function CodeTournamentHome({ id, meId, watchCode, sample }: { id: string
         if (result.ok) await load();
         return result.ok;
       }} />
-      : <GolfTripLeaderboard key={`board-${round}`} match={preview} />}
-    {playing && live && meId && <TournamentScoring key={`scoring-${scoringRound}`} t={t} act={act} meId={meId} round={scoringRound} setup={scoring.setup} onProblem={setProblem} onSaved={load} />}
+      : <GolfTripLeaderboard key={`board-${round}`} match={preview} cut={cutLine || undefined} />}
+    {playing && live && meId && outOfScoring && <p className={styles.status}>You missed the cut. Follow the rest of the tournament on the leaderboard.</p>}
+    {playing && live && meId && !outOfScoring && <TournamentScoring key={`scoring-${scoringRound}`} t={t} act={act} meId={meId} round={scoringRound} setup={scoring.setup} onProblem={setProblem} onSaved={load} />}
   </main>;
 }
 
@@ -141,7 +167,7 @@ function TournamentScoring({ t, act, meId, round, setup, onProblem, onSaved }: {
     return result.ok ? { ok: true } : { ok: false, message: result.message ?? "Couldn't submit. Try again." };
   }
   // My attestor sits beside my score: the next player in the field (look only for now; their entries stay on this screen).
-  const others = t.players.filter((player) => player.profileId !== meId);
+  const others = t.players.filter((player) => player.profileId !== meId && !cutFrom(t, player.profileId, round));
   const attestor = others.length ? others[(t.players.findIndex((player) => player.profileId === meId) + others.length) % others.length] : null;
   const [attestorStrokes, setAttestorStrokes] = useState(() => attestor ? cardFor(t, attestor.profileId, round) : []);
   const submittedCard: ScoredCard | undefined = locked ? { strokes: mine.map((s) => s ?? 0), putts: mine.map(() => null), fairways: mine.map(() => null), greens: mine.map(() => null), penalties: mine.map(() => ({ fairway: false, green: false })) } : undefined;

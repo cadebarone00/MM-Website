@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { addCodeTournamentRound, endCodeTournament, getCodeTournament, setCodeTournamentStrokes, setCodeTournamentTeeSheet, submitCodeTournamentCard } from "@/lib/platform/codeTournamentsServer";
+import { addCodeTournamentRound, endCodeTournament, getCodeTournament, setCodeTournamentCut, setCodeTournamentStrokes, setCodeTournamentTeeSheet, submitCodeTournamentCard } from "@/lib/platform/codeTournamentsServer";
 import type { TeeSheet } from "@/lib/platform/codeTournaments";
-import { badRequest, reply, roundFrom, signedOut } from "@/lib/platform/codeTournamentsRequest";
+import { badRequest, cutFrom, reply, roundFrom, signedOut } from "@/lib/platform/codeTournamentsRequest";
 
 const whole = (n: unknown, min: number, max: number): n is number => Number.isInteger(n) && (n as number) >= min && (n as number) <= max;
 /** A tee sheet as sent: up to 50 groups, each a "HH:MM" time (or "" = TBD), a starting hole and 1–6 player ids. */
@@ -35,13 +35,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
 /**
  * POST { action }: "strokes" { round, hole, strokes (null clears) } · "submit" { round } (my card) · "addRound" { setup, date }
- * "teeSheet" { round, teeSheet } and "end" (organizer only).
+ * "teeSheet" { round, teeSheet }, "cut" { cut (null = none) } and "end" (organizer only).
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { data: { user } } = await (await createSupabaseServerClient()).auth.getUser();
   if (!user) return signedOut();
-  const body = await request.json().catch(() => null) as { action?: string; round?: unknown; hole?: unknown; strokes?: unknown; setup?: unknown; date?: unknown; teeSheet?: unknown } | null;
+  const body = await request.json().catch(() => null) as { action?: string; round?: unknown; hole?: unknown; strokes?: unknown; setup?: unknown; date?: unknown; teeSheet?: unknown; cut?: unknown } | null;
   switch (body?.action) {
     case "strokes":
       if (!whole(body.round, 1, 10) || !whole(body.hole, 1, 18) || !(body.strokes === null || whole(body.strokes, 1, 20))) return badRequest();
@@ -58,6 +58,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       const sheet = teeSheetFrom(body.teeSheet);
       if (!whole(body.round, 1, 10) || !sheet) return badRequest();
       return reply(await setCodeTournamentTeeSheet(user.id, id, body.round, sheet), () => ({}));
+    }
+    case "cut": {
+      const cut = cutFrom(body.cut);
+      if (cut === undefined) return badRequest();
+      return reply(await setCodeTournamentCut(user.id, id, cut), () => ({}));
     }
     case "end":
       return reply(await endCodeTournament(user.id, id), () => ({}));

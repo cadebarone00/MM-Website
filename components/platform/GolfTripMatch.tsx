@@ -156,7 +156,10 @@ function MatchSide({ competitor, side, standing, score }: { competitor: GolfMatc
  * Stableford formats display PTS columns; stroke play formats display TOT relative to par.
  */
 /** `byToday` (no competition): ranked by the day's score, best first, rather than the trip total. */
-export function GolfTripLeaderboard({ match, byToday = false, tripStats }: { match: GolfMatchPreview; byToday?: boolean; tripStats?: TripStatsView }) {
+export function GolfTripLeaderboard({ match, byToday = false, tripStats, cut }: { match: GolfMatchPreview; byToday?: boolean; tripStats?: TripStatsView;
+  /** Tournaments by code: a cut line under the players making it (by name), labelled; `out`: the cut is past, so those
+   *  missing it show CUT for a place. */
+  cut?: { missed: ReadonlySet<string>; label: string; out: boolean } }) {
   const leaderboardRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const list = leaderboardRef.current;
@@ -206,7 +209,11 @@ export function GolfTripLeaderboard({ match, byToday = false, tripStats }: { mat
   const scoring = matchScoring(match);
   const showNet = scoring === "Net" || (scoring === "Both" && net);
   // Always best → worst (alphabetical by last name before anyone has a score), for Gross and Net alike.
-  const rows = rankLeaderboard(match.leaderboard, { net: showNet, stableford: isStableford, today: byToday });
+  const ranked = rankLeaderboard(match.leaderboard, { net: showNet, stableford: isStableford, today: byToday });
+  // A cut: everyone making it first, then the line, then those missing it.
+  const missing = cut ? ranked.filter(row => cut.missed.has(row.golfer.name)).map(row => cut.out ? { ...row, position: "CUT" } : row) : [];
+  const rows = cut ? [...ranked.filter(row => !cut.missed.has(row.golfer.name)), ...missing] : ranked;
+  const lineBefore = missing.length ? missing[0].golfer.name : null;
   // Skins this round (organizer's Competition → Skins): a column next to TOT. Players not in skins show "—".
   const skins = skinsCount(match);
   const rowClass = `${styles.single} ${showNet ? styles.singleNet : ""} ${skins ? styles.singleSkins : ""}`;
@@ -232,7 +239,7 @@ export function GolfTripLeaderboard({ match, byToday = false, tripStats }: { mat
 
           const totDisplay = isStableford ? (pointsTotal !== undefined ? `${pointsTotal} PTS` : total) : parLabel(showNet ? netTotal : total);
           const tdyDisplay = isStableford ? (pointsToday !== undefined ? `${pointsToday} PTS` : today) : parLabel(showNet ? netToday : today);
-          return <li key={golfer.name} className={rowClass}>
+          return <Fragment key={golfer.name}>{golfer.name === lineBefore && <li className={styles.cutLine} role="separator">{cut!.label}</li>}<li className={rowClass}>
             <span className={styles.rank}>{position}</span>
             <button type="button" className={styles.playerCardTrigger} onClick={() => setSelectedPlayer(golfer.name)} aria-haspopup="dialog" aria-label={golfer.name + " public trip profile"}>
               <Golfer golfer={golfer} align="left" showThru={false} showHcp={false} />
@@ -243,7 +250,7 @@ export function GolfTripLeaderboard({ match, byToday = false, tripStats }: { mat
             <span className={styles.number} aria-label={`Thru ${thru}`}>{thru}</span>
             <span className={styles.number} data-par={isStableford ? undefined : parColor(tdyDisplay)} aria-label={`Today ${tdyDisplay}`}>{tdyDisplay}</span>
 
-          </li>;
+          </li></Fragment>;
         })}
       </ul>
     </div>

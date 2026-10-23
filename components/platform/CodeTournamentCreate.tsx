@@ -5,7 +5,8 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, Copy, Plus, Share2, X } from "lucide-react";
 import { DatePicker } from "@/components/platform/DatePicker";
 import { ExploreCourseSearch, place, type CourseResult } from "./ExploreCourseSearch";
-import { formatCode, type CodeRoundSetup } from "@/lib/platform/codeTournaments";
+import { formatCode, type CodeRoundSetup, type TournamentCut } from "@/lib/platform/codeTournaments";
+import { CutFields } from "./CodeTournamentCut";
 import type { ScoringCourse } from "@/lib/platform/personalRound";
 import styles from "./PlayRound.module.css";
 import own from "./CodeTournament.module.css";
@@ -17,7 +18,8 @@ const roundDate = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateStr
 
 /**
  * Create a tournament (/tournaments/code/new): name, Gross / Net, whether I'm playing (my handicap for net), and one or
- * more rounds (course from the course search, tee, date). Create shows the join code to send out.
+ * more rounds (course from the course search, tee, date), and whether there's a cut (top players or a cut number, after
+ * which round). Create shows the join code to send out.
  * `sample` (app simulator only): Create shows a made-up code and saves nothing.
  */
 export function CodeTournamentCreate({ sample = false }: { sample?: boolean } = {}) {
@@ -26,19 +28,22 @@ export function CodeTournamentCreate({ sample = false }: { sample?: boolean } = 
   const [plays, setPlays] = useState(true);
   const [handicap, setHandicap] = useState("");
   const [rounds, setRounds] = useState<NewRound[]>([]);
+  const [cutAnswer, setCut] = useState<TournamentCut | null | undefined>(null);
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [made, setMade] = useState<{ id: string; code: string } | null>(null);
   const needsHandicap = scoring === "Net" && plays;
-  const ready = name.trim().length > 0 && rounds.length > 0 && (!needsHandicap || handicapValue(handicap) !== null);
+  // The cut follows the rounds: none to cut after with one round, and never after the last round.
+  const cut = cutAnswer && (rounds.length < 2 ? undefined : { ...cutAnswer, after: Math.min(cutAnswer.after, rounds.length - 1) });
+  const ready = name.trim().length > 0 && rounds.length > 0 && (!needsHandicap || handicapValue(handicap) !== null) && cut !== undefined;
 
   async function create() {
     if (!ready) return;
     if (sample) { setMade({ id: "sample", code: "K7Q4MZ" }); return; }
     setBusy(true); setError(null);
     const reply = await fetch("/api/code-tournaments", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name.trim(), scoring, plays, handicap: needsHandicap ? handicapValue(handicap) : null, rounds }) })
+      body: JSON.stringify({ name: name.trim(), scoring, plays, handicap: needsHandicap ? handicapValue(handicap) : null, rounds, cut }) })
       .then((r) => r.json() as Promise<{ ok: boolean; id?: string; code?: string; message?: string }>).catch(() => null);
     setBusy(false);
     if (reply?.ok && reply.id && reply.code) { setMade({ id: reply.id, code: reply.code }); return; }
@@ -46,7 +51,9 @@ export function CodeTournamentCreate({ sample = false }: { sample?: boolean } = 
   }
 
   if (made) return <CodeReady name={name.trim()} id={made.id} code={made.code} />;
-  if (adding) return <AddRound onCancel={() => setAdding(false)} onAdd={(round) => { setRounds((all) => [...all, round]); setAdding(false); }} />;
+  // The cut questions come back as last answered (an unfinished answer starts over as No cut).
+  const backFromRound = () => { setAdding(false); if (cutAnswer === undefined) setCut(null); };
+  if (adding) return <AddRound onCancel={backFromRound} onAdd={(round) => { setRounds((all) => [...all, round]); backFromRound(); }} />;
 
   return <main className={styles.page}>
     <header className={styles.header}><Link href="/tournaments/create" className={styles.back} aria-label="Back"><ArrowLeft size={18} aria-hidden="true" /></Link><p className={styles.kicker}>Create a tournament</p></header>
@@ -70,6 +77,7 @@ export function CodeTournamentCreate({ sample = false }: { sample?: boolean } = 
           </li>)}</ol>}
           <button type="button" className={own.addRound} onClick={() => setAdding(true)}><Plus size={16} aria-hidden="true" /> {rounds.length ? "Add another round" : "Add a round"}</button>
         </fieldset>
+        <CutFields initial={cutAnswer ?? null} rounds={rounds.length} net={scoring === "Net"} onChange={setCut} css={{ field: styles.field, choices: styles.choices, blurb: styles.blurb }} />
         {error && <p className={styles.error} role="alert">{error}</p>}
         <button type="submit" className={styles.primary} disabled={!ready || busy}>{busy ? "Creating…" : "Create tournament"} <ArrowRight size={16} aria-hidden="true" /></button>
       </form>

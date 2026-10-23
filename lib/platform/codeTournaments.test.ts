@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { applyChange, cleanCode, currentRound, DEFAULT_TIMING, formatCode, foursomes, randomTeeSheet, roundTeeSheet, teeTimeLabel, tournamentPreview, type CodeTournament } from "./codeTournaments.ts";
+import { applyChange, cleanCode, currentRound, cutFrom, cutStatus, DEFAULT_TIMING, formatCode, foursomes, randomTeeSheet, roundTeeSheet, teeTimeLabel, tournamentPreview, type CodeTournament } from "./codeTournaments.ts";
 import { rankLeaderboard } from "./golfLeaderboardOrder.ts";
 
 const PAR = Array(18).fill(4);
@@ -61,4 +61,22 @@ test("tee sheet: the organizer's groups, with players who left dropped and new p
   const t = applyChange(tournament("Gross", []), "a", { action: "teeSheet", round: 1, teeSheet: { groups: [{ time: "09:30", hole: 10, players: ["c", "gone", "a"] }] } });
   assert.deepEqual(roundTeeSheet(t, 1).groups, [{ time: "09:30", hole: 10, players: ["c", "a"] }, { time: "", hole: 1, players: ["b"] }]);
   assert.deepEqual(roundTeeSheet(t, 2).groups, [{ time: "08:00", hole: 1, players: ["a", "b", "c"] }]);
+});
+
+test("cut: top N and ties, or a cut number, on the standings through the cut round; projected until every card is in", () => {
+  // Round 1: a +2, b +1, c -1 (gross).
+  const holes = [{ profileId: "a", round: 1, hole: 1, strokes: 6 }, { profileId: "b", round: 1, hole: 1, strokes: 5 }, { profileId: "c", round: 1, hole: 1, strokes: 3 }];
+  const t = { ...tournament("Gross", holes), cut: { after: 1, kind: "top" as const, value: 1 } };
+  assert.deepEqual([...cutStatus(t)!.missed].sort(), ["a", "b"]);
+  assert.equal(cutStatus(t)!.final, false);
+  assert.equal(cutFrom(t, "a", 2), false);
+  const tied = { ...t, holes: [...holes.filter((h) => h.profileId !== "b"), { profileId: "b", round: 1, hole: 1, strokes: 3 }] };
+  assert.deepEqual([...cutStatus(tied)!.missed], ["a"]);
+  const byScore = { ...t, cut: { after: 1, kind: "score" as const, value: 1 }, cards: ["a", "b", "c"].map((profileId) => ({ profileId, round: 1, submittedAt: "" })) };
+  assert.deepEqual([...cutStatus(byScore)!.missed], ["a"]);
+  assert.equal(cutStatus(byScore)!.final, true);
+  assert.equal(cutFrom(byScore, "a", 2), true);
+  assert.equal(cutFrom(byScore, "a", 1), false);
+  assert.deepEqual(roundTeeSheet(byScore, 2).groups.flatMap((g) => g.players), ["b", "c"]);
+  assert.equal(cutStatus({ ...t, cut: null }), null);
 });

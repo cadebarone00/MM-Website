@@ -14,12 +14,17 @@ export interface CodeTournament {
   id: string; code: string; name: string; organizer: string; organizerPlays: boolean; scoring: "Gross" | "Net"; status: "live" | "ended"; createdAt: string;
   /** The read-only code (supabase/watch_codes.sql); sent to the organizer only. */
   watchCode?: string;
+  /** The organizer's cut (supabase/tournament_cuts.sql); none = everyone plays every round. */
+  cut?: TournamentCut | null;
   rounds: { number: number; setup: CodeRoundSetup; date: string; /** Set by the organizer (supabase/tournament_tee_sheets.sql); none = automatic foursomes. */ teeSheet?: TeeSheet | null }[];
   players: { profileId: string; name: string; username: string | null; handicap: number | null }[];
   holes: { profileId: string; round: number; hole: number; strokes: number }[];
   cards: { profileId: string; round: number; submittedAt: string }[];
 }
 /** What a code shows before joining. */
+/** A cut after round `after`: the top `value` players and ties ("top"), or everyone at `value` to par or better ("score"),
+ *  on the tournament's own scoring (gross or net) through that round. */
+export interface TournamentCut { after: number; kind: "top" | "score"; value: number }
 export interface CodeTournamentLookup {
   id: string; name: string; status: "live" | "ended"; scoring: "Gross" | "Net"; organizerName: string; member: boolean; playerCount: number;
   rounds: { number: number; course: string; date: string }[];
@@ -135,7 +140,7 @@ export function randomTeeSheet(players: string[], timing: TeeTiming, holes: numb
 export function roundTeeSheet(t: CodeTournament, round: number): TeeSheet {
   const r = t.rounds.find((x) => x.number === round);
   const holes = r?.setup.course.par.length ?? 18;
-  const ids = t.players.map((p) => p.profileId);
+  const ids = t.players.map((p) => p.profileId).filter((id) => !cutFrom(t, id, round));
   if (!r?.teeSheet) return foursomes(ids, DEFAULT_TIMING, holes);
   const groups = r.teeSheet.groups.map((g) => ({ ...g, players: g.players.filter((id) => ids.includes(id)) })).filter((g) => g.players.length);
   const placed = new Set(groups.flatMap((g) => g.players));
@@ -144,6 +149,34 @@ export function roundTeeSheet(t: CodeTournament, round: number): TeeSheet {
 }
 
 const NO_SIDE: GolfMatchSide = { name: "", winPct: 0, fairwayPct: "—", greenPct: "—", putts: "—", score: "—" };
+
+/** "+3", "E", "-2". */
+export const cutLabel = (value: number) => value === 0 ? "E" : value > 0 ? `+${value}` : String(value);
+
+/**
+ * Where the cut stands: who's missing it (profile ids) on the standings through the cut round, and whether it's final
+ * (every player has turned in that round's card, a later round has scores, or the tournament has ended); until then
+ * it's projected. A player with no score through the cut round misses only once it's final. Null without a cut.
+ */
+export function cutStatus(t: CodeTournament): { missed: Set<string>; final: boolean; cut: TournamentCut } | null {
+  const cut = t.cut;
+  if (!cut || !t.rounds.some((r) => r.number > cut.after)) return null;
+  const net = t.scoring === "Net";
+  const final = t.status === "ended" || t.players.every((p) => submitted(t, p.profileId, cut.after)) || t.holes.some((h) => h.round > cut.after);
+  const scores = t.players.map((player) => {
+    const through = t.rounds.filter((r) => r.number <= cut.after).map((r) => roundScore(t, player, r));
+    return { id: player.profileId, score: through.some((r) => r.played) ? through.reduce((sum, r) => sum + (net ? r.net : r.gross), 0) : null };
+  });
+  const ranked = scores.filter((x) => x.score !== null).map((x) => x.score as number).sort((a, b) => a - b);
+  const line = cut.kind === "top" ? ranked[Math.min(cut.value, ranked.length) - 1] ?? Infinity : cut.value;
+  return { cut, final, missed: new Set(scores.filter((x) => x.score === null ? final : x.score > line).map((x) => x.id)) };
+}
+
+/** Out of a round: I missed the cut and the round comes after it. */
+export const cutFrom = (t: CodeTournament, profileId: string | null, round: number) => {
+  const status = cutStatus(t);
+  return Boolean(profileId && status?.final && round > status.cut.after && status.missed.has(profileId));
+};
 
 /** The tournament as the golf trip's leaderboard reads it, showing one round (totals run through every round). */
 export function tournamentPreview(t: CodeTournament, shown: number): GolfMatchPreview {
@@ -159,7 +192,7 @@ export function tournamentPreview(t: CodeTournament, shown: number): GolfMatchPr
 
 /** One change a player or organizer makes (the POST body for /api/code-tournaments/<id>). */
 export type TournamentChange = { action: "strokes"; round: number; hole: number; strokes: number | null } | { action: "submit"; round: number }
-  | { action: "addRound"; setup: CodeRoundSetup; date: string } | { action: "teeSheet"; round: number; teeSheet: TeeSheet } | { action: "end" };
+  | { action: "addRound"; setup: CodeRoundSetup; date: string } | { action: "teeSheet"; round: number; teeSheet: TeeSheet } | { action: "cut"; cut: TournamentCut | null } | { action: "end" };
 
 /** The tournament after a change, as the database would make it (the app simulator's sample tournament uses this). */
 export function applyChange(t: CodeTournament, me: string, change: TournamentChange): CodeTournament {
@@ -171,6 +204,7 @@ export function applyChange(t: CodeTournament, me: string, change: TournamentCha
     case "submit": return submitted(t, me, change.round) ? t : { ...t, cards: [...t.cards, { profileId: me, round: change.round, submittedAt: new Date().toISOString() }] };
     case "addRound": return { ...t, rounds: [...t.rounds, { number: t.rounds.length + 1, setup: change.setup, date: change.date }] };
     case "teeSheet": return { ...t, rounds: t.rounds.map((r) => r.number === change.round ? { ...r, teeSheet: change.teeSheet } : r) };
+    case "cut": return { ...t, cut: change.cut };
     case "end": return { ...t, status: "ended" };
   }
 }

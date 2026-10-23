@@ -285,6 +285,9 @@
 .roundInfoSplit .summaryLabel{padding-top:8px;line-height:1.4}
 .roundInfoSplit .topFivePlace,.roundInfoSplit .topFiveName,.roundInfoSplit .topFive .number{font-size:12.5px;line-height:1.2}
 /* Team only, under Overview: the tee sheet — tee time on the left, its players stacked on the right. */
+/* Tournaments by code: the cut line across the leaderboard. */
+.cutLine{display:flex;align-items:center;gap:10px;padding:8px 0;font:700 11px var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#e8a29a}
+.cutLine::before,.cutLine::after{content:"";flex:1;border-top:1.5px dashed rgba(232,162,154,.6)}
 .teeSheetRow{display:grid;grid-template-columns:78px 1fr;gap:12px;padding:14px 0;border-top:1px solid rgba(255,255,255,.08)}
 .teeSheetTime{font:700 14px/1.4 var(--font-barlow),sans-serif;color:#dcc495}
 .teeSheetHole{display:block;font:500 12px/1.4 var(--font-barlow),sans-serif;color:rgba(251,248,241,.6)}

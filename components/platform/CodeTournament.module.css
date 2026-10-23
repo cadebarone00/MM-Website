@@ -23,6 +23,18 @@
 .teeSave{background:#e8c98a;border-color:#e8c98a;color:#3b0d18}
 .teeSave:disabled,.organizerButton:disabled{opacity:.6}
 
+/* Organizer's cut panel (dark page): the same questions as Create. */
+.cutEditor{display:grid;gap:12px;margin:0 0 14px;padding:14px;border:1px solid rgba(201,168,110,.35);border-radius:14px}
+.cutField{display:grid;gap:8px;margin:0;padding:0;border:0;font:600 12px var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#c9a86e}
+.cutField legend{margin-bottom:8px}
+.cutField input,.cutField select{min-height:40px;padding:0 12px;border:1px solid rgba(201,168,110,.55);border-radius:10px;background:rgba(255,255,255,.06);color:#fbf8f1;font:600 15px var(--font-barlow),sans-serif;letter-spacing:0;text-transform:none;color-scheme:dark}
+.cutChoices{display:flex;flex-wrap:wrap;gap:8px}
+.cutChoices button{flex:1;min-height:38px;padding:0 12px;border:1px solid rgba(201,168,110,.55);border-radius:999px;background:transparent;color:#fbf8f1;font:600 13px var(--font-barlow),sans-serif;letter-spacing:0;text-transform:none;cursor:pointer}
+.cutChoices button[aria-pressed="true"]{background:#e8c98a;border-color:#e8c98a;color:#3b0d18}
+.cutChoices button:disabled{opacity:.45;cursor:default}
+.cutBlurb{margin:0;font:500 13px/1.45 var(--font-barlow),sans-serif;letter-spacing:0;text-transform:none;color:#e8d7b2}
+.cutNote{margin:-4px 0 12px;text-align:center;font:600 12px var(--font-barlow),sans-serif;color:#e8a29a}
+
 /* Create page (light Play-a-round page): the rounds added so far, and the code once it's made. */
 .roundList{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:8px}
 .roundList li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:12px;background:#f6f0e6;font:500 14px/1.35 var(--font-barlow),sans-serif;color:#2b211d}
