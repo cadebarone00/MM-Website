@@ -43,18 +43,6 @@ export default async function GolfTripsPage() {
           </span>
         </SignInRequiredLink>
 
-        <Link href="/maroon-u" className={styles.create}>
-          <span className={styles.createTitle}>The Maroon U</span>
-          <span className={styles.createPhoto}>
-            <Image src="/schedule/courses/petedye/37c88500018493969bee.webp" alt="" fill sizes="(max-width: 600px) 90vw, 528px" />
-          </span>
-          <span className={styles.createRow}>
-            <span className={styles.iconBox} aria-hidden="true"><Flag size={18} strokeWidth={2.25} /></span>
-            The Maroon U
-            <ChevronRight size={20} strokeWidth={2} aria-hidden="true" className={styles.rowArrow} />
-          </span>
-        </Link>
-
         {result.status === "ok" ? <>
           <TripSection id="upcoming-trips" heading="Upcoming" trips={upcoming} icon={Plane}
             empty={<Link href="/tournaments/create/golf-trip" className={styles.row}>

@@ -31,14 +31,13 @@ import type { TripWeather } from "@/lib/platform/weather/types";
 
 
 /** Data selection belongs to the dev route, never to the shared trip UI. */
-export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false, fictional = false, settingsHref = "/dev/tournament/settings", signedInName = null }: {
+export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false, settingsHref = "/dev/tournament/settings", signedInName = null }: {
   /** The real signed-in account's name: who "you" are on the Golf tab (falls back to the simulator's signed-in account). */
   signedInName?: string | null;
   mock: TripData;
   maroon: TripData;
   unmapped: Record<string, unknown>;
   embedded?: boolean;
-  fictional?: boolean;
   settingsHref?: string;
 }) {
   const [view, setView] = useState<"mock" | "maroon">("maroon");
@@ -106,9 +105,9 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
       <div role="group" aria-label="Data View" style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span>Data View</span>
         <button type="button" aria-pressed={config.source === "mock"} onClick={() => {setView("mock");writeDevSetup("selection","source","mock");}}>Mock</button>
-        <button type="button" aria-pressed={config.source === "maroon"} onClick={() => {setView("maroon");writeDevSetup("selection","source","maroon");}}>{fictional ? "Maroon U" : "Maroon Tournament"}</button>
+        <button type="button" aria-pressed={config.source === "maroon"} onClick={() => {setView("maroon");writeDevSetup("selection","source","maroon");}}>Maroon Tournament</button>
       </div>
-      <div aria-live="polite" style={{ marginTop: 4, opacity: 0.7 }}>{view === "mock" || fictional ? "Mock Data" : "Real Tournament Data"}</div>
+      <div aria-live="polite" style={{ marginTop: 4, opacity: 0.7 }}>{view === "mock" ? "Mock Data" : "Real Tournament Data"}</div>
     </div>}
     <GolfTripHome key={justCreated ? `just-created-${savedVersion}` : scope} {...data} now={tripNow} competitionKey={scope}
       savedCompetitionType={justCreated ? readJustCreated("localCompetitionType") : (setup.localCompetitionType as {individual:string|null;team:string|null}|undefined) ?? (busySetup ? competitionSetupTypes(busySetup) : config.source === "maroon" ? {individual:"Stroke Play",team:"2 Teams"} : config.source === "masters" ? {individual:null,team:null} : undefined)}
@@ -117,7 +116,7 @@ export function TournamentDataPreview({ mock, maroon, unmapped, embedded = false
       savedTeamDraft={justCreated ? { teamType: readJustCreated<{ team: string | null }>("localCompetitionType")?.team ?? null, selection: readJustCreated("teamSelection") ?? null,
         date: readJustCreated("draftDate") ?? "", time: readJustCreated("draftTime") ?? "", type: readJustCreated("draftType") ?? "Snake", method: readJustCreated("draftMethod") ?? "Captain's Picks" } : setup.teamSelection ? {teamType:(setup.localCompetitionType as {team:string|null}|undefined)?.team??(config.source==="maroon"?"2 Teams":null),selection:setup.teamSelection as TeamDraft["selection"],date:(setup.draftDate as string)??"",time:(setup.draftTime as string)??"",type:(setup.draftType as TeamDraft["type"])??"Snake",method:(setup.draftMethod as TeamDraft["method"])??"Captain's Picks"} : undefined}
       onTravelChange={travel => justCreated ? writeJustCreated("travel", travel) : writeDevSetup(scope,"travel",travel)} weather={weather} organizerGames={setup.gameRounds as Record<string, GameId[]> | undefined} previewMatch={shownMatch} tripStats={sampleStats ?? scoring.tripStats} scoreChanges={scoring.scoreChanges} attesteeName={scoring.attesteeName} attestedStrokes={scoring.myLiveCard?.holes.map((h) => h.attestStrokes)} onAttestChange={onAttestChange} scoringEdits={saved?.edits} onScoringCardChange={onScoringCardChange} roundLive={roundLive} opponentCardMatches={config.state.opponentCard !== "mismatch"} scoringPrefill={scoringPrefill} onScoringSubmit={onScoringSubmit} submittedCard={submittedCard} scoringOwner={viewAs} signedInName={signedInName ?? devAccount(viewAs).name} navigation={simulator?.navigation} onNavigationChange={reportNavigation} settingsHref={settingsHref} backHref="/golf-trips" />
-    {!simulator && !embedded && !fictional && view === "maroon" && <details style={{ maxWidth: 920, margin: "24px auto", padding: 12, background: "#fff8ef", borderRadius: 8 }}>
+    {!simulator && !embedded && view === "maroon" && <details style={{ maxWidth: 920, margin: "24px auto", padding: 12, background: "#fff8ef", borderRadius: 8 }}>
       <summary style={{ fontWeight: 600 }}>DEV: Unmapped Tournament Data (click to view)</summary>
       <pre style={{ whiteSpace: "pre-wrap", marginTop: 8 }}>{JSON.stringify(unmapped, null, 2)}</pre>
     </details>}
