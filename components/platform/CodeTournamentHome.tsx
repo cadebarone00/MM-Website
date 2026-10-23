@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Check, ChevronLeft, Copy, Plus } from "lucide-react";
-import { GolfRoundHeader, GolfTripLeaderboard } from "./GolfTripMatch";
+import { GolfRoundHeader, GolfTeeSheet, GolfTripLeaderboard } from "./GolfTripMatch";
 import { GolfTripScoring } from "./GolfTripScoring";
 import { AddRound } from "./CodeTournamentCreate";
 import { applyChange, cardFor, currentRound, formatCode, submitted, tournamentPreview, type CodeRoundSetup, type CodeTournament, type TournamentChange } from "@/lib/platform/codeTournaments";
@@ -34,6 +34,7 @@ export function CodeTournamentHome({ id, meId, watchCode, sample }: { id: string
   const [shown, setShown] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
   const [copied, setCopied] = useState<"join" | "watch" | null>(null);
+  const [section, setSection] = useState<"Leaderboard" | "Tee Sheet">("Leaderboard");
 
   const load = useCallback(async () => {
     if (sample) return;
@@ -100,7 +101,13 @@ export function CodeTournamentHome({ id, meId, watchCode, sample }: { id: string
     {problem && <p className={styles.status} role="alert">{problem}</p>}
     <GolfRoundHeader match={preview} previousDisabled={index <= 0} nextDisabled={index >= t.rounds.length - 1}
       onPrevious={() => index > 0 && setShown(t.rounds[index - 1].number)} onNext={() => index < t.rounds.length - 1 && setShown(t.rounds[index + 1].number)} />
-    {t.players.length ? <GolfTripLeaderboard key={`board-${round}`} match={preview} /> : <p className={styles.status}>No players yet. Send the code to your players so they can join.</p>}
+    <div className={`${homeStyles.tabs} ${homeStyles.sectionTabs}`} role="tablist" aria-label="Tournament sections">
+      {(["Leaderboard", "Tee Sheet"] as const).map((name) => <button key={name} type="button" role="tab" aria-selected={section === name}
+        className={`${homeStyles.tab} ${section === name ? homeStyles.tabActive : ""}`} onClick={() => setSection(name)}>{name}</button>)}
+    </div>
+    {!t.players.length ? <p className={styles.status}>No players yet. Send the code to your players so they can join.</p>
+      : section === "Tee Sheet" ? <GolfTeeSheet match={preview} />
+      : <GolfTripLeaderboard key={`board-${round}`} match={preview} />}
     {playing && live && meId && <TournamentScoring key={`scoring-${scoringRound}`} t={t} act={act} meId={meId} round={scoringRound} setup={scoring.setup} onProblem={setProblem} onSaved={load} />}
   </main>;
 }
