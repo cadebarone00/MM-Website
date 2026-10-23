@@ -1,6 +1,6 @@
 import "server-only";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import type { CodeRoundSetup, CodeTournament, CodeTournamentLookup, MyCodeTournament } from "./codeTournaments.ts";
+import type { CodeRoundSetup, CodeTournament, CodeTournamentLookup, MyCodeTournament, TeeSheet } from "./codeTournaments.ts";
 
 /**
  * Tournaments by code (supabase/tournament_codes.sql). Profile ids always come from the signed-in session — callers pass
@@ -33,4 +33,7 @@ export const listMyCodeTournaments = (me: string) => rpc<MyCodeTournament[]>("li
 export const setCodeTournamentStrokes = (me: string, id: string, round: number, hole: number, strokes: number | null) =>
   rpc<null>("set_code_tournament_strokes", { p_profile: me, p_tournament: id, p_round: round, p_hole: hole, p_strokes: strokes });
 export const submitCodeTournamentCard = (me: string, id: string, round: number) => rpc<null>("submit_code_tournament_card", { p_profile: me, p_tournament: id, p_round: round });
+/** supabase/tournament_tee_sheets.sql. */
+export const setCodeTournamentTeeSheet = (organizer: string, id: string, round: number, sheet: TeeSheet) =>
+  rpc<null>("set_code_tournament_tee_sheet", { p_organizer: organizer, p_tournament: id, p_round: round, p_sheet: sheet });
 export const endCodeTournament = (organizer: string, id: string) => rpc<null>("end_code_tournament", { p_organizer: organizer, p_tournament: id });

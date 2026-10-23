@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cleanCode, currentRound, formatCode, tournamentPreview, type CodeTournament } from "./codeTournaments.ts";
+import { applyChange, cleanCode, currentRound, DEFAULT_TIMING, formatCode, foursomes, randomTeeSheet, roundTeeSheet, teeTimeLabel, tournamentPreview, type CodeTournament } from "./codeTournaments.ts";
 import { rankLeaderboard } from "./golfLeaderboardOrder.ts";
 
 const PAR = Array(18).fill(4);
@@ -46,4 +46,19 @@ test("the round to score: today's, else the first card I haven't submitted, else
   assert.equal(currentRound(t, "a", "2026-10-20"), 2);
   assert.equal(currentRound(t, "b", "2026-10-20"), 1);
   assert.equal(currentRound({ ...t, cards: [...t.cards, { profileId: "a", round: 2, submittedAt: "" }] }, "a", "2026-12-01"), 2);
+});
+
+test("tee sheet: even foursomes, two groups a time off 1 and 10 on 18 holes, one off 1 on nine", () => {
+  const ids = Array.from({ length: 10 }, (_, i) => `p${i}`);
+  assert.deepEqual(foursomes(ids, DEFAULT_TIMING, 18).groups.map((g) => [teeTimeLabel(g.time), g.hole, g.players.length]),
+    [["8:00 AM", 1, 4], ["8:00 AM", 10, 3], ["8:10 AM", 1, 3]]);
+  assert.deepEqual(foursomes(ids, { first: "12:55", every: 8, split: true }, 9).groups.map((g) => [teeTimeLabel(g.time), g.hole]),
+    [["12:55 PM", 1], ["1:03 PM", 1], ["1:11 PM", 1]]);
+  assert.deepEqual(randomTeeSheet(ids, DEFAULT_TIMING, 18).groups.flatMap((g) => g.players).sort(), ids);
+});
+
+test("tee sheet: the organizer's groups, with players who left dropped and new players in a TBD group at the end", () => {
+  const t = applyChange(tournament("Gross", []), "a", { action: "teeSheet", round: 1, teeSheet: { groups: [{ time: "09:30", hole: 10, players: ["c", "gone", "a"] }] } });
+  assert.deepEqual(roundTeeSheet(t, 1).groups, [{ time: "09:30", hole: 10, players: ["c", "a"] }, { time: "", hole: 1, players: ["b"] }]);
+  assert.deepEqual(roundTeeSheet(t, 2).groups, [{ time: "08:00", hole: 1, players: ["a", "b", "c"] }]);
 });

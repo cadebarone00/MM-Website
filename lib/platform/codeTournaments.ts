@@ -14,7 +14,7 @@ export interface CodeTournament {
   id: string; code: string; name: string; organizer: string; organizerPlays: boolean; scoring: "Gross" | "Net"; status: "live" | "ended"; createdAt: string;
   /** The read-only code (supabase/watch_codes.sql); sent to the organizer only. */
   watchCode?: string;
-  rounds: { number: number; setup: CodeRoundSetup; date: string }[];
+  rounds: { number: number; setup: CodeRoundSetup; date: string; /** Set by the organizer (supabase/tournament_tee_sheets.sql); none = automatic foursomes. */ teeSheet?: TeeSheet | null }[];
   players: { profileId: string; name: string; username: string | null; handicap: number | null }[];
   holes: { profileId: string; round: number; hole: number; strokes: number }[];
   cards: { profileId: string; round: number; submittedAt: string }[];
@@ -92,19 +92,55 @@ function rows(t: CodeTournament, shown: number, upTo = Infinity): GolfLeaderboar
   });
 }
 
-/** Tee sheet groups: the field split as evenly as possible into foursomes (threesomes when it doesn't divide by four),
- *  from 8:00 AM every 10 minutes. 18-hole rounds start off 1 and 10 (two groups per time); 9-hole rounds all off 1. */
-export function teeGroups<T>(field: T[], holes: number): { time: string; hole: number; golfers: T[] }[] {
-  const count = Math.ceil(field.length / 4);
-  const perTee = holes >= 18 ? 2 : 1;
+/** A round's tee sheet: each group's tee time ("HH:MM", 24-hour), starting hole and players (profile ids, in order). */
+export interface TeeSheet { groups: { time: string; hole: number; players: string[] }[] }
+/** How the organizer times the groups: the first tee time, minutes between times, and whether 18-hole rounds go off 1 and 10. */
+export interface TeeTiming { first: string; every: number; split: boolean }
+export const DEFAULT_TIMING: TeeTiming = { first: "08:00", every: 10, split: true };
+
+/** "08:30" → "8:30 AM". */
+export function teeTimeLabel(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return "Tee time TBD";
+  return `${(h + 11) % 12 + 1}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+}
+
+/** Group `g`'s time and starting hole under a timing: two groups per time (holes 1 and 10) when split, else one off 1. */
+export function teeSlot(g: number, timing: TeeTiming, holes: number): { time: string; hole: number } {
+  const perTee = timing.split && holes >= 18 ? 2 : 1;
+  const [h, m] = timing.first.split(":").map(Number);
+  const minutes = ((h || 0) * 60 + (m || 0) + Math.floor(g / perTee) * timing.every) % (24 * 60);
+  return { time: `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`, hole: g % perTee ? 10 : 1 };
+}
+
+/** The field split as evenly as possible into foursomes (threesomes when it doesn't divide by four), in the order given. */
+export function foursomes(players: string[], timing: TeeTiming, holes: number): TeeSheet {
+  const count = Math.ceil(players.length / 4);
   let next = 0;
-  return Array.from({ length: count }, (_, g) => {
-    const size = Math.floor(field.length / count) + (g < field.length % count ? 1 : 0);
-    const golfers = field.slice(next, next += size);
-    const minutes = 8 * 60 + Math.floor(g / perTee) * 10;
-    const time = `${(Math.floor(minutes / 60) + 11) % 12 + 1}:${String(minutes % 60).padStart(2, "0")} ${minutes < 720 ? "AM" : "PM"}`;
-    return { time, hole: g % perTee ? 10 : 1, golfers };
-  });
+  return { groups: Array.from({ length: count }, (_, g) => {
+    const size = Math.floor(players.length / count) + (g < players.length % count ? 1 : 0);
+    return { ...teeSlot(g, timing, holes), players: players.slice(next, next += size) };
+  }) };
+}
+
+/** Random pairings: the field shuffled, then split into foursomes. */
+export function randomTeeSheet(players: string[], timing: TeeTiming, holes: number): TeeSheet {
+  const shuffled = [...players];
+  for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
+  return foursomes(shuffled, timing, holes);
+}
+
+/** The tee sheet a round shows: the organizer's (players who've left dropped, anyone not yet placed in a group of
+ *  their own at the end), or foursomes in field order at the default times when none has been set. */
+export function roundTeeSheet(t: CodeTournament, round: number): TeeSheet {
+  const r = t.rounds.find((x) => x.number === round);
+  const holes = r?.setup.course.par.length ?? 18;
+  const ids = t.players.map((p) => p.profileId);
+  if (!r?.teeSheet) return foursomes(ids, DEFAULT_TIMING, holes);
+  const groups = r.teeSheet.groups.map((g) => ({ ...g, players: g.players.filter((id) => ids.includes(id)) })).filter((g) => g.players.length);
+  const placed = new Set(groups.flatMap((g) => g.players));
+  const left = ids.filter((id) => !placed.has(id));
+  return { groups: left.length ? [...groups, { time: "", hole: 1, players: left }] : groups };
 }
 
 const NO_SIDE: GolfMatchSide = { name: "", winPct: 0, fairwayPct: "—", greenPct: "—", putts: "—", score: "—" };
@@ -123,7 +159,7 @@ export function tournamentPreview(t: CodeTournament, shown: number): GolfMatchPr
 
 /** One change a player or organizer makes (the POST body for /api/code-tournaments/<id>). */
 export type TournamentChange = { action: "strokes"; round: number; hole: number; strokes: number | null } | { action: "submit"; round: number }
-  | { action: "addRound"; setup: CodeRoundSetup; date: string } | { action: "end" };
+  | { action: "addRound"; setup: CodeRoundSetup; date: string } | { action: "teeSheet"; round: number; teeSheet: TeeSheet } | { action: "end" };
 
 /** The tournament after a change, as the database would make it (the app simulator's sample tournament uses this). */
 export function applyChange(t: CodeTournament, me: string, change: TournamentChange): CodeTournament {
@@ -134,6 +170,7 @@ export function applyChange(t: CodeTournament, me: string, change: TournamentCha
     }
     case "submit": return submitted(t, me, change.round) ? t : { ...t, cards: [...t.cards, { profileId: me, round: change.round, submittedAt: new Date().toISOString() }] };
     case "addRound": return { ...t, rounds: [...t.rounds, { number: t.rounds.length + 1, setup: change.setup, date: change.date }] };
+    case "teeSheet": return { ...t, rounds: t.rounds.map((r) => r.number === change.round ? { ...r, teeSheet: change.teeSheet } : r) };
     case "end": return { ...t, status: "ended" };
   }
 }
