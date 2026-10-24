@@ -33,10 +33,10 @@ export const listMyCodeTournaments = (me: string) => rpc<MyCodeTournament[]>("li
 export const setCodeTournamentStrokes = (me: string, id: string, round: number, hole: number, strokes: number | null) =>
   rpc<null>("set_code_tournament_strokes", { p_profile: me, p_tournament: id, p_round: round, p_hole: hole, p_strokes: strokes });
 export const submitCodeTournamentCard = (me: string, id: string, round: number) => rpc<null>("submit_code_tournament_card", { p_profile: me, p_tournament: id, p_round: round });
-/** supabase/tournament_public.sql: public or private; the public ones (search words, or none for the live feed). */
+/** supabase/tournament_public.sql: public or private; the public ones (words in the name, course or place; a round's date). */
 export const setCodeTournamentPublic = (organizer: string, id: string, isPublic: boolean) =>
   rpc<null>("set_code_tournament_public", { p_organizer: organizer, p_tournament: id, p_public: isPublic });
-export const searchPublicCodeTournaments = (query: string) => rpc<PublicCodeTournament[]>("search_public_code_tournaments", { p_query: query.slice(0, 60) });
+export const searchPublicCodeTournaments = (query: string, date: string | null) => rpc<PublicCodeTournament[]>("search_public_code_tournaments", { p_query: query.slice(0, 60), p_date: date });
 /** A public tournament as its organizer reads it (callers strip it for spectators); null if it isn't public. */
 export async function getPublicCodeTournament(id: string): Promise<Result<CodeTournament | null>> {
   const organizer = await rpc<string | null>("public_code_tournament_organizer", { p_tournament: id });

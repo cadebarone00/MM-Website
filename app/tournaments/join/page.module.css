@@ -1,7 +1,7 @@
 .pageHeader {
   position: relative;
   isolation: isolate;
-  padding-top: max(80px, calc(68px + 0px));
+  padding-top: calc(92px + var(--app-top-clearance, 0px));
   background: #1d0b11;
 }
 
@@ -9,7 +9,7 @@
   content: "";
   position: absolute;
   inset: 0 0 auto;
-  height: 45svh;
+  height: calc(45svh + var(--app-top-clearance, 0px));
   z-index: -1;
   background: linear-gradient(180deg, #1d0b1160, transparent 60%), url('/images/tourneys/course-hero.jpg') center 65% / cover no-repeat;
 }

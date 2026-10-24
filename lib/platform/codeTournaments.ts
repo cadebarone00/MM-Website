@@ -32,7 +32,13 @@ export interface CodeTournamentLookup {
   rounds: { number: number; course: string; date: string }[];
 }
 /** A public tournament in the Tourneys search / live feed. */
-export interface PublicCodeTournament { id: string; name: string; scoring: "Gross" | "Net"; status: "live" | "ended"; organizerName: string; playerCount: number; firstDate: string | null; lastDate: string | null; course: string | null }
+export interface PublicCodeTournament { id: string; name: string; scoring: "Gross" | "Net"; status: "live" | "ended"; organizerName: string; playerCount: number; firstDate: string | null; lastDate: string | null; course: string | null; place: string | null }
+
+/** Which Tourneys list a public tournament is in: Past once it has ended, Upcoming before its first round day, else Live. */
+export function publicSection(t: PublicCodeTournament, today: string): "Live" | "Upcoming" | "Past" {
+  if (t.status === "ended") return "Past";
+  return t.firstDate && t.firstDate > today ? "Upcoming" : "Live";
+}
 export interface MyCodeTournament { id: string; name: string; status: "live" | "ended"; firstDate: string | null; lastDate: string | null; course: string | null }
 
 /** "K7Q4MZ" → "K7Q-4MZ" (easier to read out and type). */

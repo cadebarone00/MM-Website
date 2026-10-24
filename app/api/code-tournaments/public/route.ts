@@ -1,8 +1,10 @@
 import { searchPublicCodeTournaments } from "@/lib/platform/codeTournamentsServer";
 import { reply } from "@/lib/platform/codeTournamentsRequest";
 
-/** GET ?q=: public tournaments whose name has the words in it; no words = the ones live right now. No sign-in needed. */
+/** GET ?q=&date=: public tournaments with the words in the name, course or place, and a round on the date (YYYY-MM-DD);
+ *  both optional (none = every public tournament). No sign-in needed. */
 export async function GET(request: Request) {
-  const query = new URL(request.url).searchParams.get("q") ?? "";
-  return reply(await searchPublicCodeTournaments(query), (tournaments) => ({ tournaments }));
+  const params = new URL(request.url).searchParams;
+  const date = params.get("date");
+  return reply(await searchPublicCodeTournaments(params.get("q") ?? "", date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null), (tournaments) => ({ tournaments }));
 }

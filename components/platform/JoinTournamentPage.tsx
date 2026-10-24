@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { ChevronRight, Flag } from "lucide-react";
+import { ChevronRight, Flag, Plus } from "lucide-react";
 import { formatDateRange } from "@/lib/platform/publicSite";
 import { loadMyPastTournaments } from "@/lib/platform/pastTournamentsServer";
 import type { PastTournament } from "@/lib/platform/pastTournaments";
-import { JoinLinkForm } from "./JoinLinkForm";
-import { JoinCodeEntry } from "./JoinCodeEntry";
+import { TourneyActions } from "./TourneyActions";
 import { PublicTournamentSearch } from "./PublicTournamentSearch";
 import { listMyCodeTournaments } from "@/lib/platform/codeTournamentsServer";
 import type { MyCodeTournament } from "@/lib/platform/codeTournaments";
@@ -15,8 +14,8 @@ import styles from "./JoinTournament.module.css";
 import { JoinTournamentEntrance } from "@/components/motion/JoinTournamentEntrance";
 
 /**
- * Tourneys (/tournaments/join): create a tournament, open one from its link, search public tournaments or follow the
- * live ones, go to My Tournaments, or revisit the finished tournaments you played in.
+ * Tourneys (/tournaments/join): create or join a tournament (by code), find public ones (by name, location or date; Live,
+ * Upcoming and Past), go to My Tournaments, or revisit the finished tournaments you played in.
  */
 export async function JoinTournamentPage() {
   const past = await loadMyPastTournaments();
@@ -30,13 +29,9 @@ export async function JoinTournamentPage() {
     <JoinTournamentEntrance className={`${styles.page} ${styles.tourneys}`}>
       <div className={styles.photoPanel}>
       <h2 className={styles.descriptor}>Get started</h2>
-      <div className={styles.actions}>
-        <SignInRequiredLink href="/tournaments/create" className={styles.actionBox} message="Sign in to create a tournament"><span>Create a Tournament</span></SignInRequiredLink>
-        <JoinCodeEntry />
-      </div>
+      <TourneyActions create={<SignInRequiredLink href="/tournaments/create" className={styles.actionBox} message="Sign in to create a tournament"><Plus size={22} aria-hidden="true" /><span>Create a Tournament</span></SignInRequiredLink>} />
       </div>
       <div className={styles.lowerContent}>
-      <JoinLinkForm />
       <PublicTournamentSearch />
 
       <section aria-labelledby="my-tournaments-heading" className={styles.tournamentSection}>
