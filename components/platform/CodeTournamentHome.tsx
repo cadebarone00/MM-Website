@@ -113,7 +113,6 @@ export function CodeTournamentHome({ id, meId, watchCode, publicView = false, sa
       {isOrganizer && <button type="button" className={`${homeStyles.iconButton} ${styles.settingsButton}`} aria-label="Tournament settings" onClick={() => setSettingsOpen(true)}><Settings size={24} strokeWidth={1.75} aria-hidden /></button>}
     </div>}
     <h1 className={styles.name}>{t.name}</h1>
-    <p className={styles.sub}>{t.scoring}{live ? "" : " · Final"}</p>
     {t.cut && <p className={styles.cutNote}>Cut: {cutSummary(t.cut)}</p>}
     {problem && <p className={styles.status} role="alert">{problem}</p>}
     {/* The round shown: Round N · Today (or its date), its course under it; arrows step through the rounds. */}
