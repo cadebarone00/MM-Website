@@ -21,6 +21,6 @@ export default async function SetupNextStepPage({ params }: { params: Promise<{ 
     {isGolfTrip
       ? <Link href="/golf-trips/new" className={`${styles.continue} ${styles.start}`}>Let&apos;s go golfing</Link>
       : <p className={styles.sheetNote}>The next step is coming soon</p>}
-    <Link href="/tournaments/create" className={styles.back}>Back</Link>
+    <Link href={isGolfTrip ? "/golf-trips" : "/tournaments/join"} className={styles.back}>Back</Link>
   </SetupSheet>;
 }

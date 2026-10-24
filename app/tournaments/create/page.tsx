@@ -1,9 +1,6 @@
-import type { Metadata } from "next";
-import { CreateTournamentPage } from "@/components/platform/CreateTournamentPage";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Create a Tournament | The Maroon" };
-
-/** Create Tournament: setup page 1, pick what you're creating (event, team, league, group). */
+/** The old "What are you creating?" page: Create a Tournament now goes straight to the tournament setup. */
 export default function CreatePage() {
-  return <CreateTournamentPage />;
+  redirect("/tournaments/code/new");
 }

@@ -56,7 +56,7 @@ export function CodeTournamentCreate({ sample = false }: { sample?: boolean } = 
   if (adding) return <AddRound onCancel={backFromRound} onAdd={(round) => { setRounds((all) => [...all, round]); backFromRound(); }} />;
 
   return <main className={styles.page}>
-    <header className={styles.header}><Link href="/tournaments/create" className={styles.back} aria-label="Back"><ArrowLeft size={18} aria-hidden="true" /></Link><p className={styles.kicker}>Create a tournament</p></header>
+    <header className={styles.header}><Link href="/tournaments/join" className={styles.back} aria-label="Back to Tourneys"><ArrowLeft size={18} aria-hidden="true" /></Link><p className={styles.kicker}>Create a tournament</p></header>
     <section className={styles.panel}>
       <form className={styles.form} onSubmit={(event) => { event.preventDefault(); void create(); }}>
         <label className={styles.field}><span>Tournament name</span>

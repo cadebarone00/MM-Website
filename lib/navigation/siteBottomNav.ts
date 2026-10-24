@@ -34,7 +34,7 @@ export function siteBottomNavTabHref(pathname: string, href: string): string {
 export function siteBottomNavTabActive(pathname: string, href: string): boolean {
   // Tourneys stays lit on its My Tournaments list and the Create Tournament page too.
   if (href === "/tournaments/join") {
-    return pathname === "/tournaments/join" || pathname.startsWith("/tournaments/join/") || pathname === "/tournaments/mine" || pathname === "/tournaments/create";
+    return pathname === "/tournaments/join" || pathname.startsWith("/tournaments/join/") || pathname === "/tournaments/mine" || pathname === "/tournaments/create" || pathname === "/tournaments/code/new";
   }
   // Profile stays lit on the account screens (e.g. the post-login /account/choose), Settings, and the local dev profile preview.
   if (href === "/profile") {

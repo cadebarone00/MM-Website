@@ -29,7 +29,7 @@ export async function JoinTournamentPage() {
     <JoinTournamentEntrance className={`${styles.page} ${styles.tourneys}`}>
       <div className={styles.photoPanel}>
       <h2 className={styles.descriptor}>Get started</h2>
-      <TourneyActions create={<SignInRequiredLink href="/tournaments/create" className={styles.actionBox} message="Sign in to create a tournament"><Plus size={22} aria-hidden="true" /><span>Create a Tournament</span></SignInRequiredLink>} />
+      <TourneyActions create={<SignInRequiredLink href="/tournaments/code/new" className={styles.actionBox} message="Sign in to create a tournament"><Plus size={22} aria-hidden="true" /><span>Create a Tournament</span></SignInRequiredLink>} />
       </div>
       <div className={styles.lowerContent}>
       <PublicTournamentSearch />
