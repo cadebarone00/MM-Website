@@ -86,6 +86,11 @@ div.sheetWheels [role=listbox]:nth-of-type(4){width:48px;margin-left:4px}
 .roundStepper b{display:block;font:700 16px var(--font-barlow),sans-serif;color:#fbf8f1}
 .roundStepper small{font:500 12px var(--font-barlow),sans-serif;color:#c9a86e}
 
+/* Info / Pin Sheet tab: the PDF, then Open PDF. */
+.docView{display:grid;gap:12px;margin:8px 0 16px}
+.docFrame{width:100%;height:min(70svh,640px);border:1px solid rgba(201,168,110,.35);border-radius:14px;background:#fbf8f1}
+.docOpen{justify-self:center;text-decoration:none}
+
 /* Create page (light Play-a-round page): the rounds added so far, and the code once it's made. */
 .roundList{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:8px}
 .roundList li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:12px;background:#f6f0e6;font:500 14px/1.35 var(--font-barlow),sans-serif;color:#2b211d}

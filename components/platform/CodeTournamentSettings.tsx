@@ -1,25 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import { Check, ChevronLeft, ChevronRight, Copy, Plus, Share2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { Check, ChevronLeft, ChevronRight, Copy, ExternalLink, FileUp, Plus, Share2, Trash2 } from "lucide-react";
 import { AddRound } from "./CodeTournamentCreate";
 import { CutFields, cutSummary } from "./CodeTournamentCut";
 import { TeeSheetEditor } from "./CodeTournamentTeeSheet";
-import { formatCode, roundTeeSheet, type CodeTournament, type TournamentChange, type TournamentCut } from "@/lib/platform/codeTournaments";
+import { formatCode, roundTeeSheet, tournamentDocUrl, type CodeTournament, type TournamentChange, type TournamentCut, type TournamentDocKind } from "@/lib/platform/codeTournaments";
 import settingsStyles from "./GolfTripSettingsPreview.module.css";
 import styles from "./CodeTournament.module.css";
 
-type Panel = "Info" | "Rounds" | "Tee Sheet" | "Cut" | "Visibility";
-const CARDS: Panel[] = ["Info", "Rounds", "Tee Sheet", "Cut", "Visibility"];
+type Panel = "Info" | "Rounds" | "Tee Sheet" | "Cut" | "Info PDF" | "Pin Sheet" | "Visibility";
+const CARDS: Panel[] = ["Info", "Rounds", "Tee Sheet", "Cut", "Info PDF", "Pin Sheet", "Visibility"];
+/** What a PDF upload / removal reports back. */
+type Upload = (kind: TournamentDocKind, file: File | null) => Promise<{ ok: boolean; message?: string }>;
 const roundDate = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 
 /**
  * Tournament Settings (organizer only), opened from the settings wheel on the tournament page; the same look as Trip
  * Settings: a card for each part, each opening its own page. Info (join code, End tournament), Rounds (+ Add round),
- * Tee Sheet (each round's groups), Cut, and Public / Private (whether it shows in the Tourneys search and live feed).
+ * Tee Sheet (each round's groups), Cut, Info PDF and Pin Sheet (each uploaded PDF adds its own tab on the tournament page),
+ * and Public / Private (whether it shows in the Tourneys search and lists).
  * `act` sends a change (or applies it, for the simulator's sample); the page reloads the tournament after each one.
  */
-export function CodeTournamentSettings({ t, act, onClose }: { t: CodeTournament; act: (change: TournamentChange) => Promise<{ ok: boolean; message?: string }>; onClose: () => void }) {
+export function CodeTournamentSettings({ t, act, upload, onClose }: { t: CodeTournament; act: (change: TournamentChange) => Promise<{ ok: boolean; message?: string }>; upload: Upload; onClose: () => void }) {
   const [panel, setPanel] = useState<Panel | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -41,6 +44,8 @@ export function CodeTournamentSettings({ t, act, onClose }: { t: CodeTournament;
     Rounds: `${t.rounds.length} ${t.rounds.length === 1 ? "round" : "rounds"}`,
     "Tee Sheet": t.rounds.some((r) => r.teeSheet) ? "Set by you" : "Automatic foursomes",
     Cut: t.cut ? cutSummary(t.cut) : "No cut",
+    "Info PDF": t.infoPdf ? "Uploaded · shows an Info tab" : "None yet",
+    "Pin Sheet": t.pinSheetPdf ? "Uploaded · shows a Pin Sheet tab" : "None yet",
     Visibility: t.isPublic ? "Public" : "Private",
   };
 
@@ -78,6 +83,8 @@ export function CodeTournamentSettings({ t, act, onClose }: { t: CodeTournament;
           onSave={(round, teeSheet) => send({ action: "teeSheet", round, teeSheet }, "Couldn't save the tee sheet. Try again.")} />
         : panel === "Cut" ? <CutPanel t={t} live={live} onCancel={() => open(null)}
           onSave={async (cut) => { if (await send({ action: "cut", cut }, "Couldn't save the cut. Try again.")) open(null); }} />
+        : panel === "Info PDF" || panel === "Pin Sheet" ? <DocPanel kind={panel === "Info PDF" ? "info" : "pinSheet"} label={panel} path={panel === "Info PDF" ? t.infoPdf : t.pinSheetPdf}
+          onChange={async (kind, file) => { const result = await upload(kind, file); setProblem(result.ok ? null : result.message ?? "Couldn't save that. Try again."); return result.ok; }} />
         : <VisibilityPanel isPublic={Boolean(t.isPublic)} onChange={(isPublic) => send({ action: "public", isPublic }, "Couldn't change it. Try again.")} />}
     </div>
   </main>;
@@ -139,6 +146,27 @@ function CutPanel({ t, live, onCancel, onSave }: { t: CodeTournament; live: bool
       <button type="button" className={styles.organizerButton} onClick={onCancel}>Cancel</button>
       <button type="button" className={`${styles.organizerButton} ${styles.teeSave}`} disabled={draft === undefined || saving}
         onClick={async () => { setSaving(true); await onSave(draft ?? null); setSaving(false); }}>{saving ? "Saving…" : "Save cut"}</button>
+    </div>
+  </section>;
+}
+
+/** Info PDF / Pin Sheet: upload a PDF (it adds its tab on the tournament page), view it, replace it or remove it. */
+function DocPanel({ kind, label, path, onChange }: { kind: TournamentDocKind; label: string; path: string | null | undefined; onChange: (kind: TournamentDocKind, file: File | null) => Promise<boolean> }) {
+  const input = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState<"upload" | "remove" | null>(null);
+  const url = tournamentDocUrl(path);
+  const send = async (file: File | null) => { setBusy(file ? "upload" : "remove"); await onChange(kind, file); setBusy(null); };
+  return <section className={`${styles.settingsPanel} ${styles.cutEditor}`} aria-label={label}>
+    <p className={styles.cutBlurb}>{path
+      ? `Everyone in the tournament sees this PDF on the ${kind === "info" ? "Info" : "Pin Sheet"} tab.`
+      : `Upload a PDF (up to 10 MB) and a ${kind === "info" ? "Info" : "Pin Sheet"} tab appears on the tournament page${kind === "info" ? ", to the left of Leaderboard" : ""}.`}</p>
+    <input ref={input} type="file" accept="application/pdf" hidden onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ""; if (file) void send(file); }} />
+    <div className={styles.organizer}>
+      {url && <a className={styles.organizerButton} href={url} target="_blank" rel="noopener noreferrer"><ExternalLink size={15} aria-hidden="true" /> View PDF</a>}
+      <button type="button" className={`${styles.organizerButton} ${path ? "" : styles.teeSave}`} disabled={busy !== null} onClick={() => input.current?.click()}>
+        <FileUp size={15} aria-hidden="true" /> {busy === "upload" ? "Uploading…" : path ? "Replace PDF" : "Upload PDF"}</button>
+      {path && <button type="button" className={styles.organizerButton} disabled={busy !== null} onClick={() => { if (window.confirm(`Remove the ${label}? Its tab goes away.`)) void send(null); }}>
+        <Trash2 size={15} aria-hidden="true" /> {busy === "remove" ? "Removing…" : "Remove"}</button>}
     </div>
   </section>;
 }

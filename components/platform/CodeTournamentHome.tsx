@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Settings } from "lucide-react";
+import { ChevronLeft, ExternalLink, Settings } from "lucide-react";
 import { GolfRoundHeader, GolfTripLeaderboard } from "./GolfTripMatch";
 import { CodeTournamentTeeSheet } from "./CodeTournamentTeeSheet";
 import { GolfTripScoring } from "./GolfTripScoring";
 import { cutSummary } from "./CodeTournamentCut";
 import { CodeTournamentSettings } from "./CodeTournamentSettings";
-import { applyChange, cardFor, currentRound, cutFrom, cutLabel, cutStatus, submitted, tournamentPreview, type CodeRoundSetup, type CodeTournament, type TournamentChange } from "@/lib/platform/codeTournaments";
+import { applyChange, cardFor, currentRound, cutFrom, cutLabel, cutStatus, submitted, tournamentDocUrl, tournamentPreview, type CodeRoundSetup, type CodeTournament, type TournamentChange, type TournamentDocKind } from "@/lib/platform/codeTournaments";
 import type { SheetCard } from "@/lib/platform/liveCards";
 import type { ScoredCard } from "@/lib/platform/playerRounds";
 import homeStyles from "./GolfTripHome.module.css";
@@ -16,6 +16,7 @@ import styles from "./CodeTournament.module.css";
 
 /** How often the page checks for everyone else's scores. */
 const POLL_MS = 5000;
+type Section = "Info" | "Leaderboard" | "Tee Sheet" | "Pin Sheet";
 const today = () => new Date().toLocaleDateString("en-CA");
 type PostResult = { ok: boolean; message?: string };
 type Act = (body: TournamentChange) => Promise<PostResult>;
@@ -37,7 +38,7 @@ export function CodeTournamentHome({ id, meId, watchCode, publicView = false, sa
   const [problem, setProblem] = useState<string | null>(null);
   const [shown, setShown] = useState<number | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [section, setSection] = useState<"Leaderboard" | "Tee Sheet">("Leaderboard");
+  const [section, setSection] = useState<Section>("Leaderboard");
 
   const load = useCallback(async () => {
     if (sample) return;
@@ -72,9 +73,25 @@ export function CodeTournamentHome({ id, meId, watchCode, publicView = false, sa
   const index = t.rounds.findIndex((r) => r.number === round);
   const scoring = t.rounds.find((r) => r.number === scoringRound)!;
 
+  // Info PDF / Pin Sheet (Settings): uploaded or removed through the server; the sample keeps the picked file on this page.
+  const field = (kind: TournamentDocKind) => kind === "info" ? "infoPdf" : "pinSheetPdf";
+  async function upload(kind: TournamentDocKind, file: File | null): Promise<PostResult> {
+    if (sample) { setT((current) => current && { ...current, [field(kind)]: file ? URL.createObjectURL(file) : null }); return { ok: true }; }
+    const form = new FormData();
+    if (file) { form.set("kind", kind); form.set("file", file); }
+    const reply = await fetch(`/api/code-tournaments/${encodeURIComponent(t!.id)}/documents${file ? "" : `?kind=${kind}`}`, { method: file ? "POST" : "DELETE", body: file ? form : undefined })
+      .then(async (r) => ({ ...(await r.json().catch(() => ({}))) as PostResult, ok: r.ok })).catch(() => ({ ok: false, message: "No connection. Try again when you're back online." }));
+    if (reply.ok) await load();
+    return reply;
+  }
+
   // Tournament Settings: every change goes through the same `act`, then the page reloads the tournament.
-  if (settingsOpen && isOrganizer) return <CodeTournamentSettings t={t} onClose={() => setSettingsOpen(false)}
+  if (settingsOpen && isOrganizer) return <CodeTournamentSettings t={t} onClose={() => setSettingsOpen(false)} upload={upload}
     act={async (change) => { const result = await act(change); if (result.ok) await load(); return result; }} />;
+
+  // Info (left of Leaderboard) and Pin Sheet (after Tee Sheet) show once the organizer uploads their PDFs.
+  const sections: Section[] = [...(t.infoPdf ? ["Info" as const] : []), "Leaderboard", "Tee Sheet", ...(t.pinSheetPdf ? ["Pin Sheet" as const] : [])];
+  const tab: Section = sections.includes(section) ? section : "Leaderboard";
 
   // The cut line on the leaderboard; past the cut round, those who missed it show CUT. Missing the cut ends my scoring.
   const cut = cutStatus(t);
@@ -92,15 +109,25 @@ export function CodeTournamentHome({ id, meId, watchCode, publicView = false, sa
     <GolfRoundHeader match={preview} previousDisabled={index <= 0} nextDisabled={index >= t.rounds.length - 1}
       onPrevious={() => index > 0 && setShown(t.rounds[index - 1].number)} onNext={() => index < t.rounds.length - 1 && setShown(t.rounds[index + 1].number)} />
     <div className={`${homeStyles.tabs} ${homeStyles.sectionTabs}`} role="tablist" aria-label="Tournament sections">
-      {(["Leaderboard", "Tee Sheet"] as const).map((name) => <button key={name} type="button" role="tab" aria-selected={section === name}
-        className={`${homeStyles.tab} ${section === name ? homeStyles.tabActive : ""}`} onClick={() => setSection(name)}>{name}</button>)}
+      {sections.map((name) => <button key={name} type="button" role="tab" aria-selected={tab === name}
+        className={`${homeStyles.tab} ${tab === name ? homeStyles.tabActive : ""}`} onClick={() => setSection(name)}>{name}</button>)}
     </div>
-    {!t.players.length ? <p className={styles.status}>No players yet.{isOrganizer ? " Send the code (Settings → Info) to your players so they can join." : ""}</p>
-      : section === "Tee Sheet" ? <CodeTournamentTeeSheet t={t} round={round} match={preview} />
+    {tab === "Info" || tab === "Pin Sheet" ? <DocView title={tab} url={tournamentDocUrl(tab === "Info" ? t.infoPdf : t.pinSheetPdf)} />
+      : !t.players.length ? <p className={styles.status}>No players yet.{isOrganizer ? " Send the code (Settings → Info) to your players so they can join." : ""}</p>
+      : tab === "Tee Sheet" ? <CodeTournamentTeeSheet t={t} round={round} match={preview} />
       : <GolfTripLeaderboard key={`board-${round}`} match={preview} cut={cutLine || undefined} />}
     {playing && live && meId && outOfScoring && <p className={styles.status}>You missed the cut. Follow the rest of the tournament on the leaderboard.</p>}
     {playing && live && meId && !outOfScoring && <TournamentScoring key={`scoring-${scoringRound}`} t={t} act={act} meId={meId} round={scoringRound} setup={scoring.setup} onProblem={setProblem} onSaved={load} />}
   </main>;
+}
+
+/** The Info / Pin Sheet tab: the organizer's PDF on the page, and Open PDF (phones often show only its first page inline). */
+function DocView({ title, url }: { title: string; url: string | null }) {
+  if (!url) return <p className={styles.status}>This PDF isn&apos;t available right now.</p>;
+  return <section className={styles.docView} aria-label={title}>
+    <iframe src={url} title={title} className={styles.docFrame} />
+    <a className={`${styles.organizerButton} ${styles.docOpen}`} href={url} target="_blank" rel="noopener noreferrer"><ExternalLink size={15} aria-hidden="true" /> Open PDF</a>
+  </section>;
 }
 
 /** My scorecard for the round being played: every hole I enter goes to the tournament; Submit locks the card. */
