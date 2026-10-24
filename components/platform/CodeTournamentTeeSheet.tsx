@@ -86,7 +86,8 @@ function Dropdown<T extends string | number>({ label, value, options, onChange }
 export function CodeTournamentTeeSheet({ t, round, match }: { t: CodeTournament; round: number; match: GolfMatchPreview }) {
   const golfer = (id: string) => match.leaderboard[t.players.findIndex((p) => p.profileId === id)]?.golfer;
   const groups = roundTeeSheet(t, round).groups.map((g) => ({ time: teeTimeLabel(g.time), hole: g.hole, golfers: g.players.map(golfer).filter((x) => x !== undefined) }));
-  return <GolfTeeSheet match={match} groups={groups} />;
+  // Handicaps only matter in a net tournament.
+  return <GolfTeeSheet match={match} groups={groups} showHcp={t.scoring === "Net"} />;
 }
 
 /**

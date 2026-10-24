@@ -715,7 +715,9 @@ function teeSheet(match: GolfMatchPreview, sittingOut?: ReadonlySet<string>): [s
 }
 
 /** Under Overview (team only): the tee sheet — each tee time, then its players one per line with their handicaps. */
-export function GolfTeeSheet({ match, sittingOut, groups }: { match: GolfMatchPreview; sittingOut?: ReadonlySet<string>;
+export function GolfTeeSheet({ match, sittingOut, groups, showHcp = true }: { match: GolfMatchPreview; sittingOut?: ReadonlySet<string>;
+  /** Off for gross tournaments, where handicaps don't count. */
+  showHcp?: boolean;
   /** Set groups (tournaments by code): each group's tee time and starting hole, in place of grouping by tee time. */
   groups?: { time: string; hole: number; golfers: GolfMatchGolfer[] }[] }) {
   const teeTimes: [string, GolfMatchGolfer[], number?][] = groups ? groups.map(({ time, hole, golfers }) => [time, golfers, hole]) : teeSheet(match, sittingOut);
@@ -725,7 +727,7 @@ export function GolfTeeSheet({ match, sittingOut, groups }: { match: GolfMatchPr
       {teeTimes.map(([time, golfers, hole]) => <li key={`${time}-${hole}`} className={styles.teeSheetRow}>
         <span className={styles.teeSheetTime}>{time}{hole && <span className={styles.teeSheetHole}>Hole {hole}</span>}</span>
         <ul className={styles.teeSheetPlayers}>
-          {golfers.map(golfer => <li key={golfer.name}><span>{golfer.name}</span><span className={styles.teeSheetHcp}>HCP {golfer.hcp}</span></li>)}
+          {golfers.map(golfer => <li key={golfer.name}><span>{golfer.name}</span>{showHcp && <span className={styles.teeSheetHcp}>HCP {golfer.hcp}</span>}</li>)}
         </ul>
       </li>)}
     </ul> : <p className={styles.summaryNote}>No one is playing this round yet.</p>}
