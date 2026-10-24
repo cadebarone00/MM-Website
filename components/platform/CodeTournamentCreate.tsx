@@ -9,6 +9,7 @@ import { formatCode, type CodeRoundSetup } from "@/lib/platform/codeTournaments"
 import type { ScoringCourse } from "@/lib/platform/personalRound";
 import styles from "./PlayRound.module.css";
 import own from "./CodeTournament.module.css";
+import { InvitePlayersCard } from "./InvitePlayersCard";
 
 type NewRound = { setup: CodeRoundSetup; date: string };
 const today = () => new Date().toLocaleDateString("en-CA");
@@ -46,7 +47,7 @@ export function CodeTournamentCreate({ sample = false }: { sample?: boolean } = 
     setError(reply?.message ?? (reply === null ? "No connection. Try again when you're back online." : "Couldn't create the tournament. Try again."));
   }
 
-  if (made) return <CodeReady name={name.trim()} id={made.id} code={made.code} />;
+  if (made) return <CodeReady name={name.trim()} id={made.id} code={made.code} net={scoring === "Net"} sample={sample} />;
   const backFromRound = () => setAdding(false);
   if (adding) return <AddRound onCancel={backFromRound} onAdd={(round) => { setRounds((all) => [...all, round]); backFromRound(); }} />;
 
@@ -121,24 +122,30 @@ export function AddRound({ onCancel, onAdd, minDate }: { onCancel: () => void; o
   </main>;
 }
 
-/** After Create: the code, big, with Copy and Share, then into the tournament. */
-function CodeReady({ name, id, code }: { name: string; id: string; code: string }) {
+/**
+ * After Create, two cards: the code (Copy / Share, for anyone the organizer wants to send it to) and Invite players (a
+ * file of names and emails, emailed an invite each). Then into the tournament.
+ */
+function CodeReady({ name, id, code, net, sample }: { name: string; id: string; code: string; net: boolean; sample: boolean }) {
   const [copied, setCopied] = useState(false);
   const shown = formatCode(code);
   const message = `Join ${name} on The Maroon: open Tourneys and enter code ${shown}`;
   const copy = () => navigator.clipboard?.writeText(shown).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1800); }).catch(() => {});
   const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
   return <main className={styles.page}>
-    <section className={`${styles.panel} ${own.ready}`}>
-      <p className={styles.kicker}>Tournament created</p>
-      <h1 className={styles.title}>{name}</h1>
-      <p className={own.readyNote}>Send this code to your players. They open Tourneys in the app and enter it to join.</p>
-      <p className={own.bigCode} aria-label={`Join code ${shown.split("").join(" ")}`}>{shown}</p>
-      <div className={own.codeActions}>
-        <button type="button" className={styles.secondary} onClick={copy}>{copied ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />} {copied ? "Copied" : "Copy code"}</button>
-        {canShare && <button type="button" className={styles.secondary} onClick={() => navigator.share({ title: name, text: message }).catch(() => {})}><Share2 size={16} aria-hidden="true" /> Share</button>}
-      </div>
+    <div className={own.readyCards}>
+      <header className={own.readyHead}><p className={styles.kicker}>Tournament created</p><h1 className={styles.title}>{name}</h1></header>
+      <section className={`${styles.panel} ${own.readyCard} ${own.ready}`} aria-label="Tournament code">
+        <p className={styles.kicker}>Share the code</p>
+        <p className={own.readyCardNote}>Send it to anyone. They open Tourneys, tap Join a Tournament and enter it.</p>
+        <p className={`${own.bigCode} ${own.codeSmall}`} aria-label={`Join code ${shown.split("").join(" ")}`}>{shown}</p>
+        <div className={own.codeActions}>
+          <button type="button" className={styles.secondary} onClick={copy}>{copied ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />} {copied ? "Copied" : "Copy code"}</button>
+          {canShare && <button type="button" className={styles.secondary} onClick={() => navigator.share({ title: name, text: message }).catch(() => {})}><Share2 size={16} aria-hidden="true" /> Share</button>}
+        </div>
+      </section>
+      <InvitePlayersCard id={id} net={net} sample={sample} />
       <Link href={`/tournaments/code/${id}`} className={own.openButton}>Open tournament <ArrowRight size={16} aria-hidden="true" /></Link>
-    </section>
+    </div>
   </main>;
 }

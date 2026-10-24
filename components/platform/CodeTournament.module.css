@@ -109,6 +109,25 @@ div.tourneyTabs[role=tablist]::before,div.tourneyTabs[role=tablist]::after{flex-
 .bigCode{margin:8px 0;font:700 44px/1 var(--font-barlow),sans-serif;letter-spacing:.14em;color:#e8c98a}
 .codeActions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
 .addRound{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:46px;border:1.5px dashed #b99c6b;border-radius:12px;background:transparent;color:#591c2e;font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
+/* Created: the code card and the Invite players card. */
+.readyCards{display:grid;gap:14px;max-width:640px;margin:0 auto;padding:0 16px}
+.readyHead{text-align:center}
+.readyHead h1{margin:4px 0 0}
+.readyCard{width:100%;box-sizing:border-box;margin:0;padding:18px;border:1px solid rgba(201,168,110,.35);border-radius:18px;background:rgba(255,255,255,.04)}
+.readyCard .primary,.readyCard [class*=primary]{background:#e8c98a;color:#3b0d18}
+.readyCardNote{margin:6px 0 12px;font:500 14px/1.5 var(--font-barlow),sans-serif;color:#e8d7b2}
+.codeSmall{margin:4px 0 12px;font-size:30px}
+.readyCard .codeActions button{gap:6px}
+.dropZone{position:relative;display:grid;place-items:center;gap:8px;min-height:120px;padding:16px;border:1.5px dashed #b99c6b;border-radius:14px;color:#e8d7b2;font:600 14px/1.4 var(--font-barlow),sans-serif;text-align:center;cursor:pointer}
+.dropZone svg{color:#e8c98a}
+.dropZoneOn{border-color:#e8c98a;background:rgba(232,201,138,.08)}
+.dropInput{position:absolute;inset:0;opacity:0;cursor:pointer}
+.templateLink{display:inline-flex;align-items:center;gap:6px;margin:10px 0;padding:0;border:0;background:none;color:#e8c98a;font:600 13px var(--font-barlow),sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.importProblems{margin:0 0 12px;padding-left:18px;color:#e8a29a;font:500 13px/1.5 var(--font-barlow),sans-serif}
+.inviteLinks{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
+.inviteLinks li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,.08);font:600 14px var(--font-barlow),sans-serif;color:#fbf8f1}
+.inviteLinks small{display:block;color:#c9a86e;font-weight:500}
+.inviteLinks button{display:grid;place-items:center;width:36px;height:36px;border:1px solid rgba(201,168,110,.55);border-radius:50%;background:transparent;color:#fbf8f1;cursor:pointer}
 .readyNote{margin:0;font:500 15px/1.5 var(--font-barlow),sans-serif;color:#e8d7b2}
 .openButton{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;margin-top:6px;border-radius:14px;background:#e8c98a;color:#3b0d18;font:700 16px var(--font-barlow),sans-serif;text-decoration:none}
 /* A trip's watch code in Trip Settings → Players. */
