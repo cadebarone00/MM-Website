@@ -1,5 +1,5 @@
 import "server-only";
-import { createClient, type User } from "@supabase/supabase-js";
+import type { User } from "@supabase/supabase-js";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import type { ProfileId } from "./profileIdentity";
 import type { ProfileSetupInput } from "./profileEdit";
@@ -29,14 +29,8 @@ const missingFunction = (code?: string) => code === "PGRST202" || code === "4288
 
 /** The signed-in account for this request: a bearer access token (iOS / other clients) or the web cookie session. */
 export async function accountForRequest(request?: Request): Promise<User | null> {
-  const token = /^Bearer\s+(\S+)$/i.exec(request?.headers.get("authorization") ?? "")?.[1];
-  if (token) {
-    const client = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, { auth: { persistSession: false, autoRefreshToken: false } });
-    const { data, error } = await client.auth.getUser(token);
-    return error ? null : data.user;
-  }
-  const { data } = await (await createSupabaseServerClient()).auth.getUser();
-  return data.user ?? null;
+  const { data, error } = await (await createSupabaseServerClient(request)).auth.getUser();
+  return error ? null : data.user ?? null;
 }
 
 /** Create the profile for this (verified) account if it has none; finish an admin player invitation bound to it. */

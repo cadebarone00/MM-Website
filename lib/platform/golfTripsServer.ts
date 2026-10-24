@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { randomBytes } from "node:crypto";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { getCurrentProfile, notGolfer, tripProfileId } from "@/lib/profile/currentProfile";
+import { getCurrentProfile, notGolfer, tripProfileId, type CurrentProfile } from "@/lib/profile/currentProfile";
 import { initializeProfile } from "@/lib/profile/profileInitialization";
 import { acceptResultFromJson, declineResultFromJson, invitationPreviewFromJson, type AcceptInvitationResult, type DeclineInvitationResult, type InvitationPreview, type InviteInput } from "./golfTripInvitations.ts";
 import { membersForViewer } from "./golfTripMembers.ts";
@@ -23,7 +23,11 @@ export type GolfTripLoad =
 
 /** One saved trip plus the signed-in person's role on it. A stranger gets "not-found", same as a missing trip. */
 export const getGolfTrip = cache(async (tripId: string): Promise<GolfTripLoad> => {
-  const current = await getCurrentProfile();
+  return getGolfTripForProfile(tripId, await getCurrentProfile());
+});
+
+/** Server-only context from the verified identity boundary, never a client profile ID. */
+export async function getGolfTripForProfile(tripId: string, current: CurrentProfile): Promise<GolfTripLoad> {
   if (current.status === "signed-out") return { status: "signed-out" };
   // An account without a profile isn't on any trip. An unfinished profile may view a trip it accepted (Accounts V2).
   const profileId = tripProfileId(current);
@@ -36,7 +40,7 @@ export const getGolfTrip = cache(async (tripId: string): Promise<GolfTripLoad> =
   const trip = saved ? { ...saved, members: await withMemberPhotos(membersForViewer(saved.members, profileId), profileId) } : null;
   const viewer = trip ? golfTripViewer(trip, profileId) : null;
   return trip && viewer ? { status: "ok", trip, viewer } : { status: "not-found" };
-});
+}
 
 /**
  * Adds each accepted member's profile photo (profile_photos.sql). Same rule as the profile page: you always see your
@@ -79,7 +83,11 @@ export type UserGolfTrips =
 
 /** Every Golf Trip the signed-in person is on (organizer or member), soonest first: the data for My Trips. */
 export const getUserGolfTrips = cache(async (): Promise<UserGolfTrips> => {
-  const current = await getCurrentProfile();
+  return getUserGolfTripsForProfile(await getCurrentProfile());
+});
+
+/** Same loader as the browser list, with explicit request-scoped verified identity. */
+export async function getUserGolfTripsForProfile(current: CurrentProfile): Promise<UserGolfTrips> {
   if (current.status === "signed-out") return { status: "signed-out" };
   const profileId = tripProfileId(current);
   if (!profileId) return { status: "ok", trips: [] };
@@ -89,7 +97,7 @@ export const getUserGolfTrips = cache(async (): Promise<UserGolfTrips> => {
     return { status: "error" };
   }
   return { status: "ok", trips: golfTripSummaries(data) };
-});
+}
 
 // --- Invitations and membership (supabase/golf_trip_invitations.sql) -------------------------------------------
 
