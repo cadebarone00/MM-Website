@@ -9,7 +9,7 @@
   content: "";
   position: absolute;
   inset: 0 0 auto;
-  height: calc(45svh + var(--app-top-clearance, 0px));
+  height: calc(max(380px, 58svh) + var(--app-top-clearance, 0px));
   z-index: -1;
   background: linear-gradient(180deg, #1d0b1160, transparent 60%), url('/images/tourneys/course-hero.jpg') center 65% / cover no-repeat;
 }

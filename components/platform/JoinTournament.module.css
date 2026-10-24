@@ -195,4 +195,8 @@ a.actionBox:hover{background:var(--color-maroon-600)}
 @media (max-width: 340px) { .searchPanel { grid-template-columns: 1fr; } }
 /* Phones: the page's own top padding is reset (globals.css gives clearance to the header), so the card starts below the
    header here: its 68px row, the safe area, and a gap. */
-@media (max-width: 1023px) { .tourneys.page { padding-top: calc(92px + var(--app-top-clearance, 0px)); } }
+@media (max-width: 1023px) { .tourneys.page { padding-top: calc(max(190px, 30svh) + var(--app-top-clearance, 0px)); } }
+/* Live / Upcoming / Past Tournaments, one under the other. */
+.publicList { margin-top: 22px; }
+.publicListHeading { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; padding-bottom: 8px; border-bottom: 1px solid var(--tj-line); color: #ead8b8; font: 600 15px/1.3 var(--font-barlow), sans-serif; letter-spacing: .02em; }
+.publicListHeading small { min-width: 20px; padding: 1px 7px; border-radius: 999px; background: #ffffff18; color: var(--tj-muted); font-size: 11px; text-align: center; }

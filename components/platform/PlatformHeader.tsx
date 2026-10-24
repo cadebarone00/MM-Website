@@ -3,7 +3,8 @@ import { Menu, UserRound } from "lucide-react";
 import { SignInRequiredLink } from "./SignInRequiredLink";
 import styles from "./PlatformEntry.module.css";
 
-/** Page titles share the navigation row, immediately beside the menu. */
+/** Page titles share the navigation row, immediately beside the menu. Phones show only the title: their bottom menu
+ *  replaces the menu and account buttons (PlatformEntry.module.css). */
 export function PlatformHeader({ home = false, wordmark = true, title }: { home?: boolean; wordmark?: boolean; title?: string }) {
   return <header className={`${styles.header} ${home ? styles.homeHeader : ""}`}>
     <div className={styles.headerInner}>

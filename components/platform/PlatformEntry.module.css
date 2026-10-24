@@ -21,3 +21,11 @@
 .story{margin-bottom:28px;background:#fffdf9;border:1px solid #dfd3ba}.story a{display:block}.storyImage{position:relative;aspect-ratio:16/8;overflow:hidden}.storyCopy{padding:22px}.storyCopy .eyebrow{text-align:left}.storyCopy h3{display:flex;align-items:center;justify-content:space-between;gap:12px;font:500 26px var(--font-spectral),Georgia,serif;margin:10px 0}.storyCopy>p:last-child{font-size:14px;line-height:1.7;color:#6e645b;margin:0}.footer{display:flex;justify-content:center;flex-wrap:wrap;gap:8px 24px;border-top:1px solid #dfd3ba;padding:16px 0;font-size:12px;color:#6e645b}.footer a{padding:12px 0}
 .home a:focus-visible,.home summary:focus-visible{outline:3px solid #806331;outline-offset:4px}.login:hover,.join summary:hover,.joinLink:hover{background:#f5efe2}.primary:hover{background:#380001}
 @media(max-width:400px){.home{padding:24px 16px 16px}.headerInner{min-height:64px;padding:0 12px}.actions{padding:22px 18px}.intro{font-size:16px}.storyCopy{padding:18px}}
+
+/* Phones have the bottom menu (Play, Golf Trips, Profile, Tourneys, Pick'ems), so the header's menu and account buttons
+   go (owner request 2026-10-23); wide screens have no bottom menu and keep them. */
+@media (max-width: 1023px) {
+  .menu, .account { display: none; }
+  .headerInner { grid-template-columns: 1fr; }
+  .pageTitle { margin-left: 0; }
+}
