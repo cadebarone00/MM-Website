@@ -20,10 +20,12 @@ function swapIds<T>(value: T, ids: Map<string, string>): T {
   return JSON.parse(text) as T;
 }
 
-/** A tournament for spectators: players as p1, p2…; no join code, no organizer id. */
+/** A tournament for spectators: players as p1, p2…; no join code, no organizer id, no Info PDF or tee sheets (players only). */
 export function spectatorTournament(t: CodeTournament): CodeTournament {
   const ids = new Map(t.players.map((p, i) => [p.profileId, `p${i + 1}`]));
-  const shown: CodeTournament = { ...t, code: "", organizer: "", players: t.players.map((p) => ({ ...p, username: null })) };
+  // Info and the tee sheets are for players only.
+  const shown: CodeTournament = { ...t, code: "", organizer: "", infoPdf: null, players: t.players.map((p) => ({ ...p, username: null })),
+    rounds: t.rounds.map((r) => ({ ...r, teeSheet: null })) };
   delete shown.watchCode;
   return swapIds(shown, ids);
 }

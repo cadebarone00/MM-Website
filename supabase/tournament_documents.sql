@@ -1,29 +1,35 @@
 -- supabase/tournament_documents.sql
--- Tournament PDFs (by code): the organizer uploads an Info PDF and a Pin Sheet in Tournament Settings. Each one that's
--- uploaded adds its own tab on the tournament page (Info to the left of Leaderboard, Pin Sheet after Tee Sheet).
+-- Tournament PDFs (by code): the organizer uploads an Info PDF (one per tournament) and a Pin Sheet for each round in
+-- Tournament Settings. Each adds its tab on the tournament page (Info to the left of Leaderboard, players only; Pin
+-- Sheet after Tee Sheet, showing the round being viewed).
 --
 -- Files live in the public-read "tournament-docs" bucket at <tournament id>/<kind>-<random>.pdf (the random part keeps a
--- private tournament's files unguessable); code_tournaments.info_pdf / pin_sheet_pdf point at the current ones.
+-- private tournament's files unguessable); code_tournaments.info_pdf and code_tournament_rounds.pin_sheet_pdf point at
+-- the current ones.
 -- Nobody uploads from the browser: the server checks the organizer, the file type (PDF) and size (10 MB), then uploads
 -- with the service-role key (lib/platform/tournamentDocuments.ts, app/api/code-tournaments/[id]/documents/route.ts).
 --
 -- Prerequisites: tournament_codes.sql, tournament_tee_sheets.sql, tournament_cuts.sql, tournament_public.sql.
 -- Safe to run more than once.
--- Undo: alter table public.code_tournaments drop column info_pdf, drop column pin_sheet_pdf;
---       drop function public.set_code_tournament_document(uuid, uuid, text, text); then re-run tournament_public.sql
+-- Undo: alter table public.code_tournaments drop column info_pdf; alter table public.code_tournament_rounds drop column pin_sheet_pdf;
+--       drop function public.set_code_tournament_document(uuid, uuid, text, integer, text); then re-run tournament_public.sql
 --       (get_code_tournament without the PDFs), and delete the bucket in Storage.
 
 begin;
 
 alter table public.code_tournaments add column if not exists info_pdf text check (info_pdf is null or length(info_pdf) between 1 and 300);
-alter table public.code_tournaments add column if not exists pin_sheet_pdf text check (pin_sheet_pdf is null or length(pin_sheet_pdf) between 1 and 300);
+alter table public.code_tournament_rounds add column if not exists pin_sheet_pdf text check (pin_sheet_pdf is null or length(pin_sheet_pdf) between 1 and 300);
+-- An earlier version kept one pin sheet for the whole tournament.
+alter table public.code_tournaments drop column if exists pin_sheet_pdf;
+drop function if exists public.set_code_tournament_document(uuid, uuid, text, text);
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('tournament-docs', 'tournament-docs', true, 10485760, array['application/pdf'])
 on conflict (id) do update set public = true, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 
--- Only the organizer sets (or, with null, removes) a PDF. Returns the path it replaced, so the server can delete that file.
-create or replace function public.set_code_tournament_document(p_organizer uuid, p_tournament uuid, p_kind text, p_path text)
+-- Only the organizer sets (or, with null, removes) a PDF: the Info PDF, or round `p_round`'s Pin Sheet. Returns the path
+-- it replaced, so the server can delete that file.
+create or replace function public.set_code_tournament_document(p_organizer uuid, p_tournament uuid, p_kind text, p_round integer, p_path text)
 returns text language plpgsql security definer set search_path = public as $$
 declare v_old text;
 begin
@@ -33,8 +39,9 @@ begin
     select info_pdf into v_old from code_tournaments where id = p_tournament;
     update code_tournaments set info_pdf = p_path where id = p_tournament;
   else
-    select pin_sheet_pdf into v_old from code_tournaments where id = p_tournament;
-    update code_tournaments set pin_sheet_pdf = p_path where id = p_tournament;
+    select pin_sheet_pdf into v_old from code_tournament_rounds where tournament_id = p_tournament and number = p_round;
+    update code_tournament_rounds set pin_sheet_pdf = p_path where tournament_id = p_tournament and number = p_round;
+    if not found then raise exception 'That round isn''t in this tournament.' using errcode = '22023'; end if;
   end if;
   return v_old;
 end $$;
@@ -44,8 +51,8 @@ create or replace function public.get_code_tournament(p_profile uuid, p_tourname
 returns jsonb language sql stable security definer set search_path = public as $$
   select case when not code_tournament_is_member(p_profile, t.id) then null else jsonb_build_object(
     'id', t.id, 'code', t.code, 'name', t.name, 'organizer', t.organizer, 'organizerPlays', t.organizer_plays, 'scoring', t.scoring,
-    'status', t.status, 'createdAt', t.created_at, 'cut', t.cut, 'isPublic', t.is_public, 'infoPdf', t.info_pdf, 'pinSheetPdf', t.pin_sheet_pdf,
-    'rounds', (select coalesce(jsonb_agg(jsonb_build_object('number', r.number, 'setup', r.setup, 'date', r.round_date, 'teeSheet', r.tee_sheet) order by r.number), '[]'::jsonb)
+    'status', t.status, 'createdAt', t.created_at, 'cut', t.cut, 'isPublic', t.is_public, 'infoPdf', t.info_pdf,
+    'rounds', (select coalesce(jsonb_agg(jsonb_build_object('number', r.number, 'setup', r.setup, 'date', r.round_date, 'teeSheet', r.tee_sheet, 'pinSheetPdf', r.pin_sheet_pdf) order by r.number), '[]'::jsonb)
                from code_tournament_rounds r where r.tournament_id = t.id),
     'players', (select coalesce(jsonb_agg(jsonb_build_object('profileId', p.profile_id, 'name', pr.display_name, 'username', pr.username, 'handicap', p.handicap) order by p.joined_at), '[]'::jsonb)
                 from code_tournament_players p join profiles pr on pr.id = p.profile_id where p.tournament_id = t.id),
@@ -57,8 +64,8 @@ returns jsonb language sql stable security definer set search_path = public as $
   from code_tournaments t where t.id = p_tournament;
 $$;
 
-revoke all on function public.set_code_tournament_document(uuid, uuid, text, text) from public, anon, authenticated;
-grant execute on function public.set_code_tournament_document(uuid, uuid, text, text) to service_role;
+revoke all on function public.set_code_tournament_document(uuid, uuid, text, integer, text) from public, anon, authenticated;
+grant execute on function public.set_code_tournament_document(uuid, uuid, text, integer, text) to service_role;
 revoke all on function public.get_code_tournament(uuid, uuid) from public, anon, authenticated;
 grant execute on function public.get_code_tournament(uuid, uuid) to service_role;
 

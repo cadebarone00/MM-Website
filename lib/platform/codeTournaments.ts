@@ -18,11 +18,11 @@ export interface CodeTournament {
   cut?: TournamentCut | null;
   /** Shown in the Tourneys search and live feed (supabase/tournament_public.sql); new tournaments start private. */
   isPublic?: boolean;
-  /** The organizer's PDFs (supabase/tournament_documents.sql): storage paths, or (simulator sample) a local file's address.
-   *  Each one adds its tab on the tournament page. */
+  /** The organizer's Info PDF (supabase/tournament_documents.sql): a storage path, or (simulator sample) a local file's
+   *  address. Adds the Info tab (players only). */
   infoPdf?: string | null;
-  pinSheetPdf?: string | null;
-  rounds: { number: number; setup: CodeRoundSetup; date: string; /** Set by the organizer (supabase/tournament_tee_sheets.sql); none = automatic foursomes. */ teeSheet?: TeeSheet | null }[];
+  rounds: { number: number; setup: CodeRoundSetup; date: string; /** Set by the organizer (supabase/tournament_tee_sheets.sql); none = automatic foursomes. */ teeSheet?: TeeSheet | null;
+    /** This round's Pin Sheet PDF, like `infoPdf` (supabase/tournament_documents.sql). */ pinSheetPdf?: string | null }[];
   players: { profileId: string; name: string; username: string | null; handicap: number | null }[];
   holes: { profileId: string; round: number; hole: number; strokes: number }[];
   cards: { profileId: string; round: number; submittedAt: string }[];
@@ -35,7 +35,7 @@ export interface CodeTournamentLookup {
   id: string; name: string; status: "live" | "ended"; scoring: "Gross" | "Net"; organizerName: string; member: boolean; playerCount: number;
   rounds: { number: number; course: string; date: string }[];
 }
-/** The organizer's two PDFs: the Info PDF (an Info tab) and the Pin Sheet (a Pin Sheet tab). */
+/** The organizer's PDFs: the Info PDF (an Info tab) and each round's Pin Sheet (a Pin Sheet tab). */
 export type TournamentDocKind = "info" | "pinSheet";
 export const TOURNAMENT_DOCS_BUCKET = "tournament-docs";
 /** Where a tournament PDF opens: its public storage address (a sample's local file address as it is). */

@@ -74,12 +74,16 @@ export function CodeTournamentHome({ id, meId, watchCode, publicView = false, sa
   const scoring = t.rounds.find((r) => r.number === scoringRound)!;
 
   // Info PDF / Pin Sheet (Settings): uploaded or removed through the server; the sample keeps the picked file on this page.
-  const field = (kind: TournamentDocKind) => kind === "info" ? "infoPdf" : "pinSheetPdf";
-  async function upload(kind: TournamentDocKind, file: File | null): Promise<PostResult> {
-    if (sample) { setT((current) => current && { ...current, [field(kind)]: file ? URL.createObjectURL(file) : null }); return { ok: true }; }
+  // A pin sheet belongs to one round (`round`); the Info PDF to the whole tournament.
+  async function upload(kind: TournamentDocKind, file: File | null, round?: number): Promise<PostResult> {
+    if (sample) {
+      const value = file ? URL.createObjectURL(file) : null;
+      setT((current) => current && (kind === "info" ? { ...current, infoPdf: value } : { ...current, rounds: current.rounds.map((r) => r.number === round ? { ...r, pinSheetPdf: value } : r) }));
+      return { ok: true };
+    }
     const form = new FormData();
-    if (file) { form.set("kind", kind); form.set("file", file); }
-    const reply = await fetch(`/api/code-tournaments/${encodeURIComponent(t!.id)}/documents${file ? "" : `?kind=${kind}`}`, { method: file ? "POST" : "DELETE", body: file ? form : undefined })
+    if (file) { form.set("kind", kind); if (round) form.set("round", String(round)); form.set("file", file); }
+    const reply = await fetch(`/api/code-tournaments/${encodeURIComponent(t!.id)}/documents${file ? "" : `?kind=${kind}${round ? `&round=${round}` : ""}`}`, { method: file ? "POST" : "DELETE", body: file ? form : undefined })
       .then(async (r) => ({ ...(await r.json().catch(() => ({}))) as PostResult, ok: r.ok })).catch(() => ({ ok: false, message: "No connection. Try again when you're back online." }));
     if (reply.ok) await load();
     return reply;
@@ -89,8 +93,12 @@ export function CodeTournamentHome({ id, meId, watchCode, publicView = false, sa
   if (settingsOpen && isOrganizer) return <CodeTournamentSettings t={t} onClose={() => setSettingsOpen(false)} upload={upload}
     act={async (change) => { const result = await act(change); if (result.ok) await load(); return result; }} />;
 
-  // Info (left of Leaderboard) and Pin Sheet (after Tee Sheet) show once the organizer uploads their PDFs.
-  const sections: Section[] = [...(t.infoPdf ? ["Info" as const] : []), "Leaderboard", "Tee Sheet", ...(t.pinSheetPdf ? ["Pin Sheet" as const] : [])];
+  // Info (left of Leaderboard) shows once the organizer uploads it, and Pin Sheet (after Tee Sheet) once any round has
+  // one (it shows the round being viewed). Info and Tee Sheet are for people in the tournament, not spectators.
+  const member = !spectating;
+  const pinSheet = t.rounds.find((r) => r.number === round)?.pinSheetPdf ?? null;
+  const sections: Section[] = [...(member && t.infoPdf ? ["Info" as const] : []), "Leaderboard", ...(member ? ["Tee Sheet" as const] : []),
+    ...(t.rounds.some((r) => r.pinSheetPdf) ? ["Pin Sheet" as const] : [])];
   const tab: Section = sections.includes(section) ? section : "Leaderboard";
 
   // The cut line on the leaderboard; past the cut round, those who missed it show CUT. Missing the cut ends my scoring.
@@ -112,7 +120,9 @@ export function CodeTournamentHome({ id, meId, watchCode, publicView = false, sa
       {sections.map((name) => <button key={name} type="button" role="tab" aria-selected={tab === name}
         className={`${homeStyles.tab} ${tab === name ? homeStyles.tabActive : ""}`} onClick={() => setSection(name)}>{name}</button>)}
     </div>
-    {tab === "Info" || tab === "Pin Sheet" ? <DocView title={tab} url={tournamentDocUrl(tab === "Info" ? t.infoPdf : t.pinSheetPdf)} />
+    {tab === "Info" ? <DocView title="Info" url={tournamentDocUrl(t.infoPdf)} />
+      : tab === "Pin Sheet" ? pinSheet ? <DocView key={round} title={`Round ${round} pin sheet`} url={tournamentDocUrl(pinSheet)} />
+        : <p className={styles.status}>No pin sheet for Round {round} yet.</p>
       : !t.players.length ? <p className={styles.status}>No players yet.{isOrganizer ? " Send the code (Settings → Info) to your players so they can join." : ""}</p>
       : tab === "Tee Sheet" ? <CodeTournamentTeeSheet t={t} round={round} match={preview} />
       : <GolfTripLeaderboard key={`board-${round}`} match={preview} cut={cutLine || undefined} />}
