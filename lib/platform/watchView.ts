@@ -24,7 +24,7 @@ function swapIds<T>(value: T, ids: Map<string, string>): T {
 export function spectatorTournament(t: CodeTournament): CodeTournament {
   const ids = new Map(t.players.map((p, i) => [p.profileId, `p${i + 1}`]));
   // Info and the tee sheets are for players only.
-  const shown: CodeTournament = { ...t, code: "", organizer: "", infoPdf: null, players: t.players.map((p) => ({ ...p, username: null })),
+  const shown: CodeTournament = { ...t, code: "", organizer: "", infoPdf: null, attests: [], players: t.players.map((p) => ({ ...p, username: null })),
     rounds: t.rounds.map((r) => ({ ...r, teeSheet: null })) };
   delete shown.watchCode;
   return swapIds(shown, ids);

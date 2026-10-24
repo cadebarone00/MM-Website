@@ -33,6 +33,9 @@ export const listMyCodeTournaments = (me: string) => rpc<MyCodeTournament[]>("li
 export const setCodeTournamentStrokes = (me: string, id: string, round: number, hole: number, strokes: number | null) =>
   rpc<null>("set_code_tournament_strokes", { p_profile: me, p_tournament: id, p_round: round, p_hole: hole, p_strokes: strokes });
 export const submitCodeTournamentCard = (me: string, id: string, round: number) => rpc<null>("submit_code_tournament_card", { p_profile: me, p_tournament: id, p_round: round });
+/** supabase/tournament_attests.sql: what I (the attester) entered for the player I keep score for; null strokes clears it. */
+export const setCodeTournamentAttest = (attester: string, id: string, round: number, player: string, hole: number, strokes: number | null) =>
+  rpc<null>("set_code_tournament_attest", { p_attester: attester, p_tournament: id, p_round: round, p_player: player, p_hole: hole, p_strokes: strokes });
 /** supabase/tournament_public.sql: public or private; the public ones (words in the name, course or place; a round's date). */
 export const setCodeTournamentPublic = (organizer: string, id: string, isPublic: boolean) =>
   rpc<null>("set_code_tournament_public", { p_organizer: organizer, p_tournament: id, p_public: isPublic });

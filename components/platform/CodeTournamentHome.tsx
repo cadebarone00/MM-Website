@@ -8,7 +8,7 @@ import { CodeTournamentTeeSheet } from "./CodeTournamentTeeSheet";
 import { GolfTripScoring } from "./GolfTripScoring";
 import { cutSummary } from "./CodeTournamentCut";
 import { CodeTournamentSettings } from "./CodeTournamentSettings";
-import { applyChange, cardFor, currentRound, cutFrom, cutLabel, cutStatus, submitted, tournamentDocUrl, tournamentPreview, type CodeRoundSetup, type CodeTournament, type TournamentChange, type TournamentDocKind } from "@/lib/platform/codeTournaments";
+import { applyChange, attestCard, attestPairs, cardFor, currentRound, cutFrom, cutLabel, cutStatus, submitted, tournamentDocUrl, tournamentPreview, type CodeRoundSetup, type CodeTournament, type TournamentChange, type TournamentDocKind } from "@/lib/platform/codeTournaments";
 import type { SheetCard } from "@/lib/platform/liveCards";
 import type { ScoredCard } from "@/lib/platform/playerRounds";
 import homeStyles from "./GolfTripHome.module.css";
@@ -135,7 +135,7 @@ export function CodeTournamentHome({ id, meId, watchCode, publicView = false, sa
       : tab === "Tee Sheet" ? <CodeTournamentTeeSheet t={t} round={round} match={preview} />
       : <GolfTripLeaderboard key={`board-${round}`} match={preview} cut={cutLine || undefined} />}
     {playing && live && meId && outOfScoring && <p className={styles.status}>You missed the cut. Follow the rest of the tournament on the leaderboard.</p>}
-    {playing && live && meId && !outOfScoring && <TournamentScoring key={`scoring-${scoringRound}`} t={t} act={act} meId={meId} round={scoringRound} setup={scoring.setup} onProblem={setProblem} onSaved={load} />}
+    {playing && live && meId && !outOfScoring && <TournamentScoring key={`scoring-${scoringRound}`} t={t} act={act} meId={meId} round={scoringRound} setup={scoring.setup} sample={Boolean(sample)} onProblem={setProblem} onSaved={load} />}
   </main>;
 }
 
@@ -148,21 +148,44 @@ function DocView({ title, url }: { title: string; url: string | null }) {
   </section>;
 }
 
-/** My scorecard for the round being played: every hole I enter goes to the tournament; Submit locks the card. */
-function TournamentScoring({ t, act, meId, round, setup, onProblem, onSaved }: { t: CodeTournament; act: Act; meId: string; round: number; setup: CodeRoundSetup; onProblem: (text: string | null) => void; onSaved: () => Promise<void> }) {
+/** The scoring sheet compares all 18 holes, so a nine-hole card is padded with empty holes. */
+const toEighteen = (card: (number | null)[]) => Array.from({ length: 18 }, (_, i) => card[i] ?? null);
+
+/**
+ * My scorecard for the round being played: every hole I enter goes to the tournament; Submit locks the card. Attesting
+ * works like golf trips: the second column is the player I keep score for this round (from the tee sheet), and what I
+ * enter there goes to the tournament too. My name turns green once my attester's entries match mine (red where they
+ * don't), and Submit & Save waits for that; the column I keep is checked against that player's own card (never blocks
+ * me). A single in their group has no attester and scores alone. `sample` (simulator): no real attester, so Submit opens.
+ */
+function TournamentScoring({ t, act, meId, round, setup, sample, onProblem, onSaved }: { t: CodeTournament; act: Act; meId: string; round: number; setup: CodeRoundSetup; sample: boolean; onProblem: (text: string | null) => void; onSaved: () => Promise<void> }) {
   const holes = setup.course.par.length;
   const mine = cardFor(t, meId, round);
   const locked = submitted(t, meId, round);
-  // What the tournament has for me, hole by hole, plus what I've sent since (so a hole isn't sent twice).
+  const pairs = attestPairs(t, round);
+  const attesteeId = pairs.attesteeOf(meId), attesterId = pairs.attesterOf(meId);
+  const attestee = t.players.find((p) => p.profileId === attesteeId) ?? null;
+  // What the tournament has for me (and for the player I keep), plus what I've sent since (so a hole isn't sent twice).
   const sent = useRef<(number | null)[]>(mine);
-  const [initialHoles] = useState(() => mine);
+  const sentAttest = useRef<(number | null)[]>(attesteeId ? attestCard(t, meId, attesteeId, round) : []);
+  const [start] = useState(() => ({ holes: mine, opponentHoles: attesteeId ? attestCard(t, meId, attesteeId, round) : [], putts: mine.map(() => null), fairways: mine.map(() => null), greens: mine.map(() => null), penalties: mine.map(() => ({ fairway: false, green: false })) }));
   const sending = useRef<Promise<unknown>>(Promise.resolve());
-  const send = (hole: number, strokes: number | null) => {
-    sent.current[hole] = strokes;
-    sending.current = sending.current.then(() => act({ action: "strokes", round, hole: hole + 1, strokes })
+  const queue = (change: TournamentChange) => {
+    sending.current = sending.current.then(() => act(change)
       .then((result) => onProblem(result.ok ? null : result.message ?? "A score didn't save. It will try again when you change it.")));
   };
+  const send = (hole: number, strokes: number | null) => { sent.current[hole] = strokes; queue({ action: "strokes", round, hole: hole + 1, strokes }); };
   const onCardChange = (card: SheetCard) => card.strokes.forEach((s, h) => { if (h < holes && s !== sent.current[h]) send(h, s); });
+  // My column for the player I keep: each hole I've entered (an untouched hole sends nothing).
+  const onAttestChange = (strokes: (number | null)[], entered: boolean[]) => {
+    if (!attesteeId) return;
+    strokes.forEach((s, h) => {
+      const value = entered[h] ? s : null;
+      if (h >= holes || value === (sentAttest.current[h] ?? null)) return;
+      sentAttest.current[h] = value;
+      queue({ action: "attest", round, player: attesteeId, hole: h + 1, strokes: value });
+    });
+  };
   async function onSubmit(card: ScoredCard) {
     card.strokes.forEach((s, h) => { if (h < holes && s && s !== sent.current[h]) send(h, s); });
     await sending.current;
@@ -170,12 +193,10 @@ function TournamentScoring({ t, act, meId, round, setup, onProblem, onSaved }: {
     if (result.ok) await onSaved();
     return result.ok ? { ok: true } : { ok: false, message: result.message ?? "Couldn't submit. Try again." };
   }
-  // My attestor sits beside my score: the next player in the field (look only for now; their entries stay on this screen).
-  const others = t.players.filter((player) => player.profileId !== meId && !cutFrom(t, player.profileId, round));
-  const attestor = others.length ? others[(t.players.findIndex((player) => player.profileId === meId) + others.length) % others.length] : null;
-  const [attestorStrokes, setAttestorStrokes] = useState(() => attestor ? cardFor(t, attestor.profileId, round) : []);
   const submittedCard: ScoredCard | undefined = locked ? { strokes: mine.map((s) => s ?? 0), putts: mine.map(() => null), fairways: mine.map(() => null), greens: mine.map(() => null), penalties: mine.map(() => ({ fairway: false, green: false })) } : undefined;
-  return <GolfTripScoring solo stats={false} gps={false} parIsReference holeRange={[0, holes]} par={setup.course.par} courseName={setup.course.name}
-    initialHoles={initialHoles} submittedCard={submittedCard} onCardChange={onCardChange} onSubmit={onSubmit}
-    group={attestor ? { names: [attestor.name], strokes: [attestorStrokes], onChange: ([strokes]) => setAttestorStrokes(strokes) } : undefined} />;
+  return <GolfTripScoring solo={!attestee} stats={false} gps={false} parIsReference holeRange={[0, holes]} par={setup.course.par} courseName={setup.course.name}
+    playerName={t.players.find((p) => p.profileId === meId)?.name ?? "You"} attesteeName={attestee?.name} savedCard={start}
+    submittedCard={submittedCard} onCardChange={onCardChange} onSubmit={onSubmit} onAttestChange={onAttestChange}
+    attestedStrokes={attesterId ? toEighteen(attestCard(t, attesterId, meId, round)) : undefined} attesteeStrokes={attesteeId ? toEighteen(cardFor(t, attesteeId, round)) : undefined}
+    opponentCardMatches={sample || !attesterId} />;
 }

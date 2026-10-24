@@ -25,6 +25,8 @@ export interface CodeTournament {
     /** This round's Pin Sheet PDF, like `infoPdf` (supabase/tournament_documents.sql). */ pinSheetPdf?: string | null }[];
   players: { profileId: string; name: string; username: string | null; handicap: number | null }[];
   holes: { profileId: string; round: number; hole: number; strokes: number }[];
+  /** What each attester entered for the player they keep score for (supabase/tournament_attests.sql). */
+  attests?: { attester: string; player: string; round: number; hole: number; strokes: number }[];
   cards: { profileId: string; round: number; submittedAt: string }[];
 }
 /** What a code shows before joining. */
@@ -69,6 +71,32 @@ export function cardFor(t: CodeTournament, profileId: string, round: number): (n
   return holes;
 }
 export const submitted = (t: CodeTournament, profileId: string, round: number) => t.cards.some((c) => c.profileId === profileId && c.round === round);
+
+/**
+ * Who attests whom in a round, like golf trips: each player keeps score for the next player in their tee sheet group,
+ * around the group (A keeps B, B keeps C … the last keeps A); a twosome keeps each other; a single has no attester.
+ */
+export function attestPairs(t: CodeTournament, round: number): { attesteeOf: (id: string) => string | null; attesterOf: (id: string) => string | null } {
+  const next = new Map<string, string>();
+  for (const { players } of roundTeeSheet(t, round).groups) if (players.length > 1) players.forEach((id, i) => next.set(id, players[(i + 1) % players.length]));
+  const before = new Map([...next].map(([attester, player]) => [player, attester]));
+  return { attesteeOf: (id) => next.get(id) ?? null, attesterOf: (id) => before.get(id) ?? null };
+}
+
+/** What `attester` entered for `player` on a round, hole by hole (null = not entered). */
+export function attestCard(t: CodeTournament, attester: string, player: string, round: number): (number | null)[] {
+  const holes: (number | null)[] = (t.rounds.find((r) => r.number === round)?.setup.course.par ?? []).map(() => null);
+  for (const a of t.attests ?? []) if (a.attester === attester && a.player === player && a.round === round && a.hole <= holes.length) holes[a.hole - 1] = a.strokes;
+  return holes;
+}
+
+/** Can this card be submitted as far as attesting goes: no attester this round, or theirs matches mine on every hole. */
+export function attestAgrees(t: CodeTournament, player: string, round: number): boolean {
+  const attester = attestPairs(t, round).attesterOf(player);
+  if (!attester) return true;
+  const mine = cardFor(t, player, round), theirs = attestCard(t, attester, player, round);
+  return mine.every((s, i) => s !== null && s === theirs[i]);
+}
 
 /** The round to score now: the one dated today, else the first I haven't submitted, else the last. */
 export function currentRound(t: CodeTournament, profileId: string | null, today: string): number {
@@ -240,11 +268,16 @@ export function tournamentPreview(t: CodeTournament, shown: number): GolfMatchPr
 
 /** One change a player or organizer makes (the POST body for /api/code-tournaments/<id>). */
 export type TournamentChange = { action: "strokes"; round: number; hole: number; strokes: number | null } | { action: "submit"; round: number }
+  | { action: "attest"; round: number; player: string; hole: number; strokes: number | null }
   | { action: "addRound"; setup: CodeRoundSetup; date: string } | { action: "teeSheet"; round: number; teeSheet: TeeSheet } | { action: "cut"; cut: TournamentCut | null } | { action: "public"; isPublic: boolean } | { action: "end" };
 
 /** The tournament after a change, as the database would make it (the app simulator's sample tournament uses this). */
 export function applyChange(t: CodeTournament, me: string, change: TournamentChange): CodeTournament {
   switch (change.action) {
+    case "attest": {
+      const attests = (t.attests ?? []).filter((a) => !(a.attester === me && a.player === change.player && a.round === change.round && a.hole === change.hole));
+      return { ...t, attests: change.strokes === null ? attests : [...attests, { attester: me, player: change.player, round: change.round, hole: change.hole, strokes: change.strokes }] };
+    }
     case "strokes": {
       const holes = t.holes.filter((h) => !(h.profileId === me && h.round === change.round && h.hole === change.hole));
       return { ...t, holes: change.strokes === null ? holes : [...holes, { profileId: me, round: change.round, hole: change.hole, strokes: change.strokes }] };

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { addCodeTournamentRound, endCodeTournament, getCodeTournament, setCodeTournamentCut, setCodeTournamentPublic, setCodeTournamentStrokes, setCodeTournamentTeeSheet, submitCodeTournamentCard } from "@/lib/platform/codeTournamentsServer";
-import type { TeeSheet } from "@/lib/platform/codeTournaments";
+import { addCodeTournamentRound, endCodeTournament, getCodeTournament, setCodeTournamentAttest, setCodeTournamentCut, setCodeTournamentPublic, setCodeTournamentStrokes, setCodeTournamentTeeSheet, submitCodeTournamentCard } from "@/lib/platform/codeTournamentsServer";
+import { attestAgrees, attestPairs, type TeeSheet } from "@/lib/platform/codeTournaments";
 import { badRequest, cutFrom, reply, roundFrom, signedOut } from "@/lib/platform/codeTournamentsRequest";
 
 const whole = (n: unknown, min: number, max: number): n is number => Number.isInteger(n) && (n as number) >= min && (n as number) <= max;
@@ -34,21 +34,34 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 }
 
 /**
- * POST { action }: "strokes" { round, hole, strokes (null clears) } · "submit" { round } (my card) · "addRound" { setup, date }
+ * POST { action }: "strokes" { round, hole, strokes (null clears) } · "attest" { round, player, hole, strokes } (the player I
+ * keep score for this round) · "submit" { round } (my card, once my attester agrees) · "addRound" { setup, date }
  * "teeSheet" { round, teeSheet }, "cut" { cut (null = none) }, "public" { isPublic } and "end" (organizer only).
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { data: { user } } = await (await createSupabaseServerClient()).auth.getUser();
   if (!user) return signedOut();
-  const body = await request.json().catch(() => null) as { action?: string; round?: unknown; hole?: unknown; strokes?: unknown; setup?: unknown; date?: unknown; teeSheet?: unknown; cut?: unknown; isPublic?: unknown } | null;
+  const body = await request.json().catch(() => null) as { action?: string; round?: unknown; hole?: unknown; strokes?: unknown; setup?: unknown; date?: unknown; teeSheet?: unknown; cut?: unknown; isPublic?: unknown; player?: unknown } | null;
   switch (body?.action) {
     case "strokes":
       if (!whole(body.round, 1, 10) || !whole(body.hole, 1, 18) || !(body.strokes === null || whole(body.strokes, 1, 20))) return badRequest();
       return reply(await setCodeTournamentStrokes(user.id, id, body.round, body.hole, body.strokes), () => ({}));
-    case "submit":
+    case "attest": {
+      if (!whole(body.round, 1, 10) || !whole(body.hole, 1, 18) || typeof body.player !== "string" || !(body.strokes === null || whole(body.strokes, 1, 20))) return badRequest();
+      // Only the player this round's tee sheet gives me to keep score for.
+      const t = await getCodeTournament(user.id, id);
+      if (!t.ok || !t.value) return reply(t.ok ? { ok: false, code: "refused", message: "You're not in this tournament." } : t, () => ({}));
+      if (attestPairs(t.value, body.round).attesteeOf(user.id) !== body.player) return reply({ ok: false, code: "refused", message: "You don't keep score for that player this round." }, () => ({}));
+      return reply(await setCodeTournamentAttest(user.id, id, body.round, body.player, body.hole, body.strokes), () => ({}));
+    }
+    case "submit": {
       if (!whole(body.round, 1, 10)) return badRequest();
+      // Like golf trips: my card goes in only once my attester's entries match mine on every hole (once attesting is set up).
+      const t = await getCodeTournament(user.id, id);
+      if (t.ok && t.value?.attests && !attestAgrees(t.value, user.id, body.round)) return reply({ ok: false, code: "refused", message: "Your attester's scores don't match yours yet. Check the red holes on your card." }, () => ({}));
       return reply(await submitCodeTournamentCard(user.id, id, body.round), () => ({}));
+    }
     case "addRound": {
       const round = roundFrom({ setup: body.setup, date: body.date });
       if (!round) return badRequest();

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { applyChange, cleanCode, currentRound, cutFrom, cutStatus, DEFAULT_TIMING, formatCode, foursomes, randomTeeSheet, roundTeeSheet, scoreTeeSheet, teeTimeLabel, tournamentPreview, type CodeTournament } from "./codeTournaments.ts";
+import { applyChange, attestAgrees, attestCard, attestPairs, cleanCode, currentRound, cutFrom, cutStatus, DEFAULT_TIMING, formatCode, foursomes, randomTeeSheet, roundTeeSheet, scoreTeeSheet, teeTimeLabel, tournamentPreview, type CodeTournament } from "./codeTournaments.ts";
 import { rankLeaderboard } from "./golfLeaderboardOrder.ts";
 
 const PAR = Array(18).fill(4);
@@ -91,4 +91,26 @@ test("tee sheet by score: worst first, leaders last, on every earlier round; not
 test("tee sheet shotgun: every group at the first tee time, one per hole", () => {
   const ids = Array.from({ length: 10 }, (_, i) => `p${i}`);
   assert.deepEqual(foursomes(ids, { first: "09:00", every: 10, start: "shotgun" }, 18).groups.map((g) => [g.time, g.hole]), [["09:00", 1], ["09:00", 2], ["09:00", 3]]);
+});
+
+test("attesting: around each tee sheet group; my card can go in once my attester's entries match mine", () => {
+  const t = tournament("Gross", [{ profileId: "a", round: 1, hole: 1, strokes: 4 }]);
+  // One group of three: a keeps b, b keeps c, c keeps a.
+  const pairs = attestPairs(t, 1);
+  assert.deepEqual(["a", "b", "c"].map(pairs.attesteeOf), ["b", "c", "a"]);
+  assert.deepEqual(["a", "b", "c"].map(pairs.attesterOf), ["c", "a", "b"]);
+  assert.equal(attestAgrees(t, "a", 1), false);
+  const full = PAR.map((p, i) => ({ hole: i + 1, strokes: p }));
+  const mine = { ...t, holes: full.map((h) => ({ profileId: "a", round: 1, ...h })) };
+  const attested = { ...mine, attests: full.map((h) => ({ attester: "c", player: "a", round: 1, ...h })) };
+  assert.equal(attestAgrees(mine, "a", 1), false);
+  assert.equal(attestAgrees(attested, "a", 1), true);
+  const off = applyChange(attested, "c", { action: "attest", round: 1, player: "a", hole: 5, strokes: 6 });
+  assert.equal(attestAgrees(off, "a", 1), false);
+  assert.deepEqual(attestCard(off, "c", "a", 1)[4], 6);
+  // A single in their group has no attester.
+  const alone = applyChange(t, "a", { action: "teeSheet", round: 1, teeSheet: { groups: [{ time: "08:00", hole: 1, players: ["a"] }, { time: "08:10", hole: 1, players: ["b", "c"] }] } });
+  assert.equal(attestPairs(alone, 1).attesterOf("a"), null);
+  assert.equal(attestPairs(alone, 1).attesteeOf("b"), "c");
+  assert.equal(attestPairs(alone, 1).attesteeOf("c"), "b");
 });
