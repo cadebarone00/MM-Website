@@ -91,6 +91,16 @@ div.sheetWheels [role=listbox]:nth-of-type(4){width:48px;margin-left:4px}
 .docFrame{width:100%;height:min(70svh,640px);border:1px solid rgba(201,168,110,.35);border-radius:14px;background:#fbf8f1}
 .docOpen{justify-self:center;text-decoration:none}
 
+/* The round shown, under the name: ‹ ROUND 2 · TODAY / course › on one line under a thin rule, then the tabs below it. */
+.roundBar{display:grid;grid-template-columns:36px minmax(0,1fr) 36px;align-items:center;gap:8px;margin:6px 0 18px;padding-bottom:14px;border-bottom:1px solid rgba(220,196,149,.25);text-align:center}
+.roundBar p{margin:0;font:700 11px var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#c9a86e}
+.roundBar h2{margin:4px 0 0;overflow:hidden;font:600 20px/1.2 var(--font-spectral),Georgia,serif;color:#fbf8f1;white-space:nowrap;text-overflow:ellipsis}
+.roundBar button{display:grid;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:50%;background:transparent;color:#dcc495;cursor:pointer}
+.roundBar button:disabled{opacity:.3;cursor:default}
+/* The tabs centered under the round bar (the trip's strip centers by measuring its pills). */
+div.tourneyTabs[role=tablist]{justify-content:center;margin-top:0}
+div.tourneyTabs[role=tablist]::before,div.tourneyTabs[role=tablist]::after{flex-basis:0}
+
 /* Create page (light Play-a-round page): the rounds added so far, and the code once it's made. */
 .roundList{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:8px}
 .roundList li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:12px;background:#f6f0e6;font:500 14px/1.35 var(--font-barlow),sans-serif;color:#2b211d}

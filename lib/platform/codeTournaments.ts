@@ -117,7 +117,8 @@ function rows(t: CodeTournament, shown: number, upTo = Infinity): GolfLeaderboar
       today: toPar(today.played ? today.gross : null), netToday: toPar(today.played ? today.net : null), thru,
       holes: today.holes,
       golfer: { name: player.name, hcp: playingHandicap(round.setup, player.handicap), thru: today.done ? "F" : today.played ? `Thru ${today.played}` : "",
-        score: toPar(today.played ? today.gross : null), teeTime: "", course: round.setup.course.name, username: player.username },
+        // No "@ course" under each name: the round header already says where.
+        score: toPar(today.played ? today.gross : null), teeTime: "", course: "", username: player.username },
     };
   });
 }

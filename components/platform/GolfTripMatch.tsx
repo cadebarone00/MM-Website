@@ -929,7 +929,7 @@ function Golfer({ golfer, align, showThru = true, showHcp = true, showTee = true
     {(showHcp || showThru) && <span className={styles.golferMeta}>
       {showHcp && <span className={styles.hcp}>HCP {golfer.hcp}</span>}{showHcp && showThru && " • "}{showThru && golfer.thru}
     </span>}
-    {showTee && <span className={styles.tee}>{golfer.teeTime} <span className={styles.course}>@ {golfer.course}</span></span>}
+    {showTee && (golfer.teeTime || golfer.course) && <span className={styles.tee}>{golfer.teeTime} {golfer.course && <span className={styles.course}>@ {golfer.course}</span>}</span>}
   </div>;
 }
 

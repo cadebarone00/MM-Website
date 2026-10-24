@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ExternalLink, Settings } from "lucide-react";
-import { GolfRoundHeader, GolfTripLeaderboard } from "./GolfTripMatch";
+import { ChevronLeft, ChevronRight, ExternalLink, Settings } from "lucide-react";
+import { GolfTripLeaderboard } from "./GolfTripMatch";
 import { CodeTournamentTeeSheet } from "./CodeTournamentTeeSheet";
 import { GolfTripScoring } from "./GolfTripScoring";
 import { cutSummary } from "./CodeTournamentCut";
@@ -18,6 +18,8 @@ import styles from "./CodeTournament.module.css";
 const POLL_MS = 5000;
 type Section = "Info" | "Leaderboard" | "Tee Sheet" | "Pin Sheet";
 const today = () => new Date().toLocaleDateString("en-CA");
+/** "2026-10-23" → "Fri, Oct 23". */
+const roundDay = (date: string | undefined) => date ? new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "";
 type PostResult = { ok: boolean; message?: string };
 type Act = (body: TournamentChange) => Promise<PostResult>;
 const post = (id: string, body: object): Promise<PostResult> => fetch(`/api/code-tournaments/${encodeURIComponent(id)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
@@ -111,12 +113,19 @@ export function CodeTournamentHome({ id, meId, watchCode, publicView = false, sa
       {isOrganizer && <button type="button" className={`${homeStyles.iconButton} ${styles.settingsButton}`} aria-label="Tournament settings" onClick={() => setSettingsOpen(true)}><Settings size={24} strokeWidth={1.75} aria-hidden /></button>}
     </div>}
     <h1 className={styles.name}>{t.name}</h1>
-    <p className={styles.sub}>{t.scoring} · {t.players.length} {t.players.length === 1 ? "player" : "players"}{live ? "" : " · Final"}</p>
+    <p className={styles.sub}>{t.scoring}{live ? "" : " · Final"}</p>
     {t.cut && <p className={styles.cutNote}>Cut: {cutSummary(t.cut)}</p>}
     {problem && <p className={styles.status} role="alert">{problem}</p>}
-    <GolfRoundHeader match={preview} previousDisabled={index <= 0} nextDisabled={index >= t.rounds.length - 1}
-      onPrevious={() => index > 0 && setShown(t.rounds[index - 1].number)} onNext={() => index < t.rounds.length - 1 && setShown(t.rounds[index + 1].number)} />
-    <div className={`${homeStyles.tabs} ${homeStyles.sectionTabs}`} role="tablist" aria-label="Tournament sections">
+    {/* The round shown: Round N · Today (or its date), its course under it; arrows step through the rounds. */}
+    <header className={styles.roundBar}>
+      <button type="button" aria-label="Previous round" disabled={index <= 0} onClick={() => setShown(t.rounds[index - 1].number)}><ChevronLeft size={20} aria-hidden /></button>
+      <div>
+        <p>Round {round} · {t.rounds[index]?.date === today() ? "Today" : roundDay(t.rounds[index]?.date)}</p>
+        <h2>{t.rounds[index]?.setup.course.name}</h2>
+      </div>
+      <button type="button" aria-label="Next round" disabled={index >= t.rounds.length - 1} onClick={() => setShown(t.rounds[index + 1].number)}><ChevronRight size={20} aria-hidden /></button>
+    </header>
+    <div className={`${homeStyles.tabs} ${homeStyles.sectionTabs} ${styles.tourneyTabs}`} role="tablist" aria-label="Tournament sections">
       {sections.map((name) => <button key={name} type="button" role="tab" aria-selected={tab === name}
         className={`${homeStyles.tab} ${tab === name ? homeStyles.tabActive : ""}`} onClick={() => setSection(name)}>{name}</button>)}
     </div>
