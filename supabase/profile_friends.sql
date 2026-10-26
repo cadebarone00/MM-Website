@@ -9,12 +9,17 @@
 -- the signed-in user's profile id, using the service-role key (lib/profile/friendRequestsServer.ts). Search shows a
 -- golfer's name, @username and photo only (a Private profile shows other people its name only anyway).
 --
--- Prerequisites: schema.sql (profiles), profile_photos.sql, account_deletion.sql. Safe to run more than once.
+-- Prerequisite: schema.sql (profiles). Safe to run more than once.
 -- Undo: drop table public.profile_friend_requests; drop function public.search_golfers(uuid, text),
 --       public.send_friend_request(uuid, uuid), public.respond_friend_request(uuid, uuid, boolean), public.my_friend_requests(uuid),
 --       public.remove_friend(uuid, uuid), public.friend_request_count(uuid);
 
 begin;
+
+-- Columns search reads, added here too in case those files haven't run (same definitions): closed accounts are left
+-- out (account_deletion.sql) and photos show (profile_photos.sql).
+alter table public.profiles add column if not exists deleted_at timestamptz;
+alter table public.profiles add column if not exists avatar_path text check (avatar_path is null or (length(avatar_path) between 1 and 300));
 
 create table if not exists public.profile_friend_requests (
   id uuid primary key default gen_random_uuid(),
@@ -83,13 +88,14 @@ returns jsonb language sql stable security definer set search_path = public as $
                 from profile_friend_requests r where r.status = 'accepted' and (r.from_profile = p_me or r.to_profile = p_me)));
 $$;
 
--- I stop being friends with `p_other` (friends made by request only; golf trip mates stay friends). Returns false when
--- there was no request friendship to remove.
+-- The friend button on a golfer's profile, switched off: I stop being friends with `p_other` (friends made by request;
+-- golf trip mates stay friends), or take back the request I sent them. Returns false when there was nothing to undo.
 create or replace function public.remove_friend(p_me uuid, p_other uuid)
 returns boolean language plpgsql security definer set search_path = public as $$
 begin
-  delete from profile_friend_requests where status = 'accepted'
-    and ((from_profile = p_me and to_profile = p_other) or (from_profile = p_other and to_profile = p_me));
+  delete from profile_friend_requests
+  where (status = 'accepted' and ((from_profile = p_me and to_profile = p_other) or (from_profile = p_other and to_profile = p_me)))
+     or (status = 'pending' and from_profile = p_me and to_profile = p_other);
   return found;
 end $$;
 

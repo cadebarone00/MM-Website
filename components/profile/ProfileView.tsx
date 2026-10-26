@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { Pencil, Search, Settings } from "lucide-react";
 import { FriendRequestBadge } from "./FriendRequestBadge";
+import { FriendToggle } from "./FriendToggle";
+import type { Relation } from "@/lib/profile/friendRequestsServer";
 import { HandicapHome } from "@/components/portal/handicap/HandicapHome";
 import { PlayerRoundsList } from "@/components/profile/PlayerRoundsList";
 import { ProfileStats } from "@/components/profile/ProfileStats";
@@ -28,7 +30,9 @@ const empty = "px-4 py-5 text-center text-cream-50/70";
  */
 /** `friendsCount`: people they've been on a golf trip with (lib/profile/friendsServer.ts); null = unknown. */
 /** `links`: where the gear and the photo's pencil go (the dev profile preview points them at its sample screens). */
-export function ProfileView({ profile: real, friendsCount = null, links = { settings: "/settings", edit: "/settings" } }: { profile: ProfileReadModel; friendsCount?: number | null; links?: { settings: string; edit: string } }) {
+/** `friendship` (someone else's profile, signed in): the friend button in the corner, switched on when we're friends. */
+export function ProfileView({ profile: real, friendsCount = null, links = { settings: "/settings", edit: "/settings" }, friendship }: { profile: ProfileReadModel; friendsCount?: number | null; links?: { settings: string; edit: string };
+  friendship?: { profileId: string; relation: Relation; tripMate: boolean } }) {
   const [tab, setTab] = useState<Tab>("overview");
   // App simulator (dev only) → Profile → "Sample stats data": my own profile shows made-up rounds instead of my real ones.
   const sample = useSimulator()?.state.sampleStats === true && real.isOwner;
@@ -45,6 +49,7 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
           <Search size={26} aria-hidden="true" />
           <FriendRequestBadge />
         </Link>}
+        {!isOwner && friendship && <FriendToggle profileId={friendship.profileId} name={identity.displayName} initial={friendship.relation} tripMate={friendship.tripMate} />}
         {isOwner && <Link href={links.settings} aria-label="Settings" className="absolute right-4 top-6 flex h-11 w-11 items-center justify-center rounded-full text-maroon-900 hover:text-maroon-700">
           <Settings size={28} aria-hidden="true" />
         </Link>}
@@ -69,11 +74,13 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
             {/* One line, centred over the numbers (it sits below the gear, so it never runs under it). */}
             <h2 className="truncate text-center font-serif text-sm font-bold leading-tight" title={identity.displayName}>{identity.displayName}</h2>
             {!isPrivate && <dl className="mt-2 grid grid-cols-3 text-center" aria-label="Profile numbers">
-              {([["Rounds", String(profile.modernStats?.roundsPlayed ?? 0)], ["Friends", friendsCount === null ? "—" : String(friendsCount)], ["Handicap", profile.modernStats?.handicapIndex == null ? "—" : String(profile.modernStats.handicapIndex)]] as const).map(([label, value]) =>
-                <div key={label} className="flex flex-col-reverse items-center gap-1">
-                  <dt className="font-condensed text-sm text-maroon-900/70">{label}</dt>
-                  <dd className="m-0 font-serif text-sm font-bold leading-none">{value}</dd>
-                </div>)}
+              {([["Rounds", String(profile.modernStats?.roundsPlayed ?? 0)], ["Friends", friendsCount === null ? "—" : String(friendsCount)], ["Handicap", profile.modernStats?.handicapIndex == null ? "—" : String(profile.modernStats.handicapIndex)]] as const).map(([label, value]) => {
+                const stat = <><dt className="font-condensed text-sm text-maroon-900/70">{label}</dt><dd className="m-0 font-serif text-sm font-bold leading-none">{value}</dd></>;
+                // My Friends number opens my friends list.
+                return label === "Friends" && isOwner
+                  ? <Link key={label} href="/profile/friends" aria-label={`Friends: ${value}. See your friends`} className="flex flex-col-reverse items-center gap-1 rounded-lg text-maroon-900 hover:text-maroon-700">{stat}</Link>
+                  : <div key={label} className="flex flex-col-reverse items-center gap-1">{stat}</div>;
+              })}
             </dl>}
             </div>
           </div>

@@ -22,3 +22,7 @@
 .badgeButton{background:#f3e8cf;cursor:pointer}
 .remove{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border:0;border-radius:999px;background:#c62828;color:#fff;font:700 13px var(--font-barlow),sans-serif;cursor:pointer}
 .remove:disabled{opacity:.6}
+.total{display:inline-grid;place-items:center;min-width:22px;height:20px;margin-left:6px;padding:0 6px;border-radius:999px;background:#e6dccb;color:#5d4f47;font:700 11px var(--font-barlow),sans-serif;letter-spacing:0;vertical-align:middle}
+.whoRow{flex:1}
+.chevron{margin-left:auto;flex:none;color:#b99c6b}
+.findMore{display:inline-flex;align-items:center;gap:6px;margin-top:12px;color:var(--color-maroon-700);font:700 14px var(--font-barlow),sans-serif;text-decoration:none}

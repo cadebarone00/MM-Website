@@ -16,8 +16,8 @@ function Avatar({ name, url }: { name: string; url: string | null }) {
 
 /**
  * Profile → Find Golfers: search golfers by name or @username and ask to be friends (Add friend → Requested; Accept when
- * they asked first; Friends once you are, which you can tap to remove; trip mates show Friends · Trip and stay). Requests
- * waiting on me show too, with Accept / Decline. An accepted request makes us friends, like golfing on a trip together.
+ * they asked first; Friends once you are — switch that off on their profile). Requests waiting on me show too, with Accept /
+ * Decline. An accepted request makes us friends, like golfing on a trip together.
  */
 export function FindGolfers({ incoming: firstIncoming, setupMessage }: { incoming: FriendRequest[]; setupMessage: string | null }) {
   const [query, setQuery] = useState("");
@@ -25,8 +25,6 @@ export function FindGolfers({ incoming: firstIncoming, setupMessage }: { incomin
   const [incoming, setIncoming] = useState(firstIncoming);
   const [problem, setProblem] = useState<string | null>(setupMessage);
   const [busy, setBusy] = useState<string | null>(null);
-  // The friend whose Remove friend? is showing.
-  const [removing, setRemoving] = useState<string | null>(null);
   const words = query.trim();
   // Under two letters there's nothing to show (an older search's results stay hidden).
   const shown = words.length < 2 ? null : results;
@@ -59,11 +57,6 @@ export function FindGolfers({ incoming: firstIncoming, setupMessage }: { incomin
     }
     setBusy(null);
   }
-  async function remove(golfer: GolferResult) {
-    setBusy(golfer.id);
-    if (await send({ remove: golfer.id })) setResults((list) => list && list.map((g) => g.id === golfer.id ? { ...g, relation: "none" } : g));
-    setBusy(null); setRemoving(null);
-  }
   async function answer(request: FriendRequest, accept: boolean) {
     setBusy(request.id);
     if (await send({ request: request.id, accept })) {
@@ -73,15 +66,7 @@ export function FindGolfers({ incoming: firstIncoming, setupMessage }: { incomin
     setBusy(null);
   }
 
-  const action = (g: GolferResult) => g.relation === "friends" && g.tripMate
-      // Friends from a golf trip together: automatic, so there's nothing to remove.
-      ? <span className={`${styles.badge} ${styles.badgeFriends}`}><Check size={14} aria-hidden="true" /> Friends · Trip</span>
-    : g.relation === "friends" ? removing === g.id
-      ? <span className={styles.answer} role="group" aria-label={`Remove ${g.name} as a friend?`}>
-        <button type="button" className={styles.remove} disabled={busy === g.id} onClick={() => void remove(g)}>{busy === g.id ? "Removing…" : "Remove friend"}</button>
-        <button type="button" className={styles.decline} aria-label="Keep as a friend" onClick={() => setRemoving(null)}><X size={16} aria-hidden="true" /></button>
-      </span>
-      : <button type="button" className={`${styles.badge} ${styles.badgeFriends} ${styles.badgeButton}`} aria-label={`Friends with ${g.name}. Tap to remove`} onClick={() => setRemoving(g.id)}><Check size={14} aria-hidden="true" /> Friends</button>
+  const action = (g: GolferResult) => g.relation === "friends" ? <span className={`${styles.badge} ${styles.badgeFriends}`}><Check size={14} aria-hidden="true" /> Friends</span>
     : g.relation === "requested" ? <span className={styles.badge}>Requested</span>
     : <button type="button" className={styles.add} disabled={busy === g.id} onClick={() => void addFriend(g)}>
       {g.relation === "incoming" ? <><Check size={15} aria-hidden="true" /> Accept</> : <><UserPlus size={15} aria-hidden="true" /> Add friend</>}</button>;

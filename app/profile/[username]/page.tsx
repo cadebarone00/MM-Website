@@ -4,6 +4,7 @@ import { ProfileView } from "@/components/profile/ProfileView";
 import { getCurrentProfile } from "@/lib/profile/currentProfile";
 import { loadProfileReadModel, profileIdForUsername } from "@/lib/profile/profileReadModelServer";
 import { friendCount } from "@/lib/profile/friendsServer";
+import { friendshipWith } from "@/lib/profile/friendRequestsServer";
 import styles from "../page.module.css";
 
 export const metadata: Metadata = { title: "Profile | The Maroon", robots: { index: false } };
@@ -24,5 +25,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const profile = await loadProfileReadModel(viewerId, subjectId);
   if (!profile) notFound();
   const friends = await friendCount(subjectId).catch(() => null);
-  return <div className={styles.page}><ProfileView profile={profile} friendsCount={friends} /></div>;
+  // Signed in: the friend button in the corner shows (and switches) where we stand.
+  const friendship = viewerId ? { profileId: subjectId, ...await friendshipWith(viewerId, subjectId).catch(() => ({ relation: "none" as const, tripMate: false })) } : undefined;
+  return <div className={styles.page}><ProfileView profile={profile} friendsCount={friends} friendship={friendship} /></div>;
 }
