@@ -3,6 +3,7 @@
  * buttons and accents). Light sets <html data-mode="light">, which swaps the --lm-* colours in app/globals.css. Kept on
  * the device in the "mode" cookie so the server draws the right look from the first paint.
  */
+/** Kept for reference: the two looks. */
 export const APP_MODES = [
   { id: "dark", name: "Dark", note: "Maroon", swatch: "#240001", ink: "#fbf8f1" },
   { id: "light", name: "Light", note: "White", swatch: "#ffffff", ink: "#240001" },

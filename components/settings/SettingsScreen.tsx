@@ -34,7 +34,7 @@ export function SettingsScreen({ backHref, photo, account, offers, privacy, appe
         {privacy}
       </section>}
 
-      {appearance && <section aria-labelledby="settings-appearance" className={styles.card}>
+      {appearance && <section aria-labelledby="settings-appearance" className={`${styles.card} ${styles.compactCard}`}>
         {appearance}
       </section>}
 

@@ -48,13 +48,16 @@
 .infoPanel dd{margin:2px 0 0;color:#5d4f47}
 .segmented{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:12px;background:#e6dccb}
 .segmented button{min-height:40px;border:0;border-radius:9px;background:transparent;color:var(--color-maroon-950);font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
-.segmented button[aria-pressed=true]{background:var(--lm-bg-1d0b11);color:var(--lm-ink-f4efe6)}
+.segmented button[aria-pressed=true]{background:var(--color-maroon-950);color:#f4efe6}
 .segmented button:disabled{opacity:.7}
 
-/* Appearance: a Dark and a Light card side by side, each showing its look; the picked one has a gold ring and a check. */
-.modes{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
-.mode{display:grid;gap:8px;padding:0;border:0;background:none;color:var(--color-maroon-950);font:600 14px var(--font-barlow),sans-serif;text-align:center;cursor:pointer}
-.mode small{display:block;color:#5d4f47;font-weight:500;font-size:12px}
-.modeSwatch{position:relative;display:grid;place-items:center;height:72px;border-radius:14px;font:700 22px var(--font-spectral),Georgia,serif;box-shadow:inset 0 0 0 1px rgba(36,0,1,.18)}
-.modeSwatch svg{position:absolute;top:8px;right:8px}
-.mode[aria-checked=true] .modeSwatch{box-shadow:0 0 0 2px #f4efe6,0 0 0 4px #c7a55e}
+/* Dark mode: one row — icon, label, and a switch (gold when on). */
+.modeRow{display:flex;align-items:center;gap:12px}
+.modeIcon{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#e6dccb;color:var(--color-maroon-950)}
+.modeLabel{flex:1;font:700 16px var(--font-barlow),sans-serif;color:var(--color-maroon-950)}
+.switch{position:relative;flex:none;width:52px;height:30px;padding:0;border:0;border-radius:999px;background:#d8ccb9;cursor:pointer;transition:background .2s}
+.switch[aria-checked=true]{background:var(--color-maroon-700)}
+.switchKnob{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}
+.switch[aria-checked=true] .switchKnob{transform:translateX(22px)}
+.switch:focus-visible{outline:2px solid #c7a55e;outline-offset:3px}
+@media (prefers-reduced-motion:reduce){.switch,.switchKnob{transition:none}}
