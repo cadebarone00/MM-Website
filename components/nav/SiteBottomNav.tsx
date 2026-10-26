@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LandPlot, Plane, UserRound } from "lucide-react";
+import { Flag, Plane, UserRound } from "lucide-react";
 import { siteBottomNavTabActive, siteBottomNavTabHref } from "@/lib/navigation/siteBottomNav";
 import { PickemsIcon } from "./ImageIcons";
 import { LeaderboardIcon } from "./LeaderboardIcon";
@@ -11,7 +11,7 @@ import styles from "./SiteBottomNav.module.css";
 const ICON_SIZE = 26;
 
 const TABS = [
-  { href: "/", label: "Play", icon: LandPlot },
+  { href: "/", label: "Play", icon: Flag },
   { href: "/golf-trips", label: "Golf Trips", icon: Plane },
   { href: "/profile", label: "Profile", icon: UserRound },
   { href: "/tournaments/join", label: "Tourneys", icon: LeaderboardIcon },
