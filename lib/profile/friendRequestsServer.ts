@@ -1,6 +1,7 @@
 import "server-only";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { profilePhotoUrl } from "./profilePhoto";
+import { emailConfigured, escapeHtml, sendEmail } from "@/lib/email/sendEmail";
 import { tripFriendIds } from "./friendsServer";
 
 /**
@@ -10,7 +11,8 @@ import { tripFriendIds } from "./friendsServer";
  */
 
 export type Relation = "friends" | "requested" | "incoming" | "none";
-export interface GolferResult { id: string; name: string; username: string | null; photoUrl: string | null; relation: Relation }
+/** `tripMate`: friends from a golf trip together (automatic, so they can't be removed). */
+export interface GolferResult { id: string; name: string; username: string | null; photoUrl: string | null; relation: Relation; tripMate: boolean }
 export interface FriendRequest { id: string; profileId: string; name: string; username: string | null; photoUrl: string | null }
 export type FriendsResult<T> = { ok: true; value: T } | { ok: false; code: "not_installed" | "refused" | "failed"; message: string };
 
@@ -30,10 +32,41 @@ export async function searchGolfers(me: string, query: string): Promise<FriendsR
   if (!found.ok) return found;
   const tripMates = found.value.length ? await tripFriendIds(me) : new Set<string>();
   return { ok: true, value: found.value.map((g) => ({ id: g.id, name: g.name, username: g.username, photoUrl: profilePhotoUrl(g.avatarPath),
-    relation: tripMates.has(g.id) ? "friends" : g.relation })) };
+    relation: tripMates.has(g.id) ? "friends" : g.relation, tripMate: tripMates.has(g.id) && g.relation !== "friends" })) };
 }
 
-export const sendFriendRequest = (me: string, to: string) => rpc<Relation>("send_friend_request", { p_from: me, p_to: to });
+/** I ask `to` to be friends; a new request emails them (when email is set up). `origin`: the site the email links to. */
+export async function sendFriendRequest(me: string, to: string, origin: string): Promise<FriendsResult<Relation>> {
+  const result = await rpc<Relation>("send_friend_request", { p_from: me, p_to: to });
+  if (result.ok && result.value === "requested" && emailConfigured()) void emailFriendRequest(me, to, origin).catch(() => {});
+  return result;
+}
+
+async function emailFriendRequest(me: string, to: string, origin: string) {
+  const [{ data: from }, { data: account }] = await Promise.all([
+    db().from("profiles").select("display_name").eq("id", me).maybeSingle(),
+    db().auth.admin.getUserById(to),
+  ]);
+  const email = account?.user?.email, name = (from?.display_name as string | null) ?? "A golfer";
+  if (!email) return;
+  const url = `${origin}/profile/search`;
+  await sendEmail({ to: email, subject: `${name} wants to be friends on The Maroon`,
+    text: `${name} sent you a friend request on The Maroon.\n\nAccept or decline it here: ${url}\n`,
+    html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;background:#240001;color:#fbf8f1;border-radius:16px">
+<p style="margin:0;color:#c9a86e;font-size:12px;letter-spacing:.12em;text-transform:uppercase">Friend request</p>
+<h1 style="margin:8px 0 16px;font-family:Georgia,serif;font-size:26px">${escapeHtml(name)} wants to be friends</h1>
+<p>Friends on The Maroon can compare stats and see each other's rounds.</p>
+<p style="text-align:center;margin:24px 0"><a href="${escapeHtml(url)}" style="display:inline-block;padding:12px 20px;border-radius:999px;background:#e8c98a;color:#3b0d18;font-weight:700;text-decoration:none">See the request</a></p>
+</div>` });
+}
+
+/** Stop being friends (request friends only; golf trip mates stay friends). */
+export const removeFriend = (me: string, other: string) => rpc<boolean>("remove_friend", { p_me: me, p_other: other });
+/** How many requests are waiting on me (0 before profile_friends.sql is run). */
+export async function friendRequestCount(me: string): Promise<number> {
+  const result = await rpc<number>("friend_request_count", { p_me: me });
+  return result.ok ? result.value ?? 0 : 0;
+}
 export const respondFriendRequest = (me: string, request: string, accept: boolean) => rpc<null>("respond_friend_request", { p_me: me, p_request: request, p_accept: accept });
 
 /** Requests waiting on me, and the friends I've made by request (ids). */

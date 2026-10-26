@@ -70,3 +70,6 @@
     display: none;
   }
 }
+
+/* Holds the icon so the Profile tab's friend request count can sit on its corner. */
+.iconWrap{position:relative;display:inline-grid;place-items:center}

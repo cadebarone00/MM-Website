@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Flag, Plane, UserRound } from "lucide-react";
 import { siteBottomNavTabActive, siteBottomNavTabHref } from "@/lib/navigation/siteBottomNav";
 import { PickemsIcon } from "./ImageIcons";
+import { FriendRequestBadge } from "@/components/profile/FriendRequestBadge";
 import { LeaderboardIcon } from "./LeaderboardIcon";
 import styles from "./SiteBottomNav.module.css";
 
@@ -35,7 +36,8 @@ export function SiteBottomNav() {
             aria-current={active ? "page" : undefined}
           >
             {/* Oversized icons overlap their margin so every label stays on one line. */}
-            <Icon size={size} style={{ margin: `${(ICON_SIZE - size) / 2}px 0` }} aria-hidden="true" />
+            {/* Profile: a red count while friend requests are waiting. */}
+            <span className={styles.iconWrap}><Icon size={size} style={{ margin: `${(ICON_SIZE - size) / 2}px 0` }} aria-hidden="true" />{tab.href === "/profile" && <FriendRequestBadge />}</span>
             <span>{tab.label}</span>
           </Link>
         );

@@ -2,7 +2,8 @@
 -- Find Golfers and friend requests (Profile → magnifying glass). Anyone signed in can search golfers by name or
 -- @username and ask to be friends; the other golfer accepts or declines. An accepted request makes them friends, on
 -- top of the automatic friends from golf trips (lib/profile/friendsServer.ts). Asking someone who already asked you
--- accepts theirs.
+-- accepts theirs. Request friends can be removed (trip mates can't). The person asked gets an email (when email is set
+-- up) and a red badge on Profile until they answer.
 --
 -- Access: nobody reads or writes the table directly (RLS on, no policies). The server calls the functions below with
 -- the signed-in user's profile id, using the service-role key (lib/profile/friendRequestsServer.ts). Search shows a
@@ -10,7 +11,8 @@
 --
 -- Prerequisites: schema.sql (profiles), profile_photos.sql, account_deletion.sql. Safe to run more than once.
 -- Undo: drop table public.profile_friend_requests; drop function public.search_golfers(uuid, text),
---       public.send_friend_request(uuid, uuid), public.respond_friend_request(uuid, uuid, boolean), public.my_friend_requests(uuid);
+--       public.send_friend_request(uuid, uuid), public.respond_friend_request(uuid, uuid, boolean), public.my_friend_requests(uuid),
+--       public.remove_friend(uuid, uuid), public.friend_request_count(uuid);
 
 begin;
 
@@ -81,10 +83,27 @@ returns jsonb language sql stable security definer set search_path = public as $
                 from profile_friend_requests r where r.status = 'accepted' and (r.from_profile = p_me or r.to_profile = p_me)));
 $$;
 
+-- I stop being friends with `p_other` (friends made by request only; golf trip mates stay friends). Returns false when
+-- there was no request friendship to remove.
+create or replace function public.remove_friend(p_me uuid, p_other uuid)
+returns boolean language plpgsql security definer set search_path = public as $$
+begin
+  delete from profile_friend_requests where status = 'accepted'
+    and ((from_profile = p_me and to_profile = p_other) or (from_profile = p_other and to_profile = p_me));
+  return found;
+end $$;
+
+-- How many requests are waiting on me (the red badge on Profile and the magnifying glass).
+create or replace function public.friend_request_count(p_me uuid)
+returns integer language sql stable security definer set search_path = public as $$
+  select count(*)::integer from profile_friend_requests r join profiles p on p.id = r.from_profile
+  where r.to_profile = p_me and r.status = 'pending' and p.deleted_at is null;
+$$;
+
 do $$
 declare f text;
 begin
-  foreach f in array array['search_golfers(uuid, text)', 'send_friend_request(uuid, uuid)', 'respond_friend_request(uuid, uuid, boolean)', 'my_friend_requests(uuid)'] loop
+  foreach f in array array['search_golfers(uuid, text)', 'send_friend_request(uuid, uuid)', 'respond_friend_request(uuid, uuid, boolean)', 'my_friend_requests(uuid)', 'remove_friend(uuid, uuid)', 'friend_request_count(uuid)'] loop
     execute format('revoke all on function public.%s from public, anon, authenticated', f);
     execute format('grant execute on function public.%s to service_role', f);
   end loop;

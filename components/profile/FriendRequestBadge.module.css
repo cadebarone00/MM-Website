@@ -1,0 +1,1 @@
+.badge{position:absolute;top:-2px;right:-4px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#c62828;color:#fff;font:700 11px/1 var(--font-barlow),sans-serif;box-shadow:0 0 0 2px var(--color-maroon-950);pointer-events:none}

@@ -19,3 +19,6 @@
 .answer{display:flex;align-items:center;gap:6px;flex:none}
 .decline{display:grid;place-items:center;width:36px;height:36px;border:1px solid #b99c6b;border-radius:50%;background:transparent;color:#5d4f47;cursor:pointer}
 .count{display:inline-grid;place-items:center;min-width:20px;height:20px;margin-left:6px;padding:0 6px;border-radius:999px;background:#c62828;color:#fff;font:700 11px var(--font-barlow),sans-serif;letter-spacing:0;vertical-align:middle}
+.badgeButton{background:#f3e8cf;cursor:pointer}
+.remove{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border:0;border-radius:999px;background:#c62828;color:#fff;font:700 13px var(--font-barlow),sans-serif;cursor:pointer}
+.remove:disabled{opacity:.6}

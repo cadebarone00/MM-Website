@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { Pencil, Search, Settings } from "lucide-react";
+import { FriendRequestBadge } from "./FriendRequestBadge";
 import { HandicapHome } from "@/components/portal/handicap/HandicapHome";
 import { PlayerRoundsList } from "@/components/profile/PlayerRoundsList";
 import { ProfileStats } from "@/components/profile/ProfileStats";
@@ -42,6 +43,7 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
         {/* Find Golfers (search and friend requests), just left of the gear. */}
         {isOwner && <Link href="/profile/search" aria-label="Find golfers" className="absolute right-16 top-6 flex h-11 w-11 items-center justify-center rounded-full text-maroon-900 hover:text-maroon-700">
           <Search size={26} aria-hidden="true" />
+          <FriendRequestBadge />
         </Link>}
         {isOwner && <Link href={links.settings} aria-label="Settings" className="absolute right-4 top-6 flex h-11 w-11 items-center justify-center rounded-full text-maroon-900 hover:text-maroon-700">
           <Settings size={28} aria-hidden="true" />
