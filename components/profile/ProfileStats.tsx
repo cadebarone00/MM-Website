@@ -20,7 +20,6 @@ export function ProfileStats({ rounds, isOwner }: { rounds: ProfileHistoryRound[
       <StatRow label="Headline stats" items={[
         ["Handicap", stats.handicapIndex === null ? "—" : stats.handicapIndex.toFixed(1)],
         ["Scoring Avg.", stats.average18 === null ? "—" : stats.average18.toFixed(1)],
-        ["Scoring Avg adj", stats.adjustedAverage18 === null ? "—" : stats.adjustedAverage18.toFixed(1)],
         ["Low Score", stats.best18 ? String(stats.best18.total) : "—"],
       ]} />
       <hr className="m-0 border-0 border-t border-cream-50/15" />
