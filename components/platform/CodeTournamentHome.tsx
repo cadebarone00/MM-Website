@@ -98,8 +98,9 @@ export function CodeTournamentHome({ id, meId, watchCode, publicView = false, sa
   async function deleteTournament(): Promise<string | null> {
     if (!sample) {
       const reply = await fetch(`/api/code-tournaments/${encodeURIComponent(t!.id)}`, { method: "DELETE" })
-        .then(async (r) => ({ ...(await r.json().catch(() => ({}))) as PostResult, ok: r.ok })).catch(() => ({ ok: false, message: "No connection. Try again when you're back online." }));
-      if (!reply.ok) return reply.message ?? "Couldn't delete the tournament. Try again.";
+        .then(async (r) => ({ ...(await r.json().catch(() => ({}))) as PostResult & { code?: string }, ok: r.ok })).catch(() => ({ ok: false, code: undefined, message: "No connection. Try again when you're back online." }));
+      if (!reply.ok) return reply.code === "not_installed" ? "Deleting tournaments isn't set up in the database yet (run supabase/tournament_delete.sql)."
+        : reply.message ?? "Couldn't delete the tournament. Try again.";
     }
     router.replace("/tournaments/join");
     return null;
