@@ -486,8 +486,9 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
 
         <div className={styles.scoreSplit}>
           <ScoreCard label="My Score" strokes={strokes} holePar={shownPar} step={step} disabled={!ownEditable} compact />
-          {!solo && <ScoreCard label={`${opponentName} Score`} strokes={holesCompetitor[current]} holePar={shownPar} step={stepCompetitor} disabled={!attestEditable} compact />}
-          {group?.names.map((name, g) => <ScoreCard key={g} label={name} strokes={group.strokes[g][current]} holePar={shownPar} step={(delta) => stepGroup(g, delta)} disabled={submitted || group.editable?.[g] === false} compact />)}
+          {/* The other player's first name keeps both labels on one line, so the two steppers line up. */}
+          {!solo && <ScoreCard label={`${opponentName.trim().split(/\s+/)[0]} Score`} strokes={holesCompetitor[current]} holePar={shownPar} step={stepCompetitor} disabled={!attestEditable} compact />}
+          {group?.names.map((name, g) => <ScoreCard key={g} label={name.trim().split(/\s+/)[0]} strokes={group.strokes[g][current]} holePar={shownPar} step={(delta) => stepGroup(g, delta)} disabled={submitted || group.editable?.[g] === false} compact />)}
         </div>
       </div>
 
